@@ -43,7 +43,6 @@ class AsciiBuilder(size: Optional[Int] = Unset) extends Builder[Ascii](size):
       size.let(buffer.sizeHint(_))
 
   protected def put(ascii: Ascii): Unit = ascii.bytes.each(buffer.append(_))
-
   def put(char: Char): Unit = buffer.append(char.toByte)
   protected def wipe(): Unit = buffer.clear()
   protected def result(): Ascii = Ascii(buffer.toArray.immutable(using Unsafe))

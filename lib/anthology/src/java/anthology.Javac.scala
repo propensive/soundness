@@ -51,13 +51,14 @@ import java.net as jn
 
 object Javac:
   private var Javac: jt.JavaCompiler = jt.ToolProvider.getSystemJavaCompiler().nn
+
   def refresh(): Unit = Javac = jt.ToolProvider.getSystemJavaCompiler().nn
   def compiler(): jt.JavaCompiler = Javac
 
 case class Javac(options: List[JavacOption]):
   case class JavaSource(name: Text, code: Text)
   extends jt.SimpleJavaFileObject
-    ( jn.URI.create(t"string:///$name".s), jt.JavaFileObject.Kind.SOURCE):
+    ( jn.URI.create(t"string:///$name".s), jt.JavaFileObject.Kind.SOURCE ):
     override def getCharContent(ignoreEncodingErrors: Boolean): CharSequence = code.s
 
   def apply(classpath: LocalClasspath)[path: Abstractable across Paths to Text]
@@ -65,55 +66,54 @@ case class Javac(options: List[JavacOption]):
     ( using System, Monitor, Codicil )
   :   CompileProcess logs CompileEvent raises CompilerError =
 
-      Log.info(CompileEvent.Start)
-      val process: CompileProcess = CompileProcess()
+    Log.info(CompileEvent.Start)
+    val process: CompileProcess = CompileProcess()
 
-      val diagnostics = new jt.DiagnosticListener[jt.JavaFileObject]:
+    val diagnostics = new jt.DiagnosticListener[jt.JavaFileObject]:
+      def report(diagnostic: jt.Diagnostic[? <: jt.JavaFileObject] | Null): Unit =
+        if diagnostic != null then
+          val importance = diagnostic.getKind match
+            case jt.Diagnostic.Kind.ERROR             => Importance.Error
+            case jt.Diagnostic.Kind.WARNING           => Importance.Warning
+            case jt.Diagnostic.Kind.MANDATORY_WARNING => Importance.Warning
+            case _                                    => Importance.Info
 
-        def report(diagnostic: jt.Diagnostic[? <: jt.JavaFileObject] | Null): Unit =
-          if diagnostic != null then
-            val importance = diagnostic.getKind match
-              case jt.Diagnostic.Kind.ERROR             => Importance.Error
-              case jt.Diagnostic.Kind.WARNING           => Importance.Warning
-              case jt.Diagnostic.Kind.MANDATORY_WARNING => Importance.Warning
-              case _                                    => Importance.Info
+          val codeRange: Optional[CodeRange] =
+            if diagnostic.getPosition == jt.Diagnostic.NOPOS then Unset else
+              CodeRange
+                ( diagnostic.getLineNumber.toInt,
+                  diagnostic.getColumnNumber.toInt,
+                  diagnostic.getLineNumber.toInt,
+                  (diagnostic.getColumnNumber + diagnostic.getEndPosition
+                  - diagnostic.getPosition).toInt )
 
-            val codeRange: Optional[CodeRange] =
-              if diagnostic.getPosition == jt.Diagnostic.NOPOS then Unset else
-                CodeRange
-                  ( diagnostic.getLineNumber.toInt,
-                    diagnostic.getColumnNumber.toInt,
-                    diagnostic.getLineNumber.toInt,
-                    (diagnostic.getColumnNumber + diagnostic.getEndPosition
-                    - diagnostic.getPosition).toInt )
+          process.put:
+            Notice
+              ( importance,
+                "name".tt,
+                diagnostic.getMessage(ju.Locale.getDefault()).nn.tt,
+                codeRange )
 
-            process.put:
-              Notice
-                ( importance,
-                  "name".tt,
-                  diagnostic.getMessage(ju.Locale.getDefault()).nn.tt,
-                  codeRange )
+    val options = List(t"-classpath", classpath(), t"-d", out.generic)
+    val javaSources = sources.map(JavaSource(_, _)).asJava
+    Log.info(CompileEvent.Running(List(t"javac", options.join(t" "))))
 
-      val options = List(t"-classpath", classpath(), t"-d", out.generic)
-      val javaSources = sources.map(JavaSource(_, _)).asJava
-      Log.info(CompileEvent.Running(List(t"javac", options.join(t" "))))
+    async:
+      try
+        val success =
+          process.put(CompileProgress(0.1, t"javac"))
 
-      async:
-        try
-          val success =
-            process.put(CompileProgress(0.1, t"javac"))
+          Javac.compiler()
+          . getTask(null, null, diagnostics, options.map(_.s).asJava, null, javaSources)
+          . nn.call().nn
 
-            Javac.compiler()
-            . getTask(null, null, diagnostics, options.map(_.s).asJava, null, javaSources)
-            . nn.call().nn
+        if success then process.put(CompileProgress(1.0, t"javac"))
 
-          if success then process.put(CompileProgress(1.0, t"javac"))
+        process.put(if success then CompileResult.Success else CompileResult.Failure)
 
-          process.put(if success then CompileResult.Success else CompileResult.Failure)
+      catch case suc.NonFatal(error) =>
+        Javac.refresh()
+        Log.warn(CompileEvent.CompilerCrash)
+        process.put(CompileResult.Crash(error.stackTrace))
 
-        catch case suc.NonFatal(error) =>
-          Javac.refresh()
-          Log.warn(CompileEvent.CompilerCrash)
-          process.put(CompileResult.Crash(error.stackTrace))
-
-      process
+    process

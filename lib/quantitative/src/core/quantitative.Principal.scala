@@ -34,8 +34,6 @@ package quantitative
 
 import proscenium.*
 
-trait Principal[dimension <: Dimension, unit[_ <: Nat] <: Measure]()
-
 object Principal:
   given distance: Principal[Distance, Metres]()
   given mass: Principal[Mass, Kilograms]()
@@ -44,3 +42,5 @@ object Principal:
   given luminosity: Principal[Luminosity, Candelas]()
   given heat: Principal[Heat, Kelvins]()
   given amountOfSubstance: Principal[AmountOfSubstance, Moles]()
+
+trait Principal[dimension <: Dimension, unit[_ <: Nat] <: Measure]()

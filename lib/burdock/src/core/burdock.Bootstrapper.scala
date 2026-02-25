@@ -91,7 +91,6 @@ object Bootstrapper:
     def text = t"$digest:$url"
 
   case class Entry(name: Text, data: Data)
-
   case class UserError(detail: Message)(using Diagnostics) extends Error(detail)
 
   def main(input: IArray[Text]): Unit = application(input):
@@ -103,8 +102,7 @@ object Bootstrapper:
     . within:
         val jarfile: Path on Linux =
           ClassRef(Class.forName("burdock.Bootstrap").nn).classpathEntry match
-            case ClasspathEntry.Jar(file) =>
-              file.decode[Path on Linux]
+            case ClasspathEntry.Jar(file) => file.decode[Path on Linux]
 
             case other =>
               abort(UserError(m"Could not determine location of bootstrap class"))
@@ -138,8 +136,9 @@ object Bootstrapper:
           val localDigest: Text = data.digest[Sha1].serialize[Hex]
 
           if digest != localDigest then
-            Out.println(m"""SHA-1 checksum of local file ${base + relative0} did not match remote
-                            $url""")
+            Out.println:
+              m"SHA-1 checksum of local file ${base + relative0} did not match remote $url"
+
             Nil
 
           else

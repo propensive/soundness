@@ -44,6 +44,7 @@ object Admissible:
   def unchecked[child, filesystem]: child is Admissible on filesystem = new Admissible:
     type Self = child
     type Plane = filesystem
+
     def check(name: Text): Unit = ()
 
   inline def apply[self, filesystem](fn: Text => Unit): self is Admissible on filesystem = fn(_)
@@ -51,13 +52,13 @@ object Admissible:
   transparent inline given text: [text <: Text, filesystem] => text is Admissible on filesystem =
     inline !![text] match
       case _: Name[`filesystem`] => unchecked[text, filesystem]
+      case _                     => provide[Tactic[NameError]](Name[filesystem](_))
 
-      case _ => provide[Tactic[NameError]](Name[filesystem](_))
 
   inline given admissible: [string <: Label, filesystem] => (nominative: filesystem is Nominative)
   =>  string is Admissible on filesystem =
 
-      Admissible[string, filesystem]({ void => Name.verify[string, filesystem] })
+    Admissible[string, filesystem]({ void => Name.verify[string, filesystem] })
 
 
   given uuid: [uuid <: Uuid, filesystem <: Posix | Windows] => uuid is Admissible on filesystem =

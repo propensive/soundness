@@ -51,7 +51,6 @@ case class Decimalizer
     infinity:           Text           = "\u221e".tt,
     nan:                Text           = "\u2209\u211d".tt )
 extends DecimalConverter:
-
   def exponentScale(index: Int, a: Int): Int =
     if index == 0 then a else exponentScale(index/10, a + 1)
 

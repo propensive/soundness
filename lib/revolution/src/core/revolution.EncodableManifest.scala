@@ -44,4 +44,5 @@ object EncodableManifest:
 
 trait EncodableManifest extends Topical:
   type Self <: Label
+
   def encode(value: Topic): Text

@@ -54,4 +54,5 @@ package jsonPointerRegistries:
         case HttpError(_, _)       => Unset
         case ParseError(_, _, _)   => Unset
         case JsonError(_)          => Unset
+
       . within(url.fetch().receive[Json])

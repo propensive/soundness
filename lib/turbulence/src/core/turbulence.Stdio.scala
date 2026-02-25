@@ -46,16 +46,16 @@ object Stdio:
       termcap: Termcap )
   :   Stdio =
 
-      val safeOut: ji.PrintStream = Optional(out).or(MutePrintStream)
-      val safeErr: ji.PrintStream = Optional(err).or(MutePrintStream)
-      val safeIn: ji.InputStream = Optional(in).or(MuteInputStream)
-      val termcap2: Termcap = termcap
+    val safeOut: ji.PrintStream = Optional(out).or(MutePrintStream)
+    val safeErr: ji.PrintStream = Optional(err).or(MutePrintStream)
+    val safeIn: ji.InputStream = Optional(in).or(MuteInputStream)
+    val termcap2: Termcap = termcap
 
-      new Stdio:
-        val termcap: Termcap = termcap2
-        val out: ji.PrintStream = safeOut
-        val err: ji.PrintStream = safeErr
-        val in: ji.InputStream = safeIn
+    new Stdio:
+      val termcap: Termcap = termcap2
+      val out: ji.PrintStream = safeOut
+      val err: ji.PrintStream = safeErr
+      val in: ji.InputStream = safeIn
 
 
   object MuteOutputStream extends ji.OutputStream:
@@ -84,11 +84,8 @@ trait Stdio extends Io:
 
   def write(bytes: Data): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.length)
   def print(text: Text): Unit = out.print(text.s)
-
   def writeErr(bytes: Data): Unit = err.write(bytes.mutable(using Unsafe), 0, bytes.length)
   def printErr(text: Text): Unit = err.print(text.s)
-
   def read(array: Array[Byte]): Int = in.read(array, 0, array.length)
   def read(array: Array[Char]): Int = reader.read(array, 0, array.length)
-
   def platform: Boolean = System.out == out && System.in == in && System.err == err

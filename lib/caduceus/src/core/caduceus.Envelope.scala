@@ -44,6 +44,7 @@ object Envelope:
     case many: List[`entity` @unchecked] => many
     case one: (`entity` @unchecked)      => List(one)
 
+
   def apply[sendable: Sendable]
     ( email:   sendable,
       to:      EmailAddress | List[EmailAddress],
@@ -54,14 +55,14 @@ object Envelope:
     ( using courier: Courier, sender: Sender )
   :   Envelope =
 
-      Envelope
-        ( sender.email,
-          many(to),
-          many(cc),
-          many(bcc),
-          many(replyTo),
-          subject,
-          sendable.email(email) )
+    Envelope
+      ( sender.email,
+        many(to),
+        many(cc),
+        many(bcc),
+        many(replyTo),
+        subject,
+        sendable.email(email) )
 
 
 case class Envelope

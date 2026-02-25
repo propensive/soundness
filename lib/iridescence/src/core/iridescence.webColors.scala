@@ -174,7 +174,6 @@ object webColors:
   val White = Srgb(1, 1, 1).rgb24
   val YellowGreen = Srgb(0.604, 0.804, 0.196).rgb24
   val Yellow = Srgb(1, 1, 0).rgb24
-
   val all = List(AliceBlue, AntiqueWhite, Aquamarine, Aqua, Azure, Beige, Bisque, Black,
       BlanchedAlmond, Blue, BlueViolet, Brown, BurlyWood, CadetBlue, Chartreuse, Chocolate, Coral,
       CornflowerBlue, Cornsilk, Crimson, Cyan, DarkBlue, DarkCyan, DarkGoldenrod, DarkGray,

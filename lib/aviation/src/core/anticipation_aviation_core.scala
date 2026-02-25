@@ -37,26 +37,28 @@ import prepositional.*
 import quantitative.*
 
 package interfaces.instants:
-  given aviationInstant: Aviation2.Instant is Abstractable & Instantiable across Instants to
+  given aviationInstant: protointernal.Instant is Abstractable & Instantiable across Instants to
                           Long from Long =
+
     new Abstractable with Instantiable:
-      type Self = Aviation2.Instant
+      type Self = protointernal.Instant
       type Origin = Long
       type Result = Long
       type Domain = Instants
-      export Aviation2.Instant.generic.{genericize, apply}
+      export protointernal.Instant.generic.{genericize, apply}
 
 package interfaces.durations:
   given aviationDuration: [units <: Measure: Normalizable to Seconds[1]]
   =>  Quantity[units] is Abstractable & Instantiable across Durations to Long from Long =
-      new Abstractable with Instantiable:
-        type Origin = Long
-        type Result = Long
-        type Domain = Durations
-        type Self = Quantity[units]
 
-        def apply(nanoseconds: Long): Quantity[units] =
-          Quantity((nanoseconds.toDouble/1_000_000_000.0)*units.ratio())
+    new Abstractable with Instantiable:
+      type Origin = Long
+      type Result = Long
+      type Domain = Durations
+      type Self = Quantity[units]
 
-        def genericize(duration: Quantity[units]): Long =
-          (duration.normalize.value*1_000_000_000.0).toLong
+      def apply(nanoseconds: Long): Quantity[units] =
+        Quantity((nanoseconds.toDouble/1_000_000_000.0)*units.ratio())
+
+      def genericize(duration: Quantity[units]): Long =
+        (duration.normalize.value*1_000_000_000.0).toLong

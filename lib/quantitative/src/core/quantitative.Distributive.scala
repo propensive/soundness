@@ -51,5 +51,6 @@ object Distributive:
 
 trait Distributive extends Typeclass:
   type Operand
+
   def parts(value: Self): List[Operand]
   def place(value: Self, parts: List[Text]): Text

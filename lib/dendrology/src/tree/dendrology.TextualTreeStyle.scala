@@ -38,7 +38,6 @@ import symbolism.*
 
 case class TextualTreeStyle[line: Textual](space: Text, last: Text, branch: Text, extender: Text)
 extends TreeStyle[line]:
-
   def serialize(tiles: List[TreeTile], node: line): line =
     line(tiles.map(text(_)).join)+node
 

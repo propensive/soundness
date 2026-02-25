@@ -48,7 +48,6 @@ class StreamOutputStream() extends ji.OutputStream:
 
   def stream: Stream[Data] = chunks.stream
   def write(int: Int): Unit = buffer.append(int.toByte)
-
   override def close(): Unit = flush().also(chunks.stop())
 
   override def write(bytes: Array[Byte] | Null): Unit =

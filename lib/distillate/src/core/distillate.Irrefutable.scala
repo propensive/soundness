@@ -47,13 +47,11 @@ object Irrefutable:
 
   given textString: [text <: Text] => text is Irrefutable to String = _.s
   given ident: [result] => result is Irrefutable to result = identity(_)
-
   given byteShort: Byte is Irrefutable to Short = _.toShort
   given byteInt: Byte is Irrefutable to Int = _.toInt
   given byteLong: Byte is Irrefutable to Long = _.toLong
   given byteFloat: Byte is Irrefutable to Float = _.toFloat
   given byteDouble: Byte is Irrefutable to Double = _.toDouble
-
   given shortInt: Short is Irrefutable to Int = _.toInt
   given shortLong: Short is Irrefutable to Long = _.toLong
   given shortFloat: Short is Irrefutable to Float = _.toShort

@@ -38,6 +38,20 @@ import denominative.*
 import prepositional.*
 import vacuous.*
 
+object Tenacity:
+  def exponential[duration: Abstractable across Durations to Long](initial: duration, base: Double)
+  :   Tenacity =
+
+    new:
+      def delay(attempt: Ordinal): Optional[Long] raises RetryError =
+        if attempt == Prim then 0L
+        else (initial.generic/1_000_000L*math.pow(base, attempt.n1)).toLong
+
+
+  def fixed[generic: Abstractable across Durations to Long](duration: generic): Tenacity = new:
+    def delay(attempt: Ordinal): Optional[Long] raises RetryError =
+      if attempt == Prim then 0L else duration.generic/1_000_000L
+
 trait Tenacity:
   private inline def tenacity: this.type = this
   def delay(attempt: Ordinal): Optional[Long] raises RetryError
@@ -45,16 +59,3 @@ trait Tenacity:
   def limit(n: Int): Tenacity = new:
     def delay(attempt: Ordinal): Optional[Long] raises RetryError =
       if attempt.n1 > n then abort(RetryError(attempt.n1 - 1)) else tenacity.delay(attempt)
-
-object Tenacity:
-  def exponential[duration: Abstractable across Durations to Long](initial: duration, base: Double)
-  :   Tenacity =
-
-      new:
-        def delay(attempt: Ordinal): Optional[Long] raises RetryError =
-          if attempt == Prim then 0L
-          else (initial.generic/1_000_000L*math.pow(base, attempt.n1)).toLong
-
-  def fixed[generic: Abstractable across Durations to Long](duration: generic): Tenacity = new:
-    def delay(attempt: Ordinal): Optional[Long] raises RetryError =
-      if attempt == Prim then 0L else duration.generic/1_000_000L

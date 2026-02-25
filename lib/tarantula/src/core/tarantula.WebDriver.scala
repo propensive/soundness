@@ -65,7 +65,6 @@ case class WebDriver(server: Browser#Server):
     final private val Wei: Text = t"element-6066-11e4-a52e-4f735466cecf"
 
     case class Element(elementId: Text):
-
       private def get(address: Text): Json logs HttpEvent = safe:
         given online: Online = Online
 
@@ -104,6 +103,7 @@ case class WebDriver(server: Browser#Server):
 
       def element[element: Focusable](value: element): Element logs HttpEvent =
         case class Data(`using`: Text, value: Text)
+
         val e = post(t"element", Data(element.strategy, element.focus(value)).json)
         Element(e.value.selectDynamic(Wei.s).as[Text])
 
@@ -128,6 +128,7 @@ case class WebDriver(server: Browser#Server):
     def forward(): Unit logs HttpEvent = post(t"forward", t"{}".read[Json]).as[Json]
     def back(): Unit logs HttpEvent = post(t"back", t"{}".read[Json]).as[Json]
     def title(): Text logs HttpEvent = get(t"title").as[Json].value.as[Text]
+
     def url[url: Instantiable across Urls from Text](): url logs HttpEvent =
       url(get(t"url").url.as[Text])
 
@@ -143,8 +144,8 @@ case class WebDriver(server: Browser#Server):
       . map(Element(_))
 
     def element[element: Focusable](value: element): Element logs HttpEvent =
-
       case class Data(`using`: Text, value: Text)
+
       val e = post(t"element", Data(element.strategy, element.focus(value)).json)
 
       Element(e.value.selectDynamic(Wei.s).as[Text])
@@ -154,6 +155,7 @@ case class WebDriver(server: Browser#Server):
 
   def startSession(): Session logs HttpEvent =
     given online: Online = Online
+
     val url = url"http://localhost:${server.port}/session"
     val json = url.submit()(t"""{"capabilities":{}}""".read[Json]).read[Text].decode[Json]
 

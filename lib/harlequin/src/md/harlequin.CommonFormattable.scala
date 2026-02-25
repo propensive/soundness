@@ -45,6 +45,7 @@ import doms.html.whatwg, whatwg.*
 
 trait CommonFormattable extends Formattable:
   given lineClass: (Stylesheet of "line" | "amok") = Stylesheet()
+
   def classes(accent: Accent): Stylesheet = Stylesheet(Set(accent.show.lower))
 
   def element(accent: Accent, text: Text): Element of "code" =

@@ -64,12 +64,12 @@ trait Json2:
   =>  ( encodable: inner is Encodable in Json )
   =>  value is Encodable in Json =
 
-      new Encodable:
-        type Self = Optional[value]
-        type Form = Json
+    new Encodable:
+      type Self = Optional[value]
+      type Form = Json
 
-        def encoded(value: Optional[value]): Json =
-          value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Json.ast(JsonAst(Unset)))
+      def encoded(value: Optional[value]): Json =
+        value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Json.ast(JsonAst(Unset)))
 
 
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[JsonError]
@@ -77,6 +77,7 @@ trait Json2:
   =>  value is Decodable in Json = json =>
 
       if json.root.isAbsent then Unset else decodable.decoded(json)
+
 
   given bytes: Tactic[JsonError] => Bytes is Decodable in Json = json => json.root.long.b
 
@@ -136,7 +137,7 @@ trait Json2:
 
           Json.ast
             ( JsonAst
-              ( (labels.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe))) )
+                ( (unsafely(labels.toArray.immutable), unsafely(values.toArray.immutable)) ) )
 
     inline def split[derivation: SumReflection]: derivation is Encodable in Json = value =>
       val discriminable = infer[derivation is Discriminable in Json]
@@ -146,10 +147,12 @@ trait Json2:
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
 
+
   given lens: [name <: Label: ValueOf] => (erased DynamicJsonEnabler) => Tactic[JsonError]
   =>  name is Lens from Json onto Json =
 
-      Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))
+    Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))
+
 
   given ordinal: [element] => Ordinal is Optical from Json onto Json =
     ordinal =>
@@ -161,40 +164,32 @@ object Json extends Json2, Dynamic:
         else origin
 
   given boolean: Json is Decodable in Json = identity(_)
-
-  given boolean: Tactic[JsonError] => Boolean is Decodable in Json =
-    value => value.root.boolean
-
-  given double: Tactic[JsonError] => Double is Decodable in Json =
-    value => value.root.double
-
-  given float: Tactic[JsonError] => Float is Decodable in Json =
-    value => value.root.double.toFloat
-
+  given boolean: Tactic[JsonError] => Boolean is Decodable in Json = _.root.boolean
+  given double: Tactic[JsonError] => Double is Decodable in Json = _.root.double
+  given float: Tactic[JsonError] => Float is Decodable in Json = _.root.double.toFloat
   given long: Tactic[JsonError] => Long is Decodable in Json = _.root.long
   given int: Tactic[JsonError] => Int is Decodable in Json = _.root.long.toInt
   given ordinal: Tactic[JsonError] => Ordinal is Decodable in Json = _.root.long.toInt.z
   given text: Tactic[JsonError] => Text is Decodable in Json = _.root.string
+  given string: Tactic[JsonError] => String is Decodable in Json = _.root.string.s
 
-  given string: Tactic[JsonError] => String is Decodable in Json =
-    value => value.root.string.s
 
   given option: [value: Decodable in Json] => Tactic[JsonError]
   =>  Option[value] is Decodable in Json =
 
-      json => if json.root.isAbsent then None else Some(value.decoded(json))
+    json => if json.root.isAbsent then None else Some(value.decoded(json))
 
 
   given optionEncodable: [value] => (encodable: value is Encodable in Json)
   =>  Option[value] is Encodable in Json =
 
-      new Encodable:
-        type Self = Option[value]
-        type Form = Json
+    new Encodable:
+      type Self = Option[value]
+      type Form = Json
 
-        def encoded(value: Option[value]): Json = value match
-          case None        => Json.ast(JsonAst(Unset))
-          case Some(value) => encodable.encode(value)
+      def encoded(value: Option[value]): Json = value match
+        case None        => Json.ast(JsonAst(Unset))
+        case Some(value) => encodable.encode(value)
 
 
   given integralEncodable: [integral: Integral] => integral is Encodable in Json =
@@ -216,77 +211,85 @@ object Json extends Json2, Dynamic:
   given listEncodable: [list <: List, element] => (encodable: => element is Encodable in Json)
   =>  list[element] is Encodable in Json =
 
-      values => Json.ast(JsonAst(IArray.from(values.map(encodable.encoded(_).root))))
+    values => Json.ast(JsonAst(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given setEncodable: [set <: Set, element] => (encodable: => element is Encodable in Json)
   =>  set[element] is Encodable in Json =
-      values => Json.ast(JsonAst(IArray.from(values.map(encodable.encoded(_).root))))
+
+    values => Json.ast(JsonAst(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given trieEncodable: [trie <: Trie, element] => (encodable: => element is Encodable in Json)
   =>  trie[element] is Encodable in Json =
 
-      values => Json.ast(JsonAst(IArray.from(values.map(encodable.encoded(_).root))))
+    values => Json.ast(JsonAst(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given array: [collection <: Iterable, element]
   =>  ( factory: Factory[element, collection[element]],
         tactic:  Tactic[JsonError],
         foci:    Foci[JsonPointer] )
-  =>  ( decodable: => element is Decodable in Json)
+  =>  ( decodable: => element is Decodable in Json )
   =>  collection[element] is Decodable in Json =
 
-      value =>
-        val builder = factory.newBuilder
-        value.root.array.each: json =>
-          focus(prior.or(JsonPointer()) / ordinal):
-            builder += decodable.decoded(Json.ast(json))
+    value =>
+      val builder = factory.newBuilder
+      value.root.array.each: json =>
+        focus(prior.or(JsonPointer()) / ordinal):
+          builder += decodable.decoded(Json.ast(json))
 
-        builder.result()
+      builder.result()
+
 
   given map: [key: Decodable in Text, element] => (decodable: => element is Decodable in Json)
   =>  Tactic[JsonError]
   =>  Map[key, element] is Decodable in Json =
 
-      value =>
-        val (keys, values) = value.root.obj
+    value =>
+      val (keys, values) = value.root.obj
 
-        keys.indices.fuse(Map[key, element]()):
-          //focus(prior.or(JsonPointer()) / keys(next).tt):
-            state.updated(keys(next).tt.decode, decodable.decoded(Json.ast(values(next))))
+      keys.indices.fuse(Map[key, element]()):
+        //focus(prior.or(JsonPointer()) / keys(next).tt):
+          state.updated(keys(next).tt.decode, decodable.decoded(Json.ast(values(next))))
+
 
   given mapEncodable: [key: Encodable in Text, element]
   =>  ( encodable: element is Encodable in Json )
   =>  Map[key, element] is Encodable in Json =
 
-      map =>
-        val keys: List[key] = map.keys.to(List)
-        val values = IArray.from(keys.map(map(_).encode.root))
-        Json.ast(JsonAst((IArray.from(keys.map(_.encode.s)), values)))
+    map =>
+      val keys: List[key] = map.keys.to(List)
+      val values = IArray.from(keys.map(map(_).encode.root))
+      Json.ast(JsonAst((IArray.from(keys.map(_.encode.s)), values)))
+
 
   given jsonEncodableInText: Json is Encodable in Text = json => JsonPrinter.print(json.root, false)
 
   given aggregable: Tactic[ParseError] => Json is Aggregable by Data =
     bytes => Json(bytes.read[JsonAst])
 
+
   given aggregableDirect: [value: Decodable in Json] => Tactic[ParseError] => Tactic[JsonError]
   =>  (value over Json) is Aggregable by Data =
 
-      bytes => Json(bytes.read[JsonAst]).as[value].asInstanceOf[value over Json]
+    bytes => Json(bytes.read[JsonAst]).as[value].asInstanceOf[value over Json]
+
 
   given showable: JsonPrinter => Json is Showable = _.root.show
+
 
   given abstractable: (encoder: CharEncoder, printer: JsonPrinter)
   =>  Json is Abstractable across HttpStreams to HttpStreams.Content =
 
-      new Abstractable:
-        type Self = Json
-        type Domain = HttpStreams
-        type Result = HttpStreams.Content
+    new Abstractable:
+      type Self = Json
+      type Domain = HttpStreams
+      type Result = HttpStreams.Content
 
-        def genericize(json: Json): HttpStreams.Content =
-          (t"application/json; charset=${encoder.encoding.name}", Stream(json.show.data))
+      def genericize(json: Json): HttpStreams.Content =
+        (t"application/json; charset=${encoder.encoding.name}", Stream(json.show.data))
+
 
   given decodable: Tactic[ParseError] => Json is Decodable in Text =
     text => Stream(text.data(using charEncoders.utf8)).read[Json]
@@ -322,25 +325,26 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def applyDynamic(field: String)(index: Int)(using erased DynamicJsonEnabler)
   :   Json raises JsonError =
 
-      apply(field.tt)(index)
+    apply(field.tt)(index)
 
 
   def update[value: Encodable in Json](index: Int, value: value)(using erased DynamicJsonEnabler)
   :   Json raises JsonError =
 
-      Json.ast(JsonAst(root.array.updated(index, value.encode.root)))
+    Json.ast(JsonAst(root.array.updated(index, value.encode.root)))
 
 
   def updateDynamic(field: String)[value: Encodable in Json](value: value)
     ( using erased DynamicJsonEnabler )
   :   Json raises JsonError =
 
-      modify(field, value.encode)
+    modify(field, value.encode)
+
 
   def updateDynamic(field: String)[value](unset: Unset.type)(using erased DynamicJsonEnabler)
   :   Json raises JsonError =
 
-      delete(field)
+    delete(field)
 
 
   private[jacinta] def modify(field: String, value: Json): Json raises JsonError =
@@ -350,7 +354,8 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
   private[jacinta] def delete(field: String): Json raises JsonError =
     root.obj(0).indexWhere(_ == field) match
-      case -1    => Json.ast(JsonAst(root.obj))
+      case -1 => Json.ast(JsonAst(root.obj))
+
       case index =>
         val keys = root.obj(0)
         val values = root.obj(1)
@@ -361,7 +366,6 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
         System.arraycopy(values, 0, values2, 0, index)
         System.arraycopy(values, index + 1, values2, index, values.length - index - 1)
         Json.ast(JsonAst(keys2.immutable(using Unsafe) -> values2.immutable(using Unsafe)))
-
 
   def apply(field: Text): Json raises JsonError =
     if root.isAbsent then Json.ast(JsonAst(Unset))
@@ -387,10 +391,11 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
       case value: IArray[JsonAst] @unchecked =>
         value.fuse(value.length.hashCode)(state*31^recur(next))
 
-      case (keys, values) => keys.asMatchable.absolve match
-        case keys: IArray[String] @unchecked => values.asMatchable.absolve match
-          case values: IArray[JsonAst] @unchecked =>
-            keys.zip(values).to(Map).view.mapValues(recur(_)).hashCode
+      case (keys, values) =>
+        keys.asMatchable.absolve match
+          case keys: IArray[String] @unchecked => values.asMatchable.absolve match
+            case values: IArray[JsonAst] @unchecked =>
+              keys.zip(values).to(Map).view.mapValues(recur(_)).hashCode
 
       case _ =>
         0

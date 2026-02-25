@@ -36,9 +36,6 @@ import anticipation.*
 import denominative.*
 import fulminate.*
 
-case class UrlError(text: Text, offset: Ordinal, reason: UrlError.Reason)(using Diagnostics)
-extends Error(m"the URL $text is not valid: $reason at ${offset.n0}")
-
 object UrlError:
   given communicable: Reason is Communicable =
     case Reason.Expected(expectation)         => m"$expectation was expected"
@@ -58,3 +55,6 @@ object UrlError:
       case LowerCaseLetter => m"a lowercase letter"
       case PortRange       => m"a port range"
       case Number          => m"a number"
+
+case class UrlError(text: Text, offset: Ordinal, reason: UrlError.Reason)(using Diagnostics)
+extends Error(m"the URL $text is not valid: $reason at ${offset.n0}")

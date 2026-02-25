@@ -38,9 +38,6 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-trait Posix:
-  type UniqueRoot = true
-
 object Posix:
   type Rules =
     MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
@@ -54,3 +51,6 @@ object Posix:
     val separator: Text = t"/"
     val self: Text = t"."
     val parent: Text = t".."
+
+trait Posix:
+  type UniqueRoot = true

@@ -49,9 +49,9 @@ object BloomFilter:
     ( using Hash in algorithm )
   :   BloomFilter[element, algorithm] =
 
-      val bitSize: Int = (-1.44*approximateSize*ln(targetErrorRate.double).double).toInt
-      val hashCount: Int = ((bitSize.toDouble/approximateSize.toDouble)*ln(2.0).double + 0.5).toInt
-      new BloomFilter(bitSize, hashCount, sci.BitSet())
+    val bitSize: Int = (-1.44*approximateSize*ln(targetErrorRate.double).double).toInt
+    val hashCount: Int = ((bitSize.toDouble/approximateSize.toDouble)*ln(2.0).double + 0.5).toInt
+    new BloomFilter(bitSize, hashCount, sci.BitSet())
 
 
 case class BloomFilter[element: Digestible, algorithm <: Algorithm]

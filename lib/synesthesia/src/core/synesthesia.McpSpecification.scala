@@ -38,7 +38,7 @@ import prepositional.*
 
 object McpSpecification:
   inline given mcpSpecification: [server <: McpServer] => server is McpSpecification =
-    ${Synesthesia.spec[server]}
+    ${synesthesia.internal.spec[server]}
 
 
 trait McpSpecification extends Typeclass:
@@ -47,6 +47,5 @@ trait McpSpecification extends Typeclass:
   def prompts(): List[Mcp.Prompt]
   def invokeTool(target: Self, client: McpClient, method: Text, params: Json): Json
   def invokeResource(target: Self, method: Text): Mcp.Contents
-
   def invokePrompt(target: Self, client: McpClient, method: Text, params: Map[Text, Text])
   :   List[Discourse]

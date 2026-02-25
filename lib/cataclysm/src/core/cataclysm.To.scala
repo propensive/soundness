@@ -38,4 +38,4 @@ import language.dynamics
 
 object To extends Dynamic:
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Keyframe =
-    ${Cataclysm.keyframe('{"to"}, 'properties)}
+    ${internal.keyframe('{"to"}, 'properties)}

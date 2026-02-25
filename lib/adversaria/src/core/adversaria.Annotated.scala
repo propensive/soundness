@@ -42,7 +42,7 @@ object Annotated:
   transparent inline given annotations: [topic <: StaticAnnotation, self, plane, limit]
   =>  self is Annotated by topic on plane under limit =
 
-      ${Adversaria.general[topic, self, plane, limit]}
+    ${adversaria.internal.general[topic, self, plane, limit]}
 
 
   trait Fields extends Annotated:

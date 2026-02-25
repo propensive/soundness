@@ -150,15 +150,13 @@ object Whatwg:
   def attribute[self  <: Label: ValueOf, plane <: Label: Reifiable to List[String], topic]()
   :   self is Attribute on plane of topic in Whatwg =
 
-      new Attribute(valueOf[self].tt, plane.reify.map(_.tt).to(Set), false):
-        type Plane = plane
-        type Topic = topic
-        type Self = self
+    new Attribute(valueOf[self].tt, plane.reify.map(_.tt).to(Set), false)
+    . asInstanceOf[self is Attribute on plane of topic in Whatwg]
+
 
   def globalAttribute[self  <: Label: ValueOf, topic](): self is Attribute of topic in Whatwg =
-    new Attribute(valueOf[self].tt, Set(), true):
-      type Topic = topic
-      type Self = self
+    new Attribute(valueOf[self].tt, Set(), true)
+    . asInstanceOf[self is Attribute of topic in Whatwg]
 
   given abbr: ("abbr" is Attribute on "th" of Textual) = attribute()
   given accept: ("accept" is Attribute on "input" of MimeList) = attribute()
@@ -207,6 +205,7 @@ object Whatwg:
   given dirname: ("dirname" is Attribute on "input" | "textarea" of Textual) = attribute()
 
   private type Disableable = "button" | "input" | "optgroup" | "option" | "select" | "textarea"
+
   given disabled: ("disabled" is Attribute on Disableable of Presence) = attribute()
   given disabled2: ("disabled" is Attribute on "fieldset" of Presence) = attribute()
   given disabled3: ("disabled" is Attribute on "link" of Presence) = attribute()
@@ -216,6 +215,7 @@ object Whatwg:
   given enterkeyhint: ("enterkeyhint" is Attribute of EnterKeyHint) = globalAttribute()
 
   private type FetchPrioritizable = "img" | "link" | "script"
+
   given fetchpriority: ("fetchpriority" is Attribute on FetchPrioritizable of FetchPriority) =
     attribute()
 
@@ -273,6 +273,7 @@ object Whatwg:
   given muted: ("muted" is Attribute on "audio" | "video" of Presence) = attribute()
 
   private type NameElements = "button" | "fieldset" | "input" | "output" | "select" | "textarea"
+
   given name: ("name" is Attribute on NameElements of Name) = attribute()
   given name2: ("name" is Attribute on "details" of Name) = attribute()
   given name3: ("name" is Attribute on "form" of Name) = attribute()
@@ -434,12 +435,10 @@ class Whatwg() extends Dom:
   // - audio and video are prohibited in transparent content
   // - conditions based on presence or absence of `src` attribute
   val Audio = Tag.transparent["audio", "source" | "track", Whatwg]()
-
   val B = Tag.container["b", Phrasing, Whatwg]()
 
   // - `href` or `target` attributes are required
   val Base = Tag.void["base", Whatwg]()
-
   val Bdi = Tag.container["bdi", Phrasing, Whatwg]()
   val Bdo = Tag.container["bdo", Phrasing, Whatwg]()
   val Blockquote = Tag.container["blockquote", Flow, Whatwg]()
@@ -451,7 +450,6 @@ class Whatwg() extends Dom:
 
   // - transparent, but non-interactive
   val Canvas = Tag.transparent["canvas", "", Whatwg]()
-
   val Caption = Tag.container["caption", Flow, Whatwg](boundary = true)
   val Cite = Tag.container["cite", Phrasing, Whatwg]()
   val Code = Tag.container["code", Phrasing, Whatwg]()
@@ -672,7 +670,6 @@ class Whatwg() extends Dom:
   val Video = Tag.transparent["video", "track" | "source", Whatwg]()
   val Wbr = Tag.void["wbr", Whatwg]()
 
-
   val elements: Dictionary[Tag] =
     Dictionary(this.membersOfType[Tag].to(Seq).bi.map(_.label -> _)*)
 
@@ -687,6 +684,7 @@ class Whatwg() extends Dom:
       Whatwg.membersOfType[honeycomb.Attribute]
       . foldLeft(sci.Map[Text, Attribute]()): (map, next) =>
           map.updated(next.label, map.at(next.label).let(_.merge(next)).or(next))
+
       . to(List)
 
     Dictionary(list*)

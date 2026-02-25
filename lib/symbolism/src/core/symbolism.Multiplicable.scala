@@ -38,13 +38,13 @@ object Multiplicable:
   def apply[multiplicand, multiplier, result](lambda: (multiplicand, multiplier) => result)
   :   multiplicand is Multiplicable by multiplier to result =
 
-      new Multiplicable:
-        type Self = multiplicand
-        type Result = result
-        type Operand = multiplier
+    new Multiplicable:
+      type Self = multiplicand
+      type Result = result
+      type Operand = multiplier
 
-        def multiply(multiplicand: multiplicand, multiplier: multiplier): result =
-          lambda(multiplicand, multiplier)
+      def multiply(multiplicand: multiplicand, multiplier: multiplier): result =
+        lambda(multiplicand, multiplier)
 
 
   given double: Double is Multiplicable by Double to Double = Multiplicable:

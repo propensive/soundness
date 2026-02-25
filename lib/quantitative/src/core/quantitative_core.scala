@@ -42,7 +42,7 @@ import symbolism.*
 
 extension [units <: Measure](quantity: Quantity[units])
   transparent inline def in[units2[power <: Nat] <: Units[power, ?]]: Any =
-    ${Quantitative.norm[units, units2]('quantity)}
+    ${quantitative.internal.norm[units, units2]('quantity)}
 
   transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
 
@@ -50,14 +50,14 @@ extension [units <: Measure](quantity: Quantity[units])
   inline def normalize[units2 <: Measure](using normalizable: units is Normalizable to units2)
   :   Quantity[units2] =
 
-      normalizable.normalize(quantity)
+    normalizable.normalize(quantity)
 
 
   inline def sqrt(using root: Quantity[units] is Rootable[2]): root.Result = root.root(quantity)
   inline def cbrt(using root: Quantity[units] is Rootable[3]): root.Result = root.root(quantity)
-  inline def units: Map[Text, Int] = ${Quantitative.collectUnits[units]}
+  inline def units: Map[Text, Int] = ${quantitative.internal.collectUnits[units]}
   inline def express(using Decimalizer): Text = t"${quantity.value} ${Quantity.expressUnits(units)}"
-  inline def dimension: Text = ${Quantitative.describe[units]}
+  inline def dimension: Text = ${quantitative.internal.describe[units]}
 
 package temperatureScales:
   given kelvin: TemperatureScale:

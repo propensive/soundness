@@ -100,83 +100,83 @@ object Tests extends Suite(m"Merino tests"):
     suite(m"Number tests"):
       test(m"Parse 0e+1"):
         t"0e+1".read[JsonAst]
-      .assert(_ == JsonAst(0L))
+      . assert(_ == JsonAst(0L))
 
       test(m"Parse 0e1"):
         t"0e1".read[JsonAst]
-      .assert(_ == JsonAst(0L))
+      . assert(_ == JsonAst(0L))
 
       test(m"Parse ' 4'"):
         t" 4".read[JsonAst]
-      .assert(_ == JsonAst(4L))
+      . assert(_ == JsonAst(4L))
 
       test(m"Parse small negative number"):
         t"-0.000000000000000000000000000000000000000000000000000000000000000000000000000001".read[JsonAst]
-      .assert(_ == JsonAst(-1.0e-78))
+      . assert(_ == JsonAst(-1.0e-78))
 
       test(m"Parse 20e1"):
         t"20e1".read[JsonAst]
-      .assert(_ == JsonAst(200L))
+      . assert(_ == JsonAst(200L))
 
       test(m"Parse 123e65"):
         t"123e65".read[JsonAst]
-      .assert(_ == JsonAst(1.23e67))
+      . assert(_ == JsonAst(1.23e67))
 
       test(m"Parse -0"):
         t"-0".read[JsonAst]
-      .assert(_ == JsonAst(-0.0))
+      . assert(_ == JsonAst(-0.0))
 
       test(m"Parse -123"):
         t"-123".read[JsonAst]
-      .assert(_ == JsonAst(-123L))
+      . assert(_ == JsonAst(-123L))
 
       test(m"Parse -1"):
         t"-1".read[JsonAst]
-      .assert(_ == JsonAst(-1L))
+      . assert(_ == JsonAst(-1L))
 
       test(m"Parse 1E22"):
         t"1E22".read[JsonAst]
-      .assert(_ == JsonAst(1.0E22))
+      . assert(_ == JsonAst(1.0E22))
 
       test(m"Parse 1E-2"):
         t"1E-2".read[JsonAst]
-      .assert(_ == JsonAst(1.0E-2))
+      . assert(_ == JsonAst(1.0E-2))
 
       test(m"Parse 1E+2"):
         t"1E+2".read[JsonAst]
-      .assert(_ == JsonAst(1.0E2))
+      . assert(_ == JsonAst(1.0E2))
 
       test(m"Parse 123e45"):
         t"123e45".read[JsonAst]
-      .assert(_ == JsonAst(1.23E47))
+      . assert(_ == JsonAst(1.23E47))
 
       test(m"Parse 123.456e78"):
         t"123.456e78".read[JsonAst]
-      .assert(_ == JsonAst(1.23456E80))
+      . assert(_ == JsonAst(1.23456E80))
 
       test(m"Parse 1e-2"):
         t"1e-2".read[JsonAst]
-      .assert(_ == JsonAst(1.0E-2))
+      . assert(_ == JsonAst(1.0E-2))
 
       test(m"Parse 1e+2"):
         t"1e+2".read[JsonAst]
-      .assert(_ == JsonAst(1.0E2))
+      . assert(_ == JsonAst(1.0E2))
 
       test(m"Parse 123"):
         t"123".read[JsonAst]
-      .assert(_ == JsonAst(123L))
+      . assert(_ == JsonAst(123L))
 
       test(m"Parse 123.456789"):
         t"123.456789".read[JsonAst]
-      .assert(_ == JsonAst(123.456789))
+      . assert(_ == JsonAst(123.456789))
 
       test(m"Parse \"Hello World\""):
         t"\"Hello World\"".read[JsonAst]
-      .assert(_ == JsonAst("Hello World"))
+      . assert(_ == JsonAst("Hello World"))
 
       test(m"Parse \"\""):
         t"\"\"".read[JsonAst]
-      .assert(_ == JsonAst(""))
+      . assert(_ == JsonAst(""))
 
 
 

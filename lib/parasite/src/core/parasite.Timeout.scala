@@ -46,19 +46,20 @@ object Timeout:
     ( using Monitor, Codicil )
   :   Timeout =
 
-      val timeout = timeout0.generic/1_000_000L
+    val timeout = timeout0.generic/1_000_000L
 
-      def process(expiry: juca.AtomicLong): Task[Unit] = task("timeout".tt):
-        while jl.System.currentTimeMillis < expiry.get()
-        do sleep(expiry.get() - jl.System.currentTimeMillis)
-        expiry.set(Long.MinValue)
-        action
+    def process(expiry: juca.AtomicLong): Task[Unit] = task("timeout".tt):
+      while jl.System.currentTimeMillis < expiry.get()
+      do sleep(expiry.get() - jl.System.currentTimeMillis)
+      expiry.set(Long.MinValue)
+      action
 
-      new Timeout(timeout, process)
+    new Timeout(timeout, process)
 
 
 class Timeout private(duration: Long, makeProcess: juca.AtomicLong => Task[Unit]):
   private val expiry: juca.AtomicLong = juca.AtomicLong(jl.System.currentTimeMillis + duration)
+
   private var process: Task[Unit] = makeProcess(expiry)
 
   def alive: Boolean = expiry.get() != Long.MinValue

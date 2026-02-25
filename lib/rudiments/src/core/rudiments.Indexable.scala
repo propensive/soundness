@@ -67,7 +67,6 @@ object Indexable:
     type Result = Char
 
     def contains(text: Text, index: Ordinal): Boolean = index.n0 >= 0 && index.n0 < text.s.length
-
     def access(text: Text, index: Ordinal): Result = text.s.charAt(index.n0)
 
   given map: [key, value] => Map[key, value] is Indexable:

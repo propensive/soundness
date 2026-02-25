@@ -42,18 +42,6 @@ import vacuous.*
 
 import decimalFormatters.java
 
-enum Stroke:
-  case Move(coords: Shift | Point)
-  case Draw(coords: Shift | Point)
-  case Close
-
-  case Cubic[point <: (Shift | Point)](ctrl1: Optional[point], ctrl2: point, point: point)
-
-  case Quadratic[point <: (Shift | Point)](ctrl1: Optional[point], point: point)
-
-  case Arc
-    ( rx: Float, ry: Float, angle: Angle, largeArc: Boolean, sweep: Sweep, coords: Point | Shift )
-
 object Stroke:
   private def bit(value: Boolean): Text = if value then t"1" else t"0"
 
@@ -84,3 +72,12 @@ object Stroke:
         val clockwise = sweep == Sweep.Clockwise
         val degrees = angle.degrees.show
         t"A ${rx.toDouble} ${ry.toDouble} $degrees ${bit(largeArc)} ${bit(clockwise)} $shift"
+
+enum Stroke:
+  case Move(coords: Shift | Point)
+  case Draw(coords: Shift | Point)
+  case Close
+  case Cubic[point <: (Shift | Point)](ctrl1: Optional[point], ctrl2: point, point: point)
+  case Quadratic[point <: (Shift | Point)](ctrl1: Optional[point], point: point)
+  case Arc
+    ( rx: Float, ry: Float, angle: Angle, largeArc: Boolean, sweep: Sweep, coords: Point | Shift )

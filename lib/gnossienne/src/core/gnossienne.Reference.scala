@@ -43,13 +43,13 @@ object Reference:
   given encodable: [entity: Resolvable] => (entity.Operand is Encodable in Text)
   =>  (Reference to entity) is Encodable in Text =
 
-      _.key.encode
+    _.key.encode
 
 
   given decodable: [entity: Resolvable] => (entity.Operand is Decodable in Text)
   =>  (Reference to entity) is Decodable in Text =
 
-      value => Reference(value.decode)
+    value => Reference(value.decode)
 
 
   def apply[result: Resolvable](operand: result.Operand): Reference to result =

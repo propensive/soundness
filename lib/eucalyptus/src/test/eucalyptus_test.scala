@@ -60,5 +60,5 @@ object Tests extends Suite(m"Eucalyptus tests"):
         Log.info(t"Info message")
         Log.warn(t"Warn message")
         Log.fail(t"Fail message")
-      .assert()
+      . assert()
       Thread.sleep(1000L)

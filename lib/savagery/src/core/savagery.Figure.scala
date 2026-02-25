@@ -74,23 +74,18 @@ extends Figure:
 
   def curve(ctrl2: Shift, vector: Shift): Outline = Outline(Cubic(Unset, ctrl2, vector) :: ops)
   def curveTo(ctrl2: Point, point: Point): Outline = Outline(Cubic(Unset, ctrl2, point) :: ops)
-
   def quadCurve(ctrl1: Shift, vector: Shift): Outline = Outline(Quadratic(ctrl1, vector) :: ops)
   def quadCurveTo(ctrl1: Point, point: Point): Outline = Outline(Quadratic(ctrl1, point) :: ops)
-
   def quadCurve(vector: Shift): Outline = Outline(Quadratic(Unset, vector) :: ops)
   def quadCurveTo(point: Point): Outline = Outline(Quadratic(Unset, point) :: ops)
-
   def moveUp(value: Float): Outline = Outline(Move(Shift(value, 0.0)) :: ops)
   def moveDown(value: Float): Outline = Outline(Move(Shift(-value, 0.0)) :: ops)
   def moveLeft(value: Float): Outline = Outline(Move(Shift(0.0, -value)) :: ops)
   def moveRight(value: Float): Outline = Outline(Move(Shift(0.0, value)) :: ops)
-
   def lineUp(value: Float): Outline = Outline(Draw(Shift(value, 0.0)) :: ops)
   def lineDown(value: Float): Outline = Outline(Draw(Shift(-value, 0.0)) :: ops)
   def lineLeft(value: Float): Outline = Outline(Draw(Shift(0.0, -value)) :: ops)
   def lineRight(value: Float): Outline = Outline(Draw(Shift(0.0, value)) :: ops)
-
   def closed: Outline = Outline(Close :: ops)
 
 case class Ellipse(center: Point, xRadius: Float, yRadius: Float, angle: Angle) extends Figure:

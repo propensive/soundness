@@ -34,9 +34,9 @@ package vacuous
 
 import soundness.*
 
-object Tests extends Suite(m"Vacuous Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
-    suite(m"Vacuous tests"):
+    suite(m"internal tests"):
       test(m"String is concrete"):
         val x = summon[String is Concrete]
       . assert()

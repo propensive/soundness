@@ -46,7 +46,7 @@ extension [augend](left: augend)
   inline infix def + [addend](right: addend)(using addable: augend is Addable by addend)
   :   addable.Result =
 
-      addable.add(left, right)
+    addable.add(left, right)
 
 
 extension [minuend](left: minuend)
@@ -54,7 +54,7 @@ extension [minuend](left: minuend)
     ( using subtractable: minuend is Subtractable by subtrahend )
   :   subtractable.Result =
 
-      subtractable.subtract(left, right)
+    subtractable.subtract(left, right)
 
 
 extension [dividend](left: dividend)
@@ -62,7 +62,7 @@ extension [dividend](left: dividend)
   inline infix def / [divisor](right: divisor)(using divisible: dividend is Divisible by divisor)
   :   divisible.Result =
 
-      divisible.divide(left, right)
+    divisible.divide(left, right)
 
 
 extension [multiplicand](left: multiplicand)
@@ -71,7 +71,7 @@ extension [multiplicand](left: multiplicand)
     ( using multiplicable: multiplicand is Multiplicable by multiplier )
   :   multiplicable.Result =
 
-      multiplicable.multiply(left, right)
+    multiplicable.multiply(left, right)
 
 object `/:`:
   def unapply[entity: Quotient](value: entity): Option[(entity.Numerator, entity.Denominator)] =

@@ -42,7 +42,6 @@ import proscenium.*
 import rudiments.*
 
 object Permutation:
-
   def bySize(n: Int): Stream[Permutation] = Stream.range[BigInt](0, Factorial(n)).map: i =>
     Permutation(Factoradic(i))
 
@@ -71,7 +70,6 @@ case class Permutation(factoradic: Factoradic):
   lazy val expansion: List[Int] = unsafely(apply[Int](List.range(0, lehmer.length)))
 
   def bytes: Data = unsafely(factoradic.number.toByteArray.immutable)
-
   def apply(n: Int): Int = expansion(n)
 
   def apply[element](sequence: List[element]): List[element] raises PermutationError =
@@ -87,17 +85,17 @@ case class Permutation(factoradic: Factoradic):
         result:  List[element] )
     :   List[element] =
 
-        lehmer match
-          case head :: tail =>
-            if current == head
-            then recur(tail, prefix, list.tail, current, list.head :: result)
-            else
-              if current < head
-              then recur(lehmer, list.head :: prefix, list.tail, current + 1, result)
-              else recur(lehmer, prefix.tail, prefix.head :: list, current - 1, result)
+      lehmer match
+        case head :: tail =>
+          if current == head
+          then recur(tail, prefix, list.tail, current, list.head :: result)
+          else
+            if current < head
+            then recur(lehmer, list.head :: prefix, list.tail, current + 1, result)
+            else recur(lehmer, prefix.tail, prefix.head :: list, current - 1, result)
 
-          case Nil =>
-            result.reverse
+        case Nil =>
+          result.reverse
 
 
     val prefix = sequence.length - lehmer.length

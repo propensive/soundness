@@ -38,7 +38,7 @@ import probably.*
 case class Group(persons: List[Person])
 case class Person(name: String, age: Int)
 
-object Benchmarks extends Suite(m"Gossamer Benchmarks"):
+object Benchmarks extends Suite(m"internal Benchmarks"):
   def run(): Unit =
     suite(m"Compile performance"):
       test(m"Resolve a Show instance"):

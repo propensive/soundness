@@ -34,7 +34,7 @@ package synesthesia
 
 extension (inline context: StringContext)
   transparent inline def human(inline substitutions: Any*): Discourse =
-    ${Synesthesia.prompt('context, 'substitutions, true)}
+    ${internal.prompt('context, 'substitutions, true)}
 
   transparent inline def agent(inline substitutions: Any*): Discourse =
-    ${Synesthesia.prompt('context, 'substitutions, false)}
+    ${internal.prompt('context, 'substitutions, false)}

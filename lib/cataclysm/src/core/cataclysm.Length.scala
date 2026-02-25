@@ -87,15 +87,17 @@ enum Length:
   infix def / (double: Double): Length = infixOp(t" / ", double)
 
   private def infixOp(operator: Text, dim: Length | Double): Length.Calc = this match
-    case Calc(calc) => dim match
-      case double: Double => Calc(t"($calc)$operator${double}")
-      case Calc(calc2)    => Calc(t"($calc)$operator($calc2)")
-      case length: Length => Calc(t"($calc)$operator$length")
+    case Calc(calc) =>
+      dim match
+        case double: Double => Calc(t"($calc)$operator${double}")
+        case Calc(calc2)    => Calc(t"($calc)$operator($calc2)")
+        case length: Length => Calc(t"($calc)$operator$length")
 
-    case other => dim match
-      case double: Double => Calc(t"${this.show}$operator$double")
-      case Calc(calc2)    => Calc(t"${this.show}$operator($calc2)")
-      case length: Length => Calc(t"${this.show}$operator$length")
+    case other =>
+      dim match
+        case double: Double => Calc(t"${this.show}$operator$double")
+        case Calc(calc2)    => Calc(t"${this.show}$operator($calc2)")
+        case length: Length => Calc(t"${this.show}$operator$length")
 
   def function(name: Text, right: Length | Double): Length =
     Calc(t"$name(${infixOp(t", ", right).value})")

@@ -39,7 +39,6 @@ import vacuous.*
 
 enum Layout extends Markdown.Node:
   case BlockQuote(line: Ordinal, layout: Layout*)
-
   case OrderedList
     ( line:      Ordinal,
       start:     Int,

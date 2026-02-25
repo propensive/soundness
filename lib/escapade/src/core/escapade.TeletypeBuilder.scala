@@ -44,6 +44,7 @@ class TeletypeBuilder(size: Optional[Int] = Unset) extends Builder[Teletype]:
   private val builder: StringBuilder = StringBuilder()
   private val spans: scm.Map[CharSpan, Ansi.Transform] = scm.HashMap()
   private val insertions: scm.Map[Int, Text] = scm.HashMap()
+
   private var offset: Int = 0
 
   def length: Int = builder.length

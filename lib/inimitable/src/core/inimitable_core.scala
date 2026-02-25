@@ -33,6 +33,6 @@
 package inimitable
 
 extension (inline context: StringContext)
-  inline def uuid(): Uuid = ${Inimitable.uuid('context)}
+  inline def uuid(): Uuid = ${internal.uuid('context)}
 
 lazy val jvmInstanceId: Uuid = Uuid()

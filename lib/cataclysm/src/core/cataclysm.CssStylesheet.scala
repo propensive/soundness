@@ -44,13 +44,13 @@ object CssStylesheet:
   given abstractable: (charEncoder: CharEncoder)
   =>  CssStylesheet is Abstractable across HttpStreams to HttpStreams.Content =
 
-      new Abstractable:
-        type Self = CssStylesheet
-        type Domain = HttpStreams
-        type Result = HttpStreams.Content
+    new Abstractable:
+      type Self = CssStylesheet
+      type Domain = HttpStreams
+      type Result = HttpStreams.Content
 
-        def genericize(stylesheet: CssStylesheet): HttpStreams.Content =
-          (t"text/css; charset=${charEncoder.encoding.name}", Stream(stylesheet.text.data))
+      def genericize(stylesheet: CssStylesheet): HttpStreams.Content =
+        (t"text/css; charset=${charEncoder.encoding.name}", Stream(stylesheet.text.data))
 
 
   trait Item:

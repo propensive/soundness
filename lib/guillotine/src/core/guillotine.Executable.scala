@@ -57,7 +57,7 @@ sealed trait Executable:
   def exec[result: Computable]()(using working: WorkingDirectory)
   :   result logs ExecEvent raises ExecError =
 
-      fork[result]().await()
+    fork[result]().await()
 
 
   def apply()
@@ -66,17 +66,19 @@ sealed trait Executable:
             computable:          intelligible.Result is Computable )
   :   intelligible.Result logs ExecEvent raises ExecError =
 
-      fork[intelligible.Result]().await()
+    fork[intelligible.Result]().await()
 
 
   def apply(command: Executable): Pipeline = command match
-    case Pipeline(commands*) => this match
-      case Pipeline(commands2*) => Pipeline((commands ++ commands2)*)
-      case command: Command => Pipeline((commands :+ command)*)
+    case Pipeline(commands*) =>
+      this match
+        case Pipeline(commands2*) => Pipeline((commands ++ commands2)*)
+        case command: Command => Pipeline((commands :+ command)*)
 
-    case command: Command    => this match
-      case Pipeline(commands2*) => Pipeline((command +: commands2)*)
-      case command2: Command    => Pipeline(command, command2)
+    case command: Command =>
+      this match
+        case Pipeline(commands2*) => Pipeline((command +: commands2)*)
+        case command2: Command    => Pipeline(command, command2)
 
   @targetName("pipeTo")
   infix def | (command: Executable): Pipeline = command(this)
@@ -111,6 +113,7 @@ case class Command(arguments: Text*) extends Executable:
 
     try new Process(processBuilder.start().nn)
     catch case errror: ji.IOException => abort(ExecError(this, Stream(), Stream()))
+
 
   def escape: Text = arguments.map { argument => t"'${argument.sub(t"'", t"\'")}'" }.join(t" ")
 

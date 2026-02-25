@@ -35,7 +35,6 @@ package panopticon
 import prepositional.*
 
 object Composable:
-
   given optics: [origin, operand, target]
   =>  (Optic from origin onto operand) is Composable by (Optic from operand onto target) to
           (Optic from origin onto target) =

@@ -107,5 +107,6 @@ package couriers:
           url"https://api.resend.com/emails".submit
             ( Http.Post, authorization = Auth.Bearer(apiKey.key) )
             ( request.json )
+
           . receive[Json]
           . as[Resend.Receipt]

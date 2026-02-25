@@ -37,19 +37,6 @@ import fulminate.*
 import guillotine.*
 import profanity.*
 
-enum DaemonLogEvent:
-  case WriteExecutable(location: Text)
-  case Shutdown
-  case Termination
-  case Failure
-  case NewCli
-  case UnrecognizedMessage
-  case ReceivedSignal(signal: Signal)
-  case ExitStatusRequest(pid: Pid)
-  case CloseConnection(pid: Pid)
-  case StderrRequest(pid: Pid)
-  case Init(pid: Pid)
-
 object DaemonLogEvent:
   given communicable: DaemonLogEvent is Communicable =
     case WriteExecutable(location) => m"Writing executable to $location"
@@ -63,3 +50,16 @@ object DaemonLogEvent:
     case CloseConnection(pid)      => m"Connection closed from $pid"
     case StderrRequest(pid)        => m"STDERR requested from $pid"
     case Init(pid)                 => m"Initializing $pid"
+
+enum DaemonLogEvent:
+  case WriteExecutable(location: Text)
+  case Shutdown
+  case Termination
+  case Failure
+  case NewCli
+  case UnrecognizedMessage
+  case ReceivedSignal(signal: Signal)
+  case ExitStatusRequest(pid: Pid)
+  case CloseConnection(pid: Pid)
+  case StderrRequest(pid: Pid)
+  case Init(pid: Pid)

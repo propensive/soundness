@@ -34,8 +34,6 @@ package anticipation
 
 import prepositional.*
 
-type Data = IArray[Byte]
-
 object Data:
   def apply(xs: Byte*): Data = IArray(xs*)
   def empty: Data = IArray()
@@ -47,6 +45,8 @@ object Data:
 
   def fill(count: Int)(lambda: Int => Byte): Data = construct(count): array =>
     for index <- 0 until count do array(index) = lambda(index)
+
+type Data = IArray[Byte]
 
 extension [encodable: Encodable in Data](value: encodable)
   def bytestream: Data = encodable.encode(value)

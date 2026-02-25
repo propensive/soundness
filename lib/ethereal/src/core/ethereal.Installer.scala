@@ -81,29 +81,29 @@ object Installer:
     ( using Environment, HomeDirectory, System )
   :   List[Path on Linux] logs DaemonLogEvent raises InstallError =
 
-      mitigate:
-        case PathError(_, _)     => InstallError(InstallError.Reason.Environment)
-        case EnvironmentError(_) => InstallError(InstallError.Reason.Environment)
-        case IoError(_, _, _)    => InstallError(InstallError.Reason.Io)
-        case NameError(_, _, _)  => InstallError(InstallError.Reason.Io)
+    mitigate:
+      case PathError(_, _)     => InstallError(InstallError.Reason.Environment)
+      case EnvironmentError(_) => InstallError(InstallError.Reason.Environment)
+      case IoError(_, _, _)    => InstallError(InstallError.Reason.Io)
+      case NameError(_, _, _)  => InstallError(InstallError.Reason.Io)
 
-      . within:
-          val paths: List[Path on Linux] = Environment.path
+    . within:
+        val paths: List[Path on Linux] = Environment.path
 
-          val preferences: List[Path on Linux] =
-            List
-              ( Xdg.bin[Path on Linux],
-                % / "usr" / "local" / "bin",
-                % / "usr" / "bin",
-                % / "usr" / "local" / "sbin",
-                % / "opt" / "bin",
-                % / "bin",
-                % / "bin" )
+        val preferences: List[Path on Linux] =
+          List
+            ( Xdg.bin[Path on Linux],
+              % / "usr" / "local" / "bin",
+              % / "usr" / "bin",
+              % / "usr" / "local" / "sbin",
+              % / "opt" / "bin",
+              % / "bin",
+              % / "bin" )
 
-          paths.filter(_.exists()).filter(_.writable()).sortBy: directory =>
-            preferences.indexOf(directory) match
-              case -1    => Int.MaxValue
-              case index => index
+        paths.filter(_.exists()).filter(_.writable()).sortBy: directory =>
+          preferences.indexOf(directory) match
+            case -1    => Int.MaxValue
+            case index => index
 
 
   def install(force: Boolean = false, target: Optional[Path on Linux] = Unset)
@@ -112,47 +112,47 @@ object Installer:
     ( using Diagnostics )
   :   Result logs DaemonLogEvent raises InstallError =
 
-      import workingDirectories.java
-      import systems.java
+    import workingDirectories.java
+    import systems.java
 
-      mitigate:
-        case PathError(_, _)        => InstallError(InstallError.Reason.Environment)
-        case PropertyError(_)       => InstallError(InstallError.Reason.Environment)
-        case NumberError(_, _)      => InstallError(InstallError.Reason.Environment)
-        case IoError(_, _, _)       => InstallError(InstallError.Reason.Io)
-        case NameError(_, _, _)     => InstallError(InstallError.Reason.Io)
-        case ExecError(_, _, _)     => InstallError(InstallError.Reason.Io)
-        case StreamError(_)         => InstallError(InstallError.Reason.Io)
+    mitigate:
+      case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
+      case PropertyError(_)   => InstallError(InstallError.Reason.Environment)
+      case NumberError(_, _)  => InstallError(InstallError.Reason.Environment)
+      case IoError(_, _, _)   => InstallError(InstallError.Reason.Io)
+      case NameError(_, _, _) => InstallError(InstallError.Reason.Io)
+      case ExecError(_, _, _) => InstallError(InstallError.Reason.Io)
+      case StreamError(_)     => InstallError(InstallError.Reason.Io)
 
-      . within:
-          val command: Text = service.script
-          val scriptPath = mute[ExecEvent](sh"sh -c 'command -v $command'".exec[Text]())
+    . within:
+        val command: Text = service.script
+        val scriptPath = mute[ExecEvent](sh"sh -c 'command -v $command'".exec[Text]())
 
-          if safely(scriptPath.decode[Path on Linux]) == service.executable && !force
-          then Result.AlreadyOnPath(command, service.executable.encode)
-          else
-            val payloadSize: Bytes = Bytes(System.properties.ethereal.payloadSize[Int]())
-            val jarSize: Bytes = Bytes(System.properties.ethereal.jarSize[Int]())
-            val fileSize = service.executable.size()
-            val prefixSize = fileSize - payloadSize - jarSize
-            val installDirectory: Path on Linux = target.or(candidateTargets().prim).or:
-              abort(InstallError(InstallError.Reason.Environment))
+        if safely(scriptPath.decode[Path on Linux]) == service.executable && !force
+        then Result.AlreadyOnPath(command, service.executable.encode)
+        else
+          val payloadSize: Bytes = Bytes(System.properties.ethereal.payloadSize[Int]())
+          val jarSize: Bytes = Bytes(System.properties.ethereal.jarSize[Int]())
+          val fileSize = service.executable.size()
+          val prefixSize = fileSize - payloadSize - jarSize
+          val installDirectory: Path on Linux = target.or(candidateTargets().prim).or:
+            abort(InstallError(InstallError.Reason.Environment))
 
-            val file: Path on Linux = installDirectory/command
-            val installFile: Optional[Path on Linux] = file.make[File]()
+          val file: Path on Linux = installDirectory/command
+          val installFile: Optional[Path on Linux] = file.make[File]()
 
-            installFile.let: file =>
-              val filename: Text = file.inspect
-              Log.info(DaemonLogEvent.WriteExecutable(filename))
+          installFile.let: file =>
+            val filename: Text = file.inspect
+            Log.info(DaemonLogEvent.WriteExecutable(filename))
 
-              service.executable.open: file =>
-                val stream = file.stream[Data]
+            service.executable.open: file =>
+              val stream = file.stream[Data]
 
-                if prefixSize > 0.b
-                then (stream.take(prefixSize) ++ stream.discard(fileSize - jarSize)).writeTo(file)
-                else stream.writeTo(file)
+              if prefixSize > 0.b
+              then (stream.take(prefixSize) ++ stream.discard(fileSize - jarSize)).writeTo(file)
+              else stream.writeTo(file)
 
-              file.executable() = true
-              Result.Installed(command, file.encode)
+            file.executable() = true
+            Result.Installed(command, file.encode)
 
-            . or(Result.PathNotWritable)
+          . or(Result.PathNotWritable)

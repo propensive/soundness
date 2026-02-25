@@ -37,7 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
 
-object Tests extends Suite(m"Kaleidoscope tests"):
+object Tests extends Suite(m"internal tests"):
   def run(): Unit =
     suite(m"Regex tests"):
       import Regex.Group, Regex.Quantifier.*, Regex.Greed.*
@@ -48,11 +48,11 @@ object Tests extends Suite(m"Kaleidoscope tests"):
 
         test(m"Parse (aaa)")(Regex.parse(List(t"(aaa)")))
         . assert:
-          _ == Regex(t"(aaa)", List(Group(1, 4, 5)))
+            _ == Regex(t"(aaa)", List(Group(1, 4, 5)))
 
         test(m"Parse (aa)bb")(Regex.parse(List(t"(aa)bb")))
         . assert:
-          _ == Regex(t"(aa)bb", List(Group(1, 3, 4)))
+            _ == Regex(t"(aa)bb", List(Group(1, 3, 4)))
 
         test(m"Parse aa(bb)")(Regex.parse(List(t"aa(bb)")))
         . assert(_ == Regex(t"aa(bb)", List(Group(3, 5, 6))))
@@ -79,31 +79,31 @@ object Tests extends Suite(m"Kaleidoscope tests"):
           Regex.parse(List(t"aa(bb(cc)*dd)ee"))
 
         . assert:
-          _ == Regex(t"aa(bb(cc)*dd)ee", List(Group(3, 12, 13, List(Group(6, 8, 10, Nil, AtLeast(0))))))
+            _ == Regex(t"aa(bb(cc)*dd)ee", List(Group(3, 12, 13, List(Group(6, 8, 10, Nil, AtLeast(0))))))
 
         test(m"Parse aa(bb)+cc(dd)ee"):
           Regex.parse(List(t"aa(bb)+cc(dd)ee"))
 
         . assert:
-          _ == Regex(t"aa(bb)+cc(dd)ee", List(Group(3, 5, 7, Nil, AtLeast(1)), Group(10, 12, 13)))
+            _ == Regex(t"aa(bb)+cc(dd)ee", List(Group(3, 5, 7, Nil, AtLeast(1)), Group(10, 12, 13)))
 
         test(m"Parse aa(bb){4}cc(dd)ee"):
           Regex.parse(List(t"aa(bb){4}cc(dd)ee"))
 
         . assert:
-          _ == Regex(t"aa(bb){4}cc(dd)ee", List(Group(3, 5, 9, Nil, Exactly(4)), Group(12, 14, 15)))
+            _ == Regex(t"aa(bb){4}cc(dd)ee", List(Group(3, 5, 9, Nil, Exactly(4)), Group(12, 14, 15)))
 
         test(m"Parse aa(bb){4,}cc(dd)ee"):
           Regex.parse(List(t"aa(bb){4,}cc(dd)ee"))
 
         . assert:
-          _ == Regex(t"aa(bb){4,}cc(dd)ee", List(Group(3, 5, 10, Nil, AtLeast(4)), Group(13, 15, 16)))
+            _ == Regex(t"aa(bb){4,}cc(dd)ee", List(Group(3, 5, 10, Nil, AtLeast(4)), Group(13, 15, 16)))
 
         test(m"Parse aa(bb){4,6}cc(dd)ee"):
           Regex.parse(List(t"aa(bb){4,6}cc(dd)ee"))
 
         . assert:
-          _ == Regex(t"aa(bb){4,6}cc(dd)ee", List(Group(3, 5, 11, Nil, Between(4, 6)), Group(14, 16, 17)))
+            _ == Regex(t"aa(bb){4,6}cc(dd)ee", List(Group(3, 5, 11, Nil, Between(4, 6)), Group(14, 16, 17)))
 
         test(m"Parse aa(bb){14,16}ccddee"):
           Regex.parse(List(t"aa(bb){14,16}ccddee"))
@@ -113,7 +113,7 @@ object Tests extends Suite(m"Kaleidoscope tests"):
         test(m"Capture character class"):
           Regex.parse(List(t"w[aeiou]rld"))
 
-        .assert(_ == Regex(t"w[aeiou]rld", List(Group(2, 7, 8, Nil, Exactly(1), Greedy, false, true))))
+        . assert(_ == Regex(t"w[aeiou]rld", List(Group(2, 7, 8, Nil, Exactly(1), Greedy, false, true))))
 
       suite(m"Parsing failures"):
         test(m"Fail to parse aa(bb){14,16ccddee"):
@@ -316,7 +316,7 @@ object Tests extends Suite(m"Kaleidoscope tests"):
 
       test(m"email regex"):
         val r"^$prefix([a-z0-9._%+-]+)@$domain([a-z0-9.-]+)\.$tld([a-z]{2,6})$$" =
-            t"test@example.com": @unchecked
+          t"test@example.com": @unchecked
 
         List(prefix, domain, tld)
 
@@ -326,42 +326,42 @@ object Tests extends Suite(m"Kaleidoscope tests"):
         test(m"Match a character"):
           t"hello" match
             case r"h$vowel[aeiou]llo" => vowel
-            case _ => Nil
+            case _                    => Nil
 
         . assert(_ == 'e')
 
         test(m"Match several characters"):
           t"favourite" match
             case r"fav$vowels[aeiou]+rite" => vowels
-            case _ => Nil
+            case _                         => Nil
 
         . assert(_ == List('o', 'u'))
 
         test(m"Match zero characters"):
           t"favourite" match
             case r"favou$misc[cxm]*rite" => misc
-            case _ => Nil
+            case _                       => Nil
 
         . assert(_ == Nil)
 
         test(m"Match maybe one character; preset"):
           t"favourite" match
             case r"favo$vowel[aeiou]?rite" => vowel
-            case _ => Nil
+            case _                         => Nil
 
         . assert(_ == 'u')
 
         test(m"Match maybe one character; absent"):
           t"favourite" match
             case r"favou$vowel[aeiou]?rite" => vowel
-            case _ => Nil
+            case _                          => Nil
 
         . assert(_ == Unset)
 
         test(m"Match characters in subgroup"):
           t"favourite" match
             case r"fav($vowels[ou]*)rite" => vowels
-            case _ => Nil
+            case _                        => Nil
 
         . assert(_ == List('o', 'u'))
 
@@ -409,35 +409,35 @@ object Tests extends Suite(m"Kaleidoscope tests"):
       test(m"Extract from a glob"):
         t"/home/work/docs" match
           case g"/$home/work/docs" => home
-          case _ => Nil
+          case _                   => Nil
 
       . assert(_ == t"home")
 
       test(m"Extract from a glob with a star"):
         t"/home/work/docs" match
           case g"/$home/*/docs" => home
-          case _ => Nil
+          case _                => Nil
 
       . assert(_ == t"home")
 
       test(m"Extract from a glob with question marks"):
         t"/home/work/docs" match
           case g"/$home/????/docs" => home
-          case _ => Nil
+          case _                   => Nil
 
       . assert(_ == t"home")
 
       test(m"Extract from a glob with two extractions"):
         t"/home/work/docs" match
           case g"/$home/$work/docs" => (home, work)
-          case _ => Nil
+          case _                    => Nil
 
       . assert(_ == (t"home", t"work"))
 
       test(m"Extract from a glob with globstar"):
         t"/home/work/docs" match
           case g"/$home/**" => home
-          case _ => Nil
+          case _            => Nil
 
       . assert(_ == t"home")
 

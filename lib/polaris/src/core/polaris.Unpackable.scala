@@ -39,6 +39,7 @@ import rudiments.*
 object Unpackable:
   given iarray: [pack: Debufferable] => ClassTag[pack] => IArray[pack] is Unpackable:
     type Wrap[Type] = Int => Type
+
     def unpack(buffer: Buffer): Int => IArray[pack] = count =>
       IArray.create[pack](count): array =>
         array.indices.each: index =>
@@ -46,9 +47,11 @@ object Unpackable:
 
   given debufferable: [pack: Debufferable] => pack is Unpackable:
     type Wrap[Type] = Type
+
     def unpack(buffer: Buffer): pack = pack.debuffer(buffer)
 
 trait Unpackable extends Typeclass:
   type Wrap[_]
   type Result = Wrap[Self]
+
   def unpack(buffer: Buffer): Wrap[Self]

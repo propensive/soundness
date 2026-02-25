@@ -43,7 +43,7 @@ object Pid:
   given showable: Pid is Showable = _.toString.tt
   given encodable: Pid is Encodable in Text = _.toString.tt
 
-  given sshAgentPid: Tactic[NumberError] => EnvironmentVariable["sshAgentPid", Pid] =
+  given sshAgentPid: Tactic[NumberError] => Variable["sshAgentPid", Pid] =
     text => Pid(text.decode[Int])
 
   given decodable: Tactic[NumberError] => Pid is Decodable in Text = text =>

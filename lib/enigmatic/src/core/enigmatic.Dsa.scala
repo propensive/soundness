@@ -44,6 +44,7 @@ object Dsa:
 
 class Dsa[bits <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signing:
   type Size = bits
+
   def keySize: bits = valueOf[bits]
 
   def genKey(): Data =

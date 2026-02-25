@@ -62,7 +62,7 @@ extension [target: Openable](value: target)
     ( lambda:  target.Result => result, options: List[target.Operand] = Nil )
   :   result =
 
-      target.open(value, lambda, options)
+    target.open(value, lambda, options)
 
 package filesystemTraversal:
   given preOrder: TraversalOrder = TraversalOrder.PreOrder
@@ -76,19 +76,18 @@ extension [plane: Filesystem](path: Path on plane)
   private[galilei] def protect[result](operation: Operation)(block: => result)
   :   result raises IoError =
 
-      import Reason.*
+    import Reason.*
 
-      try block catch
-        case break: boundary.Break[?]          => throw break
-        case _: jnf.NoSuchFileException        => abort(IoError(path, operation, Nonexistent))
-        case _: jnf.FileAlreadyExistsException => abort(IoError(path, operation, AlreadyExists))
-        case _: jnf.DirectoryNotEmptyException => abort(IoError(path, operation, DirectoryNotEmpty))
-        case _: jnf.AccessDeniedException      => abort(IoError(path, operation, PermissionDenied))
-        case _: jnf.NotDirectoryException      => abort(IoError(path, operation, IsNotDirectory))
-        case _: SecurityException              => abort(IoError(path, operation, PermissionDenied))
-        case _: jnf.FileSystemLoopException    => abort(IoError(path, operation, Cycle))
-        case other                             =>
-          abort(IoError(path, operation, Unsupported))
+    try block catch
+      case break: boundary.Break[?]          => throw break
+      case _: jnf.NoSuchFileException        => abort(IoError(path, operation, Nonexistent))
+      case _: jnf.FileAlreadyExistsException => abort(IoError(path, operation, AlreadyExists))
+      case _: jnf.DirectoryNotEmptyException => abort(IoError(path, operation, DirectoryNotEmpty))
+      case _: jnf.AccessDeniedException      => abort(IoError(path, operation, PermissionDenied))
+      case _: jnf.NotDirectoryException      => abort(IoError(path, operation, IsNotDirectory))
+      case _: SecurityException              => abort(IoError(path, operation, PermissionDenied))
+      case _: jnf.FileSystemLoopException    => abort(IoError(path, operation, Cycle))
+      case other                             => abort(IoError(path, operation, Unsupported))
 
   def javaPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
   def javaFile: ji.File = javaPath.toFile.nn
@@ -97,10 +96,10 @@ extension [plane: Filesystem](path: Path on plane)
   def descendants(using DereferenceSymlinks, TraversalOrder, plane is Explorable)
   :   Stream[Path on plane] raises IoError =
 
-      path.children.flatMap: child =>
-        summon[TraversalOrder] match
-          case TraversalOrder.PreOrder  => child #:: child.descendants
-          case TraversalOrder.PostOrder => child.descendants #::: Stream(child)
+    path.children.flatMap: child =>
+      summon[TraversalOrder] match
+        case TraversalOrder.PreOrder  => child #:: child.descendants
+        case TraversalOrder.PostOrder => child.descendants #::: Stream(child)
 
 
   def size()(using plane is Explorable): Bytes raises IoError =
@@ -112,17 +111,17 @@ extension [plane: Filesystem](path: Path on plane)
   def delete()(using deleteRecursively: DeleteRecursively on plane)
   :   Path on plane raises IoError =
 
-      protect(Operation.Delete):
-        deleteRecursively.conditionally(path)(jnf.Files.delete(path.javaPath))
+    protect(Operation.Delete):
+      deleteRecursively.conditionally(path)(jnf.Files.delete(path.javaPath))
 
-      path
+    path
 
 
   def wipe()(using deleteRecursively: DeleteRecursively on plane)(using io: Tactic[IoError])
   :   Path on plane raises IoError =
 
-      deleteRecursively.conditionally(path)(jnf.Files.deleteIfExists(javaPath))
-      path
+    deleteRecursively.conditionally(path)(jnf.Files.deleteIfExists(javaPath))
+    path
 
 
   def volume(): Volume =
@@ -135,11 +134,11 @@ extension [plane: Filesystem](path: Path on plane)
             createNonexistentParents: CreateNonexistentParents on plane )
   :   Path on plane raises IoError =
 
-      createNonexistentParents(destination):
-        overwritePreexisting(destination):
-          jnf.Files.createLink(destination.javaPath, path.javaPath)
+    createNonexistentParents(destination):
+      overwritePreexisting(destination):
+        jnf.Files.createLink(destination.javaPath, path.javaPath)
 
-      destination
+    destination
 
 
   def entry()(using symlinks: DereferenceSymlinks): Entry =
@@ -163,11 +162,11 @@ extension [plane: Filesystem](path: Path on plane)
             createNonexistentParents: CreateNonexistentParents on plane )
   :   Path on plane raises IoError =
 
-      createNonexistentParents(destination):
-        overwritePreexisting(destination):
-          jnf.Files.copy(path.javaPath, destination.javaPath, dereferenceSymlinks.options()*)
+    createNonexistentParents(destination):
+      overwritePreexisting(destination):
+        jnf.Files.copy(path.javaPath, destination.javaPath, dereferenceSymlinks.options()*)
 
-      destination
+    destination
 
 
   def copyInto(destination: Path on plane)
@@ -176,11 +175,11 @@ extension [plane: Filesystem](path: Path on plane)
             substantiable:        (Path on plane) is Substantiable )
   :   Path on plane raises IoError =
 
-      given CreateNonexistentParents on plane =
-        filesystemOptions.createNonexistentParents.enabled[plane]
+    given CreateNonexistentParents on plane =
+      filesystemOptions.createNonexistentParents.enabled[plane]
 
-      val file2: Path on plane = unsafely(destination.child(path.descent.head))
-      copyTo(file2)
+    val file2: Path on plane = unsafely(destination.child(path.descent.head))
+    copyTo(file2)
 
 
   def moveTo(destination: Path on plane)
@@ -190,25 +189,25 @@ extension [plane: Filesystem](path: Path on plane)
             createNonexistentParents: CreateNonexistentParents on plane )
   :   Path on plane raises IoError =
 
-      val options: Seq[jnf.CopyOption] = dereferenceSymlinks.options() ++ moveAtomically.options()
+    val options: Seq[jnf.CopyOption] = dereferenceSymlinks.options() ++ moveAtomically.options()
 
-      createNonexistentParents(destination):
-        overwritePreexisting(destination):
-          jnf.Files.move(path.javaPath, destination.javaPath, options*)
+    createNonexistentParents(destination):
+      overwritePreexisting(destination):
+        jnf.Files.move(path.javaPath, destination.javaPath, options*)
 
-      destination
+    destination
 
 
   def moveInto
     ( destination: Path on plane )
     ( using overwritePreexisting: OverwritePreexisting on plane,
-              moveAtomically:       MoveAtomically,
-              substantiable:        (Path on plane) is Substantiable,
-              dereferenceSymlinks:  DereferenceSymlinks)
+            moveAtomically:       MoveAtomically,
+            substantiable:        (Path on plane) is Substantiable,
+            dereferenceSymlinks:  DereferenceSymlinks )
   :   Path on plane raises IoError =
 
-      import filesystemOptions.createNonexistentParents.enabled
-      moveTo(unsafely(destination.child(path.descent.head)))
+    import filesystemOptions.createNonexistentParents.enabled
+    moveTo(unsafely(destination.child(path.descent.head)))
 
 
   def symlinkTo(destination: Path on plane)
@@ -216,23 +215,23 @@ extension [plane: Filesystem](path: Path on plane)
             createNonexistentParents: CreateNonexistentParents on plane )
   :   Path on plane raises IoError =
 
-      createNonexistentParents(destination):
-        overwritePreexisting(destination):
-          jnf.Files.createSymbolicLink(destination.javaPath, path.javaPath)
+    createNonexistentParents(destination):
+      overwritePreexisting(destination):
+        jnf.Files.createSymbolicLink(destination.javaPath, path.javaPath)
 
-      destination
+    destination
 
 
   def symlinkInto
     ( destination: Path on plane )
     ( using overwritePreexisting: OverwritePreexisting on plane,
-              moveAtomically:       MoveAtomically,
-              substantiable:        (Path on plane) is Substantiable,
-              dereferenceSymlinks:  DereferenceSymlinks)
+            moveAtomically:       MoveAtomically,
+            substantiable:        (Path on plane) is Substantiable,
+            dereferenceSymlinks:  DereferenceSymlinks )
   :   Path on plane raises IoError =
 
-      import filesystemOptions.createNonexistentParents.enabled
-      symlinkTo(unsafely(destination.child(path.descent.head)))
+    import filesystemOptions.createNonexistentParents.enabled
+    symlinkTo(unsafely(destination.child(path.descent.head)))
 
 
   def modified[instant: Instantiable across Instants from Long](): instant =
@@ -275,19 +274,23 @@ package filesystemOptions:
   object readAccess:
     given enabled: ReadAccess:
       type Transform[HandleType] = HandleType & ReadAccess.Ability
+
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.READ)
 
     given disabled: ReadAccess:
       type Transform[HandleType] = HandleType
+
       def options(): List[jnf.OpenOption] = Nil
 
   object writeAccess:
     given enabled: WriteAccess:
       type Transform[HandleType] = HandleType & WriteAccess.Ability
+
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.WRITE)
 
     given disabled: WriteAccess:
       type Transform[HandleType] = HandleType
+
       def options(): List[jnf.OpenOption] = Nil
 
   object dereferenceSymlinks:
@@ -312,67 +315,68 @@ package filesystemOptions:
     =>  ( explorable: plane is Explorable )
     =>  DeleteRecursively on plane:
 
-        type World = plane
+      type World = plane
 
-        def recur(path: Path on plane): Unit =
-          path.children.each(recur(_))
-          jnf.Files.delete(jnf.Path.of(path.show.s))
+      def recur(path: Path on plane): Unit =
+        path.children.each(recur(_))
+        jnf.Files.delete(jnf.Path.of(path.show.s))
 
-        def conditionally[result](path: Path on Plane)(operation: => result): result =
-          path.children.each(recur(_)) yet operation
+      def conditionally[result](path: Path on Plane)(operation: => result): result =
+        path.children.each(recur(_)) yet operation
+
 
     given disabled: [plane: {Filesystem, Explorable}] => Tactic[IoError]
     =>  DeleteRecursively on plane:
 
-        type Plane = plane
+      type Plane = plane
 
-        def conditionally[result](path: Path on Plane)(operation: => result): result =
-          if !path.children.nil
-          then abort(IoError(path, IoError.Operation.Delete, Reason.DirectoryNotEmpty))
-          else operation
+      def conditionally[result](path: Path on Plane)(operation: => result): result =
+        if !path.children.nil
+        then abort(IoError(path, IoError.Operation.Delete, Reason.DirectoryNotEmpty))
+        else operation
 
   object overwritePreexisting:
     given enabled: [plane: Filesystem]
     =>  ( deleteRecursively: DeleteRecursively on plane )
     =>  OverwritePreexisting on plane:
 
-        type Plane = plane
+      type Plane = plane
 
-        def apply[result](path: Path on Plane)(operation: => result): result =
-          deleteRecursively.conditionally(path)(operation)
+      def apply[result](path: Path on Plane)(operation: => result): result =
+        deleteRecursively.conditionally(path)(operation)
 
 
     given disabled: [plane: Filesystem] => Tactic[IoError]
     =>  OverwritePreexisting on plane:
 
-        type Plane = plane
+      type Plane = plane
 
-        def apply[result](path: Path on Plane)(operation: => result): result =
-          try operation catch case error: jnf.FileAlreadyExistsException =>
-            abort(IoError(path, IoError.Operation.Write, Reason.AlreadyExists))
-
+      def apply[result](path: Path on Plane)(operation: => result): result =
+        try operation catch case error: jnf.FileAlreadyExistsException =>
+          abort(IoError(path, IoError.Operation.Write, Reason.AlreadyExists))
 
   object createNonexistentParents:
     given enabled: [plane: Filesystem] => Tactic[IoError] => (Path on plane) is Substantiable
     =>  CreateNonexistentParents on plane:
 
-        def apply[result](path: Path on plane)(operation: => result): result =
-          val parent: Optional[Path on plane] = safely(path.parent)
-          parent.let: parent =>
-            import dereferenceSymlinks.disabled
+      def apply[result](path: Path on plane)(operation: => result): result =
+        val parent: Optional[Path on plane] = safely(path.parent)
+        parent.let: parent =>
+          import dereferenceSymlinks.disabled
 
-            if !parent.exists() || parent.entry() != Directory
-            then jnf.Files.createDirectories(jnf.Path.of(parent.show.s))
+          if !parent.exists() || parent.entry() != Directory
+          then jnf.Files.createDirectories(jnf.Path.of(parent.show.s))
 
-          operation
+        operation
+
 
     given disabled: [plane: Filesystem] => Tactic[IoError]
     =>  CreateNonexistentParents on plane:
 
-        type Plane = plane
+      type Plane = plane
 
-        def apply[result](path: Path on plane)(block: => result): result =
-          path.protect(Operation.Write)(block)
+      def apply[result](path: Path on plane)(block: => result): result =
+        path.protect(Operation.Write)(block)
 
   object createNonexistent:
     given enabled: [plane: Filesystem]
@@ -380,28 +384,28 @@ package filesystemOptions:
     =>  (Path on plane) is Substantiable
     =>  CreateNonexistent on plane:
 
-        type Plane = plane
+      type Plane = plane
 
-        def error(path: Path on Plane, operation: IoError.Operation): Nothing =
-          import strategies.throwUnsafely
-          abort(IoError(path, operation, Reason.Nonexistent))
+      def error(path: Path on Plane, operation: IoError.Operation): Nothing =
+        import strategies.throwUnsafely
+        abort(IoError(path, operation, Reason.Nonexistent))
 
-        def apply(path: Path on Plane)(operation: => Unit): Unit =
-          if !path.exists() then create(path)(operation)
+      def apply(path: Path on Plane)(operation: => Unit): Unit =
+        if !path.exists() then create(path)(operation)
 
-        def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.CREATE)
+      def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.CREATE)
 
 
     given disabled: [plane: Filesystem] => Tactic[IoError]
     =>  CreateNonexistent on plane:
 
-        type Plane = plane
+      type Plane = plane
 
-        def error(path: Path on Plane, operation: IoError.Operation): Nothing =
-          abort(IoError(path, operation, Reason.Nonexistent))
+      def error(path: Path on Plane, operation: IoError.Operation): Nothing =
+        abort(IoError(path, operation, Reason.Nonexistent))
 
-        def apply(path: Path on Plane)(operation: => Unit): Unit = ()
-        def options(): List[jnf.OpenOption] = List()
+      def apply(path: Path on Plane)(operation: => Unit): Unit = ()
+      def options(): List[jnf.OpenOption] = List()
 
   object writeSynchronously:
     given enabled: WriteSynchronously = () => List(jnf.StandardOpenOption.SYNC)

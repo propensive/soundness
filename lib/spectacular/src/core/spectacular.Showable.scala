@@ -45,13 +45,8 @@ import rudiments.*
 import stenography.*
 import vacuous.*
 
-trait Showable extends Typeclass, Communicable:
-  def text(value: Self): Text
-  def message(value: Self): Message = Message(text(value))
-
 object Showable:
   given showable: [value: Textualizable] => value is Showable = value.textual(_)
-
   given text: [text <: Text] => text is Showable = identity(_)
   given string: String is Showable = _.tt
   given char: Char is Showable = char => char.toString.tt
@@ -84,10 +79,10 @@ object Showable:
   given zerary: Ordinal is Showable = ordinal => s"${ordinal.n0}.₀".tt
 
   given typeRepr: (quotes: Quotes) => quotes.reflect.TypeRepr is Showable = repr =>
-    Stenography.name(using repr.asType)
+    stenography.internal.name(using repr.asType)
 
   given meta: [meta] => (quotes: Quotes) => Type[meta] is Showable =
-    Stenography.name[meta](using _)
+    stenography.internal.name[meta](using _)
 
   given stackTrace: StackTrace is Showable = stack =>
     val methodWidth = stack.frames.map(_.method.method.s.length).maxOption.getOrElse(0)
@@ -112,3 +107,7 @@ object Showable:
 
     stack.cause.lay(root): cause =>
       s"$root\ncaused by:\n$cause".tt
+
+trait Showable extends Typeclass, Communicable:
+  def text(value: Self): Text
+  def message(value: Self): Message = Message(text(value))

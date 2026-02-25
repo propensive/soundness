@@ -68,6 +68,7 @@ object DagDiagram:
 
 case class DagDiagram[node](lines: List[(List[DagTile], node)]):
   val size: Int = lines.length
+
   def render[line](line: node => line)(using style: DagStyle[line]): List[line] =
     lines.map { (tiles, node) => style.serialize(tiles, line(node)) }
 

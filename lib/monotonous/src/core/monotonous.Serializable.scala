@@ -76,4 +76,5 @@ object Serializable:
 
 trait Serializable:
   type Form <: Serialization
+
   def encode(bytes: Data): Text

@@ -38,6 +38,7 @@ import anticipation.*
 
 object Default:
   def apply[value](value: => value): Default[value] = () => value
+
   given int: Default[Int] = () => 0
   given singleton: [value: ValueOf] => Default[value] = () => valueOf[value]
   given default: Default[Long] = () => 0L

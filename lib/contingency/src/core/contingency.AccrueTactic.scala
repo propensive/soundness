@@ -47,7 +47,6 @@ class AccrueTactic
   ( lambda: (accrual: accrual) ?=> Exception ~> accrual )
   ( using val diagnostics: Diagnostics )
 extends Tactic[error]:
-
   def record(error: Diagnostics ?=> error): Unit = ref.getAndUpdate: accrual =>
     lambda(using if accrual == null then initial else accrual.nn)(error)
 
@@ -56,5 +55,4 @@ extends Tactic[error]:
     boundary.break(None)(using label)
 
   def finish(): Unit = ()
-
   def certify(): Unit = if initial != ref.get() then boundary.break(None)(using label)

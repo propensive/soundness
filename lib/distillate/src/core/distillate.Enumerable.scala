@@ -41,13 +41,14 @@ import vacuous.*
 
 object Enumerable:
   inline given derived: [enumeration <: reflect.Enum: Mirror.SumOf] => enumeration is Enumerable =
-    ${Distillate.enumerable[enumeration]}
+    ${distillate.internal.enumerable[enumeration]}
 
 trait Enumerable:
   type Self <: reflect.Enum
   private lazy val valuesMap: Map[Text, Self] = values.indexBy(_.toString.tt)
   val name: Text
   val values: IArray[Self]
+
   def value(name: Text): Optional[Self] = valuesMap.at(name)
   def name(value: Self): Text = value.toString.tt
   def index(value: Self): Int = value.ordinal

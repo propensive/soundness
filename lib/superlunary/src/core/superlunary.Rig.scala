@@ -57,15 +57,17 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
   type Transport <: Object
 
   protected val scalac: Scalac[?]
+
   protected def invoke[output](stage: Stage[output, Form, Target]): Result[output]
+
   private var cache: Map[Codepoint, (Target, juf.Function[Form, Form])] = Map()
+
   protected val classloader = classloader0
 
   def classpath(out: Path on Linux): LocalClasspath = LocalClasspath:
     Classpath.Directory(out)
     :: (classloaders.threadContext.classpath.match
-      case classpath: LocalClasspath =>
-        classpath.entries
+      case classpath: LocalClasspath => classpath.entries
 
       case _ =>
         unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)
@@ -77,6 +79,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
   def stage(path: Path on Linux): Target
 
+
   inline def dispatch[output]
     ( body: (References over Transport) ?=> Quotes ?=> Expr[output] )
     [ version <: Scalac.Versions ]
@@ -86,67 +89,67 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
             stageable:  Stageable over Transport in Form )
   :   Result[output] raises CompilerError raises RemoteError =
 
-      val references: References over Transport = References[Transport]()
+    val references: References over Transport = References[Transport]()
 
-      val (target, function): (Target, juf.Function[Form, Form]) =
-        if cache.contains(codepoint) then
-          given staging.Compiler = compiler2
+    val (target, function): (Target, juf.Function[Form, Form]) =
+      if cache.contains(codepoint) then
+        given staging.Compiler = compiler2
 
-          // This is necessary to allocate references as a side effect
-          staging.withQuotes:
-            ' {
-                (array: Array[Object]) =>
-                  $ {
-                      references() = 'array
-                      body(using references)
-                    }
-              }
+        // This is necessary to allocate references as a side effect
+        staging.withQuotes:
+          ' {
+              (array: Array[Object]) =>
+                $ {
+                    references() = 'array
+                    body(using references)
+                  }
+            }
 
-          cache(codepoint)
+        cache(codepoint)
 
-        else
-          val uuid = Uuid()
+      else
+        val uuid = Uuid()
 
-          val out =
-            import strategies.throwUnsafely
-            (temporaryDirectory / uuid).on[Linux]
+        val out =
+          import strategies.throwUnsafely
+          (temporaryDirectory / uuid).on[Linux]
 
-          val settings: staging.Compiler.Settings =
-            staging.Compiler.Settings.make
-              (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
+        val settings: staging.Compiler.Settings =
+          staging.Compiler.Settings.make
+            (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
 
-          given compiler: staging.Compiler =
-            staging.Compiler.make(classloader.java)(using settings)
+        given compiler: staging.Compiler =
+          staging.Compiler.make(classloader.java)(using settings)
 
-          val function: juf.Function[Form, Form] = staging.run:
-            ' {
-                form =>
-                  stageable.serialize:
+        val function: juf.Function[Form, Form] = staging.run:
+          ' {
+              form =>
+                stageable.serialize:
 
-                    val array = new Array[Object](1)
-                    array(0) =
-                      stageable.embed[output]
-                        ( $ {
-                              references() = '{stageable.deserialize(form)}
-                              body(using references)
-                            } )
-                    array
-              }
+                  val array = new Array[Object](1)
+                  array(0) =
+                    stageable.embed[output]:
+                      $ {
+                          references() = '{stageable.deserialize(form)}
+                          body(using references)
+                        }
+                  array
+            }
 
-          val target = stage(out)
-          cache = cache.updated(codepoint, (target, function))
+        val target = stage(out)
+        cache = cache.updated(codepoint, (target, function))
 
-          (target, function)
+        (target, function)
 
-      invoke[output]
-        ( Stage
-          ( target,
-            function =>
-              stageable.extract[output]:
-                stageable.deserialize(function(stageable.serialize(references())))
-                . head.asInstanceOf[Transport]) )
+    invoke[output]
+      ( Stage
+        ( target,
+          function =>
+            stageable.extract[output]:
+              stageable.deserialize(function(stageable.serialize(references())))
+              . head.asInstanceOf[Transport] ) )
 
-      // catch case throwable: Throwable =>
-      //   println(throwable)
-      //   throwable.printStackTrace()
-      //   abort(CompilerError())
+    // catch case throwable: Throwable =>
+    //   println(throwable)
+    //   throwable.printStackTrace()
+    //   abort(CompilerError())

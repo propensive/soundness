@@ -35,21 +35,25 @@ package zephyrine
 package lineation:
   inline given linefeedChars: Lineation:
     type Operand = Char
+
     inline def active: Boolean = true
     inline def track(datum: Char): Boolean = datum == '\n'
 
   inline given carriageReturnChar: Lineation:
     type Operand = Char
+
     inline def active: Boolean = true
     inline def track(datum: Char): Boolean = datum == '\r'
 
   inline given linefeedByte: Lineation:
     type Operand = Byte
+
     inline def active: Boolean = true
     inline def track(datum: Byte): Boolean = datum == 10
 
   inline given carriageReturnByte: Lineation:
     type Operand = Byte
+
     inline def active: Boolean = true
     inline def track(datum: Byte): Boolean = datum == 13
 

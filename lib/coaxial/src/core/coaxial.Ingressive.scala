@@ -38,12 +38,12 @@ import gossamer.*
 import hieroglyph.*
 import prepositional.*
 
-trait Ingressive extends Typeclass:
-  def deserialize(message: Data): Self
-
 object Ingressive:
   given bytes: Data is Ingressive = identity(_)
   given text: CharDecoder => Text is Ingressive = _.text
 
   given decoder: [message: Decodable in Text] => CharDecoder => message is Ingressive =
     _.text.decode[message]
+
+trait Ingressive extends Typeclass:
+  def deserialize(message: Data): Self

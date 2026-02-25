@@ -44,28 +44,6 @@ import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
 
 import scala.collection.mutable as scm
 
-case class SourceCode
-  ( language: ProgrammingLanguage,
-    offset:   Int,
-    lines:    IArray[List[SourceToken]],
-    focus:    Optional[((Int, Int), (Int, Int))] = Unset ):
-
-  def lastLine: Int = offset + lines.length - 1
-  def apply(line: Int): List[SourceToken] = lines(line - offset)
-
-  def extract(range: CodeRange): SourceCode =
-    val focus = ((range.startLine, range.startColumn), (range.endLine, range.endColumn))
-    if range.startLine != range.endLine
-    then fragment(range.startLine, (range.endLine + 2).min(lastLine), focus)
-    else fragment(range.startLine, (range.endLine + 1).min(lastLine), focus)
-
-
-  def fragment(startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset)
-  :   SourceCode =
-
-    SourceCode(language, startLine, lines.slice(startLine - offset, endLine - offset + 1), focus)
-
-
 object SourceCode:
   private def accent(token: Int): Accent =
     if token <= 2 then Accent.Error
@@ -123,8 +101,7 @@ object SourceCode:
         Stream()
 
     def stream(lastEnd: Int = 0): Stream[SourceToken] = scanner.token match
-      case Tokens.EOF =>
-        untab(text.segment(lastEnd.z till text.limit)).filter(_.length > 0)
+      case Tokens.EOF => untab(text.segment(lastEnd.z till text.limit)).filter(_.length > 0)
 
       case token =>
         val start = scanner.offset max lastEnd
@@ -149,18 +126,22 @@ object SourceCode:
               Stream
                 ( SourceToken(line, trees(start, end).getOrElse(accent(token))),
                   SourceToken.Newline )
+
             . init
 
         unparsed #::: content #::: stream(end)
+
 
     def lines(sequence: List[SourceToken], acc: List[List[SourceToken]] = Nil)
     :   List[List[SourceToken]] =
 
       sequence match
         case Nil => acc
-        case xs  => xs.indexOf(SourceToken.Newline) match
-          case -1  => xs :: acc
-          case index => lines(xs.drop(index + 1), xs.take(index) :: acc)
+
+        case xs =>
+          xs.indexOf(SourceToken.Newline) match
+            case -1  => xs :: acc
+            case index => lines(xs.drop(index + 1), xs.take(index) :: acc)
 
     SourceCode(language, 1, IArray(lines(soften(stream()).to(List)).reverse*))
 
@@ -168,6 +149,7 @@ object SourceCode:
     import ast.*, untpd.*
 
     private val trees: scm.HashMap[(Int, Int), Accent] = scm.HashMap()
+
     def apply(start: Int, end: Int): Option[Accent] = trees.get((start, end))
 
     def ignored(tree: NameTree): Boolean =
@@ -176,8 +158,7 @@ object SourceCode:
 
     def traverse(tree: Tree)(using Contexts.Context): Unit =
       tree match
-        case tree: NameTree if ignored(tree) =>
-          ()
+        case tree: NameTree if ignored(tree) => ()
 
         case tree: ValOrDefDef =>
           if tree.nameSpan.exists
@@ -197,3 +178,25 @@ object SourceCode:
           ()
 
       traverseChildren(tree)
+
+
+case class SourceCode
+  ( language: ProgrammingLanguage,
+    offset:   Int,
+    lines:    IArray[List[SourceToken]],
+    focus:    Optional[((Int, Int), (Int, Int))] = Unset ):
+
+  def lastLine: Int = offset + lines.length - 1
+  def apply(line: Int): List[SourceToken] = lines(line - offset)
+
+  def extract(range: CodeRange): SourceCode =
+    val focus = ((range.startLine, range.startColumn), (range.endLine, range.endColumn))
+    if range.startLine != range.endLine
+    then fragment(range.startLine, (range.endLine + 2).min(lastLine), focus)
+    else fragment(range.startLine, (range.endLine + 1).min(lastLine), focus)
+
+
+  def fragment(startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset)
+  :   SourceCode =
+
+    SourceCode(language, startLine, lines.slice(startLine - offset, endLine - offset + 1), focus)

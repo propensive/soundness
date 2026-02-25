@@ -68,7 +68,7 @@ object Html extends Tag.Container
     mode        = Html.Mode.Whitespace,
     insertable  = true,
     foreign     = false,
-    boundary    = true), Format:
+    boundary    = true ), Format:
   type Topic = "html"
   type Transport = "head" | "body"
 
@@ -85,12 +85,12 @@ object Html extends Tag.Container
     type Result = Html
 
     transparent inline def interpolate[parts <: Tuple](inline insertions: Any*): Html =
-      ${Honeycomb.interpolator[parts]('insertions)}
+      ${honeycomb.internal.interpolator[parts]('insertions)}
 
   inline given extrapolator: Html is Extrapolable:
 
     transparent inline def extrapolate[parts <: Tuple](scrutinee: Html): Extrapolation[Html] =
-      ${Honeycomb.extractor[parts]('scrutinee)}
+      ${honeycomb.internal.extractor[parts]('scrutinee)}
 
 
   given addable: [dom        <: Dom,
@@ -100,17 +100,17 @@ object Html extends Tag.Container
                   right      <: Html of rightTopic in dom]
   =>  left is Addable by right to (Fragment of leftTopic | rightTopic in dom) =
 
-      (left, right) =>
-        Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
+    (left, right) =>
+      Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
 
 
   given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
   =>  Tactic[ParseError]
   =>  (Html of content) is Aggregable by Text =
 
-      input =>
-        val root = Tag.root(content.reify.map(_.tt).to(Set))
-        parse(input.iterator, root).of[content]
+    input =>
+      val root = Tag.root(content.reify.map(_.tt).to(Set))
+      parse(input.iterator, root).of[content]
 
   given aggregable2: (dom: Dom) => Tactic[ParseError] => Html is Aggregable by Text =
     input => parse(input.iterator, dom.generic, doctypes = false)
@@ -133,91 +133,97 @@ object Html extends Tag.Container
   def emit(document: Document[Html], flat: Boolean = false)(using Monitor, Codicil)
   :   Iterator[Text] =
 
-      val dom = document.metadata
-      val emitter = Emitter[Text](4096)
-      async:
-        def recur(node: Html, indent: Int, block: Boolean, mode: Mode): Unit =
-          node match
-            case Fragment(nodes*) => nodes.each(recur(_, indent, block, mode))
-            case Comment(comment) => emitter.put("<!--")
-                                     emitter.put(comment)
-                                     emitter.put("-->")
-            case Doctype(text)    => emitter.put("<!DOCTYPE ")
-                                     emitter.put(text) // FIXME: entities
-                                     emitter.put(">")
+    val dom = document.metadata
+    val emitter = Emitter[Text](4096)
+    async:
+      def recur(node: Html, indent: Int, block: Boolean, mode: Mode): Unit =
+        node match
+          case Fragment(nodes*) => nodes.each(recur(_, indent, block, mode))
 
-            case TextNode(text) =>
-              mode match
-                case Mode.Raw =>
-                  emitter.put(text)
-                case _ =>
+          case Comment(comment) =>
+            emitter.put("<!--")
+            emitter.put(comment)
+            emitter.put("-->")
+
+          case Doctype(text) =>
+            emitter.put("<!DOCTYPE ")
+            emitter.put(text) // FIXME: entities
+            emitter.put(">")
+
+          case TextNode(text) =>
+            mode match
+              case Mode.Raw =>
+                emitter.put(text)
+              case _ =>
+                var position: Int = 0
+
+                while position < text.length do
+                  val amp = text.s.indexOf('&', position)
+                  val lt = text.s.indexOf('<', position)
+                  val next = if amp < 0 then lt else if lt < 0 then amp else amp.min(lt)
+
+                  if next >= 0 then
+                    emitter.put(text, position.z, next - position)
+                    if next == lt then emitter.put("&lt;")
+                    if next == amp then emitter.put("&amp;")
+                    position = next + 1
+                  else
+                    emitter.put(text, position.z, text.length - position)
+                    position = text.length
+
+          case Element(label, attributes, nodes, _) =>
+            if block then emitter.put(indentation, Prim, indent*2 + 1)
+            emitter.put("<")
+            emitter.put(label)
+
+            if !attributes.nil then
+              attributes.each: (key, value) =>
+                emitter.put(" ")
+                emitter.put(key)
+
+                value.let: value =>
+                  emitter.put("=\"")
                   var position: Int = 0
-                  while position < text.length do
-                    val amp = text.s.indexOf('&', position)
-                    val lt = text.s.indexOf('<', position)
-                    val next = if amp < 0 then lt else if lt < 0 then amp else amp.min(lt)
+
+                  while position < value.length do
+                    val amp = value.s.indexOf('&', position)
+                    val quot = value.s.indexOf('\"', position)
+                    val next = if amp < 0 then quot else if quot < 0 then amp else amp.min(quot)
 
                     if next >= 0 then
-                      emitter.put(text, position.z, next - position)
-                      if next == lt then emitter.put("&lt;")
+                      emitter.put(value, position.z, next - position)
+                      if next == quot then emitter.put("&quot;")
                       if next == amp then emitter.put("&amp;")
                       position = next + 1
                     else
-                      emitter.put(text, position.z, text.length - position)
-                      position = text.length
+                      emitter.put(value, position.z, value.length - position)
+                      position = value.length
 
-            case Element(label, attributes, nodes, _) =>
-              if block then emitter.put(indentation, Prim, indent*2 + 1)
-              emitter.put("<")
+                  emitter.put("\"")
+
+            emitter.put(">")
+
+            val mode = dom.elements(label).lay(Mode.Normal)(_.mode)
+
+            val whitespace =
+              (mode == Mode.Whitespace || !nodes.exists(_.isInstanceOf[TextNode]))
+              && block
+
+            if !dom.elements(label).lay(false)(_.void) then
+              nodes.each(recur(_, indent + 1, whitespace, mode))
+
+              if block && whitespace
+              then emitter.put(indentation, Prim, (indent*2 + 1).min(indentation.length))
+
+              emitter.put("</")
               emitter.put(label)
-
-              if !attributes.nil then
-                attributes.each: (key, value) =>
-                  emitter.put(" ")
-                  emitter.put(key)
-                  value.let: value =>
-                    emitter.put("=\"")
-                    var position: Int = 0
-
-                    while position < value.length do
-                      val amp = value.s.indexOf('&', position)
-                      val quot = value.s.indexOf('\"', position)
-                      val next = if amp < 0 then quot else if quot < 0 then amp else amp.min(quot)
-
-                      if next >= 0 then
-                        emitter.put(value, position.z, next - position)
-                        if next == quot then emitter.put("&quot;")
-                        if next == amp then emitter.put("&amp;")
-                        position = next + 1
-                      else
-                        emitter.put(value, position.z, value.length - position)
-                        position = value.length
-
-                    emitter.put("\"")
-
               emitter.put(">")
 
-              val mode = dom.elements(label).lay(Mode.Normal)(_.mode)
+      recur(document.metadata.doctype, 0, true, Mode.Whitespace)
+      recur(document.root, 0, true, Mode.Whitespace)
+      emitter.finish()
 
-              val whitespace =
-                (mode == Mode.Whitespace || !nodes.exists(_.isInstanceOf[TextNode]))
-                && block
-
-              if !dom.elements(label).lay(false)(_.void) then
-                nodes.each(recur(_, indent + 1, whitespace, mode))
-
-                if block && whitespace
-                then emitter.put(indentation, Prim, (indent*2 + 1).min(indentation.length))
-
-                emitter.put("</")
-                emitter.put(label)
-                emitter.put(">")
-
-        recur(document.metadata.doctype, 0, true, Mode.Whitespace)
-        recur(document.root, 0, true, Mode.Whitespace)
-        emitter.finish()
-
-      emitter.iterator
+    emitter.iterator
 
 
   given showable: [html <: Html] => html is Showable =
@@ -230,6 +236,7 @@ object Html extends Tag.Container
       val tagContent = if attributes.nil then t"" else
         attributes.map:
           case (key, value) => value.lay(key) { value => t"""$key="$value"""" }
+
         . join(t" ", t" ", t"")
 
       t"<$tagname$tagContent>${children.map(_.show).join}</$tagname>"
@@ -246,9 +253,9 @@ object Html extends Tag.Container
       def apply(children: Optional[Html of (? <: node.Transport)]*)
       :   Element of node.Topic in node.Form =
 
-          new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
-            type Topic = node.Topic
-            type Form = node.Form
+        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
+          type Topic = node.Topic
+          type Form = node.Form
 
 
   trait Transparent:
@@ -256,9 +263,9 @@ object Html extends Tag.Container
       def apply[labels <: Label](children: Optional[Html of (? <: (labels | node.Transport))]*)
       :   Element of labels in node.Form =
 
-          new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
-            type Topic = labels
-            type Form = node.Form
+        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
+          type Topic = labels
+          type Form = node.Form
 
 
   import Issue.*
@@ -273,7 +280,7 @@ object Html extends Tag.Container
   given conversion3: [label <: Label, content >: label <: Label]
   =>  Conversion[Html of label, Html of content] =
 
-      _.of[content]
+    _.of[content]
 
 
   given comment: [content <: Label] =>  Conversion[Comment, Html of content] =
@@ -286,14 +293,14 @@ object Html extends Tag.Container
   given renderable: [content <: Label, value: Renderable in content]
   =>  Conversion[value, Html of content] =
 
-      value.render(_)
+    value.render(_)
 
 
   given sequences: [nodal, html <: Html] => (conversion: Conversion[nodal, html])
   =>  Conversion[Seq[nodal], Seq[html]] =
 
-      (sequence: Seq[nodal]) =>
-        sequence.map(conversion(_))
+    (sequence: Seq[nodal]) =>
+      sequence.map(conversion(_))
 
 
   enum Issue extends Format.Issue:
@@ -366,7 +373,7 @@ object Html extends Tag.Container
       callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
       fastforward: Int                               = 0,
       doctypes:    Boolean = false )
-    ( using dom: Dom)
+    ( using dom: Dom )
   :   Html raises ParseError =
 
     import lineation.linefeedChars
@@ -429,24 +436,30 @@ object Html extends Tag.Container
 
     @tailrec
     def whitespace(): Unit = cursor.lay(()):
-      case ' ' | '\f' | '\n' | '\r' | '\t' =>  cursor.next() yet whitespace()
-      case '<'                             =>  ()
-      case char                            =>  fail(OnlyWhitespace(char))
+      case ' ' | '\f' | '\n' | '\r' | '\t' => cursor.next() yet whitespace()
+      case '<'                             => ()
+      case char                            => fail(OnlyWhitespace(char))
 
     @tailrec
     def tagname(mark: Mark, dictionary: Dictionary[Tag])(using Cursor.Held): Tag =
       cursor.lay(fail(ExpectedMore)):
         case char if char.isLetter || char.isDigit => dictionary(char.minuscule) match
-          case Dictionary.Empty => cursor.next()
-                                   val name = cursor.grab(mark, cursor.mark)
-                                   cursor.cue(mark) yet fail(InvalidTagStart(name.lower))
-          case other            => next() yet tagname(mark, other)
+          case Dictionary.Empty =>
+            cursor.next()
+            val name = cursor.grab(mark, cursor.mark)
+            cursor.cue(mark) yet fail(InvalidTagStart(name.lower))
+
+          case other =>
+            next() yet tagname(mark, other)
 
         case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => dictionary match
-          case Dictionary.Just("", tag)       =>  tag
-          case Dictionary.Branch(tag: Tag, _) =>  tag
-          case other                          =>  val name = cursor.grab(mark, cursor.mark)
-                                                  cursor.cue(mark) yet fail(InvalidTag(name))
+          case Dictionary.Just("", tag)       => tag
+          case Dictionary.Branch(tag: Tag, _) => tag
+
+          case other =>
+            val name = cursor.grab(mark, cursor.mark)
+            cursor.cue(mark) yet fail(InvalidTag(name))
+
         case '\u0000' =>
           fail(BadInsertion)
 
@@ -455,17 +468,17 @@ object Html extends Tag.Container
 
     @tailrec
     def foreignTag(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case char if char.isLetter                       =>  next() yet foreignTag(mark)
-      case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' =>  cursor.grab(mark, cursor.mark).lower
-      case '\u0000'                                    =>  fail(BadInsertion)
-      case char                                        =>  fail(Unexpected(char))
+      case char if char.isLetter                       => next() yet foreignTag(mark)
+      case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => cursor.grab(mark, cursor.mark).lower
+      case '\u0000'                                    => fail(BadInsertion)
+      case char                                        => fail(Unexpected(char))
 
     @tailrec
     def key(mark: Mark, dictionary: Dictionary[Attribute])(using Cursor.Held): Attribute =
       cursor.lay(fail(ExpectedMore)):
         case char if char.isLetter || char == '-' => dictionary(char.minuscule) match
-          case Dictionary.Empty =>  fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
-          case dictionary       =>  next() yet key(mark, dictionary)
+          case Dictionary.Empty => fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
+          case dictionary       => next() yet key(mark, dictionary)
 
         case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>
           dictionary.element.or:
@@ -478,25 +491,31 @@ object Html extends Tag.Container
 
     @tailrec
     def foreignKey(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case char if char.isLetter || char == '-'        =>  next() yet foreignKey(mark)
-      case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>  cursor.grab(mark, cursor.mark)
-      case '\u0000'                                    =>  fail(BadInsertion)
-      case char                                        =>  fail(Unexpected(char))
+      case char if char.isLetter || char == '-'        => next() yet foreignKey(mark)
+      case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' => cursor.grab(mark, cursor.mark)
+      case '\u0000'                                    => fail(BadInsertion)
+      case char                                        => fail(Unexpected(char))
 
 
     @tailrec
     def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '&'      =>  val start = cursor.mark
-                        next()
-                        val mark2 = entity(cursor.mark).lay(mark): text =>
-                          cursor.clone(mark, start)(buffer)
-                          buffer.append(text)
-                          cursor.mark
-                        value(mark2)
-      case '"'      =>  cursor.clone(mark, cursor.mark)(buffer)
-                        next() yet result()
-      case '\u0000' =>  callback.let(_(cursor.position, Hole.Text)) yet next() yet value(mark)
-      case char     =>  next() yet value(mark)
+      case '\u0000' => callback.let(_(cursor.position, Hole.Text)) yet next() yet value(mark)
+
+      case '"' =>
+        cursor.clone(mark, cursor.mark)(buffer)
+        next() yet result()
+
+      case '&' =>
+        val start = cursor.mark
+        next()
+        val mark2 = entity(cursor.mark).lay(mark): text =>
+          cursor.clone(mark, start)(buffer)
+          buffer.append(text)
+          cursor.mark
+        value(mark2)
+
+      case char =>
+        next() yet value(mark)
 
     @tailrec
     def singleQuoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
@@ -505,16 +524,16 @@ object Html extends Tag.Container
 
     @tailrec
     def unquoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '>' | ' ' | '\f' | '\n' | '\r' | '\t' =>  cursor.grab(mark, cursor.mark)
-      case char@('"' | '\'' | '<' | '=' | '`')   =>  fail(ForbiddenUnquoted(char))
-      case '\u0000'                              =>  fail(BadInsertion)
-      case char                                  =>  next() yet unquoted(mark)
+      case '>' | ' ' | '\f' | '\n' | '\r' | '\t' => cursor.grab(mark, cursor.mark)
+      case char@('"' | '\'' | '<' | '=' | '`')   => fail(ForbiddenUnquoted(char))
+      case '\u0000'                              => fail(BadInsertion)
+      case char                                  => next() yet unquoted(mark)
 
     def equality(): Boolean = skip() yet cursor.lay(fail(ExpectedMore)):
-      case '='                                   =>  next() yet skip() yet true
-      case '>' | ' ' | '\f' | '\n' | '\r' | '\t' =>  false
-      case '\u0000'                              =>  fail(BadInsertion)
-      case char                                  =>  fail(Unexpected(char))
+      case '='                                   => next() yet skip() yet true
+      case '>' | ' ' | '\f' | '\n' | '\r' | '\t' => false
+      case '\u0000'                              => fail(BadInsertion)
+      case char                                  => fail(Unexpected(char))
 
 
     @tailrec
@@ -522,28 +541,33 @@ object Html extends Tag.Container
       ( using Cursor.Held )
     :   Map[Text, Optional[Text]] =
 
-        skip() yet cursor.lay(fail(ExpectedMore)):
-          case '>' | '/' => entries
-          case '\u0000'  => callback.let(_(cursor.position, Hole.Tagbody))
-                            next()
-                            skip()
-                            attributes(tag, foreign, entries.updated(t"\u0000", Unset))
-          case _         =>
-            val key2 = if foreign then foreignKey(cursor.mark) else
-              key(cursor.mark, dom.attributes).tap: key =>
-                if !key.targets(tag) then fail(InvalidAttributeUse(key.label, tag))
-              . label
+      skip() yet cursor.lay(fail(ExpectedMore)):
+        case '>' | '/' => entries
+        case '\u0000'  => callback.let(_(cursor.position, Hole.Tagbody))
+                          next()
+                          skip()
+                          attributes(tag, foreign, entries.updated(t"\u0000", Unset))
+        case _         =>
+          val key2 = if foreign then foreignKey(cursor.mark) else
+            key(cursor.mark, dom.attributes).tap: key =>
+              if !key.targets(tag) then fail(InvalidAttributeUse(key.label, tag))
 
-            if entries.has(key2) then fail(DuplicateAttribute(key2))
+            . label
 
-            val assignment = if !equality() then Unset else cursor.lay(fail(ExpectedMore)):
-              case '\u0000' =>  callback.let(_(cursor.position, Hole.Attribute(tag, key2)))
-                                next() yet t"\u0000"
-              case '"'      =>  next() yet value(cursor.mark)
-              case '\''     =>  next() yet singleQuoted(cursor.mark)
-              case _        =>  unquoted(cursor.mark) // FIXME: Only alphanumeric characters
+          if entries.has(key2) then fail(DuplicateAttribute(key2))
 
-            attributes(tag, foreign, entries.updated(key2, assignment))
+          val assignment = if !equality() then Unset else cursor.lay(fail(ExpectedMore)):
+            case '"'  => next() yet value(cursor.mark)
+            case '\'' => next() yet singleQuoted(cursor.mark)
+
+            case '\u0000' =>
+              callback.let(_(cursor.position, Hole.Attribute(tag, key2)))
+              next() yet t"\u0000"
+
+            case _ =>
+              unquoted(cursor.mark) // FIXME: Only alphanumeric characters
+
+          attributes(tag, foreign, entries.updated(key2, assignment))
 
 
     def entity(mark: Mark)(using Cursor.Held): Optional[Text] = cursor.lay(fail(ExpectedMore)):
@@ -582,13 +606,22 @@ object Html extends Tag.Container
     @tailrec
     def textEntity(mark: Mark, dictionary: Dictionary[Text])(using Cursor.Held): Optional[Text] =
       cursor.lay(fail(ExpectedMore)):
-        case char if char.isLetter | char.isDigit =>  dictionary(char) match
-          case Dictionary.Empty                   =>  Unset
-          case dictionary                         =>  cursor.next() yet textEntity(mark, dictionary)
-        case ';'                                  =>  cursor.next() yet dictionary(';').element
-        case '='                                  =>  Unset
-        case '\u0000'                             =>  fail(BadInsertion)
-        case char                                 =>  dictionary.element
+        case char if char.isLetter | char.isDigit =>
+          dictionary(char) match
+            case Dictionary.Empty => Unset
+            case dictionary       => cursor.next() yet textEntity(mark, dictionary)
+
+        case ';' =>
+          cursor.next() yet dictionary(';').element
+
+        case '=' =>
+          Unset
+
+        case '\u0000' =>
+          fail(BadInsertion)
+
+        case char =>
+          dictionary.element
 
 
     @tailrec
@@ -626,68 +659,71 @@ object Html extends Tag.Container
           cursor.next() yet textual(mark, close, entities)
 
     def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '-'      =>  val end = cursor.mark
-                        next()
-                        cursor.lay(fail(ExpectedMore)):
-                          case '-' => expect('>') yet cursor.grab(mark, end)
-                          case _   => comment(mark)
-      case '\u0000' =>  callback.let(_(cursor.position, Hole.Comment))
-                        next() yet comment(mark)
-      case char     =>  next() yet comment(mark)
+      case '-'      => val end = cursor.mark
+                       next()
+                       cursor.lay(fail(ExpectedMore)):
+                         case '-' => expect('>') yet cursor.grab(mark, end)
+                         case _   => comment(mark)
+      case '\u0000' => callback.let(_(cursor.position, Hole.Comment))
+                       next() yet comment(mark)
+      case char     => next() yet comment(mark)
 
     def cdata(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case ']'      =>  val end = cursor.mark
-                        next()
-                        cursor.lay(fail(ExpectedMore)):
-                          case ']' => expect('>') yet cursor.grab(mark, end)
-                          case _   => cdata(mark)
-      case char     =>  next() yet cdata(mark)
+      case ']'      => val end = cursor.mark
+                       next()
+                       cursor.lay(fail(ExpectedMore)):
+                         case ']' => expect('>') yet cursor.grab(mark, end)
+                         case _   => cdata(mark)
+      case char     => next() yet cdata(mark)
 
     def doctype(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case '>'   => cursor.grab(mark, cursor.mark).also(next())
       case other => next() yet doctype(mark)
 
     def tag(doctypes: Boolean, foreign: Boolean): Token = cursor.lay(fail(ExpectedMore)):
-      case '!'  =>  next()
-                    cursor.lay(fail(ExpectedMore)):
-                      case '-' =>
-                        expect('-')
-                        next()
-                        content = cursor.hold(comment(cursor.mark))
-                        cursor.next()
-                        Token.Comment
+      case '!'  =>
+        next()
+        cursor.lay(fail(ExpectedMore)):
+          case '-' =>
+            expect('-')
+            next()
+            content = cursor.hold(comment(cursor.mark))
+            cursor.next()
+            Token.Comment
 
-                      case '[' =>
-                        expectInsensitive('c')
-                        expectInsensitive('d')
-                        expectInsensitive('a')
-                        expectInsensitive('t')
-                        expectInsensitive('a')
-                        expect('[')
-                        next()
-                        content = cursor.hold(cdata(cursor.mark))
-                        Token.Cdata
+          case '[' =>
+            expectInsensitive('c')
+            expectInsensitive('d')
+            expectInsensitive('a')
+            expectInsensitive('t')
+            expectInsensitive('a')
+            expect('[')
+            next()
+            content = cursor.hold(cdata(cursor.mark))
+            Token.Cdata
 
-                      case 'D' | 'd' if doctypes =>
-                        expectInsensitive('o')
-                        expectInsensitive('c')
-                        expectInsensitive('t')
-                        expectInsensitive('y')
-                        expectInsensitive('p')
-                        expectInsensitive('e')
-                        next()
-                        skip()
-                        content = cursor.hold(doctype(cursor.mark))
-                        skip()
-                        Token.Doctype
+          case 'D' | 'd' if doctypes =>
+            expectInsensitive('o')
+            expectInsensitive('c')
+            expectInsensitive('t')
+            expectInsensitive('y')
+            expectInsensitive('p')
+            expectInsensitive('e')
+            next()
+            skip()
+            content = cursor.hold(doctype(cursor.mark))
+            skip()
+            Token.Doctype
 
-                      case char =>
-                        fail(Unexpected(char))
-      case '/'  =>  next()
-                    content = cursor.hold:
-                      if foreign then foreignTag(cursor.mark)
-                      else tagname(cursor.mark, dom.elements).label
-                    Token.Close
+          case char =>
+            fail(Unexpected(char))
+
+      case '/'  =>
+        next()
+        content = cursor.hold:
+          if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, dom.elements).label
+
+        Token.Close
 
       case '\u0000' => fail(BadInsertion)
       case char =>
@@ -698,10 +734,10 @@ object Html extends Tag.Container
         extra = cursor.hold(attributes(content, foreign))
 
         cursor.lay(fail(ExpectedMore)):
-          case '/'       =>  expect('>') yet cursor.next() yet Token.Empty
-          case '>'       =>  cursor.next() yet Token.Open
-          case '\u0000'  =>  fail(BadInsertion)
-          case char      =>  fail(Unexpected(char))
+          case '/'       => expect('>') yet cursor.next() yet Token.Empty
+          case '>'       => cursor.next() yet Token.Open
+          case '\u0000'  => fail(BadInsertion)
+          case char      => fail(Unexpected(char))
 
     def finish(parent: Tag, count: Int): Node =
       if parent != root then
@@ -728,10 +764,11 @@ object Html extends Tag.Container
         parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
 
       cursor.lay(finish(parent, count)):
-        case '\u0000' => callback.let(_(cursor.position, Hole.Node(parent.label)))
-                         next()
-                         append(TextNode("\u0000"))
-                         read(parent, admissible, map, count + 1)
+        case '\u0000' =>
+          callback.let(_(cursor.position, Hole.Node(parent.label)))
+          next()
+          append(TextNode("\u0000"))
+          read(parent, admissible, map, count + 1)
 
         case '<' if parent.mode != Mode.Raw && parent.mode != Mode.Rcdata =>
           var level: Level = Level.Peer
@@ -804,14 +841,19 @@ object Html extends Tag.Container
                   current = Element(content, map, array(count), parent.foreign)
 
           level match
-            case Level.Ascend  =>  current
-            case Level.Peer    =>  append(current)
-                                   read(parent, admissible, map, count + 1)
-            case Level.Descend =>  push(focus)
-                                   val child = descend(focus, admissible)
-                                   pop()
-                                   append(child)
-                                   read(parent, admissible, map, count + 1)
+            case Level.Ascend =>
+              current
+
+            case Level.Peer =>
+              append(current)
+              read(parent, admissible, map, count + 1)
+
+            case Level.Descend =>
+              push(focus)
+              val child = descend(focus, admissible)
+              pop()
+              append(child)
+              read(parent, admissible, map, count + 1)
 
         case char => parent.mode match
           case Mode.Whitespace =>
@@ -852,7 +894,6 @@ sealed into trait Html extends Topical, Documentary, Formal:
     asInstanceOf[this.type over transport]
 
   def / (tag: Tag): Fragment of tag.Topic in tag.Form = Fragment().of[tag.Topic].in[tag.Form]
-
   def body: Fragment of Topic over Transport in Form
 
 sealed trait Node extends Html
@@ -882,7 +923,7 @@ object Element:
   def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
   :   Element of "#foreign" =
 
-      Element(label, attributes, children.nodes, true).of["#foreign"]
+    Element(label, attributes, children.nodes, true).of["#foreign"]
 
 case class Element
   ( label:      Text,
@@ -890,7 +931,6 @@ case class Element
     children:   IArray[Node],
     foreign:    Boolean )
 extends Node, Topical, Transportive, Dynamic:
-
   override def toString(): String = this.show.s
 
   override def / (tag: Tag): Fragment of tag.Topic in tag.Form =
@@ -939,7 +979,6 @@ extends Node, Topical, Transportive, Dynamic:
   override def hashCode: Int =
     ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
 
-
   transparent inline def selectDynamic(name: Label): Any =
 
     compiletime.summonFrom:
@@ -956,28 +995,28 @@ extends Node, Topical, Transportive, Dynamic:
   inline def updateDynamic[value](name: Label)(value: value)
   :   Element of Topic over Transport in Form =
 
-      compiletime.summonFrom:
-        case attribute: (name.type is Attribute on (? >: Topic) in Form) =>
-          val attributive = infer[value is Attributive to attribute.Topic]
+    compiletime.summonFrom:
+      case attribute: (name.type is Attribute on (? >: Topic) in Form) =>
+        val attributive = infer[value is Attributive to attribute.Topic]
 
-          attributive.attribute(name, value).match
-            case Unset        => Element(label, attributes - name, children, foreign)
-            case (key, value) => Element(label, attributes.updated(key, value), children, foreign)
+        attributive.attribute(name, value).match
+          case Unset        => Element(label, attributes - name, children, foreign)
+          case (key, value) => Element(label, attributes.updated(key, value), children, foreign)
 
-          . of[Topic]
-          . over[Transport]
-          . in[Form]
+        . of[Topic]
+        . over[Transport]
+        . in[Form]
 
-        case attribute: (name.type is Attribute in Form) =>
-          val attributive = infer[value is Attributive to attribute.Topic]
+      case attribute: (name.type is Attribute in Form) =>
+        val attributive = infer[value is Attributive to attribute.Topic]
 
-          attributive.attribute(name, value).match
-            case Unset        => Element(label, attributes - name, children, foreign)
-            case (key, value) => Element(label, attributes.updated(key, value), children, foreign)
+        attributive.attribute(name, value).match
+          case Unset        => Element(label, attributes - name, children, foreign)
+          case (key, value) => Element(label, attributes.updated(key, value), children, foreign)
 
-          . of[Topic]
-          . over[Transport]
-          . in[Form]
+        . of[Topic]
+        . over[Transport]
+        . in[Form]
 
 object Fragment:
   @targetName("make")
@@ -999,7 +1038,6 @@ case class Fragment(nodes: Node*) extends Html:
   def body: Fragment of Topic over Transport in Form = this
 
 case class Doctype(text: Text) extends Node:
-
   override def equals(that: Any): Boolean = that match
     case Doctype(text0)           => text0 == text
     case Fragment(Doctype(text0)) => text0 == text

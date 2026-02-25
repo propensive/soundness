@@ -61,6 +61,7 @@ package executives:
     type Interface = Cli
     type Return = Execution
 
+
     def invocation
       ( arguments:        Iterable[Text],
         environment:      Environment,
@@ -72,11 +73,12 @@ package executives:
       ( using interpreter: Interpreter )
     :   Cli =
 
-        arguments match
-          case t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position0) :: tty
-               :: t"--"
-               :: command
-               :: rest =>
+      arguments match
+        case
+          t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position0) :: tty
+          :: t"--"
+          :: command
+          :: rest =>
 
             val shell = shellName match
               case t"zsh"  => Shell.Zsh
@@ -115,46 +117,46 @@ package executives:
                 tab,
                 login )
 
-          case t"{admin}" :: command :: Nil =>
-            given Stdio = stdio
-            command match
-              case t"pid"     => Out.println(OsProcess().pid.value.show) yet Exit.Ok
-              case t"kill"    => java.lang.System.exit(0) yet Exit.Ok
+        case t"{admin}" :: command :: Nil =>
+          given Stdio = stdio
+          command match
+            case t"pid"     => Out.println(OsProcess().pid.value.show) yet Exit.Ok
+            case t"kill"    => java.lang.System.exit(0) yet Exit.Ok
 
-              case t"await"   =>
-                Cli.prepare()
-                safely(Cli.await()).or(Nil).map(Out.println(_))
-                Exit.Ok
+            case t"await"   =>
+              Cli.prepare()
+              safely(Cli.await()).or(Nil).map(Out.println(_))
+              Exit.Ok
 
-              case t"install" =>
-                given Entrypoint = entrypoint
-                given WorkingDirectory = workingDirectory
-                import errorDiagnostics.stackTraces
-                import logging.silent
-                Out.println(Completions.ensure(force = true).join(t"\n"))
-                Exit.Ok
+            case t"install" =>
+              given Entrypoint = entrypoint
+              given WorkingDirectory = workingDirectory
+              import errorDiagnostics.stackTraces
+              import logging.silent
+              Out.println(Completions.ensure(force = true).join(t"\n"))
+              Exit.Ok
 
-              case _       =>
-                Exit.Fail(1)
+            case _       =>
+              Exit.Fail(1)
 
-            Invocation
-              ( Cli.arguments(arguments),
-                environment,
-                workingDirectory,
-                stdio,
-                signals,
-                false,
-                login )
+          Invocation
+            ( Cli.arguments(arguments),
+              environment,
+              workingDirectory,
+              stdio,
+              signals,
+              false,
+              login )
 
-          case other =>
-            Invocation
-              ( Cli.arguments(arguments),
-                environment,
-                workingDirectory,
-                stdio,
-                signals,
-                true,
-                login )
+        case other =>
+          Invocation
+            ( Cli.arguments(arguments),
+              environment,
+              workingDirectory,
+              stdio,
+              signals,
+              true,
+              login )
 
 
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match

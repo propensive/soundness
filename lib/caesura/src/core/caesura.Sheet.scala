@@ -51,25 +51,6 @@ import scala.compiletime.*
 
 import java.util as ju
 
-case class Sheet
-  ( rows:    Stream[Dsv],
-    format:  Optional[DsvFormat]    = Unset,
-    columns: Optional[IArray[Text]] = Unset ):
-
-  def as[value: Decodable in Dsv]: Stream[value] tracks CellRef = rows.map(_.as[value])
-
-  override def hashCode: Int =
-    (rows.hashCode*31 + format.hashCode)*31 + columns.lay(-1): array =>
-      ju.Arrays.hashCode(array.mutable(using Unsafe))
-
-  override def equals(that: Any): Boolean = that.asMatchable match
-    case dsv: Sheet =>
-      dsv.rows == rows && dsv.format == format && columns.lay(dsv.columns == Unset): columns =>
-        dsv.columns.lay(false)(columns.sameElements(_))
-
-    case _ =>
-      false
-
 object Sheet:
   private enum State:
     case Fresh, Quoted, DoubleQuoted
@@ -78,22 +59,23 @@ object Sheet:
   given abstractable: (CharEncoder, DsvFormat)
   =>  Sheet is Abstractable across HttpStreams to HttpStreams.Content =
 
-      new Abstractable:
-        type Self = Sheet
-        type Domain = HttpStreams
-        type Result = HttpStreams.Content
+    new Abstractable:
+      type Self = Sheet
+      type Domain = HttpStreams
+      type Result = HttpStreams.Content
 
-        def genericize(dsv: Sheet): HttpStreams.Content =
-          val mediaType: Text =
-            dsv.format.let(_.delimiter) match
-              case '\t' => t"text/tab-separated-values"
-              case _    => t"text/csv"
+      def genericize(dsv: Sheet): HttpStreams.Content =
+        val mediaType: Text =
+          dsv.format.let(_.delimiter) match
+            case '\t' => t"text/tab-separated-values"
+            case _    => t"text/csv"
 
-          (mediaType, dsv.stream[Text].map(_.data))
+        (mediaType, dsv.stream[Text].map(_.data))
 
 
   given tabular: Sheet is Tabular[Text]:
     type Element = Dsv
+
     def rows(value: Sheet) = value.rows
 
     def table(dsv: Sheet): Scaffold[Dsv, Text] =
@@ -105,10 +87,9 @@ object Sheet:
         . or(Nil)
 
       Scaffold[Dsv]
-        ( (columns.map: name =>
-            Column[Dsv, Text, Text](name, sizing = columnar.Collapsible(0.5))
-              ( _[Text](name).or(t"")))* )
-
+        ( ( columns.map: name =>
+              Column[Dsv, Text, Text](name, sizing = columnar.Collapsible(0.5))
+                ( _[Text](name).or(t"") ) )* )
 
   given aggregable: (format: DsvFormat) => Tactic[DsvError] => Sheet is Aggregable by Text = text =>
     val rows = recur(text)
@@ -129,62 +110,81 @@ object Sheet:
     ( using format: DsvFormat, tactic: Tactic[DsvError] )
   :   Stream[Dsv] =
 
-      inline def putCell(): Array[Text] =
-        val cells2 = if cells.length <= column then cells :+ builder() else
-          cells(column) = builder()
-          cells
+    inline def putCell(): Array[Text] =
+      val cells2 = if cells.length <= column then cells :+ builder() else
+        cells(column) = builder()
+        cells
 
-        cells2.also(builder.clear())
+      cells2.also(builder.clear())
 
-      inline def advance() =
-        val cells = putCell()
-        recur(content, index + 1, column + 1, cells, builder, State.Fresh, headings)
+    inline def advance() =
+      val cells = putCell()
+      recur(content, index + 1, column + 1, cells, builder, State.Fresh, headings)
 
-      inline def next(char: Char): Stream[Dsv] =
-        builder.put(char) yet recur(content, index + 1, column, cells, builder, state, headings)
+    inline def next(char: Char): Stream[Dsv] =
+      builder.put(char) yet recur(content, index + 1, column, cells, builder, state, headings)
 
-      inline def quote(): Stream[Dsv] = state match
-        case State.Fresh =>
-          if !builder.empty then raise(DsvError(format, DsvError.Reason.MisplacedQuote))
-          recur(content, index + 1, column, cells, builder, State.Quoted, headings)
+    inline def quote(): Stream[Dsv] = state match
+      case State.Fresh =>
+        if !builder.empty then raise(DsvError(format, DsvError.Reason.MisplacedQuote))
+        recur(content, index + 1, column, cells, builder, State.Quoted, headings)
 
-        case State.Quoted =>
-          recur(content, index + 1, column, cells, builder, State.DoubleQuoted, headings)
+      case State.Quoted =>
+        recur(content, index + 1, column, cells, builder, State.DoubleQuoted, headings)
 
-        case State.DoubleQuoted =>
-          builder.put(format.Quote)
-          recur(content, index + 1, column, cells, builder, State.Quoted, headings)
+      case State.DoubleQuoted =>
+        builder.put(format.Quote)
+        recur(content, index + 1, column, cells, builder, State.Quoted, headings)
 
-      inline def fresh(): Array[Text] = new Array[Text](cells.length)
+    inline def fresh(): Array[Text] = new Array[Text](cells.length)
 
-      inline def putDsv(): Stream[Dsv] =
-        val cells = putCell()
+    inline def putDsv(): Stream[Dsv] =
+      val cells = putCell()
 
-        if format.header && headings.absent then
-          val map: Map[Text, Int] = cells.to(List).zipWithIndex.to(Map)
-          recur(content, index + 1, 0, fresh(), builder, State.Fresh, map)
-        else
-          (column + 1).until(cells.length).each: index =>
-            cells(index) = t""
+      if format.header && headings.absent then
+        val map: Map[Text, Int] = cells.to(List).zipWithIndex.to(Map)
+        recur(content, index + 1, 0, fresh(), builder, State.Fresh, map)
+      else
+        (column + 1).until(cells.length).each: index =>
+          cells(index) = t""
 
-          val row = Dsv(unsafely(cells.immutable), headings)
-          row #:: recur(content, index + 1, 0, fresh(), builder, State.Fresh, headings)
+        val row = Dsv(unsafely(cells.immutable), headings)
+        row #:: recur(content, index + 1, 0, fresh(), builder, State.Fresh, headings)
 
-      content.flow(if column == 0 && builder.empty then Stream() else putDsv()):
-        if !head.has(index) then recur(tail, Prim, column, cells, builder, state, headings) else
-          head.s.charAt(index.n0) match
-            case format.Delimiter =>
-              if state != State.Quoted then advance() else next(format.Delimiter)
+    content.flow(if column == 0 && builder.empty then Stream() else putDsv()):
+      if !head.has(index) then recur(tail, Prim, column, cells, builder, state, headings) else
+        head.s.charAt(index.n0) match
+          case format.Delimiter =>
+            if state != State.Quoted then advance() else next(format.Delimiter)
 
-            case format.Quote =>
-              quote()
+          case format.Quote =>
+            quote()
 
-            case '\n' | '\r' =>
-              if column == 0 && builder.empty
-              then recur(content, index + 1, 0, cells, builder, State.Fresh, headings)
-              else if state != State.Quoted then putDsv()
-              else next(head.s.charAt(index.n0))
+          case '\n' | '\r' =>
+            if column == 0 && builder.empty
+            then recur(content, index + 1, 0, cells, builder, State.Fresh, headings)
+            else if state != State.Quoted then putDsv()
+            else next(head.s.charAt(index.n0))
 
-            case char =>
-              builder.put(char)
-              recur(content, index + 1, column, cells, builder, state, headings)
+          case char =>
+            builder.put(char)
+            recur(content, index + 1, column, cells, builder, state, headings)
+
+case class Sheet
+  ( rows:    Stream[Dsv],
+    format:  Optional[DsvFormat]    = Unset,
+    columns: Optional[IArray[Text]] = Unset ):
+
+  def as[value: Decodable in Dsv]: Stream[value] tracks CellRef = rows.map(_.as[value])
+
+  override def hashCode: Int =
+    (rows.hashCode*31 + format.hashCode)*31 + columns.lay(-1): array =>
+      ju.Arrays.hashCode(array.mutable(using Unsafe))
+
+  override def equals(that: Any): Boolean = that.asMatchable match
+    case dsv: Sheet =>
+      dsv.rows == rows && dsv.format == format && columns.lay(dsv.columns == Unset): columns =>
+        dsv.columns.lay(false)(columns.sameElements(_))
+
+    case _ =>
+      false

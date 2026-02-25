@@ -34,5 +34,5 @@ package hyperbole
 
 import soundness.*
 
-object Tests extends Suite(m"Hyperbole Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit = ()

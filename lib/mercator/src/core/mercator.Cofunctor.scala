@@ -36,4 +36,5 @@ trait Cofunctor[cofunctor[-_]]:
   extension [value](value: cofunctor[value])
     def contramap[value2](lambda: value2 => value): cofunctor[value2] = apply(value)(lambda)
 
+
   def apply[value, value2](value: cofunctor[value])(lambda: value2 => value): cofunctor[value2]

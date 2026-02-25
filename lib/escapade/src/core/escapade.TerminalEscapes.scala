@@ -48,7 +48,6 @@ object escapes:
     val Magenta = Escape(t"[35m", t"[39m")
     val Cyan = Escape(t"[36m", t"[39m")
     val White = Escape(t"[37m", t"[39m")
-
     val BrightBlack = Escape(t"[90m", t"[39m")
     val BrightRed = Escape(t"[91m", t"[39m")
     val BrightGreen = Escape(t"[92m", t"[39m")
@@ -67,7 +66,6 @@ object escapes:
     val Magenta = Escape(t"[45m", t"[49m")
     val Cyan = Escape(t"[46m", t"[49m")
     val White = Escape(t"[47m", t"[49m")
-
     val BrightBlack = Escape(t"[100m", t"[49m")
     val BrightRed = Escape(t"[101m", t"[49m")
     val BrightGreen = Escape(t"[102m", t"[49m")

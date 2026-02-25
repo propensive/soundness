@@ -54,7 +54,6 @@ object CodlSchema:
     def unique = schema.arity.unique
     def schema: CodlSchema = getSchema()
     def tuple: (Text, CodlSchema) = key -> schema
-
     override def toString(): String = t"$key[${schema.toString}]".s
 
   // FIXME
@@ -87,7 +86,7 @@ extends Dynamic:
     case count => count
 
   private lazy val firstVariadic: Optional[Int] = subschemas.indexWhere(_.schema.variadic) match
-    case -1  => Unset
+    case -1    => Unset
     case index => index
 
   lazy val paramCount: Int = firstVariadic.lay(fieldCount) { f => (f + 1).min(fieldCount) }
@@ -117,14 +116,14 @@ extends CodlSchema(IArray.from(structSubschemas), structArity):
   import CodlSchema.Entry
 
   def optional: Struct = Struct(structSubschemas, Arity.AtMostOne)
+
   def uniqueIndex: Optional[Int] = subschemas.indexWhere(_.schema.arity == Arity.Unique) match
-    case -1  => Unset
+    case -1    => Unset
     case index => index
 
   lazy val params: IArray[Entry] =
     def recur(subschemas: List[Entry], fields: List[Entry]): IArray[Entry] = subschemas match
-      case Entry(key, struct: Struct) :: _ =>
-        recur(Nil, fields)
+      case Entry(key, struct: Struct) :: _ => recur(Nil, fields)
 
       case Entry(key, field: Field) :: _ if field.variadic =>
         recur(Nil, Entry(key, field) :: fields)

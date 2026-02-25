@@ -42,16 +42,17 @@ object Commensurable:
   inline given numeric: [operand <: Long | Int | Double | Char | Byte | Short | Float]
   =>  Boolean is Commensurable:
 
-      type Contrast = operand
+    type Contrast = operand
 
-      inline def compare
-        ( inline left:        Boolean,
-          inline right:       operand,
-          inline strict:      Boolean,
-          inline greaterThan: Boolean )
-      :   Boolean =
 
-          ${Hypotenuse2.commensurable('left, 'right, 'strict, 'greaterThan)}
+    inline def compare
+      ( inline left:        Boolean,
+        inline right:       operand,
+        inline strict:      Boolean,
+        inline greaterThan: Boolean )
+    :   Boolean =
+
+      ${protointernal.commensurable('left, 'right, 'strict, 'greaterThan)}
 
 
   given bytes: Bytes is Orderable:
@@ -62,8 +63,7 @@ object Commensurable:
         inline greater: Boolean )
     :   Boolean =
 
-        !strict && left.long == right.long || (left.long < right.long) ^ greater
-
+      !strict && left.long == right.long || (left.long < right.long) ^ greater
 
   inline given ordinal: Ordinal is Orderable:
     inline def compare
@@ -73,8 +73,8 @@ object Commensurable:
         inline greater: Boolean )
     :   Boolean =
 
-        inline if greater then inline if strict then left.gt(right) else left.ge(right)
-        else inline if strict then left.lt(right) else left.le(right)
+      inline if greater then inline if strict then left.gt(right) else left.ge(right)
+      else inline if strict then left.lt(right) else left.le(right)
 
   given orderable: [value: Ordering] => value is Orderable:
     inline def compare
@@ -84,10 +84,10 @@ object Commensurable:
         inline greater: Boolean )
     :   Boolean =
 
-        val n = value.compare(left, right)
-        inline if greater
-        then inline if strict then n > 0 else n >= 0
-        else inline if strict then n < 0 else n <= 0
+      val n = value.compare(left, right)
+      inline if greater
+      then inline if strict then n > 0 else n >= 0
+      else inline if strict then n < 0 else n <= 0
 
 
 trait Commensurable extends Typeclass, Contrastive:

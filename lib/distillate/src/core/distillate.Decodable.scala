@@ -82,6 +82,7 @@ object Decodable extends Decodable2:
 
   given char: Char is Decodable in Text = _.s(0)
 
+
   given enumeration: [enumeration <: reflect.Enum: {Enumerable, Identifiable as identifiable}]
   =>  Tactic[VariantError]
   =>  enumeration is Decodable in Text = value =>

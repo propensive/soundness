@@ -46,11 +46,13 @@ import zephyrine.*
 object ContentLength:
   given framable: Tactic[FrameError] => Text is Framable by ContentLength = input =>
     val cursor = Cursor(input)
-    def fail(): Nothing = abort(FrameError())
 
+    def fail(): Nothing = abort(FrameError())
     def skip(): Unit = while cursor.next() && cursor.datum(using Unsafe) == ' ' do ()
+
     def key(mark: Mark)(using Cursor.Held): Optional[Text] = cursor.lay(fail()):
-      case Cr  => if mark != cursor.mark then fail() else
+      case Cr =>
+        if mark != cursor.mark then fail() else
         cursor.consume(fail())("\n")
         cursor.next()
         Unset
@@ -62,10 +64,13 @@ object ContentLength:
         if cursor.next() then key(mark) else abort(FrameError())
 
     def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail()):
-      case '\r' => cursor.grab(mark, cursor.mark).also:
-        cursor.consume(fail())("\n")
-        cursor.next()
-      case char => if cursor.next() then value(mark) else fail()
+      case '\r' =>
+        cursor.grab(mark, cursor.mark).also:
+          cursor.consume(fail())("\n")
+          cursor.next()
+
+      case char =>
+        if cursor.next() then value(mark) else fail()
 
     def frame(length: Int): Optional[Text] =
       if cursor.finished then Unset else cursor.hold(key(cursor.mark).let(_.lower)) match

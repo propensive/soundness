@@ -59,12 +59,13 @@ object Scalac:
   case class Option[-version <: Versions](flags: Text*)
 
   private var Scala3: dtd.Compiler = new dtd.Compiler()
+
   def refresh(): Unit = synchronized { Scala3 = new dtd.Compiler() }
   def compiler(): dtd.Compiler = Scala3
 
 case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[version]]):
-
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
+
 
   def apply
     ( classpath: LocalClasspath )
@@ -73,75 +74,79 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
     ( using System, Monitor, Codicil )
   :   CompileProcess logs CompileEvent raises CompilerError =
 
-      val scalacProcess: CompileProcess = CompileProcess()
+    val scalacProcess: CompileProcess = CompileProcess()
 
-      object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
-        def doReport(diagnostic: Diagnostic)(using dtdc.Contexts.Context): Unit =
-          Log.fine(CompileEvent.Notice(diagnostic.toString.tt))
-          scalacProcess.put(Notice(diagnostic))
+    object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
+      def doReport(diagnostic: Diagnostic)(using dtdc.Contexts.Context): Unit =
+        Log.fine(CompileEvent.Notice(diagnostic.toString.tt))
+        scalacProcess.put(Notice(diagnostic))
 
-      val callbackApi = new dtdi.CompilerCallback {}
+    val callbackApi = new dtdi.CompilerCallback {}
 
-      object ProgressApi extends dtdsi.ProgressCallback:
-        private var last: Int = -1
-        override def informUnitStarting(stage: String | Null, unit: dtd.CompilationUnit | Null)
-        :   Unit =
-          ()
+    object ProgressApi extends dtdsi.ProgressCallback:
+      private var last: Int = -1
 
-        override def progress
-          ( current:      Int,
-            total:        Int,
-            currentStage: String | Null,
-            nextStage:    String | Null )
-        :   Boolean =
 
-          val int = (100.0*current/total).toInt
+      override def informUnitStarting(stage: String | Null, unit: dtd.CompilationUnit | Null)
+      :   Unit =
 
-          if int > last then
-            last = int
-            scalacProcess.put
-              ( CompileProgress
-                ( last/100.0, if currentStage == null then t"null" else currentStage.tt) )
+        ()
 
-          scalacProcess.continue
 
-      object driver extends dtd.Driver:
-        val currentContext =
-          val context = initCtx.fresh
-          //val pluginParams = plugins
-          //val jsParams =
-          val arguments: List[Text] =
-            List(t"-d", out.generic, t"-classpath", classpath())
-            ::: commandLineArguments
-            ::: List(t"")
+      override def progress
+        ( current:      Int,
+          total:        Int,
+          currentStage: String | Null,
+          nextStage:    String | Null )
+      :   Boolean =
 
-          Log.info(CompileEvent.Running(arguments))
-          setup(arguments.map(_.s).to(Array), context).map(_(1)).get
+        val int = (100.0*current/total).toInt
 
-        def run(): CompileProcess =
-          given dtdc.Contexts.Context = currentContext.fresh.pipe: context =>
-            context
-            . setReporter(reporter)
-            . setCompilerCallback(callbackApi)
-            . setProgressCallback(ProgressApi)
+        if int > last then
+          last = int
+          scalacProcess.put
+            ( CompileProgress
+              ( last/100.0, if currentStage == null then t"null" else currentStage.tt ) )
 
-          val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
-            dtdu.SourceFile.virtual(name.s, content.s)
+        scalacProcess.continue
 
-          scalacProcess.put:
-            task(t"scalac"):
-              try
-                Scalac.compiler().newRun.tap: run =>
-                  run.compileSources(sourceFiles)
-                  if !reporter.hasErrors then finish(Scalac.Scala3, run)
+    object driver extends dtd.Driver:
+      val currentContext =
+        val context = initCtx.fresh
+        //val pluginParams = plugins
+        //val jsParams =
+        val arguments: List[Text] =
+          List(t"-d", out.generic, t"-classpath", classpath())
+          ::: commandLineArguments
+          ::: List(t"")
 
-                scalacProcess.put
-                  ( if reporter.hasErrors then CompileResult.Failure else CompileResult.Success )
+        Log.info(CompileEvent.Running(arguments))
+        setup(arguments.map(_.s).to(Array), context).map(_(1)).get
 
-              catch case suc.NonFatal(error) =>
-                scalacProcess.put(CompileResult.Crash(error.stackTrace))
-                Scalac.refresh()
+      def run(): CompileProcess =
+        given dtdc.Contexts.Context = currentContext.fresh.pipe: context =>
+          context
+          . setReporter(reporter)
+          . setCompilerCallback(callbackApi)
+          . setProgressCallback(ProgressApi)
 
-          scalacProcess
+        val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
+          dtdu.SourceFile.virtual(name.s, content.s)
 
-      driver.run()
+        scalacProcess.put:
+          task(t"scalac"):
+            try
+              Scalac.compiler().newRun.tap: run =>
+                run.compileSources(sourceFiles)
+                if !reporter.hasErrors then finish(Scalac.Scala3, run)
+
+              scalacProcess.put
+                ( if reporter.hasErrors then CompileResult.Failure else CompileResult.Success )
+
+            catch case suc.NonFatal(error) =>
+              scalacProcess.put(CompileResult.Crash(error.stackTrace))
+              Scalac.refresh()
+
+        scalacProcess
+
+    driver.run()

@@ -52,9 +52,11 @@ import alphabets.base64.standard
 
 object Websocket:
   val magic: Text = t"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+
   enum Opcode:
-    case Continuation, Text, Binary, Reserved0, Reserved1, Reserved2, Reserved3, Reserved4, Close,
-         Ping, Pong
+    case
+      Continuation, Text, Binary, Reserved0, Reserved1, Reserved2, Reserved3, Reserved4, Close,
+      Ping, Pong
 
   given servable: [ResultType] => Websocket[ResultType] is Servable:
     def serve(websocket: Websocket[ResultType]): Http.Response =
@@ -83,7 +85,7 @@ class Websocket[ResultType](request: Http.Request, handle: Stream[Frame] => Resu
   val task: Task[ResultType] = async(handle(events()))
 
   def unmask(bytes: Data, mask: Data): Data = Data.fill(bytes.length): index =>
-    ( bytes(index)^mask(index%4)).toByte
+    (bytes(index)^mask(index%4)).toByte
 
   def events(): Stream[Frame] =
     lazy val conduit: Conduit = Conduit(request.body())
@@ -104,21 +106,22 @@ class Websocket[ResultType](request: Http.Request, handle: Stream[Frame] => Resu
 
       import Websocket.Opcode.*
       opcode match
-        case Continuation =>
-          Frame.Continuation(fin, payload) #:: recur()
-        case Text         =>
-          Frame.Text(fin, payload) #:: recur()
-        case Binary       =>
-          Frame.Binary(fin, payload) #:: recur()
-        case Ping         =>
+        case Continuation => Frame.Continuation(fin, payload) #:: recur()
+        case Text         => Frame.Text(fin, payload) #:: recur()
+        case Binary       => Frame.Binary(fin, payload) #:: recur()
+
+        case Ping =>
           spool.put(Frame.Pong(payload))
           recur()
-        case Pong         =>
+
+        case Pong =>
           recur()
-        case Close        =>
+
+        case Close =>
           spool.put(Frame.Close(1000))
           spool.stop()
           Stream()
+
         case Reserved0 | Reserved1 | Reserved2 | Reserved3 | Reserved4 =>
           Stream()
 

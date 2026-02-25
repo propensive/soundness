@@ -35,11 +35,11 @@ package dissonance
 import denominative.*
 import proscenium.*
 
-case class Evolution[element](sequence: List[Evolution.Atom[element]]):
-  def apply(version: Ordinal): List[element] =
-    sequence.filter(_.has(version)).map(_.value)
-
 object Evolution:
   case class Atom[element](value: element, presence: Set[Ordinal]):
     def add(n: Ordinal): Atom[element] = copy(presence = presence + n)
     def has(n: Ordinal): Boolean = presence.contains(n)
+
+case class Evolution[element](sequence: List[Evolution.Atom[element]]):
+  def apply(version: Ordinal): List[element] =
+    sequence.filter(_.has(version)).map(_.value)

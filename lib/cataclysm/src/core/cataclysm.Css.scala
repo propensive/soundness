@@ -40,4 +40,4 @@ object Css extends Dynamic:
   def applyDynamic(method: "apply")(): CssStyle = CssStyle()
 
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): CssStyle =
-    ${Cataclysm.read('properties)}
+    ${internal.read('properties)}

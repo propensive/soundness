@@ -37,7 +37,6 @@ import prepositional.*
 import vacuous.*
 
 trait Discriminable extends Typeclass, Formal, Operable:
-
   def rewrite(kind: Text, value: Form): Form
   def discriminate(value: Form): Optional[Text]
   def variant(value: Form): Form

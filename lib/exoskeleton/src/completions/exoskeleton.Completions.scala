@@ -73,13 +73,13 @@ object Completions:
   enum Installation:
     case CommandNotOnPath(script: Text)
     case Shells
-          (zsh:  Installation.InstallResult,
-           bash: Installation.InstallResult,
-           fish: Installation.InstallResult)
+      ( zsh:  Installation.InstallResult,
+        bash: Installation.InstallResult,
+        fish: Installation.InstallResult )
 
     def paths: List[Text] =
       this match
-        case CommandNotOnPath(_) => Nil
+        case CommandNotOnPath(_)     => Nil
         case Shells(zsh, bash, fish) => List(zsh, bash, fish).map(_.pathname).compact
 
   object Installation:
@@ -114,65 +114,69 @@ object Completions:
         case Installed(_, path)        => path
         case AlreadyInstalled(_, path) => path
 
+
   def ensure(force: Boolean = false)(using Entrypoint, WorkingDirectory, Diagnostics)
   :   List[Text] logs CliEvent =
 
-      safely(effectful(install(force))).let(_.paths).or(Nil)
+    safely(effectful(install(force))).let(_.paths).or(Nil)
 
 
   def install(force: Boolean = false)(using entrypoint: Entrypoint)(using erased Effectful)
     ( using WorkingDirectory, Diagnostics )
   :   Installation raises InstallError logs CliEvent =
 
-      mitigate:
-        case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
-        case NameError(_, _, _) => InstallError(InstallError.Reason.Environment)
-        case ExecError(_, _, _) => InstallError(InstallError.Reason.Environment)
-      . within:
-          val scriptPath = sh"sh -c 'command -v ${entrypoint.script}'".exec[Text]()
-          val command: Text = entrypoint.script
+    mitigate:
+      case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
+      case NameError(_, _, _) => InstallError(InstallError.Reason.Environment)
+      case ExecError(_, _, _) => InstallError(InstallError.Reason.Environment)
 
-          if !force && safely(scriptPath.decode[Path on Linux]) != entrypoint.executable
-          then Installation.CommandNotOnPath(entrypoint.script)
-          else
-            val zsh: Installation.InstallResult =
-              if sh"sh -c 'command -v zsh'".exec[Exit]() != Exit.Ok
-              then Installation.InstallResult.ShellNotInstalled(Shell.Zsh)
-              else
-                val dirNamesCmd = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'"
-                val dirNames = dirNamesCmd.exec[Text]().cut(t",").to(List)
+    . within:
+        val scriptPath = sh"sh -c 'command -v ${entrypoint.script}'".exec[Text]()
+        val command: Text = entrypoint.script
 
-                val dirs =
-                  dirNames.filter(_.trim != t"").map: dir =>
-                    safely(dir.decode[Path on Linux])
-                  . compact
+        if !force && safely(scriptPath.decode[Path on Linux]) != entrypoint.executable
+        then Installation.CommandNotOnPath(entrypoint.script)
+        else
+          val zsh: Installation.InstallResult =
+            if sh"sh -c 'command -v zsh'".exec[Exit]() != Exit.Ok
+            then Installation.InstallResult.ShellNotInstalled(Shell.Zsh)
+            else
+              val dirNamesCmd = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'"
+              val dirNames = dirNamesCmd.exec[Text]().cut(t",").to(List)
 
-                install(Shell.Zsh, command, Name[Linux](t"_$command"), dirs)
+              val dirs =
+                dirNames.filter(_.trim != t"").map: dir =>
+                  safely(dir.decode[Path on Linux])
 
-            val bash: Installation.InstallResult =
-              if sh"sh -c 'command -v bash'".exec[Exit]() != Exit.Ok
-              then Installation.InstallResult.ShellNotInstalled(Shell.Bash)
-              else
-                install
-                  ( Shell.Bash,
-                    command,
-                    Name[Linux](command),
-                    List
-                      ( Xdg.dataDirs[Path on Linux].last/"bash-completion"/"completions",
-                        Xdg.dataHome[Path on Linux]/"bash-completion"/"completions") )
+                . compact
 
-            val fish: Installation.InstallResult =
-              if sh"sh -c 'command -v fish'".exec[Exit]() != Exit.Ok
-              then Installation.InstallResult.ShellNotInstalled(Shell.Fish)
-              else install
-                    (Shell.Fish,
-                     command,
-                     Name[Linux](t"$command.fish"),
-                     List
-                      (Xdg.dataDirs[Path on Linux].last/"fish"/"vendor_completions.d",
-                       Xdg.configHome[Path on Linux]/"fish"/"completions"))
+              install(Shell.Zsh, command, Name[Linux](t"_$command"), dirs)
 
-            Installation.Shells(zsh, bash, fish)
+          val bash: Installation.InstallResult =
+            if sh"sh -c 'command -v bash'".exec[Exit]() != Exit.Ok
+            then Installation.InstallResult.ShellNotInstalled(Shell.Bash)
+            else
+              install
+                ( Shell.Bash,
+                  command,
+                  Name[Linux](command),
+                  List
+                    ( Xdg.dataDirs[Path on Linux].last/"bash-completion"/"completions",
+                      Xdg.dataHome[Path on Linux]/"bash-completion"/"completions" ) )
+
+          val fish: Installation.InstallResult =
+            if sh"sh -c 'command -v fish'".exec[Exit]() != Exit.Ok
+            then Installation.InstallResult.ShellNotInstalled(Shell.Fish)
+            else
+              install
+                ( Shell.Fish,
+                  command,
+                  Name[Linux](t"$command.fish"),
+                  List
+                    ( Xdg.dataDirs[Path on Linux].last/"fish"/"vendor_completions.d",
+                      Xdg.configHome[Path on Linux]/"fish"/"completions" ) )
+
+          Installation.Shells(zsh, bash, fish)
 
 
   def install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on Linux])
@@ -197,6 +201,7 @@ object Completions:
             Installation.InstallResult.Installed(shell, path.encode)
 
         . or(Installation.InstallResult.NoWritableLocation(shell))
+
 
   def script(shell: Shell, command: Text): Text = shell match
     case Shell.Zsh =>

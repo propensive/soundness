@@ -68,15 +68,18 @@ extends Cli:
 
   val flags: scm.HashMap[Flag, Discoverable] = scm.HashMap()
   val seenFlags: scm.HashSet[Flag] = scm.HashSet()
+
   var explanation: Optional[Text] = Unset
   var cursorSuggestions: List[Suggestion] = Nil
+
   def proceed: Boolean = true
+
 
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   :   Optional[operand] =
 
-      given cli: Cli = this
-      interpreter.read(parameters, flag)
+    given cli: Cli = this
+    interpreter.read(parameters, flag)
 
 
   def focused(argument: Argument): Boolean =
@@ -106,6 +109,7 @@ extends Cli:
   override def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit =
     explanation = update(using explanation)
 
+
   override def suggest
     ( argument: Argument,
       update:   (prior: List[Suggestion]) ?=> List[Suggestion],
@@ -116,6 +120,7 @@ extends Cli:
       cursorSuggestions = update(using cursorSuggestions).map: suggestion =>
         if suggestion.expanded then suggestion
         else suggestion.copy(core = prefix+suggestion.core+suffix, expanded = true)
+
 
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
     (flags.keySet.to(Set) -- seenFlags.to(Set)).to(List).flatMap: flag =>
@@ -130,10 +135,11 @@ extends Cli:
                     flag.description,
                     aliases = aliases.map(Flag.serialize(_)) ) )
 
-          case Nil => Nil
+          case Nil =>
+            Nil
 
       else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases =
-          flag.aliases.map(Flag.serialize(_))))
+        flag.aliases.map(Flag.serialize(_))))
 
   def focusText: Text = arguments.find(_.position == currentArgument).get.value
 
@@ -142,7 +148,6 @@ extends Cli:
       if cursorSuggestions.nil
       then flagSuggestions(focusText.starts(t"--"))
       else cursorSuggestions
-
 
     val items = interpreter.focus(parameters).lay(items0) { focus => items0.map(focus.wrap(_)) }
 

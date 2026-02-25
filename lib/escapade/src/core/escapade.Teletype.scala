@@ -52,6 +52,7 @@ object Teletype:
   given add: NotGiven[Teletype is Textual] => Teletype is Addable:
     type Operand = Teletype
     type Result = Teletype
+
     inline def add(left: Teletype, right: Teletype): Teletype = left.append(right)
 
   given out: Stdio => Out.type is Writable by Teletype = new Writable:
@@ -66,10 +67,11 @@ object Teletype:
     type Operand = Teletype
 
     def write(target: Self, stream: Stream[Teletype]): Unit =
-        stream.flow(())(Err.print(head) yet write(target, tail))
+      stream.flow(())(Err.print(head) yet write(target, tail))
 
   given textual: Teletype is Textual:
     type Show[value] = value is Teletypeable
+
     def classTag: ClassTag[Teletype] = summon[ClassTag[Teletype]]
     def size(text: Teletype): Int = text.plain.s.length
     def text(teletype: Teletype): Text = teletype.plain
@@ -89,8 +91,10 @@ object Teletype:
       text.dropChars(interval.start.n0).takeChars(interval.size)
 
     val empty: Teletype = Teletype.empty
+
     def concat(left: Teletype, right: Teletype): Teletype = left.append(right)
     def unsafeChar(text: Teletype, index: Ordinal): Char = text.plain.s.charAt(index.n0)
+
     def indexOf(text: Teletype, sub: Text, start: Ordinal): Optional[Ordinal] =
       text.plain.s.indexOf(sub.s, start.n0).puncture(-1).let(_.z)
 
@@ -98,11 +102,13 @@ object Teletype:
     def builder(size: Optional[Int] = Unset): TeletypeBuilder = TeletypeBuilder(size)
 
   val empty: Teletype = Teletype(t"")
+
   given joinable: Teletype is Joinable = _.fold(empty)(_ + _)
   given printable: Teletype is Printable = _.render(_)
 
   given cuttable: Teletype is Cuttable by Text = (text, delimiter, limit) =>
     import java.util.regex.*
+
     val pattern = Pattern.compile(t"(.*)${Pattern.quote(delimiter.s).nn}(.*)".s).nn
 
     @tailrec
@@ -143,8 +149,7 @@ case class Teletype
     Teletype(plain+text.plain, spans ++ newSpans)
 
   def dropChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
-    case Rtl =>
-      takeChars(plain.length - n)
+    case Rtl => takeChars(plain.length - n)
 
     case Ltr =>
       val newSpans: TreeMap[CharSpan, Ansi.Transform] =
@@ -158,8 +163,7 @@ case class Teletype
       Teletype(plain.skip(n), newSpans)
 
   def takeChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
-    case Rtl =>
-      dropChars(plain.length - n)
+    case Rtl => dropChars(plain.length - n)
 
     case Ltr =>
       val newSpans: TreeMap[CharSpan, Ansi.Transform] =
@@ -185,39 +189,39 @@ case class Teletype
         insertions: TreeMap[Int, Text]                = TreeMap() )
     :   Text =
 
-        inline def addSpan(): Text =
-          val newInsertions = addText(position, spans.head(0).start, insertions)
-          val newStyle = spans.head(1)(style)
-          style.addChanges(buffer, newStyle, termcap.color)
-          val newStack = if spans.head(0).nil then stack else (spans.head(0) -> style) :: stack
-          recur(spans.tail, spans.head(0).start, newStyle, newStack, newInsertions)
+      inline def addSpan(): Text =
+        val newInsertions = addText(position, spans.head(0).start, insertions)
+        val newStyle = spans.head(1)(style)
+        style.addChanges(buffer, newStyle, termcap.color)
+        val newStack = if spans.head(0).nil then stack else (spans.head(0) -> style) :: stack
+        recur(spans.tail, spans.head(0).start, newStyle, newStack, newInsertions)
 
-        @tailrec
-        def addText(from: Int, to: Int, insertions: TreeMap[Int, Text]): TreeMap[Int, Text] =
-          if insertions.nil then
-            buffer.add(plain.segment(from.max(0).z thru to.max(0).u))
-            insertions
-          else if insertions.head(0) < to then
-            buffer.add(plain.segment(position.z thru insertions.head(0).u))
-            buffer.add(insertions.head(1))
-            addText(insertions.head(0), to, insertions.tail)
-          else
-            buffer.add(plain.segment(from.z thru to.u))
-            insertions
-
-        if stack.nil then
-          if spans.nil then
-            val remaining = addText(position, plain.length, insertions)
-            remaining.values.each(buffer.add(_))
-            buffer.text
-          else addSpan()
+      @tailrec
+      def addText(from: Int, to: Int, insertions: TreeMap[Int, Text]): TreeMap[Int, Text] =
+        if insertions.nil then
+          buffer.add(plain.segment(from.max(0).z thru to.max(0).u))
+          insertions
+        else if insertions.head(0) < to then
+          buffer.add(plain.segment(position.z thru insertions.head(0).u))
+          buffer.add(insertions.head(1))
+          addText(insertions.head(0), to, insertions.tail)
         else
-          if spans.nil || stack.head(0).end <= spans.head(0).start then
-            val newInsertions = addText(position, stack.head(0).end, insertions)
-            val newStyle = stack.head(1)
-            style.addChanges(buffer, newStyle, termcap.color)
-            recur(spans, stack.head(0).end, newStyle, stack.tail, newInsertions)
-          else addSpan()
+          buffer.add(plain.segment(from.z thru to.u))
+          insertions
+
+      if stack.nil then
+        if spans.nil then
+          val remaining = addText(position, plain.length, insertions)
+          remaining.values.each(buffer.add(_))
+          buffer.text
+        else addSpan()
+      else
+        if spans.nil || stack.head(0).end <= spans.head(0).start then
+          val newInsertions = addText(position, stack.head(0).end, insertions)
+          val newStyle = stack.head(1)
+          style.addChanges(buffer, newStyle, termcap.color)
+          recur(spans, stack.head(0).end, newStyle, stack.tail, newInsertions)
+        else addSpan()
 
 
     if termcap.ansi then recur(spans, insertions = insertions) else plain

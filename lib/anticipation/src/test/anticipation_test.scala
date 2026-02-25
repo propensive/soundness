@@ -34,6 +34,6 @@ package anticipation
 
 import soundness.*
 
-object Tests extends Suite(m"Anticipation Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
     ()

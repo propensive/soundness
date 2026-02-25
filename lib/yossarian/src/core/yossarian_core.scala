@@ -32,4 +32,4 @@
                                                                                                   */
 package yossarian
 
-export Yossarian.{Style, Screen}
+export internal.{Style, Screen}

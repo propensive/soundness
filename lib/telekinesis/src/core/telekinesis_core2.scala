@@ -51,19 +51,19 @@ class Orchestrate[value: Encodable in Query, result](initial: Optional[value] = 
     ( using request: Http.Request )
   :   result raises QueryError =
 
-      request.method match
-        case Http.Post =>
-          val result: Optional[value] = safely(decodable.decoded(request.query))
-          val validation = if result.absent then validate(using request.query) else Validation()
+    request.method match
+      case Http.Post =>
+        val result: Optional[value] = safely(decodable.decoded(request.query))
+        val validation = if result.absent then validate(using request.query) else Validation()
 
-          process(elicit[value](request.query, validation, _))(result)
+        process(elicit[value](request.query, validation, _))(result)
 
-        case _         =>
-          process(elicit[value](initial.let(_.encode).or(Query.empty), Validation(), _))(Unset)
+      case _ =>
+        process(elicit[value](initial.let(_.encode).or(Query.empty), Validation(), _))(Unset)
 
 
 def orchestrate[value: Encodable in Query](initial: Optional[value] = Unset)[result]
   ( render: (form: Text => Html of Flow) ?=> (value: Optional[value]) => result )
 :   Orchestrate[value, result] =
 
-    new Orchestrate[value, result](initial)(render(using _))
+  new Orchestrate[value, result](initial)(render(using _))

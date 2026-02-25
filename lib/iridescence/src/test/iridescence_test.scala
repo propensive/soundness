@@ -53,41 +53,41 @@ object Tests extends Suite(m"Iridescence tests"):
       for color <- webColors.all.reverse do
         test(m"sRGB to L*a*b*"):
           color.srgb.cielab.srgb
-        .assert(_ === color.srgb)
+        . assert(_ === color.srgb)
 
         test(m"HSV to sRGB and back"):
           color.srgb.hsv.srgb.hsv
-        .assert(_ === color.srgb.hsv)
+        . assert(_ === color.srgb.hsv)
 
         test(m"sRGB to CMY and back"):
           color.srgb.cmy.srgb
-        .assert(_ === color.srgb)
+        . assert(_ === color.srgb)
 
         test(m"sRGB to CMYK and back"):
           color.srgb.cmyk.srgb
-        .assert(_ === color.srgb)
+        . assert(_ === color.srgb)
 
         test(m"sRGB to XYZ and back"):
           color.srgb.xyz.srgb
-        .assert(_ === color.srgb)
+        . assert(_ === color.srgb)
 
         test(m"sRGB to HSL and back"):
           color.srgb.hsl.srgb
-        .assert(_ === color.srgb)
+        . assert(_ === color.srgb)
 
     suite(m"Interpolator tests"):
       test(m"Read a hex value with a leading hash"):
         rgb"#abcdef"
-      .assert(_ == Rgb24(171, 205, 239))
+      . assert(_ == Rgb24(171, 205, 239))
 
       test(m"Read a hex value without a leading hash"):
         rgb"abcdef"
-      .assert(_ == Rgb24(171, 205, 239))
+      . assert(_ == Rgb24(171, 205, 239))
 
       test(m"Read black"):
         rgb"#000000"
-      .assert(_ == Rgb24(0, 0, 0))
+      . assert(_ == Rgb24(0, 0, 0))
 
       test(m"Read white"):
         rgb"#ffffff"
-      .assert(_ == Rgb24(255, 255, 255))
+      . assert(_ == Rgb24(255, 255, 255))

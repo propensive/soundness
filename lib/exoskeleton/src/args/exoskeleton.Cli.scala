@@ -51,10 +51,9 @@ object Cli:
     trigger = Promise()
 
   def done(): Unit = trigger.offer(())
-
   def log(input: Text): Unit = messages ::= input
-
   def await(): List[Text] = safely(trigger.await(10000L)) yet messages.reverse
+
 
   def arguments
     ( textArguments: Iterable[Text],
@@ -63,8 +62,8 @@ object Cli:
       tab:           Optional[Ordinal] = Unset )
   :   List[Argument] =
 
-      textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
-        Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
+    textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
+      Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
 
 
 trait Cli extends Console:
@@ -73,7 +72,6 @@ trait Cli extends Console:
   def workingDirectory: WorkingDirectory
   def proceed: Boolean
   def login: Login
-
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   :   Optional[operand]
 
@@ -81,9 +79,11 @@ trait Cli extends Console:
   def present(flag: Flag): Unit = ()
   def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit = ()
 
+
   def suggest
     ( argument: Argument,
       update:   (prior: List[Suggestion]) ?=> List[Suggestion],
       prefix:   Text,
       suffix:   Text ) =
+
     ()

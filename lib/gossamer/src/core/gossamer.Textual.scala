@@ -40,31 +40,14 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-trait Textual extends Typeclass, Concatenable, Countable, Segmentable, Zeroic:
-  type Operand = Self
-  type Show[value]
-
-  def show[value](value: value)(using show: Show[value]): Self
-  def apply(text: Text): Self
-  def apply(char: Char): Self
-  def classTag: ClassTag[Self]
-  def length(text: Self): Int
-  def text(text: Self): Text
-  def map(text: Self)(lambda: Char => Char): Self
-  def empty: Self
-  def concat(left: Self, right: Self): Self
-  def unsafeChar(text: Self, index: Ordinal): Char
-  def indexOf(text: Self, sub: Text, start: Ordinal = Prim): Optional[Ordinal]
-  def builder(size: Optional[Int] = Unset): Builder[Self]
-  def segment(text: Self, interval: Interval): Self
-  inline def zero: Self = empty
-
 object Textual:
   def apply[textual: Textual](text: Text): textual = textual(text)
 
   given text: Text is Textual:
     type Show[value] = value is spectacular.Showable
+
     val classTag: ClassTag[Text] = summon[ClassTag[Text]]
+
     def show[value](value: value)(using show: Show[value]): Text = show.text(value)
     def apply(char: Char): Text = char.toString.tt
     def text(text: Text): Text = text
@@ -88,3 +71,22 @@ object Textual:
 
     def builder(size: Optional[Int]): Builder[Text] = TextBuilder(size)
     def size(text: Self): Int = text.length
+
+trait Textual extends Typeclass, Concatenable, Countable, Segmentable, Zeroic:
+  type Operand = Self
+  type Show[value]
+
+  def show[value](value: value)(using show: Show[value]): Self
+  def apply(text: Text): Self
+  def apply(char: Char): Self
+  def classTag: ClassTag[Self]
+  def length(text: Self): Int
+  def text(text: Self): Text
+  def map(text: Self)(lambda: Char => Char): Self
+  def empty: Self
+  def concat(left: Self, right: Self): Self
+  def unsafeChar(text: Self, index: Ordinal): Char
+  def indexOf(text: Self, sub: Text, start: Ordinal = Prim): Optional[Ordinal]
+  def builder(size: Optional[Int] = Unset): Builder[Self]
+  def segment(text: Self, interval: Interval): Self
+  inline def zero: Self = empty

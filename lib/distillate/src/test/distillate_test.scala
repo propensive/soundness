@@ -34,28 +34,27 @@ package distillate
 
 import soundness.*
 
-object Tests extends Suite(m"Distillate Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
     test(m"Extract an int"):
       t"123" match
         case As[Int](n) => n
-        case _ => 0
+        case _          => 0
     . assert(_ == 123)
 
     test(m"Extract three ints from inside a regex"):
       t"12:13:14" match
         case r"${As[Int](first)}(\d+):${As[Int](second)}(\d+):${As[Int](third)}(\d+)" =>
           List(first, second, third)
+
         case _ =>
           List(0, 0, 0)
     . assert(_ == List(12, 13, 14))
 
     test(m"Extract three listed ints"):
       List(t"12", t"13", t"14") match
-        case As[Int](first) :: As[Int](second) :: As[Int](third) :: Nil =>
-          (first, second, third)
-        case _ =>
-          (0, 0, 0)
+        case As[Int](first) :: As[Int](second) :: As[Int](third) :: Nil => (first, second, third)
+        case _                                                          => (0, 0, 0)
     . assert(_ == (12, 13, 14))
 
     test(m"Extract an email address"):

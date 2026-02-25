@@ -50,41 +50,52 @@ object Digestible extends Derivable[Digestible]:
 
   inline def split[derivation: SumReflection]: derivation is Digestible =
     (digestion, value) =>
-      variant(value):
-        [variant <: derivation] => variant =>
-          int.digest(digestion, index)
-          context.digest(digestion, variant)
+      variant(value): [variant <: derivation] => variant =>
+        int.digest(digestion, index)
+        context.digest(digestion, variant)
 
 
-  given optional: [digestible: Digestible] => util.NotGiven[Unset.type <:< digestible]
-  =>  Optional[digestible] is Digestible =
+  given optional: [value] => (digestible: => value is Digestible)
+  =>  util.NotGiven[Unset.type <:< value]
+  =>  Optional[value] is Digestible =
 
-      (acc, value) => value.let(digestible.digest(acc, _))
-
-
-  given list: [list <: List, value: Digestible] => list[value] is Digestible =
-    (digestion, list) => list.each(value.digest(digestion, _))
-
-  given set: [set <: Set, value: Digestible] => set[value] is Digestible =
-    (digestion, set) => set.each(value.digest(digestion, _))
-
-  given trie: [trie <: Trie, value: Digestible] => trie[value] is Digestible =
-    (digestion, trie) => trie.each(value.digest(digestion, _))
-
-  given iarray: [value: Digestible] => IArray[value] is Digestible =
-    (digestion, iarray) => iarray.each(value.digest(digestion, _))
+    (acc, value) => value.let(digestible.digest(acc, _))
 
 
-  given map: [digestible: Digestible, digestible2: Digestible]
-  =>  Map[digestible, digestible2] is Digestible =
+  given list: [list <: List, value] => (digestible: => value is Digestible)
+  =>  list[value] is Digestible =
 
-      (digestion, map) => map.each: (key, value) =>
-        digestible.digest(digestion, key)
-        digestible2.digest(digestion, value)
+    (digestion, list) => list.each(digestible.digest(digestion, _))
 
 
-  given stream: [value: Digestible] => Stream[value] is Digestible =
-    (digestion, iterable) => iterable.each(value.digest(digestion, _))
+  given set: [set <: Set, value] => (digestible: => value is Digestible)
+  =>  set[value] is Digestible =
+
+    (digestion, set) => set.each(digestible.digest(digestion, _))
+
+
+  given trie: [trie <: Trie, value] => (digestible: => value is Digestible)
+  =>  trie[value] is Digestible =
+
+    (digestion, trie) => trie.each(digestible.digest(digestion, _))
+
+
+  given iarray: [value] => (digestible: => value is Digestible) => IArray[value] is Digestible =
+    (digestion, iarray) => iarray.each(digestible.digest(digestion, _))
+
+
+  given map: [key, value] => (keyDigestible: => key is Digestible)
+  =>  ( valueDigestible: => value is Digestible )
+  =>  Map[key, value] is Digestible =
+
+    (digestion, map) =>
+      map.each: (key, value) =>
+        keyDigestible.digest(digestion, key)
+        valueDigestible.digest(digestion, value)
+
+
+  given stream: [value] => (digestible: => value is Digestible) => Stream[value] is Digestible =
+    (digestion, iterable) => iterable.each(digestible.digest(digestion, _))
 
   given int: Int is Digestible = (digestion, value) =>
     digestion.append((24 to 0 by -8).map(value >> _).map(_.toByte).toArray.immutable(using Unsafe))

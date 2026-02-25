@@ -35,7 +35,7 @@ package fulminate
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(m"Fulminate Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
     test(m"Whitespace in strings embedded into text should be quoted"):
       m"This (${t" "}) should be quoted".text

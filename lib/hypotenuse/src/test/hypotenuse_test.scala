@@ -34,7 +34,7 @@ package hypotenuse
 
 import soundness.*
 
-object Tests extends Suite(m"Hypotenuse tests"):
+object Tests extends Suite(m"internal tests"):
   def run(): Unit =
     suite(m"Addition tests"):
       test(m"Construct an unsigned integer"):
@@ -43,19 +43,19 @@ object Tests extends Suite(m"Hypotenuse tests"):
     suite(m"Bitmap tests"):
       test(m"Check first bit of 10"):
         B64(Data(0, 0, 0, 0, 0, 0, 0, 10)).bit(Prim)
-      .assert(_ == false)
+      . assert(_ == false)
 
       test(m"Check second bit of 6"):
         B64(Data(0, 0, 0, 0, 0, 0, 0, 6)).bit(Sec)
-      .assert(_ == true)
+      . assert(_ == true)
 
       test(m"Check third bit of 6"):
         B64(Data(0, 0, 0, 0, 0, 0, 0, 6)).bit(Ter)
-      .assert(_ == true)
+      . assert(_ == true)
 
       test(m"Check fourth bit of 6"):
         B64(Data(0, 0, 0, 0, 0, 0, 0, 6)).bit(Quat)
-      .assert(_ == false)
+      . assert(_ == false)
 
       test(m"Check first two bits of 6")(B64(Data(0, 0, 0, 0, 0, 0, 0, 6))(Prim thru Sec)).assert(_ == B64(2))
       test(m"Check first three bits of 6")(B64(Data(0, 0, 0, 0, 0, 0, 0, 6))(Prim thru Ter)).assert(_ == B64(6))
@@ -111,115 +111,115 @@ object Tests extends Suite(m"Hypotenuse tests"):
     suite(m"Inequality tests"):
       test(m"1.2 < x < 1.4"):
         List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 < _ < 1.4)
-      .assert(_ == List(1.3))
+      . assert(_ == List(1.3))
 
       test(m"1.2 < x <= 1.4"):
         List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 < _ <= 1.4)
-      .assert(_ == List(1.3, 1.4))
+      . assert(_ == List(1.3, 1.4))
 
       test(m"1.2 <= x < 1.4"):
         List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 <= _ < 1.4)
-      .assert(_ == List(1.2, 1.3))
+      . assert(_ == List(1.2, 1.3))
 
       test(m"1.2 <= x <= 1.4"):
         List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 <= _ <= 1.4)
-      .assert(_ == List(1.2, 1.3, 1.4))
+      . assert(_ == List(1.2, 1.3, 1.4))
 
       test(m"2 < x < 4"):
         List(1, 2, 3, 4, 5).filter(2 < _ < 4)
-      .assert(_ == List(3))
+      . assert(_ == List(3))
 
       test(m"2 < x <= 4"):
         List(1, 2, 3, 4, 5).filter(2 < _ <= 4)
-      .assert(_ == List(3, 4))
+      . assert(_ == List(3, 4))
 
       test(m"2 <= x < 4"):
         List(1, 2, 3, 4, 5).filter(2 <= _ < 4)
-      .assert(_ == List(2, 3))
+      . assert(_ == List(2, 3))
 
       test(m"2 <= x <= 4"):
         List(1, 2, 3, 4, 5).filter(2 <= _ <= 4)
-      .assert(_ == List(2, 3, 4))
+      . assert(_ == List(2, 3, 4))
 
       test(m"2L < x < 4L"):
         List(1L, 2L, 3L, 4L, 5L).filter(2L < _ < 4L)
-      .assert(_ == List(3L))
+      . assert(_ == List(3L))
 
       test(m"2L < x <= 4L"):
         List(1L, 2L, 3L, 4L, 5L).filter(2L < _ <= 4L)
-      .assert(_ == List(3L, 4L))
+      . assert(_ == List(3L, 4L))
 
       test(m"2L <= x < 4L"):
         List(1L, 2L, 3L, 4L, 5L).filter(2L <= _ < 4L)
-      .assert(_ == List(2L, 3L))
+      . assert(_ == List(2L, 3L))
 
       test(m"2L <= x <= 4L"):
         List(1L, 2L, 3L, 4L, 5L).filter(2L <= _ <= 4L)
-      .assert(_ == List(2L, 3L, 4L))
+      . assert(_ == List(2L, 3L, 4L))
 
       test(m"2F < x < 4F"):
         List(1F, 2F, 3F, 4F, 5F).filter(2F < _ < 4F)
-      .assert(_ == List(3F))
+      . assert(_ == List(3F))
 
       test(m"2F < x <= 4F"):
         List(1F, 2F, 3F, 4F, 5F).filter(2F < _ <= 4F)
-      .assert(_ == List(3F, 4F))
+      . assert(_ == List(3F, 4F))
 
       test(m"2F <= x < 4F"):
         List(1F, 2F, 3F, 4F, 5F).filter(2F <= _ < 4F)
-      .assert(_ == List(2F, 3F))
+      . assert(_ == List(2F, 3F))
 
       test(m"2F <= x <= 4F"):
         List(1F, 2F, 3F, 4F, 5F).filter(2F <= _ <= 4F)
-      .assert(_ == List(2F, 3F, 4F))
+      . assert(_ == List(2F, 3F, 4F))
 
       test(m"'2' < x < '4'"):
         List('1', '2', '3', '4', '5').filter('2' < _ < '4')
-      .assert(_ == List('3'))
+      . assert(_ == List('3'))
 
       test(m"'2' < x <= '4'"):
         List('1', '2', '3', '4', '5').filter('2' < _ <= '4')
-      .assert(_ == List('3', '4'))
+      . assert(_ == List('3', '4'))
 
       test(m"'2' <= x < '4'"):
         List('1', '2', '3', '4', '5').filter('2' <= _ < '4')
-      .assert(_ == List('2', '3'))
+      . assert(_ == List('2', '3'))
 
       test(m"'2' <= x <= '4'"):
         List('1', '2', '3', '4', '5').filter('2' <= _ <= '4')
-      .assert(_ == List('2', '3', '4'))
+      . assert(_ == List('2', '3', '4'))
 
       test(m"2.toByte < x < 4.toByte"):
         List(1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte).filter(2.toByte < _ < 4.toByte)
-      .assert(_ == List(3.toByte))
+      . assert(_ == List(3.toByte))
 
       test(m"2.toByte < x <= 4.toByte"):
         List(1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte).filter(2.toByte < _ <= 4.toByte)
-      .assert(_ == List(3.toByte, 4.toByte))
+      . assert(_ == List(3.toByte, 4.toByte))
 
       test(m"2.toByte <= x < 4.toByte"):
         List(1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte).filter(2.toByte <= _ < 4.toByte)
-      .assert(_ == List(2.toByte, 3.toByte))
+      . assert(_ == List(2.toByte, 3.toByte))
 
       test(m"2.toByte <= x <= 4.toByte"):
         List(1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte).filter(2.toByte <= _ <= 4.toByte)
-      .assert(_ == List(2.toByte, 3.toByte, 4.toByte))
+      . assert(_ == List(2.toByte, 3.toByte, 4.toByte))
 
       test(m"2.toShort < x < 4.toShort"):
         List(1.toShort, 2.toShort, 3.toShort, 4.toShort, 5.toShort).filter(2.toShort < _ < 4.toShort)
-      .assert(_ == List(3.toShort))
+      . assert(_ == List(3.toShort))
 
       test(m"2.toShort < x <= 4.toShort"):
         List(1.toShort, 2.toShort, 3.toShort, 4.toShort, 5.toShort).filter(2.toShort < _ <= 4.toShort)
-      .assert(_ == List(3.toShort, 4.toShort))
+      . assert(_ == List(3.toShort, 4.toShort))
 
       test(m"2.toShort <= x < 4.toShort"):
         List(1.toShort, 2.toShort, 3.toShort, 4.toShort, 5.toShort).filter(2.toShort <= _ < 4.toShort)
-      .assert(_ == List(2.toShort, 3.toShort))
+      . assert(_ == List(2.toShort, 3.toShort))
 
       test(m"2.toShort <= x <= 4.toShort"):
         List(1.toShort, 2.toShort, 3.toShort, 4.toShort, 5.toShort).filter(2.toShort <= _ <= 4.toShort)
-      .assert(_ == List(2.toShort, 3.toShort, 4.toShort))
+      . assert(_ == List(2.toShort, 3.toShort, 4.toShort))
 
 
 

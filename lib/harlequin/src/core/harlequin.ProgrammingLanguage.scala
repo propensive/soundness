@@ -41,7 +41,7 @@ sealed trait ProgrammingLanguage:
   type Context
 
   def preprocess(text: Text, context: Optional[Context]): Text = text
-  def postprocess(code: SourceCode, context: Optional[Context] ): SourceCode = code
+  def postprocess(code: SourceCode, context: Optional[Context]): SourceCode = code
 
   def highlight(text: Text, context: Optional[Context] = Unset): SourceCode =
     postprocess(SourceCode(this, preprocess(text, context)), context)

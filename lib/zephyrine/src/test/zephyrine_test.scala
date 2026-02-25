@@ -39,7 +39,7 @@ import randomization.unseeded
 import supervisors.global
 import codicils.panic
 
-object Tests extends Suite(m"Zephyrine tests"):
+object Tests extends Suite(m"internal tests"):
   val bytes = Data.fill(1000)(_.toByte)
   def run(): Unit = stochastic:
     for i <- 1 to 10 do

@@ -52,17 +52,17 @@ def elicit[value: Formulaic]
   ( using formulation: Formulation )
 :   Html of Flow =
 
-    formulation.form
-      ( value.fields(Pointer.Self, t"", query.or(Query.empty), validation, formulation), submit )
+  formulation.form
+    ( value.fields(Pointer.Self, t"", query.or(Query.empty), validation, formulation), submit )
 
 
 extension [formulaic: {Formulaic, Encodable in Query}](value: formulaic)
   def edit(validation: Validation, submit: Optional[Text])(using formulation: Formulation)
   :   Html of Flow =
 
-      formulation.form
-        ( formulaic.fields(Pointer.Self, t"", formulaic.encoded(value), validation, formulation),
-          submit )
+    formulation.form
+      ( formulaic.fields(Pointer.Self, t"", formulaic.encoded(value), validation, formulation),
+        submit )
 
 
 package formulations:
@@ -72,16 +72,18 @@ package formulations:
         ( action = t".", method = t"post" )
         ( Fragment(content*), Input.Submit(value = submit.or(t"Submit")) )
 
+
     def element
       ( widget:     Html of Phrasing,
         legend:     Text,
         validation: Optional[Message],
         required:   Boolean )
     :   Html of Flow =
-        given alertClass: (Stylesheet of "alert" | "required") = Stylesheet()
-        Div(P.alert(validation.let(_.html)), Label(legend, widget), Span.required(t"*"))
 
-        // Div
-        //  (validation.let(_.html).let(P.alert(_)),
-        //   Label(legend, widget),
-        //   Span.required(t"*").unless(!required))
+      given alertClass: (Stylesheet of "alert" | "required") = Stylesheet()
+      Div(P.alert(validation.let(_.html)), Label(legend, widget), Span.required(t"*"))
+
+      // Div
+      //  (validation.let(_.html).let(P.alert(_)),
+      //   Label(legend, widget),
+      //   Span.required(t"*").unless(!required))

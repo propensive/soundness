@@ -41,7 +41,6 @@ import urticose.*
 import vacuous.*
 
 object Attributive:
-
   given textTextual: Text is Attributive to Whatwg.Textual = (key, value) => (key, value)
   given stringTextual: String is Attributive to Whatwg.Textual = (key, value) => (key, value.tt)
 
@@ -64,7 +63,6 @@ object Attributive:
     (key, value) => (key, value.generic)
 
   given url: HttpUrl is Attributive to Whatwg.Url = (key, value) => (key, value.show)
-
   given style: Text is Attributive to Whatwg.Css = (key, value) => (key, value)
 
   given cssClassList: List[Text] is Attributive to Whatwg.CssClassList =

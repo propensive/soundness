@@ -87,8 +87,8 @@ package communication:
     if char.printable then s"$name [$char]".tt else name
 
 extension (inline context: StringContext)
-  transparent inline def enc(): Encoding = ${Hieroglyph.encoding('context)}
-  transparent inline def ucs(): Char | Text = ${Hieroglyph.char('context)}
+  transparent inline def enc(): Encoding = ${hieroglyph.internal.encoding('context)}
+  transparent inline def ucs(): Char | Text = ${hieroglyph.internal.char('context)}
 
 package textMetrics:
   given uniform: Char is Measurable = _ => 1

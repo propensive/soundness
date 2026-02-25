@@ -146,15 +146,17 @@ object JsonAst extends Format:
     inline final val CloseBrace:   125 = 125 // '}'
 
   opaque type RawJson =
-      Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean
-      | Null | Unset.type
+    Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean
+    | Null | Unset.type
+
 
   def apply
-    ( value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any]
-               | Boolean | Null | Unset.type)
+    ( value
+      : Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean
+        | Null | Unset.type )
   :   JsonAst =
 
-      value
+    value
 
 
   given Tactic[ParseError] => JsonAst is Aggregable by Data = source =>
@@ -163,6 +165,7 @@ object JsonAst extends Format:
 
   def parse(source: Data): JsonAst raises ParseError =
     val stream: Stream[Data] = Stream(source)
+
     var line: Int = 0
     var colStart: Int = 0
 
@@ -294,11 +297,14 @@ object JsonAst extends Format:
                       continue = false
                     case ch  => error(Issue.UnexpectedChar(ch.toChar))
                 case ch => error(Issue.ExpectedColon(ch.toChar))
+
             case CloseBrace =>
               if !keys.nil then error(Issue.ExpectedSomeValue('}'))
               next()
               continue = false
-            case ch => error(Issue.ExpectedString(ch.toChar))
+
+            case ch =>
+              error(Issue.ExpectedString(ch.toChar))
 
         val result = (keys.toArray, values.toArray).asInstanceOf[(IArray[String], IArray[Any])]
 
@@ -316,6 +322,7 @@ object JsonAst extends Format:
             case CloseBracket =>
               if !arrayItems.nil then error(Issue.ExpectedSomeValue(']'))
               continue = false
+
             case ch =>
               val value = parseValue()
               skip()
@@ -479,10 +486,11 @@ object JsonAst extends Format:
                 string.append('e')
                 next()
 
-              case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 | Minus
-                   | Plus =>
-                string.append(ch.toChar)
-                next()
+              case
+                Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 | Minus | Plus
+                =>
+                  string.append(ch.toChar)
+                  next()
 
               case _ =>
                 continue = false
@@ -538,7 +546,6 @@ object JsonAst extends Format:
                 do
                   mantissa = mantissa*10 + (ch & 15)
                   ch = getNext()
-
 
               case UpperE | LowerE =>
                 if decimalPosition != 0 then scale = decimalPosition - cur + 1
@@ -657,11 +664,15 @@ object JsonAst extends Format:
       while cur < block.length
       do
         (current: @switch) match
-          case Newline              =>
+          case Newline =>
             colStart = cur
             line += 1
-          case Tab | Return | Space => ()
-          case other                => error(Issue.SpuriousContent(other.toChar))
+
+          case Tab | Return | Space =>
+            ()
+
+          case other =>
+            error(Issue.SpuriousContent(other.toChar))
 
         next()
 

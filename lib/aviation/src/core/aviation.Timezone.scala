@@ -43,9 +43,6 @@ import rudiments.*
 import java.util as ju
 import java.time as jt
 
-case class Timezone private(name: Text):
-  def stdlib: jt.ZoneId = jt.ZoneId.of(name.s).nn
-
 object Timezone:
   private val ids: Set[Text] = ju.TimeZone.getAvailableIDs.nn.map(_.nn).map(Text(_)).to(Set)
 
@@ -62,3 +59,6 @@ object Timezone:
       catch case error: TimezoneError =>
         import errorDiagnostics.empty
         throw InterpolationError(error.message)
+
+case class Timezone private(name: Text):
+  def stdlib: jt.ZoneId = jt.ZoneId.of(name.s).nn

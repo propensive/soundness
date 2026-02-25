@@ -4,7 +4,7 @@
 
 # Ambience
 
-__Safely access environment variables and system properties__
+**Safely access environment variables and system properties**
 
 There are two common methods of passing textual key/value data into a JVM when
 it starts: environment variables and system properties. Environment variables
@@ -24,23 +24,19 @@ structured types as early as possible. This is the role of Ambience.
 - concise syntax with idiomatic renaming of environment variables
 - complete flexibility to use substitute environments
 
-
 ## Availability
-
-
-
-
-
-
 
 ## Getting Started
 
 All Ambience terms and types are in the `ambience` package,
+
 ```scala
 import ambience.*
-````
+```
+
 but are exported to the `soundness` package, which is useful when using
 Ambience with other Soundness libraries:
+
 ```scala
 import soundness.*
 ```
@@ -51,6 +47,7 @@ All other entities are imported explicitly.
 
 An environment variable, such as `XDG_DATA_DIRS`, can be accessed by applying
 it as a `Text` value, to the `Environment` object, like so:
+
 ```scala
 import gossamer.t
 import environments.jvm
@@ -70,9 +67,11 @@ would be written `moduleDataHome` in Scala would be written `MODULE_DATA_HOME`
 as an environment variable. Ambience can perform this translation
 automatically, just by accessing the variable name as a dynamic member of the
 `Environment` object, for example,
+
 ```scala
 val dirs = Environment.moduleDataHome
 ```
+
 will access the environment variable `MODULE_DATA_HOME`.
 
 If the variable is not defined in the environment, an `EnvironmentError` will
@@ -83,31 +82,33 @@ It might be reasonably presumed that in the examples above, string values (as
 _known_ in which case, the variable will be parsed into a more appropriate
 representation.
 
-For a variable to be _known_, a contextual `EnvironmentVariable` instance,
+For a variable to be _known_, a contextual `Variable` instance,
 parameterized on the singleton type of the environment variable's name (in its
 camel-case variant) and a result type, must be in scope. For example,
 `Environment.columns` (referring to the `COLUMNS` environment variable) will
 return an `Int` thanks to the presence of an
-`EnvironmentVariable["columns", Int]` typeclass instance, which is provided by
+`Variable["columns", Int]` typeclass instance, which is provided by
 Ambience since `COLUMNS` is a standard POSIX environment variable name.
 
 However, the `moduleDataHome` example above will default to returning a `Text`
-value, since no `EnvironmentVariable` instance for the `"moduleDataHome"`
+value, since no `Variable` instance for the `"moduleDataHome"`
 singleton literal type is provided by Ambience.
 
-We can, of course, provide one. The `EnvironmentVariable` trait defines two methods:
+We can, of course, provide one. The `Variable` trait defines two methods:
+
 - `read`, which takes a `Text` value and returns a parsed value, and
 - `name`, which allows custom renamings from "Scala style" names to a
   particular environment variable, with a default implementation that can be
   overridden
 
 Here is an example implementation for a process ID:
+
 ```scala
 import anticipation.Text
 import rudiments.Pid
 import spectacular.decodeAs
 
-given EnvironmentVariable["child", Pid] with
+given Variable["child", Pid] with
   def read(value: Text): Pid = Pid(value.decodeAs[Int])
   override def name: Text = t"CHILD_PID"
 ```
@@ -145,6 +146,7 @@ variable is not specified. It is distinct from the empty string.
 
 For example, given a `Map[Text, Text]` of environment variables, `vars`, we
 could create a new `Environment` with the following `given` definition:
+
 ```scala
 import vacuous.Unset
 
@@ -163,12 +165,13 @@ substitution of entire environments).
 
 Support for system properties is provided in much the same way as for
 environment variables:
+
 - access is provided through the `Properties` object, by `Text` value or
   dynamic member access
 - `systems.jvm` provides the standard system properties from the JVM
 - alternative instances of `System` can be defined to provide
   substitute values
-- `Property` provides the same functionality as `EnvironmentVariable`
+- `Property` provides the same functionality as `Variable`
 - a `PropertyError` will be raised instead of an `EnvironmentError`
 
 There is no need to rename system properties, since they already follow the
@@ -176,23 +179,26 @@ familiar Scala identifier style. Access through the `Properties` object is
 slightly different from `Environment`, though: since property names use a
 "dotted" format, they can be accessed as dynamic members of the `Properties`
 object, for example,
+
 ```scala
 import systems.jvm
 
 val home = System.properties.user.home()
 ```
+
 or,
+
 ```scala
 val dir = System.properties.db.user.cache.dir()
 ```
+
 where the empty parentheses are necessary to signal that the path representing
 the property name has been specified, and its value should be retrieved. The
 retrieval itself works in much the same way as for environment variables.
 
-
 ## Status
 
-Ambience is classified as __fledgling__. For reference, Soundness projects are
+Ambience is classified as **fledgling**. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -216,7 +222,7 @@ fragile, inadequately tested, and unsuitable for anything more than
 experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Ambience?".
 
-1. *Copy the sources into your own project*
+1. _Copy the sources into your own project_
 
    Read the `fury` file in the repository root to understand Ambience's build
    structure, dependencies and source location; the file format should be short
@@ -227,7 +233,7 @@ answer to the question, "how can I try Ambience?".
    There should be no problem to compile the project together with all of its
    dependencies in a single compilation.
 
-2. *Build with [Wrath](https://github.com/propensive/wrath/)*
+2. _Build with [Wrath](https://github.com/propensive/wrath/)_
 
    Wrath is a bootstrapping script for building Ambience and other projects in
    the absence of a fully-featured build tool. It is designed to read the `fury`
@@ -258,7 +264,7 @@ We suggest that all contributors read the [Contributing
 Guide](/contributing.md) to make the process of contributing to Ambience
 easier.
 
-Please __do not__ contact project maintainers privately with questions unless
+Please **do not** contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
 repsond to such questions, private answers cannot be shared with a wider
 audience, and it can result in duplication of effort.
@@ -268,8 +274,6 @@ audience, and it can result in duplication of effort.
 Ambience was designed and developed by Jon Pretty, and commercial support and
 training on all aspects of Scala 3 is available from [Propensive
 O&Uuml;](https://propensive.com/).
-
-
 
 ## Name
 

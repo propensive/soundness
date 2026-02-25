@@ -55,7 +55,7 @@ import java.net.{URLEncoder, URLDecoder}
 import language.experimental.pureFunctions
 import language.experimental.into
 
-export Gossamer.opaques.Ascii
+export gossamer.internal.opaques.Ascii
 
 inline def append[textual: Textual, value](using builder: Builder[textual])(value: value): Unit =
   inline value match
@@ -78,13 +78,16 @@ extension (textObject: Text.type)
 
   def fill(length: Int)(lambda: Int => Char): Text =
     val array = new Array[Char](length)
-    (0 until length).each { index => array(index) = lambda(index) }
+    (0 until length).each: index => array(index) = lambda(index)
 
     String(array).tt
 
 extension (inline context: StringContext)
-  transparent inline def txt(inline parts: Any*): Text = ${Gossamer.Text.expand('context, 'parts)}
-  transparent inline def t(inline parts: Any*): Text = ${Gossamer.T.expand('context, 'parts)}
+  transparent inline def txt(inline parts: Any*): Text =
+    ${gossamer.internal.Text.expand('context, 'parts)}
+
+  transparent inline def t(inline parts: Any*): Text =
+    ${gossamer.internal.T.expand('context, 'parts)}
 
 extension (context: StringContext)
   def t = SimpleTExtractor(context.parts.head.tt)
@@ -318,41 +321,42 @@ extension [textual: Textual](text: textual)
 
 package proximities:
   given jaroDistance: (sensitivity: CaseSensitivity) => Proximity by Double = (left, right) =>
-   if left == right then 1.0 else
-     val maxDist: Int = left.length.max(right.length)/2 - 1
-     val found1 = new scm.BitSet(left.length)
-     val found2 = new scm.BitSet(right.length)
+    if left == right then 1.0 else
+      val maxDist: Int = left.length.max(right.length)/2 - 1
+      val found1 = new scm.BitSet(left.length)
+      val found2 = new scm.BitSet(right.length)
 
-     @tailrec
-     def recur(i: Int, j: Int, matches: Int): Int =
-       if i >= left.length then matches else
-         if j >= (i + maxDist + 1).min(right.length)
-         then recur(i + 1, (i + 1 - maxDist).max(0), matches)
-         else if sensitivity.compare(left.s.charAt(i), right.s.charAt(j)) && !found2(j) then
-           found1(i) = true
-           found2(j) = true
-           recur(i + 1, (i + 1 - maxDist).max(0), matches + 1)
-         else recur(i, j + 1, matches)
+      @tailrec
+      def recur(i: Int, j: Int, matches: Int): Int =
+        if i >= left.length then matches else
+          if j >= (i + maxDist + 1).min(right.length)
+          then recur(i + 1, (i + 1 - maxDist).max(0), matches)
+          else if sensitivity.compare(left.s.charAt(i), right.s.charAt(j)) && !found2(j) then
+            found1(i) = true
+            found2(j) = true
+            recur(i + 1, (i + 1 - maxDist).max(0), matches + 1)
+          else recur(i, j + 1, matches)
 
-     val matches = recur(0, 0, 0)
+      val matches = recur(0, 0, 0)
 
-     def trans(i: Int, j: Int, count: Int): Int =
-       if i >= left.length then count else if found1(i) then
-         def next(j: Int): Int = if found2(j) then j else next(j + 1)
-         val j2 = next(j)
+      def transform(i: Int, j: Int, count: Int): Int =
+        if i >= left.length then count else if found1(i) then
+          def next(j: Int): Int = if found2(j) then j else next(j + 1)
+          val j2 = next(j)
 
-         trans(i + 1,
-               j2 + 1,
-               if sensitivity.compare(left.s.charAt(i), right.s.charAt(j2))
-               then count else count + 1)
+          transform(i + 1,
+                j2 + 1,
+                if sensitivity.compare(left.s.charAt(i), right.s.charAt(j2))
+                then count else count + 1)
 
-       else trans(i + 1, j, count)
+        else transform(i + 1, j, count)
 
-     val count = trans(0, 0, 0)
+      val count = transform(0, 0, 0)
 
-     if matches == 0 then 0.0
-     else (matches.toDouble/left.length + matches.toDouble/right.length +
-       ( matches - count/2.0)/matches)/3
+      if matches == 0 then 0.0 else
+        ( matches.toDouble/left.length + matches.toDouble/right.length
+          + (matches - count/2.0)/matches )
+        / 3
 
   given prefixMatch: (sensitivity: CaseSensitivity) => Proximity by Int = (left, right) =>
     val limit = left.length.min(right.length)
@@ -368,29 +372,30 @@ package proximities:
     val distance = jaroDistance.distance(left, right)
     distance + scale*prefixMatch.distance(left, right).min(4)*(1.0 - distance)
 
+
   given levenshteinDistance: (sensitivity: CaseSensitivity)
   =>  (Proximity { type Triangulable = true }) by Int =
 
-      (left, right) =>
-        val m = left.s.length
-        val n = right.length
-        val old = new Array[Int](n + 1)
-        val dist = new Array[Int](n + 1)
+    (left, right) =>
+      val m = left.s.length
+      val n = right.length
+      val old = new Array[Int](n + 1)
+      val dist = new Array[Int](n + 1)
 
-        for j <- 1 to n do old(j) = old(j - 1) + 1
+      for j <- 1 to n do old(j) = old(j - 1) + 1
 
-        for i <- 1 to m do
-          dist(0) = old(0) + 1
+      for i <- 1 to m do
+        dist(0) = old(0) + 1
 
-          for j <- 1 to n do
-            val c =
-              if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1
+        for j <- 1 to n do
+          val c =
+            if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1
 
-            dist(j) = (old(j - 1) + c).min(old(j) + 1).min(dist(j - 1) + 1)
+          dist(j) = (old(j - 1) + c).min(old(j) + 1).min(dist(j - 1) + 1)
 
-          for j <- 0 to n do old(j) = dist(j)
+        for j <- 0 to n do old(j) = dist(j)
 
-        dist(n)
+      dist(n)
 
 
   given normalizedLevenshteinDistance: CaseSensitivity => Proximity by Double =

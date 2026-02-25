@@ -108,11 +108,11 @@ case class Sandbox(name: Text)(using Classloader, Environment) extends Rig:
   protected def invoke[output](stage: Stage[output, Text, Path on Linux])
   :   Sandbox.Launcher =
 
-      stage.remote: input =>
-        unsafely:
-          variables(inputParameters = input):
-            sh"${stage.target}".exec[Exit]()
+    stage.remote: input =>
+      unsafely:
+        variables(inputParameters = input):
+          sh"${stage.target}".exec[Exit]()
 
-        t"""[""]"""
+      t"""[""]"""
 
-      Sandbox.Launcher(stage.target)
+    Sandbox.Launcher(stage.target)

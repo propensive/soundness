@@ -54,13 +54,13 @@ object Schematic:
   given optional: [value: Schematic in JsonSchema] => Optional[value] is Schematic in JsonSchema =
     () =>
       value.schema() match
-        case entity: JsonSchema.Object => entity.copy(optional = true)
-        case entity: JsonSchema.Integer  => entity.copy(optional = true)
-        case entity: JsonSchema.Number   => entity.copy(optional = true)
-        case entity: JsonSchema.String   => entity.copy(optional = true)
-        case entity: JsonSchema.Array    => entity.copy(optional = true)
-        case entity: JsonSchema.Boolean  => entity.copy(optional = true)
-        case entity: JsonSchema.Null   => entity.copy(optional = true)
+        case entity: JsonSchema.Object  => entity.copy(optional = true)
+        case entity: JsonSchema.Integer => entity.copy(optional = true)
+        case entity: JsonSchema.Number  => entity.copy(optional = true)
+        case entity: JsonSchema.String  => entity.copy(optional = true)
+        case entity: JsonSchema.Array   => entity.copy(optional = true)
+        case entity: JsonSchema.Boolean => entity.copy(optional = true)
+        case entity: JsonSchema.Null    => entity.copy(optional = true)
 
   given list: [value: Schematic in JsonSchema] => List[value] is Schematic in JsonSchema =
     () => JsonSchema.Array(items = value.schema())
@@ -72,7 +72,7 @@ object Schematic:
   given map: [key: Encodable in Text, value: Schematic in JsonSchema]
   =>  Map[key, value] is Schematic in JsonSchema =
 
-      () => JsonSchema.Object(additionalProperties = true)
+    () => JsonSchema.Object(additionalProperties = true)
 
 
 trait Schematic extends Typeclass, Formal:

@@ -36,8 +36,8 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 
-trait Feet[Power <: Nat] extends Units[Power, Distance]
-
 object Feet:
   given designation: Designation[Feet[1]] = () => "ft".tt
   inline given ratio: Ratio[Feet[-1] & Metres[1], 0.3048] = !!
+
+trait Feet[Power <: Nat] extends Units[Power, Distance]

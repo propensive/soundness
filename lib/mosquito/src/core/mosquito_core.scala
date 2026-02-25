@@ -35,7 +35,7 @@ package mosquito
 import proscenium.*
 import vacuous.*
 
-export Mosquito.Tensor
+export mosquito.internal.Tensor
 
 extension [element](list: List[element])
   def slide(size: Int): Stream[Tensor[element, size.type]] = list match

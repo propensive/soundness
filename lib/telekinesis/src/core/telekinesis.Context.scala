@@ -40,6 +40,7 @@ import vacuous.*
 object Context:
   def apply[value](): Context[value] = new Context[value]:
     private val store: scm.HashMap[Session, value] = scm.HashMap()
+
     def apply()(using session: Session): Optional[value] = store.at(session)
     def update(value: value)(using session: Session): Unit = store(session) = value
 

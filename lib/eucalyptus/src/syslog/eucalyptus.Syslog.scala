@@ -41,8 +41,6 @@ import prepositional.*
 import turbulence.*
 import vacuous.*
 
-case class Syslog(tag: Optional[Text] = Unset)
-
 object Syslog:
   given writable: Monitor => Syslog is Writable by Text = (syslog, stream) =>
     import workingDirectories.system
@@ -55,3 +53,5 @@ object Syslog:
         syslog.tag match
           case tag: Text => mute[ExecEvent](stream.writeTo(sh"logger -t $tag".fork[Unit]()))
           case _         => mute[ExecEvent](stream.writeTo(sh"logger".fork[Unit]()))
+
+case class Syslog(tag: Optional[Text] = Unset)

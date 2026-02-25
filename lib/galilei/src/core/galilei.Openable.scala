@@ -77,8 +77,8 @@ object Openable:
         ( () => Streamable.channel.stream(channel).stream[Data],
           Writable.channel.write(channel, _) )
 
-
     def close(channel: jnc.FileChannel): Unit = channel.close()
+
 
   given eof: [file: Openable by jnf.OpenOption] => Eof[file] is Openable:
     type Self = Eof[file]

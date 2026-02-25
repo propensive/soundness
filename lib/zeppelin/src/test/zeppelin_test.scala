@@ -58,7 +58,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       if file.exists() then file.delete()
       Zipfile.create(file)
       file
-    .assert(_.length > 0)
+    . assert(_.length > 0)
 
     val simpleFile: File = test(m"Create a simple ZIP file"):
       val path = File.createTempFile("tmp", ".zip").nn
@@ -70,11 +70,11 @@ object Tests extends Suite(m"Zeppelin tests"):
 
     test(m"Check zip file contains one entry"):
       Zipfile(simpleFile).entries()
-    .assert(_.length == 1)
+    . assert(_.length == 1)
 
     test(m"Check ZIP file's entry has correct content"):
       Zipfile(simpleFile).entries().head.read[Text]
-    .assert(_ == t"Hello world")
+    . assert(_ == t"Hello world")
 
     val twoEntryFile: File = test(m"Append a file to a ZIP archive"):
       val entry = ZipEntry(ZipRef / p"fox.txt", t"The quick brown fox jumps over the lazy dog.")
@@ -88,19 +88,19 @@ object Tests extends Suite(m"Zeppelin tests"):
 
     test(m"Check zip file based on another has two entries"):
       Zipfile(twoEntryFile).entries()
-    .assert(_.length == 2)
+    . assert(_.length == 2)
 
     test(m"ZIP first entry correct after update"):
       Zipfile(twoEntryFile).entries().head.read[Text]
-    .assert(_ == t"Hello world")
+    . assert(_ == t"Hello world")
 
     test(m"Check ZIP file's second entry has correct content"):
       Zipfile(twoEntryFile).entries().tail.head.read[Text]
-    .assert(_ == t"The quick brown fox jumps over the lazy dog.")
+    . assert(_ == t"The quick brown fox jumps over the lazy dog.")
 
     test(m"Access ZIP file content by path"):
       (Zipfile(twoEntryFile) / p"fox.txt").read[Text]
-    .assert(_ == t"The quick brown fox jumps over the lazy dog.")
+    . assert(_ == t"The quick brown fox jumps over the lazy dog.")
 
     simpleFile.delete()
     twoEntryFile.delete()

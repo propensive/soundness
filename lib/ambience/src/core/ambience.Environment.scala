@@ -40,24 +40,24 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-trait Environment:
-  def variable(name: Text): Optional[Text]
-
 object Environment extends Dynamic:
   def apply[variable]
     ( variable: Text )
-    ( using environment: Environment, reader: EnvironmentVariable[Label, variable] )
+    ( using environment: Environment, reader: Variable[Label, variable] )
   :   variable raises EnvironmentError =
 
-      environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable)))
-      . yet(reader.read("".tt))
+    environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable)))
+    . yet(reader.read("".tt))
 
 
   inline def selectDynamic[variable](key: String)
     ( using environment:      Environment,
-            reader:           EnvironmentVariable[key.type, variable],
+            reader:           Variable[key.type, variable],
             environmentError: Tactic[EnvironmentError] )
   :   variable =
 
-      environment.variable(reader.defaultName).let(reader.read(_)).or:
-        raise(EnvironmentError(reader.defaultName)) yet reader.read(Text(""))
+    environment.variable(reader.defaultName).let(reader.read(_)).or:
+      raise(EnvironmentError(reader.defaultName)) yet reader.read(Text(""))
+
+trait Environment:
+  def variable(name: Text): Optional[Text]

@@ -68,10 +68,10 @@ infix type ~> [-domain, +range] = PartialFunction[domain, range]
 
 export scala.EmptyTuple as Zero
 
-type Mono[value] = value *: Zero
-
 object Mono:
   inline def apply[value](value: value): Mono[value] = value *: Zero
+
+type Mono[value] = value *: Zero
 
 transparent inline def infer[context]: context = compiletime.summonInline[context]
 
@@ -81,4 +81,4 @@ transparent inline def provide[context](using erased Void)[result]
   ( inline lambda: context ?=> result )
 :   result =
 
-    lambda(using infer[context])
+  lambda(using infer[context])

@@ -38,16 +38,15 @@ object Rootable:
   def apply[root <: Int & Singleton, operand, result](lambda: operand => result)
   :   operand is Rootable[root] to result =
 
-      new Rootable[root]:
-        type Self = operand
-        type Result = result
+    new Rootable[root]:
+      type Self = operand
+      type Result = result
 
-        def root(operand: operand): result = lambda(operand)
+      def root(operand: operand): result = lambda(operand)
 
 
   given sqrt: Double is Rootable[2] to Double = math.sqrt(_)
   given cbrt: Double is Rootable[3] to Double = math.cbrt(_)
-
   given sqrtFloat: Float is Rootable[2] to Float = math.sqrt(_).toFloat
   given cbrtFloat: Float is Rootable[3] to Float = math.cbrt(_).toFloat
 

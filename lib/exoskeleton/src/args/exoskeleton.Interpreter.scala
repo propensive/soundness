@@ -36,10 +36,10 @@ import vacuous.*
 
 trait Interpreter:
   type Topic
+
   def interpret(arguments: List[Argument]): Topic
   def focus(topic: Topic): Optional[Argument]
   def find(topic: Topic, flag: Flag): List[Argument]
-
   def read[operand: Interpretable](topic: Topic, flag: Flag)
     ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
   :   Optional[operand]

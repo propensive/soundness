@@ -44,5 +44,6 @@ object Format:
 
 trait Format:
   def name: Text
+
   type Position <: Format.Position
   type Issue <: Format.Issue

@@ -46,7 +46,7 @@ import scala.collection.immutable.TreeMap
 import java.io as ji
 
 object Unicode:
-  import Hieroglyph.*
+  import hieroglyph.internal.*
 
   private object Hex:
     def unapply(text: Text): Option[Int] =
@@ -127,9 +127,10 @@ object Unicode:
     @tailrec
     def recur(stream: Stream[Text], map: TreeMap[CharRange, EaWidth]): TreeMap[CharRange, EaWidth] =
       stream match
-        case r"${Hex(from)}([0-9A-F]{4})\.\.${Hex(to)}([0-9A-F]{4});${EaWidth(w)}([AFHNW]a?).*"
-             #:: tail =>
-          recur(tail, map.append(CharRange(from, to), w))
+        case
+          r"${Hex(from)}([0-9A-F]{4})\.\.${Hex(to)}([0-9A-F]{4});${EaWidth(w)}([AFHNW]a?).*"
+          #:: tail =>
+            recur(tail, map.append(CharRange(from, to), w))
 
         case r"${Hex(from)}([0-9A-F]{4});${EaWidth(w)}([AFHNW]a?).*" #:: tail =>
           recur(tail, map.append(CharRange(from, from), w))

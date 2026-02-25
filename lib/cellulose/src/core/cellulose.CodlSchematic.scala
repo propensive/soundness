@@ -51,13 +51,14 @@ object CodlSchematic:
   given optional: [value >: Unset.type: Mandatable] => (schematic: => value.Result is CodlSchematic)
   =>  value is CodlSchematic =
 
-      () => schematic.schema().optional
+    () => schematic.schema().optional
 
 
   given option: [value] => (schematic: => value is CodlSchematic)
   =>  Option[value] is CodlSchematic =
 
-      () => schematic.schema().optional
+    () => schematic.schema().optional
+
 
   given list: [element] => (element: => element is CodlSchematic)
   =>  List[element] is CodlSchematic =
@@ -65,6 +66,7 @@ object CodlSchematic:
     () => element.schema() match
       case Field(_)       => Field(Arity.Many)
       case struct: Struct => struct.copy(structArity = Arity.Many)
+
 
   given set: [element] => (element: => element is CodlSchematic) => Set[element] is CodlSchematic =
     () => element.schema() match

@@ -48,12 +48,14 @@ object MediaTypeError:
     case InvalidSuffix(suffix: Text)
 
     def message: Text = this match
-      case NotOneSlash      => txt"a media type should always contain exactly one '/' character"
-      case MissingParam     => txt"a terminal ';' suggests that a parameter is missing"
-      case InvalidGroup     => val list = Media.Group.values.immutable(using Unsafe).map(_.name)
-                               txt"the type must be one of: ${list.join(t", ", t" or ")}"
-      case InvalidChar(c)   => txt"the character '$c' is not allowed"
-      case InvalidSuffix(s) => txt"the suffix '$s' is not recognized"
+      case NotOneSlash       => txt"a media type should always contain exactly one '/' character"
+      case MissingParam      => txt"a terminal ';' suggests that a parameter is missing"
+      case InvalidChar(char) => txt"the character '$char' is not allowed"
+      case InvalidSuffix(s)  => txt"the suffix '$s' is not recognized"
+
+      case InvalidGroup =>
+        val list = Media.Group.values.immutable(using Unsafe).map(_.name)
+        txt"the type must be one of: ${list.join(t", ", t" or ")}"
 
 case class MediaTypeError(value: Text, reason: MediaTypeError.Reason)(using Diagnostics)
 extends Error(m"the value $value is not a valid media type; ${reason.message}")

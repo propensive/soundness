@@ -49,7 +49,7 @@ import proscenium.*
 import symbolism.*
 import vacuous.*
 
-export Rudiments.{Bytes, Digit}
+export rudiments.internal.{Bytes, Digit}
 
 def fixpoint[value](initial: value)(fn: (recur: (value => value)) ?=> (value => value)): value =
   def recurrence(fn: (recur: value => value) ?=> value => value): value => value =
@@ -57,9 +57,9 @@ def fixpoint[value](initial: value)(fn: (recur: (value => value)) ?=> (value => 
 
   recurrence(fn)(initial)
 
-inline def probe[target]: Nothing = ${Rudiments.probe[target]}
-inline def typeName[target]: Text = ${Rudiments.name[target]}
-inline def reflectClass[target]: Class[target] = ${Rudiments.reflectClass}
+inline def probe[target]: Nothing = ${rudiments.internal.probe[target]}
+inline def typeName[target]: Text = ${rudiments.internal.name[target]}
+inline def reflectClass[target]: Class[target] = ${rudiments.internal.reflectClass}
 
 inline def repeat(count: Int)(inline action: => Unit): Unit =
   var i = 0
@@ -114,7 +114,7 @@ def loop(block: => Unit): Loop = Loop({ () => block })
 
 inline def that[result](inline block: => result): result = block
 
-export Rudiments.&
+export rudiments.internal.&
 
 @targetName("erasedValue")
 inline def !![erasure]: erasure = caps.unsafe.unsafeErasedValue
@@ -150,12 +150,11 @@ extension [value](iterable: Iterable[value])
             equality: addable.Result =:= value )
   :   Optional[value] =
 
-      compiletime.summonFrom:
-        case zeroic: ((? <: value) is Zeroic) =>
-          iterable.foldLeft(zeroic.zero)(addable.add)
+    compiletime.summonFrom:
+      case zeroic: ((? <: value) is Zeroic) => iterable.foldLeft(zeroic.zero)(addable.add)
 
-        case _ =>
-          if iterable.nil then Unset else iterable.tail.foldLeft(iterable.head)(addable.add)
+      case _ =>
+        if iterable.nil then Unset else iterable.tail.foldLeft(iterable.head)(addable.add)
 
 
   transparent inline def mean
@@ -164,7 +163,7 @@ extension [value](iterable: Iterable[value])
             divisible: value is Divisible by Double,
             eqality2:  divisible.Result =:= value )
   :   Optional[value] =
-      iterable.total.let(_/iterable.size.toDouble)
+    iterable.total.let(_/iterable.size.toDouble)
 
   inline def mean2
     ( using subtractable: value is Subtractable by value,
@@ -176,10 +175,10 @@ extension [value](iterable: Iterable[value])
             equality3:    addable2.Result =:= value )
   :   Optional[value] =
 
-      if iterable.nil then Unset else
-        val arbitrary = iterable.head
-        iterable.map(_ - arbitrary).total.let: total =>
-          arbitrary + total/iterable.size.toDouble
+    if iterable.nil then Unset else
+      val arbitrary = iterable.head
+      iterable.map(_ - arbitrary).total.let: total =>
+        arbitrary + total/iterable.size.toDouble
 
   def variance
     ( using addable:       value is Addable by value,
@@ -194,8 +193,8 @@ extension [value](iterable: Iterable[value])
             divisible2:    multiplicable.Result is Divisible by Double )
   :   Optional[divisible2.Result] =
 
-      iterable.mean.let: mean =>
-        iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
+    iterable.mean.let: mean =>
+      iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
 
 
   def std
@@ -209,18 +208,18 @@ extension [value](iterable: Iterable[value])
             equality4:     multiplicable.Result =:= value )
   :   Optional[value] =
 
-      iterable.mean.let: mean0 =>
-        val mean: value = mean0
-        val divisor: value = iterable.head
-        var sum: Double = 0.0
-        val mean2: Double = mean/divisor
+    iterable.mean.let: mean0 =>
+      val mean: value = mean0
+      val divisor: value = iterable.head
+      var sum: Double = 0.0
+      val mean2: Double = mean/divisor
 
-        for item <- iterable do
-          val x: Double = item/divisor
-          val y: Double = x - mean2
-          sum += y*y
+      for item <- iterable do
+        val x: Double = item/divisor
+        val y: Double = x - mean2
+        sum += y*y
 
-        divisor*math.sqrt(sum/iterable.size.toDouble)
+      divisor*math.sqrt(sum/iterable.size.toDouble)
 
 
   def product
@@ -229,7 +228,7 @@ extension [value](iterable: Iterable[value])
             equality:      multiplicable.Result =:= value )
   :   value =
 
-      iterable.foldLeft(unital.one)(multiplicable.multiply)
+    iterable.foldLeft(unital.one)(multiplicable.multiply)
 
 
   transparent inline def each(lambda: (ordinal: Ordinal) ?=> value => Unit): Unit =
@@ -412,10 +411,12 @@ extension (erased tuple: Tuple)
 
   private transparent inline def recurSubtypes[tuple <: Tuple, supertype, done <: Tuple]: Tuple =
     inline !![tuple] match
-      case _: Zero           => !![Tuple.Reverse[done]]
-      case _: (head *: tail) => inline !![head] match
-        case _: `supertype`     => recurSubtypes[tail, supertype, head *: done]
-        case _                  => recurSubtypes[tail, supertype, done]
+      case _: Zero => !![Tuple.Reverse[done]]
+
+      case _: (head *: tail) =>
+        inline !![head] match
+          case _: `supertype`     => recurSubtypes[tail, supertype, head *: done]
+          case _                  => recurSubtypes[tail, supertype, done]
 
   private inline def recurIndex[tuple <: Tuple, element](index: Int): Int =
     inline !![tuple] match
@@ -425,51 +426,72 @@ extension (erased tuple: Tuple)
 
 extension (using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
   inline def literal
-    [ primitive <: Boolean | Byte | Short | Int | Long | Float | Double | Char | String
-                            | Unit | Null]
+    [ primitive
+      <:  Boolean | Byte | Short | Int | Long | Float | Double | Char | String | Unit | Null ]
   :   Optional[primitive] =
 
-      import quotes.reflect.*
+    import quotes.reflect.*
 
-      repr.match
-        case constant: ConstantType => constant
-        case _                      => Unset
+    repr.match
+      case constant: ConstantType => constant
+      case _                      => Unset
 
-      . let: value =>
+    . let: value =>
 
-          inline !![primitive] match
-            case _: Boolean => value.constant.match
+        inline !![primitive] match
+          case _: Boolean =>
+            value.constant.match
               case BooleanConstant(value) => value
               case _                      => Unset
-            case _: Byte    => value.constant match
+
+          case _: Byte =>
+            value.constant match
               case ByteConstant(value)    => value
               case _                      => Unset
-            case _: Short   => value.constant match
+
+          case _: Short =>
+            value.constant match
               case ShortConstant(value)   => value
               case _                      => Unset
-            case _: Int     => value.constant match
+
+          case _: Int =>
+            value.constant match
               case IntConstant(value)     => value
               case _                      => Unset
-            case _: Long    => value.constant match
+
+          case _: Long =>
+            value.constant match
               case LongConstant(value)    => value
               case _                      => Unset
-            case _: Float   => value.constant match
+
+          case _: Float =>
+            value.constant match
               case FloatConstant(value)   => value
               case _                      => Unset
-            case _: Double  => value.constant match
+
+          case _: Double =>
+            value.constant match
               case DoubleConstant(value)  => value
               case _                      => Unset
-            case _: Char    => value.constant match
+
+          case _: Char =>
+            value.constant match
               case CharConstant(value)    => value
               case _                      => Unset
-            case _: String  => value.constant match
+
+          case _: String =>
+            value.constant match
               case StringConstant(value)  => value
               case _                      => Unset
-            case _: Unit    => value.constant match
+
+          case _: Unit =>
+            value.constant match
               case UnitConstant()         => ()
               case _                      => Unset
-            case _: Null    => value.constant match
+
+          case _: Null =>
+            value.constant match
               case NullConstant()         => null
               case _                      => Unset
 
-      . asInstanceOf[Optional[primitive]]
+    . asInstanceOf[Optional[primitive]]

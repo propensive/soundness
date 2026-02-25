@@ -48,6 +48,7 @@ class LarcenyTransformer() extends PluginPhase:
 
   override def transformUnit(tree: Tree)(using context: Context): Tree =
     import ast.untpd.*
+
     val classpath = context.settings.classpath.value
     val language = context.settings.language.value
 
@@ -70,7 +71,6 @@ class LarcenyTransformer() extends PluginPhase:
       Subcompiler.compile(language, classpath, source, regions)
 
     object transformer extends UntypedTreeMap:
-
       override def transform(tree: Tree)(using Context): Tree = tree match
         case Apply(Ident(name), List(content)) if name.toString == "procrastinate" =>
           val source2 = source.substring(content.span.start, content.span.end)
@@ -98,7 +98,7 @@ class LarcenyTransformer() extends PluginPhase:
                     Literal(Constant(error.message)),
                     Literal(Constant(error.code)),
                     Literal(Constant(error.start)),
-                    Literal(Constant(error.offset))) )
+                    Literal(Constant(error.offset)) ) )
 
           Apply
             ( Ident(name),

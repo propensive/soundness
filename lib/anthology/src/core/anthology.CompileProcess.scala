@@ -41,9 +41,11 @@ import vacuous.*
 
 class CompileProcess():
   private[anthology] var continue: Boolean = true
+
   private val completion: Promise[CompileResult] = Promise()
   private val noticesSpool: Spool[Notice] = Spool()
   private val progressSpool: Spool[CompileProgress] = Spool()
+
   private var compilation: Optional[Task[Unit]] = Unset
   private var errorCount: Int = 0
   private var warningCount: Int = 0
@@ -59,7 +61,6 @@ class CompileProcess():
   def put(progress: CompileProgress): Unit = progressSpool.put(progress)
   def put(result: CompileResult): Unit = completion.offer(result)
   def put(task: Task[Unit]): Unit = compilation = task
-
   def errors: Int = errorCount
   def warnings: Int = warningCount
 

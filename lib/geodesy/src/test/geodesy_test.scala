@@ -34,7 +34,7 @@ package geodesy
 
 import soundness.*
 
-object Tests extends Suite(m"Geodesy tests"):
+object Tests extends Suite(m"internal tests"):
   def run(): Unit =
     test(m"render a simple angle"):
       val angle = Angle.degrees(45)

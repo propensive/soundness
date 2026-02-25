@@ -38,9 +38,6 @@ import hieroglyph.*
 import prepositional.*
 import proscenium.*
 
-trait Transmissible extends Typeclass:
-  def serialize(message: Self): Stream[Data]
-
 object Transmissible:
   given bytes: [bytes <: Data] => bytes is Transmissible = Stream(_)
   given stream: [stream <: Stream[Data]] => stream is Transmissible = identity(_)
@@ -50,3 +47,6 @@ object Transmissible:
 
   given encoder: [message: Encodable in Text] => CharEncoder => message is Transmissible =
     value => Stream(value.encode.data)
+
+trait Transmissible extends Typeclass:
+  def serialize(message: Self): Stream[Data]

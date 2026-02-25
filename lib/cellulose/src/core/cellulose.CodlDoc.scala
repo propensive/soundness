@@ -60,7 +60,7 @@ object CodlDoc:
   given aggregable: [subject: CodlSchematic] => Tactic[ParseError]
   =>  (CodlDoc of subject) is Aggregable by Text =
 
-      subject.schema().parse(_).asInstanceOf[CodlDoc of subject]
+    subject.schema().parse(_).asInstanceOf[CodlDoc of subject]
 
 
   given aggregable2: Tactic[ParseError] => CodlDoc is Aggregable by Text = Codl.parse(_)
@@ -68,7 +68,6 @@ object CodlDoc:
 case class CodlDoc
   ( children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: Stream[Char] = Stream() )
 extends Indexed:
-
   type Topic
 
   override def toString: String = s"^[${children.mkString(", ")}]"
@@ -81,10 +80,8 @@ extends Indexed:
       false
 
   override def hashCode: Int = children.toSeq.hashCode ^ schema.hashCode ^ margin.hashCode
-
   def layout: Layout = Layout.empty
   def paramIndex: Map[Text, Int] = Map()
-
   def materialize(using Topic is Decodable in Codl): Topic raises CodlError = as[Topic]
 
   def merge(input: CodlDoc): CodlDoc =
@@ -98,8 +95,9 @@ extends Indexed:
       val changes = diff[CodlNode](children, updates, cmp).edits
 
       val nodes2 = changes.foldLeft(List[CodlNode]()):
-        case (nodes, Del(left, value))         => nodes
-        case (nodes, Ins(right, value))        => value :: nodes
+        case (nodes, Del(left, value))  => nodes
+        case (nodes, Ins(right, value)) => value :: nodes
+
         case (nodes, Par(left, right, value)) =>
           val orig: CodlNode = original(left)
           val origAtom: Atom = orig.data.or(???)

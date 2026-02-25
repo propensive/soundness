@@ -48,7 +48,6 @@ case class TextualDagStyle[line: Textual]
     cross:      Text,
     overlap:    Text )
 extends DagStyle[line]:
-
   def serialize(tiles: List[DagTile], node: line): line =
     line(tiles.map(text(_)).join)+node
 

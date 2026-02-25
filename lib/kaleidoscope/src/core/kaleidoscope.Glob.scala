@@ -34,13 +34,10 @@ package kaleidoscope
 
 import anticipation.*
 
-case class Glob(tokens: GlobToken*):
-  def regex: Text = Text(tokens.flatMap(_.regex).mkString)
-
 object Glob:
   import GlobToken.*
-  def parse(text: Text): Glob =
 
+  def parse(text: Text): Glob =
     def range(text: String): GlobToken =
       val inverse = text.startsWith("!")
       val text2 = if inverse then text.drop(1) else text
@@ -48,12 +45,12 @@ object Glob:
       if text2.length == 3 && text2(1) == '-' then GlobToken.Range(text2(0), text2(2), inverse)
       else GlobToken.Specific(text2, inverse)
 
-
     def recur(index: Int, tokens: List[GlobToken]): Glob =
       if index >= text.s.length then Glob(tokens.reverse*) else text.s(index) match
-        case '*' => tokens match
-          case Star :: tail => recur(index + 1, Globstar :: tail)
-          case _            => recur(index + 1, Star :: tokens)
+        case '*' =>
+          tokens match
+            case Star :: tail => recur(index + 1, Globstar :: tail)
+            case _            => recur(index + 1, Star :: tokens)
 
         case '?' =>
           recur(index + 1, OneChar :: tokens)
@@ -66,3 +63,6 @@ object Glob:
           recur(index + 1, Exact(char) :: tokens)
 
     recur(0, Nil)
+
+case class Glob(tokens: GlobToken*):
+  def regex: Text = Text(tokens.flatMap(_.regex).mkString)

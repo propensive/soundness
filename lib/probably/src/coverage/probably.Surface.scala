@@ -36,8 +36,7 @@ import rudiments.*
 
 object Surface:
   def collapse(todo: List[Juncture], done: List[Surface]): List[Surface] = todo match
-    case Nil =>
-      done.reverse
+    case Nil => done.reverse
 
     case head :: tail =>
       val todo2 = tail.takeWhile(head.contains(_))

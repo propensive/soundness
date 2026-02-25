@@ -53,5 +53,5 @@ trait Browser(name: Text):
     ( using WorkingDirectory, Monitor )
   :   result logs HttpEvent logs ExecEvent =
 
-      val server = launch(port)
-      try block(using WebDriver(server).startSession()) finally server.stop()
+    val server = launch(port)
+    try block(using WebDriver(server).startSession()) finally server.stop()

@@ -36,9 +36,6 @@ import anticipation.*
 import gossamer.*
 import spectacular.*
 
-enum Reaction:
-  case NetForward, BothDirections, Equilibrium, Stoichiometric, Resonance
-
 object Reaction:
   given showable: Reaction is Showable =
     case NetForward     => t"→"
@@ -46,3 +43,6 @@ object Reaction:
     case Equilibrium    => t"⇋"
     case Stoichiometric => t"↔"
     case Resonance      => t"="
+
+enum Reaction:
+  case NetForward, BothDirections, Equilibrium, Stoichiometric, Resonance

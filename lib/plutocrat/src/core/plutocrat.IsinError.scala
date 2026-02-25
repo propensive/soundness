@@ -46,8 +46,12 @@ object IsinError:
 
   given communicable: Reason is Communicable =
     case BadCountryCode(code) => m"its country code $code was not valid"
-    case WrongLength(length)  => m"it had length $length, but it should be 12 characters long"
-    case LuhnCheck            => m"its last digit failed the Luhn check"
+
+    case WrongLength(length) =>
+      m"it had length $length, but it should be 12 characters long"
+
+    case LuhnCheck =>
+      m"its last digit failed the Luhn check"
 
     case InvalidCharacter(index, char) =>
       m"the character $char at position $index is not a digit or uppercase letter"

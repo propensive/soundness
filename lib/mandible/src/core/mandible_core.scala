@@ -63,21 +63,21 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
   ( using classloader: Classloader )
 :   Bytecode =
 
-    val uuid = Uuid()
-    val out: Path on Linux = unsafely(temporaryDirectory/uuid)
-    val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
+  val uuid = Uuid()
+  val out: Path on Linux = unsafely(temporaryDirectory/uuid)
+  val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
-    val settings: staging.Compiler.Settings =
-      staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
+  val settings: staging.Compiler.Settings =
+    staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
 
-    given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
+  given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
 
-    unsafely:
-      val file: Path on Linux = out/"Generated$$Code$$From$$Quoted.class"
-      val code: Quotes ?=> Expr[Unit] = '{def _code(): Unit = $code0}
-      staging.run(code)
-      val classfile: Classfile = new Classfile(file.open(_.read[Data]))
-      classfile.methods.find(_.name == t"_code$$1").map(_.bytecode).get.vouch.embed(codepoint)
+  unsafely:
+    val file: Path on Linux = out/"Generated$$Code$$From$$Quoted.class"
+    val code: Quotes ?=> Expr[Unit] = '{def _code(): Unit = $code0}
+    staging.run(code)
+    val classfile: Classfile = new Classfile(file.open(_.read[Data]))
+    classfile.methods.find(_.name == t"_code$$1").map(_.bytecode).get.vouch.embed(codepoint)
 
 
 case class ClassfileError()(using Diagnostics)

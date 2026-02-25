@@ -57,11 +57,11 @@ object Formulaic extends ProductDerivable[Formulaic]:
         formulation: Formulation )
     :   Seq[Html of Flow] =
 
-        val message: Optional[Message] = validation(pointer)
-        val widget = renderable.render(elicitable.widget(pointer.text, legend, query().or(t"")))
-        val required = false//safely(decodable.decoded(t"")).absent
+      val message: Optional[Message] = validation(pointer)
+      val widget = renderable.render(elicitable.widget(pointer.text, legend, query().or(t"")))
+      val required = false//safely(decodable.decoded(t"")).absent
 
-        List(formulation.element(widget, legend, message, required))
+      List(formulation.element(widget, legend, message, required))
 
 
   inline def join[derivation <: Product: ProductReflection]: derivation is Formulaic =
@@ -72,6 +72,7 @@ object Formulaic extends ProductDerivable[Formulaic]:
             val label2 = if pointer == Pointer.Self then Pointer(label) else pointer(label)
             val legend = label.uncamel.map(_.lower.capitalize).spaced
             context.fields(label2, legend, query(label), errors, formulation)
+
         . flatten
 
       List(Fieldset(Legend(legend): Html of Flow, Fragment(content*): Html of Flow))

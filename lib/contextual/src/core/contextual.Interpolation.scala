@@ -48,7 +48,7 @@ object Interpolation:
         case head :: tail =>
           ConstantType(StringConstant(head)).asType.absolve match
             case '[label] => repr.asType.absolve match
-              case '[type tuple <: Tuple; tuple] =>  recur(tail, TypeRepr.of[label *: tuple])
+              case '[type tuple <: Tuple; tuple] => recur(tail, TypeRepr.of[label *: tuple])
 
         case Nil =>
           repr

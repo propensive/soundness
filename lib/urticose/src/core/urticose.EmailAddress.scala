@@ -106,7 +106,7 @@ object EmailAddress:
 
           (LocalPart.Unquoted(buffer.text), index + 1)
 
-        case '.'  =>
+        case '.' =>
           if dot then raise(EmailAddressError(SuccessivePeriods))
           if index == Prim then raise(EmailAddressError(InitialPeriod))
           buffer.append('.')

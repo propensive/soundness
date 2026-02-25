@@ -32,4 +32,4 @@
                                                                                                   */
 package feudalism
 
-export Feudalism.Mutex
+export internal.Mutex

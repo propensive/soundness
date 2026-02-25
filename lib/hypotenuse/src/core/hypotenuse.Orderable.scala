@@ -36,6 +36,7 @@ import scala.annotation.*
 
 trait Orderable extends Commensurable:
   private inline def orderable: this.type = this
+
   type Contrast = Self
 
   def contramap[self](lambda: self => Self): self is Orderable = new Orderable:
@@ -49,4 +50,4 @@ trait Orderable extends Commensurable:
         inline greater: Boolean )
     :   Boolean =
 
-        orderable.compare(lambda(left), lambda(right), strict, greater)
+      orderable.compare(lambda(left), lambda(right), strict, greater)

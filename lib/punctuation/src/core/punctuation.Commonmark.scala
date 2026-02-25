@@ -77,7 +77,6 @@ object Commonmark:
 
       def add(prose: Prose): Unit = proses ::= prose
       def add(layout: Layout): Unit = layouts ::= layout
-
       protected def line(node: Node | Null) = node.nn.getSourceSpans.nn.get(0).nn.getLineIndex.z
 
       override def visit(node: Document | Null): Unit =

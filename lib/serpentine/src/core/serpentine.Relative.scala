@@ -54,21 +54,22 @@ object Relative:
     type Topic = Zero
     type Limit = 0
 
+
   def of[topic <: Tuple, limit <: Int](ascent: Int, descent: Text*)
   :   Relative of topic under limit =
 
-      new Relative(ascent, descent.to(List)):
-        type Topic = topic
-        type Limit = limit
+    new Relative(ascent, descent.to(List)):
+      type Topic = topic
+      type Limit = limit
 
 
   def apply[filesystem, topic <: Tuple, limit <: Int](ascent: Int, descent: Text*)
   :   Relative of topic on filesystem under limit =
 
-      new Relative(ascent, descent.to(List)):
-        type Plane = filesystem
-        type Topic = topic
-        type Limit = limit
+    new Relative(ascent, descent.to(List)):
+      type Plane = filesystem
+      type Topic = topic
+      type Limit = limit
 
 
   private def conversion[from, to](fn: from => to) =
@@ -91,7 +92,7 @@ object Relative:
   inline given conversion: [topic, ascent <: Int, filesystem]
   =>  Conversion[Relative of topic under ascent, Relative of topic under ascent on filesystem] =
 
-      conversion(_.on[filesystem])
+    conversion(_.on[filesystem])
 
 
   given encodable: [filesystem: Filesystem] => Relative on filesystem is Encodable in Text =
@@ -106,26 +107,34 @@ object Relative:
         . reverse
         . join(ascender*relative.ascent, filesystem.separator, t"")
 
+
   given showable: [filesystem: Filesystem, relative <: Relative on filesystem]
   =>  relative is Showable =
-       _.encode
 
+    _.encode
+
+  // The explicit type ascription after this method is used to force silent failure of this `given`
+  // definition, so that contextual search can continue normally if it fails. This would not be the
+  // case for a non-`transparent` `inline given`, which would cause contextual resolution to fail.
+  // However, we do not wish the return type to be refined further, as would typically be the case
+  // for a `transparent` method.
   transparent inline given quotient: [filesystem, relative <: (Relative on filesystem) | Text]
   =>  relative is Quotient =
 
-      relative0 =>
-        relative0 match
-          case _: Relative =>
-            val relative = relative0.asInstanceOf[Relative on filesystem]
+    relative0 =>
+      relative0 match
+        case _: Relative =>
+          val relative = relative0.asInstanceOf[Relative on filesystem]
 
-            relative.descent match
-              case Nil | _ :: Nil => None
-              case _ :: _ :: Nil  => Some((relative.descent(1), relative.descent(0)))
+          relative.descent match
+            case Nil | _ :: Nil => None
+            case _ :: _ :: Nil  => Some((relative.descent(1), relative.descent(0)))
 
-              case _ =>
-                Some((relative.descent.last, Relative(0, relative.descent.init*)))
+            case _ =>
+              Some((relative.descent.last, Relative(0, relative.descent.init*)))
 
-          case _ => None
+        case _ =>
+          None
 
   :   relative is Quotient of Text over (Relative on filesystem) | Text
 
@@ -136,7 +145,6 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
 
   def delta: Int = descent.length - ascent
   def name: Optional[Text] = descent.prim
-
   def self: Boolean = ascent == 0 && descent == Nil
 
   transparent inline def rename(lambda: (prior: Text) ?=> Text): Optional[Relative] =
@@ -170,7 +178,6 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
     case _ =>
       if descent.nil then Relative[Plane, Topic, S[Limit]](ascent + 1)
       else Relative[Plane, Topic, Limit](ascent, descent.tail*)
-
 
   transparent inline def / (child: Any): Relative of (child.type *: Topic) under Limit =
     summonFrom:

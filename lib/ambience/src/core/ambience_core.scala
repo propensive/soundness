@@ -102,12 +102,12 @@ package temporaryDirectories:
 inline def temporaryDirectory[path: Representative of Paths](using temporary: TemporaryDirectory)
 :   path =
 
-    compiletime.summonFrom:
-      case given (`path` is Instantiable across Paths from Paths.Trusted) =>
-        Paths.Trusted(temporary.directory()).instantiate
+  compiletime.summonFrom:
+    case given (`path` is Instantiable across Paths from Paths.Trusted) =>
+      Paths.Trusted(temporary.directory()).instantiate
 
-      case given (`path` is Instantiable across Paths from Text) =>
-        temporary.directory().instantiate
+    case given (`path` is Instantiable across Paths from Text) =>
+      temporary.directory().instantiate
 
 
 inline def workingDirectory[path: Representative of Paths](using work: WorkingDirectory): path =

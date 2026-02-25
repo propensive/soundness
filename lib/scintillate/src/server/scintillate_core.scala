@@ -57,28 +57,29 @@ package httpServers:
   =>  WebserverErrorPage
   =>  Http is Protocolic:
 
-      type Transport = TcpPort of port
-      type Self = Http
-      type Server = Service
-      type Request = HttpConnection
-      type Response = Http.Response
+    type Transport = TcpPort of port
+    type Self = Http
+    type Server = Service
+    type Request = HttpConnection
+    type Response = Http.Response
 
-      def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-        HttpServer(port.number, true).handle(lambda)
+    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
+      HttpServer(port.number, true).handle(lambda)
+
 
   given stdlibPublic: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
   =>  WebserverErrorPage
   =>  Http is Protocolic:
 
-      type Transport = TcpPort of port
-      type Self = Http
-      type Server = Service
-      type Request = HttpConnection
-      type Response = Http.Response
+    type Transport = TcpPort of port
+    type Self = Http
+    type Server = Service
+    type Request = HttpConnection
+    type Response = Http.Response
 
-      def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-        HttpServer(port.number, false).handle(lambda)
+    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
+      HttpServer(port.number, false).handle(lambda)
 
 def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies.at(key)
 
@@ -86,14 +87,14 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.
   ( using connection: HttpConnection )
 :   Http.Response raises AuthError =
 
-    connection.headers.authorization match
-      case List(Auth.Basic(username, password)) =>
-        if validate(username, password) then response else Http.Response(Http.Forbidden)()
+  connection.headers.authorization match
+    case List(Auth.Basic(username, password)) =>
+      if validate(username, password) then response else Http.Response(Http.Forbidden)()
 
-      case _ =>
-        val auth = t"""Basic realm="$realm", charset="UTF-8""""
+    case _ =>
+      val auth = t"""Basic realm="$realm", charset="UTF-8""""
 
-        Http.Response(Http.Unauthorized, wwwAuthenticate = auth)()
+      Http.Response(Http.Unauthorized, wwwAuthenticate = auth)()
 
 
 inline def request: Http.Request = infer[Http.Request]
@@ -116,5 +117,6 @@ package webserverErrorPages:
 
   given stackTraces: Classloader => WebserverErrorPage = (throwable, request) =>
     import charEncoders.utf8
+
     val stack = t"<pre>${throwable.stackTrace}</pre>".read[Data]
     Http.Response(Unfulfilled(Stream(prefix, stack, postfix).ascribe(media"text/html")))

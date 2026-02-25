@@ -60,7 +60,9 @@ trait Indexed extends Codllike, Dynamic:
         if index < layout.params then schema.param(index).lay(acc): entry =>
           acc.upsert(entry.key, _.lay(List(index))(index :: _))
         else acc.upsert(data.key, _.lay(List(index))(index :: _))
-      case (acc, _) => acc
+
+      case (acc, _) =>
+        acc
 
     . view.mapValues(_.reverse).to(Map)
 
@@ -80,9 +82,10 @@ trait Indexed extends Codllike, Dynamic:
 
   def get(key: Text): List[Indexed] =
     paramIndex.lift(key) match
-      case None => index.lift(key) match
-        case None       => Nil
-        case Some(indexes) => indexes.map(children(_).data.vouch)
+      case None =>
+        index.lift(key) match
+          case None       => Nil
+          case Some(indexes) => indexes.map(children(_).data.vouch)
 
       case Some(index) =>
         List.range(index, layout.params).map: index =>
@@ -96,4 +99,4 @@ trait Indexed extends Codllike, Dynamic:
   def applyDynamic(key: String)(index: Int = 0)(using erased DynamicCodlEnabler)
   :   Atom raises CodlError =
 
-      selectDynamic(key)(index)
+    selectDynamic(key)(index)

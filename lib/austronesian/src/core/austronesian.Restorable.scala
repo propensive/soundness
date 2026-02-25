@@ -42,7 +42,6 @@ import rudiments.*
 import wisteria.*
 
 object Restorable extends ProductDerivation[[entity] =>> entity is Restorable]:
-
   def apply[self](lambda: (Quotes, Classloader) ?=> Expr[Pojo] => Expr[self]): self is Restorable =
     new Restorable:
       type Self = self

@@ -59,10 +59,8 @@ object Report:
     def include(report: Report, testId: TestId, verdict: Verdict): Report =
       val report2 = report.addVerdict(testId, verdict)
       verdict match
-        case Verdict.Pass(_) =>
-          report2
-        case Verdict.Fail(_) =>
-          report2
+        case Verdict.Pass(_) => report2
+        case Verdict.Fail(_) => report2
 
         case Verdict.Throws(error, _) =>
           report2.addDetail(testId, Verdict.Detail.Throws(StackTrace(error)))
@@ -74,13 +72,15 @@ object Report:
 
 class Report(using Environment):
   val metrics = textMetrics.eastAsianScripts
+
   given measurable: Char is Measurable:
     def width(char: Char): Int = char match
       case '✓' | '✗' | '⎇' => 1
-      case _                => metrics.width(char)
+      case _               => metrics.width(char)
 
   private var failure: Optional[(Throwable, Set[TestId])] = Unset
   private var pass: Boolean = false
+
   private val lines: ReportLine.Suite = ReportLine.Suite(Unset)
 
   private val details: scm.SortedMap[TestId, scm.ArrayBuffer[Verdict.Detail]] =
@@ -89,9 +89,9 @@ class Report(using Environment):
 
   def passed: Boolean = failure.absent && pass
 
-
   class TestsMap():
     private var tests: ListMap[TestId, ReportLine] = ListMap()
+
     def list: List[(TestId, ReportLine)] = synchronized(tests.to(List))
     def apply(testId: TestId): ReportLine = synchronized(tests(testId))
 
@@ -102,14 +102,13 @@ class Report(using Environment):
       if !tests.contains(testId) then tests = tests.updated(testId, reportLine)
       tests(testId)
 
-
   enum ReportLine:
     case Suite(suite: Optional[Testable], tests: TestsMap = TestsMap())
     case Test(test: TestId, verdicts: scm.ArrayBuffer[Verdict] = scm.ArrayBuffer())
     case Bench(test: TestId, benchmark: Benchmark)
 
     def summaries: List[Summary] = this match
-      case Suite(suite, tests)  =>
+      case Suite(suite, tests) =>
         val rest = tests.list.sortBy(_(0).timestamp).flatMap(_(1).summaries)
         if suite.absent then rest
         else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
@@ -130,7 +129,6 @@ class Report(using Environment):
         val avg: Long = buffer.fuse(0L)(state + next.duration)/buffer.length
 
         List(Summary(status, testId, buffer.length, min, max, avg))
-
 
   def resolve(suite: Optional[Testable]): ReportLine.Suite =
     suite.option.map: suite =>
@@ -192,8 +190,7 @@ class Report(using Environment):
   val unitsSeq: List[Teletype] = List(e"$BurlyWood(µs)", e"$Goldenrod(ms)", e"$Sienna(s) ")
 
   def showTime(n: Long, units: List[Teletype] = unitsSeq): Teletype = units match
-    case Nil =>
-      n.show.teletype
+    case Nil => n.show.teletype
 
     case unit :: rest =>
       if n > 100000L then showTime(n/1000L, rest) else
@@ -264,7 +261,7 @@ class Report(using Environment):
 
       def describe(surface: Surface): Teletype =
         if surface.juncture.treeName == t"DefDef" then e"• ${surface.juncture.method.teletype}"
-         else e"• ${surface.juncture.shortCode}"
+        else e"• ${surface.juncture.shortCode}"
 
       def render(junctures: List[Surface]): Stream[(Surface, Teletype)] =
         val diagram = TreeDiagram.by[Surface](_.children)(junctures*)
@@ -315,6 +312,7 @@ class Report(using Environment):
             val bars = List(ForestGreen -> covered, Goldenrod -> oldCovered, Brown -> notCovered)
 
             bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join )
+
       . tabulate(data).grid(columns).render.each(Out.println(_))
 
       Out.println(e"")
@@ -428,7 +426,7 @@ class Report(using Environment):
 
           Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): s =>
             e"${operationFrequency(s.benchmark)}")
-       ::: comparisons.map: comparison =>
+        ::: comparisons.map: comparison =>
           import Baseline.*
           val baseline = comparison.benchmark.baseline.vouch
 
@@ -452,12 +450,14 @@ class Report(using Environment):
                 case BySpeed => e"$Silver(${value}) $Turquoise(op$Gray(·)s¯¹)"
 
               baseline.mode match
-                case Arithmetic => if value == 0 then e"★"
-                                   else if value < 0
-                                   then e"$Thistle(-)${valueWithUnits.dropChars(1)}"
-                                   else e"$Thistle(+)$valueWithUnits"
+                case Arithmetic =>
+                  if value == 0 then e"★"
+                  else if value < 0
+                  then e"$Thistle(-)${valueWithUnits.dropChars(1)}"
+                  else e"$Thistle(+)$valueWithUnits"
 
-                case Geometric  => if value == 1 then e"★" else e"$Silver($value)"
+                case Geometric =>
+                  if value == 1 then e"★" else e"$Silver($value)"
         )*
       )
 
@@ -520,8 +520,7 @@ class Report(using Environment):
 
     failure.let: (error, active) =>
       val explanation = active.to(List) match
-        case Nil =>
-          e"No tests were active when a fatal error occurred."
+        case Nil => e"No tests were active when a fatal error occurred."
 
         case _ =>
           val were = if active.size == 1 then e"was" else e"were"

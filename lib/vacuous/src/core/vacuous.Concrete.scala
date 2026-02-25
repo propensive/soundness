@@ -35,9 +35,9 @@ package vacuous
 import prepositional.*
 
 object Concrete:
- inline given concrete: [typeRef] => typeRef is Concrete = ${Vacuous.concrete[typeRef]}
+  inline given concrete: [typeRef] => typeRef is Concrete = ${internal.concrete[typeRef]}
 
- def apply[self](): self is Concrete = new Concrete:
-   type Self = self
+  def apply[self](): self is Concrete = new Concrete:
+    type Self = self
 
 sealed trait Concrete extends Typeclass

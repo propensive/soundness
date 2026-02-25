@@ -38,7 +38,7 @@ import scala.quoted.*
 import anticipation.*
 import proscenium.*
 
-export Fulminate.Diagnostics
+export fulminate.internal.Diagnostics
 
 package errorDiagnostics:
   given empty: Diagnostics = Diagnostics.omit
@@ -50,48 +50,48 @@ def halt(using Quotes)(message: Message, position: quotes.reflect.Position | Nul
   ( using Realm )
 :   Nothing =
 
-    import quotes.reflect.*
-    import dotty.tools.dotc.config.Settings.Setting.value
+  import quotes.reflect.*
+  import dotty.tools.dotc.config.Settings.Setting.value
 
-    val useColor: Boolean = quotes match
-      case quotes: runtime.impl.QuotesImpl =>
-        value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
+  val useColor: Boolean = quotes match
+    case quotes: runtime.impl.QuotesImpl =>
+      value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
 
-      case _ =>
-        false
+    case _ =>
+      false
 
-    val esc = 27.toChar
+  val esc = 27.toChar
 
-    val text =
-      if useColor
-      then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].name}$esc[0m ${message.colorText}"
-      else s"${summon[Realm].name}: ${message.text}"
+  val text =
+    if useColor
+    then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].name}$esc[0m ${message.colorText}"
+    else s"${summon[Realm].name}: ${message.text}"
 
-    if position == null then report.errorAndAbort(text) else report.errorAndAbort(text, position)
+  if position == null then report.errorAndAbort(text) else report.errorAndAbort(text, position)
 
 
 def warn(using Quotes)(message: Message, position: quotes.reflect.Position | Null = null)
   ( using Realm )
 :   Unit =
 
-    import quotes.reflect.*
-    import dotty.tools.dotc.config.Settings.Setting.value
+  import quotes.reflect.*
+  import dotty.tools.dotc.config.Settings.Setting.value
 
-    val esc = 27.toChar
+  val esc = 27.toChar
 
-    val useColor: Boolean = quotes match
-      case quotes: runtime.impl.QuotesImpl =>
-        value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
+  val useColor: Boolean = quotes match
+    case quotes: runtime.impl.QuotesImpl =>
+      value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
 
-      case _ =>
-        false
+    case _ =>
+      false
 
-    val text =
-      if useColor
-      then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].name}$esc[0m ${message.colorText}"
-      else s"${summon[Realm].name}: ${message.text}"
+  val text =
+    if useColor
+    then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].name}$esc[0m ${message.colorText}"
+    else s"${summon[Realm].name}: ${message.text}"
 
-    if position == null then report.warning(text) else report.warning(text, position)
+  if position == null then report.warning(text) else report.warning(text, position)
 
 
 extension (inline context: StringContext)
@@ -112,7 +112,7 @@ extension (inline context: StringContext)
             List(infer[(? >: other.type) is Communicable].message(other)) )
 
 extension (inline context: StringContext)
-  inline def realm(): Realm = ${Fulminate.realm('context)}
+  inline def realm(): Realm = ${fulminate.internal.realm('context)}
 
 extension [communicable: Communicable](value: communicable)
   def communicate: Message = communicable.message(value)

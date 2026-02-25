@@ -60,7 +60,7 @@ trait Interpolator[input, state, result]:
     ( using Type[input], Type[state], Type[result] )
   :   Macro[result] =
 
-      expansion(context, sequence)(1)
+    expansion(context, sequence)(1)
 
 
   def expansion
@@ -69,100 +69,104 @@ trait Interpolator[input, state, result]:
     ( using Quotes, Type[input], Type[state], Type[result] )
   :   (state, Expr[result]) =
 
-      import quotes.reflect.*
+    import quotes.reflect.*
 
-      val ref = Ref(TypeRepr.of(using thisType).typeSymbol.companionModule)
-      val target = ref.asExprOf[Interpolator[input, state, result]]
+    val ref = Ref(TypeRepr.of(using thisType).typeSymbol.companionModule)
+    val target = ref.asExprOf[Interpolator[input, state, result]]
 
-      def rethrow[success](block: => success, start: Int, end: Int): success =
-        try block catch case error: InterpolationError => error match
-          case InterpolationError(msg, offset, length) =>
-            inline given canThrow: CanThrow[PositionalError] = unsafeExceptions.canThrowAny
-            given diagnostics: Diagnostics = Diagnostics.omit
+    def rethrow[success](block: => success, start: Int, end: Int): success =
+      try block catch case error: InterpolationError => error match
+        case InterpolationError(msg, offset, length) =>
+          inline given canThrow: CanThrow[PositionalError] = unsafeExceptions.canThrowAny
+          given diagnostics: Diagnostics = Diagnostics.omit
 
-            throw
-              PositionalError
-                ( msg,
-                  start + offset.or(0),
-                  start + offset.or(0) + length.or(end - start - offset.or(0)) )
+          throw
+            PositionalError
+              ( msg,
+                start + offset.or(0),
+                start + offset.or(0) + length.or(end - start - offset.or(0)) )
 
-      def recur
-        ( sequence:  Seq[Expr[Any]],
-          parts:     Seq[String],
-          positions: Seq[Position],
-          state:     state,
-          expr:      Expr[state] )
-      :   (state, Expr[result]) throws PositionalError =
 
-        sequence match
-          case '{$head: head} +: tail =>
-            def notFound: Nothing =
-              val typeName: String = TypeRepr.of[head].widen.show
+    def recur
+      ( sequence:  Seq[Expr[Any]],
+        parts:     Seq[String],
+        positions: Seq[Position],
+        state:     state,
+        expr:      Expr[state] )
+    :   (state, Expr[result]) throws PositionalError =
 
-              halt
-                ( m"can't substitute ${Text(typeName)} to this interpolated string",
-                  head.asTerm.pos )
+      sequence match
+        case '{$head: head} +: tail =>
+          def notFound: Nothing =
+            val typeName: String = TypeRepr.of[head].widen.show
 
-            val (newState, typeclass) = Expr.summon[Insertion[input, head]].fold(notFound):
-              _.absolve match
-                case '{$typeclass: Substitution[input, head, sub]} =>
-                  val substitution: String = TypeRepr.of[sub].asMatchable.absolve match
-                    case ConstantType(StringConstant(string)) =>
-                      string
+            halt
+              ( m"can't substitute ${Text(typeName)} to this interpolated string",
+                head.asTerm.pos )
 
-                  (rethrow
-                    (parse
-                      (rethrow
-                        (substitute(state, substitution.tt),
-                        expr.asTerm.pos.start,
-                        expr.asTerm.pos.end),
-                      parts.head.tt),
-                    positions.head.start,
-                    positions.head.end),
-                  typeclass)
+          val (newState, typeclass) = Expr.summon[Insertion[input, head]].fold(notFound):
+            _.absolve match
+              case '{$typeclass: Substitution[input, head, sub]} =>
+                val substitution: String = TypeRepr.of[sub].asMatchable.absolve match
+                  case ConstantType(StringConstant(string)) =>
+                    string
 
-                case typeclass =>
-                  (rethrow
-                    (parse
-                      (rethrow(skip(state), expr.asTerm.pos.start, expr.asTerm.pos.end),
-                      parts.head.tt),
-                    positions.head.start,
-                    positions.head.end),
-                  typeclass)
+                ( rethrow
+                    ( parse
+                        ( rethrow
+                            ( substitute(state, substitution.tt),
+                              expr.asTerm.pos.start,
+                              expr.asTerm.pos.end ),
+                              parts.head.tt ),
+                          positions.head.start,
+                          positions.head.end ),
+                          typeclass )
 
-            val next = '{$target.parse($target.insert($expr, $typeclass.embed($head)),
-                Text(${Expr(parts.head)}))}
+              case typeclass =>
+                ( rethrow
+                    ( parse
+                        ( rethrow(skip(state), expr.asTerm.pos.start, expr.asTerm.pos.end),
+                          parts.head.tt ),
+                      positions.head.start,
+                      positions.head.end ),
+                typeclass )
 
-            recur(tail, parts.tail, positions.tail, newState, next)
+          val next =
+            '{$target.parse($target.insert($expr, $typeclass.embed($head)), ${Expr(parts.head)}.tt)}
 
-          case _ =>
-            rethrow(complete(state), Position.ofMacroExpansion.start, Position.ofMacroExpansion.end)
-            (state, '{$target.complete($expr)})
+          recur(tail, parts.tail, positions.tail, newState, next)
 
-      val exprs: Seq[Expr[Any]] = sequence match
-        case Varargs(exprs) => exprs
-        case _              => Nil
+        case _ =>
+          rethrow(complete(state), Position.ofMacroExpansion.start, Position.ofMacroExpansion.end)
+          (state, '{$target.complete($expr)})
 
-      val parts = context.value.getOrElse:
-        halt(m"the StringContext extension method parameter does not appear to be inline")
 
-      . parts
+    val exprs: Seq[Expr[Any]] = sequence match
+      case Varargs(exprs) => exprs
+      case _              => Nil
 
-      val positions: Seq[Position] = context.absolve match
-        case '{(${sc}: StringContext.type).apply(($parts: Seq[String])*)} =>
-          parts.absolve match
-            case Varargs(stringExprs) => stringExprs.to(List).map(_.asTerm.pos)
+    val parts = context.value.getOrElse:
+      halt(m"the StringContext extension method parameter does not appear to be inline")
 
-      try recur
-          (exprs,
-            parts.tail,
-            positions.tail,
-            rethrow(parse(initial, Text(parts.head)), positions.head.start, positions.head.end),
-            '{$target.parse($target.initial, Text(${Expr(parts.head)}))})
-      catch
-        case error: PositionalError => error match
+    . parts
+
+    val positions: Seq[Position] = context.absolve match
+      case '{(${sc}: StringContext.type).apply(($parts: Seq[String])*)} =>
+        parts.absolve match
+          case Varargs(stringExprs) => stringExprs.to(List).map(_.asTerm.pos)
+
+    try recur
+        (exprs,
+          parts.tail,
+          positions.tail,
+          rethrow(parse(initial, Text(parts.head)), positions.head.start, positions.head.end),
+          '{$target.parse($target.initial, Text(${Expr(parts.head)}))})
+    catch
+      case error: PositionalError =>
+        error match
           case PositionalError(message, start, end) =>
             halt(message, Position(Position.ofMacroExpansion.sourceFile, start, end))
 
-        case error: InterpolationError => error match
+      case error: InterpolationError =>
+        error match
           case InterpolationError(message, _, _) => halt(message, Position.ofMacroExpansion)

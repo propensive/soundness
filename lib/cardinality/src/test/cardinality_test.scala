@@ -36,22 +36,22 @@ import fulminate.*
 import larceny.*
 import probably.*
 
-object Tests extends Suite(m"Cardinality tests"):
+object Tests extends Suite(m"internal tests"):
   def run(): Unit =
     suite(m"Compile-time tests"):
 
       test(m"Value is less than lower bound"):
         demilitarize:
           val x: -1.0 ~ 1.0 = -1.01
-      .assert(_.nonEmpty)
+      . assert(_.nonEmpty)
 
       test(m"Value is greater than upper bound"):
         demilitarize:
           val x: -1.0 ~ 1.0 = 1.01
-      .assert(_.nonEmpty)
+      . assert(_.nonEmpty)
 
       test(m"Doubling a number doubles its range"):
         demilitarize:
           val x: -1.0 ~ 1.0 = 0.0
           val y: -2.0 ~ 2.0 = x*2.0
-      .aspire(_ == Nil)
+      . aspire(_ == Nil)

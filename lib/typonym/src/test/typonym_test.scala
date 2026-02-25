@@ -34,19 +34,19 @@ package typonym
 
 import soundness.*
 
-object Tests extends Suite(m"Typonym tests"):
+object Tests extends Suite(m"internal tests"):
   def run(): Unit =
     test(m"Get a list of strings"):
       reify[TypeList[("one", "two", "three")]]
-    .assert(_ == List("one", "two", "three"))
+    . assert(_ == List("one", "two", "three"))
 
     test(m"Get a map of strings"):
       reify[TypeMap[((1, "one"), (2, "two"), (3, "three"))]]
-    .assert(_ == Map(1 -> "one", 2 -> "two", 3 -> "three"))
+    . assert(_ == Map(1 -> "one", 2 -> "two", 3 -> "three"))
 
     test(m"Get a multimap of strings"):
       reify[TypeMap[((1, TypeList[("one", "un", "ein")]), (2, TypeList[("two", "zwei", "deux")]))]]
-    .assert(_ == Map(1 -> List("one", "un", "ein"), 2 -> List("two", "zwei", "deux")))
+    . assert(_ == Map(1 -> List("one", "un", "ein"), 2 -> List("two", "zwei", "deux")))
 
     test(m"Reify a set of strings"):
       reify[TypeSet["one" | "two" | "three" | "four"]]

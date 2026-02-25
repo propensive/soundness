@@ -40,4 +40,4 @@ import fulminate.*
 private given realm: Realm = realm"guillotine"
 
 extension (inline context: StringContext)
-  transparent inline def sh(inline parts: Any*): Any = ${Guillotine.sh('context, 'parts)}
+  transparent inline def sh(inline parts: Any*): Any = ${guillotine.internal.sh('context, 'parts)}

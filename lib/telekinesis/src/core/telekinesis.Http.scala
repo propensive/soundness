@@ -129,7 +129,6 @@ object Http:
     case Continue                      extends Status(100, t"Continue")
     case SwitchingProtocols            extends Status(101, t"Switching Protocols")
     case EarlyHints                    extends Status(103, t"Early Hints")
-
     case Ok                            extends Status(200, t"OK")
     case Created                       extends Status(201, t"Created")
     case Accepted                      extends Status(202, t"Accepted")
@@ -137,7 +136,6 @@ object Http:
     case NoContent                     extends Status(204, t"No Content")
     case ResetContent                  extends Status(205, t"Reset Content")
     case PartialContent                extends Status(206, t"Partial Content")
-
     case MultipleChoices               extends Status(300, t"Multiple Choices")
     case MovedPermanently              extends Status(301, t"Moved Permanently")
     case Found                         extends Status(302, t"Found")
@@ -145,7 +143,6 @@ object Http:
     case NotModified                   extends Status(304, t"Not Modified")
     case TemporaryRedirect             extends Status(307, t"Temporary Redirect")
     case PermanentRedirect             extends Status(308, t"Permanent Redirect")
-
     case BadRequest                    extends Status(400, t"Bad Request")
     case Unauthorized                  extends Status(401, t"Unauthorized")
     case PaymentRequired               extends Status(402, t"Payment Required")
@@ -171,7 +168,6 @@ object Http:
     case TooManyRequests               extends Status(429, t"Too Many Requests")
     case RequestHeaderFieldsTooLarge   extends Status(431, t"Request Header Fields Too Large")
     case UnavailableForLegalReasons    extends Status(451, t"Unavailable For Legal Reasons")
-
     case InternalServerError           extends Status(500, t"Internal Server Error")
     case NotImplemented                extends Status(501, t"Not Implemented")
     case BadGateway                    extends Status(502, t"Bad Gateway")
@@ -208,12 +204,13 @@ object Http:
       val params: Text =
         request.query.values.map: (key, value) =>
           t"$key = \"$value\""
+
         . join(t"\n          ")
 
       ListMap[Text, Text](
         t"content"
-        -> safely(request.headers.contentType.prim.or(media"application/octet-stream").show)
-           . or(t"?"),
+        ->  ( safely(request.headers.contentType.prim.or(media"application/octet-stream").show)
+              . or(t"?") ),
         t"method"   -> request.method.show,
         t"query"    -> request.query.show,
         t"hostname" -> request.host.show,
@@ -264,6 +261,7 @@ object Http:
       case Body.Empty             => Stream()
       case Body.Streaming(stream) => stream
 
+
   class Request
     ( val method:      Http.Method,
       val version:     Http.Version,
@@ -301,26 +299,29 @@ object Http:
                 decoder:   directive.Topic is Decodable in Text )
       :   List[directive.Topic] =
 
-          val name2 = name.tt.uncamel.kebab.lower
-          textHeaders.filter(_.key.lower == name2).map(_.value.decode)
+        val name2 = name.tt.uncamel.kebab.lower
+        textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
     lazy val contentType: Optional[MediaType] = safely(headers.contentType.prim)
 
     lazy val textCookies: Map[Text, Text] =
       headers.cookie.flatMap: cookie =>
         cookie.bi.map(_.name -> _.value)
+
       . to(Map)
+
 
   object Response extends Dynamic:
     transparent inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
     :   Prototype | Response =
 
-        ${Telekinesis.response('headers)}
+      ${telekinesis.internal.response('headers)}
+
 
     given conversion: [servable: Servable] => Conversion[servable, Response] = servable.serve(_)
 
     transparent inline def applyDynamic(id: "apply")(inline headers: Any*): Prototype | Response =
-      ${Telekinesis.response('headers)}
+      ${telekinesis.internal.response('headers)}
 
     case class Prototype(status0: Optional[Status], headers: Seq[Header]):
       def apply(body: Body = Body.Empty): Response =
@@ -429,8 +430,8 @@ object Http:
 
     def updateDynamic[label <: Label: Directive of topic, topic](name: label)(value: topic)
     :   Response =
-        val key2 = name.tt.uncamel.kebab.lower
-        copy(textHeaders = Header(key2, label.encode(value)) :: textHeaders.filter(_.key != key2))
+      val key2 = name.tt.uncamel.kebab.lower
+      copy(textHeaders = Header(key2, label.encode(value)) :: textHeaders.filter(_.key != key2))
 
 
     def successBody: Optional[Stream[Data]] =
@@ -445,8 +446,8 @@ object Http:
                 decoder:   directive.Topic is Decodable in Text )
       :   List[directive.Topic] =
 
-          val name2 = name.tt.uncamel.kebab.lower
-          textHeaders.filter(_.key.lower == name2).map(_.value.decode)
+        val name2 = name.tt.uncamel.kebab.lower
+        textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
 
     @targetName("add")
@@ -466,10 +467,10 @@ object Http:
               client:   HttpClient onto target )
     :   Http.Response =
 
-        $ {
-            ( Telekinesis.submit[target, payload]
-              ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) )
-          }
+      $ {
+          ( telekinesis.internal.submit[target, payload]
+            ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) )
+        }
 
 
     inline def applyDynamic[payload: Postable as postable](id: "apply")(inline headers: Any*)
@@ -479,15 +480,14 @@ object Http:
               client:   HttpClient onto target )
     :   Http.Response =
 
-        $ {
-            ( Telekinesis.submit[target, payload]
-                ( 'this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) )
-          }
+      $ {
+          ( telekinesis.internal.submit[target, payload]
+              ( 'this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client ) )
+        }
 
 
   case class Fetch[target](originForm: Text, target: target, host: Hostname)
     extends Dynamic:
-
 
     inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
       ( using online:   Online,
@@ -496,7 +496,7 @@ object Http:
               client:   HttpClient onto target )
     :   Http.Response =
 
-        ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
+      ${telekinesis.internal.fetch('this, 'headers, 'online, 'loggable, 'client)}
 
 
     inline def applyDynamic[payload](id: "apply")(inline headers: Any*)
@@ -505,4 +505,4 @@ object Http:
               client:   HttpClient onto target )
     :   Http.Response =
 
-        ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
+      ${telekinesis.internal.fetch('this, 'headers, 'online, 'loggable, 'client)}

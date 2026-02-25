@@ -37,7 +37,6 @@ import proscenium.*
 
 class EscapeTactic[result](label: boundary.Label[result])
 extends Tactic[Break[result]]:
-
   given diagnostics: Diagnostics = Diagnostics.omit
   private given boundary.Label[result] = label
 

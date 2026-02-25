@@ -58,6 +58,7 @@ extends Interactivity[TerminalEvent]:
   val keyboard: Keyboard.Standard = Keyboard.Standard()
   val rows0: Promise[Int] = Promise()
   val columns0: Promise[Int] = Promise()
+
   var mode: Optional[Luminance] = Unset
   var rows: Optional[Int] = Unset
   var columns: Optional[Int] = Unset
@@ -77,6 +78,7 @@ extends Interactivity[TerminalEvent]:
     val in = console.stdio.in
 
   val events: Spool[TerminalEvent] = Spool()
+
   def eventStream(): Stream[TerminalEvent] = events.stream
 
   val pumpSignals: Daemon = daemon:

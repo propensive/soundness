@@ -43,8 +43,8 @@ object Aes:
 
 class Aes[bits <: 128 | 192 | 256: ValueOf]() extends Cipher, Encryption, Symmetric:
   type Size = bits
-  def keySize: bits = valueOf[bits]
 
+  def keySize: bits = valueOf[bits]
   private def init() = jc.Cipher.getInstance("AES/ECB/PKCS5Padding")
   private def makeKey(key: Data): SecretKeySpec = SecretKeySpec(key.mutable(using Unsafe), "AES")
 

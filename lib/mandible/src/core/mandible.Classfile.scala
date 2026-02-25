@@ -64,6 +64,7 @@ class Classfile(data: Data):
     model.attributes.nn.iterator.nn.asScala.to(List).collect:
       case attribute: jlca.SourceFileAttribute =>
         attribute.sourceFile().nn.stringValue.nn.tt
+
     . prim
 
   class Method(model: jlc.MethodModel):
@@ -78,10 +79,11 @@ class Classfile(data: Data):
           count: Int )
       :   List[Bytecode.Instruction] =
 
-          todo match
-            case Nil => done.reverse
+        todo match
+          case Nil => done.reverse
 
-            case next :: todo => next match
+          case next :: todo =>
+            next match
               case instruction: jlc.Instruction =>
                 val opcode = Bytecode.Opcode(instruction)
                 val stack2 = stack.let(opcode.transform(_))
@@ -104,6 +106,7 @@ class Classfile(data: Data):
 
               case other =>
                 panic(m"did not handle ${other.toString.tt}")
+
 
       val instructions = recur(code.elementList.nn.asScala.to(List), Unset, Nil, Nil, 0)
 

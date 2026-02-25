@@ -38,7 +38,7 @@ import scala.util.FromDigits
 
 import language.experimental.genericNumberLiterals
 
-import Cardinality.{Asym, Min4, Max4}
+import internal.{Asym, Min4, Max4}
 
 object NumericRange:
   @annotation.targetName("Range")
@@ -53,10 +53,11 @@ object NumericRange:
     =>  ( min: ValueOf[min], max: ValueOf[max] )
     =>  TypeTest[Double, min ~ max] =
 
-        value =>
-          if value >= min.value && value <= max.value
-          then Some(value.asInstanceOf[(min ~ max) & value.type])
-          else None
+      value =>
+        if value >= min.value && value <= max.value
+        then Some(value.asInstanceOf[(min ~ max) & value.type])
+        else None
+
 
     class RangeParser[min <: Double, max <: Double]
     extends FromDigits.Decimal[min ~ max]:
@@ -64,24 +65,24 @@ object NumericRange:
 
     given cardinality: [min <: Double, max <: Double] => RangeParser[min, max]:
       override inline def fromDigits(digits: String): min ~ max =
-        ${Cardinality('digits)}
+        ${internal('digits)}
+
 
     extension [leftMin <: Double, leftMax <: Double](left: leftMin ~ leftMax)
       def double: Double = left
-
 
       @annotation.targetName("add")
       infix def + [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
       :   (leftMin + rightMin) ~ (leftMax + rightMax) =
 
-          left + right
+        left + right
 
 
       @annotation.targetName("add2")
       infix def + [E <: Double & Singleton](right: E)
       :   (leftMin + right.type) ~ (leftMax + right.type) =
 
-          left + right
+        left + right
 
 
       @annotation.targetName("add3")
@@ -99,7 +100,7 @@ object NumericRange:
       infix def * [right <: Double & Singleton](right: right)
       :   Min[leftMin*right, leftMax*right] ~ Max[leftMin*right, leftMax*right] =
 
-          left*right
+        left*right
 
 
       @annotation.targetName("times3")
@@ -118,7 +119,7 @@ object NumericRange:
       infix def - [right <: Double & Singleton](right: right)
       :   Min[leftMin - right, leftMax - right] ~ Max[leftMin - right, leftMax - right] =
 
-          left - right
+        left - right
 
 
       @annotation.targetName("minus3")
@@ -129,7 +130,7 @@ object NumericRange:
       infix def / [right <: Double & Singleton](right: right)
       :   Min[leftMin/right, leftMax/right] ~ Max[leftMin/right, leftMax/right] =
 
-          left/right
+        left/right
 
 
       @annotation.targetName("divide2")
@@ -142,7 +143,7 @@ object NumericRange:
         ~ Asym
           [ rightMin*rightMax,
             Max4[leftMin/rightMin, leftMax/rightMin, leftMin/rightMax, leftMax/rightMax],
-            1.0/0.0] =
+            1.0/0.0 ] =
 
           left/right
 

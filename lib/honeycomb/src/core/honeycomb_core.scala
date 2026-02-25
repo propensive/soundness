@@ -85,5 +85,5 @@ package stylesheets:
   given uncheckedClasses: [classname <: Label: ValueOf] => NotGiven[classname =:= "apply"]
   =>  Stylesheet of classname =
 
-      new Stylesheet(Set(valueOf[classname])):
-        type Topic = classname
+    new Stylesheet(Set(valueOf[classname])):
+      type Topic = classname

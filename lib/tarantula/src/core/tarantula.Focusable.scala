@@ -39,10 +39,6 @@ import honeycomb.*
 import prepositional.*
 import spectacular.*
 
-trait Focusable extends Typeclass:
-  def strategy: Text
-  def focus(value: Self): Text
-
 object Focusable:
   def apply[element](strategy0: Text, focus0: element => Text): element is Focusable =
     new Focusable:
@@ -57,3 +53,7 @@ object Focusable:
 
   given cssClass: Stylesheet is Focusable =
     Focusable(t"css selector", _.classes.join(t".", t".", t""))
+
+trait Focusable extends Typeclass:
+  def strategy: Text
+  def focus(value: Self): Text

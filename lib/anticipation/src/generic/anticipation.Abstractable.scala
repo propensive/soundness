@@ -36,4 +36,5 @@ import prepositional.*
 
 trait Abstractable extends Typeclass, Resultant, Domainal:
   def genericize(value: Self): Result
+
   extension (value: Self) def generic: Result = genericize(value)

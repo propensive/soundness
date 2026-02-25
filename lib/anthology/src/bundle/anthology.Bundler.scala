@@ -62,46 +62,48 @@ object Bundler:
   def classpath(out: Path on Linux): LocalClasspath = LocalClasspath:
     Classpath.Directory(out)
     :: (classloaders.threadContext.classpath.match
-      case classpath: LocalClasspath =>
-        classpath.entries
+      case classpath: LocalClasspath => classpath.entries
 
       case _ =>
         unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)
 
+
   def bundle(directory: Path on Linux, jarfile0: Optional[Path on Linux], main: Optional[Fqcn])
   :   Path on Linux =
-      val jarfile = jarfile0.or(directory.peer("tmpfile.jar"))
 
-      val manifest =
-        main.let(MainClass(_)).let: main =>
-          Manifest(ManifestVersion(()), CreatedBy(t"Soundness"), main)
-        . or:
-            Manifest(ManifestVersion(()), CreatedBy(t"Soundness"))
+    val jarfile = jarfile0.or(directory.peer("tmpfile.jar"))
+
+    val manifest =
+      main.let(MainClass(_)).let: main =>
+        Manifest(ManifestVersion(()), CreatedBy(t"Soundness"), main)
+
+      . or:
+          Manifest(ManifestVersion(()), CreatedBy(t"Soundness"))
 
 
-      unsafely:
-        Zipfile.write(jarfile):
-          ZipEntry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest)
-          :: classpath(directory).entries.to(List).flatMap:
-            case ClasspathEntry.Directory(directory) =>
-              unsafely:
-                val root = directory.decode[Path on Linux]
-                root.descendants.to(List).map: file =>
-                  file.open: handle =>
-                    val ref = %.on[Zip] + root.toward(file).on[Zip]
-                    ZipEntry(ref, handle.read[Data])
+    unsafely:
+      Zipfile.write(jarfile):
+        ZipEntry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest)
+        :: classpath(directory).entries.to(List).flatMap:
+          case ClasspathEntry.Directory(directory) =>
+            unsafely:
+              val root = directory.decode[Path on Linux]
+              root.descendants.to(List).map: file =>
+                file.open: handle =>
+                  val ref = %.on[Zip] + root.toward(file).on[Zip]
+                  ZipEntry(ref, handle.read[Data])
 
-            case ClasspathEntry.Jar(jar) =>
-              unsafely:
-                val jarfile = workingDirectory[Path on Linux].resolve(jar)
-                jarfile.open: handle =>
-                  ZipStream(handle).keep { path => path.encode != t"META-INF/MANIFEST.MF" }
-                  . map: entry =>
-                      ZipEntry(entry.ref, entry.read[Data])
+          case ClasspathEntry.Jar(jar) =>
+            unsafely:
+              val jarfile = workingDirectory[Path on Linux].resolve(jar)
+              jarfile.open: handle =>
+                ZipStream(handle).keep { path => path.encode != t"META-INF/MANIFEST.MF" }
+                . map: entry =>
+                    ZipEntry(entry.ref, entry.read[Data])
 
-                  . to(List)
+                . to(List)
 
-            case _ =>
-              List()
+          case _ =>
+            List()
 
-        jarfile
+      jarfile

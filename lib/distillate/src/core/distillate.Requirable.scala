@@ -41,7 +41,7 @@ object Requirable:
   given decodable: [value] => (decodable: Tactic[Exception] ?=> value is Decodable in Text)
   =>  value is Requirable =
 
-      () => safely("".tt.decode[value]).absent
+    () => safely("".tt.decode[value]).absent
 
 
 trait Requirable extends Typeclass:

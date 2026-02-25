@@ -37,11 +37,13 @@ import prepositional.*
 object Lineation:
   inline given untrackedChars: Lineation:
     type Operand = Char
+
     inline def active: false = false
     inline def track(datum: Char): false = false
 
   inline given untrackedData: Lineation:
     type Operand = Byte
+
     inline def active: false = false
     inline def track(datum: Byte): false = false
 

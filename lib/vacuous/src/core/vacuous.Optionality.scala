@@ -37,6 +37,6 @@ import language.experimental.pureFunctions
 import scala.quoted.*
 
 object Optionality:
-  inline given default: [value] => Optionality[value] = ${Vacuous.check[value]}
+  inline given default: [value] => Optionality[value] = ${internal.check[value]}
 
 sealed trait Optionality[-value]

@@ -42,12 +42,11 @@ import proscenium.*
 import vacuous.*
 
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
-
   override def apply[path: Instantiable across Paths from Text]()
     ( using System, Environment )
   :   path raises PropertyError raises EnvironmentError =
 
-      path(t"/")
+    path(t"/")
 
 
   object Boot extends BaseLayout[Mono["boot"]](t"boot", readOnly = true)
@@ -66,6 +65,7 @@ object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
     object Bin extends BaseLayout[("bin", "usr")](t"bin", readOnly = true)
     object Include extends BaseLayout[("include", "usr")](t"include", readOnly = true)
     object Lib extends BaseLayout[("lib", "usr")](t"lib", readOnly = true)
+
     object Share extends BaseLayout(t"share", readOnly = true):
       object Doc extends BaseLayout(t"doc", readOnly = true)
 

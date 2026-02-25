@@ -48,18 +48,21 @@ object XmlSchema:
     scm.HashMap()
 
   private[xylophone] val entities: scm.HashMap[XmlSchema, Dictionary[Text]] = scm.HashMap()
-
   val generic = Tag.root(Set())
+
   object Freeform extends XmlSchema:
     override def freeform = true
+
     val elements = Dictionary()
     val attributes = Dictionary()
     val entities = Dictionary()
+
     def infer(parent: Tag, child: Tag) = Unset
 
 
 trait XmlSchema:
   def freeform: Boolean = false
+
   val elements: Dictionary[Tag]
   val attributes: Dictionary[Xml.XmlAttribute]
   val entities: Dictionary[Text]

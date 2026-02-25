@@ -52,6 +52,7 @@ class PositionReader(private var in: Stream[Text]):
   private var startCol: Int = 0
   private var requireCr: Optional[Boolean] = Unset
   private var finished: Boolean = false
+
   private val buffer: StringBuilder = StringBuilder()
 
   private var current: Ordinal = Prim - 1
@@ -80,6 +81,7 @@ class PositionReader(private var in: Stream[Text]):
     case '\n' =>
       lastLine += 1
       lastCol = 0
+
     case _ =>
       lastCol += 1
 
@@ -89,6 +91,7 @@ class PositionReader(private var in: Stream[Text]):
       case -1 =>
         finished = true
         Character.End
+
       case '\r' =>
         requireCr match
           case Unset => requireCr = true
@@ -102,12 +105,12 @@ class PositionReader(private var in: Stream[Text]):
           case true  =>
             ()
 
-        if read() != '\n'
-        then raise
-              (ParseError
-                (Codl,
-                 Codl.Position(lastLine, lastCol, 1),
-                 Codl.Issue.UnexpectedCarriageReturn))
+        if read() != '\n' then
+          raise
+            ( ParseError
+                ( Codl,
+                  Codl.Position(lastLine, lastCol, 1),
+                  Codl.Issue.UnexpectedCarriageReturn ) )
 
         Character('\n', lastLine, lastCol).tap(advance)
 

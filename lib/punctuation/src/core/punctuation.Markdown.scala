@@ -46,6 +46,7 @@ import attributives.textAttributes
 
 object Markdown:
   trait Node
+
   case class LinkRef(label: Text, title: Optional[Text], destination: Text)
 
   // FIXME: This implementation needs to be cleaned up
@@ -57,8 +58,9 @@ object Markdown:
       case ' '                          => builder.append("%20")
       case '\\'                         => builder.append("%5C")
 
-      case char@('-' | '.' | '+' | ',' | '&' | '@' | '#' | '~' | '/' | '*' | '_' | '(' | ')' | '='
-                 | ':' | '?') =>
+      case char
+        @ ( '-' | '.' | '+' | ',' | '&' | '@' | '#' | '~' | '/' | '*' | '_' | '(' | ')' | '=' | ':'
+            | '?' ) =>
         builder.append(char)
 
       case char =>
@@ -67,19 +69,15 @@ object Markdown:
     builder.toString.tt
 
   private def text(node: Prose): Text = node match
-    case Prose.Textual(text)       => text
-    case Prose.Emphasis(children*) => children.map(text(_)).join
-    case Prose.Code(code)          => code
-    case Prose.Strong(children*)   => children.map(text(_)).join
-    case Prose.Softbreak           => "\n"
-    case Prose.Linebreak           => "\n"
-    case Prose.HtmlInline(content) => ""
-
-    case Prose.Link(destination, title, content*) =>
-      content.map(text(_)).join
-
-    case Prose.Image(destination, title, content*) =>
-      content.map(text(_)).join
+    case Prose.Textual(text)                       => text
+    case Prose.Emphasis(children*)                 => children.map(text(_)).join
+    case Prose.Code(code)                          => code
+    case Prose.Strong(children*)                   => children.map(text(_)).join
+    case Prose.Softbreak                           => "\n"
+    case Prose.Linebreak                           => "\n"
+    case Prose.HtmlInline(content)                 => ""
+    case Prose.Link(destination, title, content*)  => content.map(text(_)).join
+    case Prose.Image(destination, title, content*) => content.map(text(_)).join
 
   private def phrasing(node: Prose): Html of Phrasing = node match
     case Prose.Textual(text)       => text
@@ -140,6 +138,7 @@ object Markdown:
           case head :: tail =>
             merge(true, tail, Fragment("\n", layout(head)) :: done, tight)
 
+
       def block(node: Layout): Boolean = node match
         case Layout.Paragraph(_, content*) => false
         case node                          => true
@@ -168,19 +167,20 @@ object Markdown:
 
           Ol(items2*).per(start2)(_.start = _)
 
-
         case Layout.ThematicBreak(line) =>
           Hr
 
-        case Layout.HtmlBlock(line, content) => Comment(s"[CDATA[$content]]")
+        case Layout.HtmlBlock(line, content) =>
+          Comment(s"[CDATA[$content]]")
 
-        case Layout.Heading(line, level, content*) => level match
-          case 1 => H1(content.map(phrasing(_))*)
-          case 2 => H2(content.map(phrasing(_))*)
-          case 3 => H3(content.map(phrasing(_))*)
-          case 4 => H4(content.map(phrasing(_))*)
-          case 5 => H5(content.map(phrasing(_))*)
-          case 6 => H6(content.map(phrasing(_))*)
+        case Layout.Heading(line, level, content*) =>
+          level match
+            case 1 => H1(content.map(phrasing(_))*)
+            case 2 => H2(content.map(phrasing(_))*)
+            case 3 => H3(content.map(phrasing(_))*)
+            case 4 => H4(content.map(phrasing(_))*)
+            case 5 => H5(content.map(phrasing(_))*)
+            case 6 => H6(content.map(phrasing(_))*)
 
         case Layout.CodeBlock(line, info, code) =>
           domains.format(info, code).or:
@@ -188,15 +188,16 @@ object Markdown:
 
       Fragment(markdown.children.map { node => Fragment(layout(node), "\n") }*)
 
-
   def apply(linkRefs0: List[Markdown.LinkRef], layout: Layout*): Markdown of Layout = new Markdown:
     type Topic = Layout
+
     val linkRefs: List[Markdown.LinkRef] = linkRefs0
     val children: Seq[Layout] = layout
 
   @targetName("applyProse")
   def apply(prose: Prose*): Markdown of Prose = new Markdown:
     type Topic = Prose
+
     val linkRefs: List[Markdown.LinkRef] = Nil
     val children: Seq[Prose] = prose
 

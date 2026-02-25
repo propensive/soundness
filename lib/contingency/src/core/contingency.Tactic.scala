@@ -38,7 +38,6 @@ import fulminate.*
 
 trait Tactic[-error <: Exception]:
   private inline def tactic: this.type = this
-
   def diagnostics: Diagnostics
   def record(error: Diagnostics ?=> error): Unit
   def abort(error: Diagnostics ?=> error): Nothing

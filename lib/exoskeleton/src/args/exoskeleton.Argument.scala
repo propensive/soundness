@@ -65,9 +65,11 @@ case class Argument
     case Argument.Format.Full            => suggestion
     case Argument.Format.FlagSuffix      => suggestion.copy(prefix = value.keep(2))
     case Argument.Format.CharFlag(index) => suggestion // FIXME
-    case Argument.Format.EqualityPrefix  =>
+
+    case Argument.Format.EqualityPrefix =>
       suggestion.copy(core = suggestion.core+t"="+value.after(value.index("=").or(Prim)))
-    case Argument.Format.EqualitySuffix  =>
+
+    case Argument.Format.EqualitySuffix =>
       val suggestion2 = suggestion.copy(prefix = value.before(value.index("=").or(Prim))+t"=")
       suggestion2
 
@@ -101,8 +103,8 @@ case class Argument
   def select[operand: Suggestible](options: Seq[operand])(using cli: Cli, interpreter: Interpreter)
   :   Optional[operand] =
 
-      val mapping: Map[Text, operand] =
-        options.map { option => (operand.suggest(option).text, option) }.to(Map)
+    val mapping: Map[Text, operand] =
+      options.map { option => (operand.suggest(option).text, option) }.to(Map)
 
-      suggest(options.to(List).map(operand.suggest(_)))
-      mapping.at(this())
+    suggest(options.to(List).map(operand.suggest(_)))
+    mapping.at(this())

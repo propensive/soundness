@@ -48,7 +48,6 @@ import wisteria.*
 
 
 object JsonSchema extends Derivable[Schematic in JsonSchema]:
-
   given encodable: JsonSchema is Encodable in Json = Json.EncodableDerivation.derived
 
   given discriminatedUnion: JsonSchema is Discriminable:
@@ -67,7 +66,7 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
     () =>
       val descriptions = infer[derivation is Annotated by memo] match
         case annotated: Annotated.Fields => annotated.fields
-        case _                             => Map()
+        case _                           => Map()
 
       val map =
         contexts:
@@ -80,6 +79,7 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
       val required: List[Text] =
         contexts:
           [field] => schema => label.unless(schema.schema().optional)
+
         . compact
         . to(List)
 
@@ -108,7 +108,6 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
       UriTemplate, Uuid, JsonPointer, RelativeJsonPointer, Regex
 
 enum JsonSchema extends Documentary:
-
   def optional: scala.Boolean
   def description: Optional[Text]
 
@@ -121,49 +120,48 @@ enum JsonSchema extends Documentary:
     case entity: Boolean => entity.copy(description = description)
     case entity: Null    => entity.copy(description = description)
 
-
   case Object
-        (description:          Optional[Text]             = Unset,
-         properties:           Map[Text, JsonSchema]      = Map(),
-         optional:             scala.Boolean              = false,
-         required:             Optional[List[Text]]       = Unset,
-         `enum`:               Optional[List[Json]]       = Unset,
-         additionalProperties: scala.Boolean              = false,
-         oneOf:                Optional[List[JsonSchema]] = Unset)
+    ( description:          Optional[Text]             = Unset,
+      properties:           Map[Text, JsonSchema]      = Map(),
+      optional:             scala.Boolean              = false,
+      required:             Optional[List[Text]]       = Unset,
+      `enum`:               Optional[List[Json]]       = Unset,
+      additionalProperties: scala.Boolean              = false,
+      oneOf:                Optional[List[JsonSchema]] = Unset )
 
   case Array
-        (description: Optional[Text]       = Unset,
-         items:       Optional[JsonSchema] = Unset,
-         minItems:    Optional[Int]        = Unset,
-         maxItems:    Optional[Int]        = Unset,
-         optional:    scala.Boolean        = false,
-         maxContains: Optional[Int]        = Unset,
-         minContains: Optional[Int]        = Unset)
+    ( description: Optional[Text]       = Unset,
+      items:       Optional[JsonSchema] = Unset,
+      minItems:    Optional[Int]        = Unset,
+      maxItems:    Optional[Int]        = Unset,
+      optional:    scala.Boolean        = false,
+      maxContains: Optional[Int]        = Unset,
+      minContains: Optional[Int]        = Unset )
 
   case String
-        (description: Optional[Text]              = Unset,
-         minLength:   Optional[Int]               = Unset,
-         maxLength:   Optional[Int]               = Unset,
-         pattern:     Optional[Text]              = Unset,
-         format:      Optional[JsonSchema.Format] = Unset,
-         optional:    scala.Boolean               = false)
+    ( description: Optional[Text]              = Unset,
+      minLength:   Optional[Int]               = Unset,
+      maxLength:   Optional[Int]               = Unset,
+      pattern:     Optional[Text]              = Unset,
+      format:      Optional[JsonSchema.Format] = Unset,
+      optional:    scala.Boolean               = false )
 
   case Number
-        (description:      Optional[Text]   = Unset,
-         multipleOf:       Optional[Double] = Unset,
-         maximum:          Optional[Double] = Unset,
-         minimum:          Optional[Double] = Unset,
-         exclusiveMinimum: Optional[Double] = Unset,
-         exclusiveMaximum: Optional[Double] = Unset,
-         optional:         scala.Boolean    = false)
+    ( description:      Optional[Text]   = Unset,
+      multipleOf:       Optional[Double] = Unset,
+      maximum:          Optional[Double] = Unset,
+      minimum:          Optional[Double] = Unset,
+      exclusiveMinimum: Optional[Double] = Unset,
+      exclusiveMaximum: Optional[Double] = Unset,
+      optional:         scala.Boolean    = false )
 
   case Integer
-        (description:      Optional[Text] = Unset,
-         maximum:          Optional[Int]  = Unset,
-         minimum:          Optional[Int]  = Unset,
-         exclusiveMinimum: Optional[Int]  = Unset,
-         exclusiveMaximum: Optional[Int]  = Unset,
-         optional:         scala.Boolean  = false)
+    ( description:      Optional[Text] = Unset,
+      maximum:          Optional[Int]  = Unset,
+      minimum:          Optional[Int]  = Unset,
+      exclusiveMinimum: Optional[Int]  = Unset,
+      exclusiveMaximum: Optional[Int]  = Unset,
+      optional:         scala.Boolean  = false )
 
   case Boolean(description: Optional[Text] = Unset, optional: scala.Boolean = false)
   case Null(description: Optional[Text] = Unset, optional: scala.Boolean = false)

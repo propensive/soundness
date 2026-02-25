@@ -34,7 +34,7 @@ package serpentine
 
 import soundness.*
 
-object Tests extends Suite(m"Serpentine Benchmarks"):
+object Tests extends Suite(m"internal Benchmarks"):
   def run(): Unit =
     suite(m"Constructions"):
       test(m"Create a two-element path"):
@@ -130,7 +130,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
         def receive(path: into[Path on Linux]): Unit = ()
         receive(% / "foo" / "bar")
 
-      .assert()
+      . assert()
 
       test(m"Can't construct invalid path"):
         demilitarize:
@@ -585,12 +585,15 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
       test(m"Multi-level matching"):
         path match
-          case root /: t"home" /: more => more match
-            case t"work"            => false
-            case t"work" /: t"data" => true
-            case t"data"            => false
-            case other              => false
-          case _ => false
+          case root /: t"home" /: more =>
+            more match
+              case t"work"            => false
+              case t"work" /: t"data" => true
+              case t"data"            => false
+              case other              => false
+
+          case _ =>
+            false
 
       . assert(identity(_))
 

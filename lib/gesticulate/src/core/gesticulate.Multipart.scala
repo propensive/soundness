@@ -51,53 +51,57 @@ object Multipart:
   enum Disposition:
     case Inline, Attachment, FormData
 
+
   def parse[input: Streamable by Data](input: input, boundary0: Optional[Text] = Unset)
   :   Multipart raises MultipartError =
 
-      val conduit = Conduit(input.stream[Data])
-      conduit.mark()
-      conduit.next()
-      if conduit.datum != '-' then raise(MultipartError(Reason.Expected('-')))
-      conduit.next()
-      if conduit.datum != '-' then raise(MultipartError(Reason.Expected('-')))
-      conduit.seek('\r')
-      val boundary = conduit.save()
-      conduit.next()
-      if conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
-      conduit.next()
+    val conduit = Conduit(input.stream[Data])
+    conduit.mark()
+    conduit.next()
+    if conduit.datum != '-' then raise(MultipartError(Reason.Expected('-')))
+    conduit.next()
+    if conduit.datum != '-' then raise(MultipartError(Reason.Expected('-')))
+    conduit.seek('\r')
+    val boundary = conduit.save()
+    conduit.next()
+    if conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
+    conduit.next()
 
-      def headers(list: List[(Text, Text)]): Map[Text, Text] =
-        conduit.datum match
-          case '\r' =>
-            conduit.next()
-            if conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
-            conduit.break()
-            conduit.cue()
-            list.to(Map)
-
-          case other =>
-            conduit.mark()
-            conduit.seek(':')
-            val key = Text.ascii(conduit.save())
-            conduit.next()
-            if conduit.datum != ' ' then raise(MultipartError(Reason.Expected(' ')))
-            conduit.next()
-            conduit.mark()
-            conduit.seek('\r')
-            val value = Text.ascii(conduit.save())
-            conduit.next()
-            if conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
-            conduit.next()
-            headers((key, value) :: list)
-
-      def body(): Stream[Data] = conduit.step() match
-        case Conduit.State.Clutch =>
-          val block = conduit.block
+    def headers(list: List[(Text, Text)]): Map[Text, Text] =
+      conduit.datum match
+        case '\r' =>
+          conduit.next()
+          if conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
+          conduit.break()
           conduit.cue()
-          block #:: body()
-        case Conduit.State.End =>
-          Stream()
-        case Conduit.State.Data   => conduit.datum match
+          list.to(Map)
+
+        case other =>
+          conduit.mark()
+          conduit.seek(':')
+          val key = Text.ascii(conduit.save())
+          conduit.next()
+          if conduit.datum != ' ' then raise(MultipartError(Reason.Expected(' ')))
+          conduit.next()
+          conduit.mark()
+          conduit.seek('\r')
+          val value = Text.ascii(conduit.save())
+          conduit.next()
+          if conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
+          conduit.next()
+          headers((key, value) :: list)
+
+    def body(): Stream[Data] = conduit.step() match
+      case Conduit.State.Clutch =>
+        val block = conduit.block
+        conduit.cue()
+        block #:: body()
+
+      case Conduit.State.End =>
+        Stream()
+
+      case Conduit.State.Data =>
+        conduit.datum match
           case '\r' =>
             if conduit.lookahead:
               conduit.next() && conduit.datum == '\n' && boundary.forall: char =>
@@ -110,61 +114,65 @@ object Multipart:
           case other =>
             body()
 
-      def parsePart(headers: Map[Text, Text], stream: Stream[Data]): Part =
-        headers.at(t"Content-Disposition").let: disposition =>
-          val parts = disposition.cut(t";").map(_.trim)
+    def parsePart(headers: Map[Text, Text], stream: Stream[Data]): Part =
+      headers.at(t"Content-Disposition").let: disposition =>
+        val parts = disposition.cut(t";").map(_.trim)
 
-          val params: Map[Text, Text] =
-            parts.drop(1).map: param =>
-              param.cut(t"=", 2) match
-                case List(key, value) => if value.starts(t"\"") && value.ends(t"\"")
-                                        then key -> value.segment(Sec thru value.pen.vouch)
-                                        else key -> value
-                case _                => raise(MultipartError(Reason.BadDisposition)) yet (t"", t"")
+        val params: Map[Text, Text] =
+          parts.drop(1).map: param =>
+            param.cut(t"=", 2) match
+              case List(key, value) =>
+                if value.starts(t"\"") && value.ends(t"\"")
+                                      then key -> value.segment(Sec thru value.pen.vouch)
+                                      else key -> value
 
-            . to(Map)
+              case _ =>
+                raise(MultipartError(Reason.BadDisposition)) yet (t"", t"")
 
-          val dispositionValue = parts.prim match
-            case t"inline"     => Multipart.Disposition.Inline
-            case t"form-data"  => Multipart.Disposition.FormData
-            case t"attachment" => Multipart.Disposition.Attachment
-            case _ =>
-              raise(MultipartError(Reason.BadDisposition)) yet Multipart.Disposition.FormData
+          . to(Map)
 
-          val filename = params.at(t"filename")
-          val name = params.at(t"name")
+        val dispositionValue = parts.prim match
+          case t"inline"     => Multipart.Disposition.Inline
+          case t"form-data"  => Multipart.Disposition.FormData
+          case t"attachment" => Multipart.Disposition.Attachment
 
-          Part(dispositionValue, headers, name, filename, stream)
+          case _ =>
+            raise(MultipartError(Reason.BadDisposition)) yet Multipart.Disposition.FormData
 
-        . or(Part(Multipart.Disposition.FormData, Map(), Unset, Unset, stream))
+        val filename = params.at(t"filename")
+        val name = params.at(t"name")
 
-      def parts(): Stream[Part] =
-        val part = parsePart(headers(Nil), body())
+        Part(dispositionValue, headers, name, filename, stream)
 
-        conduit.datum match
-          case '\r' =>
-            if !conduit.next() || conduit.datum != '\n'
-            then raise(MultipartError(Reason.Expected('\n')))
+      . or(Part(Multipart.Disposition.FormData, Map(), Unset, Unset, stream))
 
-            part #:: { part.body.strict; conduit.next(); parts() }
+    def parts(): Stream[Part] =
+      val part = parsePart(headers(Nil), body())
 
-          case '-' =>
-            if !conduit.next() || conduit.datum != '-'
-            then raise(MultipartError(Reason.Expected('-')))
+      conduit.datum match
+        case '\r' =>
+          if !conduit.next() || conduit.datum != '\n'
+          then raise(MultipartError(Reason.Expected('\n')))
 
-            if !conduit.next() || conduit.datum != '\r'
-            then raise(MultipartError(Reason.Expected('\r')))
+          part #:: { part.body.strict; conduit.next(); parts() }
 
-            if !conduit.next() || conduit.datum != '\n'
-            then raise(MultipartError(Reason.Expected('\n')))
-            //if conduit.next() then raise(MultipartError(Reason.StreamContinues))
-            Stream(part)
+        case '-' =>
+          if !conduit.next() || conduit.datum != '-'
+          then raise(MultipartError(Reason.Expected('-')))
 
-          case other =>
-            raise(MultipartError(Reason.Expected('-')))
-            Stream()
+          if !conduit.next() || conduit.datum != '\r'
+          then raise(MultipartError(Reason.Expected('\r')))
 
-      Multipart(parts())
+          if !conduit.next() || conduit.datum != '\n'
+          then raise(MultipartError(Reason.Expected('\n')))
+          //if conduit.next() then raise(MultipartError(Reason.StreamContinues))
+          Stream(part)
+
+        case other =>
+          raise(MultipartError(Reason.Expected('-')))
+          Stream()
+
+    Multipart(parts())
 
 
 case class Multipart(parts: Stream[Part]):

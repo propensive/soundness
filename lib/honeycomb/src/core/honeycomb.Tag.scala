@@ -46,7 +46,6 @@ import typonym.*
 import vacuous.*
 
 object Tag:
-
   given optical: [html <: Html] => Tag is Optical from html onto Node = tag =>
     Optic: (origin, lambda) =>
       origin match
@@ -71,16 +70,16 @@ object Tag:
     ( presets: Map[Text, Optional[Text]] = Map(), boundary: Boolean = false )
   :   Tag.Void of label in dom =
 
-      new Void(valueOf[label].tt, presets, boundary).of[label].in[dom]
+    new Void(valueOf[label].tt, presets, boundary).of[label].in[dom]
 
 
   def foreign[dom <: Dom](label: Text, attributes0: Map[Text, Optional[Text]])
   :   Tag of "#foreign" over "#foreign" in dom =
 
-      new Tag.Container(label, false, Html.Mode.Normal, attributes0, Set(), false, true)
-      . of["#foreign"]
-      . over["#foreign"]
-      . in[dom]
+    new Tag.Container(label, false, Html.Mode.Normal, attributes0, Set(), false, true)
+    . of["#foreign"]
+    . over["#foreign"]
+    . in[dom]
 
 
   def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String], dom <: Dom]
@@ -91,24 +90,25 @@ object Tag:
       boundary:   Boolean                   = false )
   :   Container of label over children in dom =
 
-      val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
+    val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
 
-      Container
-        ( valueOf[label].tt, autoclose, mode, presets, admissible, insertable, false, boundary )
-      . of[label]
-      . over[children]
-      . in[dom]
+    Container
+      ( valueOf[label].tt, autoclose, mode, presets, admissible, insertable, false, boundary )
+
+    . of[label]
+    . over[children]
+    . in[dom]
 
 
   def transparent[label <: Label: ValueOf, children <: Label: Reifiable to List[String], dom <: Dom]
     ( presets: Map[Text, Optional[Text]] = Map(), boundary: Boolean = false )
   :   Transparent of label over children in dom =
 
-      val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
+    val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
 
-      transparent(valueOf[label].tt, admissible, presets, boundary = boundary)
-      . of[label]
-      . over[children]
+    transparent(valueOf[label].tt, admissible, presets, boundary = boundary)
+    . of[label]
+    . over[children]
 
 
   def transparent[dom <: Dom]
@@ -118,11 +118,11 @@ object Tag:
       boundary: Boolean )
   :   Transparent in dom =
 
-      Transparent(label, children, presets, boundary = boundary).in[dom]
+    Transparent(label, children, presets, boundary = boundary).in[dom]
+
 
   def foreign[label <: Label: ValueOf, dom <: Dom](): Container of label over "#foreign" =
     Container(valueOf[label], foreign = true).of[label].over["#foreign"].in[dom]
-
 
   class Container
     ( label:      Text,
@@ -142,14 +142,14 @@ object Tag:
       ( using css: Stylesheet of (? >: className) )
     :   Element of Topic over Transport in Form =
 
-        val nodes = children.compact.nodes
+      val nodes = children.compact.nodes
 
-        val presets2 = if css.classes.nil then presets else
-          val cls: Text = valueOf[className]
-          val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
-          presets.updated("class", value)
+      val presets2 = if css.classes.nil then presets else
+        val cls: Text = valueOf[className]
+        val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
+        presets.updated("class", value)
 
-        Element(label, presets2, nodes, foreign).of[Topic].over[Transport].in[Form]
+      Element(label, presets2, nodes, foreign).of[Topic].over[Transport].in[Form]
 
     def node(attributes: Map[Text, Optional[Text]]): Result =
       new Element(label, presets ++ attributes, IArray(), foreign) with Html.Populable()
@@ -182,13 +182,13 @@ object Tag:
       ( using css: Stylesheet of (? >: className) )
     :   Element of Topic in Form =
 
-        val presets2 = if css.classes.nil then presets else
-          val cls = css.classes.join(t" ")
-          val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
-          presets.updated("class", value)
+      val presets2 = if css.classes.nil then presets else
+        val cls = css.classes.join(t" ")
+        val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
+        presets.updated("class", value)
 
-        val nodes: IArray[Node] = children.compact.nodes
-        Element(label, presets2, nodes, foreign).of[Topic].in[Form]
+      val nodes: IArray[Node] = children.compact.nodes
+      Element(label, presets2, nodes, foreign).of[Topic].in[Form]
 
 
     def node(attributes: Map[Text, Optional[Text]]): Result =
@@ -219,7 +219,6 @@ abstract class Tag
     val transparent: Boolean                   = false,
     val boundary:    Boolean                   = false )
 extends Element(label, presets, IArray(), foreign), Formal, Dynamic:
-
   type Result <: Element
 
 
@@ -232,8 +231,7 @@ extends Element(label, presets, IArray(), foreign), Formal, Dynamic:
       make(Map(t"class" -> stylesheet.classes.to(List).join(t" ")), attributes*)
 
 
-
   inline def make(presets: Map[Text, Text], inline attributes: (String, Any)*): Result =
-    ${Honeycomb.attributes[Result, this.type]('this, 'presets, 'attributes)}
+    ${honeycomb.internal.attributes[Result, this.type]('this, 'presets, 'attributes)}
 
   def node(attributes: Map[Text, Optional[Text]]): Result

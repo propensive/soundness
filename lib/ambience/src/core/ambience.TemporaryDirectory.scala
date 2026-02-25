@@ -37,5 +37,4 @@ import prepositional.*
 
 trait TemporaryDirectory:
   def directory(): Text
-
   def path[path: Instantiable across Paths from Text]: path = path(directory())

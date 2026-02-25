@@ -45,16 +45,16 @@ object Currency:
     ( )
   :   self is Currency of topic over transport in form =
 
-      new Currency:
-        type Self = self
-        type Topic = topic
-        type Transport = transport
-        type Form = form
+    new Currency:
+      type Self = self
+      type Topic = topic
+      type Transport = transport
+      type Form = form
 
-        val code: Text = valueOf[self].tt
-        val name: Text = valueOf[topic].tt
-        val symbol: Text = valueOf[form].tt
-        val modulus: Int = valueOf[transport]
+      val code: Text = valueOf[self].tt
+      val name: Text = valueOf[topic].tt
+      val symbol: Text = valueOf[form].tt
+      val modulus: Int = valueOf[transport]
 
 trait Currency:
   type Self <: Label

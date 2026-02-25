@@ -40,7 +40,7 @@ package currencyStyles:
   given generic: CurrencyStyle = (code, symbol, unit, subunit) => t"$unit.$subunit $code"
 
 extension (inline context: StringContext)
-  inline def isin(): Isin = ${Plutocrat.interpolator('context)}
+  inline def isin(): Isin = ${plutocrat.internal.interpolator('context)}
 
 package currencies:
   // These are listed as the "most traded currencies" on Wikipedia
@@ -83,4 +83,4 @@ package currencies:
   given Ron: ("RON" is Currency of "Romanian Leu" in "lei" over 100) = Currency()
   given Pen: ("PEN" is Currency of "Peruvian Sol" in "S/" over 100) = Currency()
 
-export Plutocrat.{Money, Isin}
+export plutocrat.internal.{Money, Isin}

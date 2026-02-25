@@ -41,37 +41,6 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-trait Interaction[result, question]:
-  def before(): Unit = ()
-  def render(state: Optional[question], menu: question): Unit
-  def after(): Unit = ()
-  def result(state: question): result
-
-
-  @tailrec
-  final def recur
-    ( stream: Stream[TerminalEvent], state: question, oldState: Optional[question] )
-    ( key: (question, TerminalEvent) => question )
-  :   Optional[(result, Stream[TerminalEvent])] =
-
-      render(oldState, state)
-
-      stream match
-        case Keypress.Enter #:: tail           => (result(state), tail)
-        case Keypress.Ctrl('C' | 'D') #:: tail => Unset
-        case Keypress.Escape #:: tail          => Unset
-        case other #:: tail                    => recur(tail, key(state, other), state)(key)
-        case _                                 => Unset
-
-
-  def apply(stream: Stream[TerminalEvent], state: question)
-    ( key: (question, TerminalEvent) => question )
-  :   Optional[(result, Stream[TerminalEvent])] =
-
-      before()
-      recur(stream, state, Unset)(key).also(after())
-
-
 object Interaction:
   given selectMenu: [item: Showable] => Stdio => Interaction[item, SelectMenu[item]]:
     override def before(): Unit = Out.print(t"\e[?25l")
@@ -100,3 +69,34 @@ object Interaction:
         if editor2.position > 0 then append(t"\e[${editor2.position}C")
 
     def result(editor: LineEditor): Text = editor.value
+
+
+trait Interaction[result, question]:
+  def before(): Unit = ()
+  def render(state: Optional[question], menu: question): Unit
+  def after(): Unit = ()
+  def result(state: question): result
+
+
+  @tailrec
+  final def recur
+    ( stream: Stream[TerminalEvent], state: question, oldState: Optional[question] )
+    ( key: (question, TerminalEvent) => question )
+  :   Optional[(result, Stream[TerminalEvent])] =
+
+    render(oldState, state)
+
+    stream match
+      case Keypress.Enter #:: tail           => (result(state), tail)
+      case Keypress.Ctrl('C' | 'D') #:: tail => Unset
+      case Keypress.Escape #:: tail          => Unset
+      case other #:: tail                    => recur(tail, key(state, other), state)(key)
+      case _                                 => Unset
+
+
+  def apply(stream: Stream[TerminalEvent], state: question)
+    ( key: (question, TerminalEvent) => question )
+  :   Optional[(result, Stream[TerminalEvent])] =
+
+    before()
+    recur(stream, state, Unset)(key).also(after())

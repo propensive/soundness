@@ -51,7 +51,7 @@ object ShowProperty:
   given pair: [property: ShowProperty, property2: ShowProperty]
   =>  ShowProperty[(property, property2)] =
 
-      tuple => t"${property.show(tuple(0))} ${property2.show(tuple(1))}"
+    tuple => t"${property.show(tuple(0))} ${property2.show(tuple(1))}"
 
 
   given triple: [property: ShowProperty, property2: ShowProperty, property3: ShowProperty]
@@ -62,7 +62,9 @@ object ShowProperty:
         ( property.show(tuple(0)),
           property2.show(tuple(1)),
           property3.show(tuple(2)) )
+
       . join(t" ")
+
 
   given quad
   :   [ property:  ShowProperty,
@@ -71,13 +73,15 @@ object ShowProperty:
         property4: ShowProperty ]
   =>  ShowProperty[(property, property2, property3, property4)] =
 
-      tuple =>
-        List
-          ( property.show(tuple(0)),
-            property2.show(tuple(1)),
-            property3.show(tuple(2)),
-            property4.show(tuple(3)) )
-        . join(t" ")
+    tuple =>
+      List
+        ( property.show(tuple(0)),
+          property2.show(tuple(1)),
+          property3.show(tuple(2)),
+          property4.show(tuple(3)) )
+
+      . join(t" ")
+
 
   given font: ShowProperty[Font] = _.names.map: f =>
     if f.contains(t" ") then t"'$f'" else f

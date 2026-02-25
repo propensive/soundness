@@ -47,7 +47,6 @@ import scala.quoted.*
 import errorDiagnostics.empty
 
 object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[Label]]:
-
   def refined(context: Expr[StringContext], parts: Expr[Seq[Any]]): Macro[Url[Label]] =
     import quotes.reflect.*
 

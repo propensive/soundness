@@ -48,32 +48,6 @@ import scala.compiletime.*
 
 import language.dynamics
 
-case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) extends Dynamic:
-  def as[cell: Decodable in Dsv]: cell = cell.decoded(this)
-
-  def header: Optional[IArray[Text]] = columns.let: map =>
-    val columns = map.map(_.swap)
-    IArray.tabulate(columns.size)(columns(_))
-
-  def selectDynamic[value: Decodable in Text](field: String)(using erased DynamicDsvEnabler)
-    ( using DsvRedesignation )
-  :   Optional[value] =
-
-      apply(summon[DsvRedesignation].transform(field.tt))
-
-
-  def apply[value: Decodable in Text](field: Text): Optional[value] =
-    columns.let(_.at(field)).let { index => data.at(index.z) }.let(value.decoded(_))
-
-  override def hashCode: Int = data.indices.fuse(0)(state*31 + data(next).hashCode)
-
-  override def equals(that: Any): Boolean = that.asMatchable match
-    case row: Dsv =>
-      data.length == row.data.length && data.indices.all: index =>
-        data(index) == row.data(index)
-
-    case _        => false
-
 object Dsv:
   def apply(iterable: Iterable[Text]): Dsv = new Dsv(IArray.from(iterable))
   def apply(text: Text*): Dsv = new Dsv(IArray.from(text))
@@ -88,13 +62,13 @@ object Dsv:
   inline given decodableDerivation: [value <: Product: ProductReflection]
   =>  value is Decodable in Dsv =
 
-      DecodableDerivation.derived[value]
+    DecodableDerivation.derived[value]
 
 
   inline given encodableDerivation: [value <: Product: ProductReflection]
   =>  value is Encodable in Dsv =
 
-      EncodableDerivation.derived[value]
+    EncodableDerivation.derived[value]
 
 
   given showable: (format: DsvFormat) => Dsv is Showable =
@@ -120,7 +94,9 @@ object Dsv:
 
     inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Dsv =
       var rowNumber: Ordinal = Prim
+
       val spans: IArray[Int] = Spannable.derived[derivation].spans()
+
       var count = 0
 
       provide[Foci[CellRef]]:
@@ -138,7 +114,36 @@ object Dsv:
         val cells =
           fields(value):
             [field] => field => context.encode(field).data
+
           . to(List)
           . flatten
 
         Dsv(cells)
+
+case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) extends Dynamic:
+  def as[cell: Decodable in Dsv]: cell = cell.decoded(this)
+
+  def header: Optional[IArray[Text]] = columns.let: map =>
+    val columns = map.map(_.swap)
+    IArray.tabulate(columns.size)(columns(_))
+
+
+  def selectDynamic[value: Decodable in Text](field: String)(using erased DynamicDsvEnabler)
+    ( using DsvRedesignation )
+  :   Optional[value] =
+
+    apply(summon[DsvRedesignation].transform(field.tt))
+
+
+  def apply[value: Decodable in Text](field: Text): Optional[value] =
+    columns.let(_.at(field)).let { index => data.at(index.z) }.let(value.decoded(_))
+
+  override def hashCode: Int = data.indices.fuse(0)(state*31 + data(next).hashCode)
+
+  override def equals(that: Any): Boolean = that.asMatchable match
+    case row: Dsv =>
+      data.length == row.data.length && data.indices.all: index =>
+        data(index) == row.data(index)
+
+    case _ =>
+      false

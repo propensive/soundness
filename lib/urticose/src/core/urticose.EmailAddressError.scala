@@ -35,9 +35,6 @@ package urticose
 import anticipation.*
 import fulminate.*
 
-case class EmailAddressError(reason: EmailAddressError.Reason)(using Diagnostics)
-extends Error(m"the email address is not valid because $reason")
-
 object EmailAddressError:
   enum Reason:
     case Empty
@@ -65,10 +62,12 @@ object EmailAddressError:
       case InitialPeriod     => m"the local part starts with a period, which is not allowed"
       case UnclosedIpAddress => m"the domain begins with ${'['} but does not end with ${']'}"
       case UnescapedQuote    => m"the local part contains a quote character which is not escaped"
+      case InvalidChar(char) => m"the local part contains the character $char which is not allowed"
 
-      case InvalidChar(char) =>
-        m"the local part contains the character $char which is not allowed"
+      case InvalidDomain(error) =>
+        error match
+          case error: IpAddressError => m"the domain is not a valid IP address: ${error.message}"
+          case error: HostnameError  => m"the domain is not a valid hostname: ${error.message}"
 
-      case InvalidDomain(error) => error match
-        case error: IpAddressError => m"the domain is not a valid IP address: ${error.message}"
-        case error: HostnameError  => m"the domain is not a valid hostname: ${error.message}"
+case class EmailAddressError(reason: EmailAddressError.Reason)(using Diagnostics)
+extends Error(m"the email address is not valid because $reason")

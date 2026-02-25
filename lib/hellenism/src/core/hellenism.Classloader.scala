@@ -66,6 +66,5 @@ class Classloader(val java: ClassLoader):
   def apply(path: Text): Optional[Data] =
     Optional(java.getResourceAsStream(path.s)).let(_.readAllBytes().nn.immutable(using Unsafe))
 
-
   private[hellenism] def inputStream(path: Text)(using Tactic[ClasspathError]): ji.InputStream =
     Optional(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))

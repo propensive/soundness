@@ -35,15 +35,15 @@ package nomenclature
 import anticipation.*
 import fulminate.*
 
-export Nomenclature.Name
+export nomenclature.internal.Name
 
 extension (inline context: StringContext)
-  transparent inline def n: Any = ${Nomenclature2.extractor('context)}
+  transparent inline def n: Any = ${protointernal.extractor('context)}
 
 transparent inline def disintersect[intersection] =
-  ${Nomenclature2.disintersection[intersection]}
+  ${protointernal.disintersection[intersection]}
 
 private given realm: Realm = realm"nomenclature"
 
 transparent inline def staticCompanion[instance]: Matchable =
-  ${Nomenclature3.staticCompanion[instance]}
+  ${anteprotointernal.staticCompanion[instance]}

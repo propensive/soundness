@@ -35,9 +35,9 @@ import vacuous.*
 import strategies.throwUnsafely
 
 object JsonSchema:
-
   given boolean: ("boolean" is Intensional in JsonSchema from Json to Boolean) =
     JsonSchema.intensional(_.as[Boolean])
+
 
   given optionalBoolean
   :   ("boolean?" is Intensional in JsonSchema from Json to Optional[Boolean]) =
@@ -56,6 +56,7 @@ object JsonSchema:
 
   given optionalInteger: ("integer?" is Intensional in JsonSchema from Json to Optional[Int]) =
     (value, params) => value.as[Optional[Int]]
+
 
   given boundedInteger
   :   ("integer!" is Intensional in JsonSchema from Json to (Int raises BoundsError)) =
@@ -92,6 +93,7 @@ object JsonSchema:
 
     JsonSchema.intensional(_.as[Text].instantiate)
 
+
   given optionalDateTime: [instant: Instantiable across Instants from Text]
   =>  ("date-time?" is Intensional in JsonSchema from Json to Optional[instant]) =
 
@@ -110,11 +112,11 @@ object JsonSchema:
     JsonSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
-
   given time: [time: Instantiable across Times from Text]
   =>  ("time" is Intensional in JsonSchema from Json to time) =
 
     JsonSchema.intensional(_.as[Text].instantiate)
+
 
   given optionalTime: [time: Instantiable across Times from Text]
   =>  ("time?" is Intensional in JsonSchema from Json to Optional[time]) =
@@ -126,6 +128,7 @@ object JsonSchema:
   =>  ("duration" is Intensional in JsonSchema to duration) =
 
     JsonSchema.intensional(_.as[Text].instantiate)
+
 
   given optionalDuration: [duration: Instantiable across Durations from Text]
   =>  ("duration?" is Intensional in JsonSchema to Optional[duration]) =
@@ -139,6 +142,7 @@ object JsonSchema:
 
   given optionalUriReference
   :   ("uri-reference?" is Intensional in JsonSchema from Json to Optional[Text]) =
+
     JsonSchema.intensional(_.as[Optional[Text]])
 
 
@@ -161,6 +165,7 @@ object JsonSchema:
 
     JsonSchema.intensional(_.as[EmailAddress])
 
+
   given optionalIdnEmail
   :   ( "idn-email?" is Intensional in JsonSchema from Json to
             (Optional[EmailAddress] raises EmailAddressError) ) =
@@ -172,6 +177,7 @@ object JsonSchema:
   :   ("hostname" is Intensional in JsonSchema from Json to (Hostname raises HostnameError)) =
 
     JsonSchema.intensional(_.as[Hostname])
+
 
   given optionalHostname
   :   ( "hostname?" is Intensional in JsonSchema from Json to
@@ -193,6 +199,7 @@ object JsonSchema:
   given ipv6: ("ipv6" is Intensional in JsonSchema from Json to (Ipv6 raises IpAddressError)) =
     JsonSchema.intensional(_.as[Ipv6])
 
+
   given optionalIpv6
   :   ("ipv6?" is Intensional in JsonSchema from Json to (Optional[Ipv6] raises IpAddressError)) =
 
@@ -203,6 +210,7 @@ object JsonSchema:
   =>   ( "uri" is Intensional in JsonSchema from Json to url ) =
 
     JsonSchema.intensional: value => url.instantiate(value.as[Text])
+
 
   given optionalUri: [url: Instantiable across Urls from Text]
   =>   ( "uri?" is Intensional in JsonSchema from Json to Optional[url] ) =
@@ -223,21 +231,25 @@ object JsonSchema:
     JsonSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
-
   given iriReference: ("iri-reference" is Intensional in JsonSchema from Json to Text) =
     JsonSchema.intensional(_.as[Text])
 
+
   given optionalIriReference
   :   ("iri-reference?" is Intensional in JsonSchema from Json to Optional[Text]) =
+
     JsonSchema.intensional(_.as[Optional[Text]])
 
 
   given uuid: ("uuid" is Intensional in JsonSchema from Json to (Uuid raises UuidError)) =
     JsonSchema.intensional(_.as[Uuid])
 
+
   given optionalUuid
   :   ("uuid?" is Intensional in JsonSchema from Json to (Optional[Uuid] raises UuidError)) =
+
     JsonSchema.intensional(_.as[Optional[Uuid]])
+
 
   given uriTemplate: ("uri-template" is Intensional in JsonSchema from Json to Text) =
     JsonSchema.intensional(_.as[Text])
@@ -251,6 +263,7 @@ object JsonSchema:
 
   given jsonPointer: ("json-pointer" is Intensional in JsonSchema from Json to JsonPointer) =
     JsonSchema.intensional(_.as[JsonPointer])
+
 
   given optionalJsonPointer
   :   ("json-pointer?" is Intensional in JsonSchema from Json to Optional[JsonPointer]) =
@@ -266,10 +279,12 @@ object JsonSchema:
 
   given array: ("array" is Structural[List] in JsonSchema from Json) = _.as[List[Json]].map(_)
 
+
   given optionalArray
   :   ("array?" is Structural[[element] =>> Optional[List[element]]] in JsonSchema from Json) =
 
     (value, make) => value.as[List[Json]].map(make)
+
 
   given module: ("object" is Structural[[Type] =>> Type] in JsonSchema from Json) =
     (value, make) => make(value)
@@ -305,11 +320,15 @@ object JsonSchema:
 
   def record(data0: Json, access0: Text => Json => Any): Record = new Record:
     type Origin = Json
+
     val data: Json = data0
+
     def access: Text => Json => Any = access0
+
 
   def intensional[name <: Label, value](accessor: Json => value)
   :   name is Intensional in JsonSchema from Json to value =
+
     new Intensional:
       type Self = name
       type Origin = Json
@@ -318,6 +337,7 @@ object JsonSchema:
 
       def access(value: Json): value = accessor(value)
       def transform(value: Json, params: List[Text]): value = access(value)
+
 
   case class Property
     ( `type`:     Text,
@@ -366,6 +386,7 @@ object JsonSchema:
 abstract class JsonSchema(val doc: JsonSchemaDoc) extends Specification:
   type Origin = Json
   type Form = JsonSchema
+
   def access(name: Text, json: Json): Json = json(name)
   def make(data: Json, access: Text => Json => Any): Record = JsonSchema.record(data, access)
   def fields: Map[Text, Member] = unsafely(doc.fields)

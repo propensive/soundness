@@ -39,7 +39,6 @@ abstract class Builder[textual](size: Optional[Int] = Unset):
   protected def put(text: textual): Unit
   protected def wipe(): Unit
   protected def result(): textual
-
   def append(text: textual): this.type = this.also(put(text))
 
   def build(block: this.type ?=> Unit): textual =

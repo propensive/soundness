@@ -54,7 +54,7 @@ extension [countable: Countable](value: countable)
   inline def gamut: Interval = Interval(Prim, (countable.size(value) - 1).z)
   inline def nil: Boolean = countable.empty(value)
 
-export Denominative.{Ordinal, Interval}
+export denominative.internal.{Ordinal, Interval}
 
 package ordinalShowables:
   given nominal: Ordinal is Textualizable =
@@ -76,20 +76,24 @@ package ordinalShowables:
   given english: Ordinal is Textualizable = ordinal =>
     ordinal.n1%100 match
       case 11 | 12 | 13 => ordinal.n1.toString+"th"
-      case _            => (ordinal.n1%10) match
-        case 1 => ordinal.n1.toString+"st"
-        case 2 => ordinal.n1.toString+"nd"
-        case 3 => ordinal.n1.toString+"rd"
-        case _ => ordinal.n1.toString+"th"
+
+      case _ =>
+        (ordinal.n1%10) match
+          case 1 => ordinal.n1.toString+"st"
+          case 2 => ordinal.n1.toString+"nd"
+          case 3 => ordinal.n1.toString+"rd"
+          case _ => ordinal.n1.toString+"th"
 
   given englishSuperscript: Ordinal is Textualizable = ordinal =>
     ordinal.n1%100 match
       case 11 | 12 | 13 => ordinal.n1.toString+"ᵗʰ"
-      case _            => (ordinal.n1%10) match
-        case 1 => ordinal.n1.toString+"ˢᵗ"
-        case 2 => ordinal.n1.toString+"ⁿᵈ"
-        case 3 => ordinal.n1.toString+"ʳᵈ"
-        case _ => ordinal.n1.toString+"ᵗʰ"
+
+      case _ =>
+        (ordinal.n1%10) match
+          case 1 => ordinal.n1.toString+"ˢᵗ"
+          case 2 => ordinal.n1.toString+"ⁿᵈ"
+          case 3 => ordinal.n1.toString+"ʳᵈ"
+          case _ => ordinal.n1.toString+"ᵗʰ"
 
   given french: Ordinal is Textualizable = ordinal =>
     if ordinal.n1 == 1 then "1ᵉʳ" else s"${ordinal}ᵉ"

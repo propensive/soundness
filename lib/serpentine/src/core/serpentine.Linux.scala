@@ -38,10 +38,9 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-trait Linux extends Posix
-
 object Linux:
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+
   inline given nominative: Linux is Nominative under Rules = !!
 
   given filesystem: Linux is Filesystem:
@@ -50,3 +49,5 @@ object Linux:
     val separator: Text = t"/"
     val self: Text = t"."
     val parent: Text = t".."
+
+trait Linux extends Posix

@@ -39,6 +39,7 @@ import spectacular.*
 
 object Scheme:
   given showable: Scheme[Label] is Showable = _.name
+
   object Http extends Scheme["http"](t"http")
   object Https extends Scheme["https"](t"https")
 

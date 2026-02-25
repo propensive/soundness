@@ -50,5 +50,6 @@ extends Iterable[(key, value)], sc.Map[key, value]:
     Bijection(map - key1 - key2 -- keys, transposition - map(key1) - map(key2) -- keys.map(map(_)))
 
   def get(key: key): Option[value] = map.get(key)
+
   def flip: Bijection[value, key] = new Bijection(transposition, map):
     override def flip: Bijection[key, value] = bijection

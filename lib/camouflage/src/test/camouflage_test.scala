@@ -47,7 +47,7 @@ object Tests extends Suite(m"Camouflage tests"):
       cache(4)(t"four")
       cache(5)(t"five")
       cache(1)(t"ein")
-    .assert(_ == t"ein")
+    . assert(_ == t"ein")
 
     test(m"Check that an access stops an element being evicted"):
       val cache = LruCache[Int, Text](4)
@@ -58,7 +58,7 @@ object Tests extends Suite(m"Camouflage tests"):
       cache(1)(t"ein")
       cache(5)(t"five")
       cache(1)(t"un")
-    .assert(_ == t"one")
+    . assert(_ == t"one")
 
     test(m"LRU eviction after series of accesses"):
       val cache = LruCache[Int, Text](4)
@@ -71,4 +71,4 @@ object Tests extends Suite(m"Camouflage tests"):
       cache(3)(t"drei")
       cache(5)(t"five")
       cache(4)(t"vier")
-    .assert(_ == t"vier")
+    . assert(_ == t"vier")

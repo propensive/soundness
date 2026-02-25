@@ -47,11 +47,7 @@ import wisteria.*
 import scala.reflect.*
 import scala.compiletime.*
 
-trait Contrastable extends Typeclass:
-  def juxtaposition(left: Self, right: Self): Juxtaposition
-
 object Contrastable:
-
   inline given derived: [entity] => entity is Contrastable = summonFrom:
     case contrastable: (`entity` is Contrastable.Foundation) => contrastable
     case given ProductReflection[`entity`]                   => Derivation.derived[entity]
@@ -83,13 +79,13 @@ object Contrastable:
 
         def decompose(value: derivation): Decomposition = summonFrom:
           case given (`derivation` is Decomposable) => value.decompose
-          case given (`derivation` is Showable)     =>
+
+          case given (`derivation` is Showable) =>
             Decomposition.Primitive(typeName, value.show, value)
 
 
         if left == right then Juxtaposition.Same(show(left))
         else juxtaposition(typeName, decompose(left), decompose(right))
-
 
   trait Foundation extends Contrastable:
     def juxtaposition(left: Self, right: Self): Juxtaposition
@@ -104,8 +100,9 @@ object Contrastable:
         val rightOnly: Set[Text] = (right -- left).map(_.show)
 
         def describe(set: Set[Text]): Text =
-          (if set.size > 5
-           then set.take(4).to(List) :+ t"…${(set.size - 4).show.subscripts}" else set.to(List))
+          ( if set.size > 5
+            then set.take(4).to(List) :+ t"…${(set.size - 4).show.subscripts}" else set.to(List) )
+
           . join(t"{", t", ", t"}")
 
         val message =
@@ -155,12 +152,11 @@ object Contrastable:
       (left, right) =>
         if left == right then Juxtaposition.Same(left) else
           def decompose(chars: IArray[Char]): IArray[Decomposition] = chars.map: char =>
-             Decomposition.Primitive(t"Char", char.show, char)
+            Decomposition.Primitive(t"Char", char.show, char)
           comparison[Char](t"Text", decompose(left.chars), decompose(right.chars), left, right)
 
     given string: String is Contrastable.Foundation =
       (left, right) => text.juxtaposition(left.tt, right.tt)
-
 
   inline def nothing[value]: value is Contrastable = (left, right) =>
     provide[value is Decomposable]:
@@ -209,6 +205,7 @@ object Contrastable:
 
         Juxtaposition.Different(kind(left), kind(right))
 
+
   def comparison[value]
     ( name:       Text,
       left:       IArray[Decomposition],
@@ -217,32 +214,36 @@ object Contrastable:
       rightDebug: Text )
   :   Juxtaposition =
 
-      if left == right then Juxtaposition.Same(leftDebug) else
-        val comparison = IArray.from:
-          diff(left, right).rdiff(_ == _, 10).changes.map:
-            case Par(leftIndex, rightIndex, value) =>
-              val label =
-                if leftIndex == rightIndex then leftIndex.show
-                else t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
+    if left == right then Juxtaposition.Same(leftDebug) else
+      val comparison = IArray.from:
+        diff(left, right).rdiff(_ == _, 10).changes.map:
+          case Par(leftIndex, rightIndex, value) =>
+            val label =
+              if leftIndex == rightIndex then leftIndex.show
+              else t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
 
-              label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
+            label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
 
-            case Ins(rightIndex, value) =>
-              t" ╱${rightIndex.show.subscripts}"
-              -> Juxtaposition.Different(t"", value.short)
+          case Ins(rightIndex, value) =>
+            t" ╱${rightIndex.show.subscripts}"
+            -> Juxtaposition.Different(t"", value.short)
 
-            case Del(leftIndex, value) =>
-              t"${leftIndex.show.superscripts}╱ "
-              -> Juxtaposition.Different(value.let(_.short).or(t"?"), t"")
+          case Del(leftIndex, value) =>
+            t"${leftIndex.show.superscripts}╱ "
+            -> Juxtaposition.Different(value.let(_.short).or(t"?"), t"")
 
-            case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
-              val label = t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
+          case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
+            val label = t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
 
-              label -> juxtaposition(t"", Decomposition(leftValue), Decomposition(rightValue))
+            label -> juxtaposition(t"", Decomposition(leftValue), Decomposition(rightValue))
 
-        Juxtaposition.Collation(name, comparison.to(List), leftDebug, rightDebug)
+      Juxtaposition.Collation(name, comparison.to(List), leftDebug, rightDebug)
+
 
   trait Foundation2:
     given showable: [value: Showable] => value is Contrastable = (left, right) =>
       if left == right then Juxtaposition.Same(left.show)
       else Juxtaposition.Different(left.show, right.show)
+
+trait Contrastable extends Typeclass:
+  def juxtaposition(left: Self, right: Self): Juxtaposition

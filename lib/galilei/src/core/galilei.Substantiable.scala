@@ -41,7 +41,7 @@ object Substantiable:
   given substantiable: [filesystem: Filesystem, path <: Path on filesystem]
   =>  path is Substantiable =
 
-      path => jnf.Files.exists(path.javaPath)
+    path => jnf.Files.exists(path.javaPath)
 
 
 

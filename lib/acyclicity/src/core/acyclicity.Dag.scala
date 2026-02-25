@@ -104,6 +104,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
     edgeMap.flatMap:
       case (k, v) => lambda(k).edgeMap.map:
         case (h, w) => (h, (w ++ v.flatMap(lambda(_).keys)))
+
   . reduction
 
   def reduction: Dag[node] =
@@ -113,7 +114,6 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
     Dag:
       removals.foldLeft(edgeMap):
         case (m, (k, v)) => m.updated(k, m(k) - v)
-
 
   def reachable(node: node): Set[node] =
     reachableCache.getOrElseUpdate(node, edgeMap(node).flatMap(reachable) + node)
@@ -126,6 +126,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   def remove(element: node): Dag[node] = Dag:
     (edgeMap - element).view.mapValues:
       map => if map(element) then map ++ edgeMap(element) - element else map
+
     . to(Map)
 
   private def sort(todo: Map[node, Set[node]], done: List[node]): List[node] =
@@ -151,6 +152,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
 
       queue match
         case Nil => None
+
         case (vertex, trace) :: tail =>
           trace.to(Set).intersect(apply(vertex)).headOption match
             case Some(element) => Some(trace ++ List(vertex, element))

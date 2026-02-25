@@ -47,16 +47,17 @@ case class Catalog[key, value: ClassTag](values: IArray[value]):
   def map[value2: ClassTag](lambda: value => value2): Catalog[key, value2] =
     Catalog(values.map(lambda))
 
+
   def tie[result](using proxy: Proxy[key, value, 0])
     ( lambda: (catalog: this.type, `*`: proxy.type) ?=> result )
   :   result =
 
-      lambda(using this, proxy)
+    lambda(using this, proxy)
 
 
   def braid[value2: ClassTag](right: Catalog[key, value2])[result: ClassTag]
     ( lambda: (value, value2) => result )
   :   Catalog[key, result] =
 
-      Catalog(IArray.tabulate(values.length): index =>
-        lambda(values(index), right.values(index)))
+    Catalog(IArray.tabulate(values.length): index =>
+      lambda(values(index), right.values(index)))

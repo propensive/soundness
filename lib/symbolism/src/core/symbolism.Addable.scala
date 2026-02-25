@@ -38,13 +38,13 @@ object Addable:
   def apply[augend, addend, result](lambda: (augend, addend) => result)
   :   augend is Addable by addend to result =
 
-      new Addable:
+    new Addable:
 
-        type Self = augend
-        type Result = result
-        type Operand = addend
+      type Self = augend
+      type Result = result
+      type Operand = addend
 
-        def add(augend: augend, addend: addend): result = lambda(augend, addend)
+      def add(augend: augend, addend: addend): result = lambda(augend, addend)
 
 
   given double: Double is Addable by Double to Double = Addable:
@@ -75,14 +75,15 @@ object Addable:
   given concatenable: [left, right] => (concatenable: left is Concatenable by right)
   =>  left is Addable:
 
-      type Self = left
-      type Operand = right
-      type Result = left | right
+    type Self = left
+    type Operand = right
+    type Result = left | right
 
-      def add(left: left, right: right): left | right = concatenable.concat(left, right)
+    def add(left: left, right: right): left | right = concatenable.concat(left, right)
 
 
 trait Addable extends Typeclass, Operable, Resultant:
   type Augend = Self
   type Addend = Operand
+
   def add(augend: Augend, addend: Addend): Result

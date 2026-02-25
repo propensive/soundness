@@ -38,4 +38,5 @@ trait Protocolic extends Typeclass, Transportive:
   type Request
   type Response
   type Server
+
   def server(port: Transport)(lambda: Request ?=> Response): Server

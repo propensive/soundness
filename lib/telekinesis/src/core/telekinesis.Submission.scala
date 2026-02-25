@@ -49,9 +49,9 @@ case class Submission[value](query: Optional[Query]):
     safely(query.let(_.decode[value]))
 
   def submitted: Boolean = query.present
-
   def valid(using Tactic[Exception] ?=> value is Decodable in Query): Boolean = optional.present
   def value(using value is Decodable in Query): Optional[value] = query.let(_.decode[value])
+
 
   def form
     ( submit:     Optional[Text]       = Unset,
@@ -60,6 +60,6 @@ case class Submission[value](query: Optional[Query]):
     ( using value is Formulaic, value is Encodable in Query, Formulation )
   :   Html of Flow =
 
-      // FIXME: Check why `data` isn't used
-      val data: Optional[Query] = query.or(value.let(_.encode))
-      elicit[value](query, validation.or(Validation()), submit)
+    // FIXME: Check why `data` isn't used
+    val data: Optional[Query] = query.or(value.let(_.encode))
+    elicit[value](query, validation.or(Validation()), submit)

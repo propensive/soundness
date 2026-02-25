@@ -42,6 +42,7 @@ import vacuous.*
 
 class SseSource(capacity: Int):
   private val buffer: Array[Sse] = new Array(capacity)
+
   private var current: Int = 0
   private var spool: Spool[Sse] = Spool()
 

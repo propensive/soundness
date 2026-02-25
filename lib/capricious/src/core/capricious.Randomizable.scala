@@ -49,28 +49,36 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
   given seed: Seed is Randomizable = _.long().pipe(Seed(_))
   given boolean: Boolean is Randomizable = _.long() < 0L
 
-  given list: [element: Randomizable] => (size: RandomSize) => List[element] is Randomizable =
+  given list: [element] => (randomizable: => element is Randomizable) => (size: RandomSize)
+  =>  List[element] is Randomizable =
+
     random =>
       given random0: Random = random
-      List.fill(size.generate(random))(arbitrary[element]())
+      List.fill(size.generate(random))(randomizable.from(random))
 
-  given set: [element: Randomizable] => (size: RandomSize) => Set[element] is Randomizable =
+
+  given set: [element] => (randomizable: => element is Randomizable) => (size: RandomSize)
+  =>  Set[element] is Randomizable =
+
     random =>
       given random0: Random = random
-      Set.fill(size.generate(random))(arbitrary[element]())
+      Set.fill(size.generate(random))(randomizable.from(random))
 
-  given iarray: [element: {Randomizable, ClassTag}] => (size: RandomSize)
+
+  given iarray: [element] => (randomizable: => element is Randomizable) => (tag: ClassTag[element])
+  =>  (size: RandomSize)
   =>  IArray[element] is Randomizable =
 
-      random =>
-        given random0: Random = random
-        IArray.fill(size.generate(random))(arbitrary[element]())
+    random =>
+      given random0: Random = random
+      IArray.fill(size.generate(random))(randomizable.from(random))
+
 
   given double: Distribution => Double is Randomizable = summon[Distribution].transform(_)
 
   inline def join[derivation <: Product: ProductReflection]: derivation is Randomizable = random =>
     stochastic(using infer[Randomization]):
-      construct { [field] => _.from(summon[Random]) }
+      construct: [field] => _.from(summon[Random])
 
   inline def split[derivation: SumReflection]: derivation is Randomizable = random =>
     stochastic(using infer[Randomization]):

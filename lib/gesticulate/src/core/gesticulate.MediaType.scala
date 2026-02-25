@@ -43,22 +43,6 @@ import vacuous.*
 
 import language.dynamics
 
-case class MediaType
-  ( group:      Media.Group,
-    subtype:    Media.Subtype,
-    suffixes:   List[Media.Suffix] = Nil,
-    parameters: List[(Text, Text)] = Nil )
-extends Dynamic:
-
-  private def suffixString: Text = suffixes.map { s => t"+${s.name}" }.join
-  def basic: Text = t"${group.name}/${subtype.name}$suffixString"
-  def base: MediaType = MediaType(group, subtype, suffixes)
-
-  def at(name: Text): Optional[Text] = parameters.where(_(0) == name).let(_(1))
-
-  def applyDynamicNamed(apply: "apply")(kvs: (String, Text)*): MediaType =
-    copy(parameters = parameters ::: kvs.map(_.show -> _).to(List))
-
 object MediaType:
   given inspectable: MediaType is Inspectable = mt => t"""media"${mt}""""
 
@@ -85,3 +69,17 @@ object MediaType:
     def serialize(mediaType: MediaType): Text = mediaType.show
 
   def unapply(value: Text): Option[MediaType] = safely(Some(Media.parse(value))).or(None)
+
+case class MediaType
+  ( group:      Media.Group,
+    subtype:    Media.Subtype,
+    suffixes:   List[Media.Suffix] = Nil,
+    parameters: List[(Text, Text)] = Nil )
+extends Dynamic:
+  private def suffixString: Text = suffixes.map { s => t"+${s.name}" }.join
+  def basic: Text = t"${group.name}/${subtype.name}$suffixString"
+  def base: MediaType = MediaType(group, subtype, suffixes)
+  def at(name: Text): Optional[Text] = parameters.where(_(0) == name).let(_(1))
+
+  def applyDynamicNamed(apply: "apply")(kvs: (String, Text)*): MediaType =
+    copy(parameters = parameters ::: kvs.map(_.show -> _).to(List))

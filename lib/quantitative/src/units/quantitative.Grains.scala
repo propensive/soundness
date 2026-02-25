@@ -36,8 +36,8 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 
-trait Grains[Power <: Nat] extends Units[Power, Mass]
-
 object Grains:
   given designation: Designation[Grains[1]] = () => "gr".tt
   inline given ratio: Ratio[Kilograms[1] & Grains[-1], 0.0000647989] = !!
+
+trait Grains[Power <: Nat] extends Units[Power, Mass]

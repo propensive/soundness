@@ -38,6 +38,7 @@ import anticipation.*
 
 abstract class Root(name: Text) extends Path(name):
   type Topic = EmptyTuple
+
   override def hashCode = name.hashCode
 
   override def equals(any: Any): Boolean = any.asMatchable match

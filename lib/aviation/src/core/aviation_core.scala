@@ -42,8 +42,8 @@ import prepositional.*
 import spectacular.*
 import vacuous.*
 
-export Aviation2.{Instant, Duration}
-export Aviation.{Date, Year, Day, Anniversary, WorkingDays}
+export protointernal.{Instant, Duration}
+export aviation.internal.{Date, Year, Day, Anniversary, WorkingDays}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
 private given realm: Realm = realm"aviation"
@@ -304,23 +304,23 @@ def today()(using clock: Clock, calendar: RomanCalendar, timezone: Timezone): Da
 given base60Extractable: [text <: Text] => (Text is Extractable to Int)
 =>  text is Extractable to Base60 =
 
-    case As[Int](value: Base60) => value
-    case _                      => Unset
+  case As[Int](value: Base60) => value
+  case _                      => Unset
 
 
 given base24Extractable: [text <: Text] => (Text is Extractable to Int)
 =>  text is Extractable to Base24 =
 
-    case As[Int](value: Base24) => value
-    case _                      => Unset
+  case As[Int](value: Base24) => value
+  case _                      => Unset
 
 
 enum TimeEvent:
   case ParseStart
 
 extension (inline double: Double)
-  inline def am: Clockface = ${Aviation.validTime('double, false)}
-  inline def pm: Clockface = ${Aviation.validTime('double, true)}
+  inline def am: Clockface = ${aviation.internal.validTime('double, false)}
+  inline def pm: Clockface = ${aviation.internal.validTime('double, true)}
 
 extension (int: Int)
   def years: Timespan = Timespan(StandardTime.Year, int)

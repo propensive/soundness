@@ -56,8 +56,9 @@ object Semver:
         case text: Text => text
         case long: Long => long.show
 
-      val prerelease = if semver.prerelease.nil then t""
-                       else t"-"+semver.prerelease.map(_.text).join(t".")
+      val prerelease =
+        if semver.prerelease.nil then t""
+        else t"-"+semver.prerelease.map(_.text).join(t".")
 
       val build = if semver.build.nil then t"" else t"+"+semver.build.map(_.text).join(t".")
 
@@ -102,22 +103,22 @@ object Semver:
         case _ =>
           abort(SemverError(text))
 
-
-
   given ordering: Ordering[Semver] = Ordering.fromLessThan: (left, right) =>
     def compare(left: List[Long | Text], right: List[Long | Text]): Boolean =
       (left, right).absolve match
-        case (Nil, Nil)                       => false
-        case (Nil, _)                         => true
-        case (_, Nil)                         => false
-        case (left :: lefts, right :: rights) => left.absolve match
-          case left: Text => right.absolve match
-            case right: Long => false
-            case right: Text => if left == right then compare(lefts, rights)
-                                else left.s.compareTo(right.s) < 0
-          case left: Long => right.absolve match
-            case right: Text => true
-            case right: Long => if left == right then compare(lefts, rights) else left < right
+        case (Nil, Nil) => false
+        case (Nil, _)   => true
+        case (_, Nil)   => false
+
+        case (left :: lefts, right :: rights) =>
+          left.absolve match
+            case left: Text => right.absolve match
+              case right: Long => false
+              case right: Text => if left == right then compare(lefts, rights)
+                                  else left.s.compareTo(right.s) < 0
+            case left: Long => right.absolve match
+              case right: Text => true
+              case right: Long => if left == right then compare(lefts, rights) else left < right
 
     if left.major == right.major then
       if left.minor == right.minor then

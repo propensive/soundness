@@ -46,9 +46,6 @@ import wisteria.*
 import scala.compiletime.*
 import scala.reflect.*
 
-trait Decomposable extends Typeclass:
-  def decomposition(value: Self): Decomposition
-
 object Decomposable extends Decomposable2:
   trait Base extends Decomposable:
     def decomposition(value: Self): Decomposition
@@ -58,25 +55,25 @@ object Decomposable extends Decomposable2:
   =>  ( decomposable: => element is Decomposable )
   =>  collection is Decomposable =
 
-      list =>
-        Decomposition.Sequence(t"List", list.map(decomposable.decomposition(_)), list)
+    list =>
+      Decomposition.Sequence(t"List", list.map(decomposable.decomposition(_)), list)
 
 
   given trie: [element, collection <: Trie[element]]
   =>  ( decomposable: => element is Decomposable )
   =>  collection is Decomposable =
 
-      trie =>
-        Decomposition.Sequence(t"Trie", trie.map(decomposable.decomposition(_)).to(List), trie)
+    trie =>
+      Decomposition.Sequence(t"Trie", trie.map(decomposable.decomposition(_)).to(List), trie)
 
 
   given iarray: [element]
   =>  ( decomposable: => element is Decomposable )
   =>  IArray[element] is Decomposable =
 
-      iarray =>
-        Decomposition.Sequence
-          ( t"IArray", iarray.map(decomposable.decomposition(_)).to(List), iarray )
+    iarray =>
+      Decomposition.Sequence
+        ( t"IArray", iarray.map(decomposable.decomposition(_)).to(List), iarray )
 
 
   object Base:
@@ -94,23 +91,27 @@ object Decomposable extends Decomposable2:
 
     given decomposition: Decomposition is Base = identity(_)
 
+trait Decomposable extends Typeclass:
+  def decomposition(value: Self): Decomposition
+
 
 trait Decomposable2 extends Decomposable3:
   inline given derived: [entity] => entity is Decomposable = summonFrom:
     case decomposable: (`entity` is Decomposable.Base) => decomposable
-    case given ProductReflection[`entity`] => Derivation.derived[entity]
-    case given SumReflection[`entity`]     => Derivation.split[entity]
-    case given (AnyRef <:< `entity`)       => any[entity]
+    case given ProductReflection[`entity`]             => Derivation.derived[entity]
+    case given SumReflection[`entity`]                 => Derivation.split[entity]
+    case given (AnyRef <:< `entity`)                   => any[entity]
 
-    case given (Unset.type <:< `entity`) => inline !![entity] match
-      case _: Optional[inner] => summonFrom:
-        case decomposable: (`inner` is Decomposable) =>
-          value =>
-            val inside = value match
-              case Unset => Decomposition.Primitive(t"Unset", t"∅", Unset)
-              case other => decomposable.decomposition(other.asInstanceOf[inner])
+    case given (Unset.type <:< `entity`) =>
+      inline !![entity] match
+        case _: Optional[inner] => summonFrom:
+          case decomposable: (`inner` is Decomposable) =>
+            value =>
+              val inside = value match
+                case Unset => Decomposition.Primitive(t"Unset", t"∅", Unset)
+                case other => decomposable.decomposition(other.asInstanceOf[inner])
 
-            Decomposition.Sum(t"Optional", inside, value)
+              Decomposition.Sum(t"Optional", inside, value)
 
     case given (`entity` is Showable) =>
       value => Decomposition.Primitive(shortName[entity], value.show, value)
@@ -127,7 +128,6 @@ trait Decomposable2 extends Decomposable3:
   def any[value]: value is Decomposable =
     value => Decomposition.Primitive(t"Any", value.toString.tt, value)
 
-
   object Derivation extends Derivable[Decomposable]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Decomposable =
       value =>
@@ -143,6 +143,7 @@ trait Decomposable2 extends Decomposable3:
             Decomposition.Sum(typeName, context.decomposition(variant), variant)
 
   protected inline def shortName[entity]: Text = rewrite(typeName[entity])
+
   private def rewrite(text: Text): Text = text match
     case r"(.*\.)*$basic([^\]]*)(\[.*\])?" => basic
     case other                             => other

@@ -55,6 +55,7 @@ import AsyncError.Reason
 
 sealed trait Monitor extends Resultant:
   val promise: Promise[Result]
+
   protected[parasite] var workers: Set[Worker] = Set()
 
   def name: Optional[Text]
@@ -74,8 +75,10 @@ sealed abstract class Supervisor() extends Monitor:
   type Result = Unit
 
   def chain: Optional[Chain] = Unset
+
   val promise: Promise[Unit] = Promise()
   val daemon: Boolean = true
+
   def name: Text
   def fork(name: Optional[Text])(block: => Unit): Thread
   def supervisor: Supervisor = this
@@ -111,6 +114,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
     juca.AtomicReference(Fulfillment.Initializing)
 
   private var relents: Int = 1
+
   private val startTime: Long = jl.System.currentTimeMillis
   val promise: Promise[Result] = Promise()
 
@@ -128,8 +132,8 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
     val ref = name.lay(frame.text.s)(_.s+"@"+frame.text.s)
 
     parent match
-      case supervisor: Supervisor  => (supervisor.name.s+"://"+ref).tt
-      case submonitor: Worker => (submonitor.stack.s+"//"+ref).tt
+      case supervisor: Supervisor => (supervisor.name.s+"://"+ref).tt
+      case submonitor: Worker     => (submonitor.stack.s+"//"+ref).tt
 
   def relent(): Unit =
     relents += 1
@@ -145,13 +149,13 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
   def map[result2](lambda: Result => result2)(using Monitor, Codicil)
   :   Task[result2] raises AsyncError =
 
-      async(lambda(await()))
+    async(lambda(await()))
 
 
   def bind[result2](lambda: Result => Task[result2])(using Monitor, Codicil)
   :   Task[result2] raises AsyncError =
 
-      async(lambda(await()).await())
+    async(lambda(await()).await())
 
 
   def cancel(): Unit =
@@ -184,9 +188,9 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
   def await[abstractable: Abstractable across Durations to Long](duration: abstractable)
   :   Result raises AsyncError =
 
-      promise.attend(duration)
-      thread.join()
-      result()
+    promise.attend(duration)
+    thread.join()
+    result()
 
 
   def await(): Result raises AsyncError =
@@ -207,11 +211,8 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
 
         evaluate(this).tap: result =>
           state.updateAndGet:
-            case Active(startTime) =>
-              Completed(jl.System.currentTimeMillis - startTime, result)
-
-            case other =>
-              other
+            case Active(startTime) => Completed(jl.System.currentTimeMillis - startTime, result)
+            case other             => other
 
       catch
         case error: InterruptedException =>
@@ -222,8 +223,8 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
             case state                                => state
 
           . match
-            case Cancelled => workers.each { child => if child.daemon then child.cancel() }
-            case _         => ()
+              case Cancelled => workers.each { child => if child.daemon then child.cancel() }
+              case _         => ()
 
         case error: Throwable =>
           state.set(Failed(error))

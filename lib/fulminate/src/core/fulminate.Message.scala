@@ -42,6 +42,7 @@ import scala.annotation.targetName
 
 object Message:
   def apply(value: Text): Message = Message(List(value))
+
   given printable: Message is Printable = (message, termcap) => message.text
   given communicable: [event: Communicable] => Message transcribes event = _.communicate
 
@@ -49,15 +50,16 @@ object Message:
   transparent inline def make[tuple <: Tuple](inline messages: tuple, done: List[Message])
   :   List[Message] =
 
-      inline erasedValue[tuple] match
-        case _: (message *: tail) => messages.absolve match
+    inline erasedValue[tuple] match
+      case _: (message *: tail) =>
+        messages.absolve match
           case message *: tail =>
             val message2 = message.asInstanceOf[message]
             val communicable = infer[(? >: message) is Communicable]
             make[tail](tail.asInstanceOf[tail], communicable.message(message2) :: done)
 
-        case _ =>
-          done.reverse
+      case _ =>
+        done.reverse
 
 
 case class Message(texts: List[Text], messages: List[Message] = Nil):
@@ -77,8 +79,7 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
   def fold[render](initial: render)(append: (render, Text, Int) => render): render =
     def recur(done: render, textTodo: List[Text], messagesTodo: List[Message], level: Int): render =
       messagesTodo match
-        case Nil =>
-          append(done, textTodo.head, level)
+        case Nil => append(done, textTodo.head, level)
 
         case sub :: messages =>
           val prefix = recur(append(done, textTodo.head, level), sub.texts, sub.messages, level + 1)
@@ -87,7 +88,6 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
     recur(initial, texts, messages, 0)
 
   def text: Text = unwrap(fold[String]("") { (acc, next, level) => acc+next })
-
   override def toString(): String = text.s
 
   def colorText: Text = unwrap:
@@ -102,8 +102,7 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
     val buffer: StringBuilder = StringBuilder()
 
     def recur(lines: List[String]): Text = lines match
-      case Nil =>
-        buffer.toString.nn.tt
+      case Nil => buffer.toString.nn.tt
 
       case line :: tail =>
         if line.forall(_.isWhitespace) then buffer.append("\n") else

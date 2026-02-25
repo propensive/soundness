@@ -58,7 +58,6 @@ object Printer:
             out.write('\n')
             printBlock(indent, text, end + 1)
 
-
     def recur(node: CodlNode, indent: Int): Unit = node match
       case CodlNode(data, extra) =>
         extra.let: extra =>

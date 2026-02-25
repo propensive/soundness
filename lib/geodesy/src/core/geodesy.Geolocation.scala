@@ -44,6 +44,7 @@ import vacuous.*
 
 object Geolocation:
   import GeolocationError.Reason.*
+
   private given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 6)
 
   private def parseParams(text: Text): List[(Text, Text)] raises GeolocationError =
@@ -109,6 +110,7 @@ object Geolocation:
 
   given encodable: Geolocation is Encodable in Text = geolocation =>
     import geolocation.{location, altitude, uncertainty}
+
     val alt = altitude.lay(t"") { a => t",$a" }
     t"geo:${location.encode}$alt${uncertainty.lay(t"") { u => t";u=$u" }}"
 

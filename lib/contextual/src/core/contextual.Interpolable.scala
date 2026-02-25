@@ -38,4 +38,5 @@ import prepositional.*
 
 trait Interpolable extends Typeclass:
   type Self
+
   inline def interpolate[parts <: Tuple](inline insertions: Any*): Self

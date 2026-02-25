@@ -57,79 +57,86 @@ import scala.annotation.*
 
 object Mcp:
   val version = t"2025-11-25"
+
   type Cursor = Text
+
 
   def send[interface <: McpServer](id: Text, server: interface, mcpInterface: Interface)
     ( dispatch: Json => Optional[Json] )
     ( using request: Http.Request )
     ( using Monitor, Codicil, Online )
   :   Http.Response =
-      import jsonPrinters.minimal
-      import charEncoders.utf8
 
-      given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
-      given mcpProtocolVersion: ("mcpProtocolVersion" is Directive of Text) = identity(_)
-      given lastEventId: ("lastEventId" is Directive of Text) = identity(_)
+    import jsonPrinters.minimal
+    import charEncoders.utf8
 
-      recover:
-        case error: ParseError =>
-          Http.Response(Http.Ok):
-            JsonRpc.error(-32700, t"Parse error: ${error.message}".show).json
-          . mcpSessionId = id
+    given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
+    given mcpProtocolVersion: ("mcpProtocolVersion" is Directive of Text) = identity(_)
+    given lastEventId: ("lastEventId" is Directive of Text) = identity(_)
 
-        case error: JsonError =>
-          Http.Response(Http.Ok):
-            JsonRpc.error(-32600, t"Invalid request: ${error.message}".show).json
-          . mcpSessionId = id
+    recover:
+      case error: ParseError =>
+        Http.Response(Http.Ok):
+          JsonRpc.error(-32700, t"Parse error: ${error.message}".show).json
 
-      . within:
-          try
-            request.method match
-              case Http.Options =>
-                Http.Response
-                  ( Http.NoContent,
-                    mcpProtocolVersion = version,
-                    mcpSessionId       = id )
-                  (  )
+        . mcpSessionId = id
 
-              case Http.Delete =>
-                Http.Response
-                  ( Http.Accepted,
-                    mcpProtocolVersion = version,
-                    mcpSessionId       = id )
-                  (  )
+      case error: JsonError =>
+        Http.Response(Http.Ok):
+          JsonRpc.error(-32600, t"Invalid request: ${error.message}".show).json
 
-              case Http.Get =>
+        . mcpSessionId = id
+
+    . within:
+        try
+          request.method match
+            case Http.Options =>
+              Http.Response
+                ( Http.NoContent,
+                  mcpProtocolVersion = version,
+                  mcpSessionId       = id )
+                (  )
+
+            case Http.Delete =>
+              Http.Response
+                ( Http.Accepted,
+                  mcpProtocolVersion = version,
+                  mcpSessionId       = id )
+                (  )
+
+            case Http.Get =>
+              Http.Response
+                ( Http.Ok,
+                  connection         = t"keep-alive",
+                  cacheControl       = t"no-cache",
+                  mcpProtocolVersion = version,
+                  mcpSessionId       = id )
+                ( mcpInterface.stream )
+
+            case Http.Post =>
+              val input = request.body().read[Json]
+              dispatch(input).let: json =>
+                import jsonPrinters.indented
                 Http.Response
                   ( Http.Ok,
-                    connection         = t"keep-alive",
-                    cacheControl       = t"no-cache",
                     mcpProtocolVersion = version,
                     mcpSessionId       = id )
-                  ( mcpInterface.stream )
+                  ( json )
 
-              case Http.Post =>
-                val input = request.body().read[Json]
-                dispatch(input).let: json =>
-                  import jsonPrinters.indented
+              . or:
                   Http.Response
-                    ( Http.Ok,
+                    ( Http.Accepted,
                       mcpProtocolVersion = version,
                       mcpSessionId       = id )
-                    ( json )
+                    (  )
 
-                . or:
-                    Http.Response
-                      ( Http.Accepted,
-                        mcpProtocolVersion = version,
-                        mcpSessionId       = id )
-                      (  )
-              case method =>
-                ???
-          catch
-            case error: Throwable =>
-              Http.Response(Http.Ok):
-                JsonRpc.error(-32603, t"Internal error: ${error.toString}".show).json
+            case method =>
+              ???
+        catch
+          case error: Throwable =>
+            Http.Response(Http.Ok):
+              JsonRpc.error(-32603, t"Internal error: ${error.toString}".show).json
+
 
   case class TaskAugmented(task: Optional[TaskMetadata] = Unset)
   case class Error(code: Int, message: Text, data: Optional[Json] = Unset)
@@ -160,7 +167,6 @@ object Mcp:
       theme:    Optional[Text]       = Unset )
 
   case class BaseMetadata(name: Text, title: Optional[Text] = Unset)
-
   case class Implementation
     ( name:        Text,
       title:       Optional[Text]       = Unset,
@@ -192,20 +198,17 @@ object Mcp:
 
   case class ListChanged(listChanged: Optional[Boolean] = Unset)
   case class Resources(subscribe: Optional[Boolean] = true, listChanged: Optional[Boolean] = true)
-
   case class Sampling(context: Optional[Json] = Unset, tools: Optional[Json] = Unset)
   case class Elicitation(form: Optional[Json] = Unset, url: Optional[Json] = Unset)
   case class RequestsElicitation(create: Optional[Json] = Unset)
   case class Call(call: Optional[Json] = Unset)
   case class RequestsSampling(createMessage: Optional[Json] = Unset)
-
   case class Tasks
     ( list:     Optional[Json]     = Unset,
       cancel:   Optional[Json]     = Unset,
       requests: Optional[Requests] = Unset )
 
   case class ListTasks(nextCursor: Optional[Cursor] = Unset, tasks: List[Task] = Nil)
-
   case class Requests
     ( sampling:    Optional[RequestsSampling]    = Unset,
       elicitation: Optional[RequestsElicitation] = Unset,
@@ -237,15 +240,11 @@ object Mcp:
 
   case class Contents(contents: TextResourceContents | BlobResourceContents)
   case class Context(arguments: Optional[Map[Text, Text]] = Unset)
-
-
   case class ListResources(nextCursor: Optional[Cursor] = Unset, resources: List[Resource] = Nil)
-
   case class ListResourceTemplates
     ( nextCursor: Optional[Cursor] = Unset, resourceTemplates: List[ResourceTemplate] = Nil )
 
   case class ReadResource(contents: List[Contents] = Nil)
-
   case class Resource
     ( name:        Text,
       uri:         Text,
@@ -277,14 +276,12 @@ object Mcp:
     ( uri: Text, mimeType: Optional[Text] = Unset, blob: Text, _meta: Optional[Json] = Unset )
 
   case class ListPrompts(nextCursor: Optional[Cursor] = Unset, prompts: List[Prompt] = Nil)
-
   case class Annotations
     ( audience:     Optional[List[Role]] = Unset,
       priority:     Optional[Double]     = Unset,
       lastModified: Optional[Text]       = Unset )
 
   case class Complete(completion: Completion)
-
   case class Completion
     ( values: List[Text] = Nil, total: Optional[Int] = Unset, hasMore: Optional[Boolean] = Unset )
 
@@ -368,12 +365,13 @@ object Mcp:
       arguments:   Optional[List[PromptArgument]] = Unset,
       _meta:       Optional[Json]                 = Unset )
   case class Argument(name: Text, value: Text)
+
   object Reference:
     import dynamicJsonAccess.enabled
 
     given encodable: Reference is Encodable in Json =
-      case ref: PromptReference            => unsafely(ref.json.`type` = "ref/prompt")
-      case ref: ResourceTemplateReference  => unsafely(ref.json.`type` = "ref/resource")
+      case ref: PromptReference           => unsafely(ref.json.`type` = "ref/prompt")
+      case ref: ResourceTemplateReference => unsafely(ref.json.`type` = "ref/resource")
 
     given decodable: Tactic[JsonError] => Reference is Decodable in Json = json =>
       json.`type`.as[Text] match
@@ -382,13 +380,11 @@ object Mcp:
         case _              => abort(JsonError(JsonError.Reason.OutOfRange))
 
   sealed trait Reference
+
   case class PromptReference(name: Text, title: Optional[Text] = Unset) extends Reference
   case class ResourceTemplateReference(uri: Text) extends Reference
-
   case class PromptMessage(role: Role, content: ContentBlock)
-
   case class GetPrompt(description: Optional[Text] = Unset, messages: List[PromptMessage] = Nil)
-
   case class CallTool
     ( content:           List[ContentBlock] = Nil,
       structuredContent: Optional[Json]     = Unset,
@@ -396,9 +392,7 @@ object Mcp:
 
   case class ListTools(nextCursor: Optional[Cursor] = Unset, tools: List[Tool] = Nil)
   case class ListRoots(roots: List[Root] = Nil)
-
   case class Root(uri: Text, name: Optional[Text] = Unset, _meta: Optional[Json] = Unset)
-
   case class Tool
     ( name:         Text,
       inputSchema:  JsonSchema,
@@ -411,7 +405,6 @@ object Mcp:
       _meta:        Optional[Json]            = Unset )
 
   case class ToolExecution(taskSupport: Optional[TaskSupport] = Unset)
-
   case class ToolAnnotations
     ( title:           Optional[Text]    = Unset,
       readOnlyHint:    Optional[Boolean] = Unset,
@@ -488,6 +481,7 @@ object Mcp:
         case _               => abort(JsonError(JsonError.Reason.OutOfRange))
 
   sealed trait ContentBlock
+
   case class TextContent(text: Text, annotations: Optional[Annotations] = Unset)
   extends ContentBlock, SamplingMessageContentBlock
 
@@ -576,7 +570,6 @@ object Mcp:
   case class ElicitationComplete(elicitationId: Text)
 
   trait Api extends JsonRpc:
-
     type Origin = McpClient
 
     @rpc
@@ -693,18 +686,17 @@ object Mcp:
     :   Unit
 
   object Interface:
-
     private val cache: scm.HashMap[Text, Interface] = scm.HashMap()
 
     given streamable: Interface is Streamable by Sse = _.stream
+
 
     inline def apply(sessionId: Text, server: McpServer from McpClient)
       ( using spec: server.type is McpSpecification )
     :   Interface =
 
-        cache.establish(sessionId):
-          new Interface(sessionId, server, spec)
-
+      cache.establish(sessionId):
+        new Interface(sessionId, server, spec)
 
   class Interface
     (     sessionId: Text,
@@ -723,11 +715,11 @@ object Mcp:
         _meta:           Optional[Json] )
     :   Initialize =
 
-        Initialize
-          (version,
-            ServerCapabilities(),
-            Implementation(server.name, version = server.version.encode),
-            server.description )
+      Initialize
+        ( version,
+          ServerCapabilities(),
+          Implementation(server.name, version = server.version.encode),
+          server.description )
 
     def `completion/complete`
       ( ref:      Reference,
@@ -736,7 +728,7 @@ object Mcp:
         _meta:    Optional[Json] )
     :   Complete =
 
-        ???
+      ???
 
 
     def `logging/setLevel`(level: LoggingLevel, _meta: Optional[Json]): Unit =
@@ -745,11 +737,11 @@ object Mcp:
     def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json])
     :   GetPrompt =
 
-        val messages = spec.invokePrompt(server, client, name, arguments.or(Map())).map:
-          case Human(message) => PromptMessage(Role.User, TextContent(message))
-          case Agent(message) => PromptMessage(Role.Assistant, TextContent(message))
+      val messages = spec.invokePrompt(server, client, name, arguments.or(Map())).map:
+        case Human(message) => PromptMessage(Role.User, TextContent(message))
+        case Agent(message) => PromptMessage(Role.Assistant, TextContent(message))
 
-        GetPrompt(Unset, messages)
+      GetPrompt(Unset, messages)
 
     def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts =
       ListPrompts(prompts = spec.prompts())
@@ -760,7 +752,7 @@ object Mcp:
     def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json])
     :   ListResourceTemplates =
 
-        ???
+      ???
 
 
     def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource =
@@ -789,7 +781,7 @@ object Mcp:
       ( requestId: Optional[TextInt], reason: Optional[Text], _meta: Optional[Json] )
     :   Unit =
 
-        ()
+      ()
 
 
     def `notifications/progress`
@@ -800,7 +792,7 @@ object Mcp:
         _meta:         Optional[Json] )
     :   Unit =
 
-        ()
+      ()
 
 
     def `notifications/initialized`(_meta: Optional[Json]): Unit = ()
@@ -832,4 +824,4 @@ object Mcp:
       ( level: LoggingLevel, logger: Optional[Text], data: Json, _meta: Optional[Json] )
     :   Unit =
 
-        ???
+      ???

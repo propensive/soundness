@@ -40,9 +40,6 @@ import rudiments.*
 
 import scala.compiletime.*
 
-trait JsonPrinter:
-  def print(json: JsonAst): Text
-
 object JsonPrinter:
   def print(json: JsonAst, indentation: Boolean): Text = Text.construct:
     def appendString(string: String): Unit =
@@ -59,28 +56,28 @@ object JsonPrinter:
       append('"')
 
     def recur(json: JsonAst, indent: Int): Unit = json.asMatchable match
-      case (keys, values) => keys.asMatchable.absolve match
-        case keys: Array[String] => values.asMatchable.absolve match
-          case values: Array[JsonAst] @unchecked =>
-            append('{')
-            val last = keys.length - 1
+      case (keys, values) =>
+        keys.asMatchable.absolve match
+          case keys: Array[String] => values.asMatchable.absolve match
+            case values: Array[JsonAst] @unchecked =>
+              append('{')
+              val last = keys.length - 1
 
-            keys.indices.each: index =>
+              keys.indices.each: index =>
+                if indentation then
+                  append('\n')
+                  for i <- 0 until indent*2 do append(' ')
+                appendString(keys(index))
+                append(':')
+                if indentation then append(' ')
+                recur(values(index), indent + 1)
+
+                if index < last then append(',')
+
               if indentation then
                 append('\n')
-                for i <- 0 until indent*2 do append(' ')
-              appendString(keys(index))
-              append(':')
-              if indentation then append(' ')
-              recur(values(index), indent + 1)
-
-              if index < last then append(',')
-
-            if indentation then
-              append('\n')
-              for i <- 0 until indent*2 - 2 do append(' ')
-            append('}')
-
+                for i <- 0 until indent*2 - 2 do append(' ')
+              append('}')
 
       case array: Array[JsonAst] @unchecked =>
         append('[')
@@ -100,10 +97,22 @@ object JsonPrinter:
 
         append(']')
 
-      case long: Long       => append(long.toString)
-      case double: Double   => append(double.toString)
-      case string: String   => appendString(string)
-      case boolean: Boolean => append(boolean.toString)
-      case _                => append("null")
+      case long: Long =>
+        append(long.toString)
+
+      case double: Double =>
+        append(double.toString)
+
+      case string: String =>
+        appendString(string)
+
+      case boolean: Boolean =>
+        append(boolean.toString)
+
+      case _ =>
+        append("null")
 
     recur(json, 1)
+
+trait JsonPrinter:
+  def print(json: JsonAst): Text

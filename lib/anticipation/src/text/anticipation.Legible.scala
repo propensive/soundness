@@ -34,9 +34,9 @@ package anticipation
 
 import prepositional.*
 
-trait Legible extends Typeclass:
-  def text(value: Self): Text
-
 object Legible:
   given text: Text is Legible = identity(_)
   given string: String is Legible = _.tt
+
+trait Legible extends Typeclass:
+  def text(value: Self): Text

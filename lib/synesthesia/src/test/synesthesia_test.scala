@@ -37,7 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import charEncoders.utf8
 
-object Tests extends Suite(m"Synesthesia Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
     test(m"Remote server"):
       import internetAccess.enabled
@@ -50,14 +50,16 @@ object Tests extends Suite(m"Synesthesia Tests"):
 
       tcp"8080".serve:
         request.path match
-          case % /: t"mcp"         =>
+          case % /: t"mcp" =>
             try
               unsafely:
                 TestMcpServer.serve
             catch case throwable: Throwable =>
               throwable.printStackTrace()
               ???
-          case _                   => Http.Response(Http.NotFound)(t"Error 404: Not found")
+
+          case _ =>
+            Http.Response(Http.NotFound)(t"Error 404: Not found")
 
       Thread.sleep(1000000)
 

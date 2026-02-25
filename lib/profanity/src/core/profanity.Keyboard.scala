@@ -42,22 +42,19 @@ import proscenium.*
 import spectacular.*
 import vacuous.*
 
-trait Keyboard:
-  type Keypress
-  def process(stream: Stream[Char]): Stream[Keypress]
-
 object Keyboard:
   import Keypress.*
 
 
   def modified(code: Char, keypress: EditKey | FunctionKey)
   :   EditKey | FunctionKey | Shift | Alt | Ctrl | Meta =
-      val n = code - '1'
-      val shift: EditKey | FunctionKey | Shift = if (n&1) == 1 then Shift(keypress) else keypress
-      val alt: EditKey | FunctionKey | Shift | Alt = if (n&2) == 2 then Alt(shift) else shift
-      val ctrl: EditKey | FunctionKey | Shift | Alt | Ctrl = if (n&4) == 4 then Ctrl(alt) else alt
 
-      if (n&8) == 8 then Meta(ctrl) else ctrl
+    val n = code - '1'
+    val shift: EditKey | FunctionKey | Shift = if (n&1) == 1 then Shift(keypress) else keypress
+    val alt: EditKey | FunctionKey | Shift | Alt = if (n&2) == 2 then Alt(shift) else shift
+    val ctrl: EditKey | FunctionKey | Shift | Alt | Ctrl = if (n&4) == 4 then Ctrl(alt) else alt
+
+    if (n&8) == 8 then Meta(ctrl) else ctrl
 
 
   def navigation(code: Char): Keypress.EditKey = code match
@@ -145,9 +142,25 @@ object Keyboard:
             case rest =>
               process(rest)
 
-      case ('\b' | '\u007f') #:: rest     => Keypress.Backspace #:: process(rest)
-      case '\u0009' #:: rest              => Keypress.Tab #:: process(rest)
-      case ('\u000a' | '\u000d') #:: rest => Keypress.Enter #:: process(rest)
-      case CtrlChar(char) #:: rest        => Keypress.Ctrl(char) #:: process(rest)
-      case other #:: rest                 => Keypress.CharKey(other) #:: process(rest)
-      case _                              => Stream()
+      case ('\b' | '\u007f') #:: rest =>
+        Keypress.Backspace #:: process(rest)
+
+      case '\u0009' #:: rest =>
+        Keypress.Tab #:: process(rest)
+
+      case ('\u000a' | '\u000d') #:: rest =>
+        Keypress.Enter #:: process(rest)
+
+      case CtrlChar(char) #:: rest =>
+        Keypress.Ctrl(char) #:: process(rest)
+
+      case other #:: rest =>
+        Keypress.CharKey(other) #:: process(rest)
+
+      case _ =>
+        Stream()
+
+trait Keyboard:
+  type Keypress
+
+  def process(stream: Stream[Char]): Stream[Keypress]

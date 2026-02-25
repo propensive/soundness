@@ -37,19 +37,17 @@ import gossamer.*
 import spectacular.*
 import symbolism.*
 
-case class Monthstamp(year: Year, month: Month)
-
 object Monthstamp:
   given showable: (months: Months, separation: DateSeparation, endianness: Endianness, years: Years)
   =>  Monthstamp is Showable =
 
-      monthstamp =>
-        endianness match
-          case Endianness.LittleEndian =>
-            t"${monthstamp.year}${separation.separator}${monthstamp.month}"
+    monthstamp =>
+      endianness match
+        case Endianness.LittleEndian =>
+          t"${monthstamp.year}${separation.separator}${monthstamp.month}"
 
-          case _ =>
-            t"${monthstamp.month}${separation.separator}${monthstamp.year}"
+        case _ =>
+          t"${monthstamp.month}${separation.separator}${monthstamp.year}"
 
 
   given subtractable: Monthstamp is Subtractable:
@@ -58,3 +56,5 @@ object Monthstamp:
 
     def subtract(monthstamp: Monthstamp, day: Int): Date =
       unsafely(calendars.gregorian.jdn(monthstamp.year, monthstamp.month, Day(day)))
+
+case class Monthstamp(year: Year, month: Month)

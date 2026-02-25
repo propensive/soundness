@@ -52,7 +52,7 @@ erased val Unsafe: Unsafe = caps.unsafe.unsafeErasedValue
 type Optional[value] = Unset.type | value
 
 extension [value](inline optional: Optional[value])
-  inline def or(inline value: => value): value = ${Vacuous.optimizeOr('optional, 'value)}
+  inline def or(inline value: => value): value = ${vacuous.internal.optimizeOr('optional, 'value)}
 
 extension [value](value: value)
   def per[value2](optional: Optional[value2])(lambda: (value, value2) => value): value =
@@ -107,7 +107,7 @@ extension [value](optional: Optional[value])(using Optionality[optional.type])
   inline def layGiven[value2](inline alternative: => value2)(inline block: value ?=> value2)
   :   value2 =
 
-      if absent then alternative else block(using vouch)
+    if absent then alternative else block(using vouch)
 
   def let[value2](lambda: value => value2): Optional[value2] =
     if absent then Unset else lambda(vouch)

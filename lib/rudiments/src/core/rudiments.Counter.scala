@@ -36,4 +36,5 @@ import java.util.concurrent.atomic as juca
 
 case class Counter(first: Int = 0):
   private val atomicInt: juca.AtomicInteger = juca.AtomicInteger(first)
+
   def apply(): Int = atomicInt.incrementAndGet()

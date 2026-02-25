@@ -63,7 +63,8 @@ extension (xml: Seq[Xml])
 
     var index = 0
     for item <- xml do item match
-      case Fragment(nodes*) => for node <- nodes do
+      case Fragment(nodes*) =>
+        for node <- nodes do
         array(index) = node
         index += 1
 

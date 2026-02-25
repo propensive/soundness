@@ -38,6 +38,7 @@ object Benchmark:
   given inclusion: Inclusion[Report, Benchmark]:
     def include(report: Report, testId: TestId, benchmark: Benchmark): Report =
       report.addBenchmark(testId, benchmark)
+
   type Percentiles = 80 | 85 | 90 | 95 | 96 | 97 | 98 | 99
 
 case class Benchmark

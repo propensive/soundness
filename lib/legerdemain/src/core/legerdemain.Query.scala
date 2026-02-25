@@ -67,24 +67,22 @@ object Query extends Dynamic:
     inline def join[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Query =
 
-        value =>
-          Query.of:
-            fields(value) { [field] => field => context.encoded(field).prefix(label) }
-            . to(List)
-            . flatMap(_.values)
-
+      value =>
+        Query.of:
+          fields(value) { [field] => field => context.encoded(field).prefix(label) }
+          . to(List)
+          . flatMap(_.values)
 
   object DecodableDerivation extends ProductDerivation[[Type] =>> Type is Decodable in Query]:
     inline def join[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Query =
 
-        provide[Foci[Pointer]]:
-          value =>
-            construct:
-              [field] => context =>
-                focus(prior.lay(Pointer(label))(_(label))):
-                  context.decoded(value(label))
-
+      provide[Foci[Pointer]]:
+        value =>
+          construct:
+            [field] => context =>
+              focus(prior.lay(Pointer(label))(_(label))):
+                context.decoded(value(label))
 
   given booleanEncodable: Boolean is Encodable in Query =
     boolean => if boolean then Query.of(t"on") else Query.empty
@@ -115,7 +113,7 @@ object Query extends Dynamic:
         DecodableDerivation.join[value & Product].asInstanceOf[value is Decodable in Query]
 
   inline def applyDynamicNamed(method: "apply")(inline parameters: (Label, Any)*): Query =
-    ${Legerdemain.query('parameters)}
+    ${legerdemain.internal.query('parameters)}
 
   def of(parameters: List[(Text, Text)]): Query = new Query(parameters)
   def of(parameter: Text): Query = new Query(List(t"" -> parameter))
@@ -136,20 +134,23 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
     ( using decodable: result is Decodable in Query )
   :   result =
 
-      decodable.decoded(apply(label.tt))
+    decodable.decoded(apply(label.tt))
+
 
   def updateDynamic(label: String)[result: Encodable in Query]
     ( using erased (label.type is Parametric to result) )
     ( value: result )
   :   Query =
-      val updates: List[(Text, Text)] = value.encode.values
 
-      val values2 =
-        if updates.length == 1 && updates(0)(0) == ""
-        then (label.tt, updates(0)(1)) :: values
-        else values ++ (updates.map { (key, value) => (t"$label.$key", value) })
+    val updates: List[(Text, Text)] = value.encode.values
 
-      new Query(values2)
+    val values2 =
+      if updates.length == 1 && updates(0)(0) == ""
+      then (label.tt, updates(0)(1)) :: values
+      else values ++ (updates.map { (key, value) => (t"$label.$key", value) })
+
+    new Query(values2)
+
 
   def at[value: Decodable in Text](name: Text): Optional[value] = apply(name)().let(_.decode)
   def as[value: Decodable in Query]: value tracks Pointer = value.decoded(this)

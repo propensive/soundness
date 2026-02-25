@@ -36,7 +36,7 @@ object Identity:
   given either:  Identity[[Type] =>> Either[?, Type]]:
     def point[value](value: value): Either[Nothing, value] = Right(value)
 
-  inline given ident: [ident[_]] => Identity[ident] = ${Mercator.point[ident]}
+  inline given ident: [ident[_]] => Identity[ident] = ${internal.point[ident]}
 
 trait Identity[ident[_]]:
   def point[value](value: value): ident[value]

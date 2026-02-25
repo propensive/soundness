@@ -43,6 +43,7 @@ import symbolism.*
 object Aggregable:
   given bytesData: Data is Aggregable by Data = source0 =>
     val size = source0.foldLeft(0)(_ + _.length)
+
     var source = source0
     Data.construct(size): array =>
       var index = Prim
@@ -57,6 +58,7 @@ object Aggregable:
 
   given textText: Text is Aggregable by Text = source0 =>
     var source = source0
+
     val builder = new StringBuilder()
 
     while !source.nil do
@@ -65,10 +67,11 @@ object Aggregable:
 
     builder.toString.tt
 
+
   given stream: [element, element2] => (aggregable: element2 is Aggregable by element)
   =>  Stream[element2] is Aggregable by element =
 
-      element => Stream(aggregable.aggregate(element))
+    element => Stream(aggregable.aggregate(element))
 
 trait Aggregable extends Typeclass, Operable:
   aggregable =>

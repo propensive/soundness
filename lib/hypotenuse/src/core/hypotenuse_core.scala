@@ -47,12 +47,12 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-export Hypotenuse.{B8, B16, B32, B64, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64}
+export hypotenuse.internal.{B8, B16, B32, B64, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64}
 
 
 extension (inline context: StringContext)
-  transparent inline def bin(): AnyVal = ${Hypotenuse2.bin('context)}
-  transparent inline def hex(): IArray[Byte] = ${Hypotenuse2.hex('context)}
+  transparent inline def bin(): AnyVal = ${protointernal.bin('context)}
+  transparent inline def hex(): IArray[Byte] = ${protointernal.hex('context)}
 
 extension [value](iterable: Iterable[value])
   inline def minimum(using commensurable: value is Commensurable against value): Optional[value] =
@@ -78,27 +78,27 @@ extension [value](iterable: Iterable[value])
             addable:       value is Addable by divisible.Result )
   :   Optional[addable.Result] =
 
-      def recur(n: Int, items: List[value]): value =
-        val pivot = items.head
-        var left: List[value] = Nil
-        var right: List[value] = Nil
+    def recur(n: Int, items: List[value]): value =
+      val pivot = items.head
+      var left: List[value] = Nil
+      var right: List[value] = Nil
 
-        items.tail.each: item =>
-          if item < pivot then left ::= item else right ::= item
+      items.tail.each: item =>
+        if item < pivot then left ::= item else right ::= item
 
-        if left.length == n then pivot
-        else if left.length < n then recur(n - left.length - 1, right)
-        else recur(n, left)
+      if left.length == n then pivot
+      else if left.length < n then recur(n - left.length - 1, right)
+      else recur(n, left)
 
-      val size = iterable.size
-      if size == 0 then Unset
-      else if size%2 == 0 then
-        val first = recur((size - 1)/2, iterable.to(List))
-        val second = recur((size + 1)/2, iterable.to(List))
-        first + (second - first)/2.0
-      else
-        val result: value = recur((size - 1)/2, iterable.to(List))
-        result + (result - result)/1.0
+    val size = iterable.size
+    if size == 0 then Unset
+    else if size%2 == 0 then
+      val first = recur((size - 1)/2, iterable.to(List))
+      val second = recur((size + 1)/2, iterable.to(List))
+      first + (second - first)/2.0
+    else
+      val result: value = recur((size - 1)/2, iterable.to(List))
+      result + (result - result)/1.0
 
 
 extension (float: Float)
@@ -463,7 +463,7 @@ extension [left](inline left: left)
   ( using inline commensurable: left is Commensurable against right )
   :   Boolean =
 
-      commensurable.compare(left, right, true, false)
+    commensurable.compare(left, right, true, false)
 
 
   @targetName("lte")
@@ -471,7 +471,7 @@ extension [left](inline left: left)
     ( using inline commensurable: left is Commensurable against right )
   :   Boolean =
 
-      commensurable.compare(left, right, false, false)
+    commensurable.compare(left, right, false, false)
 
 
   @targetName("gt")
@@ -479,7 +479,7 @@ extension [left](inline left: left)
     ( using inline commensurable: left is Commensurable against right )
   :   Boolean =
 
-      commensurable.compare(left, right, true, true)
+    commensurable.compare(left, right, true, true)
 
 
   @targetName("gte")
@@ -487,7 +487,7 @@ extension [left](inline left: left)
     ( using inline commensurable: left is Commensurable against right )
   :   Boolean =
 
-      commensurable.compare(left, right, false, true)
+    commensurable.compare(left, right, false, true)
 
 
   inline infix def min (inline right: left)(using left is Orderable): left =
@@ -553,6 +553,7 @@ package arithmeticOptions:
   object overflow:
     inline given unchecked: CheckOverflow:
       type Wrap[result] = result
+
       inline def addU64(left: U64, right: U64): U64 = U64((Long(left.bits) + Long(right.bits)).bits)
       inline def addS64(left: S64, right: S64): S64 = S64((left.long + right.long).bits)
       inline def addU32(left: U32, right: U32): U32 = U32((Int(left.bits) + Int(right.bits)).bits)

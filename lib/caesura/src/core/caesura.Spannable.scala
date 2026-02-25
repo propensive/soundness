@@ -39,7 +39,7 @@ import wisteria.*
 
 object Spannable extends ProductDerivable[Spannable]:
   inline def join[derivation <: Product: ProductReflection]: derivation is Spannable =
-    () => contexts { [field] => context => context.spans().sum }
+    () => contexts: [field] => context => context.spans().sum
 
   given decoder: [decodable: Decodable in Text] => decodable is Spannable = () => IArray(1)
 

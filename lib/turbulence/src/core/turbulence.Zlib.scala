@@ -36,7 +36,6 @@ import java.io as ji
 import java.util.zip as juz
 
 import anticipation.*
-import contingency.*
 import denominative.*
 import proscenium.*
 import rudiments.*

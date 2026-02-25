@@ -58,9 +58,9 @@ case class BaseLayout[topic <: Tuple](private val part: Optional[Text], readOnly
   def absolutePath(using Environment, System)
   :   Text raises EnvironmentError raises PropertyError =
 
-      val home: Text = Environment.home[Text]
-      val home2: Text = if home.ends(t"/") then home.skip(1, Rtl) else home
-      part.let(baseDir/_).or(baseDir).render(home2)
+    val home: Text = Environment.home[Text]
+    val home2: Text = if home.ends(t"/") then home.skip(1, Rtl) else home
+    part.let(baseDir/_).or(baseDir).render(home2)
 
 
   given dir: BaseLayout.Dir =
@@ -71,5 +71,5 @@ case class BaseLayout[topic <: Tuple](private val part: Optional[Text], readOnly
     ( using System, Environment )
   :   instantiable raises PropertyError raises EnvironmentError =
 
-      val path: Text = absolutePath
-      instantiable(path)
+    val path: Text = absolutePath
+    instantiable(path)

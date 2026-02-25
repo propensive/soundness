@@ -52,4 +52,4 @@ extends Interpolator[Nothing, Optional[result], result]:
     ( using thisType: Type[this.type] )
   :   Macro[result] =
 
-      expand(context, '{Nil})(using thisType)
+    expand(context, '{Nil})(using thisType)

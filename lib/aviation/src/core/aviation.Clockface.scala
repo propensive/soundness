@@ -40,28 +40,28 @@ object Clockface:
   given showable: (TimeFormat, TimeNumerics, TimeSeparation, TimeSpecificity)
   =>  Clockface is Showable =
 
-      clockface =>
-        val hour = if summon[TimeFormat].halfDay then clockface.hour%12 else clockface.hour
+    clockface =>
+      val hour = if summon[TimeFormat].halfDay then clockface.hour%12 else clockface.hour
 
-        val hour2 = summon[TimeNumerics] match
-          case TimeNumerics.VariableWidth => hour.show
-          case TimeNumerics.FixedWidth    => hour.show.pad(2, Bidi.Rtl, '0')
+      val hour2 = summon[TimeNumerics] match
+        case TimeNumerics.VariableWidth => hour.show
+        case TimeNumerics.FixedWidth    => hour.show.pad(2, Bidi.Rtl, '0')
 
-        val minute = (clockface.minute: Int).show.pad(2, Bidi.Rtl, '0')
+      val minute = (clockface.minute: Int).show.pad(2, Bidi.Rtl, '0')
 
-        val seconds0 = (clockface.second: Int).show.pad(2, Bidi.Rtl, '0')
+      val seconds0 = (clockface.second: Int).show.pad(2, Bidi.Rtl, '0')
 
-        val seconds =
-          if !summon[TimeFormat].seconds then t""
-          else t"${summon[TimeSeparation].secondSeparator}$seconds0"
+      val seconds =
+        if !summon[TimeFormat].seconds then t""
+        else t"${summon[TimeSeparation].secondSeparator}$seconds0"
 
-        val meridiem = (clockface.hour/12) match
-          case 0 => Meridiem.Am
-          case _ => Meridiem.Pm
+      val meridiem = (clockface.hour/12) match
+        case 0 => Meridiem.Am
+        case _ => Meridiem.Pm
 
-        val postfix = summon[TimeFormat].postfix(meridiem)
+      val postfix = summon[TimeFormat].postfix(meridiem)
 
-        t"$hour${summon[TimeSeparation].separator}$minute$seconds$postfix"
+      t"$hour${summon[TimeSeparation].separator}$minute$seconds$postfix"
 
 
 case class Clockface(hour: Base24, minute: Base60, second: Base60 = 0, nanos: Int = 0)

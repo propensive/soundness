@@ -70,6 +70,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             arguments match
               case Alpha() :: _ => execute(Exit.Ok)
               case Beta() :: _  => execute(Exit.Ok)
+
               case Gamma() :: _ =>
                 given Color is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
                 given Color is Interpretable =
@@ -99,7 +100,8 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
                   case _             => execute(Exit.Ok)
 
-              case _            => execute(Exit.Fail(1))
+              case _ =>
+                execute(Exit.Fail(1))
 
           t"finished"
         }

@@ -48,24 +48,27 @@ object Tests extends Suite(m"Coaxial tests"):
 
     supervise:
       val task = async:
-        val udpServer: Unit = remote.dispatch('{
-          unsafely:
-            supervise:
-              val promise: Promise[Text] = Promise()
-              val server = ${port.put}.listen[Text]: in =>
-                UdpResponse.Reply(jvmInstanceId.show.sysData).also(promise.fulfill(in.data.utf8))
+        val udpServer: Unit = remote.dispatch:
+          ' {
+              unsafely:
+                supervise:
+                  val promise: Promise[Text] = Promise()
 
-              promise.await()
-        })
+                  val server = ${port.put}.listen[Text]: in =>
+                    UdpResponse.Reply
+                      ( jvmInstanceId.show.sysData).also(promise.fulfill(in.data.utf8) )
+
+                  promise.await()
+            }
 
         test(m"Test UDP server"):
           udpServer(udp"3962")
-        .assert()
+        . assert()
 
 
       test(m"Send UDP messages until port opens"):
         Thread.sleep(5000)
         udp"3962".transmit(jvmInstanceId.show)
-      .assert()
+      . assert()
 
       task.await()

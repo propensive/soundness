@@ -37,5 +37,5 @@ export denominative
 
 package ordinalShowables:
   export denominative.ordinalShowables
-         . { nominal, uniary, zerary, unmarkedUniary, unmarkedZerary, intermediate, english,
-             englishSuperscript, french, spanish, italian, russian }
+  . { nominal, uniary, zerary, unmarkedUniary, unmarkedZerary, intermediate, english,
+      englishSuperscript, french, spanish, italian, russian }

@@ -47,5 +47,6 @@ case class Seed(value: Data):
 
   inline def stochastic[result](block: Random ?=> result): result =
     given seed: Seed = this
+
     val randomization = infer[Randomization]
     block(using new Random(randomization.make()))

@@ -34,5 +34,5 @@ package octogenarian
 
 import soundness.*
 
-object Tests extends Suite(m"Octogenarian Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit = ()

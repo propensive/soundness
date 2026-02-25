@@ -58,41 +58,47 @@ object Path:
     type Topic = EmptyTuple
     type Limit = %.type
 
+
   given decodable: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
   =>  (Path on filesystem) is Decodable in Text =
 
-      text =>
-        val root = radical.encode(radical.decode(text))
-        val parts = text.skip(radical.length(text)).cut(filesystem.separator)
-        val parts2 = if parts.last == t"" then parts.init else parts
+    text =>
+      val root = radical.encode(radical.decode(text))
+      val parts = text.skip(radical.length(text)).cut(filesystem.separator)
+      val parts2 = if parts.last == t"" then parts.init else parts
 
-        Path.of(root, parts2.reverse.map(filesystem.unescape(_))*)
+      Path.of(root, parts2.reverse.map(filesystem.unescape(_))*)
+
 
   given decodable2: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
   =>  (Path on filesystem under root) is Decodable in Text =
 
-      text =>
-        val root = radical.encode(radical.decode(text))
-        val parts = text.skip(radical.length(text)).cut(filesystem.separator)
-        val parts2 = if parts.last == t"" then parts.init else parts
+    text =>
+      val root = radical.encode(radical.decode(text))
+      val parts = text.skip(radical.length(text)).cut(filesystem.separator)
+      val parts2 = if parts.last == t"" then parts.init else parts
 
-        Path.of(root, parts2.reverse.map(filesystem.unescape(_))*)
+      Path.of(root, parts2.reverse.map(filesystem.unescape(_))*)
+
 
   given nominable: [filesystem] => (Path on filesystem) is Nominable = path =>
     path.descent.prim.or(path.root)
+
 
   given trustedInstantiable: [filesystem: Filesystem]
   =>  ( radical: Tactic[PathError] ?=> Radical on filesystem )
   =>  (Path on filesystem) is Instantiable across Paths from Paths.Trusted =
 
-      given Radical on filesystem = radical(using strategies.throwUnsafely)
-      _.text.decode[Path on filesystem]
+    given Radical on filesystem = radical(using strategies.throwUnsafely)
+    _.text.decode[Path on filesystem]
+
 
   given instantiable: [filesystem: Filesystem]
   =>  Radical on filesystem
   =>  (Path on filesystem) is Instantiable across Paths from Text =
 
-      _.decode[Path on filesystem]
+    _.decode[Path on filesystem]
+
 
   def unplatformed[root, topic <: Tuple](root: Text, descent: Text*): Path of topic under root =
     new Path(root, descent*):
@@ -103,10 +109,10 @@ object Path:
   def of[filesystem, root, topic <: Tuple](root: Text, descent: Text*)
   :   Path on filesystem of topic under root =
 
-      new Path(root, descent*):
-        type Plane = filesystem
-        type Limit = root
-        type Topic = topic
+    new Path(root, descent*):
+      type Plane = filesystem
+      type Limit = root
+      type Topic = topic
 
 
   given encodable: [filesystem: Filesystem] => Path on filesystem is Encodable in Text =
@@ -118,29 +124,31 @@ object Path:
   given communicable: [filesystem: Filesystem] => Path on filesystem is Communicable =
     path => Message(path.encode)
 
+
   given generic: [filesystem: Filesystem, path <: Path on filesystem]
   =>  path is Abstractable across Paths to Text =
 
-      _.encode
+    _.encode
 
 
   private def conversion[from, to](lambda: from => to): Conversion[from, to] = lambda(_)
 
+
   inline given convert: [topic, root, filesystem, path <: Path of topic under root]
   =>  Conversion[path, Path of topic on filesystem under root] =
 
-      conversion(_.on[filesystem])
+    conversion(_.on[filesystem])
 
 
   transparent inline given quotient: [filesystem, root, path <: Path on filesystem under root]
   =>  ( radical: root is Radical on filesystem )
   =>  path is Quotient =
 
-      ( path =>
-          if path.empty then None
-          else if path.descent.length == 1 then Some((radical.decode(path.root), path.descent.head))
-          else Some((radical.decode(path.root), Relative(0, path.descent*))) )
-      :   path is Quotient of root over (Relative on filesystem) | Text
+    ( path =>
+        if path.empty then None
+        else if path.descent.length == 1 then Some((radical.decode(path.root), path.descent.head))
+        else Some((radical.decode(path.root), Relative(0, path.descent*))) )
+    :   path is Quotient of root over (Relative on filesystem) | Text
 
 
 case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
@@ -158,18 +166,24 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   protected inline def known[topic <: Tuple]: Boolean =
     inline !![topic] match
-      case _: Zero           => true
-      case _: (head *: tail) => inline constValueOpt[head] match
-        case None               => false
-        case Some(value)        => known[tail]
-      case _ => false
+      case _: Zero => true
+
+      case _: (head *: tail) =>
+        inline constValueOpt[head] match
+          case None               => false
+          case Some(value)        => known[tail]
+
+      case _ =>
+        false
+
 
   def resolve(text: Text)
     ( using (Path on Plane) is Decodable in Text, (Relative on Plane) is Decodable in Text )
   :   Path on Plane raises PathError =
 
-      safely(text.decode[Path on Plane]).or(safely(this + text.decode[Relative on Plane])).or:
-        abort(PathError(_.InvalidRoot))
+    safely(text.decode[Path on Plane]).or(safely(this + text.decode[Relative on Plane])).or:
+      abort(PathError(_.InvalidRoot))
+
 
   def precedes(path: Path on Plane): Boolean =
     path.root == root && path.descent.drop(path.descent.length - descent.length) == descent
@@ -215,6 +229,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   transparent inline def sameRoot(right: Path): Boolean = summonFrom:
     case plane: (Plane is Filesystem) =>
       inline if caps.unsafe.unsafeErasedValue[plane.UniqueRoot] then true else root == right.root
+
     case _ =>
       root == right.root
 
@@ -234,9 +249,9 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     def recur(left: List[Text], right: List[Text], size: Int, count: Int)
     :   Path on Plane =
 
-        if left.nil then Path.of(root, left0.drop(size - count)*)
-        else if left.head == right.head then recur(left.tail, right.tail, size + 1, count + 1)
-        else recur(left.tail, right.tail, size + 1, 0)
+      if left.nil then Path.of(root, left0.drop(size - count)*)
+      else if left.head == right.head then recur(left.tail, right.tail, size + 1, count + 1)
+      else recur(left.tail, right.tail, size + 1, 0)
 
 
     recur(left0, right0, 0, 0)

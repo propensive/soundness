@@ -39,4 +39,5 @@ object Recoverable:
 
 trait Recoverable extends Resultant:
   type Self <: Exception
+
   def recover(error: Self): Result

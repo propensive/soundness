@@ -41,11 +41,6 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-case class Molecule
-  ( elements: Map[ChemicalElement, Int], charge: Int, state: Optional[PhysicalState] = Unset )
-extends Molecular:
-  def molecule: Molecule = this
-
 object Molecule:
   def apply(): Molecule = Molecule(Map(), 0)
 
@@ -84,3 +79,8 @@ object Molecule:
     + suffix
 
   def apply(element: ChemicalElement): Molecule = element.molecule
+
+case class Molecule
+  ( elements: Map[ChemicalElement, Int], charge: Int, state: Optional[PhysicalState] = Unset )
+extends Molecular:
+  def molecule: Molecule = this

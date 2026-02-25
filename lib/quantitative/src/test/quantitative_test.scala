@@ -39,30 +39,30 @@ import language.experimental.into
 
 given decimalizer: Decimalizer = Decimalizer(3)
 
-object Tests extends Suite(m"Quantitative Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
     suite(m"Arithmetic tests"):
       test(m"Add two distances"):
         Metre + Metre*2.0
-      .assert(_ == Metre*3)
+      . assert(_ == Metre*3)
 
       test(m"Multiply two different units"):
         2*Second * 3*Metre
-      .assert(_ == 6*Metre*Second)
+      . assert(_ == 6*Metre*Second)
 
       test(m"Invert a quantity"):
         (2*Metre/Second).invert
-      .assert(_ == 0.5*Second/Metre)
+      . assert(_ == 0.5*Second/Metre)
 
       test(m"Divide a double by a quantity"):
         Quantity(1)/(2*Metre/Second)
-      .assert(_ == 0.5*Second/Metre)
+      . assert(_ == 0.5*Second/Metre)
 
     suite(m"Compile errors"):
       test(m"Cannot add quantities of different units"):
         demilitarize:
           Metre + 2*Second
-      .assert(_.nonEmpty)
+      . assert(_.nonEmpty)
 
       test(m"Cannot specify a quantity with a double value"):
         demilitarize:
@@ -79,51 +79,51 @@ object Tests extends Suite(m"Quantitative Tests"):
         demilitarize:
           Metre - 2*Second
         .map(_.message)
-      .assert(_ == List("quantitative: the left operand represents distance, but the right operand represents time; these are incompatible physical quantities"))
+      . assert(_ == List("quantitative: the left operand represents distance, but the right operand represents time; these are incompatible physical quantities"))
 
       test(m"Add two different units"):
         demilitarize:
           Second*2 + Metre*3.0
         .map(_.message)
-      .assert(_.contains(t"quantitative: the left operand represents time, but the right operand represents distance; these are incompatible physical quantities"))
+      . assert(_.contains(t"quantitative: the left operand represents time, but the right operand represents distance; these are incompatible physical quantities"))
 
       test(m"Units cancel out"):
         demilitarize:
           (20*Metre*Second)/(Metre*Second): Double
         .map(_.message)
-      .assert(_.nil)
+      . assert(_.nil)
 
       test(m"Principal units are preferred"):
         demilitarize:
           val x = 2*Metre
           val y = 3*Foot
           val z: Quantity[Metres[2]] = x*y
-      .assert(_.nil)
+      . assert(_.nil)
 
       test(m"Non-principal units are not preferred"):
         demilitarize:
           val x = 2*Metre
           val y = 3*Foot
           val z: Quantity[Feet[2]] = x*y
-      .assert(_.nonEmpty)
+      . assert(_.nonEmpty)
 
       test(m"Units of different dimension cannot be added"):
         demilitarize:
           2*Metre + 2*Joule
         .map(_.message)
-      .assert(_ == List("quantitative: the left operand represents distance, but the right operand represents energy; these are incompatible physical quantities"))
+      . assert(_ == List("quantitative: the left operand represents distance, but the right operand represents energy; these are incompatible physical quantities"))
 
       test(m"Different dimensions are incomparable"):
         demilitarize:
           7*Metre >= 2*Kilo(Gram)
         .map(_.message)
-      .assert(_ == List("quantitative: the left operand represents distance, but the right operand represents mass; these are incompatible physical quantities"))
+      . assert(_ == List("quantitative: the left operand represents distance, but the right operand represents mass; these are incompatible physical quantities"))
 
       test(m"Different powers of the same dimension are incomparable"):
         demilitarize:
           7*Metre >= 2*Metre*Metre
         .map(_.message)
-      .assert(_ == List("quantitative: the left operand represents distance, but the right operand represents area; these are incompatible physical quantities"))
+      . assert(_ == List("quantitative: the left operand represents distance, but the right operand represents area; these are incompatible physical quantities"))
 
       test(m"Same-dimension units found equal"):
         Mile === 1760*Yard
@@ -147,37 +147,37 @@ object Tests extends Suite(m"Quantitative Tests"):
         val x = 2*Metre
         val y = 3*Foot
         x*y
-      .assert(_ == 1.8288000000000002*Metre*Metre)
+      . assert(_ == 1.8288000000000002*Metre*Metre)
 
       test(m"Auto-conversion on LHS in multiplication"):
         val x = 2*Metre
         val y = 3*Foot
         y*x
-      .assert(_ == 1.8288000000000002*Metre*Metre)
+      . assert(_ == 1.8288000000000002*Metre*Metre)
 
       test(m"Conversions are applied automatically in division"):
         val x = 2*Metre*Metre
         val y = 3*Foot
         x/y
-      .assert(_ == 2.187226596675415*Metre)
+      . assert(_ == 2.187226596675415*Metre)
 
       test(m"Conversions are applied automatically to LHS in division"):
         val x = 2*Metre
         val y = 3*Foot*Foot
         y/x
-      .assert(_ === 0.13935456000000002*Metre)
+      . assert(_ === 0.13935456000000002*Metre)
 
       test(m"Mixed units of the same dimension can be added"):
         2*Metre + 2*Foot
-      .assert(_ == 2.6096*Metre)
+      . assert(_ == 2.6096*Metre)
 
       test(m"Mixed units of the same dimension can be subtracted"):
         2*Metre - 2*Foot
-      .assert(_ == 1.3904*Metre)
+      . assert(_ == 1.3904*Metre)
 
       test(m"Mixed units of the same type can be added (reverse order)"):
         2*Foot + 2*Metre
-      .assert(_ == 2.6096*Metre)
+      . assert(_ == 2.6096*Metre)
 
     suite(m"Normalization tests"):
       test(m"Normalize minutes as seconds"):
@@ -195,131 +195,131 @@ object Tests extends Suite(m"Quantitative Tests"):
     suite(m"Metric prefixes"):
       test(m"Metric kilo prefix multiplies by 10^3"):
         15*Kilo(Metre)
-      .assert(_ == 15000*Metre)
+      . assert(_ == 15000*Metre)
 
       test(m"Metric mega prefix multiplies by 10^6"):
         15*Mega(Metre)
-      .assert(_ == 15000000*Metre)
+      . assert(_ == 15000000*Metre)
 
       test(m"Metric giga prefix multiplies by 10^9"):
         15*Giga(Metre)
-      .assert(_ == 15000000000.0*Metre)
+      . assert(_ == 15000000000.0*Metre)
 
       test(m"Metric kibi prefix multiplies by 2^10"):
         10*Kibi(Metre)
-      .assert(_ == 10240*Metre)
+      . assert(_ == 10240*Metre)
 
       test(m"Metric mebi prefix multiplies by 2^20"):
         10*Mebi(Metre)
-      .assert(_ == (1024*1024*10)*Metre)
+      . assert(_ == (1024*1024*10)*Metre)
 
       test(m"Metric milli prefix multiplies by 10^-3"):
         1.5*Milli(Metre)
-      .assert(_ == 0.0015*Metre)
+      . assert(_ == 0.0015*Metre)
 
       test(m"Metric micro prefix multiplies by 10^-6"):
         1.5*Micro(Metre)
-      .assert(_ == 0.0000015*Metre)
+      . assert(_ == 0.0000015*Metre)
 
       test(m"Metric nano prefix multiplies by 10^-9"):
         2.5*Nano(Metre)
-      .assert(_ == 0.0000000025*Metre)
+      . assert(_ == 0.0000000025*Metre)
 
     suite(m"Explicit conversion tests"):
       test(m"Convert feet to metres"):
         (3*Foot).in[Metres]
-      .assert(_ == 0.9144000000000001*Metre)
+      . assert(_ == 0.9144000000000001*Metre)
 
       test(m"Convert metres to feet"):
         (3*Metre).in[Feet]
-      .assert(_ == 9.842519685039369*Foot)
+      . assert(_ == 9.842519685039369*Foot)
 
       test(m"Convert m² to ft²"):
         (π*Metre*Metre).in[Feet]
-      .assert(_ === 33.815821889033906*Foot*Foot +/- 0.000000001*Foot*Foot)
+      . assert(_ === 33.815821889033906*Foot*Foot +/- 0.000000001*Foot*Foot)
 
       test(m"Conversion to seconds does nothing"):
         (3*Metre).in[Seconds]
-      .assert(_ == 3*Metre)
+      . assert(_ == 3*Metre)
 
     suite(m"Inequalities"):
       test(m"6ft < 2m"):
         6*Foot < 2*Metre
-      .assert(_ == true)
+      . assert(_ == true)
 
       test(m"6ft <= 2m"):
         6*Foot < 2*Metre
-      .assert(_ == true)
+      . assert(_ == true)
 
       test(m"7ft > 2m"):
         7*Foot > 2*Metre
-      .assert(_ == true)
+      . assert(_ == true)
 
       test(m"7ft >= 2m"):
         7*Foot >= 2*Metre
-      .assert(_ == true)
+      . assert(_ == true)
 
       test(m"9ft² < 1m²"):
         9*Foot*Foot < Metre*Metre
-      .assert(_ == true)
+      . assert(_ == true)
 
       test(m"10ft² < 1m²"):
         10*Foot*Foot < Metre*Metre
-      .assert(_ == true)
+      . assert(_ == true)
 
       test(m"11ft² > 1m²"):
         11*Foot*Foot > Metre*Metre
-      .assert(_ == true)
+      . assert(_ == true)
 
     suite(m"Rendering tests"):
       test(m"Show a value in metres"):
         (7.567*Metre).show
-      .assert(_ == t"7.57 m")
+      . assert(_ == t"7.57 m")
 
       test(m"Show a value in square metres"):
         (1.4*Metre*Metre).show
-      .assert(_ == t"1.40 m²")
+      . assert(_ == t"1.40 m²")
 
       test(m"Show a value in metres per second"):
         (8.54*Metre/Second).show
-      .assert(_ == t"8.54 m·s¯¹")
+      . assert(_ == t"8.54 m·s¯¹")
 
       test(m"Show a value in kilometres per second"):
         (8.54*Kilo(Metre)/Second).show
-      .assert(_ == t"8.54×10³ m·s¯¹")
+      . assert(_ == t"8.54×10³ m·s¯¹")
 
       test(m"Show a value in kilograms"):
         (10.4*Kilo(Gram)/Second).show
-      .assert(_ == t"10.4 kg·s¯¹")
+      . assert(_ == t"10.4 kg·s¯¹")
 
       test(m"Show the speed of light"):
         constants.SpeedOfLightInVacuum.show
-      .assert(_ == t"3.00×10⁸ m·s¯¹")
+      . assert(_ == t"3.00×10⁸ m·s¯¹")
 
       test(m"Show Planck's constant"):
         constants.PlanckConstant.show
-      .assert(_ == t"6.63×10¯³⁴ m²·kg·s¯¹")
+      . assert(_ == t"6.63×10¯³⁴ m²·kg·s¯¹")
 
       test(m"Show an energy using custom units"):
         (45*Joule).show
-      .assert(_ == t"45.0 J")
+      . assert(_ == t"45.0 J")
 
       test(m"Show a force in Newtons"):
         (100*Newton).show
-      .assert(_ == t"100 N")
+      . assert(_ == t"100 N")
 
     suite(m"Quantity descriptions"):
       test(m"describe a base dimension"):
         Metre.dimension
-      .assert(_ == t"distance")
+      . assert(_ == t"distance")
 
       test(m"describe a compound dimension"):
         (Metre/Second).dimension
-      .assert(_ == t"velocity")
+      . assert(_ == t"velocity")
 
       test(m"describe a complex compound dimension"):
         (Foot*Foot*Kilo(Gram)/(Second*Second*Mole)).dimension
-      .assert(_ == t"chemical potential")
+      . assert(_ == t"chemical potential")
 
     suite(m"Quantifiability tests"):
       case class Pts(value: Double)
@@ -327,53 +327,53 @@ object Tests extends Suite(m"Quantitative Tests"):
 
       test(m"quantify a distance less than inch"):
         Pts(71).quantify < Inch
-      .assert(_ == true)
+      . assert(_ == true)
 
       test(m"quantify a distance more than inch"):
         Pts(73).quantify > Inch
-      .assert(_ == true)
+      . assert(_ == true)
 
     suite(m"Offset quantities"):
       test(m"Get Celsius value"):
         import temperatureScales.celsius
         (zero[Temperature] + 300*Kelvin).show
-      .assert(_ == t"26.9 °C")
+      . assert(_ == t"26.9 °C")
 
       test(m"Get Fahrenheit value"):
         import temperatureScales.fahrenheit
         (zero[Temperature] + 300*Kelvin).show
-      .assert(_ == t"80.3 °F")
+      . assert(_ == t"80.3 °F")
 
       test(m"Create Celsius value"):
         import temperatureScales.celsius
         Celsius(30).show
-      .assert(_ == t"30.0 °C")
+      . assert(_ == t"30.0 °C")
 
       test(m"Create Fahrenheit value"):
         import temperatureScales.fahrenheit
         Fahrenheit(30).show
-      .assert(_ == t"30.0 °F")
+      . assert(_ == t"30.0 °F")
 
       test(m"Check stored Celsius value"):
         Celsius(30).toString.show
-      .assert(_ == t"303.15")
+      . assert(_ == t"303.15")
 
       test(m"Check stored Fahrenheit value"):
         Fahrenheit(32).toString.show
-      .assert(_ == t"273.15")
+      . assert(_ == t"273.15")
 
       test(m"Convert Fahrenheit value to Kelvin"):
         (Fahrenheit(0) - zero[Temperature]).in[Kelvins].show
-      .assert(_ == t"255 K")
+      . assert(_ == t"255 K")
 
       test(m"Convert Fahrenheit value to Rankine"):
         (Fahrenheit(100) - zero[Temperature]).in[Rankines].show
-      .assert(_ == t"560 °R")
+      . assert(_ == t"560 °R")
 
       test(m"Convert Fahrenheit directly to Celsius"):
         import temperatureScales.celsius
         Fahrenheit(100).show
-      .assert(_ == t"37.8 °C")
+      . assert(_ == t"37.8 °C")
 
     suite(m"Aggregation tests"):
       test(m"Total some values"):

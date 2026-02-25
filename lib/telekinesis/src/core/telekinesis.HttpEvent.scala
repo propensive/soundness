@@ -37,13 +37,13 @@ import fulminate.*
 import proscenium.*
 import urticose.*
 
-enum HttpEvent:
-  case Response(status: Http.Status)
-  case Request(preview: Text)
-  case Send(method: Http.Method, url: into[HttpUrl], headers: Seq[Http.Header])
-
 object HttpEvent:
   given communicable: HttpEvent is Communicable =
     case Response(status)           => m"Received response with status $status"
     case Request(preview)           => m"Request [$preview]"
     case Send(method, url, headers) => m"Send $method request to $url"
+
+enum HttpEvent:
+  case Response(status: Http.Status)
+  case Request(preview: Text)
+  case Send(method: Http.Method, url: into[HttpUrl], headers: Seq[Http.Header])

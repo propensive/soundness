@@ -38,13 +38,13 @@ object Subtractable:
   def apply[minuend, subtrahend, result](lambda: (minuend, subtrahend) => result)
   :   minuend is Subtractable by subtrahend to result =
 
-      new Subtractable:
-        type Self = minuend
-        type Result = result
-        type Operand = subtrahend
+    new Subtractable:
+      type Self = minuend
+      type Result = result
+      type Operand = subtrahend
 
-        def subtract(minuend: minuend, subtrahend: subtrahend): result =
-          lambda(minuend, subtrahend)
+      def subtract(minuend: minuend, subtrahend: subtrahend): result =
+        lambda(minuend, subtrahend)
 
 
   given double: Double is Subtractable by Double to Double = Subtractable(_ - _)

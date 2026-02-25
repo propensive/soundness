@@ -39,6 +39,7 @@ import proscenium.*
 
 class Pulsar[duration: Abstractable across Durations to Long](duration: duration):
   private var continue: Boolean = true
+
   def stop(): Unit = continue = false
 
   def stream(using Monitor): Stream[Unit] =

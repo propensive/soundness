@@ -39,6 +39,7 @@ import errorDiagnostics.stackTraces
 object Tmux:
   def enter(keypresses: (Text | Char)*)(using tmux: Tmux): Unit raises TmuxError =
     given WorkingDirectory = tmux.workingDirectory
+
     import logging.silent
 
     mitigate:
@@ -52,6 +53,7 @@ object Tmux:
 
   def screenshot()(using tmux: Tmux)(using WorkingDirectory): Screenshot = unsafely:
     import logging.silent
+
     val content = IArray.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]())
     val x = sh"tmux display-message -pt ${tmux.id} '#{cursor_x}'".exec[Text]().trim.decode[Int].z
     val y = sh"tmux display-message -pt ${tmux.id} '#{cursor_y}'".exec[Text]().trim.decode[Int].z
@@ -60,6 +62,7 @@ object Tmux:
 
   def attend(using tmux: Tmux)[result](block: => result)(using Monitor, WorkingDirectory): result =
     val init = screenshot().screen
+
     var count = 0
     block.also:
       while init === screenshot().screen && count < 60 do delay(10_000_000L) yet (count += 1)
@@ -73,6 +76,7 @@ object Tmux:
     enter(text)
     attend(enter(Ht))
     screenshot().screen.filter(!_.starts(t"> ")).join(t"\n").trim
+
 
   def progress(text: Text, decorate: Char => Text = char => t"^")
     ( using tool: Sandbox.Tool, tmux: Tmux )

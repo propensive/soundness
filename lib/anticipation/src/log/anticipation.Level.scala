@@ -32,8 +32,8 @@
                                                                                                   */
 package anticipation
 
-enum Level:
-  case Fine, Info, Warn, Fail
-
 object Level:
   given ordering: Ordering[Level] = Ordering[Int].on[Level](_.ordinal)
+
+enum Level:
+  case Fine, Info, Warn, Fail

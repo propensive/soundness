@@ -129,10 +129,12 @@ object Media:
           if !systemMediaTypes.nil then
             if !systemMediaTypes.contains(parsed.basic) then
               val suggestion = systemMediaTypes.minBy(_.proximity(parsed.basic))
-              throw InterpolationError(m"""
-                ${parsed.basic} is not a registered media type; did you mean $suggestion or
-                ${parsed.basic.sub(t"/", t"/x-")}?
-              """)
+
+              throw InterpolationError
+                ( m"""
+                    ${parsed.basic} is not a registered media type; did you mean $suggestion or
+                    ${parsed.basic.sub(t"/", t"/x-")}?
+                  """ )
 
         case _ =>
           ()
@@ -154,7 +156,7 @@ object Media:
       val xs: List[Text] = string.cut(t"+").to(List)
 
       xs.absolve match
-      case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
+        case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
 
     def parseBasic(string: Text): (Group, Subtype, List[Suffix]) = string.cut(t"/").to(List) match
       case List(group, subtype) => parseGroup(group) *: parseInit(subtype)

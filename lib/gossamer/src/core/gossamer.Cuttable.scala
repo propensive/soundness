@@ -56,9 +56,9 @@ object Cuttable:
 
       @tailrec
       def recur(start: Ordinal, results: List[textual]): List[textual] =
-        textual.indexOf
-          ( text, delimiter, start).lay(text.segment(start till text.length.z) :: results):
-          index => recur(index + dLength, text.segment(start till index) :: results)
+        textual.indexOf(text, delimiter, start)
+        . lay(text.segment(start till text.length.z) :: results):
+            index => recur(index + dLength, text.segment(start till index) :: results)
 
       recur(Prim, Nil).reverse
 
@@ -87,8 +87,8 @@ object Cuttable:
   given textualText: [textual] => (cuttable: textual is Cuttable by Text)
   =>  textual is Cuttable by Char =
 
-      (text, delimiter, limit) =>
-        cuttable.cut(text, delimiter.toString.tt, limit)
+    (text, delimiter, limit) =>
+      cuttable.cut(text, delimiter.toString.tt, limit)
 
 
 trait Cuttable extends Typeclass, Operable:

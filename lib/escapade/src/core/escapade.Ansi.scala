@@ -57,7 +57,7 @@ trait Ansi2:
   inline given teletype: [value] => Substitution[Ansi.Input, value, "t"] =
     val teletype: value => Teletype = value => compiletime.summonFrom:
       case given (`value` is Teletypeable) => value.teletype
-      case given (`value` is Showable)    => Teletype(value.show)
+      case given (`value` is Showable)     => Teletype(value.show)
 
     TeletypeSubstitution[value](teletype)
 
@@ -73,7 +73,6 @@ object Ansi extends Ansi2:
 
   given bg: Stylize[Bg] = bgColor => Stylize(_.copy(bg = bgColor.color))
   given fg: Stylize[Fg] = fgColor => Stylize(_.copy(fg = fgColor.color))
-
   given bold: Stylize[Bold.type] = _ => Stylize(_.copy(bold = true))
   given italic: Stylize[Italic.type] = _ => Stylize(_.copy(italic = true))
   given underline: Stylize[Underline.type] = _ => Stylize(_.copy(underline = true))
@@ -87,6 +86,7 @@ object Ansi extends Ansi2:
     case Escape(on: Text, off: Text)
 
   case class Frame(bracket: Char, start: Int, transform: Transform)
+
 
   case class State
     ( text:       Text                         = t"",
@@ -102,15 +102,17 @@ object Ansi extends Ansi2:
       val insertions2 = insertions.get(position).fold(t"\e"+esc.on)(_+t"\e"+esc.on)
       copy(insertions = insertions.updated(position, insertions2))
 
+
   object Interpolator extends contextual.Interpolator[Input, State, Teletype]:
     private val complement = Map('[' -> ']', '(' -> ')', '{' -> '}', '<' -> '>', '«' -> '»')
+
     def initial: State = State()
 
     def parse(state: State, text: Text): State =
       state.last.fold(closures(state, text)): transform =>
         text.at(Prim) match
-          case Bsl =>
-            closures(state.copy(last = None), text.skip(1))
+          case Bsl => closures(state.copy(last = None), text.skip(1))
+
           case '[' | '(' | '<' | '«' | '{' =>
             val frame = Frame(complement(text.s.head), state.text.length, transform)
             closures(state.copy(stack = frame :: state.stack, last = None), text.skip(1))
@@ -123,8 +125,7 @@ object Ansi extends Ansi2:
       try state.stack.headOption.fold(state.copy(text = state.text+TextEscapes.escape(text))):
         frame =>
           safely(text.where(_ == frame.bracket)).let(_.n0) match
-            case Unset =>
-              state.copy(text = state.text+text)
+            case Unset => state.copy(text = state.text+text)
 
             case index: Int =>
               val text2 = state.text+text.keep(index)

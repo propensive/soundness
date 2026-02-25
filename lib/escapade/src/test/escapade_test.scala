@@ -36,46 +36,46 @@ import soundness.*
 
 import webColors.{Red, Yellow}
 
-object Tests extends Suite(m"Escapade tests"):
+object Tests extends Suite(m"internal tests"):
   def run(): Unit =
     suite(m"Rendering tests"):
       test(m"normal string"):
         e"hello world".render
-      .assert(_ == t"hello world")
+      . assert(_ == t"hello world")
 
       test(m"simple string substitution"):
         e"hello ${"world"}".render
-      .assert(_ == t"hello world")
+      . assert(_ == t"hello world")
 
       test(m"bold text"):
         e"$Bold{bold} text".render
-      .assert(_ == t"\e[1mbold\e[22m text")
+      . assert(_ == t"\e[1mbold\e[22m text")
 
       test(m"italic text"):
         e"$Italic{italic} text".render
-      .assert(_ == t"\e[3mitalic\e[23m text")
+      . assert(_ == t"\e[3mitalic\e[23m text")
 
       test(m"24-bit colored text"):
         e"${iridescence.colors.Tan}[text]".render
-      .assert(_ == t"\e[38;2;210;180;139mtext\e[39m")
+      . assert(_ == t"\e[38;2;210;180;139mtext\e[39m")
 
       test(m"non-escape insertion should not parse brackets"):
         val notAnEscape = 42
         e"${notAnEscape}[text]".render
-      .assert(_ == t"42[text]")
+      . assert(_ == t"42[text]")
 
     suite(m"Escaping tests"):
       test(m"an escaped tab is a tab"):
         e"|\t|".plain
-      .assert(_.length == 3)
+      . assert(_.length == 3)
 
       test(m"a unicode value is converted"):
         e"|\u0040|".plain
-      .assert(_ == t"|@|")
+      . assert(_ == t"|@|")
 
       test(m"a newline is converted correctly"):
         e"\n".plain
-      .assert(_ == t"\n")
+      . assert(_ == t"\n")
 
     suite(m"Screenbuffer tests"):
       import strategies.throwUnsafely
@@ -86,44 +86,44 @@ object Tests extends Suite(m"Escapade tests"):
 
       test(m"bold text is bold"):
         boldSample.find(t"bold").vouch.styles
-      .assert(_.all(_.bold))
+      . assert(_.all(_.bold))
 
       test(m"text before bold text is not bold"):
         boldSample.find(t"This text is ").vouch.styles
-      .assert(_.all(!_.bold))
+      . assert(_.all(!_.bold))
 
       test(m"text after bold text is not bold"):
         boldSample.find(t".").vouch.styles
-      .assert(_.all(!_.bold))
+      . assert(_.all(!_.bold))
 
       test(m"nested bold/italic is both"):
         boldItalicSample.find(t"bold-italic").vouch.styles
-      .assert(_.bi.all(_.bold && _.italic))
+      . assert(_.bi.all(_.bold && _.italic))
 
       test(m"nested italic is removed but not bold"):
         boldItalicSample.find(t"unitalic").vouch.styles
-      .assert(_.bi.all(_.bold && !_.italic))
+      . assert(_.bi.all(_.bold && !_.italic))
 
       test(m"nested non-bold, non-italic text is neither"):
         boldItalicSample.find(t"end").vouch.styles
-      .assert(_.bi.all(!_.bold && !_.italic))
+      . assert(_.bi.all(!_.bold && !_.italic))
 
       test(m"nested bold/italic (without intermediate characters) is both"):
         boldItalicSample2.find(t"bold-italic").vouch.styles
-      .assert(_.bi.all(_.bold && _.italic))
+      . assert(_.bi.all(_.bold && _.italic))
 
       test(m"normal text after doubly-nested text is normal"):
         boldItalicSample2.find(t"end").vouch.styles
-      .assert(_.all(_ == Style()))
+      . assert(_.all(_ == Style()))
 
       test(m"double color change uses latter"):
         pty.consume(e"$Red($Yellow(yellow))".render).buffer.find(t"yellow").vouch.styles
-      .assert(_.all(_.foreground == Yellow))
+      . assert(_.all(_.foreground == Yellow))
 
       test(m"double color change and removal of nested uses former"):
         pty.consume(e"$Red($Yellow(yellow)red)".render).buffer.find(t"red").vouch.styles
-      .assert(_.all(_.foreground == Red))
+      . assert(_.all(_.foreground == Red))
 
       test(m"double color change and removal uses default"):
         pty.consume(e"$Red($Yellow(yellow)red)default".render).buffer.find(t"default").vouch.styles
-      .assert(_.all(_.foreground == Rgb24(255, 255, 255)))
+      . assert(_.all(_.foreground == Rgb24(255, 255, 255)))

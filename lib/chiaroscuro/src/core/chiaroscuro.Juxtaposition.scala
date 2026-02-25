@@ -45,26 +45,6 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-enum Juxtaposition:
-  case Same(value: Text)
-  case Different(left: Text, right: Text, difference: Optional[Text] = Unset)
-  case Collation(typeName: Text, comparison: List[(Text, Juxtaposition)], left: Text, right: Text)
-
-  def singleChar: Boolean = this match
-    case Same(value)                        => value.length == 1
-    case Different(left, right, difference) => left.length <= 1 && right.length <= 1
-    case Collation(_, _, _, _)              => false
-
-  def leftWidth: Int = this match
-    case Same(value)                    => value.length
-    case Different(left, _, _)          => left.length
-    case Collation(_, comparison, _, _) => comparison.sumBy(_(1).leftWidth)
-
-  def rightWidth: Int = this match
-    case Same(value)                    => value.length
-    case Different(_, right, _)         => right.length
-    case Collation(_, comparison, _, _) => comparison.sumBy(_(1).rightWidth)
-
 object Juxtaposition:
   given (measurable: Text is Measurable) => Juxtaposition is Teletypeable =
     case Juxtaposition.Collation(name, comparison, _, _) =>
@@ -93,12 +73,14 @@ object Juxtaposition:
             case (_, Same(char))            => e"${Bg(rgb"#111111")}(${rgb"#99ccff"}(${pad(char)}))"
             case (_, Different(char, _, _)) => e"${Bg(rgb"#003300")}(${pad(char)})"
             case _                          => e""
+
           . join
 
           val expected = comparison2.map:
             case (_, Same(char))            => e"${Bg(rgb"#111111")}(${rgb"#99ccff"}(${pad(char)}))"
             case (_, Different(_, char, _)) => e"${Bg(rgb"#660000")}(${pad(char)})"
             case _                          => e""
+
           . join
 
           val margin1 = topSum.show.superscripts.pad(4, Rtl, ' ')
@@ -182,3 +164,23 @@ object Juxtaposition:
 
     case Same(value) =>
       e"The value ${webColors.Gray}($value) was expected"
+
+enum Juxtaposition:
+  case Same(value: Text)
+  case Different(left: Text, right: Text, difference: Optional[Text] = Unset)
+  case Collation(typeName: Text, comparison: List[(Text, Juxtaposition)], left: Text, right: Text)
+
+  def singleChar: Boolean = this match
+    case Same(value)                        => value.length == 1
+    case Different(left, right, difference) => left.length <= 1 && right.length <= 1
+    case Collation(_, _, _, _)              => false
+
+  def leftWidth: Int = this match
+    case Same(value)                    => value.length
+    case Different(left, _, _)          => left.length
+    case Collation(_, comparison, _, _) => comparison.sumBy(_(1).leftWidth)
+
+  def rightWidth: Int = this match
+    case Same(value)                    => value.length
+    case Different(_, right, _)         => right.length
+    case Collation(_, comparison, _, _) => comparison.sumBy(_(1).rightWidth)

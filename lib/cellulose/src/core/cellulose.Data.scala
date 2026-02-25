@@ -65,12 +65,10 @@ extends Indexed:
     case _                                    => Unset
 
   def id: Optional[Text] = schema.subschemas.where(_.schema.arity == Arity.Unique) match
-    case CodlSchema.Entry(name: Text, schema) =>
-      index(name).prim.let(children(_).fieldValue)
-    case _ => key
+    case CodlSchema.Entry(name: Text, schema) => index(name).prim.let(children(_).fieldValue)
+    case _                                    => key
 
   def promote(n: Int): Atom = copy(layout = layout.copy(params = n))
-
   def has(key: Text): Boolean = index.contains(key) || paramIndex.contains(key)
 
   override def equals(that: Any) = that.matchable(using Unsafe) match

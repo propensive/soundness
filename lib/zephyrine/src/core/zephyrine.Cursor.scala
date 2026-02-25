@@ -59,14 +59,18 @@ object Cursor:
 
     given ordered: Ordering[Offset] = Ordering.Long
 
+
   extension (mark: Mark)
     inline def block: Ordinal = (mark >> 32 & 0xffffffff).toInt.z
+
     inline def index: Ordinal = mark.toInt.z
     private[zephyrine] inline def increment: Mark = mark + 1
     private[zephyrine] inline def decrement: Mark = mark - 1
 
+
   extension (offset: Offset)
     inline def line: Ordinal = (offset >> 32 & 0xffffffff).toInt.z
+
     inline def column: Ordinal = offset.toInt.z
 
 
@@ -75,20 +79,21 @@ object Cursor:
             lineation0:   Lineation by addressable0.Operand )
   :   Cursor[data] =
 
-      if iterator.hasNext then
-        val initial = iterator.next()
+    if iterator.hasNext then
+      val initial = iterator.next()
 
-        new Cursor[data]
-          ( initial, addressable0.length(initial), iterator, addressable0, lineation0 )
+      new Cursor[data]
+        ( initial, addressable0.length(initial), iterator, addressable0, lineation0 )
 
-      else
-        new Cursor[data](addressable0.empty, 0, Iterator.empty, addressable0, lineation0)
+    else
+      new Cursor[data](addressable0.empty, 0, Iterator.empty, addressable0, lineation0)
 
-class Cursor[data](initial:    data,
-                   extent0:    Int,
-                   iterator:   Iterator[data],
-                   tracked val addressable: data is Addressable,
-                   tracked val lineation:   Lineation by addressable.Operand):
+class Cursor[data]
+  (             initial:    data,
+                extent0:    Int,
+                iterator:   Iterator[data],
+    tracked val addressable: data is Addressable,
+    tracked val lineation:   Lineation by addressable.Operand ):
 
   private val buffer: scm.ArrayDeque[data] = scm.ArrayDeque()
   private val marks: scm.ArrayDeque[Mark] = scm.ArrayDeque()
@@ -160,7 +165,7 @@ class Cursor[data](initial:    data,
       columnNo = offset2.column
 
   inline def consume(inline otherwise: => Unit)(inline text: String): Unit =
-    ${Zephyrine.consume('this, 'text, 'otherwise)}
+    ${zephyrine.internal.consume('this, 'text, 'otherwise)}
 
   inline def next(): Boolean =
     val current2 = current
@@ -201,7 +206,7 @@ class Cursor[data](initial:    data,
   inline def lay[result](inline otherwise: => result)(inline lambda: addressable.Operand => result)
   :   result =
 
-      if !finished then lambda(addressable.address(current, focus)) else otherwise
+    if !finished then lambda(addressable.address(current, focus)) else otherwise
 
   inline def let(inline lambda: addressable.Operand => Unit): Unit =
     if !finished then lambda(addressable.address(current, focus))

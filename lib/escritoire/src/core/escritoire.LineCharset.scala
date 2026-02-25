@@ -40,6 +40,7 @@ enum LineCharset:
     case Rounded => BoxDrawing.roundedChars
     case Ascii   => BoxDrawing.asciiChars
 
+
   def apply
     ( top:    BoxLine = BoxLine.Blank,
       right:  BoxLine = BoxLine.Blank,
@@ -47,4 +48,4 @@ enum LineCharset:
       left:   BoxLine = BoxLine.Blank )
   :   Char =
 
-      this()(left.ordinal + bottom.ordinal*4 + right.ordinal*16 + top.ordinal*64)
+    this()(left.ordinal + bottom.ordinal*4 + right.ordinal*16 + top.ordinal*64)

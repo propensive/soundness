@@ -45,6 +45,7 @@ object Errors:
     val joined =
       errors.reverse.map: (focus, error) =>
         s"${error.message.text} at $focus".tt
+
       . mkString("; ")
       . tt
 

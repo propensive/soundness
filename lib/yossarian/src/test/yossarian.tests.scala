@@ -34,6 +34,6 @@ package yossarian
 
 import soundness.*
 
-object Tests extends Suite(m"Yossarian Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
     ()

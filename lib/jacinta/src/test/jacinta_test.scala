@@ -49,108 +49,108 @@ object Tests extends Suite(m"Jacinta Tests"):
     suite(m"Parsing tests"):
       test(m"Parse a number"):
         t"42".read[Json].as[Int]
-      .assert(_ == 42)
+      . assert(_ == 42)
 
       test(m"Parse a string"):
         val s = t"\"string\"".read[Json]
         s.as[Text]
-      .assert(_ == t"string")
+      . assert(_ == t"string")
 
       test(m"Parse true"):
         t"true".read[Json].as[Boolean]
-      .assert(identity)
+      . assert(identity)
 
       test(m"Parse false"):
         t"false".read[Json].as[Boolean]
-      .assert(!_)
+      . assert(!_)
 
       test(m"Parse float"):
         t"3.1415".read[Json].as[Float]
-      .assert(_ == 3.1415f)
+      . assert(_ == 3.1415f)
 
       test(m"Parse double"):
         t"3.1415926".read[Json].as[Double]
-      .assert(_ == 3.1415926)
+      . assert(_ == 3.1415926)
 
     suite(m"Serialization"):
       test(m"Serialize string"):
         t"foo".json.show
-      .assert(_ == t""""foo"""")
+      . assert(_ == t""""foo"""")
 
       test(m"Serialize double"):
         3.14159.json.show
-      .assert(_ == t"3.14159")
+      . assert(_ == t"3.14159")
 
       test(m"Serialize true"):
         true.json.show
-      .assert(_ == t"true")
+      . assert(_ == t"true")
 
       test(m"Serialize false"):
         false.json.show
-      .assert(_ == t"false")
+      . assert(_ == t"false")
 
       test(m"Serialize case class with Option as None"):
         case class Foo(x: Int, y: Option[Int])
         Foo(1, None).json.show
-      .assert(_ == t"""{"x":1}""")
+      . assert(_ == t"""{"x":1}""")
 
       test(m"Serialize case class with Option as Some"):
         case class Foo(x: Int, y: Option[Int])
         Foo(1, Some(2)).json.show
-      .assert(_ == t"""{"x":1,"y":2}""")
+      . assert(_ == t"""{"x":1,"y":2}""")
 
       test(m"Serialize case class with Optional as Unset"):
         case class Foo(x: Int, y: Optional[Int])
         Foo(1, Unset).json.show
-      .assert(_ == t"""{"x":1}""")
+      . assert(_ == t"""{"x":1}""")
 
       test(m"Serialize case class with present Optional"):
         case class Foo(x: Int, y: Optional[Int])
         Foo(1, 2).json.show
-      .assert(_ == t"""{"x":1,"y":2}""")
+      . assert(_ == t"""{"x":1,"y":2}""")
 
     suite(m"Misc tests"):
       test(m"Serialize to Json"):
         Foo(1, t"two").json
-      .assert(_ == Json.of(x = 1.json, y = t"two".json))
+      . assert(_ == Json.of(x = 1.json, y = t"two".json))
 
       test(m"Parse from JSON"):
         t"""{"x": 1}""".read[Json]
-      .assert(_ == Json.of(x = 1.json))
+      . assert(_ == Json.of(x = 1.json))
 
       test(m"Read case class"):
         t"""{"x": 1, "y": "two"}""".read[Json].as[Foo]
-      .assert(_ == Foo(1, t"two"))
+      . assert(_ == Foo(1, t"two"))
 
       test(m"Extract an absent Option"):
         case class OptFoo(x: Option[Int])
         t"""{"y": 1}""".read[Json].as[OptFoo].x
-      .assert(_ == None)
+      . assert(_ == None)
 
       test(m"Extract an option"):
         case class OptFoo(x: Option[Int])
         t"""{"x": 1}""".read[Json].as[OptFoo].x
-      .assert(_ == Some(1))
+      . assert(_ == Some(1))
 
       test(m"Extract a present Optional"):
         case class OptionalFoo(x: Optional[Int])
         t"""{"x": 1}""".read[Json].as[OptionalFoo].x
-      .assert(_ == 1)
+      . assert(_ == 1)
 
       test(m"Extract an absent Optional"):
         case class OptionalFoo(x: Optional[Int])
         t"""{"y": 1}""".read[Json].as[OptionalFoo].x
-      .assert(_ == Unset)
+      . assert(_ == Unset)
 
       test(m"Extract a None"):
         case class OptFoo(x: Option[Int])
         t"""{"y": 1}""".read[Json].as[OptFoo].x
-      .assert(_ == None)
+      . assert(_ == None)
 
       test(m"Access an absent Optional dynamically"):
         import dynamicJsonAccess.enabled
         t"""{"y": 1}""".read[Json].missing.as[Optional[Int]]
-      .assert(_ == Unset)
+      . assert(_ == Unset)
 
     suite(m"Generic derivation tests"):
       case class Person(name: Text, age: Int)
@@ -177,11 +177,11 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"Extract a band"):
         beatles.read[Json].as[Band]
-      .assert(_ == Band(List(Person(t"John", 40), Person(t"George", 58)), ringoObj, Some(paulObj)))
+      . assert(_ == Band(List(Person(t"John", 40), Person(t"George", 58)), ringoObj, Some(paulObj)))
 
       test(m"Extract a band directly"):
         beatles.read[Band over Json]
-      .assert(_ == Band(List(Person(t"John", 40), Person(t"George", 58)), ringoObj, Some(paulObj)))
+      . assert(_ == Band(List(Person(t"John", 40), Person(t"George", 58)), ringoObj, Some(paulObj)))
 
       enum Player:
         case Guitarist(person: Person)
@@ -196,11 +196,11 @@ object Tests extends Suite(m"Jacinta Tests"):
       test(m"Decode a coproduct"):
         summon[Int is Decodable in Json]
         paulCoproduct.read[Json].as[Player]
-      .assert(_ == Player.Bassist(paulObj))
+      . assert(_ == Player.Bassist(paulObj))
 
       test(m"Decode a coproduct as a precise subtype"):
         paulCoproduct.read[Json].as[Player.Bassist]
-      .assert(_ == Player.Bassist(paulObj))
+      . assert(_ == Player.Bassist(paulObj))
 
       case class NewBand(members: Set[Player])
 
@@ -214,7 +214,7 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"Decode a NewBand"):
         newBandText.read[Json].as[NewBand]
-      .assert(_ == newBand)
+      . assert(_ == newBand)
 
       test(m"Update a JSON object dynamically"):
         import dynamicJsonAccess.enabled

@@ -34,6 +34,6 @@ package larceny
 
 def demilitarize(code: Matchable): List[CompileError] = code match
   case xs: List[CompileError] @unchecked => xs
-  case _ => Nil
+  case _                                 => Nil
 
 def procrastinate(errors: List[CompileError]): List[CompileError] = errors

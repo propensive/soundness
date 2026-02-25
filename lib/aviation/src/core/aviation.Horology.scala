@@ -34,16 +34,6 @@ package aviation
 
 import quantitative.*
 
-trait Horology:
-  type Primary
-  type Secondary
-  type Tertiary
-  type TimeRepr
-
-  def addPrimary(time: Clockface, n: Primary): Clockface
-  def addSecondary(time: Clockface, n: Secondary): Clockface
-  def addTertiary(time: Clockface, n: Tertiary): Clockface
-
 object Horology:
   given sexagesimal: Horology:
     type Primary = Base24
@@ -63,3 +53,13 @@ object Horology:
       val minute: Base60 = Base60(time.minute + (time.second + n)/60)
       val hour: Base24 = Base24(time.hour + (time.minute + (time.second + n)/60)/60)
       Clockface(hour, minute, second)
+
+trait Horology:
+  type Primary
+  type Secondary
+  type Tertiary
+  type TimeRepr
+
+  def addPrimary(time: Clockface, n: Primary): Clockface
+  def addSecondary(time: Clockface, n: Secondary): Clockface
+  def addTertiary(time: Clockface, n: Tertiary): Clockface

@@ -38,7 +38,7 @@ import scala.quoted.*
 
 class NameExtractor[text <: Label]():
   inline def apply[plane: Nominative](): Name[plane] =
-    ${Nomenclature2.parse[plane, text]}
+    ${protointernal.parse[plane, text]}
 
   inline def unapply[plane](inline scrutinee: Name[plane]): Boolean =
-    ${Nomenclature2.parse2[plane, text]('scrutinee)}
+    ${protointernal.parse2[plane, text]('scrutinee)}

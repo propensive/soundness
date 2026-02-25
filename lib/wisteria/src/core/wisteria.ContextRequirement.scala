@@ -43,16 +43,19 @@ object ContextRequirement:
   given required: ContextRequirement:
     type Optionality[Type] = Type
     type Required = true
+
     def wrap[value](optional: Optional[value]): value = optional.vouch
 
   object relaxed extends ContextRequirement:
     type Optionality[Type] = Optional[Type]
     type Required = false
+
     def wrap[value](optional: Optional[value]): Optional[value] = optional
 
 trait ContextRequirement:
   type Optionality[Type] <: Optional[Type]
   type Required <: Boolean
+
   def wrap[value](optional: Optional[value]): Optionality[value]
 
   inline def summon[context]: Optionality[context] =

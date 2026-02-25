@@ -41,5 +41,6 @@ trait Filesystem extends Typeclass:
   val separator: Text
   val self: Text
   val parent: Text
+
   def escape(part: Text): Text = part
   def unescape(part: Text): Text = part

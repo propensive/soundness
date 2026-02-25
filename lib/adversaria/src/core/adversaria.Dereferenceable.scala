@@ -40,7 +40,7 @@ import proscenium.*
 
 object Dereferenceable:
   inline given [entity, value] => entity is Dereferenceable to value =
-    ${Adversaria.dereferenceable[entity, value]}
+    ${adversaria.internal.dereferenceable[entity, value]}
 
 trait Dereferenceable extends Typeclass, Resultant:
   def names(entity: Self): List[Text]

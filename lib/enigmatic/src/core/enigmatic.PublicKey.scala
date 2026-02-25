@@ -50,14 +50,14 @@ case class PublicKey[cipher <: Cipher](bytes: Data):
   def encrypt[value: Encodable in Data](value: value)(using algorithm: cipher & Encryption)
   :   Data =
 
-      algorithm.encrypt(value.bytestream, bytes)
+    algorithm.encrypt(value.bytestream, bytes)
 
 
   def verify[encodable: Encodable in Data](value: encodable, signature: Signature[cipher])
     ( using algorithm: cipher & Signing )
   :   Boolean =
 
-      algorithm.verify(encodable.encode(value), signature.bytes, bytes)
+    algorithm.verify(encodable.encode(value), signature.bytes, bytes)
 
 
   def pem: Pem = Pem(PemLabel.PublicKey, bytes)

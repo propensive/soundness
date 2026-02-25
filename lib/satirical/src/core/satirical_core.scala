@@ -53,42 +53,30 @@ case class Use(namespace: Ident, ident: Ident)
 case class Import(ident: Ident)
 case class Export(ident: Ident)
 
-case class Wit(entries: (World | Interface | Package)*)
-enum Primitive:
-  case Bool, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64, Char, String
-  case List(elements: Primitive)
-  case Option(element: Primitive)
-  case Result(success: Primitive, failure: Primitive)
-  case Tuple(elements: Primitive*)
-  case Record(fields: (Ident, Primitive)*)
-  case Variant(variants: (Ident, Optional[Primitive])*)
-  case Enum(variants: Ident*)
-  case Resource(interface: Interface)
-  case Alias(name: Ident)
-
-extension (context: StringContext) def w(): Ident = Ident(context.parts.head.tt.cut(t"-"))
-
 object Wit:
   given aggregable: Wit is Aggregable by Data = parse(_)
 
   def parse(input: Stream[Data]): Wit =
     val conduit = Conduit(input)
+
     def fail(msg: Message): Nothing = panic(msg)
 
     @tailrec
     def whitespace(): Unit = conduit.datum match
       case '\n' | '\r' | '\t' | ' ' => if conduit.next() then whitespace()
+
       case '/' =>
         if conduit.next() then
           if conduit.datum == '/' then comment() yet whitespace() else fail(m"expected /")
         else fail(m"early termination")
-      case _                        => ()
+
+      case _ =>
+        ()
 
     @tailrec
     def comment(): Unit = conduit.datum match
       case '\n' => ()
-      case char =>
-        if conduit.next() then comment()
+      case char => if conduit.next() then comment()
 
     def keyword(): Text =
       conduit.mark()
@@ -113,7 +101,9 @@ object Wit:
         case char if char >= 'A' && char <= 'Z' =>
           if !hyphen && uppercase then fail(m"mixed case")
           if conduit.next() then recur(false, true) else fail(m"incomplete identifier")
-        case other => Text(conduit.save()).also(whitespace())
+
+        case other =>
+          Text(conduit.save()).also(whitespace())
 
       Ident(recur(true, false).cut(t"-"))
 
@@ -139,6 +129,7 @@ object Wit:
       conduit.datum match
         case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '.' =>
           if conduit.next() then version() else fail(m"premature termination")
+
         case char =>
           Text(conduit.save()).also(whitespace())
 
@@ -157,8 +148,9 @@ object Wit:
               conduit.datum match
                 case ';' => Package(namespace, name, Unset)
                 case other => fail(m"unexpected character $other")
-        case other => fail(m"expected ':'")
 
+        case other =>
+          fail(m"expected ':'")
 
     def interfaceItems(members: List[Primitive | Func] = Nil): List[Primitive | Func] = Nil
 
@@ -174,12 +166,27 @@ object Wit:
     def topLevel(pkg: Optional[Package] = Unset, members: List[World | Interface] = Nil)
     :   List[World | Interface] =
 
-        keyword() match
-          case t"package"   => topLevel(packageDeclaration(), members)
-          case t"world"     => topLevel(pkg, world() :: members)
-          case t"interface" => topLevel(pkg, interface() :: members)
-          case _            => members.reverse
+      keyword() match
+        case t"package"   => topLevel(packageDeclaration(), members)
+        case t"world"     => topLevel(pkg, world() :: members)
+        case t"interface" => topLevel(pkg, interface() :: members)
+        case _            => members.reverse
 
 
     whitespace()
     Wit(topLevel()*)
+
+case class Wit(entries: (World | Interface | Package)*)
+enum Primitive:
+  case Bool, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64, Char, String
+  case List(elements: Primitive)
+  case Option(element: Primitive)
+  case Result(success: Primitive, failure: Primitive)
+  case Tuple(elements: Primitive*)
+  case Record(fields: (Ident, Primitive)*)
+  case Variant(variants: (Ident, Optional[Primitive])*)
+  case Enum(variants: Ident*)
+  case Resource(interface: Interface)
+  case Alias(name: Ident)
+
+extension (context: StringContext) def w(): Ident = Ident(context.parts.head.tt.cut(t"-"))

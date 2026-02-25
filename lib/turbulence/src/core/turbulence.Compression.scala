@@ -37,5 +37,6 @@ import proscenium.*
 
 trait Compression:
   type Self <: Compressor
+
   def compress(stream: Stream[Data]): Stream[Data]
   def decompress(stream: Stream[Data]): Stream[Data]
