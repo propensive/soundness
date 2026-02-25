@@ -63,8 +63,8 @@ object Cli:
       tab:           Optional[Ordinal] = Unset )
   :   List[Argument] =
 
-      textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
-        Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
+    textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
+      Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
 
 
 trait Cli extends Console:

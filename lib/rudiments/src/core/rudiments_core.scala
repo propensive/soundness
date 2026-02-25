@@ -150,12 +150,12 @@ extension [value](iterable: Iterable[value])
             equality: addable.Result =:= value )
   :   Optional[value] =
 
-      compiletime.summonFrom:
-        case zeroic: ((? <: value) is Zeroic) =>
-          iterable.foldLeft(zeroic.zero)(addable.add)
+    compiletime.summonFrom:
+      case zeroic: ((? <: value) is Zeroic) =>
+        iterable.foldLeft(zeroic.zero)(addable.add)
 
-        case _ =>
-          if iterable.nil then Unset else iterable.tail.foldLeft(iterable.head)(addable.add)
+      case _ =>
+        if iterable.nil then Unset else iterable.tail.foldLeft(iterable.head)(addable.add)
 
 
   transparent inline def mean
@@ -164,7 +164,7 @@ extension [value](iterable: Iterable[value])
             divisible: value is Divisible by Double,
             eqality2:  divisible.Result =:= value )
   :   Optional[value] =
-      iterable.total.let(_/iterable.size.toDouble)
+    iterable.total.let(_/iterable.size.toDouble)
 
   inline def mean2
     ( using subtractable: value is Subtractable by value,
@@ -176,10 +176,10 @@ extension [value](iterable: Iterable[value])
             equality3:    addable2.Result =:= value )
   :   Optional[value] =
 
-      if iterable.nil then Unset else
-        val arbitrary = iterable.head
-        iterable.map(_ - arbitrary).total.let: total =>
-          arbitrary + total/iterable.size.toDouble
+    if iterable.nil then Unset else
+      val arbitrary = iterable.head
+      iterable.map(_ - arbitrary).total.let: total =>
+        arbitrary + total/iterable.size.toDouble
 
   def variance
     ( using addable:       value is Addable by value,
@@ -194,8 +194,8 @@ extension [value](iterable: Iterable[value])
             divisible2:    multiplicable.Result is Divisible by Double )
   :   Optional[divisible2.Result] =
 
-      iterable.mean.let: mean =>
-        iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
+    iterable.mean.let: mean =>
+      iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
 
 
   def std
@@ -209,18 +209,18 @@ extension [value](iterable: Iterable[value])
             equality4:     multiplicable.Result =:= value )
   :   Optional[value] =
 
-      iterable.mean.let: mean0 =>
-        val mean: value = mean0
-        val divisor: value = iterable.head
-        var sum: Double = 0.0
-        val mean2: Double = mean/divisor
+    iterable.mean.let: mean0 =>
+      val mean: value = mean0
+      val divisor: value = iterable.head
+      var sum: Double = 0.0
+      val mean2: Double = mean/divisor
 
-        for item <- iterable do
-          val x: Double = item/divisor
-          val y: Double = x - mean2
-          sum += y*y
+      for item <- iterable do
+        val x: Double = item/divisor
+        val y: Double = x - mean2
+        sum += y*y
 
-        divisor*math.sqrt(sum/iterable.size.toDouble)
+      divisor*math.sqrt(sum/iterable.size.toDouble)
 
 
   def product
@@ -229,7 +229,7 @@ extension [value](iterable: Iterable[value])
             equality:      multiplicable.Result =:= value )
   :   value =
 
-      iterable.foldLeft(unital.one)(multiplicable.multiply)
+    iterable.foldLeft(unital.one)(multiplicable.multiply)
 
 
   transparent inline def each(lambda: (ordinal: Ordinal) ?=> value => Unit): Unit =
@@ -429,47 +429,47 @@ extension (using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
                             | Unit | Null]
   :   Optional[primitive] =
 
-      import quotes.reflect.*
+    import quotes.reflect.*
 
-      repr.match
-        case constant: ConstantType => constant
-        case _                      => Unset
+    repr.match
+      case constant: ConstantType => constant
+      case _                      => Unset
 
-      . let: value =>
+    . let: value =>
 
-          inline !![primitive] match
-            case _: Boolean => value.constant.match
-              case BooleanConstant(value) => value
-              case _                      => Unset
-            case _: Byte    => value.constant match
-              case ByteConstant(value)    => value
-              case _                      => Unset
-            case _: Short   => value.constant match
-              case ShortConstant(value)   => value
-              case _                      => Unset
-            case _: Int     => value.constant match
-              case IntConstant(value)     => value
-              case _                      => Unset
-            case _: Long    => value.constant match
-              case LongConstant(value)    => value
-              case _                      => Unset
-            case _: Float   => value.constant match
-              case FloatConstant(value)   => value
-              case _                      => Unset
-            case _: Double  => value.constant match
-              case DoubleConstant(value)  => value
-              case _                      => Unset
-            case _: Char    => value.constant match
-              case CharConstant(value)    => value
-              case _                      => Unset
-            case _: String  => value.constant match
-              case StringConstant(value)  => value
-              case _                      => Unset
-            case _: Unit    => value.constant match
-              case UnitConstant()         => ()
-              case _                      => Unset
-            case _: Null    => value.constant match
-              case NullConstant()         => null
-              case _                      => Unset
+        inline !![primitive] match
+          case _: Boolean => value.constant.match
+            case BooleanConstant(value) => value
+            case _                      => Unset
+          case _: Byte    => value.constant match
+            case ByteConstant(value)    => value
+            case _                      => Unset
+          case _: Short   => value.constant match
+            case ShortConstant(value)   => value
+            case _                      => Unset
+          case _: Int     => value.constant match
+            case IntConstant(value)     => value
+            case _                      => Unset
+          case _: Long    => value.constant match
+            case LongConstant(value)    => value
+            case _                      => Unset
+          case _: Float   => value.constant match
+            case FloatConstant(value)   => value
+            case _                      => Unset
+          case _: Double  => value.constant match
+            case DoubleConstant(value)  => value
+            case _                      => Unset
+          case _: Char    => value.constant match
+            case CharConstant(value)    => value
+            case _                      => Unset
+          case _: String  => value.constant match
+            case StringConstant(value)  => value
+            case _                      => Unset
+          case _: Unit    => value.constant match
+            case UnitConstant()         => ()
+            case _                      => Unset
+          case _: Null    => value.constant match
+            case NullConstant()         => null
+            case _                      => Unset
 
-      . asInstanceOf[Optional[primitive]]
+    . asInstanceOf[Optional[primitive]]

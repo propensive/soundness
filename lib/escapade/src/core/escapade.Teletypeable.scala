@@ -50,7 +50,7 @@ object Teletypeable:
   given colorable: [value: {Showable as showable, Colorable as colorable}]
   =>  value is Teletypeable =
 
-      value => e"${value.color}(${value.show})"
+    value => e"${value.color}(${value.show})"
 
 
   given message: Message is Teletypeable = _.fold[Teletype](e""): (acc, next, level) =>
@@ -93,12 +93,12 @@ object Teletypeable:
     def dedup[element](todo: List[element], seen: Set[element] = Set(), done: List[element] = Nil)
     :   List[element] =
 
-        todo match
-          case Nil => done
+      todo match
+        case Nil => done
 
-          case head :: tail =>
-            if seen.contains(head) then dedup(tail, seen, done)
-            else dedup(tail, seen + head, head :: done)
+        case head :: tail =>
+          if seen.contains(head) then dedup(tail, seen, done)
+          else dedup(tail, seen + head, head :: done)
 
 
     val packages: Map[Text, Int] =

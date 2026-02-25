@@ -87,17 +87,17 @@ case class Permutation(factoradic: Factoradic):
         result:  List[element] )
     :   List[element] =
 
-        lehmer match
-          case head :: tail =>
-            if current == head
-            then recur(tail, prefix, list.tail, current, list.head :: result)
-            else
-              if current < head
-              then recur(lehmer, list.head :: prefix, list.tail, current + 1, result)
-              else recur(lehmer, prefix.tail, prefix.head :: list, current - 1, result)
+      lehmer match
+        case head :: tail =>
+          if current == head
+          then recur(tail, prefix, list.tail, current, list.head :: result)
+          else
+            if current < head
+            then recur(lehmer, list.head :: prefix, list.tail, current + 1, result)
+            else recur(lehmer, prefix.tail, prefix.head :: list, current - 1, result)
 
-          case Nil =>
-            result.reverse
+        case Nil =>
+          result.reverse
 
 
     val prefix = sequence.length - lehmer.length

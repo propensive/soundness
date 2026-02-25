@@ -68,10 +68,10 @@ object Timespan:
       n:            Int )
   :   Timespan =
 
-      denomination match
-        case StandardTime.Hour   => new Timespan(0, 0, 0, n, 0, 0)
-        case StandardTime.Minute => new Timespan(0, 0, 0, 0, n, 0)
-        case StandardTime.Second => new Timespan(0, 0, 0, 0, 0, n)
+    denomination match
+      case StandardTime.Hour   => new Timespan(0, 0, 0, n, 0, 0)
+      case StandardTime.Minute => new Timespan(0, 0, 0, 0, n, 0)
+      case StandardTime.Second => new Timespan(0, 0, 0, 0, 0, n)
 
 
   given addable: Chronology[StandardTime] => Timespan is Addable:

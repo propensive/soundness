@@ -67,7 +67,7 @@ extension [value](value: value)
             equality2:            subtractable.Result =:= value )
   :   Tolerance[value] =
 
-      Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)
+    Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)
 
 
   @targetName("plusOrMinus2")
@@ -79,7 +79,7 @@ extension [value](value: value)
             equality2:            subtractable.Result =:= value )
   :   Tolerance[value] =
 
-      value +/- (tolerance)
+    value +/- (tolerance)
 
 
 def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): TestId =
@@ -90,7 +90,7 @@ def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
   ( block: Testable ?=> Unit )
 :   Unit =
 
-    runner.suite(Testable(name, suite), block)
+  runner.suite(Testable(name, suite), block)
 
 
 extension [test](test: Test[test])

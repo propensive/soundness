@@ -44,13 +44,13 @@ object Daemon:
     ( using monitor: Monitor, codepoint: Codepoint, codicil: Codicil )
   :   Daemon =
 
-      inline def evaluate0: Worker => Unit = evaluate
+    inline def evaluate0: Worker => Unit = evaluate
 
-      new Worker(codepoint, monitor, codicil) with Daemon:
-        type Result = Unit
-        def name: Optional[Text] = Unset
-        def daemon: Boolean = true
-        def evaluate(worker: Worker): Result = evaluate0(worker)
+    new Worker(codepoint, monitor, codicil) with Daemon:
+      type Result = Unit
+      def name: Optional[Text] = Unset
+      def daemon: Boolean = true
+      def evaluate(worker: Worker): Result = evaluate0(worker)
 
 
 trait Daemon:

@@ -54,62 +54,62 @@ object Diff:
         target:        Int )
     :   Diff[Text] =
 
-        if position < target
-        then
-          recur
-            ( todo,
-              line + 1,
-              Par(position, rightPosition, Unset) :: edits,
-              position + 1,
-              rightPosition + 1,
-              target )
+      if position < target
+      then
+        recur
+          ( todo,
+            line + 1,
+            Par(position, rightPosition, Unset) :: edits,
+            position + 1,
+            rightPosition + 1,
+            target )
 
-        else todo match
-          case head #:: tail =>
-            if head == Text("---") then recur(tail, line + 1, edits, position, rightPosition, 0)
-            else if head.s.startsWith("< ")
-            then
-              recur
-                ( tail,
-                  line + 1,
-                  Del(position, head.s.drop(2).tt) :: edits,
-                  position + 1,
-                  rightPosition,
-                  0 )
+      else todo match
+        case head #:: tail =>
+          if head == Text("---") then recur(tail, line + 1, edits, position, rightPosition, 0)
+          else if head.s.startsWith("< ")
+          then
+            recur
+              ( tail,
+                line + 1,
+                Del(position, head.s.drop(2).tt) :: edits,
+                position + 1,
+                rightPosition,
+                0 )
 
-            else if head.s.startsWith("> ")
-            then
-              recur
-                ( tail,
-                  line + 1,
-                  Ins(rightPosition, head.s.drop(2).tt) :: edits,
-                  position,
-                  rightPosition + 1,
-                  0 )
+          else if head.s.startsWith("> ")
+          then
+            recur
+              ( tail,
+                line + 1,
+                Ins(rightPosition, head.s.drop(2).tt) :: edits,
+                position,
+                rightPosition + 1,
+                0 )
 
-            else
-              def unpair(string: String): (Int, Int) =
-                try string.split(",").nn.to(List) match
-                  case List(start, end) => (start.nn.toInt - 1, end.nn.toInt)
-                  case List(start)      => (start.nn.toInt - 1, start.nn.toInt)
-                  case _                => raise(DiffError(line, head)) yet (0, 0)
-                catch case error: NumberFormatException => raise(DiffError(line, head)) yet (0, 0)
+          else
+            def unpair(string: String): (Int, Int) =
+              try string.split(",").nn.to(List) match
+                case List(start, end) => (start.nn.toInt - 1, end.nn.toInt)
+                case List(start)      => (start.nn.toInt - 1, start.nn.toInt)
+                case _                => raise(DiffError(line, head)) yet (0, 0)
+              catch case error: NumberFormatException => raise(DiffError(line, head)) yet (0, 0)
 
-              val pairs =
-                head.s.split("[acd]").nn.to(List) match
-                  case List(left, right) => Some((unpair(left.nn), unpair(right.nn)))
-                  case _                 => None
+            val pairs =
+              head.s.split("[acd]").nn.to(List) match
+                case List(left, right) => Some((unpair(left.nn), unpair(right.nn)))
+                case _                 => None
 
-              pairs match
-                case Some(((leftStart, leftEnd), (rightStart, rightEnd))) =>
-                  recur(tail, line + 1, edits, position, rightPosition, leftStart)
+            pairs match
+              case Some(((leftStart, leftEnd), (rightStart, rightEnd))) =>
+                recur(tail, line + 1, edits, position, rightPosition, leftStart)
 
-                case None =>
-                  raise(DiffError(line, head))
-                  recur(tail, line + 1, edits, position, rightPosition, 0)
+              case None =>
+                raise(DiffError(line, head))
+                recur(tail, line + 1, edits, position, rightPosition, 0)
 
-          case _ =>
-            Diff(edits.reverse*)
+        case _ =>
+          Diff(edits.reverse*)
 
 
     recur(lines, 1, Nil, 0, 0, 0)
@@ -134,15 +134,15 @@ case class Diff[element](edits: Edit[element]*):
   def patch(sequence: Seq[element], update: (element, element) => element = (left, right) => left)
   :   Stream[element] =
 
-      def recur(todo: List[Edit[element]], sequence: Seq[element]): Stream[element] = todo match
-        case Nil                   => sequence.to(Stream)
-        case Ins(_, value) :: tail => value #:: recur(tail, sequence)
-        case Del(_, _) :: tail     => recur(tail, sequence.tail)
+    def recur(todo: List[Edit[element]], sequence: Seq[element]): Stream[element] = todo match
+      case Nil                   => sequence.to(Stream)
+      case Ins(_, value) :: tail => value #:: recur(tail, sequence)
+      case Del(_, _) :: tail     => recur(tail, sequence.tail)
 
-        case Par(_, _, value) :: tail =>
-          value.let(update(_, sequence.head)).or(sequence.head) #:: recur(tail, sequence.tail)
+      case Par(_, _, value) :: tail =>
+        value.let(update(_, sequence.head)).or(sequence.head) #:: recur(tail, sequence.tail)
 
-      recur(edits.to(List), sequence)
+    recur(edits.to(List), sequence)
 
 
   def rdiff(similar: (element, element) => Boolean, subSize: Int = 1): RDiff[element] =

@@ -59,7 +59,7 @@ object Digestible extends Derivable[Digestible]:
   given optional: [digestible: Digestible] => util.NotGiven[Unset.type <:< digestible]
   =>  Optional[digestible] is Digestible =
 
-      (acc, value) => value.let(digestible.digest(acc, _))
+    (acc, value) => value.let(digestible.digest(acc, _))
 
 
   given list: [list <: List, value: Digestible] => list[value] is Digestible =
@@ -78,9 +78,9 @@ object Digestible extends Derivable[Digestible]:
   given map: [digestible: Digestible, digestible2: Digestible]
   =>  Map[digestible, digestible2] is Digestible =
 
-      (digestion, map) => map.each: (key, value) =>
-        digestible.digest(digestion, key)
-        digestible2.digest(digestion, value)
+    (digestion, map) => map.each: (key, value) =>
+      digestible.digest(digestion, key)
+      digestible2.digest(digestion, value)
 
 
   given stream: [value: Digestible] => Stream[value] is Digestible =

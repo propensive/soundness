@@ -101,8 +101,8 @@ case class Argument
   def select[operand: Suggestible](options: Seq[operand])(using cli: Cli, interpreter: Interpreter)
   :   Optional[operand] =
 
-      val mapping: Map[Text, operand] =
-        options.map { option => (operand.suggest(option).text, option) }.to(Map)
+    val mapping: Map[Text, operand] =
+      options.map { option => (operand.suggest(option).text, option) }.to(Map)
 
-      suggest(options.to(List).map(operand.suggest(_)))
-      mapping.at(this())
+    suggest(options.to(List).map(operand.suggest(_)))
+    mapping.at(this())

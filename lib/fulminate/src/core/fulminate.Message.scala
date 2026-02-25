@@ -49,15 +49,15 @@ object Message:
   transparent inline def make[tuple <: Tuple](inline messages: tuple, done: List[Message])
   :   List[Message] =
 
-      inline erasedValue[tuple] match
-        case _: (message *: tail) => messages.absolve match
-          case message *: tail =>
-            val message2 = message.asInstanceOf[message]
-            val communicable = infer[(? >: message) is Communicable]
-            make[tail](tail.asInstanceOf[tail], communicable.message(message2) :: done)
+    inline erasedValue[tuple] match
+      case _: (message *: tail) => messages.absolve match
+        case message *: tail =>
+          val message2 = message.asInstanceOf[message]
+          val communicable = infer[(? >: message) is Communicable]
+          make[tail](tail.asInstanceOf[tail], communicable.message(message2) :: done)
 
-        case _ =>
-          done.reverse
+      case _ =>
+        done.reverse
 
 
 case class Message(texts: List[Text], messages: List[Message] = Nil):

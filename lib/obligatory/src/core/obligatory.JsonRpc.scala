@@ -85,35 +85,35 @@ object JsonRpc:
 
   def request(target: HttpUrl, method: Text, payload: Json)(using Monitor, Codicil, Online)
   :   Promise[Json] =
-      val uuid = Uuid().text
-      val promise: Promise[Json] = Promise()
-      promises(uuid) = promise
-      import charEncoders.utf8
-      import jsonPrinters.minimal
-      import logging.silent
+    val uuid = Uuid().text
+    val promise: Promise[Json] = Promise()
+    promises(uuid) = promise
+    import charEncoders.utf8
+    import jsonPrinters.minimal
+    import logging.silent
 
-      val request = Request("2.0", method, payload, uuid.json).json
+    val request = Request("2.0", method, payload, uuid.json).json
 
-      async:
-        unsafely:
-          promise.fulfill(target.submit(Http.Post)(request).receive[Json])
+    async:
+      unsafely:
+        promise.fulfill(target.submit(Http.Post)(request).receive[Json])
 
-      promise
+    promise
 
   def notification(target: HttpUrl, method: Text, payload: Json)
     ( using Monitor, Codicil, Online )
   :   Promise[Unit] =
 
-      import charEncoders.utf8
-      import jsonPrinters.minimal
-      import logging.silent
+    import charEncoders.utf8
+    import jsonPrinters.minimal
+    import logging.silent
 
-      val request = Request("2.0", method, payload, Unset).json
+    val request = Request("2.0", method, payload, Unset).json
 
-      unsafely:
-        target.submit(Http.Post)(request).receive[Text]
+    unsafely:
+      target.submit(Http.Post)(request).receive[Text]
 
-      Promise[Unit]().tap(_.offer(()))
+    Promise[Unit]().tap(_.offer(()))
 
 trait JsonRpc extends Original:
   private val channel: Spool[Json] = Spool()

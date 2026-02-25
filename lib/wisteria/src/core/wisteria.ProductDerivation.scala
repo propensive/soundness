@@ -50,14 +50,14 @@ object ProductDerivation:
                               index:     Int & FieldIndex[field] ) ?=> field )
     :   derivation =
 
-        type Fields = reflection.MirroredElemTypes
-        type Labels = reflection.MirroredElemLabels
+      type Fields = reflection.MirroredElemTypes
+      type Labels = reflection.MirroredElemLabels
 
-        reflection.fromProduct:
-          fold[derivation, Fields, Labels, Tuple](Zero, 0): accumulator =>
-            [field] => context ?=> lambda[field](context) *: accumulator
+      reflection.fromProduct:
+        fold[derivation, Fields, Labels, Tuple](Zero, 0): accumulator =>
+          [field] => context ?=> lambda[field](context) *: accumulator
 
-          . reverse
+        . reverse
 
 
     protected transparent inline
@@ -76,16 +76,16 @@ object ProductDerivation:
                         ?=> constructor[field] )
     :   constructor[derivation] =
 
-        type Fields = reflection.MirroredElemTypes
-        type Labels = reflection.MirroredElemLabels
+      type Fields = reflection.MirroredElemTypes
+      type Labels = reflection.MirroredElemLabels
 
-        val tuple: constructor[Tuple] =
-          fold[derivation, Fields, Labels, constructor[Tuple]](pure(Zero), 0):
-            accumulator => [field] => context ?=>
-              bind(accumulator): accumulator2 =>
-                bind(lambda[field](context)): result => pure(result *: accumulator2)
+      val tuple: constructor[Tuple] =
+        fold[derivation, Fields, Labels, constructor[Tuple]](pure(Zero), 0):
+          accumulator => [field] => context ?=>
+            bind(accumulator): accumulator2 =>
+              bind(lambda[field](context)): result => pure(result *: accumulator2)
 
-        bind(tuple): tuple => pure(reflection.fromProduct(tuple.reverse))
+      bind(tuple): tuple => pure(reflection.fromProduct(tuple.reverse))
 
 
     protected transparent inline def contexts[derivation <: Product]
@@ -99,13 +99,13 @@ object ProductDerivation:
                               index:       Int & FieldIndex[field] ) ?=> result )
     :   IArray[result] =
 
-        type Fields = reflection.MirroredElemTypes
-        type Labels = reflection.MirroredElemLabels
+      type Fields = reflection.MirroredElemTypes
+      type Labels = reflection.MirroredElemLabels
 
-        provide[ClassTag[result]]:
-          IArray.create[result](valueOf[Tuple.Size[Fields]]): array =>
-            fold[derivation, Fields, Labels, Unit]((), 0): accumulator =>
-              [field] => context ?=> array(index) = lambda[field](context)
+      provide[ClassTag[result]]:
+        IArray.create[result](valueOf[Tuple.Size[Fields]]): array =>
+          fold[derivation, Fields, Labels, Unit]((), 0): accumulator =>
+            [field] => context ?=> array(index) = lambda[field](context)
 
 
     inline def typeName[derivation](using reflection: Reflection[derivation]): Text =
@@ -128,15 +128,15 @@ object ProductDerivation:
               requirement: ContextRequirement)
     :   field =
 
-        type Labels = reflection.MirroredElemLabels
-        type Fields = reflection.MirroredElemTypes
-        val tuple: Fields = Tuple.fromProductTyped(product)
+      type Labels = reflection.MirroredElemLabels
+      type Fields = reflection.MirroredElemTypes
+      val tuple: Fields = Tuple.fromProductTyped(product)
 
-        fold[derivation, Fields, Labels, Optional[field]](tuple, Unset, 0):
-          accumulator => [field2] => field =>
-            if index == fieldIndex then field.asInstanceOf[field] else accumulator
+      fold[derivation, Fields, Labels, Optional[field]](tuple, Unset, 0):
+        accumulator => [field2] => field =>
+          if index == fieldIndex then field.asInstanceOf[field] else accumulator
 
-        . vouch
+      . vouch
 
 
     protected transparent inline def fields[derivation <: Product](inline product: derivation)
@@ -150,18 +150,18 @@ object ProductDerivation:
                               index:   Int & FieldIndex[field] ) ?=> result )
     :   IArray[result] =
 
-        provide[ClassTag[result]]:
-          type Labels = reflection.MirroredElemLabels
-          type Fields = reflection.MirroredElemTypes
-          val tuple: Fields = Tuple.fromProductTyped(product)
+      provide[ClassTag[result]]:
+        type Labels = reflection.MirroredElemLabels
+        type Fields = reflection.MirroredElemTypes
+        val tuple: Fields = Tuple.fromProductTyped(product)
 
-          IArray.create[result](tuple.size): array =>
-            fold[derivation, Fields, Labels, Unit](tuple, (), 0): unit =>
-              [field] => field =>
-                given typeclass: requirement.Optionality[typeclass[field]] =
-                  requirement.wrap(context)
+        IArray.create[result](tuple.size): array =>
+          fold[derivation, Fields, Labels, Unit](tuple, (), 0): unit =>
+            [field] => field =>
+              given typeclass: requirement.Optionality[typeclass[field]] =
+                requirement.wrap(context)
 
-                array(index) = lambda[field](field)
+              array(index) = lambda[field](field)
 
 
     // The two implementations of `fold` are very similar. We would prefer to have a single
@@ -179,27 +179,27 @@ object ProductDerivation:
                               index:   Int & FieldIndex[field] ) ?=> result )
     :   result =
 
-        inline tuple match
-          case Zero => accumulator
+      inline tuple match
+        case Zero => accumulator
 
-          case tuple: (fieldType *: moreFields) => tuple match
-            case field *: moreFields => inline !![labels] match
-              case _: (label *: moreLabels) => inline valueOf[label].asMatchable match
-                case label: String =>
-                  val typeclass = requirement.summon[typeclass[fieldType]]
+        case tuple: (fieldType *: moreFields) => tuple match
+          case field *: moreFields => inline !![labels] match
+            case _: (label *: moreLabels) => inline valueOf[label].asMatchable match
+              case label: String =>
+                val typeclass = requirement.summon[typeclass[fieldType]]
 
-                  val fieldIndex: Int & FieldIndex[fieldType] =
-                    index.asInstanceOf[Int & FieldIndex[fieldType]]
+                val fieldIndex: Int & FieldIndex[fieldType] =
+                  index.asInstanceOf[Int & FieldIndex[fieldType]]
 
-                  val default = Default(Wisteria.default[derivation, fieldType](index))
+                val default = Default(Wisteria.default[derivation, fieldType](index))
 
-                  val accumulator2 =
-                    lambda(accumulator)[fieldType](field)
-                      ( using typeclass, default, label.tt, fieldIndex )
+                val accumulator2 =
+                  lambda(accumulator)[fieldType](field)
+                    ( using typeclass, default, label.tt, fieldIndex )
 
-                  fold[derivation, moreFields, moreLabels, result]
-                    ( moreFields, accumulator2, index + 1 )
-                    ( lambda )
+                fold[derivation, moreFields, moreLabels, result]
+                  ( moreFields, accumulator2, index + 1 )
+                  ( lambda )
 
 
     private transparent inline def fold
@@ -213,27 +213,27 @@ object ProductDerivation:
                               index:       Int & FieldIndex[field] ) ?=> result )
     :   result =
 
-        inline !![fields] match
-          case _: Zero => accumulator
+      inline !![fields] match
+        case _: Zero => accumulator
 
-          case _: (fieldType *: moreFields) => inline !![labels] match
-            case _: (label *: moreLabels) => inline valueOf[label].asMatchable match
-              case label: String =>
-                val typeclass = requirement.summon[typeclass[fieldType]]
+        case _: (fieldType *: moreFields) => inline !![labels] match
+          case _: (label *: moreLabels) => inline valueOf[label].asMatchable match
+            case label: String =>
+              val typeclass = requirement.summon[typeclass[fieldType]]
 
-                val fieldIndex: Int & FieldIndex[fieldType] =
-                  index.asInstanceOf[Int & FieldIndex[fieldType]]
+              val fieldIndex: Int & FieldIndex[fieldType] =
+                index.asInstanceOf[Int & FieldIndex[fieldType]]
 
-                val default = Default(Wisteria.default[derivation, fieldType](index))
+              val default = Default(Wisteria.default[derivation, fieldType](index))
 
-                val dereference: derivation => fieldType =
-                  _.productElement(fieldIndex).asInstanceOf[fieldType]
+              val dereference: derivation => fieldType =
+                _.productElement(fieldIndex).asInstanceOf[fieldType]
 
-                val accumulator2 =
-                  lambda(accumulator)[fieldType](typeclass)
-                    ( using default, label.tt, dereference, fieldIndex )
+              val accumulator2 =
+                lambda(accumulator)[fieldType](typeclass)
+                  ( using default, label.tt, dereference, fieldIndex )
 
-                fold[derivation, moreFields, moreLabels, result](accumulator2, index + 1)(lambda)
+              fold[derivation, moreFields, moreLabels, result](accumulator2, index + 1)(lambda)
 
 
     inline def join[derivation <: Product: ProductReflection]: typeclass[derivation]

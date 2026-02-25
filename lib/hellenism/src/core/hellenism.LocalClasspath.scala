@@ -51,14 +51,14 @@ object LocalClasspath:
   given decodable: (System, Tactic[PropertyError])
   =>  LocalClasspath is Decodable in Text =
 
-      classpath =>
-        val entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar] =
-          classpath.cut(System.properties.path.separator()).map: path =>
-            if path.ends(t"/") then ClasspathEntry.Directory(path)
-            else if path.ends(t".jar") then ClasspathEntry.Jar(path)
-            else ClasspathEntry.Directory(path)
+    classpath =>
+      val entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar] =
+        classpath.cut(System.properties.path.separator()).map: path =>
+          if path.ends(t"/") then ClasspathEntry.Directory(path)
+          else if path.ends(t".jar") then ClasspathEntry.Jar(path)
+          else ClasspathEntry.Directory(path)
 
-        new LocalClasspath(entries, entries.to(Set))
+      new LocalClasspath(entries, entries.to(Set))
 
 
   def apply

@@ -42,7 +42,7 @@ object Redirect:
   def apply[link: Abstractable across Urls to Text](location: link, permanent: Boolean = false)
   :   Redirect =
 
-      new Redirect(location.generic, permanent)
+    new Redirect(location.generic, permanent)
 
 
   given redirect: Redirect is Servable = redirect =>

@@ -316,7 +316,7 @@ object Tests extends Suite(m"Kaleidoscope tests"):
 
       test(m"email regex"):
         val r"^$prefix([a-z0-9._%+-]+)@$domain([a-z0-9.-]+)\.$tld([a-z]{2,6})$$" =
-            t"test@example.com": @unchecked
+          t"test@example.com": @unchecked
 
         List(prefix, domain, tld)
 

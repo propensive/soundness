@@ -59,7 +59,7 @@ case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
     ( using DsvRedesignation )
   :   Optional[value] =
 
-      apply(summon[DsvRedesignation].transform(field.tt))
+    apply(summon[DsvRedesignation].transform(field.tt))
 
 
   def apply[value: Decodable in Text](field: Text): Optional[value] =
@@ -88,13 +88,13 @@ object Dsv:
   inline given decodableDerivation: [value <: Product: ProductReflection]
   =>  value is Decodable in Dsv =
 
-      DecodableDerivation.derived[value]
+    DecodableDerivation.derived[value]
 
 
   inline given encodableDerivation: [value <: Product: ProductReflection]
   =>  value is Encodable in Dsv =
 
-      EncodableDerivation.derived[value]
+    EncodableDerivation.derived[value]
 
 
   given showable: (format: DsvFormat) => Dsv is Showable =

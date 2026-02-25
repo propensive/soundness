@@ -78,7 +78,7 @@ object Computable:
   given instantiable: [instantiable: Instantiable across Paths from Text]
   =>  instantiable is Computable =
 
-      path => instantiable(text.compute(path))
+    path => instantiable(text.compute(path))
 
 
 trait Computable extends Typeclass:

@@ -73,75 +73,75 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
     ( using System, Monitor, Codicil )
   :   CompileProcess logs CompileEvent raises CompilerError =
 
-      val scalacProcess: CompileProcess = CompileProcess()
+    val scalacProcess: CompileProcess = CompileProcess()
 
-      object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
-        def doReport(diagnostic: Diagnostic)(using dtdc.Contexts.Context): Unit =
-          Log.fine(CompileEvent.Notice(diagnostic.toString.tt))
-          scalacProcess.put(Notice(diagnostic))
+    object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
+      def doReport(diagnostic: Diagnostic)(using dtdc.Contexts.Context): Unit =
+        Log.fine(CompileEvent.Notice(diagnostic.toString.tt))
+        scalacProcess.put(Notice(diagnostic))
 
-      val callbackApi = new dtdi.CompilerCallback {}
+    val callbackApi = new dtdi.CompilerCallback {}
 
-      object ProgressApi extends dtdsi.ProgressCallback:
-        private var last: Int = -1
-        override def informUnitStarting(stage: String | Null, unit: dtd.CompilationUnit | Null)
-        :   Unit =
-          ()
+    object ProgressApi extends dtdsi.ProgressCallback:
+      private var last: Int = -1
+      override def informUnitStarting(stage: String | Null, unit: dtd.CompilationUnit | Null)
+      :   Unit =
+        ()
 
-        override def progress
-          ( current:      Int,
-            total:        Int,
-            currentStage: String | Null,
-            nextStage:    String | Null )
-        :   Boolean =
+      override def progress
+        ( current:      Int,
+          total:        Int,
+          currentStage: String | Null,
+          nextStage:    String | Null )
+      :   Boolean =
 
-          val int = (100.0*current/total).toInt
+        val int = (100.0*current/total).toInt
 
-          if int > last then
-            last = int
-            scalacProcess.put
-              ( CompileProgress
-                ( last/100.0, if currentStage == null then t"null" else currentStage.tt) )
+        if int > last then
+          last = int
+          scalacProcess.put
+            ( CompileProgress
+              ( last/100.0, if currentStage == null then t"null" else currentStage.tt) )
 
-          scalacProcess.continue
+        scalacProcess.continue
 
-      object driver extends dtd.Driver:
-        val currentContext =
-          val context = initCtx.fresh
-          //val pluginParams = plugins
-          //val jsParams =
-          val arguments: List[Text] =
-            List(t"-d", out.generic, t"-classpath", classpath())
-            ::: commandLineArguments
-            ::: List(t"")
+    object driver extends dtd.Driver:
+      val currentContext =
+        val context = initCtx.fresh
+        //val pluginParams = plugins
+        //val jsParams =
+        val arguments: List[Text] =
+          List(t"-d", out.generic, t"-classpath", classpath())
+          ::: commandLineArguments
+          ::: List(t"")
 
-          Log.info(CompileEvent.Running(arguments))
-          setup(arguments.map(_.s).to(Array), context).map(_(1)).get
+        Log.info(CompileEvent.Running(arguments))
+        setup(arguments.map(_.s).to(Array), context).map(_(1)).get
 
-        def run(): CompileProcess =
-          given dtdc.Contexts.Context = currentContext.fresh.pipe: context =>
-            context
-            . setReporter(reporter)
-            . setCompilerCallback(callbackApi)
-            . setProgressCallback(ProgressApi)
+      def run(): CompileProcess =
+        given dtdc.Contexts.Context = currentContext.fresh.pipe: context =>
+          context
+          . setReporter(reporter)
+          . setCompilerCallback(callbackApi)
+          . setProgressCallback(ProgressApi)
 
-          val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
-            dtdu.SourceFile.virtual(name.s, content.s)
+        val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
+          dtdu.SourceFile.virtual(name.s, content.s)
 
-          scalacProcess.put:
-            task(t"scalac"):
-              try
-                Scalac.compiler().newRun.tap: run =>
-                  run.compileSources(sourceFiles)
-                  if !reporter.hasErrors then finish(Scalac.Scala3, run)
+        scalacProcess.put:
+          task(t"scalac"):
+            try
+              Scalac.compiler().newRun.tap: run =>
+                run.compileSources(sourceFiles)
+                if !reporter.hasErrors then finish(Scalac.Scala3, run)
 
-                scalacProcess.put
-                  ( if reporter.hasErrors then CompileResult.Failure else CompileResult.Success )
+              scalacProcess.put
+                ( if reporter.hasErrors then CompileResult.Failure else CompileResult.Success )
 
-              catch case suc.NonFatal(error) =>
-                scalacProcess.put(CompileResult.Crash(error.stackTrace))
-                Scalac.refresh()
+            catch case suc.NonFatal(error) =>
+              scalacProcess.put(CompileResult.Crash(error.stackTrace))
+              Scalac.refresh()
 
-          scalacProcess
+        scalacProcess
 
-      driver.run()
+    driver.run()

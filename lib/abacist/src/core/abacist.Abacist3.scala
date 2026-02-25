@@ -46,6 +46,6 @@ trait Abacist3:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          inline if greaterThan
-          then inline if strict then left.long > right.long else left.long >= right.long
-          else inline if strict then left.long < right.long else left.long <= right.long
+        inline if greaterThan
+        then inline if strict then left.long > right.long else left.long >= right.long
+        else inline if strict then left.long < right.long else left.long <= right.long

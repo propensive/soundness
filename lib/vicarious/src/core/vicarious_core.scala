@@ -42,7 +42,7 @@ inline def catalog[key](key: key)[value](inline lambda: [field] => (field: field
   ( using classTag: ClassTag[value] )
 :   Catalog[key, value] =
 
-    ${Vicarious.catalog[key, value]('lambda, 'key, 'classTag)}
+  ${Vicarious.catalog[key, value]('lambda, 'key, 'classTag)}
 
 
 extension [key, value: ClassTag](catalog: Catalog[key, value])
@@ -50,8 +50,8 @@ extension [key, value: ClassTag](catalog: Catalog[key, value])
     ( lambda: (`*`: proxy.type) ?=> Proxy[key, value, Nat] ~> value )
   :   Catalog[key, value] =
 
-      val partialFunction = lambda(using proxy)
+    val partialFunction = lambda(using proxy)
 
-      Catalog(IArray.tabulate(catalog.size): index =>
-        partialFunction.applyOrElse
-          ( Proxy[key, value, index.type](), _ => catalog.values(index)) )
+    Catalog(IArray.tabulate(catalog.size): index =>
+      partialFunction.applyOrElse
+        ( Proxy[key, value, index.type](), _ => catalog.values(index)) )

@@ -101,8 +101,8 @@ object Nomenclature2:
   def parse2[plane: Type, name <: String: Type](scrutinee: Expr[Name[plane]])
   :   Macro[Boolean] =
 
-      parse[plane, name]
-      '{${Expr(constant[name])}.tt == $scrutinee}
+    parse[plane, name]
+    '{${Expr(constant[name])}.tt == $scrutinee}
 
 
   def constant[text <: String: Type](using Quotes): text =

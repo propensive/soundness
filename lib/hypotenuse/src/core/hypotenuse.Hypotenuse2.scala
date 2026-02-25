@@ -170,52 +170,52 @@ object Hypotenuse2:
       greaterThan: Expr[Boolean] )
   :   Macro[Boolean] =
 
-      val errorMessage = m"this cannot be written as a range expression"
+    val errorMessage = m"this cannot be written as a range expression"
 
-      val value =
-        if greaterThan.valueOrAbort then expr match
-          case '{($bound: Int) > ($value: Int)}        => value
-          case '{($bound: Int) >= ($value: Int)}       => value
-          case '{($bound: Double) > ($value: Double)}  => value
-          case '{($bound: Double) >= ($value: Double)} => value
-          case '{($bound: Char) > ($value: Char)}      => value
-          case '{($bound: Char) >= ($value: Char)}     => value
-          case '{($bound: Byte) > ($value: Byte)}      => value
-          case '{($bound: Byte) >= ($value: Byte)}     => value
-          case '{($bound: Short) > ($value: Short)}    => value
-          case '{($bound: Short) >= ($value: Short)}   => value
-          case '{($bound: Long) > ($value: Long)}      => value
-          case '{($bound: Long) >= ($value: Long)}     => value
-          case '{($bound: Float) > ($value: Float)}    => value
-          case '{($bound: Float) >= ($value: Float)}   => value
-          case _                                       => halt(errorMessage)
+    val value =
+      if greaterThan.valueOrAbort then expr match
+        case '{($bound: Int) > ($value: Int)}        => value
+        case '{($bound: Int) >= ($value: Int)}       => value
+        case '{($bound: Double) > ($value: Double)}  => value
+        case '{($bound: Double) >= ($value: Double)} => value
+        case '{($bound: Char) > ($value: Char)}      => value
+        case '{($bound: Char) >= ($value: Char)}     => value
+        case '{($bound: Byte) > ($value: Byte)}      => value
+        case '{($bound: Byte) >= ($value: Byte)}     => value
+        case '{($bound: Short) > ($value: Short)}    => value
+        case '{($bound: Short) >= ($value: Short)}   => value
+        case '{($bound: Long) > ($value: Long)}      => value
+        case '{($bound: Long) >= ($value: Long)}     => value
+        case '{($bound: Float) > ($value: Float)}    => value
+        case '{($bound: Float) >= ($value: Float)}   => value
+        case _                                       => halt(errorMessage)
 
-        else expr match
-          case '{($bound: Int) < ($value: Int)}        => value
-          case '{($bound: Int) <= ($value: Int)}       => value
-          case '{($bound: Double) < ($value: Double)}  => value
-          case '{($bound: Double) <= ($value: Double)} => value
-          case '{($bound: Char) < ($value: Char)}      => value
-          case '{($bound: Char) <= ($value: Char)}     => value
-          case '{($bound: Byte) < ($value: Byte)}      => value
-          case '{($bound: Byte) <= ($value: Byte)}     => value
-          case '{($bound: Short) < ($value: Short)}    => value
-          case '{($bound: Short) <= ($value: Short)}   => value
-          case '{($bound: Long) < ($value: Long)}      => value
-          case '{($bound: Long) <= ($value: Long)}     => value
-          case '{($bound: Float) < ($value: Float)}    => value
-          case '{($bound: Float) <= ($value: Float)}   => value
-          case _                                       => halt(errorMessage)
+      else expr match
+        case '{($bound: Int) < ($value: Int)}        => value
+        case '{($bound: Int) <= ($value: Int)}       => value
+        case '{($bound: Double) < ($value: Double)}  => value
+        case '{($bound: Double) <= ($value: Double)} => value
+        case '{($bound: Char) < ($value: Char)}      => value
+        case '{($bound: Char) <= ($value: Char)}     => value
+        case '{($bound: Byte) < ($value: Byte)}      => value
+        case '{($bound: Byte) <= ($value: Byte)}     => value
+        case '{($bound: Short) < ($value: Short)}    => value
+        case '{($bound: Short) <= ($value: Short)}   => value
+        case '{($bound: Long) < ($value: Long)}      => value
+        case '{($bound: Long) <= ($value: Long)}     => value
+        case '{($bound: Float) < ($value: Float)}    => value
+        case '{($bound: Float) <= ($value: Float)}   => value
+        case _                                       => halt(errorMessage)
 
-      val (lessStrict, less) =
-        (if greaterThan.valueOrAbort then (bound, value) else (value, bound)) match
-          case ('{$left: Int}, '{$right: Int})       => ('{$left < $right}, '{$left <= $right})
-          case ('{$left: Float}, '{$right: Float})   => ('{$left < $right}, '{$left <= $right})
-          case ('{$left: Double}, '{$right: Double}) => ('{$left < $right}, '{$left <= $right})
-          case ('{$left: Long}, '{$right: Long})     => ('{$left < $right}, '{$left <= $right})
-          case ('{$left: Char}, '{$right: Char})     => ('{$left < $right}, '{$left <= $right})
-          case ('{$left: Byte}, '{$right: Byte})     => ('{$left < $right}, '{$left <= $right})
-          case ('{$left: Short}, '{$right: Short})   => ('{$left < $right}, '{$left <= $right})
-          case _                                      => halt(errorMessage)
+    val (lessStrict, less) =
+      (if greaterThan.valueOrAbort then (bound, value) else (value, bound)) match
+        case ('{$left: Int}, '{$right: Int})       => ('{$left < $right}, '{$left <= $right})
+        case ('{$left: Float}, '{$right: Float})   => ('{$left < $right}, '{$left <= $right})
+        case ('{$left: Double}, '{$right: Double}) => ('{$left < $right}, '{$left <= $right})
+        case ('{$left: Long}, '{$right: Long})     => ('{$left < $right}, '{$left <= $right})
+        case ('{$left: Char}, '{$right: Char})     => ('{$left < $right}, '{$left <= $right})
+        case ('{$left: Byte}, '{$right: Byte})     => ('{$left < $right}, '{$left <= $right})
+        case ('{$left: Short}, '{$right: Short})   => ('{$left < $right}, '{$left <= $right})
+        case _                                      => halt(errorMessage)
 
-      '{$expr && ${if strict.valueOrAbort then lessStrict else less}}
+    '{$expr && ${if strict.valueOrAbort then lessStrict else less}}

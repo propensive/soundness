@@ -44,15 +44,15 @@ object Journal:
     ( store: store )
   :   Journal by entry =
 
-      new Journal:
-        type Operand = entry
-        def record(entry: Operand): Long =
-          val bytes = entry.encode
-          store.write(bytes.length.bytes)
-          store.write(entry.encode)
+    new Journal:
+      type Operand = entry
+      def record(entry: Operand): Long =
+        val bytes = entry.encode
+        store.write(bytes.length.bytes)
+        store.write(entry.encode)
 
-        def replay(offset: Long): Iterator[Data] =
-          load(offset).iterator
+      def replay(offset: Long): Iterator[Data] =
+        load(offset).iterator
 
 
 trait Journal extends Typeclass:

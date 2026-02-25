@@ -49,8 +49,8 @@ object Environment extends Dynamic:
     ( using environment: Environment, reader: EnvironmentVariable[Label, variable] )
   :   variable raises EnvironmentError =
 
-      environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable)))
-      . yet(reader.read("".tt))
+    environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable)))
+    . yet(reader.read("".tt))
 
 
   inline def selectDynamic[variable](key: String)
@@ -59,5 +59,5 @@ object Environment extends Dynamic:
             environmentError: Tactic[EnvironmentError] )
   :   variable =
 
-      environment.variable(reader.defaultName).let(reader.read(_)).or:
-        raise(EnvironmentError(reader.defaultName)) yet reader.read(Text(""))
+    environment.variable(reader.defaultName).let(reader.read(_)).or:
+      raise(EnvironmentError(reader.defaultName)) yet reader.read(Text(""))

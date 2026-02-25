@@ -47,7 +47,7 @@ object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
     ( using System, Environment )
   :   path raises PropertyError raises EnvironmentError =
 
-      path(t"/")
+    path(t"/")
 
 
   object Boot extends BaseLayout[Mono["boot"]](t"boot", readOnly = true)

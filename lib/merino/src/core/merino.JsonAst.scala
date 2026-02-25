@@ -146,8 +146,8 @@ object JsonAst extends Format:
     inline final val CloseBrace:   125 = 125 // '}'
 
   opaque type RawJson =
-      Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean
-      | Null | Unset.type
+    Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean
+    | Null | Unset.type
 
   def apply
     ( value
@@ -155,7 +155,7 @@ object JsonAst extends Format:
         | Null | Unset.type )
   :   JsonAst =
 
-      value
+    value
 
 
   given Tactic[ParseError] => JsonAst is Aggregable by Data = source =>

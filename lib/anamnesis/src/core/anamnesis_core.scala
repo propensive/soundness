@@ -44,19 +44,19 @@ extension [left](using db: Database)(left: Ref of left in db.type)
   inline def unassign[right](right: Ref of right in db.type)(using db.Has[left -< right])
   :   Unit raises DataError =
 
-      db.unassign(left, right)
+    db.unassign(left, right)
 
 
   inline def lookup[right](using db.Has[left -< right])
   :   Set[Ref of right in db.type] raises DataError =
 
-      db.lookup[left, right](left)
+    db.lookup[left, right](left)
 
 
   inline def assign[right](right: Ref of right in db.type)(using db.Has[left -< right])
   :   Unit raises DataError =
 
-      db.assign(left, right)
+    db.assign(left, right)
 
 
 extension [left](using db: Database)(left: left)

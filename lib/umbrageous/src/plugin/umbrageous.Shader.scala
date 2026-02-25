@@ -56,30 +56,30 @@ class Shader(options: List[String]) extends PluginPhase:
         ( tree: Ident | Select, fqn: String, defs: List[Tree], select: Select => Select )
       :   PackageDef =
 
-          tree match
-            case Ident(name) =>
-              val pkg = name.decode.toString+"."+fqn
+        tree match
+          case Ident(name) =>
+            val pkg = name.decode.toString+"."+fqn
 
-              val prefixes2 =
-                prefixes.filter { (k, v) => pkg == k || pkg.startsWith(k+".") }
-                . sortBy(_(0).length)
+            val prefixes2 =
+              prefixes.filter { (k, v) => pkg == k || pkg.startsWith(k+".") }
+              . sortBy(_(0).length)
 
-              val ident = prefixes2.lastOption.fold(tree): (k, v) =>
-                select(Select(Ident(v.toTermName), name))
+            val ident = prefixes2.lastOption.fold(tree): (k, v) =>
+              select(Select(Ident(v.toTermName), name))
 
-              val imports =
-                prefixes2.lastOption.fold(prefixes) { (k, v) => prefixes.filter(_(0) != k) }.map:
-                  case (_, prefix) =>
-                    Import
-                      ( Ident(prefix.toTermName),
-                        List(ImportSelector(Ident(StdNames.nme.WILDCARD))) )
+            val imports =
+              prefixes2.lastOption.fold(prefixes) { (k, v) => prefixes.filter(_(0) != k) }.map:
+                case (_, prefix) =>
+                  Import
+                    ( Ident(prefix.toTermName),
+                      List(ImportSelector(Ident(StdNames.nme.WILDCARD))) )
 
-              PackageDef(ident, imports ::: defs)
+            PackageDef(ident, imports ::: defs)
 
-            case Select(pkg: (Ident | Select), name) =>
-              rewritePackage(pkg, s"${name.decode}.$fqn", defs, Select(_, name))
+          case Select(pkg: (Ident | Select), name) =>
+            rewritePackage(pkg, s"${name.decode}.$fqn", defs, Select(_, name))
 
-            case _ => ???
+          case _ => ???
 
 
       override def transform(tree: Tree)(using Context): Tree =

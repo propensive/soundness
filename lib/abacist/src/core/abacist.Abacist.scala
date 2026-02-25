@@ -56,33 +56,33 @@ object Abacist:
     def recur(multipliers: List[Multiplier], values: List[Expr[Int]], expr: Expr[Long])
     :   Expr[Long] =
 
-        values match
-          case Nil =>
-            expr
+      values match
+        case Nil =>
+          expr
 
-          case unitValue :: valuesTail => multipliers match
-            case Multiplier(unitPower, subdivision, max) :: tail =>
-              unitValue.value match
-                case Some(unitValue) =>
-                  if unitValue < 0
-                  then halt:
-                    m"the value for the ${unitPower.ref.name} unit ($unitValue) cannot be negative"
-                  else if unitValue >= max
-                  then halt:
-                    m"""the value for the ${unitPower.ref.name} unit $unitValue must be less than
-                        $max"""
+        case unitValue :: valuesTail => multipliers match
+          case Multiplier(unitPower, subdivision, max) :: tail =>
+            unitValue.value match
+              case Some(unitValue) =>
+                if unitValue < 0
+                then halt:
+                  m"the value for the ${unitPower.ref.name} unit ($unitValue) cannot be negative"
+                else if unitValue >= max
+                then halt:
+                  m"""the value for the ${unitPower.ref.name} unit $unitValue must be less than
+                      $max"""
 
-                  recur
-                    ( tail,
-                      valuesTail,
-                      '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})} )
+                recur
+                  ( tail,
+                    valuesTail,
+                    '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})} )
 
-                case None =>
-                  recur(tail, valuesTail, '{$expr + ($unitValue.toLong*${Expr(subdivision)})})
+              case None =>
+                recur(tail, valuesTail, '{$expr + ($unitValue.toLong*${Expr(subdivision)})})
 
-            case Nil => halt:
-              m"""${inputs.length} unit values were provided, but this Quanta only has
-                  ${multipliers.length} units"""
+          case Nil => halt:
+            m"""${inputs.length} unit values were provided, but this Quanta only has
+                ${multipliers.length} units"""
 
     '{Quanta.fromLong[units](${recur(multipliers[units].reverse, inputs, '{0L})})}
 
@@ -90,69 +90,69 @@ object Abacist:
   def describeQuanta[units <: Tuple: Type](count: Expr[Quanta[units]])
   :   Macro[ListMap[Text, Long]] =
 
-      def recur(slices: List[Multiplier], expr: Expr[ListMap[Text, Long]])
-      :   Expr[ListMap[Text, Long]] =
+    def recur(slices: List[Multiplier], expr: Expr[ListMap[Text, Long]])
+    :   Expr[ListMap[Text, Long]] =
 
-          slices match
-            case Nil =>
-              expr
+      slices match
+        case Nil =>
+          expr
 
-            case (slice@Multiplier(unitPower, subdivision, max)) :: tail =>
-              val power: Text = if unitPower.power == 1 then "".tt else
-                unitPower.power.toString.tt.translate(_.superscript.or(' '))
+        case (slice@Multiplier(unitPower, subdivision, max)) :: tail =>
+          val power: Text = if unitPower.power == 1 then "".tt else
+            unitPower.power.toString.tt.translate(_.superscript.or(' '))
 
-              val value = '{(($count.asInstanceOf[Long]/${Expr(subdivision)})%(${Expr(max)}))}
-              recur
-                ( tail,
-                  '{($expr.updated
-                      (${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value))} )
+          val value = '{(($count.asInstanceOf[Long]/${Expr(subdivision)})%(${Expr(max)}))}
+          recur
+            ( tail,
+              '{($expr.updated
+                  (${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value))} )
 
-      recur(multipliers[units], '{ListMap()})
+    recur(multipliers[units], '{ListMap()})
 
 
   def multiplyQuanta[units <: Tuple: Type]
     ( count: Expr[Quanta[units]], multiplier: Expr[Double], division: Boolean )
   :   Macro[Any] =
 
-      if division then '{Quanta.fromLong[units](($count.long/$multiplier + 0.5).toLong)}
-      else '{Quanta.fromLong[units](($count.long*$multiplier + 0.5).toLong)}
+    if division then '{Quanta.fromLong[units](($count.long/$multiplier + 0.5).toLong)}
+    else '{Quanta.fromLong[units](($count.long*$multiplier + 0.5).toLong)}
 
 
   def toQuantity[units <: Tuple: Type](count: Expr[Quanta[units]]): Macro[Any] =
 
-      val lastUnit = multipliers[units].last
-      val quantityUnit = lastUnit.unitPower.ref.dimensionRef.principal
-      val ratioExpr = ratio(lastUnit.unitPower.ref, quantityUnit, lastUnit.unitPower.power)
+    val lastUnit = multipliers[units].last
+    val quantityUnit = lastUnit.unitPower.ref.dimensionRef.principal
+    val ratioExpr = ratio(lastUnit.unitPower.ref, quantityUnit, lastUnit.unitPower.power)
 
-      quantityUnit.power(1).asType.absolve match
-        case '[type quantity <: Measure; quantity] =>
-          '{Quantity[quantity]($count.long*$ratioExpr)}
+    quantityUnit.power(1).asType.absolve match
+      case '[type quantity <: Measure; quantity] =>
+        '{Quantity[quantity]($count.long*$ratioExpr)}
 
 
   def fromQuantity[quantity <: Measure: Type, units <: Tuple: Type]
     ( quantity: Expr[Quantity[quantity]] )
   :   Macro[Quanta[units]] =
 
-      import quotes.reflect.*
+    import quotes.reflect.*
 
-      val lastUnit = multipliers[units].last.unitPower
-      val quantityUnit = readUnitPower(TypeRepr.of[quantity].dealias)
-      val ratioExpr = ratio(quantityUnit.ref, lastUnit.ref, lastUnit.power)
+    val lastUnit = multipliers[units].last.unitPower
+    val quantityUnit = readUnitPower(TypeRepr.of[quantity].dealias)
+    val ratioExpr = ratio(quantityUnit.ref, lastUnit.ref, lastUnit.power)
 
-      '{($quantity.value*$ratioExpr + 0.5).toLong.asInstanceOf[Quanta[units]]}
+    '{($quantity.value*$ratioExpr + 0.5).toLong.asInstanceOf[Quanta[units]]}
 
 
   def get[units <: Tuple: Type, unit <: Units[1, ? <: Dimension]: Type](value: Expr[Quanta[units]])
   :   Macro[Int] =
 
-      import quotes.reflect.*
+    import quotes.reflect.*
 
-      val lookupUnit = readUnitPower(TypeRepr.of[unit])
+    val lookupUnit = readUnitPower(TypeRepr.of[unit])
 
-      val multiplier: Multiplier = multipliers[units].where(_.unitPower == lookupUnit).or:
-        halt(m"the Quanta does not include this unit")
+    val multiplier: Multiplier = multipliers[units].where(_.unitPower == lookupUnit).or:
+      halt(m"the Quanta does not include this unit")
 
-      '{(($value.long/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}
+    '{(($value.long/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}
 
   private case class Multiplier(unitPower: UnitPower, subdivision: Int, max: Int)
 

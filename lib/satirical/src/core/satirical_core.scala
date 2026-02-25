@@ -174,11 +174,11 @@ object Wit:
     def topLevel(pkg: Optional[Package] = Unset, members: List[World | Interface] = Nil)
     :   List[World | Interface] =
 
-        keyword() match
-          case t"package"   => topLevel(packageDeclaration(), members)
-          case t"world"     => topLevel(pkg, world() :: members)
-          case t"interface" => topLevel(pkg, interface() :: members)
-          case _            => members.reverse
+      keyword() match
+        case t"package"   => topLevel(packageDeclaration(), members)
+        case t"world"     => topLevel(pkg, world() :: members)
+        case t"interface" => topLevel(pkg, interface() :: members)
+        case _            => members.reverse
 
 
     whitespace()

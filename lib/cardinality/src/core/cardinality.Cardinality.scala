@@ -60,29 +60,29 @@ object Cardinality:
   def apply[left <: Double: Type, right <: Double: Type](digits: Expr[String])
   :   Macro[left ~ right] =
 
-      import quotes.reflect.*
+    import quotes.reflect.*
 
-      digits.value match
-        case Some(string) =>
-          TypeRepr.of[left].asMatchable match
-            case ConstantType(DoubleConstant(lowerBound)) =>
-              TypeRepr.of[right].asMatchable match
-                case ConstantType(DoubleConstant(upperBound)) =>
-                  val value = string.toDouble
+    digits.value match
+      case Some(string) =>
+        TypeRepr.of[left].asMatchable match
+          case ConstantType(DoubleConstant(lowerBound)) =>
+            TypeRepr.of[right].asMatchable match
+              case ConstantType(DoubleConstant(upperBound)) =>
+                val value = string.toDouble
 
-                  if value < lowerBound
-                  then halt(m"""the value $string is less than the lower bound for this value,
-                      ${lowerBound.toString}""")
+                if value < lowerBound
+                then halt(m"""the value $string is less than the lower bound for this value,
+                    ${lowerBound.toString}""")
 
-                  if value > upperBound
-                  then halt(m"""the value $string is greater than the upper bound for this value,
-                      ${upperBound.toString}""")
+                if value > upperBound
+                then halt(m"""the value $string is greater than the upper bound for this value,
+                    ${upperBound.toString}""")
 
-                  '{${Expr(value)}.asInstanceOf[left ~ right]}
+                '{${Expr(value)}.asInstanceOf[left ~ right]}
 
-                case _ =>
-                  halt(m"the upper bound must be a Double singleton literal types")
-            case _ =>
-              halt(m"the lower bound must be a Double singleton literal types")
-        case None =>
-          '{NumericRange($digits.toDouble)}
+              case _ =>
+                halt(m"the upper bound must be a Double singleton literal types")
+          case _ =>
+            halt(m"the lower bound must be a Double singleton literal types")
+      case None =>
+        '{NumericRange($digits.toDouble)}

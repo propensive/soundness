@@ -72,90 +72,90 @@ package executives:
       ( using interpreter: Interpreter )
     :   Cli =
 
-        arguments match
-          case
-            t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position0) :: tty
-            :: t"--"
-            :: command
-            :: rest =>
+      arguments match
+        case
+          t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position0) :: tty
+          :: t"--"
+          :: command
+          :: rest =>
 
-              val shell = shellName match
-                case t"zsh"  => Shell.Zsh
-                case t"fish" => Shell.Fish
-                case _       => Shell.Bash
+            val shell = shellName match
+              case t"zsh"  => Shell.Zsh
+              case t"fish" => Shell.Fish
+              case _       => Shell.Bash
 
-              val focus1 =
-                if shell == Shell.Bash && rest.lastOption == Some(t"=") then focus0 + 1 else focus0
+            val focus1 =
+              if shell == Shell.Bash && rest.lastOption == Some(t"=") then focus0 + 1 else focus0
 
 
-              def read(todo: List[Text], flag: Boolean, done: List[Text]): List[Text] = todo match
-                case Nil                                 => done.reverse
-                case t"=" :: tail if shell == Shell.Bash => read(tail, false, done)
+            def read(todo: List[Text], flag: Boolean, done: List[Text]): List[Text] = todo match
+              case Nil                                 => done.reverse
+              case t"=" :: tail if shell == Shell.Bash => read(tail, false, done)
 
-                case head :: tail =>
-                  read(tail, head.starts(t"--"), head :: done)
+              case head :: tail =>
+                read(tail, head.starts(t"--"), head :: done)
 
-              val rest2 = read(rest.to(List), false, Nil)
-              val focus = focus1 - (if shell == Shell.Zsh then 2 else 1)
-              val position = if shell == Shell.Bash then Unset else position0
-              val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position0))
-              val equalses = rest.take(focus0).count(_ == t"=")
-              val focus2 = focus - (if shell == Shell.Bash then equalses else 0)
+            val rest2 = read(rest.to(List), false, Nil)
+            val focus = focus1 - (if shell == Shell.Zsh then 2 else 1)
+            val position = if shell == Shell.Bash then Unset else position0
+            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position0))
+            val equalses = rest.take(focus0).count(_ == t"=")
+            val focus2 = focus - (if shell == Shell.Bash then equalses else 0)
 
-              Completion
-                ( Cli.arguments(arguments, focus2, position, tab),
-                  Cli.arguments(rest2, focus2, position, tab),
-                  environment,
-                  workingDirectory,
-                  shell,
-                  focus2,
-                  position,
-                  stdio,
-                  signals,
-                  tty,
-                  tab,
-                  login )
-
-          case t"{admin}" :: command :: Nil =>
-            given Stdio = stdio
-            command match
-              case t"pid"     => Out.println(OsProcess().pid.value.show) yet Exit.Ok
-              case t"kill"    => java.lang.System.exit(0) yet Exit.Ok
-
-              case t"await"   =>
-                Cli.prepare()
-                safely(Cli.await()).or(Nil).map(Out.println(_))
-                Exit.Ok
-
-              case t"install" =>
-                given Entrypoint = entrypoint
-                given WorkingDirectory = workingDirectory
-                import errorDiagnostics.stackTraces
-                import logging.silent
-                Out.println(Completions.ensure(force = true).join(t"\n"))
-                Exit.Ok
-
-              case _       =>
-                Exit.Fail(1)
-
-            Invocation
-              ( Cli.arguments(arguments),
+            Completion
+              ( Cli.arguments(arguments, focus2, position, tab),
+                Cli.arguments(rest2, focus2, position, tab),
                 environment,
                 workingDirectory,
+                shell,
+                focus2,
+                position,
                 stdio,
                 signals,
-                false,
+                tty,
+                tab,
                 login )
 
-          case other =>
-            Invocation
-              ( Cli.arguments(arguments),
-                environment,
-                workingDirectory,
-                stdio,
-                signals,
-                true,
-                login )
+        case t"{admin}" :: command :: Nil =>
+          given Stdio = stdio
+          command match
+            case t"pid"     => Out.println(OsProcess().pid.value.show) yet Exit.Ok
+            case t"kill"    => java.lang.System.exit(0) yet Exit.Ok
+
+            case t"await"   =>
+              Cli.prepare()
+              safely(Cli.await()).or(Nil).map(Out.println(_))
+              Exit.Ok
+
+            case t"install" =>
+              given Entrypoint = entrypoint
+              given WorkingDirectory = workingDirectory
+              import errorDiagnostics.stackTraces
+              import logging.silent
+              Out.println(Completions.ensure(force = true).join(t"\n"))
+              Exit.Ok
+
+            case _       =>
+              Exit.Fail(1)
+
+          Invocation
+            ( Cli.arguments(arguments),
+              environment,
+              workingDirectory,
+              stdio,
+              signals,
+              false,
+              login )
+
+        case other =>
+          Invocation
+            ( Cli.arguments(arguments),
+              environment,
+              workingDirectory,
+              stdio,
+              signals,
+              true,
+              login )
 
 
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match

@@ -67,7 +67,7 @@ object Aviation:
     def apply(year: Year)(using RomanCalendar)(using rounding: Anniversary.NonexistentLeapDay)
     :   Date =
 
-        safely(Date(year, month, day)).or(rounding.round(year))
+      safely(Date(year, month, day)).or(rounding.round(year))
 
 
   object WorkingDays:
@@ -84,12 +84,12 @@ object Aviation:
     given showable: (endianness: Endianness, months: Months, separation: DateSeparation)
     =>  Anniversary is Showable =
 
-        anniversary =>
-          val month: Text = months.name(anniversary.month)
+      anniversary =>
+        val month: Text = months.name(anniversary.month)
 
-          endianness.match
-            case Endianness.LittleEndian => t"${anniversary.day}${separation.separator}$month"
-            case _                       => t"$month${separation.separator}${anniversary.day}"
+        endianness.match
+          case Endianness.LittleEndian => t"${anniversary.day}${separation.separator}$month"
+          case _                       => t"$month${separation.separator}${anniversary.day}"
 
   extension (year: Year)
     @targetName("yearValue")
@@ -117,7 +117,7 @@ object Aviation:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          if left == right then !strict else (left < right)^greaterThan
+        if left == right then !strict else (left < right)^greaterThan
 
 
   object Day:
@@ -163,7 +163,7 @@ object Aviation:
       ( year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal )
     :   Date raises TimeError =
 
-        calendar.jdn(year, month, day)
+      calendar.jdn(year, month, day)
 
     trait Format(val name: Text):
       type Issue: Communicable
@@ -234,7 +234,7 @@ object Aviation:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          if left == right then !strict else (left < right)^greaterThan
+        if left == right then !strict else (left < right)^greaterThan
 
 
     given ordering: Ordering[Date] = Ordering.Int

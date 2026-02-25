@@ -99,16 +99,16 @@ object Xml extends Tag.Container
     transparent inline def extrapolate[parts <: Tuple](scrutinee: Xml)
     :   Boolean | Option[Tuple | Xml] =
 
-        ${Xylophone.extractor[parts]('scrutinee)}
+      ${Xylophone.extractor[parts]('scrutinee)}
 
 
   given aggregable: [content <: Label: Reifiable to List[String]] => (schema: XmlSchema)
   =>  Tactic[ParseError]
   =>  (Xml of content) is Aggregable by Text =
 
-      input =>
-        val root = Tag.root(content.reification().map(_.tt).to(Set))
-        parse(input.iterator, root).of[content]
+    input =>
+      val root = Tag.root(content.reification().map(_.tt).to(Set))
+      parse(input.iterator, root).of[content]
 
   given aggregable2: (schema: XmlSchema) => Tactic[ParseError] => Xml is Aggregable by Text =
     input => parse(input.iterator, schema.generic, headers = false)
@@ -126,103 +126,103 @@ object Xml extends Tag.Container
 
   def emit(document: Document[Xml], flat: Boolean = false)(using Monitor, Codicil): Iterator[Text] =
 
-      val emitter = Emitter[Text](4096)
-      async:
-        def recur(node: Xml, indent: Int): Unit =
-          node match
-            case Fragment(nodes*) => nodes.each(recur(_, indent))
+    val emitter = Emitter[Text](4096)
+    async:
+      def recur(node: Xml, indent: Int): Unit =
+        node match
+          case Fragment(nodes*) => nodes.each(recur(_, indent))
 
-            case Comment(comment) =>
-              emitter.put("<!--")
-              emitter.put(comment)
-              emitter.put("-->")
+          case Comment(comment) =>
+            emitter.put("<!--")
+            emitter.put(comment)
+            emitter.put("-->")
 
-            case Cdata(text) =>
-              emitter.put("<![CDATA[")
-              emitter.put(text)
-              emitter.put("]]>")
+          case Cdata(text) =>
+            emitter.put("<![CDATA[")
+            emitter.put(text)
+            emitter.put("]]>")
 
-            case ProcessingInstruction(target, data) =>
-              emitter.put("<?")
-              emitter.put(target)
+          case ProcessingInstruction(target, data) =>
+            emitter.put("<?")
+            emitter.put(target)
 
-              if !data.nil then
-                emitter.put(" ")
-                emitter.put(data)
+            if !data.nil then
+              emitter.put(" ")
+              emitter.put(data)
 
-              emitter.put("?>")
+            emitter.put("?>")
 
-            case Header(version, encoding, standalone) =>
-              emitter.put("""<?xml version="""")
-              emitter.put(version)
+          case Header(version, encoding, standalone) =>
+            emitter.put("""<?xml version="""")
+            emitter.put(version)
+            emitter.put("\"")
+
+            encoding.let: encoding =>
+              emitter.put(""" encoding="""")
+              emitter.put(encoding)
               emitter.put("\"")
 
-              encoding.let: encoding =>
-                emitter.put(""" encoding="""")
-                emitter.put(encoding)
+            standalone.let: standalone =>
+              emitter.put(if standalone then """ standalone="yes"""" else """ standalone="no"""")
+
+            emitter.put("?>")
+
+          case TextNode(text) =>
+            var position: Int = 0
+            while position < text.length do
+              val amp = text.s.indexOf('&', position)
+              val lt = text.s.indexOf('<', position)
+              val next = if amp < 0 then lt else if lt < 0 then amp else amp.min(lt)
+
+              if next >= 0 then
+                emitter.put(text, position.z, next - position)
+                if next == lt then emitter.put("&lt;")
+                if next == amp then emitter.put("&amp;")
+                position = next + 1
+              else
+                emitter.put(text, position.z, text.length - position)
+                position = text.length
+
+          case Element(label, attributes, nodes) =>
+            emitter.put("<")
+            emitter.put(label)
+
+            if !attributes.nil then
+              attributes.each: (key, value) =>
+                emitter.put(" ")
+                emitter.put(key)
+                emitter.put("=\"")
+                var position: Int = 0
+
+                while position < value.length do
+                  val amp = value.s.indexOf('&', position)
+                  val quot = value.s.indexOf(Sqt, position)
+                  val next = if amp < 0 then quot else if quot < 0 then amp else amp.min(quot)
+
+                  if next >= 0 then
+                    emitter.put(value, position.z, next - position)
+                    if next == quot then emitter.put("&quot;")
+                    if next == amp then emitter.put("&amp;")
+                    position = next + 1
+                  else
+                    emitter.put(value, position.z, value.length - position)
+                    position = value.length
+
                 emitter.put("\"")
 
-              standalone.let: standalone =>
-                emitter.put(if standalone then """ standalone="yes"""" else """ standalone="no"""")
+            emitter.put(">")
 
-              emitter.put("?>")
+            nodes.each(recur(_, indent + 1))
 
-            case TextNode(text) =>
-              var position: Int = 0
-              while position < text.length do
-                val amp = text.s.indexOf('&', position)
-                val lt = text.s.indexOf('<', position)
-                val next = if amp < 0 then lt else if lt < 0 then amp else amp.min(lt)
+            emitter.put("</")
+            emitter.put(label)
+            emitter.put(">")
 
-                if next >= 0 then
-                  emitter.put(text, position.z, next - position)
-                  if next == lt then emitter.put("&lt;")
-                  if next == amp then emitter.put("&amp;")
-                  position = next + 1
-                else
-                  emitter.put(text, position.z, text.length - position)
-                  position = text.length
+      recur(document.metadata, 0)
+      recur(document.root, 0)
+      emitter.finish()
 
-            case Element(label, attributes, nodes) =>
-              emitter.put("<")
-              emitter.put(label)
-
-              if !attributes.nil then
-                attributes.each: (key, value) =>
-                  emitter.put(" ")
-                  emitter.put(key)
-                  emitter.put("=\"")
-                  var position: Int = 0
-
-                  while position < value.length do
-                    val amp = value.s.indexOf('&', position)
-                    val quot = value.s.indexOf(Sqt, position)
-                    val next = if amp < 0 then quot else if quot < 0 then amp else amp.min(quot)
-
-                    if next >= 0 then
-                      emitter.put(value, position.z, next - position)
-                      if next == quot then emitter.put("&quot;")
-                      if next == amp then emitter.put("&amp;")
-                      position = next + 1
-                    else
-                      emitter.put(value, position.z, value.length - position)
-                      position = value.length
-
-                  emitter.put("\"")
-
-              emitter.put(">")
-
-              nodes.each(recur(_, indent + 1))
-
-              emitter.put("</")
-              emitter.put(label)
-              emitter.put(">")
-
-        recur(document.metadata, 0)
-        recur(document.root, 0)
-        emitter.finish()
-
-      emitter.iterator
+    emitter.iterator
 
 
   given showable: [xml <: Xml] => xml is Showable =
@@ -278,7 +278,7 @@ object Xml extends Tag.Container
   given conversion3: [label <: Label, content >: label <: Label]
   =>  Conversion[Xml of label, Xml of content] =
 
-      _.of[content]
+    _.of[content]
 
 
   given comment: [content <: Label] =>  Conversion[Comment, Xml of content] =
@@ -290,8 +290,8 @@ object Xml extends Tag.Container
   given sequences: [nodal, xml <: Xml] => (conversion: Conversion[nodal, xml])
   =>  Conversion[Seq[nodal], Seq[xml]] =
 
-      (sequence: Seq[nodal]) =>
-        sequence.map(conversion(_))
+    (sequence: Seq[nodal]) =>
+      sequence.map(conversion(_))
 
   enum Issue extends Format.Issue:
     case BadInsertion
@@ -438,23 +438,23 @@ object Xml extends Tag.Container
     @tailrec
     def key(mark: Mark, dictionary: Optional[Dictionary[XmlAttribute]])(using Cursor.Held)
     :   XmlAttribute =
-        cursor.lay(fail(ExpectedMore)):
-          case chr if chr.isLetter || chr == '-' => dictionary.let(_(chr.minuscule)) match
-            case Unset            => next() yet key(mark, Unset)
-            case Dictionary.Empty => fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
-            case dictionary       => next() yet key(mark, dictionary)
+      cursor.lay(fail(ExpectedMore)):
+        case chr if chr.isLetter || chr == '-' => dictionary.let(_(chr.minuscule)) match
+          case Unset            => next() yet key(mark, Unset)
+          case Dictionary.Empty => fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
+          case dictionary       => next() yet key(mark, dictionary)
 
-          case ' ' | Ff | Lf | Cr | Ht | '=' | '>' =>
-            dictionary.let: dictionary =>
-              dictionary.element.or:
-                val name = cursor.grab(mark, cursor.mark)
-                cursor.cue(mark)
-                fail(UnknownAttribute(name))
-            . or:
-                XmlAttribute(cursor.grab(mark, cursor.mark), Set(), true)
+        case ' ' | Ff | Lf | Cr | Ht | '=' | '>' =>
+          dictionary.let: dictionary =>
+            dictionary.element.or:
+              val name = cursor.grab(mark, cursor.mark)
+              cursor.cue(mark)
+              fail(UnknownAttribute(name))
+          . or:
+              XmlAttribute(cursor.grab(mark, cursor.mark), Set(), true)
 
-          case chr =>
-            fail(Unexpected(chr))
+        case chr =>
+          fail(Unexpected(chr))
 
     @tailrec
     def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
@@ -499,41 +499,41 @@ object Xml extends Tag.Container
     def attributes(tag: Text, entries: Map[Text, Text] = ListMap())(using Cursor.Held)
     :   Map[Text, Text] =
 
-        skip() yet cursor.lay(fail(ExpectedMore)):
-          case '>' | '/' => entries
+      skip() yet cursor.lay(fail(ExpectedMore)):
+        case '>' | '/' => entries
 
-          case Nul =>
-            callback.let(_(cursor.position, Hole.Tagbody))
-            next()
-            skip()
-            attributes(tag, entries.updated(t"\u0000", t""))
+        case Nul =>
+          callback.let(_(cursor.position, Hole.Tagbody))
+          next()
+          skip()
+          attributes(tag, entries.updated(t"\u0000", t""))
 
-          case _ =>
-            val key2 =
-              key(cursor.mark, schema.attributes.unless(schema.freeform)).tap: key =>
-                if !schema.freeform && !key.targets(tag)
-                then fail(InvalidAttributeUse(key.label, tag))
-              . label
+        case _ =>
+          val key2 =
+            key(cursor.mark, schema.attributes.unless(schema.freeform)).tap: key =>
+              if !schema.freeform && !key.targets(tag)
+              then fail(InvalidAttributeUse(key.label, tag))
+            . label
 
-            if entries.has(key2) then fail(DuplicateAttribute(key2))
+          if entries.has(key2) then fail(DuplicateAttribute(key2))
 
-            equality()
+          equality()
 
-            val assignment: Text = cursor.lay(fail(ExpectedMore)):
-              case Nul =>
-                callback.let(_(cursor.position, Hole.Attribute(tag, key2)))
-                next() yet t"\u0000"
+          val assignment: Text = cursor.lay(fail(ExpectedMore)):
+            case Nul =>
+              callback.let(_(cursor.position, Hole.Attribute(tag, key2)))
+              next() yet t"\u0000"
 
-              case Dqt =>
-                next() yet value(cursor.mark)
+            case Dqt =>
+              next() yet value(cursor.mark)
 
-              case Sqt =>
-                next() yet singleQuoted(cursor.mark)
+            case Sqt =>
+              next() yet singleQuoted(cursor.mark)
 
-              case _ =>
-                fail(UnquotedAttribute)
+            case _ =>
+              fail(UnquotedAttribute)
 
-            attributes(tag, entries.updated(key2, assignment))
+          attributes(tag, entries.updated(key2, assignment))
 
 
     def entity(mark: Mark)(using Cursor.Held): Optional[Text] = cursor.lay(fail(ExpectedMore)):
@@ -904,17 +904,17 @@ extends Node, Topical, Transportive:
   def selectDynamic(name: Label)(using attribute: name.type is Xml.XmlAttribute on Topic in Form)
   :   Optional[Text] =
 
-      attributes.at(name.tt)
+    attributes.at(name.tt)
 
 
   def updateDynamic(name: Label)(using attribute: name.type is Xml.XmlAttribute in Form)
     ( value: Text )
   :   Element of Topic over Transport in Form =
 
-      Element(label, attributes.updated(name, value), children)
-      . of[Topic]
-      . over[Transport]
-      . in[Form]
+    Element(label, attributes.updated(name, value), children)
+    . of[Topic]
+    . over[Transport]
+    . in[Form]
 
 object Fragment:
   @targetName("make")

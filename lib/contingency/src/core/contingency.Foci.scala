@@ -48,7 +48,7 @@ object Foci:
     def fold[accrual](initial: accrual)(lambda: (Optional[focus], accrual) => Exception ~> accrual)
     :   accrual =
 
-        initial
+      initial
 
     def supplement(count: Int, transform: Optional[focus] => focus): Unit = ()
 
@@ -78,7 +78,7 @@ class TrackFoci[focus]() extends Foci[focus]:
   def fold[accrual](initial: accrual)(lambda: (Optional[focus], accrual) => Exception ~> accrual)
   :   accrual =
 
-      (0 until errors.length).fuse(initial)(lambda(focuses(next), state)(errors(next)))
+    (0 until errors.length).fuse(initial)(lambda(focuses(next), state)(errors(next)))
 
 
   def supplement(count: Int, transform: Optional[focus] => focus): Unit =

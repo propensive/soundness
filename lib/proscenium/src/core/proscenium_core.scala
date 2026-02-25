@@ -81,4 +81,4 @@ transparent inline def provide[context](using erased Void)[result]
   ( inline lambda: context ?=> result )
 :   result =
 
-    lambda(using infer[context])
+  lambda(using infer[context])

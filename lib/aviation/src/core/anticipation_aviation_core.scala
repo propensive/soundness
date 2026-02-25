@@ -49,14 +49,14 @@ package interfaces.instants:
 package interfaces.durations:
   given aviationDuration: [units <: Measure: Normalizable to Seconds[1]]
   =>  Quantity[units] is Abstractable & Instantiable across Durations to Long from Long =
-      new Abstractable with Instantiable:
-        type Origin = Long
-        type Result = Long
-        type Domain = Durations
-        type Self = Quantity[units]
+    new Abstractable with Instantiable:
+      type Origin = Long
+      type Result = Long
+      type Domain = Durations
+      type Self = Quantity[units]
 
-        def apply(nanoseconds: Long): Quantity[units] =
-          Quantity((nanoseconds.toDouble/1_000_000_000.0)*units.ratio())
+      def apply(nanoseconds: Long): Quantity[units] =
+        Quantity((nanoseconds.toDouble/1_000_000_000.0)*units.ratio())
 
-        def genericize(duration: Quantity[units]): Long =
-          (duration.normalize.value*1_000_000_000.0).toLong
+      def genericize(duration: Quantity[units]): Long =
+        (duration.normalize.value*1_000_000_000.0).toLong

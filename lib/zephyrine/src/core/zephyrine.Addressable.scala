@@ -59,7 +59,7 @@ object Addressable:
     inline def clone(source: Data, start: Ordinal, end: Ordinal)(target: ji.ByteArrayOutputStream)
     :   Unit =
 
-        target.write(source.mutable(using Unsafe), start.n0, end.n0 - start.n0 + 1)
+      target.write(source.mutable(using Unsafe), start.n0, end.n0 - start.n0 + 1)
 
 
   inline given text: Text is Addressable:
@@ -80,7 +80,7 @@ object Addressable:
     inline def clone(source: Text, start: Ordinal, end: Ordinal)(target: java.lang.StringBuilder)
     :   Unit =
 
-        target.append(source.s, start.n0, end.n1)
+      target.append(source.s, start.n0, end.n1)
 
 
 trait Addressable extends Typeclass, Operable, Targetable:

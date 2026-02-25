@@ -301,8 +301,8 @@ object Http:
                 decoder:   directive.Topic is Decodable in Text )
       :   List[directive.Topic] =
 
-          val name2 = name.tt.uncamel.kebab.lower
-          textHeaders.filter(_.key.lower == name2).map(_.value.decode)
+        val name2 = name.tt.uncamel.kebab.lower
+        textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
     lazy val contentType: Optional[MediaType] = safely(headers.contentType.prim)
 
@@ -315,7 +315,7 @@ object Http:
     transparent inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
     :   Prototype | Response =
 
-        ${Telekinesis.response('headers)}
+      ${Telekinesis.response('headers)}
 
     given conversion: [servable: Servable] => Conversion[servable, Response] = servable.serve(_)
 
@@ -429,8 +429,8 @@ object Http:
 
     def updateDynamic[label <: Label: Directive of topic, topic](name: label)(value: topic)
     :   Response =
-        val key2 = name.tt.uncamel.kebab.lower
-        copy(textHeaders = Header(key2, label.encode(value)) :: textHeaders.filter(_.key != key2))
+      val key2 = name.tt.uncamel.kebab.lower
+      copy(textHeaders = Header(key2, label.encode(value)) :: textHeaders.filter(_.key != key2))
 
 
     def successBody: Optional[Stream[Data]] =
@@ -445,8 +445,8 @@ object Http:
                 decoder:   directive.Topic is Decodable in Text )
       :   List[directive.Topic] =
 
-          val name2 = name.tt.uncamel.kebab.lower
-          textHeaders.filter(_.key.lower == name2).map(_.value.decode)
+        val name2 = name.tt.uncamel.kebab.lower
+        textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
 
     @targetName("add")
@@ -466,10 +466,10 @@ object Http:
               client:   HttpClient onto target )
     :   Http.Response =
 
-        $ {
-            ( Telekinesis.submit[target, payload]
-              ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) )
-          }
+      $ {
+          ( Telekinesis.submit[target, payload]
+            ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) )
+        }
 
 
     inline def applyDynamic[payload: Postable as postable](id: "apply")(inline headers: Any*)
@@ -479,10 +479,10 @@ object Http:
               client:   HttpClient onto target )
     :   Http.Response =
 
-        $ {
-            ( Telekinesis.submit[target, payload]
-                ( 'this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) )
-          }
+      $ {
+          ( Telekinesis.submit[target, payload]
+              ( 'this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) )
+        }
 
 
   case class Fetch[target](originForm: Text, target: target, host: Hostname)
@@ -496,7 +496,7 @@ object Http:
               client:   HttpClient onto target )
     :   Http.Response =
 
-        ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
+      ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
 
 
     inline def applyDynamic[payload](id: "apply")(inline headers: Any*)
@@ -505,4 +505,4 @@ object Http:
               client:   HttpClient onto target )
     :   Http.Response =
 
-        ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
+      ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}

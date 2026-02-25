@@ -41,7 +41,7 @@ import scala.quoted.*
 transparent inline def introspect[value](inline inlining: Boolean = false)(inline value: value)
 :   Text =
 
-    ${Hyperbole.introspection[value]('value, 'inlining)}
+  ${Hyperbole.introspection[value]('value, 'inlining)}
 
 
 extension [value](expr: Expr[value])(using Quotes)

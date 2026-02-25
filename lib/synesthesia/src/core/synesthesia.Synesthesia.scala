@@ -191,72 +191,72 @@ object Synesthesia:
     // by including `target` as a lambda variable, causes the compiler to emit bad bytecode.
     val promptInvocation
     :   Expr[interface ~> ((Text, Map[Text, Text], McpClient) => List[Discourse])] =
-        ' {
-            {
-              case target: `interface` =>
-                (method: Text, input: Map[Text, Text], client: McpClient) =>
-                  given Tactic[JsonError] = $jsonErrors
+      ' {
+          {
+            case target: `interface` =>
+              (method: Text, input: Map[Text, Text], client: McpClient) =>
+                given Tactic[JsonError] = $jsonErrors
 
-                  $ {
-                      val cases = promptMethods.map: method =>
-                        val result: TypeRepr = method.info.absolve match
-                          case MethodType(_, _, MethodType(_, _, result)) => result
-                          case MethodType(_, _, result)                   => result
-                          case result                                     => result
+                $ {
+                    val cases = promptMethods.map: method =>
+                      val result: TypeRepr = method.info.absolve match
+                        case MethodType(_, _, MethodType(_, _, result)) => result
+                        case MethodType(_, _, result)                   => result
+                        case result                                     => result
 
-                        val params = method.paramSymss.headOption.map: paramList =>
-                          paramList.map: param =>
-                            param.info.asType.absolve match
-                              case '[param] => Expr.summon[param is Decodable in Text] match
-                                case Some(decodable) =>
-                                  ' {
-                                      given param is Decodable in Text = $decodable
-                                      val key = ${Expr(param.name)}.tt
-                                      if input.has(key) then input(key).decode[param]
-                                      else provide[Tactic[McpError]](abort(McpError()))
-                                    }
-                                  . asTerm
+                      val params = method.paramSymss.headOption.map: paramList =>
+                        paramList.map: param =>
+                          param.info.asType.absolve match
+                            case '[param] => Expr.summon[param is Decodable in Text] match
+                              case Some(decodable) =>
+                                ' {
+                                    given param is Decodable in Text = $decodable
+                                    val key = ${Expr(param.name)}.tt
+                                    if input.has(key) then input(key).decode[param]
+                                    else provide[Tactic[McpError]](abort(McpError()))
+                                  }
+                                . asTerm
 
-                                case None => halt:
-                                  m"""
-                                    could not find a contextual `${TypeRepr.of[param].show} is
-                                    Decodable in Text` instance for the parameter ${param.name} of
-                                    ${method.name}
-                                  """
+                              case None => halt:
+                                m"""
+                                  could not find a contextual `${TypeRepr.of[param].show} is
+                                  Decodable in Text` instance for the parameter ${param.name} of
+                                  ${method.name}
+                                """
 
-                        val application = method.paramSymss.length match
-                          case 0 => Select('target.asTerm, method)
-                          case 1 => Apply(Select('target.asTerm, method), params.get)
+                      val application = method.paramSymss.length match
+                        case 0 => Select('target.asTerm, method)
+                        case 1 => Apply(Select('target.asTerm, method), params.get)
 
-                          case 2 =>
-                            Apply
-                              ( Apply(Select('target.asTerm, method), params.get),
-                                List('client.asTerm) )
+                        case 2 =>
+                          Apply
+                            ( Apply(Select('target.asTerm, method), params.get),
+                              List('client.asTerm) )
 
-                          case _ => halt:
-                            m"""
-                              MCP prompt definitions should have exactly one explicit parameter
-                              block
-                            """
+                        case _ => halt:
+                          m"""
+                            MCP prompt definitions should have exactly one explicit parameter
+                            block
+                          """
 
-                        result.asType.absolve match
-                          case '[List[Discourse]] =>
-                          case '[result] => halt:
-                            m"""
-                              the MCP prompt method returns ${TypeRepr.of[result].show}, but it must
-                              return `List[Discourse]`
-                            """
+                      result.asType.absolve match
+                        case '[List[Discourse]] =>
+                        case '[result] => halt:
+                          m"""
+                            the MCP prompt method returns ${TypeRepr.of[result].show}, but it must
+                            return `List[Discourse]`
+                          """
 
-                        CaseDef(Literal(StringConstant(method.name)), None, application)
+                      CaseDef(Literal(StringConstant(method.name)), None, application)
 
-                      val wildcard =
-                        val rhs = '{provide[Tactic[McpError]](abort(McpError()))}
-                        CaseDef(Wildcard(), None, rhs.asTerm)
+                    val wildcard =
+                      val rhs = '{provide[Tactic[McpError]](abort(McpError()))}
+                      CaseDef(Wildcard(), None, rhs.asTerm)
 
-                      Match('method.asTerm, cases :+ wildcard).asExprOf[List[Discourse]]
-                    }
-              }
+                    Match('method.asTerm, cases :+ wildcard).asExprOf[List[Discourse]]
+                  }
             }
+          }
 
     val resourceInvocation: Expr[interface ~> (Text => Mcp.Contents)] =
       ' {
@@ -498,7 +498,7 @@ object Synesthesia:
             ( server: interface, client: McpClient, method: Text, input: Map[Text, Text] )
           :   List[Discourse] =
 
-              $promptInvocation(server)(method, input, client)
+            $promptInvocation(server)(method, input, client)
 
           def invokeResource(server: interface, method: Text): Mcp.Contents =
             $resourceInvocation(server)(method)

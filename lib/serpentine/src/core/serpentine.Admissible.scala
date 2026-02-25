@@ -57,7 +57,7 @@ object Admissible:
   inline given admissible: [string <: Label, filesystem] => (nominative: filesystem is Nominative)
   =>  string is Admissible on filesystem =
 
-      Admissible[string, filesystem]({ void => Name.verify[string, filesystem] })
+    Admissible[string, filesystem]({ void => Name.verify[string, filesystem] })
 
 
   given uuid: [uuid <: Uuid, filesystem <: Posix | Windows] => uuid is Admissible on filesystem =

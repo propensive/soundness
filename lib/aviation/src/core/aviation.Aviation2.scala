@@ -70,12 +70,12 @@ object Aviation2:
     given duration: [units <: Measure: Normalizable to Seconds[1]]
     =>  Quantity[units] is InstantSubtractable to Instant =
 
-        new InstantSubtractable:
-          type Self = Quantity[units]
-          type Result = Instant
+      new InstantSubtractable:
+        type Self = Quantity[units]
+        type Result = Instant
 
-          def subtract(left: Instant, right: Quantity[units]): Instant =
-            left - (right.normalize.value*1000.0).toLong
+        def subtract(left: Instant, right: Quantity[units]): Instant =
+          left - (right.normalize.value*1000.0).toLong
 
 
   trait InstantSubtractable extends Typeclass, Resultant:
@@ -109,24 +109,24 @@ object Aviation2:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          if left.long == right.long then !strict else (left.long < right.long)^greaterThan
+        if left.long == right.long then !strict else (left.long < right.long)^greaterThan
 
     given ordering: Ordering[Instant] = Ordering.Long
 
     given plus: [units <: Measure: Normalizable to Seconds[1]]
     =>  Instant is Addable by Quantity[units] to Instant = new Addable:
 
-        type Self = Instant
-        type Operand = Quantity[units]
-        type Result = Instant
+      type Self = Instant
+      type Operand = Quantity[units]
+      type Result = Instant
 
-        def add(instant: Instant, duration: Quantity[units]): Instant =
-          instant + (duration.normalize.value*1000.0).toLong
+      def add(instant: Instant, duration: Quantity[units]): Instant =
+        instant + (duration.normalize.value*1000.0).toLong
 
     given minus: [operand: InstantSubtractable]
     =>  Instant is Subtractable by operand to operand.Result =
 
-        operand.subtract(_, _)
+      operand.subtract(_, _)
 
   type Duration = Quantity[Seconds[1]]
 
@@ -136,17 +136,17 @@ object Aviation2:
     given generic: [units <: Measure: Normalizable to Seconds[1]]
     =>  Quantity[units] is Abstractable & Instantiable across Durations from Long to Long =
 
-        new Abstractable with Instantiable:
-          type Self = Quantity[units]
-          type Origin = Long
-          type Result = Long
-          type Domain = Durations
+      new Abstractable with Instantiable:
+        type Self = Quantity[units]
+        type Origin = Long
+        type Result = Long
+        type Domain = Durations
 
-          def apply(nanoseconds: Long): Quantity[units] =
-            Quantity(nanoseconds.toDouble/1_000_000_000.0/units.ratio())
+        def apply(nanoseconds: Long): Quantity[units] =
+          Quantity(nanoseconds.toDouble/1_000_000_000.0/units.ratio())
 
-          def genericize(duration: Quantity[units]): Long =
-            (duration.normalize.value*1_000_000_000L).toLong
+        def genericize(duration: Quantity[units]): Long =
+          (duration.normalize.value*1_000_000_000L).toLong
 
 
   extension (instant: into[Instant])

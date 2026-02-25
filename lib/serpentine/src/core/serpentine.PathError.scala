@@ -44,7 +44,7 @@ object PathError:
     ( using Diagnostics )
   :   PathError =
 
-      new PathError(reason(PathError.Reason), path)
+    new PathError(reason(PathError.Reason), path)
 
 
   object Reason:

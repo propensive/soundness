@@ -67,13 +67,13 @@ object Writable:
   given decodingAdapter: [writable: Writable by Text] => (decoder: CharDecoder)
   =>  writable is Writable by Data =
 
-      (target, stream) => writable.write(target, decoder.decoded(stream))
+    (target, stream) => writable.write(target, decoder.decoded(stream))
 
 
   given encodingAdapter: [writable: Writable by Data] => (encoder: CharEncoder)
   =>  writable is Writable by Text =
 
-      (target, stream) => writable.write(target, encoder.encoded(stream))
+    (target, stream) => writable.write(target, encoder.encoded(stream))
 
 
   given channel: Tactic[StreamError]

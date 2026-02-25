@@ -75,8 +75,8 @@ extends Cli:
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   :   Optional[operand] =
 
-      given cli: Cli = this
-      interpreter.read(parameters, flag)
+    given cli: Cli = this
+    interpreter.read(parameters, flag)
 
 
   def focused(argument: Argument): Boolean =
@@ -133,7 +133,7 @@ extends Cli:
           case Nil => Nil
 
       else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases =
-          flag.aliases.map(Flag.serialize(_))))
+        flag.aliases.map(Flag.serialize(_))))
 
   def focusText: Text = arguments.find(_.position == currentArgument).get.value
 

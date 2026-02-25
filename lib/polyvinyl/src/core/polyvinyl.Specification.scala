@@ -68,79 +68,79 @@ trait Specification extends Original:
         caseDefs: List[CaseDef] = List(CaseDef(Wildcard(), None, '{???}.asTerm)) )
     :   (TypeRepr, List[CaseDef]) =
 
-        fields match
-          case Nil =>
-            (refined, caseDefs)
+      fields match
+        case Nil =>
+          (refined, caseDefs)
 
-          case (name, Member.Value(label, params*)) :: tail =>
-            ConstantType(StringConstant(label.s)).asType.absolve match
-              case '[type label <: Label; label] =>
-                Expr.summon[label is Intensional in Form from Origin].absolve match
-                  case None =>
-                    halt:
-                      m"""
-                        could not find an Intensional instance for the field $name with type $label
-                      """
+        case (name, Member.Value(label, params*)) :: tail =>
+          ConstantType(StringConstant(label.s)).asType.absolve match
+            case '[type label <: Label; label] =>
+              Expr.summon[label is Intensional in Form from Origin].absolve match
+                case None =>
+                  halt:
+                    m"""
+                      could not find an Intensional instance for the field $name with type $label
+                    """
 
-                  case Some
-                    ( '{$accessor: label `is` Intensional `in` Form `from` Origin `to` result} ) =>
+                case Some
+                  ( '{$accessor: label `is` Intensional `in` Form `from` Origin `to` result} ) =>
 
-                    val rhs: Expr[Origin => Any] =
-                      ' {
-                          (data: Origin) =>
-                            $accessor.transform
-                              ( $target.access(${Expr(name)}, data), ${Expr(params.to(List))} )
-                        }
+                  val rhs: Expr[Origin => Any] =
+                    ' {
+                        (data: Origin) =>
+                          $accessor.transform
+                            ( $target.access(${Expr(name)}, data), ${Expr(params.to(List))} )
+                      }
 
-                    val caseDefs2 =
-                      CaseDef(Literal(StringConstant(name.s)), None, rhs.asTerm) :: caseDefs
+                  val caseDefs2 =
+                    CaseDef(Literal(StringConstant(name.s)), None, rhs.asTerm) :: caseDefs
 
-                    val refinement = Refinement(refined, name.s, TypeRepr.of[result])
+                  val refinement = Refinement(refined, name.s, TypeRepr.of[result])
 
-                    refine(value, tail, refinement, caseDefs2)
+                  refine(value, tail, refinement, caseDefs2)
 
-          case (name, Member.Record(label, map)) :: tail =>
-            ConstantType(StringConstant(label.s)).asType.absolve match
-              case '[type label <: Label; label] =>
-                Expr.summon[label is Structural[?] in Form from Origin].absolve match
-                  case None =>
-                    halt:
-                      m"""
-                        could not find a Structural instance for the field $name with type $label
-                      """
+        case (name, Member.Record(label, map)) :: tail =>
+          ConstantType(StringConstant(label.s)).asType.absolve match
+            case '[type label <: Label; label] =>
+              Expr.summon[label is Structural[?] in Form from Origin].absolve match
+                case None =>
+                  halt:
+                    m"""
+                      could not find a Structural instance for the field $name with type $label
+                    """
 
-                  case Some
-                    ( ' {
-                          type constructor[_]
-                          $structural: (label `is` Structural[constructor] `in` Form `from` Origin)
-                        } ) =>
+                case Some
+                  ( ' {
+                        type constructor[_]
+                        $structural: (label `is` Structural[constructor] `in` Form `from` Origin)
+                      } ) =>
 
-                    val nested = '{$target.access(${Expr(name)}, $value)}
-                    val recordTypeRepr = TypeRepr.of[Record]
-                    val (nestedType, nestedCaseDefs) = refine(nested, map.to(List), recordTypeRepr)
+                  val nested = '{$target.access(${Expr(name)}, $value)}
+                  val recordTypeRepr = TypeRepr.of[Record]
+                  val (nestedType, nestedCaseDefs) = refine(nested, map.to(List), recordTypeRepr)
 
-                    val matchFn: Expr[Text => Origin => Any] =
-                      ' {
-                          (name: Text) =>
-                            ${Match('name.asTerm, nestedCaseDefs).asExprOf[Origin => Any]}
-                        }
+                  val matchFn: Expr[Text => Origin => Any] =
+                    ' {
+                        (name: Text) =>
+                          ${Match('name.asTerm, nestedCaseDefs).asExprOf[Origin => Any]}
+                      }
 
-                    val maker: Expr[Origin => Record] = '{field => $target.make(field, $matchFn)}
+                  val maker: Expr[Origin => Record] = '{field => $target.make(field, $matchFn)}
 
-                    val rhs: Expr[Origin => Any] =
-                      '{data => $structural.transform($target.access(${Expr(name)}, data), $maker)}
+                  val rhs: Expr[Origin => Any] =
+                    '{data => $structural.transform($target.access(${Expr(name)}, data), $maker)}
 
-                    val caseDef = CaseDef(Literal(StringConstant(name.s)), None, rhs.asTerm)
+                  val caseDef = CaseDef(Literal(StringConstant(name.s)), None, rhs.asTerm)
 
-                    nestedType.asType.absolve match
-                      case '[nestedRecordType] =>
-                        val typeRepr = TypeRepr.of[constructor[nestedRecordType]]
+                  nestedType.asType.absolve match
+                    case '[nestedRecordType] =>
+                      val typeRepr = TypeRepr.of[constructor[nestedRecordType]]
 
-                        refine
-                          ( value,
-                            tail,
-                            Refinement(refined, name.s, typeRepr),
-                            caseDef :: caseDefs )
+                      refine
+                        ( value,
+                          tail,
+                          Refinement(refined, name.s, typeRepr),
+                          caseDef :: caseDefs )
 
 
     val (refined, caseDefs) = refine(value, fields.to(List), TypeRepr.of[Record])

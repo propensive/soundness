@@ -50,13 +50,13 @@ object Process:
   =>  ji.OutputStream is Writable by chunk
   =>  Process[command, result] is Writable by chunk =
 
-      (process, stream) => process.stdin(stream)
+    (process, stream) => process.stdin(stream)
 
 
   given writableText: [command <: Label, result] => Tactic[StreamError]
   =>  Process[command, result] is Writable by Text =
 
-      (process, stream) => process.stdin(stream.map(_.sysData))
+    (process, stream) => process.stdin(stream.map(_.sysData))
 
 
 class Process[+exec <: Label, result](process: java.lang.Process) extends ProcessRef:
@@ -74,7 +74,7 @@ class Process[+exec <: Label, result](process: java.lang.Process) extends Proces
   def stdin[chunk](stream: Stream[chunk])(using writable: ji.OutputStream is Writable by chunk)
   :   Unit =
 
-      writable.write(process.getOutputStream.nn, stream)
+    writable.write(process.getOutputStream.nn, stream)
 
 
   def await()(using computable: result is Computable): result = computable.compute(process)

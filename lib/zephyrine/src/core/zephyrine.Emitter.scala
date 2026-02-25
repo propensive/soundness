@@ -52,7 +52,7 @@ object Emittable:
     inline def copy(source: Text, start: Ordinal, target: Array[Char], index: Ordinal, size: Int)
     :   Unit =
 
-        source.s.getChars(start.n0, start.n0 + size, target, index.n0)
+      source.s.getChars(start.n0, start.n0 + size, target, index.n0)
 
   inline given bytes: Emittable:
     type Self = Data
@@ -68,7 +68,7 @@ object Emittable:
     inline def copy(source: Data, start: Ordinal, target: Array[Byte], index: Ordinal, size: Int)
     :   Unit =
 
-        System.arraycopy(source.mutable(using Unsafe), start.n0, target, index.n0, index.n0 + size)
+      System.arraycopy(source.mutable(using Unsafe), start.n0, target, index.n0, index.n0 + size)
 
 
 trait Emittable:

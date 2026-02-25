@@ -50,10 +50,10 @@ object Tenacity:
   def exponential[duration: Abstractable across Durations to Long](initial: duration, base: Double)
   :   Tenacity =
 
-      new:
-        def delay(attempt: Ordinal): Optional[Long] raises RetryError =
-          if attempt == Prim then 0L
-          else (initial.generic/1_000_000L*math.pow(base, attempt.n1)).toLong
+    new:
+      def delay(attempt: Ordinal): Optional[Long] raises RetryError =
+        if attempt == Prim then 0L
+        else (initial.generic/1_000_000L*math.pow(base, attempt.n1)).toLong
 
   def fixed[generic: Abstractable across Durations to Long](duration: generic): Tenacity = new:
     def delay(attempt: Ordinal): Optional[Long] raises RetryError =

@@ -76,7 +76,7 @@ object arithmetic:
   inline given subtractable: [value <: Product: ProductReflection]
   =>  value is Subtractable by value to value =
 
-      SubtractableDerivation.derived[value]
+    SubtractableDerivation.derived[value]
 
 
   object MultiplicableDerivation
@@ -106,7 +106,7 @@ object arithmetic:
   inline given divisible: [value <: Product: ProductReflection]
   =>  value is Divisible by value to value =
 
-      DivisibleDerivation.derived[value]
+    DivisibleDerivation.derived[value]
 
 package derivationContext:
   given required: ContextRequirement.required.type = ContextRequirement.required

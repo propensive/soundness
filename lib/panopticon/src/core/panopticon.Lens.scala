@@ -39,13 +39,13 @@ import language.dynamics
 object Lens:
   def apply[self, origin, target](get: origin => target, set: (origin, target) => origin)
   :   self is Lens from origin onto target =
-      new Lens:
-        type Self = self
-        type Origin = origin
-        type Target = target
+    new Lens:
+      type Self = self
+      type Origin = origin
+      type Target = target
 
-        def apply(origin: Origin): Target = get(origin)
-        def update(origin: Origin, value: Target): Origin = set(origin, value)
+      def apply(origin: Origin): Target = get(origin)
+      def update(origin: Origin, value: Target): Origin = set(origin, value)
 
 trait Lens extends Optic:
   def apply(origin: Origin): Target

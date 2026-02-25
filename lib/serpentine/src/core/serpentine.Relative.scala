@@ -57,18 +57,18 @@ object Relative:
   def of[topic <: Tuple, limit <: Int](ascent: Int, descent: Text*)
   :   Relative of topic under limit =
 
-      new Relative(ascent, descent.to(List)):
-        type Topic = topic
-        type Limit = limit
+    new Relative(ascent, descent.to(List)):
+      type Topic = topic
+      type Limit = limit
 
 
   def apply[filesystem, topic <: Tuple, limit <: Int](ascent: Int, descent: Text*)
   :   Relative of topic on filesystem under limit =
 
-      new Relative(ascent, descent.to(List)):
-        type Plane = filesystem
-        type Topic = topic
-        type Limit = limit
+    new Relative(ascent, descent.to(List)):
+      type Plane = filesystem
+      type Topic = topic
+      type Limit = limit
 
 
   private def conversion[from, to](fn: from => to) =
@@ -91,7 +91,7 @@ object Relative:
   inline given conversion: [topic, ascent <: Int, filesystem]
   =>  Conversion[Relative of topic under ascent, Relative of topic under ascent on filesystem] =
 
-      conversion(_.on[filesystem])
+    conversion(_.on[filesystem])
 
 
   given encodable: [filesystem: Filesystem] => Relative on filesystem is Encodable in Text =

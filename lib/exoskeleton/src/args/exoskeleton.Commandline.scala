@@ -51,8 +51,8 @@ case class Commandline
     ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
   :   Optional[operand] =
 
-      cli.register(flag, discoverable)
+    cli.register(flag, discoverable)
 
-      parameters.where { (key, _) => flag.matches(key) }.let: (_, operands) =>
-        cli.present(flag)
-        safely(operand.interpret(operands))
+    parameters.where { (key, _) => flag.matches(key) }.let: (_, operands) =>
+      cli.present(flag)
+      safely(operand.interpret(operands))

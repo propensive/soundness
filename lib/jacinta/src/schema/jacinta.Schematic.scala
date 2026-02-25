@@ -72,7 +72,7 @@ object Schematic:
   given map: [key: Encodable in Text, value: Schematic in JsonSchema]
   =>  Map[key, value] is Schematic in JsonSchema =
 
-      () => JsonSchema.Object(additionalProperties = true)
+    () => JsonSchema.Object(additionalProperties = true)
 
 
 trait Schematic extends Typeclass, Formal:

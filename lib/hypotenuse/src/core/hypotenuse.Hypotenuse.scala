@@ -94,13 +94,13 @@ object Hypotenuse:
           inline greater: Boolean )
       :   Boolean =
 
-          inline if greater
-          then
-            inline if strict then (left: Double) > (right: Double)
-            else (left: Double) >= (right: Double)
-          else
-            inline if strict then (left: Double) < (right: Double)
-            else (left: Double) <= (right: Double)
+        inline if greater
+        then
+          inline if strict then (left: Double) > (right: Double)
+          else (left: Double) >= (right: Double)
+        else
+          inline if strict then (left: Double) < (right: Double)
+          else (left: Double) <= (right: Double)
 
 
     inline given commensurableInt: F64 is Commensurable:
@@ -113,9 +113,9 @@ object Hypotenuse:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          inline if greaterThan
-          then inline if strict then left > right else left >= right
-          else inline if strict then left < right else left <= right
+        inline if greaterThan
+        then inline if strict then left > right else left >= right
+        else inline if strict then left < right else left <= right
 
 
     given divisible: F64 is Divisible:
@@ -141,9 +141,9 @@ object Hypotenuse:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          inline if greaterThan
-          then inline if strict then left > right else left >= right
-          else inline if strict then left < right else left <= right
+        inline if greaterThan
+        then inline if strict then left > right else left >= right
+        else inline if strict then left < right else left <= right
 
 
     inline given doubleConversion: Conversion[Double, F64]:
@@ -196,13 +196,13 @@ object Hypotenuse:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          inline if greaterThan
-          then
-            inline if strict then (left: Float) > (right: Float)
-            else (left: Float) >= (right: Float)
-          else
-            inline if strict then (left: Float) < (right: Float)
-            else (left: Float) <= (right: Float)
+        inline if greaterThan
+        then
+          inline if strict then (left: Float) > (right: Float)
+          else (left: Float) >= (right: Float)
+        else
+          inline if strict then (left: Float) < (right: Float)
+          else (left: Float) <= (right: Float)
 
 
     inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B32): F32 =
@@ -253,12 +253,12 @@ object Hypotenuse:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          inline if greaterThan then
-            inline if strict then JLong.compareUnsigned(left, right) == 1
-            else JLong.compareUnsigned(left, right) != -1
-          else
-            inline if strict then JLong.compareUnsigned(left, right) == -1
-            else JLong.compareUnsigned(left, right) != 1
+        inline if greaterThan then
+          inline if strict then JLong.compareUnsigned(left, right) == 1
+          else JLong.compareUnsigned(left, right) != -1
+        else
+          inline if strict then JLong.compareUnsigned(left, right) == -1
+          else JLong.compareUnsigned(left, right) != 1
 
 
   object S64:
@@ -285,9 +285,9 @@ object Hypotenuse:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          inline if greaterThan
-          then inline if strict then (left: Long) > (right: Long) else (left: Long) >= (right: Long)
-          else inline if strict then (left: Long) < (right: Long) else (left: Long) <= (right: Long)
+        inline if greaterThan
+        then inline if strict then (left: Long) > (right: Long) else (left: Long) >= (right: Long)
+        else inline if strict then (left: Long) < (right: Long) else (left: Long) <= (right: Long)
 
 
   object U32:
@@ -311,12 +311,12 @@ object Hypotenuse:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          inline if greaterThan then
-            inline if strict then JLong.compareUnsigned(left, right) == 1
-            else JInt.compareUnsigned(left, right) != -1
-          else
-            inline if strict then JLong.compareUnsigned(left, right) == -1
-            else JInt.compareUnsigned(left, right) != 1
+        inline if greaterThan then
+          inline if strict then JLong.compareUnsigned(left, right) == 1
+          else JInt.compareUnsigned(left, right) != -1
+        else
+          inline if strict then JLong.compareUnsigned(left, right) == -1
+          else JInt.compareUnsigned(left, right) != 1
 
 
   object S32:
@@ -342,9 +342,9 @@ object Hypotenuse:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          inline if greaterThan
-          then inline if strict then (left: Int) > (right: Int) else (left: Int) >= (right: Int)
-          else inline if strict then (left: Int) < (right: Int) else (left: Int) <= (right: Int)
+        inline if greaterThan
+        then inline if strict then (left: Int) > (right: Int) else (left: Int) >= (right: Int)
+        else inline if strict then (left: Int) < (right: Int) else (left: Int) <= (right: Int)
 
 
   object U16:
@@ -368,12 +368,12 @@ object Hypotenuse:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          val left2 = JShort.toUnsignedInt(left)
-          val right2 = JShort.toUnsignedInt(right)
+        val left2 = JShort.toUnsignedInt(left)
+        val right2 = JShort.toUnsignedInt(right)
 
-          inline if greaterThan
-          then inline if strict then left2 > right2 else left.toInt >= right2
-          else inline if strict then left2 < right2 else left.toInt <= right2
+        inline if greaterThan
+        then inline if strict then left2 > right2 else left.toInt >= right2
+        else inline if strict then left2 < right2 else left.toInt <= right2
 
 
   object S16:
@@ -400,13 +400,13 @@ object Hypotenuse:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          inline if greaterThan
-          then
-            inline if strict then (left: Short) > (right: Short)
-            else (left: Short) >= (right: Short)
-          else
-            inline if strict then (left: Short) < (right: Short)
-            else (left: Short) <= (right: Short)
+        inline if greaterThan
+        then
+          inline if strict then (left: Short) > (right: Short)
+          else (left: Short) >= (right: Short)
+        else
+          inline if strict then (left: Short) < (right: Short)
+          else (left: Short) <= (right: Short)
 
 
   object U8:
@@ -429,12 +429,12 @@ object Hypotenuse:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          val left2 = JByte.toUnsignedInt(left)
-          val right2 = JByte.toUnsignedInt(right)
+        val left2 = JByte.toUnsignedInt(left)
+        val right2 = JByte.toUnsignedInt(right)
 
-          inline if greaterThan
-          then inline if strict then left2 > right2 else left2 >= right2
-          else inline if strict then left2 < right2 else left2 <= right2
+        inline if greaterThan
+        then inline if strict then left2 > right2 else left2 >= right2
+        else inline if strict then left2 < right2 else left2 <= right2
 
 
   object S8:
@@ -460,9 +460,9 @@ object Hypotenuse:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          inline if greaterThan
-          then inline if strict then (left: Byte) > (right: Byte) else (left: Byte) >= (right: Byte)
-          else inline if strict then (left: Byte) < (right: Byte) else (left: Byte) <= (right: Byte)
+        inline if greaterThan
+        then inline if strict then (left: Byte) > (right: Byte) else (left: Byte) >= (right: Byte)
+        else inline if strict then (left: Byte) < (right: Byte) else (left: Byte) <= (right: Byte)
 
 
   object B64:
@@ -578,7 +578,7 @@ object Hypotenuse:
     @targetName("divS64")
     inline infix def / (right: Conversion.into[S64])(using division: DivisionByZero)
     :   division.Wrap[S64] =
-        division.divideS64(s64, right)
+      division.divideS64(s64, right)
 
     @targetName("modS64")
     inline infix def % (right: Conversion.into[S64]): S64 = s64%right
@@ -598,7 +598,7 @@ object Hypotenuse:
     @targetName("plusS32")
     inline infix def + (right: Conversion.into[S32])(using overflow: CheckOverflow)
     :   overflow.Wrap[S32] =
-        overflow.addS32(s32, right)
+      overflow.addS32(s32, right)
 
     @targetName("intS32")
     inline def int: Int = s32
@@ -633,7 +633,7 @@ object Hypotenuse:
     @targetName("divS32")
     inline infix def / (right: Conversion.into[S32])(using division: DivisionByZero)
     :   division.Wrap[S32] =
-        division.divideS32(s32, right)
+      division.divideS32(s32, right)
 
     @targetName("modS32")
     inline infix def % (right: Conversion.into[S32]): S32 = s32%right
@@ -653,7 +653,7 @@ object Hypotenuse:
     @targetName("plusS16")
     inline infix def + (right: Conversion.into[S16])(using overflow: CheckOverflow)
     :   overflow.Wrap[S16] =
-        overflow.addS16(s16, right)
+      overflow.addS16(s16, right)
 
     @targetName("shortS16")
     inline def short: Short = s16
@@ -691,7 +691,7 @@ object Hypotenuse:
     @targetName("divS16")
     inline infix def / (right: Conversion.into[S16])(using division: DivisionByZero)
     :   division.Wrap[S16] =
-        division.divideS16(s16, right)
+      division.divideS16(s16, right)
 
     @targetName("modS16")
     inline infix def % (right: Conversion.into[S16]): S16 = (s16%right).toShort
@@ -711,7 +711,7 @@ object Hypotenuse:
     @targetName("plusS8")
     inline infix def + (right: Conversion.into[S8])(using overflow: CheckOverflow)
     :   overflow.Wrap[S8] =
-        overflow.addS8(s8, right)
+      overflow.addS8(s8, right)
 
     @targetName("byteS8")
     inline def byte: Byte = s8
@@ -752,7 +752,7 @@ object Hypotenuse:
     @targetName("divS8")
     inline infix def / (right: Conversion.into[S8])(using division: DivisionByZero)
     :   division.Wrap[S8] =
-        division.divideS8(s8, right)
+      division.divideS8(s8, right)
 
     @targetName("modS8")
     inline infix def % (right: Conversion.into[S8]): S8 = (s8%right).toByte
@@ -1353,7 +1353,7 @@ object Hypotenuse:
     @targetName("divU64")
     inline infix def / (right: Conversion.into[U64])(using division: DivisionByZero)
     :   division.Wrap[U64] =
-        division.divideU64(u64, right)
+      division.divideU64(u64, right)
 
     @targetName("modU64")
     inline infix def % (right: Conversion.into[U64]): U64 = JLong.remainderUnsigned(u64, right)
@@ -1368,7 +1368,7 @@ object Hypotenuse:
     @targetName("plusU32")
     inline infix def + (right: Conversion.into[U32])(using overflow: CheckOverflow)
     :   overflow.Wrap[U32] =
-        overflow.addU32(u32, right)
+      overflow.addU32(u32, right)
 
     @targetName("bitsU32")
     inline def bits: B32 = u32
@@ -1400,7 +1400,7 @@ object Hypotenuse:
     @targetName("divU32")
     inline infix def / (right: Conversion.into[U32])(using division: DivisionByZero)
     :   division.Wrap[U32] =
-        division.divideU32(u32, right)
+      division.divideU32(u32, right)
 
     @targetName("modU32")
     inline infix def % (right: Conversion.into[U32]): U32 = JInt.remainderUnsigned(u32, right)
@@ -1421,7 +1421,7 @@ object Hypotenuse:
     @targetName("plusU16")
     inline infix def + (right: Conversion.into[U16])(using overflow: CheckOverflow)
     :   overflow.Wrap[U16] =
-        overflow.addU16(u16, right)
+      overflow.addU16(u16, right)
 
     @targetName("bitsU16")
     inline def bits: B16 = u16
@@ -1457,7 +1457,7 @@ object Hypotenuse:
     @targetName("divU16")
     inline infix def / (right: Conversion.into[U16])(using division: DivisionByZero)
     :   division.Wrap[U16] =
-        division.divideU16(u16, right)
+      division.divideU16(u16, right)
 
     @targetName("modU16")
     inline infix def % (right: Conversion.into[U16]): U16 =
@@ -1487,7 +1487,7 @@ object Hypotenuse:
     @targetName("plusU8")
     inline infix def + (right: Conversion.into[U8])(using overflow: CheckOverflow)
     :   overflow.Wrap[U8] =
-        overflow.addU8(u8, right)
+      overflow.addU8(u8, right)
 
     @targetName("bitsU8")
     inline def bits: B8 = u8
@@ -1525,7 +1525,7 @@ object Hypotenuse:
     @targetName("divU8")
     inline infix def / (right: Conversion.into[U8])(using division: DivisionByZero)
     :   division.Wrap[U8] =
-        division.divideU8(u8, right)
+      division.divideU8(u8, right)
 
     @targetName("modU8")
     inline infix def % (right: Conversion.into[U8]): U8 = JInt.remainderUnsigned(u8, right).toByte

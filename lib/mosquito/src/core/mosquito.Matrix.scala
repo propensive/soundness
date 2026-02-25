@@ -66,22 +66,22 @@ class Matrix[element, rows <: Int, columns <: Int]
   :   Matrix[multiplication.Result, rows, columns] =
 
 
-      val elements2 = IArray.create[multiplication.Result](elements.length): array =>
-        elements.indices.foreach: index =>
-          array(index) = elements(index)*right
+    val elements2 = IArray.create[multiplication.Result](elements.length): array =>
+      elements.indices.foreach: index =>
+        array(index) = elements(index)*right
 
-      new Matrix(rows, columns, elements2)
+    new Matrix(rows, columns, elements2)
 
 
   @targetName("scalarDiv")
   def / [right](right: right)(using div: element is Divisible by right)(using ClassTag[div.Result])
   :   Matrix[div.Result, rows, columns] =
 
-      val elements2 = IArray.create[div.Result](elements.length): array =>
-        elements.indices.foreach: index =>
-          array(index) = elements(index)/right
+    val elements2 = IArray.create[div.Result](elements.length): array =>
+      elements.indices.foreach: index =>
+        array(index) = elements(index)/right
 
-      new Matrix(rows, columns, elements2)
+    new Matrix(rows, columns, elements2)
 
 
   @targetName("mul")
@@ -95,15 +95,15 @@ class Matrix[element, rows <: Int, columns <: Int]
             classTag:       ClassTag[multiplication.Result] )
   :   Matrix[multiplication.Result, rows, rightColumns] =
 
-      val columns2 = valueOf[rightColumns]
-      val inner = valueOf[columns]
+    val columns2 = valueOf[rightColumns]
+    val inner = valueOf[columns]
 
-      val elements = IArray.create[multiplication.Result](rows*columns2): array =>
-        for row <- 0 until rows; column <- 0 until columns2
-        do array(columns2*column + row) =
-          (0 until inner).map { index => apply(row, index)*right(index, column) }.reduce(_ + _)
+    val elements = IArray.create[multiplication.Result](rows*columns2): array =>
+      for row <- 0 until rows; column <- 0 until columns2
+      do array(columns2*column + row) =
+        (0 until inner).map { index => apply(row, index)*right(index, column) }.reduce(_ + _)
 
-      new Matrix(rows, columns2, elements)
+    new Matrix(rows, columns2, elements)
 
 
 object Matrix:
@@ -147,15 +147,15 @@ object Matrix:
             ClassTag[element] )
   :   Any =
 
-      val rowCount: Int = valueOf[Rows]
-      val columnCount = valueOf[Columns]
+    val rowCount: Int = valueOf[Rows]
+    val columnCount = valueOf[Columns]
 
-      new Matrix[element, Rows, Columns]
-        ( rowCount,
-          columnCount,
-          IArray.create[element](columnCount*rowCount): array =>
-            for row <- 0 until rowCount; column <- 0 until columnCount
-            do rows.productElement(row).asMatchable.absolve match
-              case tuple: Tuple =>
-                array(columnCount*row + column) =
-                  tuple.productElement(column).asInstanceOf[element] )
+    new Matrix[element, Rows, Columns]
+      ( rowCount,
+        columnCount,
+        IArray.create[element](columnCount*rowCount): array =>
+          for row <- 0 until rowCount; column <- 0 until columnCount
+          do rows.productElement(row).asMatchable.absolve match
+            case tuple: Tuple =>
+              array(columnCount*row + column) =
+                tuple.productElement(column).asInstanceOf[element] )

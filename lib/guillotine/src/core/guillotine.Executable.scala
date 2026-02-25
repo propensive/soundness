@@ -57,7 +57,7 @@ sealed trait Executable:
   def exec[result: Computable]()(using working: WorkingDirectory)
   :   result logs ExecEvent raises ExecError =
 
-      fork[result]().await()
+    fork[result]().await()
 
 
   def apply()
@@ -66,7 +66,7 @@ sealed trait Executable:
             computable:          intelligible.Result is Computable )
   :   intelligible.Result logs ExecEvent raises ExecError =
 
-      fork[intelligible.Result]().await()
+    fork[intelligible.Result]().await()
 
 
   def apply(command: Executable): Pipeline = command match

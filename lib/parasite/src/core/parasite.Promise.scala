@@ -116,18 +116,18 @@ final case class Promise[value]():
   def await[generic: Abstractable across Durations to Long](duration: generic)
   :   value raises AsyncError =
 
-      val deadline = jl.System.nanoTime() + duration.generic
+    val deadline = jl.System.nanoTime() + duration.generic
 
-      @tailrec
-      def recur(): value =
-        if deadline < jl.System.nanoTime then abort(AsyncError(AsyncError.Reason.Timeout))
-        else state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
-          case Incomplete(_)   => jucl.LockSupport.parkUntil(this, deadline - jl.System.nanoTime())
-                                  recur()
-          case Complete(value) => value
-          case Cancelled       => abort(AsyncError(AsyncError.Reason.Cancelled))
+    @tailrec
+    def recur(): value =
+      if deadline < jl.System.nanoTime then abort(AsyncError(AsyncError.Reason.Timeout))
+      else state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
+        case Incomplete(_)   => jucl.LockSupport.parkUntil(this, deadline - jl.System.nanoTime())
+                                recur()
+        case Complete(value) => value
+        case Cancelled       => abort(AsyncError(AsyncError.Reason.Cancelled))
 
-      recur()
+    recur()
 
 
   def attend[generic: Abstractable across Durations to Long](duration: generic): Unit =

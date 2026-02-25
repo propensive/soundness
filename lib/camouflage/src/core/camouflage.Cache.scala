@@ -44,7 +44,7 @@ object Cache:
   def apply[generic: Abstractable across Durations to Long, value](duration: generic)
   :   Cache[value] =
 
-      new Cache[value](duration.generic/1_000_000L)
+    new Cache[value](duration.generic/1_000_000L)
 
 
   def apply[value](): Cache[value] = new Cache(Unset)

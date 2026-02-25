@@ -56,50 +56,50 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
     ( request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse )
   :   HttpConnection raises StreamError =
 
-      val uri = request.getRequestURI.nn.tt
-      val query = Optional(request.getQueryString).let(_.tt)
-      val target = uri+query.let(t"?"+_).or(t"")
+    val uri = request.getRequestURI.nn.tt
+    val query = Optional(request.getQueryString).let(_.tt)
+    val target = uri+query.let(t"?"+_).or(t"")
 
-      val headers: List[Http.Header] =
-        request.getHeaderNames.nn.asScala.to(List).map: key =>
-          key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
+    val headers: List[Http.Header] =
+      request.getHeaderNames.nn.asScala.to(List).map: key =>
+        key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
 
-        . flatMap:
-            case (key, values) => values.map(Http.Header(key, _))
+      . flatMap:
+          case (key, values) => values.map(Http.Header(key, _))
 
-      val httpRequest =
-        Http.Request
-          ( method      = request.getMethod.nn.show.decode[Http.Method],
-            version     = Http.Version.parse(request.getProtocol.nn.tt),
-            host        = unsafely(request.getServerName.nn.tt.decode[Hostname]),
-            target      = target,
-            body        = () => streamBody(request),
-            textHeaders = headers )
+    val httpRequest =
+      Http.Request
+        ( method      = request.getMethod.nn.show.decode[Http.Method],
+          version     = Http.Version.parse(request.getProtocol.nn.tt),
+          host        = unsafely(request.getServerName.nn.tt.decode[Hostname]),
+          target      = target,
+          body        = () => streamBody(request),
+          textHeaders = headers )
 
-      def respond(response: Http.Response): Unit =
-        servletResponse.setStatus(response.status.code)
+    def respond(response: Http.Response): Unit =
+      servletResponse.setStatus(response.status.code)
 
-        response.textHeaders.each:
-          case Http.Header(key, value) =>
-            servletResponse.addHeader(key.s, value.s)
+      response.textHeaders.each:
+        case Http.Header(key, value) =>
+          servletResponse.addHeader(key.s, value.s)
 
-        val out = servletResponse.getOutputStream.nn
+      val out = servletResponse.getOutputStream.nn
 
-        response.body match
-          case Http.Body.Fixed(data) =>
-            servletResponse.addHeader("content-length", data.length.show.s)
-            out.write(data.mutable(using Unsafe))
+      response.body match
+        case Http.Body.Fixed(data) =>
+          servletResponse.addHeader("content-length", data.length.show.s)
+          out.write(data.mutable(using Unsafe))
 
-          case Http.Body.Empty =>
-            servletResponse.addHeader("content-length", "0")
+        case Http.Body.Empty =>
+          servletResponse.addHeader("content-length", "0")
 
-          case Http.Body.Streaming(stream) =>
-            servletResponse.addHeader("transfer-encoding", "chunked")
-            stream.map(_.mutable(using Unsafe)).each(out.write(_))
+        case Http.Body.Streaming(stream) =>
+          servletResponse.addHeader("transfer-encoding", "chunked")
+          stream.map(_.mutable(using Unsafe)).each(out.write(_))
 
-        out.close()
+      out.close()
 
-      new HttpConnection(httpRequest, false, request.getServerPort, respond)
+    new HttpConnection(httpRequest, false, request.getServerPort, respond)
 
 
   def handle(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
@@ -112,6 +112,6 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
     ( request: jsh.HttpServletRequest | Null, response: jsh.HttpServletResponse | Null )
   :   Unit =
 
-      if request != null && response != null then try handle(request, response) catch
-        case error: Throwable =>
-          error.printStackTrace(System.out)
+    if request != null && response != null then try handle(request, response) catch
+      case error: Throwable =>
+        error.printStackTrace(System.out)

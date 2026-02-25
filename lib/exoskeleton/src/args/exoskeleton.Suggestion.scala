@@ -52,7 +52,7 @@ object Suggestion:
       expanded:    Boolean                   = false )
   :   Suggestion =
 
-      new Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix, expanded)
+    new Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix, expanded)
 
 
 case class Suggestion

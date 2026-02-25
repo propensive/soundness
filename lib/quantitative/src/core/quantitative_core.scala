@@ -50,7 +50,7 @@ extension [units <: Measure](quantity: Quantity[units])
   inline def normalize[units2 <: Measure](using normalizable: units is Normalizable to units2)
   :   Quantity[units2] =
 
-      normalizable.normalize(quantity)
+    normalizable.normalize(quantity)
 
 
   inline def sqrt(using root: Quantity[units] is Rootable[2]): root.Result = root.root(quantity)

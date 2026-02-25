@@ -81,17 +81,17 @@ object Xylophone:
 
       def checkText(array: Expr[Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
       :   Expr[Boolean] =
-          '{${Expr(pattern.text)} == $scrutinee.text}
+        '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkComment(array: Expr[Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
       :   Expr[Boolean] =
 
-          '{${Expr(pattern.text)} == $scrutinee.text}
+        '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkCdata(array: Expr[Array[Any]], pattern: Cdata, scrutinee: Expr[Cdata])
       :   Expr[Boolean] =
 
-          '{${Expr(pattern.text)} == $scrutinee.text}
+        '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkPi
         ( array:     Expr[Array[Any]],
@@ -99,183 +99,183 @@ object Xylophone:
           scrutinee: Expr[ProcessingInstruction] )
       :   Expr[Boolean] =
 
-          ' {
-              ${Expr(pattern.target)} == $scrutinee.target
-              && ${Expr(pattern.data)} == $scrutinee.data
-            }
+        ' {
+            ${Expr(pattern.target)} == $scrutinee.target
+            && ${Expr(pattern.data)} == $scrutinee.data
+          }
 
       def checkHeader(array: Expr[Array[Any]], pattern: Header, scrutinee: Expr[Header])
       :   Expr[Boolean] =
 
-          '{${Expr(pattern.version)} == $scrutinee.version} // FIXME: Check encoding/standalone too
+        '{${Expr(pattern.version)} == $scrutinee.version} // FIXME: Check encoding/standalone too
 
       def checkFragment(array: Expr[Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
       :   Expr[Boolean] =
 
-          val children = '{$scrutinee.nodes}
+        val children = '{$scrutinee.nodes}
 
-          def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
-            if index == pattern.nodes.length then expr else
-              val expr2 =
-                descend(array, pattern.nodes(index), '{$children(${Expr(index)})}, '{true})
+        def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
+          if index == pattern.nodes.length then expr else
+            val expr2 =
+              descend(array, pattern.nodes(index), '{$children(${Expr(index)})}, '{true})
 
-              elements(index + 1)('{$expr && $expr2})
+            elements(index + 1)('{$expr && $expr2})
 
 
-          elements(0):
-            '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
+        elements(0):
+          '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
 
       def checkElement(array: Expr[Array[Any]], pattern: Element, scrutinee: Expr[Element])
       :   Expr[Boolean] =
 
-          def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
-            case Nil => expr
-            case "\u0000" :: tail =>
-              index += 1
-              types ::= TypeRepr.of[Map[Text, Text]]
-              iterator.next()
-              val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
-              '{$expr && { $array(${Expr(index)}) = ${scrutinee}.attributes -- $others; true }}
+        def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
+          case Nil => expr
+          case "\u0000" :: tail =>
+            index += 1
+            types ::= TypeRepr.of[Map[Text, Text]]
+            iterator.next()
+            val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
+            '{$expr && { $array(${Expr(index)}) = ${scrutinee}.attributes -- $others; true }}
 
-            case head :: tail =>
-              attributes(tail):
-                val boolean: Expr[Boolean] = pattern.attributes(head).s.absolve match
-                  case "\u0000"   =>
-                    index += 1
-                    types ::= TypeRepr.of[Text]
-                    iterator.next()
-                    '{$array(${Expr(index)}) = $scrutinee.attributes(${Expr(head)}); true}
+          case head :: tail =>
+            attributes(tail):
+              val boolean: Expr[Boolean] = pattern.attributes(head).s.absolve match
+                case "\u0000"   =>
+                  index += 1
+                  types ::= TypeRepr.of[Text]
+                  iterator.next()
+                  '{$array(${Expr(index)}) = $scrutinee.attributes(${Expr(head)}); true}
 
-                  case text: Text =>
-                    '{$scrutinee.attributes(${Expr(head)}) == ${Expr(text)}}
+                case text: Text =>
+                  '{$scrutinee.attributes(${Expr(head)}) == ${Expr(text)}}
 
-                '{$expr && $boolean}
+              '{$expr && $boolean}
 
-          val attributesChecked = attributes(pattern.attributes.to(List).map(_(0)))('{true})
+        val attributesChecked = attributes(pattern.attributes.to(List).map(_(0)))('{true})
 
-          val children = '{$scrutinee.children}
+        val children = '{$scrutinee.children}
 
-          def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
-            if index == pattern.children.length then expr else
-              val expr2 =
-                descend(array, pattern.children(index), '{$children(${Expr(index)})}, '{true})
+        def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
+          if index == pattern.children.length then expr else
+            val expr2 =
+              descend(array, pattern.children(index), '{$children(${Expr(index)})}, '{true})
 
-              elements(index + 1)('{$expr && $expr2})
+            elements(index + 1)('{$expr && $expr2})
 
-          val elementsChecked = elements(0):
-            ' {
-                ${Expr(pattern.label)} == $scrutinee.label
-                && $scrutinee.children.length == ${Expr(pattern.children.length)}
-              }
+        val elementsChecked = elements(0):
+          ' {
+              ${Expr(pattern.label)} == $scrutinee.label
+              && $scrutinee.children.length == ${Expr(pattern.children.length)}
+            }
 
-          '{$attributesChecked && $elementsChecked}
+        '{$attributesChecked && $elementsChecked}
 
       def descend(array: Expr[Array[Any]], pattern: Xml, scrutinee: Expr[Xml], expr: Expr[Boolean])
       :   Expr[Boolean] =
 
-          pattern match
-            case Comment("\u0000") =>
-              index += 1
-              iterator.next()
-              types ::= TypeRepr.of[Text]
+        pattern match
+          case Comment("\u0000") =>
+            index += 1
+            iterator.next()
+            types ::= TypeRepr.of[Text]
 
-              ' {
-                  $expr && $scrutinee.isInstanceOf[Comment]
-                  &&
-                    {
-                      $array(${Expr(index)}) = $scrutinee.asInstanceOf[Comment].text
-                      true
-                    }
-                }
-
-            case ProcessingInstruction("\u0000", t"") =>
-              index += 1
-              iterator.next()
-              types ::= TypeRepr.of[ProcessingInstruction]
-
-              ' {
-                  $expr && $scrutinee.isInstanceOf[ProcessingInstruction]
-                  &&
+            ' {
+                $expr && $scrutinee.isInstanceOf[Comment]
+                &&
                   {
-                    $array(${Expr(index)}) = $scrutinee.asInstanceOf[ProcessingInstruction].data
+                    $array(${Expr(index)}) = $scrutinee.asInstanceOf[Comment].text
                     true
                   }
+              }
+
+          case ProcessingInstruction("\u0000", t"") =>
+            index += 1
+            iterator.next()
+            types ::= TypeRepr.of[ProcessingInstruction]
+
+            ' {
+                $expr && $scrutinee.isInstanceOf[ProcessingInstruction]
+                &&
+                {
+                  $array(${Expr(index)}) = $scrutinee.asInstanceOf[ProcessingInstruction].data
+                  true
                 }
+              }
 
-            case Cdata("\u0000") =>
-              index += 1
-              iterator.next()
-              types ::= TypeRepr.of[Cdata]
+          case Cdata("\u0000") =>
+            index += 1
+            iterator.next()
+            types ::= TypeRepr.of[Cdata]
 
-              ' {
-                  $expr && $scrutinee.isInstanceOf[Cdata]
-                  && { $array(${Expr(index)}) = $scrutinee.asInstanceOf[Cdata].text; true }
-                }
+            ' {
+                $expr && $scrutinee.isInstanceOf[Cdata]
+                && { $array(${Expr(index)}) = $scrutinee.asInstanceOf[Cdata].text; true }
+              }
 
-            case TextNode("\u0000") =>
-              index += 1
-              iterator.next() match
-                case Xml.Hole.Node(label) =>
-                  types ::= TypeRepr.of[Node]
+          case TextNode("\u0000") =>
+            index += 1
+            iterator.next() match
+              case Xml.Hole.Node(label) =>
+                types ::= TypeRepr.of[Node]
 
-                case _ =>
-                  panic(m"unexpected hole type")
+              case _ =>
+                panic(m"unexpected hole type")
 
-              '{$expr && { $array(${Expr(index)}) = $scrutinee; true }}
+            '{$expr && { $array(${Expr(index)}) = $scrutinee; true }}
 
-            case textual@TextNode(text) =>
-              val checked = checkText(array, textual, '{$scrutinee.asInstanceOf[TextNode]})
-              '{$expr && $scrutinee.isInstanceOf[TextNode] && $checked}
+          case textual@TextNode(text) =>
+            val checked = checkText(array, textual, '{$scrutinee.asInstanceOf[TextNode]})
+            '{$expr && $scrutinee.isInstanceOf[TextNode] && $checked}
 
-            case comment@Comment(text) =>
-              if text.contains("\u0000") then halt:
-                m"""
-                  only the entire comment text can be matched; write the extractor as
-                  ${t"<!--$$text-->"}
-                """
+          case comment@Comment(text) =>
+            if text.contains("\u0000") then halt:
+              m"""
+                only the entire comment text can be matched; write the extractor as
+                ${t"<!--$$text-->"}
+              """
 
-              val checked = checkComment(array, comment, '{$scrutinee.asInstanceOf[Comment]})
+            val checked = checkComment(array, comment, '{$scrutinee.asInstanceOf[Comment]})
 
-              '{$expr && $scrutinee.isInstanceOf[Comment] && $checked}
+            '{$expr && $scrutinee.isInstanceOf[Comment] && $checked}
 
-            case cdata@Cdata(content) =>
-              if content.contains("\u0000") then halt:
-                m"""
-                  only the entire CDATA content can be matched; write the extractor as
-                  ${t"<![CDATA[$$text]]>"}
-                """
+          case cdata@Cdata(content) =>
+            if content.contains("\u0000") then halt:
+              m"""
+                only the entire CDATA content can be matched; write the extractor as
+                ${t"<![CDATA[$$text]]>"}
+              """
 
-              val checked = checkCdata(array, cdata, '{$scrutinee.asInstanceOf[Cdata]})
+            val checked = checkCdata(array, cdata, '{$scrutinee.asInstanceOf[Cdata]})
 
-              '{$expr && $scrutinee.isInstanceOf[Cdata] && $checked}
+            '{$expr && $scrutinee.isInstanceOf[Cdata] && $checked}
 
-            case pi@ProcessingInstruction(target, data) =>
-              if data.contains("\u0000") || target.contains("\u0000")
-              then halt(m"only the entire data part of a processing instruction can be matched")
-              val checked = checkPi(array, pi, '{$scrutinee.asInstanceOf[ProcessingInstruction]})
-              '{$expr && $scrutinee.isInstanceOf[ProcessingInstruction] && $checked}
+          case pi@ProcessingInstruction(target, data) =>
+            if data.contains("\u0000") || target.contains("\u0000")
+            then halt(m"only the entire data part of a processing instruction can be matched")
+            val checked = checkPi(array, pi, '{$scrutinee.asInstanceOf[ProcessingInstruction]})
+            '{$expr && $scrutinee.isInstanceOf[ProcessingInstruction] && $checked}
 
-            case Element("\u0000", _, _) =>
-              index += 1
-              iterator.next() match
-                case Xml.Hole.Element(label) =>
-                  types ::= TypeRepr.of[Element]
-                case _ =>
-                  halt(m"unexpected hole type")
+          case Element("\u0000", _, _) =>
+            index += 1
+            iterator.next() match
+              case Xml.Hole.Element(label) =>
+                types ::= TypeRepr.of[Element]
+              case _ =>
+                halt(m"unexpected hole type")
 
-              '{$expr && { $array(${Expr(index)}) = $scrutinee; true }}
+            '{$expr && { $array(${Expr(index)}) = $scrutinee; true }}
 
-            case element: Element =>
-              def checked = checkElement(array, element, '{$scrutinee.asInstanceOf[Element]})
-              '{$expr && $scrutinee.isInstanceOf[Element] && $checked}
+          case element: Element =>
+            def checked = checkElement(array, element, '{$scrutinee.asInstanceOf[Element]})
+            '{$expr && $scrutinee.isInstanceOf[Element] && $checked}
 
-            case header: Header =>
-              def checked = checkHeader(array, header, '{$scrutinee.asInstanceOf[Header]})
-              '{$expr && $scrutinee.isInstanceOf[Header] && $checked}
+          case header: Header =>
+            def checked = checkHeader(array, header, '{$scrutinee.asInstanceOf[Header]})
+            '{$expr && $scrutinee.isInstanceOf[Header] && $checked}
 
-            case fragment@Fragment(nodes*) =>
-              val checked = checkFragment(array, fragment, '{$scrutinee.asInstanceOf[Fragment]})
-              '{$expr && $scrutinee.isInstanceOf[Fragment] && $checked}
+          case fragment@Fragment(nodes*) =>
+            val checked = checkFragment(array, fragment, '{$scrutinee.asInstanceOf[Fragment]})
+            '{$expr && $scrutinee.isInstanceOf[Fragment] && $checked}
 
 
       val result: Expr[Extrapolation[Xml]] =
@@ -514,56 +514,56 @@ object Xylophone:
   def attributes[result: Type, thisType <: Tag to result: Type]
     ( tag: Expr[Tag], attributes0: Expr[Seq[(String, Any)]] )
   :   Macro[result] =
-      import quotes.reflect.*
+    import quotes.reflect.*
 
-      val arguments = attributes0.absolve match
-        case Varargs(arguments) => arguments
+    val arguments = attributes0.absolve match
+      case Varargs(arguments) => arguments
 
-      val attributes: Seq[Expr[Optional[(Text, Text)]]] =
-        Type.of[thisType].absolve match
-          case
-            ' [
-                type topic <: Label;
-                type form;
-                Tag { type Topic = topic; type Form = form }
-              ] =>
+    val attributes: Seq[Expr[Optional[(Text, Text)]]] =
+      Type.of[thisType].absolve match
+        case
+          ' [
+              type topic <: Label;
+              type form;
+              Tag { type Topic = topic; type Form = form }
+            ] =>
 
-            arguments.map: argument =>
-              argument.absolve match
-                case '{($key, $value: value)} =>
-                  TypeRepr.of[topic].literal[String].let: topic =>
-                    key.asTerm match
-                      case Literal(StringConstant(key)) =>
-                        if key == "" then panic(m"Empty key")
-                        else ConstantType(StringConstant(key)).asType.absolve match
-                          case '[type key <: Label; key] =>
-                            Expr.summon[key is Xml.XmlAttribute in form on (? >: topic)]
-                            . orElse(Expr.summon[key is Xml.XmlAttribute in form]) match
-                              case
-                                Some
-                                  ( ' {
-                                        type result
-                                        $expr: Xml.XmlAttribute { type Topic = result }
-                                      } ) =>
+          arguments.map: argument =>
+            argument.absolve match
+              case '{($key, $value: value)} =>
+                TypeRepr.of[topic].literal[String].let: topic =>
+                  key.asTerm match
+                    case Literal(StringConstant(key)) =>
+                      if key == "" then panic(m"Empty key")
+                      else ConstantType(StringConstant(key)).asType.absolve match
+                        case '[type key <: Label; key] =>
+                          Expr.summon[key is Xml.XmlAttribute in form on (? >: topic)]
+                          . orElse(Expr.summon[key is Xml.XmlAttribute in form]) match
+                            case
+                              Some
+                                ( ' {
+                                      type result
+                                      $expr: Xml.XmlAttribute { type Topic = result }
+                                    } ) =>
 
-                                Expr.summon[(? >: value) is Attributive to result] match
-                                  case Some('{$converter: Attributive}) =>
-                                    '{$converter.attribute(${Expr(key.tt)}, $value)}
+                              Expr.summon[(? >: value) is Attributive to result] match
+                                case Some('{$converter: Attributive}) =>
+                                  '{$converter.attribute(${Expr(key.tt)}, $value)}
 
-                                  case _ =>
-                                    halt:
-                                      m"""
-                                        $key has attribute type ${TypeRepr.of[result].show}, but
-                                        ${TypeRepr.of[value].show} cannot be attributed as a
-                                        ${TypeRepr.of[result].show} without a contextual instance of
-                                        ${TypeRepr.of[value is Attributive to result].show}
-                                      """
+                                case _ =>
+                                  halt:
+                                    m"""
+                                      $key has attribute type ${TypeRepr.of[result].show}, but
+                                      ${TypeRepr.of[value].show} cannot be attributed as a
+                                      ${TypeRepr.of[result].show} without a contextual instance of
+                                      ${TypeRepr.of[value is Attributive to result].show}
+                                    """
 
-                              case _ =>
-                                halt(m"the attribute $key cannot be used on the element <$topic>")
+                            case _ =>
+                              halt(m"the attribute $key cannot be used on the element <$topic>")
 
-                      case _ =>
-                        halt(m"unable to determine attribute key type")
-                  . or(halt(m"unexpected type"))
+                    case _ =>
+                      halt(m"unable to determine attribute key type")
+                . or(halt(m"unexpected type"))
 
-      '{$tag.node(${Expr.ofList(attributes)}.compact.to(Map))}.asExprOf[result]
+    '{$tag.node(${Expr.ofList(attributes)}.compact.to(Map))}.asExprOf[result]

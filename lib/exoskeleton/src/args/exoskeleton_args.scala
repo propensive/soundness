@@ -53,7 +53,7 @@ package interpreters:
       ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
     :   Optional[operand] =
 
-        Unset
+      Unset
 
 
   given posixClustering: Interpreter:
@@ -68,7 +68,7 @@ package interpreters:
       ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
     :   Optional[operand] =
 
-        commandline.read(flag)
+      commandline.read(flag)
 
 
   given posix: Interpreter:
@@ -83,7 +83,7 @@ package interpreters:
       ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
     :   Optional[operand] =
 
-        commandline.read(flag)
+      commandline.read(flag)
 
 
   private def interpreter(arguments: List[Argument], clustering: Boolean): Commandline =
@@ -94,56 +94,56 @@ package interpreters:
         commandline: Commandline )
     :   Commandline =
 
-        def push(): Commandline = current.lay(Commandline(arguments.reverse)): current =>
-          commandline.copy
-            ( parameters = commandline.parameters.updated(current, arguments.reverse) )
+      def push(): Commandline = current.lay(Commandline(arguments.reverse)): current =>
+        commandline.copy
+          ( parameters = commandline.parameters.updated(current, arguments.reverse) )
 
-        def postprocess(commandline: Commandline): Commandline =
-          val parameters2: Map[Argument, List[Argument]] =
-            commandline.parameters.to(List).flatMap: (key, values) =>
-              val flag = key.value
-              if flag.starts(t"--") && flag.contains(t"=")
-              then
-                val key2 = key.copy(format = Argument.Format.EqualityPrefix)
-                val value = key.copy(format = Argument.Format.EqualitySuffix)
-                List(key2 -> (value :: values))
-              else if flag.starts(t"-") && !flag.starts(t"--") && flag.length > 2
-              then
-                if clustering then
-                  val init =
-                    (0 until (flag.length - 2)).to(List).map: index =>
-                      key.copy(format = Argument.Format.CharFlag(index.z)) -> Nil
+      def postprocess(commandline: Commandline): Commandline =
+        val parameters2: Map[Argument, List[Argument]] =
+          commandline.parameters.to(List).flatMap: (key, values) =>
+            val flag = key.value
+            if flag.starts(t"--") && flag.contains(t"=")
+            then
+              val key2 = key.copy(format = Argument.Format.EqualityPrefix)
+              val value = key.copy(format = Argument.Format.EqualitySuffix)
+              List(key2 -> (value :: values))
+            else if flag.starts(t"-") && !flag.starts(t"--") && flag.length > 2
+            then
+              if clustering then
+                val init =
+                  (0 until (flag.length - 2)).to(List).map: index =>
+                    key.copy(format = Argument.Format.CharFlag(index.z)) -> Nil
 
-                  init :+ (key.copy(format = Argument.Format.CharFlag((flag.length - 2).z)), values)
-                else
-                  List:
-                    key.copy(format = Argument.Format.CharFlag(Prim))
-                    -> (key.copy(format = Argument.Format.FlagSuffix) :: values)
+                init :+ (key.copy(format = Argument.Format.CharFlag((flag.length - 2).z)), values)
+              else
+                List:
+                  key.copy(format = Argument.Format.CharFlag(Prim))
+                  -> (key.copy(format = Argument.Format.FlagSuffix) :: values)
 
-              else List(key -> values)
-            . to(Map)
+            else List(key -> values)
+          . to(Map)
 
-          val focus2 = current.let: current =>
-            val focusCursor: Ordinal = current.cursor.or(current.value.length).z
+        val focus2 = current.let: current =>
+          val focusCursor: Ordinal = current.cursor.or(current.value.length).z
 
-            (parameters2.keySet ++ parameters2.values.flatten).find: argument =>
-              current.position == argument.position && argument.contains(focusCursor)
+          (parameters2.keySet ++ parameters2.values.flatten).find: argument =>
+            current.position == argument.position && argument.contains(focusCursor)
 
-            . optional
+          . optional
 
-          commandline.copy(parameters = parameters2, focus = focus2)
+        commandline.copy(parameters = parameters2, focus = focus2)
 
-        todo match
-          case head :: tail =>
-            if head.value == t"--" then push().copy(postpositional = tail)
-            else if head.value.starts(t"-") then recur(tail, Nil, head, push())
-            else
-              val commandline2 =
-                if head.cursor.present then commandline.copy(focus = current) else commandline
-              recur(tail, head :: arguments, current, commandline2)
+      todo match
+        case head :: tail =>
+          if head.value == t"--" then push().copy(postpositional = tail)
+          else if head.value.starts(t"-") then recur(tail, Nil, head, push())
+          else
+            val commandline2 =
+              if head.cursor.present then commandline.copy(focus = current) else commandline
+            recur(tail, head :: arguments, current, commandline2)
 
-          case Nil =>
-            postprocess(push())
+        case Nil =>
+          postprocess(push())
 
     recur(arguments, Nil, Unset, Commandline())
 

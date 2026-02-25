@@ -48,10 +48,10 @@ object Price:
   def apply[currency <: Label](principal0: Money in currency, tax0: Money in currency)
   :   Price in currency =
 
-      new Price:
-        type Form = currency
-        val principal = principal0
-        val tax = tax0
+    new Price:
+      type Form = currency
+      val principal = principal0
+      val tax = tax0
 
 trait Price:
   type Form <: Label

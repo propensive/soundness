@@ -44,7 +44,7 @@ object System:
       ( using properties: System, reader: String is Property of property )
     :   property =
 
-        reader.read(properties(property), property)
+      reader.read(properties(property), property)
 
 
     def selectDynamic(key: String): Property.Access[key.type] = Property.Access[key.type](key)

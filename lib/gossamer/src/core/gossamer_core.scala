@@ -372,26 +372,26 @@ package proximities:
   given levenshteinDistance: (sensitivity: CaseSensitivity)
   =>  (Proximity { type Triangulable = true }) by Int =
 
-      (left, right) =>
-        val m = left.s.length
-        val n = right.length
-        val old = new Array[Int](n + 1)
-        val dist = new Array[Int](n + 1)
+    (left, right) =>
+      val m = left.s.length
+      val n = right.length
+      val old = new Array[Int](n + 1)
+      val dist = new Array[Int](n + 1)
 
-        for j <- 1 to n do old(j) = old(j - 1) + 1
+      for j <- 1 to n do old(j) = old(j - 1) + 1
 
-        for i <- 1 to m do
-          dist(0) = old(0) + 1
+      for i <- 1 to m do
+        dist(0) = old(0) + 1
 
-          for j <- 1 to n do
-            val c =
-              if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1
+        for j <- 1 to n do
+          val c =
+            if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1
 
-            dist(j) = (old(j - 1) + c).min(old(j) + 1).min(dist(j - 1) + 1)
+          dist(j) = (old(j - 1) + c).min(old(j) + 1).min(dist(j - 1) + 1)
 
-          for j <- 0 to n do old(j) = dist(j)
+        for j <- 0 to n do old(j) = dist(j)
 
-        dist(n)
+      dist(n)
 
 
   given normalizedLevenshteinDistance: CaseSensitivity => Proximity by Double =

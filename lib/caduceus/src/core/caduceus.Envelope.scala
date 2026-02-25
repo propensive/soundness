@@ -54,14 +54,14 @@ object Envelope:
     ( using courier: Courier, sender: Sender )
   :   Envelope =
 
-      Envelope
-        ( sender.email,
-          many(to),
-          many(cc),
-          many(bcc),
-          many(replyTo),
-          subject,
-          sendable.email(email) )
+    Envelope
+      ( sender.email,
+        many(to),
+        many(cc),
+        many(bcc),
+        many(replyTo),
+        subject,
+        sendable.email(email) )
 
 
 case class Envelope

@@ -46,18 +46,18 @@ object Resolvable:
             encodable:   operand is Encodable in Text )
   :   result is Resolvable by operand raises ReferenceError =
 
-      new Resolvable:
-        type Self = result
-        type Operand = operand
+    new Resolvable:
+      type Self = result
+      type Operand = operand
 
-        def field: Text = annotated.asInstanceOf[Annotated.Field].field
+      def field: Text = annotated.asInstanceOf[Annotated.Field].field
 
-        def resolve(reference: Operand): Self raises ReferenceError =
-          def deref(value: result): operand =
-            dereference.select(value, annotated.asInstanceOf[Annotated.Field].field)
+      def resolve(reference: Operand): Self raises ReferenceError =
+        def deref(value: result): operand =
+          dereference.select(value, annotated.asInstanceOf[Annotated.Field].field)
 
-          store.find(deref(_) == reference).getOrElse:
-            abort(ReferenceError(reference.encode))
+        store.find(deref(_) == reference).getOrElse:
+          abort(ReferenceError(reference.encode))
 
 
 trait Resolvable:

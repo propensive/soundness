@@ -112,17 +112,17 @@ object Plutocrat:
     protected[plutocrat] def apply[currency <: Label](currency: Text, value: Long)
     :   Money in currency =
 
-        val c1 = ((currency.s(0) - 'A') & 0b11111L) << 59
-        val c2 = ((currency.s(1) - 'A') & 0b11111L) << 54
-        val c3 = ((currency.s(2) - 'A') & 0b11111L) << 49
+      val c1 = ((currency.s(0) - 'A') & 0b11111L) << 59
+      val c2 = ((currency.s(1) - 'A') & 0b11111L) << 54
+      val c3 = ((currency.s(2) - 'A') & 0b11111L) << 49
 
-        (value & ((1L << 49) - 1L) | c1 | c2 | c3).asInstanceOf[Money in currency]
+      (value & ((1L << 49) - 1L) | c1 | c2 | c3).asInstanceOf[Money in currency]
 
 
     protected[plutocrat] def apply[currency <: Label](currency: Text, value: Double)
     :   Money in currency =
 
-        apply[currency](currency, Math.round(value))
+      apply[currency](currency, Math.round(value))
 
 
     def apply[currency <: Label: ValueOf](value: Long): Money in currency =
@@ -139,38 +139,38 @@ object Plutocrat:
 
     given addable: [currency <: Label]
     =>  (Money in currency) is Addable by (Money in currency) to (Money in currency) =
-        (left, right) =>
-          Money(left.currency, left.value + right.value).in[currency]
+      (left, right) =>
+        Money(left.currency, left.value + right.value).in[currency]
 
     given subtractable: [currency <: Label]
     =>  (Money in currency) is Subtractable by (Money in currency) to (Money in currency) =
 
-        (left, right) =>
-          Money(left.currency, left.value - right.value).in[currency]
+      (left, right) =>
+        Money(left.currency, left.value - right.value).in[currency]
 
     given multiplicable: [currency <: Label]
     =>  (Money in currency) is Multiplicable by Double to (Money in currency) =
 
-        (left, right) =>
-          Money(left.currency, left.value*right).in[currency]
+      (left, right) =>
+        Money(left.currency, left.value*right).in[currency]
 
     given divisible: [currency <: Label, money <: (Money in currency)]
     =>  money is Divisible:
-        type Self = money
-        type Operand = Double
-        type Result = Money in currency
+      type Self = money
+      type Operand = Double
+      type Result = Money in currency
 
-        def divide(left: money, right: Double): Money in currency =
-          Money(left.currency, left.value/right).in[currency]
+      def divide(left: money, right: Double): Money in currency =
+        Money(left.currency, left.value/right).in[currency]
 
     given divisible2: [currency <: Label, left <: Money in currency, right <: Money in currency]
     =>  left is Divisible:
 
-        type Self = left
-        type Operand = right
-        type Result = Double
+      type Self = left
+      type Operand = right
+      type Result = Double
 
-        def divide(left: left, right: right): Double = left.value.toDouble/right.value.toDouble
+      def divide(left: left, right: right): Double = left.value.toDouble/right.value.toDouble
 
 
     given divisible3: [currency <: Label, money <: Money in currency] => money is Divisible:
@@ -190,7 +190,7 @@ object Plutocrat:
           inline greaterThan: Boolean )
       :   Boolean =
 
-          if left.value == right.value then !strict else (left.value < right.value)^greaterThan
+        if left.value == right.value then !strict else (left.value < right.value)^greaterThan
 
 
     given zeroic: [currency <: Label: Currency] => (Money in currency) is Zeroic:

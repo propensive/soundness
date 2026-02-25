@@ -50,8 +50,8 @@ object Grid:
   given printable: [text: {Textual, Printable as printable}] => (Text is Measurable)
   =>  Grid[text] is Printable =
 
-      (layout, termcap) =>
-        layout.render.map(printable.print(_, termcap)).join(t"\n")
+    (layout, termcap) =>
+      layout.render.map(printable.print(_, termcap)).join(t"\n")
 
 case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
 

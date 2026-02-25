@@ -52,30 +52,30 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
           TerminalSizeDetection)
 :   result raises TerminalError =
 
-    given terminal: Terminal = Terminal(console.signals)
+  given terminal: Terminal = Terminal(console.signals)
 
-    if summon[BackgroundColorDetection]() then Out.print(Terminal.reportBackground)
-    if summon[TerminalFocusDetection]() then Out.print(Terminal.enableFocus)
-    if summon[BracketedPasteMode]() then Out.print(Terminal.enablePaste)
-    if summon[TerminalSizeDetection]() then Out.print(Terminal.reportSize)
+  if summon[BackgroundColorDetection]() then Out.print(Terminal.reportBackground)
+  if summon[TerminalFocusDetection]() then Out.print(Terminal.enableFocus)
+  if summon[BracketedPasteMode]() then Out.print(Terminal.enablePaste)
+  if summon[TerminalSizeDetection]() then Out.print(Terminal.reportSize)
 
-    try
-      if console.stdio.platform then
-        val processBuilder =
-          ProcessBuilder("stty", "intr", "undef", "-echo", "icanon", "raw", "opost")
+  try
+    if console.stdio.platform then
+      val processBuilder =
+        ProcessBuilder("stty", "intr", "undef", "-echo", "icanon", "raw", "opost")
 
-        processBuilder.inheritIO()
-        if processBuilder.start().nn.waitFor() != 0 then abort(TerminalError())
-      block(using terminal)
+      processBuilder.inheritIO()
+      if processBuilder.start().nn.waitFor() != 0 then abort(TerminalError())
+    block(using terminal)
 
-    finally
-      terminal.signals.stop()
-      terminal.stdio.in.close()
-      terminal.events.stop()
-      safely(terminal.pumpSignals.attend())
-      safely(terminal.pumpInput.await())
-      if summon[BracketedPasteMode]() then Out.print(Terminal.disablePaste)
-      if summon[TerminalFocusDetection]() then Out.print(Terminal.disableFocus)
+  finally
+    terminal.signals.stop()
+    terminal.stdio.in.close()
+    terminal.events.stop()
+    safely(terminal.pumpSignals.attend())
+    safely(terminal.pumpInput.await())
+    if summon[BracketedPasteMode]() then Out.print(Terminal.disablePaste)
+    if summon[TerminalFocusDetection]() then Out.print(Terminal.disableFocus)
 
 
 package keyboards:

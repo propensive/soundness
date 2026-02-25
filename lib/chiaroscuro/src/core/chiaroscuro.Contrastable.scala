@@ -217,30 +217,30 @@ object Contrastable:
       rightDebug: Text )
   :   Juxtaposition =
 
-      if left == right then Juxtaposition.Same(leftDebug) else
-        val comparison = IArray.from:
-          diff(left, right).rdiff(_ == _, 10).changes.map:
-            case Par(leftIndex, rightIndex, value) =>
-              val label =
-                if leftIndex == rightIndex then leftIndex.show
-                else t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
+    if left == right then Juxtaposition.Same(leftDebug) else
+      val comparison = IArray.from:
+        diff(left, right).rdiff(_ == _, 10).changes.map:
+          case Par(leftIndex, rightIndex, value) =>
+            val label =
+              if leftIndex == rightIndex then leftIndex.show
+              else t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
 
-              label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
+            label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
 
-            case Ins(rightIndex, value) =>
-              t" ╱${rightIndex.show.subscripts}"
-              -> Juxtaposition.Different(t"", value.short)
+          case Ins(rightIndex, value) =>
+            t" ╱${rightIndex.show.subscripts}"
+            -> Juxtaposition.Different(t"", value.short)
 
-            case Del(leftIndex, value) =>
-              t"${leftIndex.show.superscripts}╱ "
-              -> Juxtaposition.Different(value.let(_.short).or(t"?"), t"")
+          case Del(leftIndex, value) =>
+            t"${leftIndex.show.superscripts}╱ "
+            -> Juxtaposition.Different(value.let(_.short).or(t"?"), t"")
 
-            case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
-              val label = t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
+          case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
+            val label = t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
 
-              label -> juxtaposition(t"", Decomposition(leftValue), Decomposition(rightValue))
+            label -> juxtaposition(t"", Decomposition(leftValue), Decomposition(rightValue))
 
-        Juxtaposition.Collation(name, comparison.to(List), leftDebug, rightDebug)
+      Juxtaposition.Collation(name, comparison.to(List), leftDebug, rightDebug)
 
   trait Foundation2:
     given showable: [value: Showable] => value is Contrastable = (left, right) =>

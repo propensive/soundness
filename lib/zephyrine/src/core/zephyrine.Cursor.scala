@@ -75,14 +75,14 @@ object Cursor:
             lineation0:   Lineation by addressable0.Operand )
   :   Cursor[data] =
 
-      if iterator.hasNext then
-        val initial = iterator.next()
+    if iterator.hasNext then
+      val initial = iterator.next()
 
-        new Cursor[data]
-          ( initial, addressable0.length(initial), iterator, addressable0, lineation0 )
+      new Cursor[data]
+        ( initial, addressable0.length(initial), iterator, addressable0, lineation0 )
 
-      else
-        new Cursor[data](addressable0.empty, 0, Iterator.empty, addressable0, lineation0)
+    else
+      new Cursor[data](addressable0.empty, 0, Iterator.empty, addressable0, lineation0)
 
 class Cursor[data]
   (             initial:    data,
@@ -202,7 +202,7 @@ class Cursor[data]
   inline def lay[result](inline otherwise: => result)(inline lambda: addressable.Operand => result)
   :   result =
 
-      if !finished then lambda(addressable.address(current, focus)) else otherwise
+    if !finished then lambda(addressable.address(current, focus)) else otherwise
 
   inline def let(inline lambda: addressable.Operand => Unit): Unit =
     if !finished then lambda(addressable.address(current, focus))

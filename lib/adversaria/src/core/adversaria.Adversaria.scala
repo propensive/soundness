@@ -72,62 +72,62 @@ object Adversaria:
   def general[operand <: StaticAnnotation: Type, self: Type, plane: Type, limit: Type]
   :   Macro[self is Annotated by operand on plane under limit] =
 
-      import quotes.reflect.{Annotated as _, *}
+    import quotes.reflect.{Annotated as _, *}
 
-      val self = TypeRepr.of[self]
-      val plane = TypeRepr.of[plane]
-      val operand = TypeRepr.of[operand]
-      val limit = TypeRepr.of[limit]
+    val self = TypeRepr.of[self]
+    val plane = TypeRepr.of[plane]
+    val operand = TypeRepr.of[operand]
+    val limit = TypeRepr.of[limit]
 
-      val paramss = self.classSymbol.get.primaryConstructor.paramSymss
-      val params = paramss.find(_.headOption.fold(false)(_.isTerm)).getOrElse(Nil)
+    val paramss = self.classSymbol.get.primaryConstructor.paramSymss
+    val params = paramss.find(_.headOption.fold(false)(_.isTerm)).getOrElse(Nil)
 
 
-      def matching(annotations: List[Term]): Expr[List[operand]] =
-        Expr.ofList:
-          annotations.map(_.asExpr).collect:
-              case '{$annotation: `operand`} => rebuild(annotation.asTerm)
-          . compact
-          . map(_.asExprOf[operand])
-          . reverse
+    def matching(annotations: List[Term]): Expr[List[operand]] =
+      Expr.ofList:
+        annotations.map(_.asExpr).collect:
+            case '{$annotation: `operand`} => rebuild(annotation.asTerm)
+        . compact
+        . map(_.asExprOf[operand])
+        . reverse
 
-      if limit =:= TypeRepr.of[Any] then
-        val annotations = matching(self.typeSymbol.annotations)
+    if limit =:= TypeRepr.of[Any] then
+      val annotations = matching(self.typeSymbol.annotations)
 
-        val params2 = params.per(plane.literal[String]): (params, field) =>
-          params.filter(_.name == field)
+      val params2 = params.per(plane.literal[String]): (params, field) =>
+        params.filter(_.name == field)
 
-        val fields =
-          params2.flatMap: param =>
-            if param.annotations.nil then Nil else
-              List(param.name ->'{(${Expr(param.name)}.tt, ${matching(param.annotations)}.to(Set))})
-          . to(Map)
+      val fields =
+        params2.flatMap: param =>
+          if param.annotations.nil then Nil else
+            List(param.name ->'{(${Expr(param.name)}.tt, ${matching(param.annotations)}.to(Set))})
+        . to(Map)
 
-        if fields.size == 1
-        then
-          val field: String = fields.head(0)
-          val target: TypeRepr = ConstantType(StringConstant(field))
+      if fields.size == 1
+      then
+        val field: String = fields.head(0)
+        val target: TypeRepr = ConstantType(StringConstant(field))
 
-          (params.find(_.name == field).get.info.asType, target.asType).absolve match
-            case ('[topic], '[ type target <: Label; target ]) =>
-              ' {
-                  Annotated.AnnotatedField[operand, self, plane, limit, topic, target]
-                    ( $annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map) )
-                }
-        else
-          ' {
-              Annotated.AnnotatedFields[operand, self, plane, limit]
-                ( $annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map) )
-            }
-
+        (params.find(_.name == field).get.info.asType, target.asType).absolve match
+          case ('[topic], '[ type target <: Label; target ]) =>
+            ' {
+                Annotated.AnnotatedField[operand, self, plane, limit, topic, target]
+                  ( $annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map) )
+              }
       else
-        val subtypes = limit.typeSymbol.children.map: subtype =>
-          '{(${Expr(subtype.name)}.tt, ${matching(subtype.annotations)}.to(Set))}
-
         ' {
-            Annotated.AnnotatedSubtypes[operand, self, plane, limit]
-              ( ${Expr.ofList(subtypes)}.to(Map) )
+            Annotated.AnnotatedFields[operand, self, plane, limit]
+              ( $annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map) )
           }
+
+    else
+      val subtypes = limit.typeSymbol.children.map: subtype =>
+        '{(${Expr(subtype.name)}.tt, ${matching(subtype.annotations)}.to(Set))}
+
+      ' {
+          Annotated.AnnotatedSubtypes[operand, self, plane, limit]
+            ( ${Expr.ofList(subtypes)}.to(Map) )
+        }
 
 
 

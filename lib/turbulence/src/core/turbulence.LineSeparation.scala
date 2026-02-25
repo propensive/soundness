@@ -43,35 +43,35 @@ object LineSeparation:
     ( lineSeparators: LineSeparation )
   :   Unit =
 
-      val action: Action = read match
-        case 10 =>
-          next
+    val action: Action = read match
+      case 10 =>
+        next
 
-          read match
-            case 13 => next; lineSeparators.lfcr
-            case ch => lineSeparators.lf
+        read match
+          case 13 => next; lineSeparators.lfcr
+          case ch => lineSeparators.lf
 
-        case 13 =>
-          next
+      case 13 =>
+        next
 
-          read match
-            case 10 => next; lineSeparators.crlf
-            case ch => lineSeparators.cr
+        read match
+          case 10 => next; lineSeparators.crlf
+          case ch => lineSeparators.cr
 
-        case ch =>
-          put(ch)
-          Action.Skip
+      case ch =>
+        put(ch)
+        Action.Skip
 
-      action match
-        case Action.Nl   => mkNewline
-        case Action.NlCr => mkNewline; put(13)
-        case Action.NlLf => mkNewline; put(10)
-        case Action.CrNl => put(13); mkNewline
-        case Action.NlNl => mkNewline; mkNewline
-        case Action.Cr   => put(13)
-        case Action.Lf   => put(10)
-        case Action.LfNl => put(10); mkNewline
-        case Action.Skip => ()
+    action match
+      case Action.Nl   => mkNewline
+      case Action.NlCr => mkNewline; put(13)
+      case Action.NlLf => mkNewline; put(10)
+      case Action.CrNl => put(13); mkNewline
+      case Action.NlNl => mkNewline; mkNewline
+      case Action.Cr   => put(13)
+      case Action.Lf   => put(10)
+      case Action.LfNl => put(10); mkNewline
+      case Action.Skip => ()
 
   enum NewlineSeq:
     case Cr, Lf, CrLf, LfCr

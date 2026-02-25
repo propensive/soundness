@@ -90,20 +90,20 @@ class Database(size: Int):
     ( using (left -< right) <:< Tuple.Union[Topic] )
   :   Unit raises DataError =
 
-      val relationIndex = !![Topic].indexOf[left -< right]
-      val relation = relate[left, right]
-      val corelation = corelate[left, right]
+    val relationIndex = !![Topic].indexOf[left -< right]
+    val relation = relate[left, right]
+    val corelation = corelate[left, right]
 
-      val relation2 = relation.updated(left, relation.at(left).or(Set()) + right)
-      val corelation2 = corelation.updated(right, left)
-      relations(relationIndex) = relation2
-      corelations(relationIndex) = corelation2
+    val relation2 = relation.updated(left, relation.at(left).or(Set()) + right)
+    val corelation2 = corelation.updated(right, left)
+    relations(relationIndex) = relation2
+    corelations(relationIndex) = corelation2
 
 
   inline def lookup[left, right](left: Ref of left in this.type)
   :   Set[Ref of right in this.type] raises DataError =
 
-      relate[left, right].at(left).or(Set()).asInstanceOf[Set[Ref of right in this.type]]
+    relate[left, right].at(left).or(Set()).asInstanceOf[Set[Ref of right in this.type]]
 
 
   inline def unassign[left, right]
@@ -111,13 +111,13 @@ class Database(size: Int):
     ( using (left -< right) <:< Tuple.Union[Topic] )
   :   Unit raises DataError =
 
-      val relationIndex = !![Topic].indexOf[left -< right]
-      val relation = relate[left, right]
-      val corelation = corelate[left, right]
+    val relationIndex = !![Topic].indexOf[left -< right]
+    val relation = relate[left, right]
+    val corelation = corelate[left, right]
 
-      val relation2: Map[Ref, Set[Ref]] =
-        relation.updated(left, relation.at(left).let(_ - right).or(Set()))
+    val relation2: Map[Ref, Set[Ref]] =
+      relation.updated(left, relation.at(left).let(_ - right).or(Set()))
 
-      val corelation2 = corelation - right
-      relations(relationIndex) = relation2
-      corelations(relationIndex) = corelation2
+    val corelation2 = corelation - right
+    relations(relationIndex) = relation2
+    corelations(relationIndex) = corelation2

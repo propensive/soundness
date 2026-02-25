@@ -126,10 +126,10 @@ object Hyperbole:
           parameter: Optional[Text]     = Unset )
       :   TastyTree =
 
-          val shown = tree.let(_.show.tt).or(repr.let(_.show)).or(t"")
-          val code = tree.let(source(_)).or(e"")
+        val shown = tree.let(_.show.tt).or(repr.let(_.show)).or(t"")
+        val code = tree.let(source(_)).or(e"")
 
-          TastyTree(tag, typeName, name, shown, code, Nil, parameter, true, false)
+        TastyTree(tag, typeName, name, shown, code, Nil, parameter, true, false)
 
 
       def repr(name: Text, repr: Optional[TypeRepr], parameter: Optional[Text] = Unset): TastyTree =

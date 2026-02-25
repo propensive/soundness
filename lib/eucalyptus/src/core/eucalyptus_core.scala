@@ -78,7 +78,7 @@ extension (logObject: Log.type)
     ( lambda: (event is Loggable) ?=> result )
   :   result =
 
-      lambda(using loggable.contramap(_.tag(value)))
+    lambda(using loggable.contramap(_.tag(value)))
 
 
   def ignore[event, message]: message transcribes event = new Transcribable:
@@ -97,18 +97,18 @@ extension (logObject: Log.type)
     ( using Monitor )
   :   entry is Loggable =
 
-      new:
-        type Self = entry
+    new:
+      type Self = entry
 
-        private lazy val spool: Spool[writable.Operand] = Spool().tap: spool =>
-          val task = async(spool.stream.writeTo(target))
+      private lazy val spool: Spool[writable.Operand] = Spool().tap: spool =>
+        val task = async(spool.stream.writeTo(target))
 
-          Os.intercept[Shutdown]:
-            spool.stop()
-            safely(task.await())
+        Os.intercept[Shutdown]:
+          spool.stop()
+          safely(task.await())
 
-        def log(level: Level, realm: Realm, timestamp: Long, event: entry): Unit =
-          spool.put(event.format(level, realm, timestamp))
+      def log(level: Level, realm: Realm, timestamp: Long, event: entry): Unit =
+        spool.put(event.format(level, realm, timestamp))
 
 
 package logging:
@@ -117,12 +117,12 @@ package logging:
   given stdout: [format: Printable, inscribable: Inscribable in format] => Stdio
   =>  inscribable is Loggable =
 
-      (level, realm, timestamp, event) =>
-        Out.println(inscribable.formatter(event, level, realm, timestamp))
+    (level, realm, timestamp, event) =>
+      Out.println(inscribable.formatter(event, level, realm, timestamp))
 
 
   given stderr: [inscribable: Inscribable in format, format: Printable] => Stdio
   =>  inscribable is Loggable =
 
-      (level, realm, timestamp, event) =>
-        Err.println(inscribable.formatter(event, level, realm, timestamp))
+    (level, realm, timestamp, event) =>
+      Err.println(inscribable.formatter(event, level, realm, timestamp))

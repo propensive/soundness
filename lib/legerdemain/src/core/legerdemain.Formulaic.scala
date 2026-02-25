@@ -57,11 +57,11 @@ object Formulaic extends ProductDerivable[Formulaic]:
         formulation: Formulation )
     :   Seq[Html of Flow] =
 
-        val message: Optional[Message] = validation(pointer)
-        val widget = renderable.render(elicitable.widget(pointer.text, legend, query().or(t"")))
-        val required = false//safely(decodable.decoded(t"")).absent
+      val message: Optional[Message] = validation(pointer)
+      val widget = renderable.render(elicitable.widget(pointer.text, legend, query().or(t"")))
+      val required = false//safely(decodable.decoded(t"")).absent
 
-        List(formulation.element(widget, legend, message, required))
+      List(formulation.element(widget, legend, message, required))
 
 
   inline def join[derivation <: Product: ProductReflection]: derivation is Formulaic =

@@ -52,7 +52,7 @@ object Austronesian:
               | java.lang.Double )
     :   Pojo =
 
-        pojo
+      pojo
 
 
     given text: Text is Encodable:
@@ -103,7 +103,7 @@ object Austronesian:
     given list: [collection <: Iterable, element: Encodable in Pojo]
     =>  collection[element] is Encodable in Pojo =
 
-        iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
+      iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
 
     given text2: Text is Decodable:
       type Form = Pojo

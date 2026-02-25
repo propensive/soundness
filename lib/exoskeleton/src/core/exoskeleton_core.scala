@@ -105,14 +105,14 @@ package executives:
       ( using interpreter: Interpreter )
     :   Invocation =
 
-        Invocation
-          ( Cli.arguments(arguments, Unset, Unset, Unset),
-            environments.java,
-            workingDirectories.java,
-            stdio,
-            signals,
-            arguments.size == 0 || arguments.head != t"{admin}",
-            login )
+      Invocation
+        ( Cli.arguments(arguments, Unset, Unset, Unset),
+          environments.java,
+          workingDirectories.java,
+          stdio,
+          signals,
+          arguments.size == 0 || arguments.head != t"{admin}",
+          login )
 
 
     def process(invocation: Invocation)(exitStatus: Interface ?=> Exit): Exit =

@@ -60,6 +60,6 @@ case class Submission[value](query: Optional[Query]):
     ( using value is Formulaic, value is Encodable in Query, Formulation )
   :   Html of Flow =
 
-      // FIXME: Check why `data` isn't used
-      val data: Optional[Query] = query.or(value.let(_.encode))
-      elicit[value](query, validation.or(Validation()), submit)
+    // FIXME: Check why `data` isn't used
+    val data: Optional[Query] = query.or(value.let(_.encode))
+    elicit[value](query, validation.or(Validation()), submit)

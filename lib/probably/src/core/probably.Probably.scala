@@ -52,74 +52,60 @@ object Probably:
       action:    Expr[Trial[test] => result] )
   :   Macro[result] =
 
-      import quotes.reflect.*
+    import quotes.reflect.*
 
-      Expr.summon[Runner[?]].getOrElse(halt(m"No `Runner` instance is available")).absolve match
-        case '{$runner: Runner[report]} =>
+    Expr.summon[Runner[?]].getOrElse(halt(m"No `Runner` instance is available")).absolve match
+      case '{$runner: Runner[report]} =>
 
-          val inclusion = Expr.summon[Inclusion[report, Verdict]].getOrElse:
-            halt(m"Can't embed test verdicts in ${Type.of[report].show}")
+        val inclusion = Expr.summon[Inclusion[report, Verdict]].getOrElse:
+          halt(m"Can't embed test verdicts in ${Type.of[report].show}")
 
-          val inclusion2 = Expr.summon[Inclusion[report, Verdict.Detail]].getOrElse:
-            halt(m"Can't embed test details in ${Type.of[report].show}")
+        val inclusion2 = Expr.summon[Inclusion[report, Verdict.Detail]].getOrElse:
+          halt(m"Can't embed test details in ${Type.of[report].show}")
 
 
-          def lift(predicate: Expr[Any]): Option[Expr[Any]] = predicate.asTerm match
-            case Inlined(_, _, predicate) => lift(predicate.asExpr)
-            case Block(List(DefDef(a, _, _, Some(expression))), Closure(Ident(b), _)) if a == b =>
-              expression match
-                case Apply(Select(Ident(_), "=="), List(term)) => Some(term.asExpr)
-                case Apply(Select(term, "=="), List(Ident(_))) => Some(term.asExpr)
-                case other                                     => None
+        def lift(predicate: Expr[Any]): Option[Expr[Any]] = predicate.asTerm match
+          case Inlined(_, _, predicate) => lift(predicate.asExpr)
+          case Block(List(DefDef(a, _, _, Some(expression))), Closure(Ident(b), _)) if a == b =>
+            expression match
+              case Apply(Select(Ident(_), "=="), List(term)) => Some(term.asExpr)
+              case Apply(Select(term, "=="), List(Ident(_))) => Some(term.asExpr)
+              case other                                     => None
 
-            case other =>
-              None
+          case other =>
+            None
 
-          val exp: Option[Expr[Any]] = lift(predicate)
+        val exp: Option[Expr[Any]] = lift(predicate)
 
-          val analyse = Expr.summon[Autopsy].absolve match
-            case None =>
-              Unset
+        val analyse = Expr.summon[Autopsy].absolve match
+          case None =>
+            Unset
 
-            case Some('{type analyse; $autopsy: (Autopsy { type Analyse = analyse })}) =>
-              TypeRepr.of[analyse].literal[Boolean]
+          case Some('{type analyse; $autopsy: (Autopsy { type Analyse = analyse })}) =>
+            TypeRepr.of[analyse].literal[Boolean]
 
-          if analyse.or(false) then exp match
-            case Some('{type testType >: test; $expr: testType}) =>
-              val decomposable: Expr[testType is Decomposable] =
-                Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
+        if analyse.or(false) then exp match
+          case Some('{type testType >: test; $expr: testType}) =>
+            val decomposable: Expr[testType is Decomposable] =
+              Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
 
-              ' {
-                  given decompose: testType is Decomposable = $decomposable
-                  val contrast = infer[testType is Contrastable]
+            ' {
+                given decompose: testType is Decomposable = $decomposable
+                val contrast = infer[testType is Contrastable]
 
-                  assertion[testType, test, report, result]
-                    ( $runner,
-                      $test,
-                      $predicate,
-                      $action,
-                      contrast,
-                      Some($expr),
-                      $inclusion,
-                      $inclusion2,
-                      decompose )
-                }
+                assertion[testType, test, report, result]
+                  ( $runner,
+                    $test,
+                    $predicate,
+                    $action,
+                    contrast,
+                    Some($expr),
+                    $inclusion,
+                    $inclusion2,
+                    decompose )
+              }
 
-            case _ =>
-              ' {
-                  ( assertion[test, test, report, result]
-                      ( $runner,
-                        $test,
-                        $predicate,
-                        $action,
-                        Contrastable.nothing[test],
-                        None,
-                        $inclusion,
-                        $inclusion2,
-                        Decomposable.any[test] ) )
-                }
-
-          else
+          case _ =>
             ' {
                 ( assertion[test, test, report, result]
                     ( $runner,
@@ -130,8 +116,22 @@ object Probably:
                       None,
                       $inclusion,
                       $inclusion2,
-                      Decomposable.any[test]) )
+                      Decomposable.any[test] ) )
               }
+
+        else
+          ' {
+              ( assertion[test, test, report, result]
+                  ( $runner,
+                    $test,
+                    $predicate,
+                    $action,
+                    Contrastable.nothing[test],
+                    None,
+                    $inclusion,
+                    $inclusion2,
+                    Decomposable.any[test]) )
+            }
 
   def check[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[test] =
     handle[test, test](test, predicate, '{(t: Trial[test]) => t.get})
@@ -157,36 +157,36 @@ object Probably:
       decomposable: test is Decomposable )
   :   result =
 
-      runner.run(test).pipe: run =>
-        val verdict = run match
-          case Trial.Throws(err, duration, map) =>
-            val exception: Exception = try err() catch case exc: Exception => exc
-            if !map.nil then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
-            Verdict.Throws(exception, duration)
+    runner.run(test).pipe: run =>
+      val verdict = run match
+        case Trial.Throws(err, duration, map) =>
+          val exception: Exception = try err() catch case exc: Exception => exc
+          if !map.nil then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
+          Verdict.Throws(exception, duration)
 
-          case Trial.Returns(value, duration, map) =>
-            try if predicate(value) then Verdict.Pass(duration) else
-              exp match
-                case Some(exp) =>
-                  inc2.include
-                    ( runner.report,
-                      test.id,
-                      Verdict.Detail.Compare
-                        ( decomposable.decomposition(exp).text,
-                          decomposable.decomposition(value).text,
-                          contrast.juxtaposition(exp, value) ) )
-                case None =>
-                  // inc2.include(runner.report, test.id, Verdict.Detail.Compare
-                  //  (summon[Any is Contrastable].compare(value, 1)))
+        case Trial.Returns(value, duration, map) =>
+          try if predicate(value) then Verdict.Pass(duration) else
+            exp match
+              case Some(exp) =>
+                inc2.include
+                  ( runner.report,
+                    test.id,
+                    Verdict.Detail.Compare
+                      ( decomposable.decomposition(exp).text,
+                        decomposable.decomposition(value).text,
+                        contrast.juxtaposition(exp, value) ) )
+              case None =>
+                // inc2.include(runner.report, test.id, Verdict.Detail.Compare
+                //  (summon[Any is Contrastable].compare(value, 1)))
 
-              if !map.nil
-              then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
+            if !map.nil
+            then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
 
-              Verdict.Fail(duration)
-            catch case error: Exception => Verdict.CheckThrows(error, duration)
+            Verdict.Fail(duration)
+          catch case error: Exception => Verdict.CheckThrows(error, duration)
 
-        inc.include(runner.report, test.id, verdict)
-        result(run)
+      inc.include(runner.report, test.id, verdict)
+      result(run)
 
 
   def debug[test: Type](expr: Expr[test], test: Expr[Harness]): Macro[test] =

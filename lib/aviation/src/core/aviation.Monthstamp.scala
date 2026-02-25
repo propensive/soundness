@@ -43,13 +43,13 @@ object Monthstamp:
   given showable: (months: Months, separation: DateSeparation, endianness: Endianness, years: Years)
   =>  Monthstamp is Showable =
 
-      monthstamp =>
-        endianness match
-          case Endianness.LittleEndian =>
-            t"${monthstamp.year}${separation.separator}${monthstamp.month}"
+    monthstamp =>
+      endianness match
+        case Endianness.LittleEndian =>
+          t"${monthstamp.year}${separation.separator}${monthstamp.month}"
 
-          case _ =>
-            t"${monthstamp.month}${separation.separator}${monthstamp.year}"
+        case _ =>
+          t"${monthstamp.month}${separation.separator}${monthstamp.year}"
 
 
   given subtractable: Monthstamp is Subtractable:

@@ -58,8 +58,8 @@ object Servable:
   given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]
   =>  response is Servable =
 
-      Servable[response](value => unsafely(Media.parse(response.generic(value)(0)))): value =>
-        Http.Body.Streaming(response.generic(value)(1))
+    Servable[response](value => unsafely(Media.parse(response.generic(value)(0)))): value =>
+      Http.Body.Streaming(response.generic(value)(1))
 
   given data: Data is Servable = Servable[Data](_ => media"application/octet-stream"):
     Http.Body.Fixed(_)

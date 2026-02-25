@@ -58,33 +58,33 @@ object Property:
       ( using properties: System, reader: (name+"."+key.type) is Property of property )
     :   property =
 
-        val name = property+"."+key
-        reader.read(properties(name.tt), name.tt)
+      val name = property+"."+key
+      reader.read(properties(name.tt), name.tt)
 
 
     inline def apply[property]()
       ( using properties: System, reader: name is Property of property )
     :   property =
 
-        val name = valueOf[name]
-        reader.read(properties(name.tt), name.tt)
+      val name = valueOf[name]
+      reader.read(properties(name.tt), name.tt)
 
   def apply[name <: String, property](lambda: Text => property)
   :   name is Property of property =
-      (value, property) =>
-        lambda(value.or(panic(m"the system property $property was unavailable")))
+    (value, property) =>
+      lambda(value.or(panic(m"the system property $property was unavailable")))
 
 
   given generic: [label <: String & Singleton] => Tactic[PropertyError]
   =>  label is Property of Text =
 
-      (value, property) => value.lest(PropertyError(property))
+    (value, property) => value.lest(PropertyError(property))
 
 
   given javaHome: [path: Instantiable across Paths from Text]
   =>  ( "java.home" is Property of path ) =
 
-      Property(path(_))
+    Property(path(_))
 
 
   // given javaLibraryPath: [path: Instantiable across Paths from Text]
@@ -109,7 +109,7 @@ object Property:
   given javaRuntimeVersion: Tactic[PropertyError]
   =>  ( "java.runtime.version" is Property of Text ) =
 
-      (value, name) => value.lest(PropertyError(name))
+    (value, name) => value.lest(PropertyError(name))
 
 
   given javaClassVersion: ("java.runtime.version" is Property of Int) =
@@ -133,13 +133,13 @@ object Property:
   given userHome: [path: Instantiable across Paths from Text]
   =>  ( "user.home" is Property of path ) =
 
-      Property(path(_))
+    Property(path(_))
 
 
   given userDir: [path: Instantiable across Paths from Text]
   =>  ( "user.dir" is Property of path ) =
 
-      Property(path(_))
+    Property(path(_))
 
 
   given osName: ("os.name" is Property of Text) = Property(identity)

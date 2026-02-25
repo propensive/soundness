@@ -145,13 +145,13 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
   def map[result2](lambda: Result => result2)(using Monitor, Codicil)
   :   Task[result2] raises AsyncError =
 
-      async(lambda(await()))
+    async(lambda(await()))
 
 
   def bind[result2](lambda: Result => Task[result2])(using Monitor, Codicil)
   :   Task[result2] raises AsyncError =
 
-      async(lambda(await()).await())
+    async(lambda(await()).await())
 
 
   def cancel(): Unit =
@@ -184,9 +184,9 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
   def await[abstractable: Abstractable across Durations to Long](duration: abstractable)
   :   Result raises AsyncError =
 
-      promise.attend(duration)
-      thread.join()
-      result()
+    promise.attend(duration)
+    thread.join()
+    result()
 
 
   def await(): Result raises AsyncError =

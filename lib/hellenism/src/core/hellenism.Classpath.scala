@@ -98,10 +98,10 @@ object Classpath extends Root(t""):
   =>  ( classloader: Classloader )
   =>  path is Streamable by Data =
 
-      given Tactic[StreamError] = strategies.throwUnsafely
+    given Tactic[StreamError] = strategies.throwUnsafely
 
-      Streamable.inputStream.contramap: path =>
-        classloader.inputStream(path.encode)
+    Streamable.inputStream.contramap: path =>
+      classloader.inputStream(path.encode)
 
 
 trait Classpath:

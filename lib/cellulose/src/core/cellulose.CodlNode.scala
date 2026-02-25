@@ -92,13 +92,13 @@ case class CodlNode(data: Optional[Atom] = Unset, extra: Optional[Extra] = Unset
 
   def selectDynamic(key: String)(using erased DynamicCodlEnabler): List[Atom] raises CodlError =
 
-      data.lest(CodlError(CodlError.Reason.MissingValue(key.show))).selectDynamic(key)
+    data.lest(CodlError(CodlError.Reason.MissingValue(key.show))).selectDynamic(key)
 
 
   def applyDynamic(key: String)(index: Int = 0)(using erased DynamicCodlEnabler)
   :   Atom raises CodlError =
 
-      selectDynamic(key)(index)
+    selectDynamic(key)(index)
 
 
   def untyped: CodlNode =

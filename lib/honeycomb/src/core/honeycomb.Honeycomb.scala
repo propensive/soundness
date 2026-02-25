@@ -80,74 +80,74 @@ object Honeycomb:
 
       def checkText(array: Expr[Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
       :   Expr[Boolean] =
-          '{${Expr(pattern.text)} == $scrutinee.text}
+        '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkComment(array: Expr[Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
       :   Expr[Boolean] =
 
-          '{${Expr(pattern.text)} == $scrutinee.text}
+        '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkFragment(array: Expr[Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
       :   Expr[Boolean] =
 
-          val children = '{$scrutinee.nodes}
+        val children = '{$scrutinee.nodes}
 
-          def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
-            if index == pattern.nodes.length then expr else
-              val expr2 =
-                descend(array, pattern.nodes(index), '{$children(${Expr(index)})}, '{true})
+        def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
+          if index == pattern.nodes.length then expr else
+            val expr2 =
+              descend(array, pattern.nodes(index), '{$children(${Expr(index)})}, '{true})
 
-              elements(index + 1)('{$expr && $expr2})
+            elements(index + 1)('{$expr && $expr2})
 
 
-          elements(0):
-            '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
+        elements(0):
+          '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
 
       def checkElement(array: Expr[Array[Any]], pattern: Element, scrutinee: Expr[Element])
       :   Expr[Boolean] =
 
-          def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
-            case Nil => expr
-            case "\u0000" :: tail =>
-              index += 1
-              types ::= TypeRepr.of[Map[Text, Optional[Text]]]
-              iterator.next()
-              val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
-              '{$expr && { $array(${Expr(index)}) = ${scrutinee}.attributes -- $others; true }}
+        def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
+          case Nil => expr
+          case "\u0000" :: tail =>
+            index += 1
+            types ::= TypeRepr.of[Map[Text, Optional[Text]]]
+            iterator.next()
+            val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
+            '{$expr && { $array(${Expr(index)}) = ${scrutinee}.attributes -- $others; true }}
 
-            case head :: tail =>
-              attributes(tail):
-                val boolean: Expr[Boolean] = pattern.attributes(head).let(_.s).absolve match
-                  case Unset      => '{$scrutinee.attributes(${Expr(head)}) == Unset}
-                  case "\u0000"   =>
-                    index += 1
-                    types ::= TypeRepr.of[Text]
-                    iterator.next()
-                    '{$array(${Expr(index)}) = $scrutinee.attributes(${Expr(head)}); true}
+          case head :: tail =>
+            attributes(tail):
+              val boolean: Expr[Boolean] = pattern.attributes(head).let(_.s).absolve match
+                case Unset      => '{$scrutinee.attributes(${Expr(head)}) == Unset}
+                case "\u0000"   =>
+                  index += 1
+                  types ::= TypeRepr.of[Text]
+                  iterator.next()
+                  '{$array(${Expr(index)}) = $scrutinee.attributes(${Expr(head)}); true}
 
-                  case text: Text =>
-                    '{$scrutinee.attributes(${Expr(head)}) == ${Expr(text)}}
+                case text: Text =>
+                  '{$scrutinee.attributes(${Expr(head)}) == ${Expr(text)}}
 
-                '{$expr && $boolean}
+              '{$expr && $boolean}
 
-          val attributesChecked = attributes(pattern.attributes.to(List).map(_(0)))('{true})
+        val attributesChecked = attributes(pattern.attributes.to(List).map(_(0)))('{true})
 
-          val children = '{$scrutinee.children}
+        val children = '{$scrutinee.children}
 
-          def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
-            if index == pattern.children.length then expr else
-              val expr2 =
-                descend(array, pattern.children(index), '{$children(${Expr(index)})}, '{true})
+        def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
+          if index == pattern.children.length then expr else
+            val expr2 =
+              descend(array, pattern.children(index), '{$children(${Expr(index)})}, '{true})
 
-              elements(index + 1)('{$expr && $expr2})
+            elements(index + 1)('{$expr && $expr2})
 
-          val elementsChecked = elements(0):
-            ' {
-                ${Expr(pattern.label)} == $scrutinee.label
-                && $scrutinee.children.length == ${Expr(pattern.children.length)}
-              }
+        val elementsChecked = elements(0):
+          ' {
+              ${Expr(pattern.label)} == $scrutinee.label
+              && $scrutinee.children.length == ${Expr(pattern.children.length)}
+            }
 
-          '{$attributesChecked && $elementsChecked}
+        '{$attributesChecked && $elementsChecked}
 
       def descend
         ( array: Expr[Array[Any]], pattern: Html, scrutinee: Expr[Html], expr: Expr[Boolean] )

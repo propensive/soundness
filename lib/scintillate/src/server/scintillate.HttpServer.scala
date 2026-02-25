@@ -51,35 +51,35 @@ extends RequestServable:
   def handle(handler: HttpConnection ?=> Http.Response)(using Monitor, Codicil)
   :   Service logs HttpServerEvent raises ServerError =
 
-      def handle(exchange: csnh.HttpExchange | Null): Unit =
-        try
-          val connection = HttpConnection(exchange.nn)
+    def handle(exchange: csnh.HttpExchange | Null): Unit =
+      try
+        val connection = HttpConnection(exchange.nn)
 
-          recover:
-            case StreamError(length) =>
-              Log.warn(HttpServerEvent.BrokenStream(length))
-          . within:
-              connection.respond:
-                try handler(using connection) catch case throwable: Throwable =>
-                  errorPage.handle(throwable, connection)
+        recover:
+          case StreamError(length) =>
+            Log.warn(HttpServerEvent.BrokenStream(length))
+        . within:
+            connection.respond:
+              try handler(using connection) catch case throwable: Throwable =>
+                errorPage.handle(throwable, connection)
 
 
-        catch case NonFatal(exception) => exception.printStackTrace()
+      catch case NonFatal(exception) => exception.printStackTrace()
 
-      def startServer(): com.sun.net.httpserver.HttpServer raises ServerError =
-        try
-          val host = if local then "localhost" else "0.0.0.0"
-          val httpServer = csnh.HttpServer.create(jn.InetSocketAddress(host, port), 0).nn
-          httpServer.createContext("/").nn.setHandler(handle(_))
-          httpServer.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor())
-          httpServer.start()
-          httpServer
-        catch
-          case error: jn.BindException => abort(ServerError(port))
+    def startServer(): com.sun.net.httpserver.HttpServer raises ServerError =
+      try
+        val host = if local then "localhost" else "0.0.0.0"
+        val httpServer = csnh.HttpServer.create(jn.InetSocketAddress(host, port), 0).nn
+        httpServer.createContext("/").nn.setHandler(handle(_))
+        httpServer.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor())
+        httpServer.start()
+        httpServer
+      catch
+        case error: jn.BindException => abort(ServerError(port))
 
-      val cancel: Promise[Unit] = Promise[Unit]()
-      val server = startServer()
+    val cancel: Promise[Unit] = Promise[Unit]()
+    val server = startServer()
 
-      val asyncTask = async(cancel.attend() yet server.stop(1))
+    val asyncTask = async(cancel.attend() yet server.stop(1))
 
-      Service(() => safely(cancel.fulfill(())))
+    Service(() => safely(cancel.fulfill(())))

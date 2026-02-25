@@ -65,7 +65,7 @@ object Subcompiler:
     ( language: List[Settings.Setting.ChoiceWithHelp[String]], classpath: String, source: String )
   :   List[CompileError] =
 
-      compile(language, classpath, source, Set((0, source.length)))
+    compile(language, classpath, source, Set((0, source.length)))
 
 
   def compile
@@ -75,57 +75,57 @@ object Subcompiler:
       regions:   Set[(Int, Int)] )
   :   List[CompileError] =
 
-      object driver extends Driver:
-        val currentContext: Context =
-          val context = initCtx.fresh
-          val context2 = context.setSetting(context.settings.classpath, classpath)
-          setup(Array[String](""), context2).map(_(1)).get
+    object driver extends Driver:
+      val currentContext: Context =
+        val context = initCtx.fresh
+        val context2 = context.setSetting(context.settings.classpath, classpath)
+        setup(Array[String](""), context2).map(_(1)).get
 
 
-        def run(source: String, regions: Set[(Int, Int)], errors: List[CompileError])
-        :   List[CompileError] =
+      def run(source: String, regions: Set[(Int, Int)], errors: List[CompileError])
+      :   List[CompileError] =
 
-            if regions.isEmpty then errors else
-              val reporter: CustomReporter = CustomReporter()
-              val sourceFile: SourceFile = SourceFile.virtual("<subcompilation>", source)
-              val context = currentContext.fresh
+        if regions.isEmpty then errors else
+          val reporter: CustomReporter = CustomReporter()
+          val sourceFile: SourceFile = SourceFile.virtual("<subcompilation>", source)
+          val context = currentContext.fresh
 
-              given context0: Context =
-                context
-                . setReporter(reporter)
-                . setSetting(context.settings.language, language)
-                . setSetting(context.settings.classpath, classpath)
-                . setSetting(context.settings.YstopBefore, List("genSJSIR"))
-                . setSetting(context.settings.color, "never")
+          given context0: Context =
+            context
+            . setReporter(reporter)
+            . setSetting(context.settings.language, language)
+            . setSetting(context.settings.classpath, classpath)
+            . setSetting(context.settings.YstopBefore, List("genSJSIR"))
+            . setSetting(context.settings.color, "never")
 
-              Scala3.newRun.tap: run =>
-                run.compileSources(List(sourceFile))
-                if !reporter.hasErrors then finish(Scala3, run)
+          Scala3.newRun.tap: run =>
+            run.compileSources(List(sourceFile))
+            if !reporter.hasErrors then finish(Scala3, run)
 
-              val newErrors = reporter.errors.to(List)
+          val newErrors = reporter.errors.to(List)
 
-              def recompile(todo: List[CompileError], done: Set[(Int, Int)], source: String)
-              :   List[CompileError] =
+          def recompile(todo: List[CompileError], done: Set[(Int, Int)], source: String)
+          :   List[CompileError] =
 
-                todo match
-                  case Nil =>
-                    if done.isEmpty then errors ::: newErrors
-                    else run(source, regions -- done, errors ::: newErrors)
+            todo match
+              case Nil =>
+                if done.isEmpty then errors ::: newErrors
+                else run(source, regions -- done, errors ::: newErrors)
 
-                  case error :: tail =>
-                    regions.find: (start, end) =>
-                      error.point >= start && error.point <= end
-                    . match
-                        case None                    => recompile(tail, done, source)
-                        case Some(region@(from, to)) =>
-                          if done.contains(region) then recompile(tail, done, source) else
+              case error :: tail =>
+                regions.find: (start, end) =>
+                  error.point >= start && error.point <= end
+                . match
+                    case None                    => recompile(tail, done, source)
+                    case Some(region@(from, to)) =>
+                      if done.contains(region) then recompile(tail, done, source) else
 
-                            val newSource =
-                              source.take(from)+"{}"+(" "*(to - from - 2))+source.drop(to)
+                        val newSource =
+                          source.take(from)+"{}"+(" "*(to - from - 2))+source.drop(to)
 
-                            recompile(tail, done + region, newSource)
+                        recompile(tail, done + region, newSource)
 
-              recompile(newErrors, Set(), source)
+          recompile(newErrors, Set(), source)
 
 
-      driver.run(source, regions, Nil)
+    driver.run(source, regions, Nil)

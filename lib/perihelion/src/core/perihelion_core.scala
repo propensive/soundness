@@ -41,4 +41,4 @@ def websocket[ResultType](lambda: (frames: LazyList[Frame]) ?=> ResultType)
   ( using Monitor, Codicil )
 :   Websocket[ResultType] =
 
-    Websocket(request, lambda(using _))
+  Websocket(request, lambda(using _))

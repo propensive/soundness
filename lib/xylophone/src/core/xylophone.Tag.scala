@@ -56,12 +56,12 @@ object Tag:
     ( presets: Map[Text, Text] = Map() )
   :   Container of label over children in schema =
 
-      val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
+    val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
 
-      Container(valueOf[label].tt, presets, admissible)
-      . of[label]
-      . over[children]
-      . in[schema]
+    Container(valueOf[label].tt, presets, admissible)
+    . of[label]
+    . over[children]
+    . in[schema]
 
 
   class Container(label: Text, presets: Map[Text, Text] = Map(), admissible: Set[Text] = Set())

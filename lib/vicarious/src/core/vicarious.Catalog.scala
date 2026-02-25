@@ -51,12 +51,12 @@ case class Catalog[key, value: ClassTag](values: IArray[value]):
     ( lambda: (catalog: this.type, `*`: proxy.type) ?=> result )
   :   result =
 
-      lambda(using this, proxy)
+    lambda(using this, proxy)
 
 
   def braid[value2: ClassTag](right: Catalog[key, value2])[result: ClassTag]
     ( lambda: (value, value2) => result )
   :   Catalog[key, result] =
 
-      Catalog(IArray.tabulate(values.length): index =>
-        lambda(values(index), right.values(index)))
+    Catalog(IArray.tabulate(values.length): index =>
+      lambda(values(index), right.values(index)))

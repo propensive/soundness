@@ -52,7 +52,7 @@ package strategies:
   given mitigation: [error <: Exception: Tactic, error2 <: Exception: Mitigable to error]
   =>  Tactic[error2] =
 
-      error.contramap(error2.mitigate(_))
+    error.contramap(error2.mitigate(_))
 
   given fatalErrors: [exception <: Exception: Fatal] => Tactic[exception]:
     given diagnostics: Diagnostics = errorDiagnostics.stackTraces
@@ -77,8 +77,8 @@ def raise[success, exception <: Exception: Recoverable to success]
   ( using tactic: Tactic[exception] )
 :   success =
 
-    tactic.record(error)
-    exception.recover(error(using tactic.diagnostics))
+  tactic.record(error)
+  exception.recover(error(using tactic.diagnostics))
 
 
 def abort[success, exception <: Exception: Tactic](error: Diagnostics ?=> exception): Nothing =
@@ -89,25 +89,25 @@ def safely[error <: Exception](using erased Void)[success]
   ( block: (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=> success )
 :   Optional[success] =
 
-    try boundary: label ?=>
-      block(using Diagnostics.omit, OptionalTactic(label))
-    catch case error: Exception => Unset
+  try boundary: label ?=>
+    block(using Diagnostics.omit, OptionalTactic(label))
+  catch case error: Exception => Unset
 
 
 def unsafely[error <: Exception](using erased Void)[success]
   ( block: (erased Unsafe) ?=> ThrowTactic[error, success] ?=> CanThrow[Exception] ?=> success )
 :   success =
 
-    boundary: label ?=>
-      import unsafeExceptions.canThrowAny
-      block(using Unsafe)(using ThrowTactic())
+  boundary: label ?=>
+    import unsafeExceptions.canThrowAny
+    block(using Unsafe)(using ThrowTactic())
 
 
 def throwErrors[error <: Exception](using CanThrow[error])[success]
   ( block: ThrowTactic[error, success] ?=> success )
 :   success =
 
-    block(using ThrowTactic())
+  block(using ThrowTactic())
 
 
 def capture[error <: Exception: ClassTag](using erased Void)[success]
@@ -115,17 +115,17 @@ def capture[error <: Exception: ClassTag](using erased Void)[success]
   ( using Tactic[ExpectationError[success]], Diagnostics )
 :   error =
 
-    try
-      val value: Either[error, success] =
-        boundary: label ?=> Right(block(using EitherTactic(label)))
+  try
+    val value: Either[error, success] =
+      boundary: label ?=> Right(block(using EitherTactic(label)))
 
-      value match
-        case Left(error)  => error
-        case Right(value) => abort(ExpectationError(value))
+    value match
+      case Left(error)  => error
+      case Right(value) => abort(ExpectationError(value))
 
-    catch
-      case exception: `error`   => exception
-      case exception: Throwable => throw exception
+  catch
+    case exception: `error`   => exception
+    case exception: Throwable => throw exception
 
 
 def attempt[error <: Exception](using erased Void)[success]
@@ -133,8 +133,8 @@ def attempt[error <: Exception](using erased Void)[success]
   ( using Diagnostics )
 :   Attempt[success, error] =
 
-    boundary: label ?=>
-      Attempt.Success(block(using AttemptTactic(label)))
+  boundary: label ?=>
+    Attempt.Success(block(using AttemptTactic(label)))
 
 
 def amalgamate[error <: Exception](using erased Void)[success]
@@ -142,17 +142,17 @@ def amalgamate[error <: Exception](using erased Void)[success]
   ( using Diagnostics )
 :   success | error =
 
-    boundary: label ?=>
-      block(using AmalgamateTactic(label))
+  boundary: label ?=>
+    block(using AmalgamateTactic(label))
 
 
 def abortive[error <: Error](using Quotes, Realm)[success]
   ( block: Diagnostics ?=> HaltTactic[error, success] ?=> success )
 :   success =
 
-    given haltTactic: HaltTactic[error, success]()
-    given diagnostics: Diagnostics = Diagnostics.omit
-    block
+  given haltTactic: HaltTactic[error, success]()
+  given diagnostics: Diagnostics = Diagnostics.omit
+  block
 
 
 infix type raises [success, error <: Exception] = Tactic[error] ?=> success
@@ -173,8 +173,8 @@ inline def focus[focus, result](using foci: Foci[focus])
   ( block: => result )
 :   result =
 
-    val length = foci.length
-    try block finally foci.supplement(foci.length - length, transform(using _))
+  val length = foci.length
+  try block finally foci.supplement(foci.length - length, transform(using _))
 
 
 transparent inline def mitigate(inline block: Exception ~> Exception): Mitigation[?] =

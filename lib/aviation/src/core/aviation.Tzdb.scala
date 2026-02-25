@@ -184,29 +184,29 @@ object Tzdb:
         zone:    Option[Tzdb.Entry.Zone] = None )
     :   List[Tzdb.Entry] =
 
-        if lines.nil then entries ++ zone else
-          val line: Text = lines.head.upto(_ == '#')
-          line.cut(unsafely(r"\s+")).to(List) match
-            case t"Rule" :: tail =>
-              recur(lineNo + 1, lines.tail, parseRule(lineNo, tail) :: (zone.to(List) ++ entries))
+      if lines.nil then entries ++ zone else
+        val line: Text = lines.head.upto(_ == '#')
+        line.cut(unsafely(r"\s+")).to(List) match
+          case t"Rule" :: tail =>
+            recur(lineNo + 1, lines.tail, parseRule(lineNo, tail) :: (zone.to(List) ++ entries))
 
-            case t"Link" :: tail =>
-              recur(lineNo + 1, lines.tail, parseLink(lineNo, tail) :: (zone.to(List) ++ entries))
+          case t"Link" :: tail =>
+            recur(lineNo + 1, lines.tail, parseLink(lineNo, tail) :: (zone.to(List) ++ entries))
 
-            case t"Zone" :: tail =>
-              recur(lineNo + 1, lines.tail, entries ++ zone.to(List), Some(parseZone(lineNo, tail)))
+          case t"Zone" :: tail =>
+            recur(lineNo + 1, lines.tail, entries ++ zone.to(List), Some(parseZone(lineNo, tail)))
 
-            case t"Leap" :: tail =>
-              recur(lineNo + 1, lines.tail, parseLeap(lineNo, tail) :: (zone.to(List) ++ entries))
+          case t"Leap" :: tail =>
+            recur(lineNo + 1, lines.tail, parseLeap(lineNo, tail) :: (zone.to(List) ++ entries))
 
-            case t"" :: Nil =>
-              recur(lineNo + 1, lines.tail, entries, zone)
+          case t"" :: Nil =>
+            recur(lineNo + 1, lines.tail, entries, zone)
 
-            case t"" :: tail =>
-              recur(lineNo + 1, lines.tail, entries, Some(addToZone(lineNo, tail, zone.getOrElse:
-                abort(TzdbError(TzdbError.Reason.UnexpectedZoneInfo, lineNo)))))
+          case t"" :: tail =>
+            recur(lineNo + 1, lines.tail, entries, Some(addToZone(lineNo, tail, zone.getOrElse:
+              abort(TzdbError(TzdbError.Reason.UnexpectedZoneInfo, lineNo)))))
 
-            case other =>
-              recur(lineNo + 1, lines.tail, entries, zone)
+          case other =>
+            recur(lineNo + 1, lines.tail, entries, zone)
 
     recur(1, lines)

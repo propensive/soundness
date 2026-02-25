@@ -51,4 +51,4 @@ extends PrivateKey[cipher](bytes):
     ( using cipher & Signing )
   :   Boolean =
 
-      public.verify(value, signature)
+    public.verify(value, signature)

@@ -62,13 +62,13 @@ object Elicitable extends Elicitable2:
   =>  entity.Operand is Encodable in Text
   =>  Reference[entity] is Elicitable:
 
-      type Operand = Dropdown
+    type Operand = Dropdown
 
-      def input(ref: Reference[entity]): Text = ref.encode
+    def input(ref: Reference[entity]): Text = ref.encode
 
-      def widget(id: Text, label: Text, value: Text): Dropdown =
-        val items = every[entity].map { item => item.encode -> item().show }.to(List)
-        Dropdown(id, items, value)
+    def widget(id: Text, label: Text, value: Text): Dropdown =
+      val items = every[entity].map { item => item.encode -> item().show }.to(List)
+      Dropdown(id, items, value)
 
 trait Elicitable extends Typeclass, Operable:
   def input(value: Self): Text

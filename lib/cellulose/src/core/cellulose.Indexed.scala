@@ -96,4 +96,4 @@ trait Indexed extends Codllike, Dynamic:
   def applyDynamic(key: String)(index: Int = 0)(using erased DynamicCodlEnabler)
   :   Atom raises CodlError =
 
-      selectDynamic(key)(index)
+    selectDynamic(key)(index)

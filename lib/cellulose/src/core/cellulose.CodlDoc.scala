@@ -60,7 +60,7 @@ object CodlDoc:
   given aggregable: [subject: CodlSchematic] => Tactic[ParseError]
   =>  (CodlDoc of subject) is Aggregable by Text =
 
-      subject.schema().parse(_).asInstanceOf[CodlDoc of subject]
+    subject.schema().parse(_).asInstanceOf[CodlDoc of subject]
 
 
   given aggregable2: Tactic[ParseError] => CodlDoc is Aggregable by Text = Codl.parse(_)

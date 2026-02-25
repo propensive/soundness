@@ -149,14 +149,14 @@ object Syntax:
     ( sub: Syntax, lower: quotes.reflect.TypeRepr, upper: quotes.reflect.TypeRepr )
   :   Syntax =
 
-      import quotes.reflect.*
+    import quotes.reflect.*
 
-      if lower == upper then apply(lower)
-      else if lower.typeSymbol == defn.NothingClass && upper.typeSymbol == defn.AnyClass
-      then sub
-      else if lower.typeSymbol == defn.NothingClass then Infix(sub, "<:", apply(upper))
-      else if upper.typeSymbol == defn.AnyClass then Infix(sub, ">:", apply(lower))
-      else Infix(Infix(sub, ">:", apply(lower)), "<:", apply(upper))
+    if lower == upper then apply(lower)
+    else if lower.typeSymbol == defn.NothingClass && upper.typeSymbol == defn.AnyClass
+    then sub
+    else if lower.typeSymbol == defn.NothingClass then Infix(sub, "<:", apply(upper))
+    else if upper.typeSymbol == defn.AnyClass then Infix(sub, ">:", apply(lower))
+    else Infix(Infix(sub, ">:", apply(lower)), "<:", apply(upper))
 
   def contextBounds(using Quotes)(clauses: List[quotes.reflect.ParamClause]): Map[Text, Syntax] =
     import quotes.reflect.*
@@ -183,51 +183,51 @@ object Syntax:
   def clause(using Quotes)
     ( clause: quotes.reflect.ParamClause, showUsing: Boolean, context: Map[Text, Syntax] )
   :   Syntax =
-      import quotes.reflect.*
+    import quotes.reflect.*
 
-      clause.absolve match
-        case TermParamClause(termDefs) =>
-          val contextual = termDefs.exists(_.symbol.flags.is(Flags.Given))
+    clause.absolve match
+      case TermParamClause(termDefs) =>
+        val contextual = termDefs.exists(_.symbol.flags.is(Flags.Given))
 
-          val items0 = termDefs.filter:
-            case ValDef(name, _, _) if !name.startsWith("evidence$") => true
-            case _                                                   => false
+        val items0 = termDefs.filter:
+          case ValDef(name, _, _) if !name.startsWith("evidence$") => true
+          case _                                                   => false
 
-          var parens = items0.length != 1 || showUsing
+        var parens = items0.length != 1 || showUsing
 
-          val items = items0.map: value =>
-            value.absolve match
-              case valDef@ValDef(name, meta, default) if !name.startsWith("evidence$") =>
-                val evidence = name.startsWith("x$")
-                val syntax =
-                  if evidence then apply(meta.tpe)
-                  else
-                    parens = true
-                    Named(contextual && showUsing, name.tt, apply(meta.tpe))
+        val items = items0.map: value =>
+          value.absolve match
+            case valDef@ValDef(name, meta, default) if !name.startsWith("evidence$") =>
+              val evidence = name.startsWith("x$")
+              val syntax =
+                if evidence then apply(meta.tpe)
+                else
+                  parens = true
+                  Named(contextual && showUsing, name.tt, apply(meta.tpe))
 
-                if valDef.symbol.flags.is(Flags.Inline) then Prefix("inline", syntax) else syntax
+              if valDef.symbol.flags.is(Flags.Inline) then Prefix("inline", syntax) else syntax
 
-          if !parens then items(0) else Sequence('(', items)
+        if !parens then items(0) else Sequence('(', items)
 
-        case TypeParamClause(typeDefs) =>
-          val items = typeDefs.map:
-            case typeDef@TypeDef(name, bounds) =>
-              val flags = typeDef.symbol.flags
+      case TypeParamClause(typeDefs) =>
+        val items = typeDefs.map:
+          case typeDef@TypeDef(name, bounds) =>
+            val flags = typeDef.symbol.flags
 
-              val ref = symbolic(name)
+            val ref = symbolic(name)
 
-              val syntax = bounds match
-                case LambdaTypeTree(typeDefs, other) => symbolic(name) // FIXME: todo
+            val syntax = bounds match
+              case LambdaTypeTree(typeDefs, other) => symbolic(name) // FIXME: todo
 
-                case TypeBoundsTree(lower, upper) =>
-                  typeBounds(symbolic(name.tt), lower.tpe, upper.tpe)
+              case TypeBoundsTree(lower, upper) =>
+                typeBounds(symbolic(name.tt), lower.tpe, upper.tpe)
 
-                case other =>
-                  symbolic(name)
+              case other =>
+                symbolic(name)
 
-              context.at(name.tt).lay(syntax)(Infix(syntax, ": ", _))
+            context.at(name.tt).lay(syntax)(Infix(syntax, ": ", _))
 
-          Sequence('[', items)
+        Sequence('[', items)
 
   def signature(using Quotes)(name: Text, repr: quotes.reflect.TypeRepr): Declaration =
     import quotes.reflect.*

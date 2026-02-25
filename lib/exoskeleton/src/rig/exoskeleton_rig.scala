@@ -41,60 +41,60 @@ extension (shell: Shell)
     ( using WorkingDirectory, Sandbox.Tool, Monitor )
   :   result raises TmuxError logs ExecEvent =
 
-      mitigate:
-        case ExecError(_, _, _) => TmuxError()
-        case NumberError(_, _)  => TmuxError()
+    mitigate:
+      case ExecError(_, _, _) => TmuxError()
+      case NumberError(_, _)  => TmuxError()
 
-      . within:
-          given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)
-          val shellPath = shell match
-            case Shell.Zsh  => t"zsh"
-            case Shell.Fish => t"fish"
-            case Shell.Bash => t"bash"
+    . within:
+        given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)
+        val shellPath = shell match
+          case Shell.Zsh  => t"zsh"
+          case Shell.Fish => t"fish"
+          case Shell.Bash => t"bash"
 
-          sh"tmux new-session -d -s ${tmux.id} -x $width -y $height '$shellPath -l'".exec[Unit]()
-          Tmux.attend:
-            ()
+        sh"tmux new-session -d -s ${tmux.id} -x $width -y $height '$shellPath -l'".exec[Unit]()
+        Tmux.attend:
+          ()
 
-          val path = summon[Sandbox.Tool].path.parent.vouch.encode
+        val path = summon[Sandbox.Tool].path.parent.vouch.encode
 
-          shell match
-            case Shell.Zsh  =>
-              val command = t"""precmd_functions=() preexec_functions=() PROMPT="> " RPROMPT="""""
-              sh"""tmux send-keys -t ${tmux.id} $command C-m""".exec[Unit]()
-              sh"""tmux send-keys -t ${tmux.id} "path+=(\"$path\")" C-m""".exec[Unit]()
+        shell match
+          case Shell.Zsh  =>
+            val command = t"""precmd_functions=() preexec_functions=() PROMPT="> " RPROMPT="""""
+            sh"""tmux send-keys -t ${tmux.id} $command C-m""".exec[Unit]()
+            sh"""tmux send-keys -t ${tmux.id} "path+=(\"$path\")" C-m""".exec[Unit]()
 
-              sh"""tmux send-keys -t ${tmux.id} "autoload -Uz compinit; compinit -u" C-m"""
-              . exec[Unit]()
+            sh"""tmux send-keys -t ${tmux.id} "autoload -Uz compinit; compinit -u" C-m"""
+            . exec[Unit]()
 
-              Tmux.attend:
-                sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
+            Tmux.attend:
+              sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
 
-            case Shell.Bash =>
-              sh"""tmux send-keys -t ${tmux.id} "PS1='> '" C-m""".exec[Unit]()
-              sh"""tmux send-keys -t ${tmux.id} 'export PATH="$path:$$PATH"' C-m""".exec[Unit]()
+          case Shell.Bash =>
+            sh"""tmux send-keys -t ${tmux.id} "PS1='> '" C-m""".exec[Unit]()
+            sh"""tmux send-keys -t ${tmux.id} 'export PATH="$path:$$PATH"' C-m""".exec[Unit]()
 
-              sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-ambiguous on"' C-m"""
-              . exec[Unit]()
+            sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-ambiguous on"' C-m"""
+            . exec[Unit]()
 
-              sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-unmodified on"' C-m"""
-              . exec[Unit]()
+            sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-unmodified on"' C-m"""
+            . exec[Unit]()
 
-              Tmux.attend:
-                sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
+            Tmux.attend:
+              sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
 
-            case Shell.Fish =>
-              sh"""tmux send-keys -t ${tmux.id} "function fish_prompt; echo -n '> '; end" C-m"""
-              . exec[Unit]()
+          case Shell.Fish =>
+            sh"""tmux send-keys -t ${tmux.id} "function fish_prompt; echo -n '> '; end" C-m"""
+            . exec[Unit]()
 
-              sh"""tmux send-keys -t ${tmux.id} 'fish_add_path --global "$path"' C-m"""
-              . exec[Unit]()
+            sh"""tmux send-keys -t ${tmux.id} 'fish_add_path --global "$path"' C-m"""
+            . exec[Unit]()
 
-              Tmux.attend:
-                sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
+            Tmux.attend:
+              sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
 
-          val result = action
+        val result = action
 
-          sh"tmux kill-session -t ${tmux.id}".exec[Exit]()
+        sh"tmux kill-session -t ${tmux.id}".exec[Exit]()
 
-          result
+        result

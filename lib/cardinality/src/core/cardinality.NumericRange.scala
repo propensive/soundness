@@ -53,10 +53,10 @@ object NumericRange:
     =>  ( min: ValueOf[min], max: ValueOf[max] )
     =>  TypeTest[Double, min ~ max] =
 
-        value =>
-          if value >= min.value && value <= max.value
-          then Some(value.asInstanceOf[(min ~ max) & value.type])
-          else None
+      value =>
+        if value >= min.value && value <= max.value
+        then Some(value.asInstanceOf[(min ~ max) & value.type])
+        else None
 
     class RangeParser[min <: Double, max <: Double]
     extends FromDigits.Decimal[min ~ max]:
@@ -74,14 +74,14 @@ object NumericRange:
       infix def + [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
       :   (leftMin + rightMin) ~ (leftMax + rightMax) =
 
-          left + right
+        left + right
 
 
       @annotation.targetName("add2")
       infix def + [E <: Double & Singleton](right: E)
       :   (leftMin + right.type) ~ (leftMax + right.type) =
 
-          left + right
+        left + right
 
 
       @annotation.targetName("add3")
@@ -99,7 +99,7 @@ object NumericRange:
       infix def * [right <: Double & Singleton](right: right)
       :   Min[leftMin*right, leftMax*right] ~ Max[leftMin*right, leftMax*right] =
 
-          left*right
+        left*right
 
 
       @annotation.targetName("times3")
@@ -118,7 +118,7 @@ object NumericRange:
       infix def - [right <: Double & Singleton](right: right)
       :   Min[leftMin - right, leftMax - right] ~ Max[leftMin - right, leftMax - right] =
 
-          left - right
+        left - right
 
 
       @annotation.targetName("minus3")
@@ -129,7 +129,7 @@ object NumericRange:
       infix def / [right <: Double & Singleton](right: right)
       :   Min[leftMin/right, leftMax/right] ~ Max[leftMin/right, leftMax/right] =
 
-          left/right
+        left/right
 
 
       @annotation.targetName("divide2")
