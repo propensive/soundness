@@ -42,7 +42,7 @@ object Irrefutable:
   given irrefutable: [result] => (irrefutable: Text is Irrefutable to result)
   =>  String is Irrefutable to result =
 
-    string => irrefutable.unapply(string.tt)
+    irrefutable.contramap(_.tt)
 
 
   given textString: [text <: Text] => text is Irrefutable to String = _.s

@@ -41,13 +41,13 @@ import wisteria.*
 import language.experimental.genericNumberLiterals
 
 object Randomizable extends Derivation[[derivation] =>> derivation is Randomizable]:
-  given byte: Byte is Randomizable = _.long().toByte
-  given short: Short is Randomizable = _.long().toShort
-  given int: Int is Randomizable = _.long().toInt
   given long: Long is Randomizable = _.long()
-  given char: Char is Randomizable = _.long().toChar
-  given seed: Seed is Randomizable = _.long().pipe(Seed(_))
-  given boolean: Boolean is Randomizable = _.long() < 0L
+  given byte: Byte is Randomizable = long.map(_.toByte)
+  given short: Short is Randomizable = long.map(_.toShort)
+  given int: Int is Randomizable = long.map(_.toInt)
+  given char: Char is Randomizable = long.map(_.toChar)
+  given seed: Seed is Randomizable = long.map(Seed(_))
+  given boolean: Boolean is Randomizable = long.map(_ < 0L)
 
   given list: [element] => (randomizable: => element is Randomizable) => (size: RandomSize)
   =>  List[element] is Randomizable =
