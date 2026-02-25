@@ -222,7 +222,10 @@ extension [accrual <: Exception,  lambda[_]](inline accrue: Accrue[accrual, lamb
     ( using tactic: Tactic[accrual], diagnostics: Diagnostics )
   :   result =
 
-    ${contingency.internal.accrueWithin[accrual, lambda, result]('accrue, 'lambda, 'tactic, 'diagnostics)}
+    $ {
+        contingency.internal.accrueWithin[accrual, lambda, result]
+          ( 'accrue, 'lambda, 'tactic, 'diagnostics )
+      }
 
 
 extension [accrual <: Exception,  lambda[_], focus](inline track: Tracking[accrual, lambda, focus])

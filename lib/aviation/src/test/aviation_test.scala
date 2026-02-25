@@ -37,8 +37,6 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
 
-import autopsies.contrastExpectations
-
 object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
     suite(m"Parsing tests"):

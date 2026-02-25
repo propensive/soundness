@@ -47,7 +47,9 @@ extension (inline context: StringContext)
   transparent inline def ip(): Ipv4 | Ipv6 = ${urticose.internal.ip('context)}
   inline def mac(): MacAddress = ${urticose.internal.mac('context)}
   transparent inline def tcp(): TcpPort | UdpPort = ${urticose.internal.portService('context, true)}
-  transparent inline def udp(): TcpPort | UdpPort = ${urticose.internal.portService('context, false)}
+
+  transparent inline def udp(): TcpPort | UdpPort =
+    ${urticose.internal.portService('context, false)}
 
 extension [remote: Connectable](value: remote)
   infix def via [port](port: port): Endpoint[port] =

@@ -83,8 +83,11 @@ extension (textObject: Text.type)
     String(array).tt
 
 extension (inline context: StringContext)
-  transparent inline def txt(inline parts: Any*): Text = ${gossamer.internal.Text.expand('context, 'parts)}
-  transparent inline def t(inline parts: Any*): Text = ${gossamer.internal.T.expand('context, 'parts)}
+  transparent inline def txt(inline parts: Any*): Text =
+    ${gossamer.internal.Text.expand('context, 'parts)}
+
+  transparent inline def t(inline parts: Any*): Text =
+    ${gossamer.internal.T.expand('context, 'parts)}
 
 extension (context: StringContext)
   def t = SimpleTExtractor(context.parts.head.tt)

@@ -108,23 +108,34 @@ object Inspectable extends Inspectable2:
   given set: [element] => (inspectable: => element is Inspectable) => Set[element] is Inspectable =
     _.map(inspectable.text(_)).mkString("{", ", ", "}").tt
 
-  given vector: [element] => (inspectable: => element is Inspectable) => Trie[element] is Inspectable =
+
+  given vector: [element] => (inspectable: => element is Inspectable)
+  =>  Trie[element] is Inspectable =
+
     _.map(inspectable.text(_)).mkString("⟨ ", " ", " ⟩").tt
+
 
   given indexedSeq: [element] => (inspectable: => element is Inspectable)
   =>  IndexedSeq[element] is Inspectable =
     _.map(inspectable.text(_)).mkString("⟨ ", " ", " ⟩ᵢ").tt
 
-  given list: [element] => (inspectable: => element is Inspectable) => List[element] is Inspectable =
+
+  given list: [element] => (inspectable: => element is Inspectable)
+  =>  List[element] is Inspectable =
+
     _.map(inspectable.text(_)).mkString("[", ", ", "]").tt
 
-  given array: [element] => (inspectable: => element is Inspectable) => Array[element] is Inspectable =
+
+  given array: [element] => (inspectable: => element is Inspectable)
+  =>  Array[element] is Inspectable =
+
     array =>
       array.zipWithIndex.map: (value, index) =>
         val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
         (subscript+inspectable.text(value).s).tt
 
       . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
+
 
   given arraySeq: [element] => (inspectable: => element is Inspectable)
   =>  scm.ArraySeq[element] is Inspectable =
@@ -135,7 +146,9 @@ object Inspectable extends Inspectable2:
 
       . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌ₛ").tt
 
-  given stream: [element] => (inspectable: => element is Inspectable) => Stream[element] is Inspectable =
+  given stream: [element] => (inspectable: => element is Inspectable)
+  =>  Stream[element] is Inspectable =
+
     stream =>
       def recur(stream: Stream[element], todo: Int): Text =
         if todo <= 0 then "..?".tt
@@ -145,13 +158,17 @@ object Inspectable extends Inspectable2:
 
       recur(stream, 3)
 
-  given iarray: [element] => (inspectable: => element is Inspectable) => IArray[element] is Inspectable =
+
+  given iarray: [element] => (inspectable: => element is Inspectable)
+  =>  IArray[element] is Inspectable =
+
     iarray =>
       iarray.zipWithIndex.map: (value, index) =>
         val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
         subscript+inspectable.text(value).s.tt
 
       . mkString(arrayPrefix(iarray.toString)+"⁅", "╱", "⁆").tt
+
 
   private def arrayPrefix(string: String): String =
     val brackets = string.count(_ == '[')
@@ -179,8 +196,11 @@ object Inspectable extends Inspectable2:
   given none: None.type is Inspectable = none => "None".tt
 
 trait Inspectable2:
-  given optional: [value] => (inspectable: => value is Inspectable) => Optional[value] is Inspectable =
+  given optional: [value] => (inspectable: => value is Inspectable)
+  =>  Optional[value] is Inspectable =
+
     _.let { value => s"⸂${inspectable.text(value)}⸃".tt }.or("⸄⸅".tt)
+
 
 trait Inspectable extends Typeclass:
   def text(value: Self): Text

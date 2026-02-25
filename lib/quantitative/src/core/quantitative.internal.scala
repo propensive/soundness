@@ -104,7 +104,9 @@ object internal extends protointernal:
     inline given underlying: [units <: Measure] => Underlying[Quantity[units], Double] = !!
     inline given canEqual: [units <: Measure] => CanEqual[Quantity[units], Quantity[units]] = !!
 
-    inline def unitsMap[units <: Measure]: Map[Text, Int] = ${quantitative.internal.collectUnits[units]}
+    inline def unitsMap[units <: Measure]: Map[Text, Int] =
+      ${quantitative.internal.collectUnits[units]}
+
     inline def units[units <: Measure]: Text = expressUnits(unitsMap[units])
 
     given zeroic: [units <: Measure] => Quantity[units] is Zeroic:
