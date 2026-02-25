@@ -240,8 +240,8 @@ object Honeycomb:
           AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse)
           . asType
           . absolve match
-              case '[type result <: Tuple; result] =>
-                '{$result.asInstanceOf[Option[result]]}
+            case '[type result <: Tuple; result] =>
+              '{$result.asInstanceOf[Option[result]]}
 
   def interpolator[parts <: Tuple: Type](insertions0: Expr[Seq[Any]]): Macro[Html] =
     import quotes.reflect.*
@@ -412,20 +412,20 @@ object Honeycomb:
       . foldLeft(TypeRepr.of[Nothing]) { (left, right) => OrType(left, right) }
       . asType
       . absolve match
-          case '[type topic <: Label; topic] =>
-            ' {
-                $ {
-                    serialize(html).absolve match
-                      case List(one: Expr[?]) => html.absolve match
-                        case _: TextNode        => one.asExprOf[TextNode]
-                        case _: Element         => one.asExprOf[Element]
-                        case _: Comment         => one.asExprOf[Comment]
-                        case _: Doctype         => one.asExprOf[Doctype]
-                      case many               => '{Fragment(${Expr.ofList(many)}*)}
-                  }
-                . of[topic]
-                . in[Whatwg]
-              }
+        case '[type topic <: Label; topic] =>
+          ' {
+              $ {
+                  serialize(html).absolve match
+                    case List(one: Expr[?]) => html.absolve match
+                      case _: TextNode        => one.asExprOf[TextNode]
+                      case _: Element         => one.asExprOf[Element]
+                      case _: Comment         => one.asExprOf[Comment]
+                      case _: Doctype         => one.asExprOf[Doctype]
+                    case many               => '{Fragment(${Expr.ofList(many)}*)}
+                }
+              . of[topic]
+              . in[Whatwg]
+            }
 
   def attributes[result: Type, thisType <: Tag to result: Type]
     ( tag: Expr[Tag], presets: Expr[Map[Text, Text]], attributes0: Expr[Seq[(String, Any)]] )
