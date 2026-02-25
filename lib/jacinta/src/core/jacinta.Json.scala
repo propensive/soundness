@@ -137,7 +137,7 @@ trait Json2:
 
           Json.ast
             ( JsonAst
-              ( (labels.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe)) ) )
+                ( (unsafely(labels.toArray.immutable), unsafely(values.toArray.immutable)) ) )
 
     inline def split[derivation: SumReflection]: derivation is Encodable in Json = value =>
       val discriminable = infer[derivation is Discriminable in Json]
@@ -164,23 +164,14 @@ object Json extends Json2, Dynamic:
         else origin
 
   given boolean: Json is Decodable in Json = identity(_)
-
-  given boolean: Tactic[JsonError] => Boolean is Decodable in Json =
-    value => value.root.boolean
-
-  given double: Tactic[JsonError] => Double is Decodable in Json =
-    value => value.root.double
-
-  given float: Tactic[JsonError] => Float is Decodable in Json =
-    value => value.root.double.toFloat
-
+  given boolean: Tactic[JsonError] => Boolean is Decodable in Json = _.root.boolean
+  given double: Tactic[JsonError] => Double is Decodable in Json = _.root.double
+  given float: Tactic[JsonError] => Float is Decodable in Json = _.root.double.toFloat
   given long: Tactic[JsonError] => Long is Decodable in Json = _.root.long
   given int: Tactic[JsonError] => Int is Decodable in Json = _.root.long.toInt
   given ordinal: Tactic[JsonError] => Ordinal is Decodable in Json = _.root.long.toInt.z
   given text: Tactic[JsonError] => Text is Decodable in Json = _.root.string
-
-  given string: Tactic[JsonError] => String is Decodable in Json =
-    value => value.root.string.s
+  given string: Tactic[JsonError] => String is Decodable in Json = _.root.string.s
 
 
   given option: [value: Decodable in Json] => Tactic[JsonError]
