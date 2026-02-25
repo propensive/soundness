@@ -247,3 +247,6 @@ object Contrastable:
 
 trait Contrastable extends Typeclass:
   def juxtaposition(left: Self, right: Self): Juxtaposition
+
+  def contramap[self2](lambda: self2 => Self): self2 is Contrastable =
+    (left, right) => juxtaposition(lambda(left), lambda(right))

@@ -38,3 +38,6 @@ trait Textualizable extends Typeclass:
   extension (value: Self) def textual: Text = convert(value)
 
   def convert(value: Self): Text
+
+  def contramap[self2](lambda: self2 => Self): self2 is Textualizable =
+    value => convert(lambda(value))

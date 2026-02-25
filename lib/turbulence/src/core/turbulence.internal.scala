@@ -40,7 +40,6 @@ import fulminate.*
 import hieroglyph.*
 import prepositional.*
 import proscenium.*
-import stenography.*
 import vacuous.*
 
 object internal:

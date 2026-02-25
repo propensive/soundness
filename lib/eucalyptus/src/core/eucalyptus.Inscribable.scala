@@ -40,5 +40,8 @@ import language.experimental.pureFunctions
 trait Inscribable extends Typeclass, Formal:
   def formatter(message: Self, level: Level, realm: Realm, timestamp: Long): Form
 
+  def contramap[self2](lambda: self2 => Self): self2 is Inscribable in Form =
+    (message, level, realm, timestamp) => formatter(lambda(message), level, realm, timestamp)
+
   extension (message: Self) def format(level: Level, realm: Realm, timestamp: Long): Form =
     formatter(message, level, realm, timestamp)

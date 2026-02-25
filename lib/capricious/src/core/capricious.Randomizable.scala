@@ -88,3 +88,4 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
 trait Randomizable extends Typeclass:
   def apply()(using random: Random): Self = from(random)
   def from(random: Random): Self
+  def map[self2](lambda: Self => self2): self2 is Randomizable = random => lambda(from(random))

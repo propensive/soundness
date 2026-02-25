@@ -50,3 +50,6 @@ object Transmissible:
 
 trait Transmissible extends Typeclass:
   def serialize(message: Self): Stream[Data]
+
+  def contramap[self2](lambda: self2 => Self): self2 is Transmissible =
+    message => serialize(lambda(message))

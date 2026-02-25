@@ -42,7 +42,6 @@ import inimitable.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import stenography.*
 import vacuous.*
 
 object Showable:
@@ -111,3 +110,6 @@ object Showable:
 trait Showable extends Typeclass, Communicable:
   def text(value: Self): Text
   def message(value: Self): Message = Message(text(value))
+
+  override def contramap[self2](lambda: self2 => Self): self2 is Showable =
+    value => text(lambda(value))

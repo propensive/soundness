@@ -37,4 +37,7 @@ import prepositional.*
 trait Instantiable extends Typeclass, Domainal, Original:
   def apply(source: Origin): Self
 
+  def map[self2](lambda: Self => self2): self2 is Instantiable across Domain from Origin =
+    source => lambda(apply(source))
+
   extension (origin: Origin) def instantiate: Self = apply(origin)

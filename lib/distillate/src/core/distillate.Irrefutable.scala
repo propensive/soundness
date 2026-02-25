@@ -62,3 +62,6 @@ object Irrefutable:
 
 trait Irrefutable extends Typeclass, Resultant:
   def unapply(value: Self): Result
+
+  def contramap[self2](lambda: self2 => Self): self2 is Irrefutable to Result =
+    value => unapply(lambda(value))
