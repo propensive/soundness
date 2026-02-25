@@ -9,7 +9,6 @@ import fulminate.*
 import gossamer.*
 import proscenium.*
 import spectacular.*
-import stenography.*
 import symbolism.*
 
 import dotty.tools.dotc.*
