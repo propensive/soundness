@@ -116,13 +116,13 @@ object Installer:
     import systems.java
 
     mitigate:
-      case PathError(_, _)        => InstallError(InstallError.Reason.Environment)
-      case PropertyError(_)       => InstallError(InstallError.Reason.Environment)
-      case NumberError(_, _)      => InstallError(InstallError.Reason.Environment)
-      case IoError(_, _, _)       => InstallError(InstallError.Reason.Io)
-      case NameError(_, _, _)     => InstallError(InstallError.Reason.Io)
-      case ExecError(_, _, _)     => InstallError(InstallError.Reason.Io)
-      case StreamError(_)         => InstallError(InstallError.Reason.Io)
+      case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
+      case PropertyError(_)   => InstallError(InstallError.Reason.Environment)
+      case NumberError(_, _)  => InstallError(InstallError.Reason.Environment)
+      case IoError(_, _, _)   => InstallError(InstallError.Reason.Io)
+      case NameError(_, _, _) => InstallError(InstallError.Reason.Io)
+      case ExecError(_, _, _) => InstallError(InstallError.Reason.Io)
+      case StreamError(_)     => InstallError(InstallError.Reason.Io)
 
     . within:
         val command: Text = service.script

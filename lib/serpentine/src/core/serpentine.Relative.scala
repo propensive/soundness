@@ -131,7 +131,8 @@ object Relative:
             case _ =>
               Some((relative.descent.last, Relative(0, relative.descent.init*)))
 
-        case _ => None
+        case _ =>
+          None
 
   :   relative is Quotient of Text over (Relative on filesystem) | Text
 

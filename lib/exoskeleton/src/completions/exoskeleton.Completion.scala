@@ -130,7 +130,8 @@ extends Cli:
                     flag.description,
                     aliases = aliases.map(Flag.serialize(_)) ) )
 
-          case Nil => Nil
+          case Nil =>
+            Nil
 
       else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases =
         flag.aliases.map(Flag.serialize(_))))

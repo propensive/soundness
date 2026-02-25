@@ -150,14 +150,15 @@ object Serpentine:
 
     if !sameRoot[left, right].or(false) then '{$left.calculate($right)} else
       topic[left] match
-        case Right(leftDescent) => topic[right] match
-          case Right(rightDescent) =>
-            calculate(leftDescent, rightDescent).asType.absolve match
-              case '[type tuple <: Tuple; tuple] =>
-                '{$left.calculate($right).asInstanceOf[Path of tuple]}
+        case Right(leftDescent) =>
+          topic[right] match
+            case Right(rightDescent) =>
+              calculate(leftDescent, rightDescent).asType.absolve match
+                case '[type tuple <: Tuple; tuple] =>
+                  '{$left.calculate($right).asInstanceOf[Path of tuple]}
 
-          case _ =>
-            '{$left.calculate($right)}
+            case _ =>
+              '{$left.calculate($right)}
 
         case _ =>
           '{$left.calculate($right)}
@@ -173,7 +174,7 @@ object Serpentine:
             case '[element] => Type.of[element *: tuple]
     . absolve
     . match
-        case '[type tuple <: Tuple; tuple] => TypeRepr.of[tuple]
+      case '[type tuple <: Tuple; tuple] => TypeRepr.of[tuple]
 
   private def calculate(left: List[String], right: List[String])(using Quotes)
   :   quotes.reflect.TypeRepr =

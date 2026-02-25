@@ -68,13 +68,14 @@ object Mosquito:
 
       def add(left: left, right: right): Tensor[result, size] =
         def recur(left: Tuple, right: Tuple): Tuple = left match
-          case leftHead *: leftTail => right match
-            case rightHead *: rightTail =>
-              (leftHead.asInstanceOf[value] + rightHead.asInstanceOf[value2])
-              *: recur(leftTail, rightTail)
+          case leftHead *: leftTail =>
+            right match
+              case rightHead *: rightTail =>
+                (leftHead.asInstanceOf[value] + rightHead.asInstanceOf[value2])
+                *: recur(leftTail, rightTail)
 
-            case _ =>
-              Zero
+              case _ =>
+                Zero
 
           case _ =>
             Zero
@@ -106,13 +107,14 @@ object Mosquito:
 
         def subtract(left: left, right: right): Tensor[result, size] =
           def recur(left: Tuple, right: Tuple): Tuple = left match
-            case leftHead *: leftTail => right match
-              case rightHead *: rightTail =>
-                (leftHead.asInstanceOf[value] - rightHead.asInstanceOf[value2])
-                *: recur(leftTail, rightTail)
+            case leftHead *: leftTail =>
+              right match
+                case rightHead *: rightTail =>
+                  (leftHead.asInstanceOf[value] - rightHead.asInstanceOf[value2])
+                  *: recur(leftTail, rightTail)
 
-              case _ =>
-                Zero
+                case _ =>
+                  Zero
 
             case _ =>
               Zero

@@ -61,33 +61,55 @@ enum Syntax:
   case Compound(syntaxes: List[Syntax])
 
   def precedence: Int = this match
-    case Structural(_, _, _)   => 0
-    case Prefix(_, _)          => 0
-    case Named(_, _, _)        => 0
-    case Suffix(_, _)          => 0
-    case Infix(_, "<:", _)     => 10
-    case Infix(_, ">:", _)     => 10
-    case Infix(_, middle, _)   => middle.s.head match
-      case '|'                   => 1
-      case '^'                   => 2
-      case '&'                   => 3
-      case '!' | '='             => 4
-      case '<' | '>'             => 5
-      case ':'                   => 6
-      case '+' | '-'             => 7
-      case '%' | '*' | '/'       => 8
-      case char if char.isLetter => 0
-      case _                     => 9
-    case Projection(_, _)      => 9
-    case Compound(_)           => 10
-    case Simple(_)             => 10
-    case Symbolic(_)           => 10
-    case Primitive(_)          => 10
-    case Application(_, _, _)  => 10
-    case Selection(_, _)       => 10
-    case Sequence(_, _)        => 10
-    case Declaration(_, _, _)  => 10
-    case Value(_)              => 10
+    case Structural(_, _, _) => 0
+    case Prefix(_, _)        => 0
+    case Named(_, _, _)      => 0
+    case Suffix(_, _)        => 0
+    case Infix(_, "<:", _)   => 10
+    case Infix(_, ">:", _)   => 10
+
+    case Infix(_, middle, _) =>
+      middle.s.head match
+        case '|'                   => 1
+        case '^'                   => 2
+        case '&'                   => 3
+        case '!' | '='             => 4
+        case '<' | '>'             => 5
+        case ':'                   => 6
+        case '+' | '-'             => 7
+        case '%' | '*' | '/'       => 8
+        case char if char.isLetter => 0
+        case _                     => 9
+
+    case Projection(_, _) =>
+      9
+
+    case Compound(_) =>
+      10
+
+    case Simple(_) =>
+      10
+
+    case Symbolic(_) =>
+      10
+
+    case Primitive(_) =>
+      10
+
+    case Application(_, _, _) =>
+      10
+
+    case Selection(_, _) =>
+      10
+
+    case Sequence(_, _) =>
+      10
+
+    case Declaration(_, _, _) =>
+      10
+
+    case Value(_) =>
+      10
 
   def text(using imports: Imports): Text = this match
     case Simple(typename)        => typename.text
@@ -106,12 +128,13 @@ enum Syntax:
     case Declaration(method, syntaxes, result) =>
       s"${syntaxes.map(_.text).mkString}${if method then ": " else ""}${result.text}".tt
 
-    case Application(left, elements, infix) => left match
-      case Simple(Typename.Type(parent, name)) if infix && imports.has(parent) =>
-        Infix(elements(0), name, elements(1)).text
+    case Application(left, elements, infix) =>
+      left match
+        case Simple(Typename.Type(parent, name)) if infix && imports.has(parent) =>
+          Infix(elements(0), name, elements(1)).text
 
-      case _ =>
-        left.text+elements.map(_.text).mkString("[", ", ", "]").tt
+        case _ =>
+          left.text+elements.map(_.text).mkString("[", ", ", "]").tt
 
     case Structural(base, members, defs) =>
       val members2 = members.map { (name, syntax) => s"type $name = ${syntax.text}".tt }
@@ -162,14 +185,16 @@ object Syntax:
     import quotes.reflect.*
 
     clauses.flatMap:
-      case TermParamClause(defs) => defs.collect:
-        case ValDef(name, meta, default) if name.startsWith("evidence$") =>
+      case TermParamClause(defs) =>
+        defs.collect:
+          case ValDef(name, meta, default) if name.startsWith("evidence$") =>
           apply(meta.tpe) match
             case Infix(Simple(typename), "is", right)          => List(typename -> right)
             case Application(Simple(typename), List(right), _) => List(typename -> right)
             case _                                             => Nil
 
-      case _ => Nil
+      case _ =>
+        Nil
 
     . flatten
     . groupBy(_(0).name)
@@ -261,9 +286,10 @@ object Syntax:
     def isPackage(name: String): Boolean = name.endsWith("$package") || name == "package"
 
     repr.absolve match
-      case ThisType(ref) => apply(ref) match
-        case Simple(Typename.Type(parent, name)) => Simple(Typename.Term(parent, name))
-        case syntax => syntax
+      case ThisType(ref) =>
+        apply(ref) match
+          case Simple(Typename.Type(parent, name)) => Simple(Typename.Term(parent, name))
+          case syntax => syntax
 
       case typeRef@TypeRef(NoPrefix(), name) =>
         Simple(Typename.Top(name))
@@ -293,7 +319,6 @@ object Syntax:
 
           case other =>
             Primitive("<unknown>")
-
 
       case termRef@TermRef(NoPrefix(), name) =>
         Value(Typename.Top(name))
@@ -327,10 +352,17 @@ object Syntax:
         then Prefix("into", apply(tpe))
         else apply(tpe)
 
-      case OrType(left, right)   => Infix(apply(left), "|", apply(right))
-      case AndType(left, right)  => Infix(apply(left), "&", apply(right))
-      case ByNameType(tpe)       => Prefix("=>", apply(tpe))
-      case FlexibleType(tpe)     => Suffix(apply(tpe), "?")
+      case OrType(left, right) =>
+        Infix(apply(left), "|", apply(right))
+
+      case AndType(left, right) =>
+        Infix(apply(left), "&", apply(right))
+
+      case ByNameType(tpe) =>
+        Prefix("=>", apply(tpe))
+
+      case FlexibleType(tpe) =>
+        Suffix(apply(tpe), "?")
 
       case typ@AppliedType(base, arguments0) =>
         if typ.isFunctionType then
@@ -361,23 +393,25 @@ object Syntax:
 
         else Application(apply(base), arguments0.map(apply(_)), false)
 
-      case ConstantType(constant) => constant.absolve match
-        case ByteConstant(byte)     => Primitive(s"$byte.toByte")
-        case ShortConstant(short)   => Primitive(s"$short.toShort")
-        case IntConstant(int)       => Primitive(int.toString.tt)
-        case LongConstant(long)     => Primitive(s"${long}L")
-        case BooleanConstant(true)  => Primitive("true")
-        case BooleanConstant(false) => Primitive("false")
-        case StringConstant(string)    => Primitive(s"\"$string\"")
-        case CharConstant(char)     => Primitive(s"'$char'")
-        case DoubleConstant(double) => Primitive(s"${double.toString}")
-        case FloatConstant(float)   => Primitive(s"${float.toString}F")
-        case UnitConstant()         => Primitive("()")
-        case NullConstant()         => Primitive("null")
-        case ClassOfConstant(cls)   => Application
-                                        (Primitive("classOf"), List(apply(cls)), false)
+      case ConstantType(constant) =>
+        constant.absolve match
+          case ByteConstant(byte)     => Primitive(s"$byte.toByte")
+          case ShortConstant(short)   => Primitive(s"$short.toShort")
+          case IntConstant(int)       => Primitive(int.toString.tt)
+          case LongConstant(long)     => Primitive(s"${long}L")
+          case BooleanConstant(true)  => Primitive("true")
+          case BooleanConstant(false) => Primitive("false")
+          case StringConstant(string)    => Primitive(s"\"$string\"")
+          case CharConstant(char)     => Primitive(s"'$char'")
+          case DoubleConstant(double) => Primitive(s"${double.toString}")
+          case FloatConstant(float)   => Primitive(s"${float.toString}F")
+          case UnitConstant()         => Primitive("()")
+          case NullConstant()         => Primitive("null")
+          case ClassOfConstant(cls)   => Application
+                                          (Primitive("classOf"), List(apply(cls)), false)
 
-      case Refinement(base, "apply", member) => apply(member)
+      case Refinement(base, "apply", member) =>
+        apply(member)
 
       case Refinement(base, name, member) =>
         if name == "Self" then Infix(apply(member), "is", apply(base)) else
@@ -391,7 +425,8 @@ object Syntax:
               if method then refined.copy(terms = refined.terms.updated(name, signature))
               else refined.copy(types = refined.types.updated(name, signature))
 
-      case TypeBounds(lower, upper) => typeBounds(Symbolic("?"), lower, upper)
+      case TypeBounds(lower, upper) =>
+        typeBounds(Symbolic("?"), lower, upper)
 
       case method@MethodType(arguments0, types, result) =>
         val unnamed = arguments0.forall(_.startsWith("x$"))
@@ -422,14 +457,18 @@ object Syntax:
 
         Infix(Sequence('[', arguments), "=>>", apply(tpe))
 
-      case ParamRef(binder, n) => binder match
-        case TypeLambda(params, _, _) => symbolic(params(n))
-        case MethodType(params, _, _) => symbolic(params(n))
-        case PolyType(params, _, _)   => symbolic(params(n))
-        case other => Primitive("ParamRef")
+      case ParamRef(binder, n) =>
+        binder match
+          case TypeLambda(params, _, _) => symbolic(params(n))
+          case MethodType(params, _, _) => symbolic(params(n))
+          case PolyType(params, _, _)   => symbolic(params(n))
+          case other => Primitive("ParamRef")
 
-      case RecursiveType(tpe) => apply(tpe)
-      case RecursiveThis(tpe) => Primitive("???")
+      case RecursiveType(tpe) =>
+        apply(tpe)
+
+      case RecursiveThis(tpe) =>
+        Primitive("???")
 
       case other =>
         Primitive(s"...other: ${other.toString}...")

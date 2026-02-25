@@ -69,8 +69,7 @@ trait Specification extends Original:
     :   (TypeRepr, List[CaseDef]) =
 
       fields match
-        case Nil =>
-          (refined, caseDefs)
+        case Nil => (refined, caseDefs)
 
         case (name, Member.Value(label, params*)) :: tail =>
           ConstantType(StringConstant(label.s)).asType.absolve match

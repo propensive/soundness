@@ -149,11 +149,8 @@ extension [element](stream: Stream[element])
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
       else if stream.nil then Stream()
       else stream.head match
-        case Tap.Regulation.Start =>
-          recur(true, stream.tail, buffer)
-
-        case Tap.Regulation.Stop =>
-          recur(false, stream.tail, Nil)
+        case Tap.Regulation.Start => recur(true, stream.tail, buffer)
+        case Tap.Regulation.Stop  => recur(false, stream.tail, Nil)
 
         case Some(other) =>
           if active then other.nn #:: defer(true, stream.tail, Nil)
@@ -170,18 +167,20 @@ extension [element](stream: Stream[element])
 
     def recur(stream: Stream[element], list: List[element], count: Int): Stream[List[element]] =
       count match
-        case 0 => safely(async(stream.nil).await()) match
-          case Unset => recur(stream, Nil, 0)
-          case false => recur(stream.tail, stream.head :: list, count + 1)
-          case true  => Stream()
+        case 0 =>
+          safely(async(stream.nil).await()) match
+            case Unset => recur(stream, Nil, 0)
+            case false => recur(stream.tail, stream.head :: list, count + 1)
+            case true  => Stream()
 
         case Limit =>
           list.reverse #:: recur(stream, Nil, 0)
 
-        case _ => safely(async(stream.nil).await(duration)) match
-          case Unset => list.reverse #:: recur(stream, Nil, 0)
-          case false => recur(stream.tail, stream.head :: list, count + 1)
-          case true  => Stream(list.reverse)
+        case _ =>
+          safely(async(stream.nil).await(duration)) match
+            case Unset => list.reverse #:: recur(stream, Nil, 0)
+            case false => recur(stream.tail, stream.head :: list, count + 1)
+            case true  => Stream(list.reverse)
 
     Stream.defer(recur(stream, Nil, 0))
 

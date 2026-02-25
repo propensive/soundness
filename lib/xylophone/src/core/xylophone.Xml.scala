@@ -70,9 +70,9 @@ object Xml extends Tag.Container
   sealed trait Id
 
   given textDecodable: [value: Decodable in Text] => Tactic[XmlError] => value is Decodable in Xml =
-    case TextNode(text)                        =>  value.decoded(text)
-    case Element(_, _, IArray(TextNode(text))) =>  value.decoded(text)
-    case _                                     =>  abort(XmlError())
+    case TextNode(text)                        => value.decoded(text)
+    case Element(_, _, IArray(TextNode(text))) => value.decoded(text)
+    case _                                     => abort(XmlError())
 
   case class attribute() extends StaticAnnotation
 
@@ -226,13 +226,11 @@ object Xml extends Tag.Container
 
 
   given showable: [xml <: Xml] => xml is Showable =
-    case Fragment(nodes*) => nodes.map(_.show).join
-    case TextNode(text)   => text
-    case Comment(text)    => t"<!--$text-->"
-    case Cdata(text)      => t"<![CDATA[$text]]>"
-
-    case ProcessingInstruction(target, data) =>
-      t"<?$target $data?>"
+    case Fragment(nodes*)                    => nodes.map(_.show).join
+    case TextNode(text)                      => text
+    case Comment(text)                       => t"<!--$text-->"
+    case Cdata(text)                         => t"<![CDATA[$text]]>"
+    case ProcessingInstruction(target, data) => t"<?$target $data?>"
 
     case Header(version, encoding, standalone) =>
       val encodingText = encoding.lay(t""): encoding =>
@@ -424,10 +422,11 @@ object Xml extends Tag.Container
               case other =>
                 next() yet tagname(mark, other)
 
-        case ' ' | Ff | Lf | Cr | Ht | '/' | '>' => dictionary match
-          case Dictionary.Just("", tag)            =>  tag
-          case Dictionary.Branch(tag: Tag, _)      =>  tag
-          case _                                   =>  Tag.freeform(cursor.grab(mark, cursor.mark))
+        case ' ' | Ff | Lf | Cr | Ht | '/' | '>' =>
+          dictionary match
+            case Dictionary.Just("", tag)            =>  tag
+            case Dictionary.Branch(tag: Tag, _)      =>  tag
+            case _                                   =>  Tag.freeform(cursor.grab(mark, cursor.mark))
 
         case Nul =>
           fail(BadInsertion)
@@ -439,10 +438,11 @@ object Xml extends Tag.Container
     def key(mark: Mark, dictionary: Optional[Dictionary[XmlAttribute]])(using Cursor.Held)
     :   XmlAttribute =
       cursor.lay(fail(ExpectedMore)):
-        case chr if chr.isLetter || chr == '-' => dictionary.let(_(chr.minuscule)) match
-          case Unset            => next() yet key(mark, Unset)
-          case Dictionary.Empty => fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
-          case dictionary       => next() yet key(mark, dictionary)
+        case chr if chr.isLetter || chr == '-' =>
+          dictionary.let(_(chr.minuscule)) match
+            case Unset            => next() yet key(mark, Unset)
+            case Dictionary.Empty => fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
+            case dictionary       => next() yet key(mark, dictionary)
 
         case ' ' | Ff | Lf | Cr | Ht | '=' | '>' =>
           dictionary.let: dictionary =>
@@ -490,9 +490,9 @@ object Xml extends Tag.Container
       case chr                               => next() yet unquoted(mark)
 
     def equality(): Unit = skip() yet cursor.lay(fail(ExpectedMore)):
-      case '=' =>  next() yet skip() yet true
-      case Nul =>  fail(BadInsertion)
-      case chr =>  fail(Unexpected(chr))
+      case '=' => next() yet skip() yet true
+      case Nul => fail(BadInsertion)
+      case chr => fail(Unexpected(chr))
 
 
     @tailrec
@@ -548,7 +548,7 @@ object Xml extends Tag.Container
     @tailrec
     def hexEntity(mark: Mark, value: Int)(using Cursor.Held): Optional[Text] =
       cursor.lay(fail(ExpectedMore)):
-        case digit if digit.isDigit         =>
+        case digit if digit.isDigit =>
           cursor.next() yet hexEntity(mark, 16*value + (digit - '0'))
 
         case letter if 'a' <= letter <= 'f' =>
@@ -572,13 +572,22 @@ object Xml extends Tag.Container
     @tailrec
     def textEntity(mark: Mark, dictionary: Dictionary[Text])(using Cursor.Held): Optional[Text] =
       cursor.lay(fail(ExpectedMore)):
-        case chr if chr.isLetter | chr.isDigit =>  dictionary(chr) match
-          case Dictionary.Empty                  =>  Unset
-          case dictionary                        =>  cursor.next() yet textEntity(mark, dictionary)
-        case ';'                               =>  cursor.next() yet dictionary(';').element
-        case '='                               =>  Unset
-        case Nul                               =>  fail(BadInsertion)
-        case chr                               =>  dictionary.element
+        case chr if chr.isLetter | chr.isDigit =>
+          dictionary(chr) match
+            case Dictionary.Empty                  =>  Unset
+            case dictionary                        =>  cursor.next() yet textEntity(mark, dictionary)
+
+        case ';' =>
+          cursor.next() yet dictionary(';').element
+
+        case '=' =>
+          Unset
+
+        case Nul =>
+          fail(BadInsertion)
+
+        case chr =>
+          dictionary.element
 
 
     @tailrec
@@ -654,7 +663,7 @@ object Xml extends Tag.Container
 
     def piTarget(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case ' ' | Lf | Cr | Ff | Ht => cursor.grab(mark, cursor.mark)
-      case chr                     =>  next() yet piTarget(mark)
+      case chr                     => next() yet piTarget(mark)
 
     def tag(headers: Boolean): Token = cursor.lay(fail(ExpectedMore)):
       case '?' if headers =>
@@ -705,7 +714,7 @@ object Xml extends Tag.Container
           case chr =>
             fail(Unexpected(chr))
 
-      case '/'  =>
+      case '/' =>
         next()
         content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform)).label)
         Token.Close
@@ -742,7 +751,8 @@ object Xml extends Tag.Container
       def admit(child: Text): Boolean = schema.freeform || parent.admissible(child)
 
       cursor.lay(finish(parent, count)):
-        case Nul => callback.let(_(cursor.position, Hole.Node(parent.label)))
+        case Nul =>
+          callback.let(_(cursor.position, Hole.Node(parent.label)))
                     next()
                     append(TextNode("\u0000"))
                     read(parent, map, count + 1)

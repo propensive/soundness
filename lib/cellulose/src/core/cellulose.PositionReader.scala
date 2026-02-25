@@ -80,6 +80,7 @@ class PositionReader(private var in: Stream[Text]):
     case '\n' =>
       lastLine += 1
       lastCol = 0
+
     case _ =>
       lastCol += 1
 
@@ -89,6 +90,7 @@ class PositionReader(private var in: Stream[Text]):
       case -1 =>
         finished = true
         Character.End
+
       case '\r' =>
         requireCr match
           case Unset => requireCr = true

@@ -182,24 +182,25 @@ object ProductDerivation:
       inline tuple match
         case Zero => accumulator
 
-        case tuple: (fieldType *: moreFields) => tuple match
-          case field *: moreFields => inline !![labels] match
-            case _: (label *: moreLabels) => inline valueOf[label].asMatchable match
-              case label: String =>
-                val typeclass = requirement.summon[typeclass[fieldType]]
+        case tuple: (fieldType *: moreFields) =>
+          tuple match
+            case field *: moreFields => inline !![labels] match
+              case _: (label *: moreLabels) => inline valueOf[label].asMatchable match
+                case label: String =>
+                  val typeclass = requirement.summon[typeclass[fieldType]]
 
-                val fieldIndex: Int & FieldIndex[fieldType] =
-                  index.asInstanceOf[Int & FieldIndex[fieldType]]
+                  val fieldIndex: Int & FieldIndex[fieldType] =
+                    index.asInstanceOf[Int & FieldIndex[fieldType]]
 
-                val default = Default(Wisteria.default[derivation, fieldType](index))
+                  val default = Default(Wisteria.default[derivation, fieldType](index))
 
-                val accumulator2 =
-                  lambda(accumulator)[fieldType](field)
-                    ( using typeclass, default, label.tt, fieldIndex )
+                  val accumulator2 =
+                    lambda(accumulator)[fieldType](field)
+                      ( using typeclass, default, label.tt, fieldIndex )
 
-                fold[derivation, moreFields, moreLabels, result]
-                  ( moreFields, accumulator2, index + 1 )
-                  ( lambda )
+                  fold[derivation, moreFields, moreLabels, result]
+                    ( moreFields, accumulator2, index + 1 )
+                    ( lambda )
 
 
     private transparent inline def fold
@@ -216,24 +217,25 @@ object ProductDerivation:
       inline !![fields] match
         case _: Zero => accumulator
 
-        case _: (fieldType *: moreFields) => inline !![labels] match
-          case _: (label *: moreLabels) => inline valueOf[label].asMatchable match
-            case label: String =>
-              val typeclass = requirement.summon[typeclass[fieldType]]
+        case _: (fieldType *: moreFields) =>
+          inline !![labels] match
+            case _: (label *: moreLabels) => inline valueOf[label].asMatchable match
+              case label: String =>
+                val typeclass = requirement.summon[typeclass[fieldType]]
 
-              val fieldIndex: Int & FieldIndex[fieldType] =
-                index.asInstanceOf[Int & FieldIndex[fieldType]]
+                val fieldIndex: Int & FieldIndex[fieldType] =
+                  index.asInstanceOf[Int & FieldIndex[fieldType]]
 
-              val default = Default(Wisteria.default[derivation, fieldType](index))
+                val default = Default(Wisteria.default[derivation, fieldType](index))
 
-              val dereference: derivation => fieldType =
-                _.productElement(fieldIndex).asInstanceOf[fieldType]
+                val dereference: derivation => fieldType =
+                  _.productElement(fieldIndex).asInstanceOf[fieldType]
 
-              val accumulator2 =
-                lambda(accumulator)[fieldType](typeclass)
-                  ( using default, label.tt, dereference, fieldIndex )
+                val accumulator2 =
+                  lambda(accumulator)[fieldType](typeclass)
+                    ( using default, label.tt, dereference, fieldIndex )
 
-              fold[derivation, moreFields, moreLabels, result](accumulator2, index + 1)(lambda)
+                fold[derivation, moreFields, moreLabels, result](accumulator2, index + 1)(lambda)
 
 
     inline def join[derivation <: Product: ProductReflection]: typeclass[derivation]

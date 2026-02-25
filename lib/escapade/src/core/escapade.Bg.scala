@@ -54,8 +54,7 @@ case class Bg(color: Int):
     val blue = color&255
 
     colorDepth match
-      case ColorDepth.TrueColor =>
-        t"\e[48;2;$red;$green;${blue}m"
+      case ColorDepth.TrueColor => t"\e[48;2;$red;$green;${blue}m"
 
       case _ =>
         val n =

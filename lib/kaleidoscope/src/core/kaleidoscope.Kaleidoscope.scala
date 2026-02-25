@@ -89,8 +89,7 @@ object Kaleidoscope:
 
     def unapply(scrutinee: Text)(using scanner: Scanner): Boolean =
       scanner.nextStart match
-        case Unset =>
-          Regex.make(List(pattern))(using Unsafe).matches(scrutinee)
+        case Unset => Regex.make(List(pattern))(using Unsafe).matches(scrutinee)
 
         case index: Int =>
           val regex = Regex.make(List(pattern))(using Unsafe)

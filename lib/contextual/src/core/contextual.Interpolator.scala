@@ -160,9 +160,11 @@ trait Interpolator[input, state, result]:
           rethrow(parse(initial, Text(parts.head)), positions.head.start, positions.head.end),
           '{$target.parse($target.initial, Text(${Expr(parts.head)}))})
     catch
-      case error: PositionalError => error match
-        case PositionalError(message, start, end) =>
-          halt(message, Position(Position.ofMacroExpansion.sourceFile, start, end))
+      case error: PositionalError =>
+        error match
+          case PositionalError(message, start, end) =>
+            halt(message, Position(Position.ofMacroExpansion.sourceFile, start, end))
 
-      case error: InterpolationError => error match
-        case InterpolationError(message, _, _) => halt(message, Position.ofMacroExpansion)
+      case error: InterpolationError =>
+        error match
+          case InterpolationError(message, _, _) => halt(message, Position.ofMacroExpansion)

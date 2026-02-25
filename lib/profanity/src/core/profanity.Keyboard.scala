@@ -145,9 +145,20 @@ object Keyboard:
             case rest =>
               process(rest)
 
-      case ('\b' | '\u007f') #:: rest     => Keypress.Backspace #:: process(rest)
-      case '\u0009' #:: rest              => Keypress.Tab #:: process(rest)
-      case ('\u000a' | '\u000d') #:: rest => Keypress.Enter #:: process(rest)
-      case CtrlChar(char) #:: rest        => Keypress.Ctrl(char) #:: process(rest)
-      case other #:: rest                 => Keypress.CharKey(other) #:: process(rest)
-      case _                              => Stream()
+      case ('\b' | '\u007f') #:: rest =>
+        Keypress.Backspace #:: process(rest)
+
+      case '\u0009' #:: rest =>
+        Keypress.Tab #:: process(rest)
+
+      case ('\u000a' | '\u000d') #:: rest =>
+        Keypress.Enter #:: process(rest)
+
+      case CtrlChar(char) #:: rest =>
+        Keypress.Ctrl(char) #:: process(rest)
+
+      case other #:: rest =>
+        Keypress.CharKey(other) #:: process(rest)
+
+      case _ =>
+        Stream()

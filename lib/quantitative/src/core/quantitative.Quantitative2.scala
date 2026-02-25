@@ -71,8 +71,7 @@ trait Quantitative2:
 
       def recur(repr: TypeRepr): Map[DimensionRef, UnitPower] =
         repr.asMatchable match
-          case AndType(left, right) =>
-            recur(left) ++ recur(right)
+          case AndType(left, right) => recur(left) ++ recur(right)
 
           case AppliedType(_, List(_)) =>
             val unitPower = readUnitPower(repr)
@@ -87,8 +86,7 @@ trait Quantitative2:
     def quantityName(using Quotes): Option[String] =
       import quotes.reflect.*
       def recur(todo: List[(DimensionRef, Int)], current: TypeRepr): TypeRepr = todo match
-        case Nil =>
-          current
+        case Nil => current
 
         case (dimension, n) :: tail =>
           (current.asType, dimension.power(n).asType).absolve match case ('[current], '[next]) =>
@@ -145,8 +143,7 @@ trait Quantitative2:
       import quotes.reflect.*
 
       types.filter(_.power != 0) match
-        case Nil =>
-          None
+        case Nil => None
 
         case UnitPower(unit, power) :: Nil =>
           Some(AppliedType(unit.ref, List(ConstantType(IntConstant(power)))))
@@ -230,7 +227,7 @@ trait Quantitative2:
 
     override def equals(that: Any): Boolean = that.asMatchable match
       case that: DimensionRef => name == that.name
-      case _                      => false
+      case _                  => false
 
     override def hashCode: Int = name.hashCode
     override def toString(): String = name
@@ -295,8 +292,7 @@ trait Quantitative2:
     :   (UnitsMap, Expr[Double]) =
 
       dimensions match
-        case Nil =>
-          (target, expr)
+        case Nil => (target, expr)
 
         case dimension :: dimensions =>
           if other.unitPower(dimension) == 0 || units.unit(dimension) == other.unit(dimension)
@@ -317,8 +313,7 @@ trait Quantitative2:
   def collectUnits[units <: Measure: Type]: Macro[Map[Text, Int]] =
     def recur(expr: Expr[Map[Text, Int]], todo: List[UnitPower]): Expr[Map[Text, Int]] =
       todo match
-        case Nil =>
-          expr
+        case Nil => expr
 
         case UnitPower(unit, power) :: todo2 =>
           unit.power(1).asType.absolve match

@@ -49,11 +49,8 @@ enum Dot:
   def serialize: Text = Dot.serialize(Dot.tokenize(this))
 
   def add(additions: Dot.Statement*): Dot = this match
-    case Dot.Graph(id, strict, statements*) =>
-      Dot.Graph(id, strict, (statements ++ additions)*)
-
-    case Dot.Digraph(id, strict, statements*) =>
-      Dot.Digraph(id, strict, (statements ++ additions)*)
+    case Dot.Graph(id, strict, statements*)   => Dot.Graph(id, strict, (statements ++ additions)*)
+    case Dot.Digraph(id, strict, statements*) => Dot.Digraph(id, strict, (statements ++ additions)*)
 
 object Dot:
   case class Target(directed: Boolean, dest: Ref | Statement.Subgraph, link: Option[Target])
@@ -119,11 +116,8 @@ object Dot:
       case word => whitespace(); append(word)
 
   private def tokenize(graph: Ref | Dot | Target | Statement | Property): Stream[Text] = graph match
-    case Ref(id, port) =>
-      Stream(port.fold(t"\"${id.key}\"") { p => t"\"${id.key}:$p\"" })
-
-    case Property(key, value) =>
-      Stream(t"$key=\"$value\"")
+    case Ref(id, port)        => Stream(port.fold(t"\"${id.key}\"") { p => t"\"${id.key}:$p\"" })
+    case Property(key, value) => Stream(t"$key=\"$value\"")
 
     case Target(directed, dest, link) =>
       val operator = if directed then t"->" else t"--"

@@ -84,5 +84,6 @@ object Cardinality:
                 halt(m"the upper bound must be a Double singleton literal types")
           case _ =>
             halt(m"the lower bound must be a Double singleton literal types")
+
       case None =>
         '{NumericRange($digits.toDouble)}

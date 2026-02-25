@@ -39,10 +39,17 @@ enum GlobToken:
   case Specific(chars: String, inverse: Boolean)
 
   def regex: String = this match
-    case Exact(char) => (if GlobToken.needsEscaping.contains(char) then "\\" else "")+char
-    case Star        => "[^/\\\\]*"
-    case OneChar     => "[^/\\\\]"
-    case Globstar    => ".*"
+    case Exact(char) =>
+      (if GlobToken.needsEscaping.contains(char) then "\\" else "")+char
+
+    case Star =>
+      "[^/\\\\]*"
+
+    case OneChar =>
+      "[^/\\\\]"
+
+    case Globstar =>
+      ".*"
 
     case Range(start, end, inverse) =>
       s"[${if inverse then "^" else ""}${Exact(start).regex}-${Exact(end).regex}]"

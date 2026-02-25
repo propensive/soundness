@@ -57,7 +57,7 @@ trait Ansi2:
   inline given teletype: [value] => Substitution[Ansi.Input, value, "t"] =
     val teletype: value => Teletype = value => compiletime.summonFrom:
       case given (`value` is Teletypeable) => value.teletype
-      case given (`value` is Showable)    => Teletype(value.show)
+      case given (`value` is Showable)     => Teletype(value.show)
 
     TeletypeSubstitution[value](teletype)
 
@@ -109,8 +109,8 @@ object Ansi extends Ansi2:
     def parse(state: State, text: Text): State =
       state.last.fold(closures(state, text)): transform =>
         text.at(Prim) match
-          case Bsl =>
-            closures(state.copy(last = None), text.skip(1))
+          case Bsl => closures(state.copy(last = None), text.skip(1))
+
           case '[' | '(' | '<' | '«' | '{' =>
             val frame = Frame(complement(text.s.head), state.text.length, transform)
             closures(state.copy(stack = frame :: state.stack, last = None), text.skip(1))
@@ -123,8 +123,7 @@ object Ansi extends Ansi2:
       try state.stack.headOption.fold(state.copy(text = state.text+TextEscapes.escape(text))):
         frame =>
           safely(text.where(_ == frame.bracket)).let(_.n0) match
-            case Unset =>
-              state.copy(text = state.text+text)
+            case Unset => state.copy(text = state.text+text)
 
             case index: Int =>
               val text2 = state.text+text.keep(index)

@@ -57,7 +57,8 @@ object TextEscapes:
       case 'e' if esc   => ('\u001b', cur + 1, false)
       case '"' if esc   => ('"', cur + 1, false)
       case '\'' if esc  => ('\'', cur + 1, false)
-      case ch if esc    =>
+
+      case ch if esc =>
         throw EscapeError
               (Message
                 (List("the character ".tt, " should not be escaped".tt),

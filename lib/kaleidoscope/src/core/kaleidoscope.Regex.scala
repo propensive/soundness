@@ -166,8 +166,7 @@ object Regex:
 
     @tailrec
     def number(required: Boolean, count: Int = 0, first: Boolean = true): Int = current() match
-      case '\u0000' =>
-        abort(RegexError(index, IncompleteRepetition))
+      case '\u0000' => abort(RegexError(index, IncompleteRepetition))
 
       case ch if ch.isDigit =>
         index += 1
@@ -261,8 +260,7 @@ object Regex:
   :   (Int, Text) =
 
     todo match
-      case Nil =>
-        (index, (text.s+pattern.s.substring(last, end).nn).tt)
+      case Nil => (index, (text.s+pattern.s.substring(last, end).nn).tt)
 
       case head :: tail =>
         val (index2, subpattern) = head.serialize(pattern, index)
@@ -317,8 +315,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
     :   List[Optional[Text | Char] | List[Text | Char]] =
 
       todo match
-        case Nil =>
-          matches
+        case Nil => matches
 
         case group :: tail =>
           val matchedText = matcher.group(s"g$index").nn

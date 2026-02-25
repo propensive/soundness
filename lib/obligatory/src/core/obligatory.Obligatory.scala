@@ -242,7 +242,9 @@ object Obligatory:
                 case _ => halt(m"a contextual `Online` instance is required")
               case _ => halt(m"a contextual `Codicil` instance is required")
             case _ => halt(m"a contextual `Monitor` instance is required")
-        case _ => halt(m"the method ${method.name} must have exactly one parameter list")
+
+        case _ =>
+          halt(m"the method ${method.name} must have exactly one parameter list")
       })
 
     val modDef = ClassDef.module(module, parents, body = defDefs)
@@ -337,7 +339,8 @@ object Obligatory:
                     instance for the return type of ${method.name}
                   """
 
-        case _ => halt(m"the method ${method.name} must have exactly one parameter list")
+        case _ =>
+          halt(m"the method ${method.name} must have exactly one parameter list")
       })
 
     val modDef = ClassDef.module(module, parents, body = defDefs)

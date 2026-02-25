@@ -137,9 +137,13 @@ object Hyperbole:
 
       def expandType(repr: TypeRepr): TastyTree =
         repr match
-          case TypeRef(ref, name)   => TastyTree.repr(t"TypeRef", repr, name)
-          case AndType(left, right) => TastyTree.repr(t"AndType", repr).typeChildren(left, right)
-          case OrType(left, right)  => TastyTree.repr(t"OrType", repr).typeChildren(left, right)
+          case TypeRef(ref, name) => TastyTree.repr(t"TypeRef", repr, name)
+
+          case AndType(left, right) =>
+            TastyTree.repr(t"AndType", repr).typeChildren(left, right)
+
+          case OrType(left, right) =>
+            TastyTree.repr(t"OrType", repr).typeChildren(left, right)
 
           case AppliedType(tycon, arguments) =>
             TastyTree.repr(t"AppliedType", repr).typeChildren(tycon :: arguments*)
@@ -229,8 +233,7 @@ object Hyperbole:
           . or(t"")
 
         tree match
-          case typeTree: TypeTree =>
-            expandType(typeTree.tpe)
+          case typeTree: TypeTree => expandType(typeTree.tpe)
 
           case PackageClause(ref, chs) =>
             TastyTree(tag, typeName, t"PackageClause", tree)

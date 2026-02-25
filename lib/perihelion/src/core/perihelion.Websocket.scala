@@ -105,21 +105,22 @@ class Websocket[ResultType](request: Http.Request, handle: Stream[Frame] => Resu
 
       import Websocket.Opcode.*
       opcode match
-        case Continuation =>
-          Frame.Continuation(fin, payload) #:: recur()
-        case Text         =>
-          Frame.Text(fin, payload) #:: recur()
-        case Binary       =>
-          Frame.Binary(fin, payload) #:: recur()
-        case Ping         =>
+        case Continuation => Frame.Continuation(fin, payload) #:: recur()
+        case Text         => Frame.Text(fin, payload) #:: recur()
+        case Binary       => Frame.Binary(fin, payload) #:: recur()
+
+        case Ping =>
           spool.put(Frame.Pong(payload))
           recur()
-        case Pong         =>
+
+        case Pong =>
           recur()
-        case Close        =>
+
+        case Close =>
           spool.put(Frame.Close(1000))
           spool.stop()
           Stream()
+
         case Reserved0 | Reserved1 | Reserved2 | Reserved3 | Reserved4 =>
           Stream()
 

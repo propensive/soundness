@@ -64,8 +64,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
   def classpath(out: Path on Linux): LocalClasspath = LocalClasspath:
     Classpath.Directory(out)
     :: (classloaders.threadContext.classpath.match
-      case classpath: LocalClasspath =>
-        classpath.entries
+      case classpath: LocalClasspath => classpath.entries
 
       case _ =>
         unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)

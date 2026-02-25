@@ -51,8 +51,7 @@ object Admissible:
   transparent inline given text: [text <: Text, filesystem] => text is Admissible on filesystem =
     inline !![text] match
       case _: Name[`filesystem`] => unchecked[text, filesystem]
-
-      case _ => provide[Tactic[NameError]](Name[filesystem](_))
+      case _                     => provide[Tactic[NameError]](Name[filesystem](_))
 
   inline given admissible: [string <: Label, filesystem] => (nominative: filesystem is Nominative)
   =>  string is Admissible on filesystem =

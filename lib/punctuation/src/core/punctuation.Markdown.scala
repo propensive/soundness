@@ -60,7 +60,7 @@ object Markdown:
       case char
         @ ( '-' | '.' | '+' | ',' | '&' | '@' | '#' | '~' | '/' | '*' | '_' | '(' | ')' | '=' | ':'
             | '?' ) =>
-          builder.append(char)
+        builder.append(char)
 
       case char =>
         builder.append(char.toString.urlEncode)
@@ -68,19 +68,15 @@ object Markdown:
     builder.toString.tt
 
   private def text(node: Prose): Text = node match
-    case Prose.Textual(text)       => text
-    case Prose.Emphasis(children*) => children.map(text(_)).join
-    case Prose.Code(code)          => code
-    case Prose.Strong(children*)   => children.map(text(_)).join
-    case Prose.Softbreak           => "\n"
-    case Prose.Linebreak           => "\n"
-    case Prose.HtmlInline(content) => ""
-
-    case Prose.Link(destination, title, content*) =>
-      content.map(text(_)).join
-
-    case Prose.Image(destination, title, content*) =>
-      content.map(text(_)).join
+    case Prose.Textual(text)                       => text
+    case Prose.Emphasis(children*)                 => children.map(text(_)).join
+    case Prose.Code(code)                          => code
+    case Prose.Strong(children*)                   => children.map(text(_)).join
+    case Prose.Softbreak                           => "\n"
+    case Prose.Linebreak                           => "\n"
+    case Prose.HtmlInline(content)                 => ""
+    case Prose.Link(destination, title, content*)  => content.map(text(_)).join
+    case Prose.Image(destination, title, content*) => content.map(text(_)).join
 
   private def phrasing(node: Prose): Html of Phrasing = node match
     case Prose.Textual(text)       => text
@@ -169,19 +165,20 @@ object Markdown:
 
           Ol(items2*).per(start2)(_.start = _)
 
-
         case Layout.ThematicBreak(line) =>
           Hr
 
-        case Layout.HtmlBlock(line, content) => Comment(s"[CDATA[$content]]")
+        case Layout.HtmlBlock(line, content) =>
+          Comment(s"[CDATA[$content]]")
 
-        case Layout.Heading(line, level, content*) => level match
-          case 1 => H1(content.map(phrasing(_))*)
-          case 2 => H2(content.map(phrasing(_))*)
-          case 3 => H3(content.map(phrasing(_))*)
-          case 4 => H4(content.map(phrasing(_))*)
-          case 5 => H5(content.map(phrasing(_))*)
-          case 6 => H6(content.map(phrasing(_))*)
+        case Layout.Heading(line, level, content*) =>
+          level match
+            case 1 => H1(content.map(phrasing(_))*)
+            case 2 => H2(content.map(phrasing(_))*)
+            case 3 => H3(content.map(phrasing(_))*)
+            case 4 => H4(content.map(phrasing(_))*)
+            case 5 => H5(content.map(phrasing(_))*)
+            case 6 => H6(content.map(phrasing(_))*)
 
         case Layout.CodeBlock(line, info, code) =>
           domains.format(info, code).or:

@@ -81,29 +81,30 @@ class Classfile(data: Data):
         todo match
           case Nil => done.reverse
 
-          case next :: todo => next match
-            case instruction: jlc.Instruction =>
-              val opcode = Bytecode.Opcode(instruction)
-              val stack2 = stack.let(opcode.transform(_))
+          case next :: todo =>
+            next match
+              case instruction: jlc.Instruction =>
+                val opcode = Bytecode.Opcode(instruction)
+                val stack2 = stack.let(opcode.transform(_))
 
-              recur
-                ( todo,
-                  Unset,
-                  Bytecode.Instruction(opcode, line, stack2, count) :: done,
-                  stack2,
-                  count + instruction.sizeInBytes )
+                recur
+                  ( todo,
+                    Unset,
+                    Bytecode.Instruction(opcode, line, stack2, count) :: done,
+                    stack2,
+                    count + instruction.sizeInBytes )
 
-            case lineNo: jlci.LineNumber =>
-              recur(todo, lineNo.line, done, stack, count)
+              case lineNo: jlci.LineNumber =>
+                recur(todo, lineNo.line, done, stack, count)
 
-            case other: jlci.LocalVariable =>
-              recur(todo, line, done, stack, count)
+              case other: jlci.LocalVariable =>
+                recur(todo, line, done, stack, count)
 
-            case other: jlci.LabelTarget =>
-              recur(todo, line, done, stack, count)
+              case other: jlci.LabelTarget =>
+                recur(todo, line, done, stack, count)
 
-            case other =>
-              panic(m"did not handle ${other.toString.tt}")
+              case other =>
+                panic(m"did not handle ${other.toString.tt}")
 
       val instructions = recur(code.elementList.nn.asScala.to(List), Unset, Nil, Nil, 0)
 

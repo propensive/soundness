@@ -72,7 +72,8 @@ object Serviceable:
           case -1 =>
             connection.channel.shutdownInput()
             Stream()
-          case n  =>
+
+          case n =>
             buffer.flip()
             val array = new Array[Byte](buffer.remaining)
             buffer.get(array)

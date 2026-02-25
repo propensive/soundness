@@ -51,7 +51,7 @@ object Hypotenuse2:
     val bits = expr.valueOrAbort.parts.head
 
     bits.indexWhere { ch => ch != '0' && ch != '1' && ch != ' ' }.match
-      case -1  => ()
+      case -1 => ()
 
       case index =>
         val startPosition = expr.asTerm.pos
@@ -86,16 +86,16 @@ object Hypotenuse2:
       !(char >= '0' && char <= '9') && !(char >= 'a' && char <= 'f') && char != ' ' && char != '\n'
 
     . match
-        case -1  => ()
+      case -1 => ()
 
-        case index =>
-          val position =
-            Position
-              ( startPosition.sourceFile,
-                startPosition.start + index,
-                startPosition.start + index + 1 )
+      case index =>
+        val position =
+          Position
+            ( startPosition.sourceFile,
+              startPosition.start + index,
+              startPosition.start + index + 1 )
 
-          halt(m"${nibbles(index)} is not a valid hexadecimal character", position)
+        halt(m"${nibbles(index)} is not a valid hexadecimal character", position)
 
     val nibbles3 = nibbles2.filterNot { ch => ch == ' ' || ch == '\n' }
 
@@ -216,6 +216,6 @@ object Hypotenuse2:
         case ('{$left: Char}, '{$right: Char})     => ('{$left < $right}, '{$left <= $right})
         case ('{$left: Byte}, '{$right: Byte})     => ('{$left < $right}, '{$left <= $right})
         case ('{$left: Short}, '{$right: Short})   => ('{$left < $right}, '{$left <= $right})
-        case _                                      => halt(errorMessage)
+        case _                                     => halt(errorMessage)
 
     '{$expr && ${if strict.valueOrAbort then lessStrict else less}}

@@ -44,6 +44,7 @@ object PtyEscapeError:
       case BadOscParameter(parameter)   => m"$parameter is not a recognized OSC parameter"
       case BadCsiEscape(char)           => m"$char is not valid in a CSI escape sequence"
       case BadFeEscape(char)            => m"$char is not a valid Fe escape"
+
       case BadCsiCommand(param, char) =>
         m"$char (with parameter $param) is not a valid CSI command"
 

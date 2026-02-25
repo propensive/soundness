@@ -51,9 +51,10 @@ object Glob:
 
     def recur(index: Int, tokens: List[GlobToken]): Glob =
       if index >= text.s.length then Glob(tokens.reverse*) else text.s(index) match
-        case '*' => tokens match
-          case Star :: tail => recur(index + 1, Globstar :: tail)
-          case _            => recur(index + 1, Star :: tokens)
+        case '*' =>
+          tokens match
+            case Star :: tail => recur(index + 1, Globstar :: tail)
+            case _            => recur(index + 1, Star :: tokens)
 
         case '?' =>
           recur(index + 1, OneChar :: tokens)

@@ -36,6 +36,7 @@ object Feistel:
   def apply(subkeys: List[Int], round: (Int, Int) => Int)(input: Long): Long =
     def recur(value: Long, subkeys: List[Int]): Long = subkeys match
       case Nil => value
+
       case next :: more =>
         recur
           ( (value.toInt.toLong << 32) | ((value >> 32).toInt ^ round(value.toInt, next)).toLong,

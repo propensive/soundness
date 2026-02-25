@@ -151,6 +151,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
 
       queue match
         case Nil => None
+
         case (vertex, trace) :: tail =>
           trace.to(Set).intersect(apply(vertex)).headOption match
             case Some(element) => Some(trace ++ List(vertex, element))

@@ -125,7 +125,8 @@ object Makable:
             . within:
                 sh"mkfifo $path"() match
                   case Exit.Ok => ()
-                  case _             =>
+
+                  case _ =>
                     raise
                       ( IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied) )
 

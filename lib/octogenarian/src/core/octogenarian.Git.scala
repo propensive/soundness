@@ -109,9 +109,11 @@ object Git:
 
     val sourceText = inline source match
       case source: SshUrl => source.text
-      case other          => summonFrom:
-        case given (`source` is Abstractable across Urls to Text)  => source.generic
-        case given (`source` is Abstractable across Paths to Text) => source.generic
+
+      case other =>
+        summonFrom:
+          case given (`source` is Abstractable across Urls to Text)  => source.generic
+          case given (`source` is Abstractable across Paths to Text) => source.generic
 
     uncheckedCloneCommit(sourceText, targetPath, commit)
 
@@ -131,9 +133,11 @@ object Git:
 
     val sourceText = inline source match
       case source: SshUrl => source.text
-      case other          => summonFrom:
-        case given (`source` is Abstractable across Urls to Text)  => source.generic
-        case given (`source` is Abstractable across Paths to Text) => source.generic
+
+      case other =>
+        summonFrom:
+          case given (`source` is Abstractable across Urls to Text)  => source.generic
+          case given (`source` is Abstractable across Paths to Text) => source.generic
 
     uncheckedClone(sourceText, targetPath, bare, branch, recursive)
 

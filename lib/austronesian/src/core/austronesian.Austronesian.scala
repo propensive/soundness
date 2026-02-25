@@ -161,17 +161,18 @@ object Austronesian:
       type Contrast = Pojo
 
       def check(left: Pojo, right: Pojo): Boolean = left match
-        case left: Array[?] => right match
-          case right: Array[?] =>
-            left.length == right.length && left.indices.forall: index =>
-              left(index) match
-                case left: Pojo @unchecked => right(index) match
-                  case right: Pojo @unchecked => checkable.check(left, right)
-                  case _                      => false
-                case _                     => false
-          case _               => false
+        case left: Array[?] =>
+          right match
+            case right: Array[?] =>
+              left.length == right.length && left.indices.forall: index =>
+                left(index) match
+                  case left: Pojo @unchecked => right(index) match
+                    case right: Pojo @unchecked => checkable.check(left, right)
+                    case _                      => false
+                  case _                     => false
+            case _               => false
 
-        case left           =>
+        case left =>
           left == right
 
     inline given encodable: [value: Reflection] => value is Encodable in Pojo =

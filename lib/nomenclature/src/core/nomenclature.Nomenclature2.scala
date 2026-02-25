@@ -46,10 +46,12 @@ object Nomenclature2:
     import quotes.reflect.*
 
     todo match
-      case Nil          => TypeRepr.of[Zero]
-      case next :: todo => next.asType.absolve match
-        case '[next] => build(todo).asType.absolve match
-          case '[type tupleType <: Tuple; tupleType] => TypeRepr.of[next *: tupleType]
+      case Nil => TypeRepr.of[Zero]
+
+      case next :: todo =>
+        next.asType.absolve match
+          case '[next] => build(todo).asType.absolve match
+            case '[type tupleType <: Tuple; tupleType] => TypeRepr.of[next *: tupleType]
 
   def decompose(using Quotes)(repr: quotes.reflect.TypeRepr): Set[quotes.reflect.TypeRepr] =
     import quotes.reflect.*
@@ -131,10 +133,13 @@ object Nomenclature2:
 
         decompose(TypeRepr.of[limit]).to(List).each: repr =>
           val text = repr.asMatchable match
-            case AppliedType(_, List(param)) => param.asMatchable match
-              case ConstantType(StringConstant(text)) => text.tt
-              case _                                  => halt(m"Bad type")
-            case _                           => halt(m"Bad type")
+            case AppliedType(_, List(param)) =>
+              param.asMatchable match
+                case ConstantType(StringConstant(text)) => text.tt
+                case _                                  => halt(m"Bad type")
+
+            case _ =>
+              halt(m"Bad type")
           val rule = companion[Rule](repr.typeSymbol)
           if !rule.check(name, text)
           then halt(m"the name is not valid because it ${rule.describe(text)}")

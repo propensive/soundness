@@ -210,8 +210,7 @@ object Aviation:
       import calendars.gregorian
 
       value.cut(t"-").to(List) match
-        case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
-          Date(year, Month(month), day)
+        case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil => Date(year, Month(month), day)
 
         case cnt =>
           raise(TimeError(_.Format(value, Iso8601, Prim)(Iso8601.Issue.Digit))) yet 2000-Jan-1

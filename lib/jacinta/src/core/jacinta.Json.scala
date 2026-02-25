@@ -350,7 +350,8 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
   private[jacinta] def delete(field: String): Json raises JsonError =
     root.obj(0).indexWhere(_ == field) match
-      case -1    => Json.ast(JsonAst(root.obj))
+      case -1 => Json.ast(JsonAst(root.obj))
+
       case index =>
         val keys = root.obj(0)
         val values = root.obj(1)
@@ -387,10 +388,11 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
       case value: IArray[JsonAst] @unchecked =>
         value.fuse(value.length.hashCode)(state*31^recur(next))
 
-      case (keys, values) => keys.asMatchable.absolve match
-        case keys: IArray[String] @unchecked => values.asMatchable.absolve match
-          case values: IArray[JsonAst] @unchecked =>
-            keys.zip(values).to(Map).view.mapValues(recur(_)).hashCode
+      case (keys, values) =>
+        keys.asMatchable.absolve match
+          case keys: IArray[String] @unchecked => values.asMatchable.absolve match
+            case values: IArray[JsonAst] @unchecked =>
+              keys.zip(values).to(Map).view.mapValues(recur(_)).hashCode
 
       case _ =>
         0

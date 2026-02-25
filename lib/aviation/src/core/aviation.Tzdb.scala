@@ -132,6 +132,7 @@ object Tzdb:
 
           case _ =>
             abort(TzdbError(TzdbError.Reason.BadName(name), lineNo))
+
       case _ =>
         abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
 

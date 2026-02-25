@@ -78,17 +78,19 @@ object Wit:
     @tailrec
     def whitespace(): Unit = conduit.datum match
       case '\n' | '\r' | '\t' | ' ' => if conduit.next() then whitespace()
+
       case '/' =>
         if conduit.next() then
           if conduit.datum == '/' then comment() yet whitespace() else fail(m"expected /")
         else fail(m"early termination")
-      case _                        => ()
+
+      case _ =>
+        ()
 
     @tailrec
     def comment(): Unit = conduit.datum match
       case '\n' => ()
-      case char =>
-        if conduit.next() then comment()
+      case char => if conduit.next() then comment()
 
     def keyword(): Text =
       conduit.mark()
@@ -113,7 +115,9 @@ object Wit:
         case char if char >= 'A' && char <= 'Z' =>
           if !hyphen && uppercase then fail(m"mixed case")
           if conduit.next() then recur(false, true) else fail(m"incomplete identifier")
-        case other => Text(conduit.save()).also(whitespace())
+
+        case other =>
+          Text(conduit.save()).also(whitespace())
 
       Ident(recur(true, false).cut(t"-"))
 
@@ -139,6 +143,7 @@ object Wit:
       conduit.datum match
         case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '.' =>
           if conduit.next() then version() else fail(m"premature termination")
+
         case char =>
           Text(conduit.save()).also(whitespace())
 
@@ -157,7 +162,9 @@ object Wit:
               conduit.datum match
                 case ';' => Package(namespace, name, Unset)
                 case other => fail(m"unexpected character $other")
-        case other => fail(m"expected ':'")
+
+        case other =>
+          fail(m"expected ':'")
 
 
     def interfaceItems(members: List[Primitive | Func] = Nil): List[Primitive | Func] = Nil

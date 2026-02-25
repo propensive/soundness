@@ -103,8 +103,7 @@ object Bootstrapper:
     . within:
         val jarfile: Path on Linux =
           ClassRef(Class.forName("burdock.Bootstrap").nn).classpathEntry match
-            case ClasspathEntry.Jar(file) =>
-              file.decode[Path on Linux]
+            case ClasspathEntry.Jar(file) => file.decode[Path on Linux]
 
             case other =>
               abort(UserError(m"Could not determine location of bootstrap class"))

@@ -40,8 +40,7 @@ case class Polyglot[+value, language](values: Map[Language, value]):
   :   Polyglot[value2, language & language2] | value2 =
 
     compiletime.summonFrom:
-      case locale: Locale[language & language2] =>
-        (values ++ polyglot.values)(locale.language)
+      case locale: Locale[language & language2] => (values ++ polyglot.values)(locale.language)
 
       case _ =>
         Polyglot[value2, language & language2](values ++ polyglot.values)

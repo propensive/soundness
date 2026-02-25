@@ -154,7 +154,7 @@ object Media:
       val xs: List[Text] = string.cut(t"+").to(List)
 
       xs.absolve match
-      case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
+        case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
 
     def parseBasic(string: Text): (Group, Subtype, List[Suffix]) = string.cut(t"/").to(List) match
       case List(group, subtype) => parseGroup(group) *: parseInit(subtype)

@@ -58,6 +58,7 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
     case Ctrl('W') =>
       val prefix = value.keep(0 max (position - 1)).reverse.dropWhile(_ != ' ').reverse
       copy(t"$prefix${value.skip(position)}", prefix.length)
+
     case Backspace =>
       copy(t"${value.keep(position - 1)}${value.skip(position)}", (position - 1) max 0)
 
@@ -73,7 +74,8 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
       val position2 = range.where { index => value.at(index.z) == ' ' }.lay(value.length)(_ + 1)
       copy(position0 = position2 `min` value.length)
 
-    case _           => this
+    case _ =>
+      this
 
   catch case e: RangeError => this
 

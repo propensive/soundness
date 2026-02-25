@@ -585,12 +585,15 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
       test(m"Multi-level matching"):
         path match
-          case root /: t"home" /: more => more match
-            case t"work"            => false
-            case t"work" /: t"data" => true
-            case t"data"            => false
-            case other              => false
-          case _ => false
+          case root /: t"home" /: more =>
+            more match
+              case t"work"            => false
+              case t"work" /: t"data" => true
+              case t"data"            => false
+              case other              => false
+
+          case _ =>
+            false
 
       . assert(identity(_))
 

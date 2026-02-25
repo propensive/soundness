@@ -61,8 +61,8 @@ object Xylophone:
 
     def intersect(parts: List[String], repr: TypeRepr = TypeRepr.of[Nothing]): TypeRepr =
       parts match
-        case head :: tail =>  intersect(tail, OrType(repr, ConstantType(StringConstant(head))))
-        case Nil          =>  repr
+        case head :: tail => intersect(tail, OrType(repr, ConstantType(StringConstant(head))))
+        case Nil          => repr
 
     abortive:
       var holes: Map[Ordinal, Xml.Hole] = Map()
@@ -130,6 +130,7 @@ object Xylophone:
 
         def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
           case Nil => expr
+
           case "\u0000" :: tail =>
             index += 1
             types ::= TypeRepr.of[Map[Text, Text]]
@@ -291,19 +292,19 @@ object Xylophone:
           }
 
       types.length match
-        case 0 =>
-          '{$result.asInstanceOf[Boolean]}
+        case 0 => '{$result.asInstanceOf[Boolean]}
 
-        case 1 => types.head.asType.absolve match
-          case '[type result <: Xml; result] =>
-            '{$result.asInstanceOf[Option[result]]}
+        case 1 =>
+          types.head.asType.absolve match
+            case '[type result <: Xml; result] =>
+              '{$result.asInstanceOf[Option[result]]}
 
         case _ =>
           AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse)
           . asType
           . absolve match
-              case '[type result <: Tuple; result] =>
-                '{$result.asInstanceOf[Option[result]]}
+            case '[type result <: Tuple; result] =>
+              '{$result.asInstanceOf[Option[result]]}
 
 
   def interpolator[parts <: Tuple: Type](insertions0: Expr[Seq[Any]]): Macro[Xml] =
@@ -414,6 +415,7 @@ object Xylophone:
 
       def serialize(xml: Xml): Seq[Expr[Node]] = xml match
         case Fragment(children*) => children.flatMap(serialize(_))
+
         case Header(version, encoding, standalone) =>
           val encoding2: Expr[Optional[Text]] =
             if encoding == Unset then '{Unset} else Expr(encoding.asInstanceOf[Text])
@@ -422,6 +424,7 @@ object Xylophone:
             if standalone == Unset then '{Unset} else Expr(encoding.asInstanceOf[Boolean])
 
           List('{Header(${Expr(version)}, $encoding2, $standalone2)})
+
         case Element(label, attributes, children) =>
           val exprs = attributes.to(List).map: (key, value) =>
             ' {
@@ -490,25 +493,25 @@ object Xylophone:
           List('{TextNode($content.tt)})
 
       def resultType(xml: Xml): Set[String] = xml match
-        case TextNode(_)        =>  Set("#text")
-        case Element(tag, _, _) =>  Set(tag.s)
-        case Fragment(values*)  =>  values.to(Set).flatMap(resultType(_))
-        case _                  =>  Set()
+        case TextNode(_)        => Set("#text")
+        case Element(tag, _, _) => Set(tag.s)
+        case Fragment(values*)  => values.to(Set).flatMap(resultType(_))
+        case _                  => Set()
 
       resultType(xml)
       . map { label => ConstantType(StringConstant(label)) }
       . foldLeft(TypeRepr.of[Nothing]) { (left, right) => OrType(left, right) }
       . asType
       . absolve match
-          case '[type topic <: Label; topic] =>
-            ' {
-                $ {
-                    serialize(xml).absolve match
-                      case List(one: Expr[?]) => one.asExprOf[Xml]
-                      case many               => '{Fragment(${Expr.ofList(many)}*)}
-                  }
-                . of[topic]
-              }
+        case '[type topic <: Label; topic] =>
+          ' {
+              $ {
+                  serialize(xml).absolve match
+                    case List(one: Expr[?]) => one.asExprOf[Xml]
+                    case many               => '{Fragment(${Expr.ofList(many)}*)}
+                }
+              . of[topic]
+            }
 
 
   def attributes[result: Type, thisType <: Tag to result: Type]

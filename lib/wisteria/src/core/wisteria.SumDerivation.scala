@@ -53,10 +53,13 @@ object SumDerivation:
         case _: (variant *: variants) => all[variant, variants]
 
     private transparent inline def all[variant, variants <: Tuple]: Boolean = summonFrom:
-      case given (variant <:< Singleton) => inline !![variants] match
-        case _: Zero                           => true
-        case _: (variant *: variants)  => all[variant, variants]
-      case _                                 => false
+      case given (variant <:< Singleton) =>
+        inline !![variants] match
+          case _: Zero                           => true
+          case _: (variant *: variants)  => all[variant, variants]
+
+      case _ =>
+        false
 
 
     protected transparent inline def complement[derivation, variant](sum: derivation)
@@ -97,15 +100,16 @@ object SumDerivation:
     :   Optional[derivation] =
 
       inline !![variants] match
-        case _: (variant *: variants) => inline !![labels] match
-          case _: (label *: labelsType) =>
-            type variant0 = variant & derivation
+        case _: (variant *: variants) =>
+          inline !![labels] match
+            case _: (label *: labelsType) =>
+              type variant0 = variant & derivation
 
-            if predicate(valueOf[label & String].tt)
-            then infer[Mirror.ProductOf[variant0]].fromProduct(Zero)
-            else singletonFold[derivation, variants, labelsType](predicate)
+              if predicate(valueOf[label & String].tt)
+              then infer[Mirror.ProductOf[variant0]].fromProduct(Zero)
+              else singletonFold[derivation, variants, labelsType](predicate)
 
-        case _  =>
+        case _ =>
           Unset
 
 
@@ -166,25 +170,26 @@ object SumDerivation:
     :   Optional[result] =
 
       inline !![variants] match
-        case _: (variant *: variants) => inline !![labels] match
-          case _: (label *: moreLabels) =>
-            type variant0 = variant & derivation
-            if index >= size then Unset else
-              (valueOf[label].asMatchable: @unchecked) match
-                case label: String =>
-                  val index2: Int & VariantIndex[derivation] = VariantIndex[derivation](index)
+        case _: (variant *: variants) =>
+          inline !![labels] match
+            case _: (label *: moreLabels) =>
+              type variant0 = variant & derivation
+              if index >= size then Unset else
+                (valueOf[label].asMatchable: @unchecked) match
+                  case label: String =>
+                    val index2: Int & VariantIndex[derivation] = VariantIndex[derivation](index)
 
-                  if predicate(using label.tt, index2)
-                  then
-                    val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
-                    val context = requirement.wrap(infer[typeclass[variant0]])
-                    lambda[variant0](context)(using context, label.tt, index3)
-                  else
-                    fold
-                      [ derivation, variants, moreLabels ]
-                      ( inputLabel, size, index + 1, fallible )
-                      ( predicate )
-                      ( lambda )
+                    if predicate(using label.tt, index2)
+                    then
+                      val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
+                      val context = requirement.wrap(infer[typeclass[variant0]])
+                      lambda[variant0](context)(using context, label.tt, index3)
+                    else
+                      fold
+                        [ derivation, variants, moreLabels ]
+                        ( inputLabel, size, index + 1, fallible )
+                        ( predicate )
+                        ( lambda )
 
         case _ =>
           inline if fallible
@@ -206,24 +211,25 @@ object SumDerivation:
     :   Optional[result] =
 
       inline !![variants] match
-        case _: (variant *: variants) => inline !![labels] match
-          case _: (label *: moreLabels) =>
-            type variant0 = variant & derivation
-            if index >= size then Unset else
-              (valueOf[label].asMatchable: @unchecked) match
-                case label: String =>
-                  val index2: Int & VariantIndex[derivation] = VariantIndex[derivation](index)
+        case _: (variant *: variants) =>
+          inline !![labels] match
+            case _: (label *: moreLabels) =>
+              type variant0 = variant & derivation
+              if index >= size then Unset else
+                (valueOf[label].asMatchable: @unchecked) match
+                  case label: String =>
+                    val index2: Int & VariantIndex[derivation] = VariantIndex[derivation](index)
 
-                  if predicate(using label.tt, index2)
-                  then
-                    val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
-                    val variant: variant0 = sum.asInstanceOf[variant0]
-                    val context = requirement.wrap(infer[typeclass[variant0]])
-                    lambda[variant0](variant)(using context, label.tt, index3)
-                  else
-                    fold[derivation, variants, moreLabels](sum, size, index + 1, fallible)
-                      ( predicate )
-                      ( lambda )
+                    if predicate(using label.tt, index2)
+                    then
+                      val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
+                      val variant: variant0 = sum.asInstanceOf[variant0]
+                      val context = requirement.wrap(infer[typeclass[variant0]])
+                      lambda[variant0](variant)(using context, label.tt, index3)
+                    else
+                      fold[derivation, variants, moreLabels](sum, size, index + 1, fallible)
+                        ( predicate )
+                        ( lambda )
 
         case _ =>
           inline if fallible

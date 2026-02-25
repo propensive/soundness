@@ -87,8 +87,7 @@ extension [plane: Filesystem](path: Path on plane)
       case _: jnf.NotDirectoryException      => abort(IoError(path, operation, IsNotDirectory))
       case _: SecurityException              => abort(IoError(path, operation, PermissionDenied))
       case _: jnf.FileSystemLoopException    => abort(IoError(path, operation, Cycle))
-      case other                             =>
-        abort(IoError(path, operation, Unsupported))
+      case other                             => abort(IoError(path, operation, Unsupported))
 
   def javaPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
   def javaFile: ji.File = javaPath.toFile.nn
@@ -268,8 +267,8 @@ extension [plane <: Posix: Filesystem](path: Path on plane)
     path.protect(Operation.Metadata):
       jnf.Files.getAttribute(jnf.Path.of(path.show.s), "unix:nlink", dereferenceSymlinks.options()*)
       . match
-          case count: Int => count
-          case _          => raise(IoError(path, Operation.Metadata, Reason.Unsupported)) yet 1
+        case count: Int => count
+        case _          => raise(IoError(path, Operation.Metadata, Reason.Unsupported)) yet 1
 
 package filesystemOptions:
   object readAccess:

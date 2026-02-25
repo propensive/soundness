@@ -359,7 +359,7 @@ object Synesthesia:
 
       val result: TypeRepr = method.info.absolve match
         case MethodType(_, _, MethodType(_, _, result)) => result
-        case MethodType(_, _, result) => result
+        case MethodType(_, _, result)                   => result
 
       result.asType.absolve match
         case '[result] => Expr.summon[result is Schematic in JsonSchema] match

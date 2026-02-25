@@ -109,7 +109,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
     sh"$git $repoOptions switch $branch".exec[Exit]() match
       case Exit.Ok => ()
-      case failure       => abort(GitError(CannotSwitchBranch))
+      case failure => abort(GitError(CannotSwitchBranch))
 
 
   def pull()(using GitCommand, Internet, WorkingDirectory)
@@ -121,7 +121,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
     GitProcess[Unit](Git.progress(process)):
       process.await() match
         case Exit.Ok => ()
-        case failure       => abort(GitError(PullFailed))
+        case failure => abort(GitError(PullFailed))
 
 
   def fetch(depth: Optional[Int] = Unset, repo: Text, refspec: Refspec)
@@ -136,7 +136,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
     GitProcess[Unit](Git.progress(process)):
       process.await() match
         case Exit.Ok => ()
-        case failure       => abort(GitError(PullFailed))
+        case failure => abort(GitError(PullFailed))
 
 
   def commit(message: Text)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
@@ -144,7 +144,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
     sh"$git $repoOptions commit -m $message".exec[Exit]() match
       case Exit.Ok => ()
-      case failure       => abort(GitError(CommitFailed))
+      case failure => abort(GitError(CommitFailed))
 
 
   def branches()(using GitCommand, WorkingDirectory, Tactic[ExecError])
@@ -167,7 +167,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
     sh"$git $repoOptions checkout -b $branch".exec[Exit]() match
       case Exit.Ok => ()
-      case failure       => abort(GitError(BranchFailed))
+      case failure => abort(GitError(BranchFailed))
 
 
   def add[path: Abstractable across Paths to Text](path: path)(using GitCommand, WorkingDirectory)
@@ -184,7 +184,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
     command.exec[Exit]() match
       case Exit.Ok => ()
-      case failure       => abort(GitError(AddFailed))
+      case failure => abort(GitError(AddFailed))
 
 
   def reset(): Unit = ()
@@ -207,7 +207,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
     sh"$git $repoOptions tag $name".exec[Exit]() match
       case Exit.Ok => name
-      case failure       => abort(GitError(TagFailed))
+      case failure => abort(GitError(TagFailed))
 
 
   private def parsePem(text: Text): Optional[Pem] = safely(Pem.parse(text))
@@ -245,35 +245,36 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
           case _                      => (lines.reverse, stream)
 
       stream match
-        case head #:: tail => head match
-          case t"" =>
-            recur(tail, hash, tree, parents, author, committer, signature, lines)
+        case head #:: tail =>
+          head match
+            case t"" =>
+              recur(tail, hash, tree, parents, author, committer, signature, lines)
 
-          case r"commit $hash(.{40})" =>
-            commit() #::: recur(tail, GitHash.unsafe(hash), Unset, Nil, Unset, Unset, Nil, Nil)
+            case r"commit $hash(.{40})" =>
+              commit() #::: recur(tail, GitHash.unsafe(hash), Unset, Nil, Unset, Unset, Nil, Nil)
 
-          case r"tree $tree(.{40})" =>
-            recur(tail, hash, GitHash.unsafe(tree), parents, author, committer, signature, lines)
+            case r"tree $tree(.{40})" =>
+              recur(tail, hash, GitHash.unsafe(tree), parents, author, committer, signature, lines)
 
-          case r"parent $parent(.{40})" =>
-            val parents2 = GitHash.unsafe(parent) :: parents
-            recur(tail, hash, tree, parents2, author, committer, signature, lines)
+            case r"parent $parent(.{40})" =>
+              val parents2 = GitHash.unsafe(parent) :: parents
+              recur(tail, hash, tree, parents2, author, committer, signature, lines)
 
-          case r"author $author(.*) $timestamp([0-9]+) $time(.....)" =>
-            recur(tail, hash, tree, parents, author, committer, signature, lines)
+            case r"author $author(.*) $timestamp([0-9]+) $time(.....)" =>
+              recur(tail, hash, tree, parents, author, committer, signature, lines)
 
-          case r"committer $committer(.*) $timestamp([0-9]+) $time(.....)" =>
-            recur(tail, hash, tree, parents, author, committer, signature, lines)
+            case r"committer $committer(.*) $timestamp([0-9]+) $time(.....)" =>
+              recur(tail, hash, tree, parents, author, committer, signature, lines)
 
-          case r"gpgsig $start(.*)" =>
-            val (signature, rest) = read(tail, Nil)
-            recur(rest, hash, tree, parents, author, committer, start :: signature, lines)
+            case r"gpgsig $start(.*)" =>
+              val (signature, rest) = read(tail, Nil)
+              recur(rest, hash, tree, parents, author, committer, start :: signature, lines)
 
-          case r"    $line(.*)" =>
-            recur(tail, hash, tree, parents, author, committer, signature, line :: lines)
+            case r"    $line(.*)" =>
+              recur(tail, hash, tree, parents, author, committer, signature, line :: lines)
 
-          case other =>
-            recur(tail, hash, tree, parents, author, committer, signature, lines)
+            case other =>
+              recur(tail, hash, tree, parents, author, committer, signature, lines)
 
         case _ =>
           commit()

@@ -111,6 +111,7 @@ object StackTrace:
           else
             buffer.append("<")
             recur(index + 1)
+
         case 'i' =>
           if (0 until 8).all { i => char(index + i) == "initial$"(i) }
           then
@@ -119,6 +120,7 @@ object StackTrace:
           else
             buffer.append("i")
             recur(index + 1)
+
         case 'l' =>
           if (0 until 7).all { i => char(index + i) == "lzyINIT"(i) }
           then
@@ -127,6 +129,7 @@ object StackTrace:
           else
             buffer.append("l")
             recur(index + 1)
+
         case 's' =>
           if (0 until 6).all { i => char(index + i) == "super$"(i) }
           then
@@ -135,75 +138,78 @@ object StackTrace:
           else
             buffer.append("s")
             recur(index + 1)
-        case '$' => char(index + 1) match
-          case '_' => token(index,           "$_avoid_name_clash_$", "′")
-          case 'a' => char(index + 2) match
-            case 'm' => token(index,         "$amp",                 "&")
-            case 'n' => char(index + 5) match
-              case 'f' => token(index,       "$anonfun",             "λ")
-              case _   => token(index,       "$anon",                "α")
-            case 't' => token(index,         "$at",                  "@")
-            case _   => skip()
-          case 'b' => char(index + 2) match
-            case 'a' => char(index + 3) match
-              case 'n' => token(index,       "$bang",                "!")
-              case 'r' => token(index,       "$bar",                 "|")
-              case _   => skip()
-            case 's' => token(index,         "$bslash",              "\\")
-            case _   => skip()
-          case 'c' => token(index,           "$colon",               ":")
-          case 'd' => char(index + 2) match
-            case 'e' => token(index,         "$default",             "δ")
-            case 'i' => char(index + 3) match
-              case 'r' => token(index,       "$direct",              "∂")
-              case 'v' => token(index,       "$div",                 "/")
-              case _   => skip()
-            case _   => skip()
-          case 'e' => char(index + 2) match
-            case 'q' => token(index,         "$eq",                  "=")
-            case 'x' => token(index,         "$extension",           "⊢")
-            case _   => skip()
-          case 'g' => token(index,           "$greater",             ">")
-          case 'h' => token(index,           "$hash",                "#")
-          case 'l' => token(index,           "$less",                "<")
-          case 'm' => char(index + 2) match
-            case 'c' =>
-              var index2: Int = index + 3
-              var arguments: List[Text] = Nil
-              var current = char(index2)
 
-              while current != '$' do
-                arguments = primitive(current.or('?')) :: arguments
-                index2 += 1
-                current = char(index2)
-
-              val name2 =
-                if arguments.length == 2 then "Σ("+arguments.last+" -> "+arguments.head+")"
-                else arguments.tail.mkString("Σ((", ", ", ")")+" -> "+arguments.head+")"
-
-              val mc = name.substring(index, index + 3).nn
-              token(index, mc, name2)
-            case 'i' => token(index,         "$minus",               "-")
-            case _   => skip()
-          case 'p' => char(index + 2) match
-            case 'a' => token(index,         "$package",             "⁆")
-            case 'e' => token(index,         "$percent",             "%")
-            case 'l' => token(index,         "$plus",                "+")
-            case _   => skip()
-          case 'q' => token(index,           "$qmark",               "?")
-          case 's' => char(index + 2) match
-            case 'p' => token(index,         "$sp",                  "ζ")
-            case _   => skip()
-          case 't' => char(index + 2) match
-            case 'i' => char(index + 3) match
-              case 'l' => token(index,       "$tilde",               "~")
-              case 'm' => token(index,       "$times",               "*")
+        case '$' =>
+          char(index + 1) match
+            case '_' => token(index,           "$_avoid_name_clash_$", "′")
+            case 'a' => char(index + 2) match
+              case 'm' => token(index,         "$amp",                 "&")
+              case 'n' => char(index + 5) match
+                case 'f' => token(index,       "$anonfun",             "λ")
+                case _   => token(index,       "$anon",                "α")
+              case 't' => token(index,         "$at",                  "@")
               case _   => skip()
-            case _  => skip()
-          case 'u' => token(index,           "$up",                  "^")
-          case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => recur(index + 1, true)
-          case _   => skip()
-        case ch  =>
+            case 'b' => char(index + 2) match
+              case 'a' => char(index + 3) match
+                case 'n' => token(index,       "$bang",                "!")
+                case 'r' => token(index,       "$bar",                 "|")
+                case _   => skip()
+              case 's' => token(index,         "$bslash",              "\\")
+              case _   => skip()
+            case 'c' => token(index,           "$colon",               ":")
+            case 'd' => char(index + 2) match
+              case 'e' => token(index,         "$default",             "δ")
+              case 'i' => char(index + 3) match
+                case 'r' => token(index,       "$direct",              "∂")
+                case 'v' => token(index,       "$div",                 "/")
+                case _   => skip()
+              case _   => skip()
+            case 'e' => char(index + 2) match
+              case 'q' => token(index,         "$eq",                  "=")
+              case 'x' => token(index,         "$extension",           "⊢")
+              case _   => skip()
+            case 'g' => token(index,           "$greater",             ">")
+            case 'h' => token(index,           "$hash",                "#")
+            case 'l' => token(index,           "$less",                "<")
+            case 'm' => char(index + 2) match
+              case 'c' =>
+                var index2: Int = index + 3
+                var arguments: List[Text] = Nil
+                var current = char(index2)
+
+                while current != '$' do
+                  arguments = primitive(current.or('?')) :: arguments
+                  index2 += 1
+                  current = char(index2)
+
+                val name2 =
+                  if arguments.length == 2 then "Σ("+arguments.last+" -> "+arguments.head+")"
+                  else arguments.tail.mkString("Σ((", ", ", ")")+" -> "+arguments.head+")"
+
+                val mc = name.substring(index, index + 3).nn
+                token(index, mc, name2)
+              case 'i' => token(index,         "$minus",               "-")
+              case _   => skip()
+            case 'p' => char(index + 2) match
+              case 'a' => token(index,         "$package",             "⁆")
+              case 'e' => token(index,         "$percent",             "%")
+              case 'l' => token(index,         "$plus",                "+")
+              case _   => skip()
+            case 'q' => token(index,           "$qmark",               "?")
+            case 's' => char(index + 2) match
+              case 'p' => token(index,         "$sp",                  "ζ")
+              case _   => skip()
+            case 't' => char(index + 2) match
+              case 'i' => char(index + 3) match
+                case 'l' => token(index,       "$tilde",               "~")
+                case 'm' => token(index,       "$times",               "*")
+                case _   => skip()
+              case _  => skip()
+            case 'u' => token(index,           "$up",                  "^")
+            case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => recur(index + 1, true)
+            case _   => skip()
+
+        case ch =>
           buffer.append(ch.toString)
           recur(index + 1)
 
@@ -212,8 +218,7 @@ object StackTrace:
     if rewritten.s.startsWith("scala.runtime.java8.JFunction") && rewritten.s.endsWith("#sp") then
       val types: String = rewritten.s.drop(29).dropRight(3)
       types.indexOf("#mc") match
-        case -1 | 0 =>
-          rewritten
+        case -1 | 0 => rewritten
 
         case i =>
           Text:

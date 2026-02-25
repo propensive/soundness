@@ -175,7 +175,7 @@ case class Diff[element](edits: Edit[element]*):
         case xs@(Par(_, _, _) :: _) =>
           Region.Unchanged(xs.collect { case par: Par[element] => par })
 
-        case xs                     =>
+        case xs =>
           Region.Changed
             ( xs.collect { case del: Del[element] => del },
               xs.collect { case ins: Ins[element] => ins } )

@@ -326,42 +326,42 @@ object Tests extends Suite(m"Kaleidoscope tests"):
         test(m"Match a character"):
           t"hello" match
             case r"h$vowel[aeiou]llo" => vowel
-            case _ => Nil
+            case _                    => Nil
 
         . assert(_ == 'e')
 
         test(m"Match several characters"):
           t"favourite" match
             case r"fav$vowels[aeiou]+rite" => vowels
-            case _ => Nil
+            case _                         => Nil
 
         . assert(_ == List('o', 'u'))
 
         test(m"Match zero characters"):
           t"favourite" match
             case r"favou$misc[cxm]*rite" => misc
-            case _ => Nil
+            case _                       => Nil
 
         . assert(_ == Nil)
 
         test(m"Match maybe one character; preset"):
           t"favourite" match
             case r"favo$vowel[aeiou]?rite" => vowel
-            case _ => Nil
+            case _                         => Nil
 
         . assert(_ == 'u')
 
         test(m"Match maybe one character; absent"):
           t"favourite" match
             case r"favou$vowel[aeiou]?rite" => vowel
-            case _ => Nil
+            case _                          => Nil
 
         . assert(_ == Unset)
 
         test(m"Match characters in subgroup"):
           t"favourite" match
             case r"fav($vowels[ou]*)rite" => vowels
-            case _ => Nil
+            case _                        => Nil
 
         . assert(_ == List('o', 'u'))
 
@@ -409,35 +409,35 @@ object Tests extends Suite(m"Kaleidoscope tests"):
       test(m"Extract from a glob"):
         t"/home/work/docs" match
           case g"/$home/work/docs" => home
-          case _ => Nil
+          case _                   => Nil
 
       . assert(_ == t"home")
 
       test(m"Extract from a glob with a star"):
         t"/home/work/docs" match
           case g"/$home/*/docs" => home
-          case _ => Nil
+          case _                => Nil
 
       . assert(_ == t"home")
 
       test(m"Extract from a glob with question marks"):
         t"/home/work/docs" match
           case g"/$home/????/docs" => home
-          case _ => Nil
+          case _                   => Nil
 
       . assert(_ == t"home")
 
       test(m"Extract from a glob with two extractions"):
         t"/home/work/docs" match
           case g"/$home/$work/docs" => (home, work)
-          case _ => Nil
+          case _                    => Nil
 
       . assert(_ == (t"home", t"work"))
 
       test(m"Extract from a glob with globstar"):
         t"/home/work/docs" match
           case g"/$home/**" => home
-          case _ => Nil
+          case _            => Nil
 
       . assert(_ == t"home")
 

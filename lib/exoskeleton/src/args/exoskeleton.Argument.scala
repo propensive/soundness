@@ -65,9 +65,11 @@ case class Argument
     case Argument.Format.Full            => suggestion
     case Argument.Format.FlagSuffix      => suggestion.copy(prefix = value.keep(2))
     case Argument.Format.CharFlag(index) => suggestion // FIXME
-    case Argument.Format.EqualityPrefix  =>
+
+    case Argument.Format.EqualityPrefix =>
       suggestion.copy(core = suggestion.core+t"="+value.after(value.index("=").or(Prim)))
-    case Argument.Format.EqualitySuffix  =>
+
+    case Argument.Format.EqualitySuffix =>
       val suggestion2 = suggestion.copy(prefix = value.before(value.index("=").or(Prim))+t"=")
       suggestion2
 

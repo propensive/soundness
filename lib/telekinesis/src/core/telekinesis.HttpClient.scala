@@ -78,8 +78,7 @@ object HttpClient:
         jnh.HttpRequest.newBuilder().nn.uri(jn.URI.create(url.show.s)).nn
 
       lazy val body = httpRequest.body() match
-        case Stream()      =>
-          jnh.HttpRequest.BodyPublishers.noBody.nn
+        case Stream() => jnh.HttpRequest.BodyPublishers.noBody.nn
 
         case Stream(bytes) =>
           jnh.HttpRequest.BodyPublishers.ofByteArray(bytes.mutable(using Unsafe))
@@ -115,12 +114,16 @@ object HttpClient:
           case error: jns.SSLKeyException             => abort(ConnectError(Ssl(Key)))
           case error: jn.UnknownHostException         => abort(ConnectError(Dns))
           case error: jnh.HttpConnectTimeoutException => abort(ConnectError(Timeout))
-          case error: jn.ConnectException             => error.getMessage() match
-            case "Connection refused"                    => abort(ConnectError(Refused))
-            case "Connection timed out"                  => abort(ConnectError(Timeout))
-            case "HTTP connect timed out"                => abort(ConnectError(Timeout))
-            case error                                   => abort(ConnectError(Unknown))
-          case error: ji.IOException                  => abort(ConnectError(Unknown))
+
+          case error: jn.ConnectException =>
+            error.getMessage() match
+              case "Connection refused"                    => abort(ConnectError(Refused))
+              case "Connection timed out"                  => abort(ConnectError(Timeout))
+              case "HTTP connect timed out"                => abort(ConnectError(Timeout))
+              case error                                   => abort(ConnectError(Unknown))
+
+          case error: ji.IOException =>
+            abort(ConnectError(Unknown))
 
       val status2: Http.Status = Http.Status.unapply(response.statusCode()).getOrElse:
         abort(ConnectError(ConnectError.Reason.Unknown))

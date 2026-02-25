@@ -68,10 +68,10 @@ object Cellulose extends Cellulose2:
       codl =>
         codl.list.prim.lest(CodlError(CodlError.Reason.BadFormat(Unset)))
         . children match
-            case IArray(CodlNode(Atom(value, _, _, _), _)) => lambda(value)
+          case IArray(CodlNode(Atom(value, _, _, _), _)) => lambda(value)
 
-            case _ =>
-              abort(CodlError(CodlError.Reason.BadFormat(Unset)))
+          case _ =>
+            abort(CodlError(CodlError.Reason.BadFormat(Unset)))
 
     def field[encodable: Encodable in Text]: encodable is Encodable in Codl =
       value => Codl(List(Codllike(IArray(CodlNode(Atom(encodable.encoded(value)))))))
@@ -140,8 +140,9 @@ object Cellulose extends Cellulose2:
     =>  List[element] is Decodable in Codl =
 
       value => schematic.schema() match
-        case Field(_) => value.list.flatMap(_.children).map: node =>
-          decodable.decoded(Codl(List(CodlDoc(node))))
+        case Field(_) =>
+          value.list.flatMap(_.children).map: node =>
+            decodable.decoded(Codl(List(CodlDoc(node))))
 
         case struct: Struct =>
           value.list.map(List(_)).map(Codl(_)).map(decodable.decoded(_))
@@ -184,7 +185,6 @@ object Cellulose extends Cellulose2:
 
         case DuplicateId(point, line, col) =>
           m"the unique ID has been used before at $line:$col, $point"
-
 
         case UnexpectedCarriageReturn =>
           m"""a carriage return character ('\\r') was followed by a character other than a newline
@@ -308,110 +308,67 @@ object Cellulose extends Cellulose2:
 
 
         tokens match
-          case token #:: tail => token match
-            case CodlToken.Body(stream) =>
-              go(tokens = Stream(), body = stream)
+          case token #:: tail =>
+            token match
+              case CodlToken.Body(stream) =>
+                go(tokens = Stream(), body = stream)
 
-            case CodlToken.Error(error) =>
-              raise(error)
-              go()
+              case CodlToken.Error(error) =>
+                raise(error)
+                go()
 
-            case CodlToken.Peer => focus.key match
-              case key: Text =>
-                val closed = focus.close
-                go(focus = Proto(), peers = closed :: peers)
+              case CodlToken.Peer => focus.key match
+                case key: Text =>
+                  val closed = focus.close
+                  go(focus = Proto(), peers = closed :: peers)
 
-              case _ =>
-                val proto =
-                  Proto
-                    ( Unset,
-                      extra = focus.extra.or(if lines == 0 then Unset else Extra(lines)) )
+                case _ =>
+                  val proto =
+                    Proto
+                      ( Unset,
+                        extra = focus.extra.or(if lines == 0 then Unset else Extra(lines)) )
 
-                go(focus = proto)
+                  go(focus = proto)
 
-            case CodlToken.Indent =>
-              if focus.key.absent
-              then
-                raise(ParseError(Codl, Position(focus.line, focus.col, 1), IndentAfterComment))
+              case CodlToken.Indent =>
+                if focus.key.absent
+                then
+                  raise(ParseError(Codl, Position(focus.line, focus.col, 1), IndentAfterComment))
 
-              go(focus = Proto(), peers = Nil, stack = (focus -> peers) :: stack)
+                go(focus = Proto(), peers = Nil, stack = (focus -> peers) :: stack)
 
-            case CodlToken.Outdent(n) => stack match
-              case Nil =>
-                go(Stream())
+              case CodlToken.Outdent(n) => stack match
+                case Nil =>
+                  go(Stream())
 
-              case (proto, rest) :: stack2 =>
-                val next = if n == 1 then CodlToken.Peer else CodlToken.Outdent(n - 1)
-                val closed = focus.close
+                case (proto, rest) :: stack2 =>
+                  val next = if n == 1 then CodlToken.Peer else CodlToken.Outdent(n - 1)
+                  val closed = focus.close
 
-                val focus2 = proto.copy(children = closed :: peers ::: proto.children)
+                  val focus2 = proto.copy(children = closed :: peers ::: proto.children)
 
-                go(next #:: tail, focus = focus2, peers = rest, stack = stack2)
+                  go(next #:: tail, focus = focus2, peers = rest, stack = stack2)
 
-            case CodlToken.Blank => focus.extra match
-              case Unset            =>
-                go(lines = lines + 1)
-              case Extra(l, _, _) =>
-                val closed = focus.close
+              case CodlToken.Blank => focus.extra match
+                case Unset            =>
+                  go(lines = lines + 1)
+                case Extra(l, _, _) =>
+                  val closed = focus.close
 
-                go(focus = Proto(), peers = closed :: peers, lines = lines + 1)
+                  go(focus = Proto(), peers = closed :: peers, lines = lines + 1)
 
-            case CodlToken.Argument =>
-              go(focus = focus.substitute(subs.head), subs = subs.tail)
+              case CodlToken.Argument =>
+                go(focus = focus.substitute(subs.head), subs = subs.tail)
 
-            case CodlToken.Item(word, line, col, block) =>
-              val extra2: Optional[Extra] =
-                focus.extra.or(if lines == 0 then Unset else Extra(blank = lines))
+              case CodlToken.Item(word, line, col, block) =>
+                val extra2: Optional[Extra] =
+                  focus.extra.or(if lines == 0 then Unset else Extra(blank = lines))
 
-              focus.key match
-                case key: Text => focus.schema match
-                  case field@Field(_) =>
-                    val (uniqueId, focus2) =
-                      focus.commit(Proto(word, line, col, multiline = block))
-
-                    uniqueId.let: uniqueId =>
-                      if peerIds.contains(uniqueId(0)) then
-                        val first = peerIds(uniqueId(0))
-                        val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
-                        raise
-                          ( ParseError
-                              ( Codl,
-                                Position(line, col, uniqueId(0).length),
-                                duplicate ) )
-
-                    val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
-                    go(focus = focus2, peerIds = peerIds2, lines = 0)
-
-                  case CodlSchema.Free =>
-                    val (uniqueId, focus2) =
-                      focus.commit(Proto(word, line, col, multiline = block))
-
-                    uniqueId.let: uniqueId =>
-                      if peerIds.contains(uniqueId(0)) then
-                        val first = peerIds(uniqueId(0))
-                        val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
-                        raise
-                          ( ParseError
-                              ( Codl,
-                                Position(line, col, uniqueId(0).length),
-                                duplicate ) )
-
-                    val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
-                    go(focus = focus2, peerIds = peerIds2, lines = 0)
-
-                  case struct@Struct(_, _) => struct.param(focus.children.length) match
-                    case Unset =>
-                      raise
-                        ( ParseError
-                          ( Codl, Position(line, col, word.length), SurplusParams(word, key)) )
-
-                      go()
-
-                    case entry: CodlSchema.Entry =>
-                      val peer =
-                        Proto(word, line, col, schema = entry.schema, multiline = block)
-
-                      val (uniqueId, focus2) = focus.commit(peer)
+                focus.key match
+                  case key: Text => focus.schema match
+                    case field@Field(_) =>
+                      val (uniqueId, focus2) =
+                        focus.commit(Proto(word, line, col, multiline = block))
 
                       uniqueId.let: uniqueId =>
                         if peerIds.contains(uniqueId(0)) then
@@ -419,52 +376,97 @@ object Cellulose extends Cellulose2:
                           val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
                           raise
                             ( ParseError
-                              ( Codl, Position(line, col, uniqueId(0).length), duplicate) )
+                                ( Codl,
+                                  Position(line, col, uniqueId(0).length),
+                                  duplicate ) )
 
                       val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
                       go(focus = focus2, peerIds = peerIds2, lines = 0)
 
-                case _ =>
-                  val fschema: CodlSchema =
-                    if schema == CodlSchema.Free then schema
-                    else schema(word).or:
+                    case CodlSchema.Free =>
+                      val (uniqueId, focus2) =
+                        focus.commit(Proto(word, line, col, multiline = block))
+
+                      uniqueId.let: uniqueId =>
+                        if peerIds.contains(uniqueId(0)) then
+                          val first = peerIds(uniqueId(0))
+                          val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
+                          raise
+                            ( ParseError
+                                ( Codl,
+                                  Position(line, col, uniqueId(0).length),
+                                  duplicate ) )
+
+                      val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
+                      go(focus = focus2, peerIds = peerIds2, lines = 0)
+
+                    case struct@Struct(_, _) => struct.param(focus.children.length) match
+                      case Unset =>
+                        raise
+                          ( ParseError
+                            ( Codl, Position(line, col, word.length), SurplusParams(word, key)) )
+
+                        go()
+
+                      case entry: CodlSchema.Entry =>
+                        val peer =
+                          Proto(word, line, col, schema = entry.schema, multiline = block)
+
+                        val (uniqueId, focus2) = focus.commit(peer)
+
+                        uniqueId.let: uniqueId =>
+                          if peerIds.contains(uniqueId(0)) then
+                            val first = peerIds(uniqueId(0))
+                            val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
+                            raise
+                              ( ParseError
+                                ( Codl, Position(line, col, uniqueId(0).length), duplicate) )
+
+                        val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
+                        go(focus = focus2, peerIds = peerIds2, lines = 0)
+
+                  case _ =>
+                    val fschema: CodlSchema =
+                      if schema == CodlSchema.Free then schema
+                      else schema(word).or:
+                        raise
+                          ( ParseError
+                            ( Codl, Position(line, col, word.length), InvalidKey(word, word)) )
+                        CodlSchema.Free
+
+                    if fschema.unique && peers.exists(_.data.let(_.key) == word)
+                    then
                       raise
                         ( ParseError
-                          ( Codl, Position(line, col, word.length), InvalidKey(word, word)) )
-                      CodlSchema.Free
+                          ( Codl, Position(line, col, word.length), DuplicateKey(word, word)) )
 
-                  if fschema.unique && peers.exists(_.data.let(_.key) == word)
-                  then
-                    raise
-                      ( ParseError
-                        ( Codl, Position(line, col, word.length), DuplicateKey(word, word)) )
+                    go(focus = Proto(word, line, col, extra = extra2, schema = fschema,
+                        multiline = block), lines = 0)
 
-                  go(focus = Proto(word, line, col, extra = extra2, schema = fschema,
-                      multiline = block), lines = 0)
+              case CodlToken.Comment(txt, line, col) => focus.key match
+                case key: Text =>
+                  go(focus = focus.setExtra(focus.extra.or(Extra()).copy(remark = txt,
+                                                                        blank  = lines)))
 
-            case CodlToken.Comment(txt, line, col) => focus.key match
-              case key: Text =>
-                go(focus = focus.setExtra(focus.extra.or(Extra()).copy(remark = txt,
-                                                                      blank  = lines)))
+                case _ =>
+                  val extra = focus.extra.or(Extra())
+
+                  go(focus = Proto
+                              (line  = line,
+                              col   = col,
+                              extra = extra.copy
+                                ( blank = lines, comments = txt :: extra.comments)) )
+
+          case _ =>
+            stack match
+              case Nil =>
+                val closed = focus.close
+                val children = if closed.blank then peers.reverse else (closed :: peers).reverse
+
+                CodlDoc(IArray.from(children), baseSchema, margin, body)
 
               case _ =>
-                val extra = focus.extra.or(Extra())
-
-                go(focus = Proto
-                            (line  = line,
-                            col   = col,
-                            extra = extra.copy
-                              ( blank = lines, comments = txt :: extra.comments)) )
-
-          case _ => stack match
-            case Nil =>
-              val closed = focus.close
-              val children = if closed.blank then peers.reverse else (closed :: peers).reverse
-
-              CodlDoc(IArray.from(children), baseSchema, margin, body)
-
-            case _ =>
-              go(Stream(CodlToken.Outdent(stack.length + 1)))
+                go(Stream(CodlToken.Outdent(stack.length + 1)))
 
       if stream.nil
       then CodlDoc() else recur(stream, Proto(), Nil, Map(), Nil, 0, subs.reverse, Stream(), Nil)
@@ -560,8 +562,7 @@ object Cellulose extends Cellulose2:
 
 
         def token(): CodlToken = state.absolve match
-          case Comment =>
-            CodlToken.Comment(reader.get(), reader.start()(0), reader.start()(1) - 1)
+          case Comment => CodlToken.Comment(reader.get(), reader.start()(0), reader.start()(1) - 1)
 
           case Margin =>
             val text: Text = reader.get()
@@ -615,45 +616,50 @@ object Cellulose extends Cellulose2:
             case n => CodlToken.Outdent(-diff/2) #:: irecur(next, indent = char.column)
 
         char.char match
-          case _ if char == Character.End => state match
-            case Indent | Space | Hash | Pending(_) => Stream()
-            case Comment | Word | Margin            => Stream(token())
+          case _ if char == Character.End =>
+            state match
+              case Indent | Space | Hash | Pending(_) => Stream()
+              case Comment | Word | Margin            => Stream(token())
 
-          case '\n' => state match
-            case Word | Comment | Pending(_) => put(Indent, padding = false)
-            case Margin                      => block()
-            case Indent | Space              => CodlToken.Blank
-                                                #:: irecur(Indent, padding = false)
-            case _                           => recur(Indent, padding = false)
+          case '\n' =>
+            state match
+              case Word | Comment | Pending(_) => put(Indent, padding = false)
+              case Margin                      => block()
+              case Indent | Space              => CodlToken.Blank
+                                                  #:: irecur(Indent, padding = false)
+              case _                           => recur(Indent, padding = false)
 
-          case ' ' => state match
-            case Space              => recur(Space, padding = true)
-            case Pending(_)         => put(Space)
-            case Indent             => recur(Indent)
-            case Word               => if padding then recur(Pending(char)) else put(Space)
-            case Comment            => consume(state)
-            case Margin             => block()
-            case Hash               => reader.get(); recur(Comment)
+          case ' ' =>
+            state match
+              case Space              => recur(Space, padding = true)
+              case Pending(_)         => put(Space)
+              case Indent             => recur(Indent)
+              case Word               => if padding then recur(Pending(char)) else put(Space)
+              case Comment            => consume(state)
+              case Margin             => block()
+              case Hash               => reader.get(); recur(Comment)
 
-          case '#' => state match
-            case Pending(_) | Space => consume(Hash)
-            case Comment            => body()
-            case Word               => consume(Word)
-            case Indent             => if diff == 4 then recur(Margin) else newline(Comment)
-            case Margin             => block()
-            case Hash               => consume(Word)
+          case '#' =>
+            state match
+              case Pending(_) | Space => consume(Hash)
+              case Comment            => body()
+              case Word               => consume(Word)
+              case Indent             => if diff == 4 then recur(Margin) else newline(Comment)
+              case Margin             => block()
+              case Hash               => consume(Word)
 
-          case ch => state match
-            case Pending(ch)    => reader.put(ch); consume(Word)
-            case Space | Word   => consume(Word)
-            case Comment        => consume(state)
-            case Indent         => reader.put(char)
-                                  if diff == 4 then recur(Margin) else newline(Word)
-            case Margin         => block()
+          case ch =>
+            state match
+              case Pending(ch)    => reader.put(ch); consume(Word)
+              case Space | Word   => consume(Word)
+              case Comment        => consume(state)
+              case Indent         => reader.put(char)
+                                    if diff == 4 then recur(Margin) else newline(Word)
+              case Margin         => block()
 
-            case Hash => char.char match
-              case '!' if first.line == 0 && first.column == 1 => consume(Comment)
-              case ch                                          => consume(Word)
+              case Hash => char.char match
+                case '!' if first.line == 0 && first.column == 1 => consume(Comment)
+                case ch                                          => consume(Word)
 
       (first.column, stream(first, padding = false).drop(1))
 

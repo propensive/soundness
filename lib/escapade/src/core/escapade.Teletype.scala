@@ -143,8 +143,7 @@ case class Teletype
     Teletype(plain+text.plain, spans ++ newSpans)
 
   def dropChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
-    case Rtl =>
-      takeChars(plain.length - n)
+    case Rtl => takeChars(plain.length - n)
 
     case Ltr =>
       val newSpans: TreeMap[CharSpan, Ansi.Transform] =
@@ -158,8 +157,7 @@ case class Teletype
       Teletype(plain.skip(n), newSpans)
 
   def takeChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
-    case Rtl =>
-      dropChars(plain.length - n)
+    case Rtl => dropChars(plain.length - n)
 
     case Ltr =>
       val newSpans: TreeMap[CharSpan, Ansi.Transform] =

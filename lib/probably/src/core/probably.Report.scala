@@ -59,10 +59,8 @@ object Report:
     def include(report: Report, testId: TestId, verdict: Verdict): Report =
       val report2 = report.addVerdict(testId, verdict)
       verdict match
-        case Verdict.Pass(_) =>
-          report2
-        case Verdict.Fail(_) =>
-          report2
+        case Verdict.Pass(_) => report2
+        case Verdict.Fail(_) => report2
 
         case Verdict.Throws(error, _) =>
           report2.addDetail(testId, Verdict.Detail.Throws(StackTrace(error)))
@@ -77,7 +75,7 @@ class Report(using Environment):
   given measurable: Char is Measurable:
     def width(char: Char): Int = char match
       case '✓' | '✗' | '⎇' => 1
-      case _                => metrics.width(char)
+      case _               => metrics.width(char)
 
   private var failure: Optional[(Throwable, Set[TestId])] = Unset
   private var pass: Boolean = false
@@ -109,7 +107,7 @@ class Report(using Environment):
     case Bench(test: TestId, benchmark: Benchmark)
 
     def summaries: List[Summary] = this match
-      case Suite(suite, tests)  =>
+      case Suite(suite, tests) =>
         val rest = tests.list.sortBy(_(0).timestamp).flatMap(_(1).summaries)
         if suite.absent then rest
         else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
@@ -192,8 +190,7 @@ class Report(using Environment):
   val unitsSeq: List[Teletype] = List(e"$BurlyWood(µs)", e"$Goldenrod(ms)", e"$Sienna(s) ")
 
   def showTime(n: Long, units: List[Teletype] = unitsSeq): Teletype = units match
-    case Nil =>
-      n.show.teletype
+    case Nil => n.show.teletype
 
     case unit :: rest =>
       if n > 100000L then showTime(n/1000L, rest) else
@@ -522,8 +519,7 @@ class Report(using Environment):
 
     failure.let: (error, active) =>
       val explanation = active.to(List) match
-        case Nil =>
-          e"No tests were active when a fatal error occurred."
+        case Nil => e"No tests were active when a fatal error occurred."
 
         case _ =>
           val were = if active.size == 1 then e"was" else e"were"

@@ -57,40 +57,42 @@ object Authority:
     import UrlError.{Expectation, Reason}, Expectation.*, Reason.*
 
     safely(value.where(_ == '@')).asMatchable match
-      case Zerary(arobase) => safely(value.where(_ == ':', arobase + 1)).asMatchable match
-        case Zerary(colon) =>
-          safely(value.after(colon).s.toInt).match
-            case port: Int if port >= 0 && port <= 65535 => port
+      case Zerary(arobase) =>
+        safely(value.where(_ == ':', arobase + 1)).asMatchable match
+          case Zerary(colon) =>
+            safely(value.after(colon).s.toInt).match
+              case port: Int if port >= 0 && port <= 65535 => port
 
-            case port: Int =>
-              raise(UrlError(value, colon + 1, Expected(PortRange))) yet 0
+              case port: Int =>
+                raise(UrlError(value, colon + 1, Expected(PortRange))) yet 0
 
-            case _ =>
-              raise(UrlError(value, colon + 1, Expected(Number))) yet 0
+              case _ =>
+                raise(UrlError(value, colon + 1, Expected(Number))) yet 0
 
-          . pipe:
-            Authority
-              ( value.segment((arobase + 1) till colon).decode[Hostname],
-                value.keep(arobase.n0),
-                _ )
+            . pipe:
+              Authority
+                ( value.segment((arobase + 1) till colon).decode[Hostname],
+                  value.keep(arobase.n0),
+                  _ )
 
-        case _ =>
-          Authority(value.after(arobase).decode[Hostname], value.before(arobase))
+          case _ =>
+            Authority(value.after(arobase).decode[Hostname], value.before(arobase))
 
-      case _ => value.where(_ == ':').asMatchable match
-        case Zerary(colon) =>
-          safely(value.after(colon).s.toInt).match
-            case port: Int if port >= 0 && port <= 65535 => port
+      case _ =>
+        value.where(_ == ':').asMatchable match
+          case Zerary(colon) =>
+            safely(value.after(colon).s.toInt).match
+              case port: Int if port >= 0 && port <= 65535 => port
 
-            case port: Int =>
-              raise(UrlError(value, colon + 1, Expected(PortRange))) yet 0
+              case port: Int =>
+                raise(UrlError(value, colon + 1, Expected(PortRange))) yet 0
 
-            case _ =>
-              raise(UrlError(value, colon + 1, Expected(Number))) yet 0
+              case _ =>
+                raise(UrlError(value, colon + 1, Expected(Number))) yet 0
 
-          . pipe(Authority(value.before(colon).decode[Hostname], Unset, _))
+            . pipe(Authority(value.before(colon).decode[Hostname], Unset, _))
 
-        case _ =>
-          Authority(value.decode[Hostname])
+          case _ =>
+            Authority(value.decode[Hostname])
 
 case class Authority(host: Hostname, userInfo: Optional[Text] = Unset, port: Optional[Int] = Unset)

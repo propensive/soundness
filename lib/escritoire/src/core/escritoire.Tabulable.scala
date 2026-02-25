@@ -55,7 +55,7 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
   inline def join[derivation <: Product: ProductReflection]: derivation is Tabulable[Text] =
     val labels: Map[Text, Text] = compiletime.summonFrom:
       case labels: TableRelabelling[derivation] => labels.relabelling()
-      case _                                        => Map()
+      case _                                    => Map()
 
     val columns: IArray[Column[derivation, Text]] =
       contexts:

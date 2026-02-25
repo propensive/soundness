@@ -77,8 +77,7 @@ enum Decomposition:
   def multiline(indent: Int = 0, newline: Boolean = true)(using TextBuilder): Unit =
     val space = t"  "
     this match
-      case Primitive(typeName, text, _) =>
-        append(t"$text")
+      case Primitive(typeName, text, _) => append(t"$text")
 
       case Sum(name, value, _) =>
         if newline then

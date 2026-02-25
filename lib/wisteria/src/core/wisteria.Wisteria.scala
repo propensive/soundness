@@ -54,7 +54,7 @@ object Wisteria:
 
     . map: selection =>
         TypeRepr.of[product].typeArgs match
-          case Nil  => selection
+          case Nil       => selection
           case arguments => selection.appliedToTypes(arguments)
 
     . map(_.asExprOf[field]).getOrElse('{Unset})

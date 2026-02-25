@@ -76,6 +76,7 @@ enum Frame(payload: Data):
   def header: Data = headerLength match
     case 2 => Data(byte0, byte1)
     case 4 => Data(byte0, byte1, (length >> 8).toByte, length.toByte)
+
     case _ =>
       val byte6 = (length >> 24).toByte
       val byte7 = (length >> 16).toByte

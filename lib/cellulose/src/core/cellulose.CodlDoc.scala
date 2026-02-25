@@ -98,8 +98,9 @@ extends Indexed:
       val changes = diff[CodlNode](children, updates, cmp).edits
 
       val nodes2 = changes.foldLeft(List[CodlNode]()):
-        case (nodes, Del(left, value))         => nodes
-        case (nodes, Ins(right, value))        => value :: nodes
+        case (nodes, Del(left, value))  => nodes
+        case (nodes, Ins(right, value)) => value :: nodes
+
         case (nodes, Par(left, right, value)) =>
           val orig: CodlNode = original(left)
           val origAtom: Atom = orig.data.or(???)

@@ -128,8 +128,8 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
     val ref = name.lay(frame.text.s)(_.s+"@"+frame.text.s)
 
     parent match
-      case supervisor: Supervisor  => (supervisor.name.s+"://"+ref).tt
-      case submonitor: Worker => (submonitor.stack.s+"//"+ref).tt
+      case supervisor: Supervisor => (supervisor.name.s+"://"+ref).tt
+      case submonitor: Worker     => (submonitor.stack.s+"//"+ref).tt
 
   def relent(): Unit =
     relents += 1
@@ -177,8 +177,8 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
       case Cancelled                   => abort(AsyncError(Reason.Cancelled))
 
     . match
-        case Delivered(_, result) => result
-        case other                => panic(m"impossible state")
+      case Delivered(_, result) => result
+      case other                => panic(m"impossible state")
 
 
   def await[abstractable: Abstractable across Durations to Long](duration: abstractable)
@@ -207,11 +207,8 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
 
         evaluate(this).tap: result =>
           state.updateAndGet:
-            case Active(startTime) =>
-              Completed(jl.System.currentTimeMillis - startTime, result)
-
-            case other =>
-              other
+            case Active(startTime) => Completed(jl.System.currentTimeMillis - startTime, result)
+            case other             => other
 
       catch
         case error: InterruptedException =>

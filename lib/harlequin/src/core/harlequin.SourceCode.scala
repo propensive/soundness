@@ -123,8 +123,7 @@ object SourceCode:
         Stream()
 
     def stream(lastEnd: Int = 0): Stream[SourceToken] = scanner.token match
-      case Tokens.EOF =>
-        untab(text.segment(lastEnd.z till text.limit)).filter(_.length > 0)
+      case Tokens.EOF => untab(text.segment(lastEnd.z till text.limit)).filter(_.length > 0)
 
       case token =>
         val start = scanner.offset max lastEnd
@@ -158,9 +157,11 @@ object SourceCode:
 
       sequence match
         case Nil => acc
-        case xs  => xs.indexOf(SourceToken.Newline) match
-          case -1  => xs :: acc
-          case index => lines(xs.drop(index + 1), xs.take(index) :: acc)
+
+        case xs =>
+          xs.indexOf(SourceToken.Newline) match
+            case -1  => xs :: acc
+            case index => lines(xs.drop(index + 1), xs.take(index) :: acc)
 
     SourceCode(language, 1, IArray(lines(soften(stream()).to(List)).reverse*))
 
@@ -176,8 +177,7 @@ object SourceCode:
 
     def traverse(tree: Tree)(using Contexts.Context): Unit =
       tree match
-        case tree: NameTree if ignored(tree) =>
-          ()
+        case tree: NameTree if ignored(tree) => ()
 
         case tree: ValOrDefDef =>
           if tree.nameSpan.exists

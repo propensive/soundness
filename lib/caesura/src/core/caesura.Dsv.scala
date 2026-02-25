@@ -72,7 +72,8 @@ case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
       data.length == row.data.length && data.indices.all: index =>
         data(index) == row.data(index)
 
-    case _        => false
+    case _ =>
+      false
 
 object Dsv:
   def apply(iterable: Iterable[Text]): Dsv = new Dsv(IArray.from(iterable))

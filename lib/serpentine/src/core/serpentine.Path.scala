@@ -158,11 +158,15 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   protected inline def known[topic <: Tuple]: Boolean =
     inline !![topic] match
-      case _: Zero           => true
-      case _: (head *: tail) => inline constValueOpt[head] match
-        case None               => false
-        case Some(value)        => known[tail]
-      case _ => false
+      case _: Zero => true
+
+      case _: (head *: tail) =>
+        inline constValueOpt[head] match
+          case None               => false
+          case Some(value)        => known[tail]
+
+      case _ =>
+        false
 
   def resolve(text: Text)
     ( using (Path on Plane) is Decodable in Text, (Relative on Plane) is Decodable in Text )
@@ -215,6 +219,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   transparent inline def sameRoot(right: Path): Boolean = summonFrom:
     case plane: (Plane is Filesystem) =>
       inline if caps.unsafe.unsafeErasedValue[plane.UniqueRoot] then true else root == right.root
+
     case _ =>
       root == right.root
 

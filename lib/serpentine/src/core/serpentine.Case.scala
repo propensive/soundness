@@ -49,10 +49,12 @@ enum Case:
     case _         => left.lower == right.lower
 
   def equal(left: List[Text], right: List[Text]): Boolean = left match
-    case Nil          => right.nil
-    case head :: tail => right match
-      case Nil            => false
-      case head2 :: tail2 => equal(head, head2) && equal(tail, tail2)
+    case Nil => right.nil
+
+    case head :: tail =>
+      right match
+        case Nil            => false
+        case head2 :: tail2 => equal(head, head2) && equal(tail, tail2)
 
   def hash(descent: List[Text]): Int = descent match
     case Nil          => 1

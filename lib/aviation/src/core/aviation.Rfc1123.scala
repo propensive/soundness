@@ -71,17 +71,27 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
 
     focus match
       case 'M' => if next() != 'o' || next() != 'n' then fail(DayName(Mon))
-      case 'T' => next() match
-        case 'u' => if next() != 'e' then fail(DayName(Tue))
-        case 'h' => if next() != 'u' then fail(DayName(Thu))
-        case _   => fail(DayName(Tue, Thu))
-      case 'W' => if next() != 'e' || next() != 'd' then fail(DayName(Wed))
-      case 'F' => if next() != 'r' || next() != 'i' then fail(DayName(Fri))
-      case 'S' => next() match
-        case 'a' => if next() != 't' then fail(DayName(Sat))
-        case 'u' => if next() != 'n' then fail(DayName(Sun))
-        case _   => fail(DayName(Sat, Sun))
-      case _   => fail(DayName(Mon, Tue, Wed, Thu, Fri, Sat, Sun))
+
+      case 'T' =>
+        next() match
+          case 'u' => if next() != 'e' then fail(DayName(Tue))
+          case 'h' => if next() != 'u' then fail(DayName(Thu))
+          case _   => fail(DayName(Tue, Thu))
+
+      case 'W' =>
+        if next() != 'e' || next() != 'd' then fail(DayName(Wed))
+
+      case 'F' =>
+        if next() != 'r' || next() != 'i' then fail(DayName(Fri))
+
+      case 'S' =>
+        next() match
+          case 'a' => if next() != 't' then fail(DayName(Sat))
+          case 'u' => if next() != 'n' then fail(DayName(Sun))
+          case _   => fail(DayName(Sat, Sun))
+
+      case _ =>
+        fail(DayName(Mon, Tue, Wed, Thu, Fri, Sat, Sun))
 
     expect(',')
     expect(' ')
@@ -93,27 +103,44 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
     expect(' ')
 
     val month: Month = next() match
-      case 'A' => next() match
-        case 'p' => if next() != 'r' then fail(MonthName(Apr)) yet Apr else Apr
-        case 'u' => if next() != 'g' then fail(MonthName(Aug)) yet Aug else Aug
-        case _   => fail(MonthName(Apr, Aug)) yet Apr
-      case 'D' => if next() != 'e' || next() != 'c' then fail(MonthName(Dec)) yet Dec else Dec
-      case 'F' => if next() != 'e' || next() != 'b' then fail(MonthName(Feb)) yet Feb else Feb
-      case 'J' => next() match
-        case 'a' => if next() != 'n' then fail(MonthName(Jan)) yet Jan else Jan
-        case 'u' => next() match
-          case 'l' => Jul
-          case 'n' => Jun
-          case _   => fail(MonthName(Jun, Jul)) yet Jul
-        case _   => fail(MonthName(Jan, Jun, Jul)) yet Jan
-      case 'M' => if next() != 'a' then fail(MonthName(Mar, May)) yet Mar else next() match
-        case 'r' => Mar
-        case 'y' => May
-        case _   => fail(MonthName(Mar, May)) yet Mar
-      case 'N' => if next() != 'o' || next() != 'v' then fail(MonthName(Nov)) yet Nov else Nov
-      case 'O' => if next() != 'c' || next() != 't' then fail(MonthName(Oct)) yet Oct else Oct
-      case 'S' => if next() != 'e' || next() != 'p' then fail(MonthName(Sep)) yet Sep else Sep
-      case _   => fail(MonthName(Month.all*)) yet Jan
+      case 'A' =>
+        next() match
+          case 'p' => if next() != 'r' then fail(MonthName(Apr)) yet Apr else Apr
+          case 'u' => if next() != 'g' then fail(MonthName(Aug)) yet Aug else Aug
+          case _   => fail(MonthName(Apr, Aug)) yet Apr
+
+      case 'D' =>
+        if next() != 'e' || next() != 'c' then fail(MonthName(Dec)) yet Dec else Dec
+
+      case 'F' =>
+        if next() != 'e' || next() != 'b' then fail(MonthName(Feb)) yet Feb else Feb
+
+      case 'J' =>
+        next() match
+          case 'a' => if next() != 'n' then fail(MonthName(Jan)) yet Jan else Jan
+          case 'u' => next() match
+            case 'l' => Jul
+            case 'n' => Jun
+            case _   => fail(MonthName(Jun, Jul)) yet Jul
+          case _   => fail(MonthName(Jan, Jun, Jul)) yet Jan
+
+      case 'M' =>
+        if next() != 'a' then fail(MonthName(Mar, May)) yet Mar else next() match
+          case 'r' => Mar
+          case 'y' => May
+          case _   => fail(MonthName(Mar, May)) yet Mar
+
+      case 'N' =>
+        if next() != 'o' || next() != 'v' then fail(MonthName(Nov)) yet Nov else Nov
+
+      case 'O' =>
+        if next() != 'c' || next() != 't' then fail(MonthName(Oct)) yet Oct else Oct
+
+      case 'S' =>
+        if next() != 'e' || next() != 'p' then fail(MonthName(Sep)) yet Sep else Sep
+
+      case _ =>
+        fail(MonthName(Month.all*)) yet Jan
 
     expect(' ')
 

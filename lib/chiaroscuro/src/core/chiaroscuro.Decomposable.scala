@@ -98,19 +98,20 @@ object Decomposable extends Decomposable2:
 trait Decomposable2 extends Decomposable3:
   inline given derived: [entity] => entity is Decomposable = summonFrom:
     case decomposable: (`entity` is Decomposable.Base) => decomposable
-    case given ProductReflection[`entity`] => Derivation.derived[entity]
-    case given SumReflection[`entity`]     => Derivation.split[entity]
-    case given (AnyRef <:< `entity`)       => any[entity]
+    case given ProductReflection[`entity`]             => Derivation.derived[entity]
+    case given SumReflection[`entity`]                 => Derivation.split[entity]
+    case given (AnyRef <:< `entity`)                   => any[entity]
 
-    case given (Unset.type <:< `entity`) => inline !![entity] match
-      case _: Optional[inner] => summonFrom:
-        case decomposable: (`inner` is Decomposable) =>
-          value =>
-            val inside = value match
-              case Unset => Decomposition.Primitive(t"Unset", t"∅", Unset)
-              case other => decomposable.decomposition(other.asInstanceOf[inner])
+    case given (Unset.type <:< `entity`) =>
+      inline !![entity] match
+        case _: Optional[inner] => summonFrom:
+          case decomposable: (`inner` is Decomposable) =>
+            value =>
+              val inside = value match
+                case Unset => Decomposition.Primitive(t"Unset", t"∅", Unset)
+                case other => decomposable.decomposition(other.asInstanceOf[inner])
 
-            Decomposition.Sum(t"Optional", inside, value)
+              Decomposition.Sum(t"Optional", inside, value)
 
     case given (`entity` is Showable) =>
       value => Decomposition.Primitive(shortName[entity], value.show, value)

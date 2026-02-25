@@ -47,4 +47,4 @@ object CompileEvent:
     case Start              => m"Starting compilation"
     case CompilerCrash      => m"Compiler crashed"
     case Notice(diagnostic) => m"The compiler emitted a diagnostic message: $diagnostic"
-    case Running(arguments)      => m"Running compiler with arguments ${arguments.join(t" ")}"
+    case Running(arguments) => m"Running compiler with arguments ${arguments.join(t" ")}"

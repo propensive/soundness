@@ -35,7 +35,7 @@ object Frontier:
     def unapply(using Quotes)(scrutinee: quotes.reflect.ImplicitSearchFailure): Option[Text] =
       scrutinee match
         case _: dotty.tools.dotc.ast.untpd.SearchFailureIdent => Some(scrutinee.explanation.tt)
-        case _ => None
+        case _                                                => None
 
   given treeStyle: [text: Textual] => TextualTreeStyle[text] =
     TextualTreeStyle(t"   ", t" └─", t" ├─", t" │ ")
@@ -114,8 +114,7 @@ object Frontier:
 
 
     seek(TypeRepr.of[target], Nil, 1).absolve match
-      case Found(_, expr) =>
-        expr.asExprOf[target]
+      case Found(_, expr) => expr.asExprOf[target]
 
       case Missing(_, results) =>
         report.errorAndAbort:

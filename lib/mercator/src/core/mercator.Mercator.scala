@@ -122,7 +122,7 @@ object Mercator:
     val flatMapMethods = monadType.methodMembers.filter: method =>
       method.tree match
         case DefDef("flatMap", _, _, _) => true
-        case _                      => false
+        case _                          => false
 
     val functorExpr: Expr[Functor[monad]] = Expr.summon[Functor[monad]].getOrElse:
       halt(m"could not find Functor value for ${monadType.name}")

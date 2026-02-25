@@ -72,8 +72,9 @@ object Stenography:
 
     val imports: List[Typename] =
       owners(Symbol.spliceOwner).flatMap:
-        case tree@DefDef(_, _, _, Some(Block(entries, _))) => entries.collect:
-          case Import(name, List(SimpleSelector("_"))) => Typename(name.show)
+        case tree@DefDef(_, _, _, Some(Block(entries, _))) =>
+          entries.collect:
+            case Import(name, List(SimpleSelector("_"))) => Typename(name.show)
 
         case tree@ValDef(_, _, _) =>
           Nil

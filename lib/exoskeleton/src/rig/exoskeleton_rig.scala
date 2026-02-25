@@ -59,7 +59,7 @@ extension (shell: Shell)
         val path = summon[Sandbox.Tool].path.parent.vouch.encode
 
         shell match
-          case Shell.Zsh  =>
+          case Shell.Zsh =>
             val command = t"""precmd_functions=() preexec_functions=() PROMPT="> " RPROMPT="""""
             sh"""tmux send-keys -t ${tmux.id} $command C-m""".exec[Unit]()
             sh"""tmux send-keys -t ${tmux.id} "path+=(\"$path\")" C-m""".exec[Unit]()

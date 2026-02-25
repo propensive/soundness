@@ -41,8 +41,7 @@ object RegexError:
 
   object Reason:
     given communicable: Reason is Communicable =
-      case UnclosedGroup =>
-        m"a capturing group was not closed"
+      case UnclosedGroup => m"a capturing group was not closed"
 
       case ExpectedGroup =>
         m"a capturing group was expected immediately following an extractor"

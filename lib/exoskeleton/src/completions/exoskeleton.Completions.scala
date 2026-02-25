@@ -79,7 +79,7 @@ object Completions:
 
     def paths: List[Text] =
       this match
-        case CommandNotOnPath(_) => Nil
+        case CommandNotOnPath(_)     => Nil
         case Shells(zsh, bash, fish) => List(zsh, bash, fish).map(_.pathname).compact
 
   object Installation:

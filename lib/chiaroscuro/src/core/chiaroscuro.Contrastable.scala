@@ -83,7 +83,8 @@ object Contrastable:
 
         def decompose(value: derivation): Decomposition = summonFrom:
           case given (`derivation` is Decomposable) => value.decompose
-          case given (`derivation` is Showable)     =>
+
+          case given (`derivation` is Showable) =>
             Decomposition.Primitive(typeName, value.show, value)
 
 

@@ -122,10 +122,15 @@ final case class Promise[value]():
     def recur(): value =
       if deadline < jl.System.nanoTime then abort(AsyncError(AsyncError.Reason.Timeout))
       else state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
-        case Incomplete(_)   => jucl.LockSupport.parkUntil(this, deadline - jl.System.nanoTime())
+        case Incomplete(_) =>
+          jucl.LockSupport.parkUntil(this, deadline - jl.System.nanoTime())
                                 recur()
-        case Complete(value) => value
-        case Cancelled       => abort(AsyncError(AsyncError.Reason.Cancelled))
+
+        case Complete(value) =>
+          value
+
+        case Cancelled =>
+          abort(AsyncError(AsyncError.Reason.Cancelled))
 
     recur()
 
@@ -137,9 +142,14 @@ final case class Promise[value]():
     def recur(): Unit =
       if deadline > jl.System.nanoTime
       then state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
-        case Incomplete(_) => jucl.LockSupport.parkUntil(this, deadline - jl.System.nanoTime())
+        case Incomplete(_) =>
+          jucl.LockSupport.parkUntil(this, deadline - jl.System.nanoTime())
                               recur()
-        case Cancelled     => ()
-        case Complete(_)   => ()
+
+        case Cancelled =>
+          ()
+
+        case Complete(_) =>
+          ()
 
     recur()

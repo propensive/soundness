@@ -57,32 +57,32 @@ object Abacist:
     :   Expr[Long] =
 
       values match
-        case Nil =>
-          expr
+        case Nil => expr
 
-        case unitValue :: valuesTail => multipliers match
-          case Multiplier(unitPower, subdivision, max) :: tail =>
-            unitValue.value match
-              case Some(unitValue) =>
-                if unitValue < 0
-                then halt:
-                  m"the value for the ${unitPower.ref.name} unit ($unitValue) cannot be negative"
-                else if unitValue >= max
-                then halt:
-                  m"""the value for the ${unitPower.ref.name} unit $unitValue must be less than
-                      $max"""
+        case unitValue :: valuesTail =>
+          multipliers match
+            case Multiplier(unitPower, subdivision, max) :: tail =>
+              unitValue.value match
+                case Some(unitValue) =>
+                  if unitValue < 0
+                  then halt:
+                    m"the value for the ${unitPower.ref.name} unit ($unitValue) cannot be negative"
+                  else if unitValue >= max
+                  then halt:
+                    m"""the value for the ${unitPower.ref.name} unit $unitValue must be less than
+                        $max"""
 
-                recur
-                  ( tail,
-                    valuesTail,
-                    '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})} )
+                  recur
+                    ( tail,
+                      valuesTail,
+                      '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})} )
 
-              case None =>
-                recur(tail, valuesTail, '{$expr + ($unitValue.toLong*${Expr(subdivision)})})
+                case None =>
+                  recur(tail, valuesTail, '{$expr + ($unitValue.toLong*${Expr(subdivision)})})
 
-          case Nil => halt:
-            m"""${inputs.length} unit values were provided, but this Quanta only has
-                ${multipliers.length} units"""
+            case Nil => halt:
+              m"""${inputs.length} unit values were provided, but this Quanta only has
+                  ${multipliers.length} units"""
 
     '{Quanta.fromLong[units](${recur(multipliers[units].reverse, inputs, '{0L})})}
 
@@ -94,8 +94,7 @@ object Abacist:
     :   Expr[ListMap[Text, Long]] =
 
       slices match
-        case Nil =>
-          expr
+        case Nil => expr
 
         case (slice@Multiplier(unitPower, subdivision, max)) :: tail =>
           val power: Text = if unitPower.power == 1 then "".tt else
@@ -184,8 +183,7 @@ object Abacist:
     val cascade: List[UnitPower] = untuple[units](Unset, Nil)
 
     def recur(todo: List[UnitPower], units: List[Multiplier] = Nil): List[Multiplier] = todo match
-      case Nil =>
-        units
+      case Nil => units
 
       case head :: tail =>
         val value = ratio(head.ref, cascade.head.ref, head.power).valueOrAbort

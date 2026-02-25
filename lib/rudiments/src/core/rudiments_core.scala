@@ -151,8 +151,7 @@ extension [value](iterable: Iterable[value])
   :   Optional[value] =
 
     compiletime.summonFrom:
-      case zeroic: ((? <: value) is Zeroic) =>
-        iterable.foldLeft(zeroic.zero)(addable.add)
+      case zeroic: ((? <: value) is Zeroic) => iterable.foldLeft(zeroic.zero)(addable.add)
 
       case _ =>
         if iterable.nil then Unset else iterable.tail.foldLeft(iterable.head)(addable.add)
@@ -412,10 +411,12 @@ extension (erased tuple: Tuple)
 
   private transparent inline def recurSubtypes[tuple <: Tuple, supertype, done <: Tuple]: Tuple =
     inline !![tuple] match
-      case _: Zero           => !![Tuple.Reverse[done]]
-      case _: (head *: tail) => inline !![head] match
-        case _: `supertype`     => recurSubtypes[tail, supertype, head *: done]
-        case _                  => recurSubtypes[tail, supertype, done]
+      case _: Zero => !![Tuple.Reverse[done]]
+
+      case _: (head *: tail) =>
+        inline !![head] match
+          case _: `supertype`     => recurSubtypes[tail, supertype, head *: done]
+          case _                  => recurSubtypes[tail, supertype, done]
 
   private inline def recurIndex[tuple <: Tuple, element](index: Int): Int =
     inline !![tuple] match
@@ -438,38 +439,59 @@ extension (using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
     . let: value =>
 
         inline !![primitive] match
-          case _: Boolean => value.constant.match
-            case BooleanConstant(value) => value
-            case _                      => Unset
-          case _: Byte    => value.constant match
-            case ByteConstant(value)    => value
-            case _                      => Unset
-          case _: Short   => value.constant match
-            case ShortConstant(value)   => value
-            case _                      => Unset
-          case _: Int     => value.constant match
-            case IntConstant(value)     => value
-            case _                      => Unset
-          case _: Long    => value.constant match
-            case LongConstant(value)    => value
-            case _                      => Unset
-          case _: Float   => value.constant match
-            case FloatConstant(value)   => value
-            case _                      => Unset
-          case _: Double  => value.constant match
-            case DoubleConstant(value)  => value
-            case _                      => Unset
-          case _: Char    => value.constant match
-            case CharConstant(value)    => value
-            case _                      => Unset
-          case _: String  => value.constant match
-            case StringConstant(value)  => value
-            case _                      => Unset
-          case _: Unit    => value.constant match
-            case UnitConstant()         => ()
-            case _                      => Unset
-          case _: Null    => value.constant match
-            case NullConstant()         => null
-            case _                      => Unset
+          case _: Boolean =>
+            value.constant.match
+              case BooleanConstant(value) => value
+              case _                      => Unset
+
+          case _: Byte =>
+            value.constant match
+              case ByteConstant(value)    => value
+              case _                      => Unset
+
+          case _: Short =>
+            value.constant match
+              case ShortConstant(value)   => value
+              case _                      => Unset
+
+          case _: Int =>
+            value.constant match
+              case IntConstant(value)     => value
+              case _                      => Unset
+
+          case _: Long =>
+            value.constant match
+              case LongConstant(value)    => value
+              case _                      => Unset
+
+          case _: Float =>
+            value.constant match
+              case FloatConstant(value)   => value
+              case _                      => Unset
+
+          case _: Double =>
+            value.constant match
+              case DoubleConstant(value)  => value
+              case _                      => Unset
+
+          case _: Char =>
+            value.constant match
+              case CharConstant(value)    => value
+              case _                      => Unset
+
+          case _: String =>
+            value.constant match
+              case StringConstant(value)  => value
+              case _                      => Unset
+
+          case _: Unit =>
+            value.constant match
+              case UnitConstant()         => ()
+              case _                      => Unset
+
+          case _: Null =>
+            value.constant match
+              case NullConstant()         => null
+              case _                      => Unset
 
     . asInstanceOf[Optional[primitive]]

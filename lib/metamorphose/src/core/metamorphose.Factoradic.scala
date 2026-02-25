@@ -41,8 +41,7 @@ case class Factoradic(number: BigInt):
     @tailrec
     def recur(current: BigInt, sequence: List[BigInt], result: List[Int]): List[Int] =
       sequence match
-        case Nil =>
-          result.reverse
+        case Nil => result.reverse
 
         case head :: tail =>
           val next = (current/head).toInt
@@ -56,6 +55,7 @@ object Factoradic:
     def recur(sequence: List[Int], bases: List[BigInt], result: BigInt, base: Int): BigInt =
       sequence match
         case Nil => result
+
         case head :: tail =>
           if head >= base
           then raise(PermutationError(PermutationError.Reason.BaseRange(head, base)))

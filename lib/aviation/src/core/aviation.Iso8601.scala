@@ -133,6 +133,7 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
     val instant: Instant = next() match
       case '\u0000' => date.at(Clockface(Base24(0), Base60(0), Base60(0))).instant
+
       case 'T' =>
         val hour = next() yet number(2)
 

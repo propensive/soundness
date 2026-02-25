@@ -70,13 +70,15 @@ sealed trait Executable:
 
 
   def apply(command: Executable): Pipeline = command match
-    case Pipeline(commands*) => this match
-      case Pipeline(commands2*) => Pipeline((commands ++ commands2)*)
-      case command: Command => Pipeline((commands :+ command)*)
+    case Pipeline(commands*) =>
+      this match
+        case Pipeline(commands2*) => Pipeline((commands ++ commands2)*)
+        case command: Command => Pipeline((commands :+ command)*)
 
-    case command: Command    => this match
-      case Pipeline(commands2*) => Pipeline((command +: commands2)*)
-      case command2: Command    => Pipeline(command, command2)
+    case command: Command =>
+      this match
+        case Pipeline(commands2*) => Pipeline((command +: commands2)*)
+        case command2: Command    => Pipeline(command, command2)
 
   @targetName("pipeTo")
   infix def | (command: Executable): Pipeline = command(this)

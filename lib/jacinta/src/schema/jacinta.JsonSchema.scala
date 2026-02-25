@@ -67,7 +67,7 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
     () =>
       val descriptions = infer[derivation is Annotated by memo] match
         case annotated: Annotated.Fields => annotated.fields
-        case _                             => Map()
+        case _                           => Map()
 
       val map =
         contexts:

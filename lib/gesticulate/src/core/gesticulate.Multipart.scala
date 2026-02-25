@@ -95,20 +95,23 @@ object Multipart:
         val block = conduit.block
         conduit.cue()
         block #:: body()
+
       case Conduit.State.End =>
         Stream()
-      case Conduit.State.Data   => conduit.datum match
-        case '\r' =>
-          if conduit.lookahead:
-            conduit.next() && conduit.datum == '\n' && boundary.forall: char =>
-              conduit.next() && conduit.datum == char
-          then
-            conduit.truncate()
-            Stream(conduit.block).also:
-              conduit.skip(boundary.length + 3)
-          else body()
-        case other =>
-          body()
+
+      case Conduit.State.Data =>
+        conduit.datum match
+          case '\r' =>
+            if conduit.lookahead:
+              conduit.next() && conduit.datum == '\n' && boundary.forall: char =>
+                conduit.next() && conduit.datum == char
+            then
+              conduit.truncate()
+              Stream(conduit.block).also:
+                conduit.skip(boundary.length + 3)
+            else body()
+          case other =>
+            body()
 
     def parsePart(headers: Map[Text, Text], stream: Stream[Data]): Part =
       headers.at(t"Content-Disposition").let: disposition =>
@@ -117,10 +120,13 @@ object Multipart:
         val params: Map[Text, Text] =
           parts.drop(1).map: param =>
             param.cut(t"=", 2) match
-              case List(key, value) => if value.starts(t"\"") && value.ends(t"\"")
+              case List(key, value) =>
+                if value.starts(t"\"") && value.ends(t"\"")
                                       then key -> value.segment(Sec thru value.pen.vouch)
                                       else key -> value
-              case _                => raise(MultipartError(Reason.BadDisposition)) yet (t"", t"")
+
+              case _ =>
+                raise(MultipartError(Reason.BadDisposition)) yet (t"", t"")
 
           . to(Map)
 
@@ -128,6 +134,7 @@ object Multipart:
           case t"inline"     => Multipart.Disposition.Inline
           case t"form-data"  => Multipart.Disposition.FormData
           case t"attachment" => Multipart.Disposition.Attachment
+
           case _ =>
             raise(MultipartError(Reason.BadDisposition)) yet Multipart.Disposition.FormData
 

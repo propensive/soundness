@@ -57,7 +57,8 @@ package logFormats:
 
   given ansiStandard: Message is Inscribable in Teletype = (event, level, realm, timestamp) =>
     try event.teletype.cut(t"\n").flatMap(_.slices(76)) match
-      case Nil          => e""
+      case Nil => e""
+
       case head :: tail =>
         val date = dateFormat.format(timestamp).nn.tt
         val first = e"$SlateGray($date) $level $CadetBlue(${realm.name.fit(10)}) > $head"

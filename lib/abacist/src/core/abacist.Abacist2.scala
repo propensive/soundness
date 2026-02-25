@@ -89,13 +89,15 @@ object Abacist2 extends Abacist3:
     given negatable: [units <: Tuple] => Quanta[units] is Negatable to Quanta[units] = -_
 
     inline given showable: [units <: Tuple] => Quanta[units] is Showable = summonFrom:
-      case names: UnitsNames[units] => count =>
+      case names: UnitsNames[units] =>
+        count =>
         val nonzeroComponents = count.components.filter(_(1) != 0)
         val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
         val units = nonzeroUnits.head :: nonzeroUnits.tail.map(names.separator+_)
         units.weave(names.units().takeRight(nonzeroUnits.length)).mkString.tt
 
-      case _ => count =>
+      case _ =>
+        count =>
         val nonzeroComponents = count.components.filter(_(1) != 0)
         nonzeroComponents.map { (unit, count) => count.toString+unit }.mkString(" ").tt
 

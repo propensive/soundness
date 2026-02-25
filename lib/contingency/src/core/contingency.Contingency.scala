@@ -276,6 +276,7 @@ object Contingency:
 
                     case None =>
                       halt(m"There is no available handler for ${TypeRepr.of[errorType].show}")
+
           case _ =>
             halt(m"argument to `mitigate` should be a partial function implemented as match cases")
 
@@ -334,8 +335,9 @@ object Contingency:
                 case Apply(_, List(_, Block(List(DefDef(_, _, _, Some(block))), _))) =>
                   mapping(unwrap(block))
 
-                case other => halt:
-                  m"argument to `accrue` should be a partial function implemented as match cases"
+                case other =>
+                  halt:
+                    m"argument to `accrue` should be a partial function implemented as match cases"
 
               val tactics = cases.map: (_, _) =>
                 '{AccrueTactic(label, ref, $accrue.initial)($accrue.lambda)(using $diagnostics)}
@@ -350,13 +352,16 @@ object Contingency:
             }
 
         result match
-          case None        => $tactic.abort:
+          case None =>
+            $tactic.abort:
+              ref.get() match
+                case null  => $accrue.initial
+                case error => error
+
+          case Some(value) =>
             ref.get() match
-              case null  => $accrue.initial
-              case error => error
-          case Some(value) => ref.get() match
-            case null        => value
-            case error       => $tactic.abort(error)
+              case null        => value
+              case error       => $tactic.abort(error)
       }
 
 
@@ -378,8 +383,9 @@ object Contingency:
                 case Apply(_, List(_, Block(List(DefDef(_, _, _, Some(block))), _))) =>
                   mapping(unwrap(block))
 
-                case other => halt:
-                  m"argument to `track` should be a partial function implemented as match cases"
+                case other =>
+                  halt:
+                    m"argument to `track` should be a partial function implemented as match cases"
 
               val tactics = cases.map: (_, _) =>
                 '{TrackTactic(label, $track.initial, foci)(using $diagnostics)}.asTerm
@@ -396,8 +402,7 @@ object Contingency:
             }
 
         result match
-          case None =>
-            $tactic.abort(foci.fold[accrual]($track.initial)($track.lambda(using _, _)))
+          case None => $tactic.abort(foci.fold[accrual]($track.initial)($track.lambda(using _, _)))
 
           case Some(value) =>
             if foci.success then value
@@ -422,9 +427,10 @@ object Contingency:
                 case Apply(_, List(_, Block(List(DefDef(_, _, _, Some(block))), _))) =>
                   mapping(unwrap(block))
 
-                case other => halt:
-                  m"""argument to `validate` should be a partial function implemented as match
-                      cases"""
+                case other =>
+                  halt:
+                    m"""argument to `validate` should be a partial function implemented as match
+                        cases"""
 
               val tactics = cases.map: (_, _) =>
                 '{TrackTactic(label, $validate.initial, foci)(using $diagnostics)}.asTerm

@@ -124,6 +124,7 @@ object Mcp:
                       mcpProtocolVersion = version,
                       mcpSessionId       = id )
                     (  )
+
             case method =>
               ???
         catch
@@ -372,8 +373,8 @@ object Mcp:
     import dynamicJsonAccess.enabled
 
     given encodable: Reference is Encodable in Json =
-      case ref: PromptReference            => unsafely(ref.json.`type` = "ref/prompt")
-      case ref: ResourceTemplateReference  => unsafely(ref.json.`type` = "ref/resource")
+      case ref: PromptReference           => unsafely(ref.json.`type` = "ref/prompt")
+      case ref: ResourceTemplateReference => unsafely(ref.json.`type` = "ref/resource")
 
     given decodable: Tactic[JsonError] => Reference is Decodable in Json = json =>
       json.`type`.as[Text] match
