@@ -33,7 +33,7 @@
 package soundness
 
 export ambience
-. { Environment, EnvironmentError, EnvironmentVariable, System, Property, PropertyError, Xdg,
+. { Environment, EnvironmentError, Variable, System, Property, PropertyError, Xdg,
     variables, TemporaryDirectory, temporaryDirectory, HomeDirectory, HomeDirectoryError,
     homeDirectory, workingDirectory, WorkingDirectory, WorkingDirectoryError }
 
