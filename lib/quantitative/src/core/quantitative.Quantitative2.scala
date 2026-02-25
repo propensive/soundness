@@ -211,8 +211,10 @@ trait Quantitative2:
               . getOrElse("the same quantity")
 
             halt:
-              m"""the operands both represent $dimensionName, but there is no principal unit
-                    specified for this dimension"""
+              m"""
+                the operands both represent $dimensionName, but there is no principal unit specified
+                for this dimension
+              """
 
           case Some('{$expr: principal}) => Type.of[principal].absolve match
             case '[Principal[dimension, units]] =>
@@ -271,12 +273,14 @@ trait Quantitative2:
                   "the same physical quantity"
 
               halt:
-                m"""both operands represent $dimensionName, but the coversion ratio between them
-                      is not known
+                m"""
+                  both operands represent $dimensionName, but the coversion ratio between them is
+                  not known
 
-                      To provide the conversion ratio, please provide a contextual instance in
-                      scope, with the type, `Ratio[${from.name}[1] & ${to.name}[-1]]`, or
-                      `Ratio[${to.name}[1] & ${from.name}[-1]]`."""
+                  To provide the conversion ratio, please provide a contextual instance in scope,
+                  with the type, `Ratio[${from.name}[1] & ${to.name}[-1]]`, or
+                  `Ratio[${to.name}[1] & ${from.name}[-1]]`.
+                """
 
           case Some('{$ratio: ratio}) => Type.of[ratio].absolve match
             case '[Ratio[?, double]] => TypeRepr.of[double].asMatchable.absolve match
@@ -373,8 +377,10 @@ trait Quantitative2:
     (left.dimensionality.quantityName, right.dimensionality.quantityName) match
       case (Some(leftName), Some(rightName)) =>
         halt:
-          m"""the left operand represents $leftName, but the right operand represents $rightName;
-              these are incompatible physical quantities"""
+          m"""
+            the left operand represents $leftName, but the right operand represents $rightName;
+            these are incompatible physical quantities
+          """
 
       case _ =>
         halt(m"the operands represent different physical quantities")

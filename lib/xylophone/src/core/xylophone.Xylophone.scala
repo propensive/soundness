@@ -373,8 +373,8 @@ object Xylophone:
                     case _ =>
                       halt:
                         m"""
-                          a value of ${TypeRepr.of[value].show} is not encodable inside a
-                          <$tag> element
+                          a value of ${TypeRepr.of[value].show} is not encodable inside a <$tag>
+                          element
                         """
 
               case Hole.Node(tag) =>
@@ -389,8 +389,11 @@ object Xylophone:
                           '{TextNode($showable.text($expr))}
 
                         case _ =>
-                          halt(m"""a value of ${TypeRepr.of[value].show} is not renderable
-                                  or showable inside a <$tag> element""")
+                          halt:
+                            m"""
+                              a value of ${TypeRepr.of[value].show} is not renderable or showable
+                              inside a <$tag> element
+                            """
 
               case Hole.Comment => Expr.summon[(? >: value) is Showable] match
                 case Some(showable) =>

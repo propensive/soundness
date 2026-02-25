@@ -184,4 +184,4 @@ object Turbulence:
         . or:
             halt(m"can not stream ${name[source]} as ${name[Data]} without a ${name[CharEncoder]}")
 
-        else halt(m"""no ${name[source is Streamable by operand]} (or $otherName) was found""")
+        else halt(m"no ${name[source is Streamable by operand]} (or $otherName) was found")

@@ -129,10 +129,12 @@ object Media:
           if !systemMediaTypes.nil then
             if !systemMediaTypes.contains(parsed.basic) then
               val suggestion = systemMediaTypes.minBy(_.proximity(parsed.basic))
-              throw InterpolationError(m"""
-                ${parsed.basic} is not a registered media type; did you mean $suggestion or
-                ${parsed.basic.sub(t"/", t"/x-")}?
-              """)
+
+              throw InterpolationError
+                ( m"""
+                    ${parsed.basic} is not a registered media type; did you mean $suggestion or
+                    ${parsed.basic.sub(t"/", t"/x-")}?
+                  """ )
 
         case _ =>
           ()

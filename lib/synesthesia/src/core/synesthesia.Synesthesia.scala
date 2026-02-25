@@ -70,8 +70,8 @@ object Synesthesia:
               '{$showable.text($argument)}
 
             case None =>
-              halt(m"""could not find a contextual `${TypeRepr.of[argument].show} is Showable`
-                      instance""")
+              halt:
+                m"could not find a contextual `${TypeRepr.of[argument].show} is Showable` instance"
 
     val result = insertions.zip(parts.tail.map(Expr(_))).foldLeft(Expr(parts.head)):
       case (result, (insertion, part)) =>
@@ -105,7 +105,7 @@ object Synesthesia:
       allAnnotations.exists(_.tpe.typeSymbol == resourceType)
 
     val jsonErrors = Expr.summon[Tactic[JsonError]].getOrElse:
-      halt(m"""could not find a contextual `Tactic[McpError]` instance""")
+      halt(m"could not find a contextual `Tactic[McpError]` instance")
 
     // This has been written as a partial function because the more natural way of writing it,
     // by including `target` as a lambda variable, causes the compiler to emit bad bytecode.
@@ -180,7 +180,7 @@ object Synesthesia:
                         CaseDef(Wildcard(), None, '{abort(McpError())(using $tactic)}.asTerm)
 
                       case None =>
-                        halt(m"""could not find a contextual `Tactic[McpError]` instance""")
+                        halt(m"could not find a contextual `Tactic[McpError]` instance")
 
                     Match('method.asTerm, cases :+ wildcard).asExprOf[Json]
                   }
@@ -234,10 +234,7 @@ object Synesthesia:
                               List('client.asTerm) )
 
                         case _ => halt:
-                          m"""
-                            MCP prompt definitions should have exactly one explicit parameter
-                            block
-                          """
+                          m"MCP prompt definitions should have exactly one explicit parameter block"
 
                       result.asType.absolve match
                         case '[List[Discourse]] =>

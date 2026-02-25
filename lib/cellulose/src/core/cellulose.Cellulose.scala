@@ -187,20 +187,28 @@ object Cellulose extends Cellulose2:
           m"the unique ID has been used before at $line:$col, $point"
 
         case UnexpectedCarriageReturn =>
-          m"""a carriage return character ('\\r') was followed by a character other than a newline
-              ('\\n')"""
+          m"""
+            a carriage return character ('\\r') was followed by a character other than a newline
+            ('\\n')
+          """
 
         case CarriageReturnMismatch(true) =>
-          m"""a newline character ('\\n') was found without a preceding carriage return ('\\r'),
-              which does not match the document's prior newline convention"""
+          m"""
+            a newline character ('\\n') was found without a preceding carriage return ('\\r'), which
+            does not match the document's prior newline convention
+          """
 
         case CarriageReturnMismatch(false) =>
-          m"""a carriage return ('\\r') was encountered, which does not match the document's prior
-              newline convention"""
+          m"""
+            a carriage return ('\\r') was encountered, which does not match the document's prior
+            newline convention
+          """
 
         case UnevenIndent(initial, indent) =>
-          m"""the indentation level of ${indent - initial} (with a margin of $initial) is not an
-              exact multiple of 2"""
+          m"""
+            the indentation level of ${indent - initial} (with a margin of $initial) is not an exact
+            multiple of 2
+          """
 
         case IndentAfterComment =>
           m"indentation was given after a comment; the comment should be aligned with its next key"

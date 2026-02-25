@@ -134,7 +134,7 @@ object Obligatory:
                       CaseDef(Wildcard(), None, '{abort(JsonRpcError())(using $tactic)}.asTerm)
 
                     case None =>
-                      halt(m"""could not find a contextual `Tactic[JsonRpcError]` instance""")
+                      halt(m"could not find a contextual `Tactic[JsonRpcError]` instance")
 
                   Match('method.asTerm, cases :+ wildcard).asExprOf[Optional[Json]]
                 }

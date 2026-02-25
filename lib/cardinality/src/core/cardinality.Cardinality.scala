@@ -71,12 +71,18 @@ object Cardinality:
                 val value = string.toDouble
 
                 if value < lowerBound
-                then halt(m"""the value $string is less than the lower bound for this value,
-                    ${lowerBound.toString}""")
+                then halt:
+                  m"""
+                    the value $string is less than the lower bound for this value,
+                    ${lowerBound.toString}
+                  """
 
                 if value > upperBound
-                then halt(m"""the value $string is greater than the upper bound for this value,
-                    ${upperBound.toString}""")
+                then halt:
+                  m"""
+                    the value $string is greater than the upper bound for this value,
+                    ${upperBound.toString}
+                  """
 
                 '{${Expr(value)}.asInstanceOf[left ~ right]}
 

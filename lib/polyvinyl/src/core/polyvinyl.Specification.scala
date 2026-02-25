@@ -77,9 +77,7 @@ trait Specification extends Original:
               Expr.summon[label is Intensional in Form from Origin].absolve match
                 case None =>
                   halt:
-                    m"""
-                      could not find an Intensional instance for the field $name with type $label
-                    """
+                    m"could not find an Intensional instance for the field $name with type $label"
 
                 case Some
                   ( '{$accessor: label `is` Intensional `in` Form `from` Origin `to` result} ) =>
@@ -104,9 +102,7 @@ trait Specification extends Original:
               Expr.summon[label is Structural[?] in Form from Origin].absolve match
                 case None =>
                   halt:
-                    m"""
-                      could not find a Structural instance for the field $name with type $label
-                    """
+                    m"could not find a Structural instance for the field $name with type $label"
 
                 case Some
                   ( ' {

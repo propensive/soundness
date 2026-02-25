@@ -69,8 +69,9 @@ object Abacist:
                     m"the value for the ${unitPower.ref.name} unit ($unitValue) cannot be negative"
                   else if unitValue >= max
                   then halt:
-                    m"""the value for the ${unitPower.ref.name} unit $unitValue must be less than
-                        $max"""
+                    m"""
+                      the value for the ${unitPower.ref.name} unit $unitValue must be less than $max
+                    """
 
                   recur
                     ( tail,
@@ -81,8 +82,10 @@ object Abacist:
                   recur(tail, valuesTail, '{$expr + ($unitValue.toLong*${Expr(subdivision)})})
 
             case Nil => halt:
-              m"""${inputs.length} unit values were provided, but this Quanta only has
-                  ${multipliers.length} units"""
+              m"""
+                ${inputs.length} unit values were provided, but this Quanta only has
+                ${multipliers.length} units
+              """
 
     '{Quanta.fromLong[units](${recur(multipliers[units].reverse, inputs, '{0L})})}
 
@@ -171,8 +174,10 @@ object Abacist:
           dimension.let: current =>
             if unitPower.ref.dimensionRef != current
             then halt:
-              m"""the Quanta type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and
-                  ${current.name}"""
+              m"""
+                the Quanta type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and
+                ${current.name}
+              """
 
           untuple[tail](unitPower.ref.dimensionRef, unitPower :: result)
 

@@ -58,8 +58,8 @@ object Vacuous:
     concrete[typeRef]
 
     if TypeRepr.of[typeRef] <:< TypeRepr.of[union]
-    then halt(m"""type ${TypeRepr.of[typeRef].show} cannot be proven distinct from
-                  ${TypeRepr.of[union].show}""")
+    then halt:
+      m"type ${TypeRepr.of[typeRef].show} cannot be proven distinct from ${TypeRepr.of[union].show}"
     else '{Distinct[typeRef, union]()}
 
   def mandatable[typeRef: Type]: Macro[typeRef is Mandatable] =

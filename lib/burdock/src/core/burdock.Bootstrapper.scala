@@ -137,8 +137,9 @@ object Bootstrapper:
           val localDigest: Text = data.digest[Sha1].serialize[Hex]
 
           if digest != localDigest then
-            Out.println(m"""SHA-1 checksum of local file ${base + relative0} did not match remote
-                            $url""")
+            Out.println:
+              m"SHA-1 checksum of local file ${base + relative0} did not match remote $url"
+
             Nil
 
           else

@@ -50,8 +50,7 @@ object ConnectError:
       object Reason:
         given communicable: Reason is Communicable =
           case Handshake =>
-            m"""the local and remote peer could not negotiate the desired level of
-                                security"""
+            m"the local and remote peer could not negotiate the desired level of security"
 
           case Key =>
             m"the SSL key was bad"
@@ -60,8 +59,7 @@ object ConnectError:
             m"the remote peer's identity could not be verified"
 
           case Protocol =>
-            m"""the local or remote implementation of the SSL protocol did not
-                                behave as expected"""
+            m"the local or remote implementation of the SSL protocol did not behave as expected"
 
     given communicable: Reason is Communicable =
       case Dns         => m"the server address could not be resolved by DNS"

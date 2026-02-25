@@ -344,8 +344,8 @@ object Honeycomb:
                 case _ =>
                   halt:
                     m"""
-                      only a ${TypeRepr.of[Map[Text, Optional[Text]]].show} can be applied in a
-                      tag body
+                      only a ${TypeRepr.of[Map[Text, Optional[Text]]].show} can be applied in a tag
+                      body
                     """
         . iterator
 
