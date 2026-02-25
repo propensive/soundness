@@ -30,23 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package abacist
+package nomenclature
 
-import hypotenuse.*
+import scala.quoted.*
 
-trait internal3:
-  trait Quanta2:
-    inline given commensurable: [units <: Tuple] => Quanta[units] is Commensurable:
-      type Contrast = Quanta[units]
+import proscenium.*
 
-
-      inline def compare
-        ( inline left:        Quanta[units],
-          inline right:       Quanta[units],
-          inline strict:      Boolean,
-          inline greaterThan: Boolean )
-      :   Boolean =
-
-        inline if greaterThan
-        then inline if strict then left.long > right.long else left.long >= right.long
-        else inline if strict then left.long < right.long else left.long <= right.long
+object anteprotointernal:
+  def staticCompanion[instance: Type]: Macro[Matchable] =
+    import quotes.reflect.*
+    Ident(TypeRepr.of[instance].typeSymbol.companionModule.termRef).asExprOf[Matchable]

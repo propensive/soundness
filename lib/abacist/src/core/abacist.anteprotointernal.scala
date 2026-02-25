@@ -30,57 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cellulose
+package abacist
 
-import anticipation.*
-import contingency.*
-import distillate.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
-import vacuous.*
-import wisteria.*
+import hypotenuse.*
 
-trait internal2:
-  object EncodableDerivation extends ProductDerivable[Encodable in Codl]:
-    inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Codl =
-      val mapping: Map[Text, Text] = compiletime.summonFrom:
-        case relabelling: CodlRelabelling[derivation] => relabelling.relabelling()
-        case _                                        => Map()
+trait anteprotointernal:
+  trait Quanta2:
+    inline given commensurable: [units <: Tuple] => Quanta[units] is Commensurable:
+      type Contrast = Quanta[units]
 
-      product => Codl:
-        List:
-          val schemata: IArray[CodlSchema.Entry] =
-            CodlSchematicDerivation.join[derivation].schema().absolve match
-              case Struct(elements, _) => IArray.from(elements)
 
-          Codllike:
-            IArray.from:
-              fields(product):
-                [field] => field =>
-                  val label2 = mapping.at(label).or(label)
-                  val schematic = infer[field is CodlSchematic]
+      inline def compare
+        ( inline left:        Quanta[units],
+          inline right:       Quanta[units],
+          inline strict:      Boolean,
+          inline greaterThan: Boolean )
+      :   Boolean =
 
-                  context.encoded(field).list.map: value =>
-                    CodlNode(Atom(label2, value.children, Layout.empty, schemata(index).schema))
-
-                  . filter(!_.empty)
-
-              . to(List).flatten
-
-  class DecodableDerivation()(using Tactic[CodlError]) extends ProductDerivable[Decodable in Codl]:
-    inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Codl =
-      values =>
-        construct: [field] => context =>
-          val label2 = compiletime.summonFrom:
-            case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
-            case _                                        => label
-
-          context.decoded:
-            Codl:
-              values.list.prim.let: value =>
-                value.absolve match
-                  case doc: CodlDoc => doc.get(label2)
-                  case data: Atom   => data.get(label2)
-
-              . lest(CodlError(CodlError.Reason.BadFormat(label2)))
+        inline if greaterThan
+        then inline if strict then left.long > right.long else left.long >= right.long
+        else inline if strict then left.long < right.long else left.long <= right.long

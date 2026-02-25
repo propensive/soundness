@@ -44,7 +44,7 @@ import symbolism.*
 import scala.quoted.*
 import scala.compiletime.*
 
-trait internal2:
+trait protointernal:
   private given realm: Realm = realm"quantitative"
 
   case class UnitPower(ref: UnitRef, power: Int)

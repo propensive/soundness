@@ -43,7 +43,7 @@ import quantitative.*
 import rudiments.*
 import symbolism.*
 
-object internal2:
+object protointernal:
   opaque type Instant = Long
   opaque type TaiInstant = Long
 
@@ -51,16 +51,16 @@ object internal2:
     inline given underlying: Underlying[TaiInstant, Long] = !!
 
 
-    given generic: internal2.TaiInstant is Abstractable & Instantiable across Instants to
-                    Long from Long =
+    given generic
+    :   protointernal.TaiInstant is Abstractable & Instantiable across Instants to Long from Long =
 
       new Abstractable with Instantiable:
-        type Self = internal2.TaiInstant
+        type Self = protointernal.TaiInstant
         type Origin = Long
         type Result = Long
         type Domain = Instants
-        def apply(long: Long): internal2.TaiInstant = long
-        def genericize(instant: internal2.TaiInstant): Long = instant
+        def apply(long: Long): protointernal.TaiInstant = long
+        def genericize(instant: protointernal.TaiInstant): Long = instant
 
   object InstantSubtractable:
     given instant: Instant is InstantSubtractable to Duration = new InstantSubtractable:
@@ -95,16 +95,16 @@ object internal2:
     def of(millis: Long): Instant = millis
 
 
-    given generic: internal2.Instant is Abstractable & Instantiable across Instants to Long from
-                    Long =
+    given generic
+    :   protointernal.Instant is Abstractable & Instantiable across Instants to Long from Long =
 
       new Abstractable with Instantiable:
-        type Self = internal2.Instant
+        type Self = protointernal.Instant
         type Result = Long
         type Origin = Long
         type Domain = Instants
-        def apply(long: Long): internal2.Instant = long
-        def genericize(instant: internal2.Instant): Long = instant
+        def apply(long: Long): protointernal.Instant = long
+        def genericize(instant: protointernal.Instant): Long = instant
 
 
     inline given orderable: Instant is Orderable:

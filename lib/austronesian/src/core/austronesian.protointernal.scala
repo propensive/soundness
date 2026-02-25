@@ -30,118 +30,94 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package abacist
+package austronesian
+
+import scala.quoted.*
 
 import anticipation.*
-import gossamer.*
-import quantitative.*
+import contingency.*
+import distillate.*
+import fulminate.*
+import hellenism.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import spectacular.*
-import symbolism.*
+import wisteria.*
 
-import scala.compiletime.*, ops.int.*
+object protointernal:
+  object EncodableDerivation extends Derivation[[entity] =>> entity is Encodable in Pojo]:
+    inline def join[derivation <: Product: ProductReflection]
+    :   derivation is Encodable in _root_.austronesian.internal.Pojo =
 
-object internal2 extends internal3:
-  opaque type Quanta[units <: Tuple] = Long
-
-  object Quanta extends Quanta2:
-    inline given underlying: [units <: Tuple] => Underlying[Quanta[units], Long] = !!
-
-    given zeroic: [units <: Tuple] => Quanta[units] is Zeroic:
-      inline def zero: Quanta[units] = 0L
-
-    given typeable: [units <: Tuple] => Typeable[Quanta[units]]:
-      def unapply(count: Any): Option[count.type & Quanta[units]] = count.asMatchable match
-        case count: Long => Some(count)
-        case _           => None
-
-    def fromLong[units <: Tuple](long: Long): Quanta[units] = long
-
-    given integral: [units <: Tuple] => Integral[Quanta[units]] = summon[Integral[Long]]
-
-    inline def apply[units <: Tuple](inline values: Int*): Quanta[units] =
-      ${abacist.internal.make[units]('values)}
-
-    given addable: [units <: Tuple] => Quanta[units] is Addable:
-      type Operand = Quanta[units]
-      type Result = Quanta[units]
-
-      def add(left: Quanta[units], right: Quanta[units]): Quanta[units] = left + right
-
-    given subtractable: [units <: Tuple] => Quanta[units] is Subtractable:
-      type Operand = Quanta[units]
-      type Result = Quanta[units]
-
-      def subtract(left: Quanta[units], right: Quanta[units]): Quanta[units] = left - right
-
-    given multiplicable: [units <: Tuple] => Quanta[units] is Multiplicable:
-      type Operand = Double
-      type Result = Quanta[units]
-
-      def multiply(left: Quanta[units], right: Double): Quanta[units] = left.multiply(right)
-
-    given divisible: [units <: Tuple] => Quanta[units] is Divisible:
-      type Operand = Double
-      type Result = Quanta[units]
-
-      def divide(left: Quanta[units], right: Double): Quanta[units] = left.divide(right)
-
-    given negatable: [units <: Tuple] => Quanta[units] is Negatable to Quanta[units] = -_
-
-    inline given showable: [units <: Tuple] => Quanta[units] is Showable = summonFrom:
-      case names: UnitsNames[units] =>
-        count =>
-        val nonzeroComponents = count.components.filter(_(1) != 0)
-        val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
-        val units = nonzeroUnits.head :: nonzeroUnits.tail.map(names.separator+_)
-        units.weave(names.units().takeRight(nonzeroUnits.length)).mkString.tt
-
-      case _ =>
-        count =>
-        val nonzeroComponents = count.components.filter(_(1) != 0)
-        nonzeroComponents.map { (unit, count) => count.toString+unit }.mkString(" ").tt
-
-    inline given distributive2: [units <: Tuple] => Quanta[units] is Distributive by Long =
-      distributive[units](_.components.map(_(1)).to(List)): (value, parts) =>
-        parts.zip(value.components.map(_(0))).map: (number, units) =>
-          t"$number $units"
-        . join(t", ")
+      fields(_): [field] => _.encode
+      . asInstanceOf[Pojo]
 
 
-    def distributive[units <: Tuple]
-      ( parts0: Quanta[units] => List[Long] )
-      ( place0: (Quanta[units], List[Text]) => Text )
-    :   Quanta[units] is Distributive by Long =
+    inline def split[derivation: SumReflection]: derivation is Encodable in Pojo =
+      variant(_): [variant <: derivation] => value =>
+        IArray.create[Pojo](2): array =>
+          array(0) = label.s.asInstanceOf[Pojo]
+          array(1) = value.encode
 
-      new Distributive:
-        type Self = Quanta[units]
-        type Operand = Long
-        def parts(value: Quanta[units]): List[Long] = parts0(value)
-        def place(value: Quanta[units], parts: List[Text]): Text = place0(value, parts)
+        . asInstanceOf[Pojo]
+
+  object DecodableDerivation extends Derivable[Decodable in Pojo]:
+    inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Pojo =
+      case array: Array[Pojo @unchecked] =>
+        construct: [field] =>
+          _.decoded(array(index))
+
+      case other =>
+        provide[Tactic[PojoError]](abort(PojoError()))
+
+    inline def split[derivation: SumReflection]: derivation is Decodable in Pojo =
+      case Array(label: String @unchecked, pojo: Pojo @unchecked) =>
+        delegate(label): [variant <: derivation] => _.decoded(pojo)
+
+      case other =>
+        provide[Tactic[PojoError]](abort(PojoError()))
+
+  def isolated[result: Type](classloader: Expr[Classloader], invoke: Expr[result]): Macro[result] =
+    import quotes.reflect.*
+
+    invoke.asTerm match
+      case term => ()
+
+    '{???}
 
 
-  extension [units <: Tuple](count: Quanta[units])
-    def long: Long = count
+  def proxy
+    ( className:   Expr[Text],
+      methodName:  Expr[String],
+      arguments:   Expr[Seq[Any]],
+      classloader: Expr[Classloader],
+      singleton:   Expr[Boolean] )
+  :   Macro[Any] =
 
+    import quotes.reflect.*
 
-  extension [units <: Tuple](inline count: Quanta[units])
-    inline def apply[unit[power <: Nat] <: Units[power, ? <: Dimension]]: Int =
+    val arguments2: IArray[Expr[Pojo]] = arguments.absolve match
+      case Varargs(arguments) => IArray.from(arguments).map:
+        case '{$argument: argument} =>
 
-      ${abacist.internal.get[units, unit[1]]('count)}
+          val encodable = Expr.summon[argument is Encodable in Pojo].getOrElse:
+            halt(m"${TypeRepr.of[argument].show} is not encodable as a standard library parameter")
 
-    transparent inline def quantity: Any = ${abacist.internal.toQuantity[units]('count)}
-    inline def components: ListMap[Text, Long] = ${abacist.internal.describeQuanta[units]('count)}
+          '{$encodable.encoded($argument)}
 
-    transparent inline def multiply(inline multiplier: Double): Any =
-      ${abacist.internal.multiplyQuanta('count, 'multiplier, false)}
+        case _ =>
+          panic(m"unmatched argument")
 
-    transparent inline def divide(inline multiplier: Double): Any =
-      ${abacist.internal.multiplyQuanta('count, 'multiplier, true)}
-
-
-    transparent inline def collapse(length: Int)(using length.type < Tuple.Size[units] =:= true)
-    :   Quanta[Tuple.Drop[units, length.type]] =
-
-      count
+    if singleton.valueOrAbort then
+      ' {
+          val javaClass = Class.forName($className.s+"$", true, $classloader.java).nn
+          val instance = javaClass.getField("MODULE$").nn.get(null).nn
+          val method = javaClass.getMethod($methodName, classOf[Object]).nn
+          method.invoke(instance, null)
+        }
+    else
+      ' {
+          val javaClass = Class.forName($className.s, true, $classloader.java).nn
+          val method = javaClass.getMethod($methodName).nn
+          method.invoke(null, null)
+        }

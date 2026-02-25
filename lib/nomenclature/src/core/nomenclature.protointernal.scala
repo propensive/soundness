@@ -30,94 +30,123 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package austronesian
-
-import scala.quoted.*
+package nomenclature
 
 import anticipation.*
 import contingency.*
-import distillate.*
 import fulminate.*
-import hellenism.*
-import prepositional.*
 import proscenium.*
 import rudiments.*
-import wisteria.*
 
-object internal2:
-  object EncodableDerivation extends Derivation[[entity] =>> entity is Encodable in Pojo]:
-    inline def join[derivation <: Product: ProductReflection]
-    :   derivation is Encodable in _root_.austronesian.internal.Pojo =
+import scala.quoted.*
+import scala.compiletime.*
 
-      fields(_): [field] => _.encode
-      . asInstanceOf[Pojo]
-
-
-    inline def split[derivation: SumReflection]: derivation is Encodable in Pojo =
-      variant(_): [variant <: derivation] => value =>
-        IArray.create[Pojo](2): array =>
-          array(0) = label.s.asInstanceOf[Pojo]
-          array(1) = value.encode
-
-        . asInstanceOf[Pojo]
-
-  object DecodableDerivation extends Derivable[Decodable in Pojo]:
-    inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Pojo =
-      case array: Array[Pojo @unchecked] =>
-        construct: [field] =>
-          _.decoded(array(index))
-
-      case other =>
-        provide[Tactic[PojoError]](abort(PojoError()))
-
-    inline def split[derivation: SumReflection]: derivation is Decodable in Pojo =
-      case Array(label: String @unchecked, pojo: Pojo @unchecked) =>
-        delegate(label): [variant <: derivation] => _.decoded(pojo)
-
-      case other =>
-        provide[Tactic[PojoError]](abort(PojoError()))
-
-  def isolated[result: Type](classloader: Expr[Classloader], invoke: Expr[result]): Macro[result] =
+object protointernal:
+  def build(using Quotes)(todo: List[quotes.reflect.TypeRepr]): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 
-    invoke.asTerm match
-      case term => ()
+    todo match
+      case Nil => TypeRepr.of[Zero]
 
-    '{???}
+      case next :: todo =>
+        next.asType.absolve match
+          case '[next] => build(todo).asType.absolve match
+            case '[type tupleType <: Tuple; tupleType] => TypeRepr.of[next *: tupleType]
 
-
-  def proxy
-    ( className:   Expr[Text],
-      methodName:  Expr[String],
-      arguments:   Expr[Seq[Any]],
-      classloader: Expr[Classloader],
-      singleton:   Expr[Boolean] )
-  :   Macro[Any] =
-
+  def decompose(using Quotes)(repr: quotes.reflect.TypeRepr): Set[quotes.reflect.TypeRepr] =
     import quotes.reflect.*
 
-    val arguments2: IArray[Expr[Pojo]] = arguments.absolve match
-      case Varargs(arguments) => IArray.from(arguments).map:
-        case '{$argument: argument} =>
+    repr.dealias.asMatchable match
+      case AndType(left, right) => decompose(left) ++ decompose(right)
+      case other                => Set(other)
 
-          val encodable = Expr.summon[argument is Encodable in Pojo].getOrElse:
-            halt(m"${TypeRepr.of[argument].show} is not encodable as a standard library parameter")
+  def disintersection[intersection: Type]: Macro[Tuple] =
+    import quotes.reflect.*
 
-          '{$encodable.encoded($argument)}
+    build(decompose(TypeRepr.of[intersection].dealias).to(List)).asType.absolve match
+      case '[type tupleType <: Tuple; tupleType] => '{null.asInstanceOf[tupleType]}
 
-        case _ =>
-          panic(m"unmatched argument")
+  def extractor(context: Expr[StringContext]): Macro[Any] =
+    import quotes.reflect.*
 
-    if singleton.valueOrAbort then
-      ' {
-          val javaClass = Class.forName($className.s+"$", true, $classloader.java).nn
-          val instance = javaClass.getField("MODULE$").nn.get(null).nn
-          val method = javaClass.getMethod($methodName, classOf[Object]).nn
-          method.invoke(instance, null)
-        }
-    else
-      ' {
-          val javaClass = Class.forName($className.s, true, $classloader.java).nn
-          val method = javaClass.getMethod($methodName).nn
-          method.invoke(null, null)
-        }
+    val string = context.valueOrAbort.parts.head
+
+    ConstantType(StringConstant(string)).asType match
+      case '[type stringType <: Label; stringType] => '{NameExtractor[stringType]()}
+      case _ =>
+        panic(m"StringContext did not contains Strings")
+
+  def makeName[system: Type](name: Expr[Text]): Macro[Name[system]] =
+    import quotes.reflect.*
+
+    Expr.summon[system is Nominative].absolve match
+      case Some('{type limit; $nominative: (Nominative { type Limit = limit })}) =>
+        val checks =
+          decompose(TypeRepr.of[limit]).to(List).map(_.asType).foldLeft('{()}): (expr, next) =>
+            next.absolve match
+              case '[type param <: String; type rule <: Check[param]; rule] =>
+                anteprotointernal.staticCompanion[rule].absolve match
+                  case '{$rule: Rule} =>
+                    TypeRepr.of[param].absolve match
+                      case ConstantType(StringConstant(string)) =>
+                        ' {
+                            if $rule.check($name, ${Expr(string)}.tt) then $expr
+                            else provide[Tactic[NameError]]:
+                              raise(NameError($name, $rule, ${Expr(string)}))
+                          }
+
+        '{$checks; $name.asInstanceOf[Name[system]]}
+
+      case None =>
+        halt(m"Couldn't find a `Nominative` instance on ${TypeRepr.of[system].show}")
+
+
+  def parse2[plane: Type, name <: String: Type](scrutinee: Expr[Name[plane]])
+  :   Macro[Boolean] =
+
+    parse[plane, name]
+    '{${Expr(constant[name])}.tt == $scrutinee}
+
+
+  def constant[text <: String: Type](using Quotes): text =
+    import quotes.reflect.*
+    TypeRepr.of[text].asMatchable.absolve match
+      case ConstantType(StringConstant(value)) => value.tt.asInstanceOf[text]
+
+  def companion[companion: Typeable](using Quotes)(symbol: quotes.reflect.Symbol): companion =
+    Class.forName(s"${symbol.companionModule.fullName}$$").nn.getField("MODULE$").nn.get(null) match
+      case module: `companion` => module
+      case _                   => halt(m"The companion object did not have the expected type.")
+
+  def parse[plane: Type, name <: String: Type]: Macro[Name[plane]] =
+    import quotes.reflect.*
+
+    val name: Text = constant[name].tt
+
+    Expr.summon[plane is Nominative] match
+      case
+        Some
+          ( ' {
+                type limit
+                type nominative <: Nominative { type Limit = limit }
+                $value: nominative
+              } ) =>
+
+        decompose(TypeRepr.of[limit]).to(List).each: repr =>
+          val text = repr.asMatchable match
+            case AppliedType(_, List(param)) =>
+              param.asMatchable match
+                case ConstantType(StringConstant(text)) => text.tt
+                case _                                  => halt(m"Bad type")
+
+            case _ =>
+              halt(m"Bad type")
+          val rule = companion[Rule](repr.typeSymbol)
+          if !rule.check(name, text)
+          then halt(m"the name is not valid because it ${rule.describe(text)}")
+
+      case _ =>
+        halt(m"Could not access constraint")
+
+
+    '{${Expr(name)}.asInstanceOf[Name[plane]]}

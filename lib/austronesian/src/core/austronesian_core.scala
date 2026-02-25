@@ -43,7 +43,7 @@ extension [entity: Encodable in Pojo](value: entity) inline def pojo: Pojo = ent
 
 extension (classloader: Classloader)
   inline def isolate[ResultType](inline invoke: ResultType): ResultType =
-    ${internal2.isolated('classloader, 'invoke)}
+    ${protointernal.isolated('classloader, 'invoke)}
 
 extension (context: StringContext)
   def o(): Proxy = Proxy(context.parts.head.tt, true)

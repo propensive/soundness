@@ -46,7 +46,7 @@ import scala.quoted.*
 
 import language.implicitConversions
 
-object internal extends internal2:
+object internal extends protointernal:
   opaque type Quantity[units <: Measure] = Double
   opaque type MetricUnit[units <: Measure] <: Quantity[units] = Double
   opaque type Temperature = Double

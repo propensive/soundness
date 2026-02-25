@@ -245,7 +245,7 @@ object internal:
     inline given canEqual: CanEqual[U64, U64] = caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U64]:
-      inline def fromDigits(digits: String): U64 = ${internal2.parseU64('digits)}
+      inline def fromDigits(digits: String): U64 = ${protointernal.parseU64('digits)}
 
     given textualizable: U64 is Textualizable = JLong.toUnsignedString(_).nn.tt
 
@@ -280,7 +280,7 @@ object internal:
 
 
     given fromDigits: FromDigits[S64]:
-      inline def fromDigits(digits: String): S64 = ${internal2.parseS64('digits)}
+      inline def fromDigits(digits: String): S64 = ${protointernal.parseS64('digits)}
 
     given textualizable: S64 is Textualizable = _.toString.tt
 
@@ -306,7 +306,7 @@ object internal:
     inline given canEqual: CanEqual[U32, U32] = caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U32]:
-      inline def fromDigits(digits: String): U32 = ${internal2.parseU32('digits)}
+      inline def fromDigits(digits: String): U32 = ${protointernal.parseU32('digits)}
 
     given textualizable: U32 is Textualizable = JInt.toUnsignedString(_).nn.tt
 
@@ -341,7 +341,7 @@ object internal:
 
 
     given fromDigits: FromDigits[S32]:
-      inline def fromDigits(digits: String): S32 = ${internal2.parseS32('digits)}
+      inline def fromDigits(digits: String): S32 = ${protointernal.parseS32('digits)}
 
     given textualizable: S32 is Textualizable = _.toString.tt
 
@@ -367,7 +367,7 @@ object internal:
     inline given canEqual: CanEqual[U16, U16] = caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U16]:
-      inline def fromDigits(digits: String): U16 = ${internal2.parseU16('digits)}
+      inline def fromDigits(digits: String): U16 = ${protointernal.parseU16('digits)}
 
     given textualizable: U16 is Textualizable = u16 => JShort.toUnsignedInt(u16).toString.tt
 
@@ -403,7 +403,7 @@ object internal:
 
 
     given fromDigits: FromDigits[S16]:
-      inline def fromDigits(digits: String): S16 = ${internal2.parseS16('digits)}
+      inline def fromDigits(digits: String): S16 = ${protointernal.parseS16('digits)}
 
     given textualizable: S16 is Textualizable = _.toString.tt
 
@@ -433,7 +433,7 @@ object internal:
     inline given canEqual: CanEqual[U8, U8] = caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U8]:
-      inline def fromDigits(digits: String): U8 = ${internal2.parseU8('digits)}
+      inline def fromDigits(digits: String): U8 = ${protointernal.parseU8('digits)}
 
     given textualizable: U8 is Textualizable = u8 => JByte.toUnsignedInt(u8).toString.tt
 
@@ -468,7 +468,7 @@ object internal:
 
 
     given fromDigits: FromDigits[S8]:
-      inline def fromDigits(digits: String): S8 = ${internal2.parseS8('digits)}
+      inline def fromDigits(digits: String): S8 = ${protointernal.parseS8('digits)}
 
     given textualizable: S8 is Textualizable = _.toString.tt
 

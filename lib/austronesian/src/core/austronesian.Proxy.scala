@@ -44,4 +44,4 @@ class Proxy(name: Text, singleton: Boolean) extends Dynamic:
     ( using classloader: Classloader )
   :   Any =
 
-    ${internal2.proxy('name, 'method, 'arguments, 'classloader, 'singleton)}
+    ${protointernal.proxy('name, 'method, 'arguments, 'classloader, 'singleton)}

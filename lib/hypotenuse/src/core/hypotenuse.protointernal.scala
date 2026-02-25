@@ -43,7 +43,7 @@ import fulminate.*
 import proscenium.*
 import rudiments.*
 
-object internal2:
+object protointernal:
   private given realm: Realm = realm"hypotenuse"
 
   def bin(expr: Expr[StringContext]): Macro[AnyVal] =

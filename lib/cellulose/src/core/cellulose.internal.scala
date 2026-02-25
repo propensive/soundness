@@ -48,7 +48,7 @@ import vacuous.*
 import wisteria.*
 import zephyrine.*
 
-object internal extends internal2:
+object internal extends protointernal:
   opaque type Codl = List[Codllike]
 
   import Codl.Issue.*

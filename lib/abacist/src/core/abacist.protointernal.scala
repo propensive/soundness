@@ -30,123 +30,118 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package nomenclature
+package abacist
 
 import anticipation.*
-import contingency.*
-import fulminate.*
+import gossamer.*
+import quantitative.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
+import spectacular.*
+import symbolism.*
 
-import scala.quoted.*
-import scala.compiletime.*
+import scala.compiletime.*, ops.int.*
 
-object internal2:
-  def build(using Quotes)(todo: List[quotes.reflect.TypeRepr]): quotes.reflect.TypeRepr =
-    import quotes.reflect.*
+object protointernal extends anteprotointernal:
+  opaque type Quanta[units <: Tuple] = Long
 
-    todo match
-      case Nil => TypeRepr.of[Zero]
+  object Quanta extends Quanta2:
+    inline given underlying: [units <: Tuple] => Underlying[Quanta[units], Long] = !!
 
-      case next :: todo =>
-        next.asType.absolve match
-          case '[next] => build(todo).asType.absolve match
-            case '[type tupleType <: Tuple; tupleType] => TypeRepr.of[next *: tupleType]
+    given zeroic: [units <: Tuple] => Quanta[units] is Zeroic:
+      inline def zero: Quanta[units] = 0L
 
-  def decompose(using Quotes)(repr: quotes.reflect.TypeRepr): Set[quotes.reflect.TypeRepr] =
-    import quotes.reflect.*
+    given typeable: [units <: Tuple] => Typeable[Quanta[units]]:
+      def unapply(count: Any): Option[count.type & Quanta[units]] = count.asMatchable match
+        case count: Long => Some(count)
+        case _           => None
 
-    repr.dealias.asMatchable match
-      case AndType(left, right) => decompose(left) ++ decompose(right)
-      case other                => Set(other)
+    def fromLong[units <: Tuple](long: Long): Quanta[units] = long
 
-  def disintersection[intersection: Type]: Macro[Tuple] =
-    import quotes.reflect.*
+    given integral: [units <: Tuple] => Integral[Quanta[units]] = summon[Integral[Long]]
 
-    build(decompose(TypeRepr.of[intersection].dealias).to(List)).asType.absolve match
-      case '[type tupleType <: Tuple; tupleType] => '{null.asInstanceOf[tupleType]}
+    inline def apply[units <: Tuple](inline values: Int*): Quanta[units] =
+      ${abacist.internal.make[units]('values)}
 
-  def extractor(context: Expr[StringContext]): Macro[Any] =
-    import quotes.reflect.*
+    given addable: [units <: Tuple] => Quanta[units] is Addable:
+      type Operand = Quanta[units]
+      type Result = Quanta[units]
 
-    val string = context.valueOrAbort.parts.head
+      def add(left: Quanta[units], right: Quanta[units]): Quanta[units] = left + right
 
-    ConstantType(StringConstant(string)).asType match
-      case '[type stringType <: Label; stringType] => '{NameExtractor[stringType]()}
-      case _ =>
-        panic(m"StringContext did not contains Strings")
+    given subtractable: [units <: Tuple] => Quanta[units] is Subtractable:
+      type Operand = Quanta[units]
+      type Result = Quanta[units]
 
-  def makeName[system: Type](name: Expr[Text]): Macro[Name[system]] =
-    import quotes.reflect.*
+      def subtract(left: Quanta[units], right: Quanta[units]): Quanta[units] = left - right
 
-    Expr.summon[system is Nominative].absolve match
-      case Some('{type limit; $nominative: (Nominative { type Limit = limit })}) =>
-        val checks =
-          decompose(TypeRepr.of[limit]).to(List).map(_.asType).foldLeft('{()}): (expr, next) =>
-            next.absolve match
-              case '[type param <: String; type rule <: Check[param]; rule] =>
-                internal3.staticCompanion[rule].absolve match
-                  case '{$rule: Rule} =>
-                    TypeRepr.of[param].absolve match
-                      case ConstantType(StringConstant(string)) =>
-                        ' {
-                            if $rule.check($name, ${Expr(string)}.tt) then $expr
-                            else provide[Tactic[NameError]]:
-                              raise(NameError($name, $rule, ${Expr(string)}))
-                          }
+    given multiplicable: [units <: Tuple] => Quanta[units] is Multiplicable:
+      type Operand = Double
+      type Result = Quanta[units]
 
-        '{$checks; $name.asInstanceOf[Name[system]]}
+      def multiply(left: Quanta[units], right: Double): Quanta[units] = left.multiply(right)
 
-      case None =>
-        halt(m"Couldn't find a `Nominative` instance on ${TypeRepr.of[system].show}")
+    given divisible: [units <: Tuple] => Quanta[units] is Divisible:
+      type Operand = Double
+      type Result = Quanta[units]
 
+      def divide(left: Quanta[units], right: Double): Quanta[units] = left.divide(right)
 
-  def parse2[plane: Type, name <: String: Type](scrutinee: Expr[Name[plane]])
-  :   Macro[Boolean] =
+    given negatable: [units <: Tuple] => Quanta[units] is Negatable to Quanta[units] = -_
 
-    parse[plane, name]
-    '{${Expr(constant[name])}.tt == $scrutinee}
-
-
-  def constant[text <: String: Type](using Quotes): text =
-    import quotes.reflect.*
-    TypeRepr.of[text].asMatchable.absolve match
-      case ConstantType(StringConstant(value)) => value.tt.asInstanceOf[text]
-
-  def companion[companion: Typeable](using Quotes)(symbol: quotes.reflect.Symbol): companion =
-    Class.forName(s"${symbol.companionModule.fullName}$$").nn.getField("MODULE$").nn.get(null) match
-      case module: `companion` => module
-      case _                   => halt(m"The companion object did not have the expected type.")
-
-  def parse[plane: Type, name <: String: Type]: Macro[Name[plane]] =
-    import quotes.reflect.*
-
-    val name: Text = constant[name].tt
-
-    Expr.summon[plane is Nominative] match
-      case
-        Some
-          ( ' {
-                type limit
-                type nominative <: Nominative { type Limit = limit }
-                $value: nominative
-              } ) =>
-
-        decompose(TypeRepr.of[limit]).to(List).each: repr =>
-          val text = repr.asMatchable match
-            case AppliedType(_, List(param)) =>
-              param.asMatchable match
-                case ConstantType(StringConstant(text)) => text.tt
-                case _                                  => halt(m"Bad type")
-
-            case _ =>
-              halt(m"Bad type")
-          val rule = companion[Rule](repr.typeSymbol)
-          if !rule.check(name, text)
-          then halt(m"the name is not valid because it ${rule.describe(text)}")
+    inline given showable: [units <: Tuple] => Quanta[units] is Showable = summonFrom:
+      case names: UnitsNames[units] =>
+        count =>
+        val nonzeroComponents = count.components.filter(_(1) != 0)
+        val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
+        val units = nonzeroUnits.head :: nonzeroUnits.tail.map(names.separator+_)
+        units.weave(names.units().takeRight(nonzeroUnits.length)).mkString.tt
 
       case _ =>
-        halt(m"Could not access constraint")
+        count =>
+        val nonzeroComponents = count.components.filter(_(1) != 0)
+        nonzeroComponents.map { (unit, count) => count.toString+unit }.mkString(" ").tt
+
+    inline given distributive2: [units <: Tuple] => Quanta[units] is Distributive by Long =
+      distributive[units](_.components.map(_(1)).to(List)): (value, parts) =>
+        parts.zip(value.components.map(_(0))).map: (number, units) =>
+          t"$number $units"
+        . join(t", ")
 
 
-    '{${Expr(name)}.asInstanceOf[Name[plane]]}
+    def distributive[units <: Tuple]
+      ( parts0: Quanta[units] => List[Long] )
+      ( place0: (Quanta[units], List[Text]) => Text )
+    :   Quanta[units] is Distributive by Long =
+
+      new Distributive:
+        type Self = Quanta[units]
+        type Operand = Long
+        def parts(value: Quanta[units]): List[Long] = parts0(value)
+        def place(value: Quanta[units], parts: List[Text]): Text = place0(value, parts)
+
+
+  extension [units <: Tuple](count: Quanta[units])
+    def long: Long = count
+
+
+  extension [units <: Tuple](inline count: Quanta[units])
+    inline def apply[unit[power <: Nat] <: Units[power, ? <: Dimension]]: Int =
+
+      ${abacist.internal.get[units, unit[1]]('count)}
+
+    transparent inline def quantity: Any = ${abacist.internal.toQuantity[units]('count)}
+    inline def components: ListMap[Text, Long] = ${abacist.internal.describeQuanta[units]('count)}
+
+    transparent inline def multiply(inline multiplier: Double): Any =
+      ${abacist.internal.multiplyQuanta('count, 'multiplier, false)}
+
+    transparent inline def divide(inline multiplier: Double): Any =
+      ${abacist.internal.multiplyQuanta('count, 'multiplier, true)}
+
+
+    transparent inline def collapse(length: Int)(using length.type < Tuple.Size[units] =:= true)
+    :   Quanta[Tuple.Drop[units, length.type]] =
+
+      count

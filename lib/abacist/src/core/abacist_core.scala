@@ -38,7 +38,7 @@ import quantitative.*
 
 import scala.quoted.*
 
-export internal2.Quanta
+export protointernal.Quanta
 
 type TimeMinutes = (Hours[1], Minutes[1])
 type TimeSeconds = (Hours[1], Minutes[1], Seconds[1])

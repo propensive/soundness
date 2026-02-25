@@ -42,7 +42,7 @@ import prepositional.*
 import spectacular.*
 import vacuous.*
 
-export internal2.{Instant, Duration}
+export protointernal.{Instant, Duration}
 export aviation.internal.{Date, Year, Day, Anniversary, WorkingDays}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 

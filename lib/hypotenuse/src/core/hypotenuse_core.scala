@@ -51,8 +51,8 @@ export hypotenuse.internal.{B8, B16, B32, B64, S8, S16, S32, S64, U8, U16, U32, 
 
 
 extension (inline context: StringContext)
-  transparent inline def bin(): AnyVal = ${internal2.bin('context)}
-  transparent inline def hex(): IArray[Byte] = ${internal2.hex('context)}
+  transparent inline def bin(): AnyVal = ${protointernal.bin('context)}
+  transparent inline def hex(): IArray[Byte] = ${protointernal.hex('context)}
 
 extension [value](iterable: Iterable[value])
   inline def minimum(using commensurable: value is Commensurable against value): Optional[value] =

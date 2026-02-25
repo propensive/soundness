@@ -38,12 +38,12 @@ import fulminate.*
 export nomenclature.internal.Name
 
 extension (inline context: StringContext)
-  transparent inline def n: Any = ${internal2.extractor('context)}
+  transparent inline def n: Any = ${protointernal.extractor('context)}
 
 transparent inline def disintersect[intersection] =
-  ${internal2.disintersection[intersection]}
+  ${protointernal.disintersection[intersection]}
 
 private given realm: Realm = realm"nomenclature"
 
 transparent inline def staticCompanion[instance]: Matchable =
-  ${internal3.staticCompanion[instance]}
+  ${anteprotointernal.staticCompanion[instance]}

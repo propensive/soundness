@@ -194,7 +194,7 @@ object internal:
           left == right
 
     inline given encodable: [value: Reflection] => value is Encodable in Pojo =
-      internal2.EncodableDerivation.derived
+      protointernal.EncodableDerivation.derived
 
     inline given decodable: [value: Reflection] => value is Decodable in Pojo =
-      internal2.DecodableDerivation.derived
+      protointernal.DecodableDerivation.derived

@@ -58,7 +58,7 @@ object internal:
         def decoded(text: Text): Name[plane] = lambda(text)
 
     inline def verify[NameType <: Label, plane] =
-      ${internal2.parse[plane, NameType]}
+      ${protointernal.parse[plane, NameType]}
 
     transparent inline def apply[plane](name: Text): Name[plane] =
-      ${internal2.makeName[plane]('name)}
+      ${protointernal.makeName[plane]('name)}
