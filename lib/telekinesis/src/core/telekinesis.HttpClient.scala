@@ -94,7 +94,7 @@ object HttpClient:
         case Http.Patch   => request.method("PATCH", body).nn
         case Http.Trace   => request.method("TRACE", body).nn
 
-      request.header("User-Agent", "Telekinesis/1.0.0")
+      request.header("User-Agent", "internal/1.0.0")
 
       httpRequest.textHeaders.each:
         case Http.Header(key, value) => request.header(key.s, value.s)

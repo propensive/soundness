@@ -35,6 +35,6 @@ package cataclysm
 import fulminate.*
 import probably.*
 
-object Tests extends Suite(m"Cataclysm Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
     ()

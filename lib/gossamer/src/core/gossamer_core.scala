@@ -55,7 +55,7 @@ import java.net.{URLEncoder, URLDecoder}
 import language.experimental.pureFunctions
 import language.experimental.into
 
-export Gossamer.opaques.Ascii
+export gossamer.internal.opaques.Ascii
 
 inline def append[textual: Textual, value](using builder: Builder[textual])(value: value): Unit =
   inline value match
@@ -83,8 +83,8 @@ extension (textObject: Text.type)
     String(array).tt
 
 extension (inline context: StringContext)
-  transparent inline def txt(inline parts: Any*): Text = ${Gossamer.Text.expand('context, 'parts)}
-  transparent inline def t(inline parts: Any*): Text = ${Gossamer.T.expand('context, 'parts)}
+  transparent inline def txt(inline parts: Any*): Text = ${gossamer.internal.Text.expand('context, 'parts)}
+  transparent inline def t(inline parts: Any*): Text = ${gossamer.internal.T.expand('context, 'parts)}
 
 extension (context: StringContext)
   def t = SimpleTExtractor(context.parts.head.tt)

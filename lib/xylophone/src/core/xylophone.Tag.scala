@@ -81,6 +81,6 @@ extends Element(label, presets, IArray()), Formal, Dynamic:
   type Result <: Element
 
   inline def applyDynamicNamed(method: "apply")(inline attributes: (String, Any)*): Result =
-    ${Xylophone.attributes[Result, this.type]('this, 'attributes)}
+    ${xylophone.internal.attributes[Result, this.type]('this, 'attributes)}
 
   def node(attributes: Map[Text, Text]): Result

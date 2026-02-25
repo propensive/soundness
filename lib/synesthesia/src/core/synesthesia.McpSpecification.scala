@@ -38,7 +38,7 @@ import prepositional.*
 
 object McpSpecification:
   inline given mcpSpecification: [server <: McpServer] => server is McpSpecification =
-    ${Synesthesia.spec[server]}
+    ${synesthesia.internal.spec[server]}
 
 
 trait McpSpecification extends Typeclass:

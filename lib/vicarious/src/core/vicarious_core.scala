@@ -42,7 +42,7 @@ inline def catalog[key](key: key)[value](inline lambda: [field] => (field: field
   ( using classTag: ClassTag[value] )
 :   Catalog[key, value] =
 
-  ${Vicarious.catalog[key, value]('lambda, 'key, 'classTag)}
+  ${vicarious.internal.catalog[key, value]('lambda, 'key, 'classTag)}
 
 
 extension [key, value: ClassTag](catalog: Catalog[key, value])

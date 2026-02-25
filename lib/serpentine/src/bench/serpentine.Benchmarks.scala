@@ -37,7 +37,7 @@ import gossamer.*
 import probably.*
 import rudiments.*
 
-object Benchmarks extends Suite(m"Serpentine Benchmarks"):
+object Benchmarks extends Suite(m"internal Benchmarks"):
   def run(): Unit =
     suite(m"Conjunctions"):
       test(m"Find conjunction of 2-element paths"):

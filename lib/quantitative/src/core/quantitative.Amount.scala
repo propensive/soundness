@@ -49,7 +49,7 @@ object Amount:
   inline given heat: Amount[Units[1, Heat], "temperature"] = !!
   inline given luminosity: Amount[Units[1, Luminosity], "luminosity"] = !!
 
-  inline def apply[units <: Measure]: Text = ${Quantitative.amount[units]}
+  inline def apply[units <: Measure]: Text = ${quantitative.internal.amount[units]}
 
   // derived units from https://en.wikipedia.org/wiki/List_of_physical_quantities
 

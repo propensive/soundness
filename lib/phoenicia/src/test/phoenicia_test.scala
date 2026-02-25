@@ -34,5 +34,5 @@ package phoenicia
 
 import soundness.*
 
-object Tests extends Suite(m"Phoenicia Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit = ()

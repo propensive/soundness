@@ -58,7 +58,7 @@ import strategies.throwUnsafely
 case class User(id: Int, email: Text, privilege: List[Privilege])
 case class Privilege(name: Text, grant: Boolean)
 
-object Tests extends Suite(m"Cellulose tests (Part 1)"):
+object Tests extends Suite(m"internal tests (Part 1)"):
 
   def run(): Unit = supervise:
     import CodlToken.*
@@ -1048,7 +1048,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
     Tests2()
 
-object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
+object Tests2 extends Suite(m"internal tests (Part 2)"):
 
   def run(): Unit = supervise:
     def roundtrip[T: {Encodable in Codl, Decodable in Codl, CodlSchematic}](value: T): T = value.codl.as[T]

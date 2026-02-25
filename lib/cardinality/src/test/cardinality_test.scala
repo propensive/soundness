@@ -36,7 +36,7 @@ import fulminate.*
 import larceny.*
 import probably.*
 
-object Tests extends Suite(m"Cardinality tests"):
+object Tests extends Suite(m"internal tests"):
   def run(): Unit =
     suite(m"Compile-time tests"):
 

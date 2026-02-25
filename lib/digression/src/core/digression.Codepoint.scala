@@ -39,7 +39,7 @@ import java.util.concurrent as juc
 import anticipation.*
 
 object Codepoint:
-  inline given default: Codepoint = ${Digression.location}
+  inline given default: Codepoint = ${digression.internal.location}
 
   private[digression] val idempotentActions: juc.ConcurrentHashMap[Codepoint, Unit] =
     juc.ConcurrentHashMap()

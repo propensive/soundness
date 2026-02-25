@@ -35,7 +35,7 @@ package geodesy
 import hypotenuse.*
 import symbolism.*
 
-export Geodesy.{Location, Angle}
+export geodesy.internal.{Location, Angle}
 
 val Degree = Angle(π/180.0)
 val ArcMinute = Degree/60.0

@@ -44,7 +44,7 @@ import symbolism.*
 import vacuous.*
 
 object Syntax:
-  inline def name[typename <: AnyKind]: Text = ${Stenography.typename[typename]}
+  inline def name[typename <: AnyKind]: Text = ${stenography.internal.typename[typename]}
 
   val Space: Symbolic = Symbolic(" ")
   val Colon: Symbolic = Symbolic(": ")

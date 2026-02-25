@@ -231,6 +231,6 @@ extends Element(label, presets, IArray(), foreign), Formal, Dynamic:
 
 
   inline def make(presets: Map[Text, Text], inline attributes: (String, Any)*): Result =
-    ${Honeycomb.attributes[Result, this.type]('this, 'presets, 'attributes)}
+    ${honeycomb.internal.attributes[Result, this.type]('this, 'presets, 'attributes)}
 
   def node(attributes: Map[Text, Optional[Text]]): Result

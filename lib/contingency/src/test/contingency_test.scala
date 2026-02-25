@@ -37,7 +37,7 @@ import soundness.*
 case class VarargsError(arguments: Text*)(using Diagnostics) extends Error(m"varargs error")
 case class VarargsError2(argument: Text, arguments: Text*)(using Diagnostics) extends Error(m"varargs error 2")
 
-object Tests extends Suite(m"Contingency tests"):
+object Tests extends Suite(m"internal tests"):
 
   def action(): Unit raises VarargsError = ()
 

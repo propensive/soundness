@@ -33,7 +33,7 @@
 package mercator
 
 object Monad:
-  inline given monad: [monad[_]] => Monad[monad] = ${Mercator.monad[monad]}
+  inline given monad: [monad[_]] => Monad[monad] = ${internal.monad[monad]}
 
 trait Monad[monad[_]] extends Functor[monad]:
   def bind[value, value2](value: monad[value])(lambda: value => monad[value2]): monad[value2]

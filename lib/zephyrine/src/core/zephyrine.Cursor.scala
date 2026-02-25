@@ -165,7 +165,7 @@ class Cursor[data]
       columnNo = offset2.column
 
   inline def consume(inline otherwise: => Unit)(inline text: String): Unit =
-    ${Zephyrine.consume('this, 'text, 'otherwise)}
+    ${zephyrine.internal.consume('this, 'text, 'otherwise)}
 
   inline def next(): Boolean =
     val current2 = current

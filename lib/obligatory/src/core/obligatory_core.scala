@@ -35,7 +35,7 @@ package obligatory
 import prepositional.*
 import urticose.*
 
-inline def remote[interface](url: HttpUrl): interface = ${Obligatory.remote[interface]('url)}
+inline def remote[interface](url: HttpUrl): interface = ${obligatory.internal.remote[interface]('url)}
 
 extension [element](stream: Iterator[element])
   def frames[frame](using framable: element is Framable by frame): Iterator[element] =

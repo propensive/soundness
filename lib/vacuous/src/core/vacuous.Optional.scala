@@ -40,4 +40,4 @@ object Optional:
   inline def apply[value](value: value | Null): Optional[value] =
     if value == null then Unset else value
 
-  inline def check[value]: Unit = ${Vacuous.check[value]}
+  inline def check[value]: Unit = ${internal.check[value]}

@@ -38,7 +38,7 @@ import fulminate.*
 extension (error: Throwable) def stackTrace: StackTrace = StackTrace(error)
 
 extension (inline context: StringContext)
-  inline def fqcn(): Fqcn = ${Digression.fqcn('context)}
+  inline def fqcn(): Fqcn = ${digression.internal.fqcn('context)}
 
 private given realm: Realm = realm"digression"
 

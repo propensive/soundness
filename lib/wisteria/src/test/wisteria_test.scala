@@ -212,7 +212,7 @@ object Producer extends Derivation[Producer]:
   inline def split[derivation: SumOf]: Producer[derivation] = input =>
     inline if choice then Some(singleton(input)) else compiletime.error("not a choice")
 
-object Tests extends Suite(m"Wisteria tests"):
+object Tests extends Suite(m"internal tests"):
   def run(): Unit =
     given Tactic[VariantError] = strategies.throwUnsafely
 

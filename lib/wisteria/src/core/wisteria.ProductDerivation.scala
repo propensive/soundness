@@ -194,7 +194,7 @@ object ProductDerivation:
                   val fieldIndex: Int & FieldIndex[fieldType] =
                     index.asInstanceOf[Int & FieldIndex[fieldType]]
 
-                  val default = Default(Wisteria.default[derivation, fieldType](index))
+                  val default = Default(wisteria.internal.default[derivation, fieldType](index))
 
                   val accumulator2 =
                     lambda(accumulator)[fieldType](field)
@@ -228,7 +228,7 @@ object ProductDerivation:
                 val fieldIndex: Int & FieldIndex[fieldType] =
                   index.asInstanceOf[Int & FieldIndex[fieldType]]
 
-                val default = Default(Wisteria.default[derivation, fieldType](index))
+                val default = Default(wisteria.internal.default[derivation, fieldType](index))
 
                 val dereference: derivation => fieldType =
                   _.productElement(fieldIndex).asInstanceOf[fieldType]

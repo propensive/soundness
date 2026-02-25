@@ -39,7 +39,7 @@ import errorDiagnostics.stackTraces
 
 import autopsies.contrastExpectations
 
-object Tests extends Suite(m"Aviation Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
       test(m"Parse a canonical date"):

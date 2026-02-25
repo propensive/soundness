@@ -43,7 +43,7 @@ import spectacular.*
 sealed trait Id
 sealed trait Id2
 
-object Tests extends Suite(m"Nomenclature tests"):
+object Tests extends Suite(m"internal tests"):
   def run(): Unit =
     inline given id: Id is Nominative under MustEnd["!"] & MustNotStart["0"] & MustNotContain["."] = !!
     inline given id2: Id2 is Nominative under MustNotEqual["."] & MustNotEqual[".."] = !!

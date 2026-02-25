@@ -40,7 +40,7 @@ import language.dynamics
 
 sealed trait Selector(val value: Text):
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): CssRule =
-    ${Cataclysm.rule('this, 'properties)}
+    ${cataclysm.internal.rule('this, 'properties)}
 
   def normalize: Selector
 

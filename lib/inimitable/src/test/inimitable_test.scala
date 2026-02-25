@@ -42,7 +42,7 @@ import probably.*
 
 import errorDiagnostics.stackTraces
 
-object Tests extends Suite(m"Inimitable Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
     suite(m"UUID tests"):
       test(m"Construct a new UUID"):

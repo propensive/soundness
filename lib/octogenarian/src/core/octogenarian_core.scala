@@ -53,6 +53,6 @@ package gitCommands:
     val path: Path on Linux = sh"which git"()
     GitCommand(path.encode)
 
-export Octogenarian.{GitTag, GitBranch, GitHash, Refspec}
+export octogenarian.internal.{GitTag, GitBranch, GitHash, Refspec}
 
 private[octogenarian] inline def git(using command: GitCommand): GitCommand = command

@@ -37,7 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import charEncoders.utf8
 
-object Tests extends Suite(m"Synesthesia Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
     test(m"Remote server"):
       import internetAccess.enabled

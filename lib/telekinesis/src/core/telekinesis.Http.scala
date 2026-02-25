@@ -313,13 +313,13 @@ object Http:
     transparent inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
     :   Prototype | Response =
 
-      ${Telekinesis.response('headers)}
+      ${telekinesis.internal.response('headers)}
 
 
     given conversion: [servable: Servable] => Conversion[servable, Response] = servable.serve(_)
 
     transparent inline def applyDynamic(id: "apply")(inline headers: Any*): Prototype | Response =
-      ${Telekinesis.response('headers)}
+      ${telekinesis.internal.response('headers)}
 
     case class Prototype(status0: Optional[Status], headers: Seq[Header]):
       def apply(body: Body = Body.Empty): Response =
@@ -466,7 +466,7 @@ object Http:
     :   Http.Response =
 
       $ {
-          ( Telekinesis.submit[target, payload]
+          ( telekinesis.internal.submit[target, payload]
             ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) )
         }
 
@@ -479,7 +479,7 @@ object Http:
     :   Http.Response =
 
       $ {
-          ( Telekinesis.submit[target, payload]
+          ( telekinesis.internal.submit[target, payload]
               ( 'this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client ) )
         }
 
@@ -494,7 +494,7 @@ object Http:
               client:   HttpClient onto target )
     :   Http.Response =
 
-      ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
+      ${telekinesis.internal.fetch('this, 'headers, 'online, 'loggable, 'client)}
 
 
     inline def applyDynamic[payload](id: "apply")(inline headers: Any*)
@@ -503,4 +503,4 @@ object Http:
               client:   HttpClient onto target )
     :   Http.Response =
 
-      ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
+      ${telekinesis.internal.fetch('this, 'headers, 'online, 'loggable, 'client)}

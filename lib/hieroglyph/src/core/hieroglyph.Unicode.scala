@@ -46,7 +46,7 @@ import scala.collection.immutable.TreeMap
 import java.io as ji
 
 object Unicode:
-  import Hieroglyph.*
+  import hieroglyph.internal.*
 
   private object Hex:
     def unapply(text: Text): Option[Int] =

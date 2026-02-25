@@ -36,13 +36,13 @@ import proscenium.*
 
 object Proxy:
   transparent inline given derived: [key, value] => Proxy[key, value, 0] =
-    ${Vicarious.proxy[key, value]}
+    ${internal.proxy[key, value]}
 
 class Proxy[key, value, +id <: Nat]() extends Selectable:
   transparent inline def selectDynamic(key: String)(using catalog: Catalog[key, value])
   :   value | Proxy[key, value, Nat] =
 
-    ${Vicarious.dereference[key, value, id]('key)}
+    ${internal.dereference[key, value, id]('key)}
 
 
   inline def id: Int = infer[ValueOf[id]].value

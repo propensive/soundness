@@ -37,13 +37,13 @@ import fulminate.*
 import hellenism.*
 import prepositional.*
 
-export Austronesian.Pojo
+export austronesian.internal.Pojo
 
 extension [entity: Encodable in Pojo](value: entity) inline def pojo: Pojo = entity.encoded(value)
 
 extension (classloader: Classloader)
   inline def isolate[ResultType](inline invoke: ResultType): ResultType =
-    ${Austronesian2.isolated('classloader, 'invoke)}
+    ${internal2.isolated('classloader, 'invoke)}
 
 extension (context: StringContext)
   def o(): Proxy = Proxy(context.parts.head.tt, true)

@@ -36,7 +36,7 @@ import soundness.*
 import fulminate.errorDiagnostics.stackTraces
 import strategies.throwUnsafely
 
-object Tests extends Suite(m"Urticose tests"):
+object Tests extends Suite(m"internal tests"):
   def run(): Unit =
     suite(m"Internet tests"):
       def remoteCall()(using Internet): Unit = ()

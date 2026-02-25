@@ -54,5 +54,5 @@ package codlPrinters:
 package dynamicCodlAccess:
   inline given enabled: DynamicCodlEnabler = !!
 
-export Cellulose.Codl
+export cellulose.internal.Codl
 export Character.Character

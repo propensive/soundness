@@ -36,4 +36,4 @@ import anticipation.*
 
 private given Realm("hellenism")
 
-export Hellenism.ClassRef
+export hellenism.internal.ClassRef

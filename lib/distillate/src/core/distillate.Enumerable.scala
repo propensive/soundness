@@ -41,7 +41,7 @@ import vacuous.*
 
 object Enumerable:
   inline given derived: [enumeration <: reflect.Enum: Mirror.SumOf] => enumeration is Enumerable =
-    ${Distillate.enumerable[enumeration]}
+    ${distillate.internal.enumerable[enumeration]}
 
 trait Enumerable:
   type Self <: reflect.Enum

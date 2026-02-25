@@ -33,6 +33,6 @@
 package gossamer
 
 extension (inline context: StringContext)
-  transparent inline def a(inline parts: Ascii*): Ascii = ${Gossamer.ascii('context, 'parts)}
+  transparent inline def a(inline parts: Ascii*): Ascii = ${internal.ascii('context, 'parts)}
 
 export Bidi.Ltr, Bidi.Rtl

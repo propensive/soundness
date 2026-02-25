@@ -39,7 +39,7 @@ import caseSensitivity.sensitive
 
 case class Person(name: Text, age: Int)
 
-object Tests extends Suite(m"Gossamer Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
     suite(m"Minimum Edit Distance"):
       import proximities.levenshteinDistance

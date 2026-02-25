@@ -34,5 +34,5 @@ package feudalism
 
 import soundness.*
 
-object Tests extends Suite(m"Feudalism tests"):
+object Tests extends Suite(m"internal tests"):
  def run(): Unit = ()

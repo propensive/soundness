@@ -37,4 +37,4 @@ extension (texts: Iterable[Text])
 
 extension (string: String) def tt: Text = Text(string)
 
-export Anticipation.Text
+export internal.Text

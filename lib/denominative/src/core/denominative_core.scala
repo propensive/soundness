@@ -54,7 +54,7 @@ extension [countable: Countable](value: countable)
   inline def gamut: Interval = Interval(Prim, (countable.size(value) - 1).z)
   inline def nil: Boolean = countable.empty(value)
 
-export Denominative.{Ordinal, Interval}
+export denominative.internal.{Ordinal, Interval}
 
 package ordinalShowables:
   given nominal: Ordinal is Textualizable =

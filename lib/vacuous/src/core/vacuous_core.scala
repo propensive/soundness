@@ -52,7 +52,7 @@ erased val Unsafe: Unsafe = caps.unsafe.unsafeErasedValue
 type Optional[value] = Unset.type | value
 
 extension [value](inline optional: Optional[value])
-  inline def or(inline value: => value): value = ${Vacuous.optimizeOr('optional, 'value)}
+  inline def or(inline value: => value): value = ${vacuous.internal.optimizeOr('optional, 'value)}
 
 extension [value](value: value)
   def per[value2](optional: Optional[value2])(lambda: (value, value2) => value): value =

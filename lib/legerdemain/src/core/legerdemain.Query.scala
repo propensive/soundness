@@ -113,7 +113,7 @@ object Query extends Dynamic:
         DecodableDerivation.join[value & Product].asInstanceOf[value is Decodable in Query]
 
   inline def applyDynamicNamed(method: "apply")(inline parameters: (Label, Any)*): Query =
-    ${Legerdemain.query('parameters)}
+    ${legerdemain.internal.query('parameters)}
 
   def of(parameters: List[(Text, Text)]): Query = new Query(parameters)
   def of(parameter: Text): Query = new Query(List(t"" -> parameter))

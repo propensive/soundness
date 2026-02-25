@@ -39,7 +39,7 @@ import language.experimental.into
 
 given decimalizer: Decimalizer = Decimalizer(3)
 
-object Tests extends Suite(m"Quantitative Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
     suite(m"Arithmetic tests"):
       test(m"Add two distances"):

@@ -53,8 +53,8 @@ import vacuous.*
 private given Realm = Realm("turbulence")
 
 extension [value](value: value)
-  inline def stream[element]: Stream[element] = ${Turbulence.stream[value, element]('value)}
-  inline def read[result]: result = ${Turbulence.read[value, result]('value)}
+  inline def stream[element]: Stream[element] = ${turbulence.internal.stream[value, element]('value)}
+  inline def read[result]: result = ${turbulence.internal.read[value, result]('value)}
 
 
   def writeTo[target](target: target)[element]

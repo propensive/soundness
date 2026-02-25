@@ -60,7 +60,7 @@ object JsonRpc:
   private val promises: scm.HashMap[Text | Int, Promise[Json]] = scm.HashMap()
 
   inline def serve[interface](interface: interface): Json => Optional[Json] =
-    ${Obligatory.dispatcher[interface]('interface)}
+    ${obligatory.internal.dispatcher[interface]('interface)}
 
   case class Request(jsonrpc: Text, method: Text, params: Json, id: Optional[Json])
   case class Response(jsonrpc: Text, result: Json, id: Optional[Json])
@@ -121,7 +121,7 @@ object JsonRpc:
 trait JsonRpc extends Original:
   private val channel: Spool[Json] = Spool()
 
-  inline def client: Origin = ${Obligatory.client[Origin]('this)}
+  inline def client: Origin = ${obligatory.internal.client[Origin]('this)}
 
   def put(json: Json): Unit =
     channel.put(json)

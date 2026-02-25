@@ -38,7 +38,7 @@ import scala.quoted.*
 import anticipation.*
 import proscenium.*
 
-export Fulminate.Diagnostics
+export fulminate.internal.Diagnostics
 
 package errorDiagnostics:
   given empty: Diagnostics = Diagnostics.omit
@@ -112,7 +112,7 @@ extension (inline context: StringContext)
             List(infer[(? >: other.type) is Communicable].message(other)) )
 
 extension (inline context: StringContext)
-  inline def realm(): Realm = ${Fulminate.realm('context)}
+  inline def realm(): Realm = ${fulminate.internal.realm('context)}
 
 extension [communicable: Communicable](value: communicable)
   def communicate: Message = communicable.message(value)

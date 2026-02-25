@@ -33,7 +33,7 @@
 package mercator
 
 object Functor:
-  inline given general: [functor[_]] => Functor[functor] = ${Mercator.functor[functor]}
+  inline given general: [functor[_]] => Functor[functor] = ${internal.functor[functor]}
 
 trait Functor[functor[_]]:
   def point[value](value: value): functor[value]

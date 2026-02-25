@@ -49,7 +49,7 @@ val red = Pencil(t"red")
 val green = Pencil(t"green")
 val blue = Pencil(t"blue")
 
-object Tests extends Suite(m"Anamnesis tests"):
+object Tests extends Suite(m"internal tests"):
   def run(): Unit =
     given db: Database of (
            Cabinet -< Shelf,

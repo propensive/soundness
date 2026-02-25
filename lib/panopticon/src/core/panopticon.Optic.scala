@@ -42,7 +42,7 @@ import language.dynamics
 
 object Optic:
   transparent inline given deref: [name <: Label, product <: Product] => name is Lens from product =
-    ${Panopticon.lens[name, product]}
+    ${panopticon.internal.lens[name, product]}
 
   def identity[value]: Optic from value onto value = new Optic:
     type Origin = value

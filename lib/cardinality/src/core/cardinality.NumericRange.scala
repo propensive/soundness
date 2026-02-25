@@ -38,7 +38,7 @@ import scala.util.FromDigits
 
 import language.experimental.genericNumberLiterals
 
-import Cardinality.{Asym, Min4, Max4}
+import internal.{Asym, Min4, Max4}
 
 object NumericRange:
   @annotation.targetName("Range")
@@ -65,7 +65,7 @@ object NumericRange:
 
     given cardinality: [min <: Double, max <: Double] => RangeParser[min, max]:
       override inline def fromDigits(digits: String): min ~ max =
-        ${Cardinality('digits)}
+        ${internal('digits)}
 
 
     extension [leftMin <: Double, leftMax <: Double](left: leftMin ~ leftMax)

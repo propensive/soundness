@@ -35,10 +35,10 @@ package typonym
 import scala.quoted.*
 
 import proscenium.*
-//transparent inline def erase(inline value: Any): Any = ${Typonym.erase(value)}
+//transparent inline def erase(inline value: Any): Any = ${internal.erase(value)}
 
-transparent inline def reify[phantom]: Any = ${Typonym.reify[phantom]}
-inline def reifyAs[phantom, result]: result = ${Typonym.reifyAs[phantom, result]}
+transparent inline def reify[phantom]: Any = ${internal.reify[phantom]}
+inline def reifyAs[phantom, result]: result = ${internal.reifyAs[phantom, result]}
 
 def reify[phantom](phantomType: Type[phantom]): Macro[Any] =
-  Typonym.reify[phantom](using phantomType)
+  internal.reify[phantom](using phantomType)

@@ -32,4 +32,4 @@
                                                                                                   */
 package quantitative
 
-export Quantitative.{Quantity, MetricUnit, Temperature}
+export internal.{Quantity, MetricUnit, Temperature}

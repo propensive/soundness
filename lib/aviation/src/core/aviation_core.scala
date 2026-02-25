@@ -42,8 +42,8 @@ import prepositional.*
 import spectacular.*
 import vacuous.*
 
-export Aviation2.{Instant, Duration}
-export Aviation.{Date, Year, Day, Anniversary, WorkingDays}
+export internal2.{Instant, Duration}
+export aviation.internal.{Date, Year, Day, Anniversary, WorkingDays}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
 private given realm: Realm = realm"aviation"
@@ -319,8 +319,8 @@ enum TimeEvent:
   case ParseStart
 
 extension (inline double: Double)
-  inline def am: Clockface = ${Aviation.validTime('double, false)}
-  inline def pm: Clockface = ${Aviation.validTime('double, true)}
+  inline def am: Clockface = ${aviation.internal.validTime('double, false)}
+  inline def pm: Clockface = ${aviation.internal.validTime('double, true)}
 
 extension (int: Int)
   def years: Timespan = Timespan(StandardTime.Year, int)

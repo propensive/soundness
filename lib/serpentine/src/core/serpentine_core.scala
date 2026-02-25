@@ -39,13 +39,13 @@ export Path.`%`
 export Relative.{`^`, `?`}
 
 extension (inline context: StringContext)
-  transparent inline def p(): Path = ${Serpentine.path('context)}
+  transparent inline def p(): Path = ${serpentine.internal.path('context)}
 
 private given Realm = Realm("serpentine")
 
 extension [path <: Path: Precise](left: path)
   transparent inline def conjunction[right <: Path: Precise](right: right): Optional[Path] =
-    ${Serpentine.conjunction[path, right]('left, 'right)}
+    ${serpentine.internal.conjunction[path, right]('left, 'right)}
 
   transparent inline def toward[target <: Path: Precise](target: target): Optional[Relative] =
-    ${Serpentine.toward[path, target]('left, 'target)}
+    ${serpentine.internal.toward[path, target]('left, 'target)}

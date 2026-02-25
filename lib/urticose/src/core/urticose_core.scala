@@ -36,18 +36,18 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 
-export Urticose.Ipv6
-export Urticose.Opaques.Ipv4
-export Urticose.Opaques.MacAddress
-export Urticose.Opaques.DnsLabel
-export Urticose.Opaques.TcpPort
-export Urticose.Opaques.UdpPort
+export urticose.internal.Ipv6
+export urticose.internal.Opaques.Ipv4
+export urticose.internal.Opaques.MacAddress
+export urticose.internal.Opaques.DnsLabel
+export urticose.internal.Opaques.TcpPort
+export urticose.internal.Opaques.UdpPort
 
 extension (inline context: StringContext)
-  transparent inline def ip(): Ipv4 | Ipv6 = ${Urticose.ip('context)}
-  inline def mac(): MacAddress = ${Urticose.mac('context)}
-  transparent inline def tcp(): TcpPort | UdpPort = ${Urticose.portService('context, true)}
-  transparent inline def udp(): TcpPort | UdpPort = ${Urticose.portService('context, false)}
+  transparent inline def ip(): Ipv4 | Ipv6 = ${urticose.internal.ip('context)}
+  inline def mac(): MacAddress = ${urticose.internal.mac('context)}
+  transparent inline def tcp(): TcpPort | UdpPort = ${urticose.internal.portService('context, true)}
+  transparent inline def udp(): TcpPort | UdpPort = ${urticose.internal.portService('context, false)}
 
 extension [remote: Connectable](value: remote)
   infix def via [port](port: port): Endpoint[port] =

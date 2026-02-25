@@ -36,4 +36,4 @@ import quantitative.*
 
 val Em: Quantity[Ems[1]] = Quantity(1.0)
 
-export Phoenicia.Glyph
+export phoenicia.internal.Glyph

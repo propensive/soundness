@@ -49,7 +49,7 @@ import proscenium.*
 import symbolism.*
 import vacuous.*
 
-export Rudiments.{Bytes, Digit}
+export rudiments.internal.{Bytes, Digit}
 
 def fixpoint[value](initial: value)(fn: (recur: (value => value)) ?=> (value => value)): value =
   def recurrence(fn: (recur: value => value) ?=> value => value): value => value =
@@ -57,9 +57,9 @@ def fixpoint[value](initial: value)(fn: (recur: (value => value)) ?=> (value => 
 
   recurrence(fn)(initial)
 
-inline def probe[target]: Nothing = ${Rudiments.probe[target]}
-inline def typeName[target]: Text = ${Rudiments.name[target]}
-inline def reflectClass[target]: Class[target] = ${Rudiments.reflectClass}
+inline def probe[target]: Nothing = ${rudiments.internal.probe[target]}
+inline def typeName[target]: Text = ${rudiments.internal.name[target]}
+inline def reflectClass[target]: Class[target] = ${rudiments.internal.reflectClass}
 
 inline def repeat(count: Int)(inline action: => Unit): Unit =
   var i = 0
@@ -114,7 +114,7 @@ def loop(block: => Unit): Loop = Loop({ () => block })
 
 inline def that[result](inline block: => result): result = block
 
-export Rudiments.&
+export rudiments.internal.&
 
 @targetName("erasedValue")
 inline def !![erasure]: erasure = caps.unsafe.unsafeErasedValue

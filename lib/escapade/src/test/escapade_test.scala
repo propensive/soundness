@@ -36,7 +36,7 @@ import soundness.*
 
 import webColors.{Red, Yellow}
 
-object Tests extends Suite(m"Escapade tests"):
+object Tests extends Suite(m"internal tests"):
   def run(): Unit =
     suite(m"Rendering tests"):
       test(m"normal string"):

@@ -95,22 +95,22 @@ def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
 
 extension [test](test: Test[test])
   inline def aspire(inline predicate: test => Boolean): Unit =
-    ${Probably.aspire[test]('test)}
+    ${probably.internal.aspire[test]('test)}
 
 
   inline def assert(inline predicate: test => Boolean): Unit =
-    ${Probably.assert[test]('test, 'predicate)}
+    ${probably.internal.assert[test]('test, 'predicate)}
 
 
   inline def check(inline predicate: test => Boolean): test =
-    ${Probably.check[test]('test, 'predicate)}
+    ${probably.internal.check[test]('test, 'predicate)}
 
-  inline def assert(): Unit = ${Probably.assert[test]('test, '{Probably.succeed})}
-  inline def check(): test = ${Probably.check[test]('test, '{Probably.succeed})}
+  inline def assert(): Unit = ${probably.internal.assert[test]('test, '{probably.internal.succeed})}
+  inline def check(): test = ${probably.internal.check[test]('test, '{probably.internal.succeed})}
   inline def matches(inline pf: test ~> Any): Unit = assert(pf.isDefinedAt(_))
 
 extension [value](inline value: value)(using inline test: Harness)
-  inline def debug: value = ${Probably.debug('value, 'test)}
+  inline def debug: value = ${probably.internal.debug('value, 'test)}
 
 package harnesses:
   given threadLocal: Harness:

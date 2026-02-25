@@ -42,7 +42,7 @@ import probably.*
 import spectacular.*
 import symbolism.*
 
-object Tests extends Suite(m"Stenography Tests"):
+object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
     import anticipation.*
     test(m"Decode a term"):

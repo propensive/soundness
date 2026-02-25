@@ -34,7 +34,7 @@ package hypotenuse
 
 import soundness.*
 
-object Tests extends Suite(m"Hypotenuse tests"):
+object Tests extends Suite(m"internal tests"):
   def run(): Unit =
     suite(m"Addition tests"):
       test(m"Construct an unsigned integer"):

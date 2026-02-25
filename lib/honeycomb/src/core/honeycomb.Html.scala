@@ -85,12 +85,12 @@ object Html extends Tag.Container
     type Result = Html
 
     transparent inline def interpolate[parts <: Tuple](inline insertions: Any*): Html =
-      ${Honeycomb.interpolator[parts]('insertions)}
+      ${honeycomb.internal.interpolator[parts]('insertions)}
 
   inline given extrapolator: Html is Extrapolable:
 
     transparent inline def extrapolate[parts <: Tuple](scrutinee: Html): Extrapolation[Html] =
-      ${Honeycomb.extractor[parts]('scrutinee)}
+      ${honeycomb.internal.extractor[parts]('scrutinee)}
 
 
   given addable: [dom        <: Dom,

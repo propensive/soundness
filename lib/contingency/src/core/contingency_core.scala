@@ -182,39 +182,39 @@ inline def focus[focus, result](using foci: Foci[focus])
 
 
 transparent inline def mitigate(inline block: Exception ~> Exception): Mitigation[?] =
-  ${Contingency.mitigate('block)}
+  ${contingency.internal.mitigate('block)}
 
 extension [lambda[_]](inline mitigation: Mitigation[lambda])
   inline def within[result](inline lambda: lambda[result]): result =
-    ${Contingency.mitigateWithin[lambda, result]('mitigation, 'lambda)}
+    ${contingency.internal.mitigateWithin[lambda, result]('mitigation, 'lambda)}
 
 transparent inline def recover[result](inline block: Exception ~> result): Recovery[result, ?] =
-  ${Contingency.recover[result]('block)}
+  ${contingency.internal.recover[result]('block)}
 
 extension [result, lambda[_]](inline recovery: Recovery[result, lambda])
   inline def within[result2 >: result](inline lambda: lambda[result2]): result2 =
-    ${Contingency.recoverWithin[lambda, result2]('recovery, 'lambda)}
+    ${contingency.internal.recoverWithin[lambda, result2]('recovery, 'lambda)}
 
 
 transparent inline def track[focus](using erased Void)[accrual <: Exception](accrual: accrual)
   ( inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual )
 :   Tracking[accrual, ?, focus] =
 
-  ${Contingency.track[accrual, focus]('accrual, 'block)}
+  ${contingency.internal.track[accrual, focus]('accrual, 'block)}
 
 
 transparent inline def validate[focus](using erased Void)[accrual](accrual: accrual)
   ( inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual )
 :   Any =
 
-  ${Contingency.validate[accrual, focus]('accrual, 'block)}
+  ${contingency.internal.validate[accrual, focus]('accrual, 'block)}
 
 
 transparent inline def accrue[accrual <: Exception](accrual: accrual)[result]
   ( inline block: (accrual: accrual) ?=> Exception ~> accrual )
 :   Any =
 
-  ${Contingency.accrue[accrual]('accrual, 'block)}
+  ${contingency.internal.accrue[accrual]('accrual, 'block)}
 
 
 extension [accrual <: Exception,  lambda[_]](inline accrue: Accrue[accrual, lambda])
@@ -222,7 +222,7 @@ extension [accrual <: Exception,  lambda[_]](inline accrue: Accrue[accrual, lamb
     ( using tactic: Tactic[accrual], diagnostics: Diagnostics )
   :   result =
 
-    ${Contingency.accrueWithin[accrual, lambda, result]('accrue, 'lambda, 'tactic, 'diagnostics)}
+    ${contingency.internal.accrueWithin[accrual, lambda, result]('accrue, 'lambda, 'tactic, 'diagnostics)}
 
 
 extension [accrual <: Exception,  lambda[_], focus](inline track: Tracking[accrual, lambda, focus])
@@ -231,7 +231,7 @@ extension [accrual <: Exception,  lambda[_], focus](inline track: Tracking[accru
   :   result =
 
     $ {
-        Contingency.trackWithin[accrual, lambda, result, focus]
+        contingency.internal.trackWithin[accrual, lambda, result, focus]
           ( 'track, 'lambda, 'tactic, 'diagnostics )
       }
 
@@ -241,7 +241,7 @@ extension [accrual <: Exception,  lambda[_], focus]
   inline def within(inline lambda: Foci[focus] ?=> lambda[Any])(using diagnostics: Diagnostics)
   :   accrual =
 
-    ${Contingency.validateWithin[accrual, lambda, focus]('validate, 'lambda, 'diagnostics)}
+    ${contingency.internal.validateWithin[accrual, lambda, focus]('validate, 'lambda, 'diagnostics)}
 
 
 extension [element](sequence: Iterable[element])

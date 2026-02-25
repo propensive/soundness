@@ -36,7 +36,7 @@ import prepositional.*
 
 object Mandatable:
   transparent inline given mandatable: [typeRef] => typeRef is Mandatable =
-    ${Vacuous.mandatable[typeRef]}
+    ${internal.mandatable[typeRef]}
 
   def apply[self, result <: self](): self is Mandatable to result = new Mandatable():
     type Self = self
