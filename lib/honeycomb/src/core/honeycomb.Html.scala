@@ -68,7 +68,7 @@ object Html extends Tag.Container
     mode        = Html.Mode.Whitespace,
     insertable  = true,
     foreign     = false,
-    boundary    = true), Format:
+    boundary    = true ), Format:
   type Topic = "html"
   type Transport = "head" | "body"
 
@@ -372,7 +372,7 @@ object Html extends Tag.Container
       callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
       fastforward: Int                               = 0,
       doctypes:    Boolean = false )
-    ( using dom: Dom)
+    ( using dom: Dom )
   :   Html raises ParseError =
 
     import lineation.linefeedChars

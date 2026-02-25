@@ -143,7 +143,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
           function =>
             stageable.extract[output]:
               stageable.deserialize(function(stageable.serialize(references())))
-              . head.asInstanceOf[Transport]) )
+              . head.asInstanceOf[Transport] ) )
 
     // catch case throwable: Throwable =>
     //   println(throwable)

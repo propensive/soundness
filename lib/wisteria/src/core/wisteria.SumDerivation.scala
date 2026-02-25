@@ -114,10 +114,9 @@ object SumDerivation:
 
 
     protected transparent inline def delegate[derivation](label: Text)
-      ( using reflection:  SumReflection[derivation], requirement: ContextRequirement)
+      ( using reflection: SumReflection[derivation], requirement: ContextRequirement )
       [ result ]
-      ( inline lambda:  [variant <: derivation]
-                        =>  requirement.Optionality[typeclass[variant]]
+      ( inline lambda:  [variant <: derivation] => requirement.Optionality[typeclass[variant]]
                         =>  ( context: requirement.Optionality[typeclass[variant]],
                               label:   Text,
                               index:   Int & VariantIndex[variant] ) ?=> result )
@@ -201,7 +200,7 @@ object SumDerivation:
     private transparent inline def fold[derivation, variants <: Tuple, labels <: Tuple]
       ( inline sum: derivation, size: Int, index: Int, fallible: Boolean )
       ( using reflection:  SumReflection[derivation], requirement: ContextRequirement )
-      ( inline predicate: (label: Text, index: Int & VariantIndex[derivation] ) ?=> Boolean )
+      ( inline predicate: (label: Text, index: Int & VariantIndex[derivation]) ?=> Boolean )
       [ result ]
       ( inline lambda:  [variant <: derivation]
                         =>  variant

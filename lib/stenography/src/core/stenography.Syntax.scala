@@ -280,7 +280,7 @@ object Syntax:
                   names.zip(elements).map:
                     _.absolve match
                       case (ConstantType(StringConstant(name)), element) =>
-                        Named(false, name.tt, element) )
+                        Named(false, name.tt, element))
 
           case ref@TypeRef(prefix, name) =>
             apply(ref)
@@ -331,7 +331,9 @@ object Syntax:
           else
             Sequence
               ( '(',
-                arguments0.zip(types).map { (member, typ) => Named(false, member, apply(typ)) } )
+                arguments0.zip(types).map: (member, typ) =>
+                  Named(false, member, apply(typ))
+              )
 
         val arrow = if method.isContextual then "?=>" else "=>"
         if unnamed && arguments0.length == 1

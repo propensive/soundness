@@ -74,4 +74,6 @@ case class Pem(label: PemLabel, data: Data):
     Seq
       ( Seq(t"-----BEGIN $label-----"),
         data.grouped(48).to(Seq).map(_.serialize[Base64]),
-        Seq(t"-----END $label-----")).flatten.join(t"\n" )
+        Seq(t"-----END $label-----") )
+    . flatten
+    . join(t"\n")

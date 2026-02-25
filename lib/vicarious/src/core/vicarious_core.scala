@@ -54,4 +54,4 @@ extension [key, value: ClassTag](catalog: Catalog[key, value])
 
     Catalog(IArray.tabulate(catalog.size): index =>
       partialFunction.applyOrElse
-        ( Proxy[key, value, index.type](), _ => catalog.values(index)) )
+        ( Proxy[key, value, index.type](), _ => catalog.values(index) ))

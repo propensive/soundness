@@ -288,7 +288,7 @@ object Synesthesia:
                                     Mcp.TextResourceContents
                                       ( $uri,
                                         mimeType = t"text/html;profile=mcp-app", // FIXME
-                                        text = $value.read[Text])
+                                        text = $value.read[Text] )
                                 }
                             case None => Expr.summon[result is Streamable by Data] match
                               case Some(streamable) =>
@@ -429,7 +429,7 @@ object Synesthesia:
             ( name         = ${Expr(method.name.tt)},
               title        = $title,
               description  = $about,
-              arguments    = ${if params.isEmpty then 'Unset else Expr.ofList(params)})
+              arguments    = ${if params.isEmpty then 'Unset else Expr.ofList(params)} )
         }
 
     val resourceEntries = resourceMethods.map: method =>

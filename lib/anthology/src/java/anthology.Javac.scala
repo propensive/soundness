@@ -57,7 +57,7 @@ object Javac:
 case class Javac(options: List[JavacOption]):
   case class JavaSource(name: Text, code: Text)
   extends jt.SimpleJavaFileObject
-    ( jn.URI.create(t"string:///$name".s), jt.JavaFileObject.Kind.SOURCE):
+    ( jn.URI.create(t"string:///$name".s), jt.JavaFileObject.Kind.SOURCE ):
     override def getCharContent(ignoreEncodingErrors: Boolean): CharSequence = code.s
 
   def apply(classpath: LocalClasspath)[path: Abstractable across Paths to Text]

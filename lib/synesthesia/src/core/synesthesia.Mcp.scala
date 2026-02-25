@@ -725,7 +725,7 @@ object Mcp:
     :   Initialize =
 
       Initialize
-        (version,
+        ( version,
           ServerCapabilities(),
           Implementation(server.name, version = server.version.encode),
           server.description )

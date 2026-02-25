@@ -98,7 +98,7 @@ class LarcenyTransformer() extends PluginPhase:
                     Literal(Constant(error.message)),
                     Literal(Constant(error.code)),
                     Literal(Constant(error.start)),
-                    Literal(Constant(error.offset))) )
+                    Literal(Constant(error.offset)) ) )
 
           Apply
             ( Ident(name),

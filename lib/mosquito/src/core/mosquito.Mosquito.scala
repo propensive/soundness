@@ -163,8 +163,8 @@ object Mosquito:
     def norm
       ( using multiplicable:  left is Multiplicable by left,
               addable:        multiplicable.Result is Addable by multiplicable.Result
-                                to multiplicable.Result,
-              rootable:       multiplicable.Result is Rootable[2] to left)
+                              to multiplicable.Result,
+              rootable:       multiplicable.Result is Rootable[2] to left )
     :   left =
 
       def recur(sum: multiplicable.Result, i: Int): left =

@@ -67,7 +67,7 @@ object Hellenism extends Hellenism2:
     ' {
         Resource:
           Path.of[Classpath, Classpath.type, Tuple]
-            ( ${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))}*)
+            ( ${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))}* )
       }
 
 

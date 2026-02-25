@@ -49,7 +49,7 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
   ( using BracketedPasteMode,
           BackgroundColorDetection,
           TerminalFocusDetection,
-          TerminalSizeDetection)
+          TerminalSizeDetection )
 :   result raises TerminalError =
 
   given terminal: Terminal = Terminal(console.signals)

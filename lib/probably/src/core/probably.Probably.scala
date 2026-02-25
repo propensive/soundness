@@ -130,7 +130,7 @@ object Probably:
                     None,
                     $inclusion,
                     $inclusion2,
-                    Decomposable.any[test]) )
+                    Decomposable.any[test] ) )
             }
 
   def check[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[test] =

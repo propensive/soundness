@@ -412,7 +412,7 @@ object Cellulose extends Cellulose2:
                       case Unset =>
                         raise
                           ( ParseError
-                            ( Codl, Position(line, col, word.length), SurplusParams(word, key)) )
+                              ( Codl, Position(line, col, word.length), SurplusParams(word, key) ) )
 
                         go()
 
@@ -428,7 +428,7 @@ object Cellulose extends Cellulose2:
                             val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
                             raise
                               ( ParseError
-                                ( Codl, Position(line, col, uniqueId(0).length), duplicate) )
+                                  ( Codl, Position(line, col, uniqueId(0).length), duplicate ) )
 
                         val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
                         go(focus = focus2, peerIds = peerIds2, lines = 0)
@@ -439,14 +439,14 @@ object Cellulose extends Cellulose2:
                       else schema(word).or:
                         raise
                           ( ParseError
-                            ( Codl, Position(line, col, word.length), InvalidKey(word, word)) )
+                              ( Codl, Position(line, col, word.length), InvalidKey(word, word) ) )
                         CodlSchema.Free
 
                     if fschema.unique && peers.exists(_.data.let(_.key) == word)
                     then
                       raise
                         ( ParseError
-                          ( Codl, Position(line, col, word.length), DuplicateKey(word, word)) )
+                            ( Codl, Position(line, col, word.length), DuplicateKey(word, word) ) )
 
                     go(focus = Proto(word, line, col, extra = extra2, schema = fschema,
                         multiline = block), lines = 0)
@@ -459,11 +459,12 @@ object Cellulose extends Cellulose2:
                 case _ =>
                   val extra = focus.extra.or(Extra())
 
-                  go(focus = Proto
-                              (line  = line,
-                              col   = col,
-                              extra = extra.copy
-                                ( blank = lines, comments = txt :: extra.comments)) )
+                  go
+                    ( focus =
+                        Proto
+                          ( line  = line,
+                            col   = col,
+                            extra = extra.copy(blank = lines, comments = txt :: extra.comments) ) )
 
           case _ =>
             stack match
@@ -616,7 +617,7 @@ object Cellulose extends Cellulose2:
             fail
               ( Indent,
                 ParseError
-                  ( Codl, Position(char.line, col(char), 1), UnevenIndent(margin, char.column)),
+                  ( Codl, Position(char.line, col(char), 1), UnevenIndent(margin, char.column) ),
                 char.column + 1 )
           else diff match
             case 2 => CodlToken.Indent #:: irecur(next, indent = char.column)

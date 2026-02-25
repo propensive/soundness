@@ -201,9 +201,9 @@ extension [plane: Filesystem](path: Path on plane)
   def moveInto
     ( destination: Path on plane )
     ( using overwritePreexisting: OverwritePreexisting on plane,
-              moveAtomically:       MoveAtomically,
-              substantiable:        (Path on plane) is Substantiable,
-              dereferenceSymlinks:  DereferenceSymlinks)
+            moveAtomically:       MoveAtomically,
+            substantiable:        (Path on plane) is Substantiable,
+            dereferenceSymlinks:  DereferenceSymlinks )
   :   Path on plane raises IoError =
 
     import filesystemOptions.createNonexistentParents.enabled
@@ -225,9 +225,9 @@ extension [plane: Filesystem](path: Path on plane)
   def symlinkInto
     ( destination: Path on plane )
     ( using overwritePreexisting: OverwritePreexisting on plane,
-              moveAtomically:       MoveAtomically,
-              substantiable:        (Path on plane) is Substantiable,
-              dereferenceSymlinks:  DereferenceSymlinks)
+            moveAtomically:       MoveAtomically,
+            substantiable:        (Path on plane) is Substantiable,
+            dereferenceSymlinks:  DereferenceSymlinks )
   :   Path on plane raises IoError =
 
     import filesystemOptions.createNonexistentParents.enabled

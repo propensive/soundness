@@ -80,7 +80,7 @@ object Git:
     ( using WorkingDirectory,
               Tactic[GitError],
               (Path on Linux) is Decodable in Text,
-              Tactic[ExecError])
+              Tactic[ExecError] )
     ( using command: GitCommand )
   :   GitRepo logs GitEvent raises NameError =
 

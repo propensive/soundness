@@ -125,7 +125,7 @@ object ProductDerivation:
       ( product: derivation )
       ( using fieldIndex:  Int & FieldIndex[field],
               reflection:  ProductReflection[derivation],
-              requirement: ContextRequirement)
+              requirement: ContextRequirement )
     :   field =
 
       type Labels = reflection.MirroredElemLabels

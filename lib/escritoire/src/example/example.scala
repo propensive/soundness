@@ -52,13 +52,13 @@ val libraries: List[Library] = List
         t"Wisteria",
         581,
         2017,
-        t"Simple, fast and transparant generic derivation for typeclasses"),
+        t"Simple, fast and transparant generic derivation for typeclasses" ),
       Library
         ( t"quantitative",
           t"Quantitative",
           1271,
           2023,
-          t"Statically-checked physical units with seamless syntax"),
+          t"Statically-checked physical units with seamless syntax" ),
       Library
         ( t"turbulence", t"Turbulence", 1047, 2022, t"Simple tools for working with data streams" ),
       Library(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables") )

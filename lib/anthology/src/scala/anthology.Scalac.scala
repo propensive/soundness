@@ -101,7 +101,7 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
           last = int
           scalacProcess.put
             ( CompileProgress
-              ( last/100.0, if currentStage == null then t"null" else currentStage.tt) )
+              ( last/100.0, if currentStage == null then t"null" else currentStage.tt ) )
 
         scalacProcess.continue
 

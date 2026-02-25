@@ -136,7 +136,7 @@ trait Json2:
 
           Json.ast
             ( JsonAst
-              ( (labels.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe))) )
+              ( (labels.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe)) ) )
 
     inline def split[derivation: SumReflection]: derivation is Encodable in Json = value =>
       val discriminable = infer[derivation is Discriminable in Json]
@@ -234,7 +234,7 @@ object Json extends Json2, Dynamic:
   =>  ( factory: Factory[element, collection[element]],
         tactic:  Tactic[JsonError],
         foci:    Foci[JsonPointer] )
-  =>  ( decodable: => element is Decodable in Json)
+  =>  ( decodable: => element is Decodable in Json )
   =>  collection[element] is Decodable in Json =
 
     value =>

@@ -115,10 +115,10 @@ trait Interpolator[input, state, result]:
                         ( rethrow
                             ( substitute(state, substitution.tt),
                               expr.asTerm.pos.start,
-                              expr.asTerm.pos.end),
+                              expr.asTerm.pos.end ),
                               parts.head.tt ),
                           positions.head.start,
-                          positions.head.end),
+                          positions.head.end ),
                           typeclass )
 
               case typeclass =>

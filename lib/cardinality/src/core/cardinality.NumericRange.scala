@@ -142,7 +142,7 @@ object NumericRange:
         ~ Asym
           [ rightMin*rightMax,
             Max4[leftMin/rightMin, leftMax/rightMin, leftMin/rightMax, leftMax/rightMax],
-            1.0/0.0] =
+            1.0/0.0 ] =
 
           left/right
 
