@@ -32,14 +32,15 @@
                                                                                                   */
 package nomenclature
 
+import scala.compiletime.*
+import scala.quoted.*
+
 import anticipation.*
 import contingency.*
 import fulminate.*
+import gigantism.*
 import proscenium.*
 import rudiments.*
-
-import scala.quoted.*
-import scala.compiletime.*
 
 object protointernal:
   def build(using Quotes)(todo: List[quotes.reflect.TypeRepr]): quotes.reflect.TypeRepr =

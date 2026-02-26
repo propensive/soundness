@@ -32,6 +32,11 @@
                                                                                                   */
 package ethereal
 
+import language.experimental.pureFunctions
+
+import java.io as ji
+import java.net as jn
+
 import anticipation.*
 import contingency.*
 import guillotine.*
@@ -41,11 +46,6 @@ import profanity.*
 import proscenium.*
 import rudiments.*
 import turbulence.*
-
-import java.net as jn
-import java.io as ji
-
-import language.experimental.pureFunctions
 
 object Client:
   @targetName("make")

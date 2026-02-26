@@ -32,6 +32,10 @@
                                                                                                   */
 package escapade
 
+import language.experimental.pureFunctions
+
+import scala.util.*
+
 import anticipation.*
 import denominative.*
 import gossamer.*
@@ -43,10 +47,6 @@ import spectacular.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
-
-import scala.util.*
-
-import language.experimental.pureFunctions
 
 object Teletype:
   given add: NotGiven[Teletype is Textual] => Teletype is Addable:

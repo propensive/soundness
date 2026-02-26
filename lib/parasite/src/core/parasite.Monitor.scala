@@ -35,8 +35,8 @@ package parasite
 import language.experimental.pureFunctions
 
 import java.lang as jl
-import java.util.concurrent.locks as jucl
 import java.util.concurrent.atomic as juca
+import java.util.concurrent.locks as jucl
 
 import scala.annotation.*
 

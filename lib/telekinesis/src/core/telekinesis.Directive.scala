@@ -34,9 +34,9 @@ package telekinesis
 
 import anticipation.*
 import denominative.*
-import hieroglyph.*
 import gesticulate.*
 import gossamer.*
+import hieroglyph.*
 import prepositional.*
 import proscenium.*
 import rudiments.*

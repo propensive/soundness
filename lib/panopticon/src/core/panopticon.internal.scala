@@ -32,14 +32,15 @@
                                                                                                   */
 package panopticon
 
+import scala.quoted.*
+
 import anticipation.*
 import fulminate.*
+import gigantism.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-
-import scala.quoted.*
 
 object internal:
   private given realm: Realm = realm"panopticon"

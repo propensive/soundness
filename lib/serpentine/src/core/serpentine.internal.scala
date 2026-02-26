@@ -39,6 +39,7 @@ import contingency.*
 import denominative.*
 import distillate.*
 import fulminate.*
+import gigantism.*
 import prepositional.*
 import proscenium.*
 import vacuous.*

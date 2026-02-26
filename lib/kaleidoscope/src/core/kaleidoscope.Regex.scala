@@ -34,8 +34,8 @@ package kaleidoscope
 
 import language.experimental.pureFunctions
 
-import java.util.regex as jur
 import java.util.concurrent.ConcurrentHashMap
+import java.util.regex as jur
 
 import anticipation.*
 import contingency.*

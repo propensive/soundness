@@ -32,8 +32,8 @@
                                                                                                   */
 package gossamer
 
-import language.experimental.pureFunctions
 import language.experimental.into
+import language.experimental.pureFunctions
 
 enum Bidi:
   case Ltr, Rtl

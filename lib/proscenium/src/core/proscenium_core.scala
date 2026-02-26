@@ -75,8 +75,6 @@ type Mono[value] = value *: Zero
 
 transparent inline def infer[context]: context = compiletime.summonInline[context]
 
-type Macro[result] = scala.quoted.Quotes ?=> scala.quoted.Expr[result]
-
 transparent inline def provide[context](using erased Void)[result]
   ( inline lambda: context ?=> result )
 :   result =

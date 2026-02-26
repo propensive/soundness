@@ -32,9 +32,9 @@
                                                                                                   */
 package obligatory
 
-import prepositional.*
-
 import scala.annotation.*
+
+import prepositional.*
 
 trait Framable extends Typeclass, Operable:
   def frames(input: Iterator[Self]): Iterator[Self]

@@ -32,6 +32,15 @@
                                                                                                   */
 package gossamer
 
+import language.experimental.into
+import language.experimental.pureFunctions
+
+import java.net.{URLEncoder, URLDecoder}
+import java.util.regex as jur
+
+import scala.collection.mutable as scm
+import scala.reflect.*
+
 import anticipation.*
 import denominative.*
 import distillate.*
@@ -45,15 +54,6 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-
-import scala.reflect.*
-import scala.collection.mutable as scm
-
-import java.util.regex as jur
-import java.net.{URLEncoder, URLDecoder}
-
-import language.experimental.pureFunctions
-import language.experimental.into
 
 export gossamer.internal.opaques.Ascii
 

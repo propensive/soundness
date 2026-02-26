@@ -32,6 +32,8 @@
                                                                                                   */
 package anthology
 
+import language.adhocExtensions
+
 import anticipation.*
 import gossamer.*
 import proscenium.*
@@ -40,8 +42,6 @@ import spectacular.*
 import vacuous.*
 
 import dotty.tools.dotc.reporting.*
-
-import language.adhocExtensions
 
 object scalacOptions:
   val newSyntax = Scalac.Option[Scalac.Versions](t"-new-syntax")

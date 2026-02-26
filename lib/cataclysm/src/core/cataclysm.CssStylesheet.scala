@@ -32,13 +32,13 @@
                                                                                                   */
 package cataclysm
 
+import language.dynamics
+
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
 import proscenium.*
-
-import language.dynamics
 
 object CssStylesheet:
   given abstractable: (charEncoder: CharEncoder)

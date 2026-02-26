@@ -32,9 +32,9 @@
                                                                                                   */
 package cataclysm
 
-import proscenium.*
-
 import language.dynamics
+
+import proscenium.*
 
 object Css extends Dynamic:
   def applyDynamic(method: "apply")(): CssStyle = CssStyle()

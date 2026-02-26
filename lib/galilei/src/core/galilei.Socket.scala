@@ -32,9 +32,9 @@
                                                                                                   */
 package galilei
 
-import java.nio.channels as jnc
-
 import language.experimental.pureFunctions
+
+import java.nio.channels as jnc
 
 object Socket extends UnixEntry
 

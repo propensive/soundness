@@ -32,14 +32,14 @@
                                                                                                   */
 package ethereal
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import exoskeleton.*
 import guillotine.*
 import prepositional.*
 import proscenium.*
 import serpentine.*
-
-import language.experimental.pureFunctions
 
 case class DaemonService[bus <: Matchable]
   ( pid:        Pid,

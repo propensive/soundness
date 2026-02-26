@@ -34,6 +34,7 @@ package zephyrine
 
 import scala.quoted.*
 
+import gigantism.*
 import proscenium.*
 
 object internal:

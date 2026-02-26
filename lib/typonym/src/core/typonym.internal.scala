@@ -34,6 +34,7 @@ package typonym
 
 import scala.quoted.*
 
+import gigantism.*
 import proscenium.*
 
 object internal:

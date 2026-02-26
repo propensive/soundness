@@ -32,10 +32,10 @@
                                                                                                   */
 package ambience
 
-import java.nio.file as jnf
-import java.lang as jl
-
 import language.experimental.pureFunctions
+
+import java.lang as jl
+import java.nio.file as jnf
 
 import anticipation.*
 import fulminate.*

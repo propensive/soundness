@@ -32,14 +32,14 @@
                                                                                                   */
 package superlunary
 
+import scala.quoted.*
+
 import anticipation.*
 import fulminate.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-
-import scala.quoted.*
 
 object References:
   def apply[transport <: Object](): References over transport = new References:

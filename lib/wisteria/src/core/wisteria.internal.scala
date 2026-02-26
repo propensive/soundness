@@ -32,10 +32,11 @@
                                                                                                   */
 package wisteria
 
+import scala.quoted.*
+
+import gigantism.*
 import proscenium.*
 import vacuous.*
-
-import scala.quoted.*
 
 object internal:
   inline def default[product, field](index: Int): Optional[field] =

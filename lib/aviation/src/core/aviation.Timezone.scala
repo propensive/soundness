@@ -32,6 +32,9 @@
                                                                                                   */
 package aviation
 
+import java.time as jt
+import java.util as ju
+
 import anticipation.*
 import contextual.*
 import contingency.*
@@ -39,9 +42,6 @@ import distillate.*
 import fulminate.*
 import prepositional.*
 import rudiments.*
-
-import java.util as ju
-import java.time as jt
 
 object Timezone:
   private val ids: Set[Text] = ju.TimeZone.getAvailableIDs.nn.map(_.nn).map(Text(_)).to(Set)

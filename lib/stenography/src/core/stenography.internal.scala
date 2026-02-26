@@ -35,6 +35,7 @@ package stenography
 import scala.quoted.*
 
 import anticipation.*
+import gigantism.*
 import proscenium.*
 
 object internal:
@@ -43,8 +44,7 @@ object internal:
   def typename[typename <: AnyKind: Type]: Macro[Text] = Expr(name[typename])
 
   def name(using Quotes)(typeRepr: quotes.reflect.TypeRepr): Text =
-    typeRepr.asType.absolve match
-      case '[tpe] => name[tpe]
+    typeRepr.asType.absolve match case '[tpe] => name[tpe]
 
   def name[typename <: AnyKind: Type](using Quotes): Text =
     import quotes.reflect.*
@@ -52,6 +52,7 @@ object internal:
     val outer = quotes.absolve match
       case quotes: runtime.impl.QuotesImpl =>
         given context: core.Contexts.Context = quotes.ctx
+
         context.compilationUnit.tpdTree.absolve match
           case ast.tpd.PackageDef(root, statements) =>
             Typename(root.show) :: statements.collect:
@@ -61,29 +62,7 @@ object internal:
           case _ =>
             Nil
 
-    def owners(symbol: Symbol): List[Tree] =
-      val parent =
-        if symbol.maybeOwner.isPackageDef then
-          symbol.maybeOwner.companionModule
-        else symbol.maybeOwner
-      try symbol.tree :: owners(parent) catch case _ =>
-        Nil
-
-    val imports: List[Typename] =
-      owners(Symbol.spliceOwner).flatMap:
-        case tree@DefDef(_, _, _, Some(Block(entries, _))) =>
-          entries.collect:
-            case Import(name, List(SimpleSelector("_"))) => Typename(name.show)
-
-        case tree@ValDef(_, _, _) =>
-          Nil
-
-        case tree: ClassDef =>
-          tree.body.collect:
-            case Import(name, List(SimpleSelector("_"))) => Typename(name.show)
-
-        case tree =>
-          Nil
+    val imports: Set[Typename] = metaprogramming.imports.map(_.term).map(Syntax.term(_)).to(Set)
 
     given Imports = Imports(Set(Typename("scala"), Typename("scala.Predef")) ++ imports ++ outer)
 

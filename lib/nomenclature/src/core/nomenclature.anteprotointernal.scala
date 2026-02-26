@@ -34,6 +34,7 @@ package nomenclature
 
 import scala.quoted.*
 
+import gigantism.*
 import proscenium.*
 
 object anteprotointernal:

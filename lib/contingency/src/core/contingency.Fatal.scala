@@ -32,8 +32,8 @@
                                                                                                   */
 package contingency
 
-import rudiments.*
 import prepositional.*
+import rudiments.*
 
 trait Fatal extends Typeclass:
   def status(error: Self): Exit

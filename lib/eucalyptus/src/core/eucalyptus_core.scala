@@ -32,6 +32,8 @@
                                                                                                   */
 package eucalyptus
 
+import language.experimental.pureFunctions
+
 import java.text as jt
 
 import anticipation.*
@@ -45,8 +47,6 @@ import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
-
-import language.experimental.pureFunctions
 
 package logFormats:
   given textLevel: Level is Showable =

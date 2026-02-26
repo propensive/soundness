@@ -32,12 +32,12 @@
                                                                                                   */
 package gossamer
 
+import language.experimental.into
+import language.experimental.pureFunctions
+
 import fulminate.*
 import prepositional.*
 import rudiments.*
-
-import language.experimental.pureFunctions
-import language.experimental.into
 
 object Joinable:
   given textual: [textual: Textual] => textual is Joinable = elements =>

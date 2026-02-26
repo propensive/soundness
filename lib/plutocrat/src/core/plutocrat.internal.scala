@@ -37,6 +37,7 @@ import scala.quoted.*
 import anticipation.*
 import contingency.*
 import fulminate.*
+import gigantism.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import hypotenuse.*

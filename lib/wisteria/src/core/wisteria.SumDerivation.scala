@@ -32,8 +32,8 @@
                                                                                                   */
 package wisteria
 
-import scala.deriving.*
 import scala.compiletime.*
+import scala.deriving.*
 
 import anticipation.*
 import contingency.*

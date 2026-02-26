@@ -32,6 +32,10 @@
                                                                                                   */
 package caesura
 
+import language.dynamics
+
+import scala.compiletime.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -43,10 +47,6 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 import wisteria.*
-
-import scala.compiletime.*
-
-import language.dynamics
 
 object Dsv:
   def apply(iterable: Iterable[Text]): Dsv = new Dsv(IArray.from(iterable))

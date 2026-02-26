@@ -32,8 +32,8 @@
                                                                                                   */
 package denominative
 
-import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.concurrent.TrieMap
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 import anticipation.*
 import prepositional.*

@@ -32,6 +32,8 @@
                                                                                                   */
 package baroque
 
+import scala.annotation.*
+
 import geodesy.*
 import gossamer.*
 import hypotenuse.*
@@ -40,8 +42,6 @@ import proscenium.*
 import quantitative.*
 import spectacular.*
 import symbolism.*
-
-import scala.annotation.*
 
 object Complex:
   inline given showable: [part: {Showable, Zeroic, Commensurable against part, Negatable to part}]

@@ -32,11 +32,14 @@
                                                                                                   */
 package synesthesia
 
+import scala.annotation.*
+import scala.quoted.*
 
 import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
+import gigantism.*
 import gossamer.*
 import jacinta.*
 import monotonous.*
@@ -46,9 +49,6 @@ import rudiments.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
-
-import scala.annotation.*
-import scala.quoted.*
 
 
 object internal:

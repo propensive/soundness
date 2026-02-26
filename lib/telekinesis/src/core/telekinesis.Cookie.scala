@@ -32,6 +32,8 @@
                                                                                                   */
 package telekinesis
 
+import java.text as jt
+
 import anticipation.*
 import distillate.*
 import fulminate.*
@@ -42,8 +44,6 @@ import spectacular.*
 import symbolism.*
 import urticose.*
 import vacuous.*
-
-import java.text as jt
 
 object Cookie:
   val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")

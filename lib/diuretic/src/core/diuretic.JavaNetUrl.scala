@@ -32,9 +32,9 @@
                                                                                                   */
 package diuretic
 
-import anticipation.*
-
 import java.net as jn
+
+import anticipation.*
 
 object JavaNetUrl extends Abstractable, Instantiable:
   type Self = jn.URL

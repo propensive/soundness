@@ -34,11 +34,14 @@ package xylophone
 
 import language.dynamics
 
+import scala.quoted.*
+
 import anticipation.*
 import contextual.*
 import contingency.*
 import denominative.*
 import fulminate.*
+import gigantism.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
@@ -46,8 +49,6 @@ import rudiments.*
 import spectacular.*
 import stenography.*
 import vacuous.*
-
-import scala.quoted.*
 
 object internal:
   def extractor[parts <: Tuple: Type](scrutinee: Expr[Xml]): Macro[Extrapolation[Xml]] =

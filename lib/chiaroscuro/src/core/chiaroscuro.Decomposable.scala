@@ -32,6 +32,9 @@
                                                                                                   */
 package chiaroscuro
 
+import scala.compiletime.*
+import scala.reflect.*
+
 import anticipation.*
 import gossamer.*
 import kaleidoscope.*
@@ -42,9 +45,6 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 import wisteria.*
-
-import scala.compiletime.*
-import scala.reflect.*
 
 object Decomposable extends Decomposable2:
   trait Base extends Decomposable:

@@ -33,35 +33,50 @@
 package hyperbole
 
 import scala.collection.mutable as scm
+import scala.quoted.*
 
 import anticipation.*
 import contingency.*
-import dendrology.*
 import denominative.*
 import escapade.*
-import escritoire.*, tableStyles.minimal, columnAttenuation.ignore
-import digression.*
 import fulminate.*
+import gigantism.*
 import gossamer.*
 import harlequin.*
-import hieroglyph.*, textMetrics.uniform
-import iridescence.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
 
-import scala.quoted.*
 import dotty.tools.*, dotc.util as dtdu
 
 import syntaxHighlighting.teletypeable
 
 object internal:
-  def introspection[value](value: Expr[value], inlining: Expr[Boolean]): Macro[Text] =
-    Expr(introspect(value, inlining).render(termcapDefinitions.xterm256))
+  def introspection[value](value: Expr[value], inlining: Expr[Boolean]): Macro[TastyTree] =
+    def serialize(tree: TastyTree): Expr[TastyTree] = tree match
+      case TastyTree(tag, typeName, name, expr, source, nodes, param, term, definitional) =>
+        val nodes2 = nodes.map(serialize(_))
+        val param2 = if param.absent then '{Unset} else Expr(param.vouch)
 
-  def introspect[value](expr: Expr[value], inlining0: Expr[Boolean])(using Quotes): Teletype =
+        ' {
+            TastyTree
+              ( ${Expr(tag)},
+                ${Expr(typeName)},
+                ${Expr(name)},
+                ${Expr(expr)},
+                ${Expr(source)},
+                ${Expr.ofList(nodes2)},
+                $param2.asInstanceOf[Optional[Text]],
+                ${Expr(term)},
+                ${Expr(definitional)}
+              )
+          }
+
+    serialize(tastyTree[value](value, inlining))
+
+  def tastyTree[value](expr: Expr[value], inlining0: Expr[Boolean])(using Quotes): TastyTree =
     import quotes.reflect.*
 
     val inlining = inlining0.valueOrAbort
@@ -85,36 +100,19 @@ object internal:
       case _ =>
         e""
 
-
-    case class TastyTree
-      ( tag:          Char,
-        typeName:     Text,
-        name:         Text,
-        expr:         Text,
-        source:       Teletype,
-        nodes:        List[TastyTree],
-        param:        Optional[Text],
-        term:         Boolean,
-        definitional: Boolean ):
-
-      def shortCode: Text =
-        val c = expr.upto(_ != '\n')
-        if c.length != expr.length then t"$c..." else expr
-
+    extension (tastyTree: TastyTree)
       def children(nodes2: Tree*): TastyTree =
-        copy(nodes = nodes ::: nodes2.to(List).map(TastyTree.expand(' ', _)))
+        tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expand(' ', _)))
 
       def typeChildren(nodes2: TypeRepr*): TastyTree =
-        copy(nodes = nodes ::: nodes2.to(List).map(TastyTree.expandType(_)))
+        tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expandType(_)))
 
       def typed(nodes2: Tree*): TastyTree =
-        copy(nodes = nodes ::: nodes2.to(List).map(TastyTree.expand('t', _)))
+        tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expand('t', _)))
 
       def add(tag: Char, nodes2: Tree*): TastyTree =
-        copy(nodes = nodes ::: nodes2.to(List).map(TastyTree.expand(tag,_)))
+        tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expand(tag,_)))
 
-      def typeNode: TastyTree = copy(term = false)
-      def definition: TastyTree = copy(definitional = true)
 
 
     object TastyTree:
@@ -123,18 +121,18 @@ object internal:
           typeName:  Text,
           name:      Text,
           tree:      Optional[Tree],
-          repr:      Optional[TypeRepr] = Unset,
-          parameter: Optional[Text]     = Unset )
+          repr:      Optional[Text] = Unset,
+          parameter: Optional[Text] = Unset )
       :   TastyTree =
 
         val shown = tree.let(_.show.tt).or(repr.let(_.show)).or(t"")
         val code = tree.let(source(_)).or(e"")
 
-        TastyTree(tag, typeName, name, shown, code, Nil, parameter, true, false)
+        new TastyTree(tag, typeName, name, shown, code.plain, Nil, parameter, true, false)
 
 
       def repr(name: Text, repr: Optional[TypeRepr], parameter: Optional[Text] = Unset): TastyTree =
-        apply(' ', t"", name, Unset, repr, parameter).typeNode
+        apply(' ', t"", name, Unset, repr.let(stenography.internal.name(_)), parameter).typeNode
 
       def expandType(repr: TypeRepr): TastyTree =
         repr match
@@ -228,7 +226,7 @@ object internal:
         val typeName =
           safely:
             tree.asExpr match
-              case '{$term: tpe} => TypeRepr.of[tpe].show
+              case '{$term: tpe} => stenography.internal.name[tpe]
               case _             => Unset
 
           . or(t"")
@@ -266,7 +264,7 @@ object internal:
             TastyTree(tag, typeName, t"This", tree, parameter = qual.map(_.tt).getOrElse(t""))
 
           case New(tpt) =>
-            val typeName = tpt.show.tt
+            val typeName = stenography.internal.name(tpt.tpe)
             TastyTree(tag, typeName, t"New", tree)
             . children(tpt)
 
@@ -279,13 +277,13 @@ object internal:
             . children(term)
 
           case Typed(expr, tpt) =>
-            val typeName = tpt.show.tt
+            val typeName = stenography.internal.name(tpt.tpe)
             TastyTree(tag, typeName, t"Typed", tree)
             . children(expr)
             . typed(tpt)
 
           case TypedOrTest(focus, tpt) =>
-            val typeName = tpt.show.tt
+            val typeName = stenography.internal.name(tpt.tpe)
             TastyTree(tag, typeName, t"TypedOrTest", tree)
             . children(focus)
             . typed(tpt)
@@ -406,7 +404,7 @@ object internal:
             . typed(tpt)
 
           case TypeBlock(aliases, tpt) =>
-            val typeName = tpt.show.tt
+            val typeName = stenography.internal.name(tpt.tpe)
             TastyTree(tag, typeName, t"TypeBlock", tree)
             . add('a', aliases*)
             . typed(tpt)
@@ -425,7 +423,7 @@ object internal:
             . typeNode
 
           case Applied(tpt, arguments) =>
-            val typeName = tpt.show.tt
+            val typeName = stenography.internal.name(tpt.tpe)
             TastyTree(tag, typeName, t"Applied", tree)
             . typed(tpt)
             . add('a', arguments*)
@@ -437,13 +435,13 @@ object internal:
             . children(annotation)
 
           case Repeated(elems, tpt) =>
-            val typeName = tpt.show.tt
+            val typeName = stenography.internal.name(tpt.tpe)
             TastyTree(tag, typeName, t"Repeated", tree)
             . children(elems*)
             . typed(tpt)
 
           case Refined(tpt, refinements) =>
-            val typeName = tpt.show.tt
+            val typeName = stenography.internal.name(tpt.tpe)
             TastyTree(tag, typeName, t"Refined", tree)
             . typed(tpt)
             . add('m', refinements*)
@@ -471,7 +469,7 @@ object internal:
             . typeNode
 
           case DefDef(name, paramss, tpt, rhs) =>
-            val typeName = tpt.show.tt
+            val typeName = stenography.internal.name(tpt.tpe)
             val clauses = paramss.map:
               case TermParamClause(params) =>
                 TastyTree('a', typeName, t"TermParamClause", tree).add('a', params*)
@@ -493,7 +491,7 @@ object internal:
             . add('c', cases*)
 
           case ValDef(name, tpt, rhs) =>
-            val typeName = tpt.show.tt
+            val typeName = stenography.internal.name(tpt.tpe)
             TastyTree(tag, typeName, t"ValDef", tree, parameter = name.tt)
             . typed(tpt)
             . children(rhs.to(List)*)
@@ -508,35 +506,4 @@ object internal:
           case _ =>
             TastyTree(tag, typeName, t"?${tree.toString}: ${tree.getClass.toString}", tree)
 
-    val tree: TastyTree = TastyTree.expand(' ', expr.asTerm)
-
-    val sequence: Seq[Expansion] = TreeDiagram.by[TastyTree](_.nodes)(tree).map: node =>
-      val color = (node.term, node.definitional) match
-        case (true, true)   => webColors.Tomato
-        case (false, true)  => webColors.YellowGreen
-        case (true, false)  => webColors.FireBrick
-        case (false, false) => webColors.MediumSeaGreen
-
-      val text = e"$color(${node.name})"
-      val tag2: Text = if node.tag == ' ' then "▪".tt else "⟨"+node.tag+"⟩"
-
-      Expansion
-        ( e"${tiles.drop(1).map(treeStyles.default.text(_)).join}$tag2 $text",
-          node.typeName,
-          node.param,
-          node.shortCode,
-          node.source )
-
-    Scaffold[Expansion]
-      ( Column(e"TASTy"): node =>
-          val param = node.param.let { param => e"$Italic(${webColors.Orange}($param))" }.or(e"")
-          e"${node.text} $param",
-        Column(e"Type"): node =>
-          val name = StackTrace.rewrite(node.typeName.s, false)
-          if node.typeName.nil then e"" else e"${webColors.Gray}(: $Italic(${name}))",
-        Column(e"Source")(_.source) )
-
-    . tabulate(sequence)
-    . grid(10000)
-    . render
-    . join(e"\n")
+    TastyTree.expand(' ', expr.asTerm)

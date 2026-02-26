@@ -32,9 +32,9 @@
                                                                                                   */
 package cataclysm
 
-import proscenium.*
-
 import language.dynamics
+
+import proscenium.*
 
 object From extends Dynamic:
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Keyframe =

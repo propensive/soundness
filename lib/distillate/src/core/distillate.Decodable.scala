@@ -39,8 +39,8 @@ import digression.*
 import inimitable.*
 import prepositional.*
 import rudiments.*
-import wisteria.*
 import vacuous.*
+import wisteria.*
 
 trait Decodable2:
   given generic: [value] => value is Decodable in value = identity(_)

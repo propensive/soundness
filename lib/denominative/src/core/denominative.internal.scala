@@ -32,10 +32,10 @@
                                                                                                   */
 package denominative
 
+import scala.annotation.targetName
+
 import prepositional.*
 import symbolism.*
-
-import scala.annotation.targetName
 
 object internal:
   opaque type Ordinal = Int

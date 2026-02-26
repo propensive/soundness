@@ -32,11 +32,12 @@
                                                                                                   */
 package vicarious
 
-import proscenium.*
-import rudiments.*
-
 import scala.compiletime.*
 import scala.quoted.*
+
+import gigantism.*
+import proscenium.*
+import rudiments.*
 
 object internal:
   def catalog[key: Type, value: Type]

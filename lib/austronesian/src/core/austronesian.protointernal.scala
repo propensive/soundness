@@ -38,6 +38,7 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
+import gigantism.*
 import hellenism.*
 import prepositional.*
 import proscenium.*

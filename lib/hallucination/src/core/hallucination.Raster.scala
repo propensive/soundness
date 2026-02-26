@@ -32,6 +32,10 @@
                                                                                                   */
 package hallucination
 
+import java.awt as ja
+import java.awt.image as jai
+import javax.imageio as ji
+
 import anticipation.*
 import contingency.*
 import iridescence.*
@@ -39,10 +43,6 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import turbulence.*
-
-import java.awt.image as jai
-import java.awt as ja
-import javax.imageio as ji
 
 object Raster:
   def apply(width: Int, height: Int)(pixel: (Int, Int) => Rgb24): Raster =

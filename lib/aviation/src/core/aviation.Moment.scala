@@ -32,10 +32,10 @@
                                                                                                   */
 package aviation
 
+import java.time as jt
+
 import anticipation.*
 import prepositional.*
-
-import java.time as jt
 
 object Moment:
   given generic: RomanCalendar => Moment is Abstractable across Instants to Long =

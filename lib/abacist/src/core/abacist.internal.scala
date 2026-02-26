@@ -37,10 +37,11 @@ import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
+import gigantism.*
 import gossamer.{where as _, *}
 import hieroglyph.*
-import quantitative.*
 import proscenium.*
+import quantitative.*
 import rudiments.*
 import symbolism.*
 import vacuous.*

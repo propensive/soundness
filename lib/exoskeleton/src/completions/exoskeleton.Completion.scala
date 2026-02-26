@@ -32,6 +32,8 @@
                                                                                                   */
 package exoskeleton
 
+import scala.collection.mutable as scm
+
 import ambience.*
 import anticipation.*
 import denominative.*
@@ -46,8 +48,6 @@ import spectacular.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
-
-import scala.collection.mutable as scm
 
 case class Completion
   ( fullArguments:    List[Argument],

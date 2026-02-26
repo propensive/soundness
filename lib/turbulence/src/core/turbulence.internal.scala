@@ -37,6 +37,7 @@ import scala.quoted.*
 import anticipation.*
 import denominative.*
 import fulminate.*
+import gigantism.*
 import hieroglyph.*
 import prepositional.*
 import proscenium.*

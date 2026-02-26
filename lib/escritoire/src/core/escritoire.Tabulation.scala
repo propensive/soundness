@@ -32,6 +32,10 @@
                                                                                                   */
 package escritoire
 
+import language.experimental.pureFunctions
+
+import scala.collection.immutable as sci
+
 import anticipation.*
 import fulminate.*
 import gossamer.*
@@ -39,10 +43,6 @@ import hieroglyph.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-
-import scala.collection.immutable as sci
-
-import language.experimental.pureFunctions
 
 object Tabulation:
   given printable: [text: {Textual as textual, Printable as printable}]

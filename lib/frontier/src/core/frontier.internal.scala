@@ -6,6 +6,7 @@ import anticipation.*
 import dendrology.*
 import escapade.*
 import fulminate.*
+import gigantism.*
 import gossamer.*
 import proscenium.*
 import spectacular.*

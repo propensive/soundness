@@ -32,17 +32,18 @@
                                                                                                   */
 package urticose
 
+import scala.quoted.*
+
 import anticipation.*
 import contextual.*
 import contingency.*
 import distillate.*
 import fulminate.*
+import gigantism.*
 import gossamer.*
 import proscenium.*
 import spectacular.*
 import symbolism.*
-
-import scala.quoted.*
 
 import errorDiagnostics.empty
 

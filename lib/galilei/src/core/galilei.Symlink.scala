@@ -32,13 +32,13 @@
                                                                                                   */
 package galilei
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import gossamer.*
 import prepositional.*
 import serpentine.*
 import spectacular.*
-
-import language.experimental.pureFunctions
 
 object Symlink extends UnixEntry, WindowsEntry:
   given [plane: Filesystem] => Symlink[plane] is Inspectable =

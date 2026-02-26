@@ -35,6 +35,7 @@ package austronesian
 import scala.quoted.*
 
 import anticipation.*
+import gigantism.*
 import hellenism.*
 import prepositional.*
 import proscenium.*

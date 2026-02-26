@@ -36,6 +36,7 @@ import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
+import gigantism.*
 import prepositional.*
 import proscenium.*
 import spectacular.*

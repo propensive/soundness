@@ -32,6 +32,9 @@
                                                                                                   */
 package coaxial
 
+import java.net as jn
+import java.nio.channels as jnc
+
 import anticipation.*
 import contingency.*
 import hypotenuse.*
@@ -41,9 +44,6 @@ import rudiments.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-
-import java.net as jn
-import java.nio.channels as jnc
 
 object Bindable:
   given domainSocket: Tactic[StreamError] => DomainSocket is Bindable:

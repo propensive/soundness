@@ -32,11 +32,11 @@
                                                                                                   */
 package abacist
 
+import scala.quoted.*
+
 import anticipation.*
 import fulminate.*
 import quantitative.*
-
-import scala.quoted.*
 
 export protointernal.Quanta
 

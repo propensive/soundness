@@ -32,10 +32,10 @@
                                                                                                   */
 package telekinesis
 
+import language.dynamics
+
 import anticipation.*
 import fulminate.*
-
-import language.dynamics
 
 case class HttpError(status: Http.Status, headers: List[Http.Header])(using Diagnostics)
 extends Error(m"the HTTP request failed with status $status")

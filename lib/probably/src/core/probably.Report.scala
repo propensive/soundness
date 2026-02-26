@@ -32,6 +32,8 @@
                                                                                                   */
 package probably
 
+import scala.collection.mutable as scm
+
 import ambience.*
 import anticipation.*
 import chiaroscuro.*
@@ -51,8 +53,6 @@ import spectacular.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
-
-import scala.collection.mutable as scm
 
 object Report:
   given verdict: Inclusion[Report, Verdict]:

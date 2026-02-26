@@ -32,11 +32,11 @@
                                                                                                   */
 package cataclysm
 
+import language.dynamics
+
 import anticipation.*
 import gossamer.*
 import proscenium.*
-
-import language.dynamics
 
 sealed trait Selector(val value: Text):
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): CssRule =

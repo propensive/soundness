@@ -40,8 +40,8 @@ import scala.reflect.*
 import anticipation.*
 import contingency.*
 import digression.*
-import escritoire.*
 import escapade.*
+import escritoire.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*

@@ -32,13 +32,12 @@
                                                                                                   */
 package fulminate
 
+import scala.annotation.targetName
 import scala.compiletime.*
 
 import anticipation.*
 import proscenium.*
 import symbolism.*
-
-import scala.annotation.targetName
 
 object Message:
   def apply(value: Text): Message = Message(List(value))

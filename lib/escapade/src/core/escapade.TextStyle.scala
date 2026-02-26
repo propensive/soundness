@@ -32,12 +32,12 @@
                                                                                                   */
 package escapade
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import gossamer.*
 import spectacular.*
 import vacuous.*
-
-import language.experimental.pureFunctions
 
 object TextStyle:
   val esc: Char = 27.toChar

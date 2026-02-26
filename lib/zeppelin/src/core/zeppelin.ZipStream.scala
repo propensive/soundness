@@ -32,6 +32,8 @@
                                                                                                   */
 package zeppelin
 
+import java.util.zip as juz
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -44,8 +46,6 @@ import serpentine.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
-
-import java.util.zip as juz
 
 object ZipStream:
   def apply[streamable: Streamable by Data](source: streamable): ZipStream logs Text =

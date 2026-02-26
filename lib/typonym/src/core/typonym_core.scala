@@ -34,8 +34,8 @@ package typonym
 
 import scala.quoted.*
 
+import gigantism.*
 import proscenium.*
-//transparent inline def erase(inline value: Any): Any = ${internal.erase(value)}
 
 transparent inline def reify[phantom]: Any = ${internal.reify[phantom]}
 inline def reifyAs[phantom, result]: result = ${internal.reifyAs[phantom, result]}

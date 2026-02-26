@@ -32,6 +32,11 @@
                                                                                                   */
 package coaxial
 
+import java.net as jn
+import java.nio.ByteBuffer
+import java.nio.channels as jnc
+import java.nio.file as jnf
+
 import anticipation.*
 import contingency.*
 import proscenium.*
@@ -39,11 +44,6 @@ import rudiments.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-
-import java.net as jn
-import java.nio.ByteBuffer
-import java.nio.channels as jnc
-import java.nio.file as jnf
 
 object Serviceable:
   given domainSocket: Tactic[StreamError] => DomainSocket is Serviceable:

@@ -32,13 +32,13 @@
                                                                                                   */
 package exoskeleton
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import escapade.*
 import gossamer.*
 import symbolism.*
 import vacuous.*
-
-import language.experimental.pureFunctions
 
 object Suggestion:
   def apply

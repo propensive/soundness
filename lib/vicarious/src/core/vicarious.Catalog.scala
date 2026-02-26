@@ -32,10 +32,10 @@
                                                                                                   */
 package vicarious
 
+import language.dynamics
+
 import proscenium.*
 import vacuous.*
-
-import language.dynamics
 
 //case class Catalog[key, value](values: Map[Text, value]):
 case class Catalog[key, value: ClassTag](values: IArray[value]):

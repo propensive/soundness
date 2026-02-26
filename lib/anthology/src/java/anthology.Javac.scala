@@ -32,6 +32,13 @@
                                                                                                   */
 package anthology
 
+import java.net as jn
+import java.util as ju
+import javax.tools as jt
+
+import scala.jdk.CollectionConverters.*
+import scala.util.control as suc
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -41,13 +48,6 @@ import hellenism.*
 import parasite.*
 import prepositional.*
 import vacuous.*
-
-import scala.jdk.CollectionConverters.*
-import scala.util.control as suc
-
-import javax.tools as jt
-import java.util as ju
-import java.net as jn
 
 object Javac:
   private var Javac: jt.JavaCompiler = jt.ToolProvider.getSystemJavaCompiler().nn

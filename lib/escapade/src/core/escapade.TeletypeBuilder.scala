@@ -32,13 +32,13 @@
                                                                                                   */
 package escapade
 
+import scala.collection.mutable as scm
+
 import anticipation.*
 import gossamer.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-
-import scala.collection.mutable as scm
 
 class TeletypeBuilder(size: Optional[Int] = Unset) extends Builder[Teletype]:
   private val builder: StringBuilder = StringBuilder()

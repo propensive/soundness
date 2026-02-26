@@ -32,9 +32,9 @@
                                                                                                   */
 package diuretic
 
-import anticipation.*
-
 import java.time as jt
+
+import anticipation.*
 
 object JavaTimeInstant extends Abstractable, Instantiable:
   type Self = jt.Instant

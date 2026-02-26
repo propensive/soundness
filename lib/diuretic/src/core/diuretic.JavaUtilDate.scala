@@ -32,9 +32,9 @@
                                                                                                   */
 package diuretic
 
-import anticipation.*
-
 import java.util as ju
+
+import anticipation.*
 
 object JavaUtilDate extends Abstractable, Instantiable:
   type Self = ju.Date

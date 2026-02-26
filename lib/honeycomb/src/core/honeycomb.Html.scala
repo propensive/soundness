@@ -37,6 +37,7 @@ import language.dynamics
 import java.lang as jl
 import java.util as ju
 
+import scala.annotation.tailrec
 import scala.quoted.*
 
 import anticipation.*
@@ -58,8 +59,6 @@ import turbulence.*
 import typonym.*
 import vacuous.*
 import zephyrine.*
-
-import scala.annotation.tailrec
 
 object Html extends Tag.Container
   ( label       = "html",

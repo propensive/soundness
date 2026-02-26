@@ -32,11 +32,11 @@
                                                                                                   */
 package gossamer
 
+import language.experimental.into
+import language.experimental.pureFunctions
+
 import anticipation.*
 import rudiments.*
-
-import language.experimental.pureFunctions
-import language.experimental.into
 
 object Pue:
   def apply(text: Text): Data =

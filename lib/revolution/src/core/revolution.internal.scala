@@ -39,6 +39,7 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
+import gigantism.*
 import gossamer.*
 import proscenium.*
 import vacuous.*

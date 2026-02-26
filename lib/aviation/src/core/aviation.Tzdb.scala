@@ -32,6 +32,8 @@
                                                                                                   */
 package aviation
 
+import scala.io.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -42,8 +44,6 @@ import proscenium.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-
-import scala.io.*
 
 object Tzdb:
   case class Time(hours: Int, minutes: Int, seconds: Int, suffix: Optional[Char])

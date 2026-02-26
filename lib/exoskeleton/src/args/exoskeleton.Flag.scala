@@ -32,6 +32,8 @@
                                                                                                   */
 package exoskeleton
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import denominative.*
 import gossamer.*
@@ -40,8 +42,6 @@ import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
-
-import language.experimental.pureFunctions
 
 object Flag:
   def serialize(name: Text | Char): Text = name.absolve match

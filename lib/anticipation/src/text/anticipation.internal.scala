@@ -32,12 +32,12 @@
                                                                                                   */
 package anticipation
 
-import symbolism.*
-
 import scala.compiletime.*
 import scala.quoted.*
 import scala.reflect.*
 import scala.util.*
+
+import symbolism.*
 
 object internal:
   into opaque type Text <: Matchable = String

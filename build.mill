@@ -66,7 +66,7 @@ object settings:
     "-language:experimental.genericNumberLiterals",
     "-language:experimental.into",
     "-language:experimental.erasedDefinitions",
-    "-language:experimental.packageObjectValues",
+    //"-language:experimental.packageObjectValues",
     "-language:implicitConversions",
     "-language:experimental.saferExceptions",
     "-language:experimental.strictEqualityPatternMatching",
@@ -523,7 +523,7 @@ object frontier extends Library:
   object test extends Tests(core, scintillate.servlet, jacinta.schema)
 
 object fulminate extends Library:
-  object core extends Component(anticipation.css, anticipation.http, symbolism.core, anticipation.print, anticipation.http, anticipation.log, proscenium.core):
+  object core extends Component(anticipation.css, anticipation.http, symbolism.core, anticipation.print, anticipation.http, anticipation.log, proscenium.core, gigantism.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object test extends Tests(core)
@@ -759,7 +759,8 @@ object rudiments extends Library:
       fulminate.core,
       vacuous.core,
       denominative.core,
-      proscenium.core
+      proscenium.core,
+      gigantism.core
     )
 
   object test extends Tests(core, abacist.core, quantitative.units)
@@ -839,7 +840,7 @@ object turbulence extends Library:
   object test extends Tests(core)
 
 object typonym extends Library:
-  object core extends Component(proscenium.core, prepositional.core, anticipation.text)
+  object core extends Component(proscenium.core, gigantism.core, prepositional.core, anticipation.text)
   object test extends Tests(core)
 
 object ulysses extends Library:

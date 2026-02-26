@@ -32,12 +32,13 @@
                                                                                                   */
 package stenography
 
-import scala.quoted.*
-import scala.collection.mutable as scm
 import scala.collection.immutable.ListMap
+import scala.collection.mutable as scm
+import scala.quoted.*
 
 import anticipation.*
 import denominative.*
+import fulminate.*
 import proscenium.*
 import rudiments.*
 import symbolism.*
@@ -84,6 +85,7 @@ object Syntax:
       case TermParamClause(defs) =>
         defs.collect:
           case ValDef(name, meta, default) if name.startsWith("evidence$") =>
+
           apply(meta.tpe) match
             case Infix(Simple(typename), "is", right)          => List(typename -> right)
             case Application(Simple(typename), List(right), _) => List(typename -> right)
@@ -179,6 +181,11 @@ object Syntax:
       case other =>
         Declaration(true, List(), apply(other))
 
+  def term(using Quotes)(repr: quotes.reflect.TermRef): Typename = apply(repr) match
+    case Value(value) => value
+    case _            => panic(m"expected a Value")
+
+
   def apply(using Quotes)(repr: quotes.reflect.TypeRepr): Syntax = cache.establish(repr):
     import quotes.reflect.*
 
@@ -228,6 +235,7 @@ object Syntax:
       case termRef@TermRef(prefix, name) =>
         apply(prefix) match
           case value@Value(typename) =>
+            if repr.toString.contains("inline") then println(name)
             if isPackage(name) then value else Value(Typename.Term(typename, name))
 
           case simple@Simple(typename) =>
@@ -272,6 +280,8 @@ object Syntax:
           val arrow = if typ.isContextFunctionType then "?=>" else "=>"
 
           Infix(arguments, arrow, apply(arguments0.last))
+        else if typ.typeSymbol == defn.RepeatedParamClass
+        then Suffix(apply(arguments0.head), " *")
         else if arguments0.length == 2 && repr.typeSymbol.flags.is(Flags.Infix)
         then Application(apply(base), arguments0.map(apply(_)), true)
         else if defn.isTupleClass(base.typeSymbol)
@@ -441,6 +451,10 @@ enum Syntax:
 
     case Value(_) =>
       10
+
+
+  def qualified: Text = text(using Imports.empty)
+
 
   def text(using imports: Imports): Text = this match
     case Simple(typename)        => typename.text

@@ -32,6 +32,10 @@
                                                                                                   */
 package caesura
 
+import java.util as ju
+
+import scala.compiletime.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -46,10 +50,6 @@ import spectacular.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
-
-import scala.compiletime.*
-
-import java.util as ju
 
 object Sheet:
   private enum State:

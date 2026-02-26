@@ -32,10 +32,10 @@
                                                                                                   */
 package quantitative
 
+import language.implicitConversions
+
 import anticipation.*
 import gossamer.*
-
-import language.implicitConversions
 
 object Redesignation:
   given joules: Redesignation[Kilograms[1] & Metres[2] & Seconds[-2]](t"J")

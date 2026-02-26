@@ -32,9 +32,9 @@
                                                                                                   */
 package capricious
 
-import scala.util as su
-
 import language.experimental.genericNumberLiterals
+
+import scala.util as su
 
 object Random:
   lazy val global: Random = new Random(randomization.unseeded.make())

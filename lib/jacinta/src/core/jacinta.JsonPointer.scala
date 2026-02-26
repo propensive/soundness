@@ -32,8 +32,8 @@
                                                                                                   */
 package jacinta
 
-import scala.collection.mutable as scm
 import scala.annotation.*
+import scala.collection.mutable as scm
 
 import anticipation.*
 import contingency.*

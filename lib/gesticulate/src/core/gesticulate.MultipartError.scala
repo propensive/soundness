@@ -32,10 +32,10 @@
                                                                                                   */
 package gesticulate
 
+import scala.reflect.*
+
 import anticipation.*
 import fulminate.*
-
-import scala.reflect.*
 
 object MultipartError:
   enum Reason:

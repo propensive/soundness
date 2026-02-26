@@ -32,9 +32,9 @@
                                                                                                   */
 package capricious
 
-import hypotenuse.*
-
 import language.experimental.genericNumberLiterals
+
+import hypotenuse.*
 
 case class PolarGaussian(mean: Double = 0.0, std: Double = 1.0) extends Distribution:
   def transform(random: Random): Double =

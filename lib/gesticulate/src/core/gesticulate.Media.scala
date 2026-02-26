@@ -32,6 +32,10 @@
                                                                                                   */
 package gesticulate
 
+import language.dynamics
+
+import scala.io.*
+
 import anticipation.*
 import contextual.*
 import contingency.*
@@ -44,13 +48,9 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-import scala.io.*
-
-import language.dynamics
-
+import caseSensitivity.insensitive
 import errorDiagnostics.empty
 import proximities.levenshteinDistance
-import caseSensitivity.insensitive
 
 object Media:
   given text: Text is Media:

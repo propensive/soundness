@@ -32,10 +32,10 @@
                                                                                                   */
 package exoskeleton
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import vacuous.*
-
-import language.experimental.pureFunctions
 
 object Switch:
   def apply

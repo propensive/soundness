@@ -32,6 +32,7 @@
                                                                                                   */
 package synesthesia
 
+import scala.annotation.*
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -52,8 +53,6 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
-
-import scala.annotation.*
 
 object Mcp:
   val version = t"2025-11-25"

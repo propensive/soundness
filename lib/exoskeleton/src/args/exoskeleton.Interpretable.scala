@@ -32,13 +32,13 @@
                                                                                                   */
 package exoskeleton
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import distillate.*
 import prepositional.*
 import proscenium.*
 import vacuous.*
-
-import language.experimental.pureFunctions
 
 object Interpretable:
   given unit: Unit is Interpretable:

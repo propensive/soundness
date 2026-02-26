@@ -32,6 +32,8 @@
                                                                                                   */
 package honeycomb
 
+import language.dynamics
+
 import scala.util.NotGiven
 
 import anticipation.*
@@ -41,8 +43,6 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-
-import language.dynamics
 
 private given realm: Realm = realm"honeycomb"
 

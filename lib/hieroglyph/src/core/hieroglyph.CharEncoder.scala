@@ -32,12 +32,12 @@
                                                                                                   */
 package hieroglyph
 
+import java.nio as jn, jn.charset as jnc
+
 import anticipation.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-
-import java.nio as jn, jn.charset as jnc
 
 object CharEncoder:
   def system: CharEncoder = unapply(jnc.Charset.defaultCharset.nn.displayName.nn.tt).get

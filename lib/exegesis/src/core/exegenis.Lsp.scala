@@ -32,12 +32,12 @@
                                                                                                   */
 package exegesis
 
+import scala.annotation.*
+
 import anticipation.*
 import jacinta.*
 import obligatory.*
 import revolution.*
-
-import scala.annotation.*
 
 object Lsp:
   case class TextDocument(uri: Text, languageId: Text, version: Int, text: Text)

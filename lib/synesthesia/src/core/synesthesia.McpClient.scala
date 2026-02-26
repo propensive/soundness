@@ -32,6 +32,8 @@
                                                                                                   */
 package synesthesia
 
+import scala.annotation.*
+
 import anticipation.*
 import gossamer.*
 import jacinta.*
@@ -39,8 +41,6 @@ import obligatory.*
 import prepositional.*
 import proscenium.*
 import vacuous.*
-
-import scala.annotation.*
 
 trait McpClient:
   import Mcp.*

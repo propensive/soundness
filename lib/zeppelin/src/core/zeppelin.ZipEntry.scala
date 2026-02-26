@@ -32,13 +32,13 @@
                                                                                                   */
 package zeppelin
 
+import java.nio.file as jnf
+
 import anticipation.*
 import prepositional.*
 import proscenium.*
 import serpentine.*
 import turbulence.*
-
-import java.nio.file as jnf
 
 object ZipEntry:
   def apply[resource: Streamable by Data](path: Path on Zip, resource: resource): ZipEntry =

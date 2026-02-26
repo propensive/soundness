@@ -32,6 +32,8 @@
                                                                                                   */
 package cellulose
 
+import language.dynamics
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -40,8 +42,6 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
-
-import language.dynamics
 
 object CodlSchema:
   object Entry:

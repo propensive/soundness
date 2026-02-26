@@ -32,11 +32,11 @@
                                                                                                   */
 package probably
 
+import scala.collection.mutable as scm
+
 import anticipation.*
 import chiaroscuro.*
 import spectacular.*
-
-import scala.collection.mutable as scm
 
 open class Harness():
   private[probably] val captured: scm.ArrayBuffer[(Text, Text)] = scm.ArrayBuffer()

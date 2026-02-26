@@ -32,6 +32,8 @@
                                                                                                   */
 package telekinesis
 
+import language.dynamics
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -39,8 +41,6 @@ import honeycomb.*
 import legerdemain.*
 import prepositional.*
 import vacuous.*
-
-import language.dynamics
 
 import doms.html.whatwg, whatwg.*
 
