@@ -43,7 +43,7 @@ import symbolism.*
 
 given Decimalizer(4)
 
-object Tests extends Suite(m"internal tests"):
+object Tests extends Suite(m"Mosquito tests"):
   def run(): Unit =
     test(m"Create a Tensor of Ints"):
       Tensor(1, 2, 3)

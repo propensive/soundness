@@ -55,7 +55,7 @@ object Person:
 
 case class Person(name: Name[Person], description: Text, email: EmailAddress)
 
-object Tests extends Suite(m"internal tests"):
+object Tests extends Suite(m"Legerdemain tests"):
   def run(): Unit =
 
     // test(m"Create a simple form"):

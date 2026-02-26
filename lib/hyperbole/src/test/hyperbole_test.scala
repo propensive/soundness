@@ -32,14 +32,47 @@
                                                                                                   */
 package hyperbole
 
-import anticipation.*
-import escapade.*
-import fulminate.*
-import probably.*
-import turbulence.*
+import soundness.*
 
 import stdioSources.virtualMachine.ansi
+import autopsies.contrastExpectations
+import dotty.tools.dotc.transform.init.Util.TastyTreeException
 
-object Tests extends Suite(m"internal Tests"):
+object Tests extends Suite(m"Hyperbole Tests"):
   def run(): Unit =
-    Out.println(introspect(true)(Out.println("hello world" + 1)).teletype)
+    test(m"Produce hello-world tree"):
+      introspect(true)(println("hello world"))
+
+    . assert: result =>
+        result
+        ==
+        TastyTree
+          ( ' ',
+            "Unit",
+            "Apply",
+            "scala.Predef.println(\"hello world\")",
+            "                 println(\"hello world\")",
+            List
+              ( TastyTree
+                  ( ' ',
+                    "",
+                    "Ident",
+                    "scala.Predef.println",
+                    "                 println",
+                    Nil,
+                    "println",
+                    true,
+                    false ),
+                TastyTree
+                  ( 'a',
+                    "\"hello world\"",
+                    "Literal",
+                    "\"hello world\"",
+                    "                         \"hello world\"",
+                    Nil,
+                    "\"hello world\"",
+                    true,
+                    false ) ),
+            Unset,
+            true,
+            false )

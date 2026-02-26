@@ -39,7 +39,7 @@ import soundness.*
 import errorDiagnostics.stackTraces
 import strategies.throwUnsafely
 
-object Tests extends Suite(m"internal Tests"):
+object Tests extends Suite(m"Honeycombd Tests"):
   def run(): Unit =
     test(m"show comment"):
       Comment("hello world").show

@@ -37,7 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
 
-object Tests extends Suite(m"internal Tests"):
+object Tests extends Suite(m"Aviation Tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
       test(m"Parse a canonical date"):

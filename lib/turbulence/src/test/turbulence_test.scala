@@ -40,7 +40,7 @@ import strategies.throwUnsafely
 
 import scala.collection.mutable as scm
 
-object Tests extends Suite(m"internal tests"):
+object Tests extends Suite(m"Turbulence tests"):
   def run(): Unit =
 
     suite(m"Shredding"):

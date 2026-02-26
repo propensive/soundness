@@ -36,7 +36,7 @@ import soundness.*
 
 import classloaders.threadContext
 
-object Tests extends Suite(m"internal tests"):
+object Tests extends Suite(m"Mandible tests"):
   def run(): Unit =
     test(m"Compile something"):
       val rewrite =

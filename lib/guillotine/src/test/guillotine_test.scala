@@ -53,7 +53,7 @@ import unsafeExceptions.canThrowAny
 
 given SimpleLogger = logging.silent
 
-object Tests extends Suite(m"internal tests"):
+object Tests extends Suite(m"Guillotine tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
       test(m"parse simple command"):

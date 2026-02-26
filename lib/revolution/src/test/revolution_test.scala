@@ -34,7 +34,7 @@ package revolution
 
 import soundness.*
 
-object Tests extends Suite(m"internal Tests"):
+object Tests extends Suite(m"Revolution Tests"):
   def run(): Unit =
     suite(m"Semantic version parsing tests"):
       val valid =

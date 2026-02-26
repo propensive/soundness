@@ -42,7 +42,7 @@ import charEncoders.utf8
 case class Address(house: Int, street: Text, city: Text, country: Text)
 case class Person(name: Text, address: Address)
 
-object Tests extends Suite(m"internal tests"):
+object Tests extends Suite(m"Telekinesis tests"):
   def run(): Unit =
     import internetAccess.enabled
 

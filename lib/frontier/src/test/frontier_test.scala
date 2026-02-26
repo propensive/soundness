@@ -68,7 +68,7 @@ object Alpha extends Alpha2:
 
 def go()(using Alpha): Unit = ()
 
-object Tests extends Suite(m"internal tests"):
+object Tests extends Suite(m"Frontier tests"):
   def run(response: Http.Response): Unit =
     response.receive[Json]
     go()

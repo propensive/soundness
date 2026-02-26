@@ -34,6 +34,6 @@ package probably
 
 import soundness.*
 
-object Tests extends Suite(m"internal Tests"):
+object Tests extends Suite(m"Probably Tests"):
   def run(): Unit =
     ()

@@ -34,5 +34,5 @@ package denominative
 
 import soundness.*
 
-object Tests extends Suite(m"internal Tests"):
+object Tests extends Suite(m"Denominative Tests"):
   def run(): Unit = ()
