@@ -74,6 +74,8 @@ object TastyTree:
     tastyTree =>
 
       val expansions = expand(tastyTree)
+      val indents = expansions.map(_.source.plain.s.takeWhile(_ == ' ').length)
+      val crop = indents.min
 
       Scaffold[Expansion]
         ( Column(e"TASTy"): node =>
@@ -82,7 +84,7 @@ object TastyTree:
           Column(e"Type"): node =>
             val name = StackTrace.rewrite(node.typeName.s, false)
             if node.typeName.nil then e"" else e"${webColors.Gray}(: $Italic(${name}))",
-          Column(e"Source")(_.source) )
+          Column(e"Source")(_.source.skip(crop)) )
 
       . tabulate(expansions)
       . grid(10000)
