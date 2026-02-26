@@ -32,9 +32,9 @@
                                                                                                   */
 package panopticon
 
-import prepositional.*
-
 import language.dynamics
+
+import prepositional.*
 
 object Lens:
   def apply[self, origin, target](get: origin => target, set: (origin, target) => origin)

@@ -32,14 +32,14 @@
                                                                                                   */
 package cellulose
 
+import java.io as ji
+
 import anticipation.*
 import contingency.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
-
-import java.io as ji
 
 object Bcodl:
   private def write(out: ji.Writer, number: Int): Unit = out.write((number + 32).toChar)

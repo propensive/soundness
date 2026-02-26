@@ -32,11 +32,11 @@
                                                                                                   */
 package escapade
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import gossamer.*
 import spectacular.*
-
-import language.experimental.pureFunctions
 
 case class Fg(color: Int):
   def bg: Bg = Bg(color)

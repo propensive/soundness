@@ -35,6 +35,7 @@ package contextual
 import scala.quoted.*
 
 import anticipation.*
+import gigantism.*
 import proscenium.*
 import vacuous.*
 
@@ -48,8 +49,7 @@ extends Interpolator[Nothing, Optional[result], result]:
   protected def complete(value: Optional[result]): result = value.option.get
 
 
-  def expand(context: Expr[StringContext])(using Type[result])
-    ( using thisType: Type[this.type] )
+  def expand(context: Expr[StringContext])(using Type[result])(using thisType: Type[this.type])
   :   Macro[result] =
 
     expand(context, '{Nil})(using thisType)

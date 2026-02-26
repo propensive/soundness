@@ -32,13 +32,13 @@
                                                                                                   */
 package hieroglyph
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import contingency.*
 import fulminate.*
 import rudiments.*
 import vacuous.*
-
-import language.experimental.pureFunctions
 
 extension (encoding: Encoding { type CanEncode = true })
   def encoder: CharEncoder = CharEncoder(encoding)

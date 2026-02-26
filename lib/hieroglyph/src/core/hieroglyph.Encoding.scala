@@ -32,13 +32,13 @@
                                                                                                   */
 package hieroglyph
 
-import anticipation.*
-import fulminate.*
-import proscenium.*
+import java.nio as jn, jn.charset as jnc
 
 import scala.jdk.CollectionConverters.SetHasAsScala
 
-import java.nio as jn, jn.charset as jnc
+import anticipation.*
+import fulminate.*
+import proscenium.*
 
 object Encoding:
   given textualizable: Encoding is Textualizable = _.name

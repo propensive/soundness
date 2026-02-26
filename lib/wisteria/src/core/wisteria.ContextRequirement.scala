@@ -32,12 +32,12 @@
                                                                                                   */
 package wisteria
 
+import scala.compiletime.*
+
 import anticipation.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-
-import scala.compiletime.*
 
 object ContextRequirement:
   given required: ContextRequirement:

@@ -32,15 +32,15 @@
                                                                                                   */
 package hieroglyph
 
+import language.experimental.pureFunctions
+
+import java.nio as jn, jn.charset as jnc
+
 import anticipation.*
 import denominative.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-
-import java.nio as jn, jn.charset as jnc
-
-import language.experimental.pureFunctions
 
 object CharDecoder:
   def system(using TextSanitizer): CharDecoder =

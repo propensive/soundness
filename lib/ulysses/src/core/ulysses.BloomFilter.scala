@@ -32,6 +32,9 @@
                                                                                                   */
 package ulysses
 
+import scala.collection.immutable as sci
+import scala.collection.mutable as scm
+
 import cardinality.*
 import gastronomy.*
 import hypotenuse.*
@@ -39,9 +42,6 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-
-import scala.collection.immutable as sci
-import scala.collection.mutable as scm
 
 object BloomFilter:
   def apply[element: Digestible](approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)

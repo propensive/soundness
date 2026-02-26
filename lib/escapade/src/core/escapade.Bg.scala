@@ -32,11 +32,11 @@
                                                                                                   */
 package escapade
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import gossamer.*
 import spectacular.*
-
-import language.experimental.pureFunctions
 
 object Bg:
   def apply[color: Chromatic](color: color): Bg = Bg(color.asRgb24Int)

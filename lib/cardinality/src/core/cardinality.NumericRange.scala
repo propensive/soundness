@@ -32,11 +32,11 @@
                                                                                                   */
 package cardinality
 
+import language.experimental.genericNumberLiterals
+
 import scala.compiletime.ops.double.*
 import scala.reflect.TypeTest
 import scala.util.FromDigits
-
-import language.experimental.genericNumberLiterals
 
 import internal.{Asym, Min4, Max4}
 

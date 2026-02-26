@@ -32,12 +32,15 @@
                                                                                                   */
 package aviation
 
+import scala.quoted.*
+
 import abacist.*
 import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
 import fulminate.*
+import gigantism.*
 import gossamer.*
 import hieroglyph.*
 import hypotenuse.*
@@ -49,8 +52,6 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-
-import scala.quoted.*
 
 object internal:
   opaque type Date = Int

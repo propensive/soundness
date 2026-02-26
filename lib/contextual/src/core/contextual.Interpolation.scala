@@ -34,10 +34,11 @@ package contextual
 
 import language.dynamics
 
+import scala.quoted.*
+
+import gigantism.*
 import prepositional.*
 import proscenium.*
-
-import scala.quoted.*
 
 object Interpolation:
   def apply[topic: Type](context: Expr[StringContext]): Macro[Interpolation of topic] =

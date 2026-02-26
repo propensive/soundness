@@ -32,6 +32,13 @@
                                                                                                   */
 package telekinesis
 
+import language.dynamics
+
+import java.io as ji
+import java.net as jn
+import java.net.http as jnh
+import javax.net.ssl as jns
+
 import anticipation.*
 import coaxial.*
 import contingency.*
@@ -42,13 +49,6 @@ import spectacular.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-
-import java.net as jn
-import java.net.http as jnh
-import java.io as ji
-import javax.net.ssl as jns
-
-import language.dynamics
 
 object HttpClient:
   private lazy val client: jnh.HttpClient = jnh.HttpClient.newHttpClient().nn

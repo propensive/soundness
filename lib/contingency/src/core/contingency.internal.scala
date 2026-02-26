@@ -39,6 +39,7 @@ import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
+import gigantism.*
 import proscenium.*
 import rudiments.*
 import vacuous.*

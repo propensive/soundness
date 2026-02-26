@@ -32,6 +32,8 @@
                                                                                                   */
 package scintillate
 
+import java.net as jn
+
 import anticipation.*
 import contingency.*
 import digression.*
@@ -42,8 +44,6 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 
-
-import java.net as jn
 import com.sun.net.httpserver as csnh
 
 case class HttpServer(port: Int, local: Boolean = true)(using errorPage: WebserverErrorPage)

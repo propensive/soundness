@@ -32,10 +32,10 @@
                                                                                                   */
 package gossamer
 
+import scala.collection.mutable as scm
+
 import rudiments.*
 import vacuous.*
-
-import scala.collection.mutable as scm
 
 class AsciiBuilder(size: Optional[Int] = Unset) extends Builder[Ascii](size):
   private val buffer: scm.ArrayBuffer[Byte] =

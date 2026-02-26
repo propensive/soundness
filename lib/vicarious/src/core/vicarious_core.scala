@@ -33,8 +33,8 @@
 package vicarious
 
 import anticipation.*
-import proscenium.*
 import fulminate.*
+import proscenium.*
 
 private given realm: Realm = realm"vicarious"
 

@@ -34,8 +34,8 @@ package contingency
 
 import language.experimental.pureFunctions
 
-import fulminate.*
 import anticipation.*
+import fulminate.*
 
 case class ExpectationError[result](result: result)(using Diagnostics)
 extends Error(m"the expression was expected to fail, but succeeded")

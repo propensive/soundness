@@ -32,14 +32,14 @@
                                                                                                   */
 package gesticulate
 
+import language.dynamics
+
 import anticipation.*
 import fulminate.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
-
-import language.dynamics
 
 object MediaTypeError:
   enum Reason:

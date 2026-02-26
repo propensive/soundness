@@ -32,6 +32,10 @@
                                                                                                   */
 package anthology
 
+import language.adhocExtensions
+
+import scala.util.control as suc
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -43,15 +47,11 @@ import prepositional.*
 import rudiments.*
 
 import dotty.tools.dotc as dtd
-import dotty.tools.dotc.reporting.*
-import dotty.tools.dotc.interfaces as dtdi
-import dotty.tools.dotc.util as dtdu
 import dotty.tools.dotc.core as dtdc
+import dotty.tools.dotc.interfaces as dtdi
+import dotty.tools.dotc.reporting.*
 import dotty.tools.dotc.sbt.interfaces as dtdsi
-
-import scala.util.control as suc
-
-import language.adhocExtensions
+import dotty.tools.dotc.util as dtdu
 
 object Scalac:
   type Versions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6 | 3.7

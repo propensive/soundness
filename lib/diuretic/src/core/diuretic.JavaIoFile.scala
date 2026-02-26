@@ -32,9 +32,9 @@
                                                                                                   */
 package diuretic
 
-import anticipation.*
-
 import java.io as ji
+
+import anticipation.*
 
 object JavaIoFile extends Abstractable, Instantiable:
   type Self = ji.File

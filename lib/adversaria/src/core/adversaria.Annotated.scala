@@ -32,11 +32,11 @@
                                                                                                   */
 package adversaria
 
+import scala.quoted.*
+
 import anticipation.*
 import prepositional.*
 import proscenium.*
-
-import scala.quoted.*
 
 object Annotated:
   transparent inline given annotations: [topic <: StaticAnnotation, self, plane, limit]

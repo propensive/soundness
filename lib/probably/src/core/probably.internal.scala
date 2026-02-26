@@ -32,18 +32,20 @@
                                                                                                   */
 package probably
 
+import scala.quoted.*
+
+import dotty.tools.dotc.util as dtdu
+
 import anticipation.*
 import chiaroscuro.*
 import denominative.*
 import fulminate.*
+import gigantism.*
 import gossamer.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
-
-import dotty.tools.dotc.util as dtdu
-import scala.quoted.*
 
 object internal:
   private def handle[test: Type, result: Type]

@@ -32,14 +32,14 @@
                                                                                                   */
 package cellulose
 
+import language.dynamics
+
 import anticipation.*
 import contingency.*
 import denominative.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
-
-import language.dynamics
 
 object Codllike:
   def apply(children0: IArray[CodlNode]): Codllike = new Codllike:

@@ -32,9 +32,9 @@
                                                                                                   */
 package symbolism
 
-import prepositional.*
-
 import scala.annotation.targetName
+
+import prepositional.*
 
 object Negatable:
   def apply[operand, result](lambda: operand => result): operand is Negatable to result =

@@ -37,6 +37,7 @@ import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
+import gigantism.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
@@ -80,11 +81,10 @@ trait Interpolator[input, state, result]:
           inline given canThrow: CanThrow[PositionalError] = unsafeExceptions.canThrowAny
           given diagnostics: Diagnostics = Diagnostics.omit
 
-          throw
-            PositionalError
-              ( msg,
-                start + offset.or(0),
-                start + offset.or(0) + length.or(end - start - offset.or(0)) )
+          throw PositionalError
+            ( msg,
+              start + offset.or(0),
+              start + offset.or(0) + length.or(end - start - offset.or(0)) )
 
 
     def recur
@@ -101,7 +101,7 @@ trait Interpolator[input, state, result]:
             val typeName: String = TypeRepr.of[head].widen.show
 
             halt
-              ( m"can't substitute ${Text(typeName)} to this interpolated string",
+              ( m"can't substitute ${typeName} to this interpolated string",
                 head.asTerm.pos )
 
           val (newState, typeclass) = Expr.summon[Insertion[input, head]].fold(notFound):
@@ -152,15 +152,15 @@ trait Interpolator[input, state, result]:
 
     val positions: Seq[Position] = context.absolve match
       case '{(${sc}: StringContext.type).apply(($parts: Seq[String])*)} =>
-        parts.absolve match
-          case Varargs(stringExprs) => stringExprs.to(List).map(_.asTerm.pos)
+        parts.absolve match case Varargs(stringExprs) => stringExprs.to(List).map(_.asTerm.pos)
 
     try recur
-        (exprs,
-          parts.tail,
-          positions.tail,
-          rethrow(parse(initial, Text(parts.head)), positions.head.start, positions.head.end),
-          '{$target.parse($target.initial, Text(${Expr(parts.head)}))})
+      ( exprs,
+        parts.tail,
+        positions.tail,
+        rethrow(parse(initial, parts.head.tt), positions.head.start, positions.head.end),
+        '{$target.parse($target.initial, ${Expr(parts.head)}.tt)} )
+
     catch
       case error: PositionalError =>
         error match

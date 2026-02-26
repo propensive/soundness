@@ -32,6 +32,8 @@
                                                                                                   */
 package mosquito
 
+import scala.compiletime.*
+
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
@@ -41,8 +43,6 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-
-import scala.compiletime.*
 
 object Matrix:
   given showable: [element: Showable] => Text is Measurable => Matrix[element, ?, ?] is Showable =

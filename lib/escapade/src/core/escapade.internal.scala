@@ -32,6 +32,8 @@
                                                                                                   */
 package escapade
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import denominative.*
 import gossamer.*
@@ -39,8 +41,6 @@ import hypotenuse.*
 import iridescence.*
 import proscenium.*
 import symbolism.*
-
-import language.experimental.pureFunctions
 
 object internal:
   opaque type CharSpan = Long

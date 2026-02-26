@@ -32,10 +32,10 @@
                                                                                                   */
 package gossamer
 
-import anticipation.*
-
-import language.experimental.pureFunctions
 import language.experimental.into
+import language.experimental.pureFunctions
+
+import anticipation.*
 
 case class Numerous(word: Text, pluralEnd: Text = "s".tt, singularEnd: Text = "".tt):
   def apply(elements: Iterable[?]): Text = apply(elements.size)

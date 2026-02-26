@@ -32,12 +32,12 @@
                                                                                                   */
 package larceny
 
+import language.adhocExtensions
+
 import dotty.tools.*, dotc.*, util.*, ast.Trees.*, ast.tpd, core.*,
     Constants.Constant, Contexts.*, Decorators.*, StdNames.*, plugins.*
 
 import scala.collection.mutable as scm
-
-import language.adhocExtensions
 
 class LarcenyTransformer() extends PluginPhase:
   import tpd.*

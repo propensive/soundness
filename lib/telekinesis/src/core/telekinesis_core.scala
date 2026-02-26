@@ -32,6 +32,8 @@
                                                                                                   */
 package telekinesis
 
+import language.dynamics
+
 import anticipation.*
 import distillate.*
 import fulminate.*
@@ -43,8 +45,6 @@ import rudiments.*
 import spectacular.*
 import urticose.*
 import vacuous.*
-
-import language.dynamics
 
 private given realm: Realm = realm"telekinesis"
 

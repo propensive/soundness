@@ -32,13 +32,12 @@
                                                                                                   */
 package capricious
 
+import language.experimental.genericNumberLiterals
+
 import hypotenuse.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
 import wisteria.*
-
-import language.experimental.genericNumberLiterals
 
 object Randomizable extends Derivation[[derivation] =>> derivation is Randomizable]:
   given long: Long is Randomizable = _.long()

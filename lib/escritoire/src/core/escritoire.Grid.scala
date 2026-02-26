@@ -32,6 +32,10 @@
                                                                                                   */
 package escritoire
 
+import language.experimental.pureFunctions
+
+import scala.collection.immutable as sci
+
 import anticipation.*
 import fulminate.*
 import gossamer.*
@@ -41,10 +45,6 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-
-import scala.collection.immutable as sci
-
-import language.experimental.pureFunctions
 
 object Grid:
   given printable: [text: {Textual, Printable as printable}] => (Text is Measurable)

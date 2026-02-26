@@ -32,6 +32,8 @@
                                                                                                   */
 package gesticulate
 
+import scala.reflect.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -42,8 +44,6 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
-
-import scala.reflect.*
 
 import MultipartError.Reason
 

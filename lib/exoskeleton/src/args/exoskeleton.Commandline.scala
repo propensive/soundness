@@ -32,11 +32,11 @@
                                                                                                   */
 package exoskeleton
 
+import language.experimental.pureFunctions
+
 import contingency.*
 import rudiments.*
 import vacuous.*
-
-import language.experimental.pureFunctions
 
 case class Commandline
   ( positional:     List[Argument]                = Nil,

@@ -32,6 +32,7 @@
                                                                                                   */
 package synesthesia
 
+import scala.annotation.*
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -51,8 +52,6 @@ import telekinesis.*
 import urticose.*
 import vacuous.*
 import wisteria.*
-
-import scala.annotation.*
 
 trait McpServer():
   import Mcp.*

@@ -32,10 +32,10 @@
                                                                                                   */
 package mercator
 
+import scala.collection.BuildFrom
+
 import anticipation.*
 import fulminate.*
-
-import scala.collection.BuildFrom
 
 private given realm: Realm = realm"mercator"
 

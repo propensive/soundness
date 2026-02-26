@@ -32,15 +32,15 @@
                                                                                                   */
 package capricious
 
-import anticipation.*
-import hypotenuse.*
-
-import scala.util as su
+import language.experimental.genericNumberLiterals
 
 import java.security as js
 import java.util as ju
 
-import language.experimental.genericNumberLiterals
+import scala.util as su
+
+import anticipation.*
+import hypotenuse.*
 
 package randomization:
   package text:

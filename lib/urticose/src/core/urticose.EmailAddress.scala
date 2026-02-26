@@ -32,11 +32,15 @@
                                                                                                   */
 package urticose
 
+import scala.compiletime.*
+import scala.quoted.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
 import fulminate.*
+import gigantism.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
@@ -45,9 +49,6 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-
-import scala.quoted.*
-import scala.compiletime.*
 
 import EmailAddressError.Reason.*
 

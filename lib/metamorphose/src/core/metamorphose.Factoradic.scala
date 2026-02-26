@@ -32,9 +32,9 @@
                                                                                                   */
 package metamorphose
 
-import contingency.*
-
 import scala.annotation.*
+
+import contingency.*
 
 object Factoradic:
   def apply(sequence: List[Int]): Factoradic raises PermutationError =

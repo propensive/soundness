@@ -32,11 +32,11 @@
                                                                                                   */
 package exoskeleton
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import escapade.*
 import vacuous.*
-
-import language.experimental.pureFunctions
 
 case class Subcommand
   ( name: Text, description: Optional[Text | Teletype] = Unset, hidden: Boolean = false ):

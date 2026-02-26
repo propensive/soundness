@@ -37,6 +37,7 @@ import scala.quoted.*
 import anticipation.*
 import contingency.*
 import fulminate.*
+import gigantism.*
 import proscenium.*
 
 object internal:

@@ -32,12 +32,12 @@
                                                                                                   */
 package camouflage
 
-import rudiments.*
-import vacuous.*
+import java.util.concurrent.atomic as juca
 
 import scala.collection.mutable as scm
 
-import java.util.concurrent.atomic as juca
+import rudiments.*
+import vacuous.*
 
 class LruCache[key, value](maxSize: Int):
   private val counter: juca.AtomicInteger = juca.AtomicInteger(0)

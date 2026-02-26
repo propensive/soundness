@@ -37,6 +37,7 @@ import language.experimental.into
 import scala.quoted.*
 
 import anticipation.*
+import gigantism.*
 import proscenium.*
 
 object internal:

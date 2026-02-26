@@ -34,11 +34,12 @@ package ethereal
 
 import language.experimental.pureFunctions
 
-import java.net as jn
 import java.io as ji
 import java.lang as jl
+import java.net as jn
 
 import scala.collection.concurrent as scc
+
 import ambience.*, systems.java
 import anticipation.*
 import contingency.*

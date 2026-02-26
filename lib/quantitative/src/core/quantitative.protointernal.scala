@@ -32,17 +32,18 @@
                                                                                                   */
 package quantitative
 
+import scala.compiletime.*
+import scala.quoted.*
+
 import anticipation.*
 import fulminate.*
+import gigantism.*
 import hypotenuse.*
 import prepositional.*
 import probably.*
 import proscenium.*
 import rudiments.*
 import symbolism.*
-
-import scala.quoted.*
-import scala.compiletime.*
 
 trait protointernal:
   private given realm: Realm = realm"quantitative"

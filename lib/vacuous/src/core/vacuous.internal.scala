@@ -35,6 +35,7 @@ package vacuous
 import scala.quoted.*
 
 import fulminate.*
+import gigantism.*
 import prepositional.*
 import proscenium.*
 

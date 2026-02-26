@@ -32,6 +32,11 @@
                                                                                                   */
 package galilei
 
+import language.experimental.pureFunctions
+
+import java.nio.channels as jnc
+import java.nio.file as jnf
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -41,11 +46,6 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import serpentine.*
-
-import java.nio.file as jnf
-import java.nio.channels as jnc
-
-import language.experimental.pureFunctions
 
 object Makable:
   given [plane: Filesystem]

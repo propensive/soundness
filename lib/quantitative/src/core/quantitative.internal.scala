@@ -32,6 +32,10 @@
                                                                                                   */
 package quantitative
 
+import language.implicitConversions
+
+import scala.quoted.*
+
 import anticipation.*
 import gossamer.*
 import hypotenuse.*
@@ -41,10 +45,6 @@ import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
-
-import scala.quoted.*
-
-import language.implicitConversions
 
 object internal extends protointernal:
   opaque type Quantity[units <: Measure] = Double

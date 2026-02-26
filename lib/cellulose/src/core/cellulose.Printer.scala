@@ -32,13 +32,13 @@
                                                                                                   */
 package cellulose
 
+import java.io as ji
+
 import anticipation.*
 import gossamer.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-
-import java.io as ji
 
 object Printer:
   def print(out: ji.Writer, doc: CodlDoc): Unit =

@@ -32,6 +32,10 @@
                                                                                                   */
 package cellulose
 
+import language.dynamics
+
+import java.io as ji
+
 import anticipation.*
 import chiaroscuro.*
 import contingency.*
@@ -44,10 +48,6 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
-
-import java.io as ji
-
-import language.dynamics
 
 object CodlDoc:
   def apply(nodes: CodlNode*): CodlDoc = CodlDoc(IArray.from(nodes), CodlSchema.Free, 0)

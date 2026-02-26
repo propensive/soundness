@@ -32,13 +32,14 @@
                                                                                                   */
 package cataclysm
 
+import scala.quoted.*
+
 import anticipation.*
 import fulminate.*
+import gigantism.*
 import gossamer.*
 import proscenium.*
 import spectacular.*
-
-import scala.quoted.*
 
 object internal:
   def rule(selector: Expr[Selector], props: Expr[Seq[(Label, Any)]]): Macro[CssRule] =

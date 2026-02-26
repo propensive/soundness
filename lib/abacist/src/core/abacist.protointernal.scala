@@ -32,16 +32,16 @@
                                                                                                   */
 package abacist
 
+import scala.compiletime.*, ops.int.*
+
 import anticipation.*
 import gossamer.*
-import quantitative.*
 import prepositional.*
 import proscenium.*
+import quantitative.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
-
-import scala.compiletime.*, ops.int.*
 
 object protointernal extends anteprotointernal:
   opaque type Quanta[units <: Tuple] = Long

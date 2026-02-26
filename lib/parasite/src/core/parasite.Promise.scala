@@ -34,11 +34,11 @@ package parasite
 
 import language.experimental.pureFunctions
 
+import java.lang as jl
 import java.util as ju
 import ju.concurrent as juc
 import juc.atomic as juca
 import juc.locks as jucl
-import java.lang as jl
 
 import anticipation.*
 import contingency.*

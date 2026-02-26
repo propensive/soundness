@@ -32,9 +32,9 @@
                                                                                                   */
 package capricious
 
-import scala.util as su
-
 import language.experimental.genericNumberLiterals
+
+import scala.util as su
 
 trait Randomization:
   def make(): su.Random

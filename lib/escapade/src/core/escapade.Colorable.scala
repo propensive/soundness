@@ -32,10 +32,10 @@
                                                                                                   */
 package escapade
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import prepositional.*
-
-import language.experimental.pureFunctions
 
 object Colorable:
   def apply[value](using erased Void)[color: Chromatic](color0: color): value is Colorable =

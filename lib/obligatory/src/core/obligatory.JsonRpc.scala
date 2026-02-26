@@ -32,7 +32,9 @@
                                                                                                   */
 package obligatory
 
+import scala.annotation.*
 import scala.collection.mutable as scm
+import scala.quoted.*
 
 import anticipation.*
 import contingency.*
@@ -51,9 +53,6 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-
-import scala.annotation.*
-import scala.quoted.*
 
 
 object JsonRpc:

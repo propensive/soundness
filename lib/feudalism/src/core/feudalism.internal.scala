@@ -32,13 +32,14 @@
                                                                                                   */
 package feudalism
 
-import denominative.*
-import fulminate.*
-import proscenium.*
-import rudiments.*
-
 import java.util.concurrent.atomic as juca
 import java.util.concurrent.locks as jucl
+
+import denominative.*
+import fulminate.*
+import gigantism.*
+import proscenium.*
+import rudiments.*
 
 object internal:
   import State.{Inactive, Reading, Writing}

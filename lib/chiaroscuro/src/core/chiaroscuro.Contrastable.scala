@@ -32,6 +32,9 @@
                                                                                                   */
 package chiaroscuro
 
+import scala.compiletime.*
+import scala.reflect.*
+
 import anticipation.*
 import denominative.*
 import dissonance.*
@@ -43,9 +46,6 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 import wisteria.*
-
-import scala.reflect.*
-import scala.compiletime.*
 
 object Contrastable:
   inline given derived: [entity] => entity is Contrastable = summonFrom:

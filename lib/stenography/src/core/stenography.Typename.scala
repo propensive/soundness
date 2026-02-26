@@ -63,6 +63,7 @@ enum Typename:
 
   def name: Text
   def child(name: Text, isType: Boolean) = if isType then Type(this, name) else Term(this, name)
+  def qualified: Text = text(using Imports.empty)
 
   def companionObject: Typename = this match
     case Type(parent, name) => Term(parent, name)

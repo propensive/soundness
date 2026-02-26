@@ -32,6 +32,13 @@
                                                                                                   */
 package gossamer
 
+import language.experimental.into
+import language.experimental.pureFunctions
+
+import java.util.regex.*
+
+import scala.reflect.*
+
 import anticipation.*
 import denominative.*
 import kaleidoscope.*
@@ -40,13 +47,6 @@ import proscenium.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
-
-import scala.reflect.*
-
-import java.util.regex.*
-
-import language.experimental.pureFunctions
-import language.experimental.into
 
 object Cuttable:
   given textualText: [textual: {Textual, Countable}] => textual is Cuttable by Text =

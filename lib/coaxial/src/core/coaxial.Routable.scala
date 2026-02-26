@@ -32,14 +32,14 @@
                                                                                                   */
 package coaxial
 
+import java.net as jn
+
 import anticipation.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import urticose.*
 import vacuous.*
-
-import java.net as jn
 
 object Routable:
   given udpEndpoint: Endpoint[UdpPort] is Routable:

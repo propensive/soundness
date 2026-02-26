@@ -32,10 +32,10 @@
                                                                                                   */
 package distillate
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import fulminate.*
-
-import language.experimental.pureFunctions
 
 case class NumberError(text: Text, specializable: Specializable)(using Diagnostics)
 extends Error(m"$text is not a valid $specializable")

@@ -32,10 +32,14 @@
                                                                                                   */
 package obligatory
 
+import scala.annotation.*
+import scala.quoted.*
+
 import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
+import gigantism.*
 import inimitable.*
 import jacinta.*
 import parasite.*
@@ -45,9 +49,6 @@ import rudiments.*
 import spectacular.*
 import urticose.*
 import vacuous.*
-
-import scala.annotation.*
-import scala.quoted.*
 
 
 object internal:

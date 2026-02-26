@@ -34,8 +34,27 @@ package gigantism
 
 import scala.quoted.*
 
-object Macro:
-  def example(param: Expr[Int]): Macro[Int] = '{34}
-  inline def example(param: Int): Int = ${example('param)}
-
 type Macro[result] = Quotes ?=> Expr[result]
+
+inline def metaprogramming(using quotes: Quotes): Metaprogramming(quotes) =
+  Metaprogramming(quotes)
+
+
+case class Metaprogramming(tracked val quotes: Quotes):
+  import dotty.tools.dotc.core.*
+  import quotes.reflect.*
+
+  private val context: Contexts.Context = quotes.asInstanceOf[runtime.impl.QuotesImpl].ctx
+
+  case class Import(wildcard: Boolean, term: quotes.reflect.TermRef)
+
+  def imports: List[Import] =
+    def recur(context: Contexts.Context, found: List[Import]): List[Import] =
+      if context == dotty.tools.dotc.core.Contexts.NoContext then found else
+        val found2 = if !context.isImportContext then found else
+          val info = context.importInfo.nn
+          Import(info.isWildcardImport, info.site(using context).asInstanceOf[quotes.reflect.TermRef]) :: found
+
+        recur(context.outer, found2)
+
+    recur(context, Nil)

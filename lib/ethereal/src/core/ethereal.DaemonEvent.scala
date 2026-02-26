@@ -32,12 +32,12 @@
                                                                                                   */
 package ethereal
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import exoskeleton.*
 import guillotine.*
 import profanity.*
-
-import language.experimental.pureFunctions
 
 enum DaemonEvent:
   case Init

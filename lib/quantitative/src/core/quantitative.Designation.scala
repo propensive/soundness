@@ -32,11 +32,11 @@
                                                                                                   */
 package quantitative
 
+import language.implicitConversions
+
 import anticipation.*
 import gossamer.*
 import spectacular.*
-
-import language.implicitConversions
 
 object Designation:
   given metres: Designation[Metres[1]] = () => t"m"

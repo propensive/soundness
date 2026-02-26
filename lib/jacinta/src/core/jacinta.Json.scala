@@ -36,8 +36,8 @@ import language.dynamics
 import language.experimental.pureFunctions
 
 import scala.collection.Factory
-import scala.compiletime.*
 import scala.collection.mutable as scm
+import scala.compiletime.*
 
 import anticipation.*
 import contingency.*

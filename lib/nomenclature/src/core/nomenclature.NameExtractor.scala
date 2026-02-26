@@ -32,9 +32,9 @@
                                                                                                   */
 package nomenclature
 
-import proscenium.*
-
 import scala.quoted.*
+
+import proscenium.*
 
 class NameExtractor[text <: Label]():
   inline def apply[plane: Nominative](): Name[plane] =

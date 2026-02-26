@@ -32,8 +32,8 @@
                                                                                                   */
 package metamorphose
 
-import scala.collection.mutable.BitSet
 import scala.annotation.*
+import scala.collection.mutable.BitSet
 
 import anticipation.*
 import contingency.*

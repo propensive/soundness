@@ -32,6 +32,8 @@
                                                                                                   */
 package chiaroscuro
 
+import scala.reflect.*
+
 import anticipation.*
 import denominative.*
 import gossamer.*
@@ -40,8 +42,6 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-
-import scala.reflect.*
 
 object Decomposition:
   def apply(optional: Optional[Decomposition]): Decomposition = optional.or:

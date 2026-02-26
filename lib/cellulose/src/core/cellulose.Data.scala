@@ -32,6 +32,8 @@
                                                                                                   */
 package cellulose
 
+import language.dynamics
+
 import anticipation.*
 import contextual.*
 import gossamer.{where as _, *}
@@ -39,8 +41,6 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
-
-import language.dynamics
 
 object Atom:
   given insertion: [entity: Encodable in Codl] => Insertion[List[Atom], entity] =

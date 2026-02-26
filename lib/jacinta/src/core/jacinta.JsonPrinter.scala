@@ -32,13 +32,13 @@
                                                                                                   */
 package jacinta
 
+import scala.compiletime.*
+
 import anticipation.*
 import gossamer.*
 import merino.*
 import proscenium.*
 import rudiments.*
-
-import scala.compiletime.*
 
 object JsonPrinter:
   def print(json: JsonAst, indentation: Boolean): Text = Text.construct:

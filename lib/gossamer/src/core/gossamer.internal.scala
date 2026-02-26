@@ -38,6 +38,7 @@ import anticipation.*
 import contextual.*
 import denominative.*
 import fulminate.*
+import gigantism.*
 import proscenium.*
 import rudiments.*
 import spectacular.*

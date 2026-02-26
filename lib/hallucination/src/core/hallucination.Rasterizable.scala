@@ -32,15 +32,15 @@
                                                                                                   */
 package hallucination
 
+import javax.imageio as ji
+
 import anticipation.*
 import contingency.*
 import gesticulate.*
 import prepositional.*
-import rudiments.*
 import proscenium.*
+import rudiments.*
 import turbulence.*
-
-import javax.imageio as ji
 
 trait Rasterizable extends Typeclass:
   rasterizable =>

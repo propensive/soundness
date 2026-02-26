@@ -32,6 +32,8 @@
                                                                                                   */
 package telekinesis
 
+import language.dynamics
+
 import anticipation.*
 import coaxial.*
 import contingency.*
@@ -50,8 +52,6 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
-
-import language.dynamics
 
 sealed trait Http
 

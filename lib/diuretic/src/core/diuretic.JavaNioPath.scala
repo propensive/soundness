@@ -32,9 +32,9 @@
                                                                                                   */
 package diuretic
 
-import anticipation.*
-
 import java.nio.file as jnf
+
+import anticipation.*
 
 object JavaNioPath extends Instantiable, Abstractable:
   type Self = jnf.Path

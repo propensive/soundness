@@ -32,8 +32,8 @@
                                                                                                   */
 package anticipation
 
-import java.nio.file as jnf
 import java.io as ji
+import java.nio.file as jnf
 
 import prepositional.*
 

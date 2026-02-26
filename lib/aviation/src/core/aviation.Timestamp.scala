@@ -32,6 +32,8 @@
                                                                                                   */
 package aviation
 
+import java.time as jt
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -43,8 +45,6 @@ import spectacular.*
 import symbolism.*
 
 import errorDiagnostics.stackTraces
-
-import java.time as jt
 
 object Timestamp:
   import calendars.gregorian

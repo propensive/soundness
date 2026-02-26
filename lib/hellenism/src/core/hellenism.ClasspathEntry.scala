@@ -32,8 +32,8 @@
                                                                                                   */
 package hellenism
 
-import java.net as jn
 import java.io as ji
+import java.net as jn
 
 import anticipation.*
 import gossamer.*

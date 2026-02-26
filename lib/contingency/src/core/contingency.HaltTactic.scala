@@ -36,8 +36,8 @@ import language.experimental.pureFunctions
 
 import scala.quoted.*
 
-import fulminate.*
 import anticipation.*
+import fulminate.*
 
 open class HaltTactic[error <: Error, success]()(using Quotes, Realm)
 extends Tactic[error]:

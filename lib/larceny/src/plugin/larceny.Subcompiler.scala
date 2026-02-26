@@ -32,12 +32,12 @@
                                                                                                   */
 package larceny
 
+import language.adhocExtensions
+
 import dotty.tools.*, dotc.*, util.*, reporting.*, core.*, config.Settings, Contexts.*
 
-import scala.util.chaining.*
 import scala.collection.mutable as scm
-
-import language.adhocExtensions
+import scala.util.chaining.*
 
 object Subcompiler:
   val Scala3: Compiler = new Compiler()

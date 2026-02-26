@@ -36,6 +36,7 @@ import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
+import gigantism.*
 import gossamer.*
 import hellenism.*
 import proscenium.*

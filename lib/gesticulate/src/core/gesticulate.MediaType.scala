@@ -32,6 +32,8 @@
                                                                                                   */
 package gesticulate
 
+import language.dynamics
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -40,8 +42,6 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
-
-import language.dynamics
 
 object MediaType:
   given inspectable: MediaType is Inspectable = mt => t"""media"${mt}""""

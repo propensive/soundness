@@ -32,11 +32,12 @@
                                                                                                   */
 package capricious
 
+import language.experimental.genericNumberLiterals
+
+import scala.annotation.tailrec
+
 import hypotenuse.*
 import symbolism.*
-
-import language.experimental.genericNumberLiterals
-import scala.annotation.tailrec
 
 object Gamma:
   def approximate(mean: Double, std: Double): Gamma =

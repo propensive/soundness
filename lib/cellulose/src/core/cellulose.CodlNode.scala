@@ -32,6 +32,8 @@
                                                                                                   */
 package cellulose
 
+import language.dynamics
+
 import anticipation.*
 import chiaroscuro.*
 import contingency.*
@@ -40,8 +42,6 @@ import dissonance.*
 import gossamer.*
 import spectacular.*
 import vacuous.*
-
-import language.dynamics
 
 object CodlNode:
   given inspectable: CodlNode is Inspectable = _.data.option.fold(t"!"): data =>

@@ -34,15 +34,16 @@ package adversaria
 
 import java.lang as jl
 
+import scala.quoted.*
+
 import anticipation.*
 import denominative.*
 import fulminate.*
+import gigantism.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-
-import scala.quoted.*
 
 object internal:
   private def rebuild(using Quotes)(term: quotes.reflect.Term): Optional[quotes.reflect.Term] =

@@ -32,10 +32,10 @@
                                                                                                   */
 package wisteria
 
+import scala.compiletime.*
+
 import anticipation.*
 import fulminate.*
-
-import scala.compiletime.*
 
 object VariantError:
   inline def apply[derivation](inputLabel: Text)

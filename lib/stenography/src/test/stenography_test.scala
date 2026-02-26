@@ -44,7 +44,6 @@ import symbolism.*
 
 object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
-    import anticipation.*
     test(m"Decode a term"):
       Typename(t"immutable.List")
     . assert(_ == Typename.Term(Typename.Top("immutable"), "List"))

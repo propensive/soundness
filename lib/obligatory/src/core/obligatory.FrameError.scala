@@ -32,9 +32,9 @@
                                                                                                   */
 package obligatory
 
+import scala.annotation.*
+
 import anticipation.*
 import fulminate.*
-
-import scala.annotation.*
 
 case class FrameError()(using Diagnostics) extends Error(m"could not deframe the message")

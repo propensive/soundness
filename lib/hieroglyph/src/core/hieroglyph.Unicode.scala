@@ -32,6 +32,10 @@
                                                                                                   */
 package hieroglyph
 
+import java.io as ji
+
+import scala.collection.immutable.TreeMap
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -40,10 +44,6 @@ import kaleidoscope.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-
-import scala.collection.immutable.TreeMap
-
-import java.io as ji
 
 object Unicode:
   import hieroglyph.internal.*

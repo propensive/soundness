@@ -32,5 +32,8 @@
                                                                                                   */
 package stenography
 
+object Imports:
+  val empty: Imports = Imports(Set())
+
 case class Imports(typenames: Set[Typename]):
   def has(typename: Typename): Boolean = typenames.contains(typename)

@@ -32,17 +32,17 @@
                                                                                                   */
 package probably
 
-import anticipation.*
-import distillate.*
-import gossamer.*
-import proscenium.*
-import rudiments.*
+import java.io.*
 
 import scala.collection.mutable.BitSet
 import scala.io.*
 import scala.runtime.coverage.*
 
-import java.io.*
+import anticipation.*
+import distillate.*
+import gossamer.*
+import proscenium.*
+import rudiments.*
 
 object Coverage:
   def apply(): Option[Coverage] = currentDir.map: dir =>

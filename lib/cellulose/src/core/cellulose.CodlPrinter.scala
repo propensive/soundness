@@ -32,9 +32,9 @@
                                                                                                   */
 package cellulose
 
-import anticipation.*
-
 import java.io as ji
+
+import anticipation.*
 
 object CodlPrinter:
   val standardPrinter: CodlPrinter = codl =>

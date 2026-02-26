@@ -32,12 +32,12 @@
                                                                                                   */
 package coaxial
 
+import java.io as ji
+
 import anticipation.*
 import contingency.*
 import proscenium.*
 import turbulence.*
-
-import java.io as ji
 
 case class Connection
   ( private[coaxial] val in: ji.InputStream, private[coaxial] val out: ji.OutputStream ):

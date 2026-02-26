@@ -33,8 +33,8 @@
 package mandible
 
 import java.lang.classfile as jlc
-import java.lang.classfile.instruction as jlci
 import java.lang.classfile.attribute as jlca
+import java.lang.classfile.instruction as jlci
 
 import anticipation.*
 import contingency.*
