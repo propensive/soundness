@@ -42,4 +42,4 @@ import stdioSources.virtualMachine.ansi
 
 object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
-    Out.println(introspect(true)(println("hello world" + 1)).teletype)
+    Out.println(introspect(true)(Out.println("hello world" + 1)).teletype)
