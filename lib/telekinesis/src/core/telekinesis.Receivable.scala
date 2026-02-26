@@ -62,3 +62,4 @@ object Receivable extends Receivable2:
 
 trait Receivable extends Typeclass:
   def read(response: Http.Response): Self
+  def map[self2](lambda: Self => self2): self2 is Receivable = response => lambda(read(response))

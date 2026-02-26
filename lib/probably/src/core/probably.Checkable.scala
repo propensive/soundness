@@ -69,3 +69,6 @@ object Checkable:
 
 trait Checkable extends Typeclass, Contrastive:
   def check(left: Self, right: Contrast): Boolean
+
+  def contramap[self2](lambda: self2 => Self): self2 is Checkable against Contrast =
+    (left, right) => check(lambda(left), right)

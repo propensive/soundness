@@ -46,3 +46,6 @@ object Attachable:
 
 trait Attachable extends Typeclass:
   def attachment(entity: Self): Asset
+
+  def contramap[self2](lambda: self2 => Self): self2 is Attachable =
+    entity => attachment(lambda(entity))

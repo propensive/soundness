@@ -36,3 +36,6 @@ import prepositional.*
 
 trait Embeddable extends Typeclass, Operable, Formal:
   def embed(value: Self): Operand
+
+  def contramap[self2](lambda: self2 => Self): self2 is Embeddable by Operand in Form =
+    value => embed(lambda(value))

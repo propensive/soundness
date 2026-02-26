@@ -170,3 +170,6 @@ object Teletypeable:
 
 trait Teletypeable extends Typeclass:
   def teletype(value: Self): Teletype
+
+  def contramap[self2](lambda: self2 => Self): self2 is Teletypeable =
+    value => teletype(lambda(value))

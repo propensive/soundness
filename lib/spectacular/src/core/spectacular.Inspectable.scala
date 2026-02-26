@@ -204,3 +204,4 @@ trait Inspectable2:
 
 trait Inspectable extends Typeclass:
   def text(value: Self): Text
+  def contramap[self2](lambda: self2 => Self): self2 is Inspectable = value => text(lambda(value))

@@ -37,3 +37,4 @@ import prepositional.*
 
 trait Fatal extends Typeclass:
   def status(error: Self): Exit
+  def contramap[self2](lambda: self2 => Self): self2 is Fatal = error => status(lambda(error))

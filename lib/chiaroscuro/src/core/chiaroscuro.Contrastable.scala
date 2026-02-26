@@ -90,27 +90,31 @@ object Contrastable:
   trait Foundation extends Contrastable:
     def juxtaposition(left: Self, right: Self): Juxtaposition
 
-  object Foundation extends Foundation2:
-    given decomposition: Decomposition is Contrastable.Foundation =
-      juxtaposition(t"", _, _)
+  object Foundation extends Protofoundation:
+    given decomposition: Decomposition is Contrastable.Foundation = juxtaposition(t"", _, _)
+    given int: Int is Contrastable.Foundation = long.juxtaposition(_, _)
+    given short: Short is Contrastable.Foundation = long.juxtaposition(_, _)
+    given byte: Byte is Contrastable.Foundation = long.juxtaposition(_, _)
+    given float: Byte is Contrastable.Foundation = long.juxtaposition(_, _)
 
-    given set: [element: Showable] => Set[element] is Contrastable.Foundation = (left, right) =>
-      if left == right then Juxtaposition.Same(left.show) else
-        val leftOnly: Set[Text] = (left -- right).map(_.show)
-        val rightOnly: Set[Text] = (right -- left).map(_.show)
+    given set: [element: Showable] => Set[element] is Contrastable.Foundation =
+      (left, right) =>
+        if left == right then Juxtaposition.Same(left.show) else
+          val leftOnly: Set[Text] = (left -- right).map(_.show)
+          val rightOnly: Set[Text] = (right -- left).map(_.show)
 
-        def describe(set: Set[Text]): Text =
-          ( if set.size > 5
-            then set.take(4).to(List) :+ t"…${(set.size - 4).show.subscripts}" else set.to(List) )
+          def describe(set: Set[Text]): Text =
+            ( if set.size > 5
+              then set.take(4).to(List) :+ t"…${(set.size - 4).show.subscripts}" else set.to(List) )
 
-          . join(t"{", t", ", t"}")
+            . join(t"{", t", ", t"}")
 
-        val message =
-          if leftOnly.nil then t"+${describe(rightOnly)}"
-          else if rightOnly.nil then t"-${describe(leftOnly)}"
-          else t"-${describe(leftOnly)}╱+${describe(rightOnly)}"
+          val message =
+            if leftOnly.nil then t"+${describe(rightOnly)}"
+            else if rightOnly.nil then t"-${describe(leftOnly)}"
+            else t"-${describe(leftOnly)}╱+${describe(rightOnly)}"
 
-        Juxtaposition.Different(left.show, right.show, message)
+          Juxtaposition.Different(left.show, right.show, message)
 
     given exception: Exception is Contrastable.Foundation:
       def juxtaposition(left: Exception, right: Exception): Juxtaposition =
@@ -136,17 +140,13 @@ object Contrastable:
 
         Juxtaposition.Different(left2, right2, difference)
 
-    given float: Float is Contrastable.Foundation = double.juxtaposition(_, _)
-
     given long: Long is Contrastable.Foundation = (left, right) =>
-      if left == right then Juxtaposition.Same(left.show)
-      else
+      if left == right then Juxtaposition.Same(left.show) else
         val plus = if right > left then t"+" else t""
         Juxtaposition.Different(left.show, right.show, t"$plus${(right - left)}")
 
-    given int: Int is Contrastable.Foundation = long.juxtaposition(_, _)
-    given short: Short is Contrastable.Foundation = long.juxtaposition(_, _)
-    given byte: Byte is Contrastable.Foundation = long.juxtaposition(_, _)
+    given string: String is Contrastable.Foundation =
+      (left, right) => text.juxtaposition(left.tt, right.tt)
 
     given text: Text is Contrastable.Foundation =
       (left, right) =>
@@ -155,12 +155,8 @@ object Contrastable:
             Decomposition.Primitive(t"Char", char.show, char)
           comparison[Char](t"Text", decompose(left.chars), decompose(right.chars), left, right)
 
-    given string: String is Contrastable.Foundation =
-      (left, right) => text.juxtaposition(left.tt, right.tt)
-
   inline def nothing[value]: value is Contrastable = (left, right) =>
-    provide[value is Decomposable]:
-      Juxtaposition.Same(left.decompose.text)
+    provide[value is Decomposable](Juxtaposition.Same(left.decompose.text))
 
   def juxtaposition(typeName: Text, left: Decomposition, right: Decomposition): Juxtaposition =
     if left.ref == right.ref then Juxtaposition.Same(left.text) else (left, right) match
@@ -240,10 +236,13 @@ object Contrastable:
       Juxtaposition.Collation(name, comparison.to(List), leftDebug, rightDebug)
 
 
-  trait Foundation2:
+  trait Protofoundation:
     given showable: [value: Showable] => value is Contrastable = (left, right) =>
       if left == right then Juxtaposition.Same(left.show)
       else Juxtaposition.Different(left.show, right.show)
 
 trait Contrastable extends Typeclass:
   def juxtaposition(left: Self, right: Self): Juxtaposition
+
+  def contramap[self2](lambda: self2 => Self): self2 is Contrastable =
+    (left, right) => juxtaposition(lambda(left), lambda(right))

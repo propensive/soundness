@@ -42,3 +42,6 @@ object Parameterizable:
 
 trait Parameterizable extends Typeclass:
   def show(value: Self): Text
+
+  def contramap[self2](lambda: self2 => Self): self2 is Parameterizable =
+    value => show(lambda(value))

@@ -51,3 +51,4 @@ object Sendable:
 
 trait Sendable extends Typeclass:
   def email(content: Self): Email
+  def contramap[self2](lambda: self2 => Self): self2 is Sendable = content => email(lambda(content))

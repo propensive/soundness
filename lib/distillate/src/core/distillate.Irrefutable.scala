@@ -42,7 +42,7 @@ object Irrefutable:
   given irrefutable: [result] => (irrefutable: Text is Irrefutable to result)
   =>  String is Irrefutable to result =
 
-    string => irrefutable.unapply(string.tt)
+    irrefutable.contramap(_.tt)
 
 
   given textString: [text <: Text] => text is Irrefutable to String = _.s
@@ -62,3 +62,6 @@ object Irrefutable:
 
 trait Irrefutable extends Typeclass, Resultant:
   def unapply(value: Self): Result
+
+  def contramap[self2](lambda: self2 => Self): self2 is Irrefutable to Result =
+    value => unapply(lambda(value))

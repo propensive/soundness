@@ -43,7 +43,10 @@ object Ingressive:
   given text: CharDecoder => Text is Ingressive = _.text
 
   given decoder: [message: Decodable in Text] => CharDecoder => message is Ingressive =
-    _.text.decode[message]
+    text.map(_.decode[message])
 
 trait Ingressive extends Typeclass:
   def deserialize(message: Data): Self
+
+  def map[self2](lambda: Self => self2): self2 is Ingressive =
+    message => lambda(deserialize(message))
