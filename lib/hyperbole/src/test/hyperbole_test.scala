@@ -40,6 +40,6 @@ import turbulence.*
 
 import stdioSources.virtualMachine.ansi
 
-object Tests extends Suite(m"internal Tests"):
+object Tests extends Suite(m"Hyperbole Tests"):
   def run(): Unit =
     Out.println(introspect(true)(println("hello world" + 1)).teletype)

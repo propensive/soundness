@@ -36,7 +36,7 @@ import soundness.*
 
 import currencies.{Gbp, Eur}
 
-object Tests extends Suite(m"internal tests"):
+object Tests extends Suite(m"Plutocrat tests"):
   def run(): Unit =
     suite(m"Money tests"):
       test(m"Show a local monetary value"):

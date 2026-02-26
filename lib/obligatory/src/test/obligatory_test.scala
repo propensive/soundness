@@ -36,7 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 
-object Tests extends Suite(m"internal Tests"):
+object Tests extends Suite(m"Obligatory Tests"):
   def run(): Unit =
     suite(m"Unframing tests"):
       test(m"Unframe by carriage-return lines"):

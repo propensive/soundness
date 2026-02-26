@@ -38,7 +38,7 @@ case class Organization(name: String, leader: Person)
 case class Person(name: String, age: Int, role: Role)
 case class Role(name: String, salary: Int)
 
-object Tests extends Suite(m"internal tests"):
+object Tests extends Suite(m"Panopticon tests"):
   def run(): Unit =
     case class Company(ceo: Person, name: Text)
     case class Person(name: Text, roles: List[Role])

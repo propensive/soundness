@@ -34,7 +34,7 @@ package typonym
 
 import soundness.*
 
-object Tests extends Suite(m"internal tests"):
+object Tests extends Suite(m"Typonym tests"):
   def run(): Unit =
     test(m"Get a list of strings"):
       reify[TypeList[("one", "two", "three")]]

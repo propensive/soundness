@@ -34,7 +34,7 @@ package distillate
 
 import soundness.*
 
-object Tests extends Suite(m"internal Tests"):
+object Tests extends Suite(m"Distillate Tests"):
   def run(): Unit =
     test(m"Extract an int"):
       t"123" match

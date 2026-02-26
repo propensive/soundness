@@ -42,7 +42,7 @@ case class Colors(colors: Trie[Color]) extends Something
 enum Color:
   case Red, Green, Blue
 
-object Tests extends Suite(m"internal tests"):
+object Tests extends Suite(m"Austronesian tests"):
   def run(): Unit = ()
     // test(m"Serialize a case class")(Person("John", 30).pojo)
     // . assert(_ === Pojo(Array("John", 30: java.lang.Integer)))

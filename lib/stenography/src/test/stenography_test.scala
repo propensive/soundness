@@ -42,7 +42,7 @@ import probably.*
 import spectacular.*
 import symbolism.*
 
-object Tests extends Suite(m"internal Tests"):
+object Tests extends Suite(m"Stenography Tests"):
   def run(): Unit =
     test(m"Decode a term"):
       Typename(t"immutable.List")

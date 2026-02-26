@@ -34,7 +34,7 @@ package adversaria
 
 import soundness.*
 
-object Tests extends Suite(m"internal tests"):
+object Tests extends Suite(m"Adversaria tests"):
 
   def run(): Unit =
     test(m"access field annotations"):

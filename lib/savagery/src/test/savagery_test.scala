@@ -36,7 +36,7 @@ import soundness.*
 
 import autopsies.contrastExpectations
 
-object Tests extends Suite(m"internal tests"):
+object Tests extends Suite(m"Savagery tests"):
   def run(): Unit =
     test(m"Simple plus sign path"):
       Outline().moveTo(0!0).lineUp(2).lineLeft(2).lineUp(1).lineRight(2).lineUp(2).lineRight(1)
