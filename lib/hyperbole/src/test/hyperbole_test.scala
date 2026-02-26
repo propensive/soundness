@@ -42,4 +42,8 @@ import stdioSources.virtualMachine.ansi
 
 object Tests extends Suite(m"internal Tests"):
   def run(): Unit =
+<<<<<<< HEAD
     Out.println(introspect(true)(Out.println("hello world" + 1)).teletype)
+=======
+    Out.println(introspect(true)(println("hello world" + 1)).teletype)
+>>>>>>> 805560f20 (Better output from Hyperbole)
