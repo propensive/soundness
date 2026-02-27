@@ -35,7 +35,6 @@ package wisteria
 import scala.quoted.*
 
 import gigantism.*
-import proscenium.*
 import vacuous.*
 
 object internal:

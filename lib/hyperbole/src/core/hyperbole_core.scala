@@ -34,11 +34,8 @@ package hyperbole
 
 import scala.quoted.*
 
-transparent inline def introspect[value](inline inlining: Boolean = false)(inline value: value)
-:   TastyTree =
-
-  ${hyperbole.internal.introspection[value]('value, 'inlining)}
-
-
 extension [value](expr: Expr[value])(using Quotes)
-  def introspect: TastyTree = hyperbole.internal.tastyTree[value](expr, '{false})
+  def syntax: TastyTree = hyperbole.internal.tastyTree[value](expr, '{false})
+
+extension [value](using Quotes)(symbol: quotes.reflect.Symbol)
+  def semantics: TastySymbol = hyperbole.internal.tastySymbol(symbol)

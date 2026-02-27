@@ -186,203 +186,205 @@ object Syntax:
     case _            => panic(m"expected a Value")
 
 
-  def apply(using Quotes)(repr: quotes.reflect.TypeRepr): Syntax = cache.establish(repr):
-    import quotes.reflect.*
+  def apply(using Quotes)(repr: quotes.reflect.TypeRepr, retry: Boolean = true): Syntax =
+    cache.establish(repr):
+      import quotes.reflect.*
 
-    def isPackage(name: String): Boolean = name.endsWith("$package") || name == "package"
+      def isPackage(name: String): Boolean = name.endsWith("$package") || name == "package"
 
-    repr.absolve match
-      case ThisType(ref) =>
-        apply(ref) match
-          case Simple(Typename.Type(parent, name)) => Simple(Typename.Term(parent, name))
-          case syntax => syntax
+      repr.absolve match
+        case ThisType(ref) =>
+          apply(ref) match
+            case Simple(Typename.Type(parent, name)) => Simple(Typename.Term(parent, name))
+            case syntax => syntax
 
-      case typeRef@TypeRef(NoPrefix(), name) =>
-        Simple(Typename.Top(name))
+        case typeRef@TypeRef(NoPrefix(), name) =>
+          Simple(Typename.Top(name))
 
-      case typeRef@TypeRef(prefix, name) =>
-        val module = typeRef.typeSymbol.flags.is(Flags.Module)
-        val name2 = if module then name.dropRight(1) else name
+        case typeRef@TypeRef(prefix, name) =>
+          val module = typeRef.typeSymbol.flags.is(Flags.Module)
+          val name2 = if module then name.dropRight(1) else name
 
-        if prefix.typeSymbol.flags.is(Flags.Package)
-        then Simple(Typename.Type(Typename(prefix.show.tt), name2))
-        else apply(prefix) match
-          case value@Value(typename) =>
-            if isPackage(name2) then value
-            else Simple(Typename.Type(typename, name2))
+          if prefix.typeSymbol.flags.is(Flags.Package)
+          then Simple(Typename.Type(Typename(prefix.show.tt), name2))
+          else apply(prefix) match
+            case value@Value(typename) =>
+              if isPackage(name2) then value
+              else Simple(Typename.Type(typename, name2))
 
-          case simple@Simple(typename) =>
-            if isPackage(name2) then simple else Simple(Typename.Type(typename, name2))
+            case simple@Simple(typename) =>
+              if isPackage(name2) then simple else Simple(Typename.Type(typename, name2))
 
-          case refined@Structural(base, members, defs) =>
-            if members.contains(name) then members(name.tt) else Projection(refined, name.tt)
+            case refined@Structural(base, members, defs) =>
+              if members.contains(name) then members(name.tt) else Projection(refined, name.tt)
 
-          case symbolic@Symbolic(_) =>
-            Selection(symbolic, name)
+            case symbolic@Symbolic(_) =>
+              Selection(symbolic, name)
 
-          case selection: Selection =>
-            Selection(selection, name)
+            case selection: Selection =>
+              Selection(selection, name)
 
-          case other =>
-            Primitive("<unknown>")
+            case other =>
+              Primitive("<unknown>")
 
-      case termRef@TermRef(NoPrefix(), name) =>
-        Value(Typename.Top(name))
+        case termRef@TermRef(NoPrefix(), name) =>
+          Value(Typename.Top(name))
 
-      case termRef@TermRef(ThisType(TypeRef(NoPrefix(), "<root>")), name) =>
-        Value(Typename.Top(name))
+        case termRef@TermRef(ThisType(TypeRef(NoPrefix(), "<root>")), name) =>
+          Value(Typename.Top(name))
 
-      case termRef@TermRef(prefix, name) =>
-        apply(prefix) match
-          case value@Value(typename) =>
-            if repr.toString.contains("inline") then println(name)
-            if isPackage(name) then value else Value(Typename.Term(typename, name))
+        case termRef@TermRef(prefix, name) =>
+          apply(prefix) match
+            case value@Value(typename) =>
+              if repr.toString.contains("inline") then println(name)
+              if isPackage(name) then value else Value(Typename.Term(typename, name))
 
-          case simple@Simple(typename) =>
-            if isPackage(name) then simple else Value(Typename.Term(typename, name))
+            case simple@Simple(typename) =>
+              if isPackage(name) then simple else Value(Typename.Term(typename, name))
 
-          case refined@Structural(base, members, defs) =>
-            if members.contains(name) then members(name.tt) else Projection(refined, name.tt)
+            case refined@Structural(base, members, defs) =>
+              if members.contains(name) then members(name.tt) else Projection(refined, name.tt)
 
-          case symbolic@Symbolic(_) =>
-            Selection(symbolic, name)
+            case symbolic@Symbolic(_) =>
+              Selection(symbolic, name)
 
-          case selection: Selection =>
-            Selection(selection, name)
+            case selection: Selection =>
+              Selection(selection, name)
 
-          case other =>
-            Primitive("<unknown>")
+            case other =>
+              Primitive("<unknown>")
 
-      case AnnotatedType(tpe, annotation) =>
-        // FIXME: We don't have access to `into` information, so this is a hack
-        if annotation.toString.contains("object annotation),into)")
-        then Prefix("into", apply(tpe))
-        else apply(tpe)
+        case AnnotatedType(tpe, annotation) =>
+          // FIXME: We don't have access to `into` information, so this is a hack
+          if annotation.toString.contains("object annotation),into)")
+          then Prefix("into", apply(tpe))
+          else apply(tpe)
 
-      case OrType(left, right) =>
-        Infix(apply(left), "|", apply(right))
+        case OrType(left, right) =>
+          Infix(apply(left), "|", apply(right))
 
-      case AndType(left, right) =>
-        Infix(apply(left), "&", apply(right))
+        case AndType(left, right) =>
+          Infix(apply(left), "&", apply(right))
 
-      case ByNameType(tpe) =>
-        Prefix("=>", apply(tpe))
+        case ByNameType(tpe) =>
+          Prefix("=>", apply(tpe))
 
-      case FlexibleType(tpe) =>
-        Suffix(apply(tpe), "?")
+        case FlexibleType(tpe) =>
+          Suffix(apply(tpe), "?")
 
-      case typ@AppliedType(base, arguments0) =>
-        if typ.isFunctionType then
-          val arguments = arguments0.init match
-            case List(one) => apply(one)
-            case many      => Sequence('(', many.map(apply(_)))
+        case typ@AppliedType(base, arguments0) =>
+          if typ.isFunctionType then
+            val arguments = arguments0.init match
+              case List(one) => apply(one)
+              case many      => Sequence('(', many.map(apply(_)))
 
-          val arrow = if typ.isContextFunctionType then "?=>" else "=>"
+            val arrow = if typ.isContextFunctionType then "?=>" else "=>"
 
-          Infix(arguments, arrow, apply(arguments0.last))
-        else if typ.typeSymbol == defn.RepeatedParamClass
-        then Suffix(apply(arguments0.head), " *")
-        else if arguments0.length == 2 && repr.typeSymbol.flags.is(Flags.Infix)
-        then Application(apply(base), arguments0.map(apply(_)), true)
-        else if defn.isTupleClass(base.typeSymbol)
-        then Sequence('(', arguments0.map(apply(_)))
-        else if base <:< TypeRepr.of[NamedTuple.NamedTuple]
-        then arguments0(0).absolve match
-          case AppliedType(_, names) => apply(arguments0(1)).absolve match
-            case Sequence(_, elements) =>
+            Infix(arguments, arrow, apply(arguments0.last))
+          else if typ.typeSymbol == defn.RepeatedParamClass
+          then Suffix(apply(arguments0.head), " *")
+          else if arguments0.length == 2 && repr.typeSymbol.flags.is(Flags.Infix)
+          then Application(apply(base), arguments0.map(apply(_)), true)
+          else if defn.isTupleClass(base.typeSymbol)
+          then Sequence('(', arguments0.map(apply(_)))
+          else if base <:< TypeRepr.of[NamedTuple.NamedTuple]
+          then arguments0(0).absolve match
+            case AppliedType(_, names) => apply(arguments0(1)).absolve match
+              case Sequence(_, elements) =>
+                Sequence
+                  ( '(',
+                    names.zip(elements).map:
+                      _.absolve match
+                        case (ConstantType(StringConstant(name)), element) =>
+                          Named(false, name.tt, element))
+
+            case ref@TypeRef(prefix, name) =>
+              apply(ref)
+
+          else Application(apply(base), arguments0.map(apply(_)), false)
+
+        case ConstantType(constant) =>
+          constant.absolve match
+            case ByteConstant(byte)     => Primitive(s"$byte.toByte")
+            case ShortConstant(short)   => Primitive(s"$short.toShort")
+            case IntConstant(int)       => Primitive(int.toString.tt)
+            case LongConstant(long)     => Primitive(s"${long}L")
+            case BooleanConstant(true)  => Primitive("true")
+            case BooleanConstant(false) => Primitive("false")
+            case StringConstant(string)    => Primitive(s"\"$string\"")
+            case CharConstant(char)     => Primitive(s"'$char'")
+            case DoubleConstant(double) => Primitive(s"${double.toString}")
+            case FloatConstant(float)   => Primitive(s"${float.toString}F")
+            case UnitConstant()         => Primitive("()")
+            case NullConstant()         => Primitive("null")
+            case ClassOfConstant(cls)   => Application
+                                            (Primitive("classOf"), List(apply(cls)), false)
+
+        case Refinement(base, "apply", member) =>
+          apply(member)
+
+        case Refinement(base, name, member) =>
+          if name == "Self" then Infix(apply(member), "is", apply(base)) else
+            val refined: Structural = apply(base) match
+              case refined@Structural(base, members, defs) => refined
+              case other =>
+                Structural(other, ListMap(), ListMap())
+
+            signature(name, member) match
+              case signature@Declaration(method, _, _) =>
+                if method then refined.copy(terms = refined.terms.updated(name, signature))
+                else refined.copy(types = refined.types.updated(name, signature))
+
+        case TypeBounds(lower, upper) =>
+          typeBounds(Symbolic("?"), lower, upper)
+
+        case method@MethodType(arguments0, types, result) =>
+          val unnamed = arguments0.forall(_.startsWith("x$"))
+
+          val arguments =
+            if arguments0.nil then Sequence('(', Nil)
+            else if unnamed then Sequence('(', types.map(apply(_)))
+            else
               Sequence
                 ( '(',
-                  names.zip(elements).map:
-                    _.absolve match
-                      case (ConstantType(StringConstant(name)), element) =>
-                        Named(false, name.tt, element))
+                  arguments0.zip(types).map: (member, typ) =>
+                    Named(false, member, apply(typ))
+                )
 
-          case ref@TypeRef(prefix, name) =>
-            apply(ref)
+          val arrow = if method.isContextual then "?=>" else "=>"
+          if unnamed && arguments0.length == 1
+          then Infix(apply(types.head), arrow, apply(result))
+          else Infix(arguments, arrow, apply(result))
 
-        else Application(apply(base), arguments0.map(apply(_)), false)
+        case typ@PolyType(arguments0, types, result) =>
+          val arguments = arguments0.zip(types).map:
+            case (name, TypeBounds(lower, upper)) =>
+              typeBounds(symbolic(name), lower, upper)
 
-      case ConstantType(constant) =>
-        constant.absolve match
-          case ByteConstant(byte)     => Primitive(s"$byte.toByte")
-          case ShortConstant(short)   => Primitive(s"$short.toShort")
-          case IntConstant(int)       => Primitive(int.toString.tt)
-          case LongConstant(long)     => Primitive(s"${long}L")
-          case BooleanConstant(true)  => Primitive("true")
-          case BooleanConstant(false) => Primitive("false")
-          case StringConstant(string)    => Primitive(s"\"$string\"")
-          case CharConstant(char)     => Primitive(s"'$char'")
-          case DoubleConstant(double) => Primitive(s"${double.toString}")
-          case FloatConstant(float)   => Primitive(s"${float.toString}F")
-          case UnitConstant()         => Primitive("()")
-          case NullConstant()         => Primitive("null")
-          case ClassOfConstant(cls)   => Application
-                                          (Primitive("classOf"), List(apply(cls)), false)
+          Infix(Sequence('[', arguments), "=>", apply(result))
 
-      case Refinement(base, "apply", member) =>
-        apply(member)
+        case TypeLambda(arguments0, bounds, tpe) =>
+          val arguments = arguments0.zip(bounds).map:
+            case (argument, TypeBounds(lower, upper)) =>
+              typeBounds(symbolic(argument), lower, upper)
 
-      case Refinement(base, name, member) =>
-        if name == "Self" then Infix(apply(member), "is", apply(base)) else
-          val refined: Structural = apply(base) match
-            case refined@Structural(base, members, defs) => refined
-            case other =>
-              Structural(other, ListMap(), ListMap())
+          Infix(Sequence('[', arguments), "=>>", apply(tpe))
 
-          signature(name, member) match
-            case signature@Declaration(method, _, _) =>
-              if method then refined.copy(terms = refined.terms.updated(name, signature))
-              else refined.copy(types = refined.types.updated(name, signature))
+        case ParamRef(binder, n) =>
+          binder match
+            case TypeLambda(params, _, _) => symbolic(params(n))
+            case MethodType(params, _, _) => symbolic(params(n))
+            case PolyType(params, _, _)   => symbolic(params(n))
+            case other => Primitive("ParamRef")
 
-      case TypeBounds(lower, upper) =>
-        typeBounds(Symbolic("?"), lower, upper)
+        case RecursiveType(tpe) =>
+          apply(tpe)
 
-      case method@MethodType(arguments0, types, result) =>
-        val unnamed = arguments0.forall(_.startsWith("x$"))
+        case RecursiveThis(tpe) =>
+          apply(tpe)
 
-        val arguments =
-          if arguments0.nil then Sequence('(', Nil)
-          else if unnamed then Sequence('(', types.map(apply(_)))
-          else
-            Sequence
-              ( '(',
-                arguments0.zip(types).map: (member, typ) =>
-                  Named(false, member, apply(typ))
-              )
-
-        val arrow = if method.isContextual then "?=>" else "=>"
-        if unnamed && arguments0.length == 1
-        then Infix(apply(types.head), arrow, apply(result))
-        else Infix(arguments, arrow, apply(result))
-
-      case typ@PolyType(arguments0, types, result) =>
-        val arguments = arguments0.zip(types).map:
-          case (name, TypeBounds(lower, upper)) =>
-            typeBounds(symbolic(name), lower, upper)
-
-        Infix(Sequence('[', arguments), "=>", apply(result))
-
-      case TypeLambda(arguments0, bounds, tpe) =>
-        val arguments = arguments0.zip(bounds).map:
-          case (argument, TypeBounds(lower, upper)) => typeBounds(symbolic(argument), lower, upper)
-
-        Infix(Sequence('[', arguments), "=>>", apply(tpe))
-
-      case ParamRef(binder, n) =>
-        binder match
-          case TypeLambda(params, _, _) => symbolic(params(n))
-          case MethodType(params, _, _) => symbolic(params(n))
-          case PolyType(params, _, _)   => symbolic(params(n))
-          case other => Primitive("ParamRef")
-
-      case RecursiveType(tpe) =>
-        apply(tpe)
-
-      case RecursiveThis(tpe) =>
-        Primitive("???")
-
-      case other =>
-        Primitive(s"...other: ${other.toString}...")
+        case repr =>
+          if retry then apply(repr.typeSymbol.typeRef, false) else Primitive("<unknown>")
 
 enum Syntax:
   case Simple(typename: Typename)
@@ -402,12 +404,22 @@ enum Syntax:
   case Compound(syntaxes: List[Syntax])
 
   def precedence: Int = this match
-    case Structural(_, _, _) => 0
-    case Prefix(_, _)        => 0
-    case Named(_, _, _)      => 0
-    case Suffix(_, _)        => 0
-    case Infix(_, "<:", _)   => 10
-    case Infix(_, ">:", _)   => 10
+    case Structural(_, _, _)  => 0
+    case Prefix(_, _)         => 0
+    case Named(_, _, _)       => 0
+    case Suffix(_, _)         => 0
+    case Infix(_, "<:", _)    => 10
+    case Infix(_, ">:", _)    => 10
+    case Projection(_, _)     => 9
+    case Compound(_)          => 10
+    case Simple(_)            => 10
+    case Symbolic(_)          => 10
+    case Primitive(_)         => 10
+    case Application(_, _, _) => 10
+    case Selection(_, _)      => 10
+    case Sequence(_, _)       => 10
+    case Declaration(_, _, _) => 10
+    case Value(_)             => 10
 
     case Infix(_, middle, _) =>
       middle.s.head match
@@ -422,39 +434,7 @@ enum Syntax:
         case char if char.isLetter => 0
         case _                     => 9
 
-    case Projection(_, _) =>
-      9
-
-    case Compound(_) =>
-      10
-
-    case Simple(_) =>
-      10
-
-    case Symbolic(_) =>
-      10
-
-    case Primitive(_) =>
-      10
-
-    case Application(_, _, _) =>
-      10
-
-    case Selection(_, _) =>
-      10
-
-    case Sequence(_, _) =>
-      10
-
-    case Declaration(_, _, _) =>
-      10
-
-    case Value(_) =>
-      10
-
-
   def qualified: Text = text(using Imports.empty)
-
 
   def text(using imports: Imports): Text = this match
     case Simple(typename)        => typename.text

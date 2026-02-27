@@ -48,6 +48,7 @@ object internal:
 
     inline infix def thru (right: Ordinal): Interval = Interval(ordinal, right)
     inline infix def till (right: Ordinal): Interval = Interval(ordinal, right - 1)
+    inline infix def span (right: Int): Interval = Interval(ordinal, ordinal + right - 1)
 
 
   extension (inline ordinal: Ordinal)

@@ -67,15 +67,15 @@ package tableStyles:
 
 package columnar:
   object Prose extends Columnar:
+    def longestWord[textual: Textual](text: textual, position: Int, lastStart: Int, max: Int): Int =
+      if position < text.length then
+        if textual.unsafeChar(text, position.z) == ' '
+        then longestWord(text, position + 1, position + 1, max.max(position - lastStart))
+        else longestWord(text, position + 1, lastStart, max)
+      else max.max(position - lastStart)
+
     def width[textual: Textual](lines: IArray[textual], maxWidth: Int, slack: Double)
     :   Optional[Int] =
-
-      def longestWord(text: textual, position: Int, lastStart: Int, max: Int): Int =
-        if position < text.length then
-          if textual.unsafeChar(text, position.z) == ' '
-          then longestWord(text, position + 1, position + 1, max.max(position - lastStart))
-          else longestWord(text, position + 1, lastStart, max)
-        else max.max(position - lastStart)
 
       val longestLine = lines.map(_.length).max
       lines.map(longestWord(_, 0, 0, 0)).max.max((slack*maxWidth).toInt).min(longestLine)
@@ -92,13 +92,12 @@ package columnar:
           if textual.unsafeChar(text, position.z) == ' '
           then format(text, position + 1, lineStart, position, lines)
           else
-            if position - lineStart >= width
-            then format
-                  (text,
-                  position + 1,
-                  lastSpace + 1,
-                  lastSpace,
-                  text.segment(lineStart.z thru lastSpace.u) :: lines)
+            if position - lineStart >= width then format
+              ( text,
+                position + 1,
+                lastSpace + 1,
+                lastSpace,
+                text.segment(lineStart.z thru lastSpace.u) :: lines )
 
             else format(text, position + 1, lineStart, lastSpace, lines)
         else if lineStart == position then lines
@@ -106,6 +105,28 @@ package columnar:
 
 
       lines.to(IndexedSeq).flatMap(format(_, 0, 0, 0, Nil).reverse)
+
+  object ProseOrBreak extends Columnar:
+    def width[textual: Textual](lines: IArray[textual], maxWidth: Int, slack: Double)
+    :   Optional[Int] =
+
+      (maxWidth*slack + 1).toInt.min(maxWidth)
+
+
+    def fit[textual: Textual](lines: IArray[textual], width: Int, textAlign: TextAlignment)
+    :   IndexedSeq[textual] =
+
+      if lines.map(Prose.longestWord(_, 0, 0, 0)).max < width
+      then Prose.fit(lines, width, textAlign)
+      else
+        var result: List[textual] = Nil
+
+        lines.each: line =>
+          val count = (line.length - 1)/width + 1
+          (0 until count).each: index =>
+            result = line.segment((width*index).z span width) :: result
+
+        result.reverse.to(Vector)
 
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double): Optional[Int] =

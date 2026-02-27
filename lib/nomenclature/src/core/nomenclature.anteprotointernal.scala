@@ -35,7 +35,6 @@ package nomenclature
 import scala.quoted.*
 
 import gigantism.*
-import proscenium.*
 
 object anteprotointernal:
   def staticCompanion[instance: Type]: Macro[Matchable] =
