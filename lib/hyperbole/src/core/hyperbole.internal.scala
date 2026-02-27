@@ -507,3 +507,191 @@ object internal:
             TastyTree(tag, typeName, t"?${tree.toString}: ${tree.getClass.toString}", tree)
 
     TastyTree.expand(' ', expr.asTerm)
+
+  def semantics[meta: Type]: Macro[TastySymbol] =
+    import quotes.reflect.*
+    introspect(TypeRepr.of[meta].dealias.typeSymbol)
+
+  def semantics(): Macro[TastySymbol] =
+    import quotes.reflect.*
+    introspect(Symbol.spliceOwner)
+
+  def semantics(expr: Expr[Any]): Macro[TastySymbol] =
+    import quotes.reflect.*
+
+    introspect:
+      expr.asTerm match
+        case Inlined(_, _, value) => value.symbol
+        case other                => other.symbol
+
+
+  def introspect(using Quotes)(symbol: quotes.reflect.Symbol): Expr[TastySymbol] =
+    serialize(tastySymbol(symbol))
+
+  def tastySymbol(using Quotes)(symbol: quotes.reflect.Symbol): TastySymbol =
+    import quotes.reflect.*
+
+    def render(term: Term): Text = term match
+      case Select(New(tree), right) => stenography.internal.name(tree.tpe)
+      case Select(left, right)      => t"${render(left)}.$right"
+      case Apply(left, params)      => t"${render(left)}(${params.map(render(_)).join(t", ")})"
+      case New(tree)                => stenography.internal.name(tree.tpe).show
+
+      case TypeApply(subject, params) =>
+        val params2 = params.map(_.tpe).map(stenography.internal.name(_)).join(t", ")
+        t"${render(subject)}[$params2]"
+
+      case _ =>
+        term.show.unless(term.show.length > 12).or("...").tt
+
+    def annotation(term: Term): Teletype = e"@${render(term)}"
+
+    val flags: List[(Text, Boolean)] =
+      List
+        ( t"abstract"          -> symbol.flags.is(Flags.Abstract),
+          t"abs-override"      -> symbol.flags.is(Flags.AbsOverride),
+          t"artifact"          -> symbol.flags.is(Flags.Artifact),
+          t"case"              -> symbol.flags.is(Flags.Case),
+          t"case-accessor"     -> symbol.flags.is(Flags.CaseAccessor),
+          t"contravariant"     -> symbol.flags.is(Flags.Contravariant),
+          t"covariant"         -> symbol.flags.is(Flags.Covariant),
+          t"deferred"          -> symbol.flags.is(Flags.Deferred),
+          t"empty-flags"       -> symbol.flags.is(Flags.EmptyFlags),
+          t"enum"              -> symbol.flags.is(Flags.Enum),
+          t"erased"            -> symbol.flags.is(Flags.Erased),
+          t"exported"          -> symbol.flags.is(Flags.Exported),
+          t"extension-method"  -> symbol.flags.is(Flags.ExtensionMethod),
+          t"field-accessor"    -> symbol.flags.is(Flags.FieldAccessor),
+          t"final"             -> symbol.flags.is(Flags.Final),
+          t"given"             -> symbol.flags.is(Flags.Given),
+          t"has-default"       -> symbol.flags.is(Flags.HasDefault),
+          t"implicit"          -> symbol.flags.is(Flags.Implicit),
+          t"infix"             -> symbol.flags.is(Flags.Infix),
+          t"inline"            -> symbol.flags.is(Flags.Inline),
+          t"invisible"         -> symbol.flags.is(Flags.Invisible),
+          t"java-defined"      -> symbol.flags.is(Flags.JavaDefined),
+          t"java-static"       -> symbol.flags.is(Flags.JavaStatic),
+          t"java-annotation"   -> symbol.flags.is(Flags.JavaAnnotation),
+          t"lazy"              -> symbol.flags.is(Flags.Lazy),
+          t"local"             -> symbol.flags.is(Flags.Local),
+          t"macro"             -> symbol.flags.is(Flags.Macro),
+          t"method"            -> symbol.flags.is(Flags.Method),
+          t"module"            -> symbol.flags.is(Flags.Module),
+          t"mutable"           -> symbol.flags.is(Flags.Mutable),
+          t"no-inits"          -> symbol.flags.is(Flags.NoInits),
+          t"opaque"            -> symbol.flags.is(Flags.Opaque),
+          t"open"              -> symbol.flags.is(Flags.Open),
+          t"override"          -> symbol.flags.is(Flags.Override),
+          t"package"           -> symbol.flags.is(Flags.Package),
+          t"param"             -> symbol.flags.is(Flags.Param),
+          t"param-accessor"    -> symbol.flags.is(Flags.ParamAccessor),
+          t"private"           -> symbol.flags.is(Flags.Private),
+          t"private-local"     -> symbol.flags.is(Flags.PrivateLocal),
+          t"protected"         -> symbol.flags.is(Flags.Protected),
+          t"scala2x"           -> symbol.flags.is(Flags.Scala2x),
+          t"sealed"            -> symbol.flags.is(Flags.Sealed),
+          t"stable-realizable" -> symbol.flags.is(Flags.StableRealizable),
+          t"synthetic"         -> symbol.flags.is(Flags.Synthetic),
+          t"trait"             -> symbol.flags.is(Flags.Trait),
+          t"transparent"       -> symbol.flags.is(Flags.Transparent) )
+
+    val properties: List[(Text, Boolean)] =
+      List
+        ( t"abstractType"        -> symbol.isAbstractType,
+          t"aliasType"           -> symbol.isAliasType,
+          t"anonymousClass"      -> symbol.isAnonymousClass,
+          t"anonymousFunction"   -> symbol.isAnonymousFunction,
+          t"bind"                -> symbol.isBind,
+          t"classConstructor"    -> symbol.isClassConstructor,
+          t"classDef"            -> symbol.isClassDef,
+          t"defDef"              -> symbol.isDefDef,
+          t"definedInCurrentRun" -> symbol.isDefinedInCurrentRun,
+          t"exists"              -> symbol.exists,
+          t"localDummy"          -> symbol.isLocalDummy,
+          t"noSymbol"            -> symbol.isNoSymbol,
+          t"packageDef"          -> symbol.isPackageDef,
+          t"refinementClass"     -> symbol.isRefinementClass,
+          t"superAccessor"       -> symbol.isSuperAccessor,
+          t"term"                -> symbol.isTerm,
+          t"type"                -> symbol.isType,
+          t"typeDef"             -> symbol.isTypeDef,
+          t"typeParam"           -> symbol.isTypeParam,
+          t"valDef"              -> symbol.isValDef )
+
+    val prefix = symbol.fullName.tt.skip(symbol.name.length, Rtl)
+
+    def position: Text =
+      symbol.pos.map: position =>
+        if position.start == 0 then t"${position.sourceFile.toString}"
+        else if position.start == position.end
+        then t"${position.sourceFile.name}:${position.start}"
+        else t"${position.sourceFile.name}:${position.start}-${position.end}"
+
+      . getOrElse(t"")
+
+    val details: List[(Text, Text | List[Text])] =
+      List
+        ( t"Owner"            -> symbol.owner.fullName.tt,
+          t"Info"             -> symbol.info.show,
+          t"Position"         -> position,
+          t"Private within"   -> symbol.privateWithin.map(_.show).getOrElse(t""),
+          t"Protected within" -> symbol.protectedWithin.map(_.show).getOrElse(t""),
+          t"Documentation"    -> symbol.docstring.getOrElse("").tt,
+          t"Annotations"      -> symbol.annotations.map(annotation(_).plain),
+          t"Declared fields"  -> symbol.declaredFields.sortBy(_.name).map(_.name.tt),
+          t"Field members"    -> symbol.fieldMembers.sortBy(_.name).map(_.name.tt),
+          t"Declared methods" -> symbol.declaredMethods.sortBy(_.name).map(_.name.tt),
+          t"Method members"   -> symbol.methodMembers.sortBy(_.name).map(_.name),
+          t"Declared types"   -> symbol.declaredTypes.sortBy(_.name).map(_.name.tt),
+          t"Type members"     -> symbol.typeMembers.sortBy(_.name).map(_.name.tt),
+          t"Declarations"     -> symbol.declarations.sortBy(_.name).map(_.name.tt),
+          t"Children"         -> symbol.children.sortBy(_.name).map(_.name.tt),
+
+          t"Parameters"
+          ->  symbol.paramSymss.map(_.map(_.name.tt).join(t"(", t" ", t")")),
+
+          t"All overridden symbols"
+          ->  symbol.allOverriddenSymbols.map(_.name.tt).to(List),
+
+          t"Primary constructor"
+          ->  symbol.primaryConstructor.name.tt,
+
+          t"Case fields"
+          ->  symbol.caseFields.map: field =>
+                t"${field.name}: ${field.info.show}"
+              . join(t"\n"),
+
+          t"Signature"        -> symbol.signature.resultSig,
+
+          t"Module class"
+          -> (if symbol.moduleClass.exists then symbol.moduleClass.fullName else t""),
+
+          t"Companion class"
+          -> (if symbol.companionClass.exists then symbol.companionClass.fullName else t""),
+
+          t"Companion module"
+          -> (if symbol.companionModule.exists then symbol.companionModule.fullName else t"") )
+
+    TastySymbol(prefix, symbol.name, flags, properties, details)
+
+
+  def serialize(symbol: TastySymbol): Macro[TastySymbol] =
+    val flags = symbol.flags.map: (key, value) => '{(${Expr(key)}, ${Expr(value)})}
+    val properties = symbol.properties.map: (key, value) => '{(${Expr(key)}, ${Expr(value)})}
+
+    val details =
+      symbol.details.map: pair =>
+        pair.absolve match
+          case (key, text: Text) => '{(${Expr(key)}, ${Expr(text)})}
+
+          case (key, list: List[Text] @unchecked) =>
+            '{(${Expr(key)}, ${Expr.ofList(list.map(Expr(_)))})}
+
+    ' {
+        TastySymbol
+          ( ${Expr(symbol.prefix)},
+            ${Expr(symbol.name)},
+            ${Expr.ofList(flags)},
+            ${Expr.ofList(properties)},
+            ${Expr.ofList(details)} )
+      }

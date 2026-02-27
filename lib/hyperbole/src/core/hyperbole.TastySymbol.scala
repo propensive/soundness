@@ -32,48 +32,51 @@
                                                                                                   */
 package hyperbole
 
-import scala.annotation.*
+import anticipation.*
+import escritoire.*, tableStyles.default, columnAttenuation.ignore
+import escapade.*
+import gossamer.*
+import hieroglyph.*, textMetrics.uniform
+import iridescence.*
 
-import soundness.*
+object TastySymbol:
+  given showable: TastySymbol is Teletypeable =
+    symbol =>
 
-import stdioSources.virtualMachine.ansi
+      val flags =
+        symbol.flags.map: (flag, on) =>
+          if on then e"${Bg(webColors.Gold)}(${webColors.Black}(·${flag}·))"
+          else e"${webColors.DarkSlateGray}($flag)"
+        . join(e" ")
 
-object Tests extends Suite(m"Hyperbole Tests"):
-  def run(): Unit =
-    test(m"Produce hello-world tree"):
-      Introspect.syntax(true):
-        println("hello world")
+      val properties =
+        symbol.properties.map: (property, on) =>
+          if on then e"${Bg(webColors.DarkOrange)}(${webColors.Black}(·${property}·))"
+          else e"${webColors.Maroon}($property)"
+        . join(e" ")
 
-    . assert: result =>
-        result
-        ==
-        TastyTree
-          ( ' ',
-            "Unit",
-            "Apply",
-            "scala.Predef.println(\"hello world\")",
-            "println(\"hello world\")",
-            List
-              ( TastyTree
-                  ( ' ',
-                    "",
-                    "Ident",
-                    "scala.Predef.println",
-                    "println",
-                    Nil,
-                    "println",
-                    true,
-                    false ),
-                TastyTree
-                  ( 'a',
-                    "\"hello world\"",
-                    "Literal",
-                    "\"hello world\"",
-                    "        \"hello world\"",
-                    Nil,
-                    "\"hello world\"",
-                    true,
-                    false ) ),
-            Unset,
-            true,
-            false )
+      val details =
+        symbol.details.map:
+          case (key, value: Text) =>
+            key -> e"${webColors.Silver}($value)"
+          case (key, items: List[Text]) =>
+            key -> e"${webColors.Silver}(${items.join(t", ")})"
+        . to(List)
+
+      val name = (t"Name", e"$Bold(${symbol.prefix}${webColors.White}(${symbol.name}))")
+
+      Scaffold[(Text, Teletype)]
+        ( Column(e"$Bold(Property)", textAlign = TextAlignment.Right)(_(0)),
+          Column(e"$Bold(Value)", sizing = columnar.ProseOrBreak)(_(1)) )
+
+      . tabulate(name :: (t"Flags", flags) :: (t"Properties", properties) :: details)
+      . grid(120)
+      . render
+      . join(e"\n")
+
+case class TastySymbol
+  ( prefix:     Text,
+    name:       Text,
+    flags:      List[(Text, Boolean)],
+    properties: List[(Text, Boolean)],
+    details:    List[(Text, List[Text] | Text)] )

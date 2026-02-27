@@ -36,7 +36,6 @@ import scala.quoted.*
 
 import anticipation.*
 import gigantism.*
-import proscenium.*
 import vacuous.*
 
 trait Verifier[result]
