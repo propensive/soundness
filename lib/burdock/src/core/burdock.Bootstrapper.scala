@@ -62,7 +62,9 @@ import zeppelin.*
 
 import charDecoders.utf8
 import textSanitizers.skip
-import stdioSources.virtualMachine.ansi
+import environments.java
+import termcaps.environment
+import stdios.virtualMachine
 import backstops.stackTrace
 import executives.direct
 import interpreters.posix

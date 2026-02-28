@@ -4,7 +4,7 @@
 
 # Escritoire
 
-__A library for writing tables__
+**A library for writing tables**
 
 _Escritoire_ is a simple library for printing tabular data in monospaced fonts,
 typically for use in console applications. Tables can be displayed in a number
@@ -21,14 +21,7 @@ content and other parameters.
 - cell contents may be left, right or centrally aligned
 - compact display for tables which don't include multiline contents
 
-
 ## Availability
-
-
-
-
-
-
 
 ## Getting Started
 
@@ -49,12 +42,15 @@ Here is an example of a table rendered by Escritoire:
 ```
 
 All Escritoire terms and types are defined in the `escritoire` package,
+
 ```amok
 syntax scala
 ##
 import escritoire.*
 ```
+
 and are exported to the `soundness` package, so alternatively we can import:
+
 ```amok
 syntax scala
 ##
@@ -81,6 +77,7 @@ good output. Titles are converted from "camel case" into normal words,
 and capitalized.
 
 The table can be rendered to standard output with,
+
 ```amok
 syntax scala
 transform
@@ -92,7 +89,7 @@ transform
         import tableStyles.default
         import textMetrics.uniform
         import columnAttenuation.ignore
-        import stdioSources.virtualMachine.ansi
+        import stdios.virtualMachine
 ##
 import soundness.*
 
@@ -102,7 +99,9 @@ case class Digit(n: Int, digitName: Text)
 val data = List(Digit(1, t"one"), Digit(2, t"two"), Digit(3, t"three"))
 Out.println(data.table)
 ```
+
 and will look like this:
+
 ```mono
 ┏━━━┯━━━━━━━━━━━━┓
 ┃ N │ Digit name ┃
@@ -197,6 +196,7 @@ column titles as `e"Name"`, and so on.
 #### Tabulation
 
 If we take a sequence of `Library` instances, such as,
+
 ```amok
 syntax scala
 ##
@@ -206,6 +206,7 @@ val libraries: List[Library] = List
   Library(t"turbulence", t"Turbulence", 1047, 2022, t"Simple tools for working with data streams"),
   Library(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables"))
 ```
+
 then we can tabulate them with `table.tabulate(libraries)`.
 
 This will produce a `Tabulation[Text]`. The source data `List[Library]` has
@@ -348,6 +349,7 @@ column is hidden first because its sizing is `Collapsible`, and it has the
 
 With the maximum width reduced to `80`, some cells in the _Description_ column
 are forced to use two lines:
+
 ```mono
 ┏━━━━━━━━━━━━━━┯━━━━━━┯━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Name         │  LoC │ Year │ Description                                     ┃
@@ -363,6 +365,7 @@ are forced to use two lines:
 
 The _Year_ column is the `Collapsible` column with the next-highest `threshold`
 value, so it is hidden when the width is constrained to `60` or less.
+
 ```mono
 ┏━━━━━━━━━━━━━━┯━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Name         │  LoC │ Description                        ┃
@@ -413,6 +416,7 @@ fit within the space available, but a user may still be able to get useful
 information from the table.
 
 This route may be chosen by including the import `columnAttenuation.ignore`:
+
 ```amok
 syntax  scala
 ##
@@ -421,6 +425,7 @@ import columnAttenuation.ignore
 
 Alternatively, it might be considered unacceptable to render a table in a space
 that's too small for it, and we can raise a `TableError` instead, by importing:
+
 ```amok
 syntax  scala
 ##
@@ -525,10 +530,9 @@ A "minimal" approach includes just a horizontal line under the title, with
                         seamless syntax
 ```
 
-
 ## Status
 
-Escritoire is classified as __maturescent__. For reference, Soundness projects are
+Escritoire is classified as **maturescent**. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -552,8 +556,8 @@ fragile, inadequately tested, and unsuitable for anything more than
 experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Escritoire?".
 
-1. *Copy the sources into your own project*
-   
+1. _Copy the sources into your own project_
+
    Read the `fury` file in the repository root to understand Escritoire's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -563,14 +567,14 @@ answer to the question, "how can I try Escritoire?".
    There should be no problem to compile the project together with all of its
    dependencies in a single compilation.
 
-2. *Build with [Wrath](https://github.com/propensive/wrath/)*
+2. _Build with [Wrath](https://github.com/propensive/wrath/)_
 
    Wrath is a bootstrapping script for building Escritoire and other projects in
    the absence of a fully-featured build tool. It is designed to read the `fury`
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -594,7 +598,7 @@ We suggest that all contributors read the [Contributing
 Guide](/contributing.md) to make the process of contributing to Escritoire
 easier.
 
-Please __do not__ contact project maintainers privately with questions unless
+Please **do not** contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
 repsond to such questions, private answers cannot be shared with a wider
 audience, and it can result in duplication of effort.
@@ -604,8 +608,6 @@ audience, and it can result in duplication of effort.
 Escritoire was designed and developed by Jon Pretty, and commercial support and
 training on all aspects of Scala 3 is available from [Propensive
 O&Uuml;](https://propensive.com/).
-
-
 
 ## Name
 
@@ -634,4 +636,3 @@ The logo shows some stylized papers laid out on a green writing table, or _escri
 
 Escritoire is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

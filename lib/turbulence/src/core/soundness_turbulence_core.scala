@@ -40,10 +40,8 @@ export turbulence
     chunked, take, spool, strict, inputStream, StreamOutputStream, load, Document, Loadable,
     Documentary }
 
-package stdioSources:
-  export turbulence.stdioSources.mute
-  package virtualMachine:
-    export turbulence.stdioSources.virtualMachine.{ansi, textOnly}
+package stdios:
+  export turbulence.stdios.{mute, system, virtualMachine}
 
 package lineSeparation:
   export turbulence.lineSeparation

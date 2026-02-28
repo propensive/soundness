@@ -40,7 +40,12 @@ import gossamer.*
 import parasite.*
 import probably.*
 import spectacular.*
-import turbulence.*, stdioSources.virtualMachine
+import termcaps.system
+import turbulence.*
+
+import environments.java
+import termcaps.environment
+import stdios.virtualMachine
 
 object Tests extends Suite(m"Eucalyptus tests"):
   def run(): Unit =

@@ -51,3 +51,6 @@ package homeDirectories:
 
 package temporaryDirectories:
   export ambience.temporaryDirectories.{system, environment, java}
+
+package termcaps:
+  export ambience.termcaps.environment

@@ -15,12 +15,15 @@ Here is an example of a table rendered by Escritoire:
 ```
 
 All Escritoire terms and types are defined in the `escritoire` package,
+
 ```amok
 syntax scala
 ##
 import escritoire.*
 ```
+
 and are exported to the `soundness` package, so alternatively we can import:
+
 ```amok
 syntax scala
 ##
@@ -47,6 +50,7 @@ good output. Titles are converted from "camel case" into normal words,
 and capitalized.
 
 The table can be rendered to standard output with,
+
 ```amok
 syntax scala
 transform
@@ -58,7 +62,7 @@ transform
         import tableStyles.default
         import textMetrics.uniform
         import columnAttenuation.ignore
-        import stdioSources.virtualMachine.ansi
+        import stdios.virtualMachine
 ##
 import soundness.*
 
@@ -68,7 +72,9 @@ case class Digit(n: Int, digitName: Text)
 val data = List(Digit(1, t"one"), Digit(2, t"two"), Digit(3, t"three"))
 Out.println(data.table)
 ```
+
 and will look like this:
+
 ```mono
 ┏━━━┯━━━━━━━━━━━━┓
 ┃ N │ Digit name ┃
@@ -163,6 +169,7 @@ column titles as `e"Name"`, and so on.
 #### Tabulation
 
 If we take a sequence of `Library` instances, such as,
+
 ```amok
 syntax scala
 ##
@@ -172,6 +179,7 @@ val libraries: List[Library] = List
   Library(t"turbulence", t"Turbulence", 1047, 2022, t"Simple tools for working with data streams"),
   Library(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables"))
 ```
+
 then we can tabulate them with `table.tabulate(libraries)`.
 
 This will produce a `Tabulation[Text]`. The source data `List[Library]` has
@@ -314,6 +322,7 @@ column is hidden first because its sizing is `Collapsible`, and it has the
 
 With the maximum width reduced to `80`, some cells in the _Description_ column
 are forced to use two lines:
+
 ```mono
 ┏━━━━━━━━━━━━━━┯━━━━━━┯━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Name         │  LoC │ Year │ Description                                     ┃
@@ -329,6 +338,7 @@ are forced to use two lines:
 
 The _Year_ column is the `Collapsible` column with the next-highest `threshold`
 value, so it is hidden when the width is constrained to `60` or less.
+
 ```mono
 ┏━━━━━━━━━━━━━━┯━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Name         │  LoC │ Description                        ┃
@@ -379,6 +389,7 @@ fit within the space available, but a user may still be able to get useful
 information from the table.
 
 This route may be chosen by including the import `columnAttenuation.ignore`:
+
 ```amok
 syntax  scala
 ##
@@ -387,6 +398,7 @@ import columnAttenuation.ignore
 
 Alternatively, it might be considered unacceptable to render a table in a space
 that's too small for it, and we can raise a `TableError` instead, by importing:
+
 ```amok
 syntax  scala
 ##

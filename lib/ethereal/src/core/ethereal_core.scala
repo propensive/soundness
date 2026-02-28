@@ -95,7 +95,9 @@ def cli[bus <: Matchable](using executive: Executive)
   import environments.java
   import strategies.throwUnsafely
   import workingDirectories.system
-  import stdioSources.virtualMachine.ansi
+  import environments.java
+  import termcaps.environment
+  import stdios.virtualMachine
 
   val name: Text =
     recover:
@@ -330,7 +332,9 @@ def cli[bus <: Matchable](using executive: Executive)
             Log.info(DaemonLogEvent.CloseConnection(pid))
 
   application(using executives.direct(using backstops.silent))(Nil):
-    import stdioSources.virtualMachine.ansi
+    import environments.java
+    import termcaps.environment
+    import stdios.virtualMachine
     import codicils.await
 
     Os.intercept[Shutdown]:

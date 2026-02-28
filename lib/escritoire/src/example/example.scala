@@ -40,7 +40,11 @@ import hieroglyph.*, textMetrics.uniform
 import iridescence.*
 import rudiments.*
 import spectacular.*
-import turbulence.*, stdioSources.virtualMachine.ansi
+import turbulence.*
+
+import environments.java
+import termcaps.environment
+import stdios.virtualMachine
 
 given decimalizer: Decimalizer = Decimalizer(3)
 

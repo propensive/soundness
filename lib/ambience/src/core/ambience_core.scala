@@ -38,6 +38,7 @@ import java.lang as jl
 import java.nio.file as jnf
 
 import anticipation.*
+import contingency.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
@@ -120,3 +121,15 @@ inline def workingDirectory[path: Representative of Paths](using work: WorkingDi
 
 def homeDirectory[path: Instantiable across Paths from Text](using directory: HomeDirectory): path =
   directory.path[path]
+
+package termcaps:
+  given environment: Environment => Termcap:
+    val ansi: Boolean = true
+
+    lazy val color: ColorDepth =
+      if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor else
+        val process = ProcessBuilder("tput", "colors").redirectErrorStream(true).nn.start().nn
+        val output = process.getInputStream().nn.readAllBytes()
+
+        if process.waitFor() != 0 then ColorDepth.NoColor
+        else ColorDepth(String(output).trim.nn.toInt)

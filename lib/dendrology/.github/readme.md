@@ -4,9 +4,9 @@
 
 # Dendrology
 
-__Rendering of trees and DAGs in the console__
+**Rendering of trees and DAGs in the console**
 
-__Dendrology__ provides methods for rendering data in a tree or directed acyclic graph
+**Dendrology** provides methods for rendering data in a tree or directed acyclic graph
 structure as lines, for rendering in a monospaced font, typically in a terminal. It can use
 [Unicode box-drawing characters](https://en.wikipedia.org/wiki/Box-drawing_characters) or
 plain ASCII to render semigraphical diagrams.
@@ -21,26 +21,21 @@ plain ASCII to render semigraphical diagrams.
 - can be easily adapted to any grid-like layout, e.g. an HTML table
 - custom textual renderings are available
 
-
 ## Availability
 
 Dendrology is available as a binary for Scala 3.4.0 and later, from [Maven
 Central](https://central.sonatype.com). To include it in an `sbt` build, use
 the coordinates:
+
 ```scala
 libraryDependencies += "dev.soundness" % "dendrology-tree" % "0.2.0"
 libraryDependencies += "dev.soundness" % "dendrology-dag" % "0.2.0"
 ```
 
-
-
-
-
-
-
 ## Getting Started
 
 Dendrology can render tree-like structures as text, such as the following,
+
 ```mono
 ├─● Plantae
 ├─● Fungi
@@ -58,7 +53,9 @@ Dendrology can render tree-like structures as text, such as the following,
         │ └─● Canis
         └─● Ursidae
 ```
+
 and DAGs such as this:
+
 ```mono
 ▪ Any
 └─▪ Matchable
@@ -77,6 +74,7 @@ Dendrology is versatile, and can represent data in a variety of input and output
 specified for working with those types.
 
 All Dendrology terms and types are in the `dendrology` package.
+
 ```scala
 import dendrology.*
 ```
@@ -90,6 +88,7 @@ be used.
 
 Dendrology makes it possible to define the method for accessing a node's children in two ways: either as a
 lambda when a `TreeDiagram` is constructed, like so,
+
 ```scala
 import anticipation.Text
 
@@ -100,9 +99,11 @@ val headOfFamily = Person(t"John", 37, List(son, daughter))
 
 val diagram = TreeDiagram.by[Person](person => person.children)(headOfFamily)
 ```
+
 or alternatively through a contextual instance of the typeclass `Expandable` for the given node type. Types
 which are naturally hierarchical can, of course, define their own `Expandable` instances so they can be used in
 tree-structures without the need to specify how child nodes should be accessed. For example:
+
 ```scala
 given Expandable[Person] = _.children
 val diagram2 = TreeDiagram(headOfFamily)
@@ -118,6 +119,7 @@ parameter, a lambda for converting from the type of the nodes, `NodeType`, to a 
 `Text`.
 
 For example, we could write,
+
 ```scala
 import treeStyles.default
 
@@ -163,10 +165,11 @@ Like `TreeDiagram`, though, `DagDiagram` provides `render` and `nodes` methods w
 lazily, and provides a strict `List`.
 
 Here is the full code used to create the example DAG above:
+
 ```scala
 import acyclicity.Dag
 import gossamer.t
-import turbulence.Out, turbulence.stdioSources.jvm
+import turbulence.Out, turbulence.stdios.jvm
 import dagStyles.default
 
 val dag = Dag(
@@ -188,12 +191,9 @@ def run2(): Unit =
   DagDiagram(dag).render { node => t"▪ $node" }.foreach(Out.println(_))
 ```
 
-
-
-
 ## Status
 
-Dendrology is classified as __maturescent__. For reference, Soundness projects are
+Dendrology is classified as **maturescent**. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -217,8 +217,8 @@ fragile, inadequately tested, and unsuitable for anything more than
 experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Dendrology?".
 
-1. *Copy the sources into your own project*
-   
+1. _Copy the sources into your own project_
+
    Read the `fury` file in the repository root to understand Dendrology's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -228,14 +228,14 @@ answer to the question, "how can I try Dendrology?".
    There should be no problem to compile the project together with all of its
    dependencies in a single compilation.
 
-2. *Build with [Wrath](https://github.com/propensive/wrath/)*
+2. _Build with [Wrath](https://github.com/propensive/wrath/)_
 
    Wrath is a bootstrapping script for building Dendrology and other projects in
    the absence of a fully-featured build tool. It is designed to read the `fury`
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -259,7 +259,7 @@ We suggest that all contributors read the [Contributing
 Guide](/contributing.md) to make the process of contributing to Dendrology
 easier.
 
-Please __do not__ contact project maintainers privately with questions unless
+Please **do not** contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
 repsond to such questions, private answers cannot be shared with a wider
 audience, and it can result in duplication of effort.
@@ -269,8 +269,6 @@ audience, and it can result in duplication of effort.
 Dendrology was designed and developed by Jon Pretty, and commercial support and
 training on all aspects of Scala 3 is available from [Propensive
 O&Uuml;](https://propensive.com/).
-
-
 
 ## Name
 
@@ -295,4 +293,3 @@ The logo shows a pattern of leaves from a tree; trees being the subject of Dendr
 
 Dendrology is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-
