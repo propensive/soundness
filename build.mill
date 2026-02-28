@@ -114,6 +114,12 @@ extends BaseScalaModule, SonatypeCentralPublishModule:
   def sources = Task.Sources(moduleDir)
   override def moduleDeps = dependencies
 
+  def plugin: Boolean = false
+  def scalacOptions =
+    if plugin then settings.scalaOptions
+    else settings.scalaOptions ++ Seq("-Xplugin", (lithosphere.plugin.assembly().path).toString())
+
+
 trait Tests(dependencies: PublishModule*) extends BaseScalaModule:
   def moduleId: String = moduleDir.last
   def finalMainClass = (moduleDir / ".." / "..").last + ".Tests"
@@ -128,7 +134,10 @@ trait Tests(dependencies: PublishModule*) extends BaseScalaModule:
     super.compile()
 
   def scalacOptions =
-    settings.scalaOptions ++ Seq("-Xplugin", (larceny.plugin.assembly().path).toString())
+    settings.scalaOptions
+    ++  Seq
+          ( "-Xplugin", (larceny.plugin.assembly().path).toString(),
+            "-Xplugin", (lithosphere.plugin.assembly().path).toString() )
 
 trait Bundle(dependencies: PublishModule*) extends BaseScalaModule, PublishModule:
   def sources = Task.Sources()
@@ -246,6 +255,7 @@ object test extends ScalaModule:
     kaleidoscope.test,
     larceny.test,
     //legerdemain.test,
+    lithosphere.test,
     mandible.test,
     mercator.test,
     merino.test,
@@ -634,6 +644,13 @@ object legerdemain extends Library:
   object core extends Component(honeycomb.core, anamnesis.core)
   object test extends Tests(core, scintillate.server)
 
+object lithosphere extends Library:
+  object plugin extends Component():
+    override def plugin = true
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+  object test extends Tests(plugin)
+
 object mandible extends Library:
   object core extends Component(hellenism.core, hyperbole.core, escritoire.core):
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
@@ -714,7 +731,7 @@ object prepositional extends Library:
   object test extends Tests(core)
 
 object proscenium extends Library:
-  object core extends Component
+  object core extends Component(lithosphere.plugin)
   object test extends Tests(core)
 
 object probably extends Library:
@@ -981,6 +998,7 @@ object publishing extends Module:
     kaleidoscope.core.publishLocal()()
     larceny.plugin.publishLocal()()
     legerdemain.core.publishLocal()()
+    lithosphere.plugin.publishLocal()()
     mandible.core.publishLocal()()
     mercator.core.publishLocal()()
     merino.core.publishLocal()()
