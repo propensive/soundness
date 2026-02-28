@@ -30,48 +30,40 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hyperbole
+package iridescence
 
-import scala.annotation.*
+import anticipation.*
 
-import soundness.*
+into trait Palette:
+  def background: Rgb24
+  def foreground: Rgb24
+  def primary: Rgb24
+  def secondary: Rgb24
+  def tertiary: Rgb24
 
-object Tests extends Suite(m"Hyperbole Tests"):
-  def run(): Unit =
-    test(m"Produce hello-world tree"):
-      Introspect.syntax(true):
-        println("hello world")
+given palette: Palette:
+  def background: Rgb24 = webColors.Black
+  def foreground: Rgb24 = webColors.White
+  def primary: Rgb24 = webColors.Crimson
+  def secondary: Rgb24 = webColors.LimeGreen
+  def tertiary: Rgb24 = webColors.MidnightBlue
 
-    . assert: result =>
-        result
-        ==
-        TastyTree
-          ( ' ',
-            "Unit",
-            "Apply",
-            "scala.Predef.println(\"hello world\")",
-            "println(\"hello world\")",
-            List
-              ( TastyTree
-                  ( ' ',
-                    "",
-                    "Ident",
-                    "scala.Predef.println",
-                    "println",
-                    Nil,
-                    "println",
-                    true,
-                    false ),
-                TastyTree
-                  ( 'a',
-                    "\"hello world\"",
-                    "Literal",
-                    "\"hello world\"",
-                    "        \"hello world\"",
-                    Nil,
-                    "\"hello world\"",
-                    true,
-                    false ) ),
-            Unset,
-            true,
-            false )
+object Experiment:
+
+  object MyPalette:
+    given myPalette: (palette: Palette) => MyPalette:
+      export palette.*
+      def syntaxKeyword = primary
+      def syntaxTerm = primary
+      def syntaxType = primary
+
+  trait MyPalette extends Palette:
+    def syntaxKeyword: Rgb24
+    def syntaxTerm: Rgb24
+    def syntaxType: Rgb24
+
+
+  def foo(using MyPalette)(): Unit =
+    println()
+
+  foo()

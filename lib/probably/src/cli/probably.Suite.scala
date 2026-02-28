@@ -43,8 +43,10 @@ import fulminate.*
 import turbulence.*
 import vacuous.*
 
+import termcaps.environment
+
 abstract class Suite(suiteName: Message) extends Testable(suiteName):
-  val suiteIo = safely(stdioSources.virtualMachine.ansi).vouch
+  val suiteIo = safely(stdios.virtualMachine).vouch
 
   var runner0: Runner[Report] =
     given stdio: Stdio = suiteIo

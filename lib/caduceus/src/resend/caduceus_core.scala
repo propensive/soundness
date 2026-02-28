@@ -32,6 +32,7 @@
                                                                                                   */
 package caduceus
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import fulminate.*
@@ -52,7 +53,9 @@ import zephyrine.*
 import charEncoders.utf8
 import jsonPrinters.minimal
 import errorDiagnostics.stackTraces
-import stdioSources.virtualMachine.ansi
+import environments.java
+import termcaps.environment
+import stdios.virtualMachine
 import alphabets.base64.standard
 
 package couriers:
