@@ -43,9 +43,9 @@ case class Srgb(red: Double, green: Double, blue: Double):
   def css: Text = Text(s"rgb(${(red*255).toInt}, ${(green*255).toInt}, ${(blue*255).toInt})")
   def rgb24: Rgb24 = Rgb24((red*255).toInt, (green*255).toInt, (blue*255).toInt)
   def srgb: Srgb = this
-  def highContrast(using ColorProfile): Srgb = if xyz.y >= 0.5 then Srgb(0, 0, 0) else Srgb(1, 1, 1)
+  def highContrast(using Colorimetry): Srgb = if xyz.y >= 0.5 then Srgb(0, 0, 0) else Srgb(1, 1, 1)
 
-  def xyz(using ColorProfile): Xyz =
+  def xyz(using Colorimetry): Xyz =
     def limit(v: Double): Double = if v > 0.04045 then ((v + 0.055)/1.055)**2.4 else v/12.92
 
     val List(r, g, b) = List(red, green, blue).map(limit(_)*100)
@@ -55,7 +55,7 @@ case class Srgb(red: Double, green: Double, blue: Double):
 
     Xyz(x, y, z)
 
-  def cielab(using ColorProfile): Cielab = xyz.cielab
+  def cielab(using Colorimetry): Cielab = xyz.cielab
   def cmy: Cmy = Cmy(1 - red, 1 - green, 1 - blue)
   def cmyk: Cmyk = cmy.cmyk
 

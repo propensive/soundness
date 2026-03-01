@@ -40,30 +40,3 @@ into trait Palette:
   def primary: Rgb24
   def secondary: Rgb24
   def tertiary: Rgb24
-
-given palette: Palette:
-  def background: Rgb24 = webColors.Black
-  def foreground: Rgb24 = webColors.White
-  def primary: Rgb24 = webColors.Crimson
-  def secondary: Rgb24 = webColors.LimeGreen
-  def tertiary: Rgb24 = webColors.MidnightBlue
-
-object Experiment:
-
-  object MyPalette:
-    given myPalette: (palette: Palette) => MyPalette:
-      export palette.*
-      def syntaxKeyword = primary
-      def syntaxTerm = primary
-      def syntaxType = primary
-
-  trait MyPalette extends Palette:
-    def syntaxKeyword: Rgb24
-    def syntaxTerm: Rgb24
-    def syntaxType: Rgb24
-
-
-  def foo(using MyPalette)(): Unit =
-    println()
-
-  foo()
