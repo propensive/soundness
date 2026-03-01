@@ -160,9 +160,9 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
     def sgr(params: List[Int]): Unit = params match
       case Nil                            => ()
       case 38 :: 5 :: n :: tail           => style = Foreground(style) = color8(n)
-      case 38 :: 2 :: r :: g :: b :: tail => style = Foreground(style) = Rgb24(r, g, b)
+      case 38 :: 2 :: r :: g :: b :: tail => style = Foreground(style) = Chroma(r, g, b)
       case 48 :: 5 :: n :: tail           => style = Background(style) = color8(n)
-      case 48 :: 2 :: r :: g :: b :: tail => style = Background(style) = Rgb24(r, g, b)
+      case 48 :: 2 :: r :: g :: b :: tail => style = Background(style) = Chroma(r, g, b)
 
       case head :: tail =>
         style = head match
@@ -188,9 +188,9 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
           case 28                            => Conceal(style) = false
           case 29                            => Strike(style) = false
           case n if 30 <= n <= 37            => Foreground(style) = palette(n - 30)
-          case 39                            => Foreground(style) = Rgb24(255, 255, 255)
+          case 39                            => Foreground(style) = Chroma(255, 255, 255)
           case n if 40 <= n <= 47            => Background(style) = palette(n - 40)
-          case 49                            => Background(style) = Rgb24(0, 0, 0)
+          case 49                            => Background(style) = Chroma(0, 0, 0)
           case n if 90 <= n <= 97            => Foreground(style) = palette(n - 82)
           case n if 100 <= n <= 107          => Background(style) = palette(n - 92)
 
@@ -227,41 +227,41 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
       case (param,             char) => raise(PtyEscapeError(BadCsiCommand(param, char)))
 
     // Uses the Ubuntu color palette
-    def palette(n: Int): Rgb24 = n match
-      case 0  => Rgb24(  1,   1,   1)
-      case 1  => Rgb24(222,  56,  43)
-      case 2  => Rgb24( 57, 181,  74)
-      case 3  => Rgb24(255, 199,   6)
-      case 4  => Rgb24(  0, 111, 184)
-      case 5  => Rgb24(118,  38, 113)
-      case 6  => Rgb24( 44, 181, 233)
-      case 7  => Rgb24(204, 204, 204)
-      case 8  => Rgb24(  1,   1,   1)
-      case 9  => Rgb24(255,   0,   0)
-      case 10 => Rgb24(  0, 255,   0)
-      case 11 => Rgb24(255, 255,   0)
-      case 12 => Rgb24(  0,   0, 255)
-      case 13 => Rgb24(255,   0, 255)
-      case 14 => Rgb24(  0, 255, 255)
-      case 15 => Rgb24(255, 255, 255)
+    def palette(n: Int): Chroma = n match
+      case 0  => Chroma(  1,   1,   1)
+      case 1  => Chroma(222,  56,  43)
+      case 2  => Chroma( 57, 181,  74)
+      case 3  => Chroma(255, 199,   6)
+      case 4  => Chroma(  0, 111, 184)
+      case 5  => Chroma(118,  38, 113)
+      case 6  => Chroma( 44, 181, 233)
+      case 7  => Chroma(204, 204, 204)
+      case 8  => Chroma(  1,   1,   1)
+      case 9  => Chroma(255,   0,   0)
+      case 10 => Chroma(  0, 255,   0)
+      case 11 => Chroma(255, 255,   0)
+      case 12 => Chroma(  0,   0, 255)
+      case 13 => Chroma(255,   0, 255)
+      case 14 => Chroma(  0, 255, 255)
+      case 15 => Chroma(255, 255, 255)
       case _  => panic(m"tried to access non-existent palette color")
 
-    def color8(n: Int): Rgb24 = n match
+    def color8(n: Int): Chroma = n match
       case n if 0 <= n <= 15 => palette(n)
 
       case n if 232 <= n <= 255 =>
         val gray = n - 232
         val gray2 = 7 + gray*10 + gray/2
-        Rgb24(gray2, gray2, gray2)
+        Chroma(gray2, gray2, gray2)
 
       case n if 16 <= n <= 231 =>
         val r = (n - 16)/36
         val g = (n - 16 - 36*r)/6
         val b = n - 16 - 36*r - 6*g
-        Rgb24(r*42 + r/2, g*42 + g/2, b*42 + b/2)
+        Chroma(r*42 + r/2, g*42 + g/2, b*42 + b/2)
 
       case n =>
-        raise(PtyEscapeError(BadColor(n))) yet Rgb24(127, 127, 127)
+        raise(PtyEscapeError(BadColor(n))) yet Chroma(127, 127, 127)
 
     def recur(index: Int, context: Context): Pty =
       inline def proceed(context: Context): Pty =

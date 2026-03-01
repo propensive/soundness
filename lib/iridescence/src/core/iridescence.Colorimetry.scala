@@ -32,24 +32,4 @@
                                                                                                   */
 package iridescence
 
-import anticipation.*
-import rudiments.*
-
-object Rgb12Opaque:
-  opaque type Rgb12 = Int
-
-  object Rgb12:
-    inline given underlying: Underlying[Rgb12, Int] = !!
-    given chromatic: Rgb12 is Chromatic = _.srgb.chroma.asInt
-
-    def apply(red: Int, green: Int, blue: Int): Rgb12 =
-      ((red&15) << 8) + ((green&15) << 4) + (blue&15)
-
-
-  extension (color: Rgb12)
-    def red: Int = (color >> 8)&15
-
-    def green: Int = (color >> 4)&15
-    def blue: Int = color&15
-    def hex: Text = ("#"+List(red, green, blue).map(_.hex).mkString).tt
-    def srgb: Srgb = Srgb(red/15.0, green/15.0, blue/15.0)
+case class Colorimetry(x2: Double, y2: Double, z2: Double, x10: Double, y10: Double, z10: Double)

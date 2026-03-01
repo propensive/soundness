@@ -126,4 +126,4 @@ object Tests extends Suite(m"Escapade tests"):
 
       test(m"double color change and removal uses default"):
         pty.consume(e"$Red($Yellow(yellow)red)default".render).buffer.find(t"default").vouch.styles
-      . assert(_.all(_.foreground == Rgb24(255, 255, 255)))
+      . assert(_.all(_.foreground == Chroma(255, 255, 255)))

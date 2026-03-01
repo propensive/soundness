@@ -101,8 +101,8 @@ trait TerminalEscapes:
   def reverse(state: Boolean): Text
   def conceal(state: Boolean): Text
   def strike(state: Boolean): Text
-  def foreground(color: Rgb24): Text
-  def background(color: Rgb24): Text
+  def foreground(color: Chroma): Text
+  def background(color: Chroma): Text
 
 object StandardEscapes extends TerminalEscapes:
   def bold(state: Boolean): Text = if state then t"\e[1m" else t"\e[22m"
@@ -111,5 +111,5 @@ object StandardEscapes extends TerminalEscapes:
   def reverse(state: Boolean): Text = if state then t"\e[7m" else t"\e[27m"
   def conceal(state: Boolean): Text = if state then t"\e[8m" else t"\e[28m"
   def strike(state: Boolean): Text = if state then t"\e[9m" else t"\e[29m"
-  def foreground(color: Rgb24): Text = t"\e[38;2;${color.red};${color.green};${color.blue}m"
-  def background(color: Rgb24): Text = t"\e[48;2;${color.red};${color.green};${color.blue}m"
+  def foreground(color: Chroma): Text = t"\e[38;2;${color.red};${color.green};${color.blue}m"
+  def background(color: Chroma): Text = t"\e[48;2;${color.red};${color.green};${color.blue}m"

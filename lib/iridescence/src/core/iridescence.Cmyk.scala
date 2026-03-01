@@ -35,8 +35,9 @@ package iridescence
 import anticipation.*
 
 object Cmyk:
-  given chromatic: Cmyk is Chromatic = _.srgb.rgb24.asInt
+  given chromatic: Cmyk is Chromatic = _.srgb.chroma.asInt
 
-case class Cmyk(cyan: Double, magenta: Double, yellow: Double, key: Double):
+case class Cmyk(cyan: Double, magenta: Double, yellow: Double, key: Double) extends Color:
   def srgb: Srgb = cmy.srgb
+  def chroma: Chroma = srgb.chroma
   def cmy: Cmy = Cmy(cyan*(1 - key) + key, magenta*(1 - key) + key, yellow*(1 - key) + key)

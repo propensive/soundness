@@ -32,11 +32,38 @@
                                                                                                   */
 package iridescence
 
-import anticipation.*
+object Palette:
+  trait Reporting:
+    palette: Palette =>
+      def success: Color
+      def error: Color
+      def warning: Color
+
+  trait Terminal:
+    palette: Palette =>
+      def red: Color
+      def green: Color
+      def blue: Color
+      def magenta: Color
+      def cyan: Color
+      def yellow: Color
+
+  trait Syntax:
+    palette: Palette =>
+      def error: Color
+      def number: Color
+      def modifier: Color
+      def identifier: Color
+      def term: Color
+      def meta: Color
+      def string: Color
+      def parenthesis: Color
+      def symbol: Color
+      def comment: Color
 
 into trait Palette:
-  def background: Rgb24
-  def foreground: Rgb24
-  def primary: Rgb24
-  def secondary: Rgb24
-  def tertiary: Rgb24
+  def background: Color
+  def foreground: Color
+  def primary: Color
+  def secondary: Color
+  def tertiary: Color
