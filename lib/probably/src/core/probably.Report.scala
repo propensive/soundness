@@ -160,7 +160,7 @@ class Report(using Environment):
 
     private val nbsp = '\u00a0'
 
-    def color: Rgb24 = this match
+    def color: Chroma = this match
       case Pass        => rgb"#8abd00"
       case Fail        => rgb"#cc3333"
       case Throws      => DarkOrange

@@ -39,10 +39,10 @@ import rudiments.*
 
 import errorDiagnostics.empty
 
-object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
-  def initial: Option[Rgb24] = None
+object RgbHex extends Interpolator[Nothing, Option[Chroma], Chroma]:
+  def initial: Option[Chroma] = None
 
-  def parse(state: Option[Rgb24], next: Text): Option[Rgb24] =
+  def parse(state: Option[Chroma], next: Text): Option[Chroma] =
     if next.s.length == 7 && next.s.startsWith("#") then parse(state, Text(next.s.substring(1).nn))
     else if next.s.length == 6 && next.s.all: char =>
       char.isDigit || ((char | 32) >= 'a' && (char | 32) <= 'f')
@@ -51,14 +51,14 @@ object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
       val green = Integer.parseInt(next.s.substring(2, 4), 16)
       val blue = Integer.parseInt(next.s.substring(4, 6), 16)
 
-      Some(Rgb24(red, green, blue))
+      Some(Chroma(red, green, blue))
 
     else throw InterpolationError(m"""the color must be in the form ${Text("rgb\"#rrggbb\"")} or
         rgb"rrggbb" where rr, gg and bb are 2-digit hex values""", 0)
 
-  def insert(state: Option[Rgb24], value: Nothing): Option[Rgb24] =
+  def insert(state: Option[Chroma], value: Nothing): Option[Chroma] =
     throw InterpolationError:
       m"substitutions into an ${Text("rgb\"\"")} interpolator are not supported"
 
-  def skip(state: Option[Rgb24]): Option[Rgb24] = state
-  def complete(color: Option[Rgb24]): Rgb24 = color.get
+  def skip(state: Option[Chroma]): Option[Chroma] = state
+  def complete(color: Option[Chroma]): Chroma = color.get

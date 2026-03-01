@@ -37,11 +37,11 @@ import hypotenuse.*
 
 
 object Srgb:
-  given chromatic: Srgb is Chromatic = _.rgb24.asInt
+  given chromatic: Srgb is Chromatic = _.chroma.asInt
 
-case class Srgb(red: Double, green: Double, blue: Double):
-  def css: Text = Text(s"rgb(${(red*255).toInt}, ${(green*255).toInt}, ${(blue*255).toInt})")
-  def rgb24: Rgb24 = Rgb24((red*255).toInt, (green*255).toInt, (blue*255).toInt)
+case class Srgb(red: Double, green: Double, blue: Double) extends Color:
+  def css: Text = s"rgb(${(red*255).toInt}, ${(green*255).toInt}, ${(blue*255).toInt})".tt
+  def chroma: Chroma = Chroma((red*255).toInt, (green*255).toInt, (blue*255).toInt)
   def srgb: Srgb = this
   def highContrast(using Colorimetry): Srgb = if xyz.y >= 0.5 then Srgb(0, 0, 0) else Srgb(1, 1, 1)
 

@@ -36,19 +36,19 @@ import anticipation.*
 import rudiments.*
 
 object Rgb24Opaque:
-  opaque type Rgb24 = Int
+  opaque type Chroma = Int
 
-  object Rgb24:
-    inline given underlying: Underlying[Rgb24, Int] = !!
-    given chromatic: Rgb24 is Chromatic = _.asInt
+  object Chroma:
+    inline given underlying: Underlying[Chroma, Int] = !!
+    given chromatic: Chroma is Chromatic = _.asInt
 
-    def apply(red: Int, green: Int, blue: Int): Rgb24 =
+    def apply(red: Int, green: Int, blue: Int): Chroma =
       ((red&255) << 16) + ((green&255) << 8) + (blue&255)
 
-    def apply(packedInt: Int): Rgb24 = packedInt & 0x00ffffff
+    def apply(packedInt: Int): Chroma = packedInt & 0x00ffffff
 
 
-  extension (color: Rgb24)
+  extension (color: Chroma)
     def red: Int = (color >> 16) & 255
 
     def green: Int = (color >> 8) & 255

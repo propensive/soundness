@@ -584,7 +584,7 @@ object Bytecode:
       case 0xFF => t"implementation-dependent"
       case _    => t"unrecognized"
 
-    def highlight: Rgb24 = cost match
+    def highlight: Chroma = cost match
       case 0 => rgb"#1a6a6c"
       case 1 => rgb"#659e24"
       case 2 => rgb"#e3a232"

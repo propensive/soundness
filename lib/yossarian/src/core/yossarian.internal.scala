@@ -124,17 +124,17 @@ object internal:
     def strike: Boolean = Style.Bit.Strike(style)
     def underline: Boolean = Style.Bit.Underline(style)
     def reverse: Boolean = Style.Bit.Reverse(style)
-    def foreground: Rgb24 = Style.Foreground(style)
-    def background: Rgb24 = Style.Background(style)
+    def foreground: Chroma = Style.Foreground(style)
+    def background: Chroma = Style.Background(style)
 
 
   object Style:
-    def apply(): Style = Foreground(0L) = Rgb24(255, 255, 255)
+    def apply(): Style = Foreground(0L) = Chroma(255, 255, 255)
 
     class Bits(offset: Int, mask: Long):
-      def apply(style: Style): Rgb24 = Rgb24(((style >>> offset) & 0xffffff).toInt)
+      def apply(style: Style): Chroma = Chroma(((style >>> offset) & 0xffffff).toInt)
 
-      def update(style: Style, color: Rgb24): Style =
+      def update(style: Style, color: Chroma): Style =
         (color.asRgb24Int.toLong << offset) + (style & mask)
 
     val Foreground = Bits(40, 0x000000ffffffffffL)

@@ -33,5 +33,5 @@
 package iridescence
 
 export Rgb12Opaque.Rgb12
-export Rgb24Opaque.Rgb24
+export Rgb24Opaque.Chroma
 export Rgb32Opaque.Rgb32

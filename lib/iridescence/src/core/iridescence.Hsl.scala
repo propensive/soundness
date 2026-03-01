@@ -35,13 +35,14 @@ package iridescence
 import anticipation.*
 
 object Hsl:
-  given chromatic: Hsl is Chromatic = _.srgb.rgb24.asInt
+  given chromatic: Hsl is Chromatic = _.srgb.chroma.asInt
 
-case class Hsl(hue: Double, saturation: Double, lightness: Double):
+case class Hsl(hue: Double, saturation: Double, lightness: Double) extends Color:
   def saturate: Hsv = Hsv(hue, 1, lightness)
   def desaturate: Hsv = Hsv(hue, 0, lightness)
   def rotate(degrees: Double): Hsv = Hsv(unitary(hue + degrees/360), saturation, lightness)
   def pure: Hsv = Hsv(hue, 1, 0)
+  def chroma: Chroma = srgb.chroma
 
   def srgb: Srgb =
     if saturation == 0 then Srgb(lightness, lightness, lightness)

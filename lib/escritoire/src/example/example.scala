@@ -125,7 +125,7 @@ def run(): Unit =
   //                tableStyles.minimal)
   // do style.give(Out.println(table.tabulate(libraries.take(2)).grid(50)))
 
-case class Fruit(chinese: Text, english: Text, russian: Text, japanese: Text, color: Rgb24)
+case class Fruit(chinese: Text, english: Text, russian: Text, japanese: Text, color: Chroma)
 
 val fruits =
   List
