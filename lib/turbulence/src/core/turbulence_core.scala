@@ -69,30 +69,22 @@ extension [value: Streamable by Text](value: value)
   def load[result <: Documentary: Loadable by Text]: Document[result] =
     result.load(value.stream[Text])
 
-package stdioSources:
+package stdios:
   given mute: Stdio = Stdio(null, null, null, termcapDefinitions.basic)
 
-  package system:
-    given textOnly: Stdio =
-      Stdio(jl.System.out.nn, jl.System.err.nn, jl.System.in.nn, termcapDefinitions.basic)
+  given system: (termcap: Termcap) => Stdio =
+    Stdio
+      ( jl.System.out.nn,
+        jl.System.err.nn,
+        jl.System.in.nn,
+        termcap )
 
-    given ansi: Stdio =
-      Stdio(jl.System.out.nn, jl.System.err.nn, jl.System.in.nn, termcapDefinitions.xterm256)
-
-  package virtualMachine:
-    given textOnly: Stdio =
-      val stdout = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.out))
-      val stderr = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.err))
-      val stdin = ji.FileInputStream(ji.FileDescriptor.in)
-
-      Stdio(stdout, stderr, stdin, termcapDefinitions.basic)
-
-    given ansi: Stdio =
-      val stdout = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.out))
-      val stderr = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.err))
-      val stdin = ji.FileInputStream(ji.FileDescriptor.in)
-
-      Stdio(stdout, stderr, stdin, termcapDefinitions.xterm256)
+  given virtualMachine: (termcap: Termcap) => Stdio =
+    Stdio
+      ( ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.out)),
+        ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.err)),
+        ji.FileInputStream(ji.FileDescriptor.in),
+        termcap )
 
 extension [element](stream: Stream[element])
   def deduplicate: Stream[element] =

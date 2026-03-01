@@ -34,7 +34,7 @@ package iridescence
 
 import soundness.*
 
-given ColorProfile = colorProfiles.daylight
+given Colorimetry = colorimetry.daylight
 
 object Tests extends Suite(m"Iridescence tests"):
   def run(): Unit =
@@ -78,16 +78,16 @@ object Tests extends Suite(m"Iridescence tests"):
     suite(m"Interpolator tests"):
       test(m"Read a hex value with a leading hash"):
         rgb"#abcdef"
-      . assert(_ == Rgb24(171, 205, 239))
+      . assert(_ == Chroma(171, 205, 239))
 
       test(m"Read a hex value without a leading hash"):
         rgb"abcdef"
-      . assert(_ == Rgb24(171, 205, 239))
+      . assert(_ == Chroma(171, 205, 239))
 
       test(m"Read black"):
         rgb"#000000"
-      . assert(_ == Rgb24(0, 0, 0))
+      . assert(_ == Chroma(0, 0, 0))
 
       test(m"Read white"):
         rgb"#ffffff"
-      . assert(_ == Rgb24(255, 255, 255))
+      . assert(_ == Chroma(255, 255, 255))

@@ -4,7 +4,7 @@
 
 # Hallucination
 
-__A library for working with images in Scala__
+**A library for working with images in Scala**
 
 Images are commonplace in many programming environments, so they ought to be as
 easy to work with as text. _Hallucination_ aspires to make this possible.
@@ -16,18 +16,12 @@ easy to work with as text. _Hallucination_ aspires to make this possible.
 - read directly from any [Turbulence](https://github.com/propensive/turbulence) source
 - access image metadata and individual pixel colors
 
-
 ## Availability
-
-
-
-
-
-
 
 ## Getting Started
 
 All terms and types are define in the `hallucination` package, and can be used with:
+
 ```scala
 import hallucination.*
 ```
@@ -36,13 +30,15 @@ import hallucination.*
 
 To read an image of a known type, the `read` method of its codec object should
 be used. Currently, four codecs are defined:
- - `Png`
- - `Gif`
- - `Jpeg`, and
- - `Bmp`
+
+- `Png`
+- `Gif`
+- `Jpeg`, and
+- `Bmp`
 
 The source of the image may be any source that can be read as `Bytes` by
 Turbulence, for example:
+
 ```scala
 import galilei.*
 
@@ -54,6 +50,7 @@ parameterized with the erased phantom type `Png`.
 
 It's possible to use Turbulence's `readAs` method to read an `Image[?]` from a
 source of `Bytes`, for example:
+
 ```scala
 import turbulence.*
 import hellenism.*
@@ -67,13 +64,11 @@ The width and height of the image are available through the `width` and
 `height` methods of `Image[?]`.
 
 The color of the pixel at given coordinates within the image can be accessed,
-as an `Rgb24` value, using `Image`'s `apply` method, i.e. `image(x, y)`.
-
-
+as an `Chroma` value, using `Image`'s `apply` method, i.e. `image(x, y)`.
 
 ## Status
 
-Hallucination is classified as __embryotic__. For reference, Soundness projects are
+Hallucination is classified as **embryotic**. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -97,7 +92,7 @@ fragile, inadequately tested, and unsuitable for anything more than
 experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Hallucination?".
 
-1. *Copy the sources into your own project*
+1. _Copy the sources into your own project_
 
    Read the `fury` file in the repository root to understand Hallucination's build
    structure, dependencies and source location; the file format should be short
@@ -108,7 +103,7 @@ answer to the question, "how can I try Hallucination?".
    There should be no problem to compile the project together with all of its
    dependencies in a single compilation.
 
-2. *Build with [Wrath](https://github.com/propensive/wrath/)*
+2. _Build with [Wrath](https://github.com/propensive/wrath/)_
 
    Wrath is a bootstrapping script for building Hallucination and other projects in
    the absence of a fully-featured build tool. It is designed to read the `fury`
@@ -139,7 +134,7 @@ We suggest that all contributors read the [Contributing
 Guide](/contributing.md) to make the process of contributing to Hallucination
 easier.
 
-Please __do not__ contact project maintainers privately with questions unless
+Please **do not** contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
 repsond to such questions, private answers cannot be shared with a wider
 audience, and it can result in duplication of effort.
@@ -149,8 +144,6 @@ audience, and it can result in duplication of effort.
 Hallucination was designed and developed by Jon Pretty, and commercial support and
 training on all aspects of Scala 3 is available from [Propensive
 O&Uuml;](https://propensive.com/).
-
-
 
 ## Name
 

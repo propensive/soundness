@@ -1,4 +1,5 @@
 All Camouflage terms and types are defined in the `camouflage` package:
+
 ```scala
 import camouflage.*
 ```
@@ -14,6 +15,7 @@ _least-recently-used_ value.
 ### `LruCache`
 
 To construct an LRU cache, specify a key and value type, and maximum size to the `LruCache` constructor:
+
 ```scala
 import galilei.Path
 import anticipation.Text
@@ -28,6 +30,7 @@ a `Map`. For `LruCache`, the parameters are curried, since the second _ought_ to
 computation—since that is the purpose of caching.
 
 Here is an example of using the `LruCache` to cache reading two files from disk:
+
 ```scala
 import galilei.File
 import galilei.filesystemOptions.{dereferenceSymlinks, doNotCreateNonexistent}
@@ -49,10 +52,12 @@ def read(): Unit =
 ```
 
 A subsequent call to,
+
 ```scala
 def readAgain(): Text = cache(dataDir / "chapter1.txt"):
   (dataDir / "chapter1.txt").as[File].readAs[Text]
 ```
+
 would retrieve the stored `Text` value from the cache, and the code which reads the file from disk would not be
 executed.
 
@@ -61,9 +66,10 @@ And for an `LruCache` of size `100`, `chapter1.txt` would only be evicted if 100
 of other keys were made since the addition or last access of `chapter1.txt`.
 
 Here is a complete example of a tiny `LruCache`:
+
 ```scala
 import turbulence.Out
-import turbulence.stdioSources.virtualMachine
+import turbulence.stdios.virtualMachine
 import gossamer.t
 
 def numbers(): Unit =

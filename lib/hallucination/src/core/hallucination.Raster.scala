@@ -45,7 +45,7 @@ import rudiments.*
 import turbulence.*
 
 object Raster:
-  def apply(width: Int, height: Int)(pixel: (Int, Int) => Rgb24): Raster =
+  def apply(width: Int, height: Int)(pixel: (Int, Int) => Chroma): Raster =
     val image = jai.BufferedImage(width, height, jai.BufferedImage.TYPE_INT_RGB)
     for x <- 0 until width; y <- 0 until height do image.setRGB(x, y, pixel(x, y).asInt)
     new Raster(image)
@@ -88,9 +88,9 @@ case class Raster(private[hallucination] val image: jai.BufferedImage) extends F
   def width: Int = image.getWidth
   def height: Int = image.getHeight
 
-  def apply(x: Int, y: Int): Rgb24 =
+  def apply(x: Int, y: Int): Chroma =
     val color: ja.Color = ja.Color(image.getRGB(x, y), true)
-    Rgb24(color.getRed, color.getGreen, color.getBlue)
+    Chroma(color.getRed, color.getGreen, color.getBlue)
 
   def to[format: Rasterizable as rasterizable]: Raster in format = Raster[format](image)
 

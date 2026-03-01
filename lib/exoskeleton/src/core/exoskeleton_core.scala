@@ -52,6 +52,9 @@ import serpentine.*
 import turbulence.*
 import vacuous.*
 
+import environments.java
+import termcaps.environment
+
 package backstops:
   given silent: Backstop:
     def handle(error: Throwable)(using Stdio): Exit = error match
@@ -145,7 +148,7 @@ def application(using executive: Executive, interpreter: Interpreter)
       ( arguments,
         environments.java,
         workingDirectories.java,
-        stdioSources.virtualMachine.ansi,
+        stdios.virtualMachine,
         spool,
         entrypoint,
         Login(ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt, Unset) )
