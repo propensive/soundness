@@ -34,4 +34,13 @@ package soundness
 
 export iridescence
 . { webColors, solarized, Xyz, Rgb12, Rgb24, Rgb32, Srgb, Cielab, Cmy, Cmyk, Hsv, Hsl, rgb,
-    colorProfiles, ColorProfile }
+    Colorimetry }
+
+package colorimetry:
+  export iridescence.colorimetry
+  . { incandescentTungsten, oldDirectSunlightAtNoon, oldDaylight, iccProfilePcs, midMorningDaylight,
+      daylight, srgb, adobeRgb, northSkyDaylight, equalEnergy, daylightFluorescentF1,
+      coolFluorescent,  whiteFluorescent, warmWhiteFluorescent, daylightFluorescentF5,
+      liteWhiteFluorescent, daylightFluorescentF7, d65Simulator, sylvaniaF40, d50Simulator,
+      coolWhiteFluorescent, philipsTl85, ultralume50, philipsTl84, ultralume40,  philipsTl83,
+      ultralume30 }

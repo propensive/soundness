@@ -53,7 +53,7 @@ case class Xyz(x: Double, y: Double, z: Double):
 
   def rgb24: Rgb24 = srgb.rgb24
 
-  def cielab(using profile: ColorProfile): Cielab =
+  def cielab(using profile: Colorimetry): Cielab =
     def limit(v: Double): Double = if v > 0.008856 then v**(1.0/3) else 7.787*v + 0.13793
 
     val l: Double = 116*limit(y/profile.y2) - 16

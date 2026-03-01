@@ -34,7 +34,7 @@ package iridescence
 
 import soundness.*
 
-given ColorProfile = colorProfiles.daylight
+given Colorimetry = colorimetry.daylight
 
 object Tests extends Suite(m"Iridescence tests"):
   def run(): Unit =

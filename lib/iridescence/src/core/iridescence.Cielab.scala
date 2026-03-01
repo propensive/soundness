@@ -36,12 +36,12 @@ import anticipation.*
 import hypotenuse.*
 
 object Cielab:
-  given chromatic: ColorProfile => Cielab is Chromatic = _.srgb.rgb24.asInt
+  given chromatic: Colorimetry => Cielab is Chromatic = _.srgb.rgb24.asInt
 
 case class Cielab(l: Double, a: Double, b: Double):
-  def srgb(using ColorProfile): Srgb = xyz.srgb
+  def srgb(using Colorimetry): Srgb = xyz.srgb
 
-  def xyz(using profile: ColorProfile): Xyz =
+  def xyz(using profile: Colorimetry): Xyz =
     def limit(v: Double): Double = if v*v*v > 0.008856 then v*v*v else (v - 16.0/116)/7.787
 
     val y = limit((l + 16)/116)*profile.y2
