@@ -38,7 +38,6 @@ import anticipation.*
 import denominative.*
 import gossamer.*
 import hypotenuse.*
-import iridescence.*
 import proscenium.*
 import symbolism.*
 

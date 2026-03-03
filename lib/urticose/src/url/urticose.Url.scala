@@ -59,8 +59,8 @@ object Url:
 
   given encodable: [scheme <: Label] => Url[scheme] is Encodable in Text = _.show
 
-  given teletype: [scheme <: Label] => Url[scheme] is Teletypeable =
-    url => e"$Underline(${Fg(0x00bfff)}(${url.show}))"
+  given teletype: [scheme <: Label] => (palette: UrlPalette) => Url[scheme] is Teletypeable =
+    url => e"$Underline(${Fg(palette.link)}(${url.show}))"
 
   given decodable: [scheme <: Label] => Tactic[UrlError] => Url[scheme] is Decodable in Text =
     value =>

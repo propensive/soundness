@@ -38,7 +38,6 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import hypotenuse.*
-import iridescence.*
 import kaleidoscope.*
 import proscenium.*
 import rudiments.*

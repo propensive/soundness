@@ -44,7 +44,7 @@ import wisteria.*
 
 object Inspectable extends Inspectable2:
   object Derivation extends Derivable[Inspectable]:
-    inline def join[derivation <: Product: ProductReflection]: derivation is Inspectable =
+    inline def conjunction[derivation <: Product: ProductReflection]: derivation is Inspectable =
       value =>
         fields(value): [field] => field =>
           val text = contextual.text(field)
@@ -52,7 +52,7 @@ object Inspectable extends Inspectable2:
 
         . mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
 
-    inline def split[derivation: SumReflection]: derivation is Inspectable = value =>
+    inline def disjunction[derivation: SumReflection]: derivation is Inspectable = value =>
       variant(value):
         [variant <: derivation] => variant =>
           contextual.give(variant.inspect)

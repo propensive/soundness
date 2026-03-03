@@ -37,5 +37,5 @@ import fulminate.*
 import vacuous.*
 
 case class RasterError(rasterizable: Optional[Rasterizable])(using Diagnostics)
-extends
-  Error(m"unable to read the raster image in ${rasterizable.lay("unspecified".tt)(_.name)} format")
+extends Error
+  ( m"unable to read the raster image in ${rasterizable.lay("unspecified".tt)(_.name)} format" )

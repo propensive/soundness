@@ -34,7 +34,6 @@ package escapade
 
 import anticipation.*
 import gossamer.*
-import iridescence.*
 import prepositional.*
 import spectacular.*
 

@@ -58,7 +58,7 @@ object arithmetic:
   object AddableDerivation
   extends ProductDerivation[[value] =>> value is Addable by value to value]:
 
-    inline def join[derivation <: Product: ProductReflection]
+    inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Addable by derivation to derivation =
 
       (left, right) => build: [field] => _.add(complement(left), complement(right))
@@ -73,7 +73,7 @@ object arithmetic:
   object SubtractableDerivation
   extends ProductDerivation[[value] =>> value is Subtractable by value to value]:
 
-    inline def join[derivation <: Product: ProductReflection]
+    inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Subtractable by derivation to derivation =
 
       (left, right) => build: [field] => _.subtract(complement(left), complement(right))
@@ -88,7 +88,7 @@ object arithmetic:
   object MultiplicableDerivation
   extends ProductDerivation[[value] =>> value is Multiplicable by value to value]:
 
-    inline def join[derivation <: Product: ProductReflection]
+    inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Multiplicable by derivation to derivation =
 
       (left, right) =>
@@ -104,7 +104,7 @@ object arithmetic:
   object DivisibleDerivation
   extends ProductDerivation[[value] =>> value is Divisible by value to value]:
 
-    inline def join[derivation <: Product: ProductReflection]
+    inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Divisible by derivation to derivation =
       (left, right) =>
         build: [field] => _.divide(complement(left), complement(right))

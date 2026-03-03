@@ -34,8 +34,22 @@ package hyperbole
 
 import scala.quoted.*
 
+import iridescence.*
+
 extension [value](expr: Expr[value])(using Quotes)
   def syntax: TastyTree = hyperbole.internal.tastyTree[value](expr, '{false})
 
 extension [value](using Quotes)(symbol: quotes.reflect.Symbol)
   def semantics: TastySymbol = hyperbole.internal.tastySymbol(symbol)
+
+type TastyPalette = Palette:
+  def typeDefinition: Color
+  def termDefinition: Color
+  def typeReference: Color
+  def termReference: Color
+  def flagOn: Color
+  def flagOff: Color
+  def propertyOn: Color
+  def propertyOff: Color
+  def outline: Color
+  def accented: Color

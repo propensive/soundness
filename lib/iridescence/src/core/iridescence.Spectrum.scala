@@ -32,30 +32,36 @@
                                                                                                   */
 package iridescence
 
-import anticipation.*
-import hypotenuse.*
+import denominative.*
 import prepositional.*
+import proscenium.*
+import rudiments.*
 
-object Cielab:
-  given xyz: (colorimetry: Colorimetry) => Cielab is Perceptual in Xyz =
-    color =>
-      def clamp(v: Double): Double = if v*v*v > 0.008856 then v*v*v else (v - 16.0/116)/7.787
+object Spectrum:
+  def apply[color <: Color](colors0: List[Color in color]): Spectrum in color =
+    var colors = colors0.to(Set)
 
-      val y = clamp((color.lightness + 16)/116)*colorimetry.y2
-      val x = clamp(color.blueYellow/500 + (color.lightness + 16)/116)*colorimetry.x2
-      val z = clamp((color.lightness + 16)/116 - color.greenRed/200)*colorimetry.z2
+    def assign[color](target: Color in color): Color in colorspace =
+      if colors.nil then colors = colors0.to(Set)
+      colors.minBy(_.delta(target)).tap: color => colors -= color
 
-      Xyz(x, y, z)
+    new Spectrum:
+      val black:   Color = assign(Srgb(0, 0, 0))
+      val white:   Color = assign(Srgb(1, 1, 1))
+      val red:     Color = assign(Srgb(1, 0, 0))
+      val green:   Color = assign(Srgb(0, 1, 0))
+      val blue:    Color = assign(Srgb(0, 0, 1))
+      val yellow:  Color = assign(Srgb(1, 1, 0))
+      val cyan:    Color = assign(Srgb(0, 1, 1))
+      val magenta: Color = assign(Srgb(1, 0, 1))
 
-case class Cielab(lightness: Double, blueYellow: Double, greenRed: Double) extends Color:
-  type Form = Cielab
-
-  def delta(left: Cielab, right: Cielab): Double =
-    ( hyp(F64(right.blueYellow), F64(right.greenRed))
-      - hyp(F64(left.blueYellow), F64(left.greenRed)) )
-    . double
-
-// case class Cielab(l: Double, a: Double, b: Double):
-
-//   def mix(that: Cielab, ratio: Double = 0.5): Cielab =
-//     Cielab(l*(1 - ratio) + ratio*that.l, a*(1 - ratio) + ratio*that.a, b*(1 - ratio) + ratio*that.b)
+trait Spectrum:
+  type Form <: Color
+  val red: Color
+  val yellow: Color
+  val green: Color
+  val blue: Color
+  val cyan: Color
+  val magenta: Color
+  val black: Color
+  val white: Color

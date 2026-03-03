@@ -35,10 +35,10 @@ package anticipation
 import prepositional.*
 
 trait Chromatic extends Typeclass:
-  extension (color: Self) def asRgb24Int: Int = convert(color)
+  extension (color: Self) def chroma: Chroma = convert(color)
 
-  def convert(color: Self): Int
-  def red(color: Self): Int = asRgb24Int(color)&255
-  def green(color: Self): Int = (asRgb24Int(color) >> 8)&255
-  def blue(color: Self): Int = (asRgb24Int(color) >> 16)&255
+  def convert(color: Self): Chroma
+  def red(color: Self): Int = (chroma(color).underlying >>> 16)&255
+  def green(color: Self): Int = (chroma(color).underlying >>> 8)&255
+  def blue(color: Self): Int = chroma(color).underlying&255
   def contramap[self2](lambda: self2 => Self): self2 is Chromatic = color => convert(lambda(color))

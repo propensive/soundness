@@ -30,7 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package profanity
+package eucalyptus
 
-enum Luminance:
-  case Dark, Light
+import iridescence.*
+
+type LogPalette = Palette:
+  def error: Color
+  def informative: Color
+  def warning: Color
+  def subdued: Color

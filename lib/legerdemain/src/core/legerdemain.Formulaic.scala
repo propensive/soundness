@@ -64,7 +64,7 @@ object Formulaic extends ProductDerivable[Formulaic]:
       List(formulation.element(widget, legend, message, required))
 
 
-  inline def join[derivation <: Product: ProductReflection]: derivation is Formulaic =
+  inline def conjunction[derivation <: Product: ProductReflection]: derivation is Formulaic =
     (pointer, legend, query, errors, formulation) =>
       val content: Seq[Html of Flow] =
         contexts:

@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export harlequin.{Accent, ProgrammingLanguage, SourceCode, SourceToken, Scala, Java}
+export harlequin.{Accent, ProgrammingLanguage, SourceCode, Token, Scala, Java}

@@ -76,7 +76,7 @@ object Restorable extends ProductDerivation[[entity] =>> entity is Restorable]:
           else throw new RuntimeException()
         }
 
-  // inline def split[derivation: SumReflection]: derivation is Restorable =
+  // inline def disjunction[derivation: SumReflection]: derivation is Restorable =
   //   new Restorable:
   //     type Self = derivation
 
@@ -86,7 +86,7 @@ object Restorable extends ProductDerivation[[entity] =>> entity is Restorable]:
   //       given Type[derivation] = infer[Type[derivation]]
 
 
-  inline def join[derivation <: Product: ProductReflection]: derivation is Restorable =
+  inline def conjunction[derivation <: Product: ProductReflection]: derivation is Restorable =
     val cls = reflectClass[derivation]
 
     Restorable[derivation]: value =>

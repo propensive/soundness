@@ -32,38 +32,27 @@
                                                                                                   */
 package iridescence
 
-object Palette:
-  trait Reporting:
-    palette: Palette =>
-      def success: Color
-      def error: Color
-      def warning: Color
+import anticipation.*
+import fulminate.*
+import prepositional.*
 
-  trait Terminal:
-    palette: Palette =>
-      def red: Color
-      def green: Color
-      def blue: Color
-      def magenta: Color
-      def cyan: Color
-      def yellow: Color
+into trait Palette extends Selectable:
+  type Form <: Color: Perceptual in Srgb
+  def background: Color in Form
+  def foreground: Color in Form
 
-  trait Syntax:
-    palette: Palette =>
-      def error: Color
-      def number: Color
-      def modifier: Color
-      def identifier: Color
-      def term: Color
-      def meta: Color
-      def string: Color
-      def parenthesis: Color
-      def symbol: Color
-      def comment: Color
+  def subdue(color: Color in Form, factor: Double = 0.5): Color in Srgb =
+    mix(color, background, factor)
 
-into trait Palette:
-  def background: Color
-  def foreground: Color
-  def primary: Color
-  def secondary: Color
-  def tertiary: Color
+  def accent(color: Color in Form, factor: Double = 0.5): Color in Srgb =
+    mix(color, foreground, factor)
+
+  def mix(left: Color in Form, right: Color in Form, balance: Double = 0.5): Color in Srgb =
+    def channel(lambda: Form => Double): Double =
+      lambda(left.in[Srgb])*(1 - balance) + lambda(right.in[Srgb])*balance
+
+    Srgb(channel(_.red)/255, channel(_.green)/255, channel(_.blue)/255)
+
+  final def selectDynamic(name: String): Form =
+    try getClass.getMethod(name).nn.invoke(this).asInstanceOf[Form]
+    catch case _: NoSuchFieldException => panic(m"field $name is not defined for this palette")

@@ -69,7 +69,7 @@ object Ansi extends Ansi2:
   given escape: Stylize[Escape] = identity(_)
 
   given chromatic: [color: Chromatic as color] => Stylize[color] =
-    color => Stylize(_.copy(fg = color.asRgb24Int))
+    color => Stylize(_.copy(fg = color.chroma))
 
   given bg: Stylize[Bg] = bgColor => Stylize(_.copy(bg = bgColor.color))
   given fg: Stylize[Fg] = fgColor => Stylize(_.copy(fg = fgColor.color))

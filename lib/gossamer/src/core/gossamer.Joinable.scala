@@ -47,5 +47,5 @@ object Joinable:
 
   given message: Message is Joinable = _.fuse(m"")(state+next)
 
-trait Joinable extends Typeclass:
+trait Joinable extends Typeclass, Operable:
   def join(elements: Iterable[Self]): Self

@@ -433,7 +433,7 @@ extension (text: Text)
 
 extension (iarray: IArray[Char]) def text: Text = String(iarray.mutable(using Unsafe)).tt
 
-extension [textual: Joinable](values: Iterable[textual])
+extension [textual: {Joinable, Textual}](values: Iterable[textual])
   def join: textual = textual.join(values)
 
   def join(separator: textual): textual =

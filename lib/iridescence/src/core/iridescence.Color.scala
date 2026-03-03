@@ -33,7 +33,20 @@
 package iridescence
 
 import anticipation.*
+import hypotenuse.*
+import prepositional.*
+
+object Color:
+  given chromatic: [form <: Color: Perceptual in Srgb as perceptual] => Color in form is Chromatic =
+    color =>
+      val srgb = color.in[Srgb]
+      Chroma((srgb.red*255).toInt, (srgb.green*255).toInt, (srgb.blue*255).toInt)
+
 
 trait Color:
-  def srgb: Srgb
-  def chroma: Chroma
+  type Form >: this.type <: Color
+
+  def in[color <: Color](using perceptual: Form is Perceptual in color): color =
+    perceptual.convert(this)
+
+  def delta[color <: Color](right: color): Double
