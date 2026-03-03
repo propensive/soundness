@@ -50,29 +50,29 @@ object Tests extends Suite(m"Iridescence tests"):
         && left.saturation === (right.saturation +/- 0.05)
         && left.value === (right.value +/- 0.05)
 
-      for color <- webColors.all.reverse do
+      for color <- WebColors.colors.reverse do
         test(m"sRGB to L*a*b*"):
-          color.srgb.cielab.srgb
+          color.in[Srgb].in[Cielab].in[Srgb]
         . assert(_ === color.srgb)
 
         test(m"HSV to sRGB and back"):
-          color.srgb.hsv.srgb.hsv
-        . assert(_ === color.srgb.hsv)
+          color.in[Srgb].in[Hsv].in[Srgb]
+        . assert(_ === color.hsv)
 
         test(m"sRGB to CMY and back"):
-          color.srgb.cmy.srgb
+          color.in[Srgb].in[Cmy].in[Srgb]
         . assert(_ === color.srgb)
 
         test(m"sRGB to CMYK and back"):
-          color.srgb.cmyk.srgb
+          color.in[Srgb].in[Cmyk].in[Srgb]
         . assert(_ === color.srgb)
 
         test(m"sRGB to XYZ and back"):
-          color.srgb.xyz.srgb
+          color.in[Srgb].in[Xyz].in[Srgb]
         . assert(_ === color.srgb)
 
         test(m"sRGB to HSL and back"):
-          color.srgb.hsl.srgb
+          color.in[Srgb].in[Hsl].in[Srgb]
         . assert(_ === color.srgb)
 
     suite(m"Interpolator tests"):

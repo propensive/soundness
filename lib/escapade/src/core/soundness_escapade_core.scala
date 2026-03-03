@@ -37,5 +37,5 @@ export escapade
     Teletypeable, TextStyle, CharSpan, Bold, Italic, Underline, Strike, Reverse, Conceal, e,
     teletype }
 
-package printableTypes:
-  export escapade.printableTypes.message
+package displayableTypes:
+  export escapade.displayableTypes.message

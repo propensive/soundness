@@ -53,6 +53,6 @@ trait CommonFormattable extends Formattable:
 
   protected def postprocess(source: SourceCode): Html of Flow =
     val code = source.lines.map: line =>
-      Span.line(line.map { case SourceToken(text, accent) => element(accent, text) }*)
+      Span.line(line.map { case Token(text, accent) => element(accent, text) }*)
 
     Fragment(Div.amok(Pre(code*)))

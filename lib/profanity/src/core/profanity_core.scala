@@ -47,14 +47,14 @@ given stdio: (terminal: Terminal) => Stdio = terminal.stdio
 def interactive[result](block: (terminal: Terminal) ?=> result)
   ( using console: Console, monitor: Monitor, codicil: Codicil )
   ( using BracketedPasteMode,
-          BackgroundColorDetection,
+          LuminosityDetection,
           TerminalFocusDetection,
           TerminalSizeDetection )
 :   result raises TerminalError =
 
   given terminal: Terminal = Terminal(console.signals)
 
-  if summon[BackgroundColorDetection]() then Out.print(Terminal.reportBackground)
+  if summon[LuminosityDetection]() then Out.print(Terminal.reportBackground)
   if summon[TerminalFocusDetection]() then Out.print(Terminal.enableFocus)
   if summon[BracketedPasteMode]() then Out.print(Terminal.enablePaste)
   if summon[TerminalSizeDetection]() then Out.print(Terminal.reportSize)
@@ -93,6 +93,6 @@ package keyboards:
 
 package terminalOptions:
   given bracketedPasteMode: BracketedPasteMode = () => true
-  given backgroundColorDetection: BackgroundColorDetection = () => true
+  given luminanceDetection: LuminosityDetection = () => true
   given terminalFocusDetection: TerminalFocusDetection = () => true
   given terminalSizeDetection: TerminalSizeDetection = () => true

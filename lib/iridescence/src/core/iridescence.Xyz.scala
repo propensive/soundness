@@ -34,29 +34,47 @@ package iridescence
 
 import anticipation.*
 import hypotenuse.*
+import prepositional.*
 
 object Xyz:
-  given chromatic: Xyz is Chromatic = _.chroma.asInt
+  given cielab: (colorimetry: Colorimetry) => Xyz is Perceptual in Cielab =
+    color =>
+      def clamp(v: Double): Double = if v > 0.008856 then v**(1.0/3) else 7.787*v + 0.13793
+
+      val lightness: Double = 116*clamp(color.y/colorimetry.y2) - 16
+
+      val blueYellow: Double =
+        500*(clamp(color.primary/colorimetry.x2) - clamp(color.y/colorimetry.y2))
+
+      val greenRed: Double =
+        200*(clamp(color.y/colorimetry.y2) - clamp(color.tertiary/colorimetry.z2))
+
+      Cielab(blueYellow, greenRed, lightness)
+
 
 case class Xyz(x: Double, y: Double, z: Double) extends Color:
-  def luminance: Double = y
+  type Form = Xyz
 
-  def srgb: Srgb =
-    def clamp(v: Double): Double = if v > 0.0031308 then 1.055*(v**(1/2.4)) - 0.055 else 12.92*v
+// case class Xyz(x: Double, y: Double, z: Double) extends Color:
+//   def luminance: Double = y
+//   def hsl: Hsl = srgb.hsl
 
-    val red = clamp(x*0.032406994 - y*0.0153738318 - z*0.0049861076)
-    val green = clamp(-x*0.0096924364 + y*0.01878675 + z*0.0004155506)
-    val blue = clamp(x*0.0005563008 - y*0.0020397696 + z*0.0105697151)
+//   def srgb: Srgb =
+//     def clamp(v: Double): Double = if v > 0.0031308 then 1.055*(v**(1/2.4)) - 0.055 else 12.92*v
 
-    Srgb(red, green, blue)
+//     val red = clamp(x*0.032406994 - y*0.0153738318 - z*0.0049861076)
+//     val green = clamp(-x*0.0096924364 + y*0.01878675 + z*0.0004155506)
+//     val blue = clamp(x*0.0005563008 - y*0.0020397696 + z*0.0105697151)
 
-  def chroma: Chroma = srgb.chroma
+//     Srgb(red, green, blue)
 
-  def cielab(using profile: Colorimetry): Cielab =
-    def clamp(v: Double): Double = if v > 0.008856 then v**(1.0/3) else 7.787*v + 0.13793
+//   def chroma: Chroma = srgb.chroma
 
-    val l: Double = 116*clamp(y/profile.y2) - 16
-    val a: Double = 500*(clamp(x/profile.x2) - clamp(y/profile.y2))
-    val b: Double = 200*(clamp(y/profile.y2) - clamp(z/profile.z2))
+//   def cielab(using profile: Colorimetry): Cielab =
+//     def clamp(v: Double): Double = if v > 0.008856 then v**(1.0/3) else 7.787*v + 0.13793
 
-    Cielab(l, a, b)
+//     val l: Double = 116*clamp(y/profile.y2) - 16
+//     val a: Double = 500*(clamp(x/profile.x2) - clamp(y/profile.y2))
+//     val b: Double = 200*(clamp(y/profile.y2) - clamp(z/profile.z2))
+
+//     Cielab(l, a, b)

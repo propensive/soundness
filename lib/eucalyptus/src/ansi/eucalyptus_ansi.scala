@@ -37,32 +37,35 @@ import digression.*
 import escapade.*
 import fulminate.*
 import gossamer.*
-import hieroglyph.*, textMetrics.uniform
-import iridescence.*, webColors.*
+import hieroglyph.*
+import iridescence.*
 import prepositional.*
 import spectacular.*
 import symbolism.*
 
-package logFormats:
-  given teleypeable: Level is Teletypeable = level =>
-    val color = level match
-      case Level.Fine => LightSeaGreen
-      case Level.Info => YellowGreen
-      case Level.Warn => Gold
-      case Level.Fail => Tomato
+import textMetrics.uniform
 
-    e"${Bg(color)}[$Black($Bold( ${level.show} ))]"
+package logFormats:
+  given teleypeable: (palette: LogPalette) => Level is Teletypeable = level =>
+    val color = level match
+      case Level.Fine => palette.subdued
+      case Level.Info => palette.informative
+      case Level.Warn => palette.warning
+      case Level.Fail => palette.error
+
+    e"${Bg(color)}[${palette.background}($Bold( ${level.show} ))]"
 
   private val indent = e" "*46
 
-  given ansiStandard: Message is Inscribable in Teletype = (event, level, realm, timestamp) =>
-    try event.teletype.cut(t"\n").flatMap(_.slices(76)) match
-      case Nil => e""
+  given ansiStandard: (palette: LogPalette) => Message is Inscribable in Teletype =
+    (event, level, realm, timestamp) =>
+      try event.teletype.cut(t"\n").flatMap(_.slices(76)) match
+        case Nil => e""
 
-      case head :: tail =>
-        val date = dateFormat.format(timestamp).nn.tt
-        val first = e"$SlateGray($date) $level $CadetBlue(${realm.name.fit(10)}) > $head"
+        case head :: tail =>
+          val date = dateFormat.format(timestamp).nn.tt
+          val first = e"${palette.subdued}($date) $level ${palette.informative}(${realm.name.fit(10)}) > $head"
 
-        (first :: tail.map(indent+_)).join(e"\n").render(termcapDefinitions.xterm256)
-        (first :: tail.map(indent+_)).join(e"\n")
-    catch case error: Throwable => e"${error.stackTrace.show}"
+          (first :: tail.map(indent+_)).join(e"\n").render(termcapDefinitions.xterm256)
+          (first :: tail.map(indent+_)).join(e"\n")
+      catch case error: Throwable => e"${error.stackTrace.show}"

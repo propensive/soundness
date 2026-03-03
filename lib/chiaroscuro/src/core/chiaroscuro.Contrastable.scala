@@ -51,13 +51,13 @@ object Contrastable:
   inline given derived: [entity] => entity is Contrastable = summonFrom:
     case contrastable: (`entity` is Contrastable.Foundation) => contrastable
     case given ProductReflection[`entity`]                   => Derivation.derived[entity]
-    case given SumReflection[`entity`]                       => Derivation.split[entity]
+    case given SumReflection[`entity`]                       => Derivation.disjunction[entity]
 
     case given (`entity` is Decomposable) =>
       (left, right) => juxtaposition(typeName, left.decompose, right.decompose)
 
   object Derivation extends Derivable[Contrastable]:
-    inline def join[derivation <: Product: ProductReflection]: derivation is Contrastable =
+    inline def conjunction[derivation <: Product: ProductReflection]: derivation is Contrastable =
       (left, right) =>
         def show(value: derivation) = summonFrom:
           case given (`derivation` is Showable)          => value.show
@@ -70,7 +70,7 @@ object Contrastable:
 
           Juxtaposition.Collation(typeName, map.to(List), show(left), show(right))
 
-    inline def split[derivation: SumReflection]: derivation is Contrastable =
+    inline def disjunction[derivation: SumReflection]: derivation is Contrastable =
       (left, right) =>
         def show(value: derivation) = summonFrom:
           case given (`derivation` is Showable)          => value.show

@@ -30,32 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package iridescence
+package harlequin
 
 import anticipation.*
-import hypotenuse.*
-import prepositional.*
+import gossamer.*
+import spectacular.*
 
-object Cielab:
-  given xyz: (colorimetry: Colorimetry) => Cielab is Perceptual in Xyz =
-    color =>
-      def clamp(v: Double): Double = if v*v*v > 0.008856 then v*v*v else (v - 16.0/116)/7.787
+object Token:
+  val Newline: Token = Token("\n", Accent.Unparsed)
+  given showable: Token is Showable = _.text
 
-      val y = clamp((color.lightness + 16)/116)*colorimetry.y2
-      val x = clamp(color.blueYellow/500 + (color.lightness + 16)/116)*colorimetry.x2
-      val z = clamp((color.lightness + 16)/116 - color.greenRed/200)*colorimetry.z2
+case class Token(text: Text, accent: Accent):
+  def length: Int = text.length
 
-      Xyz(x, y, z)
-
-case class Cielab(lightness: Double, blueYellow: Double, greenRed: Double) extends Color:
-  type Form = Cielab
-
-  def delta(left: Cielab, right: Cielab): Double =
-    ( hyp(F64(right.blueYellow), F64(right.greenRed))
-      - hyp(F64(left.blueYellow), F64(left.greenRed)) )
-    . double
-
-// case class Cielab(l: Double, a: Double, b: Double):
-
-//   def mix(that: Cielab, ratio: Double = 0.5): Cielab =
-//     Cielab(l*(1 - ratio) + ratio*that.l, a*(1 - ratio) + ratio*that.a, b*(1 - ratio) + ratio*that.b)
+  def snip(point: Int): (Token, Token) =
+    (Token(text.keep(point), accent), Token(text.skip(point), accent))

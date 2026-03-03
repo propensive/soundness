@@ -92,7 +92,6 @@ def cli[bus <: Matchable](using executive: Executive)
 
   given realm: Realm = realm"ethereal"
 
-  import environments.java
   import strategies.throwUnsafely
   import workingDirectories.system
   import environments.java

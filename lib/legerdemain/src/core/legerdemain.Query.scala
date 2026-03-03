@@ -64,7 +64,7 @@ object Query extends Dynamic:
         case _                => (t"", t"")
 
   object EncodableDerivation extends ProductDerivation[[Type] =>> Type is Encodable in Query]:
-    inline def join[derivation <: Product: ProductReflection]
+    inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Query =
 
       value =>
@@ -74,7 +74,7 @@ object Query extends Dynamic:
           . flatMap(_.values)
 
   object DecodableDerivation extends ProductDerivation[[Type] =>> Type is Decodable in Query]:
-    inline def join[derivation <: Product: ProductReflection]
+    inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Query =
 
       provide[Foci[Pointer]]:
@@ -93,7 +93,7 @@ object Query extends Dynamic:
     case given (`value` is Encodable in Text) => value => Query.of(value.encode)
 
     case given ProductReflection[`value` & Product] =>
-      EncodableDerivation.join[value & Product].asInstanceOf[value is Encodable in Query]
+      EncodableDerivation.conjunction[value & Product].asInstanceOf[value is Encodable in Query]
 
   given showable: Query is Showable =
     _.values.map { case (key, value) => t"$key = \"${value}\"" }.join(t", ")
@@ -110,7 +110,7 @@ object Query extends Dynamic:
               _().lest(QueryError()).decode
 
       case given ProductReflection[`value` & Product] =>
-        DecodableDerivation.join[value & Product].asInstanceOf[value is Decodable in Query]
+        DecodableDerivation.conjunction[value & Product].asInstanceOf[value is Decodable in Query]
 
   inline def applyDynamicNamed(method: "apply")(inline parameters: (Label, Any)*): Query =
     ${legerdemain.internal.query('parameters)}

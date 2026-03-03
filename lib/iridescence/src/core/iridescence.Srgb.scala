@@ -34,66 +34,73 @@ package iridescence
 
 import anticipation.*
 import hypotenuse.*
-
+import prepositional.*
 
 object Srgb:
-  given chromatic: Srgb is Chromatic = _.chroma.asInt
+  given xyz: Colorimetry => Srgb is Perceptual in Xyz =
+    color =>
+      def clamp(v: Double): Double = if v > 0.04045 then ((v + 0.055)/1.055)**2.4 else v/12.92
+
+      val List(r, g, b) = List(color.red, color.green, color.blue).map(clamp(_)*100)
+      val x = r*0.4124 + g*0.3576 + b*0.1805
+      val y = r*0.2126 + g*0.7152 + b*0.0722
+      val z = r*0.0193 + g*0.1192 + b*0.9505
+
+      Xyz(x, y, z)
+
+  given cielab: Colorimetry => Srgb is Perceptual in Cielab = _.in[Xyz].in[Cielab]
+
+  given cmy: Srgb is Perceptual in Cmy =
+    color => Cmy(1 - color.red, 1 - color.green, 1 - color.blue)
+
+  given cmyk: Srgb is Perceptual in Cmyk = _.in[Cmy].in[Cmyk]
+
+  given hsl: Srgb is Perceptual in Hsl =
+    color =>
+      val min = color.red min color.green min color.blue
+      val max = color.red max color.green max color.blue
+      val delta = max - min
+      val lightness = (max + min)/2
+
+      if delta == 0 then Hsl(0, 0, lightness) else
+        val saturation = if lightness < 0.5 then delta/(max + min) else delta/(2 - max - min)
+        val dRed = ((max - color.red)/6 + delta/2)/delta
+        val dGreen = ((max - color.green)/6 + delta/2)/delta
+        val dBlue = ((max - color.blue)/6 + delta/2)/delta
+
+        val hue =
+          if max == color.red then dBlue - dGreen
+          else if max == color.green then 1.0/3 + dRed - dBlue
+          else 2.0/3 + dGreen - dRed
+
+        Hsl(unitary(hue), saturation, lightness)
+
+  given hsv: Srgb is Perceptual in Hsv =
+    color =>
+      val min = color.red min color.green min color.blue
+      val value = color.red max color.green max color.blue
+      val delta = value - min
+
+      if delta == 0 then Hsv(0, 0, value)
+      else
+        val saturation = delta/value
+        val dr = ((value - color.red)/6) + (delta/2)/delta
+        val dg = ((value - color.green)/6) + (delta/2)/delta
+        val db = ((value - color.blue)/6) + (delta/2)/delta
+
+        val hue =
+          if value == color.red then db - dg
+          else if value == color.green then 1.0/3 + dr - db
+          else 2.0/3 + dg - dr
+
+        Hsv(unitary(hue), saturation, value)
 
 case class Srgb(red: Double, green: Double, blue: Double) extends Color:
-  def css: Text = s"rgb(${(red*255).toInt}, ${(green*255).toInt}, ${(blue*255).toInt})".tt
-  def chroma: Chroma = Chroma((red*255).toInt, (green*255).toInt, (blue*255).toInt)
-  def srgb: Srgb = this
-  def highContrast(using Colorimetry): Srgb = if xyz.y >= 0.5 then Srgb(0, 0, 0) else Srgb(1, 1, 1)
+  type Form = Srgb
 
-  def xyz(using Colorimetry): Xyz =
-    def limit(v: Double): Double = if v > 0.04045 then ((v + 0.055)/1.055)**2.4 else v/12.92
+  def delta(left: Color in Srgb, right: Color in Srgb): Double =
+    math.sqrt
+      ( (left.red - right.red)**2 + (left.green - right.green)**2 + (left.blue - right.blue)**2 )
 
-    val List(r, g, b) = List(red, green, blue).map(limit(_)*100)
-    val x = r*0.4124 + g*0.3576 + b*0.1805
-    val y = r*0.2126 + g*0.7152 + b*0.0722
-    val z = r*0.0193 + g*0.1192 + b*0.9505
-
-    Xyz(x, y, z)
-
-  def cielab(using Colorimetry): Cielab = xyz.cielab
-  def cmy: Cmy = Cmy(1 - red, 1 - green, 1 - blue)
-  def cmyk: Cmyk = cmy.cmyk
-
-  def hsl: Hsl =
-    val min = red min green min blue
-    val max = red max green max blue
-    val delta = max - min
-    val lightness = (max + min)/2
-
-    if delta == 0 then Hsl(0, 0, lightness)
-    else
-      val saturation = if lightness < 0.5 then delta/(max + min) else delta/(2 - max - min)
-      val dRed = ((max - red)/6 + delta/2)/delta
-      val dGreen = ((max - green)/6 + delta/2)/delta
-      val dBlue = ((max - blue)/6 + delta/2)/delta
-
-      val hue =
-        if max == red then dBlue - dGreen
-        else if max == green then 1.0/3 + dRed - dBlue
-        else 2.0/3 + dGreen - dRed
-
-      Hsl(unitary(hue), saturation, lightness)
-
-  def hsv: Hsv =
-    val min = red min green min blue
-    val value = red max green max blue
-    val delta = value - min
-
-    if delta == 0 then Hsv(0, 0, value)
-    else
-      val saturation = delta/value
-      val dr = ((value - red)/6) + (delta/2)/delta
-      val dg = ((value - green)/6) + (delta/2)/delta
-      val db = ((value - blue)/6) + (delta/2)/delta
-
-      val hue =
-        if value == red then db - dg
-        else if value == green then 1.0/3 + dr - db
-        else 2.0/3 + dg - dr
-
-      Hsv(unitary(hue), saturation, value)
+// case class Srgb(red: Double, green: Double, blue: Double) extends Color:
+//   def highContrast(using Colorimetry): Srgb = if xyz.y >= 0.5 then Srgb(0, 0, 0) else Srgb(1, 1, 1)

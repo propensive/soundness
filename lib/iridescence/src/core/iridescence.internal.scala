@@ -33,29 +33,34 @@
 package iridescence
 
 import anticipation.*
-import hypotenuse.*
-import prepositional.*
+import contextual.*
+import fulminate.*
+import rudiments.*
 
-object Cielab:
-  given xyz: (colorimetry: Colorimetry) => Cielab is Perceptual in Xyz =
-    color =>
-      def clamp(v: Double): Double = if v*v*v > 0.008856 then v*v*v else (v - 16.0/116)/7.787
+import errorDiagnostics.empty
 
-      val y = clamp((color.lightness + 16)/116)*colorimetry.y2
-      val x = clamp(color.blueYellow/500 + (color.lightness + 16)/116)*colorimetry.x2
-      val z = clamp((color.lightness + 16)/116 - color.greenRed/200)*colorimetry.z2
+object internal:
+  object RgbHex extends Interpolator[Nothing, Option[Chroma], Chroma]:
+    def initial: Option[Chroma] = None
 
-      Xyz(x, y, z)
+    def parse(state: Option[Chroma], next: Text): Option[Chroma] =
+      if next.s.length == 7 && next.s.startsWith("#")
+      then parse(state, Text(next.s.substring(1).nn))
+      else if next.s.length == 6 && next.s.all: char =>
+        char.isDigit || ((char | 32) >= 'a' && (char | 32) <= 'f')
+      then
+        val red = Integer.parseInt(next.s.substring(0, 2), 16)
+        val green = Integer.parseInt(next.s.substring(2, 4), 16)
+        val blue = Integer.parseInt(next.s.substring(4, 6), 16)
 
-case class Cielab(lightness: Double, blueYellow: Double, greenRed: Double) extends Color:
-  type Form = Cielab
+        Some(Chroma(red, green, blue))
 
-  def delta(left: Cielab, right: Cielab): Double =
-    ( hyp(F64(right.blueYellow), F64(right.greenRed))
-      - hyp(F64(left.blueYellow), F64(left.greenRed)) )
-    . double
+      else throw InterpolationError(m"""the color must be in the form ${Text("rgb\"#rrggbb\"")} or
+          rgb"rrggbb" where rr, gg and bb are 2-digit hex values""", 0)
 
-// case class Cielab(l: Double, a: Double, b: Double):
+    def insert(state: Option[Chroma], value: Nothing): Option[Chroma] =
+      throw InterpolationError:
+        m"substitutions into an ${Text("rgb\"\"")} interpolator are not supported"
 
-//   def mix(that: Cielab, ratio: Double = 0.5): Cielab =
-//     Cielab(l*(1 - ratio) + ratio*that.l, a*(1 - ratio) + ratio*that.a, b*(1 - ratio) + ratio*that.b)
+    def skip(state: Option[Chroma]): Option[Chroma] = state
+    def complete(color: Option[Chroma]): Chroma = color.get

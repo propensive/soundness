@@ -75,11 +75,12 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
 
   given double: Distribution => Double is Randomizable = summon[Distribution].transform(_)
 
-  inline def join[derivation <: Product: ProductReflection]: derivation is Randomizable = random =>
-    stochastic(using infer[Randomization]):
-      construct: [field] => _.from(summon[Random])
+  inline def conjunction[derivation <: Product: ProductReflection]: derivation is Randomizable =
+    random =>
+      stochastic(using infer[Randomization]):
+        construct: [field] => _.from(summon[Random])
 
-  inline def split[derivation: SumReflection]: derivation is Randomizable = random =>
+  inline def disjunction[derivation: SumReflection]: derivation is Randomizable = random =>
     stochastic(using infer[Randomization]):
       delegate(variantLabels(random.long().abs.toInt%variantLabels.length)):
         [variant <: derivation] => _.from(summon[Random])

@@ -32,33 +32,5 @@
                                                                                                   */
 package iridescence
 
-import anticipation.*
-import rudiments.*
-
-object Rgb24Opaque:
-  opaque type Chroma = Int
-
-  object Chroma:
-    inline given underlying: Underlying[Chroma, Int] = !!
-    given chromatic: Chroma is Chromatic = _.asInt
-
-    def apply(red: Int, green: Int, blue: Int): Chroma =
-      ((red&255) << 16) + ((green&255) << 8) + (blue&255)
-
-    def apply(packedInt: Int): Chroma = packedInt & 0x00ffffff
-
-
-  extension (color: Chroma)
-    def red: Int = (color >> 16) & 255
-
-    def green: Int = (color >> 8) & 255
-    def blue: Int = color&255
-
-    def srgb: Srgb = Srgb(red/255.0, green/255.0, blue/255.0)
-    def asInt: Int = color
-
-    def hex: Text =
-      List(red, green, blue).fuse("#"):
-        state+(next.hex.pipe { s => if s.s.length < 2 then "0"+s else s })
-
-      . tt
+enum Luminosity:
+  case Dark, Light

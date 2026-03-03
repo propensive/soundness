@@ -99,7 +99,7 @@ trait Decomposable2 extends Decomposable3:
   inline given derived: [entity] => entity is Decomposable = summonFrom:
     case decomposable: (`entity` is Decomposable.Base) => decomposable
     case given ProductReflection[`entity`]             => Derivation.derived[entity]
-    case given SumReflection[`entity`]                 => Derivation.split[entity]
+    case given SumReflection[`entity`]                 => Derivation.disjunction[entity]
     case given (AnyRef <:< `entity`)                   => any[entity]
 
     case given (Unset.type <:< `entity`) =>
@@ -129,14 +129,14 @@ trait Decomposable2 extends Decomposable3:
     value => Decomposition.Primitive(t"Any", value.toString.tt, value)
 
   object Derivation extends Derivable[Decomposable]:
-    inline def join[derivation <: Product: ProductReflection]: derivation is Decomposable =
+    inline def conjunction[derivation <: Product: ProductReflection]: derivation is Decomposable =
       value =>
         val map =
           fields(value) { [field] => field => label -> context.decomposition(field) }.to(Map)
 
         Decomposition.Product(typeName, map, value)
 
-    inline def split[derivation: SumReflection]: derivation is Decomposable =
+    inline def disjunction[derivation: SumReflection]: derivation is Decomposable =
       value =>
         variant(value):
           [variant <: derivation] => variant =>

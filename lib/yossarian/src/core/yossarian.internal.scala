@@ -34,7 +34,6 @@ package yossarian
 
 import anticipation.*
 import gossamer.*
-import iridescence.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
@@ -135,7 +134,7 @@ object internal:
       def apply(style: Style): Chroma = Chroma(((style >>> offset) & 0xffffff).toInt)
 
       def update(style: Style, color: Chroma): Style =
-        (color.asRgb24Int.toLong << offset) + (style & mask)
+        (color.underlying.toLong << offset) + (style & mask)
 
     val Foreground = Bits(40, 0x000000ffffffffffL)
     val Background = Bits(16, 0xffffff000000ffffL)

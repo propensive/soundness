@@ -41,7 +41,7 @@ object Colorable:
   def apply[value](using erased Void)[color: Chromatic](color0: color): value is Colorable =
     new Colorable:
       type Self = value
-      extension (value: value) def color: Fg = Fg(color0.asRgb24Int)
+      extension (value: value) def color: Fg = Fg(color0.chroma)
 
 
   def apply[value](using erased Void)[color: Chromatic](chooseColor: value -> color)
@@ -49,7 +49,7 @@ object Colorable:
 
     new Colorable:
       type Self = value
-      extension (value: value) def color: Fg = Fg(chooseColor(value).asRgb24Int)
+      extension (value: value) def color: Fg = Fg(chooseColor(value).chroma)
 
 
 trait Colorable extends Typeclass:

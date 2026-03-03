@@ -33,8 +33,8 @@
 package soundness
 
 export iridescence
-. { webColors, solarized, Xyz, Rgb12, Chroma, Rgb32, Srgb, Cielab, Cmy, Cmyk, Hsv, Hsl, rgb,
-    Colorimetry }
+. { WebColors, Solarized, Xyz, Rgb12, Rgb32, Srgb, Cielab, Cmy, Cmyk, Hsv, Hsl, rgb,
+    Colorimetry, Color }
 
 package colorimetry:
   export iridescence.colorimetry

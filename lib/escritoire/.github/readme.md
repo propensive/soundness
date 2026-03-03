@@ -133,8 +133,8 @@ In the first example, the expression `data.table` created a `Tabulation` of
 the data from `data`. It automatically constructed a `Table` instance for the
 type `Digit`, using generic derivation, so we did not see this value.
 
-And `Out.println` is able to print any `Printable` type, which includes
-`Tabulation` instances. This `Printable` instance automatically rendered the
+And `Out.println` is able to print any `Displayable` type, which includes
+`Tabulation` instances. This `Displayable` instance automatically rendered the
 `Tabulation` as a `Grid` and printed it.
 
 More advanced examples would, construct a `Table`, use it format a sequence of
