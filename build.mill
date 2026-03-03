@@ -51,7 +51,7 @@ object settings:
     "-preview",
     //"-explain",
     "-deprecation",
-    "-Wunused:imports,privates",
+    "-Wunused:imports",
     "-Wimplausible-patterns",
     // "-Wsafe-init",
     "-Xmax-inlines", "100",
@@ -353,14 +353,14 @@ object anticipation extends Library:
   object generic extends Component(prepositional.core)
   object text extends Component(symbolism.core)
   object opaque extends Component(text)
-  object gfx extends Component(prepositional.core)
+  object gfx extends Component(prepositional.core, color)
   object css extends Component(text, generic)
   object url extends Component(text, generic)
   object html extends Component(text, generic)
   object print extends Component(text)
   object http extends Component(text, codec, generic)
   object codec extends Component(text)
-  object color extends Component(prepositional.core)
+  object color extends Component(opaque, prepositional.core)
   object log extends Component(text)
   object path extends Component(text, generic)
   object time extends Component(generic)
@@ -726,7 +726,7 @@ object probably extends Library:
   object test extends Tests(cli)
 
 object profanity extends Library:
-  object core extends Component(eucalyptus.core, diuretic.core)
+  object core extends Component(eucalyptus.core, diuretic.core, iridescence.core)
   object test extends Tests(core)
 
 object punctuation extends Library:

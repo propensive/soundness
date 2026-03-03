@@ -44,6 +44,7 @@ import galilei.*
 import gossamer.*
 import hellenism.*
 import inimitable.*
+import iridescence.*
 import nomenclature.*
 import prepositional.*
 import proscenium.*
@@ -79,6 +80,11 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
     val classfile: Classfile = new Classfile(file.open(_.read[Data]))
     classfile.methods.find(_.name == t"_code$$1").map(_.bytecode).get.vouch.embed(codepoint)
 
+
+type BytecodePalette = Palette:
+  def bytecode: Color
+  def sourceCode: Color
+  def outline: Color
 
 case class ClassfileError()(using Diagnostics)
 extends Error(m"there was an error reading the classfile")

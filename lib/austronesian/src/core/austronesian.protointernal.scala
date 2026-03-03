@@ -47,14 +47,14 @@ import wisteria.*
 
 object protointernal:
   object EncodableDerivation extends Derivation[[entity] =>> entity is Encodable in Pojo]:
-    inline def join[derivation <: Product: ProductReflection]
+    inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in _root_.austronesian.internal.Pojo =
 
       fields(_): [field] => _.encode
       . asInstanceOf[Pojo]
 
 
-    inline def split[derivation: SumReflection]: derivation is Encodable in Pojo =
+    inline def disjunction[derivation: SumReflection]: derivation is Encodable in Pojo =
       variant(_): [variant <: derivation] => value =>
         IArray.create[Pojo](2): array =>
           array(0) = label.s.asInstanceOf[Pojo]
@@ -63,7 +63,7 @@ object protointernal:
         . asInstanceOf[Pojo]
 
   object DecodableDerivation extends Derivable[Decodable in Pojo]:
-    inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Pojo =
+    inline def conjunction[derivation <: Product: ProductReflection]: derivation is Decodable in Pojo =
       case array: Array[Pojo @unchecked] =>
         construct: [field] =>
           _.decoded(array(index))
@@ -71,7 +71,7 @@ object protointernal:
       case other =>
         provide[Tactic[PojoError]](abort(PojoError()))
 
-    inline def split[derivation: SumReflection]: derivation is Decodable in Pojo =
+    inline def disjunction[derivation: SumReflection]: derivation is Decodable in Pojo =
       case Array(label: String @unchecked, pojo: Pojo @unchecked) =>
         delegate(label): [variant <: derivation] => _.decoded(pojo)
 

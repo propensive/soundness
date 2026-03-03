@@ -14,7 +14,7 @@ import homeDirectories.system
 import logging.silent
 import codicils.cancel
 import interpreters.posix
-import printableTypes.message
+import displayableTypes.message
 import supervisors.global
 import textMetrics.uniform
 import textSanitizers.skip

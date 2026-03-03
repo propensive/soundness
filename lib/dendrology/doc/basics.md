@@ -1,4 +1,5 @@
 Dendrology can render tree-like structures as text, such as the following,
+
 ```mono
 ├─● Plantae
 ├─● Fungi
@@ -16,7 +17,9 @@ Dendrology can render tree-like structures as text, such as the following,
         │ └─● Canis
         └─● Ursidae
 ```
+
 and DAGs such as this:
+
 ```mono
 ▪ Any
 └─▪ Matchable
@@ -35,6 +38,7 @@ Dendrology is versatile, and can represent data in a variety of input and output
 specified for working with those types.
 
 All Dendrology terms and types are in the `dendrology` package.
+
 ```scala
 import dendrology.*
 ```
@@ -48,6 +52,7 @@ be used.
 
 Dendrology makes it possible to define the method for accessing a node's children in two ways: either as a
 lambda when a `TreeDiagram` is constructed, like so,
+
 ```scala
 import anticipation.Text
 
@@ -58,9 +63,11 @@ val headOfFamily = Person(t"John", 37, List(son, daughter))
 
 val diagram = TreeDiagram.by[Person](person => person.children)(headOfFamily)
 ```
+
 or alternatively through a contextual instance of the typeclass `Expandable` for the given node type. Types
 which are naturally hierarchical can, of course, define their own `Expandable` instances so they can be used in
 tree-structures without the need to specify how child nodes should be accessed. For example:
+
 ```scala
 given Expandable[Person] = _.children
 val diagram2 = TreeDiagram(headOfFamily)
@@ -76,6 +83,7 @@ parameter, a lambda for converting from the type of the nodes, `NodeType`, to a 
 `Text`.
 
 For example, we could write,
+
 ```scala
 import treeStyles.default
 
@@ -121,10 +129,11 @@ Like `TreeDiagram`, though, `DagDiagram` provides `render` and `nodes` methods w
 lazily, and provides a strict `List`.
 
 Here is the full code used to create the example DAG above:
+
 ```scala
 import acyclicity.Dag
 import gossamer.t
-import turbulence.Out, turbulence.stdioSources.jvm
+import turbulence.Out, turbulence.stdios.jvm
 import dagStyles.default
 
 val dag = Dag(
@@ -145,5 +154,3 @@ val dag = Dag(
 def run2(): Unit =
   DagDiagram(dag).render { node => t"▪ $node" }.foreach(Out.println(_))
 ```
-
-

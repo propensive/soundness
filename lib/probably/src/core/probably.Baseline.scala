@@ -37,12 +37,12 @@ object Baseline:
     case Min, Mean, Max
 
   enum Metric:
-    case BySpeed, ByTime
+    case Cadential, Temporal
 
   enum Mode:
     case Geometric, Arithmetic
 
 case class Baseline
   ( compare: Baseline.Compare = Mean,
-    metric:  Baseline.Metric  = BySpeed,
+    metric:  Baseline.Metric  = Cadential,
     mode:    Baseline.Mode    = Geometric )

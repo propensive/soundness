@@ -33,31 +33,29 @@
 package iridescence
 
 import anticipation.*
+import prepositional.*
 
 object Hsv:
-  given chromatic: Hsv is Chromatic = _.srgb.rgb24.asInt
+  given perceptual: Hsv is Perceptual in Srgb =
+    color =>
+      val i = (color.hue*6).toInt%6
+      val a1 = color.value*(1 - color.saturation)
+      val a2 = color.value*(1 - color.saturation*(color.hue*6 - i))
+      val a3 = color.value*(1 - color.saturation*(1 - (color.hue*6 - i)))
 
-case class Hsv(hue: Double, saturation: Double, value: Double):
-  def saturate: Hsv = Hsv(hue, 1, value)
-  def desaturate: Hsv = Hsv(hue, 0, value)
-  def rotate(degrees: Double): Hsv = Hsv(unitary(hue + degrees/360), saturation, value)
-  def pure: Hsv = Hsv(hue, 1, 0)
-  def tone(black: Double = 0, white: Double = 0) = shade(black).tint(white)
-  def shade(black: Double = 0): Hsv = Hsv(hue, saturation, value*(1 - black) + (1 - value)*black)
-
-  def srgb: Srgb =
-    if saturation == 0 then Srgb(value, value, value)
-    else
-      val i = (hue*6).toInt%6
-      val a1 = value*(1 - saturation)
-      val a2 = value*(1 - saturation*(hue*6 - i))
-      val a3 = value*(1 - saturation*(1 - (hue*6 - i)))
-
-      val red = if i == 1 then a2 else if i/2 == 1 then a1 else if i == 4 then a3 else value
-      val green = if i/2 == 2 then a1 else if i == 3 then a2 else if i == 0 then a3 else value
-      val blue = if i/2 == 0 then a1 else if i == 2 then a3 else if i == 5 then a2 else value
+      val red = if i == 1 then a2 else if i/2 == 1 then a1 else if i == 4 then a3 else color.value
+      val green = if i/2 == 2 then a1 else if i == 3 then a2 else if i == 0 then a3 else color.value
+      val blue = if i/2 == 0 then a1 else if i == 2 then a3 else if i == 5 then a2 else color.value
 
       Srgb(red, green, blue)
 
-  def tint(white: Double = 0): Hsv =
-    Hsv(hue, saturation*(1 - white) + (1 - saturation)*white, value)
+case class Hsv(hue: Double, saturation: Double, value: Double) extends Color:
+  type Form = Hsv
+
+//   def saturate: Hsv = Hsv(hue, 1, value)
+//   def desaturate: Hsv = Hsv(hue, 0, value)
+//   def rotate(degrees: Double): Hsv = Hsv(unitary(hue + degrees/360), saturation, value)
+//   def pure: Hsv = Hsv(hue, 1, 0)
+//   def tone(black: Double = 0, white: Double = 0) = shade(black).tint(white)
+//   def shade(black: Double = 0): Hsv = Hsv(hue, saturation, value*(1 - black) + (1 - value)*black)
+//   def tint(white: Double = 0): Hsv = Hsv(hue, saturation*(1 - white) + (1 - saturation)*white, value)

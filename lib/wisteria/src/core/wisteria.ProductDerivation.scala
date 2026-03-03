@@ -240,11 +240,11 @@ object ProductDerivation:
                 fold[derivation, moreFields, moreLabels, result](accumulator2, index + 1)(lambda)
 
 
-    inline def join[derivation <: Product: ProductReflection]: typeclass[derivation]
+    inline def conjunction[derivation <: Product: ProductReflection]: typeclass[derivation]
 
 trait ProductDerivation[typeclass[_]] extends ProductDerivation.Methods[typeclass]:
   inline given derived: [derivation] => Reflection[derivation] => typeclass[derivation] =
     inline summon[Reflection[derivation]] match
       case reflection: ProductReflection[derivationType] =>
-        join[derivationType](using reflection).asMatchable match
+        conjunction[derivationType](using reflection).asMatchable match
           case typeclass: typeclass[`derivation`] => typeclass

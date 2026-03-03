@@ -32,8 +32,8 @@
                                                                                                   */
 package profanity
 
-object BackgroundColorDetection:
-  given default: BackgroundColorDetection = () => false
+object LuminosityDetection:
+  given default: LuminosityDetection = () => false
 
-trait BackgroundColorDetection:
+trait LuminosityDetection:
   def apply(): Boolean

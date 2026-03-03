@@ -36,7 +36,7 @@ import vacuous.*
 import wisteria.*
 
 object CodlSchematicDerivation extends ProductDerivable[CodlSchematic]:
-  inline def join[derivation <: Product: ProductReflection]: derivation is CodlSchematic =
+  inline def conjunction[derivation <: Product: ProductReflection]: derivation is CodlSchematic =
     () =>
       val elements = contexts:
         [field] => context =>

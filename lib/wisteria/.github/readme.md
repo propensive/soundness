@@ -4,38 +4,32 @@
 
 # Wisteria
 
-__Simple, fast and transparant generic derivation for typeclasses__
+**Simple, fast and transparant generic derivation for typeclasses**
 
-__Wisteria__ is a generic macro for automatic materialization of typeclasses for datatypes composed from product
+**Wisteria** is a generic macro for automatic materialization of typeclasses for datatypes composed from product
 types (e.g. case classes) and coproduct types (e.g. enums). It supports recursively-defined datatypes
 out-of-the-box, and incurs no significant time-penalty during compilation.
 
 ## Features
 
- - derives typeclasses for case classes, case objects, sealed traits and enumerations
- - offers a lightweight but typesafe syntax for writing derivations avoiding complex macro code
- - builds upon Scala 3's built-in generic derivation
- - works with recursive and mutually-recursive definitions
- - supports parameterized ADTs (GADTs), including those in recursive types
- - supports both consumer and producer typeclass interfaces
- - fast at compiletime
- - generates performant runtime code, without unnecessary runtime allocations
-
+- derives typeclasses for case classes, case objects, sealed traits and enumerations
+- offers a lightweight but typesafe syntax for writing derivations avoiding complex macro code
+- builds upon Scala 3's built-in generic derivation
+- works with recursive and mutually-recursive definitions
+- supports parameterized ADTs (GADTs), including those in recursive types
+- supports both consumer and producer typeclass interfaces
+- fast at compiletime
+- generates performant runtime code, without unnecessary runtime allocations
 
 ## Availability
 
 Wisteria 0.23.0 is available as a binary for Scala 3.5.0 and later, from [Maven
 Central](https://central.sonatype.com). To include it in an `sbt` build, use
 the coordinates:
+
 ```scala
 libraryDependencies += "dev.soundness" % "wisteria-core" % "0.23.0"
 ```
-
-
-
-
-
-
 
 ## Getting Started
 
@@ -74,6 +68,7 @@ From a category-theoretical perspective, products and sums are each others'
 duals, and thus fields and variants are duals.
 
 In the following example,
+
 ```scala
 sealed trait Temporal
 
@@ -84,7 +79,9 @@ case class Date(day: Int, month: Month, year: Int) extends Temporal
 case class Time(hour: Int, minute: Int)
 case class DateTime(date: Date, time: Time) extends Temporal
 ```
+
 we can say the following:
+
 - `Temporal` is a sum type
 - `Date` and `DateTime` are variants of `Temporal`
 - `Date`, `Time` and `DateTime` are all product types
@@ -130,13 +127,16 @@ parameter), and consumers may be contravariant (indicated by a `-` before their
 type parameter). But either can be defined as invariant.
 
 For example,
+
 ```scala
 trait Size[ValueType]:
   def size(value: ValueType): Double
 ```
+
 is an invariant consumer typeclass interface for getting a representation (as a
 double) of the size of an instance of `ValueType`. It might have instances
 defined as:
+
 ```scala
 object Size:
   given Size[Boolean] = new Size[Boolean]:
@@ -147,21 +147,26 @@ object Size:
 
   given Size[String] = _.length.toDouble
 ```
+
 and even,
+
 ```scala
 given [ElementType](using size: Size[ElementType]): Size[List[ElementType]] =
   _.map(size.size(_)).sum
 ```
+
 which constructs new typeclass instances for `List`s on-demand, and which
 requires a typeclass instance corresponding to the type of the `List`'s
 elements. Since `Size` is a single-abstract-method (SAM) type, it can be
 implemented as a simple lambda corresponding to the abstract method.
 
 Another typeclass example would be,
+
 ```scala
 trait Default[+ValueType]:
   def apply(): ValueType
 ```
+
 which is a covariant producer typeclass interface.
 
 ### Derivation
@@ -194,11 +199,14 @@ will start by exploring product derivation.
 A typical example of a consumer typeclass is the `Show` typeclass. It provides
 the functionality to take a value, and produce a string representation of that
 value, and could be defined as,
+
 ```scala
 trait Show[ValueType]:
   def show(value: ValueType): Text
 ```
+
 with an extension method to make it easier to apply the typeclass:
+
 ```scala
 extension [ValueType: Show](value: ValueType)
   def show: Text = summon[Show[ValueType]].show(value)
@@ -220,18 +228,22 @@ what their types are, so we cannot rely on any of these details in our generic
 derivation definition.
 
 To use Wisteria, we need to import the `wisteria` package,
+
 ```scala
 import wisteria.*
 ```
+
 and add the `ProductDerivation` trait to the companion object of the type we
 want to define generic derivation for, along with the stub for the `join`
 method, like so:
+
 ```scala
 object Show extends ProductDerivation[Show]:
-  inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] = ???
+  inline def conjunction[DerivationType <: Product: ProductReflection]: Show[DerivationType] = ???
 ```
 
 The signature of `join` must be defined exactly like this:
+
 - it must be `inline`
 - its type parameter must be a subtype of `Product`
 - it must have a context bound on `ProductReflection`
@@ -240,9 +252,10 @@ The signature of `join` must be defined exactly like this:
 
 Given the return type, we know that we need to construct a new
 `Show[DerivationType]` instance, so we can start with the definition,
+
 ```scala
 object Show extends ProductDerivation[Show]:
-  inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] =
+  inline def conjunction[DerivationType <: Product: ProductReflection]: Show[DerivationType] =
     new Show[DerivationType]:
       def show(value: DerivationType): Text = ???
 ```
@@ -254,9 +267,10 @@ polymorphic lambda. `fields` also takes an instance of the product type, so it
 can provide the actual field value from the product inside the lambda.
 
 Here's what a call to `fields` looks like:
+
 ```scala
 object Show extends ProductDerivation[Show]:
-  inline def join[DerivationType <: Product: ProductReflection]
+  inline def conjunction[DerivationType <: Product: ProductReflection]
           :   Show[DerivationType] =
     new Show[DerivationType]:
       def show(value: DerivationType): Text =
@@ -270,13 +284,17 @@ object Show extends ProductDerivation[Show]:
 The polymorphic lambda may be unfamiliar syntax, but it can be thought of as
 equivalent to as a lambda equivalent of a polymorphic method. So if the lambda
 for,
+
 ```scala
 def transform(field: Field): Text
 ```
+
 is, `Field => Text`, then the lambda for,
+
 ```scala
 def transform[FieldType](field: FieldType): Text
 ```
+
 is, `[FieldType] => FieldType => Text`.
 
 This is necessary because each field will potentially have a different type,
@@ -294,6 +312,7 @@ _will_ be able to show an instance of `FieldType`.
 
 By default, Wisteria will make just such an instance available contextually
 within the lambda body.
+
 ```scala
 [FieldType] => field =>
   summon[Show[FieldType]].show(field)
@@ -303,19 +322,21 @@ So, for each field this lambda is invoked on, a `Show[Int]`, `Show[Text]` or
 `Show[Person]` (or whatever type necessary) is summoned and supplied to it
 contextually as a `Show[FieldType]`. It's also available contextually by name
 as `context, so we can also write,
+
 ```scala
 [FieldType] => field =>
   context.show(field)
 ```
-but since it's contextual we can use the extension method above, and so it is
-sufficient to write, `[FieldType] => field => field.show`.  ```
 
+but since it's contextual we can use the extension method above, and so it is
+sufficient to write, `[FieldType] => field => field.show`. ```
 
 This gives us enough to construct an array of `Text` values corresponding to
 each field in a product, which we can join together to surround the :
+
 ```scala
 object Show extends ProductDerivation[Show]:
-  inline def join[DerivationType <: Product: ProductReflection]
+  inline def conjunction[DerivationType <: Product: ProductReflection]
           :   Show[DerivationType] =
     new Show[DerivationType]:
       def show(value: DerivationType): Text =
@@ -345,10 +366,12 @@ But we can go further. The name of each field can also be included in the
 string output. The value `label` is provided as a named contextual value inside
 `fields`'s lambda, so we can access the label for any field from within the
 lambda. Changing the definition to,
+
 ```scala
 [FieldsType] => field =>
   t"$label:${field.show}"
 ```
+
 will change the output to `Person[name:George, age:19]`.
 
 #### Special Product types
@@ -368,21 +391,23 @@ cases.
 Since `Show` is a SAM type, we can also simplify the implementation and write
 the implementation of `join` as a lambda. A full implementation would look like
 this:
+
 ```scala
 object Show extends ProductDerivation[Show]:
-  inline def join[DerivationType <: Product: ProductReflection]
+  inline def conjunction[DerivationType <: Product: ProductReflection]
           :   Show[DerivationType] =
     value =>
       if singleton then typeName else
         fields(value):
           [FieldType] => field => if tuple then field.show else t"$label=$field"
-        .join(if tuple then t"[" else t"$typeName[", t", ", t"]")
+        . join(if tuple then t"[" else t"$typeName[", t", ", t"]")
 ```
 
 #### Complementary Values
 
 Some typeclasses operate on two values of the same type. An example is the `Eq`
 typeclass for determining structural equality of two values:
+
 ```scala
 trait Eq[ValueType]:
   def equal(left: ValueType, right: ValueType): Boolean
@@ -413,9 +438,10 @@ and to provide it with the same type so that it is compatible with that field's
 contextual typeclass instance.
 
 Here's a full implementation of `Eq`:
+
 ```scala
 object Eq extends ProductDerivation[Eq]:
-  inline def join[DerivationType <: Product: ProductReflection]: Eq[DerivationType] =
+  inline def conjunction[DerivationType <: Product: ProductReflection]: Eq[DerivationType] =
     (left, right) =>
       fields(left):
         [FieldType] => leftField =>
@@ -434,6 +460,7 @@ and constructs a random new instance from that seed. A `Random` instance for a g
 produce a new product instance, all of whose field values are chosen randomly.
 
 Here is the definition of `Random`:
+
 ```scala
 trait Random[+ValueType]:
   def next(seed: Long): ValueType
@@ -447,7 +474,7 @@ typeclass instance which can be used to instantiate the new field value.
 
 ```scala
 object Random extends ProductDerivation[Random]:
-  inline def join[DerivationType <: Product: ProductReflection]: Random[DerivationType] = seed =>
+  inline def conjunction[DerivationType <: Product: ProductReflection]: Random[DerivationType] = seed =>
     construct:
       [FieldType] => random =>
         ???
@@ -459,9 +486,10 @@ constructing a new instance for that field.
 
 Therefore, by parametricity, the only sensible way to implement the method is to invoke the `next` method, like
 so:
+
 ```scala
 object Random extends ProductDerivation[Random]:
-  inline def join[DerivationType <: Product: ProductReflection]: Random[DerivationType] = seed =>
+  inline def conjunction[DerivationType <: Product: ProductReflection]: Random[DerivationType] = seed =>
     construct:
       [FieldType] => random => random.next(seed)
 ```
@@ -474,6 +502,7 @@ a suitable implementation for the new typeclass.
 
 Often your producer will return a type construct, like `Option` or `Either`,
 for example:
+
 ```scala
 trait Parser[T]:
   def parse(input: String): Either[Exception, T]
@@ -492,7 +521,7 @@ highlight  [InputType..flatMap  This is a polymorphic `bind` function
 highlight  [Monadic..(_)  This is a polymorphic `pure` function
 ##
 object Parser extends ProductDerivation[Parser]:
-  inline def join[DerivationType <: Product: ProductReflection]: Parser[DerivationType] = input =>
+  inline def conjunction[DerivationType <: Product: ProductReflection]: Parser[DerivationType] = input =>
     constructWith[DerivationType, Either]
      ([InputType, OutputType] => _.flatMap,
       [MonadicType] => Right(_),
@@ -507,12 +536,13 @@ products. But if it is desired in addition to product derivation, a typeclass's 
 extend `Derivation` instead of `ProductDerivation`, and define an additional `split` method.
 
 Here are the adjusted stub implementations for the `Show` typeclass:
+
 ```scala
 object Show extends Derivation[Show]:
-  inline def join[DerivationType <: Product: ProductReflection]
+  inline def conjunction[DerivationType <: Product: ProductReflection]
           :   Show[DerivationType] = ???
 
-  inline def split[DerivationType: SumReflection]
+  inline def disjunction[DerivationType: SumReflection]
           :   Show[DerivationType] = ???
 ```
 
@@ -532,8 +562,9 @@ so once again, we will specify a polymorphic lambda which takes a `VariantType` 
 have one more piece of useful information about `VariantType` which we didn't know about a field's type:
 `VariantType` must be a subtype of the derivation type. Therefore, we specify the lambda type variable as
 `[VariantType <: DerivationType]`:
+
 ```scala
-inline def split[DerivationType: SumReflection]
+inline def disjunction[DerivationType: SumReflection]
         :   Show[DerivationType] =
   value =>
     variant(value):
@@ -552,7 +583,7 @@ A trivial implementation of this lambda would just call `variant.show`, since th
 value is available.
 
 ```scala
-inline def split[DerivationType: SumReflection]
+inline def disjunction[DerivationType: SumReflection]
         :   Show[DerivationType] =
   value =>
     variant(value):
@@ -571,8 +602,9 @@ If, however, both values represent the same variant, then we can access that val
 type.
 
 Here is an implementation of `split` for `Eq`:
+
 ```scala
-inline def split[DerivationType: SumReflection]
+inline def disjunction[DerivationType: SumReflection]
         :   Eq[DerivationType] =
   (left, right) =>
     variant(left):
@@ -585,18 +617,19 @@ then we use `context`, the typeclass instance that is common to both, to compare
 evidently different, we return `false`.
 
 Therefore, a complete implementation of `Eq` is as simple as:
+
 ```scala
 trait Eq[ValueType]:
   def equal(left: ValueType, right: ValueType): Boolean
 
 object Eq extends Derivation[Eq]:
-  inline def join[DerivationType <: Product: ProductReflection]: Eq[DerivationType] =
+  inline def conjunction[DerivationType <: Product: ProductReflection]: Eq[DerivationType] =
     (left, right) =>
       fields(left):
         [FieldType] => left => context.equal(left, complement(right))
       .fuse(true)(state && next)
 
-  inline def split[DerivationType: SumReflection]: Eq[DerivationType] =
+  inline def disjunction[DerivationType: SumReflection]: Eq[DerivationType] =
     (left, right) =>
       variant(left):
         [VariantType <: DerivationType] => left =>
@@ -614,6 +647,7 @@ and is not guaranteed to succeed.
 Imagine defining a `Decoder` type which reads values from strings, and we expect the variant's type to be
 encoded at the start of the string, for example, `"Developer:Hamza,39"` and `"Manager:Jane,52,2"` could both be
 representations of instances of the sum type:
+
 ```scala
 enum Employee:
   case Developer(name: Text, age: Int)
@@ -631,9 +665,10 @@ second parameter is another polymorphic lambda. As with `construct` which had no
 `delegate` has no `variant` lambda variable, and (likewise) offers the matching variant's context.
 
 For our `Decoder` example, we have:
+
 ```scala
 object Decoder extends Derivation[Decoder]:
-  inline def split[DerivationType: SumReflection]
+  inline def disjunction[DerivationType: SumReflection]
           :   Decoder[DerivationType] =
     text =>
       val prefix = text.cut(t":").head
@@ -644,9 +679,10 @@ object Decoder extends Derivation[Decoder]:
 
 Having discerned which variant's decoder should be used, we can then use this to decode the text following the
 `:`, like so:
+
 ```scala
 object Decoder extends Derivation[Decoder]:
-  inline def split[DerivationType: SumReflection]
+  inline def disjunction[DerivationType: SumReflection]
           :   Decoder[DerivationType] =
     text =>
       text.cut(t":") match
@@ -658,11 +694,14 @@ object Decoder extends Derivation[Decoder]:
 #### Derivation for Sum with all `Singleton` variants
 
 Sometimes it is useful to derive a typeclass _only_ for enums of singleton variants, such as,
+
 ```scala
 enum Country:
   case De, Fr, Gb
 ```
+
 but not for enumerations with one or more structural cases such as:
+
 ```amok
 syntax  scala
 highlight  En..ct)  English has multiple dialects
@@ -672,20 +711,22 @@ enum Language:
   case En(dialect: Dialect)
   case Eo
 ```
+
 The `choice` method returns `true` if every case in a sum type is a
 singleton, that is a "straight choice" between them. This also applies to sealed traits of case objects.
 
 Here is an example of its use deriving `Show`:
+
 ```scala
 trait Show[ValueType]:
   def show(value: ValueType): String
 
 object Show extends Derivation[Show]:
-  inline def join[DerivationType <: Product: ProductReflection]
+  inline def conjunction[DerivationType <: Product: ProductReflection]
           :   Show[DerivationType] =
     value => ???
 
-  inline def split[DerivationType: SumReflection]
+  inline def disjunction[DerivationType: SumReflection]
           :   Show[DerivationType] =
     value =>
       inline if !choice then compiletime.error("cannot derive") else
@@ -715,19 +756,20 @@ to compile, but there will be a contextual `Optional[Typeclass]` value instead, 
 
 We could take the `Show` example from earlier and adjust it to fall back to a field's `toString` value if a
 `Show` typeclass does not exist for that type:
+
 ```scala
 object Show extends ProductDerivation[Show]:
-  inline def join[DerivationType <: Product: ProductReflection]
+  inline def conjunction[DerivationType <: Product: ProductReflection]
           :   Show[DerivationType] =
     value =>
       fields(value):
         [FieldType] => field => context.layGiven(field.toString.tt)(field.show)
-      .join(t"[", t", ", t"]")
+      . join(t"[", t", ", t"]")
 ```
 
 This adjusted version refers to the contextual `Show[FieldType]` value, which is available as `context` inside
 the lambda, and uses `layGiven` to provide the fallback option in the first parameter block, with the original
-code (for when the typeclass *is* available) in the second block. This is made possible because when the
+code (for when the typeclass _is_ available) in the second block. This is made possible because when the
 `Optional` value is present, `layGiven` injects its value contextually into this parameter block.
 
 ### Default Values
@@ -743,36 +785,38 @@ A contextual `Default[Optional[FieldType]]` instance called `default` is availab
 
 ### Frequently-asked Questions
 
-*How can I avoid generic derivation failing when a typeclass for one or more parameters is missing?*
+_How can I avoid generic derivation failing when a typeclass for one or more parameters is missing?_
 
 Include the import,
+
 ```scala
 import wisteria.derivationContext.relaxed
 ```
+
 in the context where `join` and `split` are defined. This will transform the type of the typeclass value
 corresponding to the field from `TypeclassType[ValueType]` to `Optional[TypeclassType[ValueType]]`. Normally,
 this also means that the typeclass will need to be applied explicitly.
 
-*How can I use other unrelated typeclasses in a `join` or `split` implementation?*
+_How can I use other unrelated typeclasses in a `join` or `split` implementation?_
 
 The signatures of `join` and `split` cannot be changed, so it is impossible to include other typeclass instances
 in their implementations. But both are inline methods, so `summonInline` and `summonFrom` can be used to summon
 instances of other typeclasses at compiletime, whether these relate to the derivation type or a field type.
 
-*How can I use Wisteria for generic derivation without making the generically-derived typeclasses available to implicit search?*
+_How can I use Wisteria for generic derivation without making the generically-derived typeclasses available to implicit search?_
 
 Use a non-companion object extending `Derivation` or `ProductDerivation` for the definitions of `join` and
 `split`, and call the inline `derived` method on that object, passing in the derivation type.
 
-*Why is a generically-derived typeclass instance not being found when it is summoned?*
+_Why is a generically-derived typeclass instance not being found when it is summoned?_
 
 This is usually because typeclass instances relating to one or more field or variant values cannot be found. To
 test this theory, try compiling an explicit call to the inline `derived` method at the callsite where
 contextual search is failing.
 
-*Why is another contextual instance being selected by contextual search instead of a generically-derived one?*
+_Why is another contextual instance being selected by contextual search instead of a generically-derived one?_
 
-Assuming the generically-derived typeclass instance *is* a valid candidate for selection, this is probably
+Assuming the generically-derived typeclass instance _is_ a valid candidate for selection, this is probably
 because the derived candidate has a lower priority. Since the `given` instance is defined in either
 `ProductDerivation` or `Derivation`, which is typically inherited by the typeclass's companion object, its
 priority is naturally lower than `given` instances defined in the body of that companion object.
@@ -782,9 +826,10 @@ adding an additional `(using DummyImplicit)` parameter, or moving the definition
 
 Another solution is to define `join` and `split` in an unrelated (non-companion) object, and to define an inline
 given called `derived` directly in the companion object, like so:
+
 ```scala
 object Unrelated extends ProductDerivation[Typeclass]:
-  def join[DerivationType <: Product: ProductReflection]
+  inline def conjunction[DerivationType <: Product: ProductReflection]
           :   Typeclass[DerivationType] = ???
 
 object Typeclass:
@@ -792,7 +837,7 @@ object Typeclass:
     Unrelated.derived
 ```
 
-* How can I resolve a derived contextual instance conflicting with another, with an ambiguity error?
+- How can I resolve a derived contextual instance conflicting with another, with an ambiguity error?
 
 Two contextual values are ambiguous if both match the expected type and the
 compiler is unable to find a reason why one should be chosen over the other.
@@ -808,6 +853,7 @@ To transform an existing set of ambiguous `given`s, first change them from
 `given`s into ordinary `def`s. For instances derived by Wisteria, this requires
 the derivation to be implemented outside the companion object (see above).
 Then, define the `derived` `given` as:
+
 ```scala
 inline given derived[ValueType]: DerivationType[ValueType] =
   compiletime.summonFrom:
@@ -822,6 +868,7 @@ will use the presence of a contextual instance of the specified type (at the
 callsite) to determine if that particular case should match. For example, if we
 want to define derivation for a `Debug` typeclass which returns the "best"
 string value for a particular type, we could write it as follows:
+
 ```scala
 object Debug:
   inline given derived[ValueType]: Debug[ValueType] = value =>
@@ -832,39 +879,42 @@ object Debug:
 ```
 
 In plain English, this could be interpreted as,
- - if there is an `Encoder` for `value`'s type, use it to encode the value
- - if there is a `Show` for `value`'s type, make it available in-scope on the
-   right-hand side of the case clause, and use it to `show` the value
- - otherwise, just use the `value`'s `toString` method
 
-*How can I generically-derive a typeclass for a type which indirectly refers to its own type in its fields?*
+- if there is an `Encoder` for `value`'s type, use it to encode the value
+- if there is a `Show` for `value`'s type, make it available in-scope on the
+  right-hand side of the case clause, and use it to `show` the value
+- otherwise, just use the `value`'s `toString` method
+
+_How can I generically-derive a typeclass for a type which indirectly refers to its own type in its fields?_
 
 A recursive type such as `Tree`,
+
 ```scala
 enum Tree:
   case Leaf
   case Branch(left: Tree, value: Int, right: Tree)
 ```
+
 cannot be derived in-place, and should be explicitly defined on that type's companion object. The easiest way to
 do this is to add a `derives` clause to the companion. For example,
+
 ```scala
 object Tree derives Typeclass
 ```
 
-*Why does the compiler fail during derivation with a long message that mentions that, `given instance derived in trait Derivation does not match type...`?*
+_Why does the compiler fail during derivation with a long message that mentions that, `given instance derived in trait Derivation does not match type...`?_
 
 This is usually because the polymorphic lambda's type variable for `delegate` or `variant` is missing its upper
 bound. It is essential that the type variable is specified as `[VariantType <: DerivationType]` and not just,
 `[VariantType]`.
 
-*Why does the compiler report a type mismatch between the derivation type and `Product`?*
+_Why does the compiler report a type mismatch between the derivation type and `Product`?_
 
 This is usually because the derivation type in the signature of `join` is missing the `<: Product` constraint.
 
-
 ## Status
 
-Wisteria is classified as __maturescent__. For reference, Soundness projects are
+Wisteria is classified as **maturescent**. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -888,7 +938,7 @@ fragile, inadequately tested, and unsuitable for anything more than
 experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Wisteria?".
 
-1. *Copy the sources into your own project*
+1. _Copy the sources into your own project_
 
    Read the `fury` file in the repository root to understand Wisteria's build
    structure, dependencies and source location; the file format should be short
@@ -899,7 +949,7 @@ answer to the question, "how can I try Wisteria?".
    There should be no problem to compile the project together with all of its
    dependencies in a single compilation.
 
-2. *Build with [Wrath](https://github.com/propensive/wrath/)*
+2. _Build with [Wrath](https://github.com/propensive/wrath/)_
 
    Wrath is a bootstrapping script for building Wisteria and other projects in
    the absence of a fully-featured build tool. It is designed to read the `fury`
@@ -930,7 +980,7 @@ We suggest that all contributors read the [Contributing
 Guide](/contributing.md) to make the process of contributing to Wisteria
 easier.
 
-Please __do not__ contact project maintainers privately with questions unless
+Please **do not** contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
 repsond to such questions, private answers cannot be shared with a wider
 audience, and it can result in duplication of effort.
@@ -940,8 +990,6 @@ audience, and it can result in duplication of effort.
 Wisteria was designed and developed by Jon Pretty, and commercial support and
 training on all aspects of Scala 3 is available from [Propensive
 O&Uuml;](https://propensive.com/).
-
-
 
 ## Name
 

@@ -33,6 +33,7 @@
 package iridescence
 
 import anticipation.*
+import prepositional.*
 import rudiments.*
 
 object Rgb32Opaque:
@@ -40,7 +41,7 @@ object Rgb32Opaque:
 
   object Rgb32:
     inline given underlying: Underlying[Rgb32, Int] = !!
-    given chromatic: Rgb32 is Chromatic = _.srgb.rgb24.asInt
+    given chromatic: Rgb32 is Chromatic = _.chroma
 
     def apply(red: Int, green: Int, blue: Int): Rgb32 =
       ((red&1023) << 22) + ((green&4095) << 10) + (blue&1023)
@@ -48,7 +49,9 @@ object Rgb32Opaque:
 
   extension (color: Rgb32)
     def red: Int = (color >> 22)&1023
-
     def green: Int = (color >> 10)&4095
     def blue: Int = color&1023
-    def srgb: Srgb = Srgb(red/1023.0, green/4095.0, blue/1023.0)
+    def color: Color in Srgb = Srgb(red/1023.0, green/4095.0, blue/1023.0)
+
+    def chroma: Chroma =
+      Chroma((red*255 + 511)/1023, (green*255 + 2047)/4095, (blue*255 + 511)/1023)

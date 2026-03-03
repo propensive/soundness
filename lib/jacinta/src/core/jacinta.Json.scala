@@ -93,7 +93,7 @@ trait Json2:
     case given Reflection[`value`]            => EncodableDerivation.derived
 
   object DecodableDerivation extends Derivable[Decodable in Json]:
-    inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Json =
+    inline def conjunction[derivation <: Product: ProductReflection]: derivation is Decodable in Json =
       json =>
         provide[Foci[JsonPointer]]:
           provide[Tactic[JsonError]]:
@@ -107,7 +107,7 @@ trait Json2:
                   then default().or(context.decoded(new Json(JsonAst(Unset))))
                   else context.decoded(new Json(values(label.s)))
 
-    inline def split[derivation: SumReflection]: derivation is Decodable in Json =
+    inline def disjunction[derivation: SumReflection]: derivation is Decodable in Json =
       json =>
         provide[Tactic[JsonError]]:
           provide[Tactic[VariantError]]:
@@ -122,7 +122,7 @@ trait Json2:
                 context.decoded(json).asInstanceOf[derivation]
 
   object EncodableDerivation extends Derivable[Encodable in Json]:
-    inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Json =
+    inline def conjunction[derivation <: Product: ProductReflection]: derivation is Encodable in Json =
       value =>
         provide[Foci[JsonPointer]]:
           val labels: scm.ArrayBuffer[String] = scm.ArrayBuffer()
@@ -139,7 +139,7 @@ trait Json2:
             ( JsonAst
                 ( (unsafely(labels.toArray.immutable), unsafely(values.toArray.immutable)) ) )
 
-    inline def split[derivation: SumReflection]: derivation is Encodable in Json = value =>
+    inline def disjunction[derivation: SumReflection]: derivation is Encodable in Json = value =>
       val discriminable = infer[derivation is Discriminable in Json]
       variant(value): [variant <: derivation] =>
         value => discriminable.rewrite(label, context.encode(value))

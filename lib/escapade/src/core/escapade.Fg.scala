@@ -38,13 +38,16 @@ import anticipation.*
 import gossamer.*
 import spectacular.*
 
-case class Fg(color: Int):
+object Fg:
+  def apply[color: Chromatic](color: color): Fg = Fg(color.chroma)
+
+case class Fg(color: Chroma):
   def bg: Bg = Bg(color)
 
   def ansi(colorDepth: ColorDepth): Text =
-    val red = (color >> 16)&255
-    val green = (color >> 8)&255
-    val blue = color&255
+    val red = (color.underlying >> 16)&255
+    val green = (color.underlying >> 8)&255
+    val blue = color.underlying&255
 
     colorDepth match
       case ColorDepth.TrueColor => t"\e[38;2;$red;$green;${blue}m"

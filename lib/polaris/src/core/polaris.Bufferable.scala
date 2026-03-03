@@ -63,7 +63,7 @@ object Bufferable extends ProductDerivable[Bufferable]:
     type Self = derivation
     def buffer(buffer: Buffer, value: derivation): Unit = buffer0(buffer, value)
 
-  inline def join[derivation <: Product: ProductReflection]: derivation is Bufferable =
+  inline def conjunction[derivation <: Product: ProductReflection]: derivation is Bufferable =
     Join[derivation]
       ( contexts { [field] => _.width }.sum,
         (buffer, value) => fields(value) { [field] => field => context.buffer(buffer, field) } )

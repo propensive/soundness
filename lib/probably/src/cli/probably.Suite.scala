@@ -40,14 +40,38 @@ import contingency.*
 import digression.*
 import escapade.*
 import fulminate.*
+import iridescence.*
 import turbulence.*
 import vacuous.*
 
+import termcaps.environment
+import themes.solarized
+import luminance.dark
+
 abstract class Suite(suiteName: Message) extends Testable(suiteName):
-  val suiteIo = safely(stdioSources.virtualMachine.ansi).vouch
+  val suiteIo = safely(stdios.virtualMachine).vouch
 
   var runner0: Runner[Report] =
     given stdio: Stdio = suiteIo
+
+    given palette: (theme: Theme) => TestPalette = new Palette:
+      def warning:     Color = theme.spectrum.yellow
+      def critical:    Color = theme.spectrum.magenta
+      def benchmark:   Color = theme.spectrum.cyan
+      def mixed:       Color = theme.spectrum.blue
+      def informative: Color = theme.spectrum.blue
+      def cold:        Color = mix(theme.spectrum.yellow, theme.spectrum.red, 0.2)
+      def warm:        Color = mix(theme.spectrum.yellow, theme.spectrum.red, 0.5)
+      def hot:         Color = mix(theme.spectrum.yellow, theme.spectrum.red, 0.8)
+      def accented:    Color = theme.spectrum.cyan
+      def highlight:   Color = accent(theme.spectrum.yellow)
+      def pass:        Color = theme.spectrum.green
+      def fail:        Color = theme.spectrum.red
+      def detail:      Color = theme.spectrum.blue
+      def background:  Color = theme.background
+      def foreground:  Color = theme.foreground
+      def subdued:     Color = subdue(theme.foreground, 0.5)
+
     try Runner() catch case error: EnvironmentError =>
       jl.System.out.nn.println(StackTrace(error).teletype.render)
       ???

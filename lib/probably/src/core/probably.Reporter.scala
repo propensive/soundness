@@ -36,7 +36,7 @@ import ambience.*
 import turbulence.*
 
 object Reporter:
-  given report: (Stdio, Environment) => Reporter[Report]:
+  given report: (Stdio, Environment, TestPalette) => Reporter[Report]:
     def make(): Report = Report()
     def declare(report: Report, suite: Testable): Unit = report.declare(suite)
 

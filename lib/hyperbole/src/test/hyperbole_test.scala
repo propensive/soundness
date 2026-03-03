@@ -36,8 +36,6 @@ import scala.annotation.*
 
 import soundness.*
 
-import stdioSources.virtualMachine.ansi
-
 object Tests extends Suite(m"Hyperbole Tests"):
   def run(): Unit =
     test(m"Produce hello-world tree"):

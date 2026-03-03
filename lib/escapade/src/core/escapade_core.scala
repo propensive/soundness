@@ -56,7 +56,7 @@ extension (inline context: StringContext)
 extension [teletypeable: Teletypeable](value: teletypeable) def teletype: Teletype =
   teletypeable.teletype(value)
 
-package printableTypes:
+package displayableTypes:
   given message: Message is Printable = summon[Teletype is Printable].contramap(_.teletype)
 
 type Stylize[T] = Substitution[Ansi.Input, T, "esc"]

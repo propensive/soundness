@@ -7,7 +7,9 @@ import charEncoders.utf8
 import classloaders.scala
 import logFormats.ansiStandard
 import codicils.cancel
-import stdioSources.virtualMachine.ansi
+import environments.java
+import termcaps.environment
+import stdios.virtualMachine
 import threading.platform
 import httpServers.stdlibPublic
 

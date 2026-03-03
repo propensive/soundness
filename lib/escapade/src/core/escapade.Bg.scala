@@ -39,19 +39,24 @@ import gossamer.*
 import spectacular.*
 
 object Bg:
-  def apply[color: Chromatic](color: color): Bg = Bg(color.asRgb24Int)
+  def apply[color: Chromatic](color: color): Bg = Bg(color.chroma)
 
-case class Bg(color: Int):
+case class Bg(color: Chroma):
   def fg: Fg = Fg(color)
 
   def highContrast: Fg = Fg:
-    if ((color&255)*0.07 + ((color >> 8)&255)*0.72 + ((color >> 16)&255)*0.21) > 128
-    then 0 else 16777215
+    Chroma:
+      if
+        ( (color.underlying&255)*0.07
+          + ((color.underlying >> 8)&255)*0.72
+          + ((color.underlying >> 16)&255)*0.21 )
+        > 128
+      then 0 else 16777215
 
   def ansi(colorDepth: ColorDepth): Text =
-    val red = (color >> 16)&255
-    val green = (color >> 8)&255
-    val blue = color&255
+    val red = (color.underlying >> 16)&255
+    val green = (color.underlying >> 8)&255
+    val blue = color.underlying&255
 
     colorDepth match
       case ColorDepth.TrueColor => t"\e[48;2;$red;$green;${blue}m"

@@ -36,26 +36,17 @@ import anticipation.*
 import hypotenuse.*
 import prepositional.*
 
-object Cielab:
-  given xyz: (colorimetry: Colorimetry) => Cielab is Perceptual in Xyz =
+object Color:
+  given chromatic: [form <: Color: Perceptual in Srgb as perceptual] => Color in form is Chromatic =
     color =>
-      def clamp(v: Double): Double = if v*v*v > 0.008856 then v*v*v else (v - 16.0/116)/7.787
+      val srgb = color.in[Srgb]
+      Chroma((srgb.red*255).toInt, (srgb.green*255).toInt, (srgb.blue*255).toInt)
 
-      val y = clamp((color.lightness + 16)/116)*colorimetry.y2
-      val x = clamp(color.blueYellow/500 + (color.lightness + 16)/116)*colorimetry.x2
-      val z = clamp((color.lightness + 16)/116 - color.greenRed/200)*colorimetry.z2
 
-      Xyz(x, y, z)
+trait Color:
+  type Form >: this.type <: Color
 
-case class Cielab(lightness: Double, blueYellow: Double, greenRed: Double) extends Color:
-  type Form = Cielab
+  def in[color <: Color](using perceptual: Form is Perceptual in color): color =
+    perceptual.convert(this)
 
-  def delta(left: Cielab, right: Cielab): Double =
-    ( hyp(F64(right.blueYellow), F64(right.greenRed))
-      - hyp(F64(left.blueYellow), F64(left.greenRed)) )
-    . double
-
-// case class Cielab(l: Double, a: Double, b: Double):
-
-//   def mix(that: Cielab, ratio: Double = 0.5): Cielab =
-//     Cielab(l*(1 - ratio) + ratio*that.l, a*(1 - ratio) + ratio*that.a, b*(1 - ratio) + ratio*that.b)
+  def delta[color <: Color](right: color): Double
