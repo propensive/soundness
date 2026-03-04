@@ -113,6 +113,8 @@ extension (inline statement: => Unit)
 def loop(block: => Unit): Loop = Loop({ () => block })
 
 inline def that[result](inline block: => result): result = block
+inline def state[value](using value: value aka "state"): value = value()
+inline def next[value](using value: value aka "next"): value = value()
 
 export rudiments.internal.&
 
@@ -242,12 +244,18 @@ extension [value](iterable: Iterable[value])
       case tuple: Tuple => tuple :* lambda(tuple)
       case other        => (other, lambda(other))
 
-  inline def fuse[state](base: state)(lambda: (state: state, next: value) ?=> state): state =
+
+  inline def fuse[state](base: state)(lambda: (state aka "state", value aka "next") ?=> state)
+  :   state =
+
     val iterator: Iterator[value] = iterable.iterator
     var state: state = base
-    while iterator.hasNext do state = lambda(using state, iterator.next)
+
+    while iterator.hasNext
+    do state = lambda(using state.aka["state"], iterator.next.aka["next"])
 
     state
+
 
   def sumBy[number: Numeric](lambda: value => number): number =
     var count = number.zero

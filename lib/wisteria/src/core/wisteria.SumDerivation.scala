@@ -37,6 +37,7 @@ import scala.deriving.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import proscenium.*
 import rudiments.*
@@ -44,9 +45,6 @@ import vacuous.*
 
 object SumDerivation:
   trait Methods[typeclass[_]]:
-
-    @deprecated("This method has been renamed to `choice`")
-    transparent inline def allSingletons[derivation: SumReflection]: Boolean = choice[derivation]
 
     transparent inline def choice[derivation: SumReflection]: Boolean =
       inline !![derivation.MirroredElemTypes] match
@@ -63,7 +61,7 @@ object SumDerivation:
 
 
     protected transparent inline def complement[derivation, variant](sum: derivation)
-      ( using variantIndex: Int & VariantIndex[variant],
+      ( using variantIndex: Int & VariantIndex[variant] aka "index",
               reflection:   SumReflection[derivation] )
     :   Optional[variant] =
 
@@ -74,7 +72,7 @@ object SumDerivation:
 
       fold[derivation, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
         [variant2 <: derivation] => field =>
-          if index == variantIndex then field.asInstanceOf[variant] else Unset
+          if index == variantIndex() then field.asInstanceOf[variant] else Unset
 
 
     protected inline def variantLabels[derivation](using reflection: SumReflection[derivation])
@@ -118,9 +116,9 @@ object SumDerivation:
       ( using reflection: SumReflection[derivation], requirement: ContextRequirement )
       [ result ]
       ( inline lambda:  [variant <: derivation] => requirement.Optionality[typeclass[variant]]
-                        =>  ( context: requirement.Optionality[typeclass[variant]],
-                              label:   Text,
-                              index:   Int & VariantIndex[variant] ) ?=> result )
+                        =>  ( requirement.Optionality[typeclass[variant]] aka "contextual",
+                              Text aka "label",
+                              Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   result =
 
       type Labels = reflection.MirroredElemLabels
@@ -141,9 +139,9 @@ object SumDerivation:
       [ result ]
       ( inline lambda:  [variant <: derivation]
                         =>  variant
-                        =>  ( context: requirement.Optionality[typeclass[variant]],
-                              label:   Text,
-                              index:   Int & VariantIndex[variant] ) ?=> result )
+                        =>  ( requirement.Optionality[typeclass[variant]] aka "contextual",
+                              Text aka "label",
+                              Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   result =
 
       type Labels = reflection.MirroredElemLabels
@@ -160,13 +158,13 @@ object SumDerivation:
     private transparent inline def fold[derivation, variants <: Tuple, labels <: Tuple]
       ( inline inputLabel: Text, size: Int, index: Int, fallible: Boolean )
       ( using reflection: SumReflection[derivation], requirement: ContextRequirement )
-      ( inline predicate: (label: Text, index: Int & VariantIndex[derivation]) ?=> Boolean )
+      ( inline predicate: (Text aka "label", Int & VariantIndex[derivation] aka "index") ?=> Boolean )
       [ result ]
       ( inline lambda:  [variant <: derivation]
                         =>  requirement.Optionality[typeclass[variant]]
-                        =>  ( context: requirement.Optionality[typeclass[variant]],
-                              label:   Text,
-                              index:   Int & VariantIndex[variant] ) ?=> result )
+                        =>  ( requirement.Optionality[typeclass[variant]] aka "contextual",
+                              Text aka "label",
+                              Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   Optional[result] =
 
       inline !![variants] match
@@ -179,11 +177,14 @@ object SumDerivation:
                   case label: String =>
                     val index2: Int & VariantIndex[derivation] = VariantIndex[derivation](index)
 
-                    if predicate(using label.tt, index2)
+                    if predicate(using label.tt.aka["label"], index2.aka["index"])
                     then
                       val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
                       val context = requirement.wrap(infer[typeclass[variant0]])
-                      lambda[variant0](context)(using context, label.tt, index3)
+                      lambda[variant0](context)
+                        ( using context.aka["contextual"],
+                                label.tt.aka["label"],
+                                index3.aka["index"] )
                     else
                       fold
                         [ derivation, variants, moreLabels ]
@@ -200,14 +201,16 @@ object SumDerivation:
 
     private transparent inline def fold[derivation, variants <: Tuple, labels <: Tuple]
       ( inline sum: derivation, size: Int, index: Int, fallible: Boolean )
-      ( using reflection:  SumReflection[derivation], requirement: ContextRequirement )
-      ( inline predicate: (label: Text, index: Int & VariantIndex[derivation]) ?=> Boolean )
+      ( using reflection: SumReflection[derivation], requirement: ContextRequirement )
+      ( inline predicate: ( label: Text aka "label",
+                            index: Int & VariantIndex[derivation] aka "index" )
+                          ?=> Boolean )
       [ result ]
       ( inline lambda:  [variant <: derivation]
                         =>  variant
-                        =>  ( context: requirement.Optionality[typeclass[variant]],
-                              label: Text,
-                              index: Int & VariantIndex[variant] ) ?=> result )
+                        =>  ( requirement.Optionality[typeclass[variant]] aka "contextual",
+                              Text aka "label",
+                              Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   Optional[result] =
 
       inline !![variants] match
@@ -220,12 +223,16 @@ object SumDerivation:
                   case label: String =>
                     val index2: Int & VariantIndex[derivation] = VariantIndex[derivation](index)
 
-                    if predicate(using label.tt, index2)
+                    if predicate(using label.tt.aka["label"], index2.aka["index"])
                     then
                       val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
                       val variant: variant0 = sum.asInstanceOf[variant0]
                       val context = requirement.wrap(infer[typeclass[variant0]])
-                      lambda[variant0](variant)(using context, label.tt, index3)
+
+                      lambda[variant0](variant)
+                        ( using context.aka["contextual"],
+                                label.tt.aka["label"],
+                                index3.aka["index"] )
                     else
                       fold[derivation, variants, moreLabels](sum, size, index + 1, fallible)
                         ( predicate )

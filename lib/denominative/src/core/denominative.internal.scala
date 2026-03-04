@@ -40,7 +40,13 @@ import symbolism.*
 object internal:
   opaque type Ordinal = Int
   opaque type Interval = Long
+  opaque type Tagged[+value, tag] = value
 
+
+  object Tagged:
+    inline def apply[tag](value: Any): Tagged[value.type, tag] = value
+
+  extension [value, tag](tagged: Tagged[value, tag]) inline def apply(): value = tagged
 
   extension (ordinal: Ordinal)
     @targetName("minus2")
@@ -96,7 +102,7 @@ object internal:
 
 
     inline def fuse[value](inline initial: value)
-      ( inline lambda: (state: value, next: Ordinal) ?=> value )
+      ( inline lambda: (value aka "state", Ordinal aka "next") ?=> value )
     :   value =
 
       var i: Ordinal = start
