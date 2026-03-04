@@ -76,13 +76,13 @@ extension [endpoint: Serviceable as serviceable](endpoint: endpoint)
     val connection = serviceable.connect(endpoint)
 
     def recur(input: Stream[Data], state: state): state = input.flow(state):
-      handle(using state)(message.deserialize(head)) match
-        case Continue(state2) => recur(tail, state2.or(state))
+      handle(using state)(message.deserialize(next)) match
+        case Continue(state2) => recur(more, state2.or(state))
         case Terminate        => state
 
         case Reply(message, state2) =>
           serviceable.transmit(connection, Stream(message))
-          recur(tail, state2.or(state))
+          recur(more, state2.or(state))
 
         case Conclude(message, state2) =>
           serviceable.transmit(connection, Stream(message))

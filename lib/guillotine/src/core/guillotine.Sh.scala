@@ -95,7 +95,7 @@ object Sh:
       case _ =>
         state
 
-    def parse(state: State, next: Text): State = next.chars.to(List).fuse(state):
+    def parse(state: State, text: Text): State = text.chars.to(List).fuse(state):
         (state, next).absolve match
           case (State(Awaiting, _, arguments), ' ') => State(Awaiting, false, arguments)
 

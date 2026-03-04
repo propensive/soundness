@@ -52,6 +52,8 @@ import vacuous.*
 
 private given Realm = Realm("turbulence")
 
+inline def more[value](using value: value aka "more"): value = value()
+
 extension [value](value: value)
   inline def stream[element]: Stream[element] =
     ${turbulence.internal.stream[value, element]('value)}
@@ -98,16 +100,16 @@ extension [element](stream: Stream[element])
   def deduplicate: Stream[element] =
     def recur(last: element, stream: Stream[element]): Stream[element] =
       stream.flow(Stream()):
-        if last == head then recur(last, tail) else head #:: recur(head, tail)
+        if last == next then recur(last, more) else next #:: recur(next, more)
 
-    stream.flow(Stream())(head #:: recur(head, tail))
+    stream.flow(Stream())(next #:: recur(next, more))
 
 
   inline def flow[result](inline termination: => result)
-    ( inline proceed: (head: element, tail: Stream[element]) ?=> result )
+    ( inline proceed: (element aka "next", Stream[element] aka "more") ?=> result )
   :   result =
     stream match
-      case head #:: tail => proceed(using head, tail)
+      case next #:: more => proceed(using next.aka["next"], more.aka["more"])
       case _             => termination
 
 
@@ -266,8 +268,8 @@ extension (bytes: Data)
 extension (stream: Stream[Data])
   def discard(bytes: Bytes): Stream[Data] =
     def recur(stream: Stream[Data], count: Bytes): Stream[Data] = stream.flow(Stream()):
-      if head.bytes < count
-      then recur(tail, count - head.bytes) else head.drop(count.long.toInt) #:: tail
+      if next.bytes < count
+      then recur(more, count - next.bytes) else next.drop(count.long.toInt) #:: more
 
     recur(stream, bytes)
 
@@ -339,8 +341,8 @@ extension (stream: Stream[Data])
   def take(bytes: Bytes): Stream[Data] =
     def recur(stream: Stream[Data], count: Bytes): Stream[Data] =
       stream.flow(Stream()):
-        if head.bytes < count then head #:: recur(tail, count - head.bytes)
-        else Stream(head.take(count.long.toInt))
+        if next.bytes < count then next #:: recur(more, count - next.bytes)
+        else Stream(next.take(count.long.toInt))
 
     recur(stream, bytes)
 

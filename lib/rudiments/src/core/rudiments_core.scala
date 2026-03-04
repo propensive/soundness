@@ -115,6 +115,7 @@ def loop(block: => Unit): Loop = Loop({ () => block })
 inline def that[result](inline block: => result): result = block
 inline def state[value](using value: value aka "state"): value = value()
 inline def next[value](using value: value aka "next"): value = value()
+inline def prior[value](using value: value aka "prior"): value = value()
 
 export rudiments.internal.&
 

@@ -86,10 +86,10 @@ object Writable:
       @tailrec
       def recur(total: Bytes, todo: Stream[jn.ByteBuffer]): Unit =
         todo.flow(()):
-          val count = try channel.write(head) catch case e: Exception => -1
+          val count = try channel.write(next) catch case e: Exception => -1
 
           if count == -1 then raise(StreamError(total))
-          else recur(total + count.b, if head.hasRemaining then todo else tail)
+          else recur(total + count.b, if next.hasRemaining then todo else more)
 
       recur(0.b, stream.map { bytes => jn.ByteBuffer.wrap(bytes.mutable(using Unsafe)).nn })
 

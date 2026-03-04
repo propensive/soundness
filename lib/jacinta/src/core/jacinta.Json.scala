@@ -130,7 +130,7 @@ trait Json2:
 
           fields(value): [field] =>
             field => focus(prior.or(JsonPointer()) / label):
-              context.encode(field).root.tap: encoded =>
+              contextual.encode(field).root.tap: encoded =>
                 if !encoded.isAbsent then
                   labels += label.s
                   values += encoded
@@ -142,7 +142,7 @@ trait Json2:
     inline def split[derivation: SumReflection]: derivation is Encodable in Json = value =>
       val discriminable = infer[derivation is Discriminable in Json]
       variant(value): [variant <: derivation] =>
-        value => discriminable.rewrite(label, context.encode(value))
+        value => discriminable.rewrite(label, contextual.encode(value))
 
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)

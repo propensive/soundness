@@ -106,13 +106,13 @@ extends Cli:
 
   override def present(flag: Flag): Unit = if !flag.repeatable then seenFlags += flag
 
-  override def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit =
+  override def explain(update: (Optional[Text] aka "prior") ?=> Optional[Text]): Unit =
     explanation = update(using explanation)
 
 
   override def suggest
     ( argument: Argument,
-      update:   (prior: List[Suggestion]) ?=> List[Suggestion],
+      update:   (List[Suggestion] aka "prior") ?=> List[Suggestion],
       prefix:   Text,
       suffix:   Text ) =
 

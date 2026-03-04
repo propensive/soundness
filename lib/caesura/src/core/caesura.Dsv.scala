@@ -106,14 +106,14 @@ object Dsv:
             count += spans(index)
             val row2 = Dsv(row.data.drop(i))
             focus(CellRef(rowNumber, label)):
-              typeclass.decoded(row2))
+              contextual.decoded(row2))
 
   object EncodableDerivation extends ProductDerivable[Encodable in Dsv]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Dsv =
       value =>
         val cells =
           fields(value):
-            [field] => field => context.encode(field).data
+            [field] => field => contextual.encode(field).data
 
           . to(List)
           . flatten
