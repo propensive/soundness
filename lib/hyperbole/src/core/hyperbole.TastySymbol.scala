@@ -56,11 +56,10 @@ object TastySymbol:
         . join(e" ")
 
       val details =
-        symbol.details.map:
-          case (key, value: Text) =>
-            key -> e"${webColors.Silver}($value)"
-          case (key, items: List[Text]) =>
-            key -> e"${webColors.Silver}(${items.join(t", ")})"
+        symbol.details.map: detail =>
+          detail.absolve match
+            case (key, value: Text)       => key -> e"${webColors.Silver}($value)"
+            case (key, items: List[Text]) => key -> e"${webColors.Silver}(${items.join(t", ")})"
         . to(List)
 
       val name = (t"Name", e"$Bold(${symbol.prefix}${webColors.White}(${symbol.name}))")
