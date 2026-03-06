@@ -104,8 +104,7 @@ trait Json2:
               context =>
                 focus(prior.or(JsonPointer()) / label):
                   if !values.contains(label.s)
-                  then
-                    default().or(context.decoded(new Json(JsonAst(Unset))))
+                  then default.or(context.decoded(new Json(JsonAst(Unset))))
                   else context.decoded(new Json(values(label.s)))
 
     inline def split[derivation: SumReflection]: derivation is Decodable in Json =
@@ -140,6 +139,7 @@ trait Json2:
 
     inline def split[derivation: SumReflection]: derivation is Encodable in Json = value =>
       val discriminable = infer[derivation is Discriminable in Json]
+
       variant(value): [variant <: derivation] =>
         value => discriminable.rewrite(label, contextual.encode(value))
 

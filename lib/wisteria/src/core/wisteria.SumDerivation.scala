@@ -112,7 +112,7 @@ object SumDerivation:
           Unset
 
 
-    protected transparent inline def delegate[derivation](label: Text)
+    protected transparent inline def delegate[derivation](delegation: Text)
       ( using reflection: SumReflection[derivation], requirement: ContextRequirement )
       [ result ]
       ( inline lambda:  [variant <: derivation] => requirement.Optionality[typeclass[variant]]
@@ -125,11 +125,11 @@ object SumDerivation:
       type Variants = reflection.MirroredElemTypes
 
       val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
-      val variantLabel = label
 
       // Here label comes from context of fold's predicate
-      fold[derivation, Variants, Labels](variantLabel, size, 0, true)(label == variantLabel):
-        [variant <: derivation] => context => lambda[variant](context)
+      fold[derivation, Variants, Labels](delegation, size, 0, true)(label == delegation):
+        [variant <: derivation] =>
+          lambda[variant](_)
 
       . vouch
 
@@ -150,7 +150,8 @@ object SumDerivation:
       val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
 
       fold[derivation, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
-        [variant <: derivation] => variant => lambda[variant](variant)
+        [variant <: derivation] => variant =>
+          lambda[variant](variant)
 
       . vouch
 

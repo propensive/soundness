@@ -53,7 +53,6 @@ inline def variant[value](using value: value aka "variant"): value = value()
 inline def label[value](using value: value aka "label"): value = value()
 inline def contextual[value](using value: value aka "contextual"): value = value()
 inline def dereference[value](using value: value aka "dereference"): value = value()
-inline def default[value](using value: value aka "default"): value = value()
 
 object arithmetic:
   object AddableDerivation

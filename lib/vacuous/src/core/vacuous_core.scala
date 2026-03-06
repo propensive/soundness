@@ -42,6 +42,8 @@ import proscenium.*
 
 import errorDiagnostics.stackTraces
 
+inline def default[value](using default: Default[value]): value = default()
+
 inline def optimizable[value](lambda: Optional[value] => Optional[value]): Optional[value] =
   lambda(Unset)
 
@@ -74,6 +76,7 @@ extension [value](value: value)
     (partial.orElse { _ => Unset })(value)
 
   def unless(predicate: (value: value) => Boolean) = if predicate(value) then Unset else value
+  def unless(predicate: Boolean) = if predicate then Unset else value
 
 extension [value](java: ju.Optional[value])
   def optional: Optional[value] = if java.isEmpty then Unset else java.get.nn
