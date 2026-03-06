@@ -60,6 +60,11 @@ def fixpoint[value](initial: value)(fn: (recur: (value => value)) ?=> (value => 
 inline def probe[target]: Nothing = ${rudiments.internal.probe[target]}
 inline def typeName[target]: Text = ${rudiments.internal.name[target]}
 inline def reflectClass[target]: Class[target] = ${rudiments.internal.reflectClass}
+inline def that[result](inline block: => result): result = block
+inline def state[value](using value: value aka "state"): value = value()
+inline def next[value](using value: value aka "next"): value = value()
+inline def prior[value](using value: value aka "prior"): value = value()
+inline def ordinal(using value: Ordinal aka "ordinal"): Ordinal = value()
 
 inline def repeat(count: Int)(inline action: => Unit): Unit =
   var i = 0
@@ -112,10 +117,6 @@ extension (inline statement: => Unit)
 
 def loop(block: => Unit): Loop = Loop({ () => block })
 
-inline def that[result](inline block: => result): result = block
-inline def state[value](using value: value aka "state"): value = value()
-inline def next[value](using value: value aka "next"): value = value()
-inline def prior[value](using value: value aka "prior"): value = value()
 
 export rudiments.internal.&
 
@@ -135,10 +136,10 @@ extension [value <: Matchable](iterable: Iterable[value])
     iterable.zip(right).flatMap(Iterable(_, _))
 
 extension [value](iterator: Iterator[value])
-  transparent inline def each(predicate: (ordinal: Ordinal) ?=> value => Unit): Unit =
+  transparent inline def each(predicate: Ordinal aka "ordinal" ?=> value => Unit): Unit =
     var ordinal: Ordinal = Prim
     iterator.foreach: value =>
-      predicate(using ordinal)(value)
+      predicate(using ordinal.aka["ordinal"])(value)
       ordinal += 1
 
   inline def all(predicate: value => Boolean): Boolean = iterator.forall(predicate)
@@ -234,10 +235,10 @@ extension [value](iterable: Iterable[value])
     iterable.foldLeft(unital.one)(multiplicable.multiply)
 
 
-  transparent inline def each(lambda: (ordinal: Ordinal) ?=> value => Unit): Unit =
+  transparent inline def each(lambda: Ordinal aka "ordinal" ?=> value => Unit): Unit =
     var ordinal: Ordinal = Prim
     iterable.iterator.foreach: value =>
-      lambda(using ordinal)(value)
+      lambda(using ordinal.aka["ordinal"])(value)
       ordinal += 1
 
   transparent inline def annex[right](lambda: value => right) = iterable.map: item =>

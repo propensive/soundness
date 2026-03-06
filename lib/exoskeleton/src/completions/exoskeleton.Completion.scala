@@ -107,7 +107,7 @@ extends Cli:
   override def present(flag: Flag): Unit = if !flag.repeatable then seenFlags += flag
 
   override def explain(update: (Optional[Text] aka "prior") ?=> Optional[Text]): Unit =
-    explanation = update(using explanation)
+    explanation = update(using explanation.aka["prior"])
 
 
   override def suggest
@@ -117,7 +117,7 @@ extends Cli:
       suffix:   Text ) =
 
     if focused(argument) then
-      cursorSuggestions = update(using cursorSuggestions).map: suggestion =>
+      cursorSuggestions = update(using cursorSuggestions.aka["prior"]).map: suggestion =>
         if suggestion.expanded then suggestion
         else suggestion.copy(core = prefix+suggestion.core+suffix, expanded = true)
 

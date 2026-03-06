@@ -54,7 +54,7 @@ def execute(block: (erased Effectful) ?=> Invocation ?=> Exit)(using cli: Cli): 
     case invocation: Invocation => Execution(block(using !!)(using invocation))
 
 def explain(explanation: (Optional[Text] aka "prior") ?=> Optional[Text])(using cli: Cli): Unit =
-  cli.explain(explanation)
+  cli.explain(explanation(using Unset.aka["prior"]))
 
 package executives:
   given completions: (backstop: Backstop) => Executive:

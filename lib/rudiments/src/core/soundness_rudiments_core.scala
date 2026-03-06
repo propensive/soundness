@@ -39,4 +39,4 @@ export rudiments
     matchable, give, pipe, fuse, tap, also, Counter, loop, Loop, &, tuple, to, that,
     prim, sec, ter, unwind, at, Indexable, yet, Bijection, bijection, segment,
     Segmentable, Digit, total, product, mean, variance, std,
-    annex, intercalate, Defaulting, occupied, when, repeat }
+    annex, intercalate, Defaulting, occupied, when, repeat, state, next, prior, ordinal }

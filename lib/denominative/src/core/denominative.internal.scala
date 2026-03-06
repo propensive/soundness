@@ -35,18 +35,12 @@ package denominative
 import scala.annotation.targetName
 
 import prepositional.*
+import proscenium.*
 import symbolism.*
 
 object internal:
   opaque type Ordinal = Int
   opaque type Interval = Long
-  opaque type Tagged[+value, tag] = value
-
-
-  object Tagged:
-    inline def apply[tag](value: Any): Tagged[value.type, tag] = value
-
-  extension [value, tag](tagged: Tagged[value, tag]) inline def apply(): value = tagged
 
   extension (ordinal: Ordinal)
     @targetName("minus2")
@@ -109,7 +103,7 @@ object internal:
       var acc: value = initial
 
       while i <= end do
-        acc = lambda(using acc, i)
+        acc = lambda(using acc.aka["state"], i.aka["next"])
         i = i.next
       acc
 

@@ -179,6 +179,7 @@ inline def focus[focus, result](using foci: Foci[focus])
 :   result =
 
   val length = foci.length
+
   try block
   finally foci.supplement(foci.length - length, prior => transform(using prior.aka["prior"]))
 

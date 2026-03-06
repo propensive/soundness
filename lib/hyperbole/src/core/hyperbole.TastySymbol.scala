@@ -38,6 +38,7 @@ import escapade.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import iridescence.*
+import proscenium.*
 
 object TastySymbol:
   given showable: TastySymbol is Teletypeable =

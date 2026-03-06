@@ -39,6 +39,7 @@ import strategies.throwUnsafely
 import jsonPrinters.minimal
 
 import jsonDiscriminables.discriminatedUnionByKind
+import autopsies.contrastExpectations
 
 case class Foo(x: Int, y: Text) derives CanEqual
 

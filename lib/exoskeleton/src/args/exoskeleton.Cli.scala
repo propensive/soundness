@@ -72,18 +72,19 @@ trait Cli extends Console:
   def workingDirectory: WorkingDirectory
   def proceed: Boolean
   def login: Login
-  def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
-  :   Optional[operand]
-
   def register(flag: Flag, discoverable: Discoverable): Unit = ()
   def present(flag: Flag): Unit = ()
-  def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit = ()
+  def explain(update: (Optional[Text] aka "prior") ?=> Optional[Text]): Unit = ()
+
+  def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
+  :   Optional[operand]
 
 
   def suggest
     ( argument: Argument,
-      update:   (prior: List[Suggestion]) ?=> List[Suggestion],
+      update:   (List[Suggestion] aka "prior") ?=> List[Suggestion],
       prefix:   Text,
-      suffix:   Text ) =
+      suffix:   Text )
+  :   Unit =
 
-    ()
+    return

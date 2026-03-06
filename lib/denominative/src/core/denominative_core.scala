@@ -57,10 +57,10 @@ extension [countable: Countable](value: countable)
 
 export denominative.internal.{Ordinal, Interval}
 
-infix type aka [subject, label <: Label] = denominative.internal.Tagged[subject, label]
+infix type aka [subject, label <: Label] = denominative.protointernal.Tagged[subject, label]
 
 extension (any: Any)
-  inline def aka[label <: Label]: any.type aka label = denominative.internal.Tagged[label](any)
+  inline def aka[label <: Label]: any.type aka label = denominative.protointernal.Tagged[label](any)
 
 package ordinalShowables:
   given nominal: Ordinal is Textualizable =

@@ -42,8 +42,6 @@ import proscenium.*
 
 import errorDiagnostics.stackTraces
 
-inline def default[value]: value = infer[Default[value]]()
-
 inline def optimizable[value](lambda: Optional[value] => Optional[value]): Optional[value] =
   lambda(Unset)
 

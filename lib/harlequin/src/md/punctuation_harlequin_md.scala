@@ -47,10 +47,10 @@ package formattables:
     type Self = "scala"
 
     def format(meta: List[Text], content: Text): Optional[Html of Flow] =
-      postprocess(Scala.highlight(content)).unless(meta.prim != t"scala")
+      postprocess(Scala.highlight(content)).unless(_ => meta.prim != t"scala")
 
   given java: ("java" is CommonFormattable) = new CommonFormattable:
     type Self = "java"
 
     def format(meta: List[Text], content: Text): Optional[Html of Flow] =
-      postprocess(Java.highlight(content)).unless(meta.prim != t"java")
+      postprocess(Java.highlight(content)).unless(_ => meta.prim != t"java")

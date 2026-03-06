@@ -45,7 +45,7 @@ object SumOnly extends SumDerivation[SumOnly]:
   inline def split[derivation: SumReflection]: SumOnly[derivation] =
     value => variant(value):
       [variant <: derivation] => value =>
-        context.applyTo(value)
+        contextual.applyTo(value)
 
 trait SumOnly[Type]:
   def applyTo(value: Type): Unit
@@ -84,7 +84,7 @@ object Presentation extends Derivation[Presentation]:
       [variant <: derivation] =>
         variant => (typeName.s+"."+variant.present).tt
 
-trait Presentation[value]:
+trait Presentation[-value]:
   def present(value: value): Text
 
 extension [value](value: value)
@@ -190,7 +190,7 @@ object Show extends Derivation[Show]:
     inline if choice then
       variant(value):
         [variant <: derivation] =>
-          variant => typeName.s+"."+variant.show
+          arm => typeName.s+"."+arm.show
     else
       compiletime.error("cannot derive Show for adt")
 

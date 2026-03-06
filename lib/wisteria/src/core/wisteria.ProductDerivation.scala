@@ -46,7 +46,7 @@ object ProductDerivation:
       ( using reflection: ProductReflection[derivation], requirement: ContextRequirement )
       ( inline lambda:  [field] => requirement.Optionality[typeclass[field]]
                         =>  ( requirement.Optionality[typeclass[field]] aka "contextual",
-                              Default[Optional[field]],
+                              Default[Optional[field]] aka "default",
                               Text aka "label",
                               Int & FieldIndex[field] aka "index" ) ?=> field )
     :   derivation =
@@ -74,7 +74,7 @@ object ProductDerivation:
         inline pure:    [monadic] => monadic => constructor[monadic],
         inline lambda:  [field] => requirement.Optionality[typeclass[field]]
                         =>  ( requirement.Optionality[typeclass[field]] aka "contextual",
-                              Default[Optional[field]],
+                              Default[Optional[field]] aka "default",
                               Text aka "label",
                               Int & FieldIndex[field] aka "index" )
                         ?=> constructor[field] )
@@ -100,7 +100,7 @@ object ProductDerivation:
       [ result ]
       ( inline lambda:  [field] => requirement.Optionality[typeclass[field]]
                         =>  ( requirement.Optionality[typeclass[field]] aka "contextual",
-                              Default[Optional[field]],
+                              Default[Optional[field]] aka "default",
                               Text aka "label",
                               (derivation => field) aka "dereference",
                               Int & FieldIndex[field] aka "index" ) ?=> result )
@@ -158,7 +158,7 @@ object ProductDerivation:
       [ result ]
       ( inline lambda:  [field] => field
                         =>  ( requirement.Optionality[typeclass[field]] aka "contextual",
-                              Default[Optional[field]],
+                              Default[Optional[field]] aka "default",
                               Text aka "label",
                               (Int & FieldIndex[field]) aka "index" ) ?=> result )
     :   IArray[result] =
@@ -188,7 +188,7 @@ object ProductDerivation:
       ( inline tuple: fields, accumulator: result, index: Int )
       ( inline lambda:  result => [field] => field
                         =>  ( Optional[typeclass[field]] aka "contextual",
-                              Default[Optional[field]],
+                              Default[Optional[field]] aka "default",
                               Text aka "label",
                               (Int & FieldIndex[field]) aka "index" ) ?=> result )
     :   result =
@@ -210,7 +210,7 @@ object ProductDerivation:
 
                   val accumulator2 =
                     lambda(accumulator)[fieldType](field)
-                      ( using typeclass, default, label.tt.aka["label"], fieldIndex.aka["index"] )
+                      ( using typeclass, default.aka["default"], label.tt.aka["label"], fieldIndex.aka["index"] )
 
                   fold[derivation, moreFields, moreLabels, result]
                     ( moreFields, accumulator2, index + 1 )
@@ -222,7 +222,7 @@ object ProductDerivation:
       ( using requirement: ContextRequirement )
       ( inline accumulator: result, index: Int )
       ( inline lambda:  result => [field] => requirement.Optionality[typeclass[field]]
-                        =>  ( Default[Optional[field]],
+                        =>  ( Default[Optional[field]] aka "default",
                               Text aka "label",
                               (derivation => field) aka "dereference",
                               (Int & FieldIndex[field]) aka "index" ) ?=> result )
@@ -247,8 +247,8 @@ object ProductDerivation:
 
                 val accumulator2 =
                   lambda(accumulator)[fieldType](typeclass)
-                    ( using default,
-                      label.tt.aka["label"],
+                    ( using default.aka["default"],
+                            label.tt.aka["label"],
                       dereference.aka["dereference"],
                       fieldIndex.aka["index"] )
 

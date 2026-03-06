@@ -74,8 +74,9 @@ enum Decomposition:
       multiline(0)
       builder.toString.tt
 
-  def multiline(indent: Int = 0, newline: Boolean = true)(using TextBuilder): Unit =
+  def multiline(indent: Int = 0, newline: Boolean = true)(using TextBuilder aka "builder"): Unit =
     val space = t"  "
+
     this match
       case Primitive(typeName, text, _) => append(t"$text")
 
@@ -95,10 +96,10 @@ enum Decomposition:
         val last = values.size
 
         values.each: item =>
-          append(ordinal.n0.show)
+          append(ordinal.show)
           append(t": ")
           item.multiline(indent + 1, true)
-          if ordinal.n0 < last - 1 then
+          if ordinal < last - 1 then
             append(t"\n"+(space*indent))
 
       case Product(name, values, _) =>
@@ -113,5 +114,5 @@ enum Decomposition:
         values.each: (key, value) =>
           append(t"$space$key:")
           value.multiline(indent + 2, true)
-          if ordinal.n0 < last - 1 then
+          if ordinal < last - 1 then
             append(t"\n"+(space*indent))

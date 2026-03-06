@@ -57,21 +57,30 @@ import vacuous.*
 
 export gossamer.internal.opaques.Ascii
 
-inline def append[textual: Textual, value](using builder: Builder[textual])(value: value): Unit =
+inline def append[textual: Textual, value](using builder: Builder[textual] aka "builder")
+  ( value: value )
+:   Unit =
+
   inline value match
-    case text: Text => builder.append(textual(text))
-    case char: Char => builder.append(textual(char))
-    case other      => provide[textual.Show[value]](builder.append(textual.show(value)))
+    case text: Text => builder().append(textual(text))
+    case char: Char => builder().append(textual(char))
+    case other      => provide[textual.Show[value]](builder().append(textual.show(value)))
 
-inline def appendln[textual: Textual, value](using builder: Builder[textual])(value: value): Unit =
+
+inline def appendln[textual: Textual, value](using builder: Builder[textual] aka "builder")
+  ( value: value )
+:   Unit =
+
   append[textual, value](value)
-  builder.append(textual('\n'))
+  builder().append(textual('\n'))
 
 
-extension (textObject: Text.type)
-  def construct(block: (builder: TextBuilder) ?=> Unit): Text =
+inline def builder[value](using value: value aka "builder"): value = value()
+
+extension (module: Text.type)
+  def construct(block: TextBuilder aka "builder" ?=> Unit): Text =
     val builder = TextBuilder()
-    block(using builder)
+    block(using builder.aka["builder"])
     builder()
 
   def ascii(bytes: Data): Text = new String(bytes.mutable(using Unsafe), "ASCII").tt
@@ -216,7 +225,7 @@ extension [textual: Textual](text: textual)
     else Stream()
 
   def seek(regex: Regex): Optional[textual] = regex.seek(textual.text(text)).let(text.segment(_))
-  def ordinal(substring: Text): Optional[Ordinal] = textual.indexOf(text, substring)
+  def seek(substring: Text): Optional[Ordinal] = textual.indexOf(text, substring)
 
   inline def trim: textual =
     val start = text.where(!_.isWhitespace).or(text.limit - 1)

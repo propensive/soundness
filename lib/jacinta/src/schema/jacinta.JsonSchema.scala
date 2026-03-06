@@ -78,7 +78,7 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
 
       val required: List[Text] =
         contexts:
-          [field] => schema => label.unless(schema.schema().optional)
+          [field] => schema => label.unless(_ => schema.schema().optional)
 
         . compact
         . to(List)

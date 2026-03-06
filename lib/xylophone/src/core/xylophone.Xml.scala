@@ -511,7 +511,7 @@ object Xml extends Tag.Container
 
         case _ =>
           val key2 =
-            key(cursor.mark, schema.attributes.unless(schema.freeform)).tap: key =>
+            key(cursor.mark, schema.attributes.unless(_ => schema.freeform)).tap: key =>
               if !schema.freeform && !key.targets(tag)
               then fail(InvalidAttributeUse(key.label, tag))
 
@@ -718,14 +718,14 @@ object Xml extends Tag.Container
 
       case '/' =>
         next()
-        content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform)).label)
+        content = cursor.hold(tagname(cursor.mark, schema.elements.unless(_ => schema.freeform)).label)
         Token.Close
 
       case Nul =>
         fail(BadInsertion)
 
       case chr =>
-        content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform)).label)
+        content = cursor.hold(tagname(cursor.mark, schema.elements.unless(_ => schema.freeform)).label)
         extra = cursor.hold(attributes(content))
 
         cursor.lay(fail(ExpectedMore)):
