@@ -98,7 +98,7 @@ case class Argument
       case Argument.Format.EqualityPrefix  => (t"", value.after(value.seek("=").or(Prim)))
       case Argument.Format.EqualitySuffix  => (value.before(value.seek("=").or(Prim)), t"")
 
-    cli.suggest(this, update(using Nil.aka["prior"]), prefix, suffix)
+    cli.suggest(this, update, prefix, suffix)
 
   def select[operand: Suggestible](options: Seq[operand])(using cli: Cli, interpreter: Interpreter)
   :   Optional[operand] =
