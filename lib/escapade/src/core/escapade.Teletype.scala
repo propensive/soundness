@@ -60,14 +60,14 @@ object Teletype:
     type Operand = Teletype
 
     def write(target: Self, stream: Stream[Teletype]): Unit =
-      stream.flow(())(Out.print(head) yet write(target, tail))
+      stream.flow(())(Out.print(next) yet write(target, more))
 
   given err: Stdio => Err.type is Writable by Teletype = new Writable:
     type Self = Err.type
     type Operand = Teletype
 
     def write(target: Self, stream: Stream[Teletype]): Unit =
-      stream.flow(())(Err.print(head) yet write(target, tail))
+      stream.flow(())(Err.print(next) yet write(target, more))
 
   given textual: Teletype is Textual:
     type Show[value] = value is Teletypeable

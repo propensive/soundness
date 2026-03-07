@@ -46,13 +46,13 @@ import wisteria.*
 object Digestible extends Derivable[Digestible]:
   inline def join[derivation <: Product: ProductReflection]: derivation is Digestible =
     (digestion, value) => fields(value):
-      [field] => field => context.digest(digestion, field)
+      [field] => field => contextual.digest(digestion, field)
 
   inline def split[derivation: SumReflection]: derivation is Digestible =
     (digestion, value) =>
       variant(value): [variant <: derivation] => variant =>
         int.digest(digestion, index)
-        context.digest(digestion, variant)
+        contextual.digest(digestion, variant)
 
 
   given optional: [value] => (digestible: => value is Digestible)

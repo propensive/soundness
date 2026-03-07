@@ -53,8 +53,8 @@ def execute(block: (erased Effectful) ?=> Invocation ?=> Exit)(using cli: Cli): 
     case completion: Completion => Execution(Exit.Ok)
     case invocation: Invocation => Execution(block(using !!)(using invocation))
 
-def explain(explanation: (prior: Optional[Text]) ?=> Optional[Text])(using cli: Cli): Unit =
-  cli.explain(explanation)
+def explain(explanation: (Optional[Text] aka "prior") ?=> Optional[Text])(using cli: Cli): Unit =
+  cli.explain(explanation(using Unset.aka["prior"]))
 
 package executives:
   given completions: (backstop: Backstop) => Executive:

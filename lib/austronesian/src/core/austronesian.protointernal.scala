@@ -50,7 +50,7 @@ object protointernal:
     inline def join[derivation <: Product: ProductReflection]
     :   derivation is Encodable in _root_.austronesian.internal.Pojo =
 
-      fields(_): [field] => _.encode
+      fields(_): [field] => contextual.encoded(_)
       . asInstanceOf[Pojo]
 
 

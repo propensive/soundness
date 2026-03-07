@@ -60,10 +60,8 @@ object TreeDiagram:
 
 case class TreeDiagram[node](lines: Stream[(List[TreeTile], node)]):
   def render[line](line: node => line)(using style: TreeStyle[line]): Stream[line] = map[line]:
-    node => style.serialize(tiles, line(node))
+    tiles => node => style.serialize(tiles, line(node))
 
-  def map[row](line: (tiles: List[TreeTile]) ?=> node => row): Stream[row] =
-    lines.map(line(using _)(_))
-
+  def map[row](line: List[TreeTile] => node => row): Stream[row] = lines.map(line(_)(_))
   def nodes: Stream[node] = lines.map(_(1))
   def tiles: Stream[List[TreeTile]] = lines.map(_(0))

@@ -132,7 +132,7 @@ trait Decomposable2 extends Decomposable3:
     inline def join[derivation <: Product: ProductReflection]: derivation is Decomposable =
       value =>
         val map =
-          fields(value) { [field] => field => label -> context.decomposition(field) }.to(Map)
+          fields(value) { [field] => field => label -> contextual.decomposition(field) }.to(Map)
 
         Decomposition.Product(typeName, map, value)
 
@@ -140,7 +140,7 @@ trait Decomposable2 extends Decomposable3:
       value =>
         variant(value):
           [variant <: derivation] => variant =>
-            Decomposition.Sum(typeName, context.decomposition(variant), variant)
+            Decomposition.Sum(typeName, contextual.decomposition(variant), variant)
 
   protected inline def shortName[entity]: Text = rewrite(typeName[entity])
 

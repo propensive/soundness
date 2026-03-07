@@ -34,6 +34,7 @@ package wisteria
 
 import scala.deriving.*
 
+import denominative.*
 import prepositional.*
 import symbolism.*
 
@@ -47,6 +48,11 @@ type Derivable[derivation <: { type Self }] =
 type ProductDerivable[derivation <: { type Self }] =
   ProductDerivation[[self] =>> derivation { type Self = self }]
 
+inline def index[value](using value: value aka "index"): value = value()
+inline def variant[value](using value: value aka "variant"): value = value()
+inline def label[value](using value: value aka "label"): value = value()
+inline def contextual[value](using value: value aka "contextual"): value = value()
+inline def dereference[value](using value: value aka "dereference"): value = value()
 
 object arithmetic:
   object AddableDerivation

@@ -104,7 +104,7 @@ trait Json2:
               context =>
                 focus(prior.or(JsonPointer()) / label):
                   if !values.contains(label.s)
-                  then default().or(context.decoded(new Json(JsonAst(Unset))))
+                  then default.or(context.decoded(new Json(JsonAst(Unset))))
                   else context.decoded(new Json(values(label.s)))
 
     inline def split[derivation: SumReflection]: derivation is Decodable in Json =
@@ -117,9 +117,7 @@ trait Json2:
               focus(prior.or(JsonPointer()))(abort(JsonError(Reason.Absent)))
 
             delegate(discriminant): [variant <: derivation] =>
-              context =>
-                // The cast became necessary when upgrading to Scala 3.7.1.
-                context.decoded(json).asInstanceOf[derivation]
+              context => context.decoded(json)
 
   object EncodableDerivation extends Derivable[Encodable in Json]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Json =
@@ -130,7 +128,7 @@ trait Json2:
 
           fields(value): [field] =>
             field => focus(prior.or(JsonPointer()) / label):
-              context.encode(field).root.tap: encoded =>
+              contextual.encode(field).root.tap: encoded =>
                 if !encoded.isAbsent then
                   labels += label.s
                   values += encoded
@@ -141,8 +139,9 @@ trait Json2:
 
     inline def split[derivation: SumReflection]: derivation is Encodable in Json = value =>
       val discriminable = infer[derivation is Discriminable in Json]
+
       variant(value): [variant <: derivation] =>
-        value => discriminable.rewrite(label, context.encode(value))
+        value => discriminable.rewrite(label, contextual.encode(value))
 
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
@@ -154,7 +153,7 @@ object Json extends Json2, Dynamic:
     Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))
 
 
-  given ordinal: [element] => Ordinal is Optical from Json onto Json =
+  given ordinalOptical: [element] => Ordinal is Optical from Json onto Json =
     ordinal =>
       Optic: (origin, lambda) =>
         if origin.root.isArray then
@@ -169,7 +168,7 @@ object Json extends Json2, Dynamic:
   given float: Tactic[JsonError] => Float is Decodable in Json = _.root.double.toFloat
   given long: Tactic[JsonError] => Long is Decodable in Json = _.root.long
   given int: Tactic[JsonError] => Int is Decodable in Json = _.root.long.toInt
-  given ordinal: Tactic[JsonError] => Ordinal is Decodable in Json = _.root.long.toInt.z
+  given ordinalDecodable: Tactic[JsonError] => Ordinal is Decodable in Json = _.root.long.toInt.z
   given text: Tactic[JsonError] => Text is Decodable in Json = _.root.string
   given string: Tactic[JsonError] => String is Decodable in Json = _.root.string.s
 

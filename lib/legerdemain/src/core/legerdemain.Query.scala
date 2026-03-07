@@ -69,7 +69,7 @@ object Query extends Dynamic:
 
       value =>
         Query.of:
-          fields(value) { [field] => field => context.encoded(field).prefix(label) }
+          fields(value) { [field] => field => contextual.encoded(field).prefix(label) }
           . to(List)
           . flatMap(_.values)
 
@@ -103,8 +103,8 @@ object Query extends Dynamic:
       case given (`value` is Decodable in Text) =>
         provide[Tactic[QueryError]]:
           summonFrom:
-            case given Default[`value`] =>
-              _().let(_.decode).or(raise(QueryError()) yet default[value])
+            case default: Default[`value`] =>
+              _().let(_.decode).or(raise(QueryError()) yet default())
 
             case _ =>
               _().lest(QueryError()).decode

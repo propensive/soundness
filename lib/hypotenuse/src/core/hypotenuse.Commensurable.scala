@@ -52,7 +52,7 @@ object Commensurable:
         inline greaterThan: Boolean )
     :   Boolean =
 
-      ${protointernal.commensurable('left, 'right, 'strict, 'greaterThan)}
+      ${hypotenuse.protointernal.commensurable('left, 'right, 'strict, 'greaterThan)}
 
 
   given bytes: Bytes is Orderable:

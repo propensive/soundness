@@ -49,7 +49,6 @@ package gitCommands:
   =>  (Path on Linux) is Instantiable across Paths from Text
   =>  GitCommand raises NameError raises PathError raises IoError raises ExecError =
 
-    summon[(Path on Linux) is Instantiable across Paths]
     val path: Path on Linux = sh"which git"()
     GitCommand(path.encode)
 

@@ -39,6 +39,7 @@ import strategies.throwUnsafely
 import jsonPrinters.minimal
 
 import jsonDiscriminables.discriminatedUnionByKind
+import autopsies.contrastExpectations
 
 case class Foo(x: Int, y: Text) derives CanEqual
 
@@ -194,7 +195,6 @@ object Tests extends Suite(m"Jacinta Tests"):
       .check(_ == t"""{"person":{"name":"Paul","age":81},"kind":"Bassist"}""")
 
       test(m"Decode a coproduct"):
-        summon[Int is Decodable in Json]
         paulCoproduct.read[Json].as[Player]
       . assert(_ == Player.Bassist(paulObj))
 

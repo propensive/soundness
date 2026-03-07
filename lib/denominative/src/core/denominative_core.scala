@@ -33,6 +33,7 @@
 package denominative
 
 import anticipation.*
+import proscenium.*
 import symbolism.*
 
 final val Prim: Ordinal = Ordinal.zerary(0)
@@ -55,6 +56,11 @@ extension [countable: Countable](value: countable)
   inline def nil: Boolean = countable.empty(value)
 
 export denominative.internal.{Ordinal, Interval}
+
+infix type aka [subject, label <: Label] = denominative.protointernal.Tagged[subject, label]
+
+extension (any: Any)
+  inline def aka[label <: Label]: any.type aka label = denominative.protointernal.Tagged[label](any)
 
 package ordinalShowables:
   given nominal: Ordinal is Textualizable =
