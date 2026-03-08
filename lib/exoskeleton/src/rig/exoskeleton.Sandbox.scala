@@ -95,7 +95,8 @@ case class Sandbox(name: Text)(using Classloader, Environment) extends Rig:
     val target = unsafely(out.peer(name))
 
     unsafely:
-      val jarfile = unsafely(out.peer(t"$name.jar"))
+      val name2 = t"$name.jar"
+      val jarfile = out.peer(name2)
       val bundle = Bundler.bundle(out, jarfile, fqcn"superlunary.Executor2")
 
       sh"java -Dbuild.executable=$target -jar $jarfile '[]'".exec[Exit]() match

@@ -37,6 +37,7 @@ import language.experimental.pureFunctions
 import scala.quoted.*
 
 import anticipation.*
+import denominative.*
 import fulminate.*
 import prepositional.*
 import proscenium.*
@@ -173,12 +174,14 @@ infix type tracks [result, focus] = Foci[focus] ?=> result
 
 
 inline def focus[focus, result](using foci: Foci[focus])
-  ( transform: (prior: Optional[focus]) ?=> focus )
+  ( transform: (Optional[focus] aka "prior") ?=> focus )
   ( block: => result )
 :   result =
 
   val length = foci.length
-  try block finally foci.supplement(foci.length - length, transform(using _))
+
+  try block
+  finally foci.supplement(foci.length - length, prior => transform(using prior.aka["prior"]))
 
 
 transparent inline def mitigate(inline block: Exception ~> Exception): Mitigation[?] =

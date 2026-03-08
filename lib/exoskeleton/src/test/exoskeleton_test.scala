@@ -45,6 +45,7 @@ import threading.platform
 
 import strategies.throwUnsafely
 import backstops.silent
+import autopsies.contrastExpectations
 
 import Shell.*
 
@@ -164,7 +165,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         . assert(_ == t"--one   -- the first one\n--two   -- the second one")
 
         test(m"Test capture 1"):
-          tool.completions:
+          summon[Sandbox.Tool].completions:
             Zsh.tmux()(Tmux.completions(t"distribution ubuntu "))
 
         . assert()

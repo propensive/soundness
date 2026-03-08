@@ -75,9 +75,9 @@ object Sh:
 
     def insert(state: State, value: Parameters): State = value.params.to(List) match
       case head :: tail =>
-        if state.escape then throw InterpolationError(m"""
-          escaping with '\\' is not allowed immediately before a substitution
-        """)
+        if state.escape
+        then throw InterpolationError
+          ( m"escaping with '\\' is not allowed immediately before a substitution")
 
         state.absolve match
           case State(Awaiting, false, arguments) =>
@@ -95,7 +95,7 @@ object Sh:
       case _ =>
         state
 
-    def parse(state: State, next: Text): State = next.chars.to(List).fuse(state):
+    def parse(current: State, text: Text): State = text.chars.to(List).fuse(current):
         (state, next).absolve match
           case (State(Awaiting, _, arguments), ' ') => State(Awaiting, false, arguments)
 

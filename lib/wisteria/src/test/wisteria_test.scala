@@ -45,7 +45,7 @@ object SumOnly extends SumDerivation[SumOnly]:
   inline def split[derivation: SumReflection]: SumOnly[derivation] =
     value => variant(value):
       [variant <: derivation] => value =>
-        context.applyTo(value)
+        contextual.applyTo(value)
 
 trait SumOnly[Type]:
   def applyTo(value: Type): Unit
@@ -84,7 +84,7 @@ object Presentation extends Derivation[Presentation]:
       [variant <: derivation] =>
         variant => (typeName.s+"."+variant.present).tt
 
-trait Presentation[value]:
+trait Presentation[-value]:
   def present(value: value): Text
 
 extension [value](value: value)
@@ -109,7 +109,7 @@ object Readable extends Derivation[Readable]:
         construct:
           [field] =>
             readable =>
-              if index < array.length then readable.read(array(index).tt) else default().or(???)
+              if index < array.length then readable.read(array(index).tt) else default.or(???)
 
   inline def split[derivation: SumReflection]: Readable[derivation] = text =>
     text.s.split(":").nn.to(List).map(_.nn.tt).absolve match
@@ -123,7 +123,7 @@ trait Readable[value]:
 extension (text: Text)
   def read[value](using readable: Readable[value]): value = readable.read(text)
 
-trait Eq[value]:
+trait Eq[-value]:
   def equal(left: value, right: value): Boolean
 
 extension [value](left: value)
@@ -150,8 +150,7 @@ object Eq extends Derivation[Eq]:
     (left, right) =>
       variant(left):
         [variant <: derivation] => leftValue =>
-          complement(right).lay(false): rightValue =>
-            leftValue === rightValue
+          complement(right).lay(false): rightValue => leftValue === rightValue
 
 trait Parser[value]:
   def parse(s: String): Option[value]
@@ -175,7 +174,7 @@ object Parser extends ProductDerivation[Parser]:
 
 case class ParserTestCaseClass(intValue: Int, booleanValue: Boolean)
 
-trait Show[T]:
+trait Show[-T]:
   def show(value: T): String
 
 extension[T: Show](value: T)
@@ -190,7 +189,7 @@ object Show extends Derivation[Show]:
     inline if choice then
       variant(value):
         [variant <: derivation] =>
-          variant => typeName.s+"."+variant.show
+          arm => typeName.s+"."+arm.show
     else
       compiletime.error("cannot derive Show for adt")
 

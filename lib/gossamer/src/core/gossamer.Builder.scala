@@ -32,6 +32,7 @@
                                                                                                   */
 package gossamer
 
+import denominative.*
 import rudiments.*
 import vacuous.*
 
@@ -41,8 +42,8 @@ abstract class Builder[textual](size: Optional[Int] = Unset):
   protected def result(): textual
   def append(text: textual): this.type = this.also(put(text))
 
-  def build(block: this.type ?=> Unit): textual =
-    block(using this)
+  def build(block: this.type aka "builder" ?=> Unit): textual =
+    block(using this.aka["builder"])
     apply()
 
   def apply(): textual = result()

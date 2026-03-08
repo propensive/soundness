@@ -50,22 +50,23 @@ object TastyTree:
     ( text: Teletype, typeName: Text, param: Optional[Text], expr: Text, source: Teletype )
 
   private def expand(tree: TastyTree): List[Expansion] =
-    TreeDiagram.by[TastyTree](_.nodes)(tree).map: node =>
-      val color = (node.term, node.definitional) match
-        case (true, true)   => webColors.Tomato
-        case (false, true)  => webColors.YellowGreen
-        case (true, false)  => webColors.FireBrick
-        case (false, false) => webColors.MediumSeaGreen
+    TreeDiagram.by[TastyTree](_.nodes)(tree).map: tiles =>
+      node =>
+        val color = (node.term, node.definitional) match
+          case (true, true)   => webColors.Tomato
+          case (false, true)  => webColors.YellowGreen
+          case (true, false)  => webColors.FireBrick
+          case (false, false) => webColors.MediumSeaGreen
 
-      val text = e"$color(${node.name})"
-      val tag2: Text = if node.tag == ' ' then "▪".tt else "⟨"+node.tag+"⟩"
+        val text = e"$color(${node.name})"
+        val tag2: Text = if node.tag == ' ' then "▪".tt else "⟨"+node.tag+"⟩"
 
-      Expansion
-        ( e"${tiles.drop(1).map(treeStyles.default.text(_)).join}$tag2 $text",
-          node.typeName,
-          node.param,
-          node.shortCode,
-          node.source.teletype )
+        Expansion
+          ( e"${tiles.drop(1).map(treeStyles.default.text(_)).join}$tag2 $text",
+            node.typeName,
+            node.param,
+            node.shortCode,
+            node.source.teletype )
 
     . to(List)
 

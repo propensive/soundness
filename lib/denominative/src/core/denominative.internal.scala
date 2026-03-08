@@ -35,12 +35,12 @@ package denominative
 import scala.annotation.targetName
 
 import prepositional.*
+import proscenium.*
 import symbolism.*
 
 object internal:
   opaque type Ordinal = Int
   opaque type Interval = Long
-
 
   extension (ordinal: Ordinal)
     @targetName("minus2")
@@ -96,14 +96,14 @@ object internal:
 
 
     inline def fuse[value](inline initial: value)
-      ( inline lambda: (state: value, next: Ordinal) ?=> value )
+      ( inline lambda: (value aka "state", Ordinal aka "next") ?=> value )
     :   value =
 
       var i: Ordinal = start
       var acc: value = initial
 
       while i <= end do
-        acc = lambda(using acc, i)
+        acc = lambda(using acc.aka["state"], i.aka["next"])
         i = i.next
       acc
 

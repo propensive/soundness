@@ -47,7 +47,7 @@ object Inspectable extends Inspectable2:
     inline def join[derivation <: Product: ProductReflection]: derivation is Inspectable =
       value =>
         fields(value): [field] => field =>
-          val text = context.text(field)
+          val text = contextual.text(field)
           if tuple then text else s"$label:$text"
 
         . mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
@@ -55,7 +55,7 @@ object Inspectable extends Inspectable2:
     inline def split[derivation: SumReflection]: derivation is Inspectable = value =>
       variant(value):
         [variant <: derivation] => variant =>
-          context.give(variant.inspect)
+          contextual.give(variant.inspect)
 
   inline given derived: [value] => value is Inspectable = compiletime.summonFrom:
     case given (`value` is Encodable in Text) => _.encode

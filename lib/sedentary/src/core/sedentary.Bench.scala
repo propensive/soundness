@@ -46,6 +46,7 @@ import gossamer.*
 import hellenism.*
 import inimitable.*
 import jacinta.*
+import nomenclature.*
 import prepositional.*
 import probably.*
 import rudiments.*
@@ -144,7 +145,8 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
 
   def stage(out: Path on Linux): Path on Linux = unsafely:
     val uuid = Uuid()
-    val jarfile = unsafely(out.peer(t"$uuid.jar"))
+    val name = t"$uuid.jar"
+    val jarfile = out.peer(name)
     Bundler.bundle(out, jarfile, fqcn"superlunary.Executor")
     device.deploy(jarfile, uuid)
     jarfile

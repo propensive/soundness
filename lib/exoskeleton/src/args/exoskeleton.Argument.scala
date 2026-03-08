@@ -67,18 +67,18 @@ case class Argument
     case Argument.Format.CharFlag(index) => suggestion // FIXME
 
     case Argument.Format.EqualityPrefix =>
-      suggestion.copy(core = suggestion.core+t"="+value.after(value.index("=").or(Prim)))
+      suggestion.copy(core = suggestion.core+t"="+value.after(value.seek("=").or(Prim)))
 
     case Argument.Format.EqualitySuffix =>
-      val suggestion2 = suggestion.copy(prefix = value.before(value.index("=").or(Prim))+t"=")
+      val suggestion2 = suggestion.copy(prefix = value.before(value.seek("=").or(Prim))+t"=")
       suggestion2
 
   def apply(): Text = format match
     case Argument.Format.Full            => value
     case Argument.Format.FlagSuffix      => value.skip(2)
     case Argument.Format.CharFlag(index) => t"-${value.at(index + 1).or('-')}"
-    case Argument.Format.EqualityPrefix  => value.before(value.index("=").or(Prim))
-    case Argument.Format.EqualitySuffix  => value.after(value.index("=").or(Prim))
+    case Argument.Format.EqualityPrefix  => value.before(value.seek("=").or(Prim))
+    case Argument.Format.EqualitySuffix  => value.after(value.seek("=").or(Prim))
 
   def prefix: Optional[Text] = cursor.let(value.keep(_))
   def suffix: Optional[Text] = cursor.let(value.skip(_))
@@ -87,16 +87,16 @@ case class Argument
     case Argument.Format.Full            => true
     case Argument.Format.FlagSuffix      => ordinal > Sec
     case Argument.Format.CharFlag(index) => ordinal - 2 == index
-    case Argument.Format.EqualityPrefix  => value.index("=").or(Prim) > ordinal
-    case Argument.Format.EqualitySuffix  => value.index("=").or(Prim) < ordinal
+    case Argument.Format.EqualityPrefix  => value.seek("=").or(Prim) > ordinal
+    case Argument.Format.EqualitySuffix  => value.seek("=").or(Prim) < ordinal
 
-  def suggest(using cli: Cli)(update: (prior: List[Suggestion]) ?=> List[Suggestion]) =
+  def suggest(using cli: Cli)(update: (List[Suggestion] aka "prior") ?=> List[Suggestion]) =
     val (prefix, suffix) = format match
       case Argument.Format.Full            => (t"", t"")
       case Argument.Format.FlagSuffix      => (value.keep(2), t"")
       case Argument.Format.CharFlag(index) => (value.before(index + 1), value.after(index + 1))
-      case Argument.Format.EqualityPrefix  => (t"", value.after(value.index("=").or(Prim)))
-      case Argument.Format.EqualitySuffix  => (value.before(value.index("=").or(Prim)), t"")
+      case Argument.Format.EqualityPrefix  => (t"", value.after(value.seek("=").or(Prim)))
+      case Argument.Format.EqualitySuffix  => (value.before(value.seek("=").or(Prim)), t"")
 
     cli.suggest(this, update, prefix, suffix)
 
@@ -104,7 +104,8 @@ case class Argument
   :   Optional[operand] =
 
     val mapping: Map[Text, operand] =
-      options.map { option => (operand.suggest(option).text, option) }.to(Map)
+      options.map: option => (operand.suggest(option).text, option)
+      . to(Map)
 
     suggest(options.to(List).map(operand.suggest(_)))
     mapping.at(this())

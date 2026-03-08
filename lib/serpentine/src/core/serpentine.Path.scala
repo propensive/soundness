@@ -233,9 +233,9 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     case _ =>
       root == right.root
 
-  transparent inline def rename(lambda: (prior: Text) ?=> Text): Optional[Path] =
+  transparent inline def rename(lambda: (Text aka "prior") ?=> Text): Optional[Path] =
     parent.let: parent =>
-      descent.prim.let(parent / lambda(using _))
+      descent.prim.let: prior => parent / lambda(using prior.aka["prior"])
 
   def relative: Relative of Topic on Plane under 0 =
     Relative[Plane, Topic, 0](0, descent*)

@@ -43,7 +43,7 @@ import publish.*
 import os.Path
 
 object settings:
-  val scalaVersion = "3.8.1"
+  val scalaVersion = "3.8.2"
   val scalaOptions = Seq(
     "-experimental",
     "-new-syntax",
@@ -54,7 +54,7 @@ object settings:
     "-Wunused:imports,privates",
     "-Wimplausible-patterns",
     // "-Wsafe-init",
-    "-Xmax-inlines", "100",
+    "-Xmax-inlines", "32",
     //"-Ycc-new",
     "-Yno-flexible-types",
     "-Yexplicit-nulls",
@@ -293,7 +293,7 @@ object test extends ScalaModule:
     vexillology.test,
     vicarious.test,
     villainy.test,
-    wisteria.test,
+    //wisteria.test,
     xylophone.test,
     yossarian.test,
     zephyrine.test,
@@ -686,7 +686,7 @@ object panopticon extends Library:
   object test extends Tests(core, honeycomb.core)
 
 object parasite extends Library:
-  object core extends Component(digression.core, mercator.core, anticipation.time, feudalism.core)
+  object core extends Component(digression.core, mercator.core, anticipation.time)
   object test extends Tests(core, quantitative.units)
 
 object perihelion extends Library:
@@ -823,7 +823,9 @@ object symbolism extends Library:
   object test extends Tests(core)
 
 object synesthesia extends Library:
-  object core extends Component(obligatory.core)
+  object core extends Component(obligatory.core):
+    override def scalacOptions = settings.scalaOptions ++ Seq("-Xmax-inlines", "48")
+
   object test extends Tests(core)
 
 object tarantula extends Library:

@@ -36,6 +36,7 @@ import language.experimental.pureFunctions
 
 import anticipation.*
 import escapade.*
+import rudiments.*
 import vacuous.*
 
 case class Subcommand

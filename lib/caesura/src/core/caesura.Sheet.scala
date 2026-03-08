@@ -121,7 +121,7 @@ object Sheet:
       val cells = putCell()
       recur(content, index + 1, column + 1, cells, builder, State.Fresh, headings)
 
-    inline def next(char: Char): Stream[Dsv] =
+    inline def proceed(char: Char): Stream[Dsv] =
       builder.put(char) yet recur(content, index + 1, column, cells, builder, state, headings)
 
     inline def quote(): Stream[Dsv] = state match
@@ -152,10 +152,10 @@ object Sheet:
         row #:: recur(content, index + 1, 0, fresh(), builder, State.Fresh, headings)
 
     content.flow(if column == 0 && builder.empty then Stream() else putDsv()):
-      if !head.has(index) then recur(tail, Prim, column, cells, builder, state, headings) else
-        head.s.charAt(index.n0) match
+      if !next.has(index) then recur(more, Prim, column, cells, builder, state, headings) else
+        next.s.charAt(index.n0) match
           case format.Delimiter =>
-            if state != State.Quoted then advance() else next(format.Delimiter)
+            if state != State.Quoted then advance() else proceed(format.Delimiter)
 
           case format.Quote =>
             quote()
@@ -164,7 +164,7 @@ object Sheet:
             if column == 0 && builder.empty
             then recur(content, index + 1, 0, cells, builder, State.Fresh, headings)
             else if state != State.Quoted then putDsv()
-            else next(head.s.charAt(index.n0))
+            else proceed(next.s.charAt(index.n0))
 
           case char =>
             builder.put(char)

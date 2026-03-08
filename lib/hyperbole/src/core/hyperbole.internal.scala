@@ -542,7 +542,7 @@ object internal:
         t"${render(subject)}[$params2]"
 
       case _ =>
-        term.show.unless(term.show.length > 12).or("...").tt
+        term.show.unless(_ => term.show.length > 12).or("...").tt
 
     def annotation(term: Term): Teletype = e"@${render(term)}"
 
