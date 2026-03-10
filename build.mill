@@ -66,7 +66,7 @@ object settings:
     "-language:experimental.genericNumberLiterals",
     "-language:experimental.into",
     "-language:experimental.erasedDefinitions",
-    //"-language:experimental.packageObjectValues",
+    "-language:experimental.captureChecking",
     "-language:implicitConversions",
     "-language:experimental.saferExceptions",
     "-language:experimental.strictEqualityPatternMatching",
