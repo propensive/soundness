@@ -39,12 +39,7 @@ import scala.annotation.*
 import anticipation.*
 
 object TextEscapes:
-  import errorDiagnostics.stackTraces
-
-
-  def standardEscape(text: Text, cur: Int, esc: Boolean)
-  :   (Int, Int, Boolean) throws EscapeError =
-
+  def standardEscape(text: Text, cur: Int, esc: Boolean): (Int, Int, Boolean) =
     text.s.charAt(cur) match
       case '\\' if !esc => (-1, cur + 1, true)
       case '\\'         => ('\\', cur + 1, false)
@@ -57,23 +52,14 @@ object TextEscapes:
       case 'e' if esc   => ('\u001b', cur + 1, false)
       case '"' if esc   => ('"', cur + 1, false)
       case '\'' if esc  => ('\'', cur + 1, false)
-
-      case ch if esc =>
-        throw EscapeError
-              (Message
-                (List("the character ".tt, " should not be escaped".tt),
-                  List(Message(ch.toString.tt))))
-
-      case ch =>
-        (ch, cur + 1, false)
+      case ch if esc    => ???
+      case char         => (char, cur + 1, false)
 
 
-  private def parseUnicode(chars: String): Char throws EscapeError =
-    if chars.length < 4
-    then throw EscapeError(Message("the unicode escape is incomplete".tt))
-    else Integer.parseInt(chars, 16).toChar
+  private def parseUnicode(chars: String): Char =
+    if chars.length < 4 then ??? else Integer.parseInt(chars, 16).toChar
 
-  def escape(text: Text): Text throws EscapeError =
+  def escape(text: Text): Text =
     val buffer: StringBuilder = StringBuilder()
 
     @tailrec
@@ -83,7 +69,7 @@ object TextEscapes:
         val (char, index, escape) = standardEscape(text, cur, esc)
         if char >= 0 then buffer.append(char.toChar)
         recur(index, escape)
-      else if esc then throw EscapeError(Message("the final character cannot be an escape".tt))
+      else if esc then ???
 
     recur(0, false)
 

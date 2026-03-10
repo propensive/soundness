@@ -98,15 +98,11 @@ extension (inline context: StringContext)
   transparent inline def m[param](inline subs: param = Zero): Message =
     inline subs.asMatchable match
       case tuple: Tuple =>
-        import unsafeExceptions.canThrowAny
-
         Message
           ( context.parts.map(_.tt).map(TextEscapes.escape(_)).to(List),
             Message.make[tuple.type](tuple, Nil) )
 
       case other =>
-        import unsafeExceptions.canThrowAny
-
         Message
           ( context.parts.map(_.tt).map(TextEscapes.escape(_)).to(List),
             List(infer[(? >: other.type) is Communicable].message(other)) )

@@ -35,7 +35,7 @@ package symbolism
 import prepositional.*
 
 object Subtractable:
-  def apply[minuend, subtrahend, result](lambda: (minuend, subtrahend) => result)
+  def apply[minuend, subtrahend, result](lambda: (minuend, subtrahend) -> result)
   :   minuend is Subtractable by subtrahend to result =
 
     new Subtractable:

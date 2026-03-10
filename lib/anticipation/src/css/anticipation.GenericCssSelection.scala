@@ -37,5 +37,8 @@ import prepositional.*
 trait GenericCssSelection extends Typeclass:
   def selection(value: Self): Text
 
-  def contramap[self2](lambda: self2 => Self): self2 is GenericCssSelection =
+
+  def contramap[self2](lambda: self2 => Self)
+  :   (self2 is GenericCssSelection)^{this, lambda} =
+
     value => selection(lambda(value))

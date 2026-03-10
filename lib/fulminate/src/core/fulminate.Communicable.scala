@@ -63,4 +63,6 @@ object Communicable:
 
 trait Communicable extends Typeclass:
   def message(value: Self): Message
-  def contramap[self](lambda: self => Self): self is Communicable = value => message(lambda(value))
+
+  def contramap[self](lambda: self => Self): (self is Communicable)^{this, lambda} =
+    value => message(lambda(value))

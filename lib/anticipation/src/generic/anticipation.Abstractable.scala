@@ -37,7 +37,8 @@ import prepositional.*
 trait Abstractable extends Typeclass, Resultant, Domainal:
   def genericize(value: Self): Result
 
-  def contramap[self2](lambda: self2 => Self): self2 is Abstractable across Domain to Result =
+  def contramap[self2](lambda: self2 => Self)
+  :   (self2 is Abstractable across Domain to Result)^{this, lambda} =
     value => genericize(lambda(value))
 
   extension (value: Self) def generic: Result = genericize(value)

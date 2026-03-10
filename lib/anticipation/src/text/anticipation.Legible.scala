@@ -40,4 +40,6 @@ object Legible:
 
 trait Legible extends Typeclass:
   def text(value: Self): Text
-  def contramap[self2](lambda: self2 => Self): self2 is Legible = value => text(lambda(value))
+
+  def contramap[self2](lambda: self2 => Self): (self2 is Legible)^{this, lambda} =
+    value => text(lambda(value))

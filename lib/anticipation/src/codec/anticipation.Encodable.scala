@@ -52,7 +52,7 @@ trait Encodable extends Typeclass, Formal:
 
   extension (value: Self) def encode: Form = encoded(value)
 
-  def contramap[self2](lambda: self2 => Self): self2 is Encodable in Form =
+  def contramap[self2](lambda: self2 => Self): (self2 is Encodable in Form)^{this, lambda} =
     new Encodable:
       type Self = self2
       type Form = encodable.Form
