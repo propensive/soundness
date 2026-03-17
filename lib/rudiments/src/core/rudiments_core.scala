@@ -51,11 +51,11 @@ import vacuous.*
 
 export rudiments.internal.{Bytes, Digit}
 
-def fixpoint[value](initial: value)(fn: (recur: (value => value)) ?=> (value => value)): value =
-  def recurrence(fn: (recur: value => value) ?=> value => value): value => value =
-    fn(using recurrence(fn(_)))
+// def fixpoint[value](initial: value)(fn: (recur: (value => value)) ?=> (value => value)): value =
+//   def recurrence(fn: (recur: value => value) ?=> value => value): value => value =
+//     fn(using recurrence(fn(_)))
 
-  recurrence(fn)(initial)
+//   recurrence(fn)(initial)
 
 inline def probe[target]: Nothing = ${rudiments.internal.probe[target]}
 inline def typeName[target]: Text = ${rudiments.internal.name[target]}
@@ -115,7 +115,7 @@ extension (inline statement: => Unit)
     statement
     block
 
-def loop(block: => Unit): Loop = Loop({ () => block })
+def loop(block: => Unit): Loop^{block} = Loop({ () => block })
 
 
 export rudiments.internal.&

@@ -104,11 +104,12 @@ object internal:
             def point[value](value: value): functor[value] = ${pointExpr}.point(value)
 
             def apply[value, value2](value: functor[value])(lambda: value => value2)
-            :   functor[value2] =
+            :   functor[value2]^{lambda} =
 
               $ {
                   'value.asTerm.select(mapMethods(0)).appliedToType(TypeRepr.of[value2])
-                  . appliedTo('lambda.asTerm).asExprOf[functor[value2]]
+                  . appliedTo('lambda.asTerm)
+                  . asExprOf[functor[value2]^{this, lambda}]
                 }
         }
 

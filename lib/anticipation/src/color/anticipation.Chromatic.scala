@@ -41,4 +41,6 @@ trait Chromatic extends Typeclass:
   def red(color: Self): Int = asRgb24Int(color)&255
   def green(color: Self): Int = (asRgb24Int(color) >> 8)&255
   def blue(color: Self): Int = (asRgb24Int(color) >> 16)&255
-  def contramap[self2](lambda: self2 => Self): self2 is Chromatic = color => convert(lambda(color))
+
+  def contramap[self2](lambda: self2 => Self): (self2 is Chromatic)^{this, lambda} =
+    color => convert(lambda(color))

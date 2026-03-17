@@ -34,16 +34,18 @@ package contingency
 
 import language.experimental.pureFunctions
 
+import scala.caps.*
+
 import fulminate.*
 
-trait Tactic[-error <: Exception]:
+trait Tactic[-error <: Exception] extends SharedCapability:
   private inline def tactic: this.type = this
   def diagnostics: Diagnostics
   def record(error: Diagnostics ?=> error): Unit
   def abort(error: Diagnostics ?=> error): Nothing
   def certify(): Unit
 
-  def contramap[error2 <: Exception](lambda: error2 => error): Tactic[error2] =
+  def contramap[error2 <: Exception](lambda: error2 => error): Tactic[error2]^{this, lambda} =
     new Tactic[error2]:
       def diagnostics: Diagnostics = tactic.diagnostics
       def record(error: Diagnostics ?=> error2): Unit = tactic.record(lambda(error))
