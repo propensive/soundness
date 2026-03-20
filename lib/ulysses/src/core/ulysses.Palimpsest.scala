@@ -32,51 +32,50 @@
                                                                                                   */
 package ulysses
 
-import soundness.*
+import anticipation.*
+import proscenium.*
+import rudiments.*
+import vacuous.*
 
-import hashFunctions.sha1
+object Palimpsest:
+  def apply(hashes: IArray[Data]): Palimpsest =
+    val array = new Array[Byte](hashes.head.length + hashes.length - 1)
+    var count = 0
 
-object Tests extends Suite(m"Ulysses tests"):
-  def run(): Unit =
-    test(m"Check how many bits are required for a bloom filter"):
-      val bloom = BloomFilter[Text](100, 0.01)
-      bloom.bitSize
+    hashes.each: hash =>
+      hash.indices.each: index =>
+        val position = index + count
+        array(position) = (array(position)^hash(index)).toByte
 
-    . assert(_ == 663)
+      count += 1
 
-    test(m"Check that more bits are required to store more elements"):
-      val bloom = BloomFilter[Text](1000, 0.01)
-      bloom.bitSize
+    Palimpsest(array.immutable(using Unsafe), hashes.length)
 
-    . assert(_ == 6631)
+  object Hashes:
+    def apply(data: Iterable[Data]): Palimpsest.Hashes =
+      new Hashes
+        ( data.foldLeft(Map[Byte, Set[Data]]()): (map, data) =>
+            map.updated(data(0), map.getOrElse(data(0), Set()) + data) )
 
-    test(m"More bits required for more certainty"):
-      val bloom = BloomFilter[Text](100, 0.001)
-      bloom.bitSize
+  case class Hashes(hashes: Map[Byte, Set[Data]]):
+    def apply(byte: Byte): Set[Data] = hashes.getOrElse(byte, Set.empty)
 
-    . assert(_ == 994)
+case class Palimpsest(data: Data, length: Int):
+  def resolve(hashes: Palimpsest.Hashes): Optional[List[Data]] =
+    boundary[Optional[List[Data]]]:
+      val work: Array[Byte] = data.mutable(using Unsafe)
+      def xor(data: Data, offset: Int): Unit =
+        data.indices.each: index =>
+          work(index + offset) = (work(index + offset)^data(index)).toByte
 
-    val bloom = test(m"Add an element to a Bloom filter"):
-      BloomFilter[Text](100, 0.001) + t"Hello world"
+      def recur(item: Int, matched: List[Data]): Unit =
+        if item == length then break(matched.reverse) else
+          val key: Byte = work(item)
 
-    . check(_.hits(t"Hello world"))
+          hashes(key).each: hash =>
+            xor(hash, item)
+            recur(item + 1, hash :: matched)
+            xor(hash, item)
 
-    test(m"Check that Bloom filter does not contain other strings"):
-      !bloom.hits(t"hello")
-
-    . check(identity(_))
-
-    test(m"Add multiple elements to a Bloom filter"):
-      bloom ++ List(t"hello", t"world")
-
-    . assert { b => b.hits(t"hello") && b.hits(t"world") }
-
-    val numbers = List(t"one", t"two", t"three", t"four", t"five", t"six", t"seven", t"eight", t"9", t"10", t"11", t"12", t"13", t"14", t"15", t"16").map(_.digest.data)
-
-    test(m"Encode a Palimpsest"):
-      val hashes = Palimpsest.Hashes(numbers)
-
-      Palimpsest(IArray(numbers(6), numbers(0), numbers(3), numbers(5)))
-      . resolve(hashes)
-
-    . assert(_ == List(numbers(6), numbers(0), numbers(3), numbers(5)))
+      recur(0, Nil)
+      Unset

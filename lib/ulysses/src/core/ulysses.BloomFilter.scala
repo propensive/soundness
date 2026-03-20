@@ -89,7 +89,7 @@ case class BloomFilter[element: Digestible, algorithm <: Algorithm]
     elements.each(additions(_, bitSet))
     BloomFilter(bitSize, hashCount, bits | bitSet)
 
-  def mayContain(value: element): Boolean =
+  def hits(value: element): Boolean =
     val bitSet = scm.BitSet()
     additions(value, bitSet)
     bitSet.subsetOf(bits)
