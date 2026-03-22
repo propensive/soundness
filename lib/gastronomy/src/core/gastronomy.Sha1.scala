@@ -40,4 +40,4 @@ sealed trait Sha1 extends Algorithm:
   type Bits = 160
 
 object Sha1:
-  given hash: Hash in Sha1 = Hash.java(t"SHA1", t"HmacSHA1")
+  given hash: Hash in Sha1 = Hash(t"SHA1", t"HmacSHA1")

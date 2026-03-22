@@ -52,4 +52,4 @@ object internal:
     val name: String = context.valueOrAbort.parts.head
     if !name.matches("[a-z]+")
     then halt(m"the realm name should contain only lowercase letters")(using Realm("fulminate"))
-    else '{Realm.make(${Expr(name)}.tt)}
+    else '{Realm(${Expr(name)}.tt)}

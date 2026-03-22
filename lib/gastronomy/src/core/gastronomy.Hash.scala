@@ -39,7 +39,7 @@ import anticipation.*
 import prepositional.*
 
 object Hash:
-  def java[algorithm <: Algorithm](name0: Text, hmacName0: Text): Hash in algorithm = new Hash:
+  def apply[algorithm <: Algorithm](name0: Text, hmacName0: Text): Hash in algorithm = new Hash:
     type Form = algorithm
 
     val name: Text = name0
