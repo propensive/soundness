@@ -162,12 +162,9 @@ object internal:
 
   object Date:
     inline given underlying: Underlying[Date, Int] = !!
+    def julianDay(day: Int): Date = day
 
-    def of(day: Int): Date = day
-
-
-    def apply
-      ( using calendar: Calendar )
+    def apply(using calendar: Calendar)
       ( year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal )
     :   Date raises TimeError =
 
