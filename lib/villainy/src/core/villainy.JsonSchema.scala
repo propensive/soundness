@@ -388,5 +388,5 @@ abstract class JsonSchema(val doc: JsonSchemaDoc) extends Specification:
   type Form = JsonSchema
 
   def access(name: Text, json: Json): Json = json(name)
-  def make(data: Json, access: Text => Json => Any): Record = JsonSchema.record(data, access)
+  def build(data: Json, access: Text => Json => Any): Record = JsonSchema.record(data, access)
   def fields: Map[Text, Member] = unsafely(doc.fields)

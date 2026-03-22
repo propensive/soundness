@@ -53,7 +53,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
 
     random =>
       given random0: Random = random
-      List.fill(size.generate(random))(randomizable.from(random))
+      List.fill(size.generate(random))(randomizable.randomize(random))
 
 
   given set: [element] => (randomizable: => element is Randomizable) => (size: RandomSize)
@@ -61,7 +61,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
 
     random =>
       given random0: Random = random
-      Set.fill(size.generate(random))(randomizable.from(random))
+      Set.fill(size.generate(random))(randomizable.randomize(random))
 
 
   given iarray: [element] => (randomizable: => element is Randomizable) => (tag: ClassTag[element])
@@ -70,21 +70,21 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
 
     random =>
       given random0: Random = random
-      IArray.fill(size.generate(random))(randomizable.from(random))
+      IArray.fill(size.generate(random))(randomizable.randomize(random))
 
 
   given double: Distribution => Double is Randomizable = summon[Distribution].transform(_)
 
   inline def join[derivation <: Product: ProductReflection]: derivation is Randomizable = random =>
     stochastic(using infer[Randomization]):
-      build: [field] => _.from(summon[Random])
+      build: [field] => _.randomize(summon[Random])
 
   inline def split[derivation: SumReflection]: derivation is Randomizable = random =>
     stochastic(using infer[Randomization]):
       delegate(variantLabels(random.long().abs.toInt%variantLabels.length)):
-        [variant <: derivation] => _.from(summon[Random])
+        [variant <: derivation] => _.randomize(summon[Random])
 
 trait Randomizable extends Typeclass:
-  def apply()(using random: Random): Self = from(random)
-  def from(random: Random): Self
-  def map[self2](lambda: Self => self2): self2 is Randomizable = random => lambda(from(random))
+  def apply()(using random: Random): Self = randomize(random)
+  def randomize(random: Random): Self
+  def map[self2](lambda: Self => self2): self2 is Randomizable = random => lambda(randomize(random))

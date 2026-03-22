@@ -48,7 +48,7 @@ package randomization:
       val resource = getClass.getResourceAsStream("/capricious/blns.txt").nn
       val blns = IArray.from(scala.io.Source.fromInputStream(resource).getLines().map(_.tt))
 
-      def from(random: Random) = blns(random.long().toInt.abs%blns.length)
+      def randomize(random: Random) = blns(random.long().toInt.abs%blns.length)
 
   package sizes:
     given uniformUpto10: RandomSize = _.long().toInt.abs%10
