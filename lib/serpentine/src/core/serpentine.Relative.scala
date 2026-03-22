@@ -55,14 +55,6 @@ object Relative:
     type Limit = 0
 
 
-  def of[topic <: Tuple, limit <: Int](ascent: Int, descent: Text*)
-  :   Relative of topic under limit =
-
-    new Relative(ascent, descent.to(List)):
-      type Topic = topic
-      type Limit = limit
-
-
   def apply[filesystem, topic <: Tuple, limit <: Int](ascent: Int, descent: Text*)
   :   Relative of topic on filesystem under limit =
 
@@ -172,6 +164,8 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
         check[Topic, filesystem](descent.to(List))
         this.asInstanceOf[Relative of Topic under Limit on filesystem]
 
+  inline def unqualified: Relative of Topic under Limit = this
+
   transparent inline def parent = inline !![Topic] match
     case head *: tail => Relative[Plane, tail.type, Limit](ascent, descent.tail*)
     case EmptyTuple   => Relative[Plane, Zero, S[Limit]](ascent)
@@ -187,8 +181,9 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
           (ascent, infer[child.type is Navigable].follow(child) +: descent*)
 
       case _ =>
-        Relative.of[child.type *: Topic, Limit]
+        Relative[Plane, child.type *: Topic, Limit]
           (ascent, infer[child.type is Navigable].follow(child) :: descent*)
+        . unqualified
 
 
 // case class Relative(ascent: Int, descent: Text*):
