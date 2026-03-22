@@ -72,11 +72,11 @@ object Tests extends Suite(m"Ulysses tests"):
     . assert { b => b.hits(t"hello") && b.hits(t"world") }
 
     val numbers = List(t"one", t"two", t"three", t"four", t"five", t"six", t"seven", t"eight", t"9", t"10", t"11", t"12", t"13", t"14", t"15", t"16").map(_.digest.data)
+    val numbers2 = (1 to 20).map(_.toString.tt.digest.data)
 
     test(m"Encode a Palimpsest"):
-      val hashes = Palimpsest.Hashes(numbers)
+      given anthology: Anthology = Anthology(numbers2)
 
-      Palimpsest(IArray(numbers(6), numbers(0), numbers(3), numbers(5)))
-      . resolve(hashes)
+      Palimpsest((1 to 3).map(numbers2(_))).resolve
 
-    . assert(_ == List(numbers(6), numbers(0), numbers(3), numbers(5)))
+    . assert(_ == (1 to 3).map(numbers2(_)))

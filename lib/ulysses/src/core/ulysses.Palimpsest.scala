@@ -38,44 +38,38 @@ import rudiments.*
 import vacuous.*
 
 object Palimpsest:
-  def apply(hashes: IArray[Data]): Palimpsest =
+  def apply(hashes: IndexedSeq[Data]): Palimpsest =
     val array = new Array[Byte](hashes.head.length + hashes.length - 1)
-    var count = 0
 
-    hashes.each: hash =>
-      hash.indices.each: index =>
-        val position = index + count
-        array(position) = (array(position)^hash(index)).toByte
+    val data = IArray.create[Byte](hashes.head.length + hashes.length - 1): array =>
+      hashes.indices.each: hash =>
+        hashes(hash).indices.each: index =>
+          array(index + hash) = (array(index + hash)^hashes(hash)(index)).toByte
 
-      count += 1
-
-    Palimpsest(array.immutable(using Unsafe), hashes.length)
-
-  object Hashes:
-    def apply(data: Iterable[Data]): Palimpsest.Hashes =
-      new Hashes
-        ( data.foldLeft(Map[Byte, Set[Data]]()): (map, data) =>
-            map.updated(data(0), map.getOrElse(data(0), Set()) + data) )
-
-  case class Hashes(hashes: Map[Byte, Set[Data]]):
-    def apply(byte: Byte): Set[Data] = hashes.getOrElse(byte, Set.empty)
+    Palimpsest(data, hashes.length)
 
 case class Palimpsest(data: Data, length: Int):
-  def resolve(hashes: Palimpsest.Hashes): Optional[List[Data]] =
-    boundary[Optional[List[Data]]]:
-      val work: Array[Byte] = data.mutable(using Unsafe)
-      def xor(data: Data, offset: Int): Unit =
-        data.indices.each: index =>
-          work(index + offset) = (work(index + offset)^data(index)).toByte
+  def resolve(using anthology: Anthology): Optional[List[Data]] = boundary:
+    val work: Array[Byte] = data.mutable(using Unsafe)
 
-      def recur(item: Int, matched: List[Data]): Unit =
-        if item == length then break(matched.reverse) else
-          val key: Byte = work(item)
+    def xor(data: Data, offset: Int): Unit =
+      data.indices.each: index => work(index + offset) = (work(index + offset)^data(index)).toByte
 
-          hashes(key).each: hash =>
-            xor(hash, item)
-            recur(item + 1, hash :: matched)
-            xor(hash, item)
+    def complete(matched: List[Data]): Unit = if work.all(_ == 0) then break(matched.reverse)
 
-      recur(0, Nil)
-      Unset
+    def recur(item: Int, matched: List[Data]): Unit =
+      if item == length then complete(matched) else anthology(work(item)).each: hash =>
+        xor(hash, item)
+        recur(item + 1, hash :: matched)
+        xor(hash, item)
+
+    recur(0, Nil) yet Unset
+
+object Anthology:
+  def apply(data: Iterable[Data]): Anthology =
+    new Anthology
+      ( data.foldLeft(Map[Byte, Set[Data]]()): (map, data) =>
+          map.updated(data(0), map.getOrElse(data(0), Set()) + data) )
+
+case class Anthology(hashes: Map[Byte, Set[Data]]):
+  def apply(byte: Byte): Set[Data] = hashes.getOrElse(byte, Set.empty)
