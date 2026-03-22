@@ -43,17 +43,6 @@ object Dag:
   def apply[node](keys: Set[node])(dependencies: node => Set[node]): Dag[node] =
     Dag(keys.map { key => (key, dependencies(key)) }.to(Map))
 
-  def create[node](start: node)(dependencies: node => Set[node]): Dag[node] =
-    @tailrec
-    def recur(map: Map[node, Set[node]], todo: Set[node], done: Set[node]): Dag[node] =
-
-      if todo.nil then new Dag(map) else
-        val key = todo.head
-        dependencies(key).pipe: children =>
-          recur(map.updated(key, children), (todo ++ children.filter(!done(_))) - key, done + key)
-
-    recur(Map(), Set(start), Set())
-
   @targetName("fromEdges")
   def apply[node](edges: (node, node)*): Dag[node] = Dag:
     edges.foldLeft(Map[node, Set[node]]()): case (acc, (key, value)) =>
