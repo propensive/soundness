@@ -42,6 +42,6 @@ object NoCache:
     val expiry = Http.Header("expires", "0")
     val headers = noStore :: noCache :: expiry :: response.textHeaders
 
-    Http.Response.make(response.status, headers, response.body)
+    response.status(headers, response.body)
 
 case class NoCache[content](content: content)

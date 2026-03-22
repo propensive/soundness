@@ -46,14 +46,14 @@ object Servable:
   :   response is Servable = response =>
 
       val headers = List(Http.Header(t"content-type", mediaType(response).show))
-      Http.Response.make(Http.Ok, headers, lambda(response))
+      Http.Ok(headers, lambda(response))
 
 
   given content: Content is Servable:
     def serve(content: Content): Http.Response =
       val headers = List(Http.Header(t"content-type", content.media.show))
 
-      Http.Response.make(Http.Ok, headers, Http.Body.Streaming(content.stream))
+      Http.Ok(headers, Http.Body.Streaming(content.stream))
 
 
   given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]
@@ -70,17 +70,17 @@ object Servable:
     case encodable: (`media` is Encodable in Data) =>
       value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Response.make(Http.Ok, headers, Http.Body.Fixed(encodable.encode(value)))
+        Http.Ok(headers, Http.Body.Fixed(encodable.encode(value)))
 
     case given (`media` is Streamable by Data) =>
       value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Response.make(Http.Ok, headers, Http.Body.Streaming(value.stream[Data]))
+        Http.Ok(headers, Http.Body.Streaming(value.stream[Data]))
 
     case given (`media` is Streamable by Text) =>
       value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Response.make(Http.Ok, headers, Http.Body.Streaming(value.stream[Data]))
+        Http.Ok(headers, Http.Body.Streaming(value.stream[Data]))
 
 trait Servable extends Typeclass:
   def serve(content: Self): Http.Response
