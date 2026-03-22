@@ -59,7 +59,7 @@ class Orchestrate[value: Encodable in Query, result](initial: Optional[value] = 
         process(elicit[value](request.query, validation, _))(result)
 
       case _ =>
-        process(elicit[value](initial.let(_.encode).or(Query.empty), Validation(), _))(Unset)
+        process(elicit[value](initial.let(_.encode).or(Query()), Validation(), _))(Unset)
 
 
 def orchestrate[value: Encodable in Query](initial: Optional[value] = Unset)[result]

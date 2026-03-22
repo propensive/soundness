@@ -113,11 +113,11 @@ object Tests extends Suite(m"Jacinta Tests"):
     suite(m"Misc tests"):
       test(m"Serialize to Json"):
         Foo(1, t"two").json
-      . assert(_ == Json.of(x = 1.json, y = t"two".json))
+      . assert(_ == Json.make(x = 1.json, y = t"two".json))
 
       test(m"Parse from JSON"):
         t"""{"x": 1}""".read[Json]
-      . assert(_ == Json.of(x = 1.json))
+      . assert(_ == Json.make(x = 1.json))
 
       test(m"Read case class"):
         t"""{"x": 1, "y": "two"}""".read[Json].as[Foo]

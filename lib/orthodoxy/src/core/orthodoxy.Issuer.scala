@@ -100,7 +100,7 @@ class Issuer
               then abort(OAuthError(OAuthError.Reason.Other))
 
               val query =
-                Query
+                Query.make
                   ( grant_type    = t"authorization_code",
                     code          = code,
                     redirect_uri  = redirect,
@@ -113,7 +113,7 @@ class Issuer
                 case Http.Ok           => response.vouch.receive[Json]
                 case Http.Unauthorized | Unset =>
                   state.refresh.let: refresh =>
-                    val query = Query(grant_type = t"refresh_token", refresh_token = refresh)
+                    val query = Query.make(grant_type = t"refresh_token", refresh_token = refresh)
 
                     val response =
                       exchange.submit(Http.Post)(query.per(secret)(_.client_secret = _))
@@ -159,7 +159,7 @@ class Issuer
       val state = OAuth.State(request.path)
       store(session) = state
 
-      val query = Query
+      val query = Query.make
         ( client_id     = client,
           redirect_uri  = redirect,
           access_type   = t"offline",

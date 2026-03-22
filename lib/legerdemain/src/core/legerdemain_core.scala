@@ -53,7 +53,7 @@ def elicit[value: Formulaic]
 :   Html of Flow =
 
   formulation.form
-    ( value.fields(Pointer.Self, t"", query.or(Query.empty), validation, formulation), submit )
+    ( value.fields(Pointer.Self, t"", query.or(Query()), validation, formulation), submit )
 
 
 extension [formulaic: {Formulaic, Encodable in Query}](value: formulaic)

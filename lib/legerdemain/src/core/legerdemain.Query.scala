@@ -50,13 +50,14 @@ import vacuous.*
 import wisteria.*
 
 object Query extends Dynamic:
-  def empty: Query = new Query(Nil)
+  def apply(): Query = new Query(Nil)
+  def apply(parameter: Text): Query = new Query(List(t"" -> parameter))
 
   given encodable: Query is Encodable in Text =
     _.values.map { (key, value) => t"${key.urlEncode}=${value.urlEncode}" }
     . join(t"&")
 
-  given decodable: Query is Decodable in Text = text => Query.of:
+  given decodable: Query is Decodable in Text = text => Query:
     text.cut(t"&").map: next =>
       next.cut(t"=", 2) match
         case List(key, value) => (key.urlDecode, value.urlDecode)
@@ -68,7 +69,7 @@ object Query extends Dynamic:
     :   derivation is Encodable in Query =
 
       value =>
-        Query.of:
+        Query:
           fields(value) { [field] => field => contextual.encoded(field).prefix(label) }
           . to(List)
           . flatMap(_.values)
@@ -85,12 +86,12 @@ object Query extends Dynamic:
                 context.decoded(value(label))
 
   given booleanEncodable: Boolean is Encodable in Query =
-    boolean => if boolean then Query.of(t"on") else Query.empty
+    boolean => if boolean then Query(t"on") else Query()
 
   given booleanDecodable: Boolean is Decodable in Query = _().present
 
   inline given encodable: [value] => value is Encodable in Query = summonFrom:
-    case given (`value` is Encodable in Text) => value => Query.of(value.encode)
+    case given (`value` is Encodable in Text) => value => Query(value.encode)
 
     case given ProductReflection[`value` & Product] =>
       EncodableDerivation.join[value & Product].asInstanceOf[value is Encodable in Query]
@@ -112,11 +113,10 @@ object Query extends Dynamic:
       case given ProductReflection[`value` & Product] =>
         DecodableDerivation.join[value & Product].asInstanceOf[value is Decodable in Query]
 
-  inline def applyDynamicNamed(method: "apply")(inline parameters: (Label, Any)*): Query =
+  inline def applyDynamicNamed(method: "make")(inline parameters: (Label, Any)*): Query =
     ${legerdemain.internal.query('parameters)}
 
-  def of(parameters: List[(Text, Text)]): Query = new Query(parameters)
-  def of(parameter: Text): Query = new Query(List(t"" -> parameter))
+  def apply(parameters: List[(Text, Text)]): Query = new Query(parameters)
 
   given addable: Query is Addable by Query to Query =
     (left, right) => new Query(left.values ++ right.values)

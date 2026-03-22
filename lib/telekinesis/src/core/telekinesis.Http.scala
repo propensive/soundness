@@ -459,9 +459,7 @@ object Http:
 
   case class Submit[target](originForm: Text, target: target, host: Hostname)
   extends Dynamic:
-    inline def applyDynamicNamed[payload]
-      ( id: "apply" )
-      ( inline headers: (Label, Any)* )
+    inline def applyDynamicNamed[payload](id: "apply")(inline headers: (Label, Any)*)
       ( payload: payload )
       ( using online:   Online,
               loggable: HttpEvent is Loggable,

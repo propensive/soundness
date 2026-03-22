@@ -66,7 +66,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       test(m"Construct a Query"):
         inline given key: ("key" is Parametric to Text) = !!
         inline given param: ("param" is Parametric to Int) = !!
-        Query(key = t"hello world", param = 24).show
+        Query.make(key = t"hello world", param = 24).show
 
       . assert(_ == t"key=hello+world&param=24")
 
@@ -81,7 +81,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       test(m"Construct a Query by partial generic derivation"):
         // This import seems to be required
         import queryParameters.arbitrary
-        Query(person = Person(t"Ken", 39)).show
+        Query.make(person = Person(t"Ken", 39)).show
 
       . assert(_ == t"person.name=Ken&person.age=39")
 
@@ -92,14 +92,13 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       inline given second: ("second" is Parametric to Person) = !!
 
-      val query = Query.of(List
-                            (t"first.name"  -> t"Jack",
+      val query = Query(List(t"first.name"  -> t"Jack",
                              t"first.age"   -> t"12",
                              t"second.name" -> t"Jill",
                              t"second.age"  -> t"11"))
 
       test(m"Dereference a query")(query.second)
-      . assert(_ == Query.of(List(t"name" -> t"Jill", t"age"  -> t"11")))
+      . assert(_ == Query(List(t"name" -> t"Jill", t"age"  -> t"11")))
 
       test(m"Decode a query"):
         summon[Couple is Decodable in Query].decoded(query)
