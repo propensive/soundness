@@ -146,7 +146,7 @@ object Path:
   =>  path is Quotient =
 
     ( path =>
-        if path.empty then None
+        if path.nil then None
         else if path.descent.length == 1 then Some((radical.decode(path.root), path.descent.head))
         else Some((radical.decode(path.root), Relative(0, path.descent*))) )
     :   path is Quotient of root over (Relative on filesystem) | Text
@@ -156,7 +156,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   type Topic <: Tuple
 
   def name: Text = descent.prim.or(root)
-  def empty: Boolean = descent.nil
+  def nil: Boolean = descent.nil
 
   inline def knownElementTypes: Boolean = inline !![Topic] match
     case _: Zero           => true

@@ -119,7 +119,7 @@ trait protointernal:
 
     def dimensionality: Dimensionality = Dimensionality(map.view.mapValues(_.power).to(Map))
     def dimensions: List[DimensionRef] = map.keys.to(List)
-    def empty: Boolean = map.values.all(_.power == 0)
+    def nil: Boolean = map.values.all(_.power == 0)
 
     @targetName("multiply")
     infix def * (that: UnitsMap): UnitsMap =

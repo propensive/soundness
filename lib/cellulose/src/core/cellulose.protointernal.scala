@@ -64,7 +64,7 @@ trait protointernal:
                   contextual.encoded(field).list.map: value =>
                     CodlNode(Atom(label2, value.children, Layout.empty, schemata(index).schema))
 
-                  . filter(!_.empty)
+                  . filter(!_.nil)
 
               . to(List).flatten
 

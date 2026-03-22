@@ -126,7 +126,7 @@ object Sheet:
 
     inline def quote(): Stream[Dsv] = state match
       case State.Fresh =>
-        if !builder.empty then raise(DsvError(format, DsvError.Reason.MisplacedQuote))
+        if !builder.nil then raise(DsvError(format, DsvError.Reason.MisplacedQuote))
         recur(content, index + 1, column, cells, builder, State.Quoted, headings)
 
       case State.Quoted =>
@@ -151,7 +151,7 @@ object Sheet:
         val row = Dsv(unsafely(cells.immutable), headings)
         row #:: recur(content, index + 1, 0, fresh(), builder, State.Fresh, headings)
 
-    content.flow(if column == 0 && builder.empty then Stream() else putDsv()):
+    content.flow(if column == 0 && builder.nil then Stream() else putDsv()):
       if !next.has(index) then recur(more, Prim, column, cells, builder, state, headings) else
         next.s.charAt(index.n0) match
           case format.Delimiter =>
@@ -161,7 +161,7 @@ object Sheet:
             quote()
 
           case '\n' | '\r' =>
-            if column == 0 && builder.empty
+            if column == 0 && builder.nil
             then recur(content, index + 1, 0, cells, builder, State.Fresh, headings)
             else if state != State.Quoted then putDsv()
             else proceed(next.s.charAt(index.n0))

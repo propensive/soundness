@@ -52,7 +52,7 @@ extension (inline cardinal: Int)
 
 extension [countable: Countable](value: countable)
   inline def gamut: Interval = Interval(Prim, (countable.size(value) - 1).z)
-  inline def nil: Boolean = countable.empty(value)
+  inline def nil: Boolean = countable.nil(value)
 
 export denominative.internal.{Ordinal, Interval}
 

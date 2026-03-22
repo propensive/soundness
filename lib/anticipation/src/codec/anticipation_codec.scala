@@ -36,7 +36,6 @@ import prepositional.*
 
 object Data:
   def apply(xs: Byte*): Data = IArray(xs*)
-  def empty: Data = IArray()
 
   def build(count: Int)(lambda: Array[Byte] => Unit): Data =
     val array: Array[Byte] = new Array[Byte](count)

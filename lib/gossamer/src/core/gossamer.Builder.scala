@@ -48,5 +48,5 @@ abstract class Builder[textual](size: Optional[Int] = Unset):
 
   def apply(): textual = result()
   def clear(): this.type = this.also(wipe())
-  def empty: Boolean = length == 0
+  def nil: Boolean = length == 0
   def length: Int
