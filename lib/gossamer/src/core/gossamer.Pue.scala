@@ -32,17 +32,13 @@
                                                                                                   */
 package gossamer
 
-import language.experimental.into
-import language.experimental.pureFunctions
-
 import anticipation.*
-import rudiments.*
 
 object Pue:
   def apply(text: Text): Data =
     val length = text.length
 
-    IArray.create[Byte](length): array =>
+    IArray.build[Byte](length): array =>
       var i = 0
       while i < length do
         array(i) = (text.s.charAt(i)%0x100).toByte

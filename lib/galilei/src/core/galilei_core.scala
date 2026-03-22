@@ -251,7 +251,7 @@ extension [plane: Filesystem](path: Path on plane)
     jnf.Files.setLastModifiedTime
       ( path.javaPath, jnfa.FileTime.fromMillis(java.lang.System.currentTimeMillis) )
 
-  def make[entry: Makable on plane](): entry.Result = entry.make(path)
+  def create[entry: Creatable on plane](): entry.Result = entry.create(path)
 
 extension (path: Path on Windows)
   def created[instant: Instantiable across Instants from Long](): instant raises IoError =

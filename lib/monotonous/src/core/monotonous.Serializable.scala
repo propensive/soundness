@@ -36,6 +36,7 @@ import anticipation.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
+import vacuous.*
 
 object Serializable:
   def base[base <: Serialization](bits: Int)(using alphabet: Alphabet[base]): Serializable in base =
@@ -49,7 +50,7 @@ object Serializable:
           if alphabet.padding then multiple*((bytes.length + divisor - 1)/divisor)
           else (bytes.length*8 + bits - 1)/bits
 
-        val chars = IArray.create[Char](length): array =>
+        val array = new Array[Char](length)
           def recur(current: Int = 0, next: Int = 0, index: Int = 0, loaded: Int = 0): Unit =
             if index < length then
               if loaded < bits then
@@ -64,7 +65,7 @@ object Serializable:
 
           recur()
 
-        Text(chars)
+        Text(array.immutable(using Unsafe))
 
   given binary: Alphabet[Binary] => Serializable in Binary = base(1)
   given quaternary: Alphabet[Quaternary] => Serializable in Quaternary = base(2)

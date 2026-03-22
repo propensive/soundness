@@ -47,19 +47,19 @@ import proscenium.*
 import rudiments.*
 import serpentine.*
 
-object Makable:
+object Creatable:
   given [plane: Filesystem]
   =>  ( createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
         tactic:                   Tactic[IoError] )
-  =>  Directory is Makable on plane to (Path on plane) =
+  =>  Directory is Creatable on plane to (Path on plane) =
 
-    new Makable:
+    new Creatable:
       type Self = Directory
       type Result = Path on Plane
       type Plane = plane
 
-      def make(path: Path on Plane): Path on Plane =
+      def create(path: Path on Plane): Path on Plane =
         createNonexistentParents(path):
           overwritePreexisting(path):
             jnf.Files.createDirectory(jnf.Path.of(path.encode.s).nn)
@@ -70,14 +70,14 @@ object Makable:
   =>  ( createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
         tactic:                   Tactic[IoError] )
-  =>  Socket is Makable to Socket =
+  =>  Socket is Creatable to Socket =
 
-    new Makable:
+    new Creatable:
       type Plane = plane
       type Self = Socket
       type Result = Socket
 
-      def make(path: Path on Plane): Result =
+      def create(path: Path on Plane): Result =
         createNonexistentParents(path):
           overwritePreexisting(path):
             val address = java.net.UnixDomainSocketAddress.of(path.javaPath).nn
@@ -90,14 +90,14 @@ object Makable:
   =>  ( createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
         tactic:                   Tactic[IoError] )
-  =>  File is Makable on plane to (Path on plane) =
+  =>  File is Creatable on plane to (Path on plane) =
 
-    new Makable:
+    new Creatable:
       type Plane = plane
       type Self = File
       type Result = Path on Plane
 
-      def make(path: Path on Plane): Path on Plane = path.also:
+      def create(path: Path on Plane): Path on Plane = path.also:
         createNonexistentParents(path):
           overwritePreexisting(path):
             jnf.Files.createFile(path.javaPath)
@@ -109,14 +109,14 @@ object Makable:
         working:                  WorkingDirectory,
         tactic:                   Tactic[IoError],
         loggable:                 ExecEvent is Loggable )
-  =>  Fifo is Makable to (Path on plane) =
+  =>  Fifo is Creatable to (Path on plane) =
 
-    new Makable:
+    new Creatable:
       type Self = Fifo
       type Result = Path on Plane
       type Plane = plane
 
-      def make(path: Path on Plane): Path on Plane = path.also:
+      def create(path: Path on Plane): Path on Plane = path.also:
         createNonexistentParents(path):
           overwritePreexisting(path):
             mitigate:
@@ -132,5 +132,5 @@ object Makable:
                     raise
                       ( IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied) )
 
-trait Makable extends Typeclass, Resultant, Planar:
-  def make(path: Path on Plane): Result
+trait Creatable extends Typeclass, Resultant, Planar:
+  def create(path: Path on Plane): Result

@@ -93,7 +93,7 @@ object Matrix:
     new Matrix[element, Rows, Columns]
       ( rowCount,
         columnCount,
-        IArray.create[element](columnCount*rowCount): array =>
+        IArray.build[element](columnCount*rowCount): array =>
           for row <- 0 until rowCount; column <- 0 until columnCount
           do rows.productElement(row).asMatchable.absolve match
             case tuple: Tuple =>
@@ -123,7 +123,7 @@ class Matrix[element, rows <: Int, columns <: Int]
   :   Matrix[multiplication.Result, rows, columns] =
 
 
-    val elements2 = IArray.create[multiplication.Result](elements.length): array =>
+    val elements2 = IArray.build[multiplication.Result](elements.length): array =>
       elements.indices.foreach: index =>
         array(index) = elements(index)*right
 
@@ -134,7 +134,7 @@ class Matrix[element, rows <: Int, columns <: Int]
   def / [right](right: right)(using div: element is Divisible by right)(using ClassTag[div.Result])
   :   Matrix[div.Result, rows, columns] =
 
-    val elements2 = IArray.create[div.Result](elements.length): array =>
+    val elements2 = IArray.build[div.Result](elements.length): array =>
       elements.indices.foreach: index =>
         array(index) = elements(index)/right
 
@@ -155,7 +155,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     val columns2 = valueOf[rightColumns]
     val inner = valueOf[columns]
 
-    val elements = IArray.create[multiplication.Result](rows*columns2): array =>
+    val elements = IArray.build[multiplication.Result](rows*columns2): array =>
       for row <- 0 until rows; column <- 0 until columns2
       do array(columns2*column + row) =
         (0 until inner).map { index => apply(row, index)*right(index, column) }.reduce(_ + _)

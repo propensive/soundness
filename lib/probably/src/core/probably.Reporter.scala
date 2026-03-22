@@ -37,7 +37,7 @@ import turbulence.*
 
 object Reporter:
   given report: (Stdio, Environment) => Reporter[Report]:
-    def make(): Report = Report()
+    def report(): Report = Report()
     def declare(report: Report, suite: Testable): Unit = report.declare(suite)
 
     def fail(report: Report, error: Throwable, active: Set[TestId]): Unit =
@@ -46,7 +46,7 @@ object Reporter:
     def complete(report: Report): Unit = report.complete(Coverage())
 
 trait Reporter[report]:
-  def make(): report
+  def report(): report
   def fail(report: report, error: Throwable, active: Set[TestId]): Unit
   def declare(report: report, suite: Testable): Unit
   def complete(report: report): Unit

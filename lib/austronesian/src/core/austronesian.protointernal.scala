@@ -39,10 +39,10 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import gigantism.*
+import gossamer.*
 import hellenism.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
 import wisteria.*
 
 object protointernal:
@@ -56,7 +56,7 @@ object protointernal:
 
     inline def split[derivation: SumReflection]: derivation is Encodable in Pojo =
       variant(_): [variant <: derivation] => value =>
-        IArray.create[Pojo](2): array =>
+        IArray.build[Pojo](2): array =>
           array(0) = label.s.asInstanceOf[Pojo]
           array(1) = value.encode
 
