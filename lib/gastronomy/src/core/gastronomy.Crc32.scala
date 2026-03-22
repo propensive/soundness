@@ -44,7 +44,7 @@ import vacuous.*
 
 object Crc32:
   given hash: Hash in Crc32:
-    def init(): Digestion = new Digestion:
+    def initialize(): Digestion = new Digestion:
       private val state: juz.CRC32 = juz.CRC32()
 
       def append(bytes: Data): Unit = state.update(bytes.mutable(using Unsafe))

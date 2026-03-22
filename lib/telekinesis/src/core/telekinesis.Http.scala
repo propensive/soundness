@@ -187,8 +187,7 @@ object Http:
       case 4 => Http.Category.ClientError
       case 5 => Http.Category.ServerError
 
-    def apply(headers: List[Header], body: Body): Response =
-      Response.construct(this, headers, body)
+    def apply(headers: List[Header], body: Body): Response = Response.response(this, headers, body)
 
   export Status.*
 
@@ -346,7 +345,7 @@ object Http:
         case _ =>
           raise(HttpError(response.status, response.textHeaders)) yet response.body.stream
 
-    private[Http] def construct(status: Status, headers: List[Header], body: Body): Response =
+    private[Http] def response(status: Status, headers: List[Header], body: Body): Response =
       new Response(1.1, status, headers, body)
 
     def parse(stream: Stream[Data]): Response raises HttpResponseError =

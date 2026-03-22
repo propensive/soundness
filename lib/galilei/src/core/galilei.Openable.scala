@@ -57,7 +57,7 @@ object Openable:
     type Result = Handle
     type Transport = jnc.FileChannel
 
-    def init(path: path, extraOptions: List[jnf.OpenOption]): jnc.FileChannel =
+    def initialize(path: path, extraOptions: List[jnf.OpenOption]): jnc.FileChannel =
       val options =
         read.options() ++ write.options() ++ dereference.options() ++ create.options()
         ++ extraOptions
@@ -86,8 +86,8 @@ object Openable:
     type Result = file.Result
     type Transport = file.Transport
 
-    def init(eof: Eof[file], options: List[Operand]): Transport =
-      file.init(eof.file, jnf.StandardOpenOption.APPEND :: options)
+    def initialize(eof: Eof[file], options: List[Operand]): Transport =
+      file.initialize(eof.file, jnf.StandardOpenOption.APPEND :: options)
 
     def handle(transport: Transport): Result = file.handle(transport)
     def close(transport: Transport): Unit = file.close(transport)
@@ -95,11 +95,11 @@ object Openable:
 trait Openable extends Typeclass, Operable, Resultant:
   protected type Transport
 
-  def init(value: Self, options: List[Operand]): Transport
+  def initialize(value: Self, options: List[Operand]): Transport
   def handle(transport: Transport): Result
 
   def open[result](value: Self, lambda: Result => result, options: List[Operand]): result =
-    val transport = init(value, options)
+    val transport = initialize(value, options)
     try lambda(handle(transport)) finally close(transport)
 
   def close(transport: Transport): Unit

@@ -60,7 +60,7 @@ class Rsa[bits <: 1024 | 2048: ValueOf]() extends Cipher, Encryption:
     keyFactory().generatePublic(spec).nn.getEncoded.nn.immutable(using Unsafe)
 
   def decrypt(bytes: Data, key: Data): Data =
-    val cipher = init()
+    val cipher = initialize()
 
     val privateKey =
       keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(key.mutable(using Unsafe)))
@@ -69,7 +69,7 @@ class Rsa[bits <: 1024 | 2048: ValueOf]() extends Cipher, Encryption:
     cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
 
   def encrypt(bytes: Data, key: Data): Data =
-    val cipher = init()
+    val cipher = initialize()
     val publicKey = keyFactory().generatePublic(jss.X509EncodedKeySpec(key.mutable(using Unsafe)))
     cipher.init(jc.Cipher.ENCRYPT_MODE, publicKey)
     cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
@@ -80,5 +80,5 @@ class Rsa[bits <: 1024 | 2048: ValueOf]() extends Cipher, Encryption:
     val keyPair = generator.generateKeyPair().nn
     keyPair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
 
-  private def init(): jc.Cipher = jc.Cipher.getInstance("RSA").nn
+  private def initialize(): jc.Cipher = jc.Cipher.getInstance("RSA").nn
   private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("RSA").nn
