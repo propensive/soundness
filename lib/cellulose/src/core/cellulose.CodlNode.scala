@@ -74,7 +74,7 @@ object CodlNode:
 
 case class CodlNode(data: Optional[Atom] = Unset, extra: Optional[Extra] = Unset) extends Dynamic:
   def key: Optional[Text] = data.let(_.key)
-  def empty: Boolean = unsafely(data.absent || data.assume.children.nil)
+  def nil: Boolean = unsafely(data.absent || data.assume.children.nil)
   def blank: Boolean = data.absent && extra.absent
   def schema: Optional[CodlSchema] = data.let(_.schema)
   def layout: Optional[Layout] = data.let(_.layout)

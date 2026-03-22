@@ -34,8 +34,6 @@ package ulysses
 
 import anticipation.*
 import proscenium.*
-import rudiments.*
-import vacuous.*
 
 object Bibliography:
   def apply(data: Iterable[Data]): Bibliography =

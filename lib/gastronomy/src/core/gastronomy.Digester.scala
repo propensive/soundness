@@ -37,7 +37,7 @@ import rudiments.*
 
 case class Digester(run: Digestion => Unit):
   def apply[algorithm <: Algorithm](using hash: Hash in algorithm): Digest in algorithm =
-    hash.init().pipe: accumulator =>
+    hash.initialize().pipe: accumulator =>
       run(accumulator)
       Digest[algorithm](accumulator.digest())
 

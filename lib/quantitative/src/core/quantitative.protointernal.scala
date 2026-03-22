@@ -112,14 +112,14 @@ trait protointernal:
               UnitPower(UnitRef(unit.asType, unit.show), power)
 
   case class UnitsMap(map: Map[DimensionRef, UnitPower]):
-    def repr(using Quotes): Option[quotes.reflect.TypeRepr] = construct(map.values.to(List))
+    def repr(using Quotes): Option[quotes.reflect.TypeRepr] = apply(map.values.to(List))
 
     def inverseMap: Map[DimensionRef, UnitPower] =
       map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, -power) }.to(Map)
 
     def dimensionality: Dimensionality = Dimensionality(map.view.mapValues(_.power).to(Map))
     def dimensions: List[DimensionRef] = map.keys.to(List)
-    def empty: Boolean = map.values.all(_.power == 0)
+    def nil: Boolean = map.values.all(_.power == 0)
 
     @targetName("multiply")
     infix def * (that: UnitsMap): UnitsMap =
@@ -139,7 +139,7 @@ trait protointernal:
 
           . to(Map).filter(_(1).power != 0) )
 
-    def construct(using Quotes)(types: List[UnitPower]): Option[quotes.reflect.TypeRepr] =
+    def apply(using Quotes)(types: List[UnitPower]): Option[quotes.reflect.TypeRepr] =
       import quotes.reflect.*
 
       types.filter(_.power != 0) match
@@ -149,8 +149,10 @@ trait protointernal:
           Some(AppliedType(unit.ref, List(ConstantType(IntConstant(power)))))
 
         case UnitPower(unit, power) :: more =>
-          Some(AndType(AppliedType(unit.ref, List(ConstantType(IntConstant(power)))),
-              construct(more).get))
+          Some
+            ( AndType
+                ( AppliedType(unit.ref, List(ConstantType(IntConstant(power)))),
+                  apply(more).get ))
 
     def sub(dimension: DimensionRef, unit: UnitRef, power: Int): UnitsMap =
       new UnitsMap(map.updated(dimension, UnitPower(unit, power)))

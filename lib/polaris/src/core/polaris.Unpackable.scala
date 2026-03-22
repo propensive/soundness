@@ -35,15 +35,19 @@ package polaris
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import vacuous.*
 
 object Unpackable:
   given iarray: [pack: Debufferable] => ClassTag[pack] => IArray[pack] is Unpackable:
     type Wrap[Type] = Int => Type
 
     def unpack(buffer: Buffer): Int => IArray[pack] = count =>
-      IArray.create[pack](count): array =>
-        array.indices.each: index =>
-          array(index) = pack.debuffer(buffer)
+      val array = new Array[pack](count)
+
+      array.indices.each: index =>
+        array(index) = pack.debuffer(buffer)
+
+      array.immutable(using Unsafe)
 
   given debufferable: [pack: Debufferable] => pack is Unpackable:
     type Wrap[Type] = Type

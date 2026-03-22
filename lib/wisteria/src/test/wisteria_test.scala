@@ -106,7 +106,7 @@ object Readable extends Derivation[Readable]:
   inline def join[derivation <: Product: ProductReflection]: Readable[derivation] = text =>
     text.s.split(",").nn.to(List).map(_.nn).pipe:
       array =>
-        construct:
+        build:
           [field] =>
             readable =>
               if index < array.length then readable.read(array(index).tt) else default.or(???)
@@ -164,7 +164,7 @@ object Parser extends ProductDerivation[Parser]:
 
   inline def join[derivation <: Product: ProductReflection]: Parser[derivation] = input =>
     IArray.from(input.split(',')).pipe: inputArr =>
-      constructWith[Option](
+      construct[Option](
         [in, out] => _.flatMap,
         [monadic] => Some(_),
         [field] => context =>

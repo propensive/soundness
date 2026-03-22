@@ -88,11 +88,9 @@ object protointernal:
     final val Max: Instant = Long.MaxValue
 
     def apply[instant: Abstractable across Instants to Long](instant: instant): Instant =
-      of(instant.generic)
+      instant.generic
 
     inline given underlying: Underlying[Instant, Long] = !!
-
-    def of(millis: Long): Instant = millis
 
 
     given generic
@@ -139,7 +137,7 @@ object protointernal:
   type Duration = Quantity[Seconds[1]]
 
   object Duration:
-    def of(millis: Long): Duration = Quantity(millis/1000.0)
+    def apply(millis: Long): Duration = Quantity(millis/1000.0)
 
 
     given generic: [units <: Measure: Normalizable to Seconds[1]]

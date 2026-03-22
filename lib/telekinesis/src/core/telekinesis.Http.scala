@@ -187,6 +187,8 @@ object Http:
       case 4 => Http.Category.ClientError
       case 5 => Http.Category.ServerError
 
+    def apply(headers: List[Header], body: Body): Response = Response.response(this, headers, body)
+
   export Status.*
 
   object Request:
@@ -223,7 +225,7 @@ object Http:
     given transmissible: Request is Transmissible = request =>
       import charEncoders.ascii
 
-      val text: Text = Text.construct:
+      val text: Text = Text.build:
         def newline(): Unit = append(t"\r\n")
         append(request.method.show)
         append(t" ")
@@ -343,7 +345,7 @@ object Http:
         case _ =>
           raise(HttpError(response.status, response.textHeaders)) yet response.body.stream
 
-    def make(status: Status, headers: List[Header], body: Body): Response =
+    private[Http] def response(status: Status, headers: List[Header], body: Body): Response =
       new Response(1.1, status, headers, body)
 
     def parse(stream: Stream[Data]): Response raises HttpResponseError =
@@ -457,9 +459,7 @@ object Http:
 
   case class Submit[target](originForm: Text, target: target, host: Hostname)
   extends Dynamic:
-    inline def applyDynamicNamed[payload]
-      ( id: "apply" )
-      ( inline headers: (Label, Any)* )
+    inline def applyDynamicNamed[payload](id: "apply")(inline headers: (Label, Any)*)
       ( payload: payload )
       ( using online:   Online,
               loggable: HttpEvent is Loggable,

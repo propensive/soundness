@@ -99,23 +99,25 @@ class Conduit(input0: Stream[Data]):
   final def save(): Data =
     val rnd = math.random()
     val length = (index + done) - (index0 + done0)
-    IArray.create(length): array =>
-      var sourceIndex = index0.n0
-      var destinationIndex = 0
-      var head = current0
-      var tail = stream0
+    val array = new Array[Byte](length)
+    var sourceIndex = index0.n0
+    var destinationIndex = 0
+    var head = current0
+    var tail = stream0
 
-      def recur(): Unit =
-        val count = (head.length - sourceIndex).min(array.length - destinationIndex)
-        System.arraycopy(head.mutable(using Unsafe), sourceIndex, array, destinationIndex, count)
-        destinationIndex += count
-        if destinationIndex < array.length then
-          head = tail.head
-          tail = tail.tail
-          sourceIndex = 0
-          recur()
+    def recur(): Unit =
+      val count = (head.length - sourceIndex).min(array.length - destinationIndex)
+      System.arraycopy(head.mutable(using Unsafe), sourceIndex, array, destinationIndex, count)
+      destinationIndex += count
+      if destinationIndex < array.length then
+        head = tail.head
+        tail = tail.tail
+        sourceIndex = 0
+        recur()
 
-      recur()
+    recur()
+
+    array.immutable(using Unsafe)
 
   @tailrec
   final def seek(byte: Byte): Boolean = next() && (if datum != byte then seek(byte) else true)

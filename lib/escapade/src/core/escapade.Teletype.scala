@@ -126,7 +126,7 @@ object Teletype:
 
   given ordering: Ordering[Teletype] = Ordering.by(_.plain)
 
-  def make[value: Showable](value: value, transform: Ansi.Transform): Teletype =
+  def apply[value: Showable](value: value)(transform: Ansi.Transform): Teletype =
     val text: Text = value.show
     Teletype(text, TreeMap(CharSpan(0, text.s.length) -> transform))
 

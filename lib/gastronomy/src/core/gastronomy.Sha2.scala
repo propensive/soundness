@@ -41,4 +41,4 @@ sealed trait Sha2[bits <: 224 | 256 | 384 | 512] extends Algorithm:
 
 object Sha2:
   given hash: [bits <: 224 | 256 | 384 | 512: ValueOf] => Hash in Sha2[bits] =
-    Hash.java(t"SHA-${valueOf[bits]}", t"HmacSHA${valueOf[bits]}")
+    Hash(t"SHA-${valueOf[bits]}", t"HmacSHA${valueOf[bits]}")

@@ -46,7 +46,7 @@ object Message:
   given communicable: [event: Communicable] => Message transcribes event = _.communicate
 
 
-  transparent inline def make[tuple <: Tuple](inline messages: tuple, done: List[Message])
+  transparent inline def apply[tuple <: Tuple](inline messages: tuple, done: List[Message])
   :   List[Message] =
 
     inline erasedValue[tuple] match
@@ -55,7 +55,7 @@ object Message:
           case message *: tail =>
             val message2 = message.asInstanceOf[message]
             val communicable = infer[(? >: message) is Communicable]
-            make[tail](tail.asInstanceOf[tail], communicable.message(message2) :: done)
+            apply[tail](tail.asInstanceOf[tail], communicable.message(message2) :: done)
 
       case _ =>
         done.reverse

@@ -111,7 +111,7 @@ object internal:
           lambda(byte.toChar).toByte
 
         def concat(left: Ascii, right: Ascii): Ascii =
-          IArray.create[Byte](left.length + right.length): array =>
+          IArray.build[Byte](left.length + right.length): array =>
             array.place(left, Prim)
             array.place(right, left.length.z)
 

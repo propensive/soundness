@@ -108,12 +108,12 @@ object internal:
       acc
 
 
-    inline def empty: Boolean = end < start
+    inline def nil: Boolean = end < start
 
 
   object Interval:
     inline def initial(size: Int): Interval = size.toLong
-    inline def empty: Interval = 0L
+    inline def apply(): Interval = 0L
 
     inline def zerary(inline start: Int, inline end: Int): Interval =
       (start & 0xffffffffL) << 32 | end & 0xffffffffL

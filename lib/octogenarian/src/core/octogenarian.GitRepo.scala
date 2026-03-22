@@ -293,7 +293,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
     val ignoredParam = if ignored then sh"--ignored" else sh""
 
-    def unescape(text: Text): Text = if text.at(Prim) != '"' then text else Text.construct:
+    def unescape(text: Text): Text = if text.at(Prim) != '"' then text else Text.build:
       def recur(index: Int, escape: Boolean): Unit =
         if index < text.length then
           text.s.charAt(index) match

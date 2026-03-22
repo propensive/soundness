@@ -48,7 +48,7 @@ package randomization:
       val resource = getClass.getResourceAsStream("/capricious/blns.txt").nn
       val blns = IArray.from(scala.io.Source.fromInputStream(resource).getLines().map(_.tt))
 
-      def from(random: Random) = blns(random.long().toInt.abs%blns.length)
+      def randomize(random: Random) = blns(random.long().toInt.abs%blns.length)
 
   package sizes:
     given uniformUpto10: RandomSize = _.long().toInt.abs%10
@@ -69,10 +69,8 @@ package randomization:
   given secureSeeded: (seed: Seed) => Randomization = () =>
     su.Random(js.SecureRandom(seed.value.to(Array)))
 
-
 def stochastic[result](using randomization: Randomization)(block: Random ?=> result): result =
-  block(using new Random(randomization.make()))
-
+  block(using new Random(randomization.initialize()))
 
 def arbitrary[value: Randomizable]()(using Random): value = value()
 

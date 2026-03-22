@@ -57,7 +57,7 @@ object Zipfile:
     type Result = Zip.ZipRoot
     protected type Transport = jnf.FileSystem
 
-    def init(value: Zipfile, options: List[Operand]): Transport =
+    def initialize(value: Zipfile, options: List[Operand]): Transport =
       try jnf.FileSystems.newFileSystem(value.uri, Map("zipinfo-time" -> "false").asJava).nn
       catch case exception: jnf.ProviderNotFoundException =>
         panic(m"There was unexpectedly no filesystem provider for ZIP files")

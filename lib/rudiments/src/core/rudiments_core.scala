@@ -351,12 +351,6 @@ extension [element](sequence: Seq[element])
 extension [element](sequence: IndexedSeq[element])
   transparent inline def has(index: Int): Boolean = index >= 0 && index < sequence.length
 
-extension (iarray: IArray.type)
-  def create[element: ClassTag](size: Int)(lambda: Array[element] => Unit): IArray[element] =
-    val array: Array[element] = new Array[element](size)
-    lambda(array)
-    array.immutable(using Unsafe)
-
 extension (bytes: Data)
   def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
 

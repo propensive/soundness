@@ -52,6 +52,6 @@ case class Moment(date: Date, time: Clockface, timezone: Timezone):
         time.second,
         time.nanos )
 
-    Instant.of(ldt.nn.atZone(jt.ZoneId.of(timezone.name.s)).nn.toInstant.nn.toEpochMilli)
+    Instant(ldt.nn.atZone(jt.ZoneId.of(timezone.name.s)).nn.toInstant.nn.toEpochMilli)
 
   def timestamp: Timestamp = Timestamp(date, time)

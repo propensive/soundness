@@ -964,11 +964,7 @@ object internal:
     inline def zeros: S32 = 16 - JInt.bitCount(bitmap.toInt)
 
     @targetName("bytesB16")
-    def bytes: IArray[Byte] =
-      import rudiments.*
-      IArray.create(2): array =>
-        array(0) = (bitmap >> 8).toByte
-        array(1) = bitmap.toByte
+    def bytes: IArray[Byte] = IArray[Byte]((bitmap >> 8).toByte, bitmap.toByte)
 
     @targetName("hexB16")
     inline def hex: Text = String.format("%04x", bitmap).nn.tt
@@ -1064,12 +1060,8 @@ object internal:
 
     @targetName("bytesB32")
     def bytes: IArray[Byte] =
-      import rudiments.*
-      IArray.create(4): array =>
-        array(0) = (bitmap >> (8*3)).toByte
-        array(1) = (bitmap >> (8*2)).toByte
-        array(2) = (bitmap >> 8).toByte
-        array(3) = bitmap.toByte
+      IArray[Byte]
+        ( (bitmap >> 24).toByte, (bitmap >> 16).toByte, (bitmap >> 8).toByte, bitmap.toByte )
 
     @targetName("hexB32")
     inline def hex: Text = String.format("%08x", bitmap).nn.tt
@@ -1165,16 +1157,15 @@ object internal:
 
     @targetName("bytesB64")
     def bytes: IArray[Byte] =
-      import rudiments.*
-      IArray.create(8): array =>
-        array(0) = (bitmap >> (8*7)).toByte
-        array(1) = (bitmap >> (8*6)).toByte
-        array(2) = (bitmap >> (8*5)).toByte
-        array(3) = (bitmap >> (8*4)).toByte
-        array(4) = (bitmap >> (8*3)).toByte
-        array(5) = (bitmap >> (8*2)).toByte
-        array(6) = (bitmap >> 8).toByte
-        array(7) = bitmap.toByte
+      IArray[Byte]
+        ( (bitmap >> (8*7)).toByte,
+          (bitmap >> (8*6)).toByte,
+          (bitmap >> (8*5)).toByte,
+          (bitmap >> (8*4)).toByte,
+          (bitmap >> (8*3)).toByte,
+          (bitmap >> (8*2)).toByte,
+          (bitmap >> 8).toByte,
+          bitmap.toByte )
 
     @targetName("hexB64")
     inline def hex: Text = String.format("%016x", bitmap).nn.tt

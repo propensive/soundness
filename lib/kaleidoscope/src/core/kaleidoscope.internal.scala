@@ -86,14 +86,14 @@ object internal:
       case '[resultType] => '{RExtractor[Option[resultType]](${Expr(parts)})}
 
   class NoExtraction(pattern: String):
-    inline def apply(): Regex = Regex.make(List(pattern))(using Unsafe)
+    inline def apply(): Regex = Regex(List(pattern))(using Unsafe)
 
     def unapply(scrutinee: Text)(using scanner: Scanner): Boolean =
       scanner.nextStart match
-        case Unset => Regex.make(List(pattern))(using Unsafe).matches(scrutinee)
+        case Unset => Regex(List(pattern))(using Unsafe).matches(scrutinee)
 
         case index: Int =>
-          val regex = Regex.make(List(pattern))(using Unsafe)
+          val regex = Regex(List(pattern))(using Unsafe)
           val matcher = regex.javaPattern.matcher(scrutinee.s).nn
           val found = matcher.find(index)
           if found then scanner.nextStart = matcher.start
@@ -101,7 +101,7 @@ object internal:
 
   class RExtractor[result](parts: Seq[String]):
     def unapply(scrutinee: Text)(using scanner: Scanner): result =
-      val result = Regex.make(parts)(using Unsafe).matchGroups(scrutinee)
+      val result = Regex(parts)(using Unsafe).matchGroups(scrutinee)
       val result2 = result.asInstanceOf[Option[IArray[List[Text | Char] | Optional[Text | Char]]]]
 
       if parts.length == 2 then result2.map(_.head).asInstanceOf[result]

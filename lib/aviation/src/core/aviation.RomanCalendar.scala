@@ -61,7 +61,7 @@ abstract class RomanCalendar(val name: Text) extends Calendar:
   def daysInYear(year: Annual): Int = if leapYear(year) then 366 else 365
 
   def zerothDayOfYear(year: Annual): Date =
-    Date.of(year()*365 + leapYearsSinceEpoch(year - 1) + 1721059)
+    Date.julianDay(year()*365 + leapYearsSinceEpoch(year - 1) + 1721059)
 
   def annual(date: Date): Year =
     val j = date.jdn + 32044

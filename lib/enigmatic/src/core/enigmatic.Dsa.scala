@@ -60,14 +60,14 @@ class Dsa[bits <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signing:
     keyPair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
 
   def sign(data: Data, keyData: Data): Data =
-    val sig = init()
+    val sig = initialize()
     val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(keyData.to(Array)))
     sig.initSign(key)
     sig.update(data.to(Array))
     sig.sign().nn.immutable(using Unsafe)
 
   def verify(data: Data, signature: Data, keyData: Data): Boolean =
-    val sig = init()
+    val sig = initialize()
     val key = keyFactory().generatePublic(jss.X509EncodedKeySpec(keyData.to(Array)))
     sig.initVerify(key)
     sig.update(data.to(Array))
@@ -83,5 +83,5 @@ class Dsa[bits <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signing:
     val spec = jss.DSAPublicKeySpec(y, params.getP, params.getQ, params.getG)
     keyFactory().generatePublic(spec).nn.getEncoded.nn.immutable(using Unsafe)
 
-  private def init(): js.Signature = js.Signature.getInstance("DSA").nn
+  private def initialize(): js.Signature = js.Signature.getInstance("DSA").nn
   private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("DSA").nn

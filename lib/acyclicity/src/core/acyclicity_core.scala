@@ -33,6 +33,9 @@
 package acyclicity
 
 import anticipation.*
+import denominative.*
+import proscenium.*
+import rudiments.*
 import spectacular.*
 
 extension (dag: Dag[Text])
@@ -44,3 +47,19 @@ extension (inline stringContext: StringContext)
 
 extension (stringContext: StringContext)
   def id(): Dot.Id = Dot.Id(stringContext.parts.head.show)
+
+extension [node](start: node)
+  def explore(dependencies: node => Iterable[node]): Dag[node] =
+    @tailrec
+    def recur(map: Map[node, Set[node]], todo: Set[node], done: Set[node]): Dag[node] =
+
+      if todo.nil then new Dag(map) else
+        val key = todo.head
+
+        dependencies(key).pipe: children =>
+          recur
+            ( map.updated(key, children.to(Set)),
+              (todo ++ children.filter(!done(_))) - key,
+              done + key )
+
+    recur(Map(), Set(start), Set())

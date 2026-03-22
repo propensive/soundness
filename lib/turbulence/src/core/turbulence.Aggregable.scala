@@ -45,7 +45,7 @@ object Aggregable:
     val size = source0.foldLeft(0)(_ + _.length)
 
     var source = source0
-    Data.construct(size): array =>
+    Data.build(size): array =>
       var index = Prim
       while !source.nil do
         val bytes = source.head

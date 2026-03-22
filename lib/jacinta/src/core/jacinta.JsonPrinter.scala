@@ -41,7 +41,7 @@ import proscenium.*
 import rudiments.*
 
 object JsonPrinter:
-  def print(json: JsonAst, indentation: Boolean): Text = Text.construct:
+  def print(json: JsonAst, indentation: Boolean): Text = Text.build:
     def appendString(string: String): Unit =
       append('"')
 

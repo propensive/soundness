@@ -34,7 +34,4 @@ package anticipation
 
 import language.experimental.into
 
-object Realm:
-  def make(name: Text): Realm = Realm(name)
-
 case class Realm(name: Text)

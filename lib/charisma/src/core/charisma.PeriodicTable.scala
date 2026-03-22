@@ -178,10 +178,11 @@ object PeriodicTable:
   private val prefixes: IArray[Text] =
     IArray(t"nil", t"un", t"bi", t"tri", t"quad", t"pent", t"hex", t"sept", t"oct", t"enn")
 
-  def make(number: Int): ChemicalElement =
+  def element(number: Int): ChemicalElement =
     def recur(name: Text, symbol: Text, digits: Int): ChemicalElement =
       if digits == 0
-      then ChemicalElement(number, symbol.capitalize, name.capitalize.sub(t"ii", t"i")) else
+      then ChemicalElement(number, symbol.capitalize, name.capitalize.sub(t"ii", t"i"))
+      else
         val prefix = prefixes(digits%10)
         recur(prefix+name, t"${prefix.s.head}$symbol", digits/10)
 

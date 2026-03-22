@@ -226,12 +226,12 @@ extends Element(label, presets, IArray(), foreign), Formal, Dynamic:
     ( inline attributes: (String, Any)* )
   :   Result =
 
-    inline if method == "apply" then make(Map(), attributes*) else
+    inline if method == "apply" then element(Map(), attributes*) else
       val stylesheet = infer[Stylesheet of (? >: label)]
-      make(Map(t"class" -> stylesheet.classes.to(List).join(t" ")), attributes*)
+      element(Map(t"class" -> stylesheet.classes.to(List).join(t" ")), attributes*)
 
 
-  inline def make(presets: Map[Text, Text], inline attributes: (String, Any)*): Result =
+  inline def element(presets: Map[Text, Text], inline attributes: (String, Any)*): Result =
     ${honeycomb.internal.attributes[Result, this.type]('this, 'presets, 'attributes)}
 
   def node(attributes: Map[Text, Optional[Text]]): Result

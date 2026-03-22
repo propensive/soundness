@@ -42,7 +42,7 @@ import vacuous.*
 
 object ProductDerivation:
   trait Methods[typeclass[_]]:
-    protected transparent inline def construct[derivation <: Product]
+    protected transparent inline def build[derivation <: Product]
       ( using reflection: ProductReflection[derivation], requirement: ContextRequirement )
       ( inline lambda:  [field] => requirement.Optionality[typeclass[field]]
                         =>  ( requirement.Optionality[typeclass[field]] aka "contextual",
@@ -65,7 +65,7 @@ object ProductDerivation:
         . reverse
 
 
-    protected transparent inline def constructWith[constructor[_]]
+    protected transparent inline def construct[constructor[_]]
       ( using requirement: ContextRequirement )
       [ derivation <: Product ]
       ( using reflection: ProductReflection[derivation] )
@@ -110,13 +110,15 @@ object ProductDerivation:
       type Labels = reflection.MirroredElemLabels
 
       provide[ClassTag[result]]:
-        IArray.create[result](valueOf[Tuple.Size[Fields]]): array =>
+        val array = new Array[result](valueOf[Tuple.Size[Fields]])
           fold[derivation, Fields, Labels, Unit]((), 0): accumulator =>
             [field] => context ?=>
               given (requirement.Optionality[typeclass[field]] aka "contextual") =
                 context.aka["contextual"]
 
               array(index) = lambda[field](context)
+
+        array.immutable(using Unsafe)
 
 
     inline def typeName[derivation](using reflection: Reflection[derivation]): Text =
@@ -169,13 +171,15 @@ object ProductDerivation:
 
         val tuple: Fields = Tuple.fromProductTyped(product)
 
-        IArray.create[result](tuple.size): array =>
+        val array = new Array[result](tuple.size)
           fold[derivation, Fields, Labels, Unit](tuple, (), 0): unit =>
             [field] => field =>
               given typeclass: (requirement.Optionality[typeclass[field]] aka "contextual") =
                 requirement.wrap(contextual).aka["contextual"]
 
               array(index) = lambda[field](field)
+
+        array.immutable(using Unsafe)
 
 
     // The two implementations of `fold` are very similar. We would prefer to have a single

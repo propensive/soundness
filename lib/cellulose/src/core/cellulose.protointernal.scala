@@ -64,14 +64,14 @@ trait protointernal:
                   contextual.encoded(field).list.map: value =>
                     CodlNode(Atom(label2, value.children, Layout.empty, schemata(index).schema))
 
-                  . filter(!_.empty)
+                  . filter(!_.nil)
 
               . to(List).flatten
 
   class DecodableDerivation()(using Tactic[CodlError]) extends ProductDerivable[Decodable in Codl]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Codl =
       values =>
-        construct: [field] => context =>
+        build: [field] => context =>
           val label2 = compiletime.summonFrom:
             case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
             case _                                        => label

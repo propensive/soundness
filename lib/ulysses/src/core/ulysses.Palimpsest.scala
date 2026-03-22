@@ -33,6 +33,7 @@
 package ulysses
 
 import anticipation.*
+import gossamer.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
@@ -41,7 +42,7 @@ object Palimpsest:
   def apply(hashes: IndexedSeq[Data]): Palimpsest =
     val array = new Array[Byte](hashes.head.length + hashes.length - 1)
 
-    val data = IArray.create[Byte](hashes.head.length + hashes.length - 1): array =>
+    val data = IArray.build[Byte](hashes.head.length + hashes.length - 1): array =>
       hashes.indices.each: hash =>
         hashes(hash).indices.each: index =>
           array(index + hash) = (array(index + hash)^hashes(hash)(index)).toByte

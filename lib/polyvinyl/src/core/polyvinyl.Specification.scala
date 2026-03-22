@@ -46,7 +46,7 @@ trait Specification extends Original:
   type Form <: { type Origin = Origin0 }
 
   def fields: Map[Text, Member]
-  def make(data: Origin, transform: Text => Origin => Any): Record
+  def build(data: Origin, transform: Text => Origin => Any): Record
   def access(name: Text, value: Origin): Origin
 
 
@@ -122,7 +122,7 @@ trait Specification extends Original:
                           ${Match('name.asTerm, nestedCaseDefs).asExprOf[Origin => Any]}
                       }
 
-                  val maker: Expr[Origin => Record] = '{field => $target.make(field, $matchFn)}
+                  val maker: Expr[Origin => Record] = '{field => $target.build(field, $matchFn)}
 
                   val rhs: Expr[Origin => Any] =
                     '{data => $structural.transform($target.access(${Expr(name)}, data), $maker)}
@@ -147,4 +147,4 @@ trait Specification extends Original:
 
     refined.asType.absolve match
       case '[type refined <: Record; refined] =>
-        '{$target.make($value, $matchFn).asInstanceOf[refined]}
+        '{$target.build($value, $matchFn).asInstanceOf[refined]}

@@ -33,12 +33,12 @@
 package soundness
 
 export galilei
-. { CopyAttributes, Makable, CreateNonexistent, CreateNonexistentParents, DeleteRecursively,
+. { CopyAttributes, Creatable, CreateNonexistent, CreateNonexistentParents, DeleteRecursively,
     DereferenceSymlinks, Entry, FilesystemAttribute, Handle, IoError, IoEvent, MoveAtomically,
     Openable, OverwritePreexisting, ReadAccess, Socket, Symlink, TraversalOrder, Volume,
     WriteAccess, WriteSynchronously, C, D, open, javaPath, javaFile, children, descendants, size,
     delete, wipe, volume, hardLinkTo, entry, copyTo, copyInto, moveTo, moveInto, symlinkTo,
-    symlinkInto, modified, accessed, readable, writable, hidden, touch, make, created, executable,
+    symlinkInto, modified, accessed, readable, writable, hidden, touch, create, created, executable,
     hardLinks, exists, WindowsEntry, UnixEntry, File, Directory, Fifo, BlockDevice, CharDevice }
 
 package filesystemOptions:

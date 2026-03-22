@@ -42,7 +42,7 @@ import rudiments.*
 import vacuous.*
 
 object Lexicon:
-  def empty[element](using Proximity by Int): Lexicon[element] = new Lexicon[element]:
+  def apply[element]()(using Proximity by Int): Lexicon[element] = new Lexicon[element]:
     private var lexicon: Optional[Lexicon[element]] = Unset
 
     def update(key: Text, value: element): Unit =
@@ -58,7 +58,7 @@ object Lexicon:
   def apply[element](terms: Map[Text, element])(using Proximity { type Triangulable = true } by Int)
   :   Lexicon[element] =
 
-    if terms.nil then empty[element] else Node(terms.head(0), terms.head(1)).tap: tree =>
+    if terms.nil then apply() else Node(terms.head(0), terms.head(1)).tap: tree =>
       terms.drop(1).each(tree(_) = _)
 
 

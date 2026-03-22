@@ -43,7 +43,7 @@ class Runner[report]()(using reporter: Reporter[report]):
 
   def skip(id: TestId): Boolean = false
 
-  val report: report = reporter.make()
+  val report: report = reporter.report()
 
   def maybeRun[result](test: Test[result]): Optional[Trial[result]] =
     if skip(test.id) then Unset else run[result](test)

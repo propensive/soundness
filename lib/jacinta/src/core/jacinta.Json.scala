@@ -100,7 +100,7 @@ trait Json2:
             val keyValues = json.root.obj
             val values = keyValues(0).zip(keyValues(1)).to(Map)
 
-            construct: [field] =>
+            build: [field] =>
               context =>
                 focus(prior.or(JsonPointer()) / label):
                   if !values.contains(label.s)
@@ -296,7 +296,7 @@ object Json extends Json2, Dynamic:
   given instantiable: Tactic[ParseError] => Json is Instantiable across HttpRequests from Text =
     text => Stream(text.data(using charEncoders.utf8)).read[Json]
 
-  def applyDynamicNamed(methodName: "of")(elements: (String, Json)*): Json =
+  def applyDynamicNamed(methodName: "make")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0)))
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
     Json(JsonAst((keys, values)))

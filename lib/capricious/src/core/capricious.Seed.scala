@@ -49,4 +49,4 @@ case class Seed(value: Data):
     given seed: Seed = this
 
     val randomization = infer[Randomization]
-    block(using new Random(randomization.make()))
+    block(using new Random(randomization.initialize()))
