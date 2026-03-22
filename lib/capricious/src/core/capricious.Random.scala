@@ -37,10 +37,10 @@ import language.experimental.genericNumberLiterals
 import scala.util as su
 
 object Random:
-  lazy val global: Random = new Random(randomization.unseeded.make())
+  lazy val global: Random = new Random(randomization.unseeded.initialize())
 
   def apply(seed: Seed)(using randomization: Randomization): Random =
-    new Random(randomization.make())
+    new Random(randomization.initialize())
 
 class Random(private val generator: su.Random):
   def long(): Long = generator.nextLong()

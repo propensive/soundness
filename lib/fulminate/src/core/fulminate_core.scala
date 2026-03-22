@@ -102,7 +102,7 @@ extension (inline context: StringContext)
 
         Message
           ( context.parts.map(_.tt).map(TextEscapes.escape(_)).to(List),
-            Message.make[tuple.type](tuple, Nil) )
+            Message[tuple.type](tuple, Nil) )
 
       case other =>
         import unsafeExceptions.canThrowAny

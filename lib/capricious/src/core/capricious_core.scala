@@ -69,10 +69,8 @@ package randomization:
   given secureSeeded: (seed: Seed) => Randomization = () =>
     su.Random(js.SecureRandom(seed.value.to(Array)))
 
-
 def stochastic[result](using randomization: Randomization)(block: Random ?=> result): result =
-  block(using new Random(randomization.make()))
-
+  block(using new Random(randomization.initialize()))
 
 def arbitrary[value: Randomizable]()(using Random): value = value()
 

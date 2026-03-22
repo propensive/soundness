@@ -49,7 +49,7 @@ import vacuous.*
 object internal:
   import quantitative.internal.*
 
-  def make[units <: Tuple: Type](values: Expr[Seq[Int]]): Macro[Quanta[units]] =
+  def quanta[units <: Tuple: Type](values: Expr[Seq[Int]]): Macro[Quanta[units]] =
     val inputs: List[Expr[Int]] = values.absolve match
       case Varargs(values) => values.to(List).reverse
 

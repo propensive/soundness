@@ -37,4 +37,4 @@ import language.experimental.genericNumberLiterals
 import scala.util as su
 
 trait Randomization:
-  def make(): su.Random
+  def initialize(): su.Random

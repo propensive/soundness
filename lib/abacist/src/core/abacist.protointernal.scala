@@ -62,7 +62,7 @@ object protointernal extends anteprotointernal:
     given integral: [units <: Tuple] => Integral[Quanta[units]] = summon[Integral[Long]]
 
     inline def apply[units <: Tuple](inline values: Int*): Quanta[units] =
-      ${abacist.internal.make[units]('values)}
+      ${abacist.internal.quanta[units]('values)}
 
     given addable: [units <: Tuple] => Quanta[units] is Addable:
       type Operand = Quanta[units]
