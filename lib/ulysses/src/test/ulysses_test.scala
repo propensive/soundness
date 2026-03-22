@@ -75,8 +75,7 @@ object Tests extends Suite(m"Ulysses tests"):
     val numbers2 = (1 to 20).map(_.toString.tt.digest.data)
 
     test(m"Encode a Palimpsest"):
-      given anthology: Anthology = Anthology(numbers2)
+      given bibliography: Bibliography = Bibliography(numbers)
+      Palimpsest((1 to 3).map(numbers(_))).resolve
 
-      Palimpsest((1 to 3).map(numbers2(_))).resolve
-
-    . assert(_ == (1 to 3).map(numbers2(_)))
+    . assert(_ == (1 to 3).map(numbers(_)))
