@@ -162,11 +162,10 @@ object Teletypeable:
     e"$className${Fg(0x808080)}( ⌗ )$methodName"
 
   given double: (decimalizer: Decimalizer) => Double is Teletypeable = double =>
-    Teletype.make(decimalizer.decimalize(double), _.copy(fg = 0xffd600))
+    Teletype(decimalizer.decimalize(double))(_.copy(fg = 0xffd600))
 
   given throwable: Throwable is Teletypeable = throwable =>
-    Teletype.make[String]
-      ( throwable.getClass.getName.nn.show.cut(t".").last.s, _.copy(fg = 0xdc133b) )
+    Teletype[String](throwable.getClass.getName.nn.show.cut(t".").last.s)(_.copy(fg = 0xdc133b))
 
 trait Teletypeable extends Typeclass:
   def teletype(value: Self): Teletype

@@ -70,7 +70,7 @@ enum Decomposition:
     case Product(name, _, _)    => name
 
   def text: Text =
-    Text.construct:
+    Text.build:
       multiline(0)
       builder.toString.tt
 

@@ -223,7 +223,7 @@ object Http:
     given transmissible: Request is Transmissible = request =>
       import charEncoders.ascii
 
-      val text: Text = Text.construct:
+      val text: Text = Text.build:
         def newline(): Unit = append(t"\r\n")
         append(request.method.show)
         append(t" ")

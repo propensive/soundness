@@ -80,7 +80,7 @@ object Dot:
     case Assignment(id: Id, id2: Id)
     case Subgraph(id: Option[Id], statements: Statement*)
 
-  def serialize(tokens: Stream[Text]): Text = Text.construct:
+  def serialize(tokens: Stream[Text]): Text = Text.build:
     var level: Int = 0
     var end: Boolean = true
 

@@ -38,12 +38,12 @@ object Data:
   def apply(xs: Byte*): Data = IArray(xs*)
   def empty: Data = IArray()
 
-  def construct(count: Int)(lambda: Array[Byte] => Unit): Data =
+  def build(count: Int)(lambda: Array[Byte] => Unit): Data =
     val array: Array[Byte] = new Array[Byte](count)
     lambda(array)
     array.asInstanceOf[IArray[Byte]]
 
-  def fill(count: Int)(lambda: Int => Byte): Data = construct(count): array =>
+  def fill(count: Int)(lambda: Int => Byte): Data = build(count): array =>
     for index <- 0 until count do array(index) = lambda(index)
 
 type Data = IArray[Byte]

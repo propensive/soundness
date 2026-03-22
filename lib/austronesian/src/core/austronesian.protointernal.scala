@@ -65,7 +65,7 @@ object protointernal:
   object DecodableDerivation extends Derivable[Decodable in Pojo]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Pojo =
       case array: Array[Pojo @unchecked] =>
-        construct: [field] =>
+        build: [field] =>
           _.decoded(array(index))
 
       case other =>

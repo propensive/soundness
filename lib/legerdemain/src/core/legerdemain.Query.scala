@@ -79,7 +79,7 @@ object Query extends Dynamic:
 
       provide[Foci[Pointer]]:
         value =>
-          construct:
+          build:
             [field] => context =>
               focus(prior.lay(Pointer(label))(_(label))):
                 context.decoded(value(label))

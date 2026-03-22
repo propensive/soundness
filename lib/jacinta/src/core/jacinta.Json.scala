@@ -100,7 +100,7 @@ trait Json2:
             val keyValues = json.root.obj
             val values = keyValues(0).zip(keyValues(1)).to(Map)
 
-            construct: [field] =>
+            build: [field] =>
               context =>
                 focus(prior.or(JsonPointer()) / label):
                   if !values.contains(label.s)

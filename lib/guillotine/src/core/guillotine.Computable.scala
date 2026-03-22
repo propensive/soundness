@@ -57,13 +57,13 @@ object Computable:
     reader.lines().nn.toScala(List).map(_.tt)
 
   given text: Text is Computable = proc =>
-    Text.construct:
+    Text.build:
       stream.compute(proc).each: line =>
         append(line.s)
         append('\n')
 
   given string: String is Computable = proc =>
-    Text.construct(stream.compute(proc).map(_.s).each(append(_))).s
+    Text.build(stream.compute(proc).map(_.s).each(append(_))).s
 
   given dataStream: Tactic[StreamError] => Stream[Data] is Computable =
     proc => Streamable.inputStream.stream(proc.getInputStream.nn)

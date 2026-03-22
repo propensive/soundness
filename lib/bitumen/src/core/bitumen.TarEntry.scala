@@ -136,7 +136,7 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
   def format(number: U32, width: Int): Data =
     number.octal.pad(width - 1).bytes
 
-  lazy val header: Data = Data.construct(512): array =>
+  lazy val header: Data = Data.build(512): array =>
     array.place(entryName.bytes, Prim)
     array.place(mode.bytes, 100.z)
     array.place(user.bytes, 108.z)

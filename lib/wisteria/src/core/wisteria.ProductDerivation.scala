@@ -42,7 +42,7 @@ import vacuous.*
 
 object ProductDerivation:
   trait Methods[typeclass[_]]:
-    protected transparent inline def construct[derivation <: Product]
+    protected transparent inline def build[derivation <: Product]
       ( using reflection: ProductReflection[derivation], requirement: ContextRequirement )
       ( inline lambda:  [field] => requirement.Optionality[typeclass[field]]
                         =>  ( requirement.Optionality[typeclass[field]] aka "contextual",
@@ -65,7 +65,7 @@ object ProductDerivation:
         . reverse
 
 
-    protected transparent inline def constructWith[constructor[_]]
+    protected transparent inline def construct[constructor[_]]
       ( using requirement: ContextRequirement )
       [ derivation <: Product ]
       ( using reflection: ProductReflection[derivation] )

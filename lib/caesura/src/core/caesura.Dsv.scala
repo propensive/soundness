@@ -74,7 +74,7 @@ object Dsv:
   given showable: (format: DsvFormat) => Dsv is Showable =
     _.data.map: cell =>
       if !cell.contains(format.Quote) then cell else
-        Text.construct:
+        Text.build:
           append(format.quote)
 
           cell.s.foreach: char =>
@@ -100,7 +100,7 @@ object Dsv:
       var count = 0
 
       provide[Foci[CellRef]]:
-        DsvProductDecoder[derivation]((row: Dsv) => construct:
+        DsvProductDecoder[derivation]((row: Dsv) => build:
           [field] => context =>
             val i = row.columns.let(_.at(label)).or(count)
             count += spans(index)
