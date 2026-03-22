@@ -40,10 +40,10 @@ abstract class Clock():
 
 object Clock:
   given current: Clock:
-    def apply(): Instant = Instant.of(System.currentTimeMillis)
+    def apply(): Instant = Instant(System.currentTimeMillis)
 
   def fixed(instant: into[Instant]): Clock = new Clock():
     def apply(): Instant = instant
 
   def offset(diff: into[Duration]): Clock = new Clock():
-    def apply(): Instant = Instant.of(System.currentTimeMillis) + diff
+    def apply(): Instant = Instant(System.currentTimeMillis) + diff
