@@ -32,39 +32,50 @@
                                                                                                   */
 package ulysses
 
-import anticipation.*
-import fulminate.*
-import gastronomy.*, hashFunctions.sha1
-import gossamer.*
-import probably.*
+import soundness.*
 
-import language.experimental.genericNumberLiterals
+import hashFunctions.sha1
 
 object Tests extends Suite(m"Ulysses tests"):
   def run(): Unit =
     test(m"Check how many bits are required for a bloom filter"):
       val bloom = BloomFilter[Text](100, 0.01)
       bloom.bitSize
+
     . assert(_ == 663)
 
     test(m"Check that more bits are required to store more elements"):
       val bloom = BloomFilter[Text](1000, 0.01)
       bloom.bitSize
+
     . assert(_ == 6631)
 
     test(m"More bits required for more certainty"):
       val bloom = BloomFilter[Text](100, 0.001)
       bloom.bitSize
+
     . assert(_ == 994)
 
     val bloom = test(m"Add an element to a Bloom filter"):
       BloomFilter[Text](100, 0.001) + t"Hello world"
-    .check(_.mayContain(t"Hello world"))
+
+    . check(_.hits(t"Hello world"))
 
     test(m"Check that Bloom filter does not contain other strings"):
-      !bloom.mayContain(t"hello")
-    .check(identity(_))
+      !bloom.hits(t"hello")
 
-    val bloom2 = test(m"Add multiple elements to a Bloom filter"):
+    . check(identity(_))
+
+    test(m"Add multiple elements to a Bloom filter"):
       bloom ++ List(t"hello", t"world")
-    . assert { b => b.mayContain(t"hello") && b.mayContain(t"world") }
+
+    . assert { b => b.hits(t"hello") && b.hits(t"world") }
+
+    val numbers = List(t"one", t"two", t"three", t"four", t"five", t"six", t"seven", t"eight", t"9", t"10", t"11", t"12", t"13", t"14", t"15", t"16").map(_.digest.data)
+    val numbers2 = (1 to 20).map(_.toString.tt.digest.data)
+
+    test(m"Encode a Palimpsest"):
+      given bibliography: Bibliography = Bibliography(numbers)
+      Palimpsest((1 to 3).map(numbers(_))).resolve
+
+    . assert(_ == (1 to 3).map(numbers(_)))

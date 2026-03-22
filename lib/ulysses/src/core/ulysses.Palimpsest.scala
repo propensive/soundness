@@ -32,64 +32,35 @@
                                                                                                   */
 package ulysses
 
-import scala.collection.immutable as sci
-import scala.collection.mutable as scm
-
-import cardinality.*
-import gastronomy.*
-import hypotenuse.*
-import prepositional.*
+import anticipation.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
 
-object BloomFilter:
-  def apply[element: Digestible](approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)
-    [ algorithm <: Algorithm ]
-    ( using Hash in algorithm )
-  :   BloomFilter[element, algorithm] =
+object Palimpsest:
+  def apply(hashes: IndexedSeq[Data]): Palimpsest =
+    val array = new Array[Byte](hashes.head.length + hashes.length - 1)
 
-    val bitSize: Int = (-1.44*approximateSize*ln(targetErrorRate.double).double).toInt
-    val hashCount: Int = ((bitSize.toDouble/approximateSize.toDouble)*ln(2.0).double + 0.5).toInt
-    new BloomFilter(bitSize, hashCount, sci.BitSet())
+    val data = IArray.create[Byte](hashes.head.length + hashes.length - 1): array =>
+      hashes.indices.each: hash =>
+        hashes(hash).indices.each: index =>
+          array(index + hash) = (array(index + hash)^hashes(hash)(index)).toByte
 
+    Palimpsest(data, hashes.length)
 
-case class BloomFilter[element: Digestible, algorithm <: Algorithm]
-  ( bitSize: Int, hashCount: Int, bits: sci.BitSet )
-  ( using Hash in algorithm ):
+case class Palimpsest(data: Data, length: Int):
+  def resolve(using bibliography: Bibliography): Optional[List[Data]] = boundary:
+    val array: Array[Byte] = data.mutable(using Unsafe)
 
-  private val requiredEntropyBits = ln(bitSize ** hashCount).double.toInt + 1
+    def xor(data: Data, offset: Int): Unit =
+      data.indices.each: index => array(index + offset) = (array(index + offset)^data(index)).toByte
 
-  private def hash(value: element): BigInt =
-    def recur(count: Int = 0, data: List[Array[Byte]] = Nil): BigInt =
-      if data.map(_.length).sum*8 < requiredEntropyBits
-      then recur(count + 1, (count, value).digest[algorithm].data.mutable(using Unsafe) :: data)
-      else BigInt(data.to(Array).flatten).abs
+    def complete(matched: List[Data]): Unit = if array.all(_ == 0) then break(matched.reverse)
 
-    recur()
+    def recur(item: Int, matched: List[Data]): Unit =
+      if item == length then complete(matched) else bibliography(array(item)).each: hash =>
+        xor(hash, item)
+        recur(item + 1, hash :: matched)
+        xor(hash, item)
 
-  private def additions(value: element, bitSet: scm.BitSet): Unit =
-    @tailrec
-    def recur(hash: BigInt, count: Int): Unit =
-      if count < hashCount then
-        bitSet((hash%bitSize).toInt) = true
-        recur(hash/bitSize, count + 1)
-
-    recur(hash(value), 0)
-
-  @targetName("add")
-  infix def + (value: element): BloomFilter[element, algorithm] =
-    val bitSet = scm.BitSet()
-    additions(value, bitSet)
-    BloomFilter(bitSize, hashCount, bits | bitSet)
-
-  @targetName("addAll")
-  infix def ++ (elements: Iterable[element]): BloomFilter[element, algorithm] =
-    val bitSet = scm.BitSet()
-    elements.each(additions(_, bitSet))
-    BloomFilter(bitSize, hashCount, bits | bitSet)
-
-  def hits(value: element): Boolean =
-    val bitSet = scm.BitSet()
-    additions(value, bitSet)
-    bitSet.subsetOf(bits)
+    recur(0, Nil) yet Unset
