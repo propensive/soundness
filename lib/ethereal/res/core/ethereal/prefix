@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-declare javaCmd portFile pidFile ttystate script tmpPipe dataHomeDir data stderr javaBundle pendingUpdate
+declare javaCmd portFile pidFile ttystate script dataHomeDir data stderr javaBundle pendingUpdate
 declare -i doDownload minimumJava preferredJava pid port version buildId stdoutPid stderrPid continue pipePid argCount launchPid payloadSize jarSize initParameters
 declare -a args signals sttyOptions
 
@@ -41,7 +41,7 @@ backout() {
     if [ -f "$pidFile" ]
     then
       now=$(date +%s)
-      timestamp=$(stat -c %Y "$failFile" 2> /dev/null || stat -f %B "$failFile")
+      timestamp=$(stat -c %Y "$failFile" 2> /dev/null || stat -f %m "$failFile")
       [ $((now - timestamp)) -ge 2 ] && rm -f "$failFile" "$pidFile"
     else
       [ -t 0 ] && stty "$ttystate"
@@ -125,7 +125,7 @@ download() {
   mkdir -p "${javaHome}"
   mv "${dir}" "${targetDir}"
   rm -rf "${tmpDir}"
-  (cd "${javaHome}" && ln -s "${fullVersion}-${javaBundle}" "${preferredJava}-${javaBundle}")
+  (cd "${javaHome}" && ln -snf "${fullVersion}-${javaBundle}" "${preferredJava}-${javaBundle}")
   javaCmd="${targetDir}/bin/java"
 }
 
@@ -178,15 +178,25 @@ launch() {
   startTime="$(date +%s%3N)"
   echo "$pid" > "$pidFile"
   [ -x "$javaCmd" ] || extract
-  (nohup "$javaCmd" -Dethereal.startTime="$startTime" -Dethereal.name="$name" -Dethereal.user.id="$EUID" -Dethereal.user.name="$USER" -Dethereal.script="$script" -Dethereal.payloadSize=$payloadSize -Dethereal.jarSize=$jarSize -Dethereal.command="$(command -v "$name")" -Dethereal.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2> >(logger -t "$name") || abort) &
+  local javaArgs
+  javaArgs=(-Dethereal.startTime="$startTime" -Dethereal.name="$name" -Dethereal.user.id="$EUID" -Dethereal.user.name="$USER" -Dethereal.script="$script" -Dethereal.payloadSize=$payloadSize -Dethereal.jarSize=$jarSize -Dethereal.command="$(command -v "$name")" -Dethereal.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')")
+  if command -v logger > /dev/null 2>&1
+  then (nohup "$javaCmd" "${javaArgs[@]}" -jar "$script" > /dev/null 2> >(logger -t "$name") || abort) &
+  else (nohup "$javaCmd" "${javaArgs[@]}" -jar "$script" > /dev/null 2>> "$baseDir/daemon.log" || abort) &
+  fi
   launchPid=$!
 
+  local -i waitCount=0
   while [[ ! -s "$portFile" ]] && [[ ! -f "$failFile" ]]
-  do sleep 0.05
+  do
+    sleep 0.05
+    waitCount+=1
+    [[ $waitCount -ge 200 ]] && abort && break
   done
 
   backout
   setup
+  kill -0 "$(<"$pidFile")" 2> /dev/null || { abort; backout; exit 1; }
 }
 
 setup() {
@@ -242,15 +252,12 @@ await() {
 }
 
 active() {
-  local path
-  local -i pid
-  path="$1"
   [ -s "$pidFile" ] && kill -0 "$(<"$pidFile")" 2> /dev/null
 }
 
 checkState() {
   # Check the consistency of the PID file and Port file
-  if active "$pidFile"
+  if active
   then # Process is active
     if [ -s "$portFile" ]
     then
@@ -274,11 +281,24 @@ mkdir -p "$baseDir"
 backout
 checkState
 
-[ -s "$pidFile" ] || launch
+if [ ! -s "$pidFile" ]
+then
+  if command -v flock > /dev/null 2>&1
+  then
+    exec 9>"$baseDir/lock"
+    if flock -n 9
+    then launch
+    else
+      await "$portFile" 40 || { abort; backout; exit 1; }
+      setup
+    fi
+    exec 9>&-
+  else
+    launch
+  fi
+fi
 backout
 
-tmpPipe="$(mktemp -u)"
-mkfifo -m 600 "$tmpPipe" && exec 2> /dev/null 3<> "$tmpPipe" && rm "$tmpPipe" || exit 2
 [ -t 0 ] && stty "${sttyOptions[@]}" > /dev/null 2>&1
 exec 2> /dev/null 7<> /dev/tcp/localhost/$port || exit 2
 [ -t 0 ] && printf "i\nt\n" >&7 || printf "i\np\n" >&7
