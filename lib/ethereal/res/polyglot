@@ -1,29 +1,67 @@
 #!/usr/bin/env bash
 
-echo \" <<'%' >/dev/null ">nul "\" \`" <#"
+echo \" <<'next' >/dev/null ">nul "\" \`" <#"
 @echo off & <nul set /p ="[6A[J"
-:: -------------------------------------------------------------------------------------------------
-
-%%BATCH%%
-
-:: -------------------------------------------------------------------------------------------------
+:: Start Batch script ------------------------------------------------------------------------------
+setlocal enabledelayedexpansion
+echo Operating system: %OS%
+echo Architecture: %PROCESSOR_ARCHITECTURE%
+set "output=%~dpn0.exe"
+set "delim=0"
+set "script=%~f0"
+for /f "usebackq delims=:" %%a in (`findstr /n /b "payload" "!script!"`) do set "delim=%%a"
+if !delim! equ 0 (echo No payload found. & exit /b 1)
+set "b64=%TEMP%\~ethereal_%RANDOM%.b64"
+(echo -----BEGIN CERTIFICATE-----)> "!b64!"
+more +!delim! "%~f0" >> "!b64!"
+(echo -----END CERTIFICATE-----)>> "!b64!"
+certutil -decode "!b64!" "!output!" >nul 2>&1
+del "!b64!" >nul 2>&1
+echo Extracted to !output!
+endlocal
+:: End Batch script --------------------------------------------------------------------------------
 goto :eof & type con >nul
-%
+next
 #> | Out-Null
-echo \" <<'%' >/dev/null # " | Out-Null
-## -------------------------------------------------------------------------------------------------
-
-%%POWERSHELL%%
-
-## -------------------------------------------------------------------------------------------------
+echo \" <<'next' >/dev/null # " | Out-Null
+# Start PowerShell script --------------------------------------------------------------------------
+$os = if ($IsWindows -or $env:OS) { "Windows" } elseif ($IsMacOS) { "macOS" } else { "Linux" }
+$cim = Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue
+$map = @{0="x86";5="ARM";9="x64";12="ARM64"}
+$arch = if ($env:PROCESSOR_ARCHITECTURE) {
+    $env:PROCESSOR_ARCHITECTURE
+} elseif ($cim) { $map[$cim.Architecture]
+} else { "Unknown" }
+Write-Host "Operating system: $os"
+Write-Host "Architecture: $arch"
+$scriptPath = $MyInvocation.MyCommand.Definition
+$outputPath = [IO.Path]::ChangeExtension($scriptPath, ".exe")
+$lines = [IO.File]::ReadAllLines($scriptPath)
+$lastPct = -1
+for ($i = $lines.Length - 1; $i -ge 0; $i--) {
+    if ($lines[$i] -eq 'payload') { $lastPct = $i; break }
+}
+if ($lastPct -lt 0 -or $lastPct -ge $lines.Length - 1) {
+    Write-Host "No payload found." -ForegroundColor Red; exit 1
+}
+$payload = ($lines[($lastPct + 1)..($lines.Length - 1)]) -join ''
+[IO.File]::WriteAllBytes($outputPath, [Convert]::FromBase64String($payload))
+Write-Host "Extracted to $outputPath"
+## End PowerShell script ---------------------------------------------------------------------------
 while ( ! $MyInvocation.MyCommand.Source ) { $input_line = Read-Host }; exit; <#
-%
+next
 set +o histexpand 2>/dev/null
-## -------------------------------------------------------------------------------------------------
-
-%%BASH%%
-
-## -------------------------------------------------------------------------------------------------
+# Start Bash script --------------------------------------------------------------------------------
+printf "Operating system: %s\nArchitecture: %s\n" "$(uname -s)" "$(uname -m)"
+script="$(realpath "$0")"
+output="${script%.*}"
+[ "$output" = "$script" ] && output="${script}.bin"
+lastpct=$(grep -n '^payload$' "$script" | tail -1 | cut -d: -f1)
+decode() { base64 -d 2>/dev/null || base64 -D; }
+tail -n +"$((lastpct + 1))" "$script" | decode > "$output"
+chmod +x "$output"
+printf "Extracted to %s\n" "$output"
+## End Bash script ---------------------------------------------------------------------------------
 case $- in *"i"*) cat /dev/stdin >/dev/null ;; esac ; exit ; #>
-
-%%PAYLOAD%%
+payload
+IyEvdXNyL2Jpbi9lbnYgYmFzaAoKVGhpcyBpcyB0aGUgcGF5bG9hZAo=
