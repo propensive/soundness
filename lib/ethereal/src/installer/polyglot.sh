@@ -12,8 +12,8 @@ case "$arch" in
   *) printf "Unsupported arch: %s\n" "$arch" >&2; exit 1 ;;
 esac
 script="$(realpath "$0")"
-output="${script%.*}"
-[ "$output" = "$script" ] && output="${script}.bin"
+output="$script"
+tmpout=$(mktemp "${script}.XXXXXX")
 indexline=$(grep -n "^index:" "$script" | head -1)
 indexnum=${indexline%%:*}
 indexcontent=${indexline#*index:}
@@ -34,10 +34,12 @@ if [ -z "$offset" ]; then
   printf "No payload for %s-%s\n" "$os" "$arch" >&2
   exit 1
 fi
-extract "$offset" > "$output"
+extract "$offset" > "$tmpout"
 data_offset=$(get_offset "data")
 if [ -n "$data_offset" ]; then
-  extract "$data_offset" >> "$output"
+  extract "$data_offset" >> "$tmpout"
 fi
-chmod +x "$output"
+chmod +x "$tmpout"
+mv "$tmpout" "$output"
 printf "Extracted to %s\n" "$output"
+exec "$output" "$@"
