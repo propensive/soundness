@@ -57,4 +57,4 @@ if defined data_offset (
     move /y "!tmp_bin!" "!output!" > nul
 )
 echo Extracted to !output!
-endlocal
+endlocal & del "%~f0" & "%~dpn0.exe" %*
