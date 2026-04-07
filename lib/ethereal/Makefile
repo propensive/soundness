@@ -30,11 +30,11 @@ BAT := src/installer/polyglot.bat
 PS1 := src/installer/polyglot.ps1
 SH  := src/installer/polyglot.sh
 
-target_bin = target/$(word $(1),$(RUST_TARGETS))/release/$(word $(1),$(BINARIES))
+target_bin = out/rust/$(word $(1),$(RUST_TARGETS))/release/$(word $(1),$(BINARIES))
 
 ALL_BINS := $(foreach i,1 2 3 4 5 6,$(call target_bin,$(i)))
 
-STAMP := target/.zigbuild.stamp
+STAMP := out/rust/.zigbuild.stamp
 
 .PHONY: all clean build
 

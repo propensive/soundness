@@ -4,3 +4,4 @@
 out
 boot
 .bsp
+Cargo.lock
