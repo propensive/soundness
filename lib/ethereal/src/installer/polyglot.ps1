@@ -18,52 +18,60 @@ $ext = if ($os -eq "windows") { ".exe" } else { "" }
 $outputPath = [IO.Path]::ChangeExtension(
     $scriptPath, $ext
 )
-$lines = [IO.File]::ReadAllLines($scriptPath)
-$indexIdx = -1
-for ($i = 0; $i -lt $lines.Length; $i++) {
-    if ($lines[$i] -like 'index:*') {
-        $indexIdx = $i; break
+
+$reader = [IO.StreamReader]::new($scriptPath)
+$indexLineNum = 0
+$indexContent = $null
+while ($null -ne ($line = $reader.ReadLine())) {
+    $indexLineNum++
+    if ($line.StartsWith('index:')) {
+        $indexContent = $line.Substring(6)
+        break
     }
 }
-if ($indexIdx -lt 0) {
+$reader.Close()
+
+if ($null -eq $indexContent) {
     Write-Host "No index found" -ForegroundColor Red
     exit 1
 }
 $offsets = @{}
-foreach ($entry in $lines[$indexIdx].Substring(6).Split(',')) {
+foreach ($entry in $indexContent.Split(',')) {
     $k, $v = $entry.Split('=')
     $offsets[$k] = [int]$v
 }
 
-function Extract-Payload($name) {
-    if (-not $offsets.ContainsKey($name)) { return $null }
-    $beginLine = $indexIdx + $offsets[$name]
-    $startIdx = $beginLine + 1
-    $endIdx = $startIdx
-    while ($endIdx -lt $lines.Length -and
-           $lines[$endIdx].Trim() -notmatch '^-----END') {
-        $endIdx++
-    }
-    $b64 = (
-        $lines[$startIdx..($endIdx - 1)] |
-        ForEach-Object { $_.Trim() } |
-        Where-Object { $_ -match '^[A-Za-z0-9+/=]+$' }
-    ) -join ''
-    if (-not $b64) { return $null }
-    return [Convert]::FromBase64String($b64)
-}
-
 $label = "${os}-${arch}"
-$binBytes = Extract-Payload $label
-if ($binBytes -eq $null) {
+if (-not $offsets.ContainsKey($label)) {
     Write-Host "No payload for $label" -ForegroundColor Red
     exit 1
 }
-$dataBytes = Extract-Payload "data"
-$stream = [IO.File]::Create($outputPath)
-$stream.Write($binBytes, 0, $binBytes.Length)
-if ($dataBytes -ne $null) {
-    $stream.Write($dataBytes, 0, $dataBytes.Length)
+
+$tmp = Join-Path $env:TEMP "~ethereal_$PID"
+
+if ($os -eq "windows") {
+    $skip = $indexLineNum + $offsets[$label] - 1
+    & cmd /c "more +$skip `"$scriptPath`" > `"${tmp}.pem`""
+    & certutil -decode "${tmp}.pem" "${tmp}.bin" > $null
+    Remove-Item "${tmp}.pem"
+    if ($offsets.ContainsKey("data")) {
+        $dskip = $indexLineNum + $offsets["data"] - 1
+        & cmd /c "more +$dskip `"$scriptPath`" > `"${tmp}.pem`""
+        & certutil -decode "${tmp}.pem" "${tmp}.dat" > $null
+        Remove-Item "${tmp}.pem"
+        & cmd /c "copy /b `"${tmp}.bin`"+`"${tmp}.dat`" `"$outputPath`" > nul"
+        Remove-Item "${tmp}.bin", "${tmp}.dat"
+    } else {
+        Move-Item "${tmp}.bin" $outputPath -Force
+    }
+} else {
+    $skip = $indexLineNum + $offsets[$label]
+    $decode = "{ base64 -d 2>/dev/null || base64 -D; }"
+    & bash -c "tail -n +$($skip + 1) '$scriptPath' | sed -n '/^-----END/q; /^-----BEGIN/d; p' | eval $decode > '$outputPath'"
+    if ($offsets.ContainsKey("data")) {
+        $dskip = $indexLineNum + $offsets["data"]
+        & bash -c "tail -n +$($dskip + 1) '$scriptPath' | sed -n '/^-----END/q; /^-----BEGIN/d; p' | eval $decode >> '$outputPath'"
+    }
+    & chmod +x $outputPath
 }
-$stream.Close()
 Write-Host "Extracted to $outputPath"
