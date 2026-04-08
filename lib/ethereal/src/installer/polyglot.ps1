@@ -14,8 +14,8 @@ $arch = switch ($raw) {
     "ARM64"  { "arm64" }
     default  { $raw.ToLower() }
 }
-Write-Host "Operating system: $os"
-Write-Host "Architecture: $arch"
+[Console]::Error.WriteLine("Operating system: $os")
+[Console]::Error.WriteLine("Architecture: $arch")
 $scriptPath = $MyInvocation.MyCommand.Definition
 $dir = [IO.Path]::GetDirectoryName($scriptPath)
 $name = [IO.Path]::GetFileNameWithoutExtension($scriptPath)
@@ -38,7 +38,7 @@ while ($null -ne ($line = $reader.ReadLine())) {
 $reader.Close()
 
 if ($null -eq $indexContent) {
-    Write-Host "No index found" -ForegroundColor Red
+    [Console]::Error.WriteLine("No index found")
     exit 1
 }
 $offsets = @{}
@@ -49,7 +49,7 @@ foreach ($entry in $indexContent.Split(',')) {
 
 $label = "${os}-${arch}"
 if (-not $offsets.ContainsKey($label)) {
-    Write-Host "No payload for $label" -ForegroundColor Red
+    [Console]::Error.WriteLine("No payload for $label")
     exit 1
 }
 
@@ -74,7 +74,7 @@ if ($os -eq "windows") {
 } else {
     $skip = $indexLineNum + $offsets[$label]
     $decode = '{ base64 -d 2>/dev/null || base64 -D; }'
-    & bash -c "tail -n +$($skip + 1) '$scriptPath' | sed -n '/^-----END/q; /^-----BEGIN/d; p' | $decode > '$outputPath'" 2>/dev/null
+    & bash -c "tail -n +$($skip + 1) '$scriptPath' | sed -n '/^-----END/q; /^-----BEGIN/d; p' | $decode | gunzip > '$outputPath'" 2>/dev/null
     if ($offsets.ContainsKey("data")) {
         $dskip = $indexLineNum + $offsets["data"]
         & bash -c "tail -n +$($dskip + 1) '$scriptPath' | sed -n '/^-----END/q; /^-----BEGIN/d; p' | $decode >> '$outputPath'" 2>/dev/null
@@ -82,7 +82,7 @@ if ($os -eq "windows") {
     & chmod +x $outputPath
 }
 Remove-Item $scriptPath
-Write-Host "Extracted to $outputPath"
+[Console]::Error.WriteLine("Extracted to $outputPath")
 
 $exeName = [IO.Path]::GetFileNameWithoutExtension($outputPath)
 $marker = "# $exeName tab-completions"
@@ -106,7 +106,7 @@ $profilePath = $PROFILE
 $profileDir = Split-Path $profilePath
 if (-not (Test-Path $profileDir)) {
     New-Item -ItemType Directory -Path $profileDir -Force | Out-Null
-    Write-Host "Created profile directory: $profileDir"
+    [Console]::Error.WriteLine("Created profile directory: $profileDir")
 }
 if (Test-Path $profilePath) {
     $existing = Get-Content $profilePath -Raw
@@ -117,10 +117,10 @@ if ($existing -match [regex]::Escape($marker)) {
     $pattern = "(?ms)$([regex]::Escape($marker)).*?(?=\r?\n# |\z)"
     $updated = $existing -replace $pattern, $completer
     Set-Content $profilePath $updated -NoNewline
-    Write-Host "Updated tab completions for '$exeName' in $profilePath"
+    [Console]::Error.WriteLine("Updated tab completions for '$exeName' in $profilePath")
 } else {
     Add-Content $profilePath "`n$completer"
-    Write-Host "Added tab completions for '$exeName' to $profilePath"
+    [Console]::Error.WriteLine("Added tab completions for '$exeName' to $profilePath")
 }
 
 & $outputPath $args

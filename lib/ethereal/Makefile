@@ -65,7 +65,11 @@ $(OUTPUT): $(TMPL) $(BAT) $(PS1) $(SH) $(ALL_BINS) $(DATA)
 	i=0; \
 	for bin in $$bins; do \
 	  i=$$((i + 1)); \
-	  base64 < "$$bin" | fold -w 8000 > "$$tmpdir/$$i.b64"; \
+	  if [ $$i -ge 3 ] && [ $$i -le 6 ]; then \
+	    gzip -c "$$bin" | base64 | fold -w 8000 > "$$tmpdir/$$i.b64"; \
+	  else \
+	    base64 < "$$bin" | fold -w 8000 > "$$tmpdir/$$i.b64"; \
+	  fi; \
 	done; \
 	offset=1; index="index:"; sep=""; \
 	i=0; \

@@ -1,6 +1,6 @@
 setlocal enabledelayedexpansion
-echo Operating system: %OS%
-echo Architecture: %PROCESSOR_ARCHITECTURE%
+echo Operating system: %OS% >&2
+echo Architecture: %PROCESSOR_ARCHITECTURE% >&2
 set "output=%~dpn0.exe"
 set "arch=x64"
 if /i "%PROCESSOR_ARCHITECTURE%"=="ARM64" set "arch=arm64"
@@ -15,7 +15,7 @@ for /f "usebackq tokens=1* delims=:" %%a in (
     set "indexrest=%%b"
 )
 if !indexnum! equ 0 (
-    echo No index found
+    echo No index found >&2
     exit /b 1
 )
 set "indexcontent=!indexrest:~6!"
@@ -28,7 +28,7 @@ for %%E in ("!indexcontent:,=" "!") do (
     )
 )
 if not defined offset (
-    echo No payload for windows-!arch!
+    echo No payload for windows-!arch! >&2
     exit /b 1
 )
 set "tmp_bin=%TEMP%\~ethereal_%RANDOM%_bin"
@@ -38,7 +38,7 @@ more +!skip! "!script!" > "!tmp_pem!"
 certutil -decode "!tmp_pem!" "!tmp_bin!" > nul
 del "!tmp_pem!"
 if not exist "!tmp_bin!" (
-    echo Extraction failed for windows-!arch!
+    echo Extraction failed for windows-!arch! >&2
     exit /b 1
 )
 if defined data_offset (
@@ -56,5 +56,5 @@ if defined data_offset (
 ) else (
     move /y "!tmp_bin!" "!output!" > nul
 )
-echo Extracted to !output!
+echo Extracted to !output! >&2
 endlocal & del "%~f0" & "%~dpn0.exe" %*
