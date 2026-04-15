@@ -195,7 +195,7 @@ extends Cli:
 
         . filter(_.starts(focusText))
 
-      case Shell.Fish =>
+      case Shell.Fish | Shell.Powershell =>
         items.flatMap:
           case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _) =>
             if hidden then Nil else

@@ -44,4 +44,4 @@ object Shell:
   given showable: Shell is Showable = _.toString.tt.lower
 
 enum Shell:
-  case Zsh, Bash, Fish
+  case Zsh, Bash, Fish, Powershell

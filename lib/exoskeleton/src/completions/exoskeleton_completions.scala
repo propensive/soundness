@@ -75,15 +75,44 @@ package executives:
 
       arguments match
         case
+          t"{completions}" :: t"powershell" :: As[Int](cursor) :: _ :: tty
+          :: t"--"
+          :: rawLine
+          :: Nil =>
+
+            val parts = rawLine.cut(t" ")
+            val wordStarts = parts.scanLeft(0)((pos, w) => pos + w.length + 1).init
+            val wordIdx = wordStarts.lastIndexWhere(_ <= cursor).max(0)
+            val posInWord = cursor - wordStarts(wordIdx)
+            val focus = (wordIdx - 1).max(0)
+            val restParts = if parts.length > 1 then parts.tail else List(t"")
+            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, cursor))
+
+            Completion
+              ( Cli.arguments(arguments, focus, posInWord, tab),
+                Cli.arguments(restParts, focus, posInWord, tab),
+                environment,
+                workingDirectory,
+                Shell.Powershell,
+                focus,
+                posInWord,
+                stdio,
+                signals,
+                tty,
+                tab,
+                login )
+
+        case
           t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position0) :: tty
           :: t"--"
           :: command
           :: rest =>
 
             val shell = shellName match
-              case t"zsh"  => Shell.Zsh
-              case t"fish" => Shell.Fish
-              case _       => Shell.Bash
+              case t"zsh"        => Shell.Zsh
+              case t"fish"       => Shell.Fish
+              case t"powershell" => Shell.Powershell
+              case _             => Shell.Bash
 
             val focus1 =
               if shell == Shell.Bash && rest.lastOption == Some(t"=") then focus0 + 1 else focus0
