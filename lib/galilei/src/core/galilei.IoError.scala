@@ -32,7 +32,10 @@
                                                                                                   */
 package galilei
 
+import scala.annotation.*
+
 import fulminate.*
+import prepositional.*
 import serpentine.*
 
 object IoError:
@@ -42,6 +45,14 @@ object IoError:
   enum Reason:
     case PermissionDenied, Nonexistent, AlreadyExists, IsNotDirectory, IsDirectory,
         DirectoryNotEmpty, NotSameVolume, Unsupported, Cycle
+
+  @targetName("apply2")
+  def apply(path: Path, operation: Operation, reason: Reason)
+    ( using filesystem: path.Plane is Filesystem, diagnostics: Diagnostics )
+  :   IoError =
+
+    new IoError(path, operation, reason, filesystem)
+
 
   given Reason is Communicable =
     case Reason.PermissionDenied  => m"the user did not have sufficient permissions"
@@ -65,6 +76,14 @@ object IoError:
     case Operation.Delete   => m"delete"
     case Operation.Metadata => m"metadata"
 
-case class IoError(path: Path, operation: IoError.Operation, reason: IoError.Reason)
+case class IoError
+  ( path:       Path,
+    operation:  IoError.Operation,
+    reason:     IoError.Reason,
+    filesystem: path.Plane is Filesystem )
   ( using Diagnostics )
-extends Error(m"the $operation operation on ${path.toString} failed because $reason")
+extends Error
+  ( {
+      given path.Plane is Filesystem = filesystem
+      m"the $operation operation on ${path.encode} failed because $reason"
+    } )
