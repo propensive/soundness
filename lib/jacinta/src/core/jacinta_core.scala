@@ -59,10 +59,7 @@ extension (json: JsonAst)
   inline def isObject: Boolean = json.isInstanceOf[(?, ?)]
   inline def isString: Boolean = json.isInstanceOf[String]
   inline def isBoolean: Boolean = json.isInstanceOf[Boolean]
-
-  inline def isNull: Boolean = json.asMatchable match
-    case v: Null => v == null
-    case _       => false
+  inline def isNull: Boolean = json.asInstanceOf[AnyRef | Null] == null
 
   inline def isArray: Boolean = json.isInstanceOf[Array[?]]
 
