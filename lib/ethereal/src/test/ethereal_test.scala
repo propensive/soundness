@@ -161,7 +161,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           test(m"environment variable is forwarded"):
             val env = t"TEST_ETHEREAL_VAR=hello_ethereal"
             sh"env $env $tool env TEST_ETHEREAL_VAR".exec[Text]()
-          .assert(_ == t"hello_ethereal")
+          .assert(_ == t"hello_ethereal\n")
 
         suite(m"Working directory"):
           test(m"working directory is forwarded"):
@@ -264,7 +264,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             sh"kill -9 $launcherPid".exec[Unit]()
             snooze(200L)
             sh"$tool echo still-alive".exec[Text]()
-          .assert(_ == t"still-alive")
+          .assert(_ == t"still-alive\n")
 
           test(m"launcher exits when daemon is killed"):
             val proc = sh"$tool sleep 30".fork[Exit]()
@@ -277,7 +277,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
           test(m"new daemon starts after previous was killed"):
             sh"$tool echo restarted".exec[Text]()
-          .assert(_ == t"restarted")
+          .assert(_ == t"restarted\n")
 
         suite(m"State file integrity"):
 
