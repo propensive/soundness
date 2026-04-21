@@ -49,10 +49,10 @@ extension (shell: Shell)
         given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)
 
         val shellPath = shell match
-          case Shell.Zsh  => t"zsh"
-          case Shell.Fish => t"fish"
-          case Shell.Bash => t"bash"
-          case Shell.Bash => t"pwsh"
+          case Shell.Zsh        => t"zsh"
+          case Shell.Fish       => t"fish"
+          case Shell.Bash       => t"bash"
+          case Shell.Powershell => t"pwsh"
 
         sh"tmux new-session -d -s ${tmux.id} -x $width -y $height '$shellPath -l'".exec[Unit]()
         Tmux.attend:

@@ -51,14 +51,15 @@ import daemonConfig.supportStderr
 object Tests extends Suite(m"Ethereal Tests"):
   // Expected behaviors of the test executable:
   //   <no args>          -- prints "ready" to stdout and exits with status 0
-  //   echo <text>        -- prints <text> to stdout and exits with status 0
+  //   echo <text>        -- prints <text> to stdout (no newline) and exits with status 0
   //   exit <code>        -- exits with the given integer exit code
   //   stderr <text>      -- prints <text> to stderr and exits with status 0
   //   sleep <seconds>    -- sleeps for the given duration, then exits with status 0
-  //   env <varname>      -- prints the value of the given environment variable to stdout
-  //   pwd                -- prints the current working directory to stdout
-  //   args               -- prints each argument (after "args") on a separate line to stdout
-  //   pid                -- prints its own PID to stdout
+  //   env <varname>      -- prints the value of the given environment variable to stdout (no newline)
+  //   pwd                -- prints the current working directory to stdout (no newline)
+  //   args               -- prints each argument (after "args") separated by newlines, no trailing newline
+  //   lines              -- prints each argument (after "lines") separated by newlines, with trailing newline
+  //   pid                -- prints its own PID to stdout (no newline)
   //   hang               -- blocks forever (never exits), for testing forced kill scenarios
 
   def run(): Unit =
@@ -79,14 +80,18 @@ object Tests extends Suite(m"Ethereal Tests"):
           cli:
             arguments match
               case Nil =>
-                execute(Out.println("ready") yet Exit.Ok)
+                execute(Out.print(t"ready") yet Exit.Ok)
 
               case Argument("args") :: arguments =>
                 execute:
-                  Out.println(arguments.map(_()).join(t"\n")) yet Exit.Ok
+                  Out.print(arguments.map(_()).join(t"\n")) yet Exit.Ok
+
+              case Argument("lines") :: arguments =>
+                execute:
+                  Out.print(arguments.map(_()).join(t"\n") + t"\n") yet Exit.Ok
 
               case Argument("echo") :: text :: Nil =>
-                execute(Out.println(text()) yet Exit.Ok)
+                execute(Out.print(text()) yet Exit.Ok)
 
               case Argument("exit") :: Argument(As[Int](status)) :: Nil =>
                 execute(Exit.Fail(status))
@@ -100,15 +105,15 @@ object Tests extends Suite(m"Ethereal Tests"):
 
               case Argument("env") :: Argument(variable) :: Nil =>
                 execute:
-                  Out.println(Environment[Text](variable)) yet Exit.Ok
+                  Out.print(Environment[Text](variable)) yet Exit.Ok
 
               case Argument("pid") :: Nil =>
                 execute:
-                  Out.println(service.pid.show) yet Exit.Ok
+                  Out.print(service.pid.show) yet Exit.Ok
 
               case Argument("pwd") :: Nil =>
                 execute:
-                  Out.println(workingDirectory[Path on Linux].encode) yet Exit.Ok
+                  Out.print(workingDirectory[Path on Linux].encode) yet Exit.Ok
 
               case _ =>
                 execute(Exit.Fail(1))
@@ -120,12 +125,12 @@ object Tests extends Suite(m"Ethereal Tests"):
         suite(m"Basic invocation"):
           test(m"first invocation prints expected output"):
             sh"$tool echo hello".exec[Text]()
-          .assert(_ == t"hello\n")
+          .assert(_ == t"hello")
 
           test(m"second invocation reuses the daemon"):
             sh"$tool echo hello".exec[Text]()
             sh"$tool echo world".exec[Text]()
-          .assert(_ == t"world\n")
+          .assert(_ == t"world")
 
           test(m"exit code 0 is returned on success"):
             sh"$tool".exec[Exit]()
@@ -142,26 +147,30 @@ object Tests extends Suite(m"Ethereal Tests"):
         suite(m"Argument passing"):
           test(m"single argument is passed through"):
             sh"$tool args one".exec[Text]()
-          .assert(_ == t"one\n")
+          .assert(_ == t"one")
 
           test(m"multiple arguments are passed through"):
             sh"$tool args one two three".exec[Text]()
-          .assert(_ == t"one\ntwo\nthree\n")
+          .assert(_ == t"one\ntwo\nthree")
 
           test(m"argument with spaces is preserved"):
             val arg = t"hello world"
             sh"$tool args $arg".exec[Text]()
-          .assert(_ == t"hello world\n")
+          .assert(_ == t"hello world")
 
           test(m"empty argument is preserved"):
             sh"$tool args '' something".exec[Text]()
-          .assert(_ == t"\nsomething\n")
+          .assert(_ == t"\nsomething")
+
+          test(m"trailing newline in output is preserved"):
+            sh"$tool lines one two three".exec[Text]()
+          .assert(_ == t"one\ntwo\nthree\n")
 
         suite(m"Environment forwarding"):
           test(m"environment variable is forwarded"):
             val env = t"TEST_ETHEREAL_VAR=hello_ethereal"
             sh"env $env $tool env TEST_ETHEREAL_VAR".exec[Text]()
-          .assert(_ == t"hello_ethereal\n")
+          .assert(_ == t"hello_ethereal")
 
         suite(m"Working directory"):
           test(m"working directory is forwarded"):
@@ -205,7 +214,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             sh"kill -9 $daemonPid".exec[Unit]()
             snooze(500L)
             sh"$tool echo recovered".exec[Text]()
-          .assert(_ == t"recovered\n")
+          .assert(_ == t"recovered")
 
           test(m"stale pid file is cleaned up"):
             sh"$tool".exec[Unit]()
@@ -213,7 +222,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             sh"echo 99999 > $stateDir/pid".exec[Unit]()
             sh"rm -f $stateDir/port".exec[Unit]()
             sh"$tool echo fresh".exec[Text]()
-          .assert(_ == t"fresh\n")
+          .assert(_ == t"fresh")
 
           test(m"fail file is removed after 2 seconds"):
             sh"mkdir -p $stateDir".exec[Unit]()
@@ -222,7 +231,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             snooze(2500L)
             sh"echo $$ > $stateDir/pid".exec[Unit]()
             sh"$tool echo after-fail".exec[Text]()
-          .assert(_ == t"after-fail\n")
+          .assert(_ == t"after-fail")
 
         suite(m"Concurrent invocations"):
           test(m"parallel invocations share the same daemon"):
@@ -264,7 +273,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             sh"kill -9 $launcherPid".exec[Unit]()
             snooze(200L)
             sh"$tool echo still-alive".exec[Text]()
-          .assert(_ == t"still-alive\n")
+          .assert(_ == t"still-alive")
 
           test(m"launcher exits when daemon is killed"):
             val proc = sh"$tool sleep 30".fork[Exit]()
@@ -277,7 +286,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
           test(m"new daemon starts after previous was killed"):
             sh"$tool echo restarted".exec[Text]()
-          .assert(_ == t"restarted\n")
+          .assert(_ == t"restarted")
 
         suite(m"State file integrity"):
 
