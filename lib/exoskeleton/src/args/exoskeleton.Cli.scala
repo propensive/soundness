@@ -62,7 +62,7 @@ object Cli:
       tab:           Optional[Ordinal] = Unset )
   :   List[Argument] =
 
-    textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
+    textArguments.to(List).padTo(focus.let(_ + 1).or(0), t"").zipWithIndex.map: (text, index) =>
       Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
 
 
