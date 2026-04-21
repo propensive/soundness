@@ -48,7 +48,7 @@ object scalacOptions:
 
   def sourceFuture = Scalac.Option[Scalac.Versions](t"-source", t"future")
 
-  val experimental = Scalac.Option[3.4 | 3.5 | 3.6 | 3.7](t"-experimental")
+  val experimental = Scalac.Option[3.4 | 3.5 | 3.6 | 3.7 | 3.8](t"-experimental")
 
   object warnings:
     val feature = Scalac.Option[Scalac.Versions](t"-feature")

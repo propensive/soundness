@@ -32,8 +32,10 @@
                                                                                                   */
 package anthology
 
+object JavaVersion:
+  type Version =
+    8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26
+
 enum JavaVersion:
-  case Jdk
-        (version: 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24)
-  case Jre
-        (version: 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24)
+  case Jdk(version: JavaVersion.Version)
+  case Jre(version: JavaVersion.Version)

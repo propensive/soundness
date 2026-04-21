@@ -69,7 +69,7 @@ object Bundler:
 
 
   def bundle(directory: Path on Linux, jarfile0: Optional[Path on Linux], main: Optional[Fqcn])
-  :   Path on Linux =
+  :   Path on Linux raises ZipError =
 
     val jarfile = jarfile0.or(directory.peer("tmpfile.jar"))
 
@@ -81,29 +81,33 @@ object Bundler:
           Manifest(ManifestVersion(()), CreatedBy(t"Soundness"))
 
 
-    unsafely:
-      Zipfile.write(jarfile):
-        ZipEntry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest)
+    val omissions: Set[Text] = Set("MANIFEST.MF", "plugin.properties")
+
+    Zipfile.write(jarfile):
+      val entries =
+        Zip.Entry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest)
         :: classpath(directory).entries.to(List).flatMap:
           case ClasspathEntry.Directory(directory) =>
             unsafely:
               val root = directory.decode[Path on Linux]
-              root.descendants.to(List).map: file =>
-                file.open: handle =>
+              root.descendants.to(List).filter { entry => !omissions(entry.name) }.map: file =>
+                if file.entry() == Directory then Unset else file.open: handle =>
                   val ref = %.on[Zip] + root.toward(file).on[Zip]
-                  ZipEntry(ref, handle.read[Data])
+                  Zip.Entry(ref, handle.read[Data])
+              . compact
 
           case ClasspathEntry.Jar(jar) =>
             unsafely:
               val jarfile = workingDirectory[Path on Linux].resolve(jar)
               jarfile.open: handle =>
-                ZipStream(handle).keep { path => path.encode != t"META-INF/MANIFEST.MF" }
-                . map: entry =>
-                    ZipEntry(entry.ref, entry.read[Data])
+                ZipStream(handle).keep(_.encode != t"META-INF/MANIFEST.MF").map: entry =>
+                  Zip.Entry(entry.ref, entry.read[Data])
 
                 . to(List)
 
           case _ =>
-            List()
+            Nil
 
-      jarfile
+      entries.distinctBy(_.ref)
+
+    jarfile
