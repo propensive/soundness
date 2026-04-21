@@ -223,13 +223,14 @@ object StackTrace:
       types.indexOf("#mc") match
         case -1 | 0 => rewritten
 
-        case i =>
+        case index =>
           Text:
-            val types2 = types.drop(i + 3).to(List).map(primitive)
+            val types2 = types.drop(index + 3).to(List).map(primitive)
             if types2.length <= 2 then types2.mkString("(", " => ", ")")
             else types2.init.mkString("((", ", ", s") => ${types2.last})")
 
-    else if rewritten.s.startsWith("scala.runtime.function.JProcedure") then Text:
+    else if rewritten.s.startsWith("scala.runtime.function.JProcedure")
+    then
       val n = try rewritten.s.drop(33).toInt catch case error: Exception => 0
       "("+(if n < 2 then s"Any" else List.fill(n)("Any").mkString("(", ", ", ")"))+" => Unit)"
 
@@ -248,7 +249,7 @@ object StackTrace:
           rewrite(frame.getClassName.nn),
           rewrite(frame.getMethodName.nn, method = true)
         ),
-        Text(Option(frame.getFileName).map(_.nn).getOrElse("[no file]")),
+        Text(Option(frame.getFileName).map(_.nn).getOrElse("———")),
         if frame.getLineNumber < 0 then Unset else frame.getLineNumber,
         frame.isNativeMethod
       )

@@ -82,7 +82,8 @@ object Sandbox:
       block(using tool).also:
         unsafely:
           sh"$path '{admin}' kill".exec[Exit]()
-          completionScripts.trim.lines.map(_.decode[Path on Linux]).each(_.delete())
+          completionScripts.trim.lines.map(_.decode[Path on Linux]).each: item =>
+            safely(item.delete())
 
 
 case class Sandbox(name: Text)(using Classloader, Environment) extends Rig:
@@ -103,7 +104,7 @@ case class Sandbox(name: Text)(using Classloader, Environment) extends Rig:
         case Exit.Ok         => target
         case Exit.Fail(fail) => ???
 
-  protected val scalac: Scalac[3.7] = Scalac(List(scalacOptions.experimental))
+  protected val scalac: Scalac[3.8] = Scalac(List(scalacOptions.experimental))
 
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux])
