@@ -42,3 +42,4 @@ package interfaces.paths:
   inline given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
   inline given pathOnLocal: (Path on Local) is Representative of Paths = !!
   inline given pathOnPosix: (Path on Posix) is Representative of Paths = !!
+  inline given text: Text is Representative of Paths = !!

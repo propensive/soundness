@@ -50,6 +50,7 @@ object MacOs:
   given filesystem: MacOs is Filesystem:
     type UniqueRoot = true
 
+    val name: Text = "Mac OS"
     val separator: Text = t"/"
     val self: Text = t"."
     val parent: Text = t".."

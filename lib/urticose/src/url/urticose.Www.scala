@@ -54,6 +54,7 @@ object Www:
   given filesystem: Www is Filesystem:
     type UniqueRoot = false
 
+    val name: Text = "World Wide Web"
     val separator: Text = t"/"
     val self: Text = t"."
     val parent: Text = t".."

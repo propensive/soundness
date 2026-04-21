@@ -35,7 +35,6 @@ package galilei
 import scala.annotation.*
 
 import fulminate.*
-import prepositional.*
 import serpentine.*
 
 object IoError:
@@ -85,5 +84,5 @@ case class IoError
 extends Error
   ( {
       given path.Plane is Filesystem = filesystem
-      m"the $operation operation on ${path.encode} failed because $reason"
+      m"the $operation operation at ${path.encode} on ${filesystem.name} failed because $reason"
     } )

@@ -60,9 +60,10 @@ object Zip:
   given filesystem: Zip is Filesystem:
     type UniqueRoot = false
 
-    val separator: Text = t"/"
-    val self: Text = t"."
-    val parent: Text = t".."
+    val name: Text = "ZIP"
+    val separator: Text = "/"
+    val self: Text = "."
+    val parent: Text = ".."
 
   given radical: %.type is Radical:
     type Plane = Zip

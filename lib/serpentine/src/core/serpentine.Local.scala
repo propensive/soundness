@@ -51,6 +51,7 @@ object Local:
   given filesystem: System => Local is Filesystem:
     type UniqueRoot = false
 
+    val name: Text = System.properties.os.name().show
     val separator: Text = System.properties.path.separator().show
     val self: Text = t"."
     val parent: Text = t".."
