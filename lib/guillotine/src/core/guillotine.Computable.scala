@@ -40,6 +40,7 @@ import scala.jdk.StreamConverters.StreamHasToScala
 
 import anticipation.*
 import contingency.*
+import gossamer.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -73,7 +74,7 @@ object Computable:
   given instantiable: [instantiable: Instantiable across Paths from Text]
   =>  instantiable is Computable =
 
-    text.map(instantiable(_))
+    text.map: text => instantiable(text.trim)
 
 
 trait Computable extends Typeclass:

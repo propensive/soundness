@@ -270,3 +270,38 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         test(m"completion of short flag parameter on fish"):
           Fish.tmux()(Tmux.progress(t"distribution gentoo -fb"))
         . assert(_ == t"distribution gentoo -fblue ^")
+
+        suite(m"Admin commands"):
+          val tool = summon[Sandbox.Tool].path
+
+          test(m"'{admin}' pid returns a positive integer"):
+            sh"$tool '{admin}' pid".exec[Text]().trim.decode[Int]
+          .check(_ > 0)
+
+          test(m"'{admin}' pid is stable across invocations"):
+            val pid1 = sh"$tool '{admin}' pid".exec[Text]().trim
+            val pid2 = sh"$tool '{admin}' pid".exec[Text]().trim
+            pid1 == pid2
+          .assert(_ == true)
+
+          test(m"'{admin}' pid exits with status 0"):
+            sh"$tool '{admin}' pid".exec[Exit]()
+          .assert(_ == Exit.Ok)
+
+          test(m"'{admin}' install exits with status 0"):
+            sh"$tool '{admin}' install".exec[Exit]()
+          .assert(_ == Exit.Ok)
+
+          test(m"'{admin}' install output lines are existing files"):
+            val output = sh"$tool '{admin}' install".exec[Text]()
+            val paths = output.trim.lines.filter(_.length > 0)
+            paths.forall: path =>
+              safely(path.decode[Path on Linux]).let(_.exists()).or(false)
+          .assert(_ == true)
+
+          test(m"'{admin}' kill terminates the daemon"):
+            val pid = sh"$tool '{admin}' pid".exec[Text]().trim
+            sh"$tool '{admin}' kill".exec[Unit]()
+            snooze(200L)
+            sh"kill -0 $pid".exec[Exit]()
+          .assert(_ == Exit.Fail(1))

@@ -210,8 +210,8 @@ object Tests extends Suite(m"Ethereal Tests"):
 
           test(m"recovery after daemon is killed with SIGKILL"):
             snooze(500L)
-            val daemonPid = sh"cat $stateDir/pid".exec[Text]()
-            sh"kill -9 $daemonPid".exec[Unit]()
+            val pid = sh"$tool '{admin}' pid".exec[Text]().trim
+            sh"kill -9 $pid".exec[Unit]()
             snooze(500L)
             sh"$tool echo recovered".exec[Text]()
           .assert(_ == t"recovered")
@@ -278,8 +278,8 @@ object Tests extends Suite(m"Ethereal Tests"):
           test(m"launcher exits when daemon is killed"):
             val proc = sh"$tool sleep 30".fork[Exit]()
             snooze(500L)
-            val daemonPid = sh"cat $stateDir/pid".exec[Text]()
-            sh"kill -9 $daemonPid".exec[Unit]()
+            val pid = sh"$tool '{admin}' pid".exec[Text]().trim
+            sh"kill -9 $pid".exec[Unit]()
             val exit = proc.await()
             exit != Exit.Ok
           .assert(_ == true)
@@ -310,8 +310,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           test(m"pid file contains a valid running PID"):
             sh"$tool sleep 5".fork[Exit]()
             snooze(500L)
-            val pidText = sh"cat $stateDir/pid".exec[Text]()
-            // Verify the PID is a running process
+            val pidText = sh"$tool '{admin}' pid".exec[Text]().trim
             sh"kill -0 $pidText".exec[Exit]()
           .assert(_ == Exit.Ok)
 
