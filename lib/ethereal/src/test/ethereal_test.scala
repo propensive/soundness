@@ -197,7 +197,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           test(m"SIGTERM causes the launcher to exit"):
             val t0 = _root_.java.lang.System.currentTimeMillis
             val proc = sh"$tool sleep 1".fork[Exit]()
-            snooze(0.2*Second)
+            snooze(0.02*Second)
             sh"kill -TERM ${proc.pid.value}".exec[Unit]()
             proc.await()
             _root_.java.lang.System.currentTimeMillis - t0
@@ -205,35 +205,35 @@ object Tests extends Suite(m"Ethereal Tests"):
 
           test(m"SIGWINCH is forwarded to the application"):
             val proc = sh"$tool signal".fork[Text]()
-            snooze(0.2*Second)
+            snooze(0.02*Second)
             sh"kill -WINCH ${proc.pid.value}".exec[Unit]()
             proc.await()
           .assert(_ == t"WINCH")
 
           test(m"SIGUSR1 is forwarded to the application"):
             val proc = sh"$tool signal".fork[Text]()
-            snooze(0.2*Second)
+            snooze(0.02*Second)
             sh"kill -USR1 ${proc.pid.value}".exec[Unit]()
             proc.await()
           .assert(_ == t"USR1")
 
           test(m"SIGUSR2 is forwarded to the application"):
             val proc = sh"$tool signal".fork[Text]()
-            snooze(0.2*Second)
+            snooze(0.02*Second)
             sh"kill -USR2 ${proc.pid.value}".exec[Unit]()
             proc.await()
           .assert(_ == t"USR2")
 
           test(m"SIGHUP is forwarded to the application"):
             val proc = sh"$tool signal".fork[Text]()
-            snooze(0.2*Second)
+            snooze(0.02*Second)
             sh"kill -HUP ${proc.pid.value}".exec[Unit]()
             proc.await()
           .assert(_ == t"HUP")
 
           test(m"SIGINT is forwarded to the application"):
             val proc = sh"$tool signal".fork[Text]()
-            snooze(0.2*Second)
+            snooze(0.02*Second)
             sh"kill -INT ${proc.pid.value}".exec[Unit]()
             proc.await()
           .assert(_ == t"INT")
@@ -241,21 +241,18 @@ object Tests extends Suite(m"Ethereal Tests"):
         suite(m"Daemon lifecycle"):
           test(m"pid file is present while daemon is running"):
             sh"$tool".exec[Unit]()
-            snooze(0.2*Second)
             sh"test -f $stateDir/pid".exec[Exit]()
           .assert(_ == Exit.Ok) // daemon persists between invocations
 
           test(m"recovery after daemon is killed with SIGKILL"):
-            snooze(0.2*Second)
             val pid = sh"$tool '{admin}' pid".exec[Text]().trim
             sh"kill -9 $pid".exec[Unit]()
-            snooze(0.5*Second)
+            snooze(0.02*Second)
             sh"$tool echo recovered".exec[Text]()
           .assert(_ == t"recovered")
 
           test(m"stale pid file is cleaned up"):
             sh"$tool".exec[Unit]()
-            snooze(0.2*Second)
             _root_.java.nio.file.Files.writeString(
               _root_.java.nio.file.Path.of(s"${stateDir.encode.s}/pid"),
               "99999"
@@ -268,7 +265,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             sh"mkdir -p $stateDir".exec[Unit]()
             sh"touch $stateDir/fail".exec[Unit]()
             sh"rm -f $stateDir/pid $stateDir/port".exec[Unit]()
-            snooze(2.5*Second)
+            snooze(2.02*Second)
             sh"$tool echo after-fail".exec[Text]()
           .assert(_ == t"after-fail")
 
@@ -307,16 +304,16 @@ object Tests extends Suite(m"Ethereal Tests"):
         suite(m"Forced kill and cleanup"):
           test(m"daemon survives launcher SIGKILL"):
             val proc = sh"$tool sleep 30".fork[Exit]()
-            snooze(0.5*Second)
+            snooze(0.02*Second)
             val launcherPid = proc.pid.value
             sh"kill -9 $launcherPid".exec[Unit]()
-            snooze(0.2*Second)
+            snooze(0.02*Second)
             sh"$tool echo still-alive".exec[Text]()
           .assert(_ == t"still-alive")
 
           test(m"launcher exits when daemon is killed"):
             val proc = sh"$tool sleep 30".fork[Exit]()
-            snooze(0.5*Second)
+            snooze(0.02*Second)
             val pid = sh"$tool '{admin}' pid".exec[Text]().trim
             sh"kill -9 $pid".exec[Unit]()
             val exit = proc.await()
@@ -348,7 +345,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           // The pid file should contain a numeric PID of a running process
           test(m"pid file contains a valid running PID"):
             sh"$tool sleep 5".fork[Exit]()
-            snooze(0.5*Second)
+            snooze(0.02*Second)
             val pidText = sh"$tool '{admin}' pid".exec[Text]().trim
             sh"kill -0 $pidText".exec[Exit]()
           .assert(_ == Exit.Ok)
