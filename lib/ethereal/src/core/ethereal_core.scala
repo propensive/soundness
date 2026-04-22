@@ -37,6 +37,9 @@ import language.experimental.pureFunctions
 import java.io as ji
 import java.lang as jl
 import java.net as jn
+import java.util as ju
+import ju.concurrent as juc
+import juc.atomic as juca
 
 import scala.collection.concurrent as scc
 
@@ -250,7 +253,10 @@ def cli[bus <: Matchable](using executive: Executive)
 
         case DaemonEvent.Stderr(pid) =>
           Log.fine(DaemonLogEvent.StderrRequest(pid))
-          client(pid).stderr.offer(socket.getOutputStream.nn)
+          val stderrClient = client(pid)
+          stderrClient.stderr.offer(socket.getOutputStream.nn)
+          safely(stderrClient.exitPromise.await())
+          safely(socket.close())
 
         case DaemonEvent.Init(pid, login, directory, script, shellInput, textArguments, env) =>
           Log.fine(DaemonLogEvent.Init(pid))
@@ -260,12 +266,26 @@ def cli[bus <: Matchable](using executive: Executive)
           val lazyStderr: ji.OutputStream =
             if !stderrSupport() then socket.getOutputStream.nn
             else new ji.OutputStream():
-              private lazy val wrapped = connection.stderr.await()
-              def write(i: Int): Unit = wrapped.write(i)
-              override def write(bytes: Array[Byte] | Null): Unit = wrapped.write(bytes)
+              private val stderrOut: juca.AtomicReference[ji.OutputStream | Null] =
+                juca.AtomicReference(null)
+
+              private def connected(): ji.OutputStream =
+                val s = stderrOut.get()
+                if s != null then s
+                else
+                  val newS = connection.stderr.await()
+                  stderrOut.set(newS)
+                  newS
+
+              def write(i: Int): Unit = connected().write(i)
+              override def write(bytes: Array[Byte] | Null): Unit = connected().write(bytes)
 
               override def write(bytes: Array[Byte] | Null, offset: Int, length: Int): Unit =
-                wrapped.write(bytes, offset, length)
+                connected().write(bytes, offset, length)
+
+              override def close(): Unit =
+                val s = stderrOut.get()
+                if s != null then safely(s.close())
 
           given environment: Environment = LazyEnvironment(env)
 
@@ -281,8 +301,8 @@ def cli[bus <: Matchable](using executive: Executive)
 
           val stdio: Stdio =
             Stdio
-              ( ji.PrintStream(socket.getOutputStream.nn),
-                ji.PrintStream(lazyStderr),
+              ( ji.PrintStream(socket.getOutputStream.nn, true),
+                ji.PrintStream(lazyStderr, true),
                 in,
                 termcap )
 
@@ -326,6 +346,7 @@ def cli[bus <: Matchable](using executive: Executive)
               connection.exitPromise.fulfill(handler.handle(exception)(using stdio))
 
           finally
+            lazyStderr.close()
             socket.close()
             Log.info(DaemonLogEvent.CloseConnection(pid))
 

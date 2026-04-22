@@ -46,6 +46,12 @@ import proscenium.*
 import rudiments.*
 import turbulence.*
 
+object Stderr:
+  given computable: Stderr is Computable = proc =>
+    Stderr(String(proc.getErrorStream.nn.readAllBytes().nn, "UTF-8").nn.tt)
+
+case class Stderr(text: Text)
+
 object Computable:
   given stream: Stream[Text] is Computable = proc =>
     val reader = ji.BufferedReader(ji.InputStreamReader(proc.getInputStream))

@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
 declare javaCmd portFile pidFile ttystate script dataHomeDir data stderr javaBundle pendingUpdate
-declare -i doDownload minimumJava preferredJava pid port version buildId stdoutPid stderrPid continue pipePid argCount launchPid payloadSize jarSize initParameters
+declare -i doDownload minimumJava preferredJava pid port version buildId stdoutPid stderrPid continue pipePid argCount launchPid payloadSize jarSize initParameters termSig
 declare -a args signals sttyOptions
 
 # The TTY settings to use for terminal input
 sttyOptions=(intr undef -echo icanon raw opost)
 
 # The set of signals which should be captured and forwarded to the JVM process
-signals=(INT WINCH TERM)
+signals=(INT WINCH TERM HUP USR1 USR2)
 
 name="$(basename "$0")"
 baseDir="${XDG_RUNTIME_DIR:-$HOME/.local/state}/$name"
@@ -19,6 +19,7 @@ failFile="$baseDir/fail"
 invocation="$0"
 script="$(realpath "$invocation")"
 doDownload=0
+termSig=0
 minimumJava=%%JAVA_MINIMUM%%
 preferredJava=%%JAVA_PREFERRED%%
 javaHome="$dataHomeDir/java"
@@ -38,12 +39,13 @@ backout() {
   local -i timestamp now
   if [ -f "$failFile" ]
   then
-    if [ -f "$pidFile" ]
+    now=$(date +%s)
+    timestamp=$(stat -c %Y "$failFile" 2> /dev/null || stat -f %m "$failFile")
+    if [ $((now - timestamp)) -ge 2 ]
     then
-      now=$(date +%s)
-      timestamp=$(stat -c %Y "$failFile" 2> /dev/null || stat -f %m "$failFile")
-      [ $((now - timestamp)) -ge 2 ] && rm -f "$failFile" "$pidFile"
-    else
+      rm -f "$failFile"
+    elif [ ! -f "$pidFile" ]
+    then
       [ -t 0 ] && stty "$ttystate"
       printf "\nThe %s daemon process failed to start.\n" "$name" >&2
       printf "Remove the file %s before trying again.\n" "$failFile" >&2
@@ -212,7 +214,8 @@ setup() {
 handle() {
   # shellcheck disable=SC2317
   case "$1" in
-    TERM) continue=0 ;;
+    TERM) continue=0; termSig=1 ;;
+    INT)  continue=0 ;;
   esac
   # shellcheck disable=SC2317
   printf "s\n%s\n%s\n" "$pid" "$1" >"/dev/tcp/localhost/$port" || exit 1
@@ -300,7 +303,7 @@ fi
 backout
 
 [ -t 0 ] && stty "${sttyOptions[@]}" > /dev/null 2>&1
-exec 2> /dev/null 7<> /dev/tcp/localhost/$port || exit 2
+exec 7<> /dev/tcp/localhost/$port || exit 2
 [ -t 0 ] && printf "i\nt\n" >&7 || printf "i\np\n" >&7
 printf "%s\n%s\n%s\n%s\n" "$pid" "$EUID" "$USER" "$script" >&7
 pwd >&7
@@ -316,7 +319,7 @@ pipePid=$!
 
 if [ "$stderr" = "1" ]
 then
-  exec 2> /dev/null 5<> /dev/tcp/localhost/$port || exit 2
+  exec 5<> /dev/tcp/localhost/$port || exit 2
   printf "e\n%s\n" "$pid" >&5
   cat >&2 <&5 &
   stderrPid=$!
@@ -336,7 +339,14 @@ done
 [ -t 0 ] && stty "$ttystate"
 kill $launchPid 2> /dev/null
 kill $stdoutPid 2> /dev/null
-kill $stderrPid 2> /dev/null
-terminate
+if kill -0 $pipePid 2> /dev/null && [ $termSig = 1 ]
+then
+  kill $pipePid 2> /dev/null
+  kill $stderrPid 2> /dev/null
+  exit 1
+else
+  [ $stderrPid -gt 0 ] && wait $stderrPid 2> /dev/null
+  terminate
+fi
 # shellcheck disable=SC2317
 exit 1
