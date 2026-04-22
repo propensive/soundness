@@ -32,8 +32,11 @@
                                                                                                   */
 package aviation
 
+import anticipation.*
 import proscenium.*
 import symbolism.*
+
+import abstractables.instantIsAbstractable
 
 abstract class Clock():
   def apply(): Instant

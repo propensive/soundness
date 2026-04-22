@@ -37,6 +37,8 @@ import java.time as jt
 import anticipation.*
 import prepositional.*
 
+import abstractables.instantIsAbstractable
+
 object Moment:
   given generic: RomanCalendar => Moment is Abstractable across Instants to Long =
     _.instant.generic

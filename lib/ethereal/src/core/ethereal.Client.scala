@@ -38,6 +38,7 @@ import java.io as ji
 import java.net as jn
 
 import anticipation.*
+import anticipation.abstractables.durationIsAbstractable
 import contingency.*
 import guillotine.*
 import parasite.*

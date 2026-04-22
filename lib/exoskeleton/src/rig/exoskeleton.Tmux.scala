@@ -65,7 +65,7 @@ object Tmux:
 
     var count = 0
     block.also:
-      while init === screenshot().screen && count < 60 do delay(10_000_000L) yet (count += 1)
+      while init === screenshot().screen && count < 60 do delay(0.01*Second) yet (count += 1)
 
 
   def completions(text: Text)(using tool: Sandbox.Tool, tmux: Tmux)(using Monitor, WorkingDirectory)

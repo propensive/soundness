@@ -34,10 +34,10 @@ package anticipation
 
 import prepositional.*
 
-object Durations:
-  inline def ms(long: Long): Double = long.toDouble*1_000_000
-  inline def ms(double: Double): Long = (double/1_000_000).toLong
-  inline def ns(long: Long): Double = long.toDouble
-  inline def ns(double: Double): Long = double.toLong
+package abstractables:
+  given durationIsAbstractable: Long is Abstractable across Durations to Long = identity(_)
+  given instantIsAbstractable: Long is Abstractable across Instants to Long = identity(_)
 
-sealed trait Durations
+package instantiables:
+  given durationIsInstantiable: Long is Instantiable across Durations from Long = identity(_)
+  given instantIsInstantiable: Long is Instantiable across Instants from Long = identity(_)

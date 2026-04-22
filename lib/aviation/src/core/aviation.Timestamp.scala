@@ -45,6 +45,7 @@ import spectacular.*
 import symbolism.*
 
 import errorDiagnostics.stackTraces
+import abstractables.instantIsAbstractable
 
 object Timestamp:
   import calendars.gregorian

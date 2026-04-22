@@ -42,6 +42,8 @@ import profanity.*
 import rudiments.*
 import vacuous.*
 
+import abstractables.durationIsAbstractable
+
 object Cli:
   private var messages: List[Text] = Nil
   private var trigger: Promise[Unit] = Promise()

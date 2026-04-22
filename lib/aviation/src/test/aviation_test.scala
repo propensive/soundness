@@ -36,6 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
+import abstractables.instantIsAbstractable
 
 object Tests extends Suite(m"Aviation Tests"):
   def run(): Unit =

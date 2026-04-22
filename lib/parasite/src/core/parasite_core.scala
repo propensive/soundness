@@ -47,6 +47,9 @@ import proscenium.*
 import symbolism.*
 import vacuous.*
 
+import abstractables.durationIsAbstractable
+import abstractables.instantIsAbstractable
+
 package threading:
   given platform: Threading = () => PlatformSupervisor
   given virtual: Threading = () => VirtualSupervisor

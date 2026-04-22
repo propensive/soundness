@@ -47,7 +47,11 @@ package jsonEncodables:
 
 package jsonDecodables:
   given decodeInstantsAsUnixEpochMilliseconds: Tactic[JsonError] => Instant is Decodable in Json =
-    json => Instant(json.as[Long])
+    json =>
+      import abstractables.instantIsAbstractable
+      Instant(json.as[Long])
 
   given decodeDurationsAsMilliseconds: Tactic[JsonError] => Duration is Decodable in Json =
-    json => Duration(json.as[Long])
+    json =>
+      import abstractables.durationIsAbstractable
+      Duration(json.as[Long])

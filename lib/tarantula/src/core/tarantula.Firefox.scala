@@ -40,6 +40,7 @@ import guillotine.*
 import parasite.*
 import telekinesis.*
 
+import abstractables.instantIsAbstractable
 import strategies.throwUnsafely
 
 object Firefox extends Browser(t"firefox"):

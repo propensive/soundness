@@ -302,6 +302,6 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           test(m"'{admin}' kill terminates the daemon"):
             val pid = sh"$tool '{admin}' pid".exec[Text]().trim
             sh"$tool '{admin}' kill".exec[Unit]()
-            snooze(200L)
+            snooze(0.2*Second)
             sh"kill -0 $pid".exec[Exit]()
           .assert(_ == Exit.Fail(1))

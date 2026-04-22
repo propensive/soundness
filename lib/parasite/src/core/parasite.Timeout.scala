@@ -41,6 +41,8 @@ import java.util.concurrent.atomic as juca
 import anticipation.*
 import prepositional.*
 
+import abstractables.instantIsAbstractable
+
 object Timeout:
   def apply[duration: Abstractable across Durations to Long](timeout0: duration)(action: => Unit)
     ( using Monitor, Codicil )

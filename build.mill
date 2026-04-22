@@ -505,7 +505,7 @@ object exoskeleton extends Library:
   object core extends Component(args, galilei.core)
   object completions extends Component(core)
 
-  object rig extends Component(completions, superlunary.core, ethereal.core, jacinta.core, zeppelin.core, revolution.core, anthology.bundle):
+  object rig extends Component(completions, superlunary.core, ethereal.core, jacinta.core, zeppelin.core, revolution.core, anthology.bundle, quantitative.units):
     def mvnDeps =
       Seq
        (mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
