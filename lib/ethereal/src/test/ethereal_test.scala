@@ -50,27 +50,13 @@ import daemonConfig.supportStderr
 import homeDirectories.system
 
 object Tests extends Suite(m"Ethereal Tests"):
-  // Expected behaviors of the test executable:
-  //   <no args>          -- prints "ready" to stdout and exits with status 0
-  //   echo <text>        -- prints <text> to stdout (no newline) and exits with status 0
-  //   exit <code>        -- exits with the given integer exit code
-  //   stderr <text>      -- prints <text> to stderr and exits with status 0
-  //   sleep <seconds>    -- sleeps for the given duration, then exits with status 0
-  //   env <varname>      -- prints the value of the given environment variable to stdout (no newline)
-  //   pwd                -- prints the current working directory to stdout (no newline)
-  //   args               -- prints each argument (after "args") separated by newlines, no trailing newline
-  //   lines              -- prints each argument (after "lines") separated by newlines, with trailing newline
-  //   pid                -- prints its own PID to stdout (no newline)
-  //   hang               -- blocks forever (never exits), for testing forced kill scenarios
-
   def run(): Unit =
 
-    // `exe` is the path to the test executable, to be set up by the build helper.
-    // `stateDir` is the XDG_RUNTIME_DIR used to isolate daemon state per test.
-    // `cleanup` kills any lingering daemon and removes state files between tests.
+    safely(sh"pkill abcde".exec[Exit]())
+    snooze(0.1*Second)
 
-    val brokenExe = t"abcdef"
-    val stateDir: Path on Linux = Xdg.runtimeDir[Path on Linux].or(Xdg.stateHome[Path on Linux]) / t"abcde"
+    val stateDir: Path on Linux =
+      Xdg.runtimeDir[Path on Linux].or(Xdg.stateHome[Path on Linux]) / t"abcde"
 
     Sandbox("abcde").dispatch:
       ' {
@@ -131,6 +117,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
           t"finished"
         }
+
     . sandbox:
         val tool = summon[Sandbox.Tool].path
         suite(m"Basic invocation"):
@@ -197,7 +184,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           test(m"SIGTERM causes the launcher to exit"):
             val t0 = _root_.java.lang.System.currentTimeMillis
             val proc = sh"$tool sleep 1".fork[Exit]()
-            snooze(0.02*Second)
+            snooze(0.1*Second)
             sh"kill -TERM ${proc.pid.value}".exec[Unit]()
             proc.await()
             _root_.java.lang.System.currentTimeMillis - t0
@@ -205,51 +192,76 @@ object Tests extends Suite(m"Ethereal Tests"):
 
           test(m"SIGWINCH is forwarded to the application"):
             val proc = sh"$tool signal".fork[Text]()
-            snooze(0.02*Second)
+            snooze(0.1*Second)
             sh"kill -WINCH ${proc.pid.value}".exec[Unit]()
             proc.await()
-          .assert(_ == t"WINCH")
+          . assert(_ == t"WINCH")
 
           test(m"SIGUSR1 is forwarded to the application"):
             val proc = sh"$tool signal".fork[Text]()
-            snooze(0.02*Second)
+            snooze(0.1*Second)
             sh"kill -USR1 ${proc.pid.value}".exec[Unit]()
             proc.await()
-          .assert(_ == t"USR1")
+
+          . assert(_ == t"USR1")
 
           test(m"SIGUSR2 is forwarded to the application"):
             val proc = sh"$tool signal".fork[Text]()
-            snooze(0.02*Second)
+            snooze(0.1*Second)
             sh"kill -USR2 ${proc.pid.value}".exec[Unit]()
             proc.await()
-          .assert(_ == t"USR2")
+
+          . assert(_ == t"USR2")
 
           test(m"SIGHUP is forwarded to the application"):
             val proc = sh"$tool signal".fork[Text]()
-            snooze(0.02*Second)
+            snooze(0.1*Second)
             sh"kill -HUP ${proc.pid.value}".exec[Unit]()
             proc.await()
-          .assert(_ == t"HUP")
+
+          . assert(_ == t"HUP")
 
           test(m"SIGINT is forwarded to the application"):
             val proc = sh"$tool signal".fork[Text]()
-            snooze(0.02*Second)
+            snooze(0.1*Second)
             sh"kill -INT ${proc.pid.value}".exec[Unit]()
             proc.await()
-          .assert(_ == t"INT")
+
+          . assert(_ == t"INT")
+
+        suite(m"State file monitoring"):
+          test(m"daemon restarts after pid file is deleted"):
+            val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim
+            sh"rm -f $stateDir/pid".exec[Unit]()
+            snooze(0.1*Second)
+            val newPid = sh"$tool '{admin}' pid".fork[Text]().await().trim
+            newPid != oldPid
+
+          . assert(_ == true)
+
+          test(m"daemon restarts after port file is deleted"):
+            val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim
+            sh"rm -f $stateDir/port".exec[Unit]()
+            snooze(0.1*Second)
+            val newPid = sh"$tool '{admin}' pid".fork[Text]().await().trim
+            newPid != oldPid
+
+          . assert(_ == true)
 
         suite(m"Daemon lifecycle"):
           test(m"pid file is present while daemon is running"):
             sh"$tool".exec[Unit]()
             sh"test -f $stateDir/pid".exec[Exit]()
-          .assert(_ == Exit.Ok) // daemon persists between invocations
+
+          . assert(_ == Exit.Ok) // daemon persists between invocations
 
           test(m"recovery after daemon is killed with SIGKILL"):
             val pid = sh"$tool '{admin}' pid".exec[Text]().trim
             sh"kill -9 $pid".exec[Unit]()
-            snooze(0.02*Second)
+            snooze(0.1*Second)
             sh"$tool echo recovered".exec[Text]()
-          .assert(_ == t"recovered")
+
+          . assert(_ == t"recovered")
 
           test(m"stale pid file is cleaned up"):
             sh"$tool".exec[Unit]()
@@ -259,19 +271,20 @@ object Tests extends Suite(m"Ethereal Tests"):
             )
             sh"rm -f $stateDir/port".exec[Unit]()
             sh"$tool echo fresh".exec[Text]()
-          .assert(_ == t"fresh")
+
+          . assert(_ == t"fresh")
 
           test(m"fail file is removed after 2 seconds"):
             sh"mkdir -p $stateDir".exec[Unit]()
             sh"touch $stateDir/fail".exec[Unit]()
             sh"rm -f $stateDir/pid $stateDir/port".exec[Unit]()
-            snooze(2.02*Second)
+            snooze(2.1*Second)
             sh"$tool echo after-fail".exec[Text]()
-          .assert(_ == t"after-fail")
+
+          . assert(_ == t"after-fail")
 
         suite(m"Concurrent invocations"):
           test(m"parallel invocations share the same daemon"):
-            // Executable: "pid" command prints the daemon's PID
             val proc1 = sh"$tool pid".fork[Text]()
             val proc2 = sh"$tool pid".fork[Text]()
             val proc3 = sh"$tool pid".fork[Text]()
@@ -279,98 +292,105 @@ object Tests extends Suite(m"Ethereal Tests"):
             val pid2 = proc2.await()
             val pid3 = proc3.await()
             Set(pid1, pid2, pid3).size
-          .assert(_ == 1)
+
+          . assert(_ == 1)
 
           test(m"rapid sequential invocations succeed"):
             val results = (1 to 5).map: i =>
               sh"$tool echo $i".exec[Text]()
             results.to(List).map(_.trim)
-          .assert(_ == List(t"1", t"2", t"3", t"4", t"5"))
 
-        // suite(m"Version-gated restart"):
-
-        //   // When the build ID in the executable changes, the daemon should be restarted.
-        //   // This requires two different executables built with different build IDs.
-        //   test(m"daemon restarts when build ID changes"):
-        //     // Executable v1: "pid" command prints the daemon's PID, built with build ID 1
-        //     // Executable v2: same behavior, built with build ID 2
-        //     // Run v1, record the daemon PID; run v2, record the daemon PID; they should differ
-        //     val pid1 = sh"$exeV1 pid".exec[Text]()
-        //     snooze(200L)
-        //     val pid2 = sh"$exeV2 pid".exec[Text]()
-        //     pid1 != pid2
-        //   .assert(_ == true)
+          . assert(_ == List(t"1", t"2", t"3", t"4", t"5"))
 
         suite(m"Forced kill and cleanup"):
           test(m"daemon survives launcher SIGKILL"):
             val proc = sh"$tool sleep 30".fork[Exit]()
-            snooze(0.02*Second)
+            snooze(0.1*Second)
             val launcherPid = proc.pid.value
             sh"kill -9 $launcherPid".exec[Unit]()
-            snooze(0.02*Second)
+            snooze(0.1*Second)
             sh"$tool echo still-alive".exec[Text]()
-          .assert(_ == t"still-alive")
+
+          . assert(_ == t"still-alive")
 
           test(m"launcher exits when daemon is killed"):
             val proc = sh"$tool sleep 30".fork[Exit]()
-            snooze(0.02*Second)
+            snooze(0.1*Second)
             val pid = sh"$tool '{admin}' pid".exec[Text]().trim
             sh"kill -9 $pid".exec[Unit]()
             val exit = proc.await()
             exit != Exit.Ok
-          .assert(_ == true)
+
+          . assert(_ == true)
 
           test(m"new daemon starts after previous was killed"):
             sh"$tool echo restarted".exec[Text]()
-          .assert(_ == t"restarted")
+
+          . assert(_ == t"restarted")
 
         suite(m"State file integrity"):
-
-          // The port file should contain three space-separated values: port, buildId, stderr flag
           test(m"port file has correct format"):
-            // Executable: start the daemon
             sh"$tool echo probe".exec[Unit]()
             val content = sh"cat $stateDir/port".exec[Text]()
-            // Should be three space-separated tokens: <port> <buildId> <0|1>
             content.cut(t" ").length
-          .assert(_ == 3)
+
+          . assert(_ == 3)
 
           test(m"port file contains a valid port number"):
             sh"$tool echo probe".exec[Unit]()
             val content = sh"cat $stateDir/port".exec[Text]()
             val port = content.cut(t" ").head.decode[Int]
             port > 0 && port < 65536
-          .assert(_ == true)
 
-          // The pid file should contain a numeric PID of a running process
+          . assert(_ == true)
+
           test(m"pid file contains a valid running PID"):
             sh"$tool sleep 5".fork[Exit]()
-            snooze(0.02*Second)
+            snooze(0.1*Second)
             val pidText = sh"$tool '{admin}' pid".exec[Text]().trim
             sh"kill -0 $pidText".exec[Exit]()
-          .assert(_ == Exit.Ok)
+
+          . assert(_ == Exit.Ok)
 
         suite(m"Pipe mode"):
-
-          // When stdin is not a TTY (i.e. piped), the launcher should send "p" (pipe)
-          // rather than "t" (terminal) in the init message.
           test(m"pipe input is forwarded to the application"):
-            // Executable: reads from stdin and echoes it
-            // Here we pipe text into the executable
             (sh"echo 'piped input'" | sh"$tool cat").exec[Text]()
-          .assert(_ == t"piped input")
 
-        suite(m"Timeout and launch failure"):
+          . assert(_ == t"piped input")
 
-          // If the daemon fails to start (e.g. the JAR is corrupt), the launcher should
-          // time out and create a fail file, then report the failure.
-          test(m"launcher exits with error when daemon cannot start"):
-            // Executable: a broken executable that exits immediately without writing a port file
-            safely(sh"$brokenExe echo hello".exec[Exit]()).or(Exit.Fail(1))
-          .assert(_ != Exit.Ok)
+    val brokenStateDir: Path on Linux =
+      Xdg.runtimeDir[Path on Linux].or(Xdg.stateHome[Path on Linux]) / t"brokn"
 
-        //   // After a failed start, the fail file should exist
-        //   // test(m"fail file exists after failed daemon start"):
-        //   //   sh"$brokenExe echo hello".exec[Exit]()
-        //   //   sh"test -f $brokenStateDir/fail".exec[Exit]()
-        //   // .assert(_ == Exit.Ok)
+    val brokenExe: Path on Linux = Sandbox("brokn").dispatch:
+      ' {
+          import executives.completions
+          import interpreters.posix
+          import environments.daemonClient
+
+          if _root_.java.lang.System.getProperty("ethereal.name") != null then
+            _root_.java.lang.System.exit(1)
+
+          cli:
+            arguments match
+              case _ => execute(Exit.Ok)
+
+          t"unreachable"
+        }
+    . path
+
+    suite(m"Timeout and launch failure"):
+
+      test(m"launcher exits with error when daemon cannot start"):
+        sh"rm -f $brokenStateDir/fail".exec[Unit]()
+        safely(sh"$brokenExe echo hello".exec[Exit]()).or(Exit.Fail(1))
+
+      . assert(_ != Exit.Ok)
+
+      test(m"fail file exists after failed daemon start"):
+        sh"rm -f $brokenStateDir/fail".exec[Unit]()
+        safely(sh"$brokenExe echo hello".exec[Exit]())
+        sh"test -f $brokenStateDir/fail".exec[Exit]()
+
+      . assert(_ == Exit.Ok)
+
+    sh"rm -rf $brokenStateDir".exec[Unit]()

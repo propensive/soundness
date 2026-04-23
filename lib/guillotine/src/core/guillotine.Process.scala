@@ -35,10 +35,12 @@ package guillotine
 import language.experimental.pureFunctions
 
 import java.io as ji
+import java.util.concurrent as juc
 
 import anticipation.*
 import contingency.*
 import gossamer.*
+import parasite.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -78,6 +80,14 @@ class Process[+exec <: Label, result](process: java.lang.Process) extends Proces
 
 
   def await()(using computable: result is Computable): result = computable.compute(process)
+
+  def await[duration: Abstractable across Durations to Long](duration: duration)
+    ( using computable: result is Computable )
+  :   result raises AsyncError =
+
+    if process.waitFor(duration.generic/1_000_000L, juc.TimeUnit.MILLISECONDS)
+    then computable.compute(process)
+    else contingency.abort(AsyncError(AsyncError.Reason.Timeout))
 
   def exitStatus(): Exit = process.waitFor() match
     case 0     => Exit.Ok

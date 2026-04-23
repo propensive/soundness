@@ -49,6 +49,7 @@ class Runner[report]()(using reporter: Reporter[report]):
     if skip(test.id) then Unset else run[result](test)
 
   def run[result](test: Test[result]): Trial[result] =
+    _root_.java.lang.System.out.nn.println(s"running: ${test.id.name}")
     synchronized { active += test.id }
     val context = Harness()
     Runner.harnessThreadLocal.set(Some(context))

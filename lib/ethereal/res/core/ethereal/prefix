@@ -183,8 +183,8 @@ launch() {
   local javaArgs
   javaArgs=(-Dethereal.startTime="$startTime" -Dethereal.name="$name" -Dethereal.user.id="$EUID" -Dethereal.user.name="$USER" -Dethereal.script="$script" -Dethereal.payloadSize=$payloadSize -Dethereal.jarSize=$jarSize -Dethereal.command="$(command -v "$name")" -Dethereal.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')")
   if command -v logger > /dev/null 2>&1
-  then (nohup "$javaCmd" "${javaArgs[@]}" -jar "$script" > /dev/null 2> >(logger -t "$name") || abort) &
-  else (nohup "$javaCmd" "${javaArgs[@]}" -jar "$script" > /dev/null 2>> "$baseDir/daemon.log" || abort) &
+  then (nohup "$javaCmd" "${javaArgs[@]}" -jar "$script" > /dev/null 2> >(logger -t "$name") || abort) >/dev/null 2>/dev/null &
+  else (nohup "$javaCmd" "${javaArgs[@]}" -jar "$script" > /dev/null 2>> "$baseDir/daemon.log" || abort) >/dev/null 2>/dev/null &
   fi
   launchPid=$!
 
@@ -301,6 +301,7 @@ then
   fi
 fi
 backout
+[ "$port" -gt 0 ] 2>/dev/null || exit 2
 
 [ -t 0 ] && stty "${sttyOptions[@]}" > /dev/null 2>&1
 exec 7<> /dev/tcp/localhost/$port || exit 2
