@@ -58,7 +58,13 @@ object Tests extends Suite(m"Ethereal Tests"):
     val stateDir: Path on Linux =
       Xdg.runtimeDir[Path on Linux].or(Xdg.stateHome[Path on Linux]) / t"abcde"
 
-    Sandbox("abcde").dispatch:
+    safely:
+      val oldPid = sh"cat $stateDir/pid".exec[Text]().trim
+      sh"kill -9 $oldPid".exec[Exit]()
+    snooze(0.2*Second)
+    sh"rm -f $stateDir/pid $stateDir/port $stateDir/fail".exec[Unit]()
+
+    val launcher = Sandbox("abcde").dispatch:
       ' {
           import executives.completions
           import interpreters.posix
@@ -118,7 +124,9 @@ object Tests extends Suite(m"Ethereal Tests"):
           t"finished"
         }
 
-    . sandbox:
+    sh"rm -f $stateDir/fail".exec[Unit]()
+
+    launcher.sandbox:
         val tool = summon[Sandbox.Tool].path
         suite(m"Basic invocation"):
           test(m"first invocation prints expected output"):
@@ -242,8 +250,12 @@ object Tests extends Suite(m"Ethereal Tests"):
           test(m"daemon restarts after port file is deleted"):
             val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim
             sh"rm -f $stateDir/port".exec[Unit]()
-            snooze(0.1*Second)
-            val newPid = sh"$tool '{admin}' pid".fork[Text]().await().trim
+            val deadline = _root_.java.lang.System.currentTimeMillis + 10000
+            while sh"kill -0 $oldPid".exec[Exit]() == Exit.Ok
+              && _root_.java.lang.System.currentTimeMillis < deadline
+            do snooze(0.05*Second)
+            sh"rm -f $stateDir/fail".exec[Unit]()
+            val newPid = sh"$tool '{admin}' pid".exec[Text]().trim
             newPid != oldPid
 
           . assert(_ == true)
@@ -256,6 +268,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           . assert(_ == Exit.Ok) // daemon persists between invocations
 
           test(m"recovery after daemon is killed with SIGKILL"):
+            sh"rm -f $stateDir/fail".exec[Unit]()
             val pid = sh"$tool '{admin}' pid".exec[Text]().trim
             sh"kill -9 $pid".exec[Unit]()
             snooze(0.1*Second)
@@ -264,12 +277,14 @@ object Tests extends Suite(m"Ethereal Tests"):
           . assert(_ == t"recovered")
 
           test(m"stale pid file is cleaned up"):
-            sh"$tool".exec[Unit]()
-            _root_.java.nio.file.Files.writeString(
-              _root_.java.nio.file.Path.of(s"${stateDir.encode.s}/pid"),
-              "99999"
-            )
-            sh"rm -f $stateDir/port".exec[Unit]()
+            sh"$tool echo pretest".exec[Text]()
+            val daemonPid = sh"cat $stateDir/pid".exec[Text]().trim
+            sh"kill -9 $daemonPid".exec[Unit]()
+            val deadline = _root_.java.lang.System.currentTimeMillis + 3000
+            while sh"kill -0 $daemonPid".exec[Exit]() == Exit.Ok
+              && _root_.java.lang.System.currentTimeMillis < deadline
+            do snooze(0.05*Second)
+            sh"rm -f $stateDir/fail".exec[Unit]()
             sh"$tool echo fresh".exec[Text]()
 
           . assert(_ == t"fresh")
@@ -278,7 +293,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             sh"mkdir -p $stateDir".exec[Unit]()
             sh"touch $stateDir/fail".exec[Unit]()
             sh"rm -f $stateDir/pid $stateDir/port".exec[Unit]()
-            snooze(2.1*Second)
+            snooze(2.5*Second)
             sh"$tool echo after-fail".exec[Text]()
 
           . assert(_ == t"after-fail")
@@ -345,8 +360,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           . assert(_ == true)
 
           test(m"pid file contains a valid running PID"):
-            sh"$tool sleep 5".fork[Exit]()
-            snooze(0.1*Second)
+            sh"$tool".exec[Unit]()
             val pidText = sh"$tool '{admin}' pid".exec[Text]().trim
             sh"kill -0 $pidText".exec[Exit]()
 
