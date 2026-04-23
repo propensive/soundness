@@ -60,7 +60,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
     safely:
       val oldPid = sh"cat $stateDir/pid".exec[Text]().trim.decode[Pid]
-      OsProcess(oldPid).abort()
+      Process(oldPid).abort()
     snooze(0.2*Second)
     sh"rm -f $stateDir/pid $stateDir/port $stateDir/fail".exec[Unit]()
 
@@ -102,7 +102,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
               case Argument("pid") :: Nil =>
                 execute:
-                  Out.print(OsProcess().pid.value.show) yet Exit.Ok
+                  Out.print(Process().pid.value.show) yet Exit.Ok
 
               case Argument("pwd") :: Nil =>
                 execute:
@@ -251,7 +251,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim.decode[Pid]
             sh"rm -f $stateDir/port".exec[Unit]()
             val deadline = _root_.java.lang.System.currentTimeMillis + 10000
-            while safely(OsProcess(oldPid).alive).or(false)
+            while safely(Process(oldPid).alive).or(false)
               && _root_.java.lang.System.currentTimeMillis < deadline
             do snooze(0.05*Second)
             sh"rm -f $stateDir/fail".exec[Unit]()
@@ -270,7 +270,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           test(m"recovery after daemon is killed with SIGKILL"):
             sh"rm -f $stateDir/fail".exec[Unit]()
             val pid = sh"$tool '{admin}' pid".exec[Text]().trim.decode[Pid]
-            OsProcess(pid).abort()
+            Process(pid).abort()
             snooze(0.1*Second)
             sh"$tool echo recovered".exec[Text]()
 
@@ -279,9 +279,9 @@ object Tests extends Suite(m"Ethereal Tests"):
           test(m"stale pid file is cleaned up"):
             sh"$tool echo pretest".exec[Text]()
             val daemonPid = sh"cat $stateDir/pid".exec[Text]().trim.decode[Pid]
-            OsProcess(daemonPid).abort()
+            Process(daemonPid).abort()
             val deadline = _root_.java.lang.System.currentTimeMillis + 3000
-            while safely(OsProcess(daemonPid).alive).or(false)
+            while safely(Process(daemonPid).alive).or(false)
               && _root_.java.lang.System.currentTimeMillis < deadline
             do snooze(0.05*Second)
             sh"rm -f $stateDir/fail".exec[Unit]()
@@ -362,7 +362,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           test(m"pid file contains a valid running PID"):
             sh"$tool".exec[Unit]()
             val pid = sh"$tool '{admin}' pid".exec[Text]().trim.decode[Pid]
-            safely(OsProcess(pid).alive).or(false)
+            safely(Process(pid).alive).or(false)
 
           . assert(_ == true)
 

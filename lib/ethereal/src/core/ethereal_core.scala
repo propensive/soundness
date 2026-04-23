@@ -367,7 +367,7 @@ def cli[bus <: Matchable](using executive: Executive)
       val buildId = safely((Classpath/"build.id").read[Text].trim.decode[Int]).or(0)
       val stderr = if stderrSupport() then 1 else 0
       portFile.open(t"$port $buildId $stderr".writeTo(_))
-      val pidValue = OsProcess().pid.value.show
+      val pidValue = Process().pid.value.show
       pidFile.open(pidValue.writeTo(_))
 
       task(t"pid-watcher"):

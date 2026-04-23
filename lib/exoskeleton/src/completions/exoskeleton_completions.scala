@@ -149,7 +149,7 @@ package executives:
         case t"{admin}" :: command :: Nil =>
           given Stdio = stdio
           command match
-            case t"pid"     => Out.println(OsProcess().pid.value.show) yet Exit.Ok
+            case t"pid"     => Out.println(Process().pid.value.show) yet Exit.Ok
             case t"kill"    => java.lang.System.exit(0) yet Exit.Ok
 
             case t"await"   =>

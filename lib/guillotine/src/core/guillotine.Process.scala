@@ -34,83 +34,41 @@ package guillotine
 
 import language.experimental.pureFunctions
 
-import java.io as ji
-import java.util.concurrent as juc
-
 import anticipation.*
 import contingency.*
-import gossamer.*
-import parasite.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
-import turbulence.*
 import vacuous.*
 
 object Process:
-  given writable: [chunk, command <: Label, result]
-  =>  ji.OutputStream is Writable by chunk
-  =>  Process[command, result] is Writable by chunk =
+  private def allHandles = ProcessHandle.allProcesses.nn.iterator.nn.asScala.to(List)
 
-    (process, stream) => process.stdin(stream)
+  def apply(pid: Pid)(using pidError: Tactic[PidError]): Process =
+    val handle = ProcessHandle.of(pid.value).nn
+    if handle.isPresent then new Process(handle.get.nn) else abort(PidError(pid))
 
+  def all: List[Process] = allHandles.map(new Process(_))
+  def roots: List[Process] = allHandles.filter(!_.parent.nn.isPresent).map(new Process(_))
+  def apply(): Process = new Process(ProcessHandle.current.nn)
 
-  given writableText: [command <: Label, result] => Tactic[StreamError]
-  =>  Process[command, result] is Writable by Text =
+class Process private (java: ProcessHandle) extends ProcessRef:
+  def pid: Pid = Pid(java.pid)
+  def kill(): Unit logs ExecEvent = java.destroy()
+  def abort(): Unit logs ExecEvent = java.destroyForcibly()
+  def alive: Boolean = java.isAlive
+  def attend(): Unit = java.onExit.nn.get()
 
-    (process, stream) => process.stdin(stream.map(_.sysData))
+  def parent: Optional[Process] =
+    val parent = java.parent.nn
+    if parent.isPresent then new Process(parent.get.nn) else Unset
 
+  def children: List[Process] =
+    java.children.nn.iterator.nn.asScala.map(new Process(_)).to(List)
 
-class Process[+exec <: Label, result](process: java.lang.Process) extends ProcessRef:
-  def pid: Pid = Pid(process.pid)
-  def alive: Boolean = process.isAlive
-  def attend(): Unit = process.waitFor()
+  def startTime[instantiable: Instantiable across Instants from Long]: Optional[instantiable] =
+    val instant = java.info.nn.startInstant.nn
+    if instant.isPresent then instantiable(instant.get.nn.toEpochMilli) else Unset
 
-  def stdout(): Stream[Data] raises StreamError =
-    Streamable.inputStream.stream(process.getInputStream.nn)
-
-  def stderr(): Stream[Data] raises StreamError =
-    Streamable.inputStream.stream(process.getErrorStream.nn)
-
-
-  def stdin[chunk](stream: Stream[chunk])(using writable: ji.OutputStream is Writable by chunk)
-  :   Unit =
-
-    writable.write(process.getOutputStream.nn, stream)
-
-
-  def await()(using computable: result is Computable): result = computable.compute(process)
-
-  def await[duration: Abstractable across Durations to Long](duration: duration)
-    ( using computable: result is Computable )
-  :   result raises AsyncError =
-
-    if process.waitFor(duration.generic/1_000_000L, juc.TimeUnit.MILLISECONDS)
-    then computable.compute(process)
-    else contingency.abort(AsyncError(AsyncError.Reason.Timeout))
-
-  def exitStatus(): Exit = process.waitFor() match
-    case 0     => Exit.Ok
-    case other => Exit.Fail(other)
-
-  def abort(): Unit logs ExecEvent =
-    Log.info(ExecEvent.AbortProcess(pid))
-    process.destroy()
-
-  def kill(): Unit logs ExecEvent =
-    Log.warn(ExecEvent.KillProcess(pid))
-    process.destroyForcibly()
-
-  def osProcess(using Tactic[PidError]) = OsProcess(pid)
-
-  def startTime[instant: Instantiable across Instants from Long]: Optional[instant] =
-    try
-      import strategies.throwUnsafely
-      osProcess.startTime[instant]
-    catch case _: PidError => Unset
-
-  def cpuUsage[instant: Instantiable across Durations from Long]: Optional[instant] =
-    try
-      import strategies.throwUnsafely
-      osProcess.cpuUsage[instant]
-    catch case _: PidError => Unset
+  def cpuUsage[instantiable: Instantiable across Durations from Long]: Optional[instantiable] =
+    val duration = java.info.nn.totalCpuDuration.nn
+    if duration.isPresent then instantiable(duration.get.nn.toNanos) else Unset

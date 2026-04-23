@@ -45,7 +45,7 @@ import strategies.throwUnsafely
 
 object Firefox extends Browser(t"firefox"):
   def launch(port: Int)(using WorkingDirectory, Monitor): Server logs ExecEvent =
-    val server: Process["geckodriver", Text] = sh"geckodriver --port $port".fork()
+    val server: Job["geckodriver", Text] = sh"geckodriver --port $port".fork()
     sleep(100L)
     Server(port, server)
 
