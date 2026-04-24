@@ -56,21 +56,11 @@ extension (shell: Shell)
           case Shell.Bash       => t"bash -l"
           case Shell.Powershell =>
             val cmd = summon[Sandbox.Tool].command
-            val toolPath = summon[Sandbox.Tool].path.encode
+            sh"${summon[Sandbox.Tool].path} '{admin}' install".exec[Unit]()
 
             val psScript =
               s"""function global:prompt { '> ' }
                  |$$env:PATH = "${path}:" + $$env:PATH
-                 |Register-ArgumentCompleter -Native -CommandName '$cmd' -ScriptBlock {
-                 |    param($$w, $$a, $$c)
-                 |    @(& '$toolPath' '{completions}' powershell $$c 0 '' -- "$$($$a.ToString())" 2>&1 |
-                 |    ForEach-Object {
-                 |        $$p = $$_ -split "`t", 2
-                 |        $$desc = if ($$p.Length -gt 1) { $$p[1] } else { $$p[0] }
-                 |        $$ct = $$p[0]
-                 |        [System.Management.Automation.CompletionResult]::new($$ct, $$ct, 'ParameterValue', $$desc)
-                 |    })
-                 |}
                  |try {
                  |    Set-PSReadLineKeyHandler -Key Tab -ScriptBlock {
                  |        param($$key, $$arg)
@@ -79,7 +69,7 @@ extension (shell: Shell)
                  |        $$wordStart = $$cursor
                  |        while ($$wordStart -gt 0 -and $$line[$$wordStart - 1] -ne ' ') { $$wordStart-- }
                  |        $$w = $$line.Substring($$wordStart, $$cursor - $$wordStart)
-                 |        $$results = @(& '$toolPath' '{completions}' powershell $$cursor 0 '' -- $$line 2>&1 |
+                 |        $$results = @(& '$cmd' '{completions}' powershell $$cursor 0 '' -- $$line 2>&1 |
                  |            ForEach-Object { ($$_ -split "`t", 2)[0] })
                  |        $$matching = @($$results | Where-Object { $$_.StartsWith($$w) })
                  |        if ($$matching.Count -eq 0) { return }
@@ -115,7 +105,7 @@ extension (shell: Shell)
             val writer = java.io.FileWriter(psFile)
             writer.write(psScript)
             writer.close()
-            t"POWERSHELL_UPDATECHECK=Off pwsh -NoProfile -NoLogo -NoExit -File ${psFile.getAbsolutePath.nn.tt}"
+            t"POWERSHELL_UPDATECHECK=Off pwsh -NoLogo -NoExit -File ${psFile.getAbsolutePath.nn.tt}"
 
         sh"tmux new-session -d -s ${tmux.id} -x $width -y $height '$shellInvocation'".exec[Unit]()
         Tmux.attend:
