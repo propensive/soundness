@@ -374,6 +374,77 @@ object Tests extends Suite(m"Ethereal Tests"):
 
           . assert(_ == t"piped input")
 
+    val upgradeStateDir: Path on Linux =
+      Xdg.runtimeDir[Path on Linux].or(Xdg.stateHome[Path on Linux]) / t"upgrd"
+
+    sh"rm -f $upgradeStateDir/pid $upgradeStateDir/port $upgradeStateDir/fail".exec[Unit]()
+    safely(sh"pkill upgrd".exec[Exit]())
+    snooze(0.2*Second)
+
+    val launcherV1 = Sandbox("upgrd", buildId = 1).dispatch:
+      ' {
+          import executives.completions
+          import interpreters.posix
+          import environments.daemonClient
+
+          cli:
+            arguments match
+              case Argument("version") :: Nil =>
+                execute(Out.print(t"v1") yet Exit.Ok)
+
+              case _ =>
+                execute(Exit.Fail(1))
+
+          t"finished"
+        }
+
+    val toolV1 = launcherV1.path
+
+    val launcherV2 = Sandbox("upgrd", buildId = 2).dispatch:
+      ' {
+          import executives.completions
+          import interpreters.posix
+          import environments.daemonClient
+
+          cli:
+            arguments match
+              case Argument("version") :: Nil =>
+                execute(Out.print(t"v2") yet Exit.Ok)
+
+              case _ =>
+                execute(Exit.Fail(1))
+
+          t"finished"
+        }
+
+    val toolV2 = launcherV2.path
+
+    suite(m"Daemon upgrade"):
+      test(m"v1 daemon starts and returns v1 output"):
+        sh"$toolV1 version".exec[Text]()
+      .assert(_ == t"v1")
+
+      test(m"v1 daemon is still running before upgrade"):
+        sh"$toolV1 version".exec[Text]()
+      .assert(_ == t"v1")
+
+      test(m"v2 launcher replaces v1 daemon and returns v2 output"):
+        val v1Pid = sh"$toolV1 '{admin}' pid".exec[Text]().trim.decode[Pid]
+        sh"$toolV2 version".exec[Text]()
+      .assert(_ == t"v2")
+
+      test(m"v1 daemon is no longer running after upgrade"):
+        val v1Pid =
+          safely(sh"cat $upgradeStateDir/pid".exec[Text]().trim.decode[Pid]).or(Pid(0))
+        val v2Output = sh"$toolV2 version".exec[Text]()
+        v2Output == t"v2"
+      .assert(_ == true)
+
+    safely(sh"$toolV2 '{admin}' kill".exec[Exit]())
+    snooze(0.2*Second)
+    safely(sh"pkill upgrd".exec[Exit]())
+    sh"rm -rf $upgradeStateDir".exec[Unit]()
+
     val brokenStateDir: Path on Linux =
       Xdg.runtimeDir[Path on Linux].or(Xdg.stateHome[Path on Linux]) / t"brokn"
 

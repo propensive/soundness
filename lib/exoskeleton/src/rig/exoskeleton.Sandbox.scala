@@ -86,7 +86,7 @@ object Sandbox:
             safely(item.delete())
 
 
-case class Sandbox(name: Text)(using Classloader, Environment) extends Rig:
+case class Sandbox(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment) extends Rig:
   type Result[output] = Sandbox.Launcher
   type Form = Text
   type Target = Path on Linux
@@ -100,7 +100,11 @@ case class Sandbox(name: Text)(using Classloader, Environment) extends Rig:
       val jarfile = out.peer(name2)
       val bundle = Bundler.bundle(out, jarfile, fqcn"superlunary.Executor2")
 
-      sh"java -Dbuild.executable=$target -jar $jarfile '[]'".exec[Exit]() match
+      val cmd = buildId match
+        case id: Int => sh"java -Dbuild.id=$id -Dbuild.executable=$target -jar $jarfile '[]'"
+        case Unset   => sh"java -Dbuild.executable=$target -jar $jarfile '[]'"
+
+      cmd.exec[Exit]() match
         case Exit.Ok         => target
         case Exit.Fail(fail) => ???
 

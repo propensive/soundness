@@ -136,7 +136,8 @@ def cli[bus <: Matchable](using executive: Executive)
               work + destination.decode[Relative on Linux]
 
             val buildIdPath: Path on Classpath = Classpath/"build.id"
-            val buildId = safely(buildIdPath.read[Text].trim).or(t"0")
+            val buildId = safely(System.properties.build.id[Int]()).let(_.show).or:
+              safely(buildIdPath.read[Text].trim).or(t"0")
             val prefixPath: Path on Classpath = Classpath/"ethereal"/"prefix"
             val prefix = prefixPath.read[Text]
 
@@ -364,7 +365,8 @@ def cli[bus <: Matchable](using executive: Executive)
 
       val socket: jn.ServerSocket = jn.ServerSocket(0)
       val port: Int = socket.getLocalPort
-      val buildId = safely((Classpath/"build.id").read[Text].trim.decode[Int]).or(0)
+      val buildId = safely(System.properties.build.id[Int]()).or:
+        safely((Classpath/"build.id").read[Text].trim.decode[Int]).or(0)
       val stderr = if stderrSupport() then 1 else 0
       portFile.open(t"$port $buildId $stderr".writeTo(_))
       val pidValue = Process().pid.value.show
