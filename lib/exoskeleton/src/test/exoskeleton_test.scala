@@ -112,6 +112,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         Bash.tmux()(Tmux.completions(t""))
         Zsh.tmux()(Tmux.completions(t""))
         Fish.tmux(width = 120)(Tmux.completions(t""))
+        Powershell.tmux()(Tmux.completions(t""))
 
         test(m"Test subcommands on bash"):
           Bash.tmux()(Tmux.completions(t""))
@@ -137,12 +138,24 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           Fish.tmux(width = 120)(Tmux.completions(t"distribution "))
         . assert(_ == t"gentoo  (Gentoo Linux)  red hat  (Red Hat Linux)  ubuntu  (Ubuntu)")
 
+        test(m"Test subcommands on powershell"):
+          Powershell.tmux()(Tmux.completions(t""))
+        . assert(_ == t"alpha  (a command to run)  beta  (another command to run)  distribution  (a different command to run)")
+
+        test(m"Test subcommands with spaces on powershell"):
+          Powershell.tmux()(Tmux.completions(t"distribution "))
+        . assert(_ == t"gentoo  (Gentoo Linux)  red hat  (Red Hat Linux)  ubuntu  (Ubuntu)")
+
         test(m"Test flags on bash"):
           Bash.tmux()(Tmux.completions(t"distribution ubuntu "))
         . assert(_ == t"--one  --two")
 
         test(m"Test flags on fish"):
           Fish.tmux(width = 120)(Tmux.completions(t"distribution ubuntu "))
+        . assert(_ == t"--one  (the first one)  --two  (the second one)")
+
+        test(m"Test flags on powershell"):
+          Powershell.tmux()(Tmux.completions(t"distribution ubuntu "))
         . assert(_ == t"--one  (the first one)  --two  (the second one)")
 
         test(m"Autocomplete progress for flag in Fish"):
@@ -157,6 +170,11 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
         test(m"Autocomplete progress for flag in Zsh"):
           Zsh.tmux():
+            Tmux.progress(t"distribution ubuntu ")
+        . assert(_ == t"distribution ubuntu --^")
+
+        test(m"Autocomplete progress for flag in Powershell"):
+          Powershell.tmux():
             Tmux.progress(t"distribution ubuntu ")
         . assert(_ == t"distribution ubuntu --^")
 
@@ -269,6 +287,38 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
         test(m"completion of short flag parameter on fish"):
           Fish.tmux()(Tmux.progress(t"distribution gentoo -fb"))
+        . assert(_ == t"distribution gentoo -fblue ^")
+
+        test(m"flag parameter on powershell"):
+          Powershell.tmux()(Tmux.completions(t"distribution gentoo --color "))
+        . assert(_ == t"red  green  blue")
+
+        test(m"flag parameter on powershell is not repeatable"):
+          Powershell.tmux()(Tmux.progress(t"distribution gentoo --color red "))
+        . assert(_ == t"distribution gentoo --color red ^")
+
+        test(m"repeatable flag parameter on powershell is repeatable"):
+          Powershell.tmux()(Tmux.progress(t"gamma --colors red "))
+        . assert(_ == t"gamma --colors red -^")
+
+        test(m"flag parameter with `=` on powershell"):
+          Powershell.tmux()(Tmux.completions(t"distribution gentoo --color="))
+        . assert(_ == t"--color=red  --color=green  --color=blue")
+
+        test(m"completion of flag parameter with `=` on powershell"):
+          Powershell.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
+        . assert(_ == t"distribution gentoo --color=blue ^")
+
+        test(m"short flag options on powershell"):
+          Powershell.tmux()(Tmux.completions(t"distribution gentoo -"))
+        . assert(_ == t"--color  (red, green or blue)  -f  (red, green or blue)")
+
+        test(m"flag options on powershell"):
+          Powershell.tmux()(Tmux.progress(t"distribution gentoo --"))
+        . assert(_ == t"distribution gentoo --color ^")
+
+        test(m"completion of short flag parameter on powershell"):
+          Powershell.tmux()(Tmux.progress(t"distribution gentoo -fb"))
         . assert(_ == t"distribution gentoo -fblue ^")
 
         suite(m"Admin commands"):

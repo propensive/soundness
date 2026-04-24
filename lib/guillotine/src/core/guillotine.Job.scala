@@ -101,16 +101,16 @@ class Job[+exec <: Label, result](process: java.lang.Process) extends ProcessRef
     Log.warn(ExecEvent.KillProcess(pid))
     process.destroyForcibly()
 
-  def osProcess(using Tactic[PidError]) = Process(pid)
+  def process(using Tactic[PidError]) = Process(pid)
 
   def startTime[instant: Instantiable across Instants from Long]: Optional[instant] =
     try
       import strategies.throwUnsafely
-      osProcess.startTime[instant]
+      process.startTime[instant]
     catch case _: PidError => Unset
 
   def cpuUsage[instant: Instantiable across Durations from Long]: Optional[instant] =
     try
       import strategies.throwUnsafely
-      osProcess.cpuUsage[instant]
+      process.cpuUsage[instant]
     catch case _: PidError => Unset

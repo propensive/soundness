@@ -80,7 +80,8 @@ package executives:
           :: rawLine
           :: Nil =>
 
-            val parts = rawLine.cut(t" ")
+            val parts0 = rawLine.cut(t" ")
+            val parts = if cursor > rawLine.length then parts0 :+ t"" else parts0
             val wordStarts = parts.scanLeft(0)((pos, w) => pos + w.length + 1).init
             val wordIdx = wordStarts.lastIndexWhere(_ <= cursor).max(0)
             val posInWord = cursor - wordStarts(wordIdx)

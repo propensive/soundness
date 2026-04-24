@@ -48,17 +48,78 @@ extension (shell: Shell)
     . within:
         given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)
 
-        val shellPath = shell match
-          case Shell.Zsh        => t"zsh"
-          case Shell.Fish       => t"fish"
-          case Shell.Bash       => t"bash"
-          case Shell.Powershell => t"pwsh"
+        val path = summon[Sandbox.Tool].path.parent.vouch.encode
 
-        sh"tmux new-session -d -s ${tmux.id} -x $width -y $height '$shellPath -l'".exec[Unit]()
+        val shellInvocation = shell match
+          case Shell.Zsh        => t"zsh -l"
+          case Shell.Fish       => t"fish -l"
+          case Shell.Bash       => t"bash -l"
+          case Shell.Powershell =>
+            val cmd = summon[Sandbox.Tool].command
+            val toolPath = summon[Sandbox.Tool].path.encode
+
+            val psScript =
+              s"""function global:prompt { '> ' }
+                 |$$env:PATH = "${path}:" + $$env:PATH
+                 |Register-ArgumentCompleter -Native -CommandName '$cmd' -ScriptBlock {
+                 |    param($$w, $$a, $$c)
+                 |    @(& '$toolPath' '{completions}' powershell $$c 0 '' -- "$$($$a.ToString())" 2>&1 |
+                 |    ForEach-Object {
+                 |        $$p = $$_ -split "`t", 2
+                 |        $$desc = if ($$p.Length -gt 1) { $$p[1] } else { $$p[0] }
+                 |        $$ct = $$p[0]
+                 |        [System.Management.Automation.CompletionResult]::new($$ct, $$ct, 'ParameterValue', $$desc)
+                 |    })
+                 |}
+                 |try {
+                 |    Set-PSReadLineKeyHandler -Key Tab -ScriptBlock {
+                 |        param($$key, $$arg)
+                 |        $$line = $$null; $$cursor = $$null
+                 |        [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$$line, [ref]$$cursor)
+                 |        $$wordStart = $$cursor
+                 |        while ($$wordStart -gt 0 -and $$line[$$wordStart - 1] -ne ' ') { $$wordStart-- }
+                 |        $$w = $$line.Substring($$wordStart, $$cursor - $$wordStart)
+                 |        $$results = @(& '$toolPath' '{completions}' powershell $$cursor 0 '' -- $$line 2>&1 |
+                 |            ForEach-Object { ($$_ -split "`t", 2)[0] })
+                 |        $$matching = @($$results | Where-Object { $$_.StartsWith($$w) })
+                 |        if ($$matching.Count -eq 0) { return }
+                 |        $$lcp = $$matching[0]
+                 |        for ($$i = 1; $$i -lt $$matching.Count; $$i++) {
+                 |            $$m = $$matching[$$i]; $$j = 0
+                 |            while ($$j -lt $$lcp.Length -and $$j -lt $$m.Length -and $$lcp[$$j] -eq $$m[$$j]) { $$j++ }
+                 |            $$lcp = $$lcp.Substring(0, $$j)
+                 |        }
+                 |        if ($$matching.Count -eq 1) {
+                 |            [Microsoft.PowerShell.PSConsoleReadLine]::Replace($$wordStart, $$cursor - $$wordStart, $$lcp + ' ')
+                 |            [Microsoft.PowerShell.PSConsoleReadLine]::SetCursorPosition($$wordStart + $$lcp.Length + 1)
+                 |        } elseif ($$lcp.Length -gt $$w.Length) {
+                 |            [Microsoft.PowerShell.PSConsoleReadLine]::Replace($$wordStart, $$cursor - $$wordStart, $$lcp)
+                 |            [Microsoft.PowerShell.PSConsoleReadLine]::SetCursorPosition($$wordStart + $$lcp.Length)
+                 |        }
+                 |    }
+                 |} catch {}
+                 |function global:_completions {
+                 |    param($$text)
+                 |    $$cl = '$cmd ' + $$text
+                 |    $$r = TabExpansion2 $$cl $$cl.Length
+                 |    $$r.CompletionMatches | ForEach-Object {
+                 |        $$n = $$_.CompletionText.TrimEnd()
+                 |        $$d = $$_.ToolTip
+                 |        if ($$d -and $$d -cne $$n) { "$$n@@$$d" } else { $$n }
+                 |    }
+                 |}
+                 |""".stripMargin
+
+            val psFile = java.io.File.createTempFile("exoskeleton-", ".ps1", java.io.File("/tmp").nn).nn
+            psFile.deleteOnExit()
+            val writer = java.io.FileWriter(psFile)
+            writer.write(psScript)
+            writer.close()
+            t"POWERSHELL_UPDATECHECK=Off pwsh -NoProfile -NoLogo -NoExit -File ${psFile.getAbsolutePath.nn.tt}"
+
+        sh"tmux new-session -d -s ${tmux.id} -x $width -y $height '$shellInvocation'".exec[Unit]()
         Tmux.attend:
           ()
-
-        val path = summon[Sandbox.Tool].path.parent.vouch.encode
 
         shell match
           case Shell.Zsh =>
@@ -91,6 +152,17 @@ extension (shell: Shell)
 
             sh"""tmux send-keys -t ${tmux.id} 'fish_add_path --global "$path"' C-m"""
             . exec[Unit]()
+
+            Tmux.attend:
+              sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
+
+          case Shell.Powershell =>
+            var psReady = false
+            var psAttempts = 0
+            while !psReady && psAttempts < 200 do
+              delay(0.1*Second)
+              psReady = Tmux.screenshot().screen.filter(_.starts(t">")).length > 0
+              psAttempts += 1
 
             Tmux.attend:
               sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()

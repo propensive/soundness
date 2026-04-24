@@ -32,6 +32,9 @@
                                                                                                   */
 package ethereal
 
+import java.lang as jl
+import java.io as ji
+
 import soundness.*
 
 import classloaders.system
@@ -110,7 +113,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
               case Argument("cat") :: Nil =>
                 execute:
-                  val reader = _root_.java.io.BufferedReader(_root_.java.io.InputStreamReader(summon[Stdio].in))
+                  val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
                   val line: Text = reader.readLine().nn.tt
                   Out.print(line) yet Exit.Ok
 
@@ -190,12 +193,12 @@ object Tests extends Suite(m"Ethereal Tests"):
 
         suite(m"Signal forwarding"):
           test(m"SIGTERM causes the launcher to exit"):
-            val t0 = _root_.java.lang.System.currentTimeMillis
+            val t0 = jl.System.currentTimeMillis
             val proc = sh"$tool sleep 1".fork[Exit]()
             snooze(0.1*Second)
             sh"kill -TERM ${proc.pid.value}".exec[Unit]()
             proc.await()
-            _root_.java.lang.System.currentTimeMillis - t0
+            jl.System.currentTimeMillis - t0
           .assert(_ < 750L)
 
           test(m"SIGWINCH is forwarded to the application"):
@@ -250,9 +253,8 @@ object Tests extends Suite(m"Ethereal Tests"):
           test(m"daemon restarts after port file is deleted"):
             val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim.decode[Pid]
             sh"rm -f $stateDir/port".exec[Unit]()
-            val deadline = _root_.java.lang.System.currentTimeMillis + 10000
-            while safely(Process(oldPid).alive).or(false)
-              && _root_.java.lang.System.currentTimeMillis < deadline
+            val deadline = jl.System.currentTimeMillis + 10000
+            while safely(Process(oldPid).alive).or(false) && jl.System.currentTimeMillis < deadline
             do snooze(0.05*Second)
             sh"rm -f $stateDir/fail".exec[Unit]()
             val newPid = sh"$tool '{admin}' pid".exec[Text]().trim.decode[Pid]
@@ -280,9 +282,9 @@ object Tests extends Suite(m"Ethereal Tests"):
             sh"$tool echo pretest".exec[Text]()
             val daemonPid = sh"cat $stateDir/pid".exec[Text]().trim.decode[Pid]
             Process(daemonPid).abort()
-            val deadline = _root_.java.lang.System.currentTimeMillis + 3000
+            val deadline = jl.System.currentTimeMillis + 3000
             while safely(Process(daemonPid).alive).or(false)
-              && _root_.java.lang.System.currentTimeMillis < deadline
+              && jl.System.currentTimeMillis < deadline
             do snooze(0.05*Second)
             sh"rm -f $stateDir/fail".exec[Unit]()
             sh"$tool echo fresh".exec[Text]()
@@ -381,8 +383,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           import interpreters.posix
           import environments.daemonClient
 
-          if _root_.java.lang.System.getProperty("ethereal.name") != null then
-            _root_.java.lang.System.exit(1)
+          if jl.System.getProperty("ethereal.name") != null then jl.System.exit(1)
 
           cli:
             arguments match
