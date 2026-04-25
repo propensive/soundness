@@ -14,8 +14,6 @@ $arch = switch ($raw) {
     "ARM64"  { "arm64" }
     default  { $raw.ToLower() }
 }
-[Console]::Error.WriteLine("Operating system: $os")
-[Console]::Error.WriteLine("Architecture: $arch")
 $scriptPath = $MyInvocation.MyCommand.Definition
 $dir = [IO.Path]::GetDirectoryName($scriptPath)
 $name = [IO.Path]::GetFileNameWithoutExtension($scriptPath)
@@ -82,7 +80,6 @@ if ($os -eq "windows") {
     & chmod +x $outputPath
 }
 Remove-Item $scriptPath
-[Console]::Error.WriteLine("Extracted to $outputPath")
 
 $exeName = [IO.Path]::GetFileNameWithoutExtension($outputPath)
 $marker = "# $exeName tab-completions"

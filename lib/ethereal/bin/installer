@@ -3,8 +3,6 @@
 echo \" <<'next' >/dev/null ">nul "\" \`" <#"
 @echo off & <nul set /p ="[6A[J"
 setlocal enabledelayedexpansion
-echo Operating system: %OS%
-echo Architecture: %PROCESSOR_ARCHITECTURE%
 set "output=%~dpn0.exe"
 set "arch=x64"
 if /i "%PROCESSOR_ARCHITECTURE%"=="ARM64" set "arch=arm64"
@@ -60,7 +58,6 @@ if defined data_offset (
 ) else (
     move /y "!tmp_bin!" "!output!" > nul
 )
-echo Extracted to !output!
 endlocal & del "%~f0" & "%~dpn0.exe" %*
 goto :eof & type con >nul
 next
@@ -82,8 +79,6 @@ $arch = switch ($raw) {
     "ARM64"  { "arm64" }
     default  { $raw.ToLower() }
 }
-Write-Host "Operating system: $os"
-Write-Host "Architecture: $arch"
 $scriptPath = $MyInvocation.MyCommand.Definition
 $dir = [IO.Path]::GetDirectoryName($scriptPath)
 $name = [IO.Path]::GetFileNameWithoutExtension($scriptPath)
@@ -150,7 +145,6 @@ if ($os -eq "windows") {
     & chmod +x $outputPath
 }
 Remove-Item $scriptPath
-Write-Host "Extracted to $outputPath"
 
 $exeName = [IO.Path]::GetFileNameWithoutExtension($outputPath)
 $marker = "# $exeName tab-completions"
@@ -199,8 +193,6 @@ next
 set +o histexpand 2>/dev/null
 os=$(uname -s)
 arch=$(uname -m)
-printf "Operating system: %s\nArchitecture: %s\n" \
-  "$os" "$arch"
 case "$os" in
   Darwin) os=macos ;; Linux) os=linux ;;
   *) printf "Unsupported OS: %s\n" "$os" >&2; exit 1 ;;
@@ -249,7 +241,6 @@ chmod +x "$tmpout"
 tmpscript=$(mktemp "${output}.XXXXXX")
 if mv "$output" "$tmpscript" 2>/dev/null && mv "$tmpout" "$output" 2>/dev/null; then
   rm -f "$tmpscript"
-  printf "Extracted to %s\n" "$output"
   exec "$output" "$@"
 else
   rm -f "$tmpscript"
