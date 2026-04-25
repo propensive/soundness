@@ -43,7 +43,7 @@ case class Invocation
     environment:      Environment,
     workingDirectory: WorkingDirectory,
     stdio:            Stdio,
-    signals:          Spool[Signal],
+    signals:          Spool[UnixSignal | WindowsSignal],
     proceed:          Boolean,
     login:            Login )
   ( using interpreter: Interpreter )

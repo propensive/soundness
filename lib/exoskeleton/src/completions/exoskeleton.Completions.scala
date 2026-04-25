@@ -43,6 +43,7 @@ import fulminate.*
 import galilei.*
 import gossamer.{where as _, *}
 import guillotine.*
+import hieroglyph.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*, homeDirectories.system
@@ -57,6 +58,8 @@ import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
+import charDecoders.utf8
+import textSanitizers.skip
 
 object Completions:
   case class Tab(arguments: List[Text], focus: Int, cursor: Int, count: Int = 0):
@@ -73,22 +76,23 @@ object Completions:
   enum Installation:
     case CommandNotOnPath(script: Text)
     case Shells
-      ( zsh:  Installation.InstallResult,
-        bash: Installation.InstallResult,
-        fish: Installation.InstallResult )
+      ( zsh:        Installation.InstallResult,
+        bash:       Installation.InstallResult,
+        fish:       Installation.InstallResult,
+        powershell: Installation.InstallResult )
 
     def paths: List[Text] =
       this match
-        case CommandNotOnPath(_)     => Nil
-        case Shells(zsh, bash, fish) => List(zsh, bash, fish).map(_.pathname).compact
+        case CommandNotOnPath(_)              => Nil
+        case Shells(zsh, bash, fish, pwsh)    => List(zsh, bash, fish, pwsh).map(_.pathname).compact
 
   object Installation:
     given communicable: Installation is Communicable =
       case CommandNotOnPath(script) =>
         m"The ${script} command is not on the PATH, so completions scripts cannot be installed."
 
-      case Shells(zsh, bash, fish) =>
-        m"$zsh\n\n$bash\n\n$fish"
+      case Shells(zsh, bash, fish, powershell) =>
+        m"$zsh\n\n$bash\n\n$fish\n\n$powershell"
 
     object InstallResult:
       given communicable: InstallResult is Communicable =
@@ -176,7 +180,25 @@ object Completions:
                     ( Xdg.dataDirs[Path on Linux].last/"fish"/"vendor_completions.d",
                       Xdg.configHome[Path on Linux]/"fish"/"completions" ) )
 
-          Installation.Shells(zsh, bash, fish)
+          val powershell: Installation.InstallResult =
+            if sh"sh -c 'command -v pwsh'".exec[Exit]() != Exit.Ok
+            then Installation.InstallResult.ShellNotInstalled(Shell.Powershell)
+            else safely:
+              val profile = sh"pwsh -NoProfile -Command 'echo $$PROFILE'".exec[Path on Linux]()
+              val marker = t"# $command tab-completions"
+
+              if profile.exists() && profile.open(_.read[Text]).contains(marker)
+              then Installation.InstallResult.AlreadyInstalled(Shell.Powershell, profile.encode)
+              else
+                import filesystemOptions.writeAccess.enabled
+                import filesystemOptions.readAccess.enabled
+                import filesystemOptions.createNonexistent.enabled
+                import filesystemOptions.createNonexistentParents.enabled
+                Eof(profile).open(script(Shell.Powershell, command).sysData.writeTo(_))
+                Installation.InstallResult.Installed(Shell.Powershell, profile.encode)
+            .or(Installation.InstallResult.NoWritableLocation(Shell.Powershell))
+
+          Installation.Shells(zsh, bash, fish, powershell)
 
 
   def install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on Linux])
@@ -185,10 +207,10 @@ object Completions:
   :   Installation.InstallResult raises InstallError logs CliEvent =
 
     mitigate:
-      case IoError(_, _, _)   => InstallError(InstallError.Reason.Io)
-      case NameError(_, _, _) => InstallError(InstallError.Reason.Io)
-      case PathError(_, _)    => InstallError(InstallError.Reason.Io)
-      case StreamError(_)     => InstallError(InstallError.Reason.Io)
+      case IoError(_, _, _, _) => InstallError(InstallError.Reason.Io)
+      case NameError(_, _, _)  => InstallError(InstallError.Reason.Io)
+      case PathError(_, _)     => InstallError(InstallError.Reason.Io)
+      case StreamError(_)      => InstallError(InstallError.Reason.Io)
 
     . within:
         dirs.where { dir => dir.exists() && dir.writable() }.let: dir =>
@@ -235,6 +257,22 @@ object Completions:
           |    -- $${COMP_WORDS[@]})
           |}
           |complete -F _${command}_complete $command
+          |""".s.stripMargin.tt
+
+    case Shell.Powershell =>
+      t"""|# $command tab-completions
+          |Register-ArgumentCompleter -Native -CommandName '$command' -ScriptBlock {
+          |    param($$wordToComplete, $$commandAst, $$cursorPosition)
+          |    & '$command' '{completions}' powershell $$cursorPosition 0 '' `
+          |        -- "$$($$commandAst.ToString())" |
+          |    ForEach-Object {
+          |        $$parts = $$_ -split "`t", 2
+          |        $$name = $$parts[0]
+          |        $$desc = if ($$parts.Length -gt 1) { $$parts[1] } else { $$name }
+          |        [System.Management.Automation.CompletionResult]::new(
+          |            $$name, $$name, 'ParameterValue', $$desc)
+          |    }
+          |}
           |""".s.stripMargin.tt
 
 object CliEvent:

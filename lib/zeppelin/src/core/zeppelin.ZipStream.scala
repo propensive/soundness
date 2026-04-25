@@ -55,32 +55,32 @@ class ZipStream(stream: () => Stream[Data], filter: (Path on Zip) => Boolean):
   def keep(predicate: (Path on Zip) => Boolean): ZipStream =
     new ZipStream(stream, { (ref: Path on Zip) => filter(ref) && predicate(ref) })
 
-  def extract(ref: Path on Zip): ZipEntry raises ZipError logs Text =
+  def extract(ref: Path on Zip): Zip.Entry raises ZipError logs Text =
     safely(keep(_.descent == ref.descent).map(identity(_)).headOption.get).or:
-      abort(ZipError())
+      abort(ZipError(ZipError.Reason.NotFound(ref)))
 
-  def each(lambda: ZipEntry => Unit): Unit raises ZipError = map[Unit](lambda).strict
+  def each(lambda: Zip.Entry => Unit): Unit raises ZipError = map[Unit](lambda).strict
 
-  def map[element](lambda: ZipEntry => element): Stream[element] raises ZipError =
+  def map[element](lambda: Zip.Entry => element): Stream[element] raises ZipError =
     val conduit = Conduit(stream())
     if !conduit.search(0x50, 0x4b, 0x03, 0x04) then Stream() else
 
       conduit.truncate()
       val zipIn = juz.ZipInputStream(conduit.remainder.inputStream)
 
-      def recur(): Stream[ZipEntry] = zipIn.getNextEntry() match
+      def recur(): Stream[Zip.Entry] = zipIn.getNextEntry() match
         case null                         => Stream()
         case entry if entry.isDirectory() => recur()
 
         case entry =>
           import errorDiagnostics.empty
           val ref: Path on Zip =
+            val name = entry.getName().nn.tt
             mitigate:
-              case PathError(reason, path) => ZipError()
-              case NameError(_, _, _)      => ZipError()
+              case PathError(_, _)    => ZipError(ZipError.Reason.InvalidName(name))
+              case NameError(_, _, _) => ZipError(ZipError.Reason.InvalidName(name))
 
-            . within:
-                entry.getName().nn.tt.decode[Path on Zip]
+            . within(name.decode[Path on Zip])
 
           if !filter(ref) then recur() else
             def read(): Stream[Data] =
@@ -93,6 +93,6 @@ class ZipStream(stream: () => Stream[Data], filter: (Path on Zip) => Boolean):
                   (if count < size then array.take(count) else array).immutable(using Unsafe)
                   #:: read()
 
-            ZipEntry(ref, read()) #:: recur()
+            Zip.Entry(ref, read()) #:: recur()
 
       recur().map(lambda)

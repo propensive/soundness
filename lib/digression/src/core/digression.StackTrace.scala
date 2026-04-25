@@ -50,17 +50,18 @@ object StackTrace:
 
   val legend: Map[Text, Text] =
     Map
-      ( "λₙ".tt -> "anonymous function".tt,
+      ( "Λₙ".tt -> "adapted lambda",
+        "λₙ".tt -> "lambda".tt,
         "αₙ".tt -> "anonymous class".tt,
-        "ι".tt  -> "initialization".tt,
-        "↑".tt  -> "super reference".tt,
-        "⊢".tt  -> "extension method".tt,
-        "∂".tt  -> "direct".tt,
-        "δ".tt  -> "default".tt,
+        "ι ".tt  -> "initialization".tt,
+        "↑ ".tt  -> "super reference".tt,
+        "⊢ ".tt  -> "extension method".tt,
+        "∂ ".tt  -> "direct".tt,
+        "δ ".tt  -> "default".tt,
         "⁅⁆".tt -> "package file".tt,
-        "ⲛ".tt  -> "class initializer".tt,
-        "ℓ".tt  -> "lazy initializer".tt,
-        "Σ".tt  -> "specialized method".tt )
+        "ⲛ ".tt  -> "class initializer".tt,
+        "ℓ ".tt  -> "lazy initializer".tt,
+        "Σ ".tt  -> "specialized method".tt )
 
   def rewrite(name: String, method: Boolean = false): Text =
     val buffer: StringBuilder = StringBuilder()
@@ -87,7 +88,7 @@ object StackTrace:
         then buffer.append(text) yet recur(index + string.length, digits)
         else buffer.append('#') yet recur(index + 1, digits)
 
-      inline def skip(): Text = token(index, "$", if method then "()." else "#")
+      inline def skip(): Text = token(index, "$", if method then "." else "#")
 
       if index >= name.length then Text(buffer.toString+(if method then "()" else ""))
       else if digits then char(index) match
@@ -144,9 +145,11 @@ object StackTrace:
             case '_' => token(index,           "$_avoid_name_clash_$", "′")
             case 'a' => char(index + 2) match
               case 'm' => token(index,         "$amp",                 "&")
-              case 'n' => char(index + 5) match
-                case 'f' => token(index,       "$anonfun",             "λ")
-                case _   => token(index,       "$anon",                "α")
+              case 'n' => char(index + 9) match
+                case 'a' => token(index,       "$anonfun$adapted",     "Λ")
+                case _   => char(index + 5) match
+                  case 'f' => token(index,       "$anonfun",           "λ")
+                  case _   => token(index,       "$anon",              "α")
               case 't' => token(index,         "$at",                  "@")
               case _   => skip()
             case 'b' => char(index + 2) match
@@ -220,13 +223,14 @@ object StackTrace:
       types.indexOf("#mc") match
         case -1 | 0 => rewritten
 
-        case i =>
+        case index =>
           Text:
-            val types2 = types.drop(i + 3).to(List).map(primitive)
+            val types2 = types.drop(index + 3).to(List).map(primitive)
             if types2.length <= 2 then types2.mkString("(", " => ", ")")
             else types2.init.mkString("((", ", ", s") => ${types2.last})")
 
-    else if rewritten.s.startsWith("scala.runtime.function.JProcedure") then Text:
+    else if rewritten.s.startsWith("scala.runtime.function.JProcedure")
+    then
       val n = try rewritten.s.drop(33).toInt catch case error: Exception => 0
       "("+(if n < 2 then s"Any" else List.fill(n)("Any").mkString("(", ", ", ")"))+" => Unit)"
 
@@ -245,7 +249,7 @@ object StackTrace:
           rewrite(frame.getClassName.nn),
           rewrite(frame.getMethodName.nn, method = true)
         ),
-        Text(Option(frame.getFileName).map(_.nn).getOrElse("[no file]")),
+        Text(Option(frame.getFileName).map(_.nn).getOrElse("———")),
         if frame.getLineNumber < 0 then Unset else frame.getLineNumber,
         frame.isNativeMethod
       )

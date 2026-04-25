@@ -42,6 +42,8 @@ import proscenium.*
 import spectacular.*
 import vacuous.*
 
+import abstractables.durationIsAbstractable
+
 object Keyboard:
   import Keypress.*
 

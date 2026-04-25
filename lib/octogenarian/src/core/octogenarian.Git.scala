@@ -57,7 +57,7 @@ import vacuous.*
 import GitError.Reason.*
 
 object Git:
-  def progress(process: Process[?, ?]): Stream[Progress] =
+  def progress(process: Job[?, ?]): Stream[Progress] =
     safely[StreamError]:
       process.stderr().map(_.utf8).map(_.trim).flatMap(_.cut(r"[\n\r]")).collect:
         case r"Receiving objects: *$pc(\d*)\%.*" => Progress.Receiving(pc.s.toInt/100.0)

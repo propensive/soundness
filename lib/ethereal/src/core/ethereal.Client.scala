@@ -35,9 +35,10 @@ package ethereal
 import language.experimental.pureFunctions
 
 import java.io as ji
-import java.net as jn
+import java.nio.channels as jnc
 
 import anticipation.*
+import anticipation.abstractables.durationIsAbstractable
 import contingency.*
 import guillotine.*
 import parasite.*
@@ -57,13 +58,13 @@ case class Client(pid: Pid) extends Topical:
   type Topic <: Matchable
 
   val stderr: Promise[ji.OutputStream] = Promise()
-  val signals: Spool[Signal] = Spool()
+  val signals: Spool[UnixSignal | WindowsSignal] = Spool()
   val bus: Spool[Topic] = Spool()
   val terminatePid: Promise[Pid] = Promise()
   val exitPromise: Promise[Exit] = Promise()
 
   def receive(message: Topic): Unit = bus.put(message)
 
-  val socket: Promise[jn.Socket] = Promise()
+  val socket: Promise[jnc.SocketChannel] = Promise()
 
   def close(): Unit = safely(socket.await(1000L).close())

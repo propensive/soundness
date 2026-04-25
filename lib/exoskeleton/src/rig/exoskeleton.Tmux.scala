@@ -65,17 +65,37 @@ object Tmux:
 
     var count = 0
     block.also:
-      while init === screenshot().screen && count < 60 do delay(10_000_000L) yet (count += 1)
+      while init === screenshot().screen && count < 60 do delay(0.01*Second) yet (count += 1)
 
 
   def completions(text: Text)(using tool: Sandbox.Tool, tmux: Tmux)(using Monitor, WorkingDirectory)
   :   Text raises TmuxError =
 
-    enter(tool.command)
-    enter(' ')
-    enter(text)
-    attend(enter(Ht))
-    screenshot().screen.filter(!_.starts(t"> ")).join(t"\n").trim
+    tmux.shell match
+      case Shell.Powershell =>
+        enter(t"""_completions "$text"""")
+        attend(enter('\r'))
+        var count = 0
+        while Tmux.screenshot().screen.filter(_ == t">").length == 0 && count < 100 do
+          delay(0.1*Second)
+          count += 1
+        screenshot().screen.to(List)
+          .filter(!_.starts(t">"))
+          .map(_.trim)
+          .filter(_.length > 0)
+          .flatMap: line =>
+            line.cut(t"@@") match
+              case List(name, desc) => List(t"$name  ($desc)")
+              case List(name)       => List(name)
+              case _                => Nil
+          .join(t"  ")
+
+      case _ =>
+        enter(tool.command)
+        enter(' ')
+        enter(text)
+        attend(enter(Ht))
+        screenshot().screen.filter(!_.starts(t"> ")).join(t"\n").trim
 
 
   def progress(text: Text, decorate: Char => Text = char => t"^")

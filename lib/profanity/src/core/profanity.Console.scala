@@ -35,15 +35,15 @@ package profanity
 import turbulence.*
 
 object Console:
-  def apply(stdio: Stdio, signals: Spool[Signal] = Spool()): Console =
+  def apply(stdio: Stdio, signals: Spool[UnixSignal | WindowsSignal] = Spool()): Console =
     inline def stdio0: Stdio = stdio
-    inline def signals0: Spool[Signal] = signals
+    inline def signals0: Spool[UnixSignal | WindowsSignal] = signals
 
     new Console:
       val stdio: Stdio = stdio0
-      def signals: Spool[Signal] = signals0
+      def signals: Spool[UnixSignal | WindowsSignal] = signals0
 
 trait Console:
   val stdio: Stdio
 
-  def signals: Spool[Signal]
+  def signals: Spool[UnixSignal | WindowsSignal]

@@ -66,7 +66,7 @@ object Zipfile:
     def close(transport: Transport): Unit = transport.close()
 
 
-  def write[path: Abstractable across Paths to Text](path: path)(stream: Iterable[ZipEntry])
+  def write[path: Abstractable across Paths to Text](path: path)(stream: Iterable[Zip.Entry])
   :   Unit raises ZipError =
 
     val filename = path.generic
@@ -75,7 +75,10 @@ object Zipfile:
     for entry <- stream do
       val ref = entry.ref.encode
       val ref2 = if ref.starts("/") then ref.skip(1).s else ref.s
-      out.putNextEntry(juz.ZipEntry(ref2))
+
+      try out.putNextEntry(juz.ZipEntry(ref2)) catch case exception: juz.ZipException =>
+        raise(ZipError(ZipError.Reason.DuplicateEntry(entry.ref)))
+
       entry.content().each: bytes => out.write(bytes.mutable(using Unsafe))
       out.closeEntry()
 

@@ -32,15 +32,10 @@
                                                                                                   */
 package anticipation
 
-import prepositional.*
-
 object Durations:
   inline def ms(long: Long): Double = long.toDouble*1_000_000
   inline def ms(double: Double): Long = (double/1_000_000).toLong
   inline def ns(long: Long): Double = long.toDouble
   inline def ns(double: Double): Long = double.toLong
-
-  given instantiable: Long is Instantiable across Durations from Long = identity(_)
-  given abstractable: Long is Abstractable across Durations to Long = identity(_)
 
 sealed trait Durations

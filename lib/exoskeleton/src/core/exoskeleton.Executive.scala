@@ -47,7 +47,7 @@ trait Executive:
       environment:      Environment,
       workingDirectory: WorkingDirectory,
       stdio:            Stdio,
-      signals:          Spool[Signal],
+      signals:          Spool[UnixSignal | WindowsSignal],
       entrypoint:       Entrypoint,
       login:            Login )
     ( using interpreter: Interpreter )

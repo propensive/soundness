@@ -49,6 +49,6 @@ enum DaemonEvent:
       arguments:   List[Text],
       environment: List[Text] )
 
-  case Trap(pid: Pid, signal: Signal)
+  case Trap(pid: Pid, signal: UnixSignal | WindowsSignal)
   case Exit(pid: Pid)
   case Stderr(pid: Pid)

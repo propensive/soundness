@@ -64,6 +64,7 @@ object JsonPointer extends Root(""):
     override def escape(text: Text): Text = text.sub("~", "~0").sub("/", "~1")
     override def unescape(text: Text): Text = text.sub("~1", "/").sub("~0", "~")
 
+    val name: Text = "JSON"
     val parent: Text = ".."
     val self: Text = "#"
     val separator: Text = "/"

@@ -33,7 +33,6 @@
 package serpentine
 
 import anticipation.*
-import gossamer.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
@@ -54,6 +53,7 @@ object Windows:
   given filesystem: Windows is Filesystem:
     type UniqueRoot = false
 
-    val separator: Text = t"\\"
-    val self: Text = t"."
-    val parent: Text = t".."
+    val name: Text = "Windows"
+    val separator: Text = "\\"
+    val self: Text = "."
+    val parent: Text = ".."

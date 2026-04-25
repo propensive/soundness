@@ -33,7 +33,7 @@
 package anthology
 
 enum Unused[version]:
-  case All extends Unused[3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6 | 3.7]
-  case None extends Unused[3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6 | 3.7]
+  case All extends Unused[3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6 | 3.7 | 3.8]
+  case None extends Unused[3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6 | 3.7 | 3.8]
   case Subset[version <: 3.3](features: List[UnusedFeature[version]])
   extends Unused[version]

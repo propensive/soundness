@@ -42,7 +42,7 @@ import telekinesis.*
 trait Browser(name: Text):
   transparent inline def browser = this
 
-  case class Server(port: Int, value: Process[Label, Text]):
+  case class Server(port: Int, value: Job[Label, Text]):
     def stop(): Unit logs ExecEvent logs HttpEvent = browser.stop(this)
 
   def launch(port: Int)(using WorkingDirectory, Monitor): Server logs ExecEvent

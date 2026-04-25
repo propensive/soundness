@@ -51,7 +51,6 @@ object Argument:
   given inspectable: Argument is Inspectable = argument =>
     t"${argument.position}: ${argument.value.inspect} / ${argument.format} => ${argument().inspect}"
 
-
 case class Argument
   ( position: Int,
     value:    Text,

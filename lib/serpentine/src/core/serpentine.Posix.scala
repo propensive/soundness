@@ -48,6 +48,7 @@ object Posix:
   given filesystem: Posix is Filesystem:
     type UniqueRoot = true
 
+    val name: Text = "POSIX"
     val separator: Text = t"/"
     val self: Text = t"."
     val parent: Text = t".."

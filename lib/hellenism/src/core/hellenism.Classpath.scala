@@ -74,9 +74,10 @@ object Classpath extends Root(t""):
   given filesystem: Classpath is Filesystem:
     type UniqueRoot = true
 
-    val separator: Text = t"/"
-    val self: Text = t"."
-    val parent: Text = t".."
+    val name: Text = "Java classpath"
+    val separator: Text = "/"
+    val self: Text = "."
+    val parent: Text = ".."
 
   given substantiable: (classloader: Classloader) => (Path on Classpath) is Substantiable =
     path => classloader.java.getResourceAsStream(path.encode.s) != null

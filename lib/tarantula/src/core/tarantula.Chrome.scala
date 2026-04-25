@@ -40,11 +40,12 @@ import guillotine.*
 import parasite.*
 import telekinesis.*
 
+import abstractables.instantIsAbstractable
 import strategies.throwUnsafely
 
 object Chrome extends Browser(t"chrome"):
   def launch(port: Int)(using WorkingDirectory, Monitor): Server logs ExecEvent =
-    val server: Process["chromedriver", Text] = sh"chromedriver --port=$port".fork()
+    val server: Job["chromedriver", Text] = sh"chromedriver --port=$port".fork()
     sleep(100L)
     Server(port, server)
 

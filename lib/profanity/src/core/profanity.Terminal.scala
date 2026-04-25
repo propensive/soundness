@@ -41,6 +41,8 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 
+import abstractables.durationIsAbstractable
+
 object Terminal:
   def reportBackground: Text = t"\e]11;?\e\\"
   def reportSize: Text = t"\e7\e[4095C\e[4095B\e[6n\e8"
@@ -49,7 +51,7 @@ object Terminal:
   def enablePaste: Text = t"\e[?2004h"
   def disablePaste: Text = t"\e[?2004l"
 
-case class Terminal(signals: Spool[Signal])
+case class Terminal(signals: Spool[UnixSignal | WindowsSignal])
   ( using console: Console, monitor: Monitor, codicil: Codicil )
 extends Interactivity[TerminalEvent]:
 

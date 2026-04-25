@@ -82,10 +82,11 @@ object Sandbox:
       block(using tool).also:
         unsafely:
           sh"$path '{admin}' kill".exec[Exit]()
-          completionScripts.trim.lines.map(_.decode[Path on Linux]).each(_.delete())
+          completionScripts.trim.lines.map(_.decode[Path on Linux]).each: item =>
+            safely(item.delete())
 
 
-case class Sandbox(name: Text)(using Classloader, Environment) extends Rig:
+case class Sandbox(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment) extends Rig:
   type Result[output] = Sandbox.Launcher
   type Form = Text
   type Target = Path on Linux
@@ -99,11 +100,15 @@ case class Sandbox(name: Text)(using Classloader, Environment) extends Rig:
       val jarfile = out.peer(name2)
       val bundle = Bundler.bundle(out, jarfile, fqcn"superlunary.Executor2")
 
-      sh"java -Dbuild.executable=$target -jar $jarfile '[]'".exec[Exit]() match
+      val cmd = buildId match
+        case id: Int => sh"java -Dbuild.id=$id -Dbuild.executable=$target -jar $jarfile '[]'"
+        case Unset   => sh"java -Dbuild.executable=$target -jar $jarfile '[]'"
+
+      cmd.exec[Exit]() match
         case Exit.Ok         => target
         case Exit.Fail(fail) => ???
 
-  protected val scalac: Scalac[3.7] = Scalac(List(scalacOptions.experimental))
+  protected val scalac: Scalac[3.8] = Scalac(List(scalacOptions.experimental))
 
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux])

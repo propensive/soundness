@@ -51,7 +51,7 @@ sealed trait Executable:
   type Exec <: Label
 
   def fork[result]()(using working: WorkingDirectory)
-  :   Process[Exec, result] logs ExecEvent raises ExecError
+  :   Job[Exec, result] logs ExecEvent raises ExecError
 
 
   def exec[result: Computable]()(using working: WorkingDirectory)
@@ -104,14 +104,14 @@ object Command:
 
 case class Command(arguments: Text*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)
-      :   Process[Exec, result] logs ExecEvent raises ExecError =
+      :   Job[Exec, result] logs ExecEvent raises ExecError =
 
     val processBuilder = ProcessBuilder(arguments.ss*)
     processBuilder.directory(ji.File(working.directory().s))
 
     Log.info(ExecEvent.ProcessStart(this))
 
-    try new Process(processBuilder.start().nn)
+    try new Job(processBuilder.start().nn)
     catch case errror: ji.IOException => abort(ExecError(this, Stream(), Stream()))
 
 
@@ -127,7 +127,7 @@ object Pipeline:
 
 case class Pipeline(commands: Command*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)
-      :   Process[Exec, result] logs ExecEvent raises ExecError =
+      :   Job[Exec, result] logs ExecEvent raises ExecError =
 
     val processBuilders = commands.map: command =>
       val processBuilder = ProcessBuilder(command.arguments.ss*)
@@ -139,4 +139,4 @@ case class Pipeline(commands: Command*) extends Executable:
     Log.info(ExecEvent.PipelineStart(commands))
 
     val pipeline = ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last
-    new Process[Exec, result](pipeline)
+    new Job[Exec, result](pipeline)

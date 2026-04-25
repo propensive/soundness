@@ -267,9 +267,9 @@ object Tests extends Suite(m"Parasite tests"):
           val task = async:
             value = 2
             val task2 = async:
-              snooze(40L)
+              snooze(40e-3*Second)
               value = 3
-          snooze(20L)
+          snooze(20e-3*Second)
           task.await()
           value
         . assert(_ == 3)
@@ -293,11 +293,11 @@ object Tests extends Suite(m"Parasite tests"):
             Stream.continually:
               count += 1
               relent()
-              snooze(100L)
+              snooze(100e-3*Second)
             . take(10)
             . to(List)
 
-          snooze(300L)
+          snooze(300e-3*Second)
           task.cancel()
           count
         . assert(_ == 2)

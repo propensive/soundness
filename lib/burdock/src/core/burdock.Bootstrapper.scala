@@ -178,9 +178,9 @@ object Bootstrapper:
         val tmpFile = jarfile.parent.vouch / t"${jarfile.name}.tmp"
 
         Zipfile.write(tmpFile):
-          ZipEntry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest3.serialize)
+          Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest3.serialize)
           #:: todo.sift[Entry].to(Stream).map: entry =>
-                ZipEntry(entry.name.decode[Path on Zip], () => Stream(entry.data))
+                Zip.Entry(entry.name.decode[Path on Zip], () => Stream(entry.data))
 
         import filesystemOptions.overwritePreexisting.enabled
         import filesystemOptions.deleteRecursively.disabled

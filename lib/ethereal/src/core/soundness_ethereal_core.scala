@@ -34,10 +34,7 @@ package soundness
 
 export ethereal
 . { Client, Stdin, DaemonEvent, DaemonLogEvent, DaemonService, Installer, LazyEnvironment,
-    StderrSupport, cli, service }
-
-package daemonConfig:
-  export ethereal.daemonConfig.{doNotSupportStderr, supportStderr}
+    cli, service }
 
 package workingDirectories:
   export ambience.workingDirectories.daemonClient

@@ -38,6 +38,7 @@ import prepositional.*
 trait Filesystem extends Typeclass:
   type UniqueRoot <: Boolean
 
+  val name: Text
   val separator: Text
   val self: Text
   val parent: Text

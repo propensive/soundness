@@ -25,6 +25,41 @@ jobs:
           distribution: 'temurin'
           java-version: '23'
 
+      - name: Cache Coursier and Mill
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/coursier
+            ~/.cache/mill
+          key: ${{ runner.os }}-coursier-${{ hashFiles('.mill-version', 'build.mill', 'web/build.mill') }}
+          restore-keys: |
+            ${{ runner.os }}-coursier-
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('lib/ethereal/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Setup Zig
+        uses: mlugg/setup-zig@v1
+        with:
+          version: 0.13.0
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-gnu,x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu,x86_64-apple-darwin,aarch64-apple-darwin
+
+      - name: Install cargo-zigbuild
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild
+
       # - name: Create Deployment
       #   id: deployment
       #   uses: octokit/request-action@v2.x

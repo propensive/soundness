@@ -45,7 +45,7 @@ object Linux:
 
   given filesystem: Linux is Filesystem:
     type UniqueRoot = true
-
+    val name: Text = "Linux"
     val separator: Text = t"/"
     val self: Text = t"."
     val parent: Text = t".."

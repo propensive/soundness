@@ -172,6 +172,16 @@ object Json extends Json2, Dynamic:
   given text: Tactic[JsonError] => Text is Decodable in Json = _.root.string
   given string: Tactic[JsonError] => String is Decodable in Json = _.root.string.s
 
+  given unit: Tactic[JsonError] => Unit is Decodable in Json =
+    value =>
+      if value.root.isNull then ()
+      else
+        val reason =
+          if value.root.isAbsent then Reason.Absent
+          else Reason.NotType(value.root.primitive, JsonPrimitive.Null)
+
+        raise(JsonError(reason))
+
 
   given option: [value: Decodable in Json] => Tactic[JsonError]
   =>  Option[value] is Decodable in Json =
@@ -198,6 +208,7 @@ object Json extends Json2, Dynamic:
   given stringEncodable: String is Encodable in Json = string => Json.ast(JsonAst(string))
   given doubleEncodable: Double is Encodable in Json = double => Json.ast(JsonAst(double))
   given intEncodable: Int is Encodable in Json = int => Json.ast(JsonAst(int.toLong))
+  given unitEncodable: Unit is Encodable in Json = unit => Json.ast(JsonAst(null))
 
   given ordinalEncodable: Ordinal is Encodable in Json =
     ordinal => Json.ast(JsonAst(ordinal.n0.toLong))

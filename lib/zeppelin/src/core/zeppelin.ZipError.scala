@@ -34,6 +34,19 @@ package zeppelin
 
 import anticipation.*
 import fulminate.*
+import prepositional.*
+import serpentine.*
 
-case class ZipError()(using Diagnostics)
-extends Error(m"problem with ZIP file")
+object ZipError:
+  enum Reason:
+    case DuplicateEntry(path: Path on Zip)
+    case NotFound(path: Path on Zip)
+    case InvalidName(name: Text)
+
+  given communicable: Reason is Communicable =
+    case Reason.DuplicateEntry(path) => m"the path $path is a duplicate entry"
+    case Reason.NotFound(path)       => m"path $path was not found in the ZIP file"
+    case Reason.InvalidName(name)    => m"the name $name is not valid for a ZIP entry"
+
+case class ZipError(reason: ZipError.Reason)(using Diagnostics)
+extends Error(m"the ZIP operation failed because $reason")

@@ -32,12 +32,16 @@
                                                                                                   */
 package zeppelin
 
+import java.nio.file as jnf
+
 import anticipation.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import serpentine.*
+import turbulence.*
 
 object Zip:
   type Rules =
@@ -56,9 +60,10 @@ object Zip:
   given filesystem: Zip is Filesystem:
     type UniqueRoot = false
 
-    val separator: Text = t"/"
-    val self: Text = t"."
-    val parent: Text = t".."
+    val name: Text = "ZIP"
+    val separator: Text = "/"
+    val self: Text = "."
+    val parent: Text = ".."
 
   given radical: %.type is Radical:
     type Plane = Zip
@@ -66,5 +71,17 @@ object Zip:
     def length(text: Text): Int = 0
     def decode(text: Text): %.type = %
     def encode(root: %.type): Text = t""
+
+
+  object Entry:
+    def apply[resource: Streamable by Data](path: Path on Zip, resource: resource): Entry =
+      new Entry(path, () => resource.stream[Data])
+
+    given streamable: Entry is Streamable by Data = Streamable.stream[Data].contramap(_.content())
+
+    // 00:00:00, 1 January 2000
+    val epoch: jnf.attribute.FileTime = jnf.attribute.FileTime.fromMillis(946684800000L).nn
+
+  case class Entry(ref: Path on Zip, content: () => Stream[Data])
 
 sealed trait Zip

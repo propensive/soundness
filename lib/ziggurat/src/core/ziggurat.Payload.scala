@@ -30,23 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package zeppelin
-
-import java.nio.file as jnf
+package ziggurat
 
 import anticipation.*
-import prepositional.*
-import proscenium.*
-import serpentine.*
-import turbulence.*
 
-object ZipEntry:
-  def apply[resource: Streamable by Data](path: Path on Zip, resource: resource): ZipEntry =
-    new ZipEntry(path, () => resource.stream[Data])
-
-  given streamable: ZipEntry is Streamable by Data = Streamable.stream[Data].contramap(_.content())
-
-  // 00:00:00, 1 January 2000
-  val epoch: jnf.attribute.FileTime = jnf.attribute.FileTime.fromMillis(946684800000L).nn
-
-case class ZipEntry(ref: Path on Zip, content: () => Stream[Data])
+case class Payload(label: Text, bytes: Data, gzip: Boolean = true)

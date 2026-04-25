@@ -51,9 +51,12 @@ case class Metaprogramming(tracked val quotes: Quotes):
   def imports: List[Import] =
     def recur(context: Contexts.Context, found: List[Import]): List[Import] =
       if context == dotty.tools.dotc.core.Contexts.NoContext then found else
+
         val found2 = if !context.isImportContext then found else
           val info = context.importInfo.nn
-          Import(info.isWildcardImport, info.site(using context).asInstanceOf[quotes.reflect.TermRef]) :: found
+          val termRef = info.site(using context).asInstanceOf[quotes.reflect.TermRef]
+
+          Import(info.isWildcardImport, termRef) :: found
 
         recur(context.outer, found2)
 

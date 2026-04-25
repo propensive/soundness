@@ -127,12 +127,14 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
                 stageable.serialize:
 
                   val array = new Array[Object](1)
+
                   array(0) =
                     stageable.embed[output]:
                       $ {
                           references() = '{stageable.deserialize(form)}
                           body(using references)
                         }
+
                   array
             }
 
@@ -143,13 +145,8 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
     invoke[output]
       ( Stage
-        ( target,
-          function =>
-            stageable.extract[output]:
-              stageable.deserialize(function(stageable.serialize(references())))
-              . head.asInstanceOf[Transport] ) )
-
-    // catch case throwable: Throwable =>
-    //   println(throwable)
-    //   throwable.printStackTrace()
-    //   abort(CompilerError())
+          ( target,
+            function =>
+              stageable.extract[output]:
+                stageable.deserialize(function(stageable.serialize(references())))
+                . head.asInstanceOf[Transport] ) )

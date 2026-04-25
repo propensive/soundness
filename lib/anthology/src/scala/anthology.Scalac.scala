@@ -54,7 +54,7 @@ import dotty.tools.dotc.sbt.interfaces as dtdsi
 import dotty.tools.dotc.util as dtdu
 
 object Scalac:
-  type Versions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6 | 3.7
+  type Versions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6 | 3.7 | 3.8
 
   case class Option[-version <: Versions](flags: Text*)
 

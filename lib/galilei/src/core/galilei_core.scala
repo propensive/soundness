@@ -87,6 +87,7 @@ extension [plane: Filesystem](path: Path on plane)
       case _: jnf.NotDirectoryException      => abort(IoError(path, operation, IsNotDirectory))
       case _: SecurityException              => abort(IoError(path, operation, PermissionDenied))
       case _: jnf.FileSystemLoopException    => abort(IoError(path, operation, Cycle))
+      case _: jnf.FileSystemException        => abort(IoError(path, operation, IsDirectory))
       case other                             => abort(IoError(path, operation, Unsupported))
 
   def javaPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn

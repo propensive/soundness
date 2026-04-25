@@ -99,7 +99,7 @@ package executives:
         environment:      Environment,
         workingDirectory: WorkingDirectory,
         stdio:            Stdio,
-        signals:          Spool[Signal],
+        signals:          Spool[UnixSignal | WindowsSignal],
         entrypoint:       Entrypoint,
         login:            Login )
       ( using interpreter: Interpreter )
@@ -123,11 +123,11 @@ inline def effectful[result](lambda: (erased Effectful) ?=> result): result =
   lambda(using !![Effectful])
 
 def application(using executive: Executive, interpreter: Interpreter)
-  ( arguments: Iterable[Text], signals: List[Signal] = Nil )
+  ( arguments: Iterable[Text], signals: List[UnixSignal] = Nil )
   ( block: Cli ?=> executive.Return )
 :   Unit =
 
-  val spool: Spool[Signal] = Spool()
+  val spool: Spool[UnixSignal | WindowsSignal] = Spool()
   signals.each: signal =>
     sm.Signal.handle(sm.Signal(signal.shortName.s), event => spool.put(signal))
 

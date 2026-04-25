@@ -75,8 +75,6 @@ object internal extends Hellenism2:
       }
 
 
-
-
 trait Hellenism2:
   def makeClass[template <: AnyKind: Type]: Macro[ClassRef] =
     import quotes.reflect.*

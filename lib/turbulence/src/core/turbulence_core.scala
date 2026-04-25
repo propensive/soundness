@@ -50,6 +50,8 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
+import abstractables.instantIsAbstractable
+
 private given Realm = Realm("turbulence")
 
 inline def more[value](using value: value aka "more"): value = value()

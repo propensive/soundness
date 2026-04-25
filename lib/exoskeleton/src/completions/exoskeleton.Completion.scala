@@ -58,7 +58,7 @@ case class Completion
     currentArgument:  Int,
     focusPosition:    Optional[Int],
     stdio:            Stdio,
-    signals:          Spool[Signal],
+    signals:          Spool[UnixSignal | WindowsSignal],
     tty:              Text,
     tab:              Ordinal,
     login:            Login )
@@ -94,7 +94,7 @@ extends Cli:
     val operands = interpreter.find(parameters, flag)
 
     interpreter.focus(parameters).let: argument =>
-      if operands.contains(argument) then
+      if operands.headOption.contains(argument) then
         val allSuggestions = discoverable.discover(tab).to(List)
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
@@ -120,6 +120,7 @@ extends Cli:
       cursorSuggestions = update(using cursorSuggestions.aka["prior"]).map: suggestion =>
         if suggestion.expanded then suggestion
         else suggestion.copy(core = prefix+suggestion.core+suffix, expanded = true)
+      . sortBy(_.core)
 
 
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
@@ -195,7 +196,7 @@ extends Cli:
 
         . filter(_.starts(focusText))
 
-      case Shell.Fish =>
+      case Shell.Fish | Shell.Powershell =>
         items.flatMap:
           case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _) =>
             if hidden then Nil else

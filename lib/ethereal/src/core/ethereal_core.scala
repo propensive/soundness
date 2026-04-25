@@ -37,6 +37,11 @@ import language.experimental.pureFunctions
 import java.io as ji
 import java.lang as jl
 import java.net as jn
+import java.nio as jnio
+import java.nio.channels as jnc
+import java.util as ju
+import ju.concurrent as juc
+import juc.atomic as juca
 
 import scala.collection.concurrent as scc
 
@@ -76,18 +81,13 @@ import filesystemOptions.writeAccess.enabled
 
 given daemonLogEvent: Message transcribes DaemonLogEvent = _.communicate
 
-package daemonConfig:
-  given doNotSupportStderr: StderrSupport = () => false
-  given supportStderr: StderrSupport = () => true
-
 def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus] = service
 
 def cli[bus <: Matchable](using executive: Executive)
   ( block: (DaemonService[bus], executive.Interface) ?=> executive.Return )
-  ( using interpreter:   Interpreter,
-          stderrSupport: StderrSupport = daemonConfig.supportStderr,
-          threading:     Threading,
-          handler:       Backstop )
+  ( using interpreter: Interpreter,
+          threading:   Threading,
+          handler:     Backstop )
 :   Unit =
 
   given realm: Realm = realm"ethereal"
@@ -133,22 +133,67 @@ def cli[bus <: Matchable](using executive: Executive)
               work + destination.decode[Relative on Linux]
 
             val buildIdPath: Path on Classpath = Classpath/"build.id"
-            val buildId = safely(buildIdPath.read[Text].trim).or(t"0")
-            val prefixPath: Path on Classpath = Classpath/"ethereal"/"prefix"
-            val prefix = prefixPath.read[Text]
+            val buildId: Long = safely(System.properties.build.id[Long]()).or:
+              safely(buildIdPath.read[Text].trim.decode[Long]).or(0L)
+
+            val platformLabel: Text = safely(System.properties.build.target[Text]()).or:
+              val osName = safely(System.properties.os.name[Text]().lower).or(t"")
+              val osArch = safely(System.properties.os.arch[Text]().lower).or(t"")
+              val os =
+                if osName.contains(t"mac") || osName.contains(t"darwin") then t"macos"
+                else if osName.contains(t"win") then t"windows"
+                else t"linux"
+              val arch =
+                if osArch.contains(t"aarch") || osArch == t"arm64" then t"arm64" else t"x64"
+              t"$os-$arch"
+
+            val isWindows: Boolean = platformLabel.starts(t"windows")
+            val runnerName: Text =
+              if isWindows then t"runner-$platformLabel.exe" else t"runner-$platformLabel"
+            val runnerResource: Path on Classpath = Classpath/"ethereal"/runnerName
+            val runnerBytes: IArray[Byte] = runnerResource.read[Data]
+
+            val magic: Array[Byte] = Array[Byte](
+              'E'.toByte, 'T'.toByte, 'H'.toByte, 'R'.toByte,
+              'C'.toByte, 'F'.toByte, 'G'.toByte, 1.toByte)
+
+            val magicOffset: Int =
+              var found: Int = -1
+              var i = 0
+              while found < 0 && i <= runnerBytes.length - magic.length do
+                var matches = true
+                var j = 0
+                while matches && j < magic.length do
+                  if runnerBytes(i + j) != magic(j) then matches = false
+                  j += 1
+                if matches then found = i
+                i += 1
+              if found < 0 then
+                Out.println(e"Runner binary does not contain the ETHRCFG magic marker")
+                Exit.Fail(1).terminate()
+              found
+
+            val configOffset: Int = magicOffset + magic.length
+            val patched: Array[Byte] = IArray.genericWrapArray(runnerBytes).toArray
+            val buf = jnio.ByteBuffer.wrap(patched, configOffset, 24).nn
+            buf.order(jnio.ByteOrder.LITTLE_ENDIAN).nn
+            buf.putLong(buildId)
+            buf.putShort(javaMinimum.toShort)
+            buf.putShort(javaPreferred.toShort)
+            buf.put((if jdk then 1 else 0).toByte)
+            while buf.hasRemaining do buf.put(0.toByte)
 
             path.open: file =>
-              prefix
-              . sub("%%BUILD_ID%%", buildId)
-              . sub("%%JAVA_MINIMUM%%", javaMinimum.show)
-              . sub("%%JAVA_PREFERRED%%", javaPreferred.show)
-              . sub("%%JAVA_BUNDLE%%", if jdk then t"jdk" else t"jre")
-              . writeTo(file)
+              Stream(IArray.from(patched): IArray[Byte]).writeTo(file)
+
+            if platformLabel.starts(t"macos") then
+              if !isWindows then path.executable() = true
+              safely(mute[ExecEvent](sh"codesign --sign - --force $path".exec[Exit]()))
 
             jarFile.open: jarFile =>
               Eof(path).open(jarFile.stream[Data].writeTo(_))
 
-            path.executable() = true
+            if !isWindows then path.executable() = true
 
             Out.println(t"Built executable file $destination")
 
@@ -162,16 +207,18 @@ def cli[bus <: Matchable](using executive: Executive)
   val runtimeDir: Optional[Path on Linux] = Xdg.runtimeDir
   val stateHome: Path on Linux = Xdg.stateHome
   val baseDir: Path on Linux = runtimeDir.or(stateHome) //name
-  val portFile: Path on Linux = baseDir/name/"port"
+  val buildFile: Path on Linux = baseDir/name/"build"
   val pidFile: Path on Linux = baseDir/name/"pid"
+  val socketFile: Path on Linux = baseDir/name/"socket"
   val clients: scc.TrieMap[Pid, Client of bus] = scc.TrieMap()
   val terminatePid: Promise[Pid] = Promise()
 
   def client(pid: Pid): Client of bus = clients.getOrElseUpdate(pid, Client[bus](pid))
 
   lazy val termination: Unit =
-    portFile.wipe()
-    pidFile.wipe()
+    safely(socketFile.wipe())
+    safely(buildFile.wipe())
+    safely(pidFile.wipe())
     jl.System.exit(0)
 
   def shutdown(pid: Optional[Pid])(using Stdio): Unit logs DaemonLogEvent =
@@ -179,14 +226,21 @@ def cli[bus <: Matchable](using executive: Executive)
     pid.let(terminatePid.fulfill(_)).or(termination)
 
 
-  def makeClient(socket: jn.Socket)(using Monitor, Stdio, Codicil)
+  def makeClient(channel: jnc.SocketChannel)(using Monitor, Stdio, Codicil)
   :   Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
 
     async:
-      val in = socket.getInputStream.nn
-      val reader = ji.BufferedReader(ji.InputStreamReader(in, "UTF-8"))
+      val rawIn: ji.InputStream = jnc.Channels.newInputStream(channel).nn
+      val rawOut: ji.OutputStream = jnc.Channels.newOutputStream(channel).nn
+      val in: ji.BufferedInputStream = ji.BufferedInputStream(rawIn, 16384)
 
-      def line(): Text = reader.readLine().nn.tt
+      def line(): Text =
+        val sb = jl.StringBuilder()
+        var b = in.read()
+        while b != '\n' && b != -1 do
+          sb.append(b.toChar)
+          b = in.read()
+        sb.toString.tt
 
       def chunk(): Text =
         var buffer: Text = line()
@@ -206,7 +260,9 @@ def cli[bus <: Matchable](using executive: Executive)
 
         case t"s" =>
           val pid: Pid = line().decode[Pid]
-          val signal: Signal = line().decode[Signal]
+          val name: Text = line()
+          val signal: UnixSignal | WindowsSignal =
+            safely(name.decode[UnixSignal]).or(name.decode[WindowsSignal])
           DaemonEvent.Trap(pid, signal)
 
         case t"x" =>
@@ -232,40 +288,55 @@ def cli[bus <: Matchable](using executive: Executive)
       message match
         case Unset =>
           Log.warn(DaemonLogEvent.UnrecognizedMessage)
-          socket.close()
+          channel.close()
 
         case DaemonEvent.Trap(pid, signal) =>
           Log.info(DaemonLogEvent.ReceivedSignal(signal))
           client(pid).signals.put(signal)
-          socket.close()
+          channel.close()
 
         case DaemonEvent.Exit(pid) =>
           Log.fine(DaemonLogEvent.ExitStatusRequest(pid))
           val exitStatus: Exit = client(pid).exitPromise.await()
 
-          socket.getOutputStream.nn.write(exitStatus().show.data.mutable(using Unsafe))
-          socket.close()
+          rawOut.write(exitStatus().show.data.mutable(using Unsafe))
+          channel.close()
           clients.remove(pid)
           if terminatePid() == pid then termination
 
         case DaemonEvent.Stderr(pid) =>
           Log.fine(DaemonLogEvent.StderrRequest(pid))
-          client(pid).stderr.offer(socket.getOutputStream.nn)
+          val stderrClient = client(pid)
+          stderrClient.stderr.offer(rawOut)
+          safely(stderrClient.exitPromise.await())
+          safely(channel.close())
 
         case DaemonEvent.Init(pid, login, directory, script, shellInput, textArguments, env) =>
           Log.fine(DaemonLogEvent.Init(pid))
           val connection = client(pid)
-          connection.socket.fulfill(socket)
+          connection.socket.fulfill(channel)
 
-          val lazyStderr: ji.OutputStream =
-            if !stderrSupport() then socket.getOutputStream.nn
-            else new ji.OutputStream():
-              private lazy val wrapped = connection.stderr.await()
-              def write(i: Int): Unit = wrapped.write(i)
-              override def write(bytes: Array[Byte] | Null): Unit = wrapped.write(bytes)
+          val lazyStderr: ji.OutputStream = new ji.OutputStream():
+            private val stderrOut: juca.AtomicReference[ji.OutputStream | Null] =
+              juca.AtomicReference(null)
 
-              override def write(bytes: Array[Byte] | Null, offset: Int, length: Int): Unit =
-                wrapped.write(bytes, offset, length)
+            private def connected(): ji.OutputStream =
+              val s = stderrOut.get()
+              if s != null then s
+              else
+                val newS = connection.stderr.await()
+                stderrOut.set(newS)
+                newS
+
+            def write(i: Int): Unit = connected().write(i)
+            override def write(bytes: Array[Byte] | Null): Unit = connected().write(bytes)
+
+            override def write(bytes: Array[Byte] | Null, offset: Int, length: Int): Unit =
+              connected().write(bytes, offset, length)
+
+            override def close(): Unit =
+              val s = stderrOut.get()
+              if s != null then safely(s.close())
 
           given environment: Environment = LazyEnvironment(env)
 
@@ -281,8 +352,8 @@ def cli[bus <: Matchable](using executive: Executive)
 
           val stdio: Stdio =
             Stdio
-              ( ji.PrintStream(socket.getOutputStream.nn),
-                ji.PrintStream(lazyStderr),
+              ( ji.PrintStream(rawOut, true),
+                ji.PrintStream(lazyStderr, true),
                 in,
                 termcap )
 
@@ -326,7 +397,8 @@ def cli[bus <: Matchable](using executive: Executive)
               connection.exitPromise.fulfill(handler.handle(exception)(using stdio))
 
           finally
-            socket.close()
+            lazyStderr.close()
+            channel.close()
             Log.info(DaemonLogEvent.CloseConnection(pid))
 
   application(using executives.direct(using backstops.silent))(Nil):
@@ -334,24 +406,31 @@ def cli[bus <: Matchable](using executive: Executive)
     import codicils.await
 
     Os.intercept[Shutdown]:
-      portFile.wipe()
-      pidFile.wipe()
+      safely(socketFile.wipe())
+      safely(buildFile.wipe())
+      safely(pidFile.wipe())
 
     supervise:
       import logFormats.standard
       given loggable: Message is Loggable = Log.route(Syslog(t"ethereal"))
 
-      val socket: jn.ServerSocket = jn.ServerSocket(0)
-      val port: Int = socket.getLocalPort
-      val buildId = safely((Classpath/"build.id").read[Text].trim.decode[Int]).or(0)
-      val stderr = if stderrSupport() then 1 else 0
-      portFile.open(t"$port $buildId $stderr".writeTo(_))
-      val pidValue = OsProcess().pid.value.show
+      safely(socketFile.wipe())
+
+      val channel: jnc.ServerSocketChannel =
+        jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
+
+      channel.configureBlocking(true)
+      channel.bind(jn.UnixDomainSocketAddress.of(socketFile.encode.s))
+
+      val buildId = safely(System.properties.build.id[Int]()).or:
+        safely((Classpath/"build.id").read[Text].trim.decode[Int]).or(0)
+      buildFile.open(t"$buildId".writeTo(_))
+      val pidValue = Process().pid.value.show
       pidFile.open(pidValue.writeTo(_))
 
       task(t"pid-watcher"):
         safely:
-          List[Path on Linux](portFile, pidFile).watch: watcher =>
+          List[Path on Linux](socketFile, buildFile, pidFile).watch: watcher =>
             watcher.stream.each:
               case Delete(_, _) | Modify(_, _) =>
                 Log.warn(DaemonLogEvent.Termination)
@@ -360,7 +439,7 @@ def cli[bus <: Matchable](using executive: Executive)
               case other =>
                 ()
 
-      loop(safely(makeClient(socket.accept().nn))).run()
+      loop(safely(makeClient(channel.accept().nn))).run()
 
     Exit.Ok
 

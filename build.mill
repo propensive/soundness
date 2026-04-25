@@ -150,7 +150,7 @@ object soundness extends ScalaModule:
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi,
     eucalyptus.syslog, guillotine.core, escapade.core, imperial.core, profanity.core,
-    surveillance.core, punctuation.ansi, hallucination.ansi)
+    surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core)
 
   object data extends Bundle(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
     gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core, panopticon.core,
@@ -482,12 +482,69 @@ object escritoire extends Library:
   object test extends Tests(core)
 
 object ethereal extends Library:
-  object core extends Component(surveillance.core, eucalyptus.syslog, digression.core, hellenism.core, exoskeleton.core)
+  object core extends Component(surveillance.core, eucalyptus.syslog, digression.core, hellenism.core, exoskeleton.core):
+    val rustTargets: Seq[(String, String, String)] = Seq(
+      ("x86_64-pc-windows-gnu",       "windows-x64",   "runner.exe"),
+      ("x86_64-unknown-linux-gnu",    "linux-x64",     "runner"),
+      ("aarch64-unknown-linux-gnu",   "linux-arm64",   "runner"),
+      ("x86_64-apple-darwin",         "macos-x64",     "runner"),
+      ("aarch64-apple-darwin",        "macos-arm64",   "runner"))
+
+    def rustSources: T[Seq[PathRef]] = Task.Sources(
+      moduleDir / ".." / ".." / "Cargo.toml",
+      moduleDir / ".." / ".." / "src" / "runner")
+
+    def rustRunners: T[PathRef] = Task:
+      val _ = rustSources()
+      val ethDir = moduleDir / ".." / ".."
+      val manifest = ethDir / "Cargo.toml"
+      val targetDir = Task.dest / "target"
+      os.makeDir.all(targetDir)
+      val cmd = Seq("cargo", "zigbuild", "--release",
+        "--manifest-path", manifest.toString,
+        "--target-dir", targetDir.toString) ++
+        rustTargets.flatMap { case (triple, _, _) => Seq("--target", triple) }
+      os.proc(cmd).call(cwd = ethDir, stdout = os.Inherit, stderr = os.Inherit)
+      val outDir = Task.dest / "ethereal"
+      os.makeDir.all(outDir)
+      rustTargets.foreach { case (triple, label, binary) =>
+        val src = targetDir / triple / "release" / binary
+        val ext = if binary.endsWith(".exe") then ".exe" else ""
+        val dst = outDir / s"runner-$label$ext"
+        os.copy.over(src, dst)
+      }
+      PathRef(Task.dest)
+
+    override def resources: T[Seq[PathRef]] =
+      Task(super.resources() ++ Seq(rustRunners()))
 
   object example extends Component(core, exoskeleton.completions):
     override def finalMainClass: Task.Simple[String] = "ethereal.run"
 
-  object test extends Tests(core)
+    def bin(): Command[PathRef] = Task.Command:
+      val jar = assembly().path
+      val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "hello"
+      os.makeDir.all(target / os.up)
+
+      val runnersBase = core.rustRunners().path / "ethereal"
+      val staging = Task.dest / "staging"
+      os.makeDir.all(staging)
+
+      core.rustTargets.foreach: (_, label, binary) =>
+        val ext = if binary.endsWith(".exe") then ".exe" else ""
+        val src = runnersBase / s"runner-$label$ext"
+        os.copy.over(src, staging / s"runner-$label$ext")
+
+      os.copy.over(jar, staging / "data")
+
+      val classpath = ziggurat.core.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+      os.proc("java", "-cp", classpath, "ziggurat.PolyglotInstaller", target.toString, staging.toString)
+        .call(stdout = os.Inherit, stderr = os.Inherit)
+
+      new java.io.File(target.toString).setExecutable(true)
+      PathRef(target)
+
+  object test extends Tests(core, exoskeleton.rig, quantitative.units)
 
 object eucalyptus extends Library:
   object core extends Component(turbulence.core, gossamer.core)
@@ -505,7 +562,7 @@ object exoskeleton extends Library:
   object core extends Component(args, galilei.core)
   object completions extends Component(core)
 
-  object rig extends Component(completions, superlunary.core, ethereal.core, jacinta.core, zeppelin.core, revolution.core, anthology.bundle):
+  object rig extends Component(completions, superlunary.core, ethereal.core, jacinta.core, zeppelin.core, revolution.core, anthology.bundle, quantitative.units):
     def mvnDeps =
       Seq
        (mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
@@ -890,6 +947,10 @@ object zeppelin extends Library:
   object core extends Component(galilei.core, zephyrine.core)
   object test extends Tests(core, imperial.core, diuretic.core)
 
+object ziggurat extends Library:
+  object core extends Component(hellenism.core, monotonous.core, turbulence.core)
+  object test extends Tests(core)
+
 object publishing extends Module:
   def local(localIvyRepo: String = null): Command[Unit] = Task.Command:
     abacist.core.publishLocal()()
@@ -1042,6 +1103,7 @@ object publishing extends Module:
     yossarian.core.publishLocal()()
     zephyrine.core.publishLocal()()
     zeppelin.core.publishLocal()()
+    ziggurat.core.publishLocal()()
     soundness.base.publishLocal()()
     soundness.cli.publishLocal()()
     soundness.data.publishLocal()()

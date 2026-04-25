@@ -44,8 +44,13 @@ import gossamer.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import spectacular.*
 import turbulence.*
+
+object Stderr:
+  given computable: Stderr is Computable = proc =>
+    Stderr(String(proc.getErrorStream.nn.readAllBytes().nn, "UTF-8").nn.tt)
+
+case class Stderr(text: Text)
 
 object Computable:
   given stream: Stream[Text] is Computable = proc =>
@@ -57,13 +62,10 @@ object Computable:
     reader.lines().nn.toScala(List).map(_.tt)
 
   given text: Text is Computable = proc =>
-    Text.build:
-      stream.compute(proc).each: line =>
-        append(line.s)
-        append('\n')
+    String(proc.getInputStream.nn.readAllBytes().nn, "UTF-8").nn.tt
 
   given string: String is Computable = proc =>
-    Text.build(stream.compute(proc).map(_.s).each(append(_))).s
+    String(proc.getInputStream.nn.readAllBytes().nn, "UTF-8").nn
 
   given dataStream: Tactic[StreamError] => Stream[Data] is Computable =
     proc => Streamable.inputStream.stream(proc.getInputStream.nn)
@@ -78,7 +80,7 @@ object Computable:
   given instantiable: [instantiable: Instantiable across Paths from Text]
   =>  instantiable is Computable =
 
-    text.map(instantiable(_))
+    text.map: text => instantiable(text.trim)
 
 
 trait Computable extends Typeclass:
