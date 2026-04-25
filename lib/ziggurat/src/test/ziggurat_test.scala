@@ -35,6 +35,7 @@ package ziggurat
 import soundness.*
 
 import systems.java
+import environments.java
 import temporaryDirectories.system
 import workingDirectories.default
 import logging.silent
@@ -116,3 +117,65 @@ object Tests extends Suite(m"Ziggurat tests"):
           sh"docker run --rm --platform linux/arm64 -v $mount -w /work ubuntu:24.04 ./hello"
             .exec[Text]().trim
         .assert(_ == t"hello from linux-arm64")
+
+    val winHost: Optional[Text] = safely(Environment.windowsHost[Text])
+
+    if winHost.present then
+      val host = winHost.vouch
+      val winSshOk =
+        safely(sh"ssh -o BatchMode=yes -o ConnectTimeout=5 $host echo ok".exec[Exit]()) == Exit.Ok
+
+      if !winSshOk then Out.println(t"Windows host $host unreachable via SSH; skipping Windows tests")
+      else
+        val workDir: Path on Linux = temporaryDirectory[Path on Linux] / Uuid().show
+        workDir.create[Directory]()
+
+        val compilePs = workDir / t"compile.ps1"
+        compilePs.create[File]()
+        val psContent = t"""$$src = @'
+class Hello { static void Main() { System.Console.WriteLine("hello from windows-arm64"); } }
+'@
+Add-Type -TypeDefinition $$src -OutputAssembly ziggurat-test-hello.exe -OutputType ConsoleApplication
+"""
+        compilePs.open: handle =>
+          Stream(psContent.data).writeTo(handle)
+
+        val localExe = workDir / t"hello.exe"
+
+        val bootstrapped =
+          (safely(sh"scp -q $compilePs $host:ziggurat-test-compile.ps1".exec[Exit]()) == Exit.Ok)
+          && (safely(sh"ssh $host powershell -ExecutionPolicy Bypass -File ziggurat-test-compile.ps1"
+            .exec[Exit]()) == Exit.Ok)
+          && (safely(sh"scp -q $host:ziggurat-test-hello.exe $localExe".exec[Exit]()) == Exit.Ok)
+
+        if !bootstrapped then
+          Out.println(t"Failed to bootstrap hello.exe on $host; skipping Windows tests")
+          safely(sh"ssh $host del /q ziggurat-test-*".exec[Exit]())
+        else
+          val winArm64Bytes: Data = localExe.open(_.read[Data])
+          val winBundle = PolyglotInstaller.bundle:
+            payloads :+ Payload(t"windows-arm64", winArm64Bytes, gzip = false)
+
+          def stageAndCopy(extension: Text): Text =
+            val script = workDir / t"hello-${Uuid().show}.$extension"
+            script.create[File]()
+            script.open: handle =>
+              Stream(winBundle).writeTo(handle)
+            val remote = t"ziggurat-test-${Uuid().show}.$extension"
+            sh"scp -q $script $host:$remote".exec[Exit]()
+            remote
+
+          try
+            suite(m"windows-arm64 via cmd.exe"):
+              test(m"selects windows-arm64 payload"):
+                val name = stageAndCopy(t"bat")
+                sh"ssh $host cmd /c $name".exec[Text]()
+              .assert(_.contains(t"hello from windows-arm64"))
+
+            suite(m"windows-arm64 via PowerShell"):
+              test(m"selects windows-arm64 payload"):
+                val name = stageAndCopy(t"ps1")
+                sh"ssh $host powershell -ExecutionPolicy Bypass -File $name".exec[Text]()
+              .assert(_.contains(t"hello from windows-arm64"))
+          finally
+            safely(sh"ssh $host del /q ziggurat-test-*".exec[Exit]())
