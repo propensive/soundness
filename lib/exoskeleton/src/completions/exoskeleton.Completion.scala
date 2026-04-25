@@ -58,7 +58,7 @@ case class Completion
     currentArgument:  Int,
     focusPosition:    Optional[Int],
     stdio:            Stdio,
-    signals:          Spool[Signal],
+    signals:          Spool[UnixSignal | WindowsSignal],
     tty:              Text,
     tab:              Ordinal,
     login:            Login )

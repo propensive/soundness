@@ -58,7 +58,7 @@ case class Client(pid: Pid) extends Topical:
   type Topic <: Matchable
 
   val stderr: Promise[ji.OutputStream] = Promise()
-  val signals: Spool[Signal] = Spool()
+  val signals: Spool[UnixSignal | WindowsSignal] = Spool()
   val bus: Spool[Topic] = Spool()
   val terminatePid: Promise[Pid] = Promise()
   val exitPromise: Promise[Exit] = Promise()

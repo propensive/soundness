@@ -49,7 +49,6 @@ import threading.platform
 import strategies.throwUnsafely
 import backstops.silent
 import autopsies.contrastExpectations
-import daemonConfig.supportStderr
 import homeDirectories.system
 
 object Tests extends Suite(m"Ethereal Tests"):
@@ -119,7 +118,10 @@ object Tests extends Suite(m"Ethereal Tests"):
 
               case Argument("signal") :: Nil =>
                 execute:
-                  Out.print(summon[Invocation].signals.stream.head.shortName) yet Exit.Ok
+                  val name = summon[Invocation].signals.stream.head match
+                    case unix: UnixSignal       => unix.shortName
+                    case windows: WindowsSignal => windows.shortName
+                  Out.print(name) yet Exit.Ok
 
               case _ =>
                 execute(Exit.Fail(1))
@@ -351,7 +353,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             val content = sh"cat $stateDir/port".exec[Text]()
             content.cut(t" ").length
 
-          . assert(_ == 3)
+          . assert(_ == 2)
 
           test(m"port file contains a valid port number"):
             sh"$tool echo probe".exec[Unit]()
@@ -444,6 +446,63 @@ object Tests extends Suite(m"Ethereal Tests"):
     snooze(0.2*Second)
     safely(sh"pkill upgrd".exec[Exit]())
     sh"rm -rf $upgradeStateDir".exec[Unit]()
+
+    val selfuStateDir: Path on Linux =
+      Xdg.runtimeDir[Path on Linux].or(Xdg.stateHome[Path on Linux]) / t"selfu"
+    val selfuDataDir: Path on Linux = Xdg.dataHome[Path on Linux] / t"selfu"
+    sh"rm -rf $selfuStateDir $selfuDataDir".exec[Unit]()
+    safely(sh"pkill selfu".exec[Exit]())
+    snooze(0.1*Second)
+
+    val selfuV1 = Sandbox("selfu", buildId = 1).dispatch:
+      ' {
+          import executives.completions
+          import interpreters.posix
+          import environments.daemonClient
+
+          cli:
+            arguments match
+              case Argument("version") :: Nil =>
+                execute(Out.print(t"v1") yet Exit.Ok)
+
+              case _ =>
+                execute(Exit.Fail(1))
+
+          t"finished"
+        }
+
+    val selfuV2 = Sandbox("selfu", buildId = 2).dispatch:
+      ' {
+          import executives.completions
+          import interpreters.posix
+          import environments.daemonClient
+
+          cli:
+            arguments match
+              case Argument("version") :: Nil =>
+                execute(Out.print(t"v2") yet Exit.Ok)
+
+              case _ =>
+                execute(Exit.Fail(1))
+
+          t"finished"
+        }
+
+    suite(m"Self-update"):
+      test(m"launcher swaps in pending binary before next invocation"):
+        sh"mkdir -p $selfuDataDir".exec[Unit]()
+        sh"cp ${selfuV2.path} $selfuDataDir/.pending".exec[Unit]()
+        sh"${selfuV1.path} version".exec[Text]()
+
+      .assert(_ == t"v2")
+
+      test(m"old binary is preserved after upgrade"):
+        sh"test -f ${Xdg.dataHome[Path on Linux]}/selfu.old".exec[Exit]()
+
+      .assert(_ == Exit.Ok)
+
+    safely(sh"pkill selfu".exec[Exit]())
+    sh"rm -rf $selfuStateDir $selfuDataDir".exec[Unit]()
 
     val brokenStateDir: Path on Linux =
       Xdg.runtimeDir[Path on Linux].or(Xdg.stateHome[Path on Linux]) / t"brokn"

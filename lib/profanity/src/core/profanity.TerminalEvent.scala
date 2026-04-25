@@ -60,6 +60,26 @@ enum Signal extends TerminalEvent:
   def name: Text = t"SIG${this.toString.show.upper}"
   def id: Int = if ordinal < 15 then ordinal - 1 else ordinal
 
+type UnixSignal = Signal
+val UnixSignal = Signal
+
+object WindowsSignal:
+  given decoder: WindowsSignal is Decodable in Text =
+    text => WindowsSignal.valueOf(text.lower.capitalize.s)
+
+  given encodable: WindowsSignal is Encodable in Text = _.shortName
+  given showable: WindowsSignal is Showable = _.shortName
+
+enum WindowsSignal extends TerminalEvent:
+  case CtrlC, CtrlBreak, Close, Logoff, Shutdown
+
+  def shortName: Text = this match
+    case CtrlC     => t"CTRL_C"
+    case CtrlBreak => t"CTRL_BREAK"
+    case Close     => t"CLOSE"
+    case Logoff    => t"LOGOFF"
+    case Shutdown  => t"SHUTDOWN"
+
 object CtrlChar:
   def unapply(code: Char)
   :   Option

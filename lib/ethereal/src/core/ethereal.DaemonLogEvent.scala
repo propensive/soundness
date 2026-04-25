@@ -45,7 +45,9 @@ object DaemonLogEvent:
     case Failure                   => m"A failure occurred"
     case NewCli                    => m"Instantiating a new CLI"
     case UnrecognizedMessage       => m"Unrecognized message"
-    case ReceivedSignal(signal)    => m"Received signal $signal"
+    case ReceivedSignal(signal)    => signal match
+      case unix: UnixSignal       => m"Received signal $unix"
+      case windows: WindowsSignal => m"Received signal $windows"
     case ExitStatusRequest(pid)    => m"Exit status requested from $pid"
     case CloseConnection(pid)      => m"Connection closed from $pid"
     case StderrRequest(pid)        => m"STDERR requested from $pid"
@@ -58,7 +60,7 @@ enum DaemonLogEvent:
   case Failure
   case NewCli
   case UnrecognizedMessage
-  case ReceivedSignal(signal: Signal)
+  case ReceivedSignal(signal: UnixSignal | WindowsSignal)
   case ExitStatusRequest(pid: Pid)
   case CloseConnection(pid: Pid)
   case StderrRequest(pid: Pid)

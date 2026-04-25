@@ -35,7 +35,8 @@ package soundness
 export profanity
 . { BackgroundColorDetection, BracketedPasteMode, DismissError, Interaction, Interactivity,
     Keyboard, Keypress, LineEditor, Console, Question, SelectMenu, Terminal, TerminalError,
-    TerminalEvent, TerminalFocusDetection, Luminance, TerminalSizeDetection, interactive }
+    TerminalEvent, TerminalFocusDetection, Luminance, TerminalSizeDetection, interactive,
+    UnixSignal, WindowsSignal }
 
 package keyboards:
   export profanity.keyboards.{raw, numeric, standard}

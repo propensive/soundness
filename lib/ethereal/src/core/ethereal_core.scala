@@ -37,6 +37,7 @@ import language.experimental.pureFunctions
 import java.io as ji
 import java.lang as jl
 import java.net as jn
+import java.nio as jnio
 import java.util as ju
 import ju.concurrent as juc
 import juc.atomic as juca
@@ -79,18 +80,13 @@ import filesystemOptions.writeAccess.enabled
 
 given daemonLogEvent: Message transcribes DaemonLogEvent = _.communicate
 
-package daemonConfig:
-  given doNotSupportStderr: StderrSupport = () => false
-  given supportStderr: StderrSupport = () => true
-
 def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus] = service
 
 def cli[bus <: Matchable](using executive: Executive)
   ( block: (DaemonService[bus], executive.Interface) ?=> executive.Return )
-  ( using interpreter:   Interpreter,
-          stderrSupport: StderrSupport = daemonConfig.supportStderr,
-          threading:     Threading,
-          handler:       Backstop )
+  ( using interpreter: Interpreter,
+          threading:   Threading,
+          handler:     Backstop )
 :   Unit =
 
   given realm: Realm = realm"ethereal"
@@ -136,23 +132,67 @@ def cli[bus <: Matchable](using executive: Executive)
               work + destination.decode[Relative on Linux]
 
             val buildIdPath: Path on Classpath = Classpath/"build.id"
-            val buildId = safely(System.properties.build.id[Int]()).let(_.show).or:
-              safely(buildIdPath.read[Text].trim).or(t"0")
-            val prefixPath: Path on Classpath = Classpath/"ethereal"/"prefix"
-            val prefix = prefixPath.read[Text]
+            val buildId: Long = safely(System.properties.build.id[Long]()).or:
+              safely(buildIdPath.read[Text].trim.decode[Long]).or(0L)
+
+            val platformLabel: Text = safely(System.properties.build.target[Text]()).or:
+              val osName = safely(System.properties.os.name[Text]().lower).or(t"")
+              val osArch = safely(System.properties.os.arch[Text]().lower).or(t"")
+              val os =
+                if osName.contains(t"mac") || osName.contains(t"darwin") then t"macos"
+                else if osName.contains(t"win") then t"windows"
+                else t"linux"
+              val arch =
+                if osArch.contains(t"aarch") || osArch == t"arm64" then t"arm64" else t"x64"
+              t"$os-$arch"
+
+            val isWindows: Boolean = platformLabel.starts(t"windows")
+            val runnerName: Text =
+              if isWindows then t"runner-$platformLabel.exe" else t"runner-$platformLabel"
+            val runnerResource: Path on Classpath = Classpath/"ethereal"/runnerName
+            val runnerBytes: IArray[Byte] = runnerResource.read[Data]
+
+            val magic: Array[Byte] = Array[Byte](
+              'E'.toByte, 'T'.toByte, 'H'.toByte, 'R'.toByte,
+              'C'.toByte, 'F'.toByte, 'G'.toByte, 1.toByte)
+
+            val magicOffset: Int =
+              var found: Int = -1
+              var i = 0
+              while found < 0 && i <= runnerBytes.length - magic.length do
+                var matches = true
+                var j = 0
+                while matches && j < magic.length do
+                  if runnerBytes(i + j) != magic(j) then matches = false
+                  j += 1
+                if matches then found = i
+                i += 1
+              if found < 0 then
+                Out.println(e"Runner binary does not contain the ETHRCFG magic marker")
+                Exit.Fail(1).terminate()
+              found
+
+            val configOffset: Int = magicOffset + magic.length
+            val patched: Array[Byte] = IArray.genericWrapArray(runnerBytes).toArray
+            val buf = jnio.ByteBuffer.wrap(patched, configOffset, 24).nn
+            buf.order(jnio.ByteOrder.LITTLE_ENDIAN).nn
+            buf.putLong(buildId)
+            buf.putShort(javaMinimum.toShort)
+            buf.putShort(javaPreferred.toShort)
+            buf.put((if jdk then 1 else 0).toByte)
+            while buf.hasRemaining do buf.put(0.toByte)
 
             path.open: file =>
-              prefix
-              . sub("%%BUILD_ID%%", buildId)
-              . sub("%%JAVA_MINIMUM%%", javaMinimum.show)
-              . sub("%%JAVA_PREFERRED%%", javaPreferred.show)
-              . sub("%%JAVA_BUNDLE%%", if jdk then t"jdk" else t"jre")
-              . writeTo(file)
+              Stream(IArray.from(patched): IArray[Byte]).writeTo(file)
+
+            if platformLabel.starts(t"macos") then
+              if !isWindows then path.executable() = true
+              safely(mute[ExecEvent](sh"codesign --sign - --force $path".exec[Exit]()))
 
             jarFile.open: jarFile =>
               Eof(path).open(jarFile.stream[Data].writeTo(_))
 
-            path.executable() = true
+            if !isWindows then path.executable() = true
 
             Out.println(t"Built executable file $destination")
 
@@ -187,10 +227,15 @@ def cli[bus <: Matchable](using executive: Executive)
   :   Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
 
     async:
-      val in = socket.getInputStream.nn
-      val reader = ji.BufferedReader(ji.InputStreamReader(in, "UTF-8"))
+      val in: ji.BufferedInputStream = ji.BufferedInputStream(socket.getInputStream.nn, 16384)
 
-      def line(): Text = reader.readLine().nn.tt
+      def line(): Text =
+        val sb = jl.StringBuilder()
+        var b = in.read()
+        while b != '\n' && b != -1 do
+          sb.append(b.toChar)
+          b = in.read()
+        sb.toString.tt
 
       def chunk(): Text =
         var buffer: Text = line()
@@ -210,7 +255,9 @@ def cli[bus <: Matchable](using executive: Executive)
 
         case t"s" =>
           val pid: Pid = line().decode[Pid]
-          val signal: Signal = line().decode[Signal]
+          val name: Text = line()
+          val signal: UnixSignal | WindowsSignal =
+            safely(name.decode[UnixSignal]).or(name.decode[WindowsSignal])
           DaemonEvent.Trap(pid, signal)
 
         case t"x" =>
@@ -264,29 +311,27 @@ def cli[bus <: Matchable](using executive: Executive)
           val connection = client(pid)
           connection.socket.fulfill(socket)
 
-          val lazyStderr: ji.OutputStream =
-            if !stderrSupport() then socket.getOutputStream.nn
-            else new ji.OutputStream():
-              private val stderrOut: juca.AtomicReference[ji.OutputStream | Null] =
-                juca.AtomicReference(null)
+          val lazyStderr: ji.OutputStream = new ji.OutputStream():
+            private val stderrOut: juca.AtomicReference[ji.OutputStream | Null] =
+              juca.AtomicReference(null)
 
-              private def connected(): ji.OutputStream =
-                val s = stderrOut.get()
-                if s != null then s
-                else
-                  val newS = connection.stderr.await()
-                  stderrOut.set(newS)
-                  newS
+            private def connected(): ji.OutputStream =
+              val s = stderrOut.get()
+              if s != null then s
+              else
+                val newS = connection.stderr.await()
+                stderrOut.set(newS)
+                newS
 
-              def write(i: Int): Unit = connected().write(i)
-              override def write(bytes: Array[Byte] | Null): Unit = connected().write(bytes)
+            def write(i: Int): Unit = connected().write(i)
+            override def write(bytes: Array[Byte] | Null): Unit = connected().write(bytes)
 
-              override def write(bytes: Array[Byte] | Null, offset: Int, length: Int): Unit =
-                connected().write(bytes, offset, length)
+            override def write(bytes: Array[Byte] | Null, offset: Int, length: Int): Unit =
+              connected().write(bytes, offset, length)
 
-              override def close(): Unit =
-                val s = stderrOut.get()
-                if s != null then safely(s.close())
+            override def close(): Unit =
+              val s = stderrOut.get()
+              if s != null then safely(s.close())
 
           given environment: Environment = LazyEnvironment(env)
 
@@ -367,8 +412,7 @@ def cli[bus <: Matchable](using executive: Executive)
       val port: Int = socket.getLocalPort
       val buildId = safely(System.properties.build.id[Int]()).or:
         safely((Classpath/"build.id").read[Text].trim.decode[Int]).or(0)
-      val stderr = if stderrSupport() then 1 else 0
-      portFile.open(t"$port $buildId $stderr".writeTo(_))
+      portFile.open(t"$port $buildId".writeTo(_))
       val pidValue = Process().pid.value.show
       pidFile.open(pidValue.writeTo(_))
 

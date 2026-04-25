@@ -51,7 +51,7 @@ object Terminal:
   def enablePaste: Text = t"\e[?2004h"
   def disablePaste: Text = t"\e[?2004l"
 
-case class Terminal(signals: Spool[Signal])
+case class Terminal(signals: Spool[UnixSignal | WindowsSignal])
   ( using console: Console, monitor: Monitor, codicil: Codicil )
 extends Interactivity[TerminalEvent]:
 

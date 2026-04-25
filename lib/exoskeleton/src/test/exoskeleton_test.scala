@@ -355,3 +355,18 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             snooze(0.2*Second)
             sh"kill -0 $pid".exec[Exit]()
           .assert(_ == Exit.Fail(1))
+
+        suite(m"Raw completion invocation"):
+          val tool = summon[Sandbox.Tool].path
+
+          test(m"completion with bash args returns alpha"):
+            sh"$tool '{completions}' bash 1 0 /dev/null -- abcd ''".exec[Text]()
+          .check(_.contains(t"alpha"))
+
+          test(m"completion with zsh args returns alpha"):
+            sh"$tool '{completions}' zsh 2 0 /dev/null -- abcd ''".exec[Text]()
+          .check(_.contains(t"alpha"))
+
+          test(m"completion with fish args returns alpha"):
+            sh"$tool '{completions}' fish 1 0 /dev/null -- abcd ''".exec[Text]()
+          .check(_.contains(t"alpha"))

@@ -482,7 +482,41 @@ object escritoire extends Library:
   object test extends Tests(core)
 
 object ethereal extends Library:
-  object core extends Component(surveillance.core, eucalyptus.syslog, digression.core, hellenism.core, exoskeleton.core)
+  object core extends Component(surveillance.core, eucalyptus.syslog, digression.core, hellenism.core, exoskeleton.core):
+    val rustTargets: Seq[(String, String, String)] = Seq(
+      ("x86_64-pc-windows-gnu",       "windows-x64",   "runner.exe"),
+      ("x86_64-unknown-linux-gnu",    "linux-x64",     "runner"),
+      ("aarch64-unknown-linux-gnu",   "linux-arm64",   "runner"),
+      ("x86_64-apple-darwin",         "macos-x64",     "runner"),
+      ("aarch64-apple-darwin",        "macos-arm64",   "runner"))
+
+    def rustSources: T[Seq[PathRef]] = Task.Sources(
+      moduleDir / ".." / ".." / "Cargo.toml",
+      moduleDir / ".." / ".." / "src" / "runner")
+
+    def rustRunners: T[PathRef] = Task:
+      val _ = rustSources()
+      val ethDir = moduleDir / ".." / ".."
+      val manifest = ethDir / "Cargo.toml"
+      val targetDir = Task.dest / "target"
+      os.makeDir.all(targetDir)
+      val cmd = Seq("cargo", "zigbuild", "--release",
+        "--manifest-path", manifest.toString,
+        "--target-dir", targetDir.toString) ++
+        rustTargets.flatMap { case (triple, _, _) => Seq("--target", triple) }
+      os.proc(cmd).call(cwd = ethDir, stdout = os.Inherit, stderr = os.Inherit)
+      val outDir = Task.dest / "ethereal"
+      os.makeDir.all(outDir)
+      rustTargets.foreach { case (triple, label, binary) =>
+        val src = targetDir / triple / "release" / binary
+        val ext = if binary.endsWith(".exe") then ".exe" else ""
+        val dst = outDir / s"runner-$label$ext"
+        os.copy.over(src, dst)
+      }
+      PathRef(Task.dest)
+
+    override def resources: T[Seq[PathRef]] =
+      Task(super.resources() ++ Seq(rustRunners()))
 
   object example extends Component(core, exoskeleton.completions):
     override def finalMainClass: Task.Simple[String] = "ethereal.run"
