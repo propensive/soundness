@@ -521,12 +521,66 @@ object ethereal extends Library:
   object example extends Component(core, exoskeleton.completions):
     override def finalMainClass: Task.Simple[String] = "ethereal.run"
 
+    def installerSources: T[Seq[PathRef]] = Task.Sources(
+      moduleDir / ".." / ".." / "src" / "installer")
+
     def bin(): Command[PathRef] = Task.Command:
+      import java.util.Base64
+      import java.io.ByteArrayOutputStream
+      import java.util.zip.GZIPOutputStream
+
       val jar = assembly().path
       val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "hello"
       os.makeDir.all(target / os.up)
-      os.proc("java", s"-Dbuild.executable=$target", "-jar", jar.toString)
-        .call(stdout = os.Inherit, stderr = os.Inherit)
+
+      val runnersBase = core.rustRunners().path / "ethereal"
+
+      def encode(bytes: Array[Byte], gzip: Boolean): String =
+        val raw =
+          if gzip then
+            val baos = new ByteArrayOutputStream()
+            val gz = new GZIPOutputStream(baos)
+            gz.write(bytes)
+            gz.close()
+            baos.toByteArray
+          else bytes
+        Base64.getEncoder.encodeToString(raw).grouped(8000).mkString("", "\n", "\n")
+
+      val runnerPayloads = core.rustTargets.map: (_, label, binary) =>
+        val ext = if binary.endsWith(".exe") then ".exe" else ""
+        val path = runnersBase / s"runner-$label$ext"
+        label -> encode(os.read.bytes(path), gzip = !label.startsWith("windows"))
+
+      val payloads = runnerPayloads :+ ("data" -> encode(os.read.bytes(jar), gzip = false))
+
+      val installerDir = installerSources().head.path
+      val prefix = os.read(installerDir / "polyglot.tmpl")
+        .replace("@@BAT@@", os.read(installerDir / "polyglot.bat"))
+        .replace("@@PS1@@", os.read(installerDir / "polyglot.ps1"))
+        .replace("@@SH@@", os.read(installerDir / "polyglot.sh"))
+
+      val sb = new StringBuilder
+      sb.append(prefix)
+      if !prefix.endsWith("\n") then sb.append('\n')
+
+      var offset = 1
+      val indexEntries = payloads.map: (label, content) =>
+        val entry = s"$label=$offset"
+        offset += content.count(_ == '\n') + 2
+        entry
+
+      sb.append("index:").append(indexEntries.mkString(",")).append('\n')
+
+      payloads.foreach: (_, content) =>
+        sb.append("-----BEGIN CERTIFICATE-----\n")
+        sb.append(content)
+        sb.append("-----END CERTIFICATE-----\n")
+
+      sb.append("#>\n")
+
+      os.write.over(target, sb.toString)
+      new java.io.File(target.toString).setExecutable(true)
+
       PathRef(target)
 
   object test extends Tests(core, exoskeleton.rig, quantitative.units)
