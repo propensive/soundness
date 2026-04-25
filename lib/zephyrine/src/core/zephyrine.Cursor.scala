@@ -253,7 +253,6 @@ class Cursor[data]
       grab(start, mark)
 
 
-
   inline def clone(start: Mark, end: Mark)(target: addressable.Target): Unit = if start != end then
     val last = end.block - first
     var offset = start.block - first

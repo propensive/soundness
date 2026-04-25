@@ -32,9 +32,4 @@
                                                                                                   */
 package anticipation
 
-import prepositional.*
-
-object Instants:
-  ()
-
 sealed trait Instants

@@ -30,12 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anticipation
+package ziggurat
 
-object Durations:
-  inline def ms(long: Long): Double = long.toDouble*1_000_000
-  inline def ms(double: Double): Long = (double/1_000_000).toLong
-  inline def ns(long: Long): Double = long.toDouble
-  inline def ns(double: Double): Long = double.toLong
+import anticipation.*
 
-sealed trait Durations
+case class Payload(label: Text, bytes: Data, gzip: Boolean = true)

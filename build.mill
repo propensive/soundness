@@ -150,7 +150,7 @@ object soundness extends ScalaModule:
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi,
     eucalyptus.syslog, guillotine.core, escapade.core, imperial.core, profanity.core,
-    surveillance.core, punctuation.ansi, hallucination.ansi)
+    surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core)
 
   object data extends Bundle(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
     gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core, panopticon.core,
@@ -521,66 +521,27 @@ object ethereal extends Library:
   object example extends Component(core, exoskeleton.completions):
     override def finalMainClass: Task.Simple[String] = "ethereal.run"
 
-    def installerSources: T[Seq[PathRef]] = Task.Sources(
-      moduleDir / ".." / ".." / "src" / "installer")
-
     def bin(): Command[PathRef] = Task.Command:
-      import java.util.Base64
-      import java.io.ByteArrayOutputStream
-      import java.util.zip.GZIPOutputStream
-
       val jar = assembly().path
       val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "hello"
       os.makeDir.all(target / os.up)
 
       val runnersBase = core.rustRunners().path / "ethereal"
+      val staging = Task.dest / "staging"
+      os.makeDir.all(staging)
 
-      def encode(bytes: Array[Byte], gzip: Boolean): String =
-        val raw =
-          if gzip then
-            val baos = new ByteArrayOutputStream()
-            val gz = new GZIPOutputStream(baos)
-            gz.write(bytes)
-            gz.close()
-            baos.toByteArray
-          else bytes
-        Base64.getEncoder.encodeToString(raw).grouped(8000).mkString("", "\n", "\n")
-
-      val runnerPayloads = core.rustTargets.map: (_, label, binary) =>
+      core.rustTargets.foreach: (_, label, binary) =>
         val ext = if binary.endsWith(".exe") then ".exe" else ""
-        val path = runnersBase / s"runner-$label$ext"
-        label -> encode(os.read.bytes(path), gzip = !label.startsWith("windows"))
+        val src = runnersBase / s"runner-$label$ext"
+        os.copy.over(src, staging / s"runner-$label$ext")
 
-      val payloads = runnerPayloads :+ ("data" -> encode(os.read.bytes(jar), gzip = false))
+      os.copy.over(jar, staging / "data")
 
-      val installerDir = installerSources().head.path
-      val prefix = os.read(installerDir / "polyglot.tmpl")
-        .replace("@@BAT@@", os.read(installerDir / "polyglot.bat"))
-        .replace("@@PS1@@", os.read(installerDir / "polyglot.ps1"))
-        .replace("@@SH@@", os.read(installerDir / "polyglot.sh"))
+      val classpath = ziggurat.core.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+      os.proc("java", "-cp", classpath, "ziggurat.PolyglotInstaller", target.toString, staging.toString)
+        .call(stdout = os.Inherit, stderr = os.Inherit)
 
-      val sb = new StringBuilder
-      sb.append(prefix)
-      if !prefix.endsWith("\n") then sb.append('\n')
-
-      var offset = 1
-      val indexEntries = payloads.map: (label, content) =>
-        val entry = s"$label=$offset"
-        offset += content.count(_ == '\n') + 2
-        entry
-
-      sb.append("index:").append(indexEntries.mkString(",")).append('\n')
-
-      payloads.foreach: (_, content) =>
-        sb.append("-----BEGIN CERTIFICATE-----\n")
-        sb.append(content)
-        sb.append("-----END CERTIFICATE-----\n")
-
-      sb.append("#>\n")
-
-      os.write.over(target, sb.toString)
       new java.io.File(target.toString).setExecutable(true)
-
       PathRef(target)
 
   object test extends Tests(core, exoskeleton.rig, quantitative.units)
@@ -986,6 +947,9 @@ object zeppelin extends Library:
   object core extends Component(galilei.core, zephyrine.core)
   object test extends Tests(core, imperial.core, diuretic.core)
 
+object ziggurat extends Library:
+  object core extends Component(hellenism.core, monotonous.core, turbulence.core)
+
 object publishing extends Module:
   def local(localIvyRepo: String = null): Command[Unit] = Task.Command:
     abacist.core.publishLocal()()
@@ -1138,6 +1102,7 @@ object publishing extends Module:
     yossarian.core.publishLocal()()
     zephyrine.core.publishLocal()()
     zeppelin.core.publishLocal()()
+    ziggurat.core.publishLocal()()
     soundness.base.publishLocal()()
     soundness.cli.publishLocal()()
     soundness.data.publishLocal()()

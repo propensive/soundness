@@ -30,12 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anticipation
+package soundness
 
-object Durations:
-  inline def ms(long: Long): Double = long.toDouble*1_000_000
-  inline def ms(double: Double): Long = (double/1_000_000).toLong
-  inline def ns(long: Long): Double = long.toDouble
-  inline def ns(double: Double): Long = double.toLong
-
-sealed trait Durations
+export ziggurat.{PolyglotInstaller, Payload}

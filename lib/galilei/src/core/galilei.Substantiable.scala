@@ -44,6 +44,5 @@ object Substantiable:
     path => jnf.Files.exists(path.javaPath)
 
 
-
 trait Substantiable extends Typeclass:
   def existence(value: Self): Boolean

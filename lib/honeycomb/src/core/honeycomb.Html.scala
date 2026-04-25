@@ -356,7 +356,6 @@ object Html extends Tag.Container
     def describe: Text = t"line ${line.n1}, column ${column.n1}"
 
 
-
   enum Mode:
     case Raw, Rcdata, Whitespace, Normal
 
