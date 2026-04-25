@@ -30,20 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package decorum
 
-export capricious
-. { Randomizable, Distribution, Gamma, Gaussian, PolarGaussian, Random, Randomization, Seed,
-    UniformDistribution, stochastic, arbitrary, random }
-
-package randomization:
-  export capricious.randomization
-  . { unseeded, secureUnseeded, stronglySecure, seeded, secureSeeded }
-
-  package sizes:
-    export capricious.randomization.sizes
-    . { uniformUpto10, uniformUpto100, uniformUpto1000, uniformUpto10000, uniformUpto100000 }
-
-package randomDistributions:
-  export capricious.randomDistributions
-  . { gaussian, uniformUnitInterval, uniformSymmetricUnitInterval, binary }
+enum Phase:
+  case License, Package, AfterPackage, Imports, Body

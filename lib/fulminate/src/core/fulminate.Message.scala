@@ -91,6 +91,7 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
 
   def colorText: Text = unwrap:
     val esc = 27.toChar
+
     fold[String](""): (acc, next, level) =>
       if next.s.isEmpty then acc else level match
         case 0 => acc+next

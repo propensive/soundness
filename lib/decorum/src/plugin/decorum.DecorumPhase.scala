@@ -30,20 +30,36 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package decorum
 
-export capricious
-. { Randomizable, Distribution, Gamma, Gaussian, PolarGaussian, Random, Randomization, Seed,
-    UniformDistribution, stochastic, arbitrary, random }
+import scala.collection.mutable
 
-package randomization:
-  export capricious.randomization
-  . { unseeded, secureUnseeded, stronglySecure, seeded, secureSeeded }
+import dotty.tools.dotc.*, ast.tpd, core.Contexts.*, plugins.*, util.{SourceFile, SourcePosition}
+import dotty.tools.dotc.util.Spans.Span
 
-  package sizes:
-    export capricious.randomization.sizes
-    . { uniformUpto10, uniformUpto100, uniformUpto1000, uniformUpto10000, uniformUpto100000 }
+class DecorumPhase(options: List[String]) extends PluginPhase:
+  val phaseName: String                = "decorum"
+  override val runsAfter: Set[String]  = Set("typer")
+  override val runsBefore: Set[String] = Set("pickler")
 
-package randomDistributions:
-  export capricious.randomDistributions
-  . { gaussian, uniformUnitInterval, uniformSymmetricUnitInterval, binary }
+  private val errors: Boolean   = options.contains("errors")
+  private val seen: mutable.Set[String] = mutable.Set.empty
+
+  override def transformUnit(tree: tpd.Tree)(using context: Context): tpd.Tree =
+    val source: SourceFile = context.compilationUnit.source
+    val path: String       = source.file.path
+    if seen.add(path) then
+      val text: String = String(source.content)
+      val module       = Checker.expectedModule(path)
+      Checker.check(path, module, text).foreach: violation =>
+        val pos = position(source, violation.line, violation.column)
+        val msg = s"[${violation.rule}] ${violation.message}"
+        if errors then report.error(msg, pos) else report.warning(msg, pos)
+    super.transformUnit(tree)
+
+  private def position(source: SourceFile, line: Int, column: Int): SourcePosition =
+    val lineStart =
+      try source.lineToOffset((line - 1).max(0))
+      catch case _: Throwable => 0
+    val offset = (lineStart + (column - 1).max(0)).min(source.content.length)
+    SourcePosition(source, Span(offset))

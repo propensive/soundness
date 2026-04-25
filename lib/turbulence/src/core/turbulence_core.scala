@@ -43,7 +43,7 @@ import capricious.*
 import contingency.*
 import denominative.*
 import hypotenuse.*
-import parasite.*, codicils.await
+import parasite.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -51,6 +51,7 @@ import symbolism.*
 import vacuous.*
 
 import abstractables.instantIsAbstractable
+import codicils.await
 
 private given Realm = Realm("turbulence")
 
