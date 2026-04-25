@@ -33,6 +33,7 @@
 package urticose
 
 import iridescence.*
+import prepositional.*
 import proscenium.*
 
 extension (inline context: StringContext)
@@ -45,4 +46,5 @@ extension (inline context: StringContext)
 type HttpUrl = Url["https" | "http"]
 
 type UrlPalette = Palette:
-  def link: Color
+  type Form = Srgb
+  def link: Color in Srgb

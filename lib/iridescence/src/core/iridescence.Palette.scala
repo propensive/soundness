@@ -48,10 +48,10 @@ into trait Palette extends Selectable:
     mix(color, foreground, factor)
 
   def mix(left: Color in Form, right: Color in Form, balance: Double = 0.5): Color in Srgb =
-    def channel(lambda: Form => Double): Double =
+    def channel(lambda: Srgb => Double): Double =
       lambda(left.in[Srgb])*(1 - balance) + lambda(right.in[Srgb])*balance
 
-    Srgb(channel(_.red)/255, channel(_.green)/255, channel(_.blue)/255)
+    Srgb(channel(_.red), channel(_.green), channel(_.blue))
 
   final def selectDynamic(name: String): Form =
     try getClass.getMethod(name).nn.invoke(this).asInstanceOf[Form]

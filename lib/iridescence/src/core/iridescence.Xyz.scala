@@ -32,7 +32,6 @@
                                                                                                   */
 package iridescence
 
-import anticipation.*
 import hypotenuse.*
 import prepositional.*
 
@@ -44,10 +43,10 @@ object Xyz:
       val lightness: Double = 116*clamp(color.y/colorimetry.y2) - 16
 
       val blueYellow: Double =
-        500*(clamp(color.primary/colorimetry.x2) - clamp(color.y/colorimetry.y2))
+        500*(clamp(color.x/colorimetry.x2) - clamp(color.y/colorimetry.y2))
 
       val greenRed: Double =
-        200*(clamp(color.y/colorimetry.y2) - clamp(color.tertiary/colorimetry.z2))
+        200*(clamp(color.y/colorimetry.y2) - clamp(color.z/colorimetry.z2))
 
       Cielab(blueYellow, greenRed, lightness)
 

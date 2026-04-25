@@ -36,25 +36,27 @@ import escapade.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import iridescence.*
+import prepositional.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
 
 type ScalaSyntaxPalette = Palette:
-  def scalaError: Color
-  def scalaNumber: Color
-  def scalaString: Color
-  def scalaIdentifier: Color
-  def scalaTerm: Color
-  def scalaType: Color
-  def scalaKeyword: Color
-  def scalaSymbol: Color
-  def scalaParenthesis: Color
-  def scalaModifier: Color
-  def scalaComment: Color
-  def subdued: Color
-  def accented: Color
-  def margin: Color
+  type Form = Srgb
+  def scalaError: Color in Srgb
+  def scalaNumber: Color in Srgb
+  def scalaString: Color in Srgb
+  def scalaIdentifier: Color in Srgb
+  def scalaTerm: Color in Srgb
+  def scalaType: Color in Srgb
+  def scalaKeyword: Color in Srgb
+  def scalaSymbol: Color in Srgb
+  def scalaParenthesis: Color in Srgb
+  def scalaModifier: Color in Srgb
+  def scalaComment: Color in Srgb
+  def subdued: Color in Srgb
+  def accented: Color in Srgb
+  def margin: Color in Srgb
 
 package syntaxHighlighting:
   import Accent.*
@@ -79,7 +81,7 @@ package syntaxHighlighting:
     val markup = source.focus.lay(e""):
       case ((startLine, startColumn), (endLine, endColumn)) =>
         if startLine != endLine then e"\n" else
-          val foreground = Fg(rgb"#ff0033")
+          val foreground = Fg(palette.scalaError)
           if startColumn == endColumn
           then e"\n${t" "*(startColumn + indent + 2)}$foreground(╱╲)"
           else e"\n${t" "*(startColumn + indent + 3)}$foreground(${t"‾"*(endColumn - startColumn)})"

@@ -32,7 +32,6 @@
                                                                                                   */
 package iridescence
 
-import anticipation.*
 import hypotenuse.*
 import prepositional.*
 
@@ -97,10 +96,3 @@ object Srgb:
 
 case class Srgb(red: Double, green: Double, blue: Double) extends Color:
   type Form = Srgb
-
-  def delta(left: Color in Srgb, right: Color in Srgb): Double =
-    math.sqrt
-      ( (left.red - right.red)**2 + (left.green - right.green)**2 + (left.blue - right.blue)**2 )
-
-// case class Srgb(red: Double, green: Double, blue: Double) extends Color:
-//   def highContrast(using Colorimetry): Srgb = if xyz.y >= 0.5 then Srgb(0, 0, 0) else Srgb(1, 1, 1)

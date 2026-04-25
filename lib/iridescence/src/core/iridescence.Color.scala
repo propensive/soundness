@@ -33,7 +33,6 @@
 package iridescence
 
 import anticipation.*
-import hypotenuse.*
 import prepositional.*
 
 object Color:
@@ -48,5 +47,3 @@ trait Color:
 
   def in[color <: Color](using perceptual: Form is Perceptual in color): color =
     perceptual.convert(this)
-
-  def delta[color <: Color](right: color): Double

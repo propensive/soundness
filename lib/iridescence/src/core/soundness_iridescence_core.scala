@@ -34,7 +34,7 @@ package soundness
 
 export iridescence
 . { WebColors, Solarized, Xyz, Rgb12, Rgb32, Srgb, Cielab, Cmy, Cmyk, Hsv, Hsl, rgb,
-    Colorimetry, Color }
+    Colorimetry, Color, Palette, Theme, Spectrum, Luminosity, Perceptual, dark, light }
 
 package colorimetry:
   export iridescence.colorimetry
@@ -44,3 +44,9 @@ package colorimetry:
       liteWhiteFluorescent, daylightFluorescentF7, d65Simulator, sylvaniaF40, d50Simulator,
       coolWhiteFluorescent, philipsTl85, ultralume50, philipsTl84, ultralume40,  philipsTl83,
       ultralume30 }
+
+package luminosity:
+  export iridescence.luminosity.{dark, light}
+
+package themes:
+  export iridescence.themes.solarized

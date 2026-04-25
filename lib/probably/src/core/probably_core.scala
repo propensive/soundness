@@ -52,20 +52,21 @@ export Baseline.Metric.{Cadential, Temporal}
 export Baseline.Mode.{Arithmetic, Geometric}
 
 type TestPalette = Palette:
-  def warning: Color
-  def critical: Color
-  def benchmark: Color
-  def mixed: Color
-  def informative: Color
-  def cold: Color
-  def warm: Color
-  def hot: Color
-  def accented: Color
-  def highlight: Color
-  def detail: Color
-  def pass: Color
-  def fail: Color
-  def subdued: Color
+  type Form = Srgb
+  def warning: Color in Srgb
+  def critical: Color in Srgb
+  def benchmark: Color in Srgb
+  def mixed: Color in Srgb
+  def informative: Color in Srgb
+  def cold: Color in Srgb
+  def warm: Color in Srgb
+  def hot: Color in Srgb
+  def accented: Color in Srgb
+  def highlight: Color in Srgb
+  def detail: Color in Srgb
+  def pass: Color in Srgb
+  def fail: Color in Srgb
+  def subdued: Color in Srgb
 
 extension [left](left: left)
   infix def === [right](right: right)(using checkable: left is Checkable against right): Boolean =

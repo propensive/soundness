@@ -35,6 +35,7 @@ package hyperbole
 import scala.quoted.*
 
 import iridescence.*
+import prepositional.*
 
 extension [value](expr: Expr[value])(using Quotes)
   def syntax: TastyTree = hyperbole.internal.tastyTree[value](expr, '{false})
@@ -43,13 +44,14 @@ extension [value](using Quotes)(symbol: quotes.reflect.Symbol)
   def semantics: TastySymbol = hyperbole.internal.tastySymbol(symbol)
 
 type TastyPalette = Palette:
-  def typeDefinition: Color
-  def termDefinition: Color
-  def typeReference: Color
-  def termReference: Color
-  def flagOn: Color
-  def flagOff: Color
-  def propertyOn: Color
-  def propertyOff: Color
-  def outline: Color
-  def accented: Color
+  type Form = Srgb
+  def typeDefinition: Color in Srgb
+  def termDefinition: Color in Srgb
+  def typeReference: Color in Srgb
+  def termReference: Color in Srgb
+  def flagOn: Color in Srgb
+  def flagOff: Color in Srgb
+  def propertyOn: Color in Srgb
+  def propertyOff: Color in Srgb
+  def outline: Color in Srgb
+  def accented: Color in Srgb

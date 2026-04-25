@@ -46,7 +46,7 @@ inline def light(using luminosity: Luminosity): Boolean = luminosity != Luminosi
 
 package themes:
   given solarized: Luminosity => Theme = new Theme with Solarized:
-    val luminance = summon[Luminosity]
+    val luminosity = summon[Luminosity]
     val background = if dark then base03 else base3
     val foreground = if dark then base3 else base03
 

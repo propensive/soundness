@@ -33,9 +33,11 @@
 package eucalyptus
 
 import iridescence.*
+import prepositional.*
 
 type LogPalette = Palette:
-  def error: Color
-  def informative: Color
-  def warning: Color
-  def subdued: Color
+  type Form = Srgb
+  def error: Color in Srgb
+  def informative: Color in Srgb
+  def warning: Color in Srgb
+  def subdued: Color in Srgb

@@ -41,12 +41,13 @@ import digression.*
 import escapade.*
 import fulminate.*
 import iridescence.*
+import prepositional.*
 import turbulence.*
 import vacuous.*
 
 import termcaps.environment
 import themes.solarized
-import luminance.dark
+import luminosity.dark
 
 abstract class Suite(suiteName: Message) extends Testable(suiteName):
   val suiteIo = safely(stdios.virtualMachine).vouch
@@ -55,22 +56,27 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
     given stdio: Stdio = suiteIo
 
     given palette: (theme: Theme) => TestPalette = new Palette:
-      def warning:     Color = theme.spectrum.yellow
-      def critical:    Color = theme.spectrum.magenta
-      def benchmark:   Color = theme.spectrum.cyan
-      def mixed:       Color = theme.spectrum.blue
-      def informative: Color = theme.spectrum.blue
-      def cold:        Color = mix(theme.spectrum.yellow, theme.spectrum.red, 0.2)
-      def warm:        Color = mix(theme.spectrum.yellow, theme.spectrum.red, 0.5)
-      def hot:         Color = mix(theme.spectrum.yellow, theme.spectrum.red, 0.8)
-      def accented:    Color = theme.spectrum.cyan
-      def highlight:   Color = accent(theme.spectrum.yellow)
-      def pass:        Color = theme.spectrum.green
-      def fail:        Color = theme.spectrum.red
-      def detail:      Color = theme.spectrum.blue
-      def background:  Color = theme.background
-      def foreground:  Color = theme.foreground
-      def subdued:     Color = subdue(theme.foreground, 0.5)
+      type Form = Srgb
+      val yellow:      Color in Srgb = theme.spectrum.yellow.in[Srgb]
+      val red:         Color in Srgb = theme.spectrum.red.in[Srgb]
+      val blue:        Color in Srgb = theme.spectrum.blue.in[Srgb]
+
+      def warning:     Color in Srgb = yellow
+      def critical:    Color in Srgb = theme.spectrum.magenta.in[Srgb]
+      def benchmark:   Color in Srgb = theme.spectrum.cyan.in[Srgb]
+      def mixed:       Color in Srgb = blue
+      def informative: Color in Srgb = blue
+      def cold:        Color in Srgb = mix(yellow, red, 0.2)
+      def warm:        Color in Srgb = mix(yellow, red, 0.5)
+      def hot:         Color in Srgb = mix(yellow, red, 0.8)
+      def accented:    Color in Srgb = theme.spectrum.cyan.in[Srgb]
+      def highlight:   Color in Srgb = accent(yellow)
+      def pass:        Color in Srgb = theme.spectrum.green.in[Srgb]
+      def fail:        Color in Srgb = red
+      def detail:      Color in Srgb = blue
+      def background:  Color in Srgb = theme.background.in[Srgb]
+      def foreground:  Color in Srgb = theme.foreground.in[Srgb]
+      def subdued:     Color in Srgb = subdue(theme.foreground.in[Srgb], 0.5)
 
     try Runner() catch case error: EnvironmentError =>
       jl.System.out.nn.println(StackTrace(error).teletype.render)

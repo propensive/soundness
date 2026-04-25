@@ -35,10 +35,10 @@ package iridescence
 import prepositional.*
 
 trait Theme:
-  type Form <: Color
+  type Form <: Color: Perceptual in Srgb
   def luminosity: Luminosity
   def background: Color in Form
   def foreground: Color in Form
   def colors: List[Color in Form]
 
-  lazy val spectrum: Spectrum = Spectrum(colors)
+  lazy val spectrum: Spectrum in Form = Spectrum(colors)

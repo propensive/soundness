@@ -82,9 +82,10 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
 
 
 type BytecodePalette = Palette:
-  def bytecode: Color
-  def sourceCode: Color
-  def outline: Color
+  type Form = Srgb
+  def bytecode: Color in Srgb
+  def sourceCode: Color in Srgb
+  def outline: Color in Srgb
 
 case class ClassfileError()(using Diagnostics)
 extends Error(m"there was an error reading the classfile")

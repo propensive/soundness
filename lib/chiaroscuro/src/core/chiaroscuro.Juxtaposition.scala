@@ -40,6 +40,7 @@ import escritoire.*, columnAttenuation.ignore
 import gossamer.*
 import hieroglyph.*
 import iridescence.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -48,13 +49,12 @@ import vacuous.*
 object Juxtaposition:
 
   type JuxtapositionPalette = Palette:
-    def background: Color
-    def foreground: Color
-    def unaccented: Color
-    def informative: Color
-    def subdued: Color
-    def positive: Color
-    def negative: Color
+    type Form = Srgb
+    def unaccented: Color in Srgb
+    def informative: Color in Srgb
+    def subdued: Color in Srgb
+    def positive: Color in Srgb
+    def negative: Color in Srgb
 
 
   given (measurable: Text is Measurable) => (palette: JuxtapositionPalette)

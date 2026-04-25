@@ -32,7 +32,6 @@
                                                                                                   */
 package iridescence
 
-import anticipation.*
 import prepositional.*
 
 object Hsl:

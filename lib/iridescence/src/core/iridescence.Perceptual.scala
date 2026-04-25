@@ -34,6 +34,9 @@ package iridescence
 
 import prepositional.*
 
+object Perceptual:
+  given identity: [color <: Color] => color is Perceptual in color = color => color
+
 trait Perceptual:
   type Self <: Color
   type Form <: Color
