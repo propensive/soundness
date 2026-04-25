@@ -1,6 +1,4 @@
 setlocal enabledelayedexpansion
-echo Operating system: %OS% >&2
-echo Architecture: %PROCESSOR_ARCHITECTURE% >&2
 set "output=%~dpn0.exe"
 set "arch=x64"
 if /i "%PROCESSOR_ARCHITECTURE%"=="ARM64" set "arch=arm64"
@@ -56,5 +54,4 @@ if defined data_offset (
 ) else (
     move /y "!tmp_bin!" "!output!" > nul
 )
-echo Extracted to !output! >&2
 endlocal & del "%~f0" & "%~dpn0.exe" %*

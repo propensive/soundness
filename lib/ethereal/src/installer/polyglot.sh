@@ -1,8 +1,6 @@
 os=$(uname -s)
 arch=$(uname -m)
 
-printf "Operating system: %s\nArchitecture: %s\n" "$os" "$arch" >&2
-
 case "$os" in
   Darwin) os=macos ;; Linux) os=linux ;;
   *)      printf "Unsupported OS: %s\n" "$os" >&2; exit 1 ;;
@@ -57,5 +55,4 @@ fi
 
 chmod +x "$tmpout"
 mv "$tmpout" "$output"
-printf "Extracted to %s\n" "$output" >&2
 exec "$output" "$@"
