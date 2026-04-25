@@ -90,12 +90,12 @@ extension (shell: Shell)
                  |} catch {}
                  |function global:_completions {
                  |    param($$text)
-                 |    $$cl = '$cmd ' + $$text
-                 |    $$r = TabExpansion2 $$cl $$cl.Length
-                 |    $$r.CompletionMatches | ForEach-Object {
-                 |        $$n = $$_.CompletionText.TrimEnd()
-                 |        $$d = $$_.ToolTip
-                 |        if ($$d -and $$d -cne $$n) { "$$n@@$$d" } else { $$n }
+                 |    $$line = '$cmd ' + $$text
+                 |    $$cursor = $$line.Length
+                 |    & '$cmd' '{completions}' powershell $$cursor 0 '' -- $$line 2>&1 | ForEach-Object {
+                 |        $$p = $$_ -split "`t", 2
+                 |        $$n = $$p[0].TrimEnd()
+                 |        if ($$p.Length -gt 1 -and $$p[1] -cne $$n) { "$$n@@$$($$p[1])" } else { $$n }
                  |    }
                  |}
                  |""".stripMargin
