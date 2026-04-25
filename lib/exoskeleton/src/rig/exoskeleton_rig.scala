@@ -69,7 +69,8 @@ extension (shell: Shell)
                  |        $$wordStart = $$cursor
                  |        while ($$wordStart -gt 0 -and $$line[$$wordStart - 1] -ne ' ') { $$wordStart-- }
                  |        $$w = $$line.Substring($$wordStart, $$cursor - $$wordStart)
-                 |        $$results = @(& '$cmd' '{completions}' powershell $$cursor 0 '' -- $$line 2>&1 |
+                 |        $$cmpArgs = @('{completions}', 'powershell', "$$cursor", '0', '-', '--', $$line)
+                 |        $$results = @(& '$cmd' @cmpArgs 2>$$null |
                  |            ForEach-Object { ($$_ -split "`t", 2)[0] })
                  |        $$matching = @($$results | Where-Object { $$_.StartsWith($$w) })
                  |        if ($$matching.Count -eq 0) { return }
@@ -92,7 +93,8 @@ extension (shell: Shell)
                  |    param($$text)
                  |    $$line = '$cmd ' + $$text
                  |    $$cursor = $$line.Length
-                 |    & '$cmd' '{completions}' powershell $$cursor 0 '' -- $$line 2>&1 | ForEach-Object {
+                 |    $$cmpArgs = @('{completions}', 'powershell', "$$cursor", '0', '-', '--', $$line)
+                 |    & '$cmd' @cmpArgs 2>$$null | ForEach-Object {
                  |        $$p = $$_ -split "`t", 2
                  |        $$n = $$p[0].TrimEnd()
                  |        if ($$p.Length -gt 1 -and $$p[1] -cne $$n) { "$$n@@$$($$p[1])" } else { $$n }
