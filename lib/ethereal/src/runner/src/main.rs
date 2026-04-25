@@ -67,7 +67,7 @@ fn main() {
     }
     state::backout(&fail_file, &pid_file, &name);
 
-    if !state::socket_ready(&socket_file) { std::process::exit(STARTUP_FAILURE_EXIT_CODE); }
+    if !state::socket_alive(&socket_file) { std::process::exit(STARTUP_FAILURE_EXIT_CODE); }
 
     if !interactive {
         std::process::exit(run_non_interactive(&socket_file, &script, &args));

@@ -3,6 +3,8 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
+use crate::uds::UnixStream;
+
 const POLL_INTERVAL: Duration = Duration::from_millis(100);
 
 pub fn base_dir(name: &str) -> PathBuf {
@@ -36,6 +38,13 @@ pub fn socket_ready(path: &Path) -> bool {
     // On Windows AF_UNIX appears as a regular file/reparse point; presence
     // is the strongest portable signal.
     fs::metadata(path).is_ok()
+}
+
+// A stale socket file from a dead daemon will pass `socket_ready` but reject
+// connections. Probe it to confirm a daemon is actually listening.
+pub fn socket_alive(path: &Path) -> bool {
+    if !socket_ready(path) { return false; }
+    UnixStream::connect(path).is_ok()
 }
 
 fn poll_until(path: &Path, max_attempts: u32, ready: impl Fn(&Path) -> bool) -> bool {
@@ -116,7 +125,10 @@ pub fn check_state(pid_file: &Path, build_file: &Path, socket_file: &Path, build
         return;
     };
 
-    if !process_alive(pid) {
+    // `process_alive` can be misled by PID reuse — a stale daemon's PID may have
+    // been recycled by an unrelated process. Probing the socket is the
+    // authoritative liveness check: a real daemon accepts connections.
+    if !process_alive(pid) || (socket_ready(socket_file) && !socket_alive(socket_file)) {
         let _ = fs::remove_file(pid_file);
         clear_daemon_files(build_file, socket_file);
         return;
