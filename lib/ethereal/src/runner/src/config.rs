@@ -9,7 +9,6 @@
 //   [20]     bundle      (0 = jre, 1 = jdk)
 //   [21..32] reserved    (0)
 
-const MAGIC: [u8; 8] = [b'E', b'T', b'H', b'R', b'C', b'F', b'G', 1];
 const RECORD_LEN: usize = 32;
 
 #[used]
@@ -33,19 +32,13 @@ pub struct BuildConfig {
     pub bundle:    &'static str,
 }
 
-fn read_record_from_executable() -> Option<[u8; RECORD_LEN]> {
-    let executable = std::env::current_exe().ok()?;
-    let bytes = std::fs::read(&executable).ok()?;
-    let offset = bytes.windows(MAGIC.len()).position(|window| window == MAGIC)?;
-    let end = offset + RECORD_LEN;
-    if end > bytes.len() { return None; }
-    let mut record = [0u8; RECORD_LEN];
-    record.copy_from_slice(&bytes[offset..end]);
-    Some(record)
-}
-
 pub fn read_config() -> BuildConfig {
-    let record = read_record_from_executable().unwrap_or([0u8; RECORD_LEN]);
+    // Read via a volatile pointer so the compiler cannot constant-fold the
+    // initial values defined above — the bytes are patched at build time
+    // (or left as defaults when the runner is shipped unpatched).
+    let record: [u8; RECORD_LEN] = unsafe {
+        core::ptr::read_volatile(&raw const ETHEREAL_CONFIG)
+    };
     let build_id = u64::from_le_bytes(record[8..16].try_into().unwrap());
     let java_min_raw = u16::from_le_bytes(record[16..18].try_into().unwrap());
     let java_pref_raw = u16::from_le_bytes(record[18..20].try_into().unwrap());
