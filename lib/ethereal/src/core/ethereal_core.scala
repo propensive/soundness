@@ -38,6 +38,7 @@ import java.io as ji
 import java.lang as jl
 import java.net as jn
 import java.nio as jnio
+import java.nio.channels as jnc
 import java.util as ju
 import ju.concurrent as juc
 import juc.atomic as juca
@@ -206,16 +207,18 @@ def cli[bus <: Matchable](using executive: Executive)
   val runtimeDir: Optional[Path on Linux] = Xdg.runtimeDir
   val stateHome: Path on Linux = Xdg.stateHome
   val baseDir: Path on Linux = runtimeDir.or(stateHome) //name
-  val portFile: Path on Linux = baseDir/name/"port"
+  val buildFile: Path on Linux = baseDir/name/"build"
   val pidFile: Path on Linux = baseDir/name/"pid"
+  val socketFile: Path on Linux = baseDir/name/"socket"
   val clients: scc.TrieMap[Pid, Client of bus] = scc.TrieMap()
   val terminatePid: Promise[Pid] = Promise()
 
   def client(pid: Pid): Client of bus = clients.getOrElseUpdate(pid, Client[bus](pid))
 
   lazy val termination: Unit =
-    portFile.wipe()
-    pidFile.wipe()
+    safely(socketFile.wipe())
+    safely(buildFile.wipe())
+    safely(pidFile.wipe())
     jl.System.exit(0)
 
   def shutdown(pid: Optional[Pid])(using Stdio): Unit logs DaemonLogEvent =
@@ -223,11 +226,13 @@ def cli[bus <: Matchable](using executive: Executive)
     pid.let(terminatePid.fulfill(_)).or(termination)
 
 
-  def makeClient(socket: jn.Socket)(using Monitor, Stdio, Codicil)
+  def makeClient(channel: jnc.SocketChannel)(using Monitor, Stdio, Codicil)
   :   Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
 
     async:
-      val in: ji.BufferedInputStream = ji.BufferedInputStream(socket.getInputStream.nn, 16384)
+      val rawIn: ji.InputStream = jnc.Channels.newInputStream(channel).nn
+      val rawOut: ji.OutputStream = jnc.Channels.newOutputStream(channel).nn
+      val in: ji.BufferedInputStream = ji.BufferedInputStream(rawIn, 16384)
 
       def line(): Text =
         val sb = jl.StringBuilder()
@@ -283,33 +288,33 @@ def cli[bus <: Matchable](using executive: Executive)
       message match
         case Unset =>
           Log.warn(DaemonLogEvent.UnrecognizedMessage)
-          socket.close()
+          channel.close()
 
         case DaemonEvent.Trap(pid, signal) =>
           Log.info(DaemonLogEvent.ReceivedSignal(signal))
           client(pid).signals.put(signal)
-          socket.close()
+          channel.close()
 
         case DaemonEvent.Exit(pid) =>
           Log.fine(DaemonLogEvent.ExitStatusRequest(pid))
           val exitStatus: Exit = client(pid).exitPromise.await()
 
-          socket.getOutputStream.nn.write(exitStatus().show.data.mutable(using Unsafe))
-          socket.close()
+          rawOut.write(exitStatus().show.data.mutable(using Unsafe))
+          channel.close()
           clients.remove(pid)
           if terminatePid() == pid then termination
 
         case DaemonEvent.Stderr(pid) =>
           Log.fine(DaemonLogEvent.StderrRequest(pid))
           val stderrClient = client(pid)
-          stderrClient.stderr.offer(socket.getOutputStream.nn)
+          stderrClient.stderr.offer(rawOut)
           safely(stderrClient.exitPromise.await())
-          safely(socket.close())
+          safely(channel.close())
 
         case DaemonEvent.Init(pid, login, directory, script, shellInput, textArguments, env) =>
           Log.fine(DaemonLogEvent.Init(pid))
           val connection = client(pid)
-          connection.socket.fulfill(socket)
+          connection.socket.fulfill(channel)
 
           val lazyStderr: ji.OutputStream = new ji.OutputStream():
             private val stderrOut: juca.AtomicReference[ji.OutputStream | Null] =
@@ -347,7 +352,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
           val stdio: Stdio =
             Stdio
-              ( ji.PrintStream(socket.getOutputStream.nn, true),
+              ( ji.PrintStream(rawOut, true),
                 ji.PrintStream(lazyStderr, true),
                 in,
                 termcap )
@@ -393,7 +398,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
           finally
             lazyStderr.close()
-            socket.close()
+            channel.close()
             Log.info(DaemonLogEvent.CloseConnection(pid))
 
   application(using executives.direct(using backstops.silent))(Nil):
@@ -401,24 +406,31 @@ def cli[bus <: Matchable](using executive: Executive)
     import codicils.await
 
     Os.intercept[Shutdown]:
-      portFile.wipe()
-      pidFile.wipe()
+      safely(socketFile.wipe())
+      safely(buildFile.wipe())
+      safely(pidFile.wipe())
 
     supervise:
       import logFormats.standard
       given loggable: Message is Loggable = Log.route(Syslog(t"ethereal"))
 
-      val socket: jn.ServerSocket = jn.ServerSocket(0)
-      val port: Int = socket.getLocalPort
+      safely(socketFile.wipe())
+
+      val channel: jnc.ServerSocketChannel =
+        jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
+
+      channel.configureBlocking(true)
+      channel.bind(jn.UnixDomainSocketAddress.of(socketFile.encode.s))
+
       val buildId = safely(System.properties.build.id[Int]()).or:
         safely((Classpath/"build.id").read[Text].trim.decode[Int]).or(0)
-      portFile.open(t"$port $buildId".writeTo(_))
+      buildFile.open(t"$buildId".writeTo(_))
       val pidValue = Process().pid.value.show
       pidFile.open(pidValue.writeTo(_))
 
       task(t"pid-watcher"):
         safely:
-          List[Path on Linux](portFile, pidFile).watch: watcher =>
+          List[Path on Linux](socketFile, buildFile, pidFile).watch: watcher =>
             watcher.stream.each:
               case Delete(_, _) | Modify(_, _) =>
                 Log.warn(DaemonLogEvent.Termination)
@@ -427,7 +439,7 @@ def cli[bus <: Matchable](using executive: Executive)
               case other =>
                 ()
 
-      loop(safely(makeClient(socket.accept().nn))).run()
+      loop(safely(makeClient(channel.accept().nn))).run()
 
     Exit.Ok
 

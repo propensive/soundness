@@ -521,6 +521,14 @@ object ethereal extends Library:
   object example extends Component(core, exoskeleton.completions):
     override def finalMainClass: Task.Simple[String] = "ethereal.run"
 
+    def bin(): Command[PathRef] = Task.Command:
+      val jar = assembly().path
+      val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "hello"
+      os.makeDir.all(target / os.up)
+      os.proc("java", s"-Dbuild.executable=$target", "-jar", jar.toString)
+        .call(stdout = os.Inherit, stderr = os.Inherit)
+      PathRef(target)
+
   object test extends Tests(core, exoskeleton.rig, quantitative.units)
 
 object eucalyptus extends Library:

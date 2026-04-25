@@ -35,7 +35,7 @@ package ethereal
 import language.experimental.pureFunctions
 
 import java.io as ji
-import java.net as jn
+import java.nio.channels as jnc
 
 import anticipation.*
 import anticipation.abstractables.durationIsAbstractable
@@ -65,6 +65,6 @@ case class Client(pid: Pid) extends Topical:
 
   def receive(message: Topic): Unit = bus.put(message)
 
-  val socket: Promise[jn.Socket] = Promise()
+  val socket: Promise[jnc.SocketChannel] = Promise()
 
   def close(): Unit = safely(socket.await(1000L).close())

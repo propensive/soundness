@@ -28,12 +28,12 @@ pub fn stdin_is_tty() -> bool {
 
 #[cfg(unix)]
 pub fn save_tty_state() -> TtyState {
-    let mut t: libc::termios = unsafe { std::mem::zeroed() };
+    let mut termios: libc::termios = unsafe { std::mem::zeroed() };
     let is_tty = stdin_is_tty();
     if is_tty {
         unsafe {
-            if libc::tcgetattr(libc::STDIN_FILENO, &mut t) == 0 {
-                return TtyState { termios: Some(t), is_tty: true };
+            if libc::tcgetattr(libc::STDIN_FILENO, &mut termios) == 0 {
+                return TtyState { termios: Some(termios), is_tty: true };
             }
         }
     }
@@ -105,22 +105,21 @@ pub fn set_raw_mode() {
 #[cfg(unix)]
 pub fn restore_tty_state(state: &TtyState) {
     if !state.is_tty { return; }
-    if let Some(t) = state.termios {
-        unsafe { libc::tcsetattr(libc::STDIN_FILENO, libc::TCSANOW, &t); }
+    if let Some(termios) = state.termios {
+        unsafe { libc::tcsetattr(libc::STDIN_FILENO, libc::TCSANOW, &termios); }
     }
 }
 
 #[cfg(windows)]
 pub fn restore_tty_state(state: &TtyState) {
+    if !state.is_tty { return; }
     use windows_sys::Win32::System::Console::{GetStdHandle, SetConsoleMode, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE};
     unsafe {
-        if let Some(m) = state.stdin_mode {
-            let h = GetStdHandle(STD_INPUT_HANDLE);
-            SetConsoleMode(h, m);
+        if let Some(mode) = state.stdin_mode {
+            SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), mode);
         }
-        if let Some(m) = state.stdout_mode {
-            let h = GetStdHandle(STD_OUTPUT_HANDLE);
-            SetConsoleMode(h, m);
+        if let Some(mode) = state.stdout_mode {
+            SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), mode);
         }
     }
 }

@@ -64,7 +64,7 @@ object Tests extends Suite(m"Ethereal Tests"):
       val oldPid = sh"cat $stateDir/pid".exec[Text]().trim.decode[Pid]
       Process(oldPid).abort()
     snooze(0.2*Second)
-    sh"rm -f $stateDir/pid $stateDir/port $stateDir/fail".exec[Unit]()
+    sh"rm -f $stateDir/pid $stateDir/build $stateDir/socket $stateDir/fail".exec[Unit]()
 
     val launcher = Sandbox("abcde").dispatch:
       ' {
@@ -252,9 +252,9 @@ object Tests extends Suite(m"Ethereal Tests"):
 
           . assert(_ == true)
 
-          test(m"daemon restarts after port file is deleted"):
+          test(m"daemon restarts after socket file is deleted"):
             val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim.decode[Pid]
-            sh"rm -f $stateDir/port".exec[Unit]()
+            sh"rm -f $stateDir/socket".exec[Unit]()
             val deadline = jl.System.currentTimeMillis + 10000
             while safely(Process(oldPid).alive).or(false) && jl.System.currentTimeMillis < deadline
             do snooze(0.05*Second)
@@ -296,7 +296,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           test(m"fail file is removed after 2 seconds"):
             sh"mkdir -p $stateDir".exec[Unit]()
             sh"touch $stateDir/fail".exec[Unit]()
-            sh"rm -f $stateDir/pid $stateDir/port".exec[Unit]()
+            sh"rm -f $stateDir/pid $stateDir/build $stateDir/socket".exec[Unit]()
             snooze(2.5*Second)
             sh"$tool echo after-fail".exec[Text]()
 
@@ -348,20 +348,18 @@ object Tests extends Suite(m"Ethereal Tests"):
           . assert(_ == t"restarted")
 
         suite(m"State file integrity"):
-          test(m"port file has correct format"):
+          test(m"build file contains a single integer build id"):
             sh"$tool echo probe".exec[Unit]()
-            val content = sh"cat $stateDir/port".exec[Text]()
-            content.cut(t" ").length
-
-          . assert(_ == 2)
-
-          test(m"port file contains a valid port number"):
-            sh"$tool echo probe".exec[Unit]()
-            val content = sh"cat $stateDir/port".exec[Text]()
-            val port = content.cut(t" ").head.decode[Int]
-            port > 0 && port < 65536
+            val content = sh"cat $stateDir/build".exec[Text]().trim
+            safely(content.decode[Long]).let(_ => true).or(false)
 
           . assert(_ == true)
+
+          test(m"socket file is a UNIX domain socket"):
+            sh"$tool echo probe".exec[Unit]()
+            sh"test -S $stateDir/socket".exec[Exit]()
+
+          . assert(_ == Exit.Ok)
 
           test(m"pid file contains a valid running PID"):
             sh"$tool".exec[Unit]()
@@ -379,7 +377,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     val upgradeStateDir: Path on Linux =
       Xdg.runtimeDir[Path on Linux].or(Xdg.stateHome[Path on Linux]) / t"upgrd"
 
-    sh"rm -f $upgradeStateDir/pid $upgradeStateDir/port $upgradeStateDir/fail".exec[Unit]()
+    sh"rm -f $upgradeStateDir/pid $upgradeStateDir/build $upgradeStateDir/socket $upgradeStateDir/fail".exec[Unit]()
     safely(sh"pkill upgrd".exec[Exit]())
     snooze(0.2*Second)
 
