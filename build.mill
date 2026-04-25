@@ -949,6 +949,7 @@ object zeppelin extends Library:
 
 object ziggurat extends Library:
   object core extends Component(hellenism.core, monotonous.core, turbulence.core)
+  object test extends Tests(core)
 
 object publishing extends Module:
   def local(localIvyRepo: String = null): Command[Unit] = Task.Command:
