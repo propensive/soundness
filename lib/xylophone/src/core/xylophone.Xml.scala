@@ -881,14 +881,16 @@ object Xml extends Tag.Container
 
       case '/' =>
         next()
-        content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform), false).label)
+        content = cursor.hold:
+          tagname(cursor.mark, schema.elements.unless(schema.freeform), false).label
         Token.Close
 
       case Nul =>
         fail(BadInsertion)
 
       case chr =>
-        content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform), false).label)
+        content = cursor.hold:
+          tagname(cursor.mark, schema.elements.unless(schema.freeform), false).label
         extra = cursor.hold(attributes(content))
 
         cursor.lay(fail(ExpectedMore)):

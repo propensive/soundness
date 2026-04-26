@@ -290,6 +290,7 @@ object JsonAst extends Format:
                       keys += string
                       values += value
                       skip()
+
                     case CloseBrace =>
                       next()
                       keys += string
@@ -407,8 +408,9 @@ object JsonAst extends Format:
 
             case ch =>
               ((ch >> 5): @switch) match
-                case 0 => error(Issue.NotEscaped(ch.toChar))
+                case 0                 => error(Issue.NotEscaped(ch.toChar))
                 case 1 | 2 | 3 | 4 | 5 => appendChar(ch.toChar)
+
                 case _ =>
                   if (ch & bin"1110 0000") == bin"1100 0000" then
                     var char: Int = ((ch & bin"0001 1111") << 6)

@@ -101,7 +101,7 @@ object internal:
       val fields =
         params2.flatMap: param =>
           if param.annotations.nil then Nil else
-            List(param.name ->'{(${Expr(param.name)}.tt, ${matching(param.annotations)}.to(Set))})
+            List(param.name -> '{(${Expr(param.name)}.tt, ${matching(param.annotations)}.to(Set))})
 
         . to(Map)
 

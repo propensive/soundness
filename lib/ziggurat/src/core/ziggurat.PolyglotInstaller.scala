@@ -46,18 +46,17 @@ import serpentine.*
 import turbulence.*
 import vacuous.*
 
-import classloaders.threadContext
 import charDecoders.utf8
-import charEncoders.utf8 as utf8Encoder
-import textSanitizers.skip
-
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
-import filesystemOptions.overwritePreexisting.enabled
+import charEncoders.utf8
+import classloaders.threadContext
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.overwritePreexisting.enabled
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.enabled
+import textSanitizers.skip
 
 object PolyglotInstaller:
   private val ChunkSize: Int = 8000
@@ -101,7 +100,7 @@ object PolyglotInstaller:
       builder.add(t"-----END CERTIFICATE-----\n")
 
     builder.add(t"#>\n")
-    builder.text.data(using utf8Encoder)
+    builder.text.data(using charEncoders.utf8)
 
 
   def main(args: Array[String]): Unit = unsafely:

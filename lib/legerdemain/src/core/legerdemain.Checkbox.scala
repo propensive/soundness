@@ -39,9 +39,8 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import doms.html.whatwg
-import whatwg.*
 import attributives.textAttributes
+import doms.html.whatwg, whatwg.*
 
 object Checkbox:
   given renderable: Checkbox is Renderable in Phrasing = checkbox =>

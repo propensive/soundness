@@ -38,7 +38,6 @@ import java.io as ji
 import java.nio.channels as jnc
 
 import anticipation.*
-import anticipation.abstractables.durationIsAbstractable
 import contingency.*
 import guillotine.*
 import parasite.*
@@ -47,6 +46,8 @@ import profanity.*
 import proscenium.*
 import rudiments.*
 import turbulence.*
+
+import anticipation.abstractables.durationIsAbstractable
 
 object Client:
   @targetName("make")

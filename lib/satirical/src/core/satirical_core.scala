@@ -143,10 +143,11 @@ object Wit:
               conduit.mark()
               val v = version()
               Package(namespace, name, v)
+
             case other =>
               whitespace()
               conduit.datum match
-                case ';' => Package(namespace, name, Unset)
+                case ';'   => Package(namespace, name, Unset)
                 case other => fail(m"unexpected character $other")
 
         case other =>
@@ -177,6 +178,7 @@ object Wit:
     Wit(topLevel()*)
 
 case class Wit(entries: (World | Interface | Package)*)
+
 enum Primitive:
   case Bool, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64, Char, String
   case List(elements: Primitive)

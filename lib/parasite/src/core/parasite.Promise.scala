@@ -36,9 +36,9 @@ import language.experimental.pureFunctions
 
 import java.lang as jl
 import java.util as ju
-import ju.concurrent as juc
-import juc.atomic as juca
-import juc.locks as jucl
+import java.util.concurrent as juc
+import java.util.concurrent.atomic as juca
+import java.util.concurrent.locks as jucl
 
 import anticipation.*
 import contingency.*

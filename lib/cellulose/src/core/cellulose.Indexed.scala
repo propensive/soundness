@@ -84,7 +84,7 @@ trait Indexed extends Codllike, Dynamic:
     paramIndex.lift(key) match
       case None =>
         index.lift(key) match
-          case None       => Nil
+          case None          => Nil
           case Some(indexes) => indexes.map(children(_).data.vouch)
 
       case Some(index) =>

@@ -38,8 +38,6 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 
-sealed trait Amount[dimension <: Measure, label <: Label]()
-
 object Amount:
   // base units
   inline given distance: Amount[Units[1, Distance], "distance"] = !!
@@ -205,3 +203,5 @@ object Amount:
 
   inline given electricDisplacementField: Amount[ElectricDisplacementField,
       "electric displacement field"] = !!
+
+sealed trait Amount[dimension <: Measure, label <: Label]()

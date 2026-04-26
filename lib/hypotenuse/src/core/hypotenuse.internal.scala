@@ -603,6 +603,7 @@ object internal:
     @targetName("divS64")
     inline infix def / (right: Conversion.into[S64])(using division: DivisionByZero)
     :   division.Wrap[S64] =
+
       division.divideS64(s64, right)
 
     @targetName("modS64")
@@ -660,6 +661,7 @@ object internal:
     @targetName("divS32")
     inline infix def / (right: Conversion.into[S32])(using division: DivisionByZero)
     :   division.Wrap[S32] =
+
       division.divideS32(s32, right)
 
     @targetName("modS32")
@@ -720,6 +722,7 @@ object internal:
     @targetName("divS16")
     inline infix def / (right: Conversion.into[S16])(using division: DivisionByZero)
     :   division.Wrap[S16] =
+
       division.divideS16(s16, right)
 
     @targetName("modS16")
@@ -783,6 +786,7 @@ object internal:
     @targetName("divS8")
     inline infix def / (right: Conversion.into[S8])(using division: DivisionByZero)
     :   division.Wrap[S8] =
+
       division.divideS8(s8, right)
 
     @targetName("modS8")
@@ -1390,6 +1394,7 @@ object internal:
     @targetName("divU64")
     inline infix def / (right: Conversion.into[U64])(using division: DivisionByZero)
     :   division.Wrap[U64] =
+
       division.divideU64(u64, right)
 
     @targetName("modU64")
@@ -1439,6 +1444,7 @@ object internal:
     @targetName("divU32")
     inline infix def / (right: Conversion.into[U32])(using division: DivisionByZero)
     :   division.Wrap[U32] =
+
       division.divideU32(u32, right)
 
     @targetName("modU32")
@@ -1483,7 +1489,6 @@ object internal:
     inline def hex: Text = JInt.toUnsignedString(JShort.toUnsignedInt(u16), 16).nn.tt
 
     @targetName("octalU16")
-
     inline def octal: Text = JInt.toUnsignedString(JShort.toUnsignedInt(u16), 8).nn.tt
 
     @targetName("binaryU16")
@@ -1498,6 +1503,7 @@ object internal:
     @targetName("divU16")
     inline infix def / (right: Conversion.into[U16])(using division: DivisionByZero)
     :   division.Wrap[U16] =
+
       division.divideU16(u16, right)
 
     @targetName("modU16")
@@ -1568,6 +1574,7 @@ object internal:
     @targetName("divU8")
     inline infix def / (right: Conversion.into[U8])(using division: DivisionByZero)
     :   division.Wrap[U8] =
+
       division.divideU8(u8, right)
 
     @targetName("modU8")

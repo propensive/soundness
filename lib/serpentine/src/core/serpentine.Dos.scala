@@ -36,9 +36,9 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-sealed trait Dos
-
 object Dos:
   type Rules = MustMatch["[^.]{1,8}(\\.[^.]{1,3})?"] & MustNotContain[" "] & MustMatch["[!-~]*"]
 
   inline given Dos is Nominative under Rules = !!
+
+sealed trait Dos

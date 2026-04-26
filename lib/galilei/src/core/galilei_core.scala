@@ -34,7 +34,7 @@ package galilei
 
 import java.io as ji
 import java.nio.file as jnf
-import jnf.attribute as jnfa
+import java.nio.file.attribute as jnfa
 
 import anticipation.*
 import contingency.*

@@ -41,7 +41,7 @@ object Home extends BaseLayout(Unset)(using BaseLayout.Dir(true, Nil)):
   object Config extends BaseLayout[(".config", Home.type)](t".config")
 
   object Local extends BaseLayout[(".local", Home.type)](t".local"):
-    object Bin extends BaseLayout[("bin",".local", Home.type)](t"bin")
+    object Bin extends BaseLayout[("bin", ".local", Home.type)](t"bin")
     object Lib extends BaseLayout[("lib", ".local", Home.type)](t"lib")
     object Share extends BaseLayout[("share", ".local", Home.type)](t"share")
     object State extends BaseLayout[("state", ".local", Home.type)](t"state")

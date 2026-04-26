@@ -41,9 +41,9 @@ import parasite.*, monitors.global
 import probably.*
 import rudiments.*
 import turbulence.*, stdioSources.virtualMachine
-import unsafeExceptions.canThrowAny
 
 import LogFormat.standardAnsi
+import unsafeExceptions.canThrowAny
 
 val OutSink = Out.sink
 given log: Log({ case _ => OutSink })

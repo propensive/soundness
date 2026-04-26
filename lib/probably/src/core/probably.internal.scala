@@ -68,6 +68,7 @@ object internal:
 
         def lift(predicate: Expr[Any]): Option[Expr[Any]] = predicate.asTerm match
           case Inlined(_, _, predicate) => lift(predicate.asExpr)
+
           case Block(List(DefDef(a, _, _, Some(expression))), Closure(Ident(b), _)) if a == b =>
             expression match
               case Apply(Select(Ident(_), "=="), List(term)) => Some(term.asExpr)
@@ -178,6 +179,7 @@ object internal:
                       ( decomposable.decomposition(exp).text,
                         decomposable.decomposition(value).text,
                         contrast.juxtaposition(exp, value) ) )
+
               case None =>
                 // inc2.include(runner.report, test.id, Verdict.Detail.Compare
                 //  (summon[Any is Contrastable].compare(value, 1)))

@@ -278,7 +278,7 @@ extension (short: Short)
   inline def abs: Short = math.abs(short).toShort
 
   @targetName("powerShort")
-  inline infix def **(exponent: Double): Double = math.pow(short.toDouble, exponent).toShort
+  inline infix def ** (exponent: Double): Double = math.pow(short.toDouble, exponent).toShort
 
   @targetName("octalShort")
   inline def octal: Text = JInt.toOctalString(short).nn.tt

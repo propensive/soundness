@@ -50,9 +50,9 @@ import proscenium.*
 import spectacular.*
 import vacuous.*
 
+import columnAttenuation.ignore
 import tableStyles.minimal
 import textMetrics.uniform
-import columnAttenuation.ignore
 
 object Bytecode:
   given teletypeable: Bytecode is Teletypeable = bytecode =>
@@ -371,7 +371,7 @@ object Bytecode:
           | 190 | 182 =>
             2
 
-        case 170 | 171 | 187 | 188 | 189 | 197| 194 | 195 | 191 | 185 | 186 => 3
+        case 170 | 171 | 187 | 188 | 189 | 197 | 194 | 195 | 191 | 185 | 186 => 3
 
         case opcode =>
           panic(m"unrecognized opcode $opcode")

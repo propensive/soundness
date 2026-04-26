@@ -102,6 +102,7 @@ object internal:
                   case Unset => $default
                   case term  => term.asInstanceOf[value]
               }
+
             . asTerm
 
       case Inlined(call, bindings, term) =>
@@ -113,6 +114,7 @@ object internal:
               case Unset => $default
               case term  => term.asInstanceOf[value]
           }
+
         . asTerm
 
     '{${optimize(optional.asTerm).asExpr}.asInstanceOf[value]}.asExprOf[value]

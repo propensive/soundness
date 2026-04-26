@@ -49,11 +49,11 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-import charEncoders.utf8
-import jsonPrinters.minimal
-import errorDiagnostics.stackTraces
-import stdioSources.virtualMachine.ansi
 import alphabets.base64.standard
+import charEncoders.utf8
+import errorDiagnostics.stackTraces
+import jsonPrinters.minimal
+import stdioSources.virtualMachine.ansi
 
 package couriers:
   given resend: (Tactic[CourierError], Online, HttpEvent is Loggable, HttpClient)

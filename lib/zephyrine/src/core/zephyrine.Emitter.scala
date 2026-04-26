@@ -127,6 +127,7 @@ class Emitter[data: Emittable](block: Int = 4096, window: Int = 2):
 
   lazy val iterator: Iterator[data] = new Iterator[data]:
     private var ready: data | Done.type = Done
+
     def hasNext: Boolean =
       ready = queue.take().nn
       ready != Done

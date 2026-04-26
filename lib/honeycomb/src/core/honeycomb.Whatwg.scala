@@ -49,8 +49,8 @@ import turbulence.*
 import typonym.*
 import vacuous.*
 
-import classloaders.threadContext
 import charDecoders.utf8
+import classloaders.threadContext
 import textSanitizers.skip
 
 object Whatwg:
@@ -456,7 +456,7 @@ class Whatwg() extends Dom:
   val Col = Tag.void["col", Whatwg]()
 
   val Colgroup = Tag.container["colgroup", "col", Whatwg]
-                  (mode = Html.Mode.Whitespace, insertable = true)
+                  ( mode = Html.Mode.Whitespace, insertable = true )
 
   val Data = Tag.container["data", Phrasing, Whatwg]()
   val Datalist = Tag.container["datalist", Phrasing | "option", Whatwg]()
@@ -468,7 +468,7 @@ class Whatwg() extends Dom:
   val Div = Tag.container["div", Flow, Whatwg]()
 
   val Dl = Tag.container["dl", "div" | "dt" | "dd" | ScriptSupporting, Whatwg]
-            (autoclose = true, mode = Html.Mode.Whitespace)
+            ( autoclose = true, mode = Html.Mode.Whitespace )
 
   val Dt = Tag.container["dt", Flow, Whatwg](autoclose = true)
   val Em = Tag.container["em", Phrasing, Whatwg]()
@@ -590,7 +590,7 @@ class Whatwg() extends Dom:
   val Ol = Tag.container["ol", "li" | ScriptSupporting, Whatwg](mode = Html.Mode.Whitespace)
 
   val Optgroup = Tag.container["optgroup", "option" | "legend", Whatwg]
-                  (autoclose = true, mode = Html.Mode.Whitespace)
+                  ( autoclose = true, mode = Html.Mode.Whitespace )
 
   val Option = Tag.container["option", "#text", Whatwg](autoclose = true)
   val Output = Tag.container["output", Phrasing, Whatwg]()
@@ -654,7 +654,7 @@ class Whatwg() extends Dom:
   val Title = Tag.container["title", "#text", Whatwg](mode = Html.Mode.Rcdata)
 
   val Tr = Tag.container["tr", "td" | "th" | ScriptSupporting, Whatwg]
-            (autoclose = true, mode = Html.Mode.Whitespace, insertable = true)
+            ( autoclose = true, mode = Html.Mode.Whitespace, insertable = true )
 
   object Track extends Tag.Void("track", sci.Map(), false):
     type Topic = "track"
