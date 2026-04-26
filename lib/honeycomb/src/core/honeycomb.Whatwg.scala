@@ -677,10 +677,13 @@ class Whatwg() extends Dom:
     Dictionary(this.membersOfType[Tag].to(Seq).bi.map(_.label -> _)*)
 
   val entities: Dictionary[Text] =
-    val list = cp"/honeycomb/entities.tsv".read[Text].cut(t"\n").map(_.cut(t"\t")).collect:
+    val html4 = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n").map(_.cut(t"\t")).collect:
       case List(key, value) => (key, value)
 
-    Dictionary(list*)
+    val extra = cp"/honeycomb/entities-extra.tsv".read[Text].cut(t"\n").map(_.cut(t"\t")).collect:
+      case List(key, value) => (key, value)
+
+    Dictionary((html4 ++ extra)*)
 
   val attributes: Dictionary[Attribute] =
     val list: List[(Text, Attribute)] =
