@@ -236,10 +236,20 @@ class Cursor[data]
         offsets.clear()
 
   inline def grab(start: Mark, end: Mark): data =
-    // FIXME: calculate length across different blocks
-    val buffer = addressable.blank(if start.block == end.block then end.index - start.index else 0)
-    clone(start, end)(buffer)
-    addressable.build(buffer)
+    val size =
+      if start.block == end.block then end.index - start.index else
+        val startOffset = start.block - first
+        val endOffset = end.block - first
+        var total = addressable.length(buffer(startOffset)) - start.index.n0
+        var i = startOffset + 1
+        while i < endOffset do
+          total += addressable.length(buffer(i))
+          i += 1
+        total + end.index.n0
+
+    val target = addressable.blank(size)
+    clone(start, end)(target)
+    addressable.build(target)
 
   inline def take(inline otherwise: => data)(length: Int): data =
     var buffer = addressable.blank(length)
