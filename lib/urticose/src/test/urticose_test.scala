@@ -474,6 +474,49 @@ object Tests extends Suite(m"Urticose tests"):
         t"http://example.com#frag".decode[HttpUrl].show
       . assert(_ == t"http://example.com#frag")
 
+      test(m"Parse URL with IPv6 host and port"):
+        t"http://[::1]:8080/path".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1), Unset, 8080)),
+          t"/path"))
+
+      test(m"Parse URL with IPv6 host and no port"):
+        t"http://[::1]/".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), t"/"))
+
+      test(m"Parse URL with IPv6 host, no port, no path"):
+        t"http://[::1]".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), t""))
+
+      test(m"Parse URL with IPv6 host, userinfo and port"):
+        t"http://user:pw@[2001:db8::1]:443/path".decode[HttpUrl]
+      . assert(_ == Url(
+          Origin(Scheme.Http, Authority(Ipv6(0x2001, 0xdb8, 0, 0, 0, 0, 0, 1), t"user:pw", 443)),
+          t"/path"))
+
+      test(m"Parse RFC 3986 ldap URL with IPv6 host"):
+        t"ldap://[2001:db8::7]/c=GB?objectClass?one".decode[Url[Label]]
+      . assert(_ == Url(
+          Origin(Scheme(t"ldap"), Authority(Ipv6(0x2001, 0xdb8, 0, 0, 0, 0, 0, 7))),
+          t"/c=GB",
+          t"objectClass?one"))
+
+      test(m"Round-trip URL with IPv6 host"):
+        t"http://[::1]:8080/path".decode[HttpUrl].show
+      . assert(_ == t"http://[::1]:8080/path")
+
+      test(m"Round-trip RFC 3986 ldap URL"):
+        t"ldap://[2001:db8::7]/c=GB?objectClass?one".decode[Url[Label]].show
+      . assert(_ == t"ldap://[2001:db8::7]/c=GB?objectClass?one")
+
+      test(m"Parse URL with IPv6 host and fragment"):
+        t"http://[::1]#frag".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), t"",
+          Unset, t"frag"))
+
+      test(m"Parse URL with IPv6 host and query"):
+        t"http://[::1]?q=1".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), t"", t"q=1"))
+
 
 
       // TODO: fix

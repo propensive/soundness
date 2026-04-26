@@ -78,6 +78,10 @@ object Url:
                   import error.diagnostics
                   UrlError(value, colon + 3, UrlError.Reason.BadHostname(hostname, reason))
 
+                case error@IpAddressError(reason) =>
+                  import error.diagnostics
+                  UrlError(value, colon + 3, UrlError.Reason.BadIpv6(reason))
+
               . within:
                   val authEnd = safely:
                     value.where(c => c == '/' || c == '?' || c == '#', colon + 3)
@@ -134,5 +138,5 @@ extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}$locat
   def scheme: Scheme[scheme] = origin.scheme
   def authority: Optional[Authority] = origin.authority
   def requestTarget: Text = location+query.lay(t"")(t"?"+_)
-  def host: Optional[Hostname] = authority.let(_.host)
+  def host: Optional[Hostname | Ipv6] = authority.let(_.host)
   def path: Path on Www = location.decode[Path on Www]
