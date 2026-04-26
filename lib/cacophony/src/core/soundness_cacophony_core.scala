@@ -32,4 +32,6 @@
                                                                                                   */
 package soundness
 
-export cacophony.{Audio, Audible, AudioError, Wave, Aiff, Aifc, Au, Snd}
+export cacophony
+. { Audio, Audible, AudioError, Wave, Aiff, Aifc, Au, Snd, ChannelLayout, Monaural, Stereo,
+    Surround, Encoding, Configuration, Feed, FeedError, Recording }

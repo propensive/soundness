@@ -16,6 +16,8 @@ easy to work with as text. _Cacophony_ aspires to make this possible.
 - read directly from any [Turbulence](https://github.com/propensive/turbulence) source
 - non-PCM input streams readable by `javax.sound.sampled` are auto-converted to 16-bit signed PCM
 - access audio metadata (sample rate, duration, channels, bit depth) and individual samples
+- typed channel layouts (`Monaural`, `Stereo`, `Surround[N]`) using the `across` infix type
+- enumerate audio input devices (`Feed`s) and record live audio as a stream of `Audio` chunks
 
 
 ## Availability
@@ -63,6 +65,56 @@ The number of channels, frame count, sample rate and duration are available as
 
 A single PCM sample, expressed as a raw signed integer, can be accessed using
 the `apply` method, i.e. `audio(channel, frame)`.
+
+### Channel layouts
+
+Channel layouts are expressed using the [Prepositional](https://github.com/propensive/prepositional)
+`across` infix type, with one of three layout phantom types:
+
+ - `Monaural` (1 channel)
+ - `Stereo` (2 channels)
+ - `Surround[N]` (an arbitrary number of channels, fixed at compile time)
+
+For example, an `Audio` value tagged with both a file format and a channel
+layout has the type `Audio in Wave across Stereo`. The runtime channel count
+is available from any `ChannelLayout` typeclass instance, e.g.
+`summon[Stereo is ChannelLayout].channels` returns `2`.
+
+### Recording from a feed
+
+Audio input devices are represented by `Feed` values. The set of feeds visible
+to the JVM is enumerated by `Feed.list`. Each `Feed` exposes its supported
+configurations and provides a `record` method that opens a recording session
+for a chosen channel layout, sample rate and bit depth. The recording is
+returned as a `Recording` whose `stream` method yields a lazy stream of
+`Audio` chunks.
+
+```scala
+import soundness.*
+
+val feed: Feed = Feed.list.head
+val recording: Recording across Stereo =
+  feed.record[Stereo](44100.0*Hertz, bits = 16, chunkBytes = 65536)
+
+val firstChunk: Audio across Stereo = recording.stream.head
+recording.stop()
+```
+
+### Recording on macOS
+
+The JDK's `AudioSystem` cannot enumerate any input device on macOS unless the
+parent process has been granted microphone access. As a result, calling
+`Feed.list` from a plain `java`/`mill`/`scala-cli` invocation will return an
+empty list even when a microphone is available. To work around this for local
+testing:
+
+ 1. Open System Settings &rarr; Privacy &amp; Security &rarr; Microphone
+ 2. Enable the terminal application or IDE that you launch the JVM from
+ 3. Restart the terminal so the new entitlement takes effect
+
+For distribution, the JVM should be bundled into a signed `.app` whose
+`Info.plist` declares an `NSMicrophoneUsageDescription`. Linux and Windows do
+not impose this restriction.
 
 
 

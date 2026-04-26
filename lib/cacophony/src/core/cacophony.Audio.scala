@@ -84,19 +84,33 @@ object Audio:
     new Audio(format, data):
       type Form = form
 
-  given streamable: [form: Audible] => (Audio in form) is Streamable by Data = audio =>
+  private[cacophony] def of[layout]
+                            (format: jss.AudioFormat, data: Array[Byte])
+                          : Audio across layout =
+    new Audio(format, data):
+      type Domain = layout
+
+  private def writeAudio(audio: Audio, formatName: Text): Stream[Data] =
     val ais = jss.AudioInputStream
                (ji.ByteArrayInputStream(audio.data),
                 audio.format,
                 audio.frames)
 
-    val fileType = jss.AudioSystem.getAudioFileTypes.nn.find(_.toString == form.name.s).getOrElse:
-      throw RuntimeException(s"unregistered audio file format: ${form.name.s}")
+    val fileType = jss.AudioSystem.getAudioFileTypes.nn.find(_.toString == formatName.s).getOrElse:
+      throw RuntimeException(s"unregistered audio file format: ${formatName.s}")
 
     val out = StreamOutputStream()
     jss.AudioSystem.write(ais, fileType, out)
     out.close()
     out.stream
+
+  given streamable: [form: Audible] => (Audio in form) is Streamable by Data = audio =>
+    writeAudio(audio, form.name)
+
+  given streamableAcross: [form: Audible, layout]
+        =>  (Audio in form across layout) is Streamable by Data =
+
+    audio => writeAudio(audio, form.name)
 
   given abstractable: [format: Audible] => (Audio in format) is Abstractable:
     type Domain = HttpStreams
@@ -116,7 +130,8 @@ object Audio:
 case class Audio
             (private[cacophony] val format: jss.AudioFormat,
              private[cacophony] val data:   Array[Byte])
-extends Formal:
+extends Formal, Domainal:
+  audio =>
 
   def channels: Int      = format.getChannels
   def bitsPerSample: Int = format.getSampleSizeInBits
@@ -149,4 +164,7 @@ extends Formal:
       (value << shift) >> shift
     else value
 
-  def to[form: Audible as audible]: Audio in form = Audio[form](format, data)
+  def to[form: Audible as audible]: Audio in form across audio.Domain =
+    new Audio(format, data):
+      type Form   = form
+      type Domain = audio.Domain

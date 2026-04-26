@@ -32,103 +32,127 @@
                                                                                                   */
 package cacophony
 
-import soundness.*
+import javax.sound.sampled as jss
 
-import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import anticipation.*
+import contingency.*
+import prepositional.*
+import proscenium.*
+import quantitative.*
+import symbolism.*
+import turbulence.*
+import vacuous.*
 
-object Tests extends Suite(m"Cacophony Tests"):
+object Feed:
+  def list: List[Feed] =
+    jss.AudioSystem.getMixerInfo.nn.toList.flatMap: info0 =>
+      val info = info0.nn
+      val mixer = jss.AudioSystem.getMixer(info).nn
 
-  // 1-channel, 16-bit signed little-endian PCM at 8 kHz, 4 frames
-  // sample values: 100, 200, 300, 400
-  val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
-                  617461080000006400c8002c019001"""
+      val canRecord = mixer.getTargetLineInfo.nn.exists:
+        case dli: jss.DataLine.Info => dli.getLineClass == classOf[jss.TargetDataLine]
+        case _                      => false
 
-  // header is malformed beyond a plausible RIFF prefix
-  val broken = hex"5249464600000000ffffffff"
+      if canRecord then List(Feed(info)) else Nil
 
-  def run(): Unit =
-    test(m"Read a WAV's channel count"):
-      wav.read[Audio in Wave].channels
-    . assert(_ == 1)
+case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
+  def name:        Text = mixerInfo.getName.nn.tt
+  def vendor:      Text = mixerInfo.getVendor.nn.tt
+  def description: Text = mixerInfo.getDescription.nn.tt
 
-    test(m"Read a WAV's frame count"):
-      wav.read[Audio in Wave].frames
-    . assert(_ == 4L)
+  def configurations: List[Configuration] =
+    val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
 
-    test(m"Read a WAV's bits-per-sample"):
-      wav.read[Audio in Wave].bitsPerSample
-    . assert(_ == 16)
+    mixer.getTargetLineInfo.nn.toList.flatMap:
+      case dli: jss.DataLine.Info if dli.getLineClass == classOf[jss.TargetDataLine] =>
+        dli.getFormats.nn.toList.map: f0 =>
+          val f = f0.nn
 
-    test(m"Read a WAV's sample rate"):
-      wav.read[Audio in Wave].sampleRate
-    . assert(_ == 8000.0*Hertz)
+          val encoding =
+            if f.getEncoding == jss.AudioFormat.Encoding.PCM_UNSIGNED then Encoding.PcmUnsigned
+            else Encoding.PcmSigned
 
-    test(m"Read a WAV's duration"):
-      wav.read[Audio in Wave].duration
-    . assert(_ == (4.0/8000.0)*Second)
+          val rate: Optional[Quantity[Seconds[-1]]] =
+            if f.getSampleRate < 0 then Unset else f.getSampleRate.toDouble*Hertz
 
-    test(m"Read a WAV's first sample"):
-      wav.read[Audio in Wave].apply(0, 0)
-    . assert(_ == 100)
+          Configuration(f.getChannels, rate, f.getSampleSizeInBits, encoding, f.isBigEndian)
 
-    test(m"Read a WAV's third sample"):
-      wav.read[Audio in Wave].apply(0, 2)
-    . assert(_ == 300)
+      case _ => Nil
 
-    test(m"Read a WAV as AIFF fails"):
-      capture[AudioError](wav.read[Audio in Aiff])
-    . assert(_ == AudioError(Aiff()))
+  def supports[layout: ChannelLayout as cl]
+                (rate: Quantity[Seconds[-1]], bits: Int)
+              : Boolean =
+    val sampleRate = rate.value.toFloat
+    val bytesPerFrame = cl.channels*(bits/8)
 
-    test(m"Read malformed audio fails"):
-      capture[AudioError](broken.read[Audio in Wave])
-    . assert(_ == AudioError(Wave()))
+    val format = jss.AudioFormat
+                  (jss.AudioFormat.Encoding.PCM_SIGNED,
+                   sampleRate,
+                   bits,
+                   cl.channels,
+                   bytesPerFrame,
+                   sampleRate,
+                   false)
 
-    test(m"Convert a WAV to AIFF preserves frame count"):
-      val aiff = wav.read[Audio in Wave].to[Aiff].read[Data]
-      aiff.read[Audio in Aiff].frames
-    . assert(_ == 4L)
+    val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
+    mixer.isLineSupported(jss.DataLine.Info(classOf[jss.TargetDataLine], format))
 
-    test(m"Convert a WAV to AIFF preserves the first sample"):
-      val aiff = wav.read[Audio in Wave].to[Aiff].read[Data]
-      aiff.read[Audio in Aiff].apply(0, 0)
-    . assert(_ == 100)
+  def record[layout: ChannelLayout as cl]
+              (rate: Quantity[Seconds[-1]], bits: Int, chunkBytes: Int = 65536)
+            : Recording across layout raises FeedError =
 
-    test(m"Convert a WAV to AIFF preserves the third sample"):
-      val aiff = wav.read[Audio in Wave].to[Aiff].read[Data]
-      aiff.read[Audio in Aiff].apply(0, 2)
-    . assert(_ == 300)
+    val sampleRate    = rate.value.toFloat
+    val bytesPerFrame = cl.channels*(bits/8)
 
-    test(m"Round-trip WAV through AU preserves frame count"):
-      val au = wav.read[Audio in Wave].to[Au].read[Data]
-      au.read[Audio in Au].frames
-    . assert(_ == 4L)
+    val format = jss.AudioFormat
+                  (jss.AudioFormat.Encoding.PCM_SIGNED,
+                   sampleRate,
+                   bits,
+                   cl.channels,
+                   bytesPerFrame,
+                   sampleRate,
+                   false)
 
-    test(m"Monaural channel layout reports 1 channel"):
-      summon[Monaural is ChannelLayout].channels
-    . assert(_ == 1)
+    val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
+    val info = jss.DataLine.Info(classOf[jss.TargetDataLine], format)
 
-    test(m"Stereo channel layout reports 2 channels"):
-      summon[Stereo is ChannelLayout].channels
-    . assert(_ == 2)
+    if !mixer.isLineSupported(info)
+    then abort(FeedError(name, FeedError.Reason.UnsupportedConfiguration))
 
-    test(m"Surround[6] channel layout reports 6 channels"):
-      summon[Surround[6] is ChannelLayout].channels
-    . assert(_ == 6)
+    val line: jss.TargetDataLine =
+      try mixer.getLine(info).nn.asInstanceOf[jss.TargetDataLine]
+      catch case _: jss.LineUnavailableException =>
+        abort(FeedError(name, FeedError.Reason.Unavailable))
 
-    test(m"Audio.to preserves frame count"):
-      wav.read[Audio in Wave].to[Aiff].frames
-    . assert(_ == 4L)
+    try line.open(format)
+    catch case _: jss.LineUnavailableException =>
+      abort(FeedError(name, FeedError.Reason.Unavailable))
 
-    test(m"Feed.list does not throw"):
-      Feed.list.length
-    . assert(_ >= 0)
+    line.start()
 
-    Feed.list.headOption.foreach: feed =>
-      if feed.supports[Monaural](8000.0*Hertz, 16) then
-        test(m"Recording from a feed produces audio chunks"):
-          val recording = feed.record[Monaural](8000.0*Hertz, 16, chunkBytes = 1024)
-          val chunk: Audio across Monaural = recording.stream.head
-          recording.stop()
-          chunk.channels
-        . assert(_ == 1)
+    new Recording:
+      type Domain = layout
+      private var stopped = false
+
+      def active: Boolean = !stopped
+
+      def stop(): Unit =
+        if !stopped then
+          stopped = true
+          line.stop()
+          line.close()
+
+      def stream: Stream[Audio across layout] =
+        def recur: Stream[Audio across layout] =
+          if stopped then Stream() else
+            val buf: Array[Byte] = new Array[Byte](chunkBytes)
+            val n = line.read(buf, 0, buf.length)
+
+            if n <= 0 then Stream() else
+              val chunk =
+                if n == buf.length then buf
+                else java.util.Arrays.copyOf(buf, n).nn
+
+              Audio.of[layout](line.getFormat.nn, chunk) #:: recur
+
+        Stream.defer(recur)
