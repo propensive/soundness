@@ -74,6 +74,7 @@ object protointernal:
 
     ConstantType(StringConstant(string)).asType match
       case '[type stringType <: Label; stringType] => '{NameExtractor[stringType]()}
+
       case _ =>
         panic(m"StringContext did not contains Strings")
 

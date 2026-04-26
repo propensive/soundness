@@ -327,6 +327,7 @@ object Syntax:
           if name == "Self" then Infix(apply(member), "is", apply(base)) else
             val refined: Structural = apply(base) match
               case refined@Structural(base, members, defs) => refined
+
               case other =>
                 Structural(other, ListMap(), ListMap())
 

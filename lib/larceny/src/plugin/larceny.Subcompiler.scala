@@ -118,6 +118,7 @@ object Subcompiler:
 
                 . match
                     case None                    => recompile(tail, done, source)
+
                     case Some(region@(from, to)) =>
                       if done.contains(region) then recompile(tail, done, source) else
 

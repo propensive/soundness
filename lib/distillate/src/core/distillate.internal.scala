@@ -63,5 +63,6 @@ object internal:
 
                     companion.asTerm.select(ref).asExprOf[Array[enumeration]]
               }
+
             . asInstanceOf[IArray[enumeration]]
       }

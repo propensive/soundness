@@ -216,6 +216,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       summonFrom:
         case limit: (Limit is Submissible on `filesystem`)                 => limit.check(root)
         case radical: (Limit is Radical on `filesystem`)                   => radical.decode(root)
+
         case filesystem: (`filesystem` is (Filesystem { type UniqueRoot = true })) =>
           infer[Plane is (Filesystem { type UniqueRoot = true })]
 

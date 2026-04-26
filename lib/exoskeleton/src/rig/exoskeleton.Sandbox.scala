@@ -86,7 +86,8 @@ object Sandbox:
             safely(item.delete())
 
 
-case class Sandbox(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment) extends Rig:
+case class Sandbox(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment)
+extends Rig:
   type Result[output] = Sandbox.Launcher
   type Form = Text
   type Target = Path on Linux

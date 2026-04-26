@@ -94,6 +94,7 @@ object Bundler:
                 if file.entry() == Directory then Unset else file.open: handle =>
                   val ref = %.on[Zip] + root.toward(file).on[Zip]
                   Zip.Entry(ref, handle.read[Data])
+
               . compact
 
           case ClasspathEntry.Jar(jar) =>

@@ -143,6 +143,7 @@ object Wit:
               conduit.mark()
               val v = version()
               Package(namespace, name, v)
+
             case other =>
               whitespace()
               conduit.datum match

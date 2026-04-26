@@ -183,6 +183,7 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
       case _ =>
         Relative[Plane, child.type *: Topic, Limit]
           (ascent, infer[child.type is Navigable].follow(child) :: descent*)
+
         . unqualified
 
 

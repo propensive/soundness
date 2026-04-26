@@ -88,6 +88,7 @@ object Tmux:
               case List(name, desc) => List(t"$name  ($desc)")
               case List(name)       => List(name)
               case _                => Nil
+
           .join(t"  ")
 
       case _ =>

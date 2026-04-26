@@ -111,6 +111,7 @@ extension [element](stream: Stream[element])
   inline def flow[result](inline termination: => result)
     ( inline proceed: (element aka "next", Stream[element] aka "more") ?=> result )
   :   result =
+
     stream match
       case next #:: more => proceed(using next.aka["next"], more.aka["more"])
       case _             => termination

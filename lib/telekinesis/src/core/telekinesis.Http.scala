@@ -432,6 +432,7 @@ object Http:
 
     def updateDynamic[label <: Label: Directive of topic, topic](name: label)(value: topic)
     :   Response =
+
       val key2 = name.tt.uncamel.kebab.lower
       copy(textHeaders = Header(key2, label.encode(value)) :: textHeaders.filter(_.key != key2))
 

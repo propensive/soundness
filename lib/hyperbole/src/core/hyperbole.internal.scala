@@ -658,6 +658,7 @@ object internal:
           t"Case fields"
           ->  symbol.caseFields.map: field =>
                 t"${field.name}: ${field.info.show}"
+
               . join(t"\n"),
 
           t"Signature"        -> symbol.signature.resultSig,

@@ -121,6 +121,13 @@ object Checker:
     // current line (set during checkBracketInteriors, transferred to
     // `prevFormalOpenerIndent` at end of line).
     var currentFormalOpenerIndent: Int                    = -1
+    // True if the previous code line started a declaration (with a keyword
+    // like `def`, `val`, `given`, `class`, `extension`, etc.) or continued
+    // one (a `(`/`[` continuation block at the same indent as a previous
+    // signature line). Used to recognise multi-clause def signatures whose
+    // first param block is on a single line, so the second clause `(
+    // using ... )` on the next line is a continuation.
+    var prevLineStartedDecl: Boolean                      = false
 
   private def checkLine
     ( s:       State,
@@ -141,7 +148,11 @@ object Checker:
 
     val isStringContent = firstReal.exists(_.kind == Kind.Strs)
     checkR2LineLength(visibleLen, emit)
-    if !isStringContent then checkR3IndentWidth(isBlank, leadingCols, emit)
+    // Skip R3 inside open `(...)` blocks: continuation rows inside parameter
+    // lists align under names from the opener line and may need an odd
+    // number of leading spaces (e.g. under `inline commensurable` at col 18).
+    if !isStringContent && s.openParens == 0 then
+      checkR3IndentWidth(isBlank, leadingCols, emit)
     checkR4TrailingWs(line, emit)
 
     if isBlank then
@@ -171,6 +182,26 @@ object Checker:
       val sem = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
       sem.lastOption.foreach: t => s.prevCodeLineLastTok = t.text
       s.prevFormalOpenerIndent = s.currentFormalOpenerIndent
+      // Track whether the previous line is part of a (still incomplete)
+      // declaration signature. A declaration is "complete" once we see a
+      // top-level `=` (assignment body) on the line. This lets multi-clause
+      // signatures `def name(args)\n( using ... )` recognise the second
+      // clause as a continuation, while preventing `val foo = expr\n
+      // (tuple)` from being misread as one.
+      val hasTopLevelEq =
+        var depth = 0
+        var found = false
+        sem.foreach: t =>
+          if t.text == "(" || t.text == "[" || t.text == "{" then depth += 1
+          else if t.text == ")" || t.text == "]" || t.text == "}" then depth -= 1
+          else if depth == 0 && t.text == "=" then found = true
+        found
+      val startsWithDecl =
+        sem.headOption.exists(t => DeclKeywords.contains(t.text) || ModifierWords.contains(t.text))
+      val isContinuationOfDecl =
+        s.prevLineStartedDecl
+          && sem.headOption.exists(t => t.text == "(" || t.text == "[")
+      s.prevLineStartedDecl = !hasTopLevelEq && (startsWithDecl || isContinuationOfDecl)
 
     if isBlank then
       if s.prevWasAnnotation then
@@ -501,6 +532,14 @@ object Checker:
         && secondSemantic > 0
         && (arr(secondSemantic).text == "(" || arr(secondSemantic).text == "[")
 
+    // A line beginning with `:` followed by `(`/`[` is a heavy-signature
+    // continuation (typically anonymous given chains: `:   [ ... ]\n  =>  (
+    // ... )\n  =>  ...`). Treat the bracket as a formal block candidate.
+    val colonParen =
+      firstSemantic >= 0 && arr(firstSemantic).text == ":"
+        && secondSemantic > 0
+        && (arr(secondSemantic).text == "(" || arr(secondSemantic).text == "[")
+
     // A line-start opener is a "formal-block candidate" when it continues a
     // declaration or method call from the previous line. Two sub-cases:
     //
@@ -519,9 +558,15 @@ object Checker:
     val moreIndentedThanPrev = leadingCols > s.prevCodeLineIndent
     val sameIndentAsPrev = leadingCols == s.prevCodeLineIndent
     val isMultiClauseContinuation =
-      s.prevFormalOpenerIndent >= 0
-        && leadingCols == s.prevFormalOpenerIndent
-        && (prevTok == ")" || prevTok == "]")
+      (prevTok == ")" || prevTok == "]") && (
+        // Continuation of a previous formal block (multi-line `( ... )`):
+        // align under that block's opener line.
+        (s.prevFormalOpenerIndent >= 0 && leadingCols == s.prevFormalOpenerIndent)
+          // Continuation of a declaration signature (`def name(args)\n(
+          // using ... )`): prev line started with a declaration keyword and
+          // is at the same indent as this line.
+          || (s.prevLineStartedDecl && leadingCols == s.prevCodeLineIndent)
+      )
 
     // A `(`/`[` at the start of a line whose preceding line ended with `=>`
     // is a lambda or context-function body. The brackets are a tuple
@@ -548,12 +593,16 @@ object Checker:
         if text == "(" || text == "[" then
           val isLineStartOpener = lineStartsWithBracket && i == firstSemantic
           val isArrowOpener     = arrowParen && i == secondSemantic
+          val isColonOpener     = colonParen && i == secondSemantic
           // Line-start `(`/`[` requires an application-like predecessor.
           // An `=> (`/`=> [` opener after a leading `=>` is always formal —
           // the `=>` itself signals continuation (e.g. anonymous-given
           // chains, `=>  ( param: Type )`).
+          // A `:   [`/`:   (` after a leading `:` is a heavy-signature
+          // continuation (anonymous given chains starting with type params
+          // or context params).
           val formalCandidate =
-            (isLineStartOpener && prevIsApplication) || isArrowOpener
+            (isLineStartOpener && prevIsApplication) || isArrowOpener || isColonOpener
           stack.push((i, formalCandidate))
         else if text == ")" || text == "]" then
           if stack.nonEmpty then
@@ -565,12 +614,21 @@ object Checker:
             val nextAfterCloser =
               arr.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment, closer + 1)
 
+            // For colon-opener brackets (`:   ( ... )` / `:   [ ... ]`) a
+            // trailing `=` on the same line means the bracket is the return
+            // type itself (tuple type), not a context-parameter list — in
+            // that case it isn't a formal block. A `)` closer on its own
+            // line (or followed by another `)`/`]`/`,`/`(`/`[`) is part of
+            // an anonymous-given continuation and IS formal.
+            val isColonOpenerBracket = colonParen && opener == secondSemantic
             val followedByBodyOpener =
               if nextAfterCloser < 0 then true
               else
                 val t = arr(nextAfterCloser).text
-                t == ":" || t == "=" || t == "extends" || t == "derives"
-                  || t == ")" || t == "]" || t == "}" || t == ","
+                if isColonOpenerBracket then t != "="
+                else
+                  t == ":" || t == "=" || t == "extends" || t == "derives"
+                    || t == ")" || t == "]" || t == "}" || t == ","
 
             // Inspect contents at depth 0 (relative to this bracket): if
             // there is no top-level comma but there is at least one binary

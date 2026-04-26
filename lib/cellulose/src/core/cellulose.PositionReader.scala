@@ -95,6 +95,7 @@ class PositionReader(private var in: Stream[Text]):
       case '\r' =>
         requireCr match
           case Unset => requireCr = true
+
           case false =>
             raise
               ( ParseError

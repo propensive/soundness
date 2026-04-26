@@ -240,6 +240,7 @@ extension [textual: Textual](text: textual)
 
   def where(predicate: Char => Boolean, start: Optional[Ordinal] = Unset, bidi: Bidi = Ltr)
   :   Optional[Ordinal] =
+
     val step: Int = bidi match
       case Ltr => 1
       case Rtl => -1

@@ -365,6 +365,7 @@ object internal extends protointernal:
               case CodlToken.Blank => focus.extra match
                 case Unset            =>
                   go(lines = lines + 1)
+
                 case Extra(l, _, _) =>
                   val closed = focus.close
 

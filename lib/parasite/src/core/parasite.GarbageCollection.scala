@@ -121,6 +121,7 @@ object GarbageCollection:
                       preMemory.keySet.nn.iterator.nn.asScala.map: key =>
                         key.tt
                         -> (preMemory.get(key).nn.getUsed.b, postMemory.get(key).nn.getUsed.b)
+
                       .to(Map)
 
                     action(GarbageCollection(gcInfo.getId.toInt.z, collector, cause, memory))

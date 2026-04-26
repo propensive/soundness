@@ -119,6 +119,7 @@ object Html extends Tag.Container
     parse(stream.iterator, root, doctypes = true) match
       case Fragment(Doctype(doctype), content) => Document(content, dom)
       case html@Element("html", _, _, _)       => Document(html, dom)
+
       case _                                   =>
         abort(ParseError(Html, Position(1.u, 1.u), Issue.BadDocument))
 
@@ -153,6 +154,7 @@ object Html extends Tag.Container
             mode match
               case Mode.Raw =>
                 emitter.put(text)
+
               case _ =>
                 var position: Int = 0
 
@@ -545,6 +547,7 @@ object Html extends Tag.Container
                           next()
                           skip()
                           attributes(tag, foreign, entries.updated(t"\u0000", Unset))
+
         case _         =>
           val key2 = if foreign then foreignKey(cursor.mark) else
             key(cursor.mark, dom.attributes).tap: key =>
@@ -732,6 +735,7 @@ object Html extends Tag.Container
         Token.Close
 
       case '\u0000' => fail(BadInsertion)
+
       case char =>
         content =
           cursor.hold:
@@ -992,6 +996,7 @@ extends Node, Topical, Transportive, Dynamic:
         compiletime.summonFrom:
           case unattributive: (attribute.Topic is Unattributive) =>
             unattributive.unattribute(attributes.at(name.tt))
+
       case attribute: (name.type is Attribute in Form) =>
         compiletime.summonFrom:
           case unattributive: (attribute.Topic is Unattributive) =>

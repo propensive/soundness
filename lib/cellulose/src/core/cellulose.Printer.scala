@@ -128,6 +128,7 @@ object Printer:
 
                 out.write('\n')
                 children.drop(layout.params).each(recur(_, indent + 2))
+
           case Unset =>
             ()
     doc.children.each(recur(_, doc.margin))
