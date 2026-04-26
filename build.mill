@@ -230,7 +230,7 @@ object test extends ScalaModule:
     //gigantism.test,
     gnossienne.test,
     gossamer.test,
-    //guillotine.test,
+    guillotine.test,
     hallucination.test,
     harlequin.test,
     hellenism.test,
@@ -336,17 +336,17 @@ object ambience extends Library:
   object test extends Tests(core)
 
 object anamnesis extends Library:
-  object core extends Component(rudiments.core, contingency.core, distillate.core)
+  object core extends Component(distillate.core)
   object test extends Tests(core)
 
 object anthology extends Library:
   object core extends Component(hellenism.core)
 
-  object `scala` extends Component(core, anticipation.log, ambience.core, galilei.core):
+  object `scala` extends Component(core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object `java` extends Component(galilei.core, ambience.core, core, anticipation.log)
-  object bundle extends Component(core, zeppelin.core, hellenism.core, galilei.core, revolution.core, eucalyptus.core)
+  object `java` extends Component(core)
+  object bundle extends Component(core, zeppelin.core, revolution.core, eucalyptus.core)
   object test extends Tests(`scala`, `java`, core)
 
 object anticipation extends Library:
@@ -358,7 +358,7 @@ object anticipation extends Library:
   object url extends Component(text, generic)
   object html extends Component(text, generic)
   object print extends Component(text)
-  object http extends Component(text, codec, generic)
+  object http extends Component(codec, generic)
   object codec extends Component(text)
   object color extends Component(opaque, prepositional.core)
   object log extends Component(text)
@@ -367,7 +367,7 @@ object anticipation extends Library:
   object test extends Tests
 
 object austronesian extends Library:
-  object core extends Component(wisteria.core, distillate.core, probably.core, hellenism.core)
+  object core extends Component(probably.core, hellenism.core)
   object test extends Tests(core)
 
 object aviation extends Library:
@@ -375,21 +375,21 @@ object aviation extends Library:
   object test extends Tests(core)
 
 object baroque extends Library:
-  object core extends Component(gossamer.core, quantitative.core, geodesy.core)
+  object core extends Component(quantitative.core, geodesy.core)
   object test extends Tests(core, abacist.core, quantitative.units, mosquito.core)
 
 object bitumen extends Library:
-  object core extends Component(polaris.core, serpentine.core, gossamer.core, turbulence.core)
+  object core extends Component(polaris.core, serpentine.core, turbulence.core)
   object test extends Tests(core)
 
 object burdock extends Library:
   object boot extends Component
-  object core extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core, gastronomy.core, hellenism.core)
+  object core extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core, gastronomy.core)
   object test extends Tests(core)
 
 object caduceus extends Library:
-  object core extends Component(urticose.core, gesticulate.core, honeycomb.core)
-  object resend extends Component(core, honeycomb.core, telekinesis.core, jacinta.core)
+  object core extends Component(honeycomb.core)
+  object resend extends Component(core, telekinesis.core, jacinta.core)
   object test extends Tests(core)
 
 object caesura extends Library:
@@ -409,15 +409,15 @@ object cardinality extends Library:
   object test extends Tests(core)
 
 object cataclysm extends Library:
-  object core extends Component(gossamer.core, anticipation.css, anticipation.html, serpentine.core, anticipation.color, hypotenuse.core, quantitative.core)
+  object core extends Component(anticipation.html, serpentine.core, quantitative.core)
   object test extends Tests(core)
 
 object cellulose extends Library:
-  object core extends Component(eucalyptus.core, chiaroscuro.core, kaleidoscope.core, polyvinyl.core, zephyrine.core)
+  object core extends Component(eucalyptus.core, chiaroscuro.core, polyvinyl.core, zephyrine.core)
   object test extends Tests(core)
 
 object charisma extends Library:
-  object core extends Component(gossamer.core, hieroglyph.core, hypotenuse.core)
+  object core extends Component(gossamer.core)
   object test extends Tests(core)
 
 object chiaroscuro extends Library:
@@ -442,7 +442,7 @@ object cosmopolite extends Library:
 
 object dendrology extends Library:
   object tree extends Component(gossamer.core)
-  object dag extends Component(gossamer.core, acyclicity.core)
+  object dag extends Component(acyclicity.core)
   object test extends Tests(tree, dag)
 
 object denominative extends Library:
@@ -450,15 +450,15 @@ object denominative extends Library:
   object test extends Tests(core)
 
 object digression extends Library:
-  object core extends Component(rudiments.core, contingency.core)
+  object core extends Component(contingency.core)
   object test extends Tests(core)
 
 object dissonance extends Library:
-  object core extends Component(rudiments.core, contingency.core, turbulence.core)
+  object core extends Component(turbulence.core)
   object test extends Tests(core)
 
 object distillate extends Library:
-  object core extends Component(contingency.core, digression.core, inimitable.core, wisteria.core)
+  object core extends Component(digression.core, inimitable.core, wisteria.core)
   object test extends Tests(core, urticose.url)
 
 object diuretic extends Library:
@@ -474,7 +474,7 @@ object enigmatic extends Library:
   object test extends Tests(core)
 
 object escapade extends Library:
-  object core extends Component(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, hypotenuse.core)
+  object core extends Component(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core)
   object test extends Tests(core)
 
 object escritoire extends Library:
@@ -482,7 +482,7 @@ object escritoire extends Library:
   object test extends Tests(core)
 
 object ethereal extends Library:
-  object core extends Component(surveillance.core, eucalyptus.syslog, digression.core, hellenism.core, exoskeleton.core):
+  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core):
     val rustTargets: Seq[(String, String, String)] = Seq(
       ("x86_64-pc-windows-gnu",       "windows-x64",   "runner.exe"),
       ("x86_64-unknown-linux-gnu",    "linux-x64",     "runner"),
@@ -550,7 +550,7 @@ object eucalyptus extends Library:
   object core extends Component(turbulence.core, gossamer.core)
   object syslog extends Component(guillotine.core, core)
   object gcp extends Component(jacinta.core, core)
-  object ansi extends Component(escapade.core, core, iridescence.core)
+  object ansi extends Component(escapade.core, core)
   object test extends Tests(ansi, core, syslog)
 
 object exegesis extends Library:
@@ -562,7 +562,7 @@ object exoskeleton extends Library:
   object core extends Component(args, galilei.core)
   object completions extends Component(core)
 
-  object rig extends Component(completions, superlunary.core, ethereal.core, jacinta.core, zeppelin.core, revolution.core, anthology.bundle, quantitative.units):
+  object rig extends Component(completions, superlunary.core, ethereal.core, anthology.bundle, quantitative.units):
     def mvnDeps =
       Seq
        (mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
@@ -575,17 +575,17 @@ object feudalism extends Library:
   object test extends Tests(core)
 
 object frontier extends Library:
-  object core extends Component(rudiments.core, dendrology.tree, escapade.core)
+  object core extends Component(dendrology.tree, escapade.core)
   object test extends Tests(core, scintillate.servlet, jacinta.schema)
 
 object fulminate extends Library:
-  object core extends Component(anticipation.css, anticipation.http, symbolism.core, anticipation.print, anticipation.http, anticipation.log, proscenium.core, gigantism.core):
+  object core extends Component(anticipation.css, anticipation.http, anticipation.print, anticipation.log, proscenium.core, gigantism.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object test extends Tests(core)
 
 object galilei extends Library:
-  object core extends Component(serpentine.core, guillotine.core, nomenclature.core)
+  object core extends Component(serpentine.core, guillotine.core)
   object test extends Tests(core)
 
 object gastronomy extends Library:
@@ -611,11 +611,11 @@ object gnossienne extends Library:
   object test extends Tests(core)
 
 object gossamer extends Library:
-  object core extends Component(mercator.core, hieroglyph.core, contextual.core, spectacular.core, kaleidoscope.core, hypotenuse.core, distillate.core)
+  object core extends Component(mercator.core, hieroglyph.core, contextual.core, spectacular.core, hypotenuse.core, distillate.core)
   object test extends Tests(core, serpentine.core)
 
 object guillotine extends Library:
-  object core extends Component(contextual.core, anticipation.log, contingency.core, turbulence.core, gossamer.core, ambience.core)
+  object core extends Component(turbulence.core, ambience.core)
   object test extends Tests(core, galilei.core)
 
 object hallucination extends Library:
@@ -624,19 +624,19 @@ object hallucination extends Library:
   object test extends Tests(ansi)
 
 object harlequin extends Library:
-  object core extends Component(anthology.scala, gossamer.core):
+  object core extends Component(anthology.scala):
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object ansi extends Component(core, escapade.core)
-  object md extends Component(core, punctuation.html, honeycomb.core)
+  object md extends Component(core, punctuation.html)
   object test extends Tests(ansi, md)
 
 object hellenism extends Library:
-  object core extends Component(anticipation.url, ambience.core, galilei.core)
+  object core extends Component(anticipation.url, galilei.core)
   object test extends Tests(core, turbulence.core)
 
 object honeycomb extends Library:
-  object core extends Component(gossamer.core, panopticon.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url, hellenism.core, typonym.core, adversaria.core)
+  object core extends Component(panopticon.core, gesticulate.core, xylophone.core, urticose.url)
   object test extends Tests(core)
 
 object hieroglyph extends Library:
@@ -644,7 +644,7 @@ object hieroglyph extends Library:
   object test extends Tests(core)
 
 object hyperbole extends Library:
-  object core extends Component(harlequin.ansi, escapade.core, escritoire.core, dendrology.tree, hieroglyph.core):
+  object core extends Component(harlequin.ansi, escritoire.core, dendrology.tree):
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
   object test extends Tests(core, quantitative.units, mandible.core)
@@ -654,11 +654,11 @@ object hypotenuse extends Library:
   object test extends Tests(core, quantitative.units, abacist.core)
 
 object imperial extends Library:
-  object core extends Component(anticipation.path, digression.core, guillotine.core)
+  object core extends Component(guillotine.core)
   object test extends Tests(core)
 
 object inimitable extends Library:
-  object core extends Component(rudiments.core, contingency.core)
+  object core extends Component(contingency.core)
   object test extends Tests(core)
 
 object iridescence extends Library:
@@ -666,18 +666,18 @@ object iridescence extends Library:
   object test extends Tests(core)
 
 object jacinta extends Library:
-  object core extends Component(merino.core, urticose.url, panopticon.core, gossamer.core)
+  object core extends Component(merino.core, urticose.url, panopticon.core)
   object time extends Component(core, aviation.core)
   object http extends Component(core, telekinesis.core)
   object schema extends Component(core, telekinesis.core)
   object test extends Tests(time, http, schema)
 
 object journalist extends Library:
-  object core extends Component(anticipation.codec, contingency.core, galilei.core, prepositional.core, turbulence.core)
+  object core extends Component(galilei.core)
   object test extends Tests(core)
 
 object kaleidoscope extends Library:
-  object core extends Component(rudiments.core, contingency.core)
+  object core extends Component(contingency.core)
   object test extends Tests(core)
 
 object larceny extends Library:
@@ -692,7 +692,7 @@ object legerdemain extends Library:
   object test extends Tests(core, scintillate.server)
 
 object mandible extends Library:
-  object core extends Component(hellenism.core, hyperbole.core, escritoire.core):
+  object core extends Component(hyperbole.core):
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
   object test extends Tests(core, revolution.core, quantitative.units)
@@ -710,7 +710,7 @@ object metamorphose extends Library:
   object test extends Tests(core)
 
 object monotonous extends Library:
-  object core extends Component(gossamer.core, hypotenuse.core)
+  object core extends Component(gossamer.core)
   object test extends Tests(core)
 
 object mosquito extends Library:
@@ -718,7 +718,7 @@ object mosquito extends Library:
   object test extends Tests(quantitative.units, core, baroque.core)
 
 object urticose extends Library:
-  object core extends Component(gossamer.core, hypotenuse.core)
+  object core extends Component(gossamer.core)
   object url extends Component(escapade.core, serpentine.core, anticipation.html, core)
   object test extends Tests(core, url)
 
@@ -727,7 +727,7 @@ object nomenclature extends Library:
   object test extends Tests(core)
 
 object octogenarian extends Library:
-  object core extends Component(guillotine.core, galilei.core, ambience.core, gastronomy.core, urticose.core, enigmatic.core, anticipation.url)
+  object core extends Component(galilei.core, urticose.core, enigmatic.core, anticipation.url)
   object test extends Tests(core)
 
 object orthodoxy extends Library:
@@ -735,7 +735,7 @@ object orthodoxy extends Library:
   object test extends Tests(core)
 
 object obligatory extends Library:
-  object core extends Component(urticose.core, scintillate.server, hyperbole.core, eucalyptus.core, zephyrine.core, telekinesis.core, revolution.core, jacinta.schema, jacinta.http)
+  object core extends Component(scintillate.server, hyperbole.core, eucalyptus.core, revolution.core, jacinta.schema, jacinta.http)
   object test extends Tests(core)
 
 object panopticon extends Library:
@@ -747,15 +747,15 @@ object parasite extends Library:
   object test extends Tests(core, quantitative.units)
 
 object perihelion extends Library:
-  object core extends Component(telekinesis.core, scintillate.server, gastronomy.core, eucalyptus.core)
+  object core extends Component(scintillate.server, gastronomy.core, eucalyptus.core)
   object test extends Tests(core)
 
 object phoenicia extends Library:
-  object core extends Component(hypotenuse.core, turbulence.core, quantitative.core, polaris.core)
+  object core extends Component(quantitative.core, polaris.core)
   object test extends Tests(core)
 
 object plutocrat extends Library:
-  object core extends Component(anticipation.opaque, hypotenuse.core, gossamer.core)
+  object core extends Component(gossamer.core)
   object test extends Tests(core)
 
 object polaris extends Library:
@@ -775,11 +775,11 @@ object proscenium extends Library:
   object test extends Tests(core)
 
 object probably extends Library:
-  object core extends Component(gossamer.core, chiaroscuro.core, ambience.core, turbulence.core, eucalyptus.core, coverage):
+  object core extends Component(chiaroscuro.core, ambience.core, eucalyptus.core, coverage):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object cli extends Component(core, escritoire.core, larceny.plugin)
-  object coverage extends Component(gossamer.core, dendrology.tree, digression.core)
+  object cli extends Component(core)
+  object coverage extends Component(dendrology.tree)
   object test extends Tests(cli)
 
 object profanity extends Library:
@@ -787,11 +787,11 @@ object profanity extends Library:
   object test extends Tests(core)
 
 object punctuation extends Library:
-  object core extends Component(gossamer.core, turbulence.core, honeycomb.core):
+  object core extends Component(honeycomb.core):
     def mvnDeps = Seq(mvn"org.commonmark:commonmark:0.27.0")
 
-  object html extends Component(core, honeycomb.core)
-  object ansi extends Component(core, escapade.core, harlequin.core)
+  object html extends Component(core)
+  object ansi extends Component(core, harlequin.core)
   object test extends Tests(core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
 
 object quantitative extends Library:
@@ -805,18 +805,10 @@ object revolution extends Library:
 
 object rudiments extends Library:
   object core extends Component(
-      anticipation.css,
-      anticipation.http,
-      anticipation.text,
       anticipation.http,
       anticipation.path,
-      anticipation.log,
-      anticipation.codec,
-      fulminate.core,
       vacuous.core,
-      denominative.core,
-      proscenium.core,
-      gigantism.core
+      denominative.core
     )
 
   object test extends Tests(core, abacist.core, quantitative.units)
@@ -826,11 +818,11 @@ object satirical extends Library:
   object test extends Tests(core)
 
 object savagery extends Library:
-  object core extends Component(cataclysm.core, xylophone.core, quantitative.core, iridescence.core, geodesy.core)
+  object core extends Component(cataclysm.core, xylophone.core, geodesy.core)
   object test extends Tests(core)
 
 object scintillate extends Library:
-  object server extends Component(telekinesis.core, hellenism.core)
+  object server extends Component(telekinesis.core)
 
   object servlet extends Component(server):
     def mvnDeps = Seq(mvn"jakarta.servlet:jakarta.servlet-api:6.0.0")
@@ -838,15 +830,15 @@ object scintillate extends Library:
   object test extends Tests(server, servlet)
 
 object sedentary extends Library:
-  object core extends Component(probably.core, superlunary.jvm, anthology.bundle, urticose.url, diuretic.core)
+  object core extends Component(superlunary.jvm, anthology.bundle, diuretic.core)
   object test extends Tests(core, quantitative.units)
 
 object serpentine extends Library:
-  object core extends Component(gossamer.core, nomenclature.core, ambience.core)
+  object core extends Component(nomenclature.core, ambience.core)
   object test extends Tests(core)
 
 object spectacular extends Library:
-  object core extends Component(rudiments.core, stenography.core, inimitable.core, contingency.core, wisteria.core, digression.core)
+  object core extends Component(stenography.core, inimitable.core, wisteria.core, digression.core)
   object test extends Tests(core)
 
 object stenography extends Library:
@@ -856,13 +848,13 @@ object stenography extends Library:
   object test extends Tests(core)
 
 object superlunary extends Library:
-  object core extends Component(anticipation.css, symbolism.core, anticipation.text, anticipation.http, jacinta.core, inimitable.core, gastronomy.core, ambience.core, hellenism.core, anthology.scala, austronesian.core):
+  object core extends Component(jacinta.core, gastronomy.core, anthology.scala, austronesian.core):
     def mvnDeps = Seq(
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
 
-  object jvm extends Component(core, eucalyptus.core):
+  object jvm extends Component(core):
     def mvnDeps = Seq(
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
@@ -872,7 +864,7 @@ object superlunary extends Library:
     override def finalMainClass: Task.Simple[String] = "superlunary.run"
 
 object surveillance extends Library:
-  object core extends Component(anticipation.path, eucalyptus.core, feudalism.core)
+  object core extends Component(eucalyptus.core, feudalism.core)
   object test extends Tests(core)
 
 object symbolism extends Library:
@@ -886,11 +878,11 @@ object synesthesia extends Library:
   object test extends Tests(core)
 
 object tarantula extends Library:
-  object core extends Component(jacinta.core, telekinesis.core, guillotine.core, cataclysm.core, honeycomb.core, hallucination.core, diuretic.core, eucalyptus.core, gastronomy.core)
+  object core extends Component(jacinta.core, telekinesis.core, cataclysm.core, hallucination.core, diuretic.core, gastronomy.core)
   object test extends Tests(core)
 
 object telekinesis extends Library:
-  object core extends Component(monotonous.core, gesticulate.core, urticose.url, coaxial.core, legerdemain.core)
+  object core extends Component(monotonous.core, coaxial.core, legerdemain.core)
   object test extends Tests(core)
 
 object turbulence extends Library:
@@ -898,11 +890,11 @@ object turbulence extends Library:
   object test extends Tests(core)
 
 object typonym extends Library:
-  object core extends Component(proscenium.core, gigantism.core, prepositional.core, anticipation.text)
+  object core extends Component(proscenium.core, gigantism.core, anticipation.text)
   object test extends Tests(core)
 
 object ulysses extends Library:
-  object core extends Component(gastronomy.core, cardinality.core, hypotenuse.core)
+  object core extends Component(gastronomy.core)
   object test extends Tests(core)
 
 object umbrageous extends Library:
@@ -932,11 +924,11 @@ object wisteria extends Library:
   object test extends Tests(core)
 
 object xylophone extends Library:
-  object core extends Component(wisteria.core, gossamer.core, turbulence.core, zephyrine.core, adversaria.core, typonym.core, hellenism.core, serpentine.core, urticose.core)
+  object core extends Component(zephyrine.core, adversaria.core, typonym.core, hellenism.core, urticose.core)
   object test extends Tests(core)
 
 object yossarian extends Library:
-  object core extends Component(iridescence.core, contingency.core, kaleidoscope.core, gossamer.core, turbulence.core, denominative.core)
+  object core extends Component(iridescence.core, gossamer.core, turbulence.core)
   object test extends Tests(core)
 
 object zephyrine extends Library:
@@ -948,7 +940,7 @@ object zeppelin extends Library:
   object test extends Tests(core, imperial.core, diuretic.core)
 
 object ziggurat extends Library:
-  object core extends Component(hellenism.core, monotonous.core, turbulence.core)
+  object core extends Component(hellenism.core, monotonous.core)
   object test extends Tests(core)
 
 object publishing extends Module:
