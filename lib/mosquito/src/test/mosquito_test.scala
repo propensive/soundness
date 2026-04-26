@@ -251,7 +251,7 @@ object Tests extends Suite(m"Mosquito tests"):
 
       test(m"Multiply matrices"):
         m1*m2
-      . assert(_ == Matrix[2, 2]((58, 139), (64, 154)))
+      . assert(_ == Matrix[2, 2]((58, 64), (139, 154)))
 
       test(m"Scalar multiply matrices"):
         m1*10

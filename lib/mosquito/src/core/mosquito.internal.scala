@@ -61,17 +61,20 @@ object internal:
       new Tensor(tuple.toIArray)
 
     def take[element](list: List[element], size: Int): Optional[Tensor[element, size.type]] =
-      if list.length < size then Unset
-      else
-        val arr = IArray.build[Any](size): array =>
-          var i = 0
-          var rest = list
-          while i < size do
-            array(i) = rest.head
-            rest = rest.tail
+      val array: Array[Any] = new Array(size)
+      var i = 0
+      var rest = list
+      while i < size do
+        rest match
+          case Nil =>
+            return Unset
+
+          case head :: tail =>
+            array(i) = head
+            rest = tail
             i += 1
 
-        new Tensor[element, size.type](arr)
+      new Tensor[element, size.type](array.immutable(using Unsafe))
 
 
     given addable
