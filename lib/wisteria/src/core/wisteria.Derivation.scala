@@ -39,9 +39,9 @@ extends ProductDerivation.Methods[typeclass], SumDerivation.Methods[typeclass]:
   inline given derived: [derivation] => (Reflection[derivation]) => typeclass[derivation] =
     inline summon[Reflection[derivation]] match
       case reflection: ProductReflection[derivationType] =>
-        join[derivationType](using reflection).asMatchable match
+        conjunction[derivationType](using reflection).asMatchable match
           case typeclass: typeclass[`derivation`] => typeclass
 
       case reflection: SumReflection[derivationType] =>
-        split[derivationType](using reflection).asMatchable match
+        disjunction[derivationType](using reflection).asMatchable match
           case typeclass: typeclass[`derivation`] => typeclass

@@ -49,14 +49,14 @@ object TastyTree:
   case class Expansion
     ( text: Teletype, typeName: Text, param: Optional[Text], expr: Text, source: Teletype )
 
-  private def expand(tree: TastyTree): List[Expansion] =
+  private def expand(tree: TastyTree)(using palette: TastyPalette): List[Expansion] =
     TreeDiagram.by[TastyTree](_.nodes)(tree).map: tiles =>
       node =>
         val color = (node.term, node.definitional) match
-          case (true, true)   => webColors.Tomato
-          case (false, true)  => webColors.YellowGreen
-          case (true, false)  => webColors.FireBrick
-          case (false, false) => webColors.MediumSeaGreen
+          case (true, true)   => palette.termDefinition
+          case (false, true)  => palette.typeDefinition
+          case (true, false)  => palette.termReference
+          case (false, false) => palette.typeReference
 
         val text = e"$color(${node.name})"
         val tag2: Text = if node.tag == ' ' then "▪".tt else "⟨"+node.tag+"⟩"
@@ -71,7 +71,7 @@ object TastyTree:
     . to(List)
 
 
-  given showable: TastyTree is Teletypeable =
+  given teletypeable: (palette: TastyPalette) => TastyTree is Teletypeable =
     tastyTree =>
 
       val expansions = expand(tastyTree)
@@ -83,11 +83,11 @@ object TastyTree:
 
       Scaffold[Expansion]
         ( Column(e"TASTy"): node =>
-            val param = node.param.let { param => e"$Italic(${webColors.Orange}($param))" }.or(e"")
+            val param = node.param.let { param => e"$Italic(${Fg(palette.accented)}($param))" }.or(e"")
             e"${node.text} $param",
           Column(e"Type"): node =>
             val name = StackTrace.rewrite(node.typeName.s, false)
-            if node.typeName.nil then e"" else e"${webColors.Gray}(: $Italic(${name}))",
+            if node.typeName.nil then e"" else e"${Fg(palette.outline)}(: $Italic(${name}))",
           Column(e"Source")(_.source.skip(crop)) )
 
       . tabulate(expansions)

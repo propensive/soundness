@@ -55,12 +55,12 @@ import tableStyles.minimal
 import textMetrics.uniform
 
 object Bytecode:
-  given teletypeable: Bytecode is Teletypeable = bytecode =>
+  given teletypeable: (palette: BytecodePalette) => Bytecode is Teletypeable = bytecode =>
     val table = Scaffold[Instruction]
       ( Column(e"$Bold(Source)", textAlign = TextAlignment.Right): line =>
           line.line.let: line =>
-            val source = e"${rgb"#88aabb"}(${bytecode.sourceFile.or(t"")})"
-            e"$source:${rgb"#ddddbb"}(${line.show})"
+            val source = e"${Fg(palette.bytecode)}(${bytecode.sourceFile.or(t"")})"
+            e"$source:${Fg(palette.sourceCode)}(${line.show})"
 
           . or(e""),
         Column(e"")(_.offset.show.subscripts),
@@ -69,10 +69,11 @@ object Bytecode:
 
     table.tabulate(bytecode.instructions).grid(160).render.join(e"\n")
 
-  given printable: Bytecode is Printable = _.teletype.render(_)
+  given printable: (palette: BytecodePalette) => Bytecode is Printable =
+    _.teletype.render(_)
 
-  given stack: List[Frame] is Teletypeable = stack =>
-    e"${rgb"#aaaaaa"}(${stack.reverse.map(_.teletype).join(e"┃ ", e" ┊ ", e"")})"
+  given stack: (palette: BytecodePalette) => List[Frame] is Teletypeable = stack =>
+    e"${palette.outline}(${stack.reverse.map(_.teletype).join(e"┃ ", e" ┊ ", e"")})"
 
   object Frame:
     given showable: Frame is Showable =
@@ -584,7 +585,7 @@ object Bytecode:
       case 0xFF => t"implementation-dependent"
       case _    => t"unrecognized"
 
-    def highlight: Rgb24 = cost match
+    def highlight: Chroma = cost match
       case 0 => rgb"#1a6a6c"
       case 1 => rgb"#659e24"
       case 2 => rgb"#e3a232"
@@ -843,8 +844,8 @@ object Bytecode:
     given Opcode is Teletypeable = opcode =>
       opcode.show.cut(t" ") match
         case Nil               => panic(m"opcode should never be empty")
-        case List(keyword)     => e"${opcode.highlight}(${opcode.show})"
-        case keyword :: params => e"${opcode.highlight}($keyword) $Italic(${params.join(t" ")})"
+        case List(keyword)     => e"${Fg(opcode.highlight)}(${opcode.show})"
+        case keyword :: params => e"${Fg(opcode.highlight)}($keyword) $Italic(${params.join(t" ")})"
 
     given Opcode is Showable =
       case Nop                  => t"nop"

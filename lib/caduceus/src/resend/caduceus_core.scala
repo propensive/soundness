@@ -32,6 +32,7 @@
                                                                                                   */
 package caduceus
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import fulminate.*
@@ -51,9 +52,11 @@ import zephyrine.*
 
 import alphabets.base64.standard
 import charEncoders.utf8
+import environments.java
 import errorDiagnostics.stackTraces
 import jsonPrinters.minimal
-import stdioSources.virtualMachine.ansi
+import stdios.virtualMachine
+import termcaps.environment
 
 package couriers:
   given resend: (Tactic[CourierError], Online, HttpEvent is Loggable, HttpClient)

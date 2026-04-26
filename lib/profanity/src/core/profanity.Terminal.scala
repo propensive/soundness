@@ -35,6 +35,7 @@ package profanity
 import anticipation.*
 import contingency.*
 import gossamer.*
+import iridescence.*
 import parasite.*
 import proscenium.*
 import rudiments.*
@@ -61,7 +62,7 @@ extends Interactivity[TerminalEvent]:
   val rows0: Promise[Int] = Promise()
   val columns0: Promise[Int] = Promise()
 
-  var mode: Optional[Luminance] = Unset
+  var mode: Optional[Luminosity] = Unset
   var rows: Optional[Int] = Unset
   var columns: Optional[Int] = Unset
 
@@ -105,7 +106,7 @@ extends Interactivity[TerminalEvent]:
         events.put(resize)
 
       case bgColor@TerminalInfo.BgColor(red, green, blue) =>
-        mode = if dark(red, green, blue) then Luminance.Dark else Luminance.Light
+        mode = if dark(red, green, blue) then Luminosity.Dark else Luminosity.Light
         events.put(bgColor)
 
       case other =>

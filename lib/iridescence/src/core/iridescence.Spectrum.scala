@@ -32,33 +32,46 @@
                                                                                                   */
 package iridescence
 
-import anticipation.*
-import contextual.*
-import fulminate.*
-import rudiments.*
+import denominative.*
+import prepositional.*
 
-import errorDiagnostics.empty
+object Spectrum:
+  def apply[color <: Color: Perceptual in Srgb](colors0: List[Color in color])
+  :     Spectrum in color =
 
-object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
-  def initial: Option[Rgb24] = None
+    var colors = colors0.to(Set)
 
-  def parse(state: Option[Rgb24], next: Text): Option[Rgb24] =
-    if next.s.length == 7 && next.s.startsWith("#") then parse(state, Text(next.s.substring(1).nn))
-    else if next.s.length == 6 && next.s.all: char =>
-      char.isDigit || ((char | 32) >= 'a' && (char | 32) <= 'f')
-    then
-      val red = Integer.parseInt(next.s.substring(0, 2), 16)
-      val green = Integer.parseInt(next.s.substring(2, 4), 16)
-      val blue = Integer.parseInt(next.s.substring(4, 6), 16)
+    def assign(target: Srgb): Color in color =
+      if colors.nil then colors = colors0.to(Set)
 
-      Some(Rgb24(red, green, blue))
+      val chosen = colors.minBy: candidate =>
+        val srgb = candidate.in[Srgb]
+        val dr = srgb.red - target.red
+        val dg = srgb.green - target.green
+        val db = srgb.blue - target.blue
+        dr*dr + dg*dg + db*db
 
-    else throw InterpolationError(m"""the color must be in the form ${Text("rgb\"#rrggbb\"")} or
-        rgb"rrggbb" where rr, gg and bb are 2-digit hex values""", 0)
+      colors -= chosen
+      chosen
 
-  def insert(state: Option[Rgb24], value: Nothing): Option[Rgb24] =
-    throw InterpolationError:
-      m"substitutions into an ${Text("rgb\"\"")} interpolator are not supported"
+    new Spectrum:
+      type Form = color
+      val black:   Color in color = assign(Srgb(0, 0, 0))
+      val white:   Color in color = assign(Srgb(1, 1, 1))
+      val red:     Color in color = assign(Srgb(1, 0, 0))
+      val green:   Color in color = assign(Srgb(0, 1, 0))
+      val blue:    Color in color = assign(Srgb(0, 0, 1))
+      val yellow:  Color in color = assign(Srgb(1, 1, 0))
+      val cyan:    Color in color = assign(Srgb(0, 1, 1))
+      val magenta: Color in color = assign(Srgb(1, 0, 1))
 
-  def skip(state: Option[Rgb24]): Option[Rgb24] = state
-  def complete(color: Option[Rgb24]): Rgb24 = color.get
+trait Spectrum:
+  type Form <: Color
+  val red: Color in Form
+  val yellow: Color in Form
+  val green: Color in Form
+  val blue: Color in Form
+  val cyan: Color in Form
+  val magenta: Color in Form
+  val black: Color in Form
+  val white: Color in Form

@@ -32,34 +32,33 @@
                                                                                                   */
 package iridescence
 
-import anticipation.*
+import prepositional.*
 
 object Hsl:
-  given chromatic: Hsl is Chromatic = _.srgb.rgb24.asInt
+  given perceptual: Hsl is Perceptual in Srgb =
+    color =>
+      if color.saturation == 0 then Srgb(color.lightness, color.lightness, color.lightness) else
+        val v2 =
+          if color.lightness < 0.5 then color.lightness*(1 + color.saturation)
+          else (color.lightness + color.saturation - color.saturation*color.lightness)
 
-case class Hsl(hue: Double, saturation: Double, lightness: Double):
-  def saturate: Hsv = Hsv(hue, 1, lightness)
-  def desaturate: Hsv = Hsv(hue, 0, lightness)
-  def rotate(degrees: Double): Hsv = Hsv(unitary(hue + degrees/360), saturation, lightness)
-  def pure: Hsv = Hsv(hue, 1, 0)
+        val v1 = 2*color.lightness - v2
 
-  def srgb: Srgb =
-    if saturation == 0 then Srgb(lightness, lightness, lightness)
-    else
-      val v2 =
-        if lightness < 0.5 then lightness*(1 + saturation)
-        else (lightness + saturation - saturation*lightness)
+        def convert(h: Double): Double =
+          val vh = unitary(h)
 
-      val v1 = 2*lightness - v2
+          if 6*vh < 1 then v1 + (v2 - v1)*6*vh
+          else if 2*vh < 1 then v2
+          else if 3*vh < 2 then v1 + (v2 - v1)*((2.0/3) - vh)*6
+          else v1
 
-      def convert(h: Double): Double =
-        val vh = unitary(h)
-        if 6*vh < 1 then v1 + (v2 - v1)*6*vh
-        else if 2*vh < 1 then v2
-        else if 3*vh < 2 then v1 + (v2 - v1)*((2.0/3) - vh)*6
-        else v1
+        Srgb(convert(color.hue + (1.0/3.0)), convert(color.hue), convert(color.hue - (1.0/3.0)))
 
-      Srgb(convert(hue + (1.0/3.0)), convert(hue), convert(hue - (1.0/3.0)))
+case class Hsl(hue: Double, saturation: Double, lightness: Double) extends Color:
+  type Form = Hsl
 
-  def css: Text =
-    Text(s"hsl(${(hue*360).toInt}, ${(saturation*100).toInt}%, ${(lightness*100).toInt}%)")
+// case class Hsl(hue: Double, saturation: Double, lightness: Double) extends Color:
+//   def saturate: Hsv = Hsv(hue, 1, lightness)
+//   def desaturate: Hsv = Hsv(hue, 0, lightness)
+//   def rotate(degrees: Double): Hsv = Hsv(unitary(hue + degrees/360), saturation, lightness)
+//   def pure: Hsv = Hsv(hue, 1, 0)

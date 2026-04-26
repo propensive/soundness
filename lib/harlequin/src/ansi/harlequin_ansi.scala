@@ -36,34 +36,52 @@ import escapade.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import iridescence.*
+import prepositional.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
 
+type ScalaSyntaxPalette = Palette:
+  type Form = Srgb
+  def scalaError: Color in Srgb
+  def scalaNumber: Color in Srgb
+  def scalaString: Color in Srgb
+  def scalaIdentifier: Color in Srgb
+  def scalaTerm: Color in Srgb
+  def scalaType: Color in Srgb
+  def scalaKeyword: Color in Srgb
+  def scalaSymbol: Color in Srgb
+  def scalaParenthesis: Color in Srgb
+  def scalaModifier: Color in Srgb
+  def scalaComment: Color in Srgb
+  def subdued: Color in Srgb
+  def accented: Color in Srgb
+  def margin: Color in Srgb
+
 package syntaxHighlighting:
   import Accent.*
 
-  given teletypeable: SourceToken is Teletypeable =
-    case SourceToken(text, Error)    => e"${rgb"#cc0033"}($text)"
-    case SourceToken(text, Number)   => e"${rgb"#cc3366"}($text)"
-    case SourceToken(text, Modifier) => e"${rgb"#ff9966"}($text)"
-    case SourceToken(text, Keyword)  => e"${rgb"#ff6633"}($text)"
-    case SourceToken(text, Ident)    => e"${rgb"#ffcc99"}($text)"
-    case SourceToken(text, Term)     => e"${rgb"#ffcc33"}($text)"
-    case SourceToken(text, Typed)    => e"${rgb"#00cc99"}($text)"
-    case SourceToken(text, String)   => e"${rgb"#99ffff"}($text)"
-    case SourceToken(text, Parens)   => e"${rgb"#cc6699"}($text)"
-    case SourceToken(text, Symbol)   => e"${rgb"#cc3366"}($text)"
-    case SourceToken(text, Unparsed) => e"${rgb"#2288aa"}($Italic($text))"
+  given teletypeable: (palette: ScalaSyntaxPalette) => Token is Teletypeable =
+    case Token(text, Error)    => e"${palette.scalaError}($text)"
+    case Token(text, Number)   => e"${palette.scalaNumber}($text)"
+    case Token(text, Modifier) => e"${palette.scalaModifier}($text)"
+    case Token(text, Keyword)  => e"${palette.scalaKeyword}($text)"
+    case Token(text, Ident)    => e"${palette.scalaIdentifier}($text)"
+    case Token(text, Term)     => e"${palette.scalaTerm}($text)"
+    case Token(text, Typed)    => e"${palette.scalaType}($text)"
+    case Token(text, String)   => e"${palette.scalaString}($text)"
+    case Token(text, Parens)   => e"${palette.scalaParenthesis}($text)"
+    case Token(text, Symbol)   => e"${palette.scalaSymbol}($text)"
+    case Token(text, Unparsed) => e"${palette.scalaComment}($Italic($text))"
 
-  given numbered: SourceCode is Teletypeable = source =>
+  given numbered: (palette: ScalaSyntaxPalette) => SourceCode is Teletypeable = source =>
     val indent = source.lastLine.show.length
-    lazy val error = e"${rgb"#cc0033"}(║)"
+    lazy val error = e"${Fg(palette.subdued)}(║)"
 
     val markup = source.focus.lay(e""):
       case ((startLine, startColumn), (endLine, endColumn)) =>
         if startLine != endLine then e"\n" else
-          val foreground = rgb"#ff0033"
+          val foreground = Fg(palette.scalaError)
           if startColumn == endColumn
           then e"\n${t" "*(startColumn + indent + 2)}$foreground(╱╲)"
           else e"\n${t" "*(startColumn + indent + 3)}$foreground(${t"‾"*(endColumn - startColumn)})"
@@ -76,15 +94,15 @@ package syntaxHighlighting:
 
       . let: focus =>
           val prefix = lineNo.show.pad(indent, Rtl)
-          e"${Bg(rgb"#003333")}(${rgb"#99cc99"}($prefix)${rgb"#336666"}(┋))  $content"
+          e"${Bg(palette.margin)}(${Fg(palette.accented)}($prefix)${Fg(palette.subdued)}(┋))  $content"
 
       . or:
           val prefix = lineNo.show.pad(indent, Rtl)
-          e"${Bg(rgb"#003333")}(${rgb"#99cc99"}($prefix)${rgb"#336666"}(┋)) $error$content"
+          e"${Bg(palette.margin)}(${Fg(palette.accented)}($prefix)${Fg(palette.subdued)}(┋)) $error$content"
 
     . join(e"", e"\n", markup)
 
-  given unnumbered: SourceCode is Teletypeable = source =>
+  given unnumbered: ScalaSyntaxPalette => SourceCode is Teletypeable = source =>
     (source.offset to source.lastLine).map: lineNo =>
       source(lineNo).map(_.teletype).join
 

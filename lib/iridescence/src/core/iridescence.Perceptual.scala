@@ -30,48 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hyperbole
+package iridescence
 
-import scala.annotation.*
+import prepositional.*
 
-import soundness.*
+object Perceptual:
+  given identity: [color <: Color] => color is Perceptual in color = color => color
 
-object Tests extends Suite(m"Hyperbole Tests"):
-  def run(): Unit =
-    test(m"Produce hello-world tree"):
-      Introspect.syntax(true):
-        println("hello world")
+trait Perceptual:
+  type Self <: Color
+  type Form <: Color
 
-    . assert: result =>
-        result
-        ==
-        TastyTree
-          ( ' ',
-            "Unit",
-            "Apply",
-            "scala.Predef.println(\"hello world\")",
-            "println(\"hello world\")",
-            List
-              ( TastyTree
-                  ( ' ',
-                    "",
-                    "Ident",
-                    "scala.Predef.println",
-                    "println",
-                    Nil,
-                    "println",
-                    true,
-                    false ),
-                TastyTree
-                  ( 'a',
-                    "\"hello world\"",
-                    "Literal",
-                    "\"hello world\"",
-                    "        \"hello world\"",
-                    Nil,
-                    "\"hello world\"",
-                    true,
-                    false ) ),
-            Unset,
-            true,
-            false )
+  def convert(color: Self): Form

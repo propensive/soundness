@@ -8,11 +8,13 @@ soon as it happens.
 ### Capturing the TTY
 
 Before keypresses can be streamed as events, the TTY must be "captured". This is as simple as,
+
 ```scala
 Tty.capture {
   // TTY operations are available here
 }
 ```
+
 but may not always succeed, for example if the JVM is not running inside a TTY, or if the TTY has already
 been captured, or if the JNI calls fail for another reason. These exceptions are checked.
 
@@ -21,7 +23,8 @@ been captured, or if the JNI calls fail for another reason. These exceptions are
 Within a `Tty.capture` block, a contextual `Tty` instance is made available, and `Tty.stream` can be
 called which will, by default, return a `LazyList[Keypress]`, where `Keypress` is Profanity's standard
 representation of a keypress event. `Keypress` is an enumeration providing the following cases:
-- `Printable(c: Char)`, a keypress of a printable character, for example, `Shift+T` is `Printable('T')`
+
+- `Displayable(c: Char)`, a keypress of a printable character, for example, `Shift+T` is `Displayable('T')`
 - `Function(i: Int)`, a function key keypress, where `i` is the function key number, for example `F2` is `Function(2)`
 - `Ctrl(c: Char)`, a key combination of `Ctrl` and another character, for example, `Ctrl+C` is `Ctrl('c')`
 - a keypress of one of the following keys: `Enter`, `Escape`, `Tab`, `Backspace`, `Delete`, `PageUp`,
@@ -79,6 +82,3 @@ _on_ or _off_) to be specified.
 ### Limitations
 
 Profanity does not currently support Windows.
-
-
-

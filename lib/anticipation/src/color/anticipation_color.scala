@@ -30,35 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package iridescence
+package anticipation
 
-import anticipation.*
-import rudiments.*
-
-object Rgb24Opaque:
-  opaque type Rgb24 = Int
-
-  object Rgb24:
-    inline given underlying: Underlying[Rgb24, Int] = !!
-    given chromatic: Rgb24 is Chromatic = _.asInt
-
-    def apply(red: Int, green: Int, blue: Int): Rgb24 =
-      ((red&255) << 16) + ((green&255) << 8) + (blue&255)
-
-    def apply(packedInt: Int): Rgb24 = packedInt & 0x00ffffff
-
-
-  extension (color: Rgb24)
-    def red: Int = (color >> 16) & 255
-
-    def green: Int = (color >> 8) & 255
-    def blue: Int = color&255
-
-    def srgb: Srgb = Srgb(red/255.0, green/255.0, blue/255.0)
-    def asInt: Int = color
-
-    def hex: Text =
-      List(red, green, blue).fuse("#"):
-        state+(next.hex.pipe { s => if s.s.length < 2 then "0"+s else s })
-
-      . tt
+export internal2.Chroma

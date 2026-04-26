@@ -30,48 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hyperbole
+package harlequin
 
-import scala.annotation.*
+import anticipation.*
+import gossamer.*
+import spectacular.*
 
-import soundness.*
+object Token:
+  val Newline: Token = Token("\n", Accent.Unparsed)
+  given showable: Token is Showable = _.text
 
-object Tests extends Suite(m"Hyperbole Tests"):
-  def run(): Unit =
-    test(m"Produce hello-world tree"):
-      Introspect.syntax(true):
-        println("hello world")
+case class Token(text: Text, accent: Accent):
+  def length: Int = text.length
 
-    . assert: result =>
-        result
-        ==
-        TastyTree
-          ( ' ',
-            "Unit",
-            "Apply",
-            "scala.Predef.println(\"hello world\")",
-            "println(\"hello world\")",
-            List
-              ( TastyTree
-                  ( ' ',
-                    "",
-                    "Ident",
-                    "scala.Predef.println",
-                    "println",
-                    Nil,
-                    "println",
-                    true,
-                    false ),
-                TastyTree
-                  ( 'a',
-                    "\"hello world\"",
-                    "Literal",
-                    "\"hello world\"",
-                    "        \"hello world\"",
-                    Nil,
-                    "\"hello world\"",
-                    true,
-                    false ) ),
-            Unset,
-            true,
-            false )
+  def snip(point: Int): (Token, Token) =
+    (Token(text.keep(point), accent), Token(text.skip(point), accent))

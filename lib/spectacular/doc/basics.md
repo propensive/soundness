@@ -1,4 +1,5 @@
 All Spectacular terms and types are defined in the `spectacular` package:
+
 ```scala
 import spectacular.*
 ```
@@ -33,12 +34,12 @@ however technical.
 Thus, messages which are intended for end-users should use `Show` and
 "internal" messages should use `Debug`.
 
-
 ### Defining `Show` and `Debug` instances
 
 Creating a given instance of `Show` or `Debug` is simple in both cases. Both
 are single-abstract-method traits, so definitions are often take just a single
 line. For example,
+
 ```scala
 given Debug[Short] = short => t"Short(${short.toString})"
 ```
@@ -55,6 +56,7 @@ some parameters do not have their own `Debug` instance, since a `Show`
 typeclass will be used as a fallback, and `toString` as a last resort.
 
 For example, the case class,
+
 ```scala
 import anticipation.Text
 
@@ -62,12 +64,15 @@ class Id(id: String) { override def toString(): String = id }
 case class Person(id: Id, name: Text, age: Int)
 val person = Person(Id("jqm"), t"Jennifer", 61).debug
 ```
+
 will produce the text,
+
 ```
 Person(id=jqm,name=t"Jennifer",age=61)
 ```
+
 using the `toString` of `Id` and the `Debug` instances (provided by
-Spectacular) for `Text` and `age`.  Note that `Text`'s `Debug` instance
+Spectacular) for `Text` and `age`. Note that `Text`'s `Debug` instance
 produces pastable code, rather than simply returning the exact same `Text`
 value, while its `Show` instance does exactly that.
 
@@ -79,21 +84,25 @@ scenarios, and without specifying, Spectacular will not presume any particular
 
 But by importing a `BooleanStyle` value from the `spectacular.booleanStyles`
 package, a style can be chosen, for example,
+
 ```scala
 import turbulence.Out
-import turbulence.stdioSources.jvm
+import turbulence.stdios.jvm
 import booleanStyles.yesNo
 
 def run(): Unit = Out.println(true.show)
 ```
+
 will print the text `yes`.
 
 Several `BooleanStyle` options are provided in the `booleanStyles` package,
- - `yesNo` - `yes` or `no`
- - `onOff` - `on` or `off`
- - `trueFalse` - `true` or `false`
- - `oneZero` - `1` (`true`) or `0` (`false`)
-and it is trivial to provide alternatives, for example:
+
+- `yesNo` - `yes` or `no`
+- `onOff` - `on` or `off`
+- `trueFalse` - `true` or `false`
+- `oneZero` - `1` (`true`) or `0` (`false`)
+  and it is trivial to provide alternatives, for example:
+
 ```scala
 import gossamer.*
 given posNeg: BooleanStyle = BooleanStyle(t"+", t"-")
@@ -128,7 +137,7 @@ While encoding to text will normally succeed in all cases, it's common for
 decoder (or deserialization) to fail, if the input text is in the wrong format.
 However, the API of `Decoder` does not include any optionality in the signature
 of its `decode` method. That's because _capabilities_ should be used to handle
-failures, with greater flexibility.  Given `Decoder` instances should include
+failures, with greater flexibility. Given `Decoder` instances should include
 appropriate `using` clauses to demand the capability to raise errors. If using
 [Contingency](https://github.com/propensive/contingency/) for error handling, that
 implies a `Raises` instance, while Scala's checked exceptions require a

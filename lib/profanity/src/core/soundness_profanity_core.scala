@@ -33,9 +33,9 @@
 package soundness
 
 export profanity
-. { BackgroundColorDetection, BracketedPasteMode, DismissError, Interaction, Interactivity,
-    Keyboard, Keypress, LineEditor, Console, Question, SelectMenu, Terminal, TerminalError,
-    TerminalEvent, TerminalFocusDetection, Luminance, TerminalSizeDetection, interactive,
+. { BracketedPasteMode, DismissError, Interaction, Interactivity, Keyboard, Keypress,
+    LineEditor, Console, Question, SelectMenu, Terminal, TerminalError, TerminalEvent,
+    TerminalFocusDetection, LuminosityDetection, TerminalSizeDetection, interactive,
     UnixSignal, WindowsSignal }
 
 package keyboards:
@@ -43,4 +43,4 @@ package keyboards:
 
 package terminalOptions:
   export profanity.terminalOptions
-  . { bracketedPasteMode, backgroundColorDetection, terminalFocusDetection, terminalSizeDetection }
+  . { bracketedPasteMode, luminanceDetection, terminalFocusDetection, terminalSizeDetection }

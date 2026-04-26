@@ -32,6 +32,8 @@
                                                                                                   */
 package urticose
 
+import iridescence.*
+import prepositional.*
 import proscenium.*
 
 extension (inline context: StringContext)
@@ -42,3 +44,7 @@ extension (inline context: StringContext)
   transparent inline def host(): Hostname = ${Hostname.expand('context)}
 
 type HttpUrl = Url["https" | "http"]
+
+type UrlPalette = Palette:
+  type Form = Srgb
+  def link: Color in Srgb

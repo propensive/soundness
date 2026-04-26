@@ -40,14 +40,44 @@ import contingency.*
 import digression.*
 import escapade.*
 import fulminate.*
+import iridescence.*
+import prepositional.*
 import turbulence.*
 import vacuous.*
 
+import termcaps.environment
+import themes.solarized
+import luminosity.dark
+
 abstract class Suite(suiteName: Message) extends Testable(suiteName):
-  val suiteIo = safely(stdioSources.virtualMachine.ansi).vouch
+  val suiteIo = safely(stdios.virtualMachine).vouch
 
   var runner0: Runner[Report] =
     given stdio: Stdio = suiteIo
+
+    given palette: (theme: Theme) => TestPalette = new Palette:
+      type Form = Srgb
+      val yellow:      Color in Srgb = theme.spectrum.yellow.in[Srgb]
+      val red:         Color in Srgb = theme.spectrum.red.in[Srgb]
+      val blue:        Color in Srgb = theme.spectrum.blue.in[Srgb]
+
+      def warning:     Color in Srgb = yellow
+      def critical:    Color in Srgb = theme.spectrum.magenta.in[Srgb]
+      def benchmark:   Color in Srgb = theme.spectrum.cyan.in[Srgb]
+      def mixed:       Color in Srgb = blue
+      def informative: Color in Srgb = blue
+      def cold:        Color in Srgb = mix(yellow, red, 0.2)
+      def warm:        Color in Srgb = mix(yellow, red, 0.5)
+      def hot:         Color in Srgb = mix(yellow, red, 0.8)
+      def accented:    Color in Srgb = theme.spectrum.cyan.in[Srgb]
+      def highlight:   Color in Srgb = accent(yellow)
+      def pass:        Color in Srgb = theme.spectrum.green.in[Srgb]
+      def fail:        Color in Srgb = red
+      def detail:      Color in Srgb = blue
+      def background:  Color in Srgb = theme.background.in[Srgb]
+      def foreground:  Color in Srgb = theme.foreground.in[Srgb]
+      def subdued:     Color in Srgb = subdue(theme.foreground.in[Srgb], 0.5)
+
     try Runner() catch case error: EnvironmentError =>
       jl.System.out.nn.println(StackTrace(error).teletype.render)
       ???
