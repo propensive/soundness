@@ -41,6 +41,7 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -48,51 +49,64 @@ import vacuous.*
 
 object Authority:
   given showable: Authority is Showable = auth =>
-    t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host}${auth.port.let(_.show).lay(t"")(t":"+_)}"
+    t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host.show}${auth.port.let(_.show).lay(t"")(t":"+_)}"
 
-  given decodable: Tactic[HostnameError] => Tactic[UrlError] => Authority is Decodable in Text =
+  given decodable: Tactic[HostnameError]
+        => Tactic[IpAddressError]
+        => Tactic[UrlError]
+        => Authority is Decodable in Text =
     parse(_)
 
-  private def parse(value: Text): Authority raises HostnameError raises UrlError =
+  private def parse(value: Text)
+  :     Authority raises HostnameError raises IpAddressError raises UrlError =
     import UrlError.{Expectation, Reason}, Expectation.*, Reason.*
+
+    def parsePort(portText: Text, offset: Ordinal): Int =
+      safely(portText.s.toInt).match
+        case port: Int if port >= 0 && port <= 65535 => port
+        case port: Int => raise(UrlError(value, offset, Expected(PortRange))) yet 0
+        case _         => raise(UrlError(value, offset, Expected(Number))) yet 0
+
+    def parseHostPort(hostPort: Text, base: Ordinal, userInfo: Optional[Text]): Authority =
+      if hostPort.at(Prim) == '[' then
+        safely(hostPort.where(_ == ']')).asMatchable match
+          case Zerary(close) =>
+            val ipv6 = hostPort.segment(Sec till close).decode[Ipv6]
+            val afterClose: Ordinal = close + 1
+
+            if afterClose.n0 >= hostPort.limit.n0 then Authority(ipv6, userInfo)
+            else if hostPort.at(afterClose) == ':' then
+              val portOffset: Ordinal = base + (afterClose.n0 + 1)
+              val port = parsePort(hostPort.after(afterClose), portOffset)
+              Authority(ipv6, userInfo, port)
+            else
+              val errorOffset: Ordinal = base + afterClose.n0
+              raise(UrlError(value, errorOffset, Expected(More))) yet
+                Authority(ipv6, userInfo)
+
+          case _ =>
+            val errorOffset: Ordinal = base + (hostPort.limit.n0 - 1).max(0)
+            raise(UrlError(value, errorOffset, Expected(More))) yet
+              Authority(Ipv6(0L, 0L), userInfo)
+      else
+        safely(hostPort.where(_ == ':')).asMatchable match
+          case Zerary(colon) =>
+            val portOffset: Ordinal = base + (colon.n0 + 1)
+            val port = parsePort(hostPort.after(colon), portOffset)
+            Authority(hostPort.before(colon).decode[Host], userInfo, port)
+
+          case _ =>
+            Authority(hostPort.decode[Host], userInfo)
 
     safely(value.where(_ == '@')).asMatchable match
       case Zerary(arobase) =>
-        safely(value.where(_ == ':', arobase + 1)).asMatchable match
-          case Zerary(colon) =>
-            safely(value.after(colon).s.toInt).match
-              case port: Int if port >= 0 && port <= 65535 => port
-
-              case port: Int =>
-                raise(UrlError(value, colon + 1, Expected(PortRange))) yet 0
-
-              case _ =>
-                raise(UrlError(value, colon + 1, Expected(Number))) yet 0
-
-            . pipe:
-                Authority
-                  ( value.segment((arobase + 1) till colon).decode[Hostname],
-                    value.keep(arobase.n0),
-                    _ )
-
-          case _ =>
-            Authority(value.after(arobase).decode[Hostname], value.before(arobase))
+        val hostStart: Ordinal = arobase + 1
+        parseHostPort(value.after(arobase), hostStart, value.keep(arobase.n0))
 
       case _ =>
-        value.where(_ == ':').asMatchable match
-          case Zerary(colon) =>
-            safely(value.after(colon).s.toInt).match
-              case port: Int if port >= 0 && port <= 65535 => port
+        parseHostPort(value, Prim, Unset)
 
-              case port: Int =>
-                raise(UrlError(value, colon + 1, Expected(PortRange))) yet 0
-
-              case _ =>
-                raise(UrlError(value, colon + 1, Expected(Number))) yet 0
-
-            . pipe(Authority(value.before(colon).decode[Hostname], Unset, _))
-
-          case _ =>
-            Authority(value.decode[Hostname])
-
-case class Authority(host: Hostname, userInfo: Optional[Text] = Unset, port: Optional[Int] = Unset)
+case class Authority
+  ( host: Host,
+    userInfo: Optional[Text] = Unset,
+    port: Optional[Int] = Unset )
