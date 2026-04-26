@@ -53,6 +53,8 @@ object Checker:
       out += Violation
               ( file, state.prevLineNum, 1, "R15-annotation-orphan",
                 "annotation is not followed by a declaration" )
+    state.pendingR11.foreach(out += _)
+    state.pendingR11 = Nil
     finalizeCaseRun(state, out)
     checkCompanionOrdering(file, state, out)
     LazyList.from(out)
@@ -88,6 +90,8 @@ object Checker:
     var prevDeclByIndent:     mutable.Map[Int, DeclShape] = mutable.Map.empty
     var openParens:           Int                        = 0
     var usingNameColumn:      Option[Int]                = None
+    var prevLineHadAlignment: Boolean                    = false
+    var pendingR11:           List[Violation]            = Nil
     val typeDecls:            mutable.Map[String, Int]   = mutable.Map.empty
     val objectDecls:          mutable.Map[String, Int]   = mutable.Map.empty
 
@@ -126,6 +130,7 @@ object Checker:
       case Phase.Body         => ()
 
     checkTokens(lineNum, line, emit)
+    checkCommas(s, lineNum, line, isBlank, out)
     checkHardSpace(rest, leadingCols, emit)
     checkChainContinuation(s, lineNum, leadingCols, isBlank, firstReal, emit)
     checkReturnTypeBlank(s, lineNum, isBlank, rest, emit)
@@ -265,6 +270,10 @@ object Checker:
     if isBlank then ()
     else firstReal.foreach: head =>
       if head.text == "import" then
+        if importHasAlias(rest) then
+          emit
+           ( 1, "R9-aliased-import",
+             "top-level imports must not use aliases (`as` or `=>`); write the full path" )
         val path  = importPath(rest)
         val group = classifyImport(path)
 
@@ -300,6 +309,9 @@ object Checker:
              "missing blank line between imports and first declaration" )
         s.phase = Phase.Body
 
+  private def importHasAlias(rest: IndexedSeq[Token]): Boolean =
+    rest.exists(t => t.kind == Kind.Code && (t.text == "as" || t.text == "=>"))
+
   private def importPath(rest: IndexedSeq[Token]): String =
     val nonWs = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment).toList
     nonWs match
@@ -333,35 +345,77 @@ object Checker:
       cols(i + 1) = cols(i) + arr(i).text.length
       i += 1
 
-    checkCommas(arr, cols, emit)
+    // Comma checks need state for alignment-run detection.
+    // We pass them through directly via the State held in the closure.
     checkBracketInteriors(arr, cols, emit)
     checkComments(lineNum, arr, cols, emit)
     checkOperatorSpacing(arr, cols, emit)
     checkSymbolicMethodNames(arr, cols, emit)
 
   private def checkCommas
-    ( arr:  Array[Token],
-      cols: Array[Int],
-      emit: (Int, String, String) => Unit )
+    ( s:       State,
+      lineNum: Int,
+      line:    IndexedSeq[Token],
+      isBlank: Boolean,
+      out:     mutable.ListBuffer[Violation] )
   :   Unit =
+
+    val arr  = line.toArray
+    val cols = scala.Array.ofDim[Int](arr.length + 1)
+    cols(0) = 1
+    var k = 0
+    while k < arr.length do
+      cols(k + 1) = cols(k) + arr(k).text.length
+      k += 1
+
+    val deferred = mutable.ListBuffer[Violation]()
+    var hasAlignment = false
 
     var i = 0
     while i < arr.length do
       if arr(i).text == "," && arr(i).kind == Kind.Code then
-        if i > 0 && arr(i - 1).kind == Kind.Space && arr(i - 1).text.length > 0
-        then emit(cols(i), "R11-comma-space-before", "no space is permitted before a comma")
+        if i > 0 && arr(i - 1).kind == Kind.Space && arr(i - 1).text.length > 0 then
+          out += Violation
+                  ( s.file, lineNum, cols(i), "R11-comma-space-before",
+                    "no space is permitted before a comma" )
 
         if i + 1 < arr.length then
           val next = arr(i + 1)
           if next.kind != Kind.Space then
-            emit
-             ( cols(i + 1), "R11-comma-space-after",
-               "exactly one space is required after a comma" )
+            out += Violation
+                    ( s.file, lineNum, cols(i + 1), "R11-comma-space-after",
+                      "exactly one space is required after a comma" )
           else if next.text != " " then
-            emit
-             ( cols(i + 1), "R11-comma-space-after",
-               "exactly one space is required after a comma" )
+            // Extra spaces after comma — possibly an alignment-run column.
+            // Defer until we know whether neighbouring lines also have alignment.
+            hasAlignment = true
+            if !next.text.startsWith("\n") then
+              deferred += Violation
+                           ( s.file, lineNum, cols(i + 1), "R11-comma-space-after",
+                             "exactly one space is required after a comma" )
       i += 1
+
+    // Validate previously deferred (from line N-1) against current line:
+    // if current line also has alignment, the previous run continues — suppress.
+    if hasAlignment then s.pendingR11 = Nil
+    else
+      s.pendingR11.foreach(out += _)
+      s.pendingR11 = Nil
+
+    // Current candidates: keep if previous line also had alignment (then run is
+    // valid by both directions). Otherwise defer to next line.
+    if s.prevLineHadAlignment && hasAlignment then
+      // Already in a run — current line's deferred violations are part of run.
+      ()
+    else if hasAlignment then
+      // Need to confirm with next line.
+      s.pendingR11 = deferred.toList
+    else
+      // No alignment on current — emit any candidates immediately.
+      deferred.foreach(out += _)
+
+    if !isBlank then s.prevLineHadAlignment = hasAlignment
+    else s.prevLineHadAlignment = false
 
   private def checkBracketInteriors
     ( arr:  Array[Token],
@@ -441,8 +495,56 @@ object Checker:
                "a line comment must be followed by exactly one space" )
       i += 1
 
-  private val SpacedOps: Set[String] =
-    Set("=>", "->", "<-", "<:", ">:", "&", "|", "&~", "?=>")
+  private val CheckedOps: Set[String] =
+    Set("+", "-", "*", "/", "%", "&", "|", "^", "<", ">",
+        "<<", ">>", ">>>", "&&", "||", "==", "!=", "<=", ">=",
+        "=>", "->", "<-", "<:", ">:", "&~", "?=>")
+
+  private def operatorPrecedence(op: String): Int =
+    if op.isEmpty then 0
+    else op.head match
+      case c if c.isLetter        => 1
+      case '|'                    => 2
+      case '^'                    => 3
+      case '&'                    => 4
+      case '=' | '!'              => 5
+      case '<' | '>'              => 6
+      case ':'                    => 7
+      case '+' | '-'              => 8
+      case '*' | '/' | '%'        => 9
+      case _                      => 10
+
+  private case class OpHit
+                       ( text:       String,
+                         idx:        Int,
+                         col:        Int,
+                         leftSpace:  Boolean,
+                         rightSpace: Boolean )
+
+  private val NonOperandWords: Set[String] = Set(
+    "case", "if", "then", "else", "do", "while", "for", "yield", "return",
+    "match", "with", "extends", "derives", "given", "using", "new", "throw",
+    "try", "catch", "finally", "import", "package", "def", "val", "var",
+    "lazy", "object", "class", "trait", "enum", "type", "private", "protected",
+    "public", "final", "sealed", "abstract", "implicit", "override", "inline",
+    "transparent", "infix", "open", "opaque", "erased", "tracked",
+    // Custom infix words from the syntax doc + common Range/iterator infixes
+    "is", "of", "in", "by", "to", "under", "on", "raises", "until"
+  )
+
+  private def isBinaryContext(arr: Array[Token], i: Int): Boolean =
+    var j = i - 1
+    while j >= 0 && (arr(j).kind == Kind.Space || arr(j).kind == Kind.Comment) do j -= 1
+    if j < 0 then false
+    else if arr(j).kind == Kind.Strs then true
+    else if arr(j).kind == Kind.Code then
+      val t = arr(j).text
+      if t == ")" || t == "]" then true
+      else if t.isEmpty then false
+      else
+        val c = t.head
+        (c.isLetterOrDigit || c == '_' || c == '`') && !NonOperandWords.contains(t)
+    else false
 
   private def checkOperatorSpacing
     ( arr:  Array[Token],
@@ -452,23 +554,81 @@ object Checker:
 
     val firstSemantic = arr.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment)
     val lastSemantic  = arr.lastIndexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+    val frames = mutable.Stack[mutable.ArrayBuffer[OpHit]]()
+    frames.push(mutable.ArrayBuffer.empty)
+
     var i = 0
     while i < arr.length do
-      if arr(i).kind == Kind.Code && SpacedOps.contains(arr(i).text) then
-        // By-name parameter form `(=> T)` exempts `=>` from the "space before" rule.
-        val isByName = arr(i).text == "=>" && i > 0 && arr(i - 1).kind == Kind.Code
-                       && (arr(i - 1).text == "(" || arr(i - 1).text == "[")
-        if !isByName && i > firstSemantic
-          && (i == 0 || arr(i - 1).kind != Kind.Space)
-        then
-          emit
-           ( cols(i), "R16-operator-spacing",
-             s"`${arr(i).text}` must have a space before it" )
-        if i < lastSemantic && (i + 1 >= arr.length || arr(i + 1).kind != Kind.Space) then
-          emit
-           ( cols(i + 1), "R16-operator-spacing",
-             s"`${arr(i).text}` must have a space after it" )
+      val tok = arr(i)
+      if tok.kind == Kind.Code then
+        val text = tok.text
+        if text == "(" || text == "[" then
+          frames.push(mutable.ArrayBuffer.empty)
+        else if text == ")" || text == "]" then
+          if frames.size > 1 then checkOpFrame(frames.pop(), emit)
+        else if CheckedOps.contains(text) then
+          val isAtStart  = i == firstSemantic
+          val isAtEnd    = i == lastSemantic
+          val isBinary   = isAtStart || isBinaryContext(arr, i)
+          val leftSpace  = i > 0 && arr(i - 1).kind == Kind.Space
+          val rightSpace = i + 1 < arr.length && arr(i + 1).kind == Kind.Space
+          if isBinary then
+            // Symmetry: if both edges have a token of the same kind around, the
+            // spaces should be matched. Skip at line edges.
+            if !isAtStart && !isAtEnd && leftSpace != rightSpace then
+              emit
+               ( cols(i), "R16-operator-spacing",
+                 s"`$text` has asymmetric spacing — use 0 or 1 space on both sides" )
+            // Multi-char operators must have one space around (zero is reserved
+            // for single-character operators).
+            if text.length > 1 && !isAtStart && !isAtEnd
+              && (!leftSpace || !rightSpace)
+            then
+              emit
+               ( cols(i), "R16-operator-spacing",
+                 s"multi-character `$text` requires one space on each side" )
+            frames.top += OpHit(text, i, cols(i), leftSpace, rightSpace)
       i += 1
+
+    while frames.nonEmpty do checkOpFrame(frames.pop(), emit)
+
+  private def checkOpFrame
+    ( ops: mutable.ArrayBuffer[OpHit], emit: (Int, String, String) => Unit )
+  :   Unit =
+
+    if ops.isEmpty then ()
+    else
+      val withSpacing = ops.map: op =>
+        val s = if op.leftSpace || op.rightSpace then 1 else 0
+        (op, s)
+      val byPrec = withSpacing.groupBy((op, _) => operatorPrecedence(op.text))
+
+      // Same-precedence consistency
+      byPrec.values.foreach: opPairs =>
+        val spacings = opPairs.map(_._2).distinct
+        if spacings.length > 1 then
+          opPairs.foreach: (op, _) =>
+            emit
+             ( op.col, "R16-operator-spacing",
+               s"`${op.text}` has inconsistent spacing with same-precedence operators" )
+
+      // Cross-precedence ordering: higher precedence should have ≤ spacing
+      val precSpacings = byPrec.toList.map: (p, pairs) =>
+        (p, pairs.head._2)
+      val sortedPrecs = precSpacings.sortBy(_._1)
+      var i = 0
+      while i < sortedPrecs.length do
+        val (pLow, sLow) = sortedPrecs(i)
+        var j = i + 1
+        while j < sortedPrecs.length do
+          val (pHigh, sHigh) = sortedPrecs(j)
+          if sHigh > sLow then
+            byPrec(pHigh).foreach: (op, _) =>
+              emit
+               ( op.col, "R16-operator-spacing",
+                 s"`${op.text}` cannot have more spacing than lower-precedence operators in the same expression" )
+          j += 1
+        i += 1
 
   private def isSymbolicOperator(text: String): Boolean =
     text.nonEmpty && text.forall: c =>

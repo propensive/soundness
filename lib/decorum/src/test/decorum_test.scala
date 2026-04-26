@@ -158,9 +158,13 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("def f[T<:Int](x: T): T = x\n")
       . assert(_.contains("R16-operator-spacing"))
 
-      test(m"Missing space around `&` is rejected"):
-        rules("type T = Int&String\n")
+      test(m"Asymmetric `&` spacing is rejected"):
+        rules("type T = Int& String\n")
       . assert(_.contains("R16-operator-spacing"))
+
+      test(m"Single-char `&` with no spaces is accepted"):
+        rules("def f(x: Int): Int = x&255\n")
+      . assert(!_.contains("R16-operator-spacing"))
 
       test(m"Spaced `=>` is accepted"):
         rules("val f = (x: Int) => x + 1\n")

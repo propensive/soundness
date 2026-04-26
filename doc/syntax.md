@@ -20,20 +20,55 @@ for short block lambdas, e.g. `{ key => (key, dependencies(key)) }`.
 Hard limit: 100 columns. Lines that would exceed this must be broken; refer to
 the rules for heavy signatures (§4) and for chain continuation (§5.2).
 
-### Operator spacing — precedence-driven
+### Operator spacing — discretionary, symmetric, precedence-ordered
 
-Spacing around operators encodes their algebraic precedence visually:
+Every operator must have either zero spaces or exactly one space on each
+side. Within those choices, four constraints apply:
 
-- `+` and `-` (arithmetic): spaces around them, e.g. `left + right`.
-- `*` and `/` (arithmetic): no spaces, e.g. `left*right`, `left/right`.
-- `+` for `String` or `Text` concatenation: no spaces. (It is not arithmetic
-  and binds tighter than the surrounding context.)
-- Set, bit, type-union and type-intersection operators (`&`, `|`, `&~`):
-  spaces around them.
-- Lambda and arrow operators (`=>`, `->`, `<-`): spaces around them.
-- Type-bound operators (`<:`, `>:`): spaces around them.
-- Custom infix words (`is`, `of`, `in`, `by`, `to`, `under`, `on`, `raises`):
-  spaces around them.
+1. **Symmetry.** The spacing on the left and right of an operator must
+   match: `a + b` and `a+b` are both fine; `a +b` and `a+ b` are not.
+2. **Single-character only for zero spaces.** Multi-character operators
+   (`=>`, `->`, `<-`, `<:`, `>:`, `&&`, `||`, `==`, `!=`, `<=`, `>=`,
+   `<<`, `>>`, `>>>`, `&~`, etc.) must always carry one space on each
+   side.
+3. **Equal-precedence consistency.** Within a single unparenthesised
+   expression, all operators of equal precedence must use the same
+   spacing.
+4. **Precedence ordering.** Higher-precedence operators must never have
+   more spacing than lower-precedence operators in the same
+   unparenthesised expression. Tighter binding reads as tighter spacing.
+
+Operator precedence (lowest to highest), classified by first character:
+
+1. letter-named operators (`is`, `of`, `in`, `by`, `to`, `raises`, …)
+2. `|`
+3. `^`
+4. `&`
+5. `=`, `!`
+6. `<`, `>`
+7. `:`
+8. `+`, `-`
+9. `*`, `/`, `%`
+10. other special characters
+
+Examples:
+
+```scala
+a + b               // ok
+a+b                 // ok (single-char, symmetric)
+a + b*c             // ok (* tighter than +, less spacing)
+a + b*c + d         // ok (consistent + spacing)
+a+b * c             // wrong (* has more spacing than higher-precedence +)
+a + b - c           // ok (same-precedence, same spacing)
+a + b-c             // wrong (mixed spacing within precedence 8)
+a => b              // ok (multi-char, must be spaced)
+a=>b                // wrong (multi-char must be spaced)
+asRgb24Int(c)&255   // ok (single-char `&`, symmetric, no spaces)
+```
+
+Custom infix words (`is`, `of`, `in`, `by`, `to`, `under`, `on`,
+`raises`) follow the same rule as letter-named operators (precedence 1):
+because they are multi-character, they must always be spaced.
 
 ### Brackets, parentheses and commas
 
@@ -42,6 +77,21 @@ Spacing around operators encodes their algebraic precedence visually:
 - Inside parameter blocks broken across multiple lines, parentheses gain a
   single space inside: `( name: Type, … )`. This is the only context where
   spaces appear inside parentheses (§4).
+
+#### Multi-line column alignment
+
+When two or more consecutive lines align values into vertical columns by
+adding extra spaces after commas, the extra spaces are permitted:
+
+```scala
+val H  = ChemicalElement(1,   t"H",  t"Hydrogen")
+val He = ChemicalElement(2,   t"He", t"Helium")
+val Li = ChemicalElement(3,   t"Li", t"Lithium")
+```
+
+The relaxation requires at least two adjacent lines exhibiting the
+alignment pattern; an isolated line with extra spaces after a comma is
+still a violation.
 
 ### Blank lines
 
@@ -74,6 +124,25 @@ ordering within each group. The groups appear in this order:
 Each group is internally sorted alphabetically. After the final import group,
 one blank line precedes the first declaration. Wildcard imports
 (`import anticipation.*`) are the norm for library imports.
+
+Top-level imports must not introduce aliases. Both `import x.y as z`
+(Scala 3) and `import x.{y => z}` (Scala 2 style) are forbidden at this
+level — write the full path instead. So in place of:
+
+```scala
+import java.util as ju
+import ju.concurrent as juc
+```
+
+write:
+
+```scala
+import java.util
+import java.util.concurrent
+```
+
+Aliasing inside a `using` clause or a method body is unaffected by this
+rule; only top-level `import` directives are restricted.
 
 ### File-naming conventions
 
@@ -275,17 +344,31 @@ existing block is perfectly aligned; new code should follow the rule.
 
 ### Method-call chain continuation
 
-When a chain of method calls wraps to a new line, the continuation begins with
-`. method` — a leading dot followed by a single space — at the same indent as
-the receiver:
+When a chain of method calls wraps to a new line, the continuation begins
+with `. method` — a leading dot followed by a single space — at the same
+indent as the receiver. Whether a blank line precedes the dot is
+determined by the indent of the *immediately preceding* code line:
 
-```scala
-edgeMap.flatMap:
-  case (k, v) => lambda(k).edgeMap.map:
-    case (h, w) => (h, (w ++ v.flatMap(lambda(_).keys)))
+- If the previous line is *more* indented than the `. method` line (i.e.
+  the chain wrapped into a nested block), a blank line is required
+  before the dot:
 
-. reduction
-```
+  ```scala
+  edgeMap.flatMap:
+    case (k, v) => lambda(k).edgeMap.map:
+      case (h, w) => (h, (w ++ v.flatMap(lambda(_).keys)))
+
+  . reduction
+  ```
+
+- If the previous line is at the *same* indent as the `. method` line
+  (the chain stayed flat), no blank line is permitted:
+
+  ```scala
+  source.lines
+  . filter(_.nonEmpty)
+  . map(_.trim)
+  ```
 
 This applies to every wrapped chain.
 
@@ -352,8 +435,29 @@ _greater_ of the two padding requirements:
 The "same keyword" relaxation lets runs of `inline given …` or `case …` lines
 stack with no separators. A keyword change (e.g. from `given` to `def`)
 introduces at least the lower of the two paddings as a separator regardless.
+The relaxation permits but does not require zero blanks: blank lines may be
+inserted within a same-keyword run for visual grouping.
 
 The hard ceiling of two consecutive blank lines is never exceeded.
+
+#### First definition in a new indented scope
+
+The padding rule applies only between *sibling* definitions at the same
+indent level. The first definition inside a newly-opened indented scope
+(class body, object body, def body, …) is not subject to the
+greater-of-paddings rule with respect to its enclosing-scope opener — the
+opener and the first member can sit on consecutive lines:
+
+```scala
+class Foo:
+  val a = 1     // first member; no blank required before it
+  val b = 2
+```
+
+The exception is when the enclosing scope's signature is *heavy*: the
+heavy-signature rule (§4) requires a blank line between the
+`:   ReturnType =` line and the body, so the first member of a heavy
+scope is always preceded by a blank.
 
 ## 7. Comments
 
@@ -371,16 +475,24 @@ The hard ceiling of two consecutive blank lines is never exceeded.
 - Indented (colon) syntax over braces.
 - License header (32 lines) → `package` → blank → grouped imports → blank →
   code.
-- Operator spacing: `+`/`-` spaced; `*`/`/` and concatenation `+` unspaced;
-  `&`, `|`, `&~`, `=>`, `->`, `<-`, `<:`, `>:` and infix words spaced.
+- Imports: four groups (`language` / `java`+`javax` / `scala` / soundness
+  libs), alphabetical within group, no top-level aliases (`as`/`=>`).
+- Operator spacing: zero or one space, symmetric; zero only for
+  single-character operators; same-precedence operators in one expression
+  share spacing; higher-precedence operators have ≤ spacing than
+  lower-precedence operators.
+- Commas: one space after, except in 2+-line column-alignment runs.
 - Single-line / multi-line / heavy-signature definitions; choice forced by
   the 100-column limit.
 - Heavy signature: parameter blocks indented 2 with internal spaces; return
   type `:   Type =` flush-left; blank line before body.
-- Match cases: `=>` aligned within a single-line run; runs broken by
-  multi-line cases.
+- Match cases: `=>` aligned within a single-line run; multi-line cases
+  separated by blank lines from their neighbours.
 - Symbolic-operator method names take a space before the parameter list.
-- Chain continuation: `. method` at receiver indent.
+- Chain continuation: `. method` at receiver indent; blank-line-before iff
+  the preceding line is more indented.
 - Blank-line padding: 0 / 1 / 2 around single-line / multi-line /
   heavy-signature definitions; greater-of rule between unequal neighbours;
-  never more than two consecutive blanks.
+  the first member of a non-heavy scope is exempt; never more than two
+  consecutive blanks.
+- Companion `object` placed before the class/trait/enum it accompanies.
