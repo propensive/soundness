@@ -65,7 +65,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           val Ubuntu = Subcommand("ubuntu", e"Ubuntu")
           val Gentoo = Subcommand("gentoo", e"Gentoo Linux")
 
-          class Color(name: Text)
+          class Hue(name: Text)
 
           cli:
             arguments match
@@ -73,12 +73,12 @@ object Tests extends Suite(m"Exoskeleton Tests"):
               case Beta() :: _  => execute(Exit.Ok)
 
               case Gamma() :: _ =>
-                given Color is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
-                given Color is Interpretable =
-                  case argument :: Nil => Color(argument())
-                  case _               => Color(t"unknown")
+                given Hue is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
+                given Hue is Interpretable =
+                  case argument :: Nil => Hue(argument())
+                  case _               => Hue(t"unknown")
 
-                Flag[Color]("colors", repeatable = true, aliases = List('c'), description = "multiple reds, greens or blues")()
+                Flag[Hue]("colors", repeatable = true, aliases = List('c'), description = "multiple reds, greens or blues")()
                 execute(Exit.Ok)
 
               case Distribution() :: distribution =>
@@ -91,12 +91,12 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                     Flag("two", description = t"the second one")()
                     execute(Exit.Ok)
                   case Gentoo() :: _ =>
-                    given Color is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
-                    given Color is Interpretable =
-                      case argument :: Nil => Color(argument())
-                      case _               => Color(t"unknown")
+                    given Hue is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
+                    given Hue is Interpretable =
+                      case argument :: Nil => Hue(argument())
+                      case _               => Hue(t"unknown")
 
-                    Flag[Color]("color", aliases = List('f'), description = "red, green or blue")()
+                    Flag[Hue]("color", aliases = List('f'), description = "red, green or blue")()
                     execute(Exit.Ok)
 
                   case _             => execute(Exit.Ok)
