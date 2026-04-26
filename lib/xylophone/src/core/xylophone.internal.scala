@@ -279,6 +279,9 @@ object internal:
             val checked = checkFragment(array, fragment, '{$scrutinee.asInstanceOf[Fragment]})
             '{$expr && $scrutinee.isInstanceOf[Fragment] && $checked}
 
+          case Doctype(_) =>
+            halt(m"DOCTYPE patterns are not supported in extractors")
+
 
       val result: Expr[Extrapolation[Xml]] =
         ' {
@@ -495,6 +498,9 @@ object internal:
           val content = recur(parts.tail, Expr(parts.head))
 
           List('{TextNode($content.tt)})
+
+        case Doctype(text) =>
+          List('{Doctype(${Expr(text)})})
 
       def resultType(xml: Xml): Set[String] = xml match
         case TextNode(_)        => Set("#text")
