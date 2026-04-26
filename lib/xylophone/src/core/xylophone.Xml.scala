@@ -110,12 +110,14 @@ object Xml extends Tag.Container
       parse(input.iterator, root).of[content]
 
   given aggregable2: (schema: XmlSchema) => Tactic[ParseError] => Xml is Aggregable by Text =
-    input => parse(input.iterator, schema.generic, headers = false)
+    input => parse(input.iterator, schema.generic, headers0 = false)
 
   given loadable: (schema: XmlSchema) => Tactic[ParseError] => Xml is Loadable by Text = stream =>
     val root = Tag.root(Set(t"xml"))
-    parse(stream.iterator, root, headers = true) match
-      case Fragment(header: Header, content) => Document(content, header)
+    parse(stream.iterator, root, headers0 = true) match
+      case Fragment((header: Header), rest*) =>
+        if rest.length == 1 then Document(rest.head, header)
+        else Document(Fragment(rest*), header)
 
       case other =>
         abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
@@ -140,6 +142,11 @@ object Xml extends Tag.Container
             emitter.put("<![CDATA[")
             emitter.put(text)
             emitter.put("]]>")
+
+          case Doctype(text) =>
+            emitter.put("<!DOCTYPE ")
+            emitter.put(text)
+            emitter.put(">")
 
           case ProcessingInstruction(target, data) =>
             emitter.put("<?")
@@ -224,35 +231,116 @@ object Xml extends Tag.Container
     emitter.iterator
 
 
-  given showable: [xml <: Xml] => xml is Showable =
-    case Fragment(nodes*)                    => nodes.map(_.show).join
-    case TextNode(text)                      => text
-    case Comment(text)                       => t"<!--$text-->"
-    case Cdata(text)                         => t"<![CDATA[$text]]>"
-    case ProcessingInstruction(target, data) => t"<?$target $data?>"
+  private def appendEscapedText(builder: jl.StringBuilder, text: Text): Unit =
+    val source = text.s
+    val length = source.length
+    var index = 0
+
+    while index < length do
+      source.charAt(index) match
+        case '<' => builder.append("&lt;")
+        case '&' => builder.append("&amp;")
+        case chr => builder.append(chr)
+
+      index += 1
+
+  private def appendEscapedAttribute(builder: jl.StringBuilder, text: Text): Unit =
+    val source = text.s
+    val length = source.length
+    var index = 0
+
+    while index < length do
+      source.charAt(index) match
+        case '<' => builder.append("&lt;")
+        case '&' => builder.append("&amp;")
+        case '"' => builder.append("&quot;")
+        case chr => builder.append(chr)
+
+      index += 1
+
+  private def appendXml(builder: jl.StringBuilder, node: Xml): Unit = node match
+    case fragment: Fragment =>
+      val nodes = fragment.nodes
+      var index = 0
+
+      while index < nodes.length do
+        appendXml(builder, nodes(index))
+        index += 1
+
+    case TextNode(text) =>
+      appendEscapedText(builder, text)
+
+    case Comment(text) =>
+      builder.append("<!--")
+      builder.append(text.s)
+      builder.append("-->")
+
+    case Cdata(text) =>
+      builder.append("<![CDATA[")
+      builder.append(text.s)
+      builder.append("]]>")
+
+    case Doctype(text) =>
+      builder.append("<!DOCTYPE ")
+      builder.append(text.s)
+      builder.append('>')
+
+    case ProcessingInstruction(target, data) =>
+      builder.append("<?")
+      builder.append(target.s)
+
+      if !data.s.isEmpty then
+        builder.append(' ')
+        builder.append(data.s)
+
+      builder.append("?>")
 
     case Header(version, encoding, standalone) =>
-      val encodingText = encoding.lay(t""): encoding =>
-        t" encoding=\"$encoding\""
+      builder.append("<?xml version=\"")
+      builder.append(version.s)
+      builder.append('"')
 
-      val standaloneText = standalone.lay(t""): standalone =>
-        if standalone then t" standalone=\"yes\"" else t" standalone=\"no\""
+      encoding.let: encoding =>
+        builder.append(" encoding=\"")
+        builder.append(encoding.s)
+        builder.append('"')
 
-      t"<?xml version=\"$version\"$encodingText$standaloneText>"
+      standalone.let: standalone =>
+        builder.append(if standalone then " standalone=\"yes\"" else " standalone=\"no\"")
+
+      builder.append("?>")
 
     case Element(tagname, attributes, children) =>
-      val tagContent = if attributes.nil then t"" else
-        attributes.map:
-          case (key, value) => t"""$key="$value""""
+      builder.append('<')
+      builder.append(tagname.s)
 
-        . join(t" ", t" ", t"")
+      if !attributes.nil then attributes.foreach: (key, value) =>
+        builder.append(' ')
+        builder.append(key.s)
+        builder.append("=\"")
+        appendEscapedAttribute(builder, value)
+        builder.append('"')
 
-      if children.nil then t"<$tagname$tagContent/>"
-      else t"<$tagname$tagContent>${children.map(_.show).join}</$tagname>"
+      if children.nil then builder.append("/>") else
+        builder.append('>')
+        var index = 0
+
+        while index < children.length do
+          appendXml(builder, children(index))
+          index += 1
+
+        builder.append("</")
+        builder.append(tagname.s)
+        builder.append('>')
+
+  given showable: [xml <: Xml] => xml is Showable = node =>
+    val builder = jl.StringBuilder()
+    appendXml(builder, node)
+    builder.toString.tt
 
 
   private enum Token:
-    case Close, Comment, Empty, Open, Header, Cdata, Pi
+    case Close, Comment, Empty, Open, Header, Cdata, Pi, Doctype
 
   private enum Level:
     case Ascend, Descend, Peer
@@ -347,12 +435,14 @@ object Xml extends Tag.Container
     case Node(parent: Text)
 
   private[xylophone] def parse[schema <: XmlSchema]
-    ( input:       Iterator[Text],
-      root:        Tag,
-      callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
-      fastforward: Int                               = 0,
-      headers:     Boolean                           = false )
+    ( input:        Iterator[Text],
+      root:         Tag,
+      callback:     Optional[(Ordinal, Hole) => Unit] = Unset,
+      fastforward:  Int                               = 0,
+      headers0:     Boolean                           = false )
     ( using schema: XmlSchema ): Xml raises ParseError =
+
+    var headers: Boolean = headers0
 
     import lineation.linefeedChars
 
@@ -361,6 +451,8 @@ object Xml extends Tag.Container
     def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
     var content: Text = t""
     var extra: Map[Text, Text] = ListMap()
+    var headerEncoding: Optional[Text] = Unset
+    var headerStandalone: Optional[Boolean] = Unset
     var nodes: Array[Node] = new Array(4)
     var index: Int = 0
     var stack: Array[Tag] = new Array(4)
@@ -408,11 +500,20 @@ object Xml extends Tag.Container
       case ' ' | Ff | Lf | Cr | Ht => cursor.next() yet skip()
       case _                       => ()
 
+    inline def isNameStart(chr: Char): Boolean =
+      chr.isLetter || chr == '_' || chr == ':'
+
+    inline def isNameChar(chr: Char): Boolean =
+      chr.isLetter || chr.isDigit || chr == '_' || chr == '-' || chr == '.' || chr == ':'
+      || chr == '·'
+
     @tailrec
-    def tagname(mark: Mark, dictionary: Optional[Dictionary[Tag]])(using Cursor.Held): Tag =
+    def tagname(mark: Mark, dictionary: Optional[Dictionary[Tag]], started: Boolean)
+      ( using Cursor.Held )
+    :   Tag =
       cursor.lay(fail(ExpectedMore)):
-        case chr if chr.isLetter || chr.isDigit =>
-          dictionary.lay(next() yet tagname(mark, Unset)): dictionary =>
+        case chr if (if started then isNameChar(chr) else isNameStart(chr)) =>
+          dictionary.lay(next() yet tagname(mark, Unset, true)): dictionary =>
             dictionary(chr.minuscule) match
               case Dictionary.Empty =>
                 cursor.next()
@@ -420,9 +521,9 @@ object Xml extends Tag.Container
                 cursor.cue(mark) yet fail(InvalidTagStart(name.lower))
 
               case other =>
-                next() yet tagname(mark, other)
+                next() yet tagname(mark, other, true)
 
-        case ' ' | Ff | Lf | Cr | Ht | '/' | '>' =>
+        case ' ' | Ff | Lf | Cr | Ht | '/' | '>' if started =>
           dictionary match
             case Dictionary.Just("", tag)       => tag
             case Dictionary.Branch(tag: Tag, _) => tag
@@ -435,16 +536,17 @@ object Xml extends Tag.Container
           fail(Unexpected(chr))
 
     @tailrec
-    def key(mark: Mark, dictionary: Optional[Dictionary[XmlAttribute]])(using Cursor.Held)
+    def key(mark: Mark, dictionary: Optional[Dictionary[XmlAttribute]], started: Boolean)
+      ( using Cursor.Held )
     :   XmlAttribute =
       cursor.lay(fail(ExpectedMore)):
-        case chr if chr.isLetter || chr == '-' =>
+        case chr if (if started then isNameChar(chr) else isNameStart(chr)) =>
           dictionary.let(_(chr.minuscule)) match
-            case Unset            => next() yet key(mark, Unset)
+            case Unset            => next() yet key(mark, Unset, true)
             case Dictionary.Empty => fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
-            case dictionary       => next() yet key(mark, dictionary)
+            case dictionary       => next() yet key(mark, dictionary, true)
 
-        case ' ' | Ff | Lf | Cr | Ht | '=' | '>' =>
+        case ' ' | Ff | Lf | Cr | Ht | '=' | '>' if started =>
           dictionary.let: dictionary =>
             dictionary.element.or:
               val name = cursor.grab(mark, cursor.mark)
@@ -462,11 +564,12 @@ object Xml extends Tag.Container
       case '&' =>
         val start = cursor.mark
         next()
-        val mark2 = entity(cursor.mark).lay(mark): text =>
-          cursor.clone(mark, start)(buffer)
-          buffer.append(text)
-          cursor.mark
-        value(mark2)
+        cursor.clone(mark, start)(buffer)
+        buffer.append(entity())
+        value(cursor.mark)
+
+      case '<' =>
+        fail(Unexpected('<'))
 
       case '"' =>
         cursor.clone(mark, cursor.mark)(buffer)
@@ -480,15 +583,22 @@ object Xml extends Tag.Container
 
     @tailrec
     def singleQuoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case Sqt => cursor.grab(mark, cursor.mark).also(next())
-      case chr => next() yet singleQuoted(mark)
+      case '&' =>
+        val start = cursor.mark
+        next()
+        cursor.clone(mark, start)(buffer)
+        buffer.append(entity())
+        singleQuoted(cursor.mark)
 
-    @tailrec
-    def unquoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '>' | ' ' | Ff | Lf | Cr | Ht     => cursor.grab(mark, cursor.mark)
-      case chr@('"' | Sqt | '<' | '=' | '`') => fail(ForbiddenUnquoted(chr))
-      case Nul                               => fail(BadInsertion)
-      case chr                               => next() yet unquoted(mark)
+      case '<' =>
+        fail(Unexpected('<'))
+
+      case Sqt =>
+        cursor.clone(mark, cursor.mark)(buffer)
+        next() yet result()
+
+      case chr =>
+        next() yet singleQuoted(mark)
 
     def equality(): Unit = skip() yet cursor.lay(fail(ExpectedMore)):
       case '=' => next() yet skip() yet true
@@ -511,7 +621,7 @@ object Xml extends Tag.Container
 
         case _ =>
           val key2 =
-            key(cursor.mark, schema.attributes.unless(schema.freeform)).tap: key =>
+            key(cursor.mark, schema.attributes.unless(schema.freeform), false).tap: key =>
               if !schema.freeform && !key.targets(tag)
               then fail(InvalidAttributeUse(key.label, tag))
 
@@ -538,93 +648,81 @@ object Xml extends Tag.Container
           attributes(tag, entries.updated(key2, assignment))
 
 
-    def entity(mark: Mark)(using Cursor.Held): Optional[Text] = cursor.lay(fail(ExpectedMore)):
-      case '#'   => next() yet numericEntity(mark)
-      case other => textEntity(mark, schema.entities)
+    def entity()(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
+      case '#'   => next() yet numericEntity()
+      case other => textEntity()
 
-    def numericEntity(mark: Mark)(using Cursor.Held): Optional[Text] =
+    def numericEntity()(using Cursor.Held): Text =
       cursor.lay(fail(ExpectedMore)):
-        case 'x' => next() yet hexEntity(mark, 0)
-        case _   => decimalEntity(mark, 0)
+        case 'x' | 'X' => next() yet hexEntity(0)
+        case _         => decimalEntity(0)
 
     @tailrec
-    def hexEntity(mark: Mark, value: Int)(using Cursor.Held): Optional[Text] =
+    def hexEntity(value: Int)(using Cursor.Held): Text =
       cursor.lay(fail(ExpectedMore)):
         case digit if digit.isDigit =>
-          cursor.next() yet hexEntity(mark, 16*value + (digit - '0'))
+          cursor.next() yet hexEntity(16*value + (digit - '0'))
 
         case letter if 'a' <= letter <= 'f' =>
-          cursor.next() yet hexEntity(mark, 16*value + (letter - 87))
+          cursor.next() yet hexEntity(16*value + (letter - 87))
 
         case letter if 'A' <= letter <= 'F' =>
-          cursor.next() yet hexEntity(mark, 16*value + (letter - 55))
+          cursor.next() yet hexEntity(16*value + (letter - 55))
 
         case ';' =>
           cursor.next() yet value.unicode
 
         case chr =>
-          Unset
+          fail(Unexpected(chr))
 
     @tailrec
-    def decimalEntity(mark: Mark, value: Int): Optional[Text] = cursor.lay(fail(ExpectedMore)):
-      case digit if digit.isDigit => next() yet decimalEntity(mark, 10*value + (digit - '0'))
+    def decimalEntity(value: Int): Text = cursor.lay(fail(ExpectedMore)):
+      case digit if digit.isDigit => next() yet decimalEntity(10*value + (digit - '0'))
       case ';'                    => next() yet t"${value.toChar}"
-      case chr                    => Unset
+      case chr                    => fail(Unexpected(chr))
 
     @tailrec
-    def textEntity(mark: Mark, dictionary: Dictionary[Text])(using Cursor.Held): Optional[Text] =
-      cursor.lay(fail(ExpectedMore)):
-        case chr if chr.isLetter | chr.isDigit =>
-          dictionary(chr) match
-            case Dictionary.Empty => Unset
-            case dictionary       => cursor.next() yet textEntity(mark, dictionary)
+    def entityName(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
+      case chr if isNameChar(chr) => next() yet entityName(mark)
+      case ';'                    => cursor.grab(mark, cursor.mark)
+      case Nul                    => fail(BadInsertion)
+      case chr                    => fail(Unexpected(chr))
 
-        case ';' =>
-          cursor.next() yet dictionary(';').element
-
-        case '=' =>
-          Unset
-
-        case Nul =>
-          fail(BadInsertion)
-
-        case chr =>
-          dictionary.element
+    def textEntity()(using Cursor.Held): Text =
+      val mark = cursor.mark
+      val name = entityName(mark)
+      cursor.next()
+      schema.entities(name).or:
+        cursor.cue(mark)
+        fail(UnknownEntity(name))
 
 
     @tailrec
-    def textual(mark: Mark, close: Optional[Text], entities: Boolean)(using Cursor.Held): Text =
+    def textual(mark: Mark)(using Cursor.Held): Text =
       cursor.lay(cursor.clone(mark, cursor.mark)(buffer) yet result()):
         case '<' | Nul =>
-          close.lay(cursor.clone(mark, cursor.mark)(buffer) yet result()): tag =>
-            val end = cursor.mark
-            cursor.next()
-            val resume = cursor.mark
+          cursor.clone(mark, cursor.mark)(buffer) yet result()
 
-            if cursor.lay(false)(_ == '/') then
-              next()
-              val tagStart = cursor.mark
-              repeat(tag.length)(cursor.next())
-              val candidate = cursor.grab(tagStart, cursor.mark)
-              if cursor.more && candidate == tag then
-                if cursor.lay(false)(_ == '>')
-                then
-                  cursor.clone(mark, end)(buffer) yet result().also(cursor.next())
-                else cursor.cue(resume) yet textual(mark, tag, entities)
-              else cursor.cue(resume) yet textual(mark, tag, entities)
-            else cursor.cue(resume) yet textual(mark, tag, entities)
-
-        case '&' if entities =>
+        case '&' =>
           val start = cursor.mark
           next()
-          val mark2 = entity(cursor.mark).lay(mark): text =>
-            cursor.clone(mark, start)(buffer)
-            buffer.append(text)
-            cursor.mark
-          textual(mark2, close, entities)
+          cursor.clone(mark, start)(buffer)
+          buffer.append(entity())
+          textual(cursor.mark)
+
+        case ']' =>
+          next()
+          cursor.lay(textual(mark)):
+            case ']' =>
+              next()
+              cursor.lay(textual(mark)):
+                case '>' => fail(Unexpected('>'))
+                case _   => textual(mark)
+
+            case _ => textual(mark)
 
         case chr =>
-          cursor.next() yet textual(mark, close, entities)
+          cursor.next() yet textual(mark)
 
     def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case '-' =>
@@ -641,17 +739,25 @@ object Xml extends Tag.Container
       case chr =>
         next() yet comment(mark)
 
+    @tailrec
     def cdata(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case ']' =>
         val end = cursor.mark
         next()
         cursor.lay(fail(ExpectedMore)):
-          case ']' => expect('>') yet cursor.grab(mark, end)
+          case ']' =>
+            val secondEnd = cursor.mark
+            next()
+            cursor.lay(fail(ExpectedMore)):
+              case '>' => cursor.grab(mark, end)
+              case _   => cdata(secondEnd)
+
           case _   => cdata(mark)
 
       case chr =>
         next() yet cdata(mark)
 
+    @tailrec
     def piData(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case '?' =>
         val end = cursor.mark
@@ -663,9 +769,20 @@ object Xml extends Tag.Container
       case chr =>
         next() yet piData(mark)
 
+    @tailrec
     def piTarget(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case ' ' | Lf | Cr | Ff | Ht => cursor.grab(mark, cursor.mark)
-      case chr                     => next() yet piTarget(mark)
+      case ' ' | Lf | Cr | Ff | Ht | '?' => cursor.grab(mark, cursor.mark)
+      case chr                           => next() yet piTarget(mark)
+
+    @tailrec
+    def doctype(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
+      case '>' => cursor.grab(mark, cursor.mark).also(next())
+      case _   => next() yet doctype(mark)
+
+    def quotedValue()(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
+      case Dqt => next() yet value(cursor.mark)
+      case Sqt => next() yet singleQuoted(cursor.mark)
+      case _   => fail(UnquotedAttribute)
 
     def tag(headers: Boolean): Token = cursor.lay(fail(ExpectedMore)):
       case '?' if headers =>
@@ -679,11 +796,38 @@ object Xml extends Tag.Container
         cursor.consume(fail(ExpectedMore))("ersion")
         next()
         equality()
-        content = cursor.hold:
-          cursor.lay(fail(ExpectedMore)):
-            case Dqt => next() yet value(cursor.mark)
-            case Sqt => next() yet singleQuoted(cursor.mark)
-            case _   => fail(UnquotedAttribute)
+        content = cursor.hold(quotedValue())
+
+        headerEncoding = Unset
+        headerStandalone = Unset
+
+        skip()
+
+        cursor.let:
+          case 'e' =>
+            cursor.consume(fail(ExpectedMore))("ncoding")
+            next()
+            equality()
+            headerEncoding = cursor.hold(quotedValue())
+            skip()
+
+          case _ =>
+            ()
+
+        cursor.let:
+          case 's' =>
+            cursor.consume(fail(ExpectedMore))("tandalone")
+            next()
+            equality()
+            val standaloneValue: Text = cursor.hold(quotedValue())
+            headerStandalone = standaloneValue.s match
+              case "yes" => true
+              case "no"  => false
+              case _     => fail(Unexpected(standaloneValue.s.charAt(0)))
+            skip()
+
+          case _ =>
+            ()
 
         ensure('?')
         expect('>')
@@ -694,6 +838,17 @@ object Xml extends Tag.Container
       case '?' =>
         next()
         content = cursor.hold(piTarget(cursor.mark))
+
+        if content.s.length == 3 then
+          val first  = content.s.charAt(0)
+          val second = content.s.charAt(1)
+          val third  = content.s.charAt(2)
+
+          if (first == 'x' || first == 'X')
+          && (second == 'm' || second == 'M')
+          && (third == 'l' || third == 'L')
+          then fail(InvalidTag(content))
+
         skip()
         Token.Pi
 
@@ -711,21 +866,29 @@ object Xml extends Tag.Container
             cursor.consume(fail(ExpectedMore))("CDATA[")
             next()
             content = cursor.hold(cdata(cursor.mark))
+            cursor.next()
             Token.Cdata
+
+          case 'D' =>
+            cursor.consume(fail(ExpectedMore))("OCTYPE")
+            next()
+            skip()
+            content = cursor.hold(doctype(cursor.mark))
+            Token.Doctype
 
           case chr =>
             fail(Unexpected(chr))
 
       case '/' =>
         next()
-        content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform)).label)
+        content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform), false).label)
         Token.Close
 
       case Nul =>
         fail(BadInsertion)
 
       case chr =>
-        content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform)).label)
+        content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform), false).label)
         extra = cursor.hold(attributes(content))
 
         cursor.lay(fail(ExpectedMore)):
@@ -786,10 +949,15 @@ object Xml extends Tag.Container
               next()
             else tag(headers && parent == root) match
               case Token.Comment => current = Comment(content)
-              case Token.Header  => current = Header(content, Unset, Unset)
+              case Token.Header  =>
+                current = Header(content, headerEncoding, headerStandalone)
+                headers = false
               case Token.Cdata   => current = Cdata(content)
+              case Token.Doctype => current = Doctype(content)
               case Token.Pi      =>
-                current = ProcessingInstruction(content, cursor.hold(piData(cursor.mark)))
+                val data = cursor.hold(piData(cursor.mark))
+                cursor.next()
+                current = ProcessingInstruction(content, data)
 
               case Token.Empty   =>
                 if admit(content) then empty() else fail(InvalidTag(content))
@@ -824,7 +992,7 @@ object Xml extends Tag.Container
               read(parent, map, count + 1)
 
         case chr =>
-          val text = cursor.hold(textual(cursor.mark, Unset, true))
+          val text = cursor.hold(textual(cursor.mark))
           if text.length == 0 then read(parent, map, count + 1)
           else append(TextNode(text)) yet read(parent, map, count + 1)
 
@@ -854,15 +1022,23 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
 sealed trait Node extends Xml
 
 case class Comment(text: Text) extends Node:
-  override def hashCode: Int = List(this).hashCode
+  override def hashCode: Int = text.hashCode*31 + 0x436F6D6D
 
   override def equals(that: Any): Boolean = that match
     case Comment(text0)           => text0 == text
     case Fragment(Comment(text0)) => text0 == text
     case _                        => false
 
+case class Doctype(text: Text) extends Node:
+  override def hashCode: Int = text.hashCode*31 + 0x44637470
+
+  override def equals(that: Any): Boolean = that match
+    case Doctype(text0)           => text0 == text
+    case Fragment(Doctype(text0)) => text0 == text
+    case _                        => false
+
 case class Cdata(text: Text) extends Node:
-  override def hashCode: Int = List(this).hashCode // FIXME: infinite recursion
+  override def hashCode: Int = text.hashCode*31 + 0x43646174
 
   override def equals(that: Any): Boolean = that match
     case Cdata(text0)           => text0 == text
@@ -870,7 +1046,7 @@ case class Cdata(text: Text) extends Node:
     case _                      => false
 
 case class ProcessingInstruction(target: Text, data: Text) extends Node:
-  override def hashCode: Int = List(this).hashCode // FIXME
+  override def hashCode: Int = (target.hashCode*31 + data.hashCode)*31 + 0x50494E73
 
   override def equals(that: Any): Boolean = that match
     case ProcessingInstruction(target0, data0)           => target0 == target && data0 == data
@@ -880,7 +1056,7 @@ case class ProcessingInstruction(target: Text, data: Text) extends Node:
 case class TextNode(text: Text) extends Node:
   type Topic = "#text"
 
-  override def hashCode: Int = List(this).hashCode // FIXME: infinite recursion
+  override def hashCode: Int = text.hashCode*31 + 0x54657874
 
   override def equals(that: Any): Boolean = that match
     case Fragment(textual: TextNode) => this == textual
@@ -939,7 +1115,8 @@ case class Fragment(nodes: Node*) extends Xml:
 
 case class Header(version: Text, encoding: Optional[Text], standalone: Optional[Boolean])
 extends Node:
-  override def hashCode: Int = List(this).hashCode
+  override def hashCode: Int =
+    ((version.hashCode*31 + encoding.hashCode)*31 + standalone.hashCode)*31 + 0x48646572
 
   override def equals(that: Any): Boolean = that match
     case Fragment(header: Header) => equals(header)
