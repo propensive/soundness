@@ -156,8 +156,19 @@ class Matrix[element, rows <: Int, columns <: Int]
     val inner = valueOf[columns]
 
     val elements = IArray.build[multiplication.Result](rows*columns2): array =>
-      for row <- 0 until rows; column <- 0 until columns2
-      do array(columns2*column + row) =
-        (0 until inner).map { index => apply(row, index)*right(index, column) }.reduce(_ + _)
+      var row = 0
+      while row < rows do
+        var column = 0
+        while column < columns2 do
+          var sum: multiplication.Result = apply(row, 0)*right(0, column)
+          var k = 1
+          while k < inner do
+            sum = sum + apply(row, k)*right(k, column)
+            k += 1
+
+          array(columns2*row + column) = sum
+          column += 1
+
+        row += 1
 
     new Matrix(rows, columns2, elements)

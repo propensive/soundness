@@ -45,12 +45,12 @@ object Tenacity:
     new:
       def delay(attempt: Ordinal): Optional[Long] raises RetryError =
         if attempt == Prim then 0L
-        else (initial.generic/1_000_000L*math.pow(base, attempt.n1)).toLong
+        else (initial.generic*math.pow(base, attempt.n0 - 1)).toLong
 
 
   def fixed[generic: Abstractable across Durations to Long](duration: generic): Tenacity = new:
     def delay(attempt: Ordinal): Optional[Long] raises RetryError =
-      if attempt == Prim then 0L else duration.generic/1_000_000L
+      if attempt == Prim then 0L else duration.generic
 
 trait Tenacity:
   private inline def tenacity: this.type = this
