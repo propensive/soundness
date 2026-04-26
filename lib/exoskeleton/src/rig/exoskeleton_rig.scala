@@ -160,9 +160,6 @@ extension (shell: Shell)
               psReady = Tmux.screenshot().screen.filter(_.starts(t">")).length > 0
               psAttempts += 1
 
-            Tmux.attend:
-              sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
-
         val result = action
 
         sh"tmux kill-session -t ${tmux.id}".exec[Exit]()
