@@ -287,6 +287,14 @@ object internal:
   object Ipv6:
     lazy val Localhost: Ipv6 = apply(0, 0, 0, 0, 0, 0, 0, 1)
 
+    given hostShowable: urticose.Host is Showable =
+      case host: Hostname          => host.show
+      case ipv6: Ipv6              => t"[${ipv6.show}]"
+      case ipv4: (Ipv4 @unchecked) => ipv4.show
+
+    given hostDecodable: Tactic[HostnameError] => urticose.Host is Decodable in Text = text =>
+      safely(text.decode[Ipv6]).or(safely(text.decode[Ipv4])).or(text.decode[Hostname])
+
     given decodable: Tactic[IpAddressError] => Ipv6 is Decodable in Text = parse(_)
 
     given toExpr: ToExpr[Ipv6]:

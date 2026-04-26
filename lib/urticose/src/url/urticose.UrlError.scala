@@ -40,10 +40,12 @@ object UrlError:
   given communicable: Reason is Communicable =
     case Reason.Expected(expectation)         => m"$expectation was expected"
     case Reason.BadHostname(hostname, reason) => m"$hostname was not valid because $reason"
+    case Reason.BadIpv6(reason)               => m"the IPv6 address is not valid because $reason"
 
   enum Reason:
     case Expected(expectation: Expectation)
     case BadHostname(hostname: Text, reason: HostnameError.Reason)
+    case BadIpv6(reason: IpAddressError.Reason)
 
   enum Expectation:
     case Colon, More, LowerCaseLetter, PortRange, Number

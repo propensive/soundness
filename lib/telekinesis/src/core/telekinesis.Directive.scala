@@ -61,7 +61,7 @@ object Directive:
   given expect: ("expect" is Directive of Text) = identity(_)
   given forwarded: ("forwarded" is Directive of Text) = identity(_)
   given from: ("from" is Directive of Text) = identity(_)
-  given host: ("host" is Directive of Hostname) = _.show
+  given host: ("host" is Directive of Host) = _.show
   given http2Settings: ("http2Settings" is Directive of Text) = identity(_)
   given ifMatch: ("ifMatch" is Directive of Text) = identity(_)
   given ifModifiedSince: ("ifModifiedSince" is Directive of Text) = identity(_)
