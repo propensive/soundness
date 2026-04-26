@@ -57,7 +57,6 @@ extension (shell: Shell)
           case Shell.Bash       => t"bash -l"
           case Shell.Powershell =>
             val cmd = summon[Sandbox.Tool].command
-            sh"${summon[Sandbox.Tool].path} '{admin}' install".exec[Unit]()
 
             val psScript =
               s"""function global:prompt { '> ' }
