@@ -32,7 +32,6 @@
                                                                                                   */
 package hellenism
 
-import java.io as ji
 import java.net as jn
 
 import anticipation.*
@@ -120,10 +119,8 @@ trait Classpath:
 
   def classloader: Classloader =
     val urls = entries.flatMap:
-      case ClasspathEntry.Jar(jarfile)   => List(ji.File(jarfile.s).toURI.nn.toURL.nn)
-      case ClasspathEntry.Directory(dir) => List(ji.File(dir.s).toURI.nn.toURL.nn)
-      case ClasspathEntry.Url(url)       => List(jn.URI.create(url.s).nn.toURL.nn)
-      case ClasspathEntry.JavaRuntime    => Nil
+      case ClasspathEntry.JavaRuntime => Nil
+      case other                      => List(other.javaUrl)
 
     new Classloader
       ( new jn.URLClassLoader(Array.from(urls), ClassLoader.getPlatformClassLoader().nn) )
