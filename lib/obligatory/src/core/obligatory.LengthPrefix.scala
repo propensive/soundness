@@ -61,6 +61,7 @@ object LengthPrefix:
 
     new Iterator[Data]:
       private var ready: Optional[Data] = Unset
+
       def hasNext: Boolean =
         if ready == Unset then ready = frame()
         ready != Unset

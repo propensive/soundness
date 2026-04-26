@@ -107,6 +107,7 @@ object Juxtaposition:
         def children(comp: (Text, Juxtaposition)): List[(Text, Juxtaposition)] = comp(1) match
           case Same(value)                           => Nil
           case Different(left, right, difference)    => Nil
+
           case Collation(_, comparison, left, right) =>
             if comparison.all(_(1).singleChar) then Nil else comparison.to(List)
 

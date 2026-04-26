@@ -82,7 +82,7 @@ object Bcodl:
 
           case schema =>
             val subschema = readNumber(reader) match
-              case 0  => (Unset, CodlSchema.Free)
+              case 0     => (Unset, CodlSchema.Free)
               case index => schema.entry(index - 1).tuple
 
             val key = subschema(0).option.getOrElse(abort(BcodlError(t"unexpected key", 0)))

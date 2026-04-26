@@ -152,7 +152,7 @@ trait protointernal:
           Some
             ( AndType
                 ( AppliedType(unit.ref, List(ConstantType(IntConstant(power)))),
-                  apply(more).get ))
+                  apply(more).get ) )
 
     def sub(dimension: DimensionRef, unit: UnitRef, power: Int): UnitsMap =
       new UnitsMap(map.updated(dimension, UnitPower(unit, power)))

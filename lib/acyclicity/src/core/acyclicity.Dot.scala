@@ -54,11 +54,11 @@ object Dot:
 
   case class Ref(id: Id, port: Option[Attachment] = None):
     @targetName("joinTo")
-    infix def --(dest: Ref | Statement.Subgraph): Dot.Statement.Edge =
+    infix def -- (dest: Ref | Statement.Subgraph): Dot.Statement.Edge =
       Dot.Statement.Edge(this, Target(false, dest, None))
 
     @targetName("mapTo")
-    infix def -->(dest: Ref | Statement.Subgraph): Dot.Statement.Edge =
+    infix def --> (dest: Ref | Statement.Subgraph): Dot.Statement.Edge =
       Dot.Statement.Edge(this, Target(true, dest, None))
 
   object Ref:
@@ -69,7 +69,7 @@ object Dot:
       Statement.Node(this, attrs.map { (k, v) => Property(k.show, v) }*)
 
     @targetName("assign")
-    infix def :=(id: Id): Statement.Assignment = Statement.Assignment(this, id)
+    infix def := (id: Id): Statement.Assignment = Statement.Assignment(this, id)
 
   enum CompassPoint:
     case North, South, East, West, NorthEast, NorthWest, SouthEast, SouthWest

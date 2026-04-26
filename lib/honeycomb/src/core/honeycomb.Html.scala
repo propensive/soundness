@@ -119,6 +119,7 @@ object Html extends Tag.Container
     parse(stream.iterator, root, doctypes = true) match
       case Fragment(Doctype(doctype), content) => Document(content, dom)
       case html@Element("html", _, _, _)       => Document(html, dom)
+
       case _                                   =>
         abort(ParseError(Html, Position(1.u, 1.u), Issue.BadDocument))
 
@@ -153,6 +154,7 @@ object Html extends Tag.Container
             mode match
               case Mode.Raw =>
                 emitter.put(text)
+
               case _ =>
                 var position: Int = 0
 
@@ -226,10 +228,10 @@ object Html extends Tag.Container
 
 
   given showable: [html <: Html] => html is Showable =
-    case Fragment(nodes*) => nodes.map(_.show).join
+    case Fragment(nodes*)  => nodes.map(_.show).join
     case TextNode(text)    => text
-    case Comment(text) => t"<!--$text-->"
-    case Doctype(text) => t"<!$text>"
+    case Comment(text)     => t"<!--$text-->"
+    case Doctype(text)     => t"<!$text>"
 
     case Element(tagname, attributes, children, _) =>
       val tagContent = if attributes.nil then t"" else
@@ -569,6 +571,7 @@ object Html extends Tag.Container
                           next()
                           skip()
                           attributes(tag, foreign, entries.updated(t"\u0000", Unset))
+
         case _         =>
           val key2 = if foreign then foreignKey(cursor.mark) else
             key(cursor.mark, dom.attributes).tap: key =>
@@ -681,22 +684,30 @@ object Html extends Tag.Container
           cursor.next() yet textual(mark, close, entities)
 
     def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '-'      => val end = cursor.mark
-                       next()
-                       cursor.lay(fail(ExpectedMore)):
-                         case '-' => expect('>') yet cursor.grab(mark, end)
-                         case _   => comment(mark)
-      case '\u0000' => callback.let(_(cursor.position, Hole.Comment))
-                       next() yet comment(mark)
-      case char     => next() yet comment(mark)
+      case '-' =>
+        val end = cursor.mark
+        next()
+        cursor.lay(fail(ExpectedMore)):
+          case '-' => expect('>') yet cursor.grab(mark, end)
+          case _   => comment(mark)
+
+      case '\u0000' =>
+        callback.let(_(cursor.position, Hole.Comment))
+        next() yet comment(mark)
+
+      case char =>
+        next() yet comment(mark)
 
     def cdata(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case ']'      => val end = cursor.mark
-                       next()
-                       cursor.lay(fail(ExpectedMore)):
-                         case ']' => expect('>') yet cursor.grab(mark, end)
-                         case _   => cdata(mark)
-      case char     => next() yet cdata(mark)
+      case ']' =>
+        val end = cursor.mark
+        next()
+        cursor.lay(fail(ExpectedMore)):
+          case ']' => expect('>') yet cursor.grab(mark, end)
+          case _   => cdata(mark)
+
+      case char =>
+        next() yet cdata(mark)
 
     def doctype(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case '>'   => cursor.grab(mark, cursor.mark).also(next())
@@ -749,6 +760,7 @@ object Html extends Tag.Container
         Token.Close
 
       case '\u0000' => fail(BadInsertion)
+
       case char =>
         val newForeign: Boolean = cursor.hold:
           if foreign then
@@ -1104,6 +1116,7 @@ extends Node, Topical, Transportive, Dynamic:
         compiletime.summonFrom:
           case unattributive: (attribute.Topic is Unattributive) =>
             unattributive.unattribute(attributes.at(name.tt))
+
       case attribute: (name.type is Attribute in Form) =>
         compiletime.summonFrom:
           case unattributive: (attribute.Topic is Unattributive) =>

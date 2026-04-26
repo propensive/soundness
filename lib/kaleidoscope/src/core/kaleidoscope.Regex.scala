@@ -322,6 +322,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
 
         case group :: tail =>
           val matchedText = matcher.group(s"g$index").nn
+
           val matches2 =
             if group.capture then
               if group.charClass then

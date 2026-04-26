@@ -38,8 +38,8 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import doms.html.whatwg, whatwg.*
 import attributives.textAttributes
+import doms.html.whatwg, whatwg.*
 
 object Field:
   given renderable: Field is Renderable in Phrasing = field =>

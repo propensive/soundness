@@ -37,8 +37,6 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-sealed trait Windows
-
 object Windows:
   type Rules =
     MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"]
@@ -57,3 +55,5 @@ object Windows:
     val separator: Text = "\\"
     val self: Text = "."
     val parent: Text = ".."
+
+sealed trait Windows

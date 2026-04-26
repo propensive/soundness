@@ -34,6 +34,8 @@ package harlequin
 
 import scala.collection.mutable as scm
 
+import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
+
 import anthology.*
 import anticipation.*
 import denominative.*
@@ -41,8 +43,6 @@ import gossamer.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-
-import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
 
 object SourceCode:
   private def accent(token: Int): Accent =
@@ -140,7 +140,7 @@ object SourceCode:
 
         case xs =>
           xs.indexOf(SourceToken.Newline) match
-            case -1  => xs :: acc
+            case -1    => xs :: acc
             case index => lines(xs.drop(index + 1), xs.take(index) :: acc)
 
     SourceCode(language, 1, IArray(lines(soften(stream()).to(List)).reverse*))

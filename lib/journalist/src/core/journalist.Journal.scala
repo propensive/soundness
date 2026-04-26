@@ -45,6 +45,7 @@ object Journal:
 
     new Journal:
       type Operand = entry
+
       def record(entry: Operand): Long =
         val bytes = entry.encode
         store.write(bytes.length.bytes)

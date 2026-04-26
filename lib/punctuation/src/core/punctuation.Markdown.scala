@@ -41,8 +41,8 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-import doms.html.whatwg, whatwg.*
 import attributives.textAttributes
+import doms.html.whatwg, whatwg.*
 
 object Markdown:
   trait Node

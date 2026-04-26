@@ -125,6 +125,7 @@ object Syntax:
           value.absolve match
             case valDef@ValDef(name, meta, default) if !name.startsWith("evidence$") =>
               val evidence = name.startsWith("x$")
+
               val syntax =
                 if evidence then apply(meta.tpe)
                 else
@@ -196,7 +197,7 @@ object Syntax:
         case ThisType(ref) =>
           apply(ref) match
             case Simple(Typename.Type(parent, name)) => Simple(Typename.Term(parent, name))
-            case syntax => syntax
+            case syntax                              => syntax
 
         case typeRef@TypeRef(NoPrefix(), name) =>
           Simple(Typename.Top(name))
@@ -296,7 +297,7 @@ object Syntax:
                     names.zip(elements).map:
                       _.absolve match
                         case (ConstantType(StringConstant(name)), element) =>
-                          Named(false, name.tt, element))
+                          Named(false, name.tt, element) )
 
             case ref@TypeRef(prefix, name) =>
               apply(ref)
@@ -305,20 +306,20 @@ object Syntax:
 
         case ConstantType(constant) =>
           constant.absolve match
-            case ByteConstant(byte)     => Primitive(s"$byte.toByte")
-            case ShortConstant(short)   => Primitive(s"$short.toShort")
-            case IntConstant(int)       => Primitive(int.toString.tt)
-            case LongConstant(long)     => Primitive(s"${long}L")
-            case BooleanConstant(true)  => Primitive("true")
-            case BooleanConstant(false) => Primitive("false")
+            case ByteConstant(byte)        => Primitive(s"$byte.toByte")
+            case ShortConstant(short)      => Primitive(s"$short.toShort")
+            case IntConstant(int)          => Primitive(int.toString.tt)
+            case LongConstant(long)        => Primitive(s"${long}L")
+            case BooleanConstant(true)     => Primitive("true")
+            case BooleanConstant(false)    => Primitive("false")
             case StringConstant(string)    => Primitive(s"\"$string\"")
-            case CharConstant(char)     => Primitive(s"'$char'")
-            case DoubleConstant(double) => Primitive(s"${double.toString}")
-            case FloatConstant(float)   => Primitive(s"${float.toString}F")
-            case UnitConstant()         => Primitive("()")
-            case NullConstant()         => Primitive("null")
-            case ClassOfConstant(cls)   => Application
-                                            (Primitive("classOf"), List(apply(cls)), false)
+            case CharConstant(char)        => Primitive(s"'$char'")
+            case DoubleConstant(double)    => Primitive(s"${double.toString}")
+            case FloatConstant(float)      => Primitive(s"${float.toString}F")
+            case UnitConstant()            => Primitive("()")
+            case NullConstant()            => Primitive("null")
+            case ClassOfConstant(cls)      => Application
+                                            ( Primitive("classOf"), List(apply(cls)), false )
 
         case Refinement(base, "apply", member) =>
           apply(member)
@@ -327,6 +328,7 @@ object Syntax:
           if name == "Self" then Infix(apply(member), "is", apply(base)) else
             val refined: Structural = apply(base) match
               case refined@Structural(base, members, defs) => refined
+
               case other =>
                 Structural(other, ListMap(), ListMap())
 
@@ -348,8 +350,7 @@ object Syntax:
               Sequence
                 ( '(',
                   arguments0.zip(types).map: (member, typ) =>
-                    Named(false, member, apply(typ))
-                )
+                    Named(false, member, apply(typ)) )
 
           val arrow = if method.isContextual then "?=>" else "=>"
           if unnamed && arguments0.length == 1
@@ -375,7 +376,7 @@ object Syntax:
             case TypeLambda(params, _, _) => symbolic(params(n))
             case MethodType(params, _, _) => symbolic(params(n))
             case PolyType(params, _, _)   => symbolic(params(n))
-            case other => Primitive("ParamRef")
+            case other                    => Primitive("ParamRef")
 
         case RecursiveType(tpe) =>
           apply(tpe)

@@ -33,8 +33,8 @@
 package hyperbole
 
 import anticipation.*
-import escritoire.*, tableStyles.default, columnAttenuation.ignore
 import escapade.*
+import escritoire.*, tableStyles.default, columnAttenuation.ignore
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import iridescence.*
@@ -48,12 +48,14 @@ object TastySymbol:
         symbol.flags.map: (flag, on) =>
           if on then e"${Bg(webColors.Gold)}(${webColors.Black}(·${flag}·))"
           else e"${webColors.DarkSlateGray}($flag)"
+
         . join(e" ")
 
       val properties =
         symbol.properties.map: (property, on) =>
           if on then e"${Bg(webColors.DarkOrange)}(${webColors.Black}(·${property}·))"
           else e"${webColors.Maroon}($property)"
+
         . join(e" ")
 
       val details =
@@ -61,6 +63,7 @@ object TastySymbol:
           detail.absolve match
             case (key, value: Text)       => key -> e"${webColors.Silver}($value)"
             case (key, items: List[Text]) => key -> e"${webColors.Silver}(${items.join(t", ")})"
+
         . to(List)
 
       val name = (t"Name", e"$Bold(${symbol.prefix}${webColors.White}(${symbol.name}))")

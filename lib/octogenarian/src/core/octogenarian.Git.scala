@@ -78,9 +78,9 @@ object Git:
     [ path: Abstractable across Paths to Text ]
     ( targetPath: path, bare: Boolean = false )
     ( using WorkingDirectory,
-              Tactic[GitError],
-              (Path on Linux) is Decodable in Text,
-              Tactic[ExecError] )
+            Tactic[GitError],
+            (Path on Linux) is Decodable in Text,
+            Tactic[ExecError] )
     ( using command: GitCommand )
   :   GitRepo logs GitEvent raises NameError =
 
@@ -100,11 +100,11 @@ object Git:
   inline def cloneCommit[source <: Matchable, path: Abstractable across Paths to Text]
     ( source: source, targetPath: path, commit: GitHash )
     ( using Internet,
-      (Path on Linux) is Decodable in Text,
-      GitCommand,
-      Tactic[GitError],
-      Tactic[ExecError],
-      WorkingDirectory )
+            (Path on Linux) is Decodable in Text,
+            GitCommand,
+            Tactic[GitError],
+            Tactic[ExecError],
+            WorkingDirectory )
   :   GitProcess[GitRepo] logs GitEvent raises NameError =
 
     val sourceText = inline source match

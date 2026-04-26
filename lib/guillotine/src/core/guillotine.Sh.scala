@@ -77,7 +77,7 @@ object Sh:
       case head :: tail =>
         if state.escape
         then throw InterpolationError
-          ( m"escaping with '\\' is not allowed immediately before a substitution")
+          (  m"escaping with '\\' is not allowed immediately before a substitution" )
 
         state.absolve match
           case State(Awaiting, false, arguments) =>

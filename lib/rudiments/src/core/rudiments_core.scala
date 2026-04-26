@@ -121,7 +121,7 @@ def loop(block: => Unit): Loop = Loop({ () => block })
 export rudiments.internal.&
 
 @targetName("erasedValue")
-inline def !![erasure]: erasure = caps.unsafe.unsafeErasedValue
+inline def !! [erasure]: erasure = caps.unsafe.unsafeErasedValue
 
 extension [value <: Matchable](iterable: Iterable[value])
   transparent inline def sift[filter <: value: Typeable]: Iterable[filter] =
@@ -167,6 +167,7 @@ extension [value](iterable: Iterable[value])
             divisible: value is Divisible by Double,
             eqality2:  divisible.Result =:= value )
   :   Optional[value] =
+
     iterable.total.let(_/iterable.size.toDouble)
 
   inline def mean2
@@ -339,6 +340,7 @@ extension [element](sequence: Seq[element])
     @tailrec
     def recur(current: Any, todo: Seq[element], run: List[element], done: List[List[element]])
     :   List[List[element]] =
+
       if todo.nil then (run.reverse :: done).reverse
       else
         val focus = lambda(todo.head)

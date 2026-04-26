@@ -38,6 +38,7 @@ import language.experimental.pureFunctions
 import java.lang.management as jlm
 import javax.management as jm
 import javax.management.openmbean as jmo
+
 import com.sun.management as csm
 
 import anticipation.*
@@ -120,6 +121,7 @@ object GarbageCollection:
                       preMemory.keySet.nn.iterator.nn.asScala.map: key =>
                         key.tt
                         -> (preMemory.get(key).nn.getUsed.b, postMemory.get(key).nn.getUsed.b)
+
                       .to(Map)
 
                     action(GarbageCollection(gcInfo.getId.toInt.z, collector, cause, memory))

@@ -310,6 +310,7 @@ object internal:
                 ' {
                     tactic.contramap: error => Break[result]($pfExpr(error))
                   }
+
                 . asTerm
 
               val method = TypeRepr.of[ContextResult].typeSymbol.declaredMethod("apply").head

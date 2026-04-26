@@ -85,6 +85,7 @@ object ContentLength:
 
     new Iterator[Text]:
       private var ready: Optional[Text] = Unset
+
       def hasNext: Boolean =
         if ready == Unset then ready = frame(0)
         ready != Unset
