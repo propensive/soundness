@@ -34,10 +34,10 @@ package larceny
 
 import language.adhocExtensions
 
-import dotty.tools.*, dotc.*, util.*, reporting.*, core.*, config.Settings, Contexts.*
-
 import scala.collection.mutable as scm
 import scala.util.chaining.*
+
+import dotty.tools.*, dotc.*, util.*, reporting.*, core.*, config.Settings, Contexts.*
 
 object Subcompiler:
   val Scala3: Compiler = new Compiler()

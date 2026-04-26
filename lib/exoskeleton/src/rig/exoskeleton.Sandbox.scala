@@ -53,11 +53,10 @@ import superlunary.*
 import symbolism.*
 import vacuous.*
 
+import codicils.cancel
 import filesystemOptions.deleteRecursively.disabled
-
 import logging.silent
 import workingDirectories.java
-import codicils.cancel
 
 
 object Sandbox:

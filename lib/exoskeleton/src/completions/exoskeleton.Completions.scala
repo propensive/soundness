@@ -53,12 +53,12 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
+import charDecoders.utf8
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
-import charDecoders.utf8
 import textSanitizers.skip
 
 object Completions:

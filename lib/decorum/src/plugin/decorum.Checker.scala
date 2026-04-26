@@ -355,7 +355,7 @@ object Checker:
         // and 5). Standard-library aliases (`import scala.collection.mutable
         // as scm`, `import java.util.concurrent as juc`, etc.) and
         // language-feature aliases are an established convention.
-        if importHasAlias(rest) && group >= 4 then
+        if importHasAlias(rest) && group >= 5 then
           emit
             ( 1, "R9-aliased-import",
               "top-level imports must not use aliases (`as` or `=>`); write the full path" )
@@ -422,7 +422,19 @@ object Checker:
     val nonWs = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment).toList
     nonWs match
       case _ :: tail =>
-        tail.takeWhile(_.text != "as").iterator.map(_.text).mkString
+        // Stop at a top-level `as` (rename of the whole import). An `as`
+        // inside braces (`{Float as _, *}`) is a selector rename and is
+        // part of the import path.
+        val sb    = new StringBuilder
+        var depth = 0
+        var done  = false
+        tail.foreach: t =>
+          if !done then
+            if t.text == "{" then { depth += 1; sb.append(t.text) }
+            else if t.text == "}" then { depth -= 1; sb.append(t.text) }
+            else if depth == 0 && t.text == "as" then done = true
+            else sb.append(t.text)
+        sb.toString
 
       case _ =>
         ""
@@ -430,23 +442,40 @@ object Checker:
   private def classifyImport(path: String): Int =
     // For multi-import lines (`import a.*, b.x, c.y`), classify by the first
     // import only — additional comma-separated imports are sub-imports of
-    // the same group.
-    val firstImport  = path.takeWhile(_ != ',')
+    // the same group. A braced wildcard `{… , *}` counts as a wildcard
+    // import (group 4), since the `*` selector still pulls in everything.
+    // Stop the first-import scan at the first top-level `,` (commas inside
+    // `{…}` are part of the same import).
+    val firstImport =
+      val sb = new StringBuilder
+      var depth = 0
+      var done  = false
+      path.foreach: c =>
+        if !done then
+          if c == '{' then { depth += 1; sb.append(c) }
+          else if c == '}' then { depth -= 1; sb.append(c) }
+          else if depth == 0 && c == ',' then done = true
+          else sb.append(c)
+      sb.toString
+
     val firstSegment = firstImport.takeWhile(c => c != '.' && c != '{' && c != ' ')
+
+    val wildcardImport =
+      firstImport.endsWith(".*") || firstImport.endsWith("*}") || firstImport.endsWith("*, *}")
     firstSegment match
       case "language"        => 1
       case "java" | "javax"  => 2
       case "scala"           => 3
       // Compiler / JVM-internals and JEE: dotty (compiler API), `com.sun.*`
       // (Oracle JVM internals), `sun.*` (raw JVM internals), and `jakarta.*`
-      // (JEE) live alongside the JDK and follow the same alias-friendly
-      // conventions as `java.*` / `scala.*`.
-      case "dotty" | "com" | "sun" | "jakarta" => 3
+      // (JEE). These are alias-friendly like the JDK but conceptually
+      // distinct from `scala.*`, so they form their own group.
+      case "dotty" | "com" | "sun" | "jakarta" => 4
 
       case _ =>
-        if firstSegment.headOption.exists(_.isUpper) then 5
-        else if !firstImport.endsWith(".*") then 5
-        else 4
+        if firstSegment.headOption.exists(_.isUpper) then 6
+        else if !wildcardImport then 6
+        else 5
 
   private def checkTokens
     ( s:       State,

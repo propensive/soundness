@@ -34,14 +34,13 @@ package honeycomb
 
 import anticipation.*
 import digression.*
+import doms.html.whatwg.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
 import spectacular.*
 import vacuous.*
-
-import doms.html.whatwg.*
 
 object Renderable:
   given message: Message is Renderable:

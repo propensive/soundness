@@ -33,8 +33,8 @@
 package hyperbole
 
 import anticipation.*
-import escritoire.*, tableStyles.default, columnAttenuation.ignore
 import escapade.*
+import escritoire.*, tableStyles.default, columnAttenuation.ignore
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import iridescence.*

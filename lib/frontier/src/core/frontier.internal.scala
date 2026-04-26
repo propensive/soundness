@@ -34,6 +34,8 @@ package frontier
 
 import scala.quoted.*
 
+import dotty.tools.dotc.*
+
 import anticipation.*
 import dendrology.*
 import escapade.*
@@ -43,8 +45,6 @@ import gossamer.*
 import proscenium.*
 import spectacular.*
 import symbolism.*
-
-import dotty.tools.dotc.*
 
 object internal:
   inline def explanation[target]: target = ${explain[target]}

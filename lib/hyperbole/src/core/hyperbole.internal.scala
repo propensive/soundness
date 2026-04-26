@@ -35,6 +35,8 @@ package hyperbole
 import scala.collection.mutable as scm
 import scala.quoted.*
 
+import dotty.tools.*, dotc.util as dtdu
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -48,8 +50,6 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-
-import dotty.tools.*, dotc.util as dtdu
 
 import syntaxHighlighting.teletypeable
 

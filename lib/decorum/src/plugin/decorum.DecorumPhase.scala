@@ -32,10 +32,10 @@
                                                                                                   */
 package decorum
 
+import scala.collection.mutable
+
 import dotty.tools.dotc.*, ast.tpd, core.Contexts.*, plugins.*, util.{SourceFile, SourcePosition}
 import dotty.tools.dotc.util.Spans.Span
-
-import scala.collection.mutable
 
 class DecorumPhase(options: List[String]) extends PluginPhase:
   val phaseName: String                = "decorum"

@@ -34,6 +34,8 @@ package harlequin
 
 import scala.collection.mutable as scm
 
+import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
+
 import anthology.*
 import anticipation.*
 import denominative.*
@@ -41,8 +43,6 @@ import gossamer.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-
-import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
 
 object SourceCode:
   private def accent(token: Int): Accent =

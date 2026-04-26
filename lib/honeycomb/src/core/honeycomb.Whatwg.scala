@@ -49,8 +49,8 @@ import turbulence.*
 import typonym.*
 import vacuous.*
 
-import classloaders.threadContext
 import charDecoders.utf8
+import classloaders.threadContext
 import textSanitizers.skip
 
 object Whatwg:
