@@ -37,7 +37,7 @@ import gossamer.*
 
 package dagStyles:
   given default: [text: Textual] => TextualDagStyle[text] =
-    TextualDagStyle("  ".tt, "└─".tt, "│ ".tt, "├─".tt, "──".tt,  "┴─".tt, "│─".tt, "┼─".tt)
+    TextualDagStyle("  ".tt, "└─".tt, "│ ".tt, "├─".tt, "──".tt, "┴─".tt, "│─".tt, "┼─".tt)
 
   given ascii: [text: Textual] => TextualDagStyle[text] =
     TextualDagStyle("  ".tt, "+-".tt, "| ".tt, "+-".tt, "--".tt, "+-".tt, "|-".tt, "+-".tt)

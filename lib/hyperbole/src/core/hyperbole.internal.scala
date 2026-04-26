@@ -111,7 +111,7 @@ object internal:
         tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expand('t', _)))
 
       def add(tag: Char, nodes2: Tree*): TastyTree =
-        tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expand(tag,_)))
+        tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expand(tag, _)))
 
 
     object TastyTree:

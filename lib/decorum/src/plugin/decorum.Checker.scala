@@ -60,13 +60,23 @@ object Checker:
     LazyList.from(out)
 
   def expectedModule(filePath: String): Option[String] =
-    val parts    = filePath.split("/lib/").nn
-    val segments = filePath.split("/").nn
-    val fileName = segments(segments.length - 1).nn
-    val cuts     = List(fileName.indexOf('_'), fileName.indexOf('.')).filter(_ >= 0)
-    if cuts.nonEmpty then Some(fileName.substring(0, cuts.min).nn)
-    else if parts.length < 2 then None
-    else Some(parts(1).nn.split("/").nn(0).nn)
+    val parts = filePath.split("/lib/").nn
+    if parts.length < 2 then None
+    else
+      val moduleDir = parts(1).nn.split("/").nn(0).nn
+      val segments = filePath.split("/").nn
+      val fileName = segments(segments.length - 1).nn
+      val base =
+        if fileName.endsWith(".scala")
+        then fileName.substring(0, fileName.length - ".scala".length).nn
+        else fileName
+      // Cross-module export files (e.g. `soundness_serpentine_core.scala`,
+      // `anticipation_serpentine_core.scala`) declare a different package
+      // — the prefix before `_<module>_<suffix>`. Detect this pattern and
+      // return that prefix as the expected package.
+      val prefix = s"_${moduleDir}_"
+      val idx    = base.indexOf(prefix)
+      if idx > 0 then Some(base.substring(0, idx).nn) else Some(moduleDir)
 
   private case class CaseEntry(lineNum: Int, arrowCol: Int)
   private class CaseRun(val indent: Int, val cases: mutable.ListBuffer[CaseEntry])

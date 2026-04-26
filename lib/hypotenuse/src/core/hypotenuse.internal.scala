@@ -1483,7 +1483,6 @@ object internal:
     inline def hex: Text = JInt.toUnsignedString(JShort.toUnsignedInt(u16), 16).nn.tt
 
     @targetName("octalU16")
-
     inline def octal: Text = JInt.toUnsignedString(JShort.toUnsignedInt(u16), 8).nn.tt
 
     @targetName("binaryU16")

@@ -657,22 +657,30 @@ object Html extends Tag.Container
           cursor.next() yet textual(mark, close, entities)
 
     def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '-'      => val end = cursor.mark
-                       next()
-                       cursor.lay(fail(ExpectedMore)):
-                         case '-' => expect('>') yet cursor.grab(mark, end)
-                         case _   => comment(mark)
-      case '\u0000' => callback.let(_(cursor.position, Hole.Comment))
-                       next() yet comment(mark)
-      case char     => next() yet comment(mark)
+      case '-' =>
+        val end = cursor.mark
+        next()
+        cursor.lay(fail(ExpectedMore)):
+          case '-' => expect('>') yet cursor.grab(mark, end)
+          case _   => comment(mark)
+
+      case '\u0000' =>
+        callback.let(_(cursor.position, Hole.Comment))
+        next() yet comment(mark)
+
+      case char =>
+        next() yet comment(mark)
 
     def cdata(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case ']'      => val end = cursor.mark
-                       next()
-                       cursor.lay(fail(ExpectedMore)):
-                         case ']' => expect('>') yet cursor.grab(mark, end)
-                         case _   => cdata(mark)
-      case char     => next() yet cdata(mark)
+      case ']' =>
+        val end = cursor.mark
+        next()
+        cursor.lay(fail(ExpectedMore)):
+          case ']' => expect('>') yet cursor.grab(mark, end)
+          case _   => cdata(mark)
+
+      case char =>
+        next() yet cdata(mark)
 
     def doctype(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case '>'   => cursor.grab(mark, cursor.mark).also(next())
