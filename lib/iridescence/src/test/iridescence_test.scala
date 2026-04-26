@@ -52,28 +52,28 @@ object Tests extends Suite(m"Iridescence tests"):
 
       for color <- WebColors.colors.reverse do
         test(m"sRGB to L*a*b*"):
-          color.in[Srgb].in[Cielab].in[Srgb]
-        . assert(_ === color.srgb)
+          color.in[Cielab].in[Srgb]
+        . assert(_ === color.in[Srgb])
 
         test(m"HSV to sRGB and back"):
-          color.in[Srgb].in[Hsv].in[Srgb]
-        . assert(_ === color.hsv)
+          color.in[Hsv].in[Srgb]
+        . assert(_ === color.in[Srgb])
 
         test(m"sRGB to CMY and back"):
-          color.in[Srgb].in[Cmy].in[Srgb]
-        . assert(_ === color.srgb)
+          color.in[Cmy].in[Srgb]
+        . assert(_ === color.in[Srgb])
 
         test(m"sRGB to CMYK and back"):
-          color.in[Srgb].in[Cmyk].in[Srgb]
-        . assert(_ === color.srgb)
+          color.in[Cmyk].in[Srgb]
+        . assert(_ === color.in[Srgb])
 
         test(m"sRGB to XYZ and back"):
-          color.in[Srgb].in[Xyz].in[Srgb]
-        . assert(_ === color.srgb)
+          color.in[Xyz].in[Srgb]
+        . assert(_ === color.in[Srgb])
 
         test(m"sRGB to HSL and back"):
-          color.in[Srgb].in[Hsl].in[Srgb]
-        . assert(_ === color.srgb)
+          color.in[Hsl].in[Srgb]
+        . assert(_ === color.in[Srgb])
 
     suite(m"Interpolator tests"):
       test(m"Read a hex value with a leading hash"):

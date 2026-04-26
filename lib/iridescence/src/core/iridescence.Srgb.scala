@@ -83,9 +83,9 @@ object Srgb:
       if delta == 0 then Hsv(0, 0, value)
       else
         val saturation = delta/value
-        val dr = ((value - color.red)/6) + (delta/2)/delta
-        val dg = ((value - color.green)/6) + (delta/2)/delta
-        val db = ((value - color.blue)/6) + (delta/2)/delta
+        val dr = ((value - color.red)/6 + delta/2)/delta
+        val dg = ((value - color.green)/6 + delta/2)/delta
+        val db = ((value - color.blue)/6 + delta/2)/delta
 
         val hue =
           if value == color.red then db - dg

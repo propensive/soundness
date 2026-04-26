@@ -35,12 +35,14 @@ package iridescence
 import prepositional.*
 
 object Cmyk:
-  given perceptual: Cmyk is Perceptual in Cmy =
+  given cmy: Cmyk is Perceptual in Cmy =
     color =>
       Cmy
         ( color.cyan*(1 - color.key) + color.key,
           color.magenta*(1 - color.key) + color.key,
           color.yellow*(1 - color.key) + color.key )
+
+  given srgb: Cmyk is Perceptual in Srgb = _.in[Cmy].in[Srgb]
 
 case class Cmyk(cyan: Double, magenta: Double, yellow: Double, key: Double) extends Color:
   type Form = Cmyk

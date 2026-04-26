@@ -46,6 +46,8 @@ object Cielab:
 
       Xyz(x, y, z)
 
+  given srgb: Colorimetry => Cielab is Perceptual in Srgb = _.in[Xyz].in[Srgb]
+
 case class Cielab(lightness: Double, blueYellow: Double, greenRed: Double) extends Color:
   type Form = Cielab
 
@@ -53,8 +55,3 @@ case class Cielab(lightness: Double, blueYellow: Double, greenRed: Double) exten
     ( hyp(F64(right.blueYellow), F64(right.greenRed))
       - hyp(F64(left.blueYellow), F64(left.greenRed)) )
     . double
-
-// case class Cielab(l: Double, a: Double, b: Double):
-
-//   def mix(that: Cielab, ratio: Double = 0.5): Cielab =
-//     Cielab(l*(1 - ratio) + ratio*that.l, a*(1 - ratio) + ratio*that.a, b*(1 - ratio) + ratio*that.b)
