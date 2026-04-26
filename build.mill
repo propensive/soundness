@@ -230,7 +230,7 @@ object test extends ScalaModule:
     //gigantism.test,
     gnossienne.test,
     gossamer.test,
-    //guillotine.test,
+    guillotine.test,
     hallucination.test,
     harlequin.test,
     hellenism.test,
