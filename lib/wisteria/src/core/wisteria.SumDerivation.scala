@@ -54,7 +54,7 @@ object SumDerivation:
       case given (variant <:< Singleton) =>
         inline !![variants] match
           case _: Zero                           => true
-          case _: (variant *: variants)  => all[variant, variants]
+          case _: (variant *: variants)          => all[variant, variants]
 
       case _ =>
         false

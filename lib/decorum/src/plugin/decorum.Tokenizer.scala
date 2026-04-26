@@ -43,6 +43,7 @@ object Tokenizer:
     var inTripleString = false
 
     inline def emit(tok: Token): Unit = line += tok
+
     inline def endLine(): Unit =
       lines += line.toIndexedSeq
       line = mutable.ArrayBuffer[Token]()

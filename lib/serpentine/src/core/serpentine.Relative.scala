@@ -178,11 +178,11 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
     summonFrom:
       case given (child.type is Admissible on Plane) =>
         Relative[Plane, child.type *: Topic, Limit]
-          (ascent, infer[child.type is Navigable].follow(child) +: descent*)
+          ( ascent, infer[child.type is Navigable].follow(child) +: descent* )
 
       case _ =>
         Relative[Plane, child.type *: Topic, Limit]
-          (ascent, infer[child.type is Navigable].follow(child) :: descent*)
+          ( ascent, infer[child.type is Navigable].follow(child) :: descent* )
 
         . unqualified
 

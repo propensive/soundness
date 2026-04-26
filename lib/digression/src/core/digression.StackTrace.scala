@@ -208,9 +208,9 @@ object StackTrace:
                 case 'm' => token(index,       "$times",               "*")
                 case _   => skip()
               case _  => skip()
-            case 'u' => token(index,           "$up",                  "^")
+            case 'u'                                                       => token(index,           "$up",                  "^")
             case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => recur(index + 1, true)
-            case _   => skip()
+            case _                                                         => skip()
 
         case ch =>
           buffer.append(ch.toString)

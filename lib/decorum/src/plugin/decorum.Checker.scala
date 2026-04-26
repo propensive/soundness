@@ -66,6 +66,7 @@ object Checker:
       val moduleDir = parts(1).nn.split("/").nn(0).nn
       val segments = filePath.split("/").nn
       val fileName = segments(segments.length - 1).nn
+
       val base =
         if fileName.endsWith(".scala")
         then fileName.substring(0, fileName.length - ".scala".length).nn
@@ -74,6 +75,7 @@ object Checker:
       // `anticipation_serpentine_core.scala`) declare a different package
       // — the prefix before `_<module>_<suffix>`. Detect this pattern and
       // return that prefix as the expected package.
+
       val prefix = s"_${moduleDir}_"
       val idx    = base.indexOf(prefix)
       if idx > 0 then Some(base.substring(0, idx).nn) else Some(moduleDir)
@@ -196,8 +198,10 @@ object Checker:
           else if t.text == ")" || t.text == "]" || t.text == "}" then depth -= 1
           else if depth == 0 && t.text == "=" then found = true
         found
+
       val startsWithDecl =
         sem.headOption.exists(t => DeclKeywords.contains(t.text) || ModifierWords.contains(t.text))
+
       val isContinuationOfDecl =
         s.prevLineStartedDecl
           && sem.headOption.exists(t => t.text == "(" || t.text == "[")
@@ -345,13 +349,16 @@ object Checker:
       s.inMultilineImport = importContinues(rest)
     else firstReal.foreach: head =>
       if head.text == "import" then
-        if importHasAlias(rest) then
+        val path  = importPath(rest)
+        val group = classifyImport(path)
+        // Top-level aliases are forbidden only for soundness libs (group 4
+        // and 5). Standard-library aliases (`import scala.collection.mutable
+        // as scm`, `import java.util.concurrent as juc`, etc.) and
+        // language-feature aliases are an established convention.
+        if importHasAlias(rest) && group >= 4 then
           emit
             ( 1, "R9-aliased-import",
               "top-level imports must not use aliases (`as` or `=>`); write the full path" )
-
-        val path  = importPath(rest)
-        val group = classifyImport(path)
 
         s.prevImportGroup match
           case Some(prevGroup) =>
@@ -397,8 +404,19 @@ object Checker:
       val endsWithComma = nonWs.last.text == ","
       unbalanced || endsWithComma
 
+  // Detects top-level `as` / `=>` aliases on an import statement, e.g.
+  // `import scala.collection.immutable as sci`. Selector-renaming inside
+  // braces (`import java.nio.file.{Files, Path as JPath}`) is permitted —
+  // an `as` token at depth > 0 (inside `{…}`) does not count.
   private def importHasAlias(rest: IndexedSeq[Token]): Boolean =
-    rest.exists(t => t.kind == Kind.Code && (t.text == "as" || t.text == "=>"))
+    var depth = 0
+    var found = false
+    rest.foreach: t =>
+      if t.kind == Kind.Code then
+        if t.text == "{" then depth += 1
+        else if t.text == "}" then depth -= 1
+        else if depth == 0 && (t.text == "as" || t.text == "=>") then found = true
+    found
 
   private def importPath(rest: IndexedSeq[Token]): String =
     val nonWs = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment).toList
@@ -410,15 +428,24 @@ object Checker:
         ""
 
   private def classifyImport(path: String): Int =
-    val firstSegment = path.takeWhile(c => c != '.' && c != ',' && c != '{' && c != ' ')
+    // For multi-import lines (`import a.*, b.x, c.y`), classify by the first
+    // import only — additional comma-separated imports are sub-imports of
+    // the same group.
+    val firstImport  = path.takeWhile(_ != ',')
+    val firstSegment = firstImport.takeWhile(c => c != '.' && c != '{' && c != ' ')
     firstSegment match
       case "language"        => 1
       case "java" | "javax"  => 2
       case "scala"           => 3
+      // Compiler / JVM-internals and JEE: dotty (compiler API), `com.sun.*`
+      // (Oracle JVM internals), `sun.*` (raw JVM internals), and `jakarta.*`
+      // (JEE) live alongside the JDK and follow the same alias-friendly
+      // conventions as `java.*` / `scala.*`.
+      case "dotty" | "com" | "sun" | "jakarta" => 3
 
       case _ =>
         if firstSegment.headOption.exists(_.isUpper) then 5
-        else if !path.endsWith(".*") then 5
+        else if !firstImport.endsWith(".*") then 5
         else 4
 
   private def checkTokens
@@ -557,6 +584,7 @@ object Checker:
     val leadingCols = arr.takeWhile(_.kind == Kind.Space).iterator.map(_.text.length).sum
     val moreIndentedThanPrev = leadingCols > s.prevCodeLineIndent
     val sameIndentAsPrev = leadingCols == s.prevCodeLineIndent
+
     val isMultiClauseContinuation =
       (prevTok == ")" || prevTok == "]") && (
         // Continuation of a previous formal block (multi-line `( ... )`):
@@ -573,6 +601,7 @@ object Checker:
     // expression, not a method application — skip both R30 and R12 by
     // suppressing the rule entirely for the line.
     val isArrowBodyContinuation = prevTok == "=>" && !s.prevLineWasBlank
+
     val prevIsApplication =
       if s.prevLineWasBlank then false
       else if isMultiClauseContinuation then true
@@ -601,6 +630,7 @@ object Checker:
           // A `:   [`/`:   (` after a leading `:` is a heavy-signature
           // continuation (anonymous given chains starting with type params
           // or context params).
+
           val formalCandidate =
             (isLineStartOpener && prevIsApplication) || isArrowOpener || isColonOpener
           stack.push((i, formalCandidate))
@@ -614,18 +644,28 @@ object Checker:
             val nextAfterCloser =
               arr.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment, closer + 1)
 
-            // For colon-opener brackets (`:   ( ... )` / `:   [ ... ]`) a
-            // trailing `=` on the same line means the bracket is the return
-            // type itself (tuple type), not a context-parameter list — in
-            // that case it isn't a formal block. A `)` closer on its own
-            // line (or followed by another `)`/`]`/`,`/`(`/`[`) is part of
-            // an anonymous-given continuation and IS formal.
+            // For colon-opener brackets (`:   ( ... )` / `:   [ ... ]`) the
+            // bracket is a formal context-parameter / type-parameter list
+            // only when its closer is the line's last semantic token (the
+            // chain continues on the next line) or is immediately followed
+            // by an arrow `=>` (anonymous given continuation). Anything
+            // else — `=`, `throws`, `~`, etc. — means the bracket is part
+            // of the return type expression itself. Additionally a `(...)`
+            // colon-opener bracket must contain a `name: type` annotation
+            // (top-level `:`) — otherwise it is a tuple type, not a
+            // context-parameter list.
             val isColonOpenerBracket = colonParen && opener == secondSemantic
+
+            val colonParenBracketIsParamList =
+              !isColonOpenerBracket
+                || arr(opener).text == "[" || bracketHasTopColon(arr, opener, closer)
+
             val followedByBodyOpener =
-              if nextAfterCloser < 0 then true
+              if !colonParenBracketIsParamList then false
+              else if nextAfterCloser < 0 then true
               else
                 val t = arr(nextAfterCloser).text
-                if isColonOpenerBracket then t != "="
+                if isColonOpenerBracket then t == "=>"
                 else
                   t == ":" || t == "=" || t == "extends" || t == "derives"
                     || t == ")" || t == "]" || t == "}" || t == ","
@@ -740,6 +780,27 @@ object Checker:
     Set("||", "&&", "==", "!=", "<=", ">=", "<", ">", "+", "-", "*", "/", "%")
 
   private def isExpressionOperator(t: String): Boolean = ExpressionOperators.contains(t)
+
+  // True iff the bracket between `opener` and `closer` (exclusive) contains
+  // a top-level `:` token at depth 0 — indicating a `name: Type`
+  // annotation (parameter list). Used to distinguish `:   ( a: T )`
+  // (param list) from `:   (T1, T2)` (tuple type).
+  private def bracketHasTopColon
+    ( arr: Array[Token], opener: Int, closer: Int )
+  :   Boolean =
+
+    var depth = 0
+    var found = false
+    var k = opener + 1
+    while k < closer && !found do
+      val t = arr(k)
+      if t.kind == Kind.Code then
+        val text = t.text
+        if text == "(" || text == "[" then depth += 1
+        else if text == ")" || text == "]" then depth -= 1
+        else if depth == 0 && text == ":" then found = true
+      k += 1
+    found
 
   private def checkComments
     ( lineNum: Int,
@@ -1292,6 +1353,7 @@ object Checker:
         val freshRow =
           s.prevCodeLineLastTok == "," || s.prevCodeLineLastTok == "("
             || s.prevCodeLineLastTok == "using"
+
         val firstSemIdx = rest.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment)
         if freshRow && firstSemIdx >= 0 && rest(firstSemIdx).text != ")" then
           var c = leadingCols + 1

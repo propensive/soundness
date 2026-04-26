@@ -70,8 +70,7 @@ object internal:
                 ${Expr.ofList(nodes2)},
                 $param2.asInstanceOf[Optional[Text]],
                 ${Expr(term)},
-                ${Expr(definitional)}
-              )
+                ${Expr(definitional)} )
           }
 
     serialize(tastyTree[value](value, inlining))
@@ -85,6 +84,7 @@ object internal:
     def source(tree: Tree): Teletype = tree.pos match
       case position: dtdu.SourcePosition =>
         val init: Ordinal = position.lineContent.tt.where(_ != ' ').or(Prim)
+
         val content: Teletype =
           val sourceCode = sources.establish(position.source.toString.tt):
             val text = Scala.highlight(new String(position.source.content()).tt)
@@ -469,6 +469,7 @@ object internal:
 
           case DefDef(name, paramss, tpt, rhs) =>
             val typeName = stenography.internal.name(tpt.tpe)
+
             val clauses = paramss.map:
               case TermParamClause(params) =>
                 TastyTree('a', typeName, t"TermParamClause", tree).add('a', params*)

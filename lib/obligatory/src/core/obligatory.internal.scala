@@ -110,7 +110,7 @@ object internal:
                           """
 
                     val rhs = result.asType.absolve match
-                      case '[Unit] => '{${application.asExpr} yet Unset}
+                      case '[Unit]   => '{${application.asExpr} yet Unset}
                       case '[result] => Expr.summon[result is Encodable in Json] match
                         case Some(encoder) =>
                           ' {

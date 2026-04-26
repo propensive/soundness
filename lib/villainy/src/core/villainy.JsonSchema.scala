@@ -105,49 +105,49 @@ object JsonSchema:
 
 
   given dateTime: [instant: Instantiable across Instants from Text]
-  =>  ("date-time" is Intensional in JsonSchema from Json to instant) =
+  =>  ( "date-time" is Intensional in JsonSchema from Json to instant ) =
 
     JsonSchema.intensional(_.as[Text].instantiate)
 
 
   given optionalDateTime: [instant: Instantiable across Instants from Text]
-  =>  ("date-time?" is Intensional in JsonSchema from Json to Optional[instant]) =
+  =>  ( "date-time?" is Intensional in JsonSchema from Json to Optional[instant] ) =
 
     JsonSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
   given date: [date: Instantiable across Dates from Text]
-  =>  ("date" is Intensional in JsonSchema from Json to date) =
+  =>  ( "date" is Intensional in JsonSchema from Json to date ) =
 
     JsonSchema.intensional(_.as[Text].instantiate)
 
 
   given optionalDate: [date: Instantiable across Dates from Text]
-  =>  ("date?" is Intensional in JsonSchema from Json to Optional[date]) =
+  =>  ( "date?" is Intensional in JsonSchema from Json to Optional[date] ) =
 
     JsonSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
   given time: [time: Instantiable across Times from Text]
-  =>  ("time" is Intensional in JsonSchema from Json to time) =
+  =>  ( "time" is Intensional in JsonSchema from Json to time ) =
 
     JsonSchema.intensional(_.as[Text].instantiate)
 
 
   given optionalTime: [time: Instantiable across Times from Text]
-  =>  ("time?" is Intensional in JsonSchema from Json to Optional[time]) =
+  =>  ( "time?" is Intensional in JsonSchema from Json to Optional[time] ) =
 
     JsonSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
   given duration: [duration: Instantiable across Durations from Text]
-  =>  ("duration" is Intensional in JsonSchema to duration) =
+  =>  ( "duration" is Intensional in JsonSchema to duration ) =
 
     JsonSchema.intensional(_.as[Text].instantiate)
 
 
   given optionalDuration: [duration: Instantiable across Durations from Text]
-  =>  ("duration?" is Intensional in JsonSchema to Optional[duration]) =
+  =>  ( "duration?" is Intensional in JsonSchema to Optional[duration] ) =
 
     JsonSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
 
@@ -223,26 +223,26 @@ object JsonSchema:
 
 
   given uri: [url: Instantiable across Urls from Text]
-  =>  ( "uri" is Intensional in JsonSchema from Json to url ) =
+  =>  (  "uri" is Intensional in JsonSchema from Json to url  ) =
 
     JsonSchema.intensional: value => url.instantiate(value.as[Text])
 
 
   given optionalUri: [url: Instantiable across Urls from Text]
-  =>  ( "uri?" is Intensional in JsonSchema from Json to Optional[url] ) =
+  =>  (  "uri?" is Intensional in JsonSchema from Json to Optional[url]  ) =
 
     JsonSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
   given iri: [url: Instantiable across Urls from Text]
-  =>  ("iri" is Intensional in JsonSchema from Json to url) =
+  =>  ( "iri" is Intensional in JsonSchema from Json to url ) =
 
     JsonSchema.intensional:
       value => url.instantiate(value.as[Text])
 
 
   given optionalIri: [url: Instantiable across Urls from Text]
-  =>  ( "iri?" is Intensional in JsonSchema from Json to Optional[url] ) =
+  =>  (  "iri?" is Intensional in JsonSchema from Json to Optional[url]  ) =
 
     JsonSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
 

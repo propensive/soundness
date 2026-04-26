@@ -408,7 +408,7 @@ object JsonAst extends Format:
 
             case ch =>
               ((ch >> 5): @switch) match
-                case 0 => error(Issue.NotEscaped(ch.toChar))
+                case 0                 => error(Issue.NotEscaped(ch.toChar))
                 case 1 | 2 | 3 | 4 | 5 => appendChar(ch.toChar)
 
                 case _ =>

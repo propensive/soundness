@@ -48,7 +48,7 @@ import vacuous.*
 
 import classloaders.threadContext
 import charDecoders.utf8
-import charEncoders.utf8 as utf8Encoder
+import charEncoders.utf8
 import textSanitizers.skip
 
 import filesystemOptions.dereferenceSymlinks.enabled
@@ -101,7 +101,7 @@ object PolyglotInstaller:
       builder.add(t"-----END CERTIFICATE-----\n")
 
     builder.add(t"#>\n")
-    builder.text.data(using utf8Encoder)
+    builder.text.data(using charEncoders.utf8)
 
 
   def main(args: Array[String]): Unit = unsafely:

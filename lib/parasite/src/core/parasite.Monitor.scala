@@ -50,8 +50,8 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-import Fulfillment.*
 import AsyncError.Reason
+import Fulfillment.*
 
 sealed trait Monitor extends Resultant:
   val promise: Promise[Result]

@@ -272,10 +272,10 @@ object internal extends protointernal:
               val extra2 = extra.let { m => m.copy(comments = m.comments.reverse) }
 
               val data = Atom
-                          (key,
-                          IArray.from(children.reverse),
-                          Layout(params, multiline, col - margin),
-                          schema)
+                          ( key,
+                            IArray.from(children.reverse),
+                            Layout(params, multiline, col - margin),
+                            schema )
 
               val node = CodlNode(data, extra2)
 

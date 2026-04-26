@@ -51,6 +51,7 @@ object internal:
         new Enumerable:
           type Self = enumeration
           val name: Text = ${Expr(TypeRepr.of[enumeration].show)}.tt
+
           val values: IArray[enumeration] =
             $ {
                 companion.absolve match

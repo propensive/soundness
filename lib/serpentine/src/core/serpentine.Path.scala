@@ -278,11 +278,11 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     summonFrom:
       case given ((? >: child.type) is Admissible on Plane) =>
         Path[Plane, Limit, child.type *: Topic]
-          (root, infer[child.type is Navigable on Plane].follow(child) +: descent)
+          ( root, infer[child.type is Navigable on Plane].follow(child) +: descent )
 
       case _ =>
         Path.unplatformed[Limit, child.type *: Topic]
-          (root, infer[child.type is Navigable on Plane].follow(child) +: descent*)
+          ( root, infer[child.type is Navigable on Plane].follow(child) +: descent* )
 
 
   transparent inline def peer(child: Any)(using child.type is Admissible on Plane)

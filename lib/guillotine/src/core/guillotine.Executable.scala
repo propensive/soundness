@@ -73,7 +73,7 @@ sealed trait Executable:
     case Pipeline(commands*) =>
       this match
         case Pipeline(commands2*) => Pipeline((commands ++ commands2)*)
-        case command: Command => Pipeline((commands :+ command)*)
+        case command: Command     => Pipeline((commands :+ command)*)
 
     case command: Command =>
       this match

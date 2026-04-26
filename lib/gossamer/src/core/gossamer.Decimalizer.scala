@@ -103,6 +103,7 @@ extends DecimalConverter:
               exponent.length + (if exponentValue < 0 then 1 else 0)
               + (exponentScale(exponentValue, 0))
             else 0
+
           val fullLength = (if sign then 1 else 0) + (if point < length then 1 else 0) + length
           val array = new Array[Char](fullLength + suffix)
 

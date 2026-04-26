@@ -115,6 +115,7 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
         val context = initCtx.fresh
         //val pluginParams = plugins
         //val jsParams =
+
         val arguments: List[Text] =
           List(t"-d", out.generic, t"-classpath", classpath())
           ::: commandLineArguments

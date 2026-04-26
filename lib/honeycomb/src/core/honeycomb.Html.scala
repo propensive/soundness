@@ -228,10 +228,10 @@ object Html extends Tag.Container
 
 
   given showable: [html <: Html] => html is Showable =
-    case Fragment(nodes*) => nodes.map(_.show).join
+    case Fragment(nodes*)  => nodes.map(_.show).join
     case TextNode(text)    => text
-    case Comment(text) => t"<!--$text-->"
-    case Doctype(text) => t"<!$text>"
+    case Comment(text)     => t"<!--$text-->"
+    case Doctype(text)     => t"<!$text>"
 
     case Element(tagname, attributes, children, _) =>
       val tagContent = if attributes.nil then t"" else

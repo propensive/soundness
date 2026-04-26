@@ -124,7 +124,7 @@ object internal:
                     val cases = toolMethods.map: method =>
                       val result: TypeRepr = method.info.absolve match
                         case MethodType(_, _, MethodType(_, _, result)) => result
-                        case MethodType(_, _, result) => result
+                        case MethodType(_, _, result)                   => result
 
                       val params = method.paramSymss.head.map: param =>
                         param.info.asType.absolve match

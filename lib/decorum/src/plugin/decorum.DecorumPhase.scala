@@ -32,10 +32,10 @@
                                                                                                   */
 package decorum
 
-import scala.collection.mutable
-
 import dotty.tools.dotc.*, ast.tpd, core.Contexts.*, plugins.*, util.{SourceFile, SourcePosition}
 import dotty.tools.dotc.util.Spans.Span
+
+import scala.collection.mutable
 
 class DecorumPhase(options: List[String]) extends PluginPhase:
   val phaseName: String                = "decorum"
@@ -61,5 +61,6 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
     val lineStart =
       try source.lineToOffset((line - 1).max(0))
       catch case _: Throwable => 0
+
     val offset = (lineStart + (column - 1).max(0)).min(source.content.length)
     SourcePosition(source, Span(offset))
