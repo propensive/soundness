@@ -245,7 +245,11 @@ object Html extends Tag.Container
     case Close, Comment, Empty, Open, Doctype, Cdata
 
   private enum Level:
-    case Ascend, Descend, Peer
+    case Ascend, Descend, Peer, Skip
+
+  private val formattingTags: Set[Text] = Set(
+    t"a", t"b", t"big", t"code", t"em", t"font", t"i", t"nobr",
+    t"s", t"small", t"strike", t"strong", t"tt", t"u" )
 
   trait Populable:
     node: Element =>
@@ -386,6 +390,26 @@ object Html extends Tag.Container
     var stack: Array[Tag] = new Array(4)
     var depth: Int = 0
     var fragment: IArray[Node] = IArray()
+    var pendingFormatting: List[(Text, Map[Text, Optional[Text]])] = Nil
+    var pendingAtDepth: Int = -1
+    var fosteredBefore: List[Node] = Nil
+    var fosteredAfter: List[Node] = Nil
+    var inTableContent: Boolean = false
+    var pendingFosterDescend: Boolean = false
+
+    def findAncestorIndex(label: Text): Int =
+      var i = 0
+      val end = depth - 1
+      while i < end do
+        if stack(i).label == label then return i
+        i += 1
+      -1
+
+    def stackContainsAncestor(label: Text): Boolean = findAncestorIndex(label) >= 0
+
+    def isTableLikeContext(tag: Tag): Boolean =
+      tag.label == t"table" || tag.label == t"tbody" || tag.label == t"thead"
+      || tag.label == t"tfoot" || tag.label == t"tr"
 
     def append(node: Node): Unit =
       if index >= nodes.length then
@@ -598,7 +622,7 @@ object Html extends Tag.Container
     @tailrec
     def decimalEntity(mark: Mark, value: Int): Optional[Text] = cursor.lay(fail(ExpectedMore)):
       case digit if digit.isDigit => next() yet decimalEntity(mark, 10*value + (digit - '0'))
-      case ';'                    => next() yet t"${value.toChar}"
+      case ';'                    => next() yet value.unicode
       case char                   => Unset
 
     @tailrec
@@ -698,6 +722,7 @@ object Html extends Tag.Container
             expect('[')
             next()
             content = cursor.hold(cdata(cursor.mark))
+            cursor.next()
             Token.Cdata
 
           case 'D' | 'd' if doctypes =>
@@ -725,11 +750,16 @@ object Html extends Tag.Container
 
       case '\u0000' => fail(BadInsertion)
       case char =>
-        content =
-          cursor.hold:
-            if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, dom.elements).label
+        val newForeign: Boolean = cursor.hold:
+          if foreign then
+            content = foreignTag(cursor.mark)
+            true
+          else
+            val tagDef = tagname(cursor.mark, dom.elements)
+            content = tagDef.label
+            tagDef.foreign
 
-        extra = cursor.hold(attributes(content, foreign))
+        extra = cursor.hold(attributes(content, foreign || newForeign))
 
         cursor.lay(fail(ExpectedMore)):
           case '/'       => expect('>') yet cursor.next() yet Token.Empty
@@ -751,9 +781,9 @@ object Html extends Tag.Container
       index -= count
       result.immutable(using Unsafe)
 
-    def descend(parent: Tag, admissible: Set[Text]): Node =
+    def descend(parent: Tag, admissible: Set[Text], attrs: Map[Text, Optional[Text]]): Node =
       val admissible2 = if parent.transparent then admissible else parent.admissible
-      read(parent, admissible2, extra, 0)
+      read(parent, admissible2, attrs, 0)
 
     @tailrec
     def read(parent: Tag, admissible: Set[Text], map: Map[Text, Optional[Text]], count: Int): Node =
@@ -783,7 +813,7 @@ object Html extends Tag.Container
               current = Element(content, extra, IArray(), parent.foreign)
 
             def close(): Unit =
-              current = Element(parent.label, parent.attributes, array(count), parent.foreign)
+              current = Element(parent.label, map, array(count), parent.foreign)
               level = Level.Ascend
 
             def infer(tag: Tag): Unit =
@@ -824,38 +854,127 @@ object Html extends Tag.Container
                     cursor.cue(mark)
                     fail(InvalidTag(content))
 
-                if !admit(content) then infer(focus) else if focus.void then empty()
+                if !admit(content) then
+                  val inferred = dom.infer(parent, focus)
+                  if inferred.absent then
+                    if parent.autoclose then
+                      cursor.cue(mark)
+                      close()
+                    else if isTableLikeContext(parent) && !focus.void then
+                      pendingFosterDescend = true
+                      level = Level.Descend
+                    else
+                      cursor.cue(mark)
+                      fail(InadmissibleTag(content, parent.label))
+                  else
+                    cursor.cue(mark)
+                    focus = inferred.vouch
+                    level = Level.Descend
+                else if focus.void then empty()
+                else if (content == t"a" || content == t"nobr")
+                && (parent.label == content || stackContainsAncestor(content)) then
+                  cursor.cue(mark)
+                  close()
                 else level = Level.Descend
 
               case Token.Close =>
                 if content != parent.label then
-                  cursor.cue(mark)
-                  if parent.autoclose then close()
-                  else if parent == root then fail(UnopenedTag(content))
-                  else fail(MismatchedTag(parent.label, content))
+                  if parent.autoclose then
+                    cursor.cue(mark)
+                    close()
+                  else if stackContainsAncestor(content) then
+                    if formattingTags.contains(parent.label) then
+                      pendingAtDepth = findAncestorIndex(content)
+                      pendingFormatting = pendingFormatting :+ ((parent.label, map))
+                    cursor.cue(mark)
+                    close()
+                  else if formattingTags.contains(content) then
+                    cursor.next()
+                    level = Level.Skip
+                  else
+                    cursor.cue(mark)
+                    if parent == root then fail(UnopenedTag(content))
+                    else fail(MismatchedTag(parent.label, content))
                 else
                   cursor.next()
                   level = Level.Ascend
                   current = Element(content, map, array(count), parent.foreign)
 
+          def reconstructPending(): Int =
+            if pendingFormatting.isEmpty || depth != pendingAtDepth then 0
+            else if cursor.finished || cursor.lay(false)(_ == '<') then
+              pendingFormatting = Nil
+              pendingAtDepth = -1
+              0
+            else
+              val pending = pendingFormatting
+              pendingFormatting = Nil
+              pendingAtDepth = -1
+              var added = 0
+              pending.foreach: (label, attrs) =>
+                dom.elements(label).let: cloneTag =>
+                  push(cloneTag)
+                  val cloneChild = descend(cloneTag, admissible, attrs)
+                  pop()
+                  cloneChild match
+                    case Element(_, _, children, _) if children.length == 0 => ()
+                    case _ =>
+                      append(cloneChild)
+                      added += 1
+              added
+
           level match
             case Level.Ascend =>
               current
 
+            case Level.Skip =>
+              read(parent, admissible, map, count)
+
             case Level.Peer =>
               append(current)
-              read(parent, admissible, map, count + 1)
+              val added = reconstructPending()
+              read(parent, admissible, map, count + 1 + added)
 
             case Level.Descend =>
               push(focus)
-              val child = descend(focus, admissible)
+              val savedFosterFlag = pendingFosterDescend
+              pendingFosterDescend = false
+              if parent.label == t"table" && !savedFosterFlag then inTableContent = true
+              val child = descend(focus, admissible, extra)
               pop()
-              append(child)
-              read(parent, admissible, map, count + 1)
+              if savedFosterFlag then
+                if inTableContent then fosteredAfter = fosteredAfter :+ child
+                else fosteredBefore = fosteredBefore :+ child
+                val added = reconstructPending()
+                read(parent, admissible, map, count + added)
+              else if focus.label == t"table" then
+                val beforeAdded = fosteredBefore.size
+                fosteredBefore.foreach(append)
+                fosteredBefore = Nil
+                append(child)
+                val afterAdded = fosteredAfter.size
+                fosteredAfter.foreach(append)
+                fosteredAfter = Nil
+                inTableContent = false
+                val added = reconstructPending()
+                read(parent, admissible, map, count + 1 + beforeAdded + afterAdded + added)
+              else
+                append(child)
+                val added = reconstructPending()
+                read(parent, admissible, map, count + 1 + added)
 
         case char => parent.mode match
           case Mode.Whitespace =>
-            whitespace() yet read(parent, admissible, map, count)
+            if isTableLikeContext(parent) then
+              val text = cursor.hold(textual(cursor.mark, Unset, true))
+              val trimmed = text.s.trim.nn
+              if !trimmed.isEmpty then
+                val node = TextNode(trimmed.tt)
+                if inTableContent then fosteredAfter = fosteredAfter :+ node
+                else fosteredBefore = fosteredBefore :+ node
+              read(parent, admissible, map, count)
+            else
+              whitespace() yet read(parent, admissible, map, count)
 
           case Mode.Raw =>
             val text = cursor.hold(textual(cursor.mark, parent.label, false))
@@ -874,9 +993,10 @@ object Html extends Tag.Container
 
     if cursor.finished then Fragment() else
       skip()
-      append(root)
-      val head = read(root, root.admissible, ListMap(), 0)
-      if fragment.nil then head else Fragment(fragment*)
+      if cursor.finished then Fragment() else
+        append(root)
+        val head = read(root, root.admissible, ListMap(), 0)
+        if fragment.nil then head else Fragment(fragment*)
 
 sealed into trait Html extends Topical, Documentary, Formal:
   type Topic <: Label

@@ -39,6 +39,7 @@ export honeycomb
 
 package doms.html:
   export honeycomb.doms.html.whatwg
+  export honeycomb.doms.html.html4Transitional
 
 package attributives:
   export honeycomb.attributives.textAttributes
