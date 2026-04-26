@@ -455,7 +455,12 @@ object Checker:
     var i = 0
     while i < arr.length do
       if arr(i).kind == Kind.Code && SpacedOps.contains(arr(i).text) then
-        if i > firstSemantic && (i == 0 || arr(i - 1).kind != Kind.Space) then
+        // By-name parameter form `(=> T)` exempts `=>` from the "space before" rule.
+        val isByName = arr(i).text == "=>" && i > 0 && arr(i - 1).kind == Kind.Code
+                       && (arr(i - 1).text == "(" || arr(i - 1).text == "[")
+        if !isByName && i > firstSemantic
+          && (i == 0 || arr(i - 1).kind != Kind.Space)
+        then
           emit
            ( cols(i), "R16-operator-spacing",
              s"`${arr(i).text}` must have a space before it" )
@@ -507,7 +512,7 @@ object Checker:
             emit
              ( leadingCols + 3, "R25-hard-space",
                "`=>` continuation line must be followed by exactly two spaces" )
-      case Some(tok) if tok.text == ":" =>
+      case Some(tok) if tok.text == ":" && lineEndsWithEqualsToken(rest) =>
         if rest.length >= 2 then
           val next = rest(1)
           if next.kind != Kind.Space || next.text != "   " then
@@ -515,6 +520,10 @@ object Checker:
              ( leadingCols + 2, "R25-hard-space",
                "heavy-signature return type `:` must be followed by exactly three spaces" )
       case _ => ()
+
+  private def lineEndsWithEqualsToken(rest: IndexedSeq[Token]): Boolean =
+    val nonWs = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+    nonWs.lastOption.exists(_.text == "=")
 
   private def checkChainContinuation
     ( s:           State,
@@ -643,7 +652,9 @@ object Checker:
       then CaseLine(-1, false, false)
       else
         val arrowIdx = rest.indexWhere(t => t.text == "=>")
-        if arrowIdx < 0 then CaseLine(-1, false, true)
+        // No `=>` on this line — it's an enum case (or a match case with a
+        // multi-line pattern, which is uncommon). Either way, skip both R19 and R20.
+        if arrowIdx < 0 then CaseLine(-1, false, false)
         else
           var col = leadingCols + 1
           var k = 0
@@ -678,7 +689,8 @@ object Checker:
     else
       // Multi-line case isolation (Rule 20)
       if !info.isSingleLine then
-        if !s.prevLineWasBlank && !s.prevLineEndedMatch then
+        val isFirstInScope = s.prevCodeLineIndent < leadingCols
+        if !s.prevLineWasBlank && !s.prevLineEndedMatch && !isFirstInScope then
           emit
            ( leadingCols + 1, "R20-multiline-case-blank",
              "a blank line is required before a multi-line case (except for the first case)" )

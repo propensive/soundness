@@ -88,6 +88,12 @@ object Tokenizer:
           case (newPos, content) =>
             emit(Token(content, Kind.Strs))
             i = newPos
+      else if c == '`' then
+        val start = i
+        i += 1
+        while i < text.length && text.charAt(i) != '`' && text.charAt(i) != '\n' do i += 1
+        if i < text.length && text.charAt(i) == '`' then i += 1
+        emit(Token(text.substring(start, i).nn, Kind.Code))
       else if c == ' ' || c == '\t' then
         val start = i
         while i < text.length && (text.charAt(i) == ' ' || text.charAt(i) == '\t') do i += 1
