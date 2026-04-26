@@ -35,10 +35,11 @@ package exoskeleton
 import soundness.*
 
 import errorDiagnostics.stackTraces
+import interfaces.paths.pathOnLinux
 
 extension (shell: Shell)
   def tmux(width: Int = 80, height: Int = 24)[result](action: (tmux: Tmux) ?=> result)
-    ( using WorkingDirectory, Sandbox.Tool, Monitor )
+    ( using WorkingDirectory, Sandbox.Tool, Monitor, TemporaryDirectory )
   :   result raises TmuxError logs ExecEvent =
 
     mitigate:
@@ -102,12 +103,16 @@ extension (shell: Shell)
                  |}
                  |""".stripMargin
 
-            val psFile = java.io.File.createTempFile("exoskeleton-", ".ps1", java.io.File("/tmp").nn).nn
-            psFile.deleteOnExit()
-            val writer = java.io.FileWriter(psFile)
-            writer.write(psScript)
-            writer.close()
-            t"POWERSHELL_UPDATECHECK=Off pwsh -NoLogo -NoExit -File ${psFile.getAbsolutePath.nn.tt}"
+            import filesystemOptions.writeAccess.enabled
+            import filesystemOptions.readAccess.disabled
+            import filesystemOptions.createNonexistent.enabled
+            import filesystemOptions.createNonexistentParents.disabled
+            import filesystemOptions.dereferenceSymlinks.enabled
+            import charEncoders.utf8
+
+            val psFile: Path on Linux = unsafely(temporaryDirectory/t"exoskeleton-${Uuid()}.ps1")
+            unsafely(psFile.open(psScript.tt.writeTo(_)))
+            t"POWERSHELL_UPDATECHECK=Off pwsh -NoLogo -NoExit -File ${psFile.encode}"
 
         sh"tmux new-session -d -s ${tmux.id} -x $width -y $height '$shellInvocation'".exec[Unit]()
         Tmux.attend:
