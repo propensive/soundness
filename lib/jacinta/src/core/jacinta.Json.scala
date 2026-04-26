@@ -419,27 +419,27 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           case left: Long       => left == right
           case left: Double     => left == right
           case left: BigDecimal => left == BigDecimal(right)
-          case _             => false
+          case _                => false
 
         case right: Double => left.asMatchable match
           case left: Long       => left == right
           case left: Double     => left == right
           case left: BigDecimal => left == BigDecimal(right)
-          case _             => false
+          case _                => false
 
         case right: BigDecimal => left.asMatchable match
           case left: Long       => BigDecimal(left) == right
           case left: Double     => BigDecimal(left) == right
           case left: BigDecimal => left == right
-          case _             => false
+          case _                => false
 
         case right: String => left.asMatchable match
           case left: String => left == right
-          case _         => false
+          case _            => false
 
         case right: Boolean => left.asMatchable match
           case left: Boolean => left == right
-          case _         => false
+          case _             => false
 
         case right: IArray[JsonAst] @unchecked => left.asMatchable match
           case left: IArray[JsonAst] @unchecked =>

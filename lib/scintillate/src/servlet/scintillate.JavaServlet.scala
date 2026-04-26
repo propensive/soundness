@@ -32,6 +32,8 @@
                                                                                                   */
 package scintillate
 
+import jakarta.servlet as js, js.http as jsh
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -44,8 +46,6 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-
-import jakarta.servlet as js, js.http as jsh
 
 open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.HttpServlet:
   protected def streamBody(request: jsh.HttpServletRequest): Stream[Data] raises StreamError =

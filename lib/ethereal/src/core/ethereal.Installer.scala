@@ -52,11 +52,11 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
+import filesystemOptions.createNonexistent.enabled
+import filesystemOptions.createNonexistentParents.enabled
+import filesystemOptions.deleteRecursively.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.deleteRecursively.enabled
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
@@ -135,6 +135,7 @@ object Installer:
           val jarSize: Bytes = Bytes(System.properties.ethereal.jarSize[Int]())
           val fileSize = service.executable.size()
           val prefixSize = fileSize - payloadSize - jarSize
+
           val installDirectory: Path on Linux = target.or(candidateTargets().prim).or:
             abort(InstallError(InstallError.Reason.Environment))
 

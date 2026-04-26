@@ -38,9 +38,6 @@ import symbolism.*
 
 import abstractables.instantIsAbstractable
 
-abstract class Clock():
-  def apply(): Instant
-
 object Clock:
   given current: Clock:
     def apply(): Instant = Instant(System.currentTimeMillis)
@@ -50,3 +47,6 @@ object Clock:
 
   def offset(diff: into[Duration]): Clock = new Clock():
     def apply(): Instant = Instant(System.currentTimeMillis) + diff
+
+abstract class Clock():
+  def apply(): Instant

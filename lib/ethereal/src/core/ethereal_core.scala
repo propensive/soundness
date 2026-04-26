@@ -40,8 +40,8 @@ import java.net as jn
 import java.nio as jnio
 import java.nio.channels as jnc
 import java.util as ju
-import ju.concurrent as juc
-import juc.atomic as juca
+import java.util.concurrent as juc
+import java.util.concurrent.atomic as juca
 
 import scala.collection.concurrent as scc
 
@@ -72,10 +72,10 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
+import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
@@ -134,23 +134,28 @@ def cli[bus <: Matchable](using executive: Executive)
               work + destination.decode[Relative on Linux]
 
             val buildIdPath: Path on Classpath = Classpath/"build.id"
+
             val buildId: Long = safely(System.properties.build.id[Long]()).or:
               safely(buildIdPath.read[Text].trim.decode[Long]).or(0L)
 
             val platformLabel: Text = safely(System.properties.build.target[Text]()).or:
               val osName = safely(System.properties.os.name[Text]().lower).or(t"")
               val osArch = safely(System.properties.os.arch[Text]().lower).or(t"")
+
               val os =
                 if osName.contains(t"mac") || osName.contains(t"darwin") then t"macos"
                 else if osName.contains(t"win") then t"windows"
                 else t"linux"
+
               val arch =
                 if osArch.contains(t"aarch") || osArch == t"arm64" then t"arm64" else t"x64"
               t"$os-$arch"
 
             val isWindows: Boolean = platformLabel.starts(t"windows")
+
             val runnerName: Text =
               if isWindows then t"runner-$platformLabel.exe" else t"runner-$platformLabel"
+
             val runnerResource: Path on Classpath = Classpath/"ethereal"/runnerName
             val runnerBytes: IArray[Byte] = runnerResource.read[Data]
 
@@ -262,6 +267,7 @@ def cli[bus <: Matchable](using executive: Executive)
         case t"s" =>
           val pid: Pid = line().decode[Pid]
           val name: Text = line()
+
           val signal: UnixSignal | WindowsSignal =
             safely(name.decode[UnixSignal]).or(name.decode[WindowsSignal])
           DaemonEvent.Trap(pid, signal)
@@ -349,7 +355,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
               if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
               else ColorDepth
-                    (safely(mute[ExecEvent](sh"tput colors".exec[Text]().decode[Int])).or(-1))
+                    ( safely(mute[ExecEvent](sh"tput colors".exec[Text]().decode[Int])).or(-1) )
 
           val stdio: Stdio =
             Stdio

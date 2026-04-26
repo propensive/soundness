@@ -1,19 +1,35 @@
-/*
-    Villainy, version [unreleased]. Copyright 2025 Jon Pretty, Propensive OÜ.
-
-    The primary distribution site is: https://propensive.com/
-
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
-    file except in compliance with the License. You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software distributed under the
-    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-    either express or implied. See the License for the specific language governing permissions
-    and limitations under the License.
-*/
-
+                                                                                                  /*
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                  ┃
+┃                                                   ╭───╮                                          ┃
+┃                                                   │   │                                          ┃
+┃                                                   │   │                                          ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
+┃                                                                                                  ┃
+┃    Soundness, version 0.54.0.                                                                    ┃
+┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
+┃                                                                                                  ┃
+┃    The primary distribution site is:                                                             ┃
+┃                                                                                                  ┃
+┃        https://soundness.dev/                                                                    ┃
+┃                                                                                                  ┃
+┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
+┃    except in compliance with the License. You may obtain a copy of the License at                ┃
+┃                                                                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
+┃                                                                                                  ┃
+┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
+┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
+┃    either express or implied. See the License for the specific language governing permissions    ┃
+┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                                                                                  */
 package villainy
 
 import anticipation.*
@@ -89,49 +105,49 @@ object JsonSchema:
 
 
   given dateTime: [instant: Instantiable across Instants from Text]
-  =>  ("date-time" is Intensional in JsonSchema from Json to instant) =
+  =>  ( "date-time" is Intensional in JsonSchema from Json to instant ) =
 
     JsonSchema.intensional(_.as[Text].instantiate)
 
 
   given optionalDateTime: [instant: Instantiable across Instants from Text]
-  =>  ("date-time?" is Intensional in JsonSchema from Json to Optional[instant]) =
+  =>  ( "date-time?" is Intensional in JsonSchema from Json to Optional[instant] ) =
 
     JsonSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
   given date: [date: Instantiable across Dates from Text]
-  =>  ("date" is Intensional in JsonSchema from Json to date) =
+  =>  ( "date" is Intensional in JsonSchema from Json to date ) =
 
     JsonSchema.intensional(_.as[Text].instantiate)
 
 
   given optionalDate: [date: Instantiable across Dates from Text]
-  =>  ("date?" is Intensional in JsonSchema from Json to Optional[date]) =
+  =>  ( "date?" is Intensional in JsonSchema from Json to Optional[date] ) =
 
     JsonSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
   given time: [time: Instantiable across Times from Text]
-  =>  ("time" is Intensional in JsonSchema from Json to time) =
+  =>  ( "time" is Intensional in JsonSchema from Json to time ) =
 
     JsonSchema.intensional(_.as[Text].instantiate)
 
 
   given optionalTime: [time: Instantiable across Times from Text]
-  =>  ("time?" is Intensional in JsonSchema from Json to Optional[time]) =
+  =>  ( "time?" is Intensional in JsonSchema from Json to Optional[time] ) =
 
     JsonSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
   given duration: [duration: Instantiable across Durations from Text]
-  =>  ("duration" is Intensional in JsonSchema to duration) =
+  =>  ( "duration" is Intensional in JsonSchema to duration ) =
 
     JsonSchema.intensional(_.as[Text].instantiate)
 
 
   given optionalDuration: [duration: Instantiable across Durations from Text]
-  =>  ("duration?" is Intensional in JsonSchema to Optional[duration]) =
+  =>  ( "duration?" is Intensional in JsonSchema to Optional[duration] ) =
 
     JsonSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
 
@@ -207,26 +223,26 @@ object JsonSchema:
 
 
   given uri: [url: Instantiable across Urls from Text]
-  =>   ( "uri" is Intensional in JsonSchema from Json to url ) =
+  =>  (  "uri" is Intensional in JsonSchema from Json to url  ) =
 
     JsonSchema.intensional: value => url.instantiate(value.as[Text])
 
 
   given optionalUri: [url: Instantiable across Urls from Text]
-  =>   ( "uri?" is Intensional in JsonSchema from Json to Optional[url] ) =
+  =>  (  "uri?" is Intensional in JsonSchema from Json to Optional[url]  ) =
 
     JsonSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
   given iri: [url: Instantiable across Urls from Text]
-  =>  ("iri" is Intensional in JsonSchema from Json to url) =
+  =>  ( "iri" is Intensional in JsonSchema from Json to url ) =
 
     JsonSchema.intensional:
       value => url.instantiate(value.as[Text])
 
 
   given optionalIri: [url: Instantiable across Urls from Text]
-  =>   ( "iri?" is Intensional in JsonSchema from Json to Optional[url] ) =
+  =>  (  "iri?" is Intensional in JsonSchema from Json to Optional[url]  ) =
 
     JsonSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
 

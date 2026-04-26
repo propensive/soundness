@@ -78,7 +78,7 @@ object internal:
               case '[(key, value)] => '{(${reify[key]}, ${reify[value]})}
 
           def recur(todo: List[Expr[(Any, Any)]]): Expr[List[(Any, Any)]] = todo match
-            case Nil => '{Nil}
+            case Nil          => '{Nil}
             case head :: tail => '{$head :: ${recur(tail)}}
 
           recur(keyValues)

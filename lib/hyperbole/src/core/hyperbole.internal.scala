@@ -35,6 +35,8 @@ package hyperbole
 import scala.collection.mutable as scm
 import scala.quoted.*
 
+import dotty.tools.*, dotc.util as dtdu
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -68,8 +70,7 @@ object internal:
                 ${Expr.ofList(nodes2)},
                 $param2.asInstanceOf[Optional[Text]],
                 ${Expr(term)},
-                ${Expr(definitional)}
-              )
+                ${Expr(definitional)} )
           }
 
     serialize(tastyTree[value](value, inlining))
@@ -108,7 +109,7 @@ object internal:
         tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expand('t', _)))
 
       def add(tag: Char, nodes2: Tree*): TastyTree =
-        tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expand(tag,_)))
+        tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expand(tag, _)))
 
 
     object TastyTree:
@@ -466,6 +467,7 @@ object internal:
 
           case DefDef(name, paramss, tpt, rhs) =>
             val typeName = stenography.internal.name(tpt.tpe)
+
             val clauses = paramss.map:
               case TermParamClause(params) =>
                 TastyTree('a', typeName, t"TermParamClause", tree).add('a', params*)
@@ -655,6 +657,7 @@ object internal:
           t"Case fields"
           ->  symbol.caseFields.map: field =>
                 t"${field.name}: ${field.info.show}"
+
               . join(t"\n"),
 
           t"Signature"        -> symbol.signature.resultSig,

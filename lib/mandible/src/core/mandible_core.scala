@@ -52,11 +52,10 @@ import serpentine.*
 import turbulence.*
 import vacuous.*
 
-import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.createNonexistent.disabled
+import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.disabled
-
 import interfaces.paths.pathOnLinux
 
 

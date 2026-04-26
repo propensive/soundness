@@ -65,7 +65,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
 
 
   given iarray: [element] => (randomizable: => element is Randomizable) => (tag: ClassTag[element])
-  =>  (size: RandomSize)
+  =>  ( size: RandomSize )
   =>  IArray[element] is Randomizable =
 
     random =>

@@ -40,8 +40,6 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 
-sealed trait Local
-
 object Local:
   // Note that Mac OS rules subsume Linux rules
   type Rules = Windows.Rules & MacOs.Rules
@@ -55,3 +53,5 @@ object Local:
     val separator: Text = System.properties.path.separator().show
     val self: Text = t"."
     val parent: Text = t".."
+
+sealed trait Local

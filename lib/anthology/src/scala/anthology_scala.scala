@@ -34,14 +34,14 @@ package anthology
 
 import language.adhocExtensions
 
+import dotty.tools.dotc.reporting.*
+
 import anticipation.*
 import gossamer.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
-
-import dotty.tools.dotc.reporting.*
 
 object scalacOptions:
   val newSyntax = Scalac.Option[Scalac.Versions](t"-new-syntax")

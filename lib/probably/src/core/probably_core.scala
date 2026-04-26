@@ -91,10 +91,10 @@ extension [value](value: value)
   @targetName("plusOrMinus2")
   inline infix def ± (tolerance: value)
     ( using inline commensurable: value is Commensurable against value,
-            addable:              value is Addable by value,
-            equality:             addable.Result =:= value,
-            subtractable:         value is Subtractable by value,
-            equality2:            subtractable.Result =:= value )
+                   addable:       value is Addable by value,
+                   equality:      addable.Result =:= value,
+                   subtractable:  value is Subtractable by value,
+                   equality2:     subtractable.Result =:= value )
   :   Tolerance[value] =
 
     value +/- (tolerance)

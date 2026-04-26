@@ -82,6 +82,7 @@ object internal:
 
       def checkText(array: Expr[Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
       :   Expr[Boolean] =
+
         '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkComment(array: Expr[Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
@@ -262,6 +263,7 @@ object internal:
             iterator.next() match
               case Xml.Hole.Element(label) =>
                 types ::= TypeRepr.of[Element]
+
               case _ =>
                 halt(m"unexpected hole type")
 
@@ -415,6 +417,7 @@ object internal:
               case Hole.Tagbody => Type.of[value] match
                 case '[Map[Text, Text]] =>
                   expr
+
                 case _ =>
                   halt(m"only a ${TypeRepr.of[Map[Text, Text]].show} can be applied in a tag body")
 
@@ -441,6 +444,7 @@ object internal:
                       else Expr[Text](value)
                     } )
               }
+
             . asExprOf[(Text, Text)]
 
           val map = '{Map(${Expr.ofList(exprs)}*)}
@@ -453,6 +457,7 @@ object internal:
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
+
             case head :: tail =>
               recur(tail, '{$expr+${iterator.next().asExprOf[Text]}+${Expr(head)}})
 
@@ -465,6 +470,7 @@ object internal:
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
+
             case head :: tail =>
               recur(tail, '{$expr+${iterator.next().asExprOf[Text]}+${Expr(head)}})
 
@@ -477,6 +483,7 @@ object internal:
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
+
             case head :: tail =>
               recur(tail, '{$expr+${iterator.next().asExprOf[Text]}+${Expr(head)}})
 
@@ -492,6 +499,7 @@ object internal:
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
+
             case head :: tail =>
               recur(tail, '{$expr+${iterator.next().asExprOf[Text]}+${Expr(head)}})
 
@@ -520,6 +528,7 @@ object internal:
                     case List(one: Expr[?]) => one.asExprOf[Xml]
                     case many               => '{Fragment(${Expr.ofList(many)}*)}
                 }
+
               . of[topic]
             }
 

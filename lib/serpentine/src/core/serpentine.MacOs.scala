@@ -38,8 +38,6 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-sealed trait MacOs extends Posix
-
 object MacOs:
   type Rules =
     MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
@@ -54,3 +52,5 @@ object MacOs:
     val separator: Text = t"/"
     val self: Text = t"."
     val parent: Text = t".."
+
+sealed trait MacOs extends Posix

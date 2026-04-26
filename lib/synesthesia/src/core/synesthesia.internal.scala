@@ -124,7 +124,7 @@ object internal:
                     val cases = toolMethods.map: method =>
                       val result: TypeRepr = method.info.absolve match
                         case MethodType(_, _, MethodType(_, _, result)) => result
-                        case MethodType(_, _, result) => result
+                        case MethodType(_, _, result)                   => result
 
                       val params = method.paramSymss.head.map: param =>
                         param.info.asType.absolve match
@@ -134,7 +134,9 @@ object internal:
                                   given param is Decodable in Json = $decodable
                                   request(${Expr(param.name)}).as[param]
                                 }
+
                               . asTerm
+
                             case None =>
                               halt:
                                 m"""
@@ -218,6 +220,7 @@ object internal:
                                     if input.has(key) then input(key).decode[param]
                                     else provide[Tactic[McpError]](abort(McpError()))
                                   }
+
                                 . asTerm
 
                               case None => halt:
@@ -280,6 +283,7 @@ object internal:
                                     allAnnotations.find(_.tpe.typeSymbol == resourceType).get
                                     . asExprOf[resource]
                                   }
+
                                 . uri
                               }
 

@@ -224,8 +224,7 @@ class Report(using Environment)(using palette: TestPalette):
           Column(e"$Bold($timeTitle)", textAlign = TextAlignment.Right)(_.avgTime),
 
           Column(e"$Bold(Max)", textAlign = TextAlignment.Right): s =>
-            if s.count < 2 then e"" else s.maxTime
-        )
+            if s.count < 2 then e"" else s.maxTime )
 
     val columns: Int = safely(Environment.columns.decode[Int]).or(120)
     val summaryLines = lines.summaries
@@ -523,6 +522,7 @@ class Report(using Environment)(using palette: TestPalette):
 
         case _ =>
           val were = if active.size == 1 then e"was" else e"were"
+
           val tests =
             active.to(List).map { test => e"$Bold(${test.name})" }
             . join(e"", e", ", e" and ", e"")

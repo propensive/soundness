@@ -43,8 +43,8 @@ import rudiments.*
 import serpentine.*
 import urticose.*
 
-import workingDirectories.java
 import logging.silent
+import workingDirectories.java
 
 trait BenchmarkDevice:
   def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError

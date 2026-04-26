@@ -81,6 +81,7 @@ object Honeycomb:
 
       def checkText(array: Expr[Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
       :   Expr[Boolean] =
+
         '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkComment(array: Expr[Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
@@ -109,6 +110,7 @@ object Honeycomb:
 
         def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
           case Nil => expr
+
           case "\u0000" :: tail =>
             index += 1
             types ::= TypeRepr.of[Map[Text, Optional[Text]]]
@@ -120,6 +122,7 @@ object Honeycomb:
             attributes(tail):
               val boolean: Expr[Boolean] = pattern.attributes(head).let(_.s).absolve match
                 case Unset      => '{$scrutinee.attributes(${Expr(head)}) == Unset}
+
                 case "\u0000"   =>
                   index += 1
                   types ::= TypeRepr.of[Text]
@@ -203,6 +206,7 @@ object Honeycomb:
                 types ::= whatwg.elements(label).lay(TypeRepr.of[Element]): tag =>
                   intersect(tag.admissible.map(_.s).to(List)).asType.absolve match
                     case '[type children <: Label; children] => TypeRepr.of[Element of children]
+
               case _ =>
                 halt(m"unexpected hole type")
 
@@ -342,6 +346,7 @@ object Honeycomb:
               case Hole.Tagbody => Type.of[value] match
                 case '[Map[Text, Optional[Text]]] =>
                   expr
+
                 case _ =>
                   halt:
                     m"""
@@ -353,6 +358,7 @@ object Honeycomb:
 
       def serialize(html: Html): Seq[Expr[Node]] = html match
         case Fragment(children*) => children.flatMap(serialize(_))
+
         case Element(label, attributes, children, foreign) =>
           val exprs = attributes.to(List).map: (key, value) =>
             ' {
@@ -363,6 +369,7 @@ object Honeycomb:
                       else Expr[Text](value.asInstanceOf[Text])
                     } )
               }
+
             . asExprOf[(Text, Optional[Text])]
 
           val map = '{Map(${Expr.ofList(exprs)}*)}
@@ -380,6 +387,7 @@ object Honeycomb:
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
+
             case head :: tail =>
               recur(tail, '{$expr+${iterator.next().asExprOf[Text]}+${Expr(head)}})
 
@@ -395,6 +403,7 @@ object Honeycomb:
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
+
             case head :: tail =>
               recur(tail, '{$expr+${iterator.next().asExprOf[Text]}+${Expr(head)}})
 
@@ -425,6 +434,7 @@ object Honeycomb:
                       case _: Doctype         => one.asExprOf[Doctype]
                     case many               => '{Fragment(${Expr.ofList(many)}*)}
                 }
+
               . of[topic]
               . in[Whatwg]
             }

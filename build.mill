@@ -106,6 +106,14 @@ trait BaseScalaModule extends ScalaModule:
 trait Library extends Module:
   def moduleDir = super.moduleDir / ".." / "lib" / super.moduleDir.last / "src"
 
+trait BareComponent(dependencies: PublishModule*)
+extends BaseScalaModule, SonatypeCentralPublishModule:
+  def moduleId: String = moduleDir.last
+  def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def sources = Task.Sources(moduleDir)
+  override def moduleDeps = dependencies
+
 trait Component(dependencies: PublishModule*)
 extends BaseScalaModule, SonatypeCentralPublishModule:
   def moduleId: String = moduleDir.last
@@ -113,6 +121,9 @@ extends BaseScalaModule, SonatypeCentralPublishModule:
   def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def sources = Task.Sources(moduleDir)
   override def moduleDeps = dependencies
+
+  override def scalacOptions = Task:
+    settings.scalaOptions :+ s"-Xplugin:${decorum.plugin.assembly().path}"
 
 trait Tests(dependencies: PublishModule*) extends BaseScalaModule:
   def moduleId: String = moduleDir.last
@@ -123,12 +134,8 @@ trait Tests(dependencies: PublishModule*) extends BaseScalaModule:
   def sources = Task.Sources(moduleDir)
   def consoleScalacOptions = scalacOptions()
 
-  def compile = Task:
-    larceny.plugin.assembly()
-    super.compile()
-
-  def scalacOptions =
-    settings.scalaOptions ++ Seq("-Xplugin", (larceny.plugin.assembly().path).toString())
+  def scalacOptions = Task:
+    settings.scalaOptions :+ s"-Xplugin:${larceny.plugin.assembly().path}"
 
 trait Bundle(dependencies: PublishModule*) extends BaseScalaModule, PublishModule:
   def sources = Task.Sources()
@@ -164,9 +171,9 @@ object soundness extends ScalaModule:
   object test extends Bundle(capricious.core, larceny.plugin, sedentary.core, tarantula.core,
     superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm, mandible.core)
 
-  object tool extends Bundle(anthology.core, harlequin.core, hellenism.core, hyperbole.core,
-    octogenarian.core, revolution.core, umbrageous.plugin, anthology.java, harlequin.md,
-    harlequin.ansi, austronesian.core)
+  object tool extends Bundle(anthology.core, decorum.plugin, harlequin.core, hellenism.core,
+    hyperbole.core, octogenarian.core, revolution.core, umbrageous.plugin, anthology.java,
+    harlequin.md, harlequin.ansi, austronesian.core)
 
   object web extends Bundle(cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
@@ -206,6 +213,7 @@ object test extends ScalaModule:
     contextual.test,
     contingency.test,
     //cosmopolite.test,
+    decorum.test,
     dendrology.test,
     denominative.test,
     digression.test,
@@ -444,6 +452,11 @@ object dendrology extends Library:
   object tree extends Component(gossamer.core)
   object dag extends Component(acyclicity.core)
   object test extends Tests(tree, dag)
+
+object decorum extends Library:
+  object plugin extends BareComponent():
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+  object test extends Tests(plugin)
 
 object denominative extends Library:
   object core extends Component(fulminate.core)
@@ -940,7 +953,7 @@ object zeppelin extends Library:
   object test extends Tests(core, imperial.core, diuretic.core)
 
 object ziggurat extends Library:
-  object core extends Component(hellenism.core, monotonous.core)
+  object core extends Component(hellenism.core, monotonous.core, turbulence.core)
   object test extends Tests(core)
 
 object publishing extends Module:

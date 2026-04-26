@@ -43,7 +43,7 @@ import capricious.*
 import contingency.*
 import denominative.*
 import hypotenuse.*
-import parasite.*, codicils.await
+import parasite.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -51,6 +51,7 @@ import symbolism.*
 import vacuous.*
 
 import abstractables.instantIsAbstractable
+import codicils.await
 
 private given Realm = Realm("turbulence")
 
@@ -102,6 +103,7 @@ extension [element](stream: Stream[element])
   inline def flow[result](inline termination: => result)
     ( inline proceed: (element aka "next", Stream[element] aka "more") ?=> result )
   :   result =
+
     stream match
       case next #:: more => proceed(using next.aka["next"], more.aka["more"])
       case _             => termination

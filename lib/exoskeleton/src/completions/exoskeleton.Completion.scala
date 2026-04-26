@@ -120,6 +120,7 @@ extends Cli:
       cursorSuggestions = update(using cursorSuggestions.aka["prior"]).map: suggestion =>
         if suggestion.expanded then suggestion
         else suggestion.copy(core = prefix+suggestion.core+suffix, expanded = true)
+
       . sortBy(_.core)
 
 

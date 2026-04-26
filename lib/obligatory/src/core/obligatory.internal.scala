@@ -101,6 +101,7 @@ object internal:
 
                     val result: TypeRepr = method.info.absolve match
                       case MethodType(_, _, result) => result
+
                       case _ =>
                         halt:
                           m"""
@@ -109,7 +110,7 @@ object internal:
                           """
 
                     val rhs = result.asType.absolve match
-                      case '[Unit] => '{${application.asExpr} yet Unset}
+                      case '[Unit]   => '{${application.asExpr} yet Unset}
                       case '[result] => Expr.summon[result is Encodable in Json] match
                         case Some(encoder) =>
                           ' {
@@ -199,6 +200,7 @@ object internal:
 
           val result: TypeRepr = runSym.info.absolve match
             case MethodType(_, _, result) => result
+
             case _ =>
               halt:
                 m"the type of method ${method.name} has the unexpected type, ${method.info.show}"
@@ -220,6 +222,7 @@ object internal:
 
                           . await()
                       }
+
                     . asTerm
                   else result.asType.absolve match
                     case '[result] => Expr.summon[result is Decodable in Json] match
@@ -234,6 +237,7 @@ object internal:
                                 . await()
                                 . decode[result](using $decoder)
                             }
+
                           . asTerm
 
                       case _ =>
@@ -323,6 +327,7 @@ object internal:
                 val json = Map(${Varargs(entries)}*).json
                 JsonRpc.notification($rpc, $methodName, json)
               }
+
             . asTerm
           else result.asType.absolve match
             case '[result] => Expr.summon[result is Decodable in Json] match
@@ -335,6 +340,7 @@ object internal:
                         . await()
                         . decode[result](using $decoder)
                     }
+
                   . asTerm
 
               case _ =>

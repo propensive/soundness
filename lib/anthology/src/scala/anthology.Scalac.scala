@@ -36,6 +36,13 @@ import language.adhocExtensions
 
 import scala.util.control as suc
 
+import dotty.tools.dotc as dtd
+import dotty.tools.dotc.core as dtdc
+import dotty.tools.dotc.interfaces as dtdi
+import dotty.tools.dotc.reporting.*
+import dotty.tools.dotc.sbt.interfaces as dtdsi
+import dotty.tools.dotc.util as dtdu
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -45,13 +52,6 @@ import hellenism.*
 import parasite.*
 import prepositional.*
 import rudiments.*
-
-import dotty.tools.dotc as dtd
-import dotty.tools.dotc.core as dtdc
-import dotty.tools.dotc.interfaces as dtdi
-import dotty.tools.dotc.reporting.*
-import dotty.tools.dotc.sbt.interfaces as dtdsi
-import dotty.tools.dotc.util as dtdu
 
 object Scalac:
   type Versions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6 | 3.7 | 3.8
@@ -115,6 +115,7 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
         val context = initCtx.fresh
         //val pluginParams = plugins
         //val jsParams =
+
         val arguments: List[Text] =
           List(t"-d", out.generic, t"-classpath", classpath())
           ::: commandLineArguments
