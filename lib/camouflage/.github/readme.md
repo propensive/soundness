@@ -4,7 +4,7 @@
 
 # Camouflage
 
-__An LRU cache implementation for Scala__
+**An LRU cache implementation for Scala**
 
 Caching provides a useful tradeoff between the costs of _time_ and _space_; that is, a cache can reduce the
 amount of computation time at the expense of using more memory. _Camouflage_ provides one implementation of a
@@ -18,15 +18,10 @@ cache which will be appropriate for some (but not all) applications: a least-rec
 
 ## Availability
 
-
-
-
-
-
-
 ## Getting Started
 
 All Camouflage terms and types are defined in the `camouflage` package:
+
 ```scala
 import camouflage.*
 ```
@@ -42,6 +37,7 @@ _least-recently-used_ value.
 ### `LruCache`
 
 To construct an LRU cache, specify a key and value type, and maximum size to the `LruCache` constructor:
+
 ```scala
 import galilei.Path
 import anticipation.Text
@@ -56,6 +52,7 @@ a `Map`. For `LruCache`, the parameters are curried, since the second _ought_ to
 computation—since that is the purpose of caching.
 
 Here is an example of using the `LruCache` to cache reading two files from disk:
+
 ```scala
 import galilei.File
 import galilei.filesystemOptions.{dereferenceSymlinks, doNotCreateNonexistent}
@@ -77,10 +74,12 @@ def read(): Unit =
 ```
 
 A subsequent call to,
+
 ```scala
 def readAgain(): Text = cache(dataDir / "chapter1.txt"):
   (dataDir / "chapter1.txt").as[File].readAs[Text]
 ```
+
 would retrieve the stored `Text` value from the cache, and the code which reads the file from disk would not be
 executed.
 
@@ -89,9 +88,10 @@ And for an `LruCache` of size `100`, `chapter1.txt` would only be evicted if 100
 of other keys were made since the addition or last access of `chapter1.txt`.
 
 Here is a complete example of a tiny `LruCache`:
+
 ```scala
 import turbulence.Out
-import turbulence.stdioSources.virtualMachine
+import turbulence.stdios.virtualMachine
 import gossamer.t
 
 def numbers(): Unit =
@@ -117,10 +117,9 @@ the previous line (_1_), `one` would be the least-recently-used value, and the l
 the evaluation of `ein` and its insertion into the cache; but since `one` remains in the cache at the same
 index, it is retrieved instead.
 
-
 ## Status
 
-Camouflage is classified as __embryotic__. For reference, Soundness projects are
+Camouflage is classified as **embryotic**. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -144,7 +143,7 @@ fragile, inadequately tested, and unsuitable for anything more than
 experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Camouflage?".
 
-1. *Copy the sources into your own project*
+1. _Copy the sources into your own project_
 
    Read the `fury` file in the repository root to understand Camouflage's build
    structure, dependencies and source location; the file format should be short
@@ -155,7 +154,7 @@ answer to the question, "how can I try Camouflage?".
    There should be no problem to compile the project together with all of its
    dependencies in a single compilation.
 
-2. *Build with [Wrath](https://github.com/propensive/wrath/)*
+2. _Build with [Wrath](https://github.com/propensive/wrath/)_
 
    Wrath is a bootstrapping script for building Camouflage and other projects in
    the absence of a fully-featured build tool. It is designed to read the `fury`
@@ -186,7 +185,7 @@ We suggest that all contributors read the [Contributing
 Guide](/contributing.md) to make the process of contributing to Camouflage
 easier.
 
-Please __do not__ contact project maintainers privately with questions unless
+Please **do not** contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
 repsond to such questions, private answers cannot be shared with a wider
 audience, and it can result in duplication of effort.
@@ -196,8 +195,6 @@ audience, and it can result in duplication of effort.
 Camouflage was designed and developed by Jon Pretty, and commercial support and
 training on all aspects of Scala 3 is available from [Propensive
 O&Uuml;](https://propensive.com/).
-
-
 
 ## Name
 

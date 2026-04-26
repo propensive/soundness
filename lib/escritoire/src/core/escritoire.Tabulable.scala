@@ -46,7 +46,7 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
     type Self = derivation
     def table(): Scaffold[derivation, Text] = Scaffold[derivation](columns*)
 
-  inline def join[derivation <: Product: ProductReflection]: derivation is Tabulable[Text] =
+  inline def conjunction[derivation <: Product: ProductReflection]: derivation is Tabulable[Text] =
     val labels: Map[Text, Text] = compiletime.summonFrom:
       case labels: TableRelabelling[derivation] => labels.relabelling()
       case _                                    => Map()

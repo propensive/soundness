@@ -63,6 +63,7 @@ import zeppelin.*
 import alphabets.hex.lowerCase
 import backstops.stackTrace
 import charDecoders.utf8
+import environments.java
 import executives.direct
 import filesystemOptions.createNonexistent.disabled
 import filesystemOptions.dereferenceSymlinks.enabled
@@ -71,7 +72,8 @@ import filesystemOptions.writeAccess.disabled
 import internetAccess.enabled
 import interpreters.posix
 import logging.silent
-import stdioSources.virtualMachine.ansi
+import stdios.virtualMachine
+import termcaps.environment
 import textSanitizers.skip
 import workingDirectories.system
 

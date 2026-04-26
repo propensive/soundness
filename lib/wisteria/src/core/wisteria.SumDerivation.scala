@@ -246,11 +246,11 @@ object SumDerivation:
           else panic(m"Should be unreachable")
 
 
-    inline def split[derivation: SumReflection]: typeclass[derivation]
+    inline def disjunction[derivation: SumReflection]: typeclass[derivation]
 
 trait SumDerivation[typeclass[_]] extends SumDerivation.Methods[typeclass]:
   inline given derived: [derivation] => Reflection[derivation] => typeclass[derivation] =
     inline summon[Reflection[derivation]] match
       case reflection: SumReflection[derivationType] =>
-        split[derivationType](using reflection).asMatchable match
+        disjunction[derivationType](using reflection).asMatchable match
           case typeclass: typeclass[`derivation`] => typeclass

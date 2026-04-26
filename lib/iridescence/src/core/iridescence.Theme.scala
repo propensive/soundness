@@ -30,16 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package harlequin
+package iridescence
 
-import anticipation.*
-import gossamer.*
+import prepositional.*
 
-object SourceToken:
-  val Newline: SourceToken = SourceToken(t"\n", Accent.Unparsed)
+trait Theme:
+  type Form <: Color: Perceptual in Srgb
+  def luminosity: Luminosity
+  def background: Color in Form
+  def foreground: Color in Form
+  def colors: List[Color in Form]
 
-case class SourceToken(text: Text, accent: Accent):
-  def length: Int = text.length
-
-  def snip(point: Int): (SourceToken, SourceToken) =
-    (SourceToken(text.keep(point), accent), SourceToken(text.skip(point), accent))
+  lazy val spectrum: Spectrum in Form = Spectrum(colors)

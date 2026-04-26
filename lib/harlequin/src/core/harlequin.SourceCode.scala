@@ -77,21 +77,21 @@ object SourceCode:
     val scanner =
       if language == Java then JavaScanners.JavaScanner(source) else Scanners.Scanner(source)
 
-    def untab(text: Text): Stream[SourceToken] =
-      Stream(SourceToken(text.sub(t"\t", t"  "), Accent.Unparsed), SourceToken.Newline)
+    def untab(text: Text): Stream[Token] =
+      Stream(Token(text.sub(t"\t", t"  "), Accent.Unparsed), Token.Newline)
 
-    def hard(stream: Stream[SourceToken]): Boolean = stream match
-      case SourceToken(_, Accent.Unparsed) #:: more                   => hard(more)
-      case SourceToken(text, Accent.Ident) #:: more if soft.has(text) => hard(more)
-      case SourceToken(text, Accent.Keyword | Accent.Modifier) #:: _  => true
+    def hard(stream: Stream[Token]): Boolean = stream match
+      case Token(_, Accent.Unparsed) #:: more                   => hard(more)
+      case Token(text, Accent.Ident) #:: more if soft.has(text) => hard(more)
+      case Token(text, Accent.Keyword | Accent.Modifier) #:: _  => true
       case other                                                      => false
 
-    def soften(stream: Stream[SourceToken]): Stream[SourceToken] = stream match
-      case (SourceToken(text@(t"using" | t"erased"), Accent.Ident)) #:: more =>
-        SourceToken(text, Accent.Modifier) #:: soften(more)
+    def soften(stream: Stream[Token]): Stream[Token] = stream match
+      case (Token(text@(t"using" | t"erased"), Accent.Ident)) #:: more =>
+        Token(text, Accent.Modifier) #:: soften(more)
 
-      case (token@SourceToken(text, Accent.Ident)) #:: more if soft.has(text) =>
-        if hard(more) then SourceToken(text, Accent.Modifier) #:: soften(more)
+      case (token@Token(text, Accent.Ident)) #:: more if soft.has(text) =>
+        if hard(more) then Token(text, Accent.Modifier) #:: soften(more)
         else token #:: soften(more)
 
       case token #:: more =>
@@ -100,13 +100,13 @@ object SourceCode:
       case _ =>
         Stream()
 
-    def stream(lastEnd: Int = 0): Stream[SourceToken] = scanner.token match
+    def stream(lastEnd: Int = 0): Stream[Token] = scanner.token match
       case Tokens.EOF => untab(text.segment(lastEnd.z till text.limit)).filter(_.length > 0)
 
       case token =>
         val start = scanner.offset max lastEnd
 
-        val unparsed: Stream[SourceToken] =
+        val unparsed: Stream[Token] =
           if lastEnd != start
           then
             text.segment(lastEnd.z thru start.u)
@@ -120,27 +120,25 @@ object SourceCode:
         scanner.nextToken()
         val end = scanner.lastOffset max start
 
-        val content: Stream[SourceToken] =
+        val content: Stream[Token] =
           if start == end then Stream() else
             text.segment(start.z thru end.u).cut(t"\n").to(Stream).flatMap: line =>
-              Stream
-                ( SourceToken(line, trees(start, end).getOrElse(accent(token))),
-                  SourceToken.Newline )
+              Stream(Token(line, trees(start, end).getOrElse(accent(token))), Token.Newline)
 
             . init
 
         unparsed #::: content #::: stream(end)
 
 
-    def lines(sequence: List[SourceToken], acc: List[List[SourceToken]] = Nil)
-    :   List[List[SourceToken]] =
+    def lines(sequence: List[Token], acc: List[List[Token]] = Nil)
+    :   List[List[Token]] =
 
       sequence match
         case Nil => acc
 
         case xs =>
-          xs.indexOf(SourceToken.Newline) match
-            case -1    => xs :: acc
+          xs.indexOf(Token.Newline) match
+            case -1  => xs :: acc
             case index => lines(xs.drop(index + 1), xs.take(index) :: acc)
 
     SourceCode(language, 1, IArray(lines(soften(stream()).to(List)).reverse*))
@@ -183,11 +181,11 @@ object SourceCode:
 case class SourceCode
   ( language: ProgrammingLanguage,
     offset:   Int,
-    lines:    IArray[List[SourceToken]],
+    lines:    IArray[List[Token]],
     focus:    Optional[((Int, Int), (Int, Int))] = Unset ):
 
   def lastLine: Int = offset + lines.length - 1
-  def apply(line: Int): List[SourceToken] = lines(line - offset)
+  def apply(line: Int): List[Token] = lines(line - offset)
 
   def extract(range: CodeRange): SourceCode =
     val focus = ((range.startLine, range.startColumn), (range.endLine, range.endColumn))

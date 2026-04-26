@@ -30,48 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hyperbole
+package anticipation
 
-import scala.annotation.*
+object internal2:
+  opaque type Chroma <: Matchable = Int
 
-import soundness.*
+  object Chroma:
+    erased given underlying: Underlying[Chroma, Int] = caps.unsafe.unsafeErasedValue
 
-object Tests extends Suite(m"Hyperbole Tests"):
-  def run(): Unit =
-    test(m"Produce hello-world tree"):
-      Introspect.syntax(true):
-        println("hello world")
+    def apply(value: Int): Chroma = value
 
-    . assert: result =>
-        result
-        ==
-        TastyTree
-          ( ' ',
-            "Unit",
-            "Apply",
-            "scala.Predef.println(\"hello world\")",
-            "println(\"hello world\")",
-            List
-              ( TastyTree
-                  ( ' ',
-                    "",
-                    "Ident",
-                    "scala.Predef.println",
-                    "println",
-                    Nil,
-                    "println",
-                    true,
-                    false ),
-                TastyTree
-                  ( 'a',
-                    "\"hello world\"",
-                    "Literal",
-                    "\"hello world\"",
-                    "        \"hello world\"",
-                    Nil,
-                    "\"hello world\"",
-                    true,
-                    false ) ),
-            Unset,
-            true,
-            false )
+    def apply(red: Int, green: Int, blue: Int): Chroma =
+      ((red&255) << 16) + ((green&255) << 8) + (blue&255)
+
+  extension(inline chroma: Chroma)
+    inline def underlying: Int = chroma
+    inline def red: Int = chroma >> 16
+    inline def green: Int = (chroma >> 8)&255
+    inline def blue: Int = chroma&255

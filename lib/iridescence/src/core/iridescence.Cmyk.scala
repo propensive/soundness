@@ -32,11 +32,17 @@
                                                                                                   */
 package iridescence
 
-import anticipation.*
+import prepositional.*
 
 object Cmyk:
-  given chromatic: Cmyk is Chromatic = _.srgb.rgb24.asInt
+  given cmy: Cmyk is Perceptual in Cmy =
+    color =>
+      Cmy
+        ( color.cyan*(1 - color.key) + color.key,
+          color.magenta*(1 - color.key) + color.key,
+          color.yellow*(1 - color.key) + color.key )
 
-case class Cmyk(cyan: Double, magenta: Double, yellow: Double, key: Double):
-  def srgb: Srgb = cmy.srgb
-  def cmy: Cmy = Cmy(cyan*(1 - key) + key, magenta*(1 - key) + key, yellow*(1 - key) + key)
+  given srgb: Cmyk is Perceptual in Srgb = _.in[Cmy].in[Srgb]
+
+case class Cmyk(cyan: Double, magenta: Double, yellow: Double, key: Double) extends Color:
+  type Form = Cmyk

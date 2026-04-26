@@ -40,7 +40,7 @@ import hieroglyph.*, characterEncodings.utf8, badEncodingHandlers.strict
 import parasite.*, monitors.global
 import probably.*
 import rudiments.*
-import turbulence.*, stdioSources.virtualMachine
+import turbulence.*, stdios.virtualMachine
 
 import LogFormat.standardAnsi
 import unsafeExceptions.canThrowAny

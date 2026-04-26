@@ -38,16 +38,15 @@ import javax.imageio as ji
 
 import anticipation.*
 import contingency.*
-import iridescence.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import turbulence.*
 
 object Raster:
-  def apply(width: Int, height: Int)(pixel: (Int, Int) => Rgb24): Raster =
+  def apply(width: Int, height: Int)(pixel: (Int, Int) => Chroma): Raster =
     val image = jai.BufferedImage(width, height, jai.BufferedImage.TYPE_INT_RGB)
-    for x <- 0 until width; y <- 0 until height do image.setRGB(x, y, pixel(x, y).asInt)
+    for x <- 0 until width; y <- 0 until height do image.setRGB(x, y, pixel(x, y).underlying)
     new Raster(image)
 
   def apply[streamable: Streamable by Data](input: streamable): Raster =
@@ -71,7 +70,7 @@ object Raster:
       (format.mediaType.basic, image.read[Stream[Data]])
 
   given graphical: Raster is Graphical:
-    def pixel(raster: Raster, x: Int, y: Int): Int = raster(x, y).asInt
+    def pixel(raster: Raster, x: Int, y: Int): Chroma = raster(x, y)
     def width(raster: Raster): Int = raster.width
     def height(raster: Raster): Int = raster.height
 
@@ -88,9 +87,9 @@ case class Raster(private[hallucination] val image: jai.BufferedImage) extends F
   def width: Int = image.getWidth
   def height: Int = image.getHeight
 
-  def apply(x: Int, y: Int): Rgb24 =
+  def apply(x: Int, y: Int): Chroma =
     val color: ja.Color = ja.Color(image.getRGB(x, y), true)
-    Rgb24(color.getRed, color.getGreen, color.getBlue)
+    Chroma(color.getRed, color.getGreen, color.getBlue)
 
   def to[format: Rasterizable as rasterizable]: Raster in format = Raster[format](image)
 

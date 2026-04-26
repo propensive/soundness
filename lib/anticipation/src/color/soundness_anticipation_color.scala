@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export anticipation.Chromatic
+export anticipation.{Chromatic, Chroma}

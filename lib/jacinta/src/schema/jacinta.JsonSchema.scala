@@ -62,7 +62,7 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
     def discriminate(json: Json): Optional[Text] =
       safely(json.selectDynamic("type").as[Text]).let(_.capitalize)
 
-  inline def join[derivation <: Product: ProductReflection]: derivation is Schematic in JsonSchema =
+  inline def conjunction[derivation <: Product: ProductReflection]: derivation is Schematic in JsonSchema =
     () =>
       val descriptions = infer[derivation is Annotated by memo] match
         case annotated: Annotated.Fields => annotated.fields
@@ -86,7 +86,7 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
 
       Object(properties = map, required = required)
 
-  inline def split[derivation: SumReflection]: derivation is Schematic in JsonSchema =
+  inline def disjunction[derivation: SumReflection]: derivation is Schematic in JsonSchema =
     () =>
       val descriptions = infer[Annotated by memo under derivation] match
         case annotated: Annotated.Subtypes => annotated.subtypes

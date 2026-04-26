@@ -32,32 +32,34 @@
                                                                                                   */
 package iridescence
 
-import anticipation.*
 import hypotenuse.*
+import prepositional.*
 
 object Xyz:
-  given chromatic: Xyz is Chromatic = _.srgb.rgb24.asInt
+  given cielab: (colorimetry: Colorimetry) => Xyz is Perceptual in Cielab =
+    color =>
+      def clamp(v: Double): Double = if v > 0.008856 then v**(1.0/3) else 7.787*v + 0.13793
 
-case class Xyz(x: Double, y: Double, z: Double):
-  def luminescence: Double = y
+      val lightness: Double = 116*clamp(color.y/colorimetry.y2) - 16
 
-  def srgb: Srgb =
-    def limit(v: Double): Double =
-      if v > 0.0031308 then 1.055*(v**(1/2.4)) - 0.055 else 12.92*v
+      val blueYellow: Double =
+        500*(clamp(color.x/colorimetry.x2) - clamp(color.y/colorimetry.y2))
 
-    val red = limit(x*0.032406994 - y*0.0153738318 - z*0.0049861076)
-    val green = limit(-x*0.0096924364 + y*0.01878675 + z*0.0004155506)
-    val blue = limit(x*0.0005563008 - y*0.0020397696 + z*0.0105697151)
+      val greenRed: Double =
+        200*(clamp(color.y/colorimetry.y2) - clamp(color.z/colorimetry.z2))
 
-    Srgb(red, green, blue)
+      Cielab(lightness, blueYellow, greenRed)
 
-  def rgb24: Rgb24 = srgb.rgb24
+  given srgb: Xyz is Perceptual in Srgb =
+    color =>
+      def clamp(v: Double): Double = if v > 0.0031308 then 1.055*(v**(1/2.4)) - 0.055 else 12.92*v
 
-  def cielab(using profile: ColorProfile): Cielab =
-    def limit(v: Double): Double = if v > 0.008856 then v**(1.0/3) else 7.787*v + 0.13793
+      val red = clamp(color.x*0.032406994 - color.y*0.0153738318 - color.z*0.0049861076)
+      val green = clamp(-color.x*0.0096924364 + color.y*0.01878675 + color.z*0.0004155506)
+      val blue = clamp(color.x*0.0005563008 - color.y*0.0020397696 + color.z*0.0105697151)
 
-    val l: Double = 116*limit(y/profile.y2) - 16
-    val a: Double = 500*(limit(x/profile.x2) - limit(y/profile.y2))
-    val b: Double = 200*(limit(y/profile.y2) - limit(z/profile.z2))
+      Srgb(red, green, blue)
 
-    Cielab(l, a, b)
+
+case class Xyz(x: Double, y: Double, z: Double) extends Color:
+  type Form = Xyz

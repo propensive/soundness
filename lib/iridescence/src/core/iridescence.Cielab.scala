@@ -32,25 +32,26 @@
                                                                                                   */
 package iridescence
 
-import anticipation.*
 import hypotenuse.*
+import prepositional.*
 
 object Cielab:
-  given chromatic: ColorProfile => Cielab is Chromatic = _.srgb.rgb24.asInt
+  given xyz: (colorimetry: Colorimetry) => Cielab is Perceptual in Xyz =
+    color =>
+      def clamp(v: Double): Double = if v*v*v > 0.008856 then v*v*v else (v - 16.0/116)/7.787
 
-case class Cielab(l: Double, a: Double, b: Double):
-  def srgb(using ColorProfile): Srgb = xyz.srgb
+      val y = clamp((color.lightness + 16)/116)*colorimetry.y2
+      val x = clamp(color.blueYellow/500 + (color.lightness + 16)/116)*colorimetry.x2
+      val z = clamp((color.lightness + 16)/116 - color.greenRed/200)*colorimetry.z2
 
-  def xyz(using profile: ColorProfile): Xyz =
-    def limit(v: Double): Double = if v*v*v > 0.008856 then v*v*v else (v - 16.0/116)/7.787
+      Xyz(x, y, z)
 
-    val y = limit((l + 16)/116)*profile.y2
-    val x = limit(a/500 + (l + 16)/116)*profile.x2
-    val z = limit((l + 16)/116 - b/200)*profile.z2
+  given srgb: Colorimetry => Cielab is Perceptual in Srgb = _.in[Xyz].in[Srgb]
 
-    Xyz(x, y, z)
+case class Cielab(lightness: Double, blueYellow: Double, greenRed: Double) extends Color:
+  type Form = Cielab
 
-  def mix(that: Cielab, ratio: Double = 0.5): Cielab =
-    Cielab(l*(1 - ratio) + ratio*that.l, a*(1 - ratio) + ratio*that.a, b*(1 - ratio) + ratio*that.b)
-
-  def delta(that: Cielab): Double = (hyp(F64(that.a), F64(that.b)) - hyp(F64(a), F64(b))).double
+  def delta(left: Cielab, right: Cielab): Double =
+    ( hyp(F64(right.blueYellow), F64(right.greenRed))
+      - hyp(F64(left.blueYellow), F64(left.greenRed)) )
+    . double

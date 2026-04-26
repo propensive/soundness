@@ -38,6 +38,7 @@ import digression.*
 import fulminate.*
 import gossamer.*
 import hypotenuse.*
+import iridescence.*
 import prepositional.*
 import proscenium.*
 import symbolism.*
@@ -47,8 +48,25 @@ private given realm: Realm = realm"probably"
 given decimalizer: Decimalizer = Decimalizer(4)
 
 export Baseline.Compare.{Min, Mean, Max}
-export Baseline.Metric.{BySpeed, ByTime}
+export Baseline.Metric.{Cadential, Temporal}
 export Baseline.Mode.{Arithmetic, Geometric}
+
+type TestPalette = Palette:
+  type Form = Srgb
+  def warning: Color in Srgb
+  def critical: Color in Srgb
+  def benchmark: Color in Srgb
+  def mixed: Color in Srgb
+  def informative: Color in Srgb
+  def cold: Color in Srgb
+  def warm: Color in Srgb
+  def hot: Color in Srgb
+  def accented: Color in Srgb
+  def highlight: Color in Srgb
+  def detail: Color in Srgb
+  def pass: Color in Srgb
+  def fail: Color in Srgb
+  def subdued: Color in Srgb
 
 extension [left](left: left)
   infix def === [right](right: right)(using checkable: left is Checkable against right): Boolean =
@@ -61,10 +79,10 @@ extension [value](value: value)
   @targetName("plusOrMinus")
   inline infix def +/- (tolerance: value)
   ( using inline commensurable: value is Commensurable against value,
-                 addable:       value is Addable by value,
-                 equality:      addable.Result =:= value,
-                 subtractable:  value is Subtractable by value,
-                 equality2:     subtractable.Result =:= value )
+          addable:              value is Addable by value,
+          equality:             addable.Result =:= value,
+          subtractable:         value is Subtractable by value,
+          equality2:            subtractable.Result =:= value )
   :   Tolerance[value] =
 
     Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)

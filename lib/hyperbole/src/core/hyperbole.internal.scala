@@ -51,7 +51,7 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-import syntaxHighlighting.teletypeable
+import dotty.tools.*, dotc.util as dtdu
 
 object internal:
   def introspection[value](value: Expr[value], inlining: Expr[Boolean]): Macro[TastyTree] =
@@ -81,24 +81,22 @@ object internal:
     val inlining = inlining0.valueOrAbort
     val sources: scm.HashMap[Text, SourceCode] = scm.HashMap()
 
-    def source(tree: Tree): Teletype = tree.pos match
+    def source(tree: Tree): Text = tree.pos match
       case position: dtdu.SourcePosition =>
         val init: Ordinal = position.lineContent.tt.where(_ != ' ').or(Prim)
-
-        val content: Teletype =
+        val content: Text =
           val sourceCode = sources.establish(position.source.toString.tt):
-            val text = Scala.highlight(new String(position.source.content()).tt)
-            text
+            Scala.highlight(new String(position.source.content()).tt)
 
-          val lineContent: Teletype = sourceCode.lines(position.line).map(_.teletype).join
+          val lineContent: Text = sourceCode.lines(position.line).map(_.show).join
 
           try lineContent.segment(position.startColumn.z thru position.endColumn.u)
-          catch case e: Exception => e""
+          catch case e: Exception => t""
 
-        ((e" "*(position.startColumn - init.n0))+content)
+        ((t" "*(position.startColumn - init.n0))+content)
 
       case _ =>
-        e""
+        t""
 
     extension (tastyTree: TastyTree)
       def children(nodes2: Tree*): TastyTree =
@@ -125,9 +123,9 @@ object internal:
       :   TastyTree =
 
         val shown = tree.let(_.show.tt).or(repr.let(_.show)).or(t"")
-        val code = tree.let(source(_)).or(e"")
+        val code = tree.let(source(_)).or(t"")
 
-        new TastyTree(tag, typeName, name, shown, code.plain, Nil, parameter, true, false)
+        new TastyTree(tag, typeName, name, shown, code, Nil, parameter, true, false)
 
 
       def repr(name: Text, repr: Optional[TypeRepr], parameter: Optional[Text] = Unset): TastyTree =

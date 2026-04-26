@@ -42,7 +42,7 @@ object SumOnly extends SumDerivation[SumOnly]:
   given SumOnly[SumOnlyEnum.Alpha] = alpha => ()
   given SumOnly[SumOnlyEnum.Beta] = beta => ()
 
-  inline def split[derivation: SumReflection]: SumOnly[derivation] =
+  inline def disjunction[derivation: SumReflection]: SumOnly[derivation] =
     value => variant(value):
       [variant <: derivation] => value =>
         contextual.applyTo(value)
@@ -72,14 +72,14 @@ object Presentation extends Derivation[Presentation]:
   given Presentation[Boolean] = boolean => if boolean then "yes".tt else "no".tt
   given Presentation[Int] = _.toString.tt
 
-  inline def join[derivation <: Product: ProductReflection]: Presentation[derivation] = value =>
+  inline def conjunction[derivation <: Product: ProductReflection]: Presentation[derivation] = value =>
     inline if singleton then typeName else
       val prefix = inline if tuple then "".tt else typeName
       fields(value):
         [field] => field => s"$index:$label=${field.present}".tt
       .mkString((prefix.s+"("), ", ", ")").tt
 
-  inline def split[derivation: SumReflection]: Presentation[derivation] = value =>
+  inline def disjunction[derivation: SumReflection]: Presentation[derivation] = value =>
     variant(value):
       [variant <: derivation] =>
         variant => (typeName.s+"."+variant.present).tt
@@ -103,7 +103,7 @@ object Readable extends Derivation[Readable]:
   given int: Readable[Int] = _.s.toInt
   given boolean: Readable[Boolean] = _ == "yes".tt
 
-  inline def join[derivation <: Product: ProductReflection]: Readable[derivation] = text =>
+  inline def conjunction[derivation <: Product: ProductReflection]: Readable[derivation] = text =>
     text.s.split(",").nn.to(List).map(_.nn).pipe:
       array =>
         build:
@@ -111,7 +111,7 @@ object Readable extends Derivation[Readable]:
             readable =>
               if index < array.length then readable.read(array(index).tt) else default.or(???)
 
-  inline def split[derivation: SumReflection]: Readable[derivation] = text =>
+  inline def disjunction[derivation: SumReflection]: Readable[derivation] = text =>
     text.s.split(":").nn.to(List).map(_.nn.tt).absolve match
       case List(variant, text2) => delegate(variant):
         [variant <: derivation] =>
@@ -140,13 +140,13 @@ object Eq extends Derivation[Eq]:
   given boolean: Eq[Boolean] = _ & _
   given double: Eq[Double] = (left, right) => math.abs(left - right) < 0.1
 
-  inline def join[derivation <: Product: ProductReflection]: Eq[derivation] =
+  inline def conjunction[derivation <: Product: ProductReflection]: Eq[derivation] =
     (left, right) =>
       fields(left):
         [field] => leftValue => leftValue === complement(right)
       . all { boolean => boolean }
 
-  inline def split[derivation: SumReflection]: Eq[derivation] =
+  inline def disjunction[derivation: SumReflection]: Eq[derivation] =
     (left, right) =>
       variant(left):
         [variant <: derivation] => leftValue =>
@@ -162,7 +162,7 @@ object Parser extends ProductDerivation[Parser]:
   given Parser[Boolean] with
     def parse(s: String): Option[Boolean] = s.toBooleanOption
 
-  inline def join[derivation <: Product: ProductReflection]: Parser[derivation] = input =>
+  inline def conjunction[derivation <: Product: ProductReflection]: Parser[derivation] = input =>
     IArray.from(input.split(',')).pipe: inputArr =>
       construct[Option](
         [in, out] => _.flatMap,
@@ -182,10 +182,10 @@ extension[T: Show](value: T)
 
 object Show extends Derivation[Show]:
 
-  inline def join[derivation <: Product: ProductReflection]: Show[derivation] = value =>
+  inline def conjunction[derivation <: Product: ProductReflection]: Show[derivation] = value =>
     typeName.s
 
-  inline def split[derivation: SumReflection]: Show[derivation] = value =>
+  inline def disjunction[derivation: SumReflection]: Show[derivation] = value =>
     inline if choice then
       variant(value):
         [variant <: derivation] =>
@@ -206,9 +206,9 @@ trait Producer[value]:
   def produce(s: String): Option[value]
 
 object Producer extends Derivation[Producer]:
-  inline def join[derivation <: Product: ProductOf]: Producer[derivation] = ???
+  inline def conjunction[derivation <: Product: ProductOf]: Producer[derivation] = ???
 
-  inline def split[derivation: SumOf]: Producer[derivation] = input =>
+  inline def disjunction[derivation: SumOf]: Producer[derivation] = input =>
     inline if choice then Some(singleton(input)) else compiletime.error("not a choice")
 
 object Tests extends Suite(m"Wisteria tests"):

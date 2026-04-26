@@ -38,7 +38,6 @@ import anticipation.*
 import denominative.*
 import gossamer.*
 import hypotenuse.*
-import iridescence.*
 import proscenium.*
 import symbolism.*
 
@@ -115,9 +114,9 @@ object internal:
     def setConcealed: Boolean = style.bit(SetConcealed)
     def concealed: Boolean = style.bit(Concealed)
     def setForeground: Boolean = style.bit(SetForeground)
-    def foreground: Rgb24 = Rgb24(style(Foreground).s64.long.toInt)
+    def foreground: Chroma = Chroma(style(Foreground).s64.long.toInt)
     def setBackground: Boolean = style.bit(SetBackground)
-    def background: Rgb24 = Rgb24(style(Background).s64.long.toInt)
+    def background: Chroma = Chroma(style(Background).s64.long.toInt)
     def changed: Boolean = (style & Changes) != B64(0)
 
     def update(changes: AnsiStyle): AnsiStyle =

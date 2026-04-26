@@ -4,7 +4,7 @@
 
 # Spectacular
 
-__Typeclasses for rendering different values as text for different audiences__
+**Typeclasses for rendering different values as text for different audiences**
 
 The idea of a `Show` typeclass is well established as a better alternative to using `toString`, but it
 is limited by its inability to distinguish different audiences. A fully-generic typeclass for
@@ -23,18 +23,12 @@ for most purposes, and has the distinction that `debug` will always provide _som
 - the `debug` method will fall back to a `Show` method and then `toString` if no `Debug` instance exists
 - `Debug` instances are generically derived for products and coproducts
 
-
 ## Availability
-
-
-
-
-
-
 
 ## Getting Started
 
 All Spectacular terms and types are defined in the `spectacular` package:
+
 ```scala
 import spectacular.*
 ```
@@ -69,12 +63,12 @@ however technical.
 Thus, messages which are intended for end-users should use `Show` and
 "internal" messages should use `Debug`.
 
-
 ### Defining `Show` and `Debug` instances
 
 Creating a given instance of `Show` or `Debug` is simple in both cases. Both
 are single-abstract-method traits, so definitions are often take just a single
 line. For example,
+
 ```scala
 given Debug[Short] = short => t"Short(${short.toString})"
 ```
@@ -91,6 +85,7 @@ some parameters do not have their own `Debug` instance, since a `Show`
 typeclass will be used as a fallback, and `toString` as a last resort.
 
 For example, the case class,
+
 ```scala
 import anticipation.Text
 
@@ -98,12 +93,15 @@ class Id(id: String) { override def toString(): String = id }
 case class Person(id: Id, name: Text, age: Int)
 val person = Person(Id("jqm"), t"Jennifer", 61).debug
 ```
+
 will produce the text,
+
 ```
 Person(id=jqm,name=t"Jennifer",age=61)
 ```
+
 using the `toString` of `Id` and the `Debug` instances (provided by
-Spectacular) for `Text` and `age`.  Note that `Text`'s `Debug` instance
+Spectacular) for `Text` and `age`. Note that `Text`'s `Debug` instance
 produces pastable code, rather than simply returning the exact same `Text`
 value, while its `Show` instance does exactly that.
 
@@ -115,21 +113,25 @@ scenarios, and without specifying, Spectacular will not presume any particular
 
 But by importing a `BooleanStyle` value from the `spectacular.booleanStyles`
 package, a style can be chosen, for example,
+
 ```scala
 import turbulence.Out
-import turbulence.stdioSources.jvm
+import turbulence.stdios.jvm
 import booleanStyles.yesNo
 
 def run(): Unit = Out.println(true.show)
 ```
+
 will print the text `yes`.
 
 Several `BooleanStyle` options are provided in the `booleanStyles` package,
- - `yesNo` - `yes` or `no`
- - `onOff` - `on` or `off`
- - `trueFalse` - `true` or `false`
- - `oneZero` - `1` (`true`) or `0` (`false`)
-and it is trivial to provide alternatives, for example:
+
+- `yesNo` - `yes` or `no`
+- `onOff` - `on` or `off`
+- `trueFalse` - `true` or `false`
+- `oneZero` - `1` (`true`) or `0` (`false`)
+  and it is trivial to provide alternatives, for example:
+
 ```scala
 import gossamer.*
 given posNeg: BooleanStyle = BooleanStyle(t"+", t"-")
@@ -164,19 +166,15 @@ While encoding to text will normally succeed in all cases, it's common for
 decoder (or deserialization) to fail, if the input text is in the wrong format.
 However, the API of `Decoder` does not include any optionality in the signature
 of its `decode` method. That's because _capabilities_ should be used to handle
-failures, with greater flexibility.  Given `Decoder` instances should include
+failures, with greater flexibility. Given `Decoder` instances should include
 appropriate `using` clauses to demand the capability to raise errors. If using
 [Contingency](https://github.com/propensive/contingency/) for error handling, that
 implies a `Raises` instance, while Scala's checked exceptions require a
 `CanThrow` instance for the exception type.
 
-
-
-
-
 ## Status
 
-Spectacular is classified as __maturescent__. For reference, Soundness projects are
+Spectacular is classified as **maturescent**. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -200,7 +198,7 @@ fragile, inadequately tested, and unsuitable for anything more than
 experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Spectacular?".
 
-1. *Copy the sources into your own project*
+1. _Copy the sources into your own project_
 
    Read the `fury` file in the repository root to understand Spectacular's build
    structure, dependencies and source location; the file format should be short
@@ -211,7 +209,7 @@ answer to the question, "how can I try Spectacular?".
    There should be no problem to compile the project together with all of its
    dependencies in a single compilation.
 
-2. *Build with [Wrath](https://github.com/propensive/wrath/)*
+2. _Build with [Wrath](https://github.com/propensive/wrath/)_
 
    Wrath is a bootstrapping script for building Spectacular and other projects in
    the absence of a fully-featured build tool. It is designed to read the `fury`
@@ -242,7 +240,7 @@ We suggest that all contributors read the [Contributing
 Guide](/contributing.md) to make the process of contributing to Spectacular
 easier.
 
-Please __do not__ contact project maintainers privately with questions unless
+Please **do not** contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
 repsond to such questions, private answers cannot be shared with a wider
 audience, and it can result in duplication of effort.
@@ -252,8 +250,6 @@ audience, and it can result in duplication of effort.
 Spectacular was designed and developed by Jon Pretty, and commercial support and
 training on all aspects of Scala 3 is available from [Propensive
 O&Uuml;](https://propensive.com/).
-
-
 
 ## Name
 
