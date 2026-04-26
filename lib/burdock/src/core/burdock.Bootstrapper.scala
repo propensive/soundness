@@ -60,20 +60,20 @@ import urticose.*
 import vacuous.*
 import zeppelin.*
 
-import charDecoders.utf8
-import textSanitizers.skip
-import stdioSources.virtualMachine.ansi
-import backstops.stackTrace
-import executives.direct
-import interpreters.posix
-import workingDirectories.system
-import internetAccess.enabled
-import logging.silent
 import alphabets.hex.lowerCase
+import backstops.stackTrace
+import charDecoders.utf8
+import executives.direct
+import filesystemOptions.createNonexistent.disabled
+import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.disabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.createNonexistent.disabled
+import internetAccess.enabled
+import interpreters.posix
+import logging.silent
+import stdioSources.virtualMachine.ansi
+import textSanitizers.skip
+import workingDirectories.system
 
 object Bootstrapper:
   object BurdockMain extends ManifestAttribute["Burdock-Main"]

@@ -52,11 +52,11 @@ object XmlSchema:
 
   val defaultEntities: Dictionary[Text] =
     Dictionary
-     ( t"amp"  -> t"&",
-       t"lt"   -> t"<",
-       t"gt"   -> t">",
-       t"apos" -> t"'",
-       t"quot" -> t"\"" )
+      ( t"amp"  -> t"&",
+        t"lt"   -> t"<",
+        t"gt"   -> t">",
+        t"apos" -> t"'",
+        t"quot" -> t"\"" )
 
   object Freeform extends XmlSchema:
     override def freeform = true

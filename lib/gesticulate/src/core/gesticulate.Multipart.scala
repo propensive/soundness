@@ -111,6 +111,7 @@ object Multipart:
               Stream(conduit.block).also:
                 conduit.skip(boundary.length + 3)
             else body()
+
           case other =>
             body()
 

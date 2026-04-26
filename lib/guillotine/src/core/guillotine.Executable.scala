@@ -62,8 +62,8 @@ sealed trait Executable:
 
   def apply()
     ( using erased intelligible: Exec is Intelligible,
-            working:             WorkingDirectory,
-            computable:          intelligible.Result is Computable )
+                   working:      WorkingDirectory,
+                   computable:   intelligible.Result is Computable )
   :   intelligible.Result logs ExecEvent raises ExecError =
 
     fork[intelligible.Result]().await()
@@ -73,7 +73,7 @@ sealed trait Executable:
     case Pipeline(commands*) =>
       this match
         case Pipeline(commands2*) => Pipeline((commands ++ commands2)*)
-        case command: Command => Pipeline((commands :+ command)*)
+        case command: Command     => Pipeline((commands :+ command)*)
 
     case command: Command =>
       this match

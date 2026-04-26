@@ -55,6 +55,7 @@ extension (shell: Shell)
           case Shell.Zsh        => t"zsh -l"
           case Shell.Fish       => t"fish -l"
           case Shell.Bash       => t"bash -l"
+
           case Shell.Powershell =>
             val cmd = summon[Sandbox.Tool].command
 

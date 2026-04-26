@@ -38,9 +38,8 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import doms.html.whatwg
-import whatwg.*
 import attributives.textAttributes
+import doms.html.whatwg, whatwg.*
 
 object Combobox:
   given renderable: Combobox is Renderable in Phrasing = combobox =>

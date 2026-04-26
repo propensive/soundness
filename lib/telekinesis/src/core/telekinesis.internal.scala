@@ -154,7 +154,7 @@ object internal:
         val (method0, _, headers) = expand(exprs)
 
         val method = method0 match
-          case Unset                    => '{Http.Get}
+          case Unset                     => '{Http.Get}
           case method: Expr[Http.Method] => method
 
         ' {

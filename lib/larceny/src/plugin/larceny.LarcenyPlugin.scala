@@ -32,9 +32,9 @@
                                                                                                   */
 package larceny
 
-import dotty.tools.*, dotc.*, core.*, Contexts.*, plugins.*
-
 import language.adhocExtensions
+
+import dotty.tools.*, dotc.*, core.*, Contexts.*, plugins.*
 
 class LarcenyPlugin() extends StandardPlugin:
   val name: String = "larceny"

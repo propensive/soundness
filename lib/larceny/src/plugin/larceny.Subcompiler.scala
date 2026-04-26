@@ -34,10 +34,10 @@ package larceny
 
 import language.adhocExtensions
 
-import dotty.tools.*, dotc.*, util.*, reporting.*, core.*, config.Settings, Contexts.*
-
 import scala.collection.mutable as scm
 import scala.util.chaining.*
+
+import dotty.tools.*, dotc.*, util.*, reporting.*, core.*, config.Settings, Contexts.*
 
 object Subcompiler:
   val Scala3: Compiler = new Compiler()
@@ -118,6 +118,7 @@ object Subcompiler:
 
                 . match
                     case None                    => recompile(tail, done, source)
+
                     case Some(region@(from, to)) =>
                       if done.contains(region) then recompile(tail, done, source) else
 

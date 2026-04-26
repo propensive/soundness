@@ -50,8 +50,8 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-import Fulfillment.*
 import AsyncError.Reason
+import Fulfillment.*
 
 import unsafeExceptions.canThrowAny
 

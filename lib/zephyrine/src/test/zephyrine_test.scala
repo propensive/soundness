@@ -444,3 +444,22 @@ object Tests extends Suite(m"Zephyrine tests"):
               cursor.grab(start, cursor.mark)
 
           . assert(_ == "Hello world!".substring(offset, offset + length).nn)
+
+      test(m"Grab spanning multi-character blocks"):
+        val cursor = Cursor(Iterator[Text]("hello", "world"))
+        for j <- 1 to 2 do cursor.next()
+        cursor.hold:
+          val start = cursor.mark
+          for i <- 1 to 4 do cursor.next()
+          cursor.grab(start, cursor.mark)
+
+      . assert(_ == "llow")
+
+      test(m"Grab spanning three multi-character blocks"):
+        val cursor = Cursor(Iterator[Text]("one", "two", "three", "four"))
+        cursor.hold:
+          val start = cursor.mark
+          for i <- 1 to 7 do cursor.next()
+          cursor.grab(start, cursor.mark)
+
+      . assert(_ == "onetwot")

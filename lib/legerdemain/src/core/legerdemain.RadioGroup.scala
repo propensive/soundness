@@ -38,8 +38,8 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import doms.html.whatwg, whatwg.*
 import attributives.textAttributes
+import doms.html.whatwg, whatwg.*
 
 object RadioGroup:
   given renderable: RadioGroup is Renderable in Phrasing = group =>

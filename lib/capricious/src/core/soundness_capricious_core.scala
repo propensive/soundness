@@ -38,7 +38,7 @@ export capricious
 
 package randomization:
   export capricious.randomization
-  . { unseeded, secureUnseeded, stronglySecure, seeded,  secureSeeded }
+  . { unseeded, secureUnseeded, stronglySecure, seeded, secureSeeded }
 
   package sizes:
     export capricious.randomization.sizes

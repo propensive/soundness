@@ -220,7 +220,7 @@ transparent inline def accrue[accrual <: Exception](accrual: accrual)[result]
   ${contingency.internal.accrue[accrual]('accrual, 'block)}
 
 
-extension [accrual <: Exception,  lambda[_]](inline accrue: Accrue[accrual, lambda])
+extension [accrual <: Exception, lambda[_]](inline accrue: Accrue[accrual, lambda])
   inline def within[result](inline lambda: lambda[result])
     ( using tactic: Tactic[accrual], diagnostics: Diagnostics )
   :   result =
@@ -231,7 +231,7 @@ extension [accrual <: Exception,  lambda[_]](inline accrue: Accrue[accrual, lamb
       }
 
 
-extension [accrual <: Exception,  lambda[_], focus](inline track: Tracking[accrual, lambda, focus])
+extension [accrual <: Exception, lambda[_], focus](inline track: Tracking[accrual, lambda, focus])
   inline def within[result](inline lambda: Foci[focus] ?=> lambda[result])
     ( using tactic: Tactic[accrual], diagnostics: Diagnostics )
   :   result =
@@ -242,7 +242,7 @@ extension [accrual <: Exception,  lambda[_], focus](inline track: Tracking[accru
       }
 
 
-extension [accrual <: Exception,  lambda[_], focus]
+extension [accrual <: Exception, lambda[_], focus]
   ( inline validate: Validate[accrual, lambda, focus] )
   inline def within(inline lambda: Foci[focus] ?=> lambda[Any])(using diagnostics: Diagnostics)
   :   accrual =

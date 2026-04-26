@@ -79,16 +79,22 @@ class Issuer
         mitigate:
             case error@PathError(reason, path) =>
               OAuthError(OAuthError.Reason.Other)
+
             case error@ConnectError(reason)    =>
               OAuthError(OAuthError.Reason.Connection(exchange, reason))
+
             case error@ParseError(_, _, _)     =>
               OAuthError(OAuthError.Reason.InvalidJsonResponse)
+
             case error@HttpError(status, _) =>
               OAuthError(OAuthError.Reason.UnexpectedHttpStatus(status))
+
             case error@UuidError(_)            =>
               OAuthError(OAuthError.Reason.Other)
+
             case error@QueryError()            =>
               OAuthError(OAuthError.Reason.Other)
+
             case error@JsonError(reason)       =>
               OAuthError(OAuthError.Reason.InvalidJsonResponse)
 
@@ -111,6 +117,7 @@ class Issuer
 
               val json: Json = response.let(_.status) match
                 case Http.Ok           => response.vouch.receive[Json]
+
                 case Http.Unauthorized | Unset =>
                   state.refresh.let: refresh =>
                     val query = Query.make(grant_type = t"refresh_token", refresh_token = refresh)

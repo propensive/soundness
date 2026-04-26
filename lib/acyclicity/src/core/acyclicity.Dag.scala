@@ -83,7 +83,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
       state.updated(next, lambda(apply(next).map(state), next))
 
   @targetName("addAll")
-  infix def ++(dag: Dag[node]): Dag[node] =
+  infix def ++ (dag: Dag[node]): Dag[node] =
     val joined = edgeMap.to(List) ++ dag.edgeMap.to(List)
     Dag(joined.groupBy(_._1).view.mapValues(_.flatMap(_._2).to(Set)).to(Map))
 

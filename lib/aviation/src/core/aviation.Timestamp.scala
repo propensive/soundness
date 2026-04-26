@@ -44,8 +44,8 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 
-import errorDiagnostics.stackTraces
 import abstractables.instantIsAbstractable
+import errorDiagnostics.stackTraces
 
 object Timestamp:
   import calendars.gregorian

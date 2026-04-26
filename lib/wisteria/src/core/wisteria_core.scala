@@ -106,6 +106,7 @@ object arithmetic:
 
     inline def join[derivation <: Product: ProductReflection]
     :   derivation is Divisible by derivation to derivation =
+
       (left, right) =>
         build: [field] => _.divide(complement(left), complement(right))
 

@@ -37,10 +37,12 @@ import gossamer.*
 
 object en extends Language(t"en"):
   type Code = en
+
 trait en
 
 object pl extends Language(t"pl"):
   type Code = pl
+
 trait pl
 
 infix type via [value, language] = Locale[language] ?=> value

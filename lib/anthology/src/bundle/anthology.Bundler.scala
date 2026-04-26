@@ -48,15 +48,15 @@ import turbulence.*
 import vacuous.*
 import zeppelin.*
 
-import manifestAttributes.*
-import workingDirectories.java
-import systems.java
-import logging.silent
+import filesystemOptions.createNonexistent.disabled
+import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.createNonexistent.disabled
 import filesystemTraversal.preOrder
+import logging.silent
+import manifestAttributes.*
+import systems.java
+import workingDirectories.java
 
 object Bundler:
   def classpath(out: Path on Linux): LocalClasspath = LocalClasspath:
@@ -94,6 +94,7 @@ object Bundler:
                 if file.entry() == Directory then Unset else file.open: handle =>
                   val ref = %.on[Zip] + root.toward(file).on[Zip]
                   Zip.Entry(ref, handle.read[Data])
+
               . compact
 
           case ClasspathEntry.Jar(jar) =>

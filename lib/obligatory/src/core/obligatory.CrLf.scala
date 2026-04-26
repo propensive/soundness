@@ -54,6 +54,7 @@ object CrLf:
 
     new Iterator[Text]:
       private var ready: Optional[Text] = Unset
+
       def hasNext: Boolean =
         if ready == Unset then ready = frame()
         ready != Unset
