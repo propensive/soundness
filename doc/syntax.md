@@ -372,6 +372,51 @@ determined by the indent of the *immediately preceding* code line:
 
 This applies to every wrapped chain.
 
+### Multi-line method applications
+
+When a method call (or any parenthesised application) does not fit on one
+line, two transformations apply in order:
+
+1. **Move the method name to the start of a new line** using the chain
+   continuation rule above:
+
+   ```scala
+   foo.bar.baz(arg1, arg2, arg3)
+   ```
+
+   becomes
+
+   ```scala
+   foo.bar
+   . baz(arg1, arg2, arg3)
+   ```
+
+2. **If the call still doesn't fit, move the parameter application to its
+   own line, indented two spaces from the method name, with a single
+   space after the opening `(` and before the closing `)`:**
+
+   ```scala
+   foo.bar
+   . baz
+       ( arg1, arg2, arg3 )
+   ```
+
+   The arguments must be either *all on one line* or *all on different
+   lines, each indented to the same column*:
+
+   ```scala
+   foo.bar
+   . baz
+       ( arg1,
+         arg2,
+         arg3 )
+   ```
+
+The same `( ... )` form is used for any parenthesised block that lives on
+its own line — heavy method signatures, anonymous given continuations,
+multi-line type-parameter blocks. The closing bracket sits on the same
+line as the last parameter; it is never alone on a line.
+
 ### Function literals
 
 - Inline arrow form: `x => …` or `(x, y) => …` with spaces around `=>`.
@@ -413,6 +458,34 @@ the leading `:` and the return type on a heavy-signature return-type line.**
 - `t"…"` for `Text`.
 - `m"…"` for `Message`.
 - `s"…"` and plain `"…"` only where a raw `String` is genuinely needed.
+
+### Macro quotes and splices
+
+Scala 3 macro quote (`'{ … }`, `'[ … ]`) and splice (`${ … }`) syntax has
+two styles:
+
+- **Inline.** No padding between `'` (or `$`) and the opening `{`/`[`,
+  with the contents on the same line:
+
+  ```scala
+  '{Quantity(left)}
+  ${quantitative.internal.multiply('left, 'right)}
+  ```
+
+- **Block.** A space between `'` (or `$`) and the opening `{`, with
+  `' {` (or `$ {`) alone at the end of a line. The quoted/spliced
+  content is indented two spaces, starting on the next line, and the
+  closing `}` sits in the same column as the opening `{`:
+
+  ```scala
+  ' {
+      Multiplicable[multiplicand, multiplier, Quantity[result]]:
+        (left, right) =>
+          ${quantitative.internal.multiply('left, 'right).asExprOf[Quantity[result]]}
+    }
+  ```
+
+Quoted references (`'identifier`) take no padding.
 
 ## 6. Blank-line conventions
 
@@ -491,6 +564,11 @@ scope is always preceded by a blank.
 - Symbolic-operator method names take a space before the parameter list.
 - Chain continuation: `. method` at receiver indent; blank-line-before iff
   the preceding line is more indented.
+- Multi-line method applications: when the param block lives on its own
+  line, use `( arg, arg )` (or all-aligned multi-line) with a space inside
+  each paren; the closing bracket sits with the last argument, never alone.
+- Macro quotes/splices have inline (`'{x}`, `${x}`) and block (`' {`/`$ {`
+  on its own line, content +2, closing `}` aligned with `{`) styles.
 - Blank-line padding: 0 / 1 / 2 around single-line / multi-line /
   heavy-signature definitions; greater-of rule between unequal neighbours;
   the first member of a non-heavy scope is exempt; never more than two

@@ -85,6 +85,8 @@ object Checker:
     var prevReturnTypeLine:   Int                        = 0
     var prevCodeLineIndent:   Int                        = -1
     var prevLineEndedMatch:   Boolean                    = false
+    var prevCodeLineLastTok:  String                     = ""
+    var inMultilineImport:    Boolean                    = false
     var caseRun:              Option[CaseRun]            = None
     var blanksSinceDecl:      Int                        = 0
     var prevDeclByIndent:     mutable.Map[Int, DeclShape] = mutable.Map.empty
@@ -94,6 +96,21 @@ object Checker:
     var pendingR11:           List[Violation]            = Nil
     val typeDecls:            mutable.Map[String, Int]   = mutable.Map.empty
     val objectDecls:          mutable.Map[String, Int]   = mutable.Map.empty
+    // Cross-line tracking for R30: each unclosed `(`/`[` records whether it
+    // looked like a formal-block opener and the indent of the line it
+    // opened on. Closers on later lines pop to decide whether the bracket
+    // was formal and what indent a multi-clause continuation must match.
+    val bracketFormality:     mutable.Stack[(Boolean, Int)] = mutable.Stack.empty
+    // The indent of the opener line of the most recently closed formal
+    // block, or -1 if the previous code line did not end a formal block.
+    // Lets multi-clause def signatures (`( a )\n( using b )`) recognise the
+    // second clause as a continuation: leadingCols of the new line must
+    // equal this value.
+    var prevFormalOpenerIndent: Int                       = -1
+    // The opener-line indent of the formal block whose closer ends the
+    // current line (set during checkBracketInteriors, transferred to
+    // `prevFormalOpenerIndent` at end of line).
+    var currentFormalOpenerIndent: Int                    = -1
 
   private def checkLine
     ( s:       State,
@@ -112,8 +129,9 @@ object Checker:
     inline def emit(col: Int, rule: String, message: String): Unit =
       out += Violation(s.file, lineNum, col, rule, message)
 
+    val isStringContent = firstReal.exists(_.kind == Kind.Strs)
     checkR2LineLength(visibleLen, emit)
-    checkR3IndentWidth(isBlank, leadingCols, emit)
+    if !isStringContent then checkR3IndentWidth(isBlank, leadingCols, emit)
     checkR4TrailingWs(line, emit)
 
     if isBlank then
@@ -129,7 +147,7 @@ object Checker:
       case Phase.Imports      => checkImports(s, isBlank, firstReal, rest, emit)
       case Phase.Body         => ()
 
-    checkTokens(lineNum, line, emit)
+    checkTokens(s, lineNum, line, s.prevCodeLineLastTok, emit)
     checkCommas(s, lineNum, line, isBlank, out)
     checkHardSpace(rest, leadingCols, emit)
     checkChainContinuation(s, lineNum, leadingCols, isBlank, firstReal, emit)
@@ -138,18 +156,29 @@ object Checker:
     checkSiblingPadding(s, lineNum, leadingCols, isBlank, rest, out)
     checkUsingAlignment(s, lineNum, leadingCols, rest, emit)
     recordDeclarations(s, lineNum, rest)
-    if !isBlank then s.prevLineEndedMatch = lineEndsWithMatch(rest)
+    if !isBlank then
+      s.prevLineEndedMatch = lineEndsWithMatch(rest)
+      val sem = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+      sem.lastOption.foreach: t => s.prevCodeLineLastTok = t.text
+      s.prevFormalOpenerIndent = s.currentFormalOpenerIndent
 
     if isBlank then
       if s.prevWasAnnotation then
         emit
-         ( 1, "R15-annotation-blank",
-           "blank line is not permitted between an annotation and the declaration it annotates" )
+          ( 1, "R15-annotation-blank",
+            "blank line is not permitted between an annotation and the declaration it annotates" )
         s.prevWasAnnotation = false
     else
       s.prevWasAnnotation = lineStartsAnnotation(firstReal)
       s.prevLineNum = lineNum
-      s.prevCodeLineIndent = leadingCols
+      // Comment-only and annotation-only lines belong to the next declaration:
+      // they must not update `prevCodeLineIndent`, otherwise sibling-scope
+      // detection mis-classifies the next declaration as a same-scope sibling
+      // of whatever appeared before the comment.
+      val isCommentOnly = firstReal.exists(_.kind == Kind.Comment)
+      val isAnnotationOnly = lineStartsAnnotation(firstReal)
+      if !isCommentOnly && !isAnnotationOnly then
+        s.prevCodeLineIndent = leadingCols
 
     s.prevLineWasBlank = isBlank
 
@@ -174,8 +203,8 @@ object Checker:
   private def checkR2LineLength(visibleLen: Int, emit: (Int, String, String) => Unit): Unit =
     if visibleLen > MaxColumns then
       emit
-       ( MaxColumns + 1, "R2-line-length",
-         s"line exceeds 100 columns (is $visibleLen columns)" )
+        ( MaxColumns + 1, "R2-line-length",
+          s"line exceeds 100 columns (is $visibleLen columns)" )
 
   private def checkR3IndentWidth
     ( isBlank: Boolean, leadingCols: Int, emit: (Int, String, String) => Unit )
@@ -194,6 +223,7 @@ object Checker:
         if hasNonWs then
           val col = line.iterator.map(_.text.length).sum - token.text.length + 1
           emit(col, "R4-trailing-ws", "line has trailing whitespace")
+
       case _ =>
         ()
 
@@ -220,8 +250,8 @@ object Checker:
 
     if lineNum != PackageLine then
       emit
-       ( 1, "R7-package",
-         s"expected `package` declaration on line 33, found content on line $lineNum" )
+        ( 1, "R7-package",
+          s"expected `package` declaration on line 33, found content on line $lineNum" )
       s.phase = Phase.Body
     else
       val nonWs = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment).toList
@@ -231,19 +261,19 @@ object Checker:
 
           if !ident.text.matches("[A-Za-z_][A-Za-z0-9_]*") then
             emit
-             ( 1, "R7-package",
-               s"package declaration must be a single identifier segment, not `${ident.text}`" )
+              ( 1, "R7-package",
+                s"package declaration must be a single identifier segment, not `${ident.text}`" )
 
           s.expectedModule.foreach: expected =>
             if ident.text != expected then
               emit
-               ( 1, "R7-package",
-                 s"package `${ident.text}` does not match expected module `$expected`" )
+                ( 1, "R7-package",
+                  s"package `${ident.text}` does not match expected module `$expected`" )
 
           if tail.nonEmpty then
             emit
-             ( 1, "R7-package",
-               "package declaration must contain only `package <ident>` on line 33" )
+              ( 1, "R7-package",
+                "package declaration must contain only `package <ident>` on line 33" )
 
         case _ =>
           emit(1, "R7-package", "line 33 must be `package <module>`")
@@ -267,13 +297,18 @@ object Checker:
       emit:      (Int, String, String) => Unit )
   :   Unit =
 
-    if isBlank then ()
+    if isBlank then s.inMultilineImport = false
+    else if s.inMultilineImport then
+      // Continuation of a multi-line `import …,\n  more, more` or
+      // `import …{a, b,\n  c}` statement. Update state and skip checks.
+      s.inMultilineImport = importContinues(rest)
     else firstReal.foreach: head =>
       if head.text == "import" then
         if importHasAlias(rest) then
           emit
-           ( 1, "R9-aliased-import",
-             "top-level imports must not use aliases (`as` or `=>`); write the full path" )
+            ( 1, "R9-aliased-import",
+              "top-level imports must not use aliases (`as` or `=>`); write the full path" )
+
         val path  = importPath(rest)
         val group = classifyImport(path)
 
@@ -281,33 +316,45 @@ object Checker:
           case Some(prevGroup) =>
             if group < prevGroup then
               emit
-               ( 1, "R9-import-order",
-                 s"import group $group appears after group $prevGroup" )
+                ( 1, "R9-import-order",
+                  s"import group $group appears after group $prevGroup" )
             else if group > prevGroup then
               if !s.prevLineWasBlank then
                 emit
-                 ( 1, "R9-import-group-blank",
-                   "import groups must be separated by exactly one blank line" )
+                  ( 1, "R9-import-group-blank",
+                    "import groups must be separated by exactly one blank line" )
             else
               if s.prevLineWasBlank then
                 emit
-                 ( 1, "R9-import-group-blank",
-                   "unexpected blank line within an import group" )
+                  ( 1, "R9-import-group-blank",
+                    "unexpected blank line within an import group" )
               s.prevImportName.foreach: prevName =>
                 if path < prevName then
                   emit
-                   ( 1, "R9-import-order",
-                     s"import `$path` is out of alphabetical order (after `$prevName`)" )
+                    ( 1, "R9-import-order",
+                      s"import `$path` is out of alphabetical order (after `$prevName`)" )
+
           case None => ()
 
         s.prevImportGroup = Some(group)
         s.prevImportName  = Some(path)
+        s.inMultilineImport = importContinues(rest)
       else
         if !s.prevLineWasBlank && s.prevImportGroup.isDefined then
           emit
-           ( 1, "R10-after-imports",
-             "missing blank line between imports and first declaration" )
+            ( 1, "R10-after-imports",
+              "missing blank line between imports and first declaration" )
         s.phase = Phase.Body
+
+  private def importContinues(rest: IndexedSeq[Token]): Boolean =
+    val nonWs = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+    if nonWs.isEmpty then false
+    else
+      val opens  = nonWs.count(_.text == "{")
+      val closes = nonWs.count(_.text == "}")
+      val unbalanced = opens > closes
+      val endsWithComma = nonWs.last.text == ","
+      unbalanced || endsWithComma
 
   private def importHasAlias(rest: IndexedSeq[Token]): Boolean =
     rest.exists(t => t.kind == Kind.Code && (t.text == "as" || t.text == "=>"))
@@ -317,6 +364,7 @@ object Checker:
     nonWs match
       case _ :: tail =>
         tail.takeWhile(_.text != "as").iterator.map(_.text).mkString
+
       case _ =>
         ""
 
@@ -326,14 +374,17 @@ object Checker:
       case "language"        => 1
       case "java" | "javax"  => 2
       case "scala"           => 3
+
       case _ =>
         if firstSegment.headOption.exists(_.isUpper) then 5
         else if !path.endsWith(".*") then 5
         else 4
 
   private def checkTokens
-    ( lineNum: Int,
+    ( s:       State,
+      lineNum: Int,
       line:    IndexedSeq[Token],
+      prevTok: String,
       emit:    (Int, String, String) => Unit )
   :   Unit =
 
@@ -347,7 +398,7 @@ object Checker:
 
     // Comma checks need state for alignment-run detection.
     // We pass them through directly via the State held in the closure.
-    checkBracketInteriors(arr, cols, emit)
+    checkBracketInteriors(s, arr, cols, prevTok, emit)
     checkComments(lineNum, arr, cols, emit)
     checkOperatorSpacing(arr, cols, emit)
     checkSymbolicMethodNames(arr, cols, emit)
@@ -391,8 +442,8 @@ object Checker:
             hasAlignment = true
             if !next.text.startsWith("\n") then
               deferred += Violation
-                           ( s.file, lineNum, cols(i + 1), "R11-comma-space-after",
-                             "exactly one space is required after a comma" )
+                            ( s.file, lineNum, cols(i + 1), "R11-comma-space-after",
+                              "exactly one space is required after a comma" )
       i += 1
 
     // Validate previously deferred (from line N-1) against current line:
@@ -418,49 +469,209 @@ object Checker:
     else s.prevLineHadAlignment = false
 
   private def checkBracketInteriors
-    ( arr:  Array[Token],
-      cols: Array[Int],
-      emit: (Int, String, String) => Unit )
+    ( s:       State,
+      arr:     Array[Token],
+      cols:    Array[Int],
+      prevTok: String,
+      emit:    (Int, String, String) => Unit )
   :   Unit =
 
     val firstSemantic = arr.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+    val lastSemantic  = arr.lastIndexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+
     val lineStartsWithBracket =
       firstSemantic >= 0 && (arr(firstSemantic).text == "(" || arr(firstSemantic).text == "[")
+
     val secondSemantic =
       if firstSemantic < 0 then -1
       else arr.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment, firstSemantic + 1)
+
     val arrowParen =
       firstSemantic >= 0 && arr(firstSemantic).text == "=>"
         && secondSemantic > 0
         && (arr(secondSemantic).text == "(" || arr(secondSemantic).text == "[")
+
+    // A line-start opener is a "formal-block candidate" when it continues a
+    // declaration or method call from the previous line. Two sub-cases:
+    //
+    //   1. **Indent step**: the current line is more indented than the prev
+    //      code line, AND prev line's last token is application-like
+    //      (identifier, `)`, `]`, modifier keyword). This catches the first
+    //      `(` of a heavy signature: `def name\n  ( a, b )`.
+    //
+    //   2. **Multi-clause continuation**: the current line is at the same
+    //      indent as the prev line, AND the prev line ended with a formal
+    //      `)`/`]` (i.e. the prev line was itself a formal-block clause).
+    //      This catches subsequent param clauses: `( a )\n( using b )`.
+    //
+    // A blank line before the opener rules out continuation in either case.
+    val leadingCols = arr.takeWhile(_.kind == Kind.Space).iterator.map(_.text.length).sum
+    val moreIndentedThanPrev = leadingCols > s.prevCodeLineIndent
+    val sameIndentAsPrev = leadingCols == s.prevCodeLineIndent
+    val isMultiClauseContinuation =
+      s.prevFormalOpenerIndent >= 0
+        && leadingCols == s.prevFormalOpenerIndent
+        && (prevTok == ")" || prevTok == "]")
+
+    // A `(`/`[` at the start of a line whose preceding line ended with `=>`
+    // is a lambda or context-function body. The brackets are a tuple
+    // expression, not a method application — skip both R30 and R12 by
+    // suppressing the rule entirely for the line.
+    val isArrowBodyContinuation = prevTok == "=>" && !s.prevLineWasBlank
+    val prevIsApplication =
+      if s.prevLineWasBlank then false
+      else if isMultiClauseContinuation then true
+      else if !moreIndentedThanPrev then false
+      else if prevTok == ")" || prevTok == "]" then true
+      else if prevTok.isEmpty then false
+      else if ModifierWords.contains(prevTok) then true
+      else
+        val c = prevTok.head
+        (c.isLetter || c == '_' || c == '`') && !NonOperandWords.contains(prevTok)
+
     val stack = mutable.Stack[(Int, Boolean)]()
+    s.currentFormalOpenerIndent = -1
     var i = 0
     while i < arr.length do
       if arr(i).kind == Kind.Code then
         val text = arr(i).text
         if text == "(" || text == "[" then
-          val exempt = (lineStartsWithBracket && i == firstSemantic)
-                         || (arrowParen && i == secondSemantic)
-          stack.push((i, exempt))
+          val isLineStartOpener = lineStartsWithBracket && i == firstSemantic
+          val isArrowOpener     = arrowParen && i == secondSemantic
+          // Line-start `(`/`[` requires an application-like predecessor.
+          // An `=> (`/`=> [` opener after a leading `=>` is always formal —
+          // the `=>` itself signals continuation (e.g. anonymous-given
+          // chains, `=>  ( param: Type )`).
+          val formalCandidate =
+            (isLineStartOpener && prevIsApplication) || isArrowOpener
+          stack.push((i, formalCandidate))
         else if text == ")" || text == "]" then
           if stack.nonEmpty then
-            val (opener, exempt) = stack.pop()
+            val (opener, formalCandidate) = stack.pop()
             val closer = i
-            if !exempt && closer > opener + 1 then
-              val firstInside = arr(opener + 1)
-              if firstInside.kind == Kind.Space && firstInside.text.length > 0 then
-                emit
-                 ( cols(opener + 1), "R12-bracket-interior",
-                   s"no space is permitted directly after `${arr(opener).text}`" )
 
-              val lastInside = arr(closer - 1)
-              if lastInside.kind == Kind.Space && lastInside.text.length > 0
-                && (closer - 1) != (opener + 1)
-              then
+            // Formal block: opener is a candidate AND the closer is the
+            // line's last semantic token or only followed by a body opener.
+            val nextAfterCloser =
+              arr.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment, closer + 1)
+
+            val followedByBodyOpener =
+              if nextAfterCloser < 0 then true
+              else
+                val t = arr(nextAfterCloser).text
+                t == ":" || t == "=" || t == "extends" || t == "derives"
+                  || t == ")" || t == "]" || t == "}" || t == ","
+
+            // Inspect contents at depth 0 (relative to this bracket): if
+            // there is no top-level comma but there is at least one binary
+            // operator, the brackets are a grouping expression, not an
+            // argument list — R30 does not apply.
+            val hasArgListShape = bracketHasArgListShape(arr, opener, closer)
+            val isFormalBlock = formalCandidate && followedByBodyOpener && hasArgListShape
+            if isFormalBlock then
+              if nextAfterCloser < 0 then s.currentFormalOpenerIndent = leadingCols
+              if closer > opener + 1 then
+                val firstInside = arr(opener + 1)
+                if firstInside.kind != Kind.Space then
+                  emit
+                    ( cols(opener + 1), "R30-multiline-app",
+                      s"a space is required after `${arr(opener).text}` in a multi-line block" )
+                val lastInside = arr(closer - 1)
+                if lastInside.kind != Kind.Space then
+                  emit
+                    ( cols(closer), "R30-multiline-app",
+                      s"a space is required before `$text` in a multi-line block" )
+            else if closer > opener + 1 then
+              // Suppress R12 for tuples appearing as a lambda/match-case
+              // body on a fresh line after `=>` — author may use either
+              // tight `(a, b)` or formal-style `( a, b )`.
+              val isLambdaBodyTuple =
+                isArrowBodyContinuation && opener == firstSemantic && closer == lastSemantic
+              if !isLambdaBodyTuple then
+                val firstInside = arr(opener + 1)
+                if firstInside.kind == Kind.Space && firstInside.text.length > 0 then
+                  emit
+                    ( cols(opener + 1), "R12-bracket-interior",
+                      s"no space is permitted directly after `${arr(opener).text}`" )
+                val lastInside = arr(closer - 1)
+                if lastInside.kind == Kind.Space && lastInside.text.length > 0
+                  && (closer - 1) != (opener + 1)
+                then
+                  emit
+                    ( cols(closer - 1), "R12-bracket-interior",
+                      s"no space is permitted directly before `$text`" )
+          else
+            // Closer with no opener on this line: the opener was on an
+            // earlier line. Pop its formal-candidate flag and opener-line
+            // indent from the cross-line stack and only fire R30 if it was a
+            // formal candidate.
+            val (wasFormal, openerIndent) =
+              if s.bracketFormality.nonEmpty then s.bracketFormality.pop() else (false, -1)
+            if wasFormal then
+              val nextAfterCloser =
+                arr.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment, i + 1)
+              if nextAfterCloser < 0 then s.currentFormalOpenerIndent = openerIndent
+              if i == firstSemantic then
                 emit
-                 ( cols(closer - 1), "R12-bracket-interior",
-                   s"no space is permitted directly before `$text`" )
+                  ( cols(i), "R30-multiline-app",
+                    s"`$text` cannot appear alone on its line; the closing bracket of a "
+                      +s"multi-line block goes on the same line as the last parameter" )
+              else if i > 0 && arr(i - 1).kind != Kind.Space then
+                emit
+                  ( cols(i), "R30-multiline-app",
+                    s"a space is required before `$text` in a multi-line block" )
       i += 1
+
+    // Any opener left on the stack didn't match on this line: multi-line
+    // opener. Push its formality flag and opener-line indent onto the
+    // cross-line stack so the closer (on a later line) can decide whether to
+    // fire R30 and what indent a multi-clause continuation must match.
+    val leftover = stack.toList.reverse
+    leftover.foreach: (opener, formalCandidate) =>
+      val openerText = arr(opener).text
+      if formalCandidate then
+        if opener + 1 >= arr.length || arr(opener + 1).kind != Kind.Space then
+          emit
+            ( cols(opener + 1), "R30-multiline-app",
+              s"a space is required after `$openerText` in a multi-line block" )
+      s.bracketFormality.push((formalCandidate, leadingCols))
+
+  // Single-line bracket between `opener` and `closer` (exclusive). Returns
+  // true iff the contents look like an argument list: a top-level comma or
+  // type-annotation `:` is present, or there are no top-level binary
+  // operators. Returns false when the contents are a pure grouping
+  // expression (no commas, no `:`, has operators like `||`, `&&`, `==`,
+  // `+`, etc.).
+  private def bracketHasArgListShape
+    ( arr: Array[Token], opener: Int, closer: Int )
+  :   Boolean =
+
+    var depth = 0
+    var hasTopComma = false
+    var hasTopColon = false
+    var hasTopOperator = false
+    var k = opener + 1
+    while k < closer do
+      val t = arr(k)
+      if t.kind == Kind.Code then
+        val text = t.text
+        if text == "(" || text == "[" then depth += 1
+        else if text == ")" || text == "]" then depth -= 1
+        else if depth == 0 then
+          if text == "," then hasTopComma = true
+          else if text == ":" then hasTopColon = true
+          else if isExpressionOperator(text) then hasTopOperator = true
+      k += 1
+    hasTopComma || hasTopColon || !hasTopOperator
+
+  // Operators that almost exclusively appear in expression position, not in
+  // type signatures or argument annotations: arithmetic, comparison, boolean.
+  // Type operators (`<:`, `>:`, `&`, `|`, `=>`, `?=>`, `+:`, `:+`, etc.) are
+  // intentionally excluded — they appear in parameter lists too.
+  private val ExpressionOperators: Set[String] =
+    Set("||", "&&", "==", "!=", "<=", ">=", "<", ">", "+", "-", "*", "/", "%")
+
+  private def isExpressionOperator(t: String): Boolean = ExpressionOperators.contains(t)
 
   private def checkComments
     ( lineNum: Int,
@@ -476,29 +687,29 @@ object Checker:
         val text = arr(i).text
         if text.startsWith("/**") then
           emit
-           ( cols(i), "R14-scaladoc",
-             "`/** ... */` block comments are not permitted; use `doc/` markdown instead" )
+            ( cols(i), "R14-scaladoc",
+              "`/** ... */` block comments are not permitted; use `doc/` markdown instead" )
         else if text.startsWith("/*") && !inLicense then
           emit
-           ( cols(i), "R14-block-comment",
-             "`/* ... */` block comments are reserved for the license header (lines 1-32)" )
+            ( cols(i), "R14-block-comment",
+              "`/* ... */` block comments are reserved for the license header (lines 1-32)" )
         else if text.startsWith("//") && !inLicense then
           if text.length == 2 then ()
           else if text.charAt(2) == ' ' then
             if text.length > 3 && text.charAt(3) == ' ' then
               emit
-               ( cols(i), "R13-comment-space",
-                 "a line comment must be followed by exactly one space" )
+                ( cols(i), "R13-comment-space",
+                  "a line comment must be followed by exactly one space" )
           else
             emit
-             ( cols(i), "R13-comment-space",
-               "a line comment must be followed by exactly one space" )
+              ( cols(i), "R13-comment-space",
+                "a line comment must be followed by exactly one space" )
       i += 1
 
-  private val CheckedOps: Set[String] =
-    Set("+", "-", "*", "/", "%", "&", "|", "^", "<", ">",
-        "<<", ">>", ">>>", "&&", "||", "==", "!=", "<=", ">=",
-        "=>", "->", "<-", "<:", ">:", "&~", "?=>")
+  private val CheckedOps: Set[String] = Set
+    ( "+", "-", "*", "/", "%", "&", "|", "^", "<", ">", "<<", ">>", ">>>",
+      "&&", "||", "==", "!=", "<=", ">=", "=>", "->", "<-", "<:", ">:",
+      "&~", "?=>" )
 
   private def operatorPrecedence(op: String): Int =
     if op.isEmpty then 0
@@ -515,36 +726,54 @@ object Checker:
       case _                      => 10
 
   private case class OpHit
-                       ( text:       String,
-                         idx:        Int,
-                         col:        Int,
-                         leftSpace:  Boolean,
-                         rightSpace: Boolean )
+                        ( text:       String,
+                          idx:        Int,
+                          col:        Int,
+                          leftSpace:  Boolean,
+                          rightSpace: Boolean )
 
-  private val NonOperandWords: Set[String] = Set(
-    "case", "if", "then", "else", "do", "while", "for", "yield", "return",
-    "match", "with", "extends", "derives", "given", "using", "new", "throw",
-    "try", "catch", "finally", "import", "package", "def", "val", "var",
-    "lazy", "object", "class", "trait", "enum", "type", "private", "protected",
-    "public", "final", "sealed", "abstract", "implicit", "override", "inline",
-    "transparent", "infix", "open", "opaque", "erased", "tracked",
-    // Custom infix words from the syntax doc + common Range/iterator infixes
-    "is", "of", "in", "by", "to", "under", "on", "raises", "until"
-  )
+  private val NonOperandWords: Set[String] = Set
+    ( "case", "if", "then", "else", "do", "while", "for", "yield", "return",
+      "match", "with", "extends", "derives", "given", "using", "new", "throw",
+      "try", "catch", "finally", "import", "package", "def", "val", "var",
+      "lazy", "object", "class", "trait", "enum", "type", "private", "protected",
+      "public", "final", "sealed", "abstract", "implicit", "override", "inline",
+      "transparent", "infix", "open", "opaque", "erased", "tracked",
+      "is", "of", "in", "by", "to", "under", "on", "raises", "until" )
 
   private def isBinaryContext(arr: Array[Token], i: Int): Boolean =
-    var j = i - 1
-    while j >= 0 && (arr(j).kind == Kind.Space || arr(j).kind == Kind.Comment) do j -= 1
-    if j < 0 then false
-    else if arr(j).kind == Kind.Strs then true
-    else if arr(j).kind == Kind.Code then
-      val t = arr(j).text
-      if t == ")" || t == "]" then true
-      else if t.isEmpty then false
-      else
-        val c = t.head
-        (c.isLetterOrDigit || c == '_' || c == '`') && !NonOperandWords.contains(t)
-    else false
+    val left =
+      var j = i - 1
+      while j >= 0 && (arr(j).kind == Kind.Space || arr(j).kind == Kind.Comment) do j -= 1
+      if j < 0 then false
+      else if arr(j).kind == Kind.Strs then true
+      else if arr(j).kind == Kind.Code then
+        val t = arr(j).text
+        if t == ")" || t == "]" then true
+        else if t.isEmpty then false
+        else
+          val c = t.head
+          (c.isLetterOrDigit || c == '_' || c == '`') && !NonOperandWords.contains(t)
+      else false
+
+    val right =
+      var j = i + 1
+      while j < arr.length && (arr(j).kind == Kind.Space || arr(j).kind == Kind.Comment) do j += 1
+      if j >= arr.length then false
+      else if arr(j).kind == Kind.Strs then true
+      else if arr(j).kind == Kind.Code then
+        val t = arr(j).text
+        // The next token must look like an operand (not a closing bracket or
+        // separator). This excludes postfix usages like `xs*`, `tuple*`, etc.
+        if t == ")" || t == "]" || t == "}" || t == "," || t == ";" then false
+        else if t.isEmpty then false
+        else
+          val c = t.head
+          (c.isLetterOrDigit || c == '_' || c == '`' || c == '"' || c == '\'')
+            && !NonOperandWords.contains(t)
+      else false
+
+    left && right
 
   private def checkOperatorSpacing
     ( arr:  Array[Token],
@@ -577,16 +806,16 @@ object Checker:
             // spaces should be matched. Skip at line edges.
             if !isAtStart && !isAtEnd && leftSpace != rightSpace then
               emit
-               ( cols(i), "R16-operator-spacing",
-                 s"`$text` has asymmetric spacing — use 0 or 1 space on both sides" )
+                ( cols(i), "R16-operator-spacing",
+                  s"`$text` has asymmetric spacing — use 0 or 1 space on both sides" )
             // Multi-char operators must have one space around (zero is reserved
             // for single-character operators).
             if text.length > 1 && !isAtStart && !isAtEnd
               && (!leftSpace || !rightSpace)
             then
               emit
-               ( cols(i), "R16-operator-spacing",
-                 s"multi-character `$text` requires one space on each side" )
+                ( cols(i), "R16-operator-spacing",
+                  s"multi-character `$text` requires one space on each side" )
             frames.top += OpHit(text, i, cols(i), leftSpace, rightSpace)
       i += 1
 
@@ -609,8 +838,8 @@ object Checker:
         if spacings.length > 1 then
           opPairs.foreach: (op, _) =>
             emit
-             ( op.col, "R16-operator-spacing",
-               s"`${op.text}` has inconsistent spacing with same-precedence operators" )
+              ( op.col, "R16-operator-spacing",
+                s"`${op.text}` has inconsistent spacing with same-precedence operators" )
 
       // Cross-precedence ordering: higher precedence should have ≤ spacing
       val precSpacings = byPrec.toList.map: (p, pairs) =>
@@ -625,8 +854,9 @@ object Checker:
           if sHigh > sLow then
             byPrec(pHigh).foreach: (op, _) =>
               emit
-               ( op.col, "R16-operator-spacing",
-                 s"`${op.text}` cannot have more spacing than lower-precedence operators in the same expression" )
+                ( op.col, "R16-operator-spacing",
+                  s"`${op.text}` cannot have more spacing than lower-precedence "
+                    +"operators in the same expression" )
           j += 1
         i += 1
 
@@ -656,8 +886,9 @@ object Checker:
             && (arr(nextIdx).text == "(" || arr(nextIdx).text == "[")
           then
             emit
-             ( cols(nextIdx), "R18-symbolic-method",
-               s"a single space is required between `${arr(opIdx).text}` and `${arr(nextIdx).text}`" )
+              ( cols(nextIdx), "R18-symbolic-method",
+                s"a single space is required between `${arr(opIdx).text}` and "
+                  +s"`${arr(nextIdx).text}`" )
       i += 1
 
   private def checkHardSpace
@@ -670,15 +901,16 @@ object Checker:
           val next = rest(1)
           if next.kind != Kind.Space || next.text != "  " then
             emit
-             ( leadingCols + 3, "R25-hard-space",
-               "`=>` continuation line must be followed by exactly two spaces" )
+              ( leadingCols + 3, "R25-hard-space",
+                "`=>` continuation line must be followed by exactly two spaces" )
+
       case Some(tok) if tok.text == ":" && lineEndsWithEqualsToken(rest) =>
         if rest.length >= 2 then
           val next = rest(1)
           if next.kind != Kind.Space || next.text != "   " then
             emit
-             ( leadingCols + 2, "R25-hard-space",
-               "heavy-signature return type `:` must be followed by exactly three spaces" )
+              ( leadingCols + 2, "R25-hard-space",
+                "heavy-signature return type `:` must be followed by exactly three spaces" )
       case _ => ()
 
   private def lineEndsWithEqualsToken(rest: IndexedSeq[Token]): Boolean =
@@ -699,12 +931,13 @@ object Checker:
       if tok.text == "." && s.prevCodeLineIndent >= 0 then
         if s.prevCodeLineIndent > leadingCols && !s.prevLineWasBlank then
           emit
-           ( leadingCols + 1, "R26-chain-blank-required",
-             "blank line is required before `. method` continuation following a more-indented line" )
+            ( leadingCols + 1, "R26-chain-blank-required",
+              "blank line is required before `. method` continuation following a "
+                +"more-indented line" )
         else if s.prevCodeLineIndent == leadingCols && s.prevLineWasBlank then
           emit
-           ( leadingCols + 1, "R26-chain-blank-forbidden",
-             "no blank line is permitted before `. method` continuation at the same indent" )
+            ( leadingCols + 1, "R26-chain-blank-forbidden",
+              "no blank line is permitted before `. method` continuation at the same indent" )
 
   private def checkReturnTypeBlank
     ( s:       State,
@@ -717,8 +950,8 @@ object Checker:
     if s.prevWasReturnType then
       if !isBlank then
         emit
-         ( 1, "R21-heavy-body-blank",
-           "a blank line is required between a heavy-signature return type and the body" )
+          ( 1, "R21-heavy-body-blank",
+            "a blank line is required between a heavy-signature return type and the body" )
       s.prevWasReturnType = false
     if !isBlank && isReturnTypeLine(rest) then s.prevWasReturnType = true
 
@@ -740,10 +973,10 @@ object Checker:
           else if keyword == "object" then
             if !s.objectDecls.contains(name) then s.objectDecls(name) = lineNum
 
-  private val ModifierWords: Set[String] =
-    Set("private", "protected", "public", "final", "sealed", "abstract", "implicit",
-        "lazy", "override", "case", "inline", "transparent", "infix", "open",
-        "opaque", "erased", "tracked", "given")
+  private val ModifierWords: Set[String] = Set
+    ( "private", "protected", "public", "final", "sealed", "abstract",
+      "implicit", "lazy", "override", "case", "inline", "transparent",
+      "infix", "open", "opaque", "erased", "tracked", "given" )
 
   private def skipModifiers(tokens: IndexedSeq[Token], start: Int): (Option[String], Int) =
     var i = start
@@ -852,14 +1085,15 @@ object Checker:
         val isFirstInScope = s.prevCodeLineIndent < leadingCols
         if !s.prevLineWasBlank && !s.prevLineEndedMatch && !isFirstInScope then
           emit
-           ( leadingCols + 1, "R20-multiline-case-blank",
-             "a blank line is required before a multi-line case (except for the first case)" )
+            ( leadingCols + 1, "R20-multiline-case-blank",
+              "a blank line is required before a multi-line case (except for the first case)" )
         finalizeCaseRun(s, out)
       else
         // Single-line case
         s.caseRun match
           case Some(run) if run.indent == leadingCols && !s.prevLineWasBlank =>
             run.cases += CaseEntry(lineNum, info.arrowCol)
+
           case _ =>
             finalizeCaseRun(s, out)
             val newRun = CaseRun(leadingCols, mutable.ListBuffer.empty)
@@ -895,8 +1129,10 @@ object Checker:
         && !DeclKeywords.contains(t.text) =>
         buf += t.text
         collectKeywords(rest, buf)
+
       case t :: _ if t.kind == Kind.Code && DeclKeywords.contains(t.text) =>
         (buf, Some(t.text))
+
       case _ =>
         (buf, None)
 
@@ -915,36 +1151,60 @@ object Checker:
 
     if isBlank then s.blanksSinceDecl += 1
     else
-      declKeywordSequence(rest) match
+      val firstTok = rest.headOption
+      val isAnnotation = firstTok.exists(_.text.startsWith("@"))
+      val isCommentOnly = firstTok.exists(_.kind == Kind.Comment)
+
+      // Drop entries from scopes we've exited. This must fire on every code
+      // line, not just declaration lines: a non-declaration line at a smaller
+      // indent (e.g. `else if c == '\'' then`) signals we have left the inner
+      // scope, and any declarations recorded inside that scope must not be
+      // treated as siblings of the next declaration we encounter.
+      if !isCommentOnly && !isAnnotation then
+        s.prevDeclByIndent.keysIterator.toList.foreach: k =>
+          if k > leadingCols then s.prevDeclByIndent.remove(k)
+
+      // R27 does not apply inside an open `(…)` parameter list: `val name:
+      // type,` rows there are constructor parameters, not body declarations.
+      if s.openParens > 0 then ()
+      else declKeywordSequence(rest) match
         case Some(kwSeq) =>
           val padding =
             if lineOpensBody(rest) then 1 else 0
+
           val cur = DeclShape(lineNum, leadingCols, kwSeq, padding)
           val isFirstInScope = s.prevCodeLineIndent < leadingCols
-          // Drop entries from scopes we've exited.
-          s.prevDeclByIndent.keysIterator.toList.foreach: k =>
-            if k > leadingCols then s.prevDeclByIndent.remove(k)
+
           // First declaration in a new scope: blank line is enforced separately by R21
           // (heavy signatures only); regular non-heavy scopes have no requirement.
           if isFirstInScope then s.prevDeclByIndent.remove(leadingCols)
           s.prevDeclByIndent.get(leadingCols).foreach: prev =>
             val sameKw   = prev.kwSeq == kwSeq
+
             val expected =
               if sameKw && prev.padding == 0 && cur.padding == 0 then 0
               else math.max(prev.padding, cur.padding)
+
             val actual = s.blanksSinceDecl
             if actual < expected then
               out += Violation
                       ( s.file, lineNum, 1, "R27-sibling-padding",
-                        s"expected $expected blank line(s) between sibling declarations (saw $actual)" )
+                        s"expected $expected blank line(s) between sibling declarations "
+                          +s"(saw $actual)" )
+
           s.prevDeclByIndent(leadingCols) = cur
           s.blanksSinceDecl = 0
+
         case None =>
-          // Annotation lines belong to the next declaration; don't consume the
-          // blank-line counter that separates the previous declaration from the
-          // upcoming one.
-          val isAnnotation = rest.headOption.exists(_.text.startsWith("@"))
-          if !isAnnotation then s.blanksSinceDecl = 0
+          // Annotation and comment-only lines belong to the next declaration;
+          // they don't consume the blank-line counter that separates the
+          // previous declaration from the upcoming one. Anything else
+          // (free-floating statements like method calls) breaks the sibling
+          // chain — the next declaration is not a sibling of whatever came
+          // before the statement.
+          if !isAnnotation && !isCommentOnly then
+            s.blanksSinceDecl = 0
+            s.prevDeclByIndent.remove(leadingCols)
 
   private def checkUsingAlignment
     ( s:           State,
@@ -954,11 +1214,18 @@ object Checker:
       emit:        (Int, String, String) => Unit )
   :   Unit =
 
-    // Alignment check first, using state from the prior line.
+    // Alignment check first, using state from the prior line. Only fresh
+    // parameter rows are checked: a row is fresh iff the previous line ended
+    // with `,`, `(`, or `using` (the row-separator tokens). Otherwise the
+    // current line is a wrapped continuation of the previous parameter's type
+    // and is intentionally aligned to the type column, not the name column.
     if s.openParens > 0 && rest.nonEmpty then
       s.usingNameColumn.foreach: expected =>
+        val freshRow =
+          s.prevCodeLineLastTok == "," || s.prevCodeLineLastTok == "("
+            || s.prevCodeLineLastTok == "using"
         val firstSemIdx = rest.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment)
-        if firstSemIdx >= 0 && rest(firstSemIdx).text != ")" then
+        if freshRow && firstSemIdx >= 0 && rest(firstSemIdx).text != ")" then
           var c = leadingCols + 1
           var k = 0
           while k < firstSemIdx do
@@ -966,8 +1233,8 @@ object Checker:
             k += 1
           if c != expected then
             emit
-             ( c, "R22-using-alignment",
-               s"using-clause parameter should align at column $expected (found $c)" )
+              ( c, "R22-using-alignment",
+                s"using-clause parameter should align at column $expected (found $c)" )
 
     // Then update state by walking tokens.
     var depth = s.openParens
@@ -979,7 +1246,14 @@ object Checker:
           if depth == 0 then
             val nextSem = nextSemantic(rest, i + 1)
             if nextSem >= 0 && rest(nextSem).text == "using" then
-              val nameIdx = nextSemantic(rest, nextSem + 1)
+              // Skip parameter modifiers (e.g. `inline`) after `using` so the
+              // expected name column is aligned under the first parameter's
+              // name, not under the modifier word.
+              var nameIdx = nextSemantic(rest, nextSem + 1)
+              while
+                nameIdx >= 0 && rest(nameIdx).kind == Kind.Code
+                  && ModifierWords.contains(rest(nameIdx).text)
+              do nameIdx = nextSemantic(rest, nameIdx + 1)
               if nameIdx >= 0 then
                 var c = leadingCols + 1
                 var k = 0

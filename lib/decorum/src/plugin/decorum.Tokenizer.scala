@@ -36,10 +36,11 @@ import scala.collection.mutable
 
 object Tokenizer:
   def tokenize(text: String): IndexedSeq[IndexedSeq[Token]] =
-    val lines  = mutable.ArrayBuffer[IndexedSeq[Token]]()
-    var line   = mutable.ArrayBuffer[Token]()
-    var i      = 0
-    var inBlock = false
+    val lines          = mutable.ArrayBuffer[IndexedSeq[Token]]()
+    var line           = mutable.ArrayBuffer[Token]()
+    var i              = 0
+    var inBlock        = false
+    var inTripleString = false
 
     inline def emit(tok: Token): Unit = line += tok
     inline def endLine(): Unit =
@@ -52,6 +53,18 @@ object Tokenizer:
       if c == '\n' then
         endLine()
         i += 1
+      else if inTripleString then
+        val start = i
+        var done = false
+        while i < text.length && text.charAt(i) != '\n' && !done do
+          if i + 2 < text.length && text.charAt(i) == '"'
+            && text.charAt(i + 1) == '"' && text.charAt(i + 2) == '"'
+          then
+            i += 3
+            done = true
+            inTripleString = false
+          else i += 1
+        emit(Token(text.substring(start, i).nn, Kind.Strs))
       else if inBlock then
         val start = i
         var done = false
@@ -79,15 +92,29 @@ object Tokenizer:
           else i += 1
         emit(Token(text.substring(start, i).nn, Kind.Comment))
       else if c == '"' then
-        scanQuotedString(text, i, '"') match
-          case (newPos, content) =>
-            emit(Token(content, Kind.Strs))
-            i = newPos
+        val (newPos, content, closed) = scanQuotedString(text, i, '"')
+        emit(Token(content, Kind.Strs))
+        i = newPos
+        if !closed && content.startsWith("\"\"\"") then inTripleString = true
       else if c == '\'' then
-        scanQuotedString(text, i, '\'') match
-          case (newPos, content) =>
-            emit(Token(content, Kind.Strs))
-            i = newPos
+        // A `'` is a char literal only in the precise forms `'X'`, `'\X'`,
+        // `'\uXXXX'`. Otherwise it is Scala 3 macro syntax: a quote
+        // (`'{ … }` / `' { … }` / `'[ … ]`) or a quoted reference
+        // (`'ident`). In every non-char-literal case we just emit `'` as a
+        // Code token.
+        val isCharLiteral =
+          (i + 2 < text.length && text.charAt(i + 2) == '\'')
+            || (i + 3 < text.length && text.charAt(i + 1) == '\\'
+                  && text.charAt(i + 3) == '\'')
+            || (i + 7 < text.length && text.charAt(i + 1) == '\\'
+                  && text.charAt(i + 2) == 'u' && text.charAt(i + 7) == '\'')
+        if isCharLiteral then
+          val (newPos, content, _) = scanQuotedString(text, i, '\'')
+          emit(Token(content, Kind.Strs))
+          i = newPos
+        else
+          emit(Token("'", Kind.Code))
+          i += 1
       else if c == '`' then
         val start = i
         i += 1
@@ -104,9 +131,10 @@ object Tokenizer:
         val ident: String = text.substring(start, i).nn
         if i < text.length && (text.charAt(i) == '"' || text.charAt(i) == '\'') then
           val quote = text.charAt(i)
-          val (newPos, content) = scanQuotedString(text, i, quote)
+          val (newPos, content, closed) = scanQuotedString(text, i, quote)
           emit(Token(ident + content, Kind.Strs))
           i = newPos
+          if !closed && content.startsWith("\"\"\"") then inTripleString = true
         else emit(Token(ident, Kind.Code))
       else if c.isDigit then
         val start = i
@@ -132,13 +160,12 @@ object Tokenizer:
     case _                                                   => false
 
   // Scans a quoted string starting at position `start` (which is the opening quote).
-  // Returns (positionAfterString, fullText including quotes).
+  // Returns (positionAfterString, fullText including quotes, closedOnThisLine).
   // Handles escape sequences. If the string spans newlines, scanning stops at the
-  // newline and the caller resumes on the next line as Code (a small inaccuracy
-  // for triple-quoted multi-line strings, but sufficient for our checks).
-  private def scanQuotedString(text: String, start: Int, quote: Char): (Int, String) =
+  // newline; the caller is responsible for setting tokenizer state accordingly.
+  private def scanQuotedString(text: String, start: Int, quote: Char): (Int, String, Boolean) =
     val triple = quote == '"' && start + 2 < text.length
-                   && text.charAt(start + 1) == '"' && text.charAt(start + 2) == '"'
+      && text.charAt(start + 1) == '"' && text.charAt(start + 2) == '"'
     var i = start + (if triple then 3 else 1)
     var done = false
     while i < text.length && text.charAt(i) != '\n' && !done do
@@ -154,4 +181,4 @@ object Tokenizer:
       else if text.charAt(i) == '\\' && i + 1 < text.length && text.charAt(i + 1) != '\n' then
         i += 2
       else i += 1
-    (i, text.substring(start, i).nn)
+    (i, text.substring(start, i).nn, done)
