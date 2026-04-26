@@ -231,28 +231,26 @@ object Xml extends Tag.Container
     emitter.iterator
 
 
-  private def escapeText(text: Text): Text =
-    val builder = jl.StringBuilder()
+  private def appendEscapedText(builder: jl.StringBuilder, text: Text): Unit =
+    val source = text.s
+    val length = source.length
     var index = 0
-    val length = text.s.length
 
     while index < length do
-      text.s.charAt(index) match
+      source.charAt(index) match
         case '<' => builder.append("&lt;")
         case '&' => builder.append("&amp;")
         case chr => builder.append(chr)
 
       index += 1
 
-    builder.toString.tt
-
-  private def escapeAttribute(text: Text): Text =
-    val builder = jl.StringBuilder()
+  private def appendEscapedAttribute(builder: jl.StringBuilder, text: Text): Unit =
+    val source = text.s
+    val length = source.length
     var index = 0
-    val length = text.s.length
 
     while index < length do
-      text.s.charAt(index) match
+      source.charAt(index) match
         case '<' => builder.append("&lt;")
         case '&' => builder.append("&amp;")
         case '"' => builder.append("&quot;")
@@ -260,35 +258,85 @@ object Xml extends Tag.Container
 
       index += 1
 
-    builder.toString.tt
+  private def appendXml(builder: jl.StringBuilder, node: Xml): Unit = node match
+    case fragment: Fragment =>
+      val nodes = fragment.nodes
+      var index = 0
 
-  given showable: [xml <: Xml] => xml is Showable =
-    case Fragment(nodes*)                    => nodes.map(_.show).join
-    case TextNode(text)                      => escapeText(text)
-    case Comment(text)                       => t"<!--$text-->"
-    case Cdata(text)                         => t"<![CDATA[$text]]>"
-    case Doctype(text)                       => t"<!DOCTYPE $text>"
+      while index < nodes.length do
+        appendXml(builder, nodes(index))
+        index += 1
+
+    case TextNode(text) =>
+      appendEscapedText(builder, text)
+
+    case Comment(text) =>
+      builder.append("<!--")
+      builder.append(text.s)
+      builder.append("-->")
+
+    case Cdata(text) =>
+      builder.append("<![CDATA[")
+      builder.append(text.s)
+      builder.append("]]>")
+
+    case Doctype(text) =>
+      builder.append("<!DOCTYPE ")
+      builder.append(text.s)
+      builder.append('>')
+
     case ProcessingInstruction(target, data) =>
-      if data.s.isEmpty then t"<?$target?>" else t"<?$target $data?>"
+      builder.append("<?")
+      builder.append(target.s)
+
+      if !data.s.isEmpty then
+        builder.append(' ')
+        builder.append(data.s)
+
+      builder.append("?>")
 
     case Header(version, encoding, standalone) =>
-      val encodingText = encoding.lay(t""): encoding =>
-        t""" encoding="$encoding""""
+      builder.append("<?xml version=\"")
+      builder.append(version.s)
+      builder.append('"')
 
-      val standaloneText = standalone.lay(t""): standalone =>
-        if standalone then t""" standalone="yes"""" else t""" standalone="no""""
+      encoding.let: encoding =>
+        builder.append(" encoding=\"")
+        builder.append(encoding.s)
+        builder.append('"')
 
-      t"""<?xml version="$version"$encodingText$standaloneText?>"""
+      standalone.let: standalone =>
+        builder.append(if standalone then " standalone=\"yes\"" else " standalone=\"no\"")
+
+      builder.append("?>")
 
     case Element(tagname, attributes, children) =>
-      val tagContent = if attributes.nil then t"" else
-        attributes.map:
-          case (key, value) => t"""$key="${escapeAttribute(value)}""""
+      builder.append('<')
+      builder.append(tagname.s)
 
-        . join(t" ", t" ", t"")
+      if !attributes.nil then attributes.foreach: (key, value) =>
+        builder.append(' ')
+        builder.append(key.s)
+        builder.append("=\"")
+        appendEscapedAttribute(builder, value)
+        builder.append('"')
 
-      if children.nil then t"<$tagname$tagContent/>"
-      else t"<$tagname$tagContent>${children.map(_.show).join}</$tagname>"
+      if children.nil then builder.append("/>") else
+        builder.append('>')
+        var index = 0
+
+        while index < children.length do
+          appendXml(builder, children(index))
+          index += 1
+
+        builder.append("</")
+        builder.append(tagname.s)
+        builder.append('>')
+
+  given showable: [xml <: Xml] => xml is Showable = node =>
+    val builder = jl.StringBuilder()
+    appendXml(builder, node)
+    builder.toString.tt
 
 
   private enum Token:
@@ -663,7 +711,6 @@ object Xml extends Tag.Container
           textual(cursor.mark)
 
         case ']' =>
-          val first = cursor.mark
           next()
           cursor.lay(textual(mark)):
             case ']' =>
@@ -975,7 +1022,7 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
 sealed trait Node extends Xml
 
 case class Comment(text: Text) extends Node:
-  override def hashCode: Int = List(this).hashCode
+  override def hashCode: Int = text.hashCode*31 + 0x436F6D6D
 
   override def equals(that: Any): Boolean = that match
     case Comment(text0)           => text0 == text
@@ -983,7 +1030,7 @@ case class Comment(text: Text) extends Node:
     case _                        => false
 
 case class Doctype(text: Text) extends Node:
-  override def hashCode: Int = List(this).hashCode
+  override def hashCode: Int = text.hashCode*31 + 0x44637470
 
   override def equals(that: Any): Boolean = that match
     case Doctype(text0)           => text0 == text
@@ -991,7 +1038,7 @@ case class Doctype(text: Text) extends Node:
     case _                        => false
 
 case class Cdata(text: Text) extends Node:
-  override def hashCode: Int = List(this).hashCode // FIXME: infinite recursion
+  override def hashCode: Int = text.hashCode*31 + 0x43646174
 
   override def equals(that: Any): Boolean = that match
     case Cdata(text0)           => text0 == text
@@ -999,7 +1046,7 @@ case class Cdata(text: Text) extends Node:
     case _                      => false
 
 case class ProcessingInstruction(target: Text, data: Text) extends Node:
-  override def hashCode: Int = List(this).hashCode // FIXME
+  override def hashCode: Int = (target.hashCode*31 + data.hashCode)*31 + 0x50494E73
 
   override def equals(that: Any): Boolean = that match
     case ProcessingInstruction(target0, data0)           => target0 == target && data0 == data
@@ -1009,7 +1056,7 @@ case class ProcessingInstruction(target: Text, data: Text) extends Node:
 case class TextNode(text: Text) extends Node:
   type Topic = "#text"
 
-  override def hashCode: Int = List(this).hashCode // FIXME: infinite recursion
+  override def hashCode: Int = text.hashCode*31 + 0x54657874
 
   override def equals(that: Any): Boolean = that match
     case Fragment(textual: TextNode) => this == textual
@@ -1068,7 +1115,8 @@ case class Fragment(nodes: Node*) extends Xml:
 
 case class Header(version: Text, encoding: Optional[Text], standalone: Optional[Boolean])
 extends Node:
-  override def hashCode: Int = List(this).hashCode
+  override def hashCode: Int =
+    ((version.hashCode*31 + encoding.hashCode)*31 + standalone.hashCode)*31 + 0x48646572
 
   override def equals(that: Any): Boolean = that match
     case Fragment(header: Header) => equals(header)
