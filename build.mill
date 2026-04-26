@@ -175,7 +175,7 @@ object soundness extends ScalaModule:
     hyperbole.core, octogenarian.core, revolution.core, umbrageous.plugin, anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core)
 
-  object web extends Bundle(cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
+  object web extends Bundle(cacophony.core, cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
     telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, /*perihelion.core,*/
@@ -200,6 +200,7 @@ object test extends ScalaModule:
     baroque.test,
     //bitumen.test,
     burdock.test,
+    cacophony.test,
     caduceus.test,
     caesura.test,
     camouflage.test,
@@ -393,6 +394,10 @@ object bitumen extends Library:
 object burdock extends Library:
   object boot extends Component
   object core extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core, gastronomy.core)
+  object test extends Tests(core)
+
+object cacophony extends Library:
+  object core extends Component(gesticulate.core, quantitative.units, anticipation.http)
   object test extends Tests(core)
 
 object caduceus extends Library:
