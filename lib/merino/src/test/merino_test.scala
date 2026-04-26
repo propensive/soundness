@@ -32,51 +32,58 @@
                                                                                                   */
 package merino
 
-import java.io as ji
-
 import ambience.*
-import anticipation.*, interfaces.paths.javaIoFile
+import anticipation.*, interfaces.paths.pathOnLinux
 import contingency.*, strategies.throwUnsafely
 import fulminate.*
+import galilei.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8
+import nomenclature.*
+import prepositional.*
 import probably.*
+import proscenium.*
 import rudiments.*, workingDirectories.system
+import serpentine.*
 import turbulence.*
 import zephyrine.*
 import errorDiagnostics.stackTraces
+
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.disabled
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.createNonexistent.disabled
 
 //import unsafeExceptions.canThrowAny
 
 object Tests extends Suite(m"Merino tests"):
   def run(): Unit =
-    val work: ji.File = workingDirectory
-    val tests = ji.File(ji.File(work, "tests"), "test_parsing")
-    val tests2 = ji.File(ji.File(work, "tests"), "test_transform")
+    val work: Path on Linux = workingDirectory
+    val tests: Path on Linux = work/"tests"/"test_parsing"
+    val tests2: Path on Linux = work/"tests"/"test_transform"
 
     suite(m"Positive tests"):
-      (tests.listFiles.nn.map(_.nn).to(List).filter(_.getName.nn.startsWith("y_")) ++ tests2.listFiles.nn.map(_.nn).to(List)).each: file =>
-        test(Message(file.getName.nn.dropRight(5).tt)):
-          ji.BufferedInputStream(ji.FileInputStream(file)).read[JsonAst]
+      (tests.children.filter(_.name.starts(t"y_")) ++ tests2.children).each: file =>
+        test(Message(file.name.skip(5, Rtl))):
+          file.open(_.read[JsonAst])
         .check()
 
     suite(m"Negative tests"):
-      tests.listFiles.nn.map(_.nn).filter(_.getName.nn.startsWith("n_")).each: file =>
-        test(Message(file.getName.nn.dropRight(5).tt)):
-          capture(ji.BufferedInputStream(ji.FileInputStream(file)).read[JsonAst])
+      tests.children.filter(_.name.starts(t"n_")).each: file =>
+        test(Message(file.name.skip(5, Rtl))):
+          capture[ParseError](file.open(_.read[JsonAst]))
         .matches:
           case ParseError(_, _, _) => true
-          case _                   => false
 
-    val testDir = ji.File(work, "data")
+    val testDir: Path on Linux = work/"data"
 
     suite(m"Parse large files"):
       val file: Data = test(m"Read file"):
-        ji.BufferedInputStream(ji.FileInputStream(ji.File(testDir, "huge.json"))).read[Data]
+        (testDir/"huge.json").open(_.read[Data])
       .check()
 
       val file2: Data = test(m"Read file 2"):
-        ji.BufferedInputStream(ji.FileInputStream(ji.File(testDir, "huge2.json"))).read[Data]
+        (testDir/"huge2.json").open(_.read[Data])
       .check()
 
       // test(m"Parse huge file with Jawn"):
