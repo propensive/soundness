@@ -32,25 +32,46 @@
                                                                                                   */
 package mosquito
 
+import scala.compiletime.*
+
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
 
 object internal:
-  opaque type Tensor[value, size <: Int] = Tuple
+  class Tensor[value, size <: Int](val data: IArray[Any]):
+    override def equals(right: Any): Boolean = right.asMatchable match
+      case that: Tensor[?, ?] => data.sameElements(that.data)
+      case _                  => false
+
+    override def hashCode: Int =
+      scala.util.hashing.MurmurHash3.arrayHash(data.mutable(using Unsafe))
+
+    override def toString: String = data.mkString("Tensor(", ", ", ")")
+
 
   object Tensor:
-    def apply(tuple: Tuple): Tensor[Tuple.Union[tuple.type], Tuple.Size[tuple.type]] = tuple
+    def apply(tuple: Tuple): Tensor[Tuple.Union[tuple.type], Tuple.Size[tuple.type]] =
+      new Tensor(tuple.toIArray)
 
     def take[element](list: List[element], size: Int): Optional[Tensor[element, size.type]] =
-      if size == 0 then Zero else list match
-        case Nil          => Unset
-        case head :: tail => take(tail, size - 1).let(head *: _)
+      if list.length < size then Unset
+      else
+        val arr = IArray.build[Any](size): array =>
+          var i = 0
+          var rest = list
+          while i < size do
+            array(i) = rest.head
+            rest = rest.tail
+            i += 1
+
+        new Tensor[element, size.type](arr)
 
 
     given addable
@@ -67,20 +88,17 @@ object internal:
       type Result = Tensor[result, size]
 
       def add(left: left, right: right): Tensor[result, size] =
-        def recur(left: Tuple, right: Tuple): Tuple = left match
-          case leftHead *: leftTail =>
-            right match
-              case rightHead *: rightTail =>
-                (leftHead.asInstanceOf[value] + rightHead.asInstanceOf[value2])
-                *: recur(leftTail, rightTail)
+        val length = left.data.length
+        val arr = IArray.build[Any](length): array =>
+          var i = 0
+          while i < length do
+            array(i) = addable.add
+                        ( left.data(i).asInstanceOf[value],
+                          right.data(i).asInstanceOf[value2] )
 
-              case _ =>
-                Zero
+            i += 1
 
-          case _ =>
-            Zero
-
-        recur(left, right)
+        new Tensor[result, size](arr)
 
 
     given negatable: [value, size <: Int, tensor <: Tensor[value, size], result]
@@ -107,20 +125,17 @@ object internal:
         type Result = Tensor[result, size]
 
         def subtract(left: left, right: right): Tensor[result, size] =
-          def recur(left: Tuple, right: Tuple): Tuple = left match
-            case leftHead *: leftTail =>
-              right match
-                case rightHead *: rightTail =>
-                  (leftHead.asInstanceOf[value] - rightHead.asInstanceOf[value2])
-                  *: recur(leftTail, rightTail)
+          val length = left.data.length
+          val arr = IArray.build[Any](length): array =>
+            var i = 0
+            while i < length do
+              array(i) = subtractable.subtract
+                          ( left.data(i).asInstanceOf[value],
+                            right.data(i).asInstanceOf[value2] )
 
-                case _ =>
-                  Zero
+              i += 1
 
-            case _ =>
-              Zero
-
-          recur(left, right)
+          new Tensor[result, size](arr)
 
 
     given showable: [size <: Int: ValueOf, element: Showable] => Text is Measurable
@@ -150,15 +165,15 @@ object internal:
       val second = left.element(2)*right.element(0) - left.element(0)*right.element(2)
       val third = left.element(0)*right.element(1) - left.element(1)*right.element(0)
 
-      first *: second *: third *: Zero
+      new Tensor[addition.Result, 3](IArray[Any](first, second, third))
 
 
   extension [size <: Int, left](left: Tensor[left, size])
-    def element(index: Int): left = left.toArray(index).asInstanceOf[left]
+    def element(index: Int): left = left.data(index).asInstanceOf[left]
 
-    def apply(index: Int): left = left.toArray(index).asInstanceOf[left]
-    def list: List[left] = left.toList.asInstanceOf[List[left]]
-    def iarray: IArray[left] = left.toIArray.asInstanceOf[IArray[left]]
+    def apply(index: Int): left = left.data(index).asInstanceOf[left]
+    def list: List[left] = left.data.toList.asInstanceOf[List[left]]
+    def iarray: IArray[left] = left.data.asInstanceOf[IArray[left]]
     def size(using ValueOf[size]): Int = valueOf[size]
 
 
@@ -174,15 +189,18 @@ object internal:
           val x2: multiplicable.Result = left.element(i)*left.element(i)
           recur(addable.add(sum, x2), i - 1)
 
-      recur(left.element(0)*left.element(0), size - 1)
+      recur(left.element(0)*left.element(0), left.data.length - 1)
 
 
     def map[left2](fn: left => left2): Tensor[left2, size] =
-      def recur(tuple: Tuple): Tuple = tuple match
-        case head *: tail => fn(head.asInstanceOf[left]) *: recur(tail)
-        case _            => Zero
+      val length = left.data.length
+      val arr = IArray.build[Any](length): array =>
+        var i = 0
+        while i < length do
+          array(i) = fn(left.data(i).asInstanceOf[left])
+          i += 1
 
-      recur(left)
+      new Tensor[left2, size](arr)
 
 
     def unitary[square]
@@ -193,12 +211,14 @@ object internal:
     :   Tensor[Double, size] =
 
       val magnitude: left = left.norm
+      val length = left.data.length
+      val arr = IArray.build[Any](length): array =>
+        var i = 0
+        while i < length do
+          array(i) = left.data(i).asInstanceOf[left]/magnitude
+          i += 1
 
-      def recur(tuple: Tuple): Tuple = tuple match
-        case head *: tail => (head.asInstanceOf[left]/magnitude) *: recur(tail)
-        case _            => Zero
-
-      recur(left)
+      new Tensor[Double, size](arr)
 
 
     def dot[right](right: Tensor[right, size])

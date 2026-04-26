@@ -37,9 +37,11 @@ import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import larceny.*
 import probably.*
+import proscenium.*
 import quantitative.*
 import spectacular.*
 import symbolism.*
+import vacuous.*
 
 given Decimalizer(4)
 
@@ -85,9 +87,138 @@ object Tests extends Suite(m"Mosquito tests"):
       Tensor(1, 3, 6).show
     . assert(_ == t"\u239b 1 \u239e\n\u239c 3 \u239f\n\u239d 6 \u23a0")
 
+    test(m"Show Tensor 1-tensor"):
+      Tensor(Mono(42)).show
+    . assert(_ == t"( 42 )")
+
+    test(m"Show Tensor 2-tensor"):
+      Tensor(1, 2).show
+    . assert(_ == t"\u239b 1 \u239e\n\u239d 2 \u23a0")
+
     test(m"Add two tensors"):
       Tensor(1, 2, 3) + Tensor(3, 4, 5)
     . assert(_ == Tensor(4, 6, 8))
+
+    test(m"Subtract two tensors"):
+      Tensor(5, 7, 9) - Tensor(1, 2, 3)
+    . assert(_ == Tensor(4, 5, 6))
+
+    test(m"Negate a tensor"):
+      -Tensor(1, -2, 3)
+    . assert(_ == Tensor(-1, 2, -3))
+
+    suite(m"Element access and conversions"):
+      test(m"element(0) on a 3-tensor"):
+        Tensor(10, 20, 30).element(0)
+      . assert(_ == 10)
+
+      test(m"element(1) on a 3-tensor"):
+        Tensor(10, 20, 30).element(1)
+      . assert(_ == 20)
+
+      test(m"element(2) on a 3-tensor"):
+        Tensor(10, 20, 30).element(2)
+      . assert(_ == 30)
+
+      test(m"apply(i) accessor matches element(i)"):
+        Tensor(10, 20, 30)(1)
+      . assert(_ == 20)
+
+      test(m"list conversion"):
+        Tensor(1, 2, 3).list
+      . assert(_ == List(1, 2, 3))
+
+      test(m"iarray conversion"):
+        Tensor("a", "b", "c").iarray.toList
+      . assert(_ == List("a", "b", "c"))
+
+      test(m"size of a 4-tensor"):
+        Tensor(1, 2, 3, 4).size
+      . assert(_ == 4)
+
+    suite(m"Map operations"):
+      test(m"Map increment over Ints"):
+        Tensor(1, 2, 3).map(_ + 1)
+      . assert(_ == Tensor(2, 3, 4))
+
+      test(m"Map type-changing (Int to String)"):
+        Tensor(1, 2, 3).map(_.toString)
+      . assert(_ == Tensor("1", "2", "3"))
+
+    suite(m"Vector magnitude operations"):
+      test(m"Norm of a 3-4 right triangle"):
+        Tensor(3.0, 4.0).norm
+      . assert(_ === 5.0 +/- 0.000001)
+
+      test(m"Norm of a 2-3-6 vector"):
+        Tensor(2.0, 3.0, 6.0).norm
+      . assert(_ === 7.0 +/- 0.000001)
+
+      test(m"Unitary of a 3-4 vector x-component"):
+        Tensor(3.0, 4.0).unitary.element(0)
+      . assert(_ === 0.6 +/- 0.000001)
+
+      test(m"Unitary of a 3-4 vector y-component"):
+        Tensor(3.0, 4.0).unitary.element(1)
+      . assert(_ === 0.8 +/- 0.000001)
+
+    suite(m"Tensor.take and List.slide"):
+      test(m"Tensor.take takes the first N elements"):
+        Tensor.take(List(1, 2, 3), 3)
+      . assert(_ == Tensor(1, 2, 3))
+
+      test(m"Tensor.take returns Unset when list is too short"):
+        Tensor.take(List(1, 2), 3)
+      . assert(_ == Unset)
+
+      test(m"Tensor.take of size 0 with empty list is defined"):
+        Tensor.take(Nil: List[Int], 0)
+      . assert(_ != Unset)
+
+      test(m"List.slide produces a stream of 2-tensors"):
+        List(1, 2, 3, 4).slide(2).to(List)
+      . assert(_ == List(Tensor(1, 2), Tensor(2, 3), Tensor(3, 4)))
+
+    suite(m"Tensors of various sizes"):
+      test(m"1-tensor list"):
+        Tensor(Mono(42)).list
+      . assert(_ == List(42))
+
+      test(m"2-tensor list"):
+        Tensor(1, 2).list
+      . assert(_ == List(1, 2))
+
+      test(m"4-tensor list"):
+        Tensor(1, 2, 3, 4).list
+      . assert(_ == List(1, 2, 3, 4))
+
+      test(m"5-tensor element access"):
+        Tensor(10, 20, 30, 40, 50).element(4)
+      . assert(_ == 50)
+
+      test(m"5-tensor size"):
+        Tensor(10, 20, 30, 40, 50).size
+      . assert(_ == 5)
+
+      test(m"4-tensor iarray length"):
+        Tensor("a", "b", "c", "d").iarray.length
+      . assert(_ == 4)
+
+    suite(m"Vector identities"):
+      val a = Tensor(1, 2, 3)
+      val b = Tensor(4, 5, 6)
+
+      test(m"Cross product is anti-commutative"):
+        a.cross(b)
+      . assert(_ == -b.cross(a))
+
+      test(m"Dot product of orthogonal unit vectors is zero"):
+        Tensor(1, 0, 0).dot(Tensor(0, 1, 0))
+      . assert(_ == 0)
+
+      test(m"Dot product is commutative"):
+        a.dot(b)
+      . assert(_ == b.dot(a))
 
     suite(m"Quantity operations"):
       test(m"Add two quantity tensors"):
