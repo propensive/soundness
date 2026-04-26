@@ -871,7 +871,7 @@ object Html extends Tag.Container
                     focus = inferred.vouch
                     level = Level.Descend
                 else if focus.void then empty()
-                else if formattingTags.contains(content)
+                else if (content == t"a" || content == t"nobr")
                 && (parent.label == content || stackContainsAncestor(content)) then
                   cursor.cue(mark)
                   close()
