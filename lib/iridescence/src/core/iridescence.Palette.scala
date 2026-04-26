@@ -40,6 +40,8 @@ into trait Palette extends Selectable:
   type Form <: Color: Perceptual in Srgb
   def background: Color in Form
   def foreground: Color in Form
+  def black: Color in Srgb = Srgb(0, 0, 0)
+  def white: Color in Srgb = Srgb(1, 1, 1)
 
   def subdue(color: Color in Form, factor: Double = 0.5): Color in Srgb =
     mix(color, background, factor)

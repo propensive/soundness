@@ -162,13 +162,13 @@ class Report(using Environment)(using palette: TestPalette):
     private val nbsp = '\u00a0'
 
     def symbol(using palette: TestPalette): Teletype = this match
-      case Pass        => e"${Bg(palette.pass)}($Bold(${Fg(palette.background)}( ✓ )))"
-      case Fail        => e"${Bg(palette.fail)}($Bold(${Fg(palette.background)}( ✗ )))"
-      case Throws      => e"${Bg(palette.warning)}($Bold(${Fg(palette.background)}( ! )))"
-      case CheckThrows => e"${Bg(palette.critical)}($Bold(${Fg(palette.background)}( ‼ )))"
-      case Mixed       => e"${Bg(palette.mixed)}($Bold(${Fg(palette.background)}( ? )))"
+      case Pass        => e"${Bg(palette.pass)}($Bold(${Fg(palette.black)}( ✓ )))"
+      case Fail        => e"${Bg(palette.fail)}($Bold(${Fg(palette.black)}( ✗ )))"
+      case Throws      => e"${Bg(palette.warning)}($Bold(${Fg(palette.black)}( ! )))"
+      case CheckThrows => e"${Bg(palette.critical)}($Bold(${Fg(palette.black)}( ‼ )))"
+      case Mixed       => e"${Bg(palette.mixed)}($Bold(${Fg(palette.black)}( ? )))"
       case Suite       => e"   "
-      case Bench       => e"${Bg(palette.benchmark)}($Bold(${Fg(WebColors.Black)}($nbsp*$nbsp)))"
+      case Bench       => e"${Bg(palette.benchmark)}($Bold(${Fg(palette.black)}($nbsp*$nbsp)))"
 
     def describe: Teletype = this match
       case Pass        => e"Pass"
@@ -346,11 +346,11 @@ class Report(using Environment)(using palette: TestPalette):
         val width = if pass then 38 else 34
         if !pass || !tabulation then
           Out.println(e"$color(╭${t"─"*width}╮)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}(${Fg(palette.background)}(  $text1  ))) $color(│)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}(${Fg(palette.background)}(  $text2  ))) $color(│)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}(${Fg(palette.background)}(  $text3  ))) $color(│)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}(${Fg(palette.background)}(  $text4  ))) $color(│)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}(${Fg(palette.background)}(  $text5  ))) $color(│)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}(${Fg(palette.black)}(  $text1  ))) $color(│)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}(${Fg(palette.black)}(  $text2  ))) $color(│)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}(${Fg(palette.black)}(  $text3  ))) $color(│)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}(${Fg(palette.black)}(  $text4  ))) $color(│)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}(${Fg(palette.black)}(  $text5  ))) $color(│)")
           Out.println(e"$color(╰${t"─"*width}╯)")
 
           given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)

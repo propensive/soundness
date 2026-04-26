@@ -46,13 +46,13 @@ object TastySymbol:
 
       val flags =
         symbol.flags.map: (flag, on) =>
-          if on then e"${Bg(palette.flagOff)}(${Fg(palette.background)}(·${flag}·))"
+          if on then e"${Bg(palette.flagOff)}(${Fg(palette.black)}(·${flag}·))"
           else e"${Fg(palette.flagOff)}($flag)"
         . join(e" ")
 
       val properties =
         symbol.properties.map: (property, on) =>
-          if on then e"${Bg(palette.propertyOn)}(${Fg(palette.background)}(·${property}·))"
+          if on then e"${Bg(palette.propertyOn)}(${Fg(palette.black)}(·${property}·))"
           else e"${palette.propertyOff}($property)"
         . join(e" ")
 

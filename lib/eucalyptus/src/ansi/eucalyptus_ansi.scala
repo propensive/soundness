@@ -53,7 +53,7 @@ package logFormats:
       case Level.Warn => palette.warning
       case Level.Fail => palette.error
 
-    e"${Bg(color)}[${palette.background}($Bold( ${level.show} ))]"
+    e"${Bg(color)}[${palette.black}($Bold( ${level.show} ))]"
 
   private val indent = e" "*46
 
