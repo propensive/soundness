@@ -467,10 +467,10 @@ class Whatwg() extends Dom:
   val Dialog = Tag.container["dialog", Flow, Whatwg]()
   val Div = Tag.container["div", Flow, Whatwg]()
 
-  val Dl = Tag.container["dl", "div" | "dt" | ScriptSupporting, Whatwg]
+  val Dl = Tag.container["dl", "div" | "dt" | "dd" | ScriptSupporting, Whatwg]
             (autoclose = true, mode = Html.Mode.Whitespace)
 
-  val Dt = Tag.container["dl", Flow, Whatwg](autoclose = true)
+  val Dt = Tag.container["dt", Flow, Whatwg](autoclose = true)
   val Em = Tag.container["em", Phrasing, Whatwg]()
   val Embed = Tag.void["embed", Whatwg]()
   val Fieldset = Tag.container["fieldset", "legend" | Flow, Whatwg]()
