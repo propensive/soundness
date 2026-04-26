@@ -517,6 +517,19 @@ object Tests extends Suite(m"Urticose tests"):
         t"http://[::1]?q=1".decode[HttpUrl]
       . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), t"", t"q=1"))
 
+      test(m"Parse URL with IPv4 host"):
+        t"http://192.168.0.1/path".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv4(192, 168, 0, 1))), t"/path"))
+
+      test(m"Parse URL with IPv4 host and port"):
+        t"http://192.168.0.1:8080/path".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv4(192, 168, 0, 1), Unset, 8080)),
+          t"/path"))
+
+      test(m"Round-trip URL with IPv4 host"):
+        t"http://192.168.0.1:8080/path".decode[HttpUrl].show
+      . assert(_ == t"http://192.168.0.1:8080/path")
+
 
 
       // TODO: fix

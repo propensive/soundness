@@ -49,10 +49,7 @@ import vacuous.*
 
 object Authority:
   given showable: Authority is Showable = auth =>
-    val hostText = auth.host.absolve match
-      case host: Hostname => host.show
-      case ipv6: Ipv6     => t"[${ipv6.show}]"
-    t"${auth.userInfo.lay(t"")(_+t"@")}$hostText${auth.port.let(_.show).lay(t"")(t":"+_)}"
+    t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host.show}${auth.port.let(_.show).lay(t"")(t":"+_)}"
 
   given decodable: Tactic[HostnameError]
         => Tactic[IpAddressError]
@@ -96,10 +93,10 @@ object Authority:
           case Zerary(colon) =>
             val portOffset: Ordinal = base + (colon.n0 + 1)
             val port = parsePort(hostPort.after(colon), portOffset)
-            Authority(hostPort.before(colon).decode[Hostname], userInfo, port)
+            Authority(hostPort.before(colon).decode[Host], userInfo, port)
 
           case _ =>
-            Authority(hostPort.decode[Hostname], userInfo)
+            Authority(hostPort.decode[Host], userInfo)
 
     safely(value.where(_ == '@')).asMatchable match
       case Zerary(arobase) =>
@@ -110,6 +107,6 @@ object Authority:
         parseHostPort(value, Prim, Unset)
 
 case class Authority
-  ( host: Hostname | Ipv6,
+  ( host: Host,
     userInfo: Optional[Text] = Unset,
     port: Optional[Int] = Unset )

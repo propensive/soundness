@@ -129,7 +129,7 @@ object internal:
             given online0: Online = $online
             given payload is Postable = $postable
             given loggable0: HttpEvent is Loggable = $loggable
-            val host: Hostname = $submit.host
+            val host: Host = $submit.host
             val body = $postable.stream($payload)
             val path = $submit.originForm
             val contentType = Http.Header("content-type".tt, $postable.mediaType($payload).show)
