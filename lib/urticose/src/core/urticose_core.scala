@@ -34,7 +34,11 @@ package urticose
 
 import anticipation.*
 import contingency.*
+import distillate.*
+import gossamer.*
 import prepositional.*
+import spectacular.*
+import vacuous.*
 
 export urticose.internal.Ipv6
 export urticose.internal.Opaques.Ipv4
@@ -69,6 +73,8 @@ def internet[result](online: Boolean)(block: Internet ?=> result): result =
 def online(using internet: Internet): Boolean = internet.online
 
 val Localhost: Hostname = Hostname(DnsLabel("localhost".tt))
+
+type Host = Hostname | Ipv4 | Ipv6
 
 package internetAccess:
   given enabled: Online = Online()

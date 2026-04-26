@@ -267,7 +267,7 @@ object Http:
   class Request
     ( val method:      Http.Method,
       val version:     Http.Version,
-      val host:        Hostname,
+      val host:        Host,
       val target:      Text,
       val textHeaders: List[Http.Header],
       val body:        () => Stream[Data] ):
@@ -458,7 +458,7 @@ object Http:
       val header: Http.Header = value.encode
       copy(textHeaders = header :: textHeaders)
 
-  case class Submit[target](originForm: Text, target: target, host: Hostname)
+  case class Submit[target](originForm: Text, target: target, host: Host)
   extends Dynamic:
     inline def applyDynamicNamed[payload](id: "apply")(inline headers: (Label, Any)*)
       ( payload: payload )
@@ -487,7 +487,7 @@ object Http:
         }
 
 
-  case class Fetch[target](originForm: Text, target: target, host: Hostname)
+  case class Fetch[target](originForm: Text, target: target, host: Host)
     extends Dynamic:
 
     inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)

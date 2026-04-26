@@ -467,10 +467,10 @@ class Whatwg() extends Dom:
   val Dialog = Tag.container["dialog", Flow, Whatwg]()
   val Div = Tag.container["div", Flow, Whatwg]()
 
-  val Dl = Tag.container["dl", "div" | "dt" | ScriptSupporting, Whatwg]
+  val Dl = Tag.container["dl", "div" | "dt" | "dd" | ScriptSupporting, Whatwg]
             ( autoclose = true, mode = Html.Mode.Whitespace )
 
-  val Dt = Tag.container["dl", Flow, Whatwg](autoclose = true)
+  val Dt = Tag.container["dt", Flow, Whatwg](autoclose = true)
   val Em = Tag.container["em", Phrasing, Whatwg]()
   val Embed = Tag.void["embed", Whatwg]()
   val Fieldset = Tag.container["fieldset", "legend" | Flow, Whatwg]()
@@ -629,7 +629,10 @@ class Whatwg() extends Dom:
   val Svg = Tag.foreign["svg", Whatwg]()
 
   val Table =
-    Tag.container["table", "caption" | "colgroup" | "thead" | "tbody" | "tfoot", Whatwg]
+    Tag.container
+      [ "table",
+        "caption" | "colgroup" | "thead" | "tbody" | "tfoot" | ScriptSupporting,
+        Whatwg ]
       ( mode = Html.Mode.Whitespace, boundary = true )
 
   val Tbody = Tag.container["tbody", "tr", Whatwg]
@@ -674,10 +677,13 @@ class Whatwg() extends Dom:
     Dictionary(this.membersOfType[Tag].to(Seq).bi.map(_.label -> _)*)
 
   val entities: Dictionary[Text] =
-    val list = cp"/honeycomb/entities.tsv".read[Text].cut(t"\n").map(_.cut(t"\t")).collect:
+    val html4 = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n").map(_.cut(t"\t")).collect:
       case List(key, value) => (key, value)
 
-    Dictionary(list*)
+    val extra = cp"/honeycomb/entities-extra.tsv".read[Text].cut(t"\n").map(_.cut(t"\t")).collect:
+      case List(key, value) => (key, value)
+
+    Dictionary((html4 ++ extra)*)
 
   val attributes: Dictionary[Attribute] =
     val list: List[(Text, Attribute)] =

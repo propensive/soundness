@@ -80,6 +80,7 @@ extension (html: Seq[Html])
 
 package doms.html:
   given whatwg: Whatwg = Whatwg()
+  given html4Transitional: Html4Transitional = Html4Transitional()
 
 package stylesheets:
   given uncheckedClasses: [classname <: Label: ValueOf] => NotGiven[classname =:= "apply"]

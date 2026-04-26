@@ -47,6 +47,8 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
+import unsafeExceptions.canThrowAny
+
 object Promise:
   enum State[+value]:
     case Incomplete(waiting: Set[Thread])
@@ -94,15 +96,18 @@ final case class Promise[value]():
 
   @tailrec
   def await(): value raises AsyncError =
+    if Thread.interrupted() then throw new InterruptedException()
     state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
       case Incomplete(_)   => jucl.LockSupport.park(this) yet await()
       case Complete(value) => value
       case Cancelled       => abort(AsyncError(AsyncError.Reason.Cancelled))
 
   @tailrec
-  def attend(): Unit = state.getAndUpdate(enqueue(Thread.currentThread.nn)) match
-    case Incomplete(_) => jucl.LockSupport.park(this) yet attend()
-    case _             => ()
+  def attend(): Unit =
+    if Thread.interrupted() then throw new InterruptedException()
+    state.getAndUpdate(enqueue(Thread.currentThread.nn)) match
+      case Incomplete(_) => jucl.LockSupport.park(this) yet attend()
+      case _             => ()
 
   private def cancelIncomplete(current: State[value] | Null): State[value] = current match
     case Incomplete(_) => Cancelled
@@ -120,10 +125,11 @@ final case class Promise[value]():
 
     @tailrec
     def recur(): value =
-      if deadline < jl.System.nanoTime then abort(AsyncError(AsyncError.Reason.Timeout))
+      if Thread.interrupted() then throw new InterruptedException()
+      else if deadline < jl.System.nanoTime then abort(AsyncError(AsyncError.Reason.Timeout))
       else state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
         case Incomplete(_) =>
-          jucl.LockSupport.parkUntil(this, deadline - jl.System.nanoTime())
+          jucl.LockSupport.parkNanos(this, deadline - jl.System.nanoTime())
                                 recur()
 
         case Complete(value) =>
@@ -140,10 +146,11 @@ final case class Promise[value]():
 
     @tailrec
     def recur(): Unit =
-      if deadline > jl.System.nanoTime
+      if Thread.interrupted() then throw new InterruptedException()
+      else if deadline > jl.System.nanoTime
       then state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
         case Incomplete(_) =>
-          jucl.LockSupport.parkUntil(this, deadline - jl.System.nanoTime())
+          jucl.LockSupport.parkNanos(this, deadline - jl.System.nanoTime())
                               recur()
 
         case Cancelled =>

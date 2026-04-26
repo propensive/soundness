@@ -48,7 +48,7 @@ object Fetchable:
       def target(httpUrl: url): Origin["http" | "https"] = httpUrl.origin
       def text(httpUrl: url): Text = httpUrl.requestTarget
 
-      def hostname(httpUrl: url): Hostname = httpUrl.host.or:
+      def hostname(httpUrl: url): Host = httpUrl.host.or:
         panic(m"The HTTP URL does not have a hostname")
 
   given unixSocket: DomainSocketEndpoint is Fetchable onto DomainSocket =
@@ -58,9 +58,9 @@ object Fetchable:
 
       def target(endpoint: DomainSocketEndpoint): DomainSocket = endpoint.socket
       def text(endpoint: DomainSocketEndpoint): Text = endpoint.path
-      def hostname(endpoint: DomainSocketEndpoint): Hostname = Localhost
+      def hostname(endpoint: DomainSocketEndpoint): Host = Localhost
 
 trait Fetchable extends Typeclass, Targetable:
   def target(value: Self): Target
   def text(value: Self): Text
-  def hostname(value: Self): Hostname
+  def hostname(value: Self): Host
