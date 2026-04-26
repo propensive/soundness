@@ -629,7 +629,10 @@ class Whatwg() extends Dom:
   val Svg = Tag.foreign["svg", Whatwg]()
 
   val Table =
-    Tag.container["table", "caption" | "colgroup" | "thead" | "tbody" | "tfoot", Whatwg]
+    Tag.container
+      [ "table",
+        "caption" | "colgroup" | "thead" | "tbody" | "tfoot" | ScriptSupporting,
+        Whatwg ]
       ( mode = Html.Mode.Whitespace, boundary = true )
 
   val Tbody = Tag.container["tbody", "tr", Whatwg]
