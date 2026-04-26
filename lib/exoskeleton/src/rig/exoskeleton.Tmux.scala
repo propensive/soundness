@@ -76,8 +76,8 @@ object Tmux:
         enter(t"""_completions "$text"""")
         attend(enter('\r'))
         var count = 0
-        while Tmux.screenshot().screen.filter(_ == t">").length == 0 && count < 100 do
-          delay(0.1*Second)
+        while Tmux.screenshot().screen.filter(_ == t">").length == 0 && count < 333 do
+          delay(0.03*Second)
           count += 1
         screenshot().screen.to(List)
           .filter(!_.starts(t">"))

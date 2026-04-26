@@ -155,8 +155,8 @@ extension (shell: Shell)
           case Shell.Powershell =>
             var psReady = false
             var psAttempts = 0
-            while !psReady && psAttempts < 200 do
-              delay(0.1*Second)
+            while !psReady && psAttempts < 666 do
+              delay(0.03*Second)
               psReady = Tmux.screenshot().screen.filter(_.starts(t">")).length > 0
               psAttempts += 1
 
