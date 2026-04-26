@@ -58,7 +58,6 @@ extension (shell: Shell)
 
           case Shell.Powershell =>
             val cmd = summon[Sandbox.Tool].command
-            sh"${summon[Sandbox.Tool].path} '{admin}' install".exec[Unit]()
 
             val psScript =
               s"""function global:prompt { '> ' }
@@ -157,13 +156,10 @@ extension (shell: Shell)
           case Shell.Powershell =>
             var psReady = false
             var psAttempts = 0
-            while !psReady && psAttempts < 200 do
-              delay(0.1*Second)
+            while !psReady && psAttempts < 666 do
+              delay(0.03*Second)
               psReady = Tmux.screenshot().screen.filter(_.starts(t">")).length > 0
               psAttempts += 1
-
-            Tmux.attend:
-              sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
 
         val result = action
 

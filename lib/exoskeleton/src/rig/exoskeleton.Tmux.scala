@@ -76,8 +76,8 @@ object Tmux:
         enter(t"""_completions "$text"""")
         attend(enter('\r'))
         var count = 0
-        while Tmux.screenshot().screen.filter(_ == t">").length == 0 && count < 100 do
-          delay(0.1*Second)
+        while Tmux.screenshot().screen.filter(_ == t">").length == 0 && count < 333 do
+          delay(0.03*Second)
           count += 1
         screenshot().screen.to(List)
           .filter(!_.starts(t">"))
@@ -107,7 +107,30 @@ object Tmux:
     enter(tool.command)
     enter(' ')
     enter(text)
-    attend(enter(Ht))
+
+    tmux.shell match
+      case Shell.Powershell =>
+        delay(0.05*Second)
+        val init = screenshot().screen
+        enter(Ht)
+        var count = 0
+        while init === screenshot().screen && count < 150 do
+          delay(0.01*Second) yet (count += 1)
+
+        if init !== screenshot().screen then
+          var prev = screenshot().screen
+          var stable = 0
+          while stable < 3 && count < 200 do
+            delay(0.01*Second)
+            val current = screenshot().screen
+            if current === prev then stable += 1 else
+              stable = 0
+              prev = current
+            count += 1
+
+      case _ =>
+        attend(enter(Ht))
+
     screenshot().currentLine(decorate).sub(t"> ${tool.command} ", t"")
 
 
