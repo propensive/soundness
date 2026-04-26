@@ -79,7 +79,9 @@ object Url:
                   UrlError(value, colon + 3, UrlError.Reason.BadHostname(hostname, reason))
 
               . within:
-                  val authEnd = safely(value.where(_ == '/', colon + 3)).or(value.limit - 1)
+                  val authEnd = safely:
+                    value.where(c => c == '/' || c == '?' || c == '#', colon + 3)
+                  . or(value.limit)
                   val hostname = value.segment((colon + 3) till authEnd)
                   (authEnd, hostname.decode[Authority])
 
