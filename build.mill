@@ -703,7 +703,7 @@ object mercator extends Library:
 
 object merino extends Library:
   object core extends Component(turbulence.core, zephyrine.core)
-  object test extends Tests(core, sedentary.core, diuretic.core)
+  object test extends Tests(core, sedentary.core, diuretic.core, galilei.core)
 
 object metamorphose extends Library:
   object core extends Component(contingency.core)
