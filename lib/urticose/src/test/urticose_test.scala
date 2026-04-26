@@ -382,6 +382,154 @@ object Tests extends Suite(m"Urticose tests"):
         url"http://user:pw@example.com/$message"
       . assert(_ == Url(Origin(Scheme(t"http"), Authority(example.com, t"user:pw")), t"/Hello+world%21"))
 
+      test(m"Parse URL with no path"):
+        t"http://example.com".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t""))
+
+      test(m"Parse URL with port and no path"):
+        t"http://example.com:8080".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com, Unset, 8080)), t""))
+
+      test(m"Parse URL with query and no path"):
+        t"http://example.com?q=1".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t"", t"q=1"))
+
+      test(m"Parse URL with fragment and no path"):
+        t"http://example.com#frag".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t"", Unset, t"frag"))
+
+      test(m"Parse URL with port, query and no path"):
+        t"http://example.com:8080?q=1".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com, Unset, 8080)), t"", t"q=1"))
+
+      test(m"Parse URL with port, fragment and no path"):
+        t"http://example.com:8080#frag".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com, Unset, 8080)), t"", Unset, t"frag"))
+
+      test(m"Parse URL with empty query delimiter"):
+        t"http://example.com/?".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t"/", t""))
+
+      test(m"Parse URL with empty fragment delimiter"):
+        t"http://example.com/#".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t"/", Unset, t""))
+
+      test(m"Parse URL with empty query and empty fragment"):
+        t"http://example.com/?#".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t"/", t"", t""))
+
+      test(m"Parse URL with multiple query params"):
+        t"http://example.com/a/b?x=1&y=2".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t"/a/b", t"x=1&y=2"))
+
+      test(m"Parse URL with question mark inside query"):
+        t"http://example.com/a?x=?".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t"/a", t"x=?"))
+
+      test(m"Parse RFC 3986 ftp URL"):
+        t"ftp://ftp.is.co.za/rfc/rfc1808.txt".decode[Url[Label]].show
+      . assert(_ == t"ftp://ftp.is.co.za/rfc/rfc1808.txt")
+
+      test(m"Parse RFC 3986 http URL"):
+        t"http://www.ietf.org/rfc/rfc2396.txt".decode[Url[Label]].show
+      . assert(_ == t"http://www.ietf.org/rfc/rfc2396.txt")
+
+      test(m"Parse RFC 3986 mailto URL"):
+        t"mailto:John.Doe@example.com".decode[Url[Label]].show
+      . assert(_ == t"mailto:John.Doe@example.com")
+
+      test(m"Parse RFC 3986 news URL"):
+        t"news:comp.infosystems.www.servers.unix".decode[Url[Label]].show
+      . assert(_ == t"news:comp.infosystems.www.servers.unix")
+
+      test(m"Parse RFC 3986 tel URL"):
+        t"tel:+1-816-555-1212".decode[Url[Label]].show
+      . assert(_ == t"tel:+1-816-555-1212")
+
+      test(m"Parse RFC 3986 urn URL"):
+        t"urn:oasis:names:specification:docbook:dtd:xml:4.1.2".decode[Url[Label]].show
+      . assert(_ == t"urn:oasis:names:specification:docbook:dtd:xml:4.1.2")
+
+      test(m"Parse opaque mailto with query"):
+        t"mailto:user@example.com?subject=hi".decode[Url[Label]].show
+      . assert(_ == t"mailto:user@example.com?subject=hi")
+
+      test(m"Parse opaque data URL with fragment"):
+        t"data:text/html,test#test".decode[Url[Label]].show
+      . assert(_ == t"data:text/html,test#test")
+
+      test(m"Round-trip URL with no path"):
+        t"http://example.com".decode[HttpUrl].show
+      . assert(_ == t"http://example.com")
+
+      test(m"Round-trip URL with port and no path"):
+        t"http://example.com:8080".decode[HttpUrl].show
+      . assert(_ == t"http://example.com:8080")
+
+      test(m"Round-trip URL with query and no path"):
+        t"http://example.com?q=1".decode[HttpUrl].show
+      . assert(_ == t"http://example.com?q=1")
+
+      test(m"Round-trip URL with fragment and no path"):
+        t"http://example.com#frag".decode[HttpUrl].show
+      . assert(_ == t"http://example.com#frag")
+
+      test(m"Parse URL with IPv6 host and port"):
+        t"http://[::1]:8080/path".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1), Unset, 8080)),
+          t"/path"))
+
+      test(m"Parse URL with IPv6 host and no port"):
+        t"http://[::1]/".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), t"/"))
+
+      test(m"Parse URL with IPv6 host, no port, no path"):
+        t"http://[::1]".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), t""))
+
+      test(m"Parse URL with IPv6 host, userinfo and port"):
+        t"http://user:pw@[2001:db8::1]:443/path".decode[HttpUrl]
+      . assert(_ == Url(
+          Origin(Scheme.Http, Authority(Ipv6(0x2001, 0xdb8, 0, 0, 0, 0, 0, 1), t"user:pw", 443)),
+          t"/path"))
+
+      test(m"Parse RFC 3986 ldap URL with IPv6 host"):
+        t"ldap://[2001:db8::7]/c=GB?objectClass?one".decode[Url[Label]]
+      . assert(_ == Url(
+          Origin(Scheme(t"ldap"), Authority(Ipv6(0x2001, 0xdb8, 0, 0, 0, 0, 0, 7))),
+          t"/c=GB",
+          t"objectClass?one"))
+
+      test(m"Round-trip URL with IPv6 host"):
+        t"http://[::1]:8080/path".decode[HttpUrl].show
+      . assert(_ == t"http://[::1]:8080/path")
+
+      test(m"Round-trip RFC 3986 ldap URL"):
+        t"ldap://[2001:db8::7]/c=GB?objectClass?one".decode[Url[Label]].show
+      . assert(_ == t"ldap://[2001:db8::7]/c=GB?objectClass?one")
+
+      test(m"Parse URL with IPv6 host and fragment"):
+        t"http://[::1]#frag".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), t"",
+          Unset, t"frag"))
+
+      test(m"Parse URL with IPv6 host and query"):
+        t"http://[::1]?q=1".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), t"", t"q=1"))
+
+      test(m"Parse URL with IPv4 host"):
+        t"http://192.168.0.1/path".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv4(192, 168, 0, 1))), t"/path"))
+
+      test(m"Parse URL with IPv4 host and port"):
+        t"http://192.168.0.1:8080/path".decode[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv4(192, 168, 0, 1), Unset, 8080)),
+          t"/path"))
+
+      test(m"Round-trip URL with IPv4 host"):
+        t"http://192.168.0.1:8080/path".decode[HttpUrl].show
+      . assert(_ == t"http://192.168.0.1:8080/path")
+
 
 
       // TODO: fix

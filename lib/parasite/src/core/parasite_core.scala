@@ -146,7 +146,7 @@ def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) 
   @tailrec
   def recur(attempt: Ordinal): value =
     boundary[Perseverance[value]]: label ?=>
-      sleep(summon[Tenacity].delay(attempt).or(abort(RetryError(attempt.n1))))
+      monitor.snooze(summon[Tenacity].delay(attempt).or(abort(RetryError(attempt.n1))))
       def surrender(): Nothing = boundary.break(Perseverance.Surrender)
       def persevere(): Nothing = boundary.break(Perseverance.Persevere)
 
