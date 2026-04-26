@@ -53,10 +53,17 @@ import vacuous.*
 import Fulfillment.*
 import AsyncError.Reason
 
+import unsafeExceptions.canThrowAny
+
 sealed trait Monitor extends Resultant:
   val promise: Promise[Result]
 
-  protected[parasite] var workers: Set[Worker] = Set()
+  protected[parasite] val workersRef: juca.AtomicReference[Set[Worker]] =
+    juca.AtomicReference(Set())
+
+  protected[parasite] def workers: Set[Worker] = workersRef.get().nn
+  protected[parasite] def addWorker(worker: Worker): Unit =
+    workersRef.updateAndGet(_.nn + worker)
 
   def name: Optional[Text]
   def chain: Optional[Chain]
@@ -65,7 +72,7 @@ sealed trait Monitor extends Resultant:
   def attend(): Unit = promise.attend()
   def ready: Boolean = promise.ready
   def cancel(): Unit
-  def remove(monitor: Worker): Unit = workers -= monitor
+  def remove(monitor: Worker): Unit = workersRef.updateAndGet(_.nn - monitor)
   def supervisor: Supervisor
 
   def snooze[generic: Abstractable across Durations to Long](duration: generic): Unit =
@@ -118,6 +125,8 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
   private val startTime: Long = jl.System.currentTimeMillis
   val promise: Promise[Result] = Promise()
 
+  parent.addWorker(this)
+
   def chain: Chain = Chain(frame, parent.chain)
   def evaluate(worker: Worker): Result
   def supervisor: Supervisor = parent.supervisor
@@ -137,13 +146,20 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
 
   def relent(): Unit =
     relents += 1
+    if Thread.interrupted() then throw new InterruptedException()
+
     state.get().nn match
       case Initializing    => ()
       case Active(_)       => ()
       case Completed(_, _) => panic(m"should not be relenting after completion")
       case Delivered(_, _) => panic(m"should not be relenting after completion")
       case Failed(_)       => panic(m"should not be relenting after failure")
-      case Cancelled       => panic(m"should not be relenting after cancellation")
+      case Cancelled       => throw new InterruptedException()
+
+  override def snooze[generic: Abstractable across Durations to Long](duration: generic): Unit =
+    if Thread.interrupted() || state.get() == Cancelled then throw new InterruptedException()
+    jucl.LockSupport.parkNanos(duration.generic)
+    if Thread.interrupted() || state.get() == Cancelled then throw new InterruptedException()
 
 
   def map[result2](lambda: Result => result2)(using Monitor, Codicil)
@@ -189,6 +205,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
   :   Result raises AsyncError =
 
     promise.attend(duration)
+    if !promise.ready then abort(AsyncError(Reason.Timeout))
     thread.join()
     result()
 
@@ -199,51 +216,46 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
     result()
 
   private lazy val thread: Thread = parent.supervisor.fork(stack):
-    boundary[Unit]:
-      try
+    val started: Boolean = state.updateAndGet:
+      case Initializing => Active(jl.System.currentTimeMillis)
+      case other        => other
+    match
+      case Active(_) => true
+      case _         => false
+
+    try
+      if started then evaluate(this).tap: result =>
         state.updateAndGet:
-          case Initializing =>
-            parent.workers += this
-            Active(jl.System.currentTimeMillis)
+          case Active(startTime) => Completed(jl.System.currentTimeMillis - startTime, result)
+          case other             => other
 
-          case other =>
-            boundary.break()
+    catch
+      case error: InterruptedException =>
+        Thread.interrupted()
 
-        evaluate(this).tap: result =>
-          state.updateAndGet:
-            case Active(startTime) => Completed(jl.System.currentTimeMillis - startTime, result)
-            case other             => other
+        state.updateAndGet:
+          case Initializing | Active(_) | Cancelled => Cancelled
+          case state                                => state
 
-      catch
-        case error: InterruptedException =>
-          Thread.interrupted()
+        . match
+            case Cancelled => workers.each { child => if child.daemon then child.cancel() }
+            case _         => ()
 
-          state.updateAndGet:
-            case Initializing | Active(_) | Cancelled => Cancelled
-            case state                                => state
+      case error: Throwable =>
+        state.set(Failed(error))
 
-          . match
-              case Cancelled => workers.each { child => if child.daemon then child.cancel() }
-              case _         => ()
+    finally
+      try codicil.cleanup(this) catch case error: Throwable => state.set(Failed(error))
 
-        case error: Throwable =>
-          state.set(Failed(error))
-          throw error
-
-      finally
-        codicil.cleanup(this)
-
-        state.updateAndGet: state =>
-          parent.remove(this)
-          state match
-            case null                             => Cancelled.also(promise.cancel())
-            case Initializing                     => Cancelled.also(promise.cancel())
-            case Active(_)                        => Cancelled.also(promise.cancel())
-            case state@Completed(duration, value) => state.also(promise.offer(value))
-            case state@Delivered(duration, value) => state
-            case state@Failed(_)                  => state.also(promise.cancel())
-            case Cancelled                        => Cancelled
-
-        boundary.break()
+      state.updateAndGet: state =>
+        parent.remove(this)
+        state match
+          case null                             => Cancelled.also(promise.cancel())
+          case Initializing                     => Cancelled.also(promise.cancel())
+          case Active(_)                        => Cancelled.also(promise.cancel())
+          case state@Completed(duration, value) => state.also(promise.offer(value))
+          case state@Delivered(duration, value) => state
+          case state@Failed(_)                  => state.also(promise.cancel())
+          case Cancelled                        => Cancelled
 
   thread
