@@ -37,8 +37,10 @@ import gossamer.*
 import spectacular.*
 
 object RemoteError:
-  enum Reason:
-    case Serialization, Deserialization, Unknown
+  enum Reason(val number: Int) extends Clarification:
+    case Serialization   extends Reason(1)
+    case Deserialization extends Reason(2)
+    case Unknown         extends Reason(3)
 
   given Reason is Showable =
     case Reason.Serialization   => t"the output could not be serialized"
@@ -46,4 +48,4 @@ object RemoteError:
     case Reason.Unknown         => t"of an unknown reason"
 
 case class RemoteError(reason: RemoteError.Reason)(using Diagnostics)
-extends Error(m"failed to perform a remote operation because $reason")
+extends Error(realm"sl", 1, reason.number)(m"failed to perform a remote operation because $reason")

@@ -38,4 +38,4 @@ import anticipation.*
 import fulminate.*
 
 case class EnvironmentError(variable: Text)(using Diagnostics)
-extends Error(m"the environment variable ${variable} was not defined")
+extends Error(realm"am", 1, 0)(m"the environment variable ${variable} was not defined")

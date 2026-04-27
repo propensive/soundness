@@ -37,4 +37,5 @@ import fulminate.*
 
 case class WebDriverError(error: Text, wdMsg: Text, browserStacktrace: List[Text])
   ( using Diagnostics )
-extends Error(m"the action caused the error $error in the browser, with the message: $wdMsg")
+extends Error(realm"ta", 1, 0)
+         (m"the action caused the error $error in the browser, with the message: $wdMsg")

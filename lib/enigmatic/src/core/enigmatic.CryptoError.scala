@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class CryptoError(detail: Text)(using Diagnostics)
-extends Error(m"could not decode the encrypted data: $detail")
+extends Error(realm"en", 1, 0)(m"could not decode the encrypted data: $detail")

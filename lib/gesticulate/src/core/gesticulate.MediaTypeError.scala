@@ -42,10 +42,12 @@ import spectacular.*
 import vacuous.*
 
 object MediaTypeError:
-  enum Reason:
-    case NotOneSlash, MissingParam, InvalidGroup
-    case InvalidChar(char: Char)
-    case InvalidSuffix(suffix: Text)
+  enum Reason(val number: Int) extends Clarification:
+    case NotOneSlash              extends Reason(1)
+    case MissingParam             extends Reason(2)
+    case InvalidGroup             extends Reason(3)
+    case InvalidChar(char: Char)  extends Reason(4)
+    case InvalidSuffix(suffix: Text) extends Reason(5)
 
     def message: Text = this match
       case NotOneSlash       => txt"a media type should always contain exactly one '/' character"
@@ -58,4 +60,5 @@ object MediaTypeError:
         txt"the type must be one of: ${list.join(t", ", t" or ")}"
 
 case class MediaTypeError(value: Text, reason: MediaTypeError.Reason)(using Diagnostics)
-extends Error(m"the value $value is not a valid media type; ${reason.message}")
+extends Error(realm"ge", 1, reason.number)
+         (m"the value $value is not a valid media type; ${reason.message}")

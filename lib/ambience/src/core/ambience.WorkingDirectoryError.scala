@@ -35,4 +35,4 @@ package ambience
 import fulminate.*
 
 case class WorkingDirectoryError()(using Diagnostics)
-extends Error(m"there is no working directory")
+extends Error(realm"am", 4, 0)(m"there is no working directory")

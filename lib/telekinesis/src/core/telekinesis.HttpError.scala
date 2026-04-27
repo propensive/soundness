@@ -38,4 +38,4 @@ import anticipation.*
 import fulminate.*
 
 case class HttpError(status: Http.Status, headers: List[Http.Header])(using Diagnostics)
-extends Error(m"the HTTP request failed with status $status")
+extends Error(realm"te", 3, 0)(m"the HTTP request failed with status $status")

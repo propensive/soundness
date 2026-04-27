@@ -34,4 +34,5 @@ package coaxial
 
 import fulminate.*
 
-case class BindError()(using Diagnostics) extends Error(m"the port was not available for binding")
+case class BindError()(using Diagnostics)
+extends Error(realm"cx", 1, 0)(m"the port was not available for binding")

@@ -38,9 +38,12 @@ import anticipation.*
 import fulminate.*
 
 object MultipartError:
-  enum Reason:
-    case Expected(char: Char)
-    case StreamContinues, BadBoundaryEnding, MediaType, BadDisposition
+  enum Reason(val number: Int) extends Clarification:
+    case Expected(char: Char) extends Reason(1)
+    case StreamContinues      extends Reason(2)
+    case BadBoundaryEnding    extends Reason(3)
+    case MediaType            extends Reason(4)
+    case BadDisposition       extends Reason(5)
 
   given communicable: Reason is Communicable =
     case Reason.Expected(char)    => m"the character '$char' was expected"
@@ -52,4 +55,4 @@ object MultipartError:
 import MultipartError.Reason
 
 case class MultipartError(reason: MultipartError.Reason)(using Diagnostics)
-extends Error(m"multipart data could not be read because $reason")
+extends Error(realm"ge", 2, reason.number)(m"multipart data could not be read because $reason")

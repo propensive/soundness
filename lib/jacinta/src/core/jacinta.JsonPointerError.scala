@@ -34,4 +34,5 @@ package jacinta
 
 import fulminate.*
 
-case class JsonPointerError()(using Diagnostics) extends Error(m"could not resolve JSON pointer")
+case class JsonPointerError()(using Diagnostics)
+extends Error(realm"ja", 2, 0)(m"could not resolve JSON pointer")

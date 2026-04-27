@@ -35,12 +35,12 @@ package telekinesis
 import fulminate.*
 
 object ConnectError:
-  enum Reason:
-    case Dns
-    case Refused
-    case Ssl(reason: Ssl.Reason)
-    case Timeout
-    case Unknown
+  enum Reason(val number: Int) extends Clarification:
+    case Dns                   extends Reason(1)
+    case Refused               extends Reason(2)
+    case Ssl(reason: Ssl.Reason) extends Reason(3)
+    case Timeout               extends Reason(4)
+    case Unknown               extends Reason(5)
 
   object Reason:
     object Ssl:
@@ -69,4 +69,4 @@ object ConnectError:
       case Unknown     => m"an unrecognized error occurred"
 
 case class ConnectError(reason: ConnectError.Reason)(using Diagnostics)
-extends Error(m"the TCP connection failed because $reason")
+extends Error(realm"te", 2, reason.number)(m"the TCP connection failed because $reason")

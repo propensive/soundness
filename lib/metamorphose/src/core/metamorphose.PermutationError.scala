@@ -35,11 +35,11 @@ package metamorphose
 import fulminate.*
 
 object PermutationError:
-  enum Reason:
-    case BaseRange(value: Int, base: Int)
-    case DuplicateIndex(index: Int, element: Int)
-    case InvalidIndex(last: Int, max: Int)
-    case TooShort(length: Int, min: Int)
+  enum Reason(val number: Int) extends Clarification:
+    case BaseRange(value: Int, base: Int)        extends Reason(1)
+    case DuplicateIndex(index: Int, element: Int) extends Reason(2)
+    case InvalidIndex(last: Int, max: Int)       extends Reason(3)
+    case TooShort(length: Int, min: Int)         extends Reason(4)
 
   import Reason.*
 
@@ -57,4 +57,4 @@ object PermutationError:
       m"the input, of size $size, is too short for the permutation of size $min"
 
 case class PermutationError(reason: PermutationError.Reason)(using Diagnostics)
-extends Error(m"could not construct permutation because $reason")
+extends Error(realm"mt", 1, reason.number)(m"could not construct permutation because $reason")

@@ -37,13 +37,13 @@ import fulminate.*
 import proscenium.*
 
 object HttpResponseError:
-    enum Reason:
-      case Expectation(expected: Char, found: Char)
-      case Status(value: Text)
+    enum Reason(val number: Int) extends Clarification:
+      case Expectation(expected: Char, found: Char) extends Reason(1)
+      case Status(value: Text)                      extends Reason(2)
 
     given communicable: Reason is Communicable =
       case Reason.Expectation(expected, found) => m"$found was found when $expected was expected"
       case Reason.Status(value)                => m"the HTTP status code $value was invalid"
 
 case class HttpResponseError(reason: HttpResponseError.Reason)(using Diagnostics)
-extends Error(m"could not parse HTTP response because $reason")
+extends Error(realm"te", 4, reason.number)(m"could not parse HTTP response because $reason")

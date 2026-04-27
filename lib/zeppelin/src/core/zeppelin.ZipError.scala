@@ -38,10 +38,10 @@ import prepositional.*
 import serpentine.*
 
 object ZipError:
-  enum Reason:
-    case DuplicateEntry(path: Path on Zip)
-    case NotFound(path: Path on Zip)
-    case InvalidName(name: Text)
+  enum Reason(val number: Int) extends Clarification:
+    case DuplicateEntry(path: Path on Zip) extends Reason(1)
+    case NotFound(path: Path on Zip)       extends Reason(2)
+    case InvalidName(name: Text)           extends Reason(3)
 
   given communicable: Reason is Communicable =
     case Reason.DuplicateEntry(path) => m"the path $path is a duplicate entry"
@@ -49,4 +49,4 @@ object ZipError:
     case Reason.InvalidName(name)    => m"the name $name is not valid for a ZIP entry"
 
 case class ZipError(reason: ZipError.Reason)(using Diagnostics)
-extends Error(m"the ZIP operation failed because $reason")
+extends Error(realm"zp", 1, reason.number)(m"the ZIP operation failed because $reason")

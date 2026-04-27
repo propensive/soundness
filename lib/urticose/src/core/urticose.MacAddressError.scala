@@ -36,10 +36,10 @@ import anticipation.*
 import fulminate.*
 
 object MacAddressError:
-  enum Reason:
-    case WrongGroupCount(count: Int)
-    case WrongGroupLength(group: Int, length: Int)
-    case NotHex(group: Int, content: Text)
+  enum Reason(val number: Int) extends Clarification:
+    case WrongGroupCount(count: Int)               extends Reason(1)
+    case WrongGroupLength(group: Int, length: Int) extends Reason(2)
+    case NotHex(group: Int, content: Text)         extends Reason(3)
 
   object Reason:
     given communicable: Reason is Communicable =
@@ -54,4 +54,4 @@ object MacAddressError:
 
 
 case class MacAddressError(reason: MacAddressError.Reason)(using Diagnostics)
-extends Error(m"the MAC address is not valid because $reason")
+extends Error(realm"ur", 4, reason.number)(m"the MAC address is not valid because $reason")

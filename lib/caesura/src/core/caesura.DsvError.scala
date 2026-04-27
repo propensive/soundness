@@ -38,8 +38,8 @@ object DsvError:
   given communicable: Reason is Communicable =
     case Reason.MisplacedQuote => m"a quote was found after the start of a cell"
 
-  enum Reason:
-    case MisplacedQuote
+  enum Reason(val number: Int) extends Clarification:
+    case MisplacedQuote extends Reason(1)
 
 case class DsvError(format: DsvFormat, reason: DsvError.Reason)(using Diagnostics)
-extends Error(m"could not parse row data because $reason")
+extends Error(realm"cs", 1, reason.number)(m"could not parse row data because $reason")

@@ -38,4 +38,5 @@ import anticipation.*
 import fulminate.*
 import proscenium.*
 
-case class XmlError()(using Diagnostics) extends Error(m"there was an XML error")
+case class XmlError()(using Diagnostics)
+extends Error(realm"xy", 1, 0)(m"there was an XML error")

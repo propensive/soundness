@@ -38,4 +38,4 @@ import proscenium.*
 import urticose.*
 
 case class CourierError(from: EmailAddress, to: EmailAddress, subject: Text)(using Diagnostics)
-extends Error(m"unable to send email from $from to $to with subject $subject")
+extends Error(realm"cd", 1, 0)(m"unable to send email from $from to $to with subject $subject")

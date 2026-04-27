@@ -36,11 +36,11 @@ import anticipation.*
 import fulminate.*
 
 object IsinError:
-  enum Reason:
-    case InvalidCharacter(index: Int, char: Char)
-    case BadCountryCode(code: Text)
-    case WrongLength(length: Int)
-    case LuhnCheck
+  enum Reason(val number: Int) extends Clarification:
+    case InvalidCharacter(index: Int, char: Char) extends Reason(1)
+    case BadCountryCode(code: Text)               extends Reason(2)
+    case WrongLength(length: Int)                 extends Reason(3)
+    case LuhnCheck                                extends Reason(4)
 
   export Reason.*
 
@@ -57,4 +57,4 @@ object IsinError:
       m"the character $char at position $index is not a digit or uppercase letter"
 
 case class IsinError(reason: IsinError.Reason)(using Diagnostics)
-extends Error(m"the ISIN number is not valid because $reason")
+extends Error(realm"pl", 1, reason.number)(m"the ISIN number is not valid because $reason")

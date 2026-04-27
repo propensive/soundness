@@ -38,4 +38,4 @@ import anticipation.*
 import fulminate.*
 
 case class SemverError(version: Text)(using Diagnostics)
-extends Error(m"$version is not a valid semantic version")
+extends Error(realm"re", 1, 0)(m"$version is not a valid semantic version")

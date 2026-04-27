@@ -38,11 +38,11 @@ import gossamer.*
 import vacuous.*
 
 object CodlError:
-  enum Reason:
-    case BadFormat(label: Optional[Text])
-    case MissingValue(key: Text)
-    case MissingIndexValue(index: Int)
-    case MultipleIds(key: Text)
+  enum Reason(val number: Int) extends Clarification:
+    case BadFormat(label: Optional[Text])  extends Reason(1)
+    case MissingValue(key: Text)           extends Reason(2)
+    case MissingIndexValue(index: Int)     extends Reason(3)
+    case MultipleIds(key: Text)            extends Reason(4)
 
   given communicable: Reason is Communicable =
     case Reason.MissingValue(key)        => m"the key $key does not exist in the document"
@@ -56,4 +56,4 @@ object CodlError:
 
 
 case class CodlError(reason: CodlError.Reason)(using Diagnostics)
-extends Error(m"the CoDL was not valid because $reason")
+extends Error(realm"cl", 2, reason.number)(m"the CoDL was not valid because $reason")

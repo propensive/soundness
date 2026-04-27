@@ -38,4 +38,4 @@ import anticipation.*
 import fulminate.*
 
 case class PropertyError(property: Text)(using Diagnostics)
-extends Error(m"the system property $property was not defined")
+extends Error(realm"am", 3, 0)(m"the system property $property was not defined")

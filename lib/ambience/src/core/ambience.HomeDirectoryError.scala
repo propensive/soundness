@@ -34,4 +34,5 @@ package ambience
 
 import fulminate.*
 
-case class HomeDirectoryError()(using Diagnostics) extends Error(m"there is no home directory")
+case class HomeDirectoryError()(using Diagnostics)
+extends Error(realm"am", 2, 0)(m"there is no home directory")
