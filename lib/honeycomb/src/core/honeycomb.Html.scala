@@ -980,9 +980,9 @@ object Html extends Tag.Container
           case Mode.Whitespace =>
             if isTableLikeContext(parent) then
               val text = cursor.hold(textual(cursor.mark, Unset, true))
-              val trimmed = text.s.trim.nn
-              if !trimmed.isEmpty then
-                val node = TextNode(trimmed.tt)
+              val trimmed = text.trim
+              if trimmed.length > 0 then
+                val node = TextNode(trimmed)
                 if inTableContent then fosteredAfter = fosteredAfter :+ node
                 else fosteredBefore = fosteredBefore :+ node
               read(parent, admissible, map, count)
