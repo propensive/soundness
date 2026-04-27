@@ -64,8 +64,8 @@ def halt(using Quotes)(message: Message, position: quotes.reflect.Position | Nul
 
   val text =
     if useColor
-    then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].name}$esc[0m ${message.colorText}"
-    else s"${summon[Realm].name}: ${message.text}"
+    then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].code}$esc[0m ${message.colorText}"
+    else s"${summon[Realm].code}: ${message.text}"
 
   if position == null then report.errorAndAbort(text) else report.errorAndAbort(text, position)
 
@@ -88,8 +88,8 @@ def warn(using Quotes)(message: Message, position: quotes.reflect.Position | Nul
 
   val text =
     if useColor
-    then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].name}$esc[0m ${message.colorText}"
-    else s"${summon[Realm].name}: ${message.text}"
+    then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].code}$esc[0m ${message.colorText}"
+    else s"${summon[Realm].code}: ${message.text}"
 
   if position == null then report.warning(text) else report.warning(text, position)
 

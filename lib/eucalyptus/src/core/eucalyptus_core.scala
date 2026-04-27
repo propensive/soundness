@@ -57,11 +57,11 @@ package logFormats:
 
   given standard: [event: Communicable] => event is Inscribable in Text =
     (event, level, realm, timestamp) =>
-      t"${dateFormat.format(timestamp).nn} [$level] ${realm.name.fit(10)} > ${event.communicate}\n"
+      t"${dateFormat.format(timestamp).nn} [$level] ${realm.code.fit(10)} > ${event.communicate}\n"
 
   given untimestamped: [event: Communicable] => event is Inscribable in Text =
     (event, level, realm, timestamp) =>
-      t"[$level] ${realm.name.fit(10)} > ${event.communicate}\n"
+      t"[$level] ${realm.code.fit(10)} > ${event.communicate}\n"
 
   given lightweight: [event: Communicable] => event is Inscribable in Text =
     (event, level, realm, timestamp) =>

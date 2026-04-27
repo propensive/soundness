@@ -34,4 +34,4 @@ package anticipation
 
 import language.experimental.into
 
-case class Realm(name: Text)
+case class Realm(code: Text)
