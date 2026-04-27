@@ -11,5 +11,6 @@ identifier of the form `SN-xx/d` or `SN-xx/d.e`, where:
 The rendered prefix appears in compile output as `[↯SN-xx/d.e]`,
 coloured if the compiler's `-color` setting is on.
 
-Each error is documented in a markdown file at
-`<xx>/<d>.md` (or `<xx>/<d>.<e>.md` for variant errors).
+Each error is documented in a markdown file at `<xx>/<d>.md`. When
+an error has variants, every `SN-xx/d.e` is documented as a
+sub-section of the same `<xx>/<d>.md` file.
