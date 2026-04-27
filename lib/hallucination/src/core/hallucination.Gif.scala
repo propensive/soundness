@@ -35,11 +35,11 @@ package hallucination
 import anticipation.*
 import gesticulate.*
 
-sealed trait Gif
-
 object Gif:
   def apply(): Rasterizable = rasterization
 
   given rasterization: Gif is Rasterizable:
     def name: Text = "GIF".tt
     def mediaType = media"image/gif"
+
+sealed trait Gif

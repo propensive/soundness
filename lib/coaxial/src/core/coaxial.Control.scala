@@ -35,22 +35,8 @@ package coaxial
 import anticipation.*
 import vacuous.*
 
-sealed trait Control[+state]
-
 object Control:
   sealed trait Interactive
-
-  case class Conclude[+state](message: Data, state: Optional[state])
-  extends Control[state]
-
-  case object Terminate extends Control[Nothing]
-
-  case class Continue[+state](state: Optional[state] = Unset)
-  extends Control[state], Interactive
-
-  case class Reply[+state](message: Data, state: Optional[state])
-  extends Control[state], Interactive
-
 
   object Conclude:
     def apply[transmissible: Transmissible, state]
@@ -59,9 +45,23 @@ object Control:
 
       Conclude(transmissible.serialize(message), state)
 
+  case object Terminate extends Control[Nothing]
+
+  case class Continue[+state](state: Optional[state] = Unset)
+  extends Control[state], Interactive
+
   object Reply:
     def apply[transmissible: Transmissible, state]
       ( message: transmissible, state: Optional[state] = Unset )
     :   Reply[state] =
 
       Reply(transmissible.serialize(message), state)
+
+  case class Conclude[+state](message: Data, state: Optional[state])
+  extends Control[state]
+
+  case class Reply[+state](message: Data, state: Optional[state])
+  extends Control[state], Interactive
+
+
+sealed trait Control[+state]

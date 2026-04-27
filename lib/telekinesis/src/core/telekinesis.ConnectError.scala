@@ -35,18 +35,8 @@ package telekinesis
 import fulminate.*
 
 object ConnectError:
-  enum Reason(val number: Int) extends Clarification:
-    case Dns                   extends Reason(1)
-    case Refused               extends Reason(2)
-    case Ssl(reason: Ssl.Reason) extends Reason(3)
-    case Timeout               extends Reason(4)
-    case Unknown               extends Reason(5)
-
   object Reason:
     object Ssl:
-      enum Reason:
-        case Handshake, Key, Peer, Protocol
-
       object Reason:
         given communicable: Reason is Communicable =
           case Handshake =>
@@ -61,12 +51,22 @@ object ConnectError:
           case Protocol =>
             m"the local or remote implementation of the SSL protocol did not behave as expected"
 
+      enum Reason:
+        case Handshake, Key, Peer, Protocol
+
     given communicable: Reason is Communicable =
       case Dns         => m"the server address could not be resolved by DNS"
       case Refused     => m"the connection was refused"
       case Ssl(reason) => m"the SSL/TLS layer could not be established because $reason"
       case Timeout     => m"the server did not respond within the time limit"
       case Unknown     => m"an unrecognized error occurred"
+
+  enum Reason(val number: Int) extends Clarification:
+    case Dns                   extends Reason(1)
+    case Refused               extends Reason(2)
+    case Ssl(reason: Ssl.Reason) extends Reason(3)
+    case Timeout               extends Reason(4)
+    case Unknown               extends Reason(5)
 
 case class ConnectError(reason: ConnectError.Reason)(using Diagnostics)
 extends Error(realm"te", 2, reason.number)(m"the TCP connection failed because $reason")

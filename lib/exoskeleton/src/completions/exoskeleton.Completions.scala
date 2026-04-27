@@ -74,19 +74,6 @@ object Completions:
     . count
     . z
 
-  enum Installation:
-    case CommandNotOnPath(script: Text)
-    case Shells
-      ( zsh:        Installation.InstallResult,
-        bash:       Installation.InstallResult,
-        fish:       Installation.InstallResult,
-        powershell: Installation.InstallResult )
-
-    def paths: List[Text] =
-      this match
-        case CommandNotOnPath(_)              => Nil
-        case Shells(zsh, bash, fish, pwsh)    => List(zsh, bash, fish, pwsh).map(_.pathname).compact
-
   object Installation:
     given communicable: Installation is Communicable =
       case CommandNotOnPath(script) =>
@@ -276,6 +263,19 @@ object Completions:
           |    }
           |}
           |""".s.stripMargin.tt
+
+  enum Installation:
+    case CommandNotOnPath(script: Text)
+    case Shells
+      ( zsh:        Installation.InstallResult,
+        bash:       Installation.InstallResult,
+        fish:       Installation.InstallResult,
+        powershell: Installation.InstallResult )
+
+    def paths: List[Text] =
+      this match
+        case CommandNotOnPath(_)              => Nil
+        case Shells(zsh, bash, fish, pwsh)    => List(zsh, bash, fish, pwsh).map(_.pathname).compact
 
 object CliEvent:
   given execEvent: CliEvent transcribes ExecEvent = CliEvent.Exec(_)

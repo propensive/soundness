@@ -35,11 +35,11 @@ package hallucination
 import anticipation.*
 import gesticulate.*
 
-sealed trait Bmp
-
 object Bmp:
   def apply(): Rasterizable = rasterization
 
   given rasterization: Bmp is Rasterizable:
     def name: Text = "BMP".tt
     def mediaType = media"image/bmp"
+
+sealed trait Bmp

@@ -47,6 +47,21 @@ import vacuous.*
 import wisteria.*
 
 object Decomposable extends Decomposable2:
+  object Base:
+    given text: Text is Base =
+      value => Decomposition.Primitive(t"Text", value, value)
+
+    given int: Int is Base =
+      value => Decomposition.Primitive(t"Int", value.show, value)
+
+    given string: String is Base =
+      value => Decomposition.Primitive("String", value, value)
+
+    given compileError: CompileError is Base =
+      value => Decomposition.Primitive("CompileError", value.toString.tt, value)
+
+    given decomposition: Decomposition is Base = identity(_)
+
   trait Base extends Decomposable:
     def decomposition(value: Self): Decomposition
 
@@ -75,21 +90,6 @@ object Decomposable extends Decomposable2:
       Decomposition.Sequence
         ( t"IArray", iarray.map(decomposable.decomposition(_)).to(List), iarray )
 
-
-  object Base:
-    given text: Text is Base =
-      value => Decomposition.Primitive(t"Text", value, value)
-
-    given int: Int is Base =
-      value => Decomposition.Primitive(t"Int", value.show, value)
-
-    given string: String is Base =
-      value => Decomposition.Primitive("String", value, value)
-
-    given compileError: CompileError is Base =
-      value => Decomposition.Primitive("CompileError", value.toString.tt, value)
-
-    given decomposition: Decomposition is Base = identity(_)
 
 trait Decomposable extends Typeclass:
   def decomposition(value: Self): Decomposition

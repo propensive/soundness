@@ -39,16 +39,16 @@ import anticipation.*
 import fulminate.*
 
 object JsonError:
-  enum Reason(val number: Int) extends Clarification:
-    case OutOfRange extends Reason(1)
-    case NotType(found: JsonPrimitive, primitive: JsonPrimitive) extends Reason(2)
-    case Absent     extends Reason(3)
-
   object Reason:
     given communicable: Reason is Communicable =
       case OutOfRange                => m"the array index is out of range"
       case NotType(found, primitive) => m"the JSON value had type $found instead of $primitive"
       case Absent                    => m"the JSON value was not present"
+
+  enum Reason(val number: Int) extends Clarification:
+    case OutOfRange extends Reason(1)
+    case NotType(found: JsonPrimitive, primitive: JsonPrimitive) extends Reason(2)
+    case Absent     extends Reason(3)
 
 case class JsonError(reason: JsonError.Reason)(using Diagnostics)
 extends Error(realm"ja", 1, reason.number)(m"could not access the value because $reason")

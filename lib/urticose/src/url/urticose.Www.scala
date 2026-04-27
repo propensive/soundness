@@ -37,8 +37,6 @@ import gossamer.*
 import prepositional.*
 import serpentine.*
 
-sealed trait Www
-
 object Www:
   given submissible: (%.type is Submissible on Www) = void => ()
   given admissible: [text <: Text] => (text is Admissible on Www) = void => ()
@@ -61,3 +59,5 @@ object Www:
 
     override def escape(part: Text): Text = part.urlEncode
     override def unescape(part: Text): Text = part.urlDecode
+
+sealed trait Www

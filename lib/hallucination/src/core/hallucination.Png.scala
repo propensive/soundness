@@ -35,11 +35,11 @@ package hallucination
 import anticipation.*
 import gesticulate.*
 
-sealed trait Png
-
 object Png:
   def apply(): Rasterizable = rasterization
 
   given rasterization: Png is Rasterizable:
     def name: Text = "PNG".tt
     def mediaType = media"image/png"
+
+sealed trait Png

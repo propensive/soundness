@@ -38,27 +38,6 @@ import anticipation.*
 import gossamer.*
 import proscenium.*
 
-sealed trait Selector(val value: Text):
-  inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): CssRule =
-    ${cataclysm.internal.rule('this, 'properties)}
-
-  def normalize: Selector
-
-  @targetName("or")
-  infix def | (that: Selector): Selector = Selector.Or(this, that)
-
-  @targetName("descendant")
-  infix def >> (that: Selector): Selector = Selector.Descendant(this, that)
-
-  @targetName("after")
-  infix def + (that: Selector): Selector = Selector.After(this, that)
-
-  @targetName("and")
-  infix def & (that: Selector): Selector = Selector.And(this, that)
-
-  @targetName("before")
-  infix def ~ (that: Selector): Selector = Selector.Before(this, that)
-
 object Selector:
   // given childSelector: [selector: Selectable, selector2: Selectable]
   //     => CompareGreater[selector, selector2, Selector]:
@@ -131,3 +110,24 @@ object Selector:
         right.normalize match
           case Or(a, b) => Or(Child(left, a).normalize, Child(left, b).normalize)
           case right    => Child(left, right)
+
+sealed trait Selector(val value: Text):
+  inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): CssRule =
+    ${cataclysm.internal.rule('this, 'properties)}
+
+  def normalize: Selector
+
+  @targetName("or")
+  infix def | (that: Selector): Selector = Selector.Or(this, that)
+
+  @targetName("descendant")
+  infix def >> (that: Selector): Selector = Selector.Descendant(this, that)
+
+  @targetName("after")
+  infix def + (that: Selector): Selector = Selector.After(this, that)
+
+  @targetName("and")
+  infix def & (that: Selector): Selector = Selector.And(this, that)
+
+  @targetName("before")
+  infix def ~ (that: Selector): Selector = Selector.Before(this, that)

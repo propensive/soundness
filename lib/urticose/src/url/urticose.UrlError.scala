@@ -47,9 +47,6 @@ object UrlError:
     case BadHostname(hostname: Text, reason: HostnameError.Reason) extends Reason(2)
     case BadIpv6(reason: IpAddressError.Reason)                    extends Reason(3)
 
-  enum Expectation:
-    case Colon, More, LowerCaseLetter, PortRange, Number
-
   object Expectation:
     given communicable: Expectation is Communicable =
       case Colon           => m"a colon"
@@ -57,6 +54,9 @@ object UrlError:
       case LowerCaseLetter => m"a lowercase letter"
       case PortRange       => m"a port range"
       case Number          => m"a number"
+
+  enum Expectation:
+    case Colon, More, LowerCaseLetter, PortRange, Number
 
 case class UrlError(text: Text, offset: Ordinal, reason: UrlError.Reason)(using Diagnostics)
 extends Error(realm"ur", 7, reason.number)
