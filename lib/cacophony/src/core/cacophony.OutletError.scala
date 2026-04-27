@@ -30,9 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package cacophony
 
-export cacophony
-. { Audio, Audible, AudioError, Wave, Aiff, Aifc, Au, Snd, ChannelLayout, Monaural, Stereo,
-    Surround, Encoding, Configuration, Feed, FeedError, Recording, Outlet, OutletError,
-    Playback }
+import anticipation.*
+import fulminate.*
+
+object OutletError:
+  enum Reason(val number: Int) extends Clarification:
+    case Unavailable              extends Reason(1)
+    case UnsupportedConfiguration extends Reason(2)
+    case Closed                   extends Reason(3)
+
+  given Reason is Communicable =
+    case Reason.Unavailable              => m"the audio line could not be opened"
+    case Reason.UnsupportedConfiguration => m"the requested configuration is not supported"
+    case Reason.Closed                   => m"the playback has already been stopped"
+
+case class OutletError(outlet: Text, reason: OutletError.Reason)(using Diagnostics)
+extends Error(realm"ca", 2, reason.number)(m"could not play to outlet $outlet because $reason")
