@@ -581,7 +581,7 @@ object internal extends protointernal:
 
           case Margin =>
             val text: Text = reader.get()
-            val trimmed = if text.s.last == '\n' then text.skip(1, Rtl) else text
+            val trimmed = if text.ends(t"\n") then text.skip(1, Rtl) else text
             CodlToken.Item(trimmed, reader.start()(0), reader.start()(1), true)
 
           case Word | Pending(_) =>
