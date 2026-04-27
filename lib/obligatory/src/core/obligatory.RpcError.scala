@@ -34,4 +34,5 @@ package obligatory
 
 import fulminate.*
 
-case class RpcError()(using Diagnostics) extends Error(m"the remote procedure call failed")
+case class RpcError()(using Diagnostics)
+extends Error(realm"ob", 3, 0)(m"the remote procedure call failed")

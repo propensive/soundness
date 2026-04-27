@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class UuidError(badUuid: Text)(using Diagnostics)
-extends Error(m"$badUuid is not a valid UUID")
+extends Error(realm"in", 1, 0)(m"$badUuid is not a valid UUID")

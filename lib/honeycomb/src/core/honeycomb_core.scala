@@ -44,7 +44,7 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-private given realm: Realm = realm"honeycomb"
+private given realm: Realm = realm"hc"
 
 extension [renderable: Renderable](value: renderable)
   def html: Html of renderable.Form = renderable.render(value)

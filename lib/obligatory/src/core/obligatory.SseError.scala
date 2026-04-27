@@ -34,4 +34,5 @@ package obligatory
 
 import fulminate.*
 
-case class SseError()(using Diagnostics) extends Error(m"the server-sent event was not valid")
+case class SseError()(using Diagnostics)
+extends Error(realm"ob", 1, 0)(m"the server-sent event was not valid")

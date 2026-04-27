@@ -100,7 +100,7 @@ object protointernal:
         '{$checks; $name.asInstanceOf[Name[system]]}
 
       case None =>
-        halt(m"Couldn't find a `Nominative` instance on ${TypeRepr.of[system].show}")
+        halt(2, m"Couldn't find a `Nominative` instance on ${TypeRepr.of[system].show}")
 
 
   def parse2[plane: Type, name <: String: Type](scrutinee: Expr[Name[plane]])
@@ -118,7 +118,7 @@ object protointernal:
   def companion[companion: Typeable](using Quotes)(symbol: quotes.reflect.Symbol): companion =
     Class.forName(s"${symbol.companionModule.fullName}$$").nn.getField("MODULE$").nn.get(null) match
       case module: `companion` => module
-      case _                   => halt(m"The companion object did not have the expected type.")
+      case _                   => halt(3, m"The companion object did not have the expected type.")
 
   def parse[plane: Type, name <: String: Type]: Macro[Name[plane]] =
     import quotes.reflect.*
@@ -139,16 +139,16 @@ object protointernal:
             case AppliedType(_, List(param)) =>
               param.asMatchable match
                 case ConstantType(StringConstant(text)) => text.tt
-                case _                                  => halt(m"Bad type")
+                case _                                  => halt(4, m"Bad type")
 
             case _ =>
-              halt(m"Bad type")
+              halt(4, m"Bad type")
           val rule = companion[Rule](repr.typeSymbol)
           if !rule.check(name, text)
-          then halt(m"the name is not valid because it ${rule.describe(text)}")
+          then halt(5, m"the name is not valid because it ${rule.describe(text)}")
 
       case _ =>
-        halt(m"Could not access constraint")
+        halt(6, m"Could not access constraint")
 
 
     '{${Expr(name)}.asInstanceOf[Name[plane]]}

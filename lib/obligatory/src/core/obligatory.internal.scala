@@ -52,7 +52,7 @@ import vacuous.*
 
 
 object internal:
-  given Realm = realm"obligatory"
+  given Realm = realm"ob"
 
   def dispatcher[interface: Type](target: Expr[interface]): Macro[Json => Optional[Json]] =
     import quotes.reflect.*
@@ -137,7 +137,7 @@ object internal:
                       CaseDef(Wildcard(), None, '{abort(JsonRpcError())(using $tactic)}.asTerm)
 
                     case None =>
-                      halt(m"could not find a contextual `Tactic[JsonRpcError]` instance")
+                      halt(5, m"could not find a contextual `Tactic[JsonRpcError]` instance")
 
                   Match('method.asTerm, cases :+ wildcard).asExprOf[Optional[Json]]
                 }
@@ -247,12 +247,12 @@ object internal:
                             found
                           """
 
-                case _ => halt(m"a contextual `Online` instance is required")
-              case _ => halt(m"a contextual `Codicil` instance is required")
-            case _ => halt(m"a contextual `Monitor` instance is required")
+                case _ => halt(6, m"a contextual `Online` instance is required")
+              case _ => halt(7, m"a contextual `Codicil` instance is required")
+            case _ => halt(8, m"a contextual `Monitor` instance is required")
 
         case _ =>
-          halt(m"the method ${method.name} must have exactly one parameter list")
+          halt(9, m"the method ${method.name} must have exactly one parameter list")
       })
 
     val modDef = ClassDef.module(module, parents, body = defDefs)
@@ -351,7 +351,7 @@ object internal:
                   """
 
         case _ =>
-          halt(m"the method ${method.name} must have exactly one parameter list")
+          halt(9, m"the method ${method.name} must have exactly one parameter list")
       })
 
     val modDef = ClassDef.module(module, parents, body = defDefs)

@@ -46,7 +46,7 @@ import proscenium.*
 import vacuous.*
 
 object internal:
-  private given realm: Realm = realm"kaleidoscope"
+  private given realm: Realm = realm"kd"
 
   def glob(context: Expr[StringContext]): Macro[Any] =
     val parts = context.value.get.parts.map(Text(_)).map(Glob.parse(_).regex.s).to(List)
@@ -79,7 +79,7 @@ object internal:
 
     try Pattern.compile(parts.mkString) catch case exception: PatternSyntaxException =>
       import errorDiagnostics.empty
-      halt(RegexError(exception.getIndex, RegexError.Reason.InvalidPattern).message)
+      halt(RegexError(exception.getIndex, RegexError.Reason.InvalidPattern).labelled)
 
     if types.length == 0 then '{NoExtraction(${Expr(parts.head)})}
     else tupleType.asType.runtimeChecked match

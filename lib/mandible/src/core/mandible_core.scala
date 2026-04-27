@@ -87,4 +87,4 @@ type BytecodePalette = Palette:
   def outline: Color in Srgb
 
 case class ClassfileError()(using Diagnostics)
-extends Error(m"there was an error reading the classfile")
+extends Error(realm"ma", 1, 0)(m"there was an error reading the classfile")

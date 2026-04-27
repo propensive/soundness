@@ -36,4 +36,4 @@ import fulminate.*
 import proscenium.*
 
 case class JsonRpcError()(using Diagnostics)
-extends Error(m"an error occurred during a JSON-RPC operation")
+extends Error(realm"ob", 4, 0)(m"an error occurred during a JSON-RPC operation")

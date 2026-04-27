@@ -49,13 +49,13 @@ object internal:
 
     import quotes.reflect.*
 
-    given Realm = realm"mandible"
+    given Realm = realm"ma"
 
     val name = block.asTerm match
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, name)))), _)) => name
 
       case _ =>
-        halt(m"this type of lambda is not supported")
+        halt(2, m"this type of lambda is not supported")
 
     val classname: Text =
       TypeRepr.of[target].classSymbol.get.fullName.sub(t".", t"/").nn+t".class"

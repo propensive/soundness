@@ -34,4 +34,5 @@ package legerdemain
 
 import fulminate.*
 
-case class QueryError()(using Diagnostics) extends Error(m"the query parameter could not be read")
+case class QueryError()(using Diagnostics)
+extends Error(realm"le", 1, 0)(m"the query parameter could not be read")
