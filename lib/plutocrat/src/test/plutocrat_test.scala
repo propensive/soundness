@@ -173,16 +173,16 @@ object Tests extends Suite(m"Plutocrat tests"):
 
       test(m"Compiletime ISIN length error"):
         demilitarize(isin"GB00BH4HKS3").map(_.message)
-      . assert(_ == List(t"plutocrat: the ISIN number is not valid because it had length 11, but it should be 12 characters long"))
+      . assert(_ == List(t"[↯SN-pl/1.3] the ISIN number is not valid because it had length 11, but it should be 12 characters long"))
 
       test(m"Compiletime ISIN bad country code"):
         demilitarize(isin"5500BH4HKS30").map(_.message)
-      . assert(_ == List(t"plutocrat: the ISIN number is not valid because its country code 55 was not valid"))
+      . assert(_ == List(t"[↯SN-pl/1.2] the ISIN number is not valid because its country code 55 was not valid"))
 
       test(m"Compiletime ISIN invalid character"):
         demilitarize(isin"US00Bx4HKS30").map(_.message)
-      . assert(_ == List(t"plutocrat: the ISIN number is not valid because the character x at position 5 is not a digit or uppercase letter"))
+      . assert(_ == List(t"[↯SN-pl/1.1] the ISIN number is not valid because the character x at position 5 is not a digit or uppercase letter"))
 
       test(m"Compiletime ISIN Luhn check failure"):
         demilitarize(isin"GB00BH4HKS34").map(_.message)
-      . assert(_ == List(t"plutocrat: the ISIN number is not valid because its last digit failed the Luhn check"))
+      . assert(_ == List(t"[↯SN-pl/1.4] the ISIN number is not valid because its last digit failed the Luhn check"))

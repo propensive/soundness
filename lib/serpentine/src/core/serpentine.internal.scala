@@ -45,6 +45,8 @@ import proscenium.*
 import vacuous.*
 
 object internal:
+  private given realm: Realm = realm"se"
+
   def path(context: Expr[StringContext]): Macro[Path] =
     val name: String = context.valueOrAbort.parts.head
     safely(name.tt.decode[Path on Posix]).let: path =>
@@ -55,7 +57,7 @@ object internal:
           val varargs = Expr.ofList(path.descent.map(Expr(_)))
           '{Path[Windows, Drive, Tuple](${Expr(path.root)}, $varargs)}
 
-        . or(halt(m"The path ${name} is not a valid Windows or POSIX path"))
+        . or(halt(2, m"The path ${name} is not a valid Windows or POSIX path"))
 
   private def plane[path <: Path: Type](using Quotes): Optional[quotes.reflect.Symbol] =
     import quotes.reflect.*
