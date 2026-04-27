@@ -32,7 +32,33 @@
                                                                                                   */
 package savagery
 
+import scala.collection.immutable.SeqMap
+
 import anticipation.*
 import cardinality.*
+import gossamer.*
+import proscenium.*
+import spectacular.*
+import xylophone.*
 
-case class Stop[color: Chromatic](offset: 0.0 ~ 1.0, color: color)
+import decimalFormatters.java
+
+object Stop:
+  private[savagery] def hex2(n: Int): Text =
+    val hex = Integer.toHexString(n & 0xff).nn
+    if hex.length == 1 then t"0${hex.tt}" else hex.tt
+
+case class Stop[color]
+    (offset: 0.0 ~ 1.0, color: color)
+    (using val chromatic: color is Chromatic):
+
+  def xml: Xml =
+    val red = chromatic.red(color)
+    val green = chromatic.green(color)
+    val blue = chromatic.blue(color)
+    val hex = t"#${Stop.hex2(red)}${Stop.hex2(green)}${Stop.hex2(blue)}"
+
+    Element
+     (t"stop",
+      SeqMap(t"offset" -> offset.double.show, t"stop-color" -> hex),
+      IArray())

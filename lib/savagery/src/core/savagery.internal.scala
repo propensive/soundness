@@ -41,6 +41,8 @@ object internal:
   object SvgId:
     def apply(id: Text): SvgId = id
 
+    extension (id: SvgId) def text: Text = id
+
 
   extension (point: Point)
     @targetName("plus")

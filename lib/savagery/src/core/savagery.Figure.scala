@@ -32,61 +32,72 @@
                                                                                                   */
 package savagery
 
+import scala.collection.immutable.SeqMap
+
 import anticipation.*
 import cataclysm.{Float as _, *}
-import contingency.*
 import geodesy.*
 import gossamer.*
+import prepositional.*
+import proscenium.*
 import spectacular.*
 import vacuous.*
 import xylophone.*
 
 sealed trait Figure:
-  val transforms: List[Transform] = Nil
+  def xml: Xml
 
 case class Rectangle(position: Point, width: Float, height: Float) extends Figure:
-  def xml: Xml = unsafely:
+  def xml: Xml =
     given showable: Float is Showable = _.toString.tt
     x"<rect x=${position.x.show} y=${position.y.show} width=${width.show} height=${height.show}/>"
 
 case class Outline
-  ( ops:       List[Stroke]       = Nil,
-    style:     Optional[CssStyle] = Unset,
-    id:        Optional[SvgId]    = Unset,
-    transform: List[Transform]    = Nil )
+    ( ops:        List[Stroke]       = Nil,
+      style:      Optional[CssStyle] = Unset,
+      id:         Optional[SvgId]    = Unset,
+      transforms: List[Transform]    = Nil )
 extends Figure:
   import Stroke.*
 
   def xml: Xml =
     val d: Text = ops.reverse.map(_.encode).join(t" ")
-    x"<path d=$d/>"
+    val attrs = SeqMap.newBuilder[Text, Text]
+    attrs += t"d" -> d
+    id.let { svgId => attrs += t"id" -> svgId.text }
 
-  def moveTo(point: Point): Outline = Outline(Move(point) :: ops)
-  def lineTo(point: Point): Outline = Outline(Draw(point) :: ops)
-  def move(vector: Shift): Outline = Outline(Move(vector) :: ops)
-  def line(vector: Shift): Outline = Outline(Draw(vector) :: ops)
+    if transforms.nonEmpty
+    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+
+    style.let { css => attrs += t"style" -> css.properties.map(_.text).join(t";") }
+    Element(t"path", attrs.result(), IArray())
+
+  def moveTo(point: Point): Outline = copy(ops = Move(point) :: ops)
+  def lineTo(point: Point): Outline = copy(ops = Draw(point) :: ops)
+  def move(vector: Shift): Outline = copy(ops = Move(vector) :: ops)
+  def line(vector: Shift): Outline = copy(ops = Draw(vector) :: ops)
 
   def curve(ctrl1: Shift, ctrl2: Shift, point: Shift): Outline =
-    Outline(Cubic(ctrl1, ctrl2, point) :: ops)
+    copy(ops = Cubic(ctrl1, ctrl2, point) :: ops)
 
   def curveTo(ctrl1: Point, ctrl2: Point, point: Point): Outline =
-    Outline(Cubic(ctrl1, ctrl2, point) :: ops)
+    copy(ops = Cubic(ctrl1, ctrl2, point) :: ops)
 
-  def curve(ctrl2: Shift, vector: Shift): Outline = Outline(Cubic(Unset, ctrl2, vector) :: ops)
-  def curveTo(ctrl2: Point, point: Point): Outline = Outline(Cubic(Unset, ctrl2, point) :: ops)
-  def quadCurve(ctrl1: Shift, vector: Shift): Outline = Outline(Quadratic(ctrl1, vector) :: ops)
-  def quadCurveTo(ctrl1: Point, point: Point): Outline = Outline(Quadratic(ctrl1, point) :: ops)
-  def quadCurve(vector: Shift): Outline = Outline(Quadratic(Unset, vector) :: ops)
-  def quadCurveTo(point: Point): Outline = Outline(Quadratic(Unset, point) :: ops)
-  def moveUp(value: Float): Outline = Outline(Move(Shift(value, 0.0)) :: ops)
-  def moveDown(value: Float): Outline = Outline(Move(Shift(-value, 0.0)) :: ops)
-  def moveLeft(value: Float): Outline = Outline(Move(Shift(0.0, -value)) :: ops)
-  def moveRight(value: Float): Outline = Outline(Move(Shift(0.0, value)) :: ops)
-  def lineUp(value: Float): Outline = Outline(Draw(Shift(value, 0.0)) :: ops)
-  def lineDown(value: Float): Outline = Outline(Draw(Shift(-value, 0.0)) :: ops)
-  def lineLeft(value: Float): Outline = Outline(Draw(Shift(0.0, -value)) :: ops)
-  def lineRight(value: Float): Outline = Outline(Draw(Shift(0.0, value)) :: ops)
-  def closed: Outline = Outline(Close :: ops)
+  def curve(ctrl2: Shift, vector: Shift): Outline = copy(ops = Cubic(Unset, ctrl2, vector) :: ops)
+  def curveTo(ctrl2: Point, point: Point): Outline = copy(ops = Cubic(Unset, ctrl2, point) :: ops)
+  def quadCurve(ctrl1: Shift, vector: Shift): Outline = copy(ops = Quadratic(ctrl1, vector) :: ops)
+  def quadCurveTo(ctrl1: Point, point: Point): Outline = copy(ops = Quadratic(ctrl1, point) :: ops)
+  def quadCurve(vector: Shift): Outline = copy(ops = Quadratic(Unset, vector) :: ops)
+  def quadCurveTo(point: Point): Outline = copy(ops = Quadratic(Unset, point) :: ops)
+  def moveUp(value: Float): Outline = copy(ops = Move(Shift(value, 0.0)) :: ops)
+  def moveDown(value: Float): Outline = copy(ops = Move(Shift(-value, 0.0)) :: ops)
+  def moveLeft(value: Float): Outline = copy(ops = Move(Shift(0.0, -value)) :: ops)
+  def moveRight(value: Float): Outline = copy(ops = Move(Shift(0.0, value)) :: ops)
+  def lineUp(value: Float): Outline = copy(ops = Draw(Shift(value, 0.0)) :: ops)
+  def lineDown(value: Float): Outline = copy(ops = Draw(Shift(-value, 0.0)) :: ops)
+  def lineLeft(value: Float): Outline = copy(ops = Draw(Shift(0.0, -value)) :: ops)
+  def lineRight(value: Float): Outline = copy(ops = Draw(Shift(0.0, value)) :: ops)
+  def closed: Outline = copy(ops = Close :: ops)
 
 case class Ellipse(center: Point, xRadius: Float, yRadius: Float, angle: Angle) extends Figure:
   def circle: Boolean = xRadius == yRadius
