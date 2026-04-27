@@ -37,7 +37,7 @@ import prepositional.*
 
 object Spectrum:
   def apply[color <: Color: Perceptual in Srgb](colors0: List[Color in color])
-  :     Spectrum in color =
+  :   Spectrum in color =
 
     var colors = colors0.to(Set)
 

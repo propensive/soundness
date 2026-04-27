@@ -126,10 +126,6 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("def f( a: Int ): Int = a\n")
       . assert(_.contains("12"))
 
-      test(m"Line comment without space after // is rejected"):
-        rules("val x = 1 //foo\n")
-      . assert(_.contains("13"))
-
       test(m"Block comment outside license header is rejected"):
         rules("/* hello */\nval x = 1\n")
       . assert(_.contains("14.1"))

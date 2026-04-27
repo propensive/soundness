@@ -32,13 +32,14 @@
                                                                                                   */
 package soundness
 
-export hypotenuse
-. { CheckOverflow, Commensurable, DivisionByZero, DivisionError, Orderable, OverflowError, B8, B16,
-    B32, B64, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64, abs, ceiling, floor, exponent,
-    increment, decrement, round, scalb, signum, ulp, bits, rawBits, finite, infinite, nan, **,
-    mantissa, long, int, short, octal, hex, base32, binary, %%, /-, apply, erf, π, pi, euler, φ,
-    goldenRatio, cos, acos, cosh, sin, asin, sinh, tan, atan, hyp, exp, expm1, ln, log10, log1p, <,
-    <=, >, >=, bin, lcm, gcd, successor, predecessor }
+export
+  hypotenuse
+  . { %%, **, /-, <, <=, >, >=, abs, acos, apply, asin, atan, B16, B32, B64, B8, base32, bin,
+      binary, bits, ceiling, CheckOverflow, Commensurable, cos, cosh, decrement, DivisionByZero,
+      DivisionError, erf, euler, exp, expm1, exponent, F32, F64, finite, floor, gcd, goldenRatio,
+      hex, hyp, increment, infinite, int, lcm, ln, log10, log1p, long, mantissa, nan, octal,
+      Orderable, OverflowError, pi, predecessor, rawBits, round, S16, S32, S64, S8, scalb, short,
+      signum, sin, sinh, successor, tan, U16, U32, U64, U8, ulp, π, φ }
 
 package arithmeticOptions:
   export hypotenuse.arithmeticOptions.{division, overflow}

@@ -170,12 +170,17 @@ object Tokenizer:
     var i = start + (if triple then 3 else 1)
     var done = false
     while i < text.length && text.charAt(i) != '\n' && !done do
-      if triple
-        && i + 2 < text.length && text.charAt(i) == '"'
-        && text.charAt(i + 1) == '"' && text.charAt(i + 2) == '"'
-      then
-        i += 3
-        done = true
+      if triple && text.charAt(i) == '"' then
+        // Per the Scala spec, a triple-quoted string is closed by the LAST
+        // run of three or more consecutive `"`. Count the run, and if it has
+        // length >= 3 treat the final three as the closer (any preceding `"`s
+        // become part of the string content).
+        var qcount = 0
+        while i + qcount < text.length && text.charAt(i + qcount) == '"' do qcount += 1
+        if qcount >= 3 then
+          i += qcount
+          done = true
+        else i += qcount
       else if !triple && text.charAt(i) == quote then
         i += 1
         done = true

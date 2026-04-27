@@ -32,29 +32,33 @@
                                                                                                   */
 package soundness
 
-export monotonous
-. { Alphabet, Base32, Base64, Binary, Deserializable, Hex, Octal, Quaternary, Serializable,
-    Serialization, SerializationError, deserialize, serialize }
+export
+  monotonous
+  . { Alphabet, Base32, Base64, Binary, Deserializable, deserialize, Hex, Octal, Quaternary,
+      Serializable, Serialization, SerializationError, serialize }
 
 package alphabets:
   package binary:
     export monotonous.alphabets.binary.standard
 
   package quaternary:
-    export monotonous.alphabets.quaternary.{standard, dnaNucleotide}
+    export monotonous.alphabets.quaternary.{dnaNucleotide, standard}
 
   package octal:
     export monotonous.alphabets.octal.standard
 
   package hex:
-    export monotonous.alphabets.hex
-    . { strictUpperCase, strictLowerCase, upperCase, lowerCase, bioctal }
+    export
+      monotonous.alphabets.hex
+      . { bioctal, lowerCase, strictLowerCase, strictUpperCase, upperCase }
 
   package base32:
-    export monotonous.alphabets.base32
-    . { strictUpperCase, strictLowerCase, upperCase, lowerCase, extendedHexUpperCase,
-        extendedHexLowerCase, zBase32, zBase32Unpadded, geohash, wordSafe, crockford }
+    export
+      monotonous.alphabets.base32
+      . { crockford, extendedHexLowerCase, extendedHexUpperCase, geohash, lowerCase,
+          strictLowerCase, strictUpperCase, upperCase, wordSafe, zBase32, zBase32Unpadded }
 
   package base64:
-    export monotonous.alphabets.base64
-    . { standard, unpadded, url, xml, imap, yui, radix64, bcrypt, sasl, uuencoding }
+    export
+      monotonous.alphabets.base64
+      . { bcrypt, imap, radix64, sasl, standard, unpadded, url, uuencoding, xml, yui }

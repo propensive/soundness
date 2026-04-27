@@ -32,10 +32,11 @@
                                                                                                   */
 package soundness
 
-export urticose
-. { ip, mac, tcp, udp, via, internet, online, EmailAddress, EmailAddressError, Endpoint, Hostname,
-    HostnameError, Internet, IpAddressError, LocalPart, MacAddressError, OfflineError, Online, Port,
-    PortError, Connectable, serve, Service, UdpPort, TcpPort }
+export
+  urticose
+  . { Connectable, EmailAddress, EmailAddressError, Endpoint, Hostname, HostnameError, Internet,
+      internet, ip, IpAddressError, LocalPart, mac, MacAddressError, OfflineError, Online, online,
+      Port, PortError, serve, Service, tcp, TcpPort, udp, UdpPort, via }
 
 package internetAccess:
-  export urticose.internetAccess.{enabled, disabled}
+  export urticose.internetAccess.{disabled, enabled}

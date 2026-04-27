@@ -32,11 +32,13 @@
                                                                                                   */
 package soundness
 
-export revolution
-. { DecodableManifest, EncodableManifest, Manifest, ManifestAttribute, ManifestEntry, Semver, v }
+export
+  revolution
+  . { DecodableManifest, EncodableManifest, Manifest, ManifestAttribute, ManifestEntry, Semver, v }
 
 package manifestAttributes:
-  export revolution.manifestAttributes
-  . { ManifestVersion, MainClass, CreatedBy, ClassPath, ContentType, ExtensionList, ExtensionName,
-      ImplementationTitle, ImplementationVendor, ImplementationVersion, Sealed, SignatureVersion,
-      SpecificationTitle, SpecifacationVendor, SpecifacationVersion }
+  export
+    revolution.manifestAttributes
+    . { ClassPath, ContentType, CreatedBy, ExtensionList, ExtensionName, ImplementationTitle,
+        ImplementationVendor, ImplementationVersion, MainClass, ManifestVersion, Sealed,
+        SignatureVersion, SpecifacationVendor, SpecifacationVersion, SpecificationTitle }

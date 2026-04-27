@@ -35,8 +35,6 @@ package parasite
 import language.experimental.pureFunctions
 
 import java.lang as jl
-import java.util as ju
-import java.util.concurrent as juc
 import java.util.concurrent.atomic as juca
 import java.util.concurrent.locks as jucl
 
@@ -130,7 +128,7 @@ final case class Promise[value]():
       else state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
         case Incomplete(_) =>
           jucl.LockSupport.parkNanos(this, deadline - jl.System.nanoTime())
-                                recur()
+          recur()
 
         case Complete(value) =>
           value
@@ -151,7 +149,7 @@ final case class Promise[value]():
       then state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
         case Incomplete(_) =>
           jucl.LockSupport.parkNanos(this, deadline - jl.System.nanoTime())
-                              recur()
+          recur()
 
         case Cancelled =>
           ()

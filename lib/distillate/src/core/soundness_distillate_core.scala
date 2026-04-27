@@ -32,5 +32,6 @@
                                                                                                   */
 package soundness
 
-export distillate
-. { Decodable, decode, Enumerable, Identifiable, NumberError, As, Extractable, Irrefutable, as }
+export
+  distillate
+  . { As, as, Decodable, decode, Enumerable, Extractable, Identifiable, Irrefutable, NumberError }

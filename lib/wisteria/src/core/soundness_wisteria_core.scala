@@ -32,10 +32,11 @@
                                                                                                   */
 package soundness
 
-export wisteria
-. { FieldIndex, ContextRequirement, VariantIndex, VariantError, ProductDerivation, Derivation,
-    Reflection, ProductReflection, SumReflection, Derivable, ProductDerivable, arithmetic,
-    Discriminable, index, variant, label, contextual, dereference }
+export
+  wisteria
+  . { arithmetic, ContextRequirement, contextual, dereference, Derivable, Derivation, Discriminable,
+      FieldIndex, index, label, ProductDerivable, ProductDerivation, ProductReflection, Reflection,
+      SumReflection, variant, VariantError, VariantIndex }
 
 package derivationContext:
-  export wisteria.derivationContext.{required, relaxed}
+  export wisteria.derivationContext.{relaxed, required}

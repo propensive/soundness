@@ -32,10 +32,11 @@
                                                                                                   */
 package soundness
 
-export honeycomb
-. { Autocomplete, Attribute, Stylesheet, Capture, Crossorigin, DomId, Element, Comment, TextNode,
-    Fragment, Doctype, HDir, Attributive, HttpEquiv, Kind, Method, Node, h, Html,
-    Preload, Rel, Rev, Sandbox, Shape, Tag, Target, Wrap, html, Renderable }
+export
+  honeycomb
+  . { Attribute, Attributive, Autocomplete, Capture, Comment, Crossorigin, Doctype, DomId, Element,
+      Fragment, h, HDir, Html, html, HttpEquiv, Kind, Method, Node, Preload, Rel, Renderable, Rev,
+      Sandbox, Shape, Stylesheet, Tag, Target, TextNode, Wrap }
 
 package doms.html:
   export honeycomb.doms.html.whatwg

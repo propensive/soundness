@@ -32,19 +32,20 @@
                                                                                                   */
 package soundness
 
-export hieroglyph
-. { Encoding, encoder, CharDecoder, CharEncoder, TextSanitizer, CharDecodeError, CharEncodeError,
-    enc, Unicode, metrics, Measurable, Chars, superscript, subscript, ucs, description, majuscule,
-    minuscule, Nul, Bel, Ht, Lf, Ff, Cr, Esc, Sqt, Dqt, Bsl, Bs }
+export
+  hieroglyph
+  . { Bel, Bs, Bsl, CharDecodeError, CharDecoder, CharEncodeError, CharEncoder, Chars, Cr,
+      description, Dqt, enc, encoder, Encoding, Esc, Ff, Ht, Lf, majuscule, Measurable, metrics,
+      minuscule, Nul, Sqt, subscript, superscript, TextSanitizer, ucs, Unicode }
 
 package textSanitizers:
-  export hieroglyph.textSanitizers.{strict, skip, substitute}
+  export hieroglyph.textSanitizers.{skip, strict, substitute}
 
 package textMetrics:
   export hieroglyph.textMetrics.{eastAsianScripts, uniform}
 
 package charDecoders:
-  export hieroglyph.charDecoders.{utf8, utf16, utf16Le, utf16Be, ascii}
+  export hieroglyph.charDecoders.{ascii, utf16, utf16Be, utf16Le, utf8}
 
 package charEncoders:
-  export hieroglyph.charEncoders.{utf8, utf16, utf16Le, utf16Be, ascii}
+  export hieroglyph.charEncoders.{ascii, utf16, utf16Be, utf16Le, utf8}

@@ -327,20 +327,25 @@ class Report(using Environment)(using palette: TestPalette):
 
         val color = if pass then palette.pass else palette.fail
 
-        val text1 = if !pass then t"┳┳━━━┓ ┏┳━━━┳┓   ┳┳   ┳┳    "
-                    else t"┳┳━━━┳┓  ┏┳━━━┳┓  ┏┳━━━┓  ┏┳━━━┓"
+        val text1 =
+          if !pass then t"┳┳━━━┓ ┏┳━━━┳┓   ┳┳   ┳┳    "
+          else t"┳┳━━━┳┓  ┏┳━━━┳┓  ┏┳━━━┓  ┏┳━━━┓"
 
-        val text2 = if !pass then t"┃┃     ┃┃   ┃┃   ┃┃   ┃┃    "
-                    else t"┃┃   ┃┃  ┃┃   ┃┃  ┃┃      ┃┃    "
+        val text2 =
+          if !pass then t"┃┃     ┃┃   ┃┃   ┃┃   ┃┃    "
+          else t"┃┃   ┃┃  ┃┃   ┃┃  ┃┃      ┃┃    "
 
-        val text3 = if !pass then t"┃┣━━   ┃┣━━━┫┃   ┃┃   ┃┃    "
-                    else t"┃┣━━━┻┛  ┃┣━━━┫┃  ┗┻━━┳┓  ┗┻━━┳┓"
+        val text3 =
+          if !pass then t"┃┣━━   ┃┣━━━┫┃   ┃┃   ┃┃    "
+          else t"┃┣━━━┻┛  ┃┣━━━┫┃  ┗┻━━┳┓  ┗┻━━┳┓"
 
-        val text4 = if !pass then t"┃┃     ┃┃   ┃┃   ┃┃   ┃┃    "
-                    else t"┃┃       ┃┃   ┃┃      ┃┃      ┃┃"
+        val text4 =
+          if !pass then t"┃┃     ┃┃   ┃┃   ┃┃   ┃┃    "
+          else t"┃┃       ┃┃   ┃┃      ┃┃      ┃┃"
 
-        val text5 = if !pass then t"┻┻     ┻┻   ┻┻   ┻┻   ┻┻━━━┛"
-                    else t"┻┻       ┻┻   ┻┻  ┗━━━┻┛  ┗━━━┻┛"
+        val text5 =
+          if !pass then t"┻┻     ┻┻   ┻┻   ┻┻   ┻┻━━━┛"
+          else t"┻┻       ┻┻   ┻┻  ┗━━━┻┛  ┗━━━┻┛"
 
         val width = if pass then 38 else 34
         if !pass || !tabulation then
@@ -387,7 +392,7 @@ class Report(using Environment)(using palette: TestPalette):
         Ribbon
           ( palette.subdue(palette.detail, 0.3),
             palette.subdue(palette.detail, 0.6),
-            palette.subdue(palette.detail, 0.9))
+            palette.subdue(palette.detail, 0.9) )
 
       Out.println:
         val suiteName = suite.let(_.name.teletype).or(e"")

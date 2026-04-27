@@ -32,13 +32,15 @@
                                                                                                   */
 package soundness
 
-export caesura
-. { CellRef, Sheet, Spannable, DsvFormat, DsvRedesignation, dynamicDsvAccess, DynamicDsvEnabler,
-    Dsv, dsv, DsvError }
+export
+  caesura
+  . { CellRef, Dsv, dsv, DsvError, DsvFormat, DsvRedesignation, dynamicDsvAccess, DynamicDsvEnabler,
+      Sheet, Spannable }
 
 package dsvFormats:
-  export caesura.dsvFormats.{csv, csvWithHeader, tsv, tsvWithHeader, ssv, ssvWithHeader}
+  export caesura.dsvFormats.{csv, csvWithHeader, ssv, ssvWithHeader, tsv, tsvWithHeader}
 
 package dsvRedesignations:
-  export caesura.dsvRedesignations
-  . { unchanged, lowerDotted, lowerSlashed, capitalizedWords, lowerWords}
+  export
+    caesura.dsvRedesignations
+    . { capitalizedWords, lowerDotted, lowerSlashed, lowerWords, unchanged }

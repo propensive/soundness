@@ -32,12 +32,14 @@
                                                                                                   */
 package soundness
 
-export geodesy
-. { Directional, CardinalWind, Compass, IntercardinalWind, HalfWind, Locatable, rad, deg, North,
-    East, South, West, Northeast, Southeast, Northwest, Southwest, NorthNortheast, EastNortheast,
-    SouthSoutheast, EastSoutheast, NorthNorthwest, WestNorthwest, SouthSouthwest, WestSouthwest,
-    Location, Geolocation, Angle, Degree, ArcMinute, ArcSecond }
+export
+  geodesy
+  . { Angle, ArcMinute, ArcSecond, CardinalWind, Compass, deg, Degree, Directional, East,
+      EastNortheast, EastSoutheast, Geolocation, HalfWind, IntercardinalWind, Locatable, Location,
+      North, Northeast, NorthNortheast, NorthNorthwest, Northwest, rad, South, Southeast,
+      SouthSoutheast, SouthSouthwest, Southwest, West, WestNorthwest, WestSouthwest }
 
 package compassBearings:
-  export geodesy.compassBearings
-  . { fourPointCompass, eightPointCompass, sixteenPointCompass, fromNorth, fromEast }
+  export
+    geodesy.compassBearings
+    . { eightPointCompass, fourPointCompass, fromEast, fromNorth, sixteenPointCompass }

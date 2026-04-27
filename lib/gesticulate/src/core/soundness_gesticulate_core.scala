@@ -32,6 +32,7 @@
                                                                                                   */
 package soundness
 
-export gesticulate
-. { Extensions, Media, MediaType, MediaTypeError, media, Multipart, MultipartError, Part, Content,
-    Asset, ascribe }
+export
+  gesticulate
+  . { ascribe, Asset, Content, Extensions, Media, media, MediaType, MediaTypeError, Multipart,
+      MultipartError, Part }

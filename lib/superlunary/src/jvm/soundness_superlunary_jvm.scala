@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export superlunary.{Jvm, Executor}
+export superlunary.{Executor, Jvm}

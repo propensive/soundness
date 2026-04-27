@@ -189,7 +189,7 @@ object internal:
                     Match('method.asTerm, cases :+ wildcard).asExprOf[Json]
                   }
             }
-          }
+        }
 
     // This has been written as a partial function because the more natural way of writing it,
     // by including `target` as a lambda variable, causes the compiler to emit bad bytecode.
@@ -259,7 +259,7 @@ object internal:
                     Match('method.asTerm, cases :+ wildcard).asExprOf[List[Discourse]]
                   }
             }
-          }
+        }
 
 
     val resourceInvocation: Expr[interface ~> (Text => Mcp.Contents)] =
@@ -328,7 +328,7 @@ object internal:
                       case (acc, (pattern, rhs)) => '{if uri == $pattern then $rhs else $acc}
                   }
             }
-          }
+        }
 
     val toolEntries = toolMethods.map: method =>
       val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)

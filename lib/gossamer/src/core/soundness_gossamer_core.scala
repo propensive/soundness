@@ -32,15 +32,16 @@
                                                                                                   */
 package soundness
 
-export gossamer
-. { Bidi, Builder, Cuttable, Decimalizer, Joinable, Numerous, Pue, RangeError,
-    TextBuilder, Textual, append, build, fill, txt, t, utf8, utf16, ascii, text, pue, cut,
-    pascal, camel, snake, kebab, length, lower, upper, plain, skip, keep, capitalize, uncapitalize,
-    tail, init, chars, snip, reverse, contains, trim, where, upto, dropWhile, translate, count, pad,
-    center, fit, uncamel, unkebab, unsnake, starts, ends, tr, subscripts, superscripts, sub,
-    urlEncode, urlDecode, punycode, data, sysData, proximity, join, add, words, lines, appendln,
-    spaced, slices, seek, search, Ascii, AsciiBuilder, Ltr, Rtl, erase, before, after, from,
-    Lexicon, Dictionary, BoundsError, broken }
+export
+  gossamer
+  . { add, after, append, appendln, Ascii, ascii, AsciiBuilder, before, Bidi, BoundsError, broken,
+      build, Builder, camel, capitalize, center, chars, contains, count, cut, Cuttable, data,
+      Decimalizer, Dictionary, dropWhile, ends, erase, fill, fit, from, init, join, Joinable, kebab,
+      keep, length, Lexicon, lines, lower, Ltr, Numerous, pad, pascal, plain, proximity, Pue, pue,
+      punycode, RangeError, reverse, Rtl, search, seek, skip, slices, snake, snip, spaced, starts,
+      sub, subscripts, superscripts, sysData, t, tail, text, TextBuilder, Textual, tr, translate,
+      trim, txt, uncamel, uncapitalize, unkebab, unsnake, upper, upto, urlDecode, urlEncode, utf16,
+      utf8, where, words }
 
 package decimalFormatters:
   export gossamer.decimalFormatters.java
@@ -59,4 +60,4 @@ package proximities:
   export gossamer.proximities.normalizedLevenshteinDistance
 
 package caseSensitivity:
-  export gossamer.caseSensitivity.{sensitive, insensitive, smart}
+  export gossamer.caseSensitivity.{insensitive, sensitive, smart}

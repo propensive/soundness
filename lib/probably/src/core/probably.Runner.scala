@@ -41,8 +41,8 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 
-import termcaps.environment
 import stdios.virtualMachine
+import termcaps.environment
 
 object Runner:
   private[probably] val harnessThreadLocal: ThreadLocal[Option[Harness]] = ThreadLocal()

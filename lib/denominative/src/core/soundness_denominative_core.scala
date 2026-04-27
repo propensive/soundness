@@ -32,11 +32,13 @@
                                                                                                   */
 package soundness
 
-export denominative
-. { Countable, Prim, Sec, Ter, Quat, Quin, Sen, Sept, gamut, Ordinal, Interval, Zerary, z, u, nil,
-    aka }
+export
+  denominative
+  . { aka, Countable, gamut, Interval, nil, Ordinal, Prim, Quat, Quin, Sec, Sen, Sept, Ter, u, z,
+      Zerary }
 
 package ordinalShowables:
-  export denominative.ordinalShowables
-  . { nominal, uniary, zerary, unmarkedUniary, unmarkedZerary, intermediate, english,
-      englishSuperscript, french, spanish, italian, russian }
+  export
+    denominative.ordinalShowables
+    . { english, englishSuperscript, french, intermediate, italian, nominal, russian, spanish,
+        uniary, unmarkedUniary, unmarkedZerary, zerary }

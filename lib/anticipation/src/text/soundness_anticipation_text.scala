@@ -33,4 +33,4 @@
 package soundness
 
 export anticipation.internal.Text
-export anticipation.{Textualizable, Legible, ss, tt}
+export anticipation.{Legible, ss, Textualizable, tt}

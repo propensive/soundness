@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export surveillance.{watch, Watch, WatchError, WatchEvent}
+export surveillance.{Watch, watch, WatchError, WatchEvent}

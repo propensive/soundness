@@ -32,6 +32,7 @@
                                                                                                   */
 package soundness
 
-export obligatory
-. { Associable, Framable, CarriageReturn, ContentLength, CrLf, FrameError, JsonRpc, LengthPrefix,
-    Linefeed, rpc, RpcError, Sse, SseError, remote, frames, SseSource }
+export
+  obligatory
+  . { Associable, CarriageReturn, ContentLength, CrLf, Framable, FrameError, frames, JsonRpc,
+      LengthPrefix, Linefeed, remote, rpc, RpcError, Sse, SseError, SseSource }

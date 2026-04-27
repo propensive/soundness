@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export anticipation.{Instants, Durations, Dates, Times}
+export anticipation.{Dates, Durations, Instants, Times}
 
 package abstractables:
   export anticipation.abstractables.{durationIsAbstractable, instantIsAbstractable}

@@ -58,7 +58,6 @@ object Hostname:
   given encodable: Hostname is Encodable in Text = showable.text(_)
 
 
-
   def expand(context: Expr[StringContext]): Macro[Hostname] = abortive:
     Expr(Hostname.parse(context.valueOrAbort.parts.head.tt))
 

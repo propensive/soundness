@@ -32,5 +32,6 @@
                                                                                                   */
 package soundness
 
-export acyclicity
-. { Dag, Digraph, Dot, Graph, NodeParser, Subgraph, dot, Poset, PartiallyOrdered, explore }
+export
+  acyclicity
+  . { Dag, Digraph, Dot, dot, explore, Graph, NodeParser, PartiallyOrdered, Poset, Subgraph }

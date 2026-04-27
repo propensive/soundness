@@ -23,8 +23,8 @@
 ┃                                                                                                  ┃
 ┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
 ┃                                                                                                  ┃
-┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
-┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
+┃    Unless required by applicable law or agreed to in writing, software distributed under the    ┃
+┃    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
 ┃                                                                                                  ┃
@@ -142,38 +142,38 @@ object StackTrace:
 
         case '$' =>
           char(index + 1) match
-            case '_' => token(index,           "$_avoid_name_clash_$", "′")
+            case '_' => token(index, "$_avoid_name_clash_$", "′")
             case 'a' => char(index + 2) match
-              case 'm' => token(index,         "$amp",                 "&")
+              case 'm' => token(index, "$amp", "&")
               case 'n' => char(index + 9) match
-                case 'a' => token(index,       "$anonfun$adapted",     "Λ")
+                case 'a' => token(index, "$anonfun$adapted", "Λ")
                 case _   => char(index + 5) match
-                  case 'f' => token(index,       "$anonfun",           "λ")
-                  case _   => token(index,       "$anon",              "α")
-              case 't' => token(index,         "$at",                  "@")
+                  case 'f' => token(index, "$anonfun", "λ")
+                  case _   => token(index, "$anon", "α")
+              case 't' => token(index, "$at", "@")
               case _   => skip()
             case 'b' => char(index + 2) match
               case 'a' => char(index + 3) match
-                case 'n' => token(index,       "$bang",                "!")
-                case 'r' => token(index,       "$bar",                 "|")
+                case 'n' => token(index, "$bang", "!")
+                case 'r' => token(index, "$bar", "|")
                 case _   => skip()
-              case 's' => token(index,         "$bslash",              "\\")
+              case 's' => token(index, "$bslash", "\\")
               case _   => skip()
-            case 'c' => token(index,           "$colon",               ":")
+            case 'c' => token(index, "$colon", ":")
             case 'd' => char(index + 2) match
-              case 'e' => token(index,         "$default",             "δ")
+              case 'e' => token(index, "$default", "δ")
               case 'i' => char(index + 3) match
-                case 'r' => token(index,       "$direct",              "∂")
-                case 'v' => token(index,       "$div",                 "/")
+                case 'r' => token(index, "$direct", "∂")
+                case 'v' => token(index, "$div", "/")
                 case _   => skip()
               case _   => skip()
             case 'e' => char(index + 2) match
-              case 'q' => token(index,         "$eq",                  "=")
-              case 'x' => token(index,         "$extension",           "⊢")
+              case 'q' => token(index, "$eq", "=")
+              case 'x' => token(index, "$extension", "⊢")
               case _   => skip()
-            case 'g' => token(index,           "$greater",             ">")
-            case 'h' => token(index,           "$hash",                "#")
-            case 'l' => token(index,           "$less",                "<")
+            case 'g' => token(index, "$greater", ">")
+            case 'h' => token(index, "$hash", "#")
+            case 'l' => token(index, "$less", "<")
             case 'm' => char(index + 2) match
               case 'c' =>
                 var index2: Int = index + 3
@@ -191,26 +191,32 @@ object StackTrace:
 
                 val mc = name.substring(index, index + 3).nn
                 token(index, mc, name2)
-              case 'i' => token(index,         "$minus",               "-")
+              case 'i' => token(index, "$minus", "-")
               case _   => skip()
             case 'p' => char(index + 2) match
-              case 'a' => token(index,         "$package",             "⁆")
-              case 'e' => token(index,         "$percent",             "%")
-              case 'l' => token(index,         "$plus",                "+")
+              case 'a' => token(index, "$package", "⁆")
+              case 'e' => token(index, "$percent", "%")
+              case 'l' => token(index, "$plus", "+")
               case _   => skip()
-            case 'q' => token(index,           "$qmark",               "?")
+            case 'q' => token(index, "$qmark", "?")
             case 's' => char(index + 2) match
-              case 'p' => token(index,         "$sp",                  "ζ")
+              case 'p' => token(index, "$sp", "ζ")
               case _   => skip()
             case 't' => char(index + 2) match
               case 'i' => char(index + 3) match
-                case 'l' => token(index,       "$tilde",               "~")
-                case 'm' => token(index,       "$times",               "*")
+                case 'l' => token(index, "$tilde", "~")
+                case 'm' => token(index, "$times", "*")
                 case _   => skip()
               case _  => skip()
-            case 'u'                                                       => token(index,           "$up",                  "^")
-            case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => recur(index + 1, true)
-            case _                                                         => skip()
+
+            case 'u' =>
+              token(index, "$up", "^")
+
+            case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
+              recur(index + 1, true)
+
+            case _ =>
+              skip()
 
         case ch =>
           buffer.append(ch.toString)

@@ -32,10 +32,10 @@
                                                                                                   */
 package soundness
 
-export escapade
-. { Ansi, Bg, Colorable, csi, internal, Escape, escapes, Fg, Ribbon, Stylize, Teletype,
-    Teletypeable, TextStyle, CharSpan, Bold, Italic, Underline, Strike, Reverse, Conceal, e,
-    teletype }
+export
+  escapade
+  . { Ansi, Bg, Bold, CharSpan, Colorable, Conceal, csi, e, Escape, escapes, Fg, internal, Italic,
+      Reverse, Ribbon, Strike, Stylize, Teletype, teletype, Teletypeable, TextStyle, Underline }
 
 package displayableTypes:
   export escapade.displayableTypes.message

@@ -67,7 +67,7 @@ object internal:
       def add(left: text, right: String): Text = (left.s+right).tt
 
     private def recur(text: Text, n: Int, acc: Text): Text =
-      if n == 0 then acc else recur(text, n - 1, acc+text)
+      if n == 0 then acc else recur(text, n - 1, acc + text)
 
     given multiplicable: [text <: Text] => text is Multiplicable:
       type Self = Text

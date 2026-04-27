@@ -930,6 +930,7 @@ object Html extends Tag.Container
                   pop()
                   cloneChild match
                     case Element(_, _, children, _) if children.length == 0 => ()
+
                     case _ =>
                       append(cloneChild)
                       added += 1

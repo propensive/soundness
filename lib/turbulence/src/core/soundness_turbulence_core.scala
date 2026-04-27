@@ -32,18 +32,19 @@
                                                                                                   */
 package soundness
 
-export turbulence
-. { Aggregable, Compression, Compressor, Eof, Err, Spool, Gzip, In, Io, Line, more,
-    LineSeparation, Multiplexer, Out, Pistol, Pulsar, Streamable, Stdio, StreamError, Tap, Writable,
-    Zlib, stream, read, writeTo, deduplicate, rate, multiplex, regulate, cluster, parallelMap,
-    multiplexer, defer, metronome, gzip, gunzip, discard, compress, decompress, shred,
-    chunked, take, spool, strict, inputStream, StreamOutputStream, load, Document, Loadable,
-    Documentary }
+export
+  turbulence
+  . { Aggregable, chunked, cluster, compress, Compression, Compressor, decompress, deduplicate,
+      defer, discard, Document, Documentary, Eof, Err, gunzip, Gzip, gzip, In, inputStream, Io,
+      Line, LineSeparation, load, Loadable, metronome, more, multiplex, Multiplexer, multiplexer,
+      Out, parallelMap, Pistol, Pulsar, rate, read, regulate, shred, Spool, spool, Stdio, stream,
+      Streamable, StreamError, StreamOutputStream, strict, take, Tap, Writable, writeTo, Zlib }
 
 package stdios:
   export turbulence.stdios.{mute, system, virtualMachine}
 
 package lineSeparation:
-  export turbulence.lineSeparation
-  . { carriageReturn, strictCarriageReturn, linefeed, strictLinefeeds, carriageReturnLinefeed,
-      adaptiveLinefeed, virtualMachine }
+  export
+    turbulence.lineSeparation
+    . { adaptiveLinefeed, carriageReturn, carriageReturnLinefeed, linefeed, strictCarriageReturn,
+        strictLinefeeds, virtualMachine }

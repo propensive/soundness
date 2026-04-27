@@ -50,9 +50,10 @@ object Checker:
       checkLine(state, lineNum, lines(idx), out)
       idx += 1
     if state.prevWasAnnotation then
-      out += Violation
-              ( file, state.prevLineNum, 1, "15.1",
-                "annotation is not followed by a declaration" )
+      out +=
+        Violation
+          ( file, state.prevLineNum, 1, "15.1",
+            "annotation is not followed by a declaration" )
     state.pendingR11.foreach(out += _)
     state.pendingR11 = Nil
     finalizeCaseRun(state, out)
@@ -130,6 +131,25 @@ object Checker:
     // first param block is on a single line, so the second clause `(
     // using ... )` on the next line is a continuation.
     var prevLineStartedDecl: Boolean                      = false
+    // True if the previous code line ended with `' {` or `$ {` — a quote
+    // or splice context that takes its body indented +4 (instead of the
+    // usual +2) on the following line. R31 widens its allowance accordingly.
+    var prevLineOpensQuoteSplice: Boolean                 = false
+    // True if the previous code line was a chain method-application opener
+    // — i.e. it began with `.` and ended with `:` or `=>`. The body of such
+    // a chain takes indent +4 from the opener line (R31 exception).
+    var prevLineOpensChain:       Boolean                 = false
+    // Stack of columns of opening `{` for currently-unclosed quote/splice
+    // contexts (`' {` or `$ {`). The corresponding closing `}` must appear
+    // at the same column.
+    val quoteSpliceBraces:        mutable.Stack[Int]      = mutable.Stack.empty
+    // Indent of the first line of the current `given` declaration whose
+    // signature spans multiple lines, or -1 if we are not inside one. Set
+    // when a line begins with `given` (after any modifiers) and reset when
+    // the body opener (`=`) is reached. Used by R32 to require that any
+    // `=>` continuation line align vertically with the leading modifier or
+    // `given` keyword on the first signature line.
+    var givenSignatureIndent:     Int                     = -1
 
   private def checkLine
     ( s:       State,
@@ -156,6 +176,7 @@ object Checker:
     if !isStringContent && s.openParens == 0 then
       checkR3IndentWidth(isBlank, leadingCols, emit)
     checkR4TrailingWs(line, emit)
+    checkR31ContinuationIndent(s, leadingCols, isBlank, firstReal, emit)
 
     if isBlank then
       s.consecutiveBlanks += 1
@@ -174,6 +195,7 @@ object Checker:
     checkCommas(s, lineNum, line, isBlank, out)
     checkHardSpace(rest, leadingCols, emit)
     checkChainContinuation(s, lineNum, leadingCols, isBlank, firstReal, emit)
+    checkR32GivenArrowAlign(s, leadingCols, isBlank, rest, emit)
     checkReturnTypeBlank(s, lineNum, isBlank, rest, emit)
     checkMatchCases(s, lineNum, leadingCols, isBlank, rest, line, out)
     checkSiblingPadding(s, lineNum, leadingCols, isBlank, rest, out)
@@ -207,6 +229,27 @@ object Checker:
           && sem.headOption.exists(t => t.text == "(" || t.text == "[")
       s.prevLineStartedDecl = !hasTopLevelEq && (startsWithDecl || isContinuationOfDecl)
 
+      // R31 exceptions: detect quote/splice opener and chain opener on this
+      // line so the next line gets a +4 (rather than +2) allowance. Also
+      // track quote/splice brace columns for the closing-`}`-alignment check.
+      s.prevLineOpensQuoteSplice = lineEndsWithQuoteSpliceBrace(sem)
+      s.prevLineOpensChain       = lineIsChainOpener(sem)
+      trackQuoteSpliceBraces(s, line, leadingCols, lineNum, out)
+
+      // R32 anchor: a line that begins a `given` declaration (after any
+      // modifiers) records its leading-cols as the anchor for arrow
+      // continuation. The anchor clears when the body opener (`=`) appears
+      // at top level or when an unrelated declaration begins.
+      val (_, kwIdx) = skipModifiers(sem, 0)
+      val startsGiven =
+        kwIdx < sem.length && sem(kwIdx).kind == Kind.Code && sem(kwIdx).text == "given"
+      if startsGiven then s.givenSignatureIndent = leadingCols
+      else if s.givenSignatureIndent >= 0 && hasTopLevelEq then s.givenSignatureIndent = -1
+      else if s.givenSignatureIndent >= 0 && !sem.headOption.exists(_.text == "=>") then
+        // Any line that's neither an `=>` continuation nor part of the
+        // initial signature ends the given-signature region.
+        if !startsWithDecl && !isContinuationOfDecl then s.givenSignatureIndent = -1
+
     if isBlank then
       if s.prevWasAnnotation then
         emit
@@ -222,7 +265,12 @@ object Checker:
       // of whatever appeared before the comment.
       val isCommentOnly = firstReal.exists(_.kind == Kind.Comment)
       val isAnnotationOnly = lineStartsAnnotation(firstReal)
-      if !isCommentOnly && !isAnnotationOnly then
+      // Lines inside a multi-line triple-quoted string are tokenised as a
+      // single Strs token without leading Space tokens, so their leadingCols
+      // is always 0. Don't let that corrupt the indent state used by
+      // chain-continuation / bracket / sibling / R31 checks.
+      val isStringOnly = firstReal.exists(_.kind == Kind.Strs)
+      if !isCommentOnly && !isAnnotationOnly && !isStringOnly then
         s.prevCodeLineIndent = leadingCols
 
     s.prevLineWasBlank = isBlank
@@ -237,8 +285,9 @@ object Checker:
     while i < rawText.length do
       val ch = rawText.charAt(i)
       if ch == '\t' then
-        out += Violation
-                ( file, line, col, "1", "tab character is not permitted; use spaces" )
+        out +=
+          Violation
+            ( file, line, col, "1", "tab character is not permitted; use spaces" )
       if ch == '\n' then
         line += 1
         col = 1
@@ -258,6 +307,119 @@ object Checker:
     if !isBlank && leadingCols%2 != 0 then
       emit(1, "3", s"indent width $leadingCols is not a multiple of 2")
 
+  // R31: a non-blank code line cannot be indented more than two columns
+  // deeper than the previous code line. This forbids "alignment" indents
+  // that line up under a name on the previous line — when a continuation
+  // needs deeper indent, the previous line should be split so the rule
+  // is satisfied by ordinary +2 stepping.
+  //
+  // Two exceptions allow +4 instead of +2:
+  //   - the previous line opened a quote or splice context (`' {` or `$ {`
+  //     as its trailing tokens);
+  //   - the previous line is a chain method-application opener — it begins
+  //     with `.` and ends with `:` or `=>` (e.g. `. within:` or
+  //     `. map: x =>`).
+  //
+  // Suspended when the line is inside an unclosed `(`, `[`, or `{` from an
+  // earlier line: alignment inside parameter / selector lists (e.g. the
+  // multi-line `import …. { A, B, /\n      C, D }` and `export` patterns)
+  // is governed by R12/R22/R30 and the surrounding bracket structure.
+  private def checkR31ContinuationIndent
+    ( s:           State,
+      leadingCols: Int,
+      isBlank:     Boolean,
+      firstReal:   Option[Token],
+      emit:        (Int, String, String) => Unit )
+  :   Unit =
+
+    if isBlank then ()
+    else if s.prevCodeLineIndent < 0 then ()
+    else if s.bracketFormality.nonEmpty then ()
+    else if s.quoteSpliceBraces.nonEmpty then ()
+    else if s.inMultilineImport then ()
+    else
+      val isCommentOnly   = firstReal.exists(_.kind == Kind.Comment)
+      val isStringContent = firstReal.exists(_.kind == Kind.Strs)
+      if isCommentOnly || isStringContent then ()
+      else
+        val deepStep   = s.prevLineOpensQuoteSplice || s.prevLineOpensChain
+        val step       = if deepStep then 4 else 2
+        val maxAllowed = s.prevCodeLineIndent + step
+        if leadingCols > maxAllowed then
+          emit
+            ( leadingCols + 1, "R31-continuation-indent",
+              s"indent $leadingCols cannot exceed previous line's indent "
+                +s"${s.prevCodeLineIndent} by more than $step" )
+
+  // True if the semantic tokens of a line end with `' {` or `$ {` (the
+  // opening of a quote/splice block whose body lives on the following lines).
+  private def lineEndsWithQuoteSpliceBrace(sem: IndexedSeq[Token]): Boolean =
+    if sem.length < 2 then false
+    else
+      val last = sem(sem.length - 1).text
+      val prev = sem(sem.length - 2).text
+      last == "{" && (prev == "'" || prev == "$")
+
+  // True if the line is a chain method-application opener — the first
+  // semantic token is `.` and the last is `:` or `=>` (e.g. `. within:` or
+  // `. map: x =>`). Such lines deepen indentation by +4 rather than +2.
+  private def lineIsChainOpener(sem: IndexedSeq[Token]): Boolean =
+    if sem.isEmpty then false
+    else
+      val first = sem(0).text
+      val last  = sem(sem.length - 1).text
+      first == "." && (last == ":" || last == "=>")
+
+  // Walk a line's tokens to maintain the quote/splice brace stack. The stack
+  // holds an entry for every unclosed `{`: -1 for a regular brace, or the
+  // column of `{` for a quote/splice opener whose body extends onto the
+  // following lines (i.e. the `{` is the line's last semantic token, and
+  // its matching `}` is therefore on a later line). When that `}` closes,
+  // R31b checks that the closer's column matches the opener's column.
+  private def trackQuoteSpliceBraces
+    ( s:       State,
+      line:    IndexedSeq[Token],
+      ignored: Int,
+      lineNum: Int,
+      out:     mutable.ListBuffer[Violation] )
+  :   Unit =
+
+    val arr  = line.toArray
+    val cols = scala.Array.ofDim[Int](arr.length + 1)
+    cols(0) = 1
+    var i = 0
+    while i < arr.length do
+      cols(i + 1) = cols(i) + arr(i).text.length
+      i += 1
+    val lastSemantic = arr.lastIndexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+    val stack = s.quoteSpliceBraces
+    i = 0
+    while i < arr.length do
+      if arr(i).kind == Kind.Code then
+        val text = arr(i).text
+        if text == "{" then
+          // A quote/splice opener that we care about is `' {` or `$ {`
+          // appearing as the last semantic tokens of the line — its body
+          // lives on the following lines. Inline `'{...}` patterns (case
+          // patterns, type-quote patterns, single-line splices) close on
+          // the same line and don't need cross-line tracking.
+          val isLineEnd = i == lastSemantic
+          var j = i - 1
+          while j >= 0 && (arr(j).kind == Kind.Space || arr(j).kind == Kind.Comment) do j -= 1
+          val precededByQuoteSplice =
+            j >= 0 && arr(j).kind == Kind.Code && (arr(j).text == "'" || arr(j).text == "$")
+          if isLineEnd && precededByQuoteSplice then stack.push(cols(i))
+          else stack.push(-1)
+        else if text == "}" then
+          if stack.nonEmpty then
+            val openerCol = stack.pop()
+            if openerCol >= 0 && cols(i) != openerCol then
+              out += Violation
+                      ( s.file, lineNum, cols(i), "R31-quote-splice-close",
+                        s"closing `}` of a quote/splice block at column ${cols(i)} "
+                          +s"does not align with its opening `{` at column $openerCol" )
+      i += 1
+
   private def checkR4TrailingWs
     ( line: IndexedSeq[Token], emit: (Int, String, String) => Unit )
   :   Unit =
@@ -271,6 +433,27 @@ object Checker:
 
       case _ =>
         ()
+
+  // R32: continuation lines of a multi-line `given` signature that begin
+  // with `=>` must align vertically with the leading modifier or `given`
+  // keyword on the first line of the signature.
+  private def checkR32GivenArrowAlign
+    ( s:           State,
+      leadingCols: Int,
+      isBlank:     Boolean,
+      rest:        IndexedSeq[Token],
+      emit:        (Int, String, String) => Unit )
+  :   Unit =
+
+    if isBlank then ()
+    else if s.givenSignatureIndent < 0 then ()
+    else
+      val sem = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+      if sem.headOption.exists(_.text == "=>") && leadingCols != s.givenSignatureIndent then
+        emit
+          ( leadingCols + 1, "R32-given-arrow-align",
+            s"`=>` continuation of a `given` signature should align at column "
+              +s"${s.givenSignatureIndent + 1} (found ${leadingCols + 1})" )
 
   private def checkLicense
     ( s: State, lineNum: Int, line: IndexedSeq[Token], emit: (Int, String, String) => Unit )
@@ -362,16 +545,24 @@ object Checker:
 
         s.prevImportGroup match
           case Some(prevGroup) =>
-            if group < prevGroup then
+            // Groups 5 and 6 are "third-party" siblings: lowercase wildcard
+            // (`import contingency.*`) and other named imports
+            // (`import filesystemOptions.x`, `import AsyncError.Reason`)
+            // routinely interleave in soundness code, so we don't require
+            // ordering or blank lines between them. Alphabetical and
+            // blank-within-group checks still apply within strictly the same
+            // group (5 with 5, 6 with 6).
+            val areSiblings = group >= 5 && prevGroup >= 5
+            if !areSiblings && group < prevGroup then
               emit
                 ( 1, "9.2",
                   s"import group $group appears after group $prevGroup" )
-            else if group > prevGroup then
+            else if !areSiblings && group > prevGroup then
               if !s.prevLineWasBlank then
                 emit
                   ( 1, "9.3",
                     "import groups must be separated by exactly one blank line" )
-            else
+            else if group == prevGroup then
               if s.prevLineWasBlank then
                 emit
                   ( 1, "9.3",
@@ -523,24 +714,27 @@ object Checker:
     while i < arr.length do
       if arr(i).text == "," && arr(i).kind == Kind.Code then
         if i > 0 && arr(i - 1).kind == Kind.Space && arr(i - 1).text.length > 0 then
-          out += Violation
-                  ( s.file, lineNum, cols(i), "11.1",
-                    "no space is permitted before a comma" )
+          out +=
+            Violation
+              ( s.file, lineNum, cols(i), "11.1",
+                "no space is permitted before a comma" )
 
         if i + 1 < arr.length then
           val next = arr(i + 1)
           if next.kind != Kind.Space then
-            out += Violation
-                    ( s.file, lineNum, cols(i + 1), "11.2",
-                      "exactly one space is required after a comma" )
+            out +=
+              Violation
+                ( s.file, lineNum, cols(i + 1), "11.2",
+                  "exactly one space is required after a comma" )
           else if next.text != " " then
             // Extra spaces after comma — possibly an alignment-run column.
             // Defer until we know whether neighbouring lines also have alignment.
             hasAlignment = true
             if !next.text.startsWith("\n") then
-              deferred += Violation
-                            ( s.file, lineNum, cols(i + 1), "11.2",
-                              "exactly one space is required after a comma" )
+              deferred +=
+                Violation
+                  ( s.file, lineNum, cols(i + 1), "11.2",
+                    "exactly one space is required after a comma" )
       i += 1
 
     // Validate previously deferred (from line N-1) against current line:
@@ -851,17 +1045,6 @@ object Checker:
           emit
             ( cols(i), "14.1",
               "`/* ... */` block comments are reserved for the license header (lines 1-32)" )
-        else if text.startsWith("//") && !inLicense then
-          if text.length == 2 then ()
-          else if text.charAt(2) == ' ' then
-            if text.length > 3 && text.charAt(3) == ' ' then
-              emit
-                ( cols(i), "13",
-                  "a line comment must be followed by exactly one space" )
-          else
-            emit
-              ( cols(i), "13",
-                "a line comment must be followed by exactly one space" )
       i += 1
 
   private val CheckedOps: Set[String] = Set
@@ -884,11 +1067,11 @@ object Checker:
       case _                      => 10
 
   private case class OpHit
-                        ( text:       String,
-                          idx:        Int,
-                          col:        Int,
-                          leftSpace:  Boolean,
-                          rightSpace: Boolean )
+    ( text:       String,
+      idx:        Int,
+      col:        Int,
+      leftSpace:  Boolean,
+      rightSpace: Boolean )
 
   private val NonOperandWords: Set[String] = Set
     ( "case", "if", "then", "else", "do", "while", "for", "yield", "return",
@@ -1154,9 +1337,10 @@ object Checker:
     s.objectDecls.foreach: (name, objLine) =>
       s.typeDecls.get(name).foreach: typeLine =>
         if objLine > typeLine then
-          out += Violation
-                  ( file, objLine, 1, "28",
-                    s"object `$name` must appear before class/trait/enum `$name`" )
+          out +=
+            Violation
+              ( file, objLine, 1, "28",
+                s"object `$name` must appear before class/trait/enum `$name`" )
 
   private def checkFileNaming(file: String, out: mutable.ListBuffer[Violation]): Unit =
     val segments = file.split("/").nn
@@ -1174,9 +1358,10 @@ object Checker:
         || base.startsWith(s"${m}_") && base.endsWith("_core")
         || isCrossModuleExport(base)
       if !ok then
-        out += Violation
-                ( file, 1, 1, "29",
-                  s"file name `$name` does not match a documented soundness convention" )
+        out +=
+          Violation
+            ( file, 1, 1, "29",
+              s"file name `$name` does not match a documented soundness convention" )
 
   private def isCrossModuleExport(base: String): Boolean =
     val u = base.indexOf('_')
@@ -1264,9 +1449,10 @@ object Checker:
         val expected = run.cases.iterator.map(_.arrowCol).max
         run.cases.foreach: entry =>
           if entry.arrowCol != expected then
-            out += Violation
-                    ( s.file, entry.lineNum, entry.arrowCol, "19",
-                      s"`=>` should be at column $expected to align with the case run" )
+            out +=
+              Violation
+                ( s.file, entry.lineNum, entry.arrowCol, "19",
+                  s"`=>` should be at column $expected to align with the case run" )
     s.caseRun = None
 
   private val DeclKeywords: Set[String] =
@@ -1345,10 +1531,10 @@ object Checker:
 
             val actual = s.blanksSinceDecl
             if actual < expected then
-              out += Violation
-                      ( s.file, lineNum, 1, "27",
-                        s"expected $expected blank line(s) between sibling declarations "
-                          +s"(saw $actual)" )
+              out +=
+                Violation
+                  ( s.file, lineNum, 1, "27",
+                    s"expected $expected blank line(s) between sibling declarations (saw $actual)" )
 
           s.prevDeclByIndent(leadingCols) = cur
           s.blanksSinceDecl = 0

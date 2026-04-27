@@ -56,11 +56,11 @@ object internal:
             $ {
                 companion.absolve match
                   case '{$companion: companion} =>
-                    val ref = TypeRepr.of[companion].typeSymbol.declaredMethod("values")
-                              . headOption
-                              . getOrElse:
-                                  halt:
-                                    m"enum ${TypeRepr.of[enumeration].show} is not a simple choice"
+                    val ref =
+                      TypeRepr.of[companion].typeSymbol.declaredMethod("values")
+                      . headOption
+                      . getOrElse:
+                          halt(m"enum ${TypeRepr.of[enumeration].show} is not a simple choice")
 
                     companion.asTerm.select(ref).asExprOf[Array[enumeration]]
               }

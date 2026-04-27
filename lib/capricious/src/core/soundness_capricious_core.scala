@@ -32,18 +32,20 @@
                                                                                                   */
 package soundness
 
-export capricious
-. { Randomizable, Distribution, Gamma, Gaussian, PolarGaussian, Random, Randomization, Seed,
-    UniformDistribution, stochastic, arbitrary, random }
+export
+  capricious
+  . { arbitrary, Distribution, Gamma, Gaussian, PolarGaussian, Random, random, Randomizable,
+      Randomization, Seed, stochastic, UniformDistribution }
 
 package randomization:
-  export capricious.randomization
-  . { unseeded, secureUnseeded, stronglySecure, seeded, secureSeeded }
+  export capricious.randomization.{secureSeeded, secureUnseeded, seeded, stronglySecure, unseeded}
 
   package sizes:
-    export capricious.randomization.sizes
-    . { uniformUpto10, uniformUpto100, uniformUpto1000, uniformUpto10000, uniformUpto100000 }
+    export
+      capricious.randomization.sizes
+      . { uniformUpto10, uniformUpto100, uniformUpto1000, uniformUpto10000, uniformUpto100000 }
 
 package randomDistributions:
-  export capricious.randomDistributions
-  . { gaussian, uniformUnitInterval, uniformSymmetricUnitInterval, binary }
+  export
+    capricious.randomDistributions
+    . { binary, gaussian, uniformSymmetricUnitInterval, uniformUnitInterval }

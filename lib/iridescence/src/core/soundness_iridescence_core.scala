@@ -32,18 +32,20 @@
                                                                                                   */
 package soundness
 
-export iridescence
-. { WebColors, Solarized, Xyz, Rgb12, Rgb32, Srgb, Cielab, Cmy, Cmyk, Hsv, Hsl, rgb,
-    Colorimetry, Color, Palette, Theme, Spectrum, Luminosity, Perceptual, dark, light }
+export
+  iridescence
+  . { Cielab, Cmy, Cmyk, Color, Colorimetry, dark, Hsl, Hsv, light, Luminosity, Palette, Perceptual,
+      rgb, Rgb12, Rgb32, Solarized, Spectrum, Srgb, Theme, WebColors, Xyz }
 
 package colorimetry:
-  export iridescence.colorimetry
-  . { incandescentTungsten, oldDirectSunlightAtNoon, oldDaylight, iccProfilePcs, midMorningDaylight,
-      daylight, srgb, adobeRgb, northSkyDaylight, equalEnergy, daylightFluorescentF1,
-      coolFluorescent,  whiteFluorescent, warmWhiteFluorescent, daylightFluorescentF5,
-      liteWhiteFluorescent, daylightFluorescentF7, d65Simulator, sylvaniaF40, d50Simulator,
-      coolWhiteFluorescent, philipsTl85, ultralume50, philipsTl84, ultralume40,  philipsTl83,
-      ultralume30 }
+  export
+    iridescence.colorimetry
+    . { adobeRgb, coolFluorescent, coolWhiteFluorescent, d50Simulator, d65Simulator, daylight,
+        daylightFluorescentF1, daylightFluorescentF5, daylightFluorescentF7, equalEnergy,
+        iccProfilePcs, incandescentTungsten, liteWhiteFluorescent, midMorningDaylight,
+        northSkyDaylight, oldDaylight, oldDirectSunlightAtNoon, philipsTl83, philipsTl84,
+        philipsTl85, srgb, sylvaniaF40, ultralume30, ultralume40, ultralume50, warmWhiteFluorescent,
+        whiteFluorescent }
 
 package luminosity:
   export iridescence.luminosity.{dark, light}
