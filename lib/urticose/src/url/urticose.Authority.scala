@@ -65,8 +65,12 @@ object Authority:
     def parsePort(portText: Text, offset: Ordinal): Int =
       safely(portText.s.toInt).match
         case port: Int if port >= 0 && port <= 65535 => port
-        case port: Int => raise(UrlError(value, offset, Expected(PortRange))) yet 0
-        case _         => raise(UrlError(value, offset, Expected(Number))) yet 0
+
+        case port: Int =>
+          raise(UrlError(value, offset, Expected(PortRange))) yet 0
+
+        case _ =>
+          raise(UrlError(value, offset, Expected(Number))) yet 0
 
     def parseHostPort(hostPort: Text, base: Ordinal, userInfo: Optional[Text]): Authority =
       if hostPort.at(Prim) == '[' then

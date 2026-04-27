@@ -80,22 +80,22 @@ class Issuer
             case error@PathError(reason, path) =>
               OAuthError(OAuthError.Reason.Other)
 
-            case error@ConnectError(reason)    =>
+            case error@ConnectError(reason) =>
               OAuthError(OAuthError.Reason.Connection(exchange, reason))
 
-            case error@ParseError(_, _, _)     =>
+            case error@ParseError(_, _, _) =>
               OAuthError(OAuthError.Reason.InvalidJsonResponse)
 
             case error@HttpError(status, _) =>
               OAuthError(OAuthError.Reason.UnexpectedHttpStatus(status))
 
-            case error@UuidError(_)            =>
+            case error@UuidError(_) =>
               OAuthError(OAuthError.Reason.Other)
 
-            case error@QueryError()            =>
+            case error@QueryError() =>
               OAuthError(OAuthError.Reason.Other)
 
-            case error@JsonError(reason)       =>
+            case error@JsonError(reason) =>
               OAuthError(OAuthError.Reason.InvalidJsonResponse)
 
         . within:

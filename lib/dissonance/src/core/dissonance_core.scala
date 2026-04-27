@@ -186,30 +186,3 @@ extension (diff: Diff[Text])
       val insSeq = inss.map { ins => Text("> "+ins.value) }
 
       command :: delSeq ::: sep ::: insSeq
-
-  /* def casual: CasualDiff =
-    def recur(todo: List[Region[Text]], acc: List[Replace], last: List[Text]): CasualDiff =
-      todo match
-        case Nil                            => CasualDiff(acc.reverse)
-        case Region.Unchanged(pars) :: tail => recur(tail, acc, pars.map(_.value).compact)
-
-        case Region.Changed(deletions, insertions) :: tail =>
-          val deletions2 = deletions.map(_.value).compact
-          val prelude = (last ++ deletions2).to(Array)
-
-          def replace(deletions: List[Text], target: Int): Replace =
-            val index = prelude.indexOfSlice(deletions)
-            if index == target
-            then
-              Replace(deletions.dropRight(deletions2.length), deletions2, insertions.map(_.value))
-            else
-              def countback(n: Int): Int =
-                if index - n > 0 && prelude(target - n) == prelude(index - n) then countback(n + 1)
-                else n
-
-              val n = countback(1)
-              replace(prelude.slice(target - n, target).to(List) ++ deletions, target - n)
-
-          recur(tail, replace(deletions2, last.length) :: acc, Nil)
-
-    recur(diff.collate, Nil, Nil) */

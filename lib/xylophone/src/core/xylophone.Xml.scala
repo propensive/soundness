@@ -511,6 +511,7 @@ object Xml extends Tag.Container
     def tagname(mark: Mark, dictionary: Optional[Dictionary[Tag]], started: Boolean)
       ( using Cursor.Held )
     :   Tag =
+
       cursor.lay(fail(ExpectedMore)):
         case chr if (if started then isNameChar(chr) else isNameStart(chr)) =>
           dictionary.lay(next() yet tagname(mark, Unset, true)): dictionary =>
@@ -535,10 +536,12 @@ object Xml extends Tag.Container
         case chr =>
           fail(Unexpected(chr))
 
+
     @tailrec
     def key(mark: Mark, dictionary: Optional[Dictionary[XmlAttribute]], started: Boolean)
       ( using Cursor.Held )
     :   XmlAttribute =
+
       cursor.lay(fail(ExpectedMore)):
         case chr if (if started then isNameChar(chr) else isNameStart(chr)) =>
           dictionary.let(_(chr.minuscule)) match
@@ -558,6 +561,7 @@ object Xml extends Tag.Container
 
         case chr =>
           fail(Unexpected(chr))
+
 
     @tailrec
     def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
@@ -790,7 +794,7 @@ object Xml extends Tag.Container
         next()
         skip()
         cursor.lay(fail(ExpectedMore)):
-          case 'v'  => ()
+          case 'v' => ()
           case chr => fail(Unexpected(chr))
 
         cursor.consume(fail(ExpectedMore))("ersion")
@@ -951,17 +955,23 @@ object Xml extends Tag.Container
               next()
             else tag(headers && parent == root) match
               case Token.Comment => current = Comment(content)
-              case Token.Header  =>
+
+              case Token.Header =>
                 current = Header(content, headerEncoding, headerStandalone)
                 headers = false
-              case Token.Cdata   => current = Cdata(content)
-              case Token.Doctype => current = Doctype(content)
-              case Token.Pi      =>
+
+              case Token.Cdata =>
+                current = Cdata(content)
+
+              case Token.Doctype =>
+                current = Doctype(content)
+
+              case Token.Pi =>
                 val data = cursor.hold(piData(cursor.mark))
                 cursor.next()
                 current = ProcessingInstruction(content, data)
 
-              case Token.Empty   =>
+              case Token.Empty =>
                 if admit(content) then empty() else fail(InvalidTag(content))
 
               case Token.Open =>

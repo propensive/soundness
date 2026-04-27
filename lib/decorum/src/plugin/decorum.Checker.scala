@@ -265,12 +265,15 @@ object Checker:
       // of whatever appeared before the comment.
       val isCommentOnly = firstReal.exists(_.kind == Kind.Comment)
       val isAnnotationOnly = lineStartsAnnotation(firstReal)
-      // Lines inside a multi-line triple-quoted string are tokenised as a
-      // single Strs token without leading Space tokens, so their leadingCols
-      // is always 0. Don't let that corrupt the indent state used by
-      // chain-continuation / bracket / sibling / R31 checks.
-      val isStringOnly = firstReal.exists(_.kind == Kind.Strs)
-      if !isCommentOnly && !isAnnotationOnly && !isStringOnly then
+      // Continuation lines inside a multi-line triple-quoted string are
+      // tokenised as a single Strs token with no leading Space token, so
+      // their leadingCols is always 0. Don't let that corrupt the indent
+      // state used by chain-continuation / bracket / sibling / R31 checks.
+      // A normal code line that *starts* with a string interpolation (e.g.
+      // `sh"…".exec()`) does have a leading Space token and is not affected.
+      val isStringContinuation =
+        firstReal.exists(_.kind == Kind.Strs) && leadingWs.isEmpty
+      if !isCommentOnly && !isAnnotationOnly && !isStringContinuation then
         s.prevCodeLineIndent = leadingCols
 
     s.prevLineWasBlank = isBlank
@@ -1136,6 +1139,11 @@ object Checker:
           frames.push(mutable.ArrayBuffer.empty)
         else if text == ")" || text == "]" then
           if frames.size > 1 then checkOpFrame(frames.pop(), emit)
+        else if text == "," then
+          // A comma separates independent expressions: close the current
+          // operator frame and open a fresh one at the same nesting level.
+          checkOpFrame(frames.pop(), emit)
+          frames.push(mutable.ArrayBuffer.empty)
         else if CheckedOps.contains(text) then
           val isAtStart  = i == firstSemantic
           val isAtEnd    = i == lastSemantic
@@ -1430,6 +1438,22 @@ object Checker:
           emit
             ( leadingCols + 1, "20",
               "a blank line is required before a multi-line case (except for the first case)" )
+
+        // R33: a multi-line case must have exactly one space before `=>` —
+        // alignment-padding only applies to runs of single-line cases (R19).
+        val arrowIdx = rest.indexWhere(_.text == "=>")
+        if arrowIdx > 0 then
+          val before = rest(arrowIdx - 1)
+          if before.kind != Kind.Space || before.text != " " then
+            var c = leadingCols + 1
+            var k = 0
+            while k < arrowIdx do
+              c += rest(k).text.length
+              k += 1
+            emit
+              ( c, "R33-multiline-case-arrow-space",
+                "exactly one space is required before `=>` in a multi-line case" )
+
         finalizeCaseRun(s, out)
       else
         // Single-line case
@@ -1591,18 +1615,16 @@ object Checker:
           if depth == 0 then
             val nextSem = nextSemantic(rest, i + 1)
             if nextSem >= 0 && rest(nextSem).text == "using" then
-              // Skip parameter modifiers (e.g. `inline`) after `using` so the
-              // expected name column is aligned under the first parameter's
-              // name, not under the modifier word.
-              var nameIdx = nextSemantic(rest, nextSem + 1)
-              while
-                nameIdx >= 0 && rest(nameIdx).kind == Kind.Code
-                  && ModifierWords.contains(rest(nameIdx).text)
-              do nameIdx = nextSemantic(rest, nameIdx + 1)
-              if nameIdx >= 0 then
+              // Per-parameter modifiers (e.g. `inline`) are part of the
+              // parameter, so subsequent rows align under the FIRST token
+              // of the parameter — including the modifier — not under the
+              // parameter's name. So `inline commensurable: …,` followed
+              // by `addable: …,` aligns `addable` under `inline`.
+              val firstTokIdx = nextSemantic(rest, nextSem + 1)
+              if firstTokIdx >= 0 then
                 var c = leadingCols + 1
                 var k = 0
-                while k < nameIdx do
+                while k < firstTokIdx do
                   c += rest(k).text.length
                   k += 1
                 s.usingNameColumn = Some(c)

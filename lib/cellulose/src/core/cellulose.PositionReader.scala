@@ -103,7 +103,7 @@ class PositionReader(private var in: Stream[Text]):
                     Codl.Position(lastLine, lastCol, 1),
                     Codl.Issue.CarriageReturnMismatch(false) ) )
 
-          case true  =>
+          case true =>
             ()
 
         if read() != '\n' then
@@ -117,7 +117,7 @@ class PositionReader(private var in: Stream[Text]):
 
       case '\n' =>
         requireCr match
-          case true  =>
+          case true =>
             raise
               ( ParseError
                   ( Codl,

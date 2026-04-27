@@ -50,10 +50,9 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
+import unsafeExceptions.canThrowAny
 import AsyncError.Reason
 import Fulfillment.*
-
-import unsafeExceptions.canThrowAny
 
 sealed trait Monitor extends Resultant:
   val promise: Promise[Result]

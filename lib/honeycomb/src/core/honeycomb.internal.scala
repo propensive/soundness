@@ -123,7 +123,7 @@ object internal:
               val boolean: Expr[Boolean] = pattern.attributes(head).let(_.s).absolve match
                 case Unset      => '{$scrutinee.attributes(${Expr(head)}) == Unset}
 
-                case "\u0000"   =>
+                case "\u0000" =>
                   index += 1
                   types ::= TypeRepr.of[Text]
                   iterator.next()

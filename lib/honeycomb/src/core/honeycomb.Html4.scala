@@ -153,14 +153,19 @@ object Html4Transitional:
   given href: ("href" is Attribute on "a" | "area" | "base" | "link" of Url) = attribute()
   given src: ("src" is Attribute on "img" | "input" | "script" | "iframe" of Url) = attribute()
   given alt: ("alt" is Attribute on "applet" | "area" | "img" | "input" of Textual) = attribute()
+
   given `type`: ("type" is Attribute on
     "a" | "link" | "object" | "param" | "script" | "style" | "input" | "button" of Mime) = attribute()
+
   given typeOl: ("type" is Attribute on "ol" | "ul" | "li" of OlType) = attribute()
+
   given name: ("name" is Attribute on
     "a" | "applet" | "button" | "form" | "iframe" | "img" | "input" | "map" | "meta" | "object"
     | "param" | "select" | "textarea" of Name) = attribute()
+
   given value: ("value" is Attribute on "input" | "option" | "param" | "button" of Textual) =
     attribute()
+
   given valueLi: ("value" is Attribute on "li" of PositiveInt) = attribute()
   given rel: ("rel" is Attribute on "a" | "link" of Tokens) = attribute()
   given rev: ("rev" is Attribute on "a" | "link" of Tokens) = attribute()
@@ -193,8 +198,10 @@ object Html4Transitional:
   given coords: ("coords" is Attribute on "a" | "area" of Coords) = attribute()
   given nohref: ("nohref" is Attribute on "area" of Presence) = attribute()
   given hreflang: ("hreflang" is Attribute on "a" | "link" of Language) = attribute()
+
   given charset: ("charset" is Attribute on "a" | "link" | "script" | "meta" of Charset) =
     attribute()
+
   given media: ("media" is Attribute on "link" | "style" of MediaQueryList) = attribute()
   given defer: ("defer" is Attribute on "script" of Presence) = attribute()
   given language: ("language" is Attribute on "script" of Textual) = attribute()

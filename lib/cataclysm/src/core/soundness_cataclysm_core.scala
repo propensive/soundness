@@ -39,5 +39,4 @@ export
       From, Import, inches, Inherit, Initial, internal, Keyframe, Keyframes, Length, max, MediaRule,
       min, MixBlendMode, mm, Overflow, pc, PointerEvents, Position, PropertyDef, PropertyValue, pt,
       px, rem, select, Selectable, Selector, ShowProperty, TextAlign, TextDecorationLine,
-      TextDecorationStyle, To, Transparent, UserSelect, VerticalAlign, vh, vmax/*, vmin, vw, ||,
-      ~*/, ~~ }
+      TextDecorationStyle, To, Transparent, UserSelect, VerticalAlign, vh, vmax, ~~ }

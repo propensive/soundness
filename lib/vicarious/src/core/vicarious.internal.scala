@@ -79,7 +79,7 @@ object internal:
     val fields = fieldNames[key]("")
     val label = fields(index)+"."+key.valueOrAbort
     ConstantType(IntConstant(fields.indexOf(label))).asType.absolve match
-      case '[ type id <: Nat; id ] => '{Proxy[key, value, id]()}
+      case '[type id <: Nat; id] => '{Proxy[key, value, id]()}
 
 
   def proxy[key: Type, value: Type]: Macro[Proxy[key, value, 0]] =

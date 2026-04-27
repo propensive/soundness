@@ -446,7 +446,7 @@ class Report(using Environment)(using palette: TestPalette):
                   operations(metric(bench.benchmark.mean), metric(comparison.benchmark.mean))
 
               val valueWithUnits = baseline.metric match
-                case Temporal  =>
+                case Temporal =>
                   showTime(value.toLong)
 
                 case Cadential =>

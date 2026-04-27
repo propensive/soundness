@@ -34,11 +34,7 @@ package urticose
 
 import anticipation.*
 import contingency.*
-import distillate.*
-import gossamer.*
 import prepositional.*
-import spectacular.*
-import vacuous.*
 
 export urticose.internal.Ipv6
 export urticose.internal.Opaques.Ipv4

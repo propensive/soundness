@@ -162,8 +162,9 @@ object Tokenizer:
 
   // Scans a quoted string starting at position `start` (which is the opening quote).
   // Returns (positionAfterString, fullText including quotes, closedOnThisLine).
-  // Handles escape sequences. If the string spans newlines, scanning stops at the
-  // newline; the caller is responsible for setting tokenizer state accordingly.
+  // Handles escape sequences and string-interpolation blocks `${...}`. If the
+  // string spans newlines, scanning stops at the newline; the caller is
+  // responsible for setting tokenizer state accordingly.
   private def scanQuotedString(text: String, start: Int, quote: Char): (Int, String, Boolean) =
     val triple = quote == '"' && start + 2 < text.length
       && text.charAt(start + 1) == '"' && text.charAt(start + 2) == '"'
@@ -184,6 +185,22 @@ object Tokenizer:
       else if !triple && text.charAt(i) == quote then
         i += 1
         done = true
+      else if text.charAt(i) == '$' && i + 1 < text.length && text.charAt(i + 1) == '{' then
+        // Skip past the interpolation block, balancing nested `{`/`}`. Quoted
+        // strings inside the block (which themselves can contain `{`/`}`) are
+        // skipped via a recursive scan so they don't unbalance the count.
+        i += 2
+        var depth = 1
+        while i < text.length && text.charAt(i) != '\n' && depth > 0 do
+          val c = text.charAt(i)
+          if c == '{' then { depth += 1; i += 1 }
+          else if c == '}' then { depth -= 1; i += 1 }
+          else if c == '"' || c == '\'' then
+            val (newPos, _, _) = scanQuotedString(text, i, c)
+            i = newPos
+          else if c == '\\' && i + 1 < text.length && text.charAt(i + 1) != '\n' then
+            i += 2
+          else i += 1
       else if text.charAt(i) == '\\' && i + 1 < text.length && text.charAt(i + 1) != '\n' then
         i += 2
       else i += 1
