@@ -58,3 +58,4 @@ object Ci:
   def drone: Boolean = safely(Environment.drone[Text]) == t"true"
   def semaphore: Boolean = safely(Environment.semaphore[Text]) == t"true"
   def buddy: Boolean = safely(Environment.buddyWorkspaceId[Text]).present
+  def claudeCode: Boolean = safely(Environment.claudecode[Text]).present
