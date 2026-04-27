@@ -349,80 +349,87 @@ object Http:
       new Response(1.1, status, headers, body)
 
     def parse(stream: Stream[Data]): Response raises HttpResponseError =
-      val conduit = Conduit(stream)
+      val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)
 
-      inline def expect(char: Char) = if conduit.datum != char then raise:
-        HttpResponseError(HttpResponseError.Reason.Expectation(char, conduit.datum.toChar))
+      inline def expect(char: Char): Unit =
+        if cursor.datum(using Unsafe) != char.toByte then raise:
+          HttpResponseError(HttpResponseError.Reason.Expectation(char, cursor.datum(using Unsafe).toChar))
 
-      conduit.mark()
-      expect('H')
-      conduit.next()
-      expect('T')
-      conduit.next()
-      expect('T')
-      conduit.next()
-      expect('P')
-      conduit.next()
-      expect('/')
-      conduit.next()
-      conduit.seek(' ')
-      val version: Http.Version = Http.Version.parse(Ascii(conduit.save()).show)
-      conduit.next()
-      conduit.mark()
-      if conduit.datum < '1' || conduit.datum > '5' then
-        conduit.next()
-        conduit.next()
-        abort(HttpResponseError(HttpResponseError.Reason.Status(Ascii(conduit.save()).show)))
+      val version: Http.Version = cursor.hold:
+        val start = cursor.mark
+        expect('H'); cursor.next()
+        expect('T'); cursor.next()
+        expect('T'); cursor.next()
+        expect('P'); cursor.next()
+        expect('/'); cursor.next()
+        cursor.seek(' '.toByte)
+        Http.Version.parse(Ascii(cursor.grab(start, cursor.mark)).show)
 
-      var code: Int = conduit.datum - '0'
-      conduit.next()
+      cursor.next()
 
-      if conduit.datum < '0' || conduit.datum > '9' then
-        conduit.next()
-        abort(HttpResponseError(HttpResponseError.Reason.Status(Ascii(conduit.save()).show)))
+      val code: Int = cursor.hold:
+        val start = cursor.mark
+        val d1 = cursor.datum(using Unsafe)
+        if d1 < '1'.toByte || d1 > '5'.toByte then
+          cursor.next()
+          cursor.next()
+          abort(HttpResponseError(HttpResponseError.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show)))
 
-      code = code*10 + (conduit.datum - '0')
-      conduit.next()
+        var code = d1 - '0'.toByte
+        cursor.next()
+        val d2 = cursor.datum(using Unsafe)
+        if d2 < '0'.toByte || d2 > '9'.toByte then
+          cursor.next()
+          abort(HttpResponseError(HttpResponseError.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show)))
 
-      if conduit.datum < '0' || conduit.datum > '9' then
-        abort(HttpResponseError(HttpResponseError.Reason.Status(Ascii(conduit.save()).show)))
+        code = code*10 + (d2 - '0'.toByte)
+        cursor.next()
+        val d3 = cursor.datum(using Unsafe)
+        if d3 < '0'.toByte || d3 > '9'.toByte then
+          abort(HttpResponseError(HttpResponseError.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show)))
 
-      code = code*10 + (conduit.datum - '0')
-      conduit.next()
+        code*10 + (d3 - '0'.toByte)
+
+      cursor.next()
       expect(' ')
 
       val status = Http.Status.unapply(code).optional.or:
         abort(HttpResponseError(HttpResponseError.Reason.Status(code.toString.tt)))
 
-      conduit.seek('\r')
-      conduit.next()
+      cursor.seek('\r'.toByte)
+      cursor.next()
       expect('\n')
 
       def readHeaders(headers: List[Http.Header]): List[Http.Header] =
-        conduit.next()
-        conduit.mark()
-        if conduit.datum == '\r' then
-          conduit.next()
+        cursor.next()
+        if cursor.datum(using Unsafe) == '\r'.toByte then
+          cursor.next()
           expect('\n')
           headers
 
         else
-          conduit.next()
-          conduit.seek(':')
-          val header = Ascii(conduit.save()).show
-          conduit.next()
-          while conduit.datum == ' ' || conduit.datum == '\t' do conduit.next()
-          conduit.mark()
-          conduit.seek('\r')
-          val value = Ascii(conduit.save()).show
-          conduit.next()
+          val header: Text = cursor.hold:
+            val start = cursor.mark
+            cursor.seek(':'.toByte)
+            Ascii(cursor.grab(start, cursor.mark)).show
+
+          cursor.next()
+          while cursor.datum(using Unsafe) == ' '.toByte || cursor.datum(using Unsafe) == '\t'.toByte
+          do cursor.next()
+
+          val value: Text = cursor.hold:
+            val start = cursor.mark
+            cursor.seek('\r'.toByte)
+            Ascii(cursor.grab(start, cursor.mark)).show
+
+          cursor.next()
           expect('\n')
           readHeaders(Http.Header(header, value) :: headers)
 
       val headers = readHeaders(Nil)
 
-      conduit.break()
-      val body = Http.Body.Streaming(conduit.remainder)
+      cursor.next()
+      val body = Http.Body.Streaming(cursor.remainder)
 
       Response(version, status, headers.reverse, body)
 

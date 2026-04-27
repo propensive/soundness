@@ -88,21 +88,21 @@ class Websocket[ResultType](request: Http.Request, handle: Stream[Frame] => Resu
     (bytes(index)^mask(index%4)).toByte
 
   def events(): Stream[Frame] =
-    lazy val conduit: Conduit = Conduit(request.body())
+    lazy val cursor = Cursor(request.body().filter(_.nonEmpty).iterator)
 
     def recur(): Stream[Frame] =
-      val head = conduit.datum
+      val head: Int = cursor.lay(0)(b => b & 0xff)
       val fin = (head & 128) == 128
       val opcode = Websocket.Opcode.fromOrdinal(head & 16)
-      conduit.next()
+      cursor.next()
 
-      val length = (conduit.datum&bin"01111111") match
-        case 127   => B64(conduit.take(8)).s64.long.toInt
-        case 126   => B16(conduit.take(2)).s16.int
+      val length = (cursor.lay(0)(b => (b & 0xff) & bin"01111111")) match
+        case 127   => B64(cursor.take(Data())(8)).s64.long.toInt
+        case 126   => B16(cursor.take(Data())(2)).s16.int
         case count => count
 
-      val mask = conduit.take(4)
-      val payload = unmask(conduit.take(length), mask)
+      val mask = cursor.take(Data())(4)
+      val payload = unmask(cursor.take(Data())(length), mask)
 
       import Websocket.Opcode.*
       opcode match

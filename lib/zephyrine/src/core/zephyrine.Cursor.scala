@@ -36,6 +36,7 @@ import scala.collection.mutable as scm
 
 import denominative.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 
@@ -154,6 +155,22 @@ class Cursor[data]
     focusBlock = block
     focus = Prim
 
+  inline def blockTail: data =
+    val len = addressable.length(current)
+    if focus.n0 == 0 && len > 0 then current
+    else if focus.n0 >= len then addressable.empty
+    else
+      val target = addressable.blank(len - focus.n0)
+      addressable.clone(current, focus, (len - 1).z)(target)
+      addressable.build(target)
+
+  inline def advanceBlock(): Boolean =
+    val nextBlock = focusBlock.next
+    val offset = nextBlock - first
+    if offset < buffer.length || iterator.hasNext then forward() yet true else false
+
+  inline def remainder: Stream[data] = blockTail #:: Stream.from(iterator)
+
   inline def cue(mark: Mark): Unit =
     while mark.block.n0 < focusBlock.n0 do backward()
     while mark.block.n0 > focusBlock.n0 do forward()
@@ -224,6 +241,7 @@ class Cursor[data]
 
     if !keep0 then
       keep = true
+      buffer.clear()
       first = focusBlock
       store(focusBlock, current)
 
