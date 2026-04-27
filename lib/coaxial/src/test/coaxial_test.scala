@@ -44,7 +44,7 @@ object Tests extends Suite(m"Coaxial tests"):
   def run(): Unit = unsafely:
 
     val u = udp"3876".json.show
-    Json.parse(u).as[UdpPort]
+    u.decode[Json].as[UdpPort]
 
     supervise:
       val task = async:

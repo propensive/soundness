@@ -39,7 +39,7 @@ import environments.java
 import temporaryDirectories.system
 import workingDirectories.default
 import logging.silent
-import stdioSources.virtualMachine.ansi
+import stdios.virtualMachine.ansi
 
 import strategies.throwUnsafely
 import charEncoders.utf8
@@ -125,7 +125,8 @@ object Tests extends Suite(m"Ziggurat tests"):
       val winSshOk =
         safely(sh"ssh -o BatchMode=yes -o ConnectTimeout=5 $host echo ok".exec[Exit]()) == Exit.Ok
 
-      if !winSshOk then Out.println(t"Windows host $host unreachable via SSH; skipping Windows tests")
+      if !winSshOk
+      then Out.println(t"Windows host $host unreachable via SSH; skipping Windows tests")
       else
         val workDir: Path on Linux = temporaryDirectory[Path on Linux] / Uuid().show
         workDir.create[Directory]()

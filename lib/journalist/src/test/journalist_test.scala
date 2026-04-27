@@ -32,7 +32,7 @@
                                                                                                   */
 package journalist
 
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Journalist Tests"):
   def run(): Unit = ()

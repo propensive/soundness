@@ -120,9 +120,11 @@ object PolyglotInstaller:
       . map: path =>
           val name = path.name
           val withoutPrefix = name.skip(RunnerPrefix.length)
-          val label = if withoutPrefix.ends(ExeSuffix)
-                      then withoutPrefix.skip(ExeSuffix.length, Rtl)
-                      else withoutPrefix
+
+          val label =
+            if withoutPrefix.ends(ExeSuffix) then withoutPrefix.skip(ExeSuffix.length, Rtl)
+            else withoutPrefix
+
           val data: Data = path.open(_.read[Data])
           val gzip = !label.starts(t"windows")
           Payload(label, data, gzip)

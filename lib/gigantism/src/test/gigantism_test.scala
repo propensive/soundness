@@ -32,7 +32,7 @@
                                                                                                   */
 package gigantism
 
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Gigantism Tests"):
   def run(): Unit = ()

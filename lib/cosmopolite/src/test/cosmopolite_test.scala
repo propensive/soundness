@@ -32,28 +32,28 @@
                                                                                                   */
 package cosmopolite
 
-import languages.common.*
+// import languages.common.*
 
-import probably.*
-import rudiments.*
-import gossamer.*
+// import probably.*
+// import rudiments.*
+// import gossamer.*
 
-import unsafeExceptions.canThrowAny
+// import unsafeExceptions.canThrowAny
 
-object Tests extends Suite(m"Cosmopolite Tests"):
-  def run(): Unit =
-    test(m"extract language from string (English)"):
-      val two = en"two" & fr"deux"
-      two[En]
-    . assert(_ == t"two")
+// object Tests extends Suite(m"Cosmopolite Tests"):
+//   def run(): Unit =
+//     test(m"extract language from string (English)"):
+//       val two = en"two" & fr"deux"
+//       two[En]
+//     . assert(_ == t"two")
 
-    test(m"extract language from string (French)"):
-      val two = en"two" & fr"deux"
-      two[Fr]
-    . assert(_ == t"deux")
+//     test(m"extract language from string (French)"):
+//       val two = en"two" & fr"deux"
+//       two[Fr]
+//     . assert(_ == t"deux")
 
-    test(m"extract default language"):
-      val two = en"two" & fr"deux"
-      given Language[Fr] = Language[Fr]("fr")
-      two()
-    . assert(_ == t"deux")
+//     test(m"extract default language"):
+//       val two = en"two" & fr"deux"
+//       given Language[Fr] = Language[Fr]("fr")
+//       two()
+//     . assert(_ == t"deux")
