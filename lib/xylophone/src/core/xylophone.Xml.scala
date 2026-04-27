@@ -289,7 +289,7 @@ object Xml extends Tag.Container
       builder.append("<?")
       builder.append(target.s)
 
-      if !data.s.isEmpty then
+      if data.length > 0 then
         builder.append(' ')
         builder.append(data.s)
 
@@ -827,7 +827,7 @@ object Xml extends Tag.Container
             headerStandalone = standaloneValue.s match
               case "yes" => true
               case "no"  => false
-              case _     => fail(Unexpected(standaloneValue.s.charAt(0)))
+              case _     => fail(Unexpected(standaloneValue.chars(0)))
             skip()
 
           case _ =>
@@ -843,10 +843,11 @@ object Xml extends Tag.Container
         next()
         content = cursor.hold(piTarget(cursor.mark))
 
-        if content.s.length == 3 then
-          val first  = content.s.charAt(0)
-          val second = content.s.charAt(1)
-          val third  = content.s.charAt(2)
+        if content.length == 3 then
+          val chars  = content.chars
+          val first  = chars(0)
+          val second = chars(1)
+          val third  = chars(2)
 
           if (first == 'x' || first == 'X')
           && (second == 'm' || second == 'M')
