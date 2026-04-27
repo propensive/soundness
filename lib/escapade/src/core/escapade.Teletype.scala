@@ -73,9 +73,9 @@ object Teletype:
     type Show[value] = value is Teletypeable
 
     def classTag: ClassTag[Teletype] = summon[ClassTag[Teletype]]
-    def size(text: Teletype): Int = text.plain.s.length
+    def size(text: Teletype): Int = text.plain.length
     def text(teletype: Teletype): Text = teletype.plain
-    def length(text: Teletype): Int = text.plain.s.length
+    def length(text: Teletype): Int = text.plain.length
     def apply(text: Text): Teletype = Teletype(text)
     def apply(char: Char): Teletype = Teletype(char.show)
 
@@ -128,7 +128,7 @@ object Teletype:
 
   def apply[value: Showable](value: value)(transform: Ansi.Transform): Teletype =
     val text: Text = value.show
-    Teletype(text, TreeMap(CharSpan(0, text.s.length) -> transform))
+    Teletype(text, TreeMap(CharSpan(0, text.length) -> transform))
 
 case class Teletype
   ( plain:      Text,
