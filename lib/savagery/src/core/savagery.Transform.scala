@@ -32,12 +32,33 @@
                                                                                                   */
 package savagery
 
+import anticipation.*
 import geodesy.*
+import gossamer.*
+import prepositional.*
+import proscenium.*
+import spectacular.*
 import vacuous.*
+
+import decimalFormatters.java
+
+object Transform:
+  private given floatShowable: Float is Showable = _.toString.tt
+
+  given encodable: Transform is Encodable in Text =
+    _.absolve match
+      case Translate(Shift(dx, dy))   => t"translate($dx,$dy)"
+      case Scale(x, Unset)            => t"scale($x)"
+      case Scale(x, y: Float)         => t"scale($x,$y)"
+      case Rotate(angle)              => t"rotate(${angle.degrees})"
+      case SkewX(angle)               => t"skewX(${angle.degrees})"
+      case SkewY(angle)               => t"skewY(${angle.degrees})"
+      case Matrix(a, b, c, d, e, f)   => t"matrix($a,$b,$c,$d,$e,$f)"
 
 enum Transform:
   case Translate(vector: Shift)
   case Scale(x: Float, y: Optional[Float])
   case Rotate(angle: Angle)
-  case Matrix()
-  case Skew()
+  case SkewX(angle: Angle)
+  case SkewY(angle: Angle)
+  case Matrix(a: Float, b: Float, c: Float, d: Float, e: Float, f: Float)

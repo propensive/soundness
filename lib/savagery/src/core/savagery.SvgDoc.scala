@@ -32,6 +32,16 @@
                                                                                                   */
 package savagery
 
+import anticipation.*
+import gossamer.*
 import hieroglyph.*
+import vacuous.*
+import xylophone.*
 
-case class SvgDoc(svg: Svg, encoding: Encoding)
+case class SvgDoc(svg: Svg, encoding: Encoding):
+  def xml: Xml =
+    val header = Header(t"1.0", encoding.name, Unset)
+
+    svg.xml match
+      case node: Node       => Fragment(header, node)
+      case Fragment(nodes*) => Fragment((header +: nodes)*)

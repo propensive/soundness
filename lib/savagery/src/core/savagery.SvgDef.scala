@@ -32,8 +32,15 @@
                                                                                                   */
 package savagery
 
+import scala.collection.immutable.SeqMap
+
 import anticipation.*
+import gossamer.*
+import xylophone.*
 
-sealed trait SvgDef
+sealed trait SvgDef:
+  def xml: Xml
 
-case class LinearGradient[color: Chromatic](stops: Stop[color]*) extends SvgDef
+case class LinearGradient[color](id: SvgId, stops: Stop[color]*) extends SvgDef:
+  def xml: Xml =
+    Element(t"linearGradient", SeqMap(t"id" -> id.text), stops.map(_.xml).toSeq.nodes)

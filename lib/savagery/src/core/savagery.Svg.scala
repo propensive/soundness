@@ -32,12 +32,28 @@
                                                                                                   */
 package savagery
 
-import quantitative.*
+import scala.collection.immutable.SeqMap
+
+import anticipation.*
+import gossamer.*
+import spectacular.*
+import xylophone.*
 
 case class Svg
-  ( width:      Quantity[Units[1, Distance]],
-    height:     Quantity[Units[1, Distance]],
-    viewWidth:  Float,
-    viewHeight: Float,
-    defs:       List[SvgDef],
-    figures:    List[Figure] )
+    (width: Float, height: Float, defs: List[SvgDef] = Nil, figures: List[Figure] = Nil):
+
+  def xml: Xml =
+    given showable: Float is Showable = _.toString.tt
+
+    val attrs: SeqMap[Text, Text] = SeqMap
+     (t"xmlns"   -> t"http://www.w3.org/2000/svg",
+      t"viewBox" -> t"0 0 ${width.show} ${height.show}",
+      t"width"   -> width.show,
+      t"height"  -> height.show)
+
+    val defsElement: Seq[Xml] =
+      if defs.isEmpty then Nil
+      else Seq(Element(t"defs", SeqMap[Text, Text](), defs.map(_.xml).toSeq.nodes))
+
+    val children: IArray[Node] = (defsElement ++ figures.map(_.xml)).nodes
+    Element(t"svg", attrs, children)
