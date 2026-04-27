@@ -38,4 +38,4 @@ import proscenium.*
 
 case class ExecError(command: Command, stdout: Stream[Data], stderr: Stream[Data])
   ( using Diagnostics )
-extends Error(m"execution of the command $command failed")
+extends Error(realm"gu", 1, 0)(m"execution of the command $command failed")

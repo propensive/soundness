@@ -52,7 +52,7 @@ import vacuous.*
 
 
 object internal:
-  given Realm = realm"synesthesia"
+  given Realm = realm"sn"
 
 
   def prompt(context: Expr[StringContext], arguments0: Expr[Seq[Any]], human: Boolean)

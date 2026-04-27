@@ -618,4 +618,4 @@ object Tests extends Suite(m"internal Benchmarks"):
 
       test(m"Invalid path"):
         demilitarize(p"123").map(_.message)
-      . assert(_ == List("serpentine: The path 123 is not a valid Windows or POSIX path"))
+      . assert(_ == List("[↯SN-se/2] The path 123 is not a valid Windows or POSIX path"))

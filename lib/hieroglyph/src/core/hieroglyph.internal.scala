@@ -40,7 +40,7 @@ import gigantism.*
 import proscenium.*
 
 object internal:
-  private given realm: Realm = realm"hieroglyph"
+  private given realm: Realm = realm"hi"
 
   opaque type CharRange = Long
 
@@ -66,7 +66,7 @@ object internal:
 
     val context: StringContext = contextExpr.valueOrAbort
     Encoding.unapply(context.parts.head.tt) match
-      case None => halt(m"the encoding ${context.parts.head.tt} was not available")
+      case None => halt(2, m"the encoding ${context.parts.head.tt} was not available")
 
       case Some(encoding) =>
         if !encoding.charset.isRegistered
@@ -84,4 +84,4 @@ object internal:
     Unicode(name) match
       case char: Char => Expr(char)
       case text: Text => Expr(text)
-      case _          => halt(m"the unicode character $name does not exist")
+      case _          => halt(3, m"the unicode character $name does not exist")

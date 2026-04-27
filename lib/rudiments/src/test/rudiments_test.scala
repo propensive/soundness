@@ -116,14 +116,14 @@ object Tests extends Suite(m"Rudiments Tests"):
 
           long
         .map(_.message)
-      . assert(_ == List(t"hypotenuse: a binary literal must be 8, 16, 32 or 64 bits long"))
+      . assert(_ == List(t"[↯SN-hp/4] a binary literal must be 8, 16, 32 or 64 bits long"))
 
       test(m"Incorrect bit count"):
         demilitarize:
           val x: Long = bin"0101010 10101010 10101010 10101010 00000000 11111111 11111111 11111111"
           x
         .map(_.message)
-      . assert(_ == List(t"hypotenuse: a binary literal must be 8, 16, 32 or 64 bits long"))
+      . assert(_ == List(t"[↯SN-hp/4] a binary literal must be 8, 16, 32 or 64 bits long"))
 
       test(m"Too many bits for type"):
         demilitarize:
@@ -135,7 +135,7 @@ object Tests extends Suite(m"Rudiments Tests"):
         demilitarize:
           bin"00011112 11111111"
         .map(_.message)
-      . assert(_ == List(t"hypotenuse: a binary value can only contain characters '0' or '1'"))
+      . assert(_ == List(t"[↯SN-hp/3] a binary value can only contain characters '0' or '1'"))
 
     suite(m"hex tests"):
       test(m"Specify some bytes"):
@@ -150,13 +150,13 @@ object Tests extends Suite(m"Rudiments Tests"):
         demilitarize:
           hex"bacdf1e"
         .map(_.message)
-      . assert(_ == List(t"hypotenuse: a hexadecimal value must have an even number of digits"))
+      . assert(_ == List(t"[↯SN-hp/6] a hexadecimal value must have an even number of digits"))
 
       test(m"Non-hex content"):
         demilitarize:
           hex"bacdf1eg"
         .map(_.message)
-      . assert(_ == List(t"hypotenuse: g is not a valid hexadecimal character"))
+      . assert(_ == List(t"[↯SN-hp/5] g is not a valid hexadecimal character"))
 
       /*test(m"Convert a byte to hex"):
         126.toByte.hex

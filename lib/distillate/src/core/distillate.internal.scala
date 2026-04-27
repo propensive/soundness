@@ -40,7 +40,7 @@ import gigantism.*
 import proscenium.*
 
 object internal:
-  private given realm: Realm = realm"distillate"
+  private given realm: Realm = realm"dl"
 
   def enumerable[enumeration <: reflect.Enum: Type]: Macro[enumeration is Enumerable] =
     import quotes.reflect.*

@@ -36,12 +36,12 @@ import anticipation.*
 import fulminate.*
 
 object HostnameError:
-  enum Reason:
-    case LongDnsLabel(label: Text)
-    case LongHostname
-    case InvalidChar(char: Char)
-    case EmptyDnsLabel(n: Int)
-    case InitialDash(label: Text)
+  enum Reason(val number: Int) extends Clarification:
+    case LongDnsLabel(label: Text) extends Reason(1)
+    case LongHostname              extends Reason(2)
+    case InvalidChar(char: Char)   extends Reason(3)
+    case EmptyDnsLabel(n: Int)     extends Reason(4)
+    case InitialDash(label: Text)  extends Reason(5)
 
   object Reason:
     given communicable: Reason is Communicable =
@@ -52,4 +52,4 @@ object HostnameError:
       case InitialDash(label)  => m"the DNS label $label begins with a dash which is not allowed"
 
 case class HostnameError(text: Text, reason: HostnameError.Reason)(using Diagnostics)
-extends Error(m"the hostname is not valid because $reason")
+extends Error(realm"ur", 2, reason.number)(m"the hostname is not valid because $reason")

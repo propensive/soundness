@@ -51,5 +51,5 @@ object internal:
   def realm(context: Expr[StringContext]): Macro[Realm] =
     val name: String = context.valueOrAbort.parts.head
     if !name.matches("[a-z]+")
-    then halt(m"the realm name should contain only lowercase letters")(using Realm("fulminate"))
+    then halt(3, m"the realm code should contain only lowercase letters")(using summon, Realm("fu"))
     else '{Realm(${Expr(name)}.tt)}

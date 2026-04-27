@@ -42,8 +42,11 @@ object PemError:
     case Reason.EndMissing   => m"the END line could not be found"
     case Reason.EmptyFile    => m"the file was empty"
 
-  enum Reason:
-    case BeginMissing, EndMissing, BadBase64, EmptyFile
+  enum Reason(val number: Int) extends Clarification:
+    case BeginMissing extends Reason(1)
+    case EndMissing   extends Reason(2)
+    case BadBase64    extends Reason(3)
+    case EmptyFile    extends Reason(4)
 
 case class PemError(reason: PemError.Reason)(using Diagnostics)
-extends Error(m"could not parse PEM content because $reason")
+extends Error(realm"en", 2, reason.number)(m"could not parse PEM content because $reason")

@@ -38,4 +38,4 @@ import anticipation.*
 import fulminate.*
 
 case class ExpectationError[result](result: result)(using Diagnostics)
-extends Error(m"the expression was expected to fail, but succeeded")
+extends Error(realm"cg", 2, 0)(m"the expression was expected to fail, but succeeded")

@@ -35,4 +35,4 @@ package parasite
 import fulminate.*
 
 case class RetryError(count: Int)(using Diagnostics)
-extends Error(m"aborted repeated evaluation after $count attempts")
+extends Error(realm"pr", 1, 0)(m"aborted repeated evaluation after $count attempts")

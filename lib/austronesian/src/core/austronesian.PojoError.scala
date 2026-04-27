@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class PojoError()(using Diagnostics)
-extends Error(m"could not deserialize from Java POJO types")
+extends Error(realm"au", 1, 0)(m"could not deserialize from Java POJO types")

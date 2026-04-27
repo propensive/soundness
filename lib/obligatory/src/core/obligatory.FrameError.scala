@@ -37,4 +37,5 @@ import scala.annotation.*
 import anticipation.*
 import fulminate.*
 
-case class FrameError()(using Diagnostics) extends Error(m"could not deframe the message")
+case class FrameError()(using Diagnostics)
+extends Error(realm"ob", 2, 0)(m"could not deframe the message")

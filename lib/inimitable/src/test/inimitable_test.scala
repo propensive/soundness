@@ -41,6 +41,7 @@ import larceny.*
 import probably.*
 
 import errorDiagnostics.stackTraces
+import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Inimitable Tests"):
   def run(): Unit =
@@ -101,4 +102,4 @@ object Tests extends Suite(m"Inimitable Tests"):
         demilitarize:
           uuid"not-a-uuid"
         .map(_.message)
-      . assert(_ == List(t"inimitable: not-a-uuid is not a valid UUID"))
+      . assert(_ == List(t"[↯SN-in/1] not-a-uuid is not a valid UUID"))

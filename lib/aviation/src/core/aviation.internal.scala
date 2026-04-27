@@ -142,9 +142,9 @@ object internal:
         val hour = d.toInt
         val Base60(minutes: Base60) = ((d - hour) * 100 + 0.5).toInt: @unchecked
 
-        if minutes >= 60 then halt(m"a time cannot have a minute value above 59", lit.pos)
-        if hour < 0 then halt(m"a time cannot be negative", lit.pos)
-        if hour > 12 then halt(m"a time cannot have an hour value above 12", lit.pos)
+        if minutes >= 60 then halt(5, m"a time cannot have a minute value above 59", lit.pos)
+        if hour < 0 then halt(6, m"a time cannot be negative", lit.pos)
+        if hour > 12 then halt(7, m"a time cannot have an hour value above 12", lit.pos)
 
         val Base24(hours: Base24) = (hour + (if pm^(hour == 12) then 12 else 0))%24: @unchecked
         val length = lit.pos.endColumn - lit.pos.startColumn
@@ -153,12 +153,12 @@ object internal:
           case r"[0-9][0-9]?\.[0-9][0-9][^0-9]*" =>
 
           case other =>
-            halt(m"the time should have exactly two minutes digits", lit.pos)
+            halt(8, m"the time should have exactly two minutes digits", lit.pos)
 
         '{Clockface(${Expr[Base24](hours)}, ${Expr[Base60](minutes)}, 0)}
 
       case _ =>
-        halt(m"expected a literal double value")
+        halt(9, m"expected a literal double value")
 
   object Date:
     inline given underlying: Underlying[Date, Int] = !!

@@ -53,7 +53,7 @@ import vacuous.*
 import EmailAddressError.Reason.*
 
 object EmailAddress:
-  private given realm: Realm = realm"urticose"
+  private given realm: Realm = realm"ur"
 
   given decodable: Tactic[EmailAddressError] => EmailAddress is Decodable in Text =
     EmailAddress.parse(_)

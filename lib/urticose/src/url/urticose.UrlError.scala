@@ -42,10 +42,10 @@ object UrlError:
     case Reason.BadHostname(hostname, reason) => m"$hostname was not valid because $reason"
     case Reason.BadIpv6(reason)               => m"the IPv6 address is not valid because $reason"
 
-  enum Reason:
-    case Expected(expectation: Expectation)
-    case BadHostname(hostname: Text, reason: HostnameError.Reason)
-    case BadIpv6(reason: IpAddressError.Reason)
+  enum Reason(val number: Int) extends Clarification:
+    case Expected(expectation: Expectation)                       extends Reason(1)
+    case BadHostname(hostname: Text, reason: HostnameError.Reason) extends Reason(2)
+    case BadIpv6(reason: IpAddressError.Reason)                    extends Reason(3)
 
   enum Expectation:
     case Colon, More, LowerCaseLetter, PortRange, Number
@@ -59,4 +59,5 @@ object UrlError:
       case Number          => m"a number"
 
 case class UrlError(text: Text, offset: Ordinal, reason: UrlError.Reason)(using Diagnostics)
-extends Error(m"the URL $text is not valid: $reason at ${offset.n0}")
+extends Error(realm"ur", 7, reason.number)
+         (m"the URL $text is not valid: $reason at ${offset.n0}")

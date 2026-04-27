@@ -38,13 +38,13 @@ import telekinesis.*
 import urticose.*
 
 object OAuthError:
-  enum Reason:
-    case Connection(url: HttpUrl, reason: ConnectError.Reason)
-    case InvalidJsonResponse
-    case UnexpectedHttpStatus(status: Http.Status)
-    case InsufficientPrivileges(scope: Text)
-    case Unauthorized
-    case Other
+  enum Reason(val number: Int) extends Clarification:
+    case Connection(url: HttpUrl, reason: ConnectError.Reason) extends Reason(1)
+    case InvalidJsonResponse                                   extends Reason(2)
+    case UnexpectedHttpStatus(status: Http.Status)             extends Reason(3)
+    case InsufficientPrivileges(scope: Text)                   extends Reason(4)
+    case Unauthorized                                          extends Reason(5)
+    case Other                                                 extends Reason(6)
 
   import Reason.*
 
@@ -59,4 +59,4 @@ object OAuthError:
       m"could not connect to the OAuth provider at $url because $reason"
 
 case class OAuthError(reason: OAuthError.Reason)(using Diagnostics)
-extends Error(m"OAuth failed because $reason")
+extends Error(realm"or", 1, reason.number)(m"OAuth failed because $reason")

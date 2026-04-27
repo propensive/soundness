@@ -35,9 +35,18 @@ package kaleidoscope
 import fulminate.*
 
 object RegexError:
-  enum Reason:
-    case UnclosedGroup, ExpectedGroup, BadRepetition, Uncapturable, UnexpectedChar, NotInGroup,
-        IncompleteRepetition, InvalidPattern, UnclosedEscape, EmptyCharClass, ZeroMaximum
+  enum Reason(val number: Int) extends Clarification:
+    case UnclosedGroup       extends Reason(1)
+    case ExpectedGroup       extends Reason(2)
+    case BadRepetition       extends Reason(3)
+    case Uncapturable        extends Reason(4)
+    case UnexpectedChar      extends Reason(5)
+    case NotInGroup          extends Reason(6)
+    case IncompleteRepetition extends Reason(7)
+    case InvalidPattern      extends Reason(8)
+    case UnclosedEscape      extends Reason(9)
+    case EmptyCharClass      extends Reason(10)
+    case ZeroMaximum         extends Reason(11)
 
   object Reason:
     given communicable: Reason is Communicable =
@@ -74,4 +83,5 @@ object RegexError:
         m"the maximum number of repetitions must be greater than zero"
 
 case class RegexError(index: Int, reason: RegexError.Reason)(using Diagnostics)
-extends Error(m"the regular expression could not be parsed because $reason at $index")
+extends Error(realm"kd", 1, reason.number)
+              (m"the regular expression could not be parsed because $reason at $index")

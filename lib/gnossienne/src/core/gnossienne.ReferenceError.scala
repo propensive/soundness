@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class ReferenceError(reference: Text)(using Diagnostics)
-extends Error(m"reference $reference could not be resolved")
+extends Error(realm"gn", 1, 0)(m"reference $reference could not be resolved")

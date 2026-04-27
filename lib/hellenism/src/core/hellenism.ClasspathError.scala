@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class ClasspathError(resource: Text)(using Diagnostics)
-extends Error(m"the resource $resource was not on the classpath")
+extends Error(realm"he", 1, 0)(m"the resource $resource was not on the classpath")

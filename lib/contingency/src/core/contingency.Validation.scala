@@ -62,7 +62,7 @@ object Validation:
       case n => m"$n messages: $joined"
 
 case class Validation(messages: List[(Pointer, Message)] = Nil)
-extends Error(Validation.text(messages)):
+extends Error(realm"cg", 4, 0)(Validation.text(messages)):
   private lazy val map: Map[Pointer, Message] = messages.to(Map)
 
   @targetName("add")

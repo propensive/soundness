@@ -51,7 +51,8 @@ object Errors:
 
     m"${errors.size} accrued errors: $joined"
 
-case class Errors(errors: (Text, Error)*)(using Diagnostics) extends Error(Errors.format(errors)):
+case class Errors(errors: (Text, Error)*)(using Diagnostics)
+extends Error(realm"cg", 3, 0)(Errors.format(errors)):
   private lazy val errorMap: Map[Text, Error] = errors.to(Map)
 
   @targetName("add")

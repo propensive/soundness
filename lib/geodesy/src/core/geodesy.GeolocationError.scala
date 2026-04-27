@@ -35,9 +35,14 @@ package geodesy
 import fulminate.*
 
 object GeolocationError:
-  enum Reason:
-    case MissingEquals, MultipleEquals, BadScheme, ExpectedSemicolon, UnexpectedSuffix,
-        ExpectedCoordinates, BadUncertainty
+  enum Reason(val number: Int) extends Clarification:
+    case MissingEquals       extends Reason(1)
+    case MultipleEquals      extends Reason(2)
+    case BadScheme           extends Reason(3)
+    case ExpectedSemicolon   extends Reason(4)
+    case UnexpectedSuffix    extends Reason(5)
+    case ExpectedCoordinates extends Reason(6)
+    case BadUncertainty      extends Reason(7)
 
   given communicable: Reason is Communicable =
     case Reason.MissingEquals       => m"the parameter does not contain an `=`"
@@ -49,4 +54,5 @@ object GeolocationError:
     case Reason.BadUncertainty      => m"the `uncertainty` parameter vas not a valid number"
 
 case class GeolocationError(reason: GeolocationError.Reason)(using Diagnostics)
-extends Error(m"the geo URI is not in the correct format because $reason")
+extends Error(realm"gd", 1, reason.number)
+         (m"the geo URI is not in the correct format because $reason")

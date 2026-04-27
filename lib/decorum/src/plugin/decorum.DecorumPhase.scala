@@ -45,15 +45,34 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
   private val errors: Boolean   = options.contains("errors")
   private val seen: mutable.Set[String] = mutable.Set.empty
 
+  private val esc: Char = 27.toChar
+  private val gray   = s"$esc[38;2;128;128;128m"
+  private val orange = s"$esc[38;2;255;165;0m"
+  private val yellow = s"$esc[38;2;255;215;0m"
+  private val cyan   = s"$esc[38;2;0;200;255m"
+  private val reset  = s"$esc[0m"
+
+  private def colourPrefix(rule: String, useColor: Boolean): String =
+    if useColor then
+      val rendered = rule.replace(".", s"$gray.$cyan")
+      s"$gray[$orange↯SN$gray-${yellow}de$gray/$cyan$rendered$gray]$reset "
+    else
+      s"[↯SN-de/$rule] "
+
   override def transformUnit(tree: tpd.Tree)(using context: Context): tpd.Tree =
     val source: SourceFile = context.compilationUnit.source
     val path: String       = source.file.path
     if seen.add(path) then
       val text: String = String(source.content)
       val module       = Checker.expectedModule(path)
+      val useColor     =
+        try
+          import dotty.tools.dotc.config.Settings.Setting.value
+          value(context.settings.color)(using context) != "never"
+        catch case _: Throwable => false
       Checker.check(path, module, text).foreach: violation =>
         val pos = position(source, violation.line, violation.column)
-        val msg = s"[${violation.rule}] ${violation.message}"
+        val msg = colourPrefix(violation.rule, useColor)+violation.message
         if errors then report.error(msg, pos) else report.warning(msg, pos)
     super.transformUnit(tree)
 

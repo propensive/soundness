@@ -36,4 +36,4 @@ import fulminate.*
 import proscenium.*
 
 case class McpError()(using Diagnostics)
-extends Error(m"an error occurred during an MCP operation")
+extends Error(realm"sn", 1, 0)(m"an error occurred during an MCP operation")

@@ -64,7 +64,7 @@ package logFormats:
 
         case head :: tail =>
           val date = dateFormat.format(timestamp).nn.tt
-          val first = e"${palette.subdued}($date) $level ${palette.informative}(${realm.name.fit(10)}) > $head"
+          val first = e"${palette.subdued}($date) $level ${palette.informative}(${realm.code.fit(10)}) > $head"
 
           (first :: tail.map(indent+_)).join(e"\n").render(termcapDefinitions.xterm256)
           (first :: tail.map(indent+_)).join(e"\n")

@@ -197,7 +197,7 @@ object Honeycomb:
             '{$expr && $scrutinee.isInstanceOf[Comment] && $checked}
 
           case Doctype(_) =>
-            halt(m"cannot match against a document type declaration")
+            halt(1, m"cannot match against a document type declaration")
 
           case Element("\u0000", _, _, _) =>
             index += 1

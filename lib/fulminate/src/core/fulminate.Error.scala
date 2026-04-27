@@ -39,12 +39,47 @@ object Error:
     case error: Error         => error
     case throwable: Throwable => UncheckedError(throwable)
 
-transparent abstract class Error(val message: Message, private val cause: Throwable | Null = null)
-  ( using val diagnostics: Diagnostics )
+transparent abstract class Error
+    (val realm: Realm, val d: Int, val e: Int)
+    (val message: Message, private val cause: Throwable | Null)
+    (using val diagnostics: Diagnostics)
 extends Exception(message.text.s, cause, false, diagnostics.captureStack):
   this: Error =>
+
+  def this(realm: Realm, d: Int, e: Int)(message: Message)(using Diagnostics) =
+    this(realm, d, e)(message, null)
+
+  def this(message: Message, cause: Throwable | Null = null)(using Diagnostics) =
+    this(Realm("zz"), 0, 0)(message, cause)
+
   def fullClass: List[Text] = List(getClass.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
   def className: Text = fullClass.last
   def component: Text = fullClass.head
-  override def getMessage: String = component.s+": "+message.text
+
+  def errorCode: Text =
+    if d == 0 then "".tt
+    else
+      val ePart = if e == 0 then "" else s".$e"
+      s"SN-${realm.code}/$d$ePart".tt
+
+  def colourCode: Text =
+    if d == 0 then "".tt
+    else
+      val esc = 27.toChar
+      val gray   = s"$esc[38;2;128;128;128m"
+      val orange = s"$esc[38;2;255;165;0m"
+      val yellow = s"$esc[38;2;255;215;0m"
+      val cyan   = s"$esc[38;2;0;200;255m"
+      val reset  = s"$esc[0m"
+      val ePart  = if e == 0 then "" else s"$gray.$cyan$e"
+      s"$gray[$orange↯SN$gray-$yellow${realm.code}$gray/$cyan$d$ePart$gray]$reset".tt
+
+  def labelled: Message =
+    if d == 0 then message
+    else m"[↯$errorCode] $message"
+
+  override def getMessage: String =
+    if d == 0 then component.s+": "+message.text
+    else "[↯"+errorCode+"] "+message.text
+
   override def getCause: Throwable | Null = cause

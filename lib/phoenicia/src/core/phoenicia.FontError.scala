@@ -36,10 +36,10 @@ import anticipation.*
 import fulminate.*
 
 object FontError:
-  enum Reason:
-    case MissingTable(tag: TableTag)
-    case UnknownFormat
-    case MagicNumber
+  enum Reason(val number: Int) extends Clarification:
+    case MissingTable(tag: TableTag) extends Reason(1)
+    case UnknownFormat               extends Reason(2)
+    case MagicNumber                 extends Reason(3)
 
   given communicable: Reason is Communicable =
     case Reason.MissingTable(tag) => m"the table ${tag.text} was not found"
@@ -47,4 +47,4 @@ object FontError:
     case Reason.MagicNumber       => m"the font did not contain expected check data"
 
 case class FontError(reason: FontError.Reason)(using Diagnostics)
-extends Error(m"the font could not be read because $reason")
+extends Error(realm"pn", 1, reason.number)(m"the font could not be read because $reason")

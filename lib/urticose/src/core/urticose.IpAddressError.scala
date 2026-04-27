@@ -36,15 +36,15 @@ import anticipation.*
 import fulminate.*
 
 object IpAddressError:
-  enum Reason:
-    case Ipv4ByteOutOfRange(byte: Int)
-    case Ipv4ByteNotNumeric(byte: Text)
-    case Ipv4WrongNumberOfGroups(count: Int)
-    case Ipv6GroupWrongLength(group: Text)
-    case Ipv6GroupNotHex(group: Text)
-    case Ipv6TooManyNonzeroGroups(count: Int)
-    case Ipv6WrongNumberOfGroups(count: Int)
-    case Ipv6MultipleDoubleColons
+  enum Reason(val number: Int) extends Clarification:
+    case Ipv4ByteOutOfRange(byte: Int)         extends Reason(1)
+    case Ipv4ByteNotNumeric(byte: Text)        extends Reason(2)
+    case Ipv4WrongNumberOfGroups(count: Int)   extends Reason(3)
+    case Ipv6GroupWrongLength(group: Text)     extends Reason(4)
+    case Ipv6GroupNotHex(group: Text)          extends Reason(5)
+    case Ipv6TooManyNonzeroGroups(count: Int)  extends Reason(6)
+    case Ipv6WrongNumberOfGroups(count: Int)   extends Reason(7)
+    case Ipv6MultipleDoubleColons              extends Reason(8)
 
   object Reason:
     given communicable: Reason is Communicable =
@@ -64,4 +64,4 @@ object IpAddressError:
         m"the group is more than 4 hexadecimal characters long"
 
 case class IpAddressError(reason: IpAddressError.Reason)(using Diagnostics)
-extends Error(m"the IP address is not valid because $reason")
+extends Error(realm"ur", 3, reason.number)(m"the IP address is not valid because $reason")

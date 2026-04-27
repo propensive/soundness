@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class AuthError(value: Text)(using Diagnostics)
-extends Error(m"the authentication value $value is not valid")
+extends Error(realm"te", 1, 0)(m"the authentication value $value is not valid")

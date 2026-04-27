@@ -34,4 +34,5 @@ package sedentary
 
 import fulminate.*
 
-case class BenchError()(using Diagnostics) extends Error(m"unable to run benchmarks")
+case class BenchError()(using Diagnostics)
+extends Error(realm"sd", 1, 0)(m"unable to run benchmarks")

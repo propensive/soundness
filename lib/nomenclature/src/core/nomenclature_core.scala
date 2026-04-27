@@ -43,7 +43,7 @@ extension (inline context: StringContext)
 transparent inline def disintersect[intersection] =
   ${protointernal.disintersection[intersection]}
 
-private given realm: Realm = realm"nomenclature"
+private given realm: Realm = realm"no"
 
 transparent inline def staticCompanion[instance]: Matchable =
   ${anteprotointernal.staticCompanion[instance]}

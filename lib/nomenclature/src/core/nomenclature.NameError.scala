@@ -36,4 +36,5 @@ import anticipation.*
 import fulminate.*
 
 case class NameError(name: Text, rule: Rule, parameter: Text)(using Diagnostics)
-extends Error(m"the name $name is not valid because it ${rule.describe(parameter)}")
+extends Error(realm"no", 1, 0)
+              (m"the name $name is not valid because it ${rule.describe(parameter)}")

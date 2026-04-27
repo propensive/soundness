@@ -53,8 +53,12 @@ object PathError:
       case Reason.DifferentRoots => m"it does not have the same root as the source"
       case Reason.InvalidName    => m"the name is not valid"
 
-  enum Reason:
-    case RootParent, InvalidRoot, DifferentRoots, InvalidName
+  enum Reason(val number: Int) extends Clarification:
+    case RootParent     extends Reason(1)
+    case InvalidRoot    extends Reason(2)
+    case DifferentRoots extends Reason(3)
+    case InvalidName    extends Reason(4)
 
 case class PathError(reason: PathError.Reason, path: Optional[Text])(using Diagnostics)
-extends Error(m"the path ${path.lay(t"")(_+t" ")}was invalid because $reason")
+extends Error(realm"se", 1, reason.number)
+         (m"the path ${path.lay(t"")(_+t" ")}was invalid because $reason")

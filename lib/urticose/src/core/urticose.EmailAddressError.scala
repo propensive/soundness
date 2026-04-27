@@ -36,19 +36,19 @@ import anticipation.*
 import fulminate.*
 
 object EmailAddressError:
-  enum Reason:
-    case Empty
-    case InvalidDomain(error: IpAddressError | HostnameError)
-    case LongLocalPart
-    case TerminalPeriod
-    case SuccessivePeriods
-    case InitialPeriod
-    case UnescapedQuote
-    case UnclosedQuote
-    case MissingDomain
-    case MissingAtSymbol
-    case UnclosedIpAddress
-    case InvalidChar(char: Char)
+  enum Reason(val number: Int) extends Clarification:
+    case Empty                                              extends Reason(1)
+    case InvalidDomain(error: IpAddressError | HostnameError) extends Reason(2)
+    case LongLocalPart                                      extends Reason(3)
+    case TerminalPeriod                                     extends Reason(4)
+    case SuccessivePeriods                                  extends Reason(5)
+    case InitialPeriod                                      extends Reason(6)
+    case UnescapedQuote                                     extends Reason(7)
+    case UnclosedQuote                                      extends Reason(8)
+    case MissingDomain                                      extends Reason(9)
+    case MissingAtSymbol                                    extends Reason(10)
+    case UnclosedIpAddress                                  extends Reason(11)
+    case InvalidChar(char: Char)                            extends Reason(12)
 
   object Reason:
     given communicable: Reason is Communicable =
@@ -70,4 +70,4 @@ object EmailAddressError:
           case error: HostnameError  => m"the domain is not a valid hostname: ${error.message}"
 
 case class EmailAddressError(reason: EmailAddressError.Reason)(using Diagnostics)
-extends Error(m"the email address is not valid because $reason")
+extends Error(realm"ur", 1, reason.number)(m"the email address is not valid because $reason")

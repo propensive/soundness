@@ -40,10 +40,11 @@ object TimeError:
   inline def apply(inline lambda: Reason.type => Reason)(using Diagnostics): TimeError =
     TimeError(lambda(Reason))
 
-  enum Reason:
+  enum Reason(val number: Int) extends Clarification:
     case Format(text: Text, format: Date.Format, offset: Ordinal)(val issue: format.Issue)
-    case Invalid(year: Int, month: Int, day: Int, calendar: Calendar)
-    case Unknown(text: Text, kind: Text)
+                                                                            extends Reason(1)
+    case Invalid(year: Int, month: Int, day: Int, calendar: Calendar)       extends Reason(2)
+    case Unknown(text: Text, kind: Text)                                    extends Reason(3)
 
   object Reason:
     given Reason is Communicable =
@@ -57,4 +58,4 @@ object TimeError:
         m"$text is not a recognized $kind"
 
 case class TimeError(reason: TimeError.Reason)(using Diagnostics)
-extends Error(m"the date was not valid because $reason")
+extends Error(realm"av", 1, reason.number)(m"the date was not valid because $reason")

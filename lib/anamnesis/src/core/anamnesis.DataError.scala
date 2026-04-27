@@ -34,4 +34,4 @@ package anamnesis
 
 import fulminate.*
 
-case class DataError()(using Diagnostics) extends Error(m"there was a database error")
+case class DataError()(using Diagnostics) extends Error(realm"an", 1, 0)(m"there was a database error")

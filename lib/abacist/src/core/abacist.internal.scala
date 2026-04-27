@@ -154,7 +154,7 @@ object internal:
     val lookupUnit = readUnitPower(TypeRepr.of[unit])
 
     val multiplier: Multiplier = multipliers[units].where(_.unitPower == lookupUnit).or:
-      halt(m"the Quanta does not include this unit")
+      halt(1, m"the Quanta does not include this unit")
 
     '{(($value.long/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}
 

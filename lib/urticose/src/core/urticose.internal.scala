@@ -53,7 +53,7 @@ import vacuous.*
 import IpAddressError.Reason, Reason.*
 
 object internal:
-  private given realm: Realm = realm"urticose"
+  private given realm: Realm = realm"ur"
 
   private lazy val serviceNames: Map[(Boolean, Text), Int] =
     val stream =
@@ -257,10 +257,10 @@ object internal:
             if tcp then '{TcpPort.unsafe(${Expr(portNumber)}).asInstanceOf[TcpPort of number]}
             else '{UdpPort.unsafe(${Expr(portNumber)}).asInstanceOf[UdpPort of number]}
 
-      else halt(m"the $portType port number ${portNumber} is not in the range 1-65535")
+      else halt(8, m"the $portType port number ${portNumber} is not in the range 1-65535")
 
     . or:
-        serviceNames.at((tcp, id)).lay(halt(m"$id is not a valid $portType port")):
+        serviceNames.at((tcp, id)).lay(halt(9, m"$id is not a valid $portType port")):
           case port: Int =>
             ConstantType(IntConstant(port)).asType.absolve match
               case '[type number <: Int; number] =>

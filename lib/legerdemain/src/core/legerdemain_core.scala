@@ -43,7 +43,7 @@ import vacuous.*
 import attributives.textAttributes
 import doms.html.whatwg, whatwg.*
 
-private given realm: Realm = realm"legerdemain"
+private given realm: Realm = realm"le"
 
 
 def elicit[value: Formulaic]

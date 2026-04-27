@@ -134,7 +134,7 @@ object Tmux:
     screenshot().currentLine(decorate).sub(t"> ${tool.command} ", t"")
 
 
-case class TmuxError()(using Diagnostics) extends Error(m"can't execute tmux")
+case class TmuxError()(using Diagnostics) extends Error(realm"ek", 2, 0)(m"can't execute tmux")
 case class Tmux(id: Text, workingDirectory: WorkingDirectory, width: Int, height: Int, shell: Shell)
 
 case class Screenshot(screen: IArray[Text], size: (Int, Int), cursor: (Ordinal, Ordinal)):

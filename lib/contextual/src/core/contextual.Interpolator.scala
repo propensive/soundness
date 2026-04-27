@@ -44,7 +44,7 @@ import vacuous.*
 
 trait Interpolator[input, state, result]:
   given canThrow: CanThrow[InterpolationError] = !!
-  private given realm: Realm = realm"contextual"
+  private given realm: Realm = realm"cn"
 
   protected def initial: state
   protected def parse(state: state, next: Text): state
@@ -54,7 +54,7 @@ trait Interpolator[input, state, result]:
   protected def complete(value: state): result
 
   case class PositionalError(positionalMessage: Message, start: Int, end: Int)(using Diagnostics)
-  extends Error(m"error $positionalMessage at position $start")
+  extends Error(realm"cn", 2, 0)(m"error $positionalMessage at position $start")
 
   def expand(context: Expr[StringContext], sequence: Expr[Seq[Any]])
     ( using thisType: Type[this.type] )
@@ -101,7 +101,8 @@ trait Interpolator[input, state, result]:
             val typeName: String = TypeRepr.of[head].widen.show
 
             halt
-              ( m"can't substitute ${typeName} to this interpolated string",
+              ( 3,
+                m"can't substitute ${typeName} to this interpolated string",
                 head.asTerm.pos )
 
           val (newState, typeclass) = Expr.summon[Insertion[input, head]].fold(notFound):
@@ -146,7 +147,7 @@ trait Interpolator[input, state, result]:
       case _              => Nil
 
     val parts = context.value.getOrElse:
-      halt(m"the StringContext extension method parameter does not appear to be inline")
+      halt(4, m"the StringContext extension method parameter does not appear to be inline")
 
     . parts
 
@@ -164,9 +165,10 @@ trait Interpolator[input, state, result]:
     catch
       case error: PositionalError =>
         error match
-          case PositionalError(message, start, end) =>
-            halt(message, Position(Position.ofMacroExpansion.sourceFile, start, end))
+          case error@PositionalError(_, start, end) =>
+            halt(2, error.message, Position(Position.ofMacroExpansion.sourceFile, start, end))
 
       case error: InterpolationError =>
         error match
-          case InterpolationError(message, _, _) => halt(message, Position.ofMacroExpansion)
+          case error@InterpolationError(_, _, _) =>
+            halt(1, error.message, Position.ofMacroExpansion)

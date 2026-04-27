@@ -47,15 +47,16 @@ object TzdbError:
     case Reason.UnparsableDate          => m"the date could not be parsed"
     case Reason.NoTzdbFile(name)        => m"the zonefile $name could not be found on the classpath"
 
-  enum Reason:
-    case CouldNotParseTime(time: Text)
-    case UnexpectedRule
-    case UnexpectedLink
-    case UnexpectedZoneInfo
-    case UnparsableDate
-    case BadZoneInfo(line: List[Text])
-    case BadName(name: Text)
-    case NoTzdbFile(name: Text)
+  enum Reason(val number: Int) extends Clarification:
+    case CouldNotParseTime(time: Text) extends Reason(1)
+    case UnexpectedRule                extends Reason(2)
+    case UnexpectedLink                extends Reason(3)
+    case UnexpectedZoneInfo            extends Reason(4)
+    case UnparsableDate                extends Reason(5)
+    case BadZoneInfo(line: List[Text]) extends Reason(6)
+    case BadName(name: Text)           extends Reason(7)
+    case NoTzdbFile(name: Text)        extends Reason(8)
 
 case class TzdbError(reason: TzdbError.Reason, line: Int)(using Diagnostics)
-extends Error(m"the timezone could not be parsed at line $line: $reason")
+extends Error(realm"av", 4, reason.number)
+              (m"the timezone could not be parsed at line $line: $reason")

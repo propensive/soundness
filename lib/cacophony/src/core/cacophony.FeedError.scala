@@ -36,8 +36,10 @@ import anticipation.*
 import fulminate.*
 
 object FeedError:
-  enum Reason:
-    case Unavailable, UnsupportedConfiguration, Closed
+  enum Reason(val number: Int) extends Clarification:
+    case Unavailable              extends Reason(1)
+    case UnsupportedConfiguration extends Reason(2)
+    case Closed                   extends Reason(3)
 
   given Reason is Communicable =
     case Reason.Unavailable              => m"the audio line could not be opened"
@@ -45,4 +47,4 @@ object FeedError:
     case Reason.Closed                   => m"the recording has already been stopped"
 
 case class FeedError(feed: Text, reason: FeedError.Reason)(using Diagnostics)
-extends Error(m"could not record from feed $feed because $reason")
+extends Error(realm"ca", 1, reason.number)(m"could not record from feed $feed because $reason")

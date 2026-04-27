@@ -95,7 +95,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
     suite(m"Compile-time tests"):
       test(m"Check that an invalid encoding produces an error"):
         demilitarize(enc"ABCDEF").map(_.message)
-      . assert(_ == List(t"hieroglyph: the encoding ABCDEF was not available"))
+      . assert(_ == List(t"[↯SN-hi/2] the encoding ABCDEF was not available"))
 
       test(m"Non-encoding has a decoder method"):
         demilitarize:

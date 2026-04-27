@@ -35,4 +35,5 @@ package urticose
 import anticipation.*
 import fulminate.*
 
-case class PortError()(using Diagnostics) extends Error(m"the port is not in the valid range")
+case class PortError()(using Diagnostics)
+extends Error(realm"ur", 6, 0)(m"the port is not in the valid range")

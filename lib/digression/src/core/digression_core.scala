@@ -40,7 +40,7 @@ extension (error: Throwable) def stackTrace: StackTrace = StackTrace(error)
 extension (inline context: StringContext)
   inline def fqcn(): Fqcn = ${digression.internal.fqcn('context)}
 
-private given realm: Realm = realm"digression"
+private given realm: Realm = realm"dg"
 
 def idempotent(lambda: => Unit)(using codepoint: Codepoint): Unit =
   Codepoint.idempotentActions.computeIfAbsent(codepoint, void => lambda)

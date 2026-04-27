@@ -43,7 +43,7 @@ import symbolism.*
 import vacuous.*
 
 object internal:
-  private given realm: Realm = realm"rudiments"
+  private given realm: Realm = realm"ru"
 
   opaque type Bytes = Long
   opaque type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
@@ -92,7 +92,7 @@ object internal:
 
   def probe[target: Type]: Macro[Nothing] =
     import quotes.reflect.*
-    halt(m"the type is ${TypeRepr.of[target].dealias.widen.show}")
+    halt(1, m"the type is ${TypeRepr.of[target].dealias.widen.show}")
 
   def name[target: Type]: Macro[Text] =
     import quotes.reflect.*

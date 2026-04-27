@@ -36,4 +36,5 @@ import language.experimental.into
 
 import fulminate.*
 
-case class DivisionError()(using Diagnostics) extends Error(m"the result is unrepresentable")
+case class DivisionError()(using Diagnostics)
+extends Error(realm"hp", 2, 0)(m"the result is unrepresentable")

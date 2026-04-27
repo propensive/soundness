@@ -48,7 +48,7 @@ import vacuous.*
 import errorDiagnostics.empty
 
 object internal:
-  private given realm: Realm = realm"gossamer"
+  private given realm: Realm = realm"go"
 
   case class Input(txt: Text)
 
@@ -130,7 +130,7 @@ object internal:
 
     val staticParts: List[Expr[Ascii]] = context.value.get.parts.to(List).map: part =>
       val bytes: IArray[Expr[Byte]] = part.tt.chars.map: char =>
-        if char >= 128 then halt(m"$char is not a valid ASCII character")
+        if char >= 128 then halt(3, m"$char is not a valid ASCII character")
         Expr[Byte](char.toByte)
 
       '{Ascii(Data(${Varargs(bytes)}*))}

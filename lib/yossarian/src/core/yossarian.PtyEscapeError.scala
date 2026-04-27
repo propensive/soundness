@@ -51,15 +51,16 @@ object PtyEscapeError:
       case BadCsiParameter(n, command) =>
         m"$n is not a valid CSI parameter for the $command command"
 
-  enum Reason:
-    case BadSgrParameters(n: Text)
-    case BadCsiParameter(n: Int, command: Text)
-    case NonintegerSgrParameter(text: Text)
-    case BadColor(n: Int)
-    case BadOscParameter(parameter: Text)
-    case BadCsiCommand(param: Text, char: Char)
-    case BadCsiEscape(char: Char)
-    case BadFeEscape(char: Char)
+  enum Reason(val number: Int) extends Clarification:
+    case BadSgrParameters(n: Text)              extends Reason(1)
+    case BadCsiParameter(n: Int, command: Text) extends Reason(2)
+    case NonintegerSgrParameter(text: Text)     extends Reason(3)
+    case BadColor(n: Int)                       extends Reason(4)
+    case BadOscParameter(parameter: Text)       extends Reason(5)
+    case BadCsiCommand(param: Text, char: Char) extends Reason(6)
+    case BadCsiEscape(char: Char)               extends Reason(7)
+    case BadFeEscape(char: Char)                extends Reason(8)
 
 case class PtyEscapeError(reason: PtyEscapeError.Reason)(using Diagnostics)
-extends Error(m"an ANSI escape code could not be handled because $reason")
+extends Error(realm"yo", 1, reason.number)
+         (m"an ANSI escape code could not be handled because $reason")

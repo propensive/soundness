@@ -46,7 +46,7 @@ import rudiments.*
 import symbolism.*
 
 trait protointernal:
-  private given realm: Realm = realm"quantitative"
+  private given realm: Realm = realm"qu"
 
   case class UnitPower(ref: UnitRef, power: Int)
 

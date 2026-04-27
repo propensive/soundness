@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class BcodlError(expectation: Text, position: Int)(using Diagnostics)
-extends Error(m"expected $expectation at position $position")
+extends Error(realm"cl", 1, 0)(m"expected $expectation at position $position")

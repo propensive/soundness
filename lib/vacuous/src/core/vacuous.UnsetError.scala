@@ -34,4 +34,5 @@ package vacuous
 
 import fulminate.*
 
-case class UnsetError()(using Diagnostics) extends Error(m"the value was not set")
+case class UnsetError()(using Diagnostics)
+extends Error(realm"va", 1, 0)(m"the value was not set")
