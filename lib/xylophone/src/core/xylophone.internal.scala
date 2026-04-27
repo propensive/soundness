@@ -453,7 +453,7 @@ object internal:
           List('{Element(${Expr(label)}, $map, $elements)})
 
         case Comment(text) =>
-          val parts = text.s.split("\u0000").nn.map(_.nn).to(List)
+          val parts = text.cut(t"\u0000").map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -466,7 +466,7 @@ object internal:
           List('{Comment($content.tt)})
 
         case Cdata(text) =>
-          val parts = text.s.split("\u0000").nn.map(_.nn).to(List)
+          val parts = text.cut(t"\u0000").map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -479,7 +479,7 @@ object internal:
           List('{Cdata($content.tt)})
 
         case ProcessingInstruction(target, data0) =>
-          val parts = data0.s.split("\u0000").nn.map(_.nn).to(List)
+          val parts = data0.cut(t"\u0000").map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -495,7 +495,7 @@ object internal:
           List(iterator.next().asExprOf[Node])
 
         case TextNode(text) =>
-          val parts = text.s.split("\u0000").nn.map(_.nn).to(List)
+          val parts = text.cut(t"\u0000").map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr

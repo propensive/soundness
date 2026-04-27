@@ -383,7 +383,7 @@ object internal:
           else List('{Doctype(${Expr(text)})})
 
         case Comment(text) =>
-          val parts = text.s.split("\u0000").nn.map(_.nn).to(List)
+          val parts = text.cut(t"\u0000").map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -399,7 +399,7 @@ object internal:
           List(iterator.next().asExprOf[Node])
 
         case TextNode(text) =>
-          val parts = text.s.split("\u0000").nn.map(_.nn).to(List)
+          val parts = text.cut(t"\u0000").map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr

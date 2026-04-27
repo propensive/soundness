@@ -45,7 +45,7 @@ object Printer:
 
     @tailrec
     def printBlock(indent: Int, text: Text, start: Int = 0): Unit =
-      if start < (text.s.length - 1) then
+      if start < (text.length - 1) then
         for i <- 0 until indent do out.write(' ')
 
         text.s.indexOf('\n', start) match
