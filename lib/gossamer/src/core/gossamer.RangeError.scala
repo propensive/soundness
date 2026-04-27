@@ -38,4 +38,4 @@ import language.experimental.pureFunctions
 import fulminate.*
 
 case class RangeError(index: Int, from: Int, to: Int)(using Diagnostics)
-extends Error(m"the index $index is outside the range $from-$to")
+extends Error(realm"go", 2, 0)(m"the index $index is outside the range $from-$to")
