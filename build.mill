@@ -1,4 +1,4 @@
-//| mill-version: 1.1.0-RC3
+//| mill-version: 1.1.5
 //| mill-jvm-version: temurin:25
 //| mill-jvm-opts: ["-XX:NonProfiledCodeHeapSize=250m", "-XX:ReservedCodeCacheSize=500m"]
 
@@ -387,9 +387,9 @@ object baroque extends Library:
   object core extends Component(quantitative.core, geodesy.core)
   object test extends Tests(core, abacist.core, quantitative.units, mosquito.core)
 
-object bitumen extends Library:
-  object core extends Component(polaris.core, serpentine.core, turbulence.core)
-  object test extends Tests(core)
+// object bitumen extends Library:
+//   object core extends Component(polaris.core, serpentine.core, turbulence.core)
+//   object test extends Tests(core)
 
 object burdock extends Library:
   object boot extends Component
@@ -764,9 +764,9 @@ object parasite extends Library:
   object core extends Component(digression.core, mercator.core, anticipation.time)
   object test extends Tests(core, quantitative.units)
 
-object perihelion extends Library:
-  object core extends Component(scintillate.server, gastronomy.core, eucalyptus.core)
-  object test extends Tests(core)
+// object perihelion extends Library:
+//   object core extends Component(scintillate.server, gastronomy.core, eucalyptus.core)
+//   object test extends Tests(core)
 
 object phoenicia extends Library:
   object core extends Component(quantitative.core, polaris.core)
