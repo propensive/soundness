@@ -35,7 +35,7 @@ package soundness
 export
   probably
   . { Baseline, Benchmark, Inclusion, Verdict, Runner, Test, Harness, TestId, Report, Reporter,
-      Trial, Testable, Tolerance, Min, Mean, Max, BySpeed, ===, !==, ByTime, Geometric, Arithmetic,
+      Trial, Testable, Tolerance, Min, Mean, Max, Cadential, ===, !==, Temporal, Geometric, Arithmetic,
       +/-, ±, test, suite, aspire, assert, check, matches, debug, Checkable, Ci, GithubActions }
 
 package harnesses:
