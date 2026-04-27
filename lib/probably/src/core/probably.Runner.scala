@@ -49,6 +49,7 @@ object Runner:
 
 class Runner[report]()(using reporter: Reporter[report]):
   private var active: List[TestId] = Nil
+  private val silent: Boolean = Ci.claudeCode || Ci()
 
   def skip(id: TestId): Boolean = false
 
@@ -57,7 +58,7 @@ class Runner[report]()(using reporter: Reporter[report]):
   def maybeRun[result](test: Test[result]): Optional[Trial[result]] =
     if skip(test.id) then Unset else run[result](test)
 
-  def redraw(size: Int): Unit =
+  def redraw(size: Int): Unit = if !silent then
     if size > 0 then Out.print(e"\e[${size}A\r\e[2K")
 
     active.reverse.each: test =>

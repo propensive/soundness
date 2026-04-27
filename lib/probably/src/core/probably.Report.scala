@@ -207,6 +207,99 @@ class Report(using Environment)(using palette: TestPalette):
     def iterations: Teletype = if count == 0 then e"" else count.teletype
 
   def complete(coverage: Option[Coverage])(using Stdio): Unit =
+    if Ci.claudeCode then terseComplete() else humanComplete(coverage)
+
+  private def terseComplete()(using Stdio): Unit =
+    import tableStyles.minimal
+
+    val summaryLines = lines.summaries
+    val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
+    val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
+    val total: Int = totals.values.sum
+    val failed: Int = total - passed
+    if total == passed && failure.absent then pass = true
+
+    if total == 0 then Out.println(t"No tests were run.")
+    else Out.println(t"$passed passed, $failed failed, $total total")
+
+    def truncate(text: Text, max: Int = 800): Text =
+      if text.length <= max then text else t"${text.keep(max)}…"
+
+    def statusWord(status: Status): Text = status match
+      case Status.Pass        => t"pass"
+      case Status.Fail        => t"fail"
+      case Status.Throws      => t"throws"
+      case Status.CheckThrows => t"check-throws"
+      case Status.Mixed       => t"mixed"
+      case Status.Suite       => t"suite"
+      case Status.Bench       => t"bench"
+
+    def formatFrame(frame: StackTrace.Frame): Text =
+      val ln = frame.line.let(_.toString.tt).or(t"?")
+      t"  at ${frame.method.cls}.${frame.method.method} (${frame.file}:$ln)"
+
+    val failureStatuses: Set[Status] =
+      Set(Status.Fail, Status.Throws, Status.CheckThrows, Status.Mixed)
+
+    val failures = summaryLines.filter(s => failureStatuses.contains(s.status))
+
+    if failures.nonEmpty then
+      val columns: Int = safely(Environment.columns.decode[Int]).or(120)
+      Out.println(t"")
+
+      Scaffold[Summary]
+        ( Column(e"Hash"): s =>
+            e"${s.id.id}",
+          Column(e"Test"): s =>
+            val depth = s.id.suite.let(_.id.depth).or(0)
+            e"${t"  "*depth}${s.id.name}",
+          Column(e"Status"): s =>
+            e"${statusWord(s.status)}" )
+
+      . tabulate(failures).grid(columns).render.each(Out.println(_))
+
+      Out.println(t"")
+
+      failures.each: summary =>
+        val location = t"${summary.id.codepoint.source}:${summary.id.codepoint.line}"
+        Out.println(t"${summary.id.id}  ${summary.id.name.text} @ $location")
+
+        details(summary.id).each: detail =>
+          detail match
+            case Verdict.Detail.Throws(err) =>
+              Out.println:
+                t"  threw ${err.component}.${err.className}: ${truncate(err.message.text)}"
+              err.crop(t"probably.Runner", t"run()").frames.take(3).each: frame =>
+                Out.println(formatFrame(frame))
+
+            case Verdict.Detail.CheckThrows(err) =>
+              Out.println:
+                t"  check threw ${err.component}.${err.className}: ${truncate(err.message.text)}"
+              err.crop(t"probably.Verdict#", t"apply()").frames.take(3).each: frame =>
+                Out.println(formatFrame(frame))
+
+            case Verdict.Detail.Compare(expected, observed, _) =>
+              Out.println(t"  expected: ${truncate(expected.sub(t"\n", t" "))}")
+              Out.println(t"  observed: ${truncate(observed.sub(t"\n", t" "))}")
+
+            case Verdict.Detail.Message(text) =>
+              Out.println(t"  ${truncate(text)}")
+
+            case Verdict.Detail.Captures(captures) =>
+              captures.each: (expr, value) =>
+                Out.println(t"  $expr = ${truncate(value)}")
+
+        Out.println(t"")
+
+    failure.let: (error, active) =>
+      val activeNames = active.to(List).map(_.name.text).join(t", ")
+      val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
+      val msg = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
+      if active.isEmpty then Out.println(t"FATAL: $errorClass: $msg")
+      else Out.println(t"FATAL in $activeNames: $errorClass: $msg")
+      StackTrace(error).frames.take(3).each(frame => Out.println(formatFrame(frame)))
+
+  private def humanComplete(coverage: Option[Coverage])(using Stdio): Unit =
     val table =
       val showStats = !lines.summaries.all(_.count < 2)
       val timeTitle = if showStats then t"Avg" else t"Time"
