@@ -30,16 +30,95 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package probably
 
-export
-  probably
-  . { Baseline, Benchmark, Inclusion, Verdict, Runner, Test, Harness, TestId, Report, Reporter,
-      Trial, Testable, Tolerance, Min, Mean, Max, Cadential, ===, !==, Temporal, Geometric, Arithmetic,
-      +/-, ±, test, suite, aspire, assert, check, matches, debug, Checkable, Ci, GithubActions }
+import ambience.*, environments.java
+import anticipation.*
+import contingency.*
+import gossamer.*
+import spectacular.*
+import turbulence.*
+import vacuous.*
 
-package harnesses:
-  export probably.harnesses.threadLocal
+object GithubActions:
+  def workspaceRelative(path: Text): Text =
+    safely(Environment.githubWorkspace[Text]).let: workspace =>
+      if path.starts(workspace) && path.length > workspace.length
+         && path.s.charAt(workspace.length) == '/'
+      then path.skip(workspace.length + 1)
+      else path
 
-package autopsies:
-  export probably.autopsies.{contrastExpectations, none}
+    . or(path)
+
+
+  def error
+       ( message: Text,
+         file:    Optional[Text] = Unset,
+         line:    Optional[Int]  = Unset,
+         title:   Optional[Text] = Unset )
+       (using Stdio)
+  :     Unit =
+    emit(t"error", file, line, title, message)
+
+
+  def warning
+       ( message: Text,
+         file:    Optional[Text] = Unset,
+         line:    Optional[Int]  = Unset,
+         title:   Optional[Text] = Unset )
+       (using Stdio)
+  :     Unit =
+    emit(t"warning", file, line, title, message)
+
+
+  def notice
+       ( message: Text,
+         file:    Optional[Text] = Unset,
+         line:    Optional[Int]  = Unset,
+         title:   Optional[Text] = Unset )
+       (using Stdio)
+  :     Unit =
+    emit(t"notice", file, line, title, message)
+
+
+  def debug(message: Text)(using Stdio): Unit =
+    Out.println(t"::debug::${escape(message)}")
+
+
+  def group(title: Text)(using Stdio): Unit =
+    Out.println(t"::group::${escape(title)}")
+
+
+  def endGroup()(using Stdio): Unit = Out.println(t"::endgroup::")
+
+
+  inline def grouped[result](title: Text)(inline block: => result)(using Stdio): result =
+    group(title)
+    try block finally endGroup()
+
+
+  private def escape(text: Text): Text =
+    text.sub(t"%", t"%25").sub(t"\r", t"%0D").sub(t"\n", t"%0A")
+
+
+  private def escapeProperty(text: Text): Text =
+    escape(text).sub(t",", t"%2C").sub(t":", t"%3A")
+
+
+  private def emit
+       ( kind:    Text,
+         file:    Optional[Text],
+         line:    Optional[Int],
+         title:   Optional[Text],
+         message: Text )
+       (using Stdio)
+  :     Unit =
+
+    val props = List
+                  ( file.let(workspaceRelative).let(path => t"file=${escapeProperty(path)}").option,
+                    line.let(value => t"line=${value.show}").option,
+                    title.let(text => t"title=${escapeProperty(text)}").option )
+                . flatten
+
+    val propsText = if props.isEmpty then t"" else t" ${props.join(t",")}"
+    Out.println(t"::$kind$propsText::${escape(message)}")

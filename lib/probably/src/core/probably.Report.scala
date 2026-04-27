@@ -228,6 +228,30 @@ class Report(using Environment)(using palette: TestPalette):
 
     val columns: Int = safely(Environment.columns.decode[Int]).or(120)
     val summaryLines = lines.summaries
+    val githubActions = Ci.githubActions
+
+    val ghDetected: Text = if githubActions then t"true" else t"false"
+    val ghEnv: Text = safely(Environment.githubActions[Text]).or(t"<unset>")
+    Out.println(t"::notice title=Probably diagnostic::Ci.githubActions=$ghDetected; GITHUB_ACTIONS=$ghEnv")
+
+    def truncate(text: Text, max: Int = 800): Text =
+      if text.length <= max then text else t"${text.keep(max)}…"
+
+    def describeFailure(info: Optional[Verdict.Detail]): Text = info match
+      case Verdict.Detail.Throws(err) =>
+        truncate(t"Threw ${err.component}.${err.className}: ${err.message.text}")
+
+      case Verdict.Detail.CheckThrows(err) =>
+        truncate(t"Check threw ${err.component}.${err.className}: ${err.message.text}")
+
+      case Verdict.Detail.Compare(expected, observed, _) =>
+        truncate(t"Expected: ${expected.sub(t"\n", t" ")}; observed: ${observed.sub(t"\n", t" ")}")
+
+      case Verdict.Detail.Message(text) =>
+        truncate(text)
+
+      case Verdict.Detail.Captures(_) | Unset =>
+        t"Test failed"
 
     coverage.each: coverage =>
       Out.println(e"$Bold($Underline(Test coverage))")
@@ -394,8 +418,11 @@ class Report(using Environment)(using palette: TestPalette):
             palette.subdue(palette.detail, 0.6),
             palette.subdue(palette.detail, 0.9) )
 
+      val suiteName = suite.let(_.name.teletype).or(e"")
+      if githubActions then
+        GithubActions.group(t"Benchmarks: ${suite.let(_.name.text).or(t"")}")
+
       Out.println:
-        val suiteName = suite.let(_.name.teletype).or(e"")
         ribbon.fill(e"${suite.lay(t"")(_.id.id)}", e"Benchmarks", suiteName)
 
       val comparisons: List[ReportLine.Bench] =
@@ -467,6 +494,8 @@ class Report(using Environment)(using palette: TestPalette):
       bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput))
       . grid(columns).render.each(Out.println(_))
 
+      if githubActions then GithubActions.endGroup()
+
     def showLegend(): Unit =
       Out.println(t"─"*74)
       Out.println:
@@ -477,8 +506,25 @@ class Report(using Environment)(using palette: TestPalette):
 
       Out.println(t"─"*74)
 
+    if githubActions then summaryLines.each: summary =>
+      summary.status match
+        case Status.Fail | Status.Throws | Status.CheckThrows | Status.Mixed =>
+          val firstDetail: Optional[Verdict.Detail] =
+            details.get(summary.id).flatMap(_.headOption).getOrElse(Unset)
+
+          GithubActions.error
+           ( message = describeFailure(firstDetail),
+             file    = summary.id.codepoint.source,
+             line    = summary.id.codepoint.line,
+             title   = summary.id.name.text )
+
+        case _ => ()
+
     details.to(List).sortBy(_(0).timestamp).each: (id, info) =>
       val ribbon = Ribbon(palette.pass, palette.subdue(palette.pass, 0.5), palette.subdue(palette.pass, 0.75))
+
+      if githubActions then GithubActions.group(t"Failure: ${id.name.text} (${id.id})")
+
       Out.println(ribbon.fill(e"$Bold(${id.id})", id.codepoint.text.teletype, id.name.teletype))
 
       info.each: details =>
@@ -520,6 +566,7 @@ class Report(using Environment)(using palette: TestPalette):
             Out.println(text)
 
       Out.println()
+      if githubActions then GithubActions.endGroup()
 
     failure.let: (error, active) =>
       val explanation = active.to(List) match
@@ -534,9 +581,22 @@ class Report(using Environment)(using palette: TestPalette):
 
           e"A fatal error occurred while $tests $were running."
 
+      if githubActions then
+        val activeNames = active.to(List).map(_.name.text).join(t", ")
+        val cause = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
+        val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
+        val message = if active.isEmpty
+                      then truncate(t"Fatal error: $errorClass: $cause")
+                      else truncate(t"Fatal error in $activeNames: $errorClass: $cause")
+
+        GithubActions.error(message = message, title = t"Fatal error")
+        GithubActions.group(t"Fatal error stack trace")
+
       Out.println()
 
       Out.println(Ribbon(palette.pass, palette.subdue(palette.pass, 0.5)).fill(e"$Bold(FATAL)", explanation))
       Out.println(StackTrace(error).teletype)
+
+      if githubActions then GithubActions.endGroup()
 
     totals(false)
