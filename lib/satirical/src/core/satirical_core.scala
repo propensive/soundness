@@ -37,10 +37,8 @@ import fulminate.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
 import turbulence.*
 import vacuous.*
-import zephyrine.*
 
 case class World(name: Ident, members: List[Import | Export])
 case class Interface(name: Ident, members: List[Primitive | Func])

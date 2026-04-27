@@ -32,7 +32,7 @@
                                                                                                   */
 package orthodoxy
 
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Orthodoxy Tests"):
   def run(): Unit = ()

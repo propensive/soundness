@@ -33,15 +33,12 @@
 package guillotine
 
 import ambience.*
-import ambience.environments.empty
-import ambience.systems.empty
 import ambience.workingDirectories.default
 import anticipation.*
 import anticipation.abstractables.durationIsAbstractable
 import contingency.*, strategies.throwUnsafely
 import distillate.*
 import fulminate.*
-import galilei.*
 import gossamer.*
 import nomenclature.*
 import parasite.*

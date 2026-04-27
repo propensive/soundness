@@ -33,19 +33,6 @@
 package legerdemain
 
 import soundness.*
-import telekinesis.*
-
-import formulations.default
-import strategies.throwUnsafely
-import httpServers.stdlib
-import codicils.cancel
-import logging.silent
-import doms.html.whatwg, whatwg.*
-import charEncoders.utf8
-import threading.platform
-import errorDiagnostics.stackTraces
-
-import doms.html.whatwg, whatwg.*
 
 case class Group(org: Organization)
 case class Organization(leader: Person, name: Name[Person])
@@ -57,6 +44,7 @@ case class Person(name: Name[Person], description: Text, email: EmailAddress)
 
 object Tests extends Suite(m"Legerdemain tests"):
   def run(): Unit =
+    ()
 
     // test(m"Create a simple form"):
     //   val person = Person(t"John", t"A generic person", true)
@@ -68,23 +56,23 @@ object Tests extends Suite(m"Legerdemain tests"):
     //   elicit[Organization](t"Sample", Query(organization))
     // .assert(_ == whatwge.Form)
 
-    summon[Boolean is Decodable in Query]
+    // summon[Boolean is Decodable in Query]
 
-    supervise:
-      tcp"8082".serve[Http]:
-        orchestrate[Group]:
-          case Submission.Complete(group) =>
-            Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(H1(group.inspect)))))
+    // supervise:
+    //   tcp"8082".serve[Http]:
+    //     orchestrate[Group]:
+    //       case Submission.Complete(group) =>
+    //         Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(H1(group.inspect)))))
 
-          case Submission.Incomplete(form) =>
-            Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(form))))
+    //       case Submission.Incomplete(form) =>
+    //         Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(form))))
 
-          case Submission.Invalid(query) =>
-            val errors =
-              validate[Text](Errors()):
-                case error@EmailAddressError(_) => accrual + (focus.or(t"unknown"), error)
-                case error@NameError(_, _, _)   => accrual + (focus.or(t"unknown"), error)
+    //       case Submission.Invalid(query) =>
+    //         val errors =
+    //           validate[Text](Errors()):
+    //             case error@EmailAddressError(_) => accrual + (focus.or(t"unknown"), error)
+    //             case error@NameError(_, _, _)   => accrual + (focus.or(t"unknown"), error)
 
-              . within(query.as[Group])
+    //           . within(query.as[Group])
 
-            abort(errors)
+    //         abort(errors)

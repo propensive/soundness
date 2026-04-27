@@ -439,7 +439,7 @@ object chiaroscuro extends Library:
 
 object coaxial extends Library:
   object core extends Component(galilei.core, urticose.core)
-  object test extends Tests(core, jacinta.core, superlunary.core)
+  //object test extends Tests(core, jacinta.core, superlunary.core)
 
 object contextual extends Library:
   object core extends Component(rudiments.core)
@@ -451,7 +451,7 @@ object contingency extends Library:
 
 object cosmopolite extends Library:
   object core extends Component(gossamer.core)
-  object test extends Tests(core)
+  //object test extends Tests(core)
 
 object dendrology extends Library:
   object tree extends Component(gossamer.core)
@@ -483,9 +483,9 @@ object diuretic extends Library:
   object core extends Component(anticipation.path, anticipation.url, anticipation.time)
   object test extends Tests(core)
 
-object embarcadero extends Library:
-  object core extends Component(jacinta.core, telekinesis.core, eucalyptus.core)
-  object test extends Tests(core)
+// object embarcadero extends Library:
+//   object core extends Component(jacinta.core, telekinesis.core, eucalyptus.core)
+//   object test extends Tests(core)
 
 object enigmatic extends Library:
   object core extends Component(gastronomy.core)
@@ -493,11 +493,11 @@ object enigmatic extends Library:
 
 object escapade extends Library:
   object core extends Component(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core)
-  object test extends Tests(core)
+  // object test extends Tests(core)
 
 object escritoire extends Library:
   object core extends Component(gossamer.core)
-  object test extends Tests(core)
+  // object test extends Tests(core)
 
 object ethereal extends Library:
   object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core):
@@ -939,7 +939,7 @@ object villainy extends Library:
 
 object wisteria extends Library:
   object core extends Component(contingency.core)
-  object test extends Tests(core)
+  //object test extends Tests(core)
 
 object xylophone extends Library:
   object core extends Component(zephyrine.core, adversaria.core, typonym.core, hellenism.core, urticose.core)

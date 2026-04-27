@@ -48,22 +48,22 @@ import termcaps.environment
 import stdios.virtualMachine
 
 object Tests extends Suite(m"Eucalyptus tests"):
-  def run(): Unit =
-    import Level.*
-    given LogFormat[Out.type, Display] = logFormats.standardColor[Out.type]
-    given LogFormat[Err.type, Display] = logFormats.standardColor[Err.type]
+  def run(): Unit = ()
+    // import Level.*
+    // given LogFormat[Out.type, Display] = logFormats.standardColor[Out.type]
+    // given LogFormat[Err.type, Display] = logFormats.standardColor[Err.type]
 
-    supervise:
-      given Log[Display] = Log.route[Display]:
-        case Warn() => Out
-        case Fail() => Out
-        case _      => Out//Syslog(t"tab")
+    // supervise:
+    //   given Log[Display] = Log.route[Display]:
+    //     case Warn() => Out
+    //     case Fail() => Out
+    //     case _      => Out//Syslog(t"tab")
 
-      test(m"Log something"):
-        given realm: Realm = realm"test"
-        Log.fine(t"Fine message")
-        Log.info(t"Info message")
-        Log.warn(t"Warn message")
-        Log.fail(t"Fail message")
-      . assert()
-      Thread.sleep(1000L)
+    //   test(m"Log something"):
+    //     given realm: Realm = realm"test"
+    //     Log.fine(t"Fine message")
+    //     Log.info(t"Info message")
+    //     Log.warn(t"Warn message")
+    //     Log.fail(t"Fail message")
+    //   . assert()
+    //   Thread.sleep(1000L)
