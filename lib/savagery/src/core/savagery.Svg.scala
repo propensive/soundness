@@ -35,9 +35,26 @@ package savagery
 import scala.collection.immutable.SeqMap
 
 import anticipation.*
+import contingency.*
 import gossamer.*
+import prepositional.*
+import proscenium.*
 import spectacular.*
+import turbulence.*
 import xylophone.*
+import zephyrine.*
+
+object Svg:
+  given aggregable: (XmlSchema)
+        =>  Tactic[ParseError]
+        =>  Tactic[XmlError]
+        =>  Tactic[SvgError]
+        =>  Svg is Aggregable by Text =
+
+    source =>
+      val xml: Xml = summon[Xml is Aggregable by Text].aggregate(source)
+      SvgParser.decodeSvg(SvgParser.rootElement(xml))
+
 
 case class Svg
     (width: Float, height: Float, defs: List[SvgDef] = Nil, figures: List[Figure] = Nil):

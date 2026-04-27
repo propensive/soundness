@@ -836,8 +836,8 @@ object satirical extends Library:
   object test extends Tests(core)
 
 object savagery extends Library:
-  object core extends Component(cataclysm.core, xylophone.core, geodesy.core)
-  object test extends Tests(core, iridescence.core)
+  object core extends Component(cataclysm.core, xylophone.core, geodesy.core, iridescence.core)
+  object test extends Tests(core)
 
 object scintillate extends Library:
   object server extends Component(telekinesis.core)

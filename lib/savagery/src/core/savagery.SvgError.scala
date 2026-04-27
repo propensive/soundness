@@ -30,9 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package savagery
 
-export
-  savagery
-  . { Circle, Ellipse, Figure, LinearGradient, Outline, Point, Rectangle, Segment, Shift, Stop,
-      Stroke, Svg, SvgDef, SvgDoc, SvgError, SvgId, SvgParser, Sweep, Transform }
+import anticipation.*
+import fulminate.*
+
+object SvgError:
+  enum Reason(val number: Int) extends Clarification:
+    case NotAnSvg(label: Text)            extends Reason(1)
+    case MalformedPathData(data: Text)    extends Reason(2)
+    case MalformedColor(color: Text)      extends Reason(3)
+
+  given communicable: Reason is Communicable =
+    case Reason.NotAnSvg(label)         => m"the root element was <$label> instead of <svg>"
+    case Reason.MalformedPathData(data) => m"the path data $data could not be parsed"
+    case Reason.MalformedColor(color)   => m"the color $color could not be parsed"
+
+case class SvgError(reason: SvgError.Reason)(using Diagnostics)
+extends Error(realm"sv", 1, reason.number)(m"the SVG could not be parsed because $reason")

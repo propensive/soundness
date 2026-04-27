@@ -36,7 +36,10 @@ import soundness.*
 
 import autopsies.contrastExpectations
 import decimalFormatters.java
+import errorDiagnostics.stackTraces
 import iridescence.WebColors.{Red, Blue, Green, Black, White}
+import strategies.throwUnsafely
+import xylophone.{Xml, XmlSchema, Element, Header, Fragment, Node}
 
 object Tests extends Suite(m"Savagery tests"):
   def run(): Unit =
@@ -242,3 +245,222 @@ object Tests extends Suite(m"Savagery tests"):
         SvgDoc(Svg(50, 50, figures = List(Circle(25!25, 10))), enc"UTF-8").xml.show
       .assert: result =>
           result == t"""<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50.0 50.0" width="50.0" height="50.0"><circle cx="25.0" cy="25.0" r="10.0"/></svg>"""
+
+    suite(m"SVG parsing"):
+      given XmlSchema = XmlSchema.Freeform
+
+      test(m"Parse empty SVG"):
+        val svg = t"""<svg width="100" height="100"/>""".read[Svg]
+        (svg.width, svg.height, svg.figures.length, svg.defs.length)
+      .assert(_ == (100.0f, 100.0f, 0, 0))
+
+      test(m"Parse SVG with rectangle"):
+        val svg =
+          t"""<svg width="50" height="50"><rect x="0" y="0" width="10" height="10"/></svg>"""
+        . read[Svg]
+
+        svg.figures
+      .assert(_ == List(Rectangle(Point(0, 0), 10, 10)))
+
+      test(m"Parse SVG with circle"):
+        val svg = t"""<svg width="100" height="100"><circle cx="10" cy="20" r="5"/></svg>"""
+                . read[Svg]
+
+        svg.figures
+      .assert(_ == List(Ellipse(Point(10, 20), 5, 5, Angle(0))))
+
+      test(m"Parse SVG with ellipse"):
+        val svg =
+          t"""<svg width="100" height="100"><ellipse cx="1" cy="2" rx="3" ry="4"/></svg>"""
+        . read[Svg]
+
+        svg.figures
+      .assert(_ == List(Ellipse(Point(1, 2), 3, 4, Angle(0))))
+
+      test(m"Parse SVG with simple path"):
+        val svg = t"""<svg width="10" height="10"><path d="M 0 0 L 1 1 Z"/></svg>""".read[Svg]
+        svg.figures.length
+      .assert(_ == 1)
+
+      test(m"Parse SVG with path and check ops"):
+        val svg = t"""<svg width="10" height="10"><path d="M 0 0 L 1 1 Z"/></svg>""".read[Svg]
+        svg.figures.head
+      .assert:
+          case Outline(ops, Unset, Unset, Nil) =>
+            ops.reverse == List(Stroke.Move(Point(0, 0)), Stroke.Draw(Point(1, 1)), Stroke.Close)
+          case _ => false
+
+      test(m"Parse path with relative h and v"):
+        val svg = t"""<svg width="10" height="10"><path d="M 0 0 h 2 v -2 Z"/></svg>""".read[Svg]
+        svg.figures.head
+      .assert:
+          case Outline(ops, _, _, _) =>
+            ops.reverse == List
+             (Stroke.Move(Point(0, 0)),
+              Stroke.Draw(Shift(2, 0)),
+              Stroke.Draw(Shift(0, -2)),
+              Stroke.Close)
+          case _ => false
+
+      test(m"Parse path with id"):
+        val svg = t"""<svg width="10" height="10"><path id="x" d="M 0 0 Z"/></svg>""".read[Svg]
+        svg.figures.head
+      .assert:
+          case Outline(_, _, id, _) => id == SvgId(t"x")
+          case _                    => false
+
+      test(m"Parse path with single transform"):
+        val svg = t"""<svg width="10" height="10"><path d="M 0 0 Z" transform="translate(5,10)"/></svg>"""
+                . read[Svg]
+
+        svg.figures.head
+      .assert:
+          case Outline(_, _, _, transforms) =>
+            transforms == List(Transform.Translate(Shift(5, 10)))
+          case _ => false
+
+      test(m"Parse path with multiple transforms"):
+        val svg = t"""<svg width="10" height="10"><path d="M 0 0 Z" transform="translate(1,2) rotate(45)"/></svg>"""
+                . read[Svg]
+
+        svg.figures.head
+      .assert:
+          case Outline(_, _, _, transforms) =>
+            transforms == List(Transform.Translate(Shift(1, 2)), Transform.Rotate(Angle.degrees(45)))
+          case _ => false
+
+      test(m"Parse rgb hex color #ff0000"):
+        val svg =
+          t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="#ff0000"/></linearGradient></defs></svg>"""
+        . read[Svg]
+
+        svg.defs.head
+      .assert:
+          case lg: LinearGradient[?] =>
+            lg.stops.length == 1 && lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
+          case _ => false
+
+      test(m"Parse short hex #f00"):
+        val svg =
+          t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="#f00"/></linearGradient></defs></svg>"""
+        . read[Svg]
+
+        svg.defs.head
+      .assert:
+          case lg: LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
+          case _                     => false
+
+      test(m"Parse rgb function"):
+        val svg =
+          t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0.5" stop-color="rgb(255,0,0)"/></linearGradient></defs></svg>"""
+        . read[Svg]
+
+        svg.defs.head
+      .assert:
+          case lg: LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
+          case _                     => false
+
+      test(m"Parse named color red"):
+        val svg =
+          t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="red"/></linearGradient></defs></svg>"""
+        . read[Svg]
+
+        svg.defs.head
+      .assert:
+          case lg: LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
+          case _                     => false
+
+      test(m"Parse linear gradient with id"):
+        val svg =
+          t"""<svg width="10" height="10"><defs><linearGradient id="myGrad"><stop offset="0" stop-color="#ff0000"/></linearGradient></defs></svg>"""
+        . read[Svg]
+
+        svg.defs.head
+      .assert:
+          case lg: LinearGradient[?] => lg.id == SvgId(t"myGrad")
+          case _                     => false
+
+      test(m"Skip unknown element"):
+        val svg =
+          t"""<svg width="10" height="10"><text x="0" y="0">Hello</text><rect x="0" y="0" width="5" height="5"/></svg>"""
+        . read[Svg]
+
+        svg.figures.length
+      .assert(_ == 1)
+
+      test(m"Flatten group"):
+        val svg =
+          t"""<svg width="10" height="10"><g><rect x="0" y="0" width="5" height="5"/><circle cx="0" cy="0" r="3"/></g></svg>"""
+        . read[Svg]
+
+        svg.figures.length
+      .assert(_ == 2)
+
+      test(m"Ignore unknown attributes"):
+        val svg = t"""<svg width="10" height="10"><rect x="0" y="0" width="5" height="5" foo="bar"/></svg>"""
+                . read[Svg]
+
+        svg.figures.head
+      .assert(_ == Rectangle(Point(0, 0), 5, 5))
+
+      test(m"Default missing attributes to zero"):
+        val svg = t"""<svg width="10" height="10"><rect width="5" height="5"/></svg>""".read[Svg]
+        svg.figures.head
+      .assert(_ == Rectangle(Point(0, 0), 5, 5))
+
+      test(m"Round-trip: rectangle"):
+        val encoded = Svg(100, 100, figures = List(Rectangle(2!3, 8, 4))).xml.show
+        encoded.read[Svg].xml.show == encoded
+      .assert(_ == true)
+
+      test(m"Round-trip: circle"):
+        val encoded = Svg(100, 100, figures = List(Circle(50!50, 10))).xml.show
+        encoded.read[Svg].xml.show == encoded
+      .assert(_ == true)
+
+      test(m"Round-trip: ellipse"):
+        val encoded = Svg(100, 100, figures = List(Ellipse(0!0, 5, 3, Angle(0)))).xml.show
+        encoded.read[Svg].xml.show == encoded
+      .assert(_ == true)
+
+      test(m"Round-trip: path"):
+        val encoded =
+          Svg(100, 100, figures = List(Outline().moveTo(0!0).lineTo(1!1).closed)).xml.show
+
+        encoded.read[Svg].xml.show == encoded
+      .assert(_ == true)
+
+      test(m"Round-trip: path with id and transform"):
+        val encoded = Svg
+         (100,
+          100,
+          figures = List
+           (Outline
+             (id         = SvgId(t"shape1"),
+              transforms = List(Transform.Translate(Shift(5, 10))))
+            . moveTo(0!0).closed))
+        . xml.show
+
+        encoded.read[Svg].xml.show == encoded
+      .assert(_ == true)
+
+      test(m"Round-trip: SVG with multiple figures"):
+        val encoded = Svg
+         (100, 100, figures = List(Rectangle(0!0, 10, 10), Circle(50!50, 5)))
+        . xml.show
+
+        encoded.read[Svg].xml.show == encoded
+      .assert(_ == true)
+
+      test(m"Round-trip: SvgDoc"):
+        val encoded =
+          SvgDoc(Svg(50, 50, figures = List(Circle(25!25, 10))), enc"UTF-8").xml.show
+
+        encoded.read[SvgDoc].xml.show == encoded
+      .assert(_ == true)
+
+      test(m"Non-SVG root raises NotAnSvg"):
+        capture[SvgError](t"""<html/>""".read[Svg])
+      .assert:
+          case SvgError(SvgError.Reason.NotAnSvg(_)) => true
+          case _                                     => false
