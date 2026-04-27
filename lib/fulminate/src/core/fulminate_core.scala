@@ -46,27 +46,61 @@ package errorDiagnostics:
 
 def panic(message: Message): Nothing = throw Panic(message)
 
+private def errorPrefix(realm: Realm, d: Int, e: Int, useColor: Boolean): String =
+  val esc = 27.toChar
+  if useColor then
+    val gray   = s"$esc[38;2;128;128;128m"
+    val orange = s"$esc[38;2;255;165;0m"
+    val yellow = s"$esc[38;2;255;215;0m"
+    val cyan   = s"$esc[38;2;0;200;255m"
+    val reset  = s"$esc[0m"
+    val ePart  = if e == 0 then "" else s"$gray.$cyan$e"
+    s"$gray[$orange↯SN$gray-$yellow${realm.code}$gray/$cyan$d$ePart$gray]$reset "
+  else
+    val ePart = if e == 0 then "" else s".$e"
+    s"[↯SN-${realm.code}/$d$ePart] "
+
+private def detectColor(using quotes: Quotes): Boolean =
+  import dotty.tools.dotc.config.Settings.Setting.value
+  quotes match
+    case quotes: runtime.impl.QuotesImpl =>
+      value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
+    case _ =>
+      false
+
 def halt(using Quotes)(message: Message, position: quotes.reflect.Position | Null = null)
   ( using Realm )
 :   Nothing =
 
   import quotes.reflect.*
-  import dotty.tools.dotc.config.Settings.Setting.value
+  val text = if detectColor then message.colorText.s else message.text.s
+  if position == null then report.errorAndAbort(text) else report.errorAndAbort(text, position)
 
-  val useColor: Boolean = quotes match
-    case quotes: runtime.impl.QuotesImpl =>
-      value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
 
-    case _ =>
-      false
+def halt(using Quotes)(d: Int, message: Message)(using Realm): Nothing =
+  haltImpl(message, null, errorPrefix(summon[Realm], d, 0, detectColor))
 
-  val esc = 27.toChar
+def halt(using Quotes)(d: Int, message: Message, position: quotes.reflect.Position | Null)
+  (using Realm)
+:   Nothing =
+  haltImpl(message, position, errorPrefix(summon[Realm], d, 0, detectColor))
 
-  val text =
-    if useColor
-    then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].code}$esc[0m ${message.colorText}"
-    else s"${summon[Realm].code}: ${message.text}"
+def halt(using Quotes)(d: Int, reason: Clarification, message: Message)(using Realm): Nothing =
+  haltImpl(message, null, errorPrefix(summon[Realm], d, reason.number, detectColor))
 
+def halt(using Quotes)
+  (d: Int, reason: Clarification, message: Message, position: quotes.reflect.Position | Null)
+  (using Realm)
+:   Nothing =
+  haltImpl(message, position, errorPrefix(summon[Realm], d, reason.number, detectColor))
+
+private def haltImpl(using quotes: Quotes)
+  (message: Message, position: quotes.reflect.Position | Null, prefix: String)
+:   Nothing =
+
+  import quotes.reflect.*
+
+  val text = prefix+(if detectColor then message.colorText.s else message.text.s)
   if position == null then report.errorAndAbort(text) else report.errorAndAbort(text, position)
 
 
@@ -75,22 +109,34 @@ def warn(using Quotes)(message: Message, position: quotes.reflect.Position | Nul
 :   Unit =
 
   import quotes.reflect.*
-  import dotty.tools.dotc.config.Settings.Setting.value
+  val text = if detectColor then message.colorText.s else message.text.s
+  if position == null then report.warning(text) else report.warning(text, position)
 
-  val esc = 27.toChar
 
-  val useColor: Boolean = quotes match
-    case quotes: runtime.impl.QuotesImpl =>
-      value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
+def warn(using Quotes)(d: Int, message: Message)(using Realm): Unit =
+  warnImpl(message, null, errorPrefix(summon[Realm], d, 0, detectColor))
 
-    case _ =>
-      false
+def warn(using Quotes)(d: Int, message: Message, position: quotes.reflect.Position | Null)
+  (using Realm)
+:   Unit =
+  warnImpl(message, position, errorPrefix(summon[Realm], d, 0, detectColor))
 
-  val text =
-    if useColor
-    then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].code}$esc[0m ${message.colorText}"
-    else s"${summon[Realm].code}: ${message.text}"
+def warn(using Quotes)(d: Int, reason: Clarification, message: Message)(using Realm): Unit =
+  warnImpl(message, null, errorPrefix(summon[Realm], d, reason.number, detectColor))
 
+def warn(using Quotes)
+  (d: Int, reason: Clarification, message: Message, position: quotes.reflect.Position | Null)
+  (using Realm)
+:   Unit =
+  warnImpl(message, position, errorPrefix(summon[Realm], d, reason.number, detectColor))
+
+private def warnImpl(using quotes: Quotes)
+  (message: Message, position: quotes.reflect.Position | Null, prefix: String)
+:   Unit =
+
+  import quotes.reflect.*
+
+  val text = prefix+(if detectColor then message.colorText.s else message.text.s)
   if position == null then report.warning(text) else report.warning(text, position)
 
 
