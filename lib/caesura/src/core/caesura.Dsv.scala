@@ -77,7 +77,7 @@ object Dsv:
         Text.build:
           append(format.quote)
 
-          cell.s.foreach: char =>
+          cell.chars.each: char =>
             if char == format.quote then append(char)
             append(char)
 

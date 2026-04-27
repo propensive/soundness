@@ -276,7 +276,7 @@ object internal:
     def parseGroup(text: Text): Int raises IpAddressError =
       if text.length > 4 then raise(IpAddressError(Ipv6GroupWrongLength(text)))
 
-      text.lower.s.each: char =>
+      text.lower.chars.each: char =>
         if !('0' <= char <= '9' || 'a' <= char <= 'f')
         then raise(IpAddressError(Ipv6GroupNotHex(text)))
 
