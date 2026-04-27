@@ -36,7 +36,7 @@ import anticipation.*
 import fulminate.*
 import proscenium.*
 
-private given realm: Realm = realm"vicarious"
+private given realm: Realm = realm"vi"
 
 inline def catalog[key](key: key)[value](inline lambda: [field] => (field: field) => value)
   ( using classTag: ClassTag[value] )

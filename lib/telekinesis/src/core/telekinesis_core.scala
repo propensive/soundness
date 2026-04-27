@@ -46,7 +46,7 @@ import spectacular.*
 import urticose.*
 import vacuous.*
 
-private given realm: Realm = realm"telekinesis"
+private given realm: Realm = realm"te"
 
 package queryParameters:
   inline given arbitrary: [key <: Label, value] => key is Parametric to value = !!

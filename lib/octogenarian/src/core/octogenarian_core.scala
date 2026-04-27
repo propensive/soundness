@@ -42,7 +42,7 @@ import nomenclature.*
 import prepositional.*
 import serpentine.*
 
-private given realm: Realm = realm"octogenarian"
+private given realm: Realm = realm"oc"
 
 package gitCommands:
   given environmentDefault: (WorkingDirectory, GitEvent is Loggable)

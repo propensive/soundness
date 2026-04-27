@@ -35,10 +35,20 @@ package octogenarian
 import fulminate.*
 
 object GitError:
-  enum Reason:
-    case CannotExecuteGit, CloneFailed, InvalidRepoPath, RepoDoesNotExist, BranchDoesNotExist,
-        CommitDoesNotExist, CommitFailed, CannotSwitchBranch, PullFailed, BranchFailed, TagFailed,
-        AddFailed, NoWorkTree
+  enum Reason(val number: Int) extends Clarification:
+    case CannotExecuteGit   extends Reason(1)
+    case CloneFailed        extends Reason(2)
+    case InvalidRepoPath    extends Reason(3)
+    case RepoDoesNotExist   extends Reason(4)
+    case BranchDoesNotExist extends Reason(5)
+    case CommitDoesNotExist extends Reason(6)
+    case CommitFailed       extends Reason(7)
+    case CannotSwitchBranch extends Reason(8)
+    case PullFailed         extends Reason(9)
+    case BranchFailed       extends Reason(10)
+    case TagFailed          extends Reason(11)
+    case AddFailed          extends Reason(12)
+    case NoWorkTree         extends Reason(13)
 
   import Reason.*
 
@@ -58,4 +68,5 @@ object GitError:
     case CannotSwitchBranch => m"the branch could not be changed"
 
 case class GitError(reason: GitError.Reason)(using Diagnostics)
-extends Error(m"the Git operation could not be completed because $reason")
+extends Error(realm"oc", 1, reason.number)
+              (m"the Git operation could not be completed because $reason")

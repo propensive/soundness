@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class GitRefError(value: Text)(using Diagnostics)
-extends Error(m"$value is not a valid Git reference")
+extends Error(realm"oc", 2, 0)(m"$value is not a valid Git reference")

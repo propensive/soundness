@@ -43,7 +43,7 @@ import rudiments.*
 import vacuous.*
 
 object internal:
-  private given realm: Realm = realm"panopticon"
+  private given realm: Realm = realm"pa"
 
   def lens[self: Type, origin <: Product: Type]: Macro[self is Lens from origin] =
     import quotes.reflect.*

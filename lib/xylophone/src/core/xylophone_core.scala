@@ -74,4 +74,4 @@ extension (xml: Seq[Xml])
 
     array.immutable(using Unsafe)
 
-private given realm: Realm = realm"xylophone"
+private given realm: Realm = realm"xy"
