@@ -76,10 +76,10 @@ extends Exception(message.text.s, cause, false, diagnostics.captureStack):
 
   def labelled: Message =
     if d == 0 then message
-    else m"[$errorCode] $message"
+    else m"[↯$errorCode] $message"
 
   override def getMessage: String =
     if d == 0 then component.s+": "+message.text
-    else "["+errorCode+"] "+message.text
+    else "[↯"+errorCode+"] "+message.text
 
   override def getCause: Throwable | Null = cause

@@ -139,4 +139,4 @@ object Tests extends Suite(m"Mercator tests"):
       demilitarize:
         summon[Identity[Ordering]].point(1)
       .map(_.message)
-    . assert(_ == List("mercator: the companion object Ordering has no candidate apply methods"))
+    . assert(_ == List("[↯SN-mc/1] the companion object Ordering has no candidate apply methods"))
