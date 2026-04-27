@@ -77,31 +77,18 @@ def halt(using Quotes)(message: Message, position: quotes.reflect.Position | Nul
   if position == null then report.errorAndAbort(text) else report.errorAndAbort(text, position)
 
 
-def halt(using Quotes)(d: Int, message: Message)(using Realm): Nothing =
-  haltImpl(message, null, errorPrefix(summon[Realm], d, 0, detectColor))
-
-def halt(using Quotes)(d: Int, message: Message, position: quotes.reflect.Position | Null)
-  (using Realm)
-:   Nothing =
-  haltImpl(message, position, errorPrefix(summon[Realm], d, 0, detectColor))
-
-def halt(using Quotes)(d: Int, reason: Clarification, message: Message)(using Realm): Nothing =
-  haltImpl(message, null, errorPrefix(summon[Realm], d, reason.number, detectColor))
-
-def halt(using Quotes)
-  (d: Int, reason: Clarification, message: Message, position: quotes.reflect.Position | Null)
-  (using Realm)
-:   Nothing =
-  haltImpl(message, position, errorPrefix(summon[Realm], d, reason.number, detectColor))
-
-private def haltImpl(using quotes: Quotes)
-  (message: Message, position: quotes.reflect.Position | Null, prefix: String)
-:   Nothing =
-
+def halt(d: Int, message: Message)(using quotes: Quotes, realm: Realm): Nothing =
   import quotes.reflect.*
+  val body = if detectColor then message.colorText.s else message.text.s
+  report.errorAndAbort(errorPrefix(realm, d, 0, detectColor)+body)
 
-  val text = prefix+(if detectColor then message.colorText.s else message.text.s)
-  if position == null then report.errorAndAbort(text) else report.errorAndAbort(text, position)
+
+def halt(d: Int, reason: Clarification, message: Message)
+  (using quotes: Quotes, realm: Realm)
+:   Nothing =
+  import quotes.reflect.*
+  val body = if detectColor then message.colorText.s else message.text.s
+  report.errorAndAbort(errorPrefix(realm, d, reason.number, detectColor)+body)
 
 
 def warn(using Quotes)(message: Message, position: quotes.reflect.Position | Null = null)
@@ -113,31 +100,18 @@ def warn(using Quotes)(message: Message, position: quotes.reflect.Position | Nul
   if position == null then report.warning(text) else report.warning(text, position)
 
 
-def warn(using Quotes)(d: Int, message: Message)(using Realm): Unit =
-  warnImpl(message, null, errorPrefix(summon[Realm], d, 0, detectColor))
-
-def warn(using Quotes)(d: Int, message: Message, position: quotes.reflect.Position | Null)
-  (using Realm)
-:   Unit =
-  warnImpl(message, position, errorPrefix(summon[Realm], d, 0, detectColor))
-
-def warn(using Quotes)(d: Int, reason: Clarification, message: Message)(using Realm): Unit =
-  warnImpl(message, null, errorPrefix(summon[Realm], d, reason.number, detectColor))
-
-def warn(using Quotes)
-  (d: Int, reason: Clarification, message: Message, position: quotes.reflect.Position | Null)
-  (using Realm)
-:   Unit =
-  warnImpl(message, position, errorPrefix(summon[Realm], d, reason.number, detectColor))
-
-private def warnImpl(using quotes: Quotes)
-  (message: Message, position: quotes.reflect.Position | Null, prefix: String)
-:   Unit =
-
+def warn(d: Int, message: Message)(using quotes: Quotes, realm: Realm): Unit =
   import quotes.reflect.*
+  val body = if detectColor then message.colorText.s else message.text.s
+  report.warning(errorPrefix(realm, d, 0, detectColor)+body)
 
-  val text = prefix+(if detectColor then message.colorText.s else message.text.s)
-  if position == null then report.warning(text) else report.warning(text, position)
+
+def warn(d: Int, reason: Clarification, message: Message)
+  (using quotes: Quotes, realm: Realm)
+:   Unit =
+  import quotes.reflect.*
+  val body = if detectColor then message.colorText.s else message.text.s
+  report.warning(errorPrefix(realm, d, reason.number, detectColor)+body)
 
 
 extension (inline context: StringContext)
