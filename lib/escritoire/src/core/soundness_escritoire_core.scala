@@ -32,16 +32,17 @@
                                                                                                   */
 package soundness
 
-export escritoire
-. { Attenuation, BoxDrawing, BoxLine, Column, ColumnAlignment, Columnar, Grid, LineCharset,
-    Scaffold, TableCell, TableError, TableRelabelling, TableRow, TableSection, TableStyle,
-    Tabulable, Tabulation, TextAlignment, VerticalAlignment, tabulation }
+export
+  escritoire
+  . { Attenuation, BoxDrawing, BoxLine, Column, ColumnAlignment, Columnar, Grid, LineCharset,
+      Scaffold, TableCell, TableError, TableRelabelling, TableRow, TableSection, TableStyle,
+      Tabulable, Tabulation, tabulation, TextAlignment, VerticalAlignment }
 
 package columnAttenuation:
   export escritoire.columnAttenuation.{fail, ignore}
 
 package tableStyles:
-  export escritoire.tableStyles.{default, thinRounded, horizontal, midOnly, vertical, minimal}
+  export escritoire.tableStyles.{default, horizontal, midOnly, minimal, thinRounded, vertical}
 
 package columnar:
-  export escritoire.columnar.{Prose, Fixed, Shortened, Collapsible}
+  export escritoire.columnar.{Collapsible, Fixed, Prose, Shortened}

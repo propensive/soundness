@@ -81,22 +81,21 @@ trait Specification extends Original:
                   halt:
                     m"could not find an Intensional instance for the field $name with type $label"
 
-                case Some
-                  ( '{$accessor: label `is` Intensional `in` Form `from` Origin `to` result} ) =>
+                case
+                  Some('{$accessor: label `is` Intensional `in` Form `from` Origin `to` result}) =>
+                    val rhs: Expr[Origin => Any] =
+                      ' {
+                          (data: Origin) =>
+                            $accessor.transform
+                              ( $target.access(${Expr(name)}, data), ${Expr(params.to(List))} )
+                        }
 
-                  val rhs: Expr[Origin => Any] =
-                    ' {
-                        (data: Origin) =>
-                          $accessor.transform
-                            ( $target.access(${Expr(name)}, data), ${Expr(params.to(List))} )
-                      }
+                    val caseDefs2 =
+                      CaseDef(Literal(StringConstant(name.s)), None, rhs.asTerm) :: caseDefs
 
-                  val caseDefs2 =
-                    CaseDef(Literal(StringConstant(name.s)), None, rhs.asTerm) :: caseDefs
+                    val refinement = Refinement(refined, name.s, TypeRepr.of[result])
 
-                  val refinement = Refinement(refined, name.s, TypeRepr.of[result])
-
-                  refine(value, tail, refinement, caseDefs2)
+                    refine(value, tail, refinement, caseDefs2)
 
         case (name, Member.Record(label, map)) :: tail =>
           ConstantType(StringConstant(label.s)).asType.absolve match

@@ -143,7 +143,7 @@ object internal:
           case head :: tail =>
             attributes(tail):
               val boolean: Expr[Boolean] = pattern.attributes(head).s.absolve match
-                case "\u0000"   =>
+                case "\u0000" =>
                   index += 1
                   types ::= TypeRepr.of[Text]
                   iterator.next()

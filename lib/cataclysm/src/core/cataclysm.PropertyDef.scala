@@ -37,9 +37,6 @@ import prepositional.*
 import quantitative.*
 import rudiments.*
 
-sealed trait PropertyDef[-property]:
-  type Self <: Label
-
 object PropertyDef:
   inline given alignContent: ("alignContent" is PropertyDef[Text]) = !!
   inline given alignItems: ("alignItems" is PropertyDef[Text]) = !!
@@ -443,3 +440,6 @@ object PropertyDef:
 
   inline given transparent: [label <: Label] => label is PropertyDef[Transparent.type] =
     !!
+
+sealed trait PropertyDef[-property]:
+  type Self <: Label

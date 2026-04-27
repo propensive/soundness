@@ -48,12 +48,14 @@ object TastySymbol:
         symbol.flags.map: (flag, on) =>
           if on then e"${Bg(palette.flagOff)}(${Fg(palette.black)}(·${flag}·))"
           else e"${Fg(palette.flagOff)}($flag)"
+
         . join(e" ")
 
       val properties =
         symbol.properties.map: (property, on) =>
           if on then e"${Bg(palette.propertyOn)}(${Fg(palette.black)}(·${property}·))"
           else e"${palette.propertyOff}($property)"
+
         . join(e" ")
 
       val details =
@@ -61,8 +63,10 @@ object TastySymbol:
           detail.absolve match
             case (key, value: Text) =>
               key -> e"${Fg(palette.outline)}($value)"
+
             case (key, items: List[Text]) =>
               key -> e"${Fg(palette.outline)}(${items.join(t", ")})"
+
         . to(List)
 
       val name = (t"Name", e"$Bold(${symbol.prefix}${Fg(palette.foreground)}(${symbol.name}))")

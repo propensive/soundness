@@ -35,30 +35,33 @@ package soundness
 export scala.collection.immutable.Vector as Trie
 export Predef.runtimeChecked as absolve
 export scala.reflect.{ClassTag, Typeable}
-export scala.collection.immutable.{Set, List, ListMap, Map, TreeSet, TreeMap}
+export scala.collection.immutable.{List, ListMap, Map, Set, TreeMap, TreeSet}
 export scala.collection.concurrent.TrieMap
 
-export Predef
-. { nn, identity, summon, charWrapper, $conforms, ArrowAssoc, intWrapper, longWrapper, shortWrapper,
-    byteWrapper, valueOf, doubleWrapper, floatWrapper, locally }
+export
+  Predef
+  . { $conforms, ArrowAssoc, byteWrapper, charWrapper, doubleWrapper, floatWrapper, identity,
+      intWrapper, locally, longWrapper, nn, shortWrapper, summon, valueOf }
 
 export scala.util.control.NonFatal
 
 export scala.util.boundary, boundary.break
 
-export scala.jdk.CollectionConverters
-. { IteratorHasAsScala, ListHasAsScala, MapHasAsScala, SeqHasAsJava, MapHasAsJava,
-    EnumerationHasAsScala }
+export
+  scala.jdk.CollectionConverters
+  . { EnumerationHasAsScala, IteratorHasAsScala, ListHasAsScala, MapHasAsJava, MapHasAsScala,
+      SeqHasAsJava }
 
-export scala.annotation
-. { tailrec, implicitNotFound as missingContext, targetName, switch, StaticAnnotation }
+export
+  scala.annotation
+  . { implicitNotFound as missingContext, StaticAnnotation, switch, tailrec, targetName }
 
-export scala.annotation.unchecked.{uncheckedVariance, uncheckedCaptures, uncheckedStable}
+export scala.annotation.unchecked.{uncheckedCaptures, uncheckedStable, uncheckedVariance}
 
 export scala.LazyList as Stream
 export scala.DummyImplicit as Void
 
-export proscenium.{Nat, Label, `~>`, Zero, Mono}
+export proscenium.{`~>`, Label, Mono, Nat, Zero}
 
 transparent inline def infer[context]: context = compiletime.summonInline[context]
 

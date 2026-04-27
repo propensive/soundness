@@ -87,9 +87,6 @@ object Contrastable:
         if left == right then Juxtaposition.Same(show(left))
         else juxtaposition(typeName, decompose(left), decompose(right))
 
-  trait Foundation extends Contrastable:
-    def juxtaposition(left: Self, right: Self): Juxtaposition
-
   object Foundation extends Protofoundation:
     given decomposition: Decomposition is Contrastable.Foundation = juxtaposition(t"", _, _)
     given int: Int is Contrastable.Foundation = long.juxtaposition(_, _)
@@ -235,6 +232,9 @@ object Contrastable:
 
       Juxtaposition.Collation(name, comparison.to(List), leftDebug, rightDebug)
 
+
+  trait Foundation extends Contrastable:
+    def juxtaposition(left: Self, right: Self): Juxtaposition
 
   trait Protofoundation:
     given showable: [value: Showable] => value is Contrastable = (left, right) =>

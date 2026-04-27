@@ -52,20 +52,25 @@ object Authority:
     t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host.show}${auth.port.let(_.show).lay(t"")(t":"+_)}"
 
   given decodable: Tactic[HostnameError]
-        => Tactic[IpAddressError]
-        => Tactic[UrlError]
-        => Authority is Decodable in Text =
+  =>  Tactic[IpAddressError]
+  =>  Tactic[UrlError]
+  =>  Authority is Decodable in Text =
     parse(_)
 
   private def parse(value: Text)
-  :     Authority raises HostnameError raises IpAddressError raises UrlError =
+  :   Authority raises HostnameError raises IpAddressError raises UrlError =
+
     import UrlError.{Expectation, Reason}, Expectation.*, Reason.*
 
     def parsePort(portText: Text, offset: Ordinal): Int =
       safely(portText.s.toInt).match
         case port: Int if port >= 0 && port <= 65535 => port
-        case port: Int => raise(UrlError(value, offset, Expected(PortRange))) yet 0
-        case _         => raise(UrlError(value, offset, Expected(Number))) yet 0
+
+        case port: Int =>
+          raise(UrlError(value, offset, Expected(PortRange))) yet 0
+
+        case _ =>
+          raise(UrlError(value, offset, Expected(Number))) yet 0
 
     def parseHostPort(hostPort: Text, base: Ordinal, userInfo: Optional[Text]): Authority =
       if hostPort.at(Prim) == '[' then

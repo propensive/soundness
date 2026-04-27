@@ -53,8 +53,6 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-sealed trait Http
-
 object Http:
   object Version:
     given showable: Version is Showable =
@@ -514,3 +512,5 @@ object Http:
     :   Http.Response =
 
       ${telekinesis.internal.fetch('this, 'headers, 'online, 'loggable, 'client)}
+
+sealed trait Http

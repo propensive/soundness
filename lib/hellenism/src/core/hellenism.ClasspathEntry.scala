@@ -39,13 +39,6 @@ import gossamer.*
 import prepositional.*
 import vacuous.*
 
-sealed trait ClasspathEntry:
-  def javaUrl: jn.URL = this match
-    case ClasspathEntry.Directory(path) => jn.URI("file", null, path.s, null).toURL.nn
-    case ClasspathEntry.Jar(path)       => jn.URI("file", null, path.s, null).toURL.nn
-    case ClasspathEntry.Url(url)        => jn.URI(url.s).toURL().nn
-    case ClasspathEntry.JavaRuntime     => jn.URI("jrt:/").toURL().nn
-
 object ClasspathEntry:
   case class Directory(path: Text) extends ClasspathEntry:
     def apply[directory: Instantiable across Paths from Text](): directory = directory(path)
@@ -68,3 +61,10 @@ object ClasspathEntry:
 
     case _ =>
       Unset
+
+sealed trait ClasspathEntry:
+  def javaUrl: jn.URL = this match
+    case ClasspathEntry.Directory(path) => jn.URI("file", null, path.s, null).toURL.nn
+    case ClasspathEntry.Jar(path)       => jn.URI("file", null, path.s, null).toURL.nn
+    case ClasspathEntry.Url(url)        => jn.URI(url.s).toURL().nn
+    case ClasspathEntry.JavaRuntime     => jn.URI("jrt:/").toURL().nn

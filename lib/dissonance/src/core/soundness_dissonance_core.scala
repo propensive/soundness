@@ -32,6 +32,7 @@
                                                                                                   */
 package soundness
 
-export dissonance
-. { Change, Edit, Ins, Del, Par, Sub, Region, RDiff, DiffError, Diff, Chunk, diff, Evolution,
-    evolve }
+export
+  dissonance
+  . { Change, Chunk, Del, Diff, diff, DiffError, Edit, Evolution, evolve, Ins, Par, RDiff, Region,
+      Sub }

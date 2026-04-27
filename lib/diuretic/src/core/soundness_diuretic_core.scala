@@ -34,13 +34,13 @@ package soundness
 
 package interfaces:
   package instants:
-    export anticipation.interfaces.instants.{javaTimeInstant, javaLong, javaUtilDate}
+    export anticipation.interfaces.instants.{javaLong, javaTimeInstant, javaUtilDate}
 
   package durations:
     export anticipation.interfaces.durations.javaLong
 
   package paths:
-    export anticipation.interfaces.paths.{javaNioPath, javaIoFile}
+    export anticipation.interfaces.paths.{javaIoFile, javaNioPath}
 
   package urls:
     export anticipation.interfaces.urls.javaNetUrl

@@ -162,23 +162,45 @@ object Tokenizer:
 
   // Scans a quoted string starting at position `start` (which is the opening quote).
   // Returns (positionAfterString, fullText including quotes, closedOnThisLine).
-  // Handles escape sequences. If the string spans newlines, scanning stops at the
-  // newline; the caller is responsible for setting tokenizer state accordingly.
+  // Handles escape sequences and string-interpolation blocks `${...}`. If the
+  // string spans newlines, scanning stops at the newline; the caller is
+  // responsible for setting tokenizer state accordingly.
   private def scanQuotedString(text: String, start: Int, quote: Char): (Int, String, Boolean) =
     val triple = quote == '"' && start + 2 < text.length
       && text.charAt(start + 1) == '"' && text.charAt(start + 2) == '"'
     var i = start + (if triple then 3 else 1)
     var done = false
     while i < text.length && text.charAt(i) != '\n' && !done do
-      if triple
-        && i + 2 < text.length && text.charAt(i) == '"'
-        && text.charAt(i + 1) == '"' && text.charAt(i + 2) == '"'
-      then
-        i += 3
-        done = true
+      if triple && text.charAt(i) == '"' then
+        // Per the Scala spec, a triple-quoted string is closed by the LAST
+        // run of three or more consecutive `"`. Count the run, and if it has
+        // length >= 3 treat the final three as the closer (any preceding `"`s
+        // become part of the string content).
+        var qcount = 0
+        while i + qcount < text.length && text.charAt(i + qcount) == '"' do qcount += 1
+        if qcount >= 3 then
+          i += qcount
+          done = true
+        else i += qcount
       else if !triple && text.charAt(i) == quote then
         i += 1
         done = true
+      else if text.charAt(i) == '$' && i + 1 < text.length && text.charAt(i + 1) == '{' then
+        // Skip past the interpolation block, balancing nested `{`/`}`. Quoted
+        // strings inside the block (which themselves can contain `{`/`}`) are
+        // skipped via a recursive scan so they don't unbalance the count.
+        i += 2
+        var depth = 1
+        while i < text.length && text.charAt(i) != '\n' && depth > 0 do
+          val c = text.charAt(i)
+          if c == '{' then { depth += 1; i += 1 }
+          else if c == '}' then { depth -= 1; i += 1 }
+          else if c == '"' || c == '\'' then
+            val (newPos, _, _) = scanQuotedString(text, i, c)
+            i = newPos
+          else if c == '\\' && i + 1 < text.length && text.charAt(i + 1) != '\n' then
+            i += 2
+          else i += 1
       else if text.charAt(i) == '\\' && i + 1 < text.length && text.charAt(i + 1) != '\n' then
         i += 2
       else i += 1

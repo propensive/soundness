@@ -75,7 +75,7 @@ abstract class RomanCalendar(val name: Text) extends Calendar:
     val da = db - a * 365
     val y = g*400 + c*100 + b*4 + a
     val m = (da*5 + 308)/153 - 2
-    val d = da - (m + 4) * 153/5 + 122
+    val d = da - (m + 4)*153/5 + 122
 
     Year(y - 4800 + (m + 2)/12)
 
@@ -103,7 +103,7 @@ abstract class RomanCalendar(val name: Text) extends Calendar:
     val da = db - a * 365
     val m = (da*5 + 308)/153 - 2
 
-    Day(da - (m + 4) * 153/5 + 122 + 1)
+    Day(da - (m + 4)*153/5 + 122 + 1)
 
   def jdn(year: Year, month: Month, day: Day): Date raises TimeError =
     if day() < 1 || day() > daysInMonth(month, year) then

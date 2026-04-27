@@ -182,7 +182,7 @@ object Bootstrapper:
         Zipfile.write(tmpFile):
           Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest3.serialize)
           #:: todo.sift[Entry].to(Stream).map: entry =>
-                Zip.Entry(entry.name.decode[Path on Zip], () => Stream(entry.data))
+            Zip.Entry(entry.name.decode[Path on Zip], () => Stream(entry.data))
 
         import filesystemOptions.overwritePreexisting.enabled
         import filesystemOptions.deleteRecursively.disabled

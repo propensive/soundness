@@ -32,12 +32,13 @@
                                                                                                   */
 package soundness
 
-export plutocrat.{Currency, CurrencyStyle, Price, Money}
+export plutocrat.{Currency, CurrencyStyle, Money, Price}
 
 package currencyStyles:
-  export plutocrat.currencyStyles.{local, generic}
+  export plutocrat.currencyStyles.{generic, local}
 
 package currencies:
-  export plutocrat.currencies
-  . { Eur, Usd, Jpy, Gbp, Cny, Aud, Cad, Chf, Hkd, Sgd, Sek, Krw, Nok, Nzd, Inr, Mxn, Twd, Zar, Brl,
-      Dkk, Pln, Thb, Ils, Idr, Czk, Aed, Try, Huf, Clp, Sar, Php, Myr, Cop, Rub, Ron, Pen }
+  export
+    plutocrat.currencies
+    . { Aed, Aud, Brl, Cad, Chf, Clp, Cny, Cop, Czk, Dkk, Eur, Gbp, Hkd, Huf, Idr, Ils, Inr, Jpy,
+        Krw, Mxn, Myr, Nok, Nzd, Pen, Php, Pln, Ron, Rub, Sar, Sek, Sgd, Thb, Try, Twd, Usd, Zar }

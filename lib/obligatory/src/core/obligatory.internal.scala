@@ -141,7 +141,7 @@ object internal:
 
                   Match('method.asTerm, cases :+ wildcard).asExprOf[Optional[Json]]
                 }
-        }
+      }
 
   def remote[interface: Type](url: Expr[HttpUrl]): Macro[interface] =
     import quotes.reflect.*

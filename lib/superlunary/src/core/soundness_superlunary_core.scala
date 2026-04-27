@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export superlunary.{embeddings, Stage, Stageable, Rig, References}
+export superlunary.{embeddings, References, Rig, Stage, Stageable}

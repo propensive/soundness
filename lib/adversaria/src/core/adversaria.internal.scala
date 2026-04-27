@@ -111,7 +111,7 @@ object internal:
         val target: TypeRepr = ConstantType(StringConstant(field))
 
         (params.find(_.name == field).get.info.asType, target.asType).absolve match
-          case ('[topic], '[ type target <: Label; target ]) =>
+          case ('[topic], '[type target <: Label; target]) =>
             ' {
                 Annotated.AnnotatedField[operand, self, plane, limit, topic, target]
                   ( $annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map) )

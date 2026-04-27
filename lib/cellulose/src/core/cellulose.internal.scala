@@ -363,7 +363,7 @@ object internal extends protointernal:
                   go(next #:: tail, focus = focus2, peers = rest, stack = stack2)
 
               case CodlToken.Blank => focus.extra match
-                case Unset            =>
+                case Unset =>
                   go(lines = lines + 1)
 
                 case Extra(l, _, _) =>

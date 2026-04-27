@@ -113,7 +113,7 @@ object protointernal:
           inline greaterThan: Boolean )
       :   Boolean =
 
-        if left.long == right.long then !strict else (left.long < right.long)^greaterThan
+        if left.long == right.long then !strict else (left.long < right.long) ^ greaterThan
 
     given ordering: Ordering[Instant] = Ordering.Long
 

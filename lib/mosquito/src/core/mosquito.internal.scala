@@ -45,17 +45,6 @@ import symbolism.*
 import vacuous.*
 
 object internal:
-  class Tensor[value, size <: Int](val data: IArray[Any]):
-    override def equals(right: Any): Boolean = right.asMatchable match
-      case that: Tensor[?, ?] => data.sameElements(that.data)
-      case _                  => false
-
-    override def hashCode: Int =
-      scala.util.hashing.MurmurHash3.arrayHash(data.mutable(using Unsafe))
-
-    override def toString: String = data.mkString("Tensor(", ", ", ")")
-
-
   object Tensor:
     def apply(tuple: Tuple): Tensor[Tuple.Union[tuple.type], Tuple.Size[tuple.type]] =
       new Tensor(tuple.toIArray)
@@ -237,3 +226,14 @@ object internal:
 
       val start = size.value - 1
       recur(start - 1, left.element(start)*right.element(start))
+
+  class Tensor[value, size <: Int](val data: IArray[Any]):
+    override def equals(right: Any): Boolean = right.asMatchable match
+      case that: Tensor[?, ?] => data.sameElements(that.data)
+      case _                  => false
+
+    override def hashCode: Int =
+      scala.util.hashing.MurmurHash3.arrayHash(data.mutable(using Unsafe))
+
+    override def toString: String = data.mkString("Tensor(", ", ", ")")
+

@@ -32,6 +32,7 @@
                                                                                                   */
 package soundness
 
-export enigmatic
-. { Aes, Cipher, CryptoError, Dsa, Encryption, Divulgence, Hmac, Pem, PemError, PemLabel,
-    PrivateKey, Rsa, Signature, Signing, Symmetric, SymmetricKey, hmac }
+export
+  enigmatic
+  . { Aes, Cipher, CryptoError, Divulgence, Dsa, Encryption, Hmac, hmac, Pem, PemError, PemLabel,
+      PrivateKey, Rsa, Signature, Signing, Symmetric, SymmetricKey }

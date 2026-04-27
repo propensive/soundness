@@ -43,8 +43,8 @@ import spectacular.*
 import turbulence.*
 
 import environments.java
-import termcaps.environment
 import stdios.virtualMachine
+import termcaps.environment
 
 given decimalizer: Decimalizer = Decimalizer(3)
 

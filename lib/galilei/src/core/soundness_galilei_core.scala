@@ -32,20 +32,22 @@
                                                                                                   */
 package soundness
 
-export galilei
-. { CopyAttributes, Creatable, CreateNonexistent, CreateNonexistentParents, DeleteRecursively,
-    DereferenceSymlinks, Entry, FilesystemAttribute, Handle, IoError, IoEvent, MoveAtomically,
-    Openable, OverwritePreexisting, ReadAccess, Socket, Symlink, TraversalOrder, Volume,
-    WriteAccess, WriteSynchronously, C, D, open, javaPath, javaFile, children, descendants, size,
-    delete, wipe, volume, hardLinkTo, entry, copyTo, copyInto, moveTo, moveInto, symlinkTo,
-    symlinkInto, modified, accessed, readable, writable, hidden, touch, create, created, executable,
-    hardLinks, exists, WindowsEntry, UnixEntry, File, Directory, Fifo, BlockDevice, CharDevice }
+export
+  galilei
+  . { accessed, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo, Creatable,
+      create, created, CreateNonexistent, CreateNonexistentParents, D, delete, DeleteRecursively,
+      DereferenceSymlinks, descendants, Directory, Entry, entry, executable, exists, Fifo, File,
+      FilesystemAttribute, Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent, javaFile,
+      javaPath, modified, MoveAtomically, moveInto, moveTo, open, Openable, OverwritePreexisting,
+      readable, ReadAccess, size, Socket, Symlink, symlinkInto, symlinkTo, touch, TraversalOrder,
+      UnixEntry, Volume, volume, WindowsEntry, wipe, writable, WriteAccess, WriteSynchronously }
 
 package filesystemOptions:
-  export galilei.filesystemOptions
-  . { readAccess, writeAccess, dereferenceSymlinks, moveAtomically, copyAttributes,
-      deleteRecursively, overwritePreexisting, createNonexistentParents, createNonexistent,
-      writeSynchronously }
+  export
+    galilei.filesystemOptions
+    . { copyAttributes, createNonexistent, createNonexistentParents, deleteRecursively,
+        dereferenceSymlinks, moveAtomically, overwritePreexisting, readAccess, writeAccess,
+        writeSynchronously }
 
 package filesystemTraversal:
-  export galilei.filesystemTraversal.{preOrder, postOrder}
+  export galilei.filesystemTraversal.{postOrder, preOrder}

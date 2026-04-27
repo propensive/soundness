@@ -36,8 +36,8 @@ import anticipation.*
 import gossamer.*
 import prepositional.*
 
-sealed trait Sha1 extends Algorithm:
-  type Bits = 160
-
 object Sha1:
   given hash: Hash in Sha1 = Hash(t"SHA1", t"HmacSHA1")
+
+sealed trait Sha1 extends Algorithm:
+  type Bits = 160

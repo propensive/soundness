@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export orthodoxy.{OAuth, OAuthError, Issuer, Scope, Authorization}
+export orthodoxy.{Authorization, Issuer, OAuth, OAuthError, Scope}

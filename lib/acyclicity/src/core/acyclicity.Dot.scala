@@ -52,6 +52,9 @@ object Dot:
 
   case class Attachment(id: Id, compass: Option[CompassPoint] = None)
 
+  object Ref:
+    def apply(key: Text): Ref = Ref(Id(key))
+
   case class Ref(id: Id, port: Option[Attachment] = None):
     @targetName("joinTo")
     infix def -- (dest: Ref | Statement.Subgraph): Dot.Statement.Edge =
@@ -60,9 +63,6 @@ object Dot:
     @targetName("mapTo")
     infix def --> (dest: Ref | Statement.Subgraph): Dot.Statement.Edge =
       Dot.Statement.Edge(this, Target(true, dest, None))
-
-  object Ref:
-    def apply(key: Text): Ref = Ref(Id(key))
 
   case class Id(key: Text) extends Dynamic:
     def applyDynamicNamed(method: "apply")(attrs: (String, Text)*) =

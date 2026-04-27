@@ -32,17 +32,20 @@
                                                                                                   */
 package soundness
 
-export quantitative
-. { Galileo, Poise, Franklin, Biot, Debye, Erg, Dyne, Calorie, Langley, Phot, Stokes, Lambert, Emu,
-    Oersted, Maxwell, Gauss, Gilbert, Darcy, Barye, Kayser, Hertz, Newton, Pascal, Joule, Watt,
-    Coulomb, Volt, Farad, Ohm, Siemens, Weber, Tesla, Henry, Lux, Becquerel, Gray, Sievert, Katal,
-    Metre, Gram, Candela, Mole, Ampere, Kelvin, Second, Inch, Foot, Yard, Mile, Lightyear,
-    NauticalMile, Furlong, Grain, Ounce, Pound, Stone, Hundredweight, Ton, SolarDay, Hour, Minute,
-    Are, Acre, Litre, FluidOunce, Pint, Quart, Gallon, Days, Drams, Feet,
-    Furlongs, Grains, Hours, Hundredweights, Inches, Lightyears, Miles, Minutes, NauticalMiles,
-    Ounces, Picas, Points, Pounds, Quarters, Rankines, SiderealDays, Stones, Tons, Yards }
+export
+  quantitative
+  . { Acre, Ampere, Are, Barye, Becquerel, Biot, Calorie, Candela, Coulomb, Darcy, Days, Debye,
+      Drams, Dyne, Emu, Erg, Farad, Feet, FluidOunce, Foot, Franklin, Furlong, Furlongs, Galileo,
+      Gallon, Gauss, Gilbert, Grain, Grains, Gram, Gray, Henry, Hertz, Hour, Hours, Hundredweight,
+      Hundredweights, Inch, Inches, Joule, Katal, Kayser, Kelvin, Lambert, Langley, Lightyear,
+      Lightyears, Litre, Lux, Maxwell, Metre, Mile, Miles, Minute, Minutes, Mole, NauticalMile,
+      NauticalMiles, Newton, Oersted, Ohm, Ounce, Ounces, Pascal, Phot, Picas, Pint, Points, Poise,
+      Pound, Pounds, Quart, Quarters, Rankines, Second, SiderealDays, Siemens, Sievert, SolarDay,
+      Stokes, Stone, Stones, Tesla, Ton, Tons, Volt, Watt, Weber, Yard, Yards }
 
 package constants:
-  export quantitative.constants
-  . { SpeedOfLightInVacuum, MagneticConstant, ElectricConstant, CharacteristicImpedanceOfVacuum,
-      PlanckConstant, GravitationalConstant, ElementaryCharge, AvogadroConstant, BoltzmannConstant }
+  export
+    quantitative.constants
+    . { AvogadroConstant, BoltzmannConstant, CharacteristicImpedanceOfVacuum, ElectricConstant,
+        ElementaryCharge, GravitationalConstant, MagneticConstant, PlanckConstant,
+        SpeedOfLightInVacuum }

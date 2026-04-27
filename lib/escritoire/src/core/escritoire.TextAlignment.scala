@@ -66,7 +66,7 @@ object TextAlignment:
         def recur(spare: Int, count: Int, done: text): text =
           if count == 0 then done+Textual(t" "*spare) else
             val space = spare/count
-            recur(spare - space, count - 1, done+Textual(t" "*space)+words(wordCount - count))
+            recur(spare - space, count - 1, done + Textual(t" "*space) + words(wordCount - count))
 
         recur(spare, wordCount - 1, words.head)
 

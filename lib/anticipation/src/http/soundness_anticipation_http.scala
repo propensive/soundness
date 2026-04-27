@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export anticipation.{HttpStreams, HttpRequests}
+export anticipation.{HttpRequests, HttpStreams}

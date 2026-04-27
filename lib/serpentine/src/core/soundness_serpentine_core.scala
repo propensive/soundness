@@ -32,10 +32,12 @@
                                                                                                   */
 package soundness
 
-export serpentine
-. { Admissible, Ascent, Case, Dos, Drive, Linux, MacOs, Navigable, Path, Radical, Relative, Root,
-    Submissible, Filesystem, Windows, ^, %, ?, Posix, PathError, p, toward }
+export
+  serpentine
+  . { %, ?, ^, Admissible, Ascent, Case, Dos, Drive, Filesystem, Linux, MacOs, Navigable, p, Path,
+      PathError, Posix, Radical, Relative, Root, Submissible, toward, Windows }
 
 package interfaces.paths:
-  export anticipation.interfaces.paths
-  . { pathOnLinux, pathOnWindows, pathOnMacOs, pathOnLocal, pathOnPosix }
+  export
+    anticipation.interfaces.paths
+    . { pathOnLinux, pathOnLocal, pathOnMacOs, pathOnPosix, pathOnWindows }

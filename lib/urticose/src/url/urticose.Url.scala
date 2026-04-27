@@ -85,6 +85,7 @@ object Url:
               . within:
                   val authEnd = safely:
                     value.where(c => c == '/' || c == '?' || c == '#', colon + 3)
+
                   . or(value.limit)
                   val hostname = value.segment((colon + 3) till authEnd)
                   (authEnd, hostname.decode[Authority])

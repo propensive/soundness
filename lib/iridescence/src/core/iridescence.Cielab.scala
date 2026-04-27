@@ -54,4 +54,5 @@ case class Cielab(lightness: Double, blueYellow: Double, greenRed: Double) exten
   def delta(left: Cielab, right: Cielab): Double =
     ( hyp(F64(right.blueYellow), F64(right.greenRed))
       - hyp(F64(left.blueYellow), F64(left.greenRed)) )
+
     . double

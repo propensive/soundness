@@ -63,13 +63,16 @@ object protointernal:
         . asInstanceOf[Pojo]
 
   object DecodableDerivation extends Derivable[Decodable in Pojo]:
-    inline def conjunction[derivation <: Product: ProductReflection]: derivation is Decodable in Pojo =
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   derivation is Decodable in Pojo =
+
       case array: Array[Pojo @unchecked] =>
         build: [field] =>
           _.decoded(array(index))
 
       case other =>
         provide[Tactic[PojoError]](abort(PojoError()))
+
 
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Pojo =
       case Array(label: String @unchecked, pojo: Pojo @unchecked) =>

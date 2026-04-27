@@ -120,7 +120,7 @@ object Html extends Tag.Container
       case Fragment(Doctype(doctype), content) => Document(content, dom)
       case html@Element("html", _, _, _)       => Document(html, dom)
 
-      case _                                   =>
+      case _ =>
         abort(ParseError(Html, Position(1.u, 1.u), Issue.BadDocument))
 
   // Up to 32 levels of two-space indentation
@@ -572,7 +572,7 @@ object Html extends Tag.Container
                           skip()
                           attributes(tag, foreign, entries.updated(t"\u0000", Unset))
 
-        case _         =>
+        case _ =>
           val key2 = if foreign then foreignKey(cursor.mark) else
             key(cursor.mark, dom.attributes).tap: key =>
               if !key.targets(tag) then fail(InvalidAttributeUse(key.label, tag))
@@ -714,7 +714,7 @@ object Html extends Tag.Container
       case other => next() yet doctype(mark)
 
     def tag(doctypes: Boolean, foreign: Boolean): Token = cursor.lay(fail(ExpectedMore)):
-      case '!'  =>
+      case '!' =>
         next()
         cursor.lay(fail(ExpectedMore)):
           case '-' =>
@@ -752,7 +752,7 @@ object Html extends Tag.Container
           case char =>
             fail(Unexpected(char))
 
-      case '/'  =>
+      case '/' =>
         next()
         content = cursor.hold:
           if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, dom.elements).label
@@ -854,7 +854,7 @@ object Html extends Tag.Container
                   fail(InvalidCdata)
                   Comment(t"[CDATA[${content}]]")
 
-              case Token.Empty   =>
+              case Token.Empty =>
                 if admit(content) then empty() else infer:
                   if parent.foreign then Tag.foreign(content, extra)
                   else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
@@ -930,6 +930,7 @@ object Html extends Tag.Container
                   pop()
                   cloneChild match
                     case Element(_, _, children, _) if children.length == 0 => ()
+
                     case _ =>
                       append(cloneChild)
                       added += 1

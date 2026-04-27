@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export polaris.{Buffer, Bufferable, Debufferable, Unpackable, unpackFrom, buffer, unpack, byteWidth}
+export polaris.{Buffer, buffer, Bufferable, byteWidth, Debufferable, unpack, Unpackable, unpackFrom}

@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export dendrology.{TreeStyle, TextualTreeStyle, TreeTile, TreeDiagram, Expandable}
+export dendrology.{Expandable, TextualTreeStyle, TreeDiagram, TreeStyle, TreeTile}
 
 package treeStyles:
-  export dendrology.treeStyles.{default, rounded, ascii}
+  export dendrology.treeStyles.{ascii, default, rounded}

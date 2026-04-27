@@ -204,7 +204,7 @@ object internal:
           inline greaterThan: Boolean )
       :   Boolean =
 
-        if left.value == right.value then !strict else (left.value < right.value)^greaterThan
+        if left.value == right.value then !strict else (left.value < right.value) ^ greaterThan
 
     given zeroic: [currency <: Label: Currency] => (Money in currency) is Zeroic:
       def zero: Money in currency = Money(currency.code, 0L).in[currency]

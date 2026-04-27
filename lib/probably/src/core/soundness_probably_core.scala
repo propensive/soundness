@@ -32,13 +32,14 @@
                                                                                                   */
 package soundness
 
-export probably
-. { Baseline, Benchmark, Inclusion, Verdict, Runner, Test, Harness, TestId, Report,
-    Reporter, Trial, Testable, Tolerance, Min, Mean, Max, Cadential, ===, !==, Temporal, Geometric,
-    Arithmetic, +/-, ±, test, suite, aspire, assert, check, matches, debug, Checkable, Ci }
+export
+  probably
+  . { !==, +/-, ===, Arithmetic, aspire, assert, Baseline, Benchmark, Cadential, check, Checkable,
+      Ci, debug, Geometric, Harness, Inclusion, matches, Max, Mean, Min, Report, Reporter, Runner,
+      suite, Temporal, Test, test, Testable, TestId, Tolerance, Trial, Verdict, ± }
 
 package harnesses:
   export probably.harnesses.threadLocal
 
 package autopsies:
-  export probably.autopsies.{none, contrastExpectations}
+  export probably.autopsies.{contrastExpectations, none}

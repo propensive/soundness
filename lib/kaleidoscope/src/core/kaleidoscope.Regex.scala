@@ -117,7 +117,7 @@ object Regex:
 
     def captures(todo: List[Text], last: Int, done: Set[Int]): Set[Int] = todo match
       case Nil          => done
-      case head :: tail => captures(tail, last+head.s.length, done + last)
+      case head :: tail => captures(tail, last + head.s.length, done + last)
 
     val captured: Set[Int] =
       if parts.length > 1 then captures(parts.tail, parts.head.s.length, Set()) else Set()

@@ -44,13 +44,13 @@ object ScanAll:
     val all         = mutable.ArrayBuffer[Violation]()
 
     val files = Files.walk(libRoot).nn.iterator.nn.asScala.filter: path =>
-      val s = path.toString.nn
+      val s = path.toString
       s.endsWith(".scala") && s.contains("/src/") && !s.contains("/src/test")
 
     . toList
 
     files.foreach: path =>
-      val s    = path.toString.nn
+      val s    = path.toString
       val text = Files.readString(path).nn
       Checker.check(s, Checker.expectedModule(s), text).foreach(all += _)
 
@@ -60,6 +60,6 @@ object ScanAll:
 
     filtered.foreach: v =>
       val short = v.file.split("/lib/").nn match
-        case parts if parts.length >= 2 => "lib/" + parts(1).nn
+        case parts if parts.length >= 2 => "lib/" + parts(1)
         case _                          => v.file
       println(s"${short}:${v.line}:${v.column}  [${v.rule}] ${v.message}")

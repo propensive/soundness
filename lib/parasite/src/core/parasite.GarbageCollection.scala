@@ -48,18 +48,6 @@ import rudiments.*
 import symbolism.*
 
 object GarbageCollection:
-  enum Collector:
-    case G1YoungGeneration
-    case G1OldGeneration
-    case G1Concurrent
-    case PsScavenge
-    case PsMarkSweep
-    case ParNew
-    case ConcurrentMarkSweep
-    case Copy
-    case MarkSweepCompact
-    case Other(name: Text)
-
   object Collector:
     def unapply(name: Text): Some[Collector] = name.s match
       case "G1 Young Generation" => Some(G1YoungGeneration)
@@ -73,12 +61,17 @@ object GarbageCollection:
       case "MarkSweepCompact"    => Some(MarkSweepCompact)
       case other                 => Some(Other(name))
 
-  enum Cause:
-    case
-      AllocationFailure, SystemGc, GcLocker, Metadata, Ergonomics, CmsInitialMark, CmsFinalRemark,
-      FullGc, HeapInspection, NoGc, G1EvacuationPause, G1HumongousAllocation
-
-    case Other(cause: Text)
+  enum Collector:
+    case G1YoungGeneration
+    case G1OldGeneration
+    case G1Concurrent
+    case PsScavenge
+    case PsMarkSweep
+    case ParNew
+    case ConcurrentMarkSweep
+    case Copy
+    case MarkSweepCompact
+    case Other(name: Text)
 
   object Cause:
     def unapply(text: Text): Some[Cause] = text.s match
@@ -138,6 +131,13 @@ object GarbageCollection:
 
       () => listeners.each: (emitter, listener) =>
         emitter.removeNotificationListener(listener)
+
+  enum Cause:
+    case
+      AllocationFailure, SystemGc, GcLocker, Metadata, Ergonomics, CmsInitialMark, CmsFinalRemark,
+      FullGc, HeapInspection, NoGc, G1EvacuationPause, G1HumongousAllocation
+
+    case Other(cause: Text)
 
 case class GarbageCollection
   ( run:       Ordinal,

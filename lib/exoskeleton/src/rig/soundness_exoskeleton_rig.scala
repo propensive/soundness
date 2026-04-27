@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export exoskeleton.{Tmux, tmux, Sandbox}
+export exoskeleton.{Sandbox, Tmux, tmux}

@@ -32,12 +32,13 @@
                                                                                                   */
 package soundness
 
-export scintillate
-. { cookie, basicAuth, request, Acceptable, HttpConnection, HttpServer, HttpServerEvent, NotFound,
-    Redirect, RequestServable, Responder, ServerError, Unfulfilled, NoCache }
+export
+  scintillate
+  . { Acceptable, basicAuth, cookie, HttpConnection, HttpServer, HttpServerEvent, NoCache, NotFound,
+      Redirect, request, RequestServable, Responder, ServerError, Unfulfilled }
 
 package httpServers:
   export scintillate.httpServers.{stdlib, stdlibPublic}
 
 package webserverErrorPages:
-  export scintillate.webserverErrorPages.{minimal, standard, stackTraces}
+  export scintillate.webserverErrorPages.{minimal, stackTraces, standard}

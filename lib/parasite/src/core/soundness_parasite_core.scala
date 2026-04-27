@@ -32,14 +32,15 @@
                                                                                                   */
 package soundness
 
-export parasite
-. { Codicil, Fulfillment, AsyncError, Daemon, Hook, Monitor, Promise, Task, Threading, Chain,
-    Transgression, monitor, daemon, async, task, relent, cancel, sleep, snooze, hibernate, delay,
-    race, supervise, Tenacity, retry, Observation, Os, Destruction, Shutdown, intercept,
-    Interceptable, GarbageCollection, Timeout, Heap }
+export
+  parasite
+  . { async, AsyncError, cancel, Chain, Codicil, Daemon, daemon, delay, Destruction, Fulfillment,
+      GarbageCollection, Heap, hibernate, Hook, intercept, Interceptable, Monitor, monitor,
+      Observation, Os, Promise, race, relent, retry, Shutdown, sleep, snooze, supervise, Task, task,
+      Tenacity, Threading, Timeout, Transgression }
 
 package threading:
-  export parasite.threading.{platform, virtual, adaptive}
+  export parasite.threading.{adaptive, platform, virtual}
 
 package codicils:
   export parasite.codicils.{await, cancel, fail, panic}
@@ -48,6 +49,7 @@ package supervisors:
   export parasite.supervisors.global
 
 package retryTenacities:
-  export parasite.retryTenacities
-  . { exponentialForever, exponentialFiveTimes, exponentialTenTimes, fixedNoDelayForever,
-      fixedNoDelayFiveTimes, fixedNoDelayTenTimes }
+  export
+    parasite.retryTenacities
+    . { exponentialFiveTimes, exponentialForever, exponentialTenTimes, fixedNoDelayFiveTimes,
+        fixedNoDelayForever, fixedNoDelayTenTimes }

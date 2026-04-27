@@ -36,9 +36,9 @@ import anticipation.*
 import gossamer.*
 import prepositional.*
 
-sealed trait Sha2[bits <: 224 | 256 | 384 | 512] extends Algorithm:
-  type Bits = bits
-
 object Sha2:
   given hash: [bits <: 224 | 256 | 384 | 512: ValueOf] => Hash in Sha2[bits] =
     Hash(t"SHA-${valueOf[bits]}", t"HmacSHA${valueOf[bits]}")
+
+sealed trait Sha2[bits <: 224 | 256 | 384 | 512] extends Algorithm:
+  type Bits = bits

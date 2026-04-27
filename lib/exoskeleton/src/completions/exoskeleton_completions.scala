@@ -153,7 +153,7 @@ package executives:
             case t"pid"     => Out.println(Process().pid.value.show) yet Exit.Ok
             case t"kill"    => java.lang.System.exit(0) yet Exit.Ok
 
-            case t"await"   =>
+            case t"await" =>
               Cli.prepare()
               safely(Cli.await()).or(Nil).map(Out.println(_))
               Exit.Ok
@@ -166,7 +166,7 @@ package executives:
               Out.println(Completions.ensure(force = true).join(t"\n"))
               Exit.Ok
 
-            case _       =>
+            case _ =>
               Exit.Fail(1)
 
           Invocation

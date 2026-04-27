@@ -32,11 +32,11 @@
                                                                                                   */
 package soundness
 
-export cataclysm
-. { AnimationFillMode, BackgroundRepeat, BorderStyle, internal, Css, CssProperty, CssRule,
-    CssStyle, CssStylesheet, Dir, Display, Float, Font, FontFace, FontStyle, FontWeight,
-    From, Import, Inherit, Initial, Keyframe, Keyframes, Length, MediaRule, MixBlendMode, Overflow,
-    PointerEvents, Position, PropertyDef, PropertyValue, Selectable, Selector, ShowProperty,
-    TextAlign, TextDecorationLine, TextDecorationStyle, To, Transparent, UserSelect, VerticalAlign,
-    select, >>, ||, &&, ~~, max, min, px, pt, inches, pc, cm, mm, em, ex, ch, rem, vw, vh, vmin,
-    vmax/*, ~*/}
+export
+  cataclysm
+  . { &&, >>, AnimationFillMode, BackgroundRepeat, BorderStyle, ch, cm, Css, CssProperty, CssRule,
+      CssStyle, CssStylesheet, Dir, Display, em, ex, Float, Font, FontFace, FontStyle, FontWeight,
+      From, Import, inches, Inherit, Initial, internal, Keyframe, Keyframes, Length, max, MediaRule,
+      min, MixBlendMode, mm, Overflow, pc, PointerEvents, Position, PropertyDef, PropertyValue, pt,
+      px, rem, select, Selectable, Selector, ShowProperty, TextAlign, TextDecorationLine,
+      TextDecorationStyle, To, Transparent, UserSelect, VerticalAlign, vh, vmax, ~~ }

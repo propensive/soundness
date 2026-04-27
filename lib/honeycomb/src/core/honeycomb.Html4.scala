@@ -49,8 +49,8 @@ import turbulence.*
 import typonym.*
 import vacuous.*
 
-import classloaders.threadContext
 import charDecoders.utf8
+import classloaders.threadContext
 import textSanitizers.skip
 
 object Html4Transitional:
@@ -153,19 +153,26 @@ object Html4Transitional:
   given href: ("href" is Attribute on "a" | "area" | "base" | "link" of Url) = attribute()
   given src: ("src" is Attribute on "img" | "input" | "script" | "iframe" of Url) = attribute()
   given alt: ("alt" is Attribute on "applet" | "area" | "img" | "input" of Textual) = attribute()
+
   given `type`: ("type" is Attribute on
     "a" | "link" | "object" | "param" | "script" | "style" | "input" | "button" of Mime) = attribute()
+
   given typeOl: ("type" is Attribute on "ol" | "ul" | "li" of OlType) = attribute()
+
   given name: ("name" is Attribute on
     "a" | "applet" | "button" | "form" | "iframe" | "img" | "input" | "map" | "meta" | "object"
     | "param" | "select" | "textarea" of Name) = attribute()
+
   given value: ("value" is Attribute on "input" | "option" | "param" | "button" of Textual) =
     attribute()
+
   given valueLi: ("value" is Attribute on "li" of PositiveInt) = attribute()
   given rel: ("rel" is Attribute on "a" | "link" of Tokens) = attribute()
   given rev: ("rev" is Attribute on "a" | "link" of Tokens) = attribute()
+
   given target: ("target" is Attribute on "a" | "area" | "base" | "form" | "link" of Target) =
     attribute()
+
   given action: ("action" is Attribute on "form" of Url) = attribute()
   given method: ("method" is Attribute on "form" of Method) = attribute()
   given enctype: ("enctype" is Attribute on "form" of Enctype) = attribute()
@@ -191,8 +198,10 @@ object Html4Transitional:
   given coords: ("coords" is Attribute on "a" | "area" of Coords) = attribute()
   given nohref: ("nohref" is Attribute on "area" of Presence) = attribute()
   given hreflang: ("hreflang" is Attribute on "a" | "link" of Language) = attribute()
+
   given charset: ("charset" is Attribute on "a" | "link" | "script" | "meta" of Charset) =
     attribute()
+
   given media: ("media" is Attribute on "link" | "style" of MediaQueryList) = attribute()
   given defer: ("defer" is Attribute on "script" of Presence) = attribute()
   given language: ("language" is Attribute on "script" of Textual) = attribute()
@@ -358,8 +367,9 @@ class Html4Transitional() extends Dom:
   val Code = Tag.container["code", Inline, Html4Transitional]()
   val Col = Tag.void["col", Html4Transitional]()
 
-  val Colgroup = Tag.container["colgroup", "col", Html4Transitional]
-                  (mode = Html.Mode.Whitespace, insertable = true)
+  val Colgroup =
+    Tag.container["colgroup", "col", Html4Transitional]
+      ( mode = Html.Mode.Whitespace, insertable = true )
 
   val Dd = Tag.container["dd", Flow, Html4Transitional](autoclose = true)
   val Del = Tag.transparent["del", "", Html4Transitional]()
@@ -367,8 +377,9 @@ class Html4Transitional() extends Dom:
   val Dir = Tag.container["dir", "li", Html4Transitional](mode = Html.Mode.Whitespace)
   val Div = Tag.container["div", Flow, Html4Transitional]()
 
-  val Dl = Tag.container["dl", "dt" | "dd", Html4Transitional]
-            (autoclose = true, mode = Html.Mode.Whitespace)
+  val Dl =
+    Tag.container["dl", "dt" | "dd", Html4Transitional]
+      ( autoclose = true, mode = Html.Mode.Whitespace )
 
   val Dt = Tag.container["dt", Inline, Html4Transitional](autoclose = true)
   val Em = Tag.container["em", Inline, Html4Transitional]()
@@ -424,8 +435,9 @@ class Html4Transitional() extends Dom:
   val Object = Tag.container["object", "param" | Flow, Html4Transitional](boundary = true)
   val Ol = Tag.container["ol", "li", Html4Transitional](mode = Html.Mode.Whitespace)
 
-  val Optgroup = Tag.container["optgroup", "option", Html4Transitional]
-                  (autoclose = true, mode = Html.Mode.Whitespace)
+  val Optgroup =
+    Tag.container["optgroup", "option", Html4Transitional]
+      ( autoclose = true, mode = Html.Mode.Whitespace )
 
   val Option = Tag.container["option", "#text", Html4Transitional](autoclose = true)
   val P = Tag.container["p", Inline, Html4Transitional](autoclose = true)
@@ -468,8 +480,9 @@ class Html4Transitional() extends Dom:
 
   val Title = Tag.container["title", "#text", Html4Transitional](mode = Html.Mode.Rcdata)
 
-  val Tr = Tag.container["tr", "td" | "th", Html4Transitional]
-            (autoclose = true, mode = Html.Mode.Whitespace, insertable = true)
+  val Tr =
+    Tag.container["tr", "td" | "th", Html4Transitional]
+      ( autoclose = true, mode = Html.Mode.Whitespace, insertable = true )
 
   val Tt = Tag.container["tt", Inline, Html4Transitional]()
   val U = Tag.container["u", Inline, Html4Transitional]()
@@ -489,8 +502,8 @@ class Html4Transitional() extends Dom:
     val list: List[(Text, Attribute)] =
       Html4Transitional.membersOfType[honeycomb.Attribute]
       . foldLeft(sci.Map[Text, Attribute]()): (map, next) =>
-          val coerced = next.asInstanceOf[Attribute]
-          map.updated(coerced.label, map.at(coerced.label).let(_.merge(coerced).asInstanceOf[Attribute]).or(coerced))
+        val coerced = next.asInstanceOf[Attribute]
+        map.updated(coerced.label, map.at(coerced.label).let(_.merge(coerced).asInstanceOf[Attribute]).or(coerced))
 
       . to(List)
 

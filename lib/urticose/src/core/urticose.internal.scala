@@ -239,50 +239,6 @@ object internal:
     given showable: Ipv4Subnet is Showable = subnet => t"${subnet.ipv4}/${subnet.size}"
 
   case class Ipv4Subnet(ipv4: Ipv4, size: Int)
-  case class Ipv6(highBits: Long, lowBits: Long)
-
-
-  def portService(context: Expr[StringContext], tcp: Boolean)
-  :   Macro[TcpPort | UdpPort] =
-
-    import quotes.reflect.*
-
-    val id = context.valueOrAbort.parts.head.tt
-    val portType = if tcp then t"TCP" else t"UDP"
-
-    safely(id.decode[Int]).let: portNumber =>
-      if 1 <= portNumber <= 65535 then
-        ConstantType(IntConstant(portNumber)).asType.absolve match
-          case '[number] =>
-            if tcp then '{TcpPort.unsafe(${Expr(portNumber)}).asInstanceOf[TcpPort of number]}
-            else '{UdpPort.unsafe(${Expr(portNumber)}).asInstanceOf[UdpPort of number]}
-
-      else halt(8, m"the $portType port number ${portNumber} is not in the range 1-65535")
-
-    . or:
-        serviceNames.at((tcp, id)).lay(halt(9, m"$id is not a valid $portType port")):
-          case port: Int =>
-            ConstantType(IntConstant(port)).asType.absolve match
-              case '[type number <: Int; number] =>
-                if tcp then '{TcpPort.unsafe(${Expr(port)}).asInstanceOf[TcpPort of number]}
-                else '{UdpPort.unsafe(${Expr(port)}).asInstanceOf[UdpPort of number]}
-
-
-  def ip(context: Expr[StringContext]): Macro[Ipv4 | Ipv6] =
-    val text = Text(context.valueOrAbort.parts.head)
-
-    abortive:
-      if text.contains(t".") then
-        val ipv4 = text.decode[Ipv4]
-        '{Ipv4(${Expr(ipv4.byte0)}, ${Expr(ipv4.byte1)}, ${Expr(ipv4.byte2)}, ${Expr(ipv4.byte3)})}
-
-      else
-        val ipv6 = text.decode[Ipv6]
-        '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
-
-  def mac(context: Expr[StringContext]): Macro[MacAddress] = abortive:
-    val macAddress = context.valueOrAbort.parts.head.tt.decode[MacAddress]
-    '{MacAddress(${Expr(macAddress.long)})}
 
   object Ipv6:
     lazy val Localhost: Ipv6 = apply(0, 0, 0, 0, 0, 0, 0, 1)
@@ -355,3 +311,48 @@ object internal:
           raise(IpAddressError(Ipv6MultipleDoubleColons)) yet zeroes
 
       Ipv6(pack(groups.take(4).map(parseGroup)), pack(groups.drop(4).map(parseGroup)))
+
+  case class Ipv6(highBits: Long, lowBits: Long)
+
+
+  def portService(context: Expr[StringContext], tcp: Boolean)
+  :   Macro[TcpPort | UdpPort] =
+
+    import quotes.reflect.*
+
+    val id = context.valueOrAbort.parts.head.tt
+    val portType = if tcp then t"TCP" else t"UDP"
+
+    safely(id.decode[Int]).let: portNumber =>
+      if 1 <= portNumber <= 65535 then
+        ConstantType(IntConstant(portNumber)).asType.absolve match
+          case '[number] =>
+            if tcp then '{TcpPort.unsafe(${Expr(portNumber)}).asInstanceOf[TcpPort of number]}
+            else '{UdpPort.unsafe(${Expr(portNumber)}).asInstanceOf[UdpPort of number]}
+
+      else halt(8, m"the $portType port number ${portNumber} is not in the range 1-65535")
+
+    . or:
+        serviceNames.at((tcp, id)).lay(halt(9, m"$id is not a valid $portType port")):
+          case port: Int =>
+            ConstantType(IntConstant(port)).asType.absolve match
+              case '[type number <: Int; number] =>
+                if tcp then '{TcpPort.unsafe(${Expr(port)}).asInstanceOf[TcpPort of number]}
+                else '{UdpPort.unsafe(${Expr(port)}).asInstanceOf[UdpPort of number]}
+
+
+  def ip(context: Expr[StringContext]): Macro[Ipv4 | Ipv6] =
+    val text = Text(context.valueOrAbort.parts.head)
+
+    abortive:
+      if text.contains(t".") then
+        val ipv4 = text.decode[Ipv4]
+        '{Ipv4(${Expr(ipv4.byte0)}, ${Expr(ipv4.byte1)}, ${Expr(ipv4.byte2)}, ${Expr(ipv4.byte3)})}
+
+      else
+        val ipv6 = text.decode[Ipv6]
+        '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
+
+  def mac(context: Expr[StringContext]): Macro[MacAddress] = abortive:
+    val macAddress = context.valueOrAbort.parts.head.tt.decode[MacAddress]
+    '{MacAddress(${Expr(macAddress.long)})}

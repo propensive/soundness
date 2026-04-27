@@ -32,15 +32,16 @@
                                                                                                   */
 package soundness
 
-export profanity
-. { BracketedPasteMode, DismissError, Interaction, Interactivity, Keyboard, Keypress,
-    LineEditor, Console, Question, SelectMenu, Terminal, TerminalError, TerminalEvent,
-    TerminalFocusDetection, LuminosityDetection, TerminalSizeDetection, interactive,
-    UnixSignal, WindowsSignal }
+export
+  profanity
+  . { BracketedPasteMode, Console, DismissError, Interaction, interactive, Interactivity, Keyboard,
+      Keypress, LineEditor, LuminosityDetection, Question, SelectMenu, Terminal, TerminalError,
+      TerminalEvent, TerminalFocusDetection, TerminalSizeDetection, UnixSignal, WindowsSignal }
 
 package keyboards:
-  export profanity.keyboards.{raw, numeric, standard}
+  export profanity.keyboards.{numeric, raw, standard}
 
 package terminalOptions:
-  export profanity.terminalOptions
-  . { bracketedPasteMode, luminanceDetection, terminalFocusDetection, terminalSizeDetection }
+  export
+    profanity.terminalOptions
+    . { bracketedPasteMode, luminanceDetection, terminalFocusDetection, terminalSizeDetection }

@@ -84,7 +84,7 @@ object SourceCode:
       case Token(_, Accent.Unparsed) #:: more                   => hard(more)
       case Token(text, Accent.Ident) #:: more if soft.has(text) => hard(more)
       case Token(text, Accent.Keyword | Accent.Modifier) #:: _  => true
-      case other                                                      => false
+      case other                                                => false
 
     def soften(stream: Stream[Token]): Stream[Token] = stream match
       case (Token(text@(t"using" | t"erased"), Accent.Ident)) #:: more =>
@@ -138,7 +138,7 @@ object SourceCode:
 
         case xs =>
           xs.indexOf(Token.Newline) match
-            case -1  => xs :: acc
+            case -1    => xs :: acc
             case index => lines(xs.drop(index + 1), xs.take(index) :: acc)
 
     SourceCode(language, 1, IArray(lines(soften(stream()).to(List)).reverse*))

@@ -51,8 +51,6 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-import dotty.tools.*, dotc.util as dtdu
-
 object internal:
   def introspection[value](value: Expr[value], inlining: Expr[Boolean]): Macro[TastyTree] =
     def serialize(tree: TastyTree): Expr[TastyTree] = tree match
@@ -84,6 +82,7 @@ object internal:
     def source(tree: Tree): Text = tree.pos match
       case position: dtdu.SourcePosition =>
         val init: Ordinal = position.lineContent.tt.where(_ != ' ').or(Prim)
+
         val content: Text =
           val sourceCode = sources.establish(position.source.toString.tt):
             Scala.highlight(new String(position.source.content()).tt)

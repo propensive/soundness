@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export inimitable.{Uuid, UuidError, uuid, jvmInstanceId}
+export inimitable.{jvmInstanceId, Uuid, uuid, UuidError}

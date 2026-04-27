@@ -39,12 +39,6 @@ import kaleidoscope.*
 import vacuous.*
 
 object JsonSchemaError:
-  enum Reason(val number: Int) extends Clarification:
-    case JsonType(expected: JsonPrimitive, found: JsonPrimitive)                  extends Reason(1)
-    case MissingValue                                                             extends Reason(2)
-    case IntOutOfRange(value: Int, minimum: Optional[Int], maximum: Optional[Int]) extends Reason(3)
-    case PatternMismatch(value: Text, pattern: Regex)                             extends Reason(4)
-
   object Reason:
     given Reason is Communicable =
       case JsonType(expected, found) => m"expected JSON type $expected, but found $found"
@@ -57,6 +51,12 @@ object JsonSchemaError:
 
       case PatternMismatch(value, pattern) =>
         m"the value did not conform to the regular expression ${pattern.pattern}"
+
+  enum Reason(val number: Int) extends Clarification:
+    case JsonType(expected: JsonPrimitive, found: JsonPrimitive)                  extends Reason(1)
+    case MissingValue                                                             extends Reason(2)
+    case IntOutOfRange(value: Int, minimum: Optional[Int], maximum: Optional[Int]) extends Reason(3)
+    case PatternMismatch(value: Text, pattern: Regex)                             extends Reason(4)
 
 case class JsonSchemaError(reason: JsonSchemaError.Reason)(using Diagnostics)
 extends Error(realm"vy", 1, reason.number)
