@@ -62,11 +62,30 @@ class ZipStream(stream: () => Stream[Data], filter: (Path on Zip) => Boolean):
   def each(lambda: Zip.Entry => Unit): Unit raises ZipError = map[Unit](lambda).strict
 
   def map[element](lambda: Zip.Entry => element): Stream[element] raises ZipError =
-    val conduit = Conduit(stream())
-    if !conduit.search(0x50, 0x4b, 0x03, 0x04) then Stream() else
+    val cursor = Cursor[Data](stream().filter(_.nonEmpty).iterator)
 
-      conduit.truncate()
-      val zipIn = juz.ZipInputStream(conduit.remainder.inputStream)
+    def findMagic(): Boolean =
+      var done = false
+      var found = false
+      while !done && !cursor.finished do
+        if !cursor.seek(0x50.toByte) then done = true
+        else
+          val matched = cursor.hold:
+            val start = cursor.mark
+            val ok =
+              cursor.next() && cursor.lay(false)(_ == 0x4b.toByte)
+              && cursor.next() && cursor.lay(false)(_ == 0x03.toByte)
+              && cursor.next() && cursor.lay(false)(_ == 0x04.toByte)
+            cursor.cue(start)
+            ok
+          if matched then
+            found = true
+            done = true
+          else cursor.next()
+      found
+
+    if !findMagic() then Stream() else
+      val zipIn = juz.ZipInputStream(cursor.remainder.inputStream)
 
       def recur(): Stream[Zip.Entry] = zipIn.getNextEntry() match
         case null                         => Stream()

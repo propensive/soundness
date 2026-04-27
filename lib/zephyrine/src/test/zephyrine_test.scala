@@ -42,122 +42,6 @@ import codicils.panic
 object Tests extends Suite(m"Zephyrine tests"):
   val bytes = Data.fill(1000)(_.toByte)
   def run(): Unit = stochastic:
-    for i <- 1 to 10 do
-      val stream = Stream(bytes).shred(10.0, 10.0)
-      test(m"Conduit always starts at first byte"):
-        val conduit = Conduit(stream)
-        conduit.datum
-
-      . assert(_ == 0.toByte)
-
-      test(m"Conduit second byte is always 1"):
-        val conduit = Conduit(stream)
-        conduit.next()
-        conduit.datum
-
-      . assert(_ == 1.toByte)
-
-      test(m"Can capture first ten bytes"):
-        val conduit = Conduit(stream)
-        conduit.take(10)
-
-      . assert(_ === Data(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
-
-      test(m"Can capture second ten bytes"):
-        val conduit = Conduit(stream)
-        conduit.skip(10)
-        conduit.take(10)
-
-      . assert(_ === Data(10, 11, 12, 13, 14, 15, 16, 17, 18, 19))
-
-      test(m"Next ten times reaches same datum"):
-        val conduit = Conduit(stream)
-        for i <- 1 to 10 do conduit.next()
-        conduit.datum
-
-      . assert(_ == 10.toByte)
-
-      test(m"Position on next after save"):
-        val conduit = Conduit(stream)
-
-        conduit.skip(15)
-        conduit.mark()
-        conduit.skip(10)
-        (conduit.save().last, conduit.datum)
-
-      . assert(_ == (24.toByte, 25.toByte))
-
-      test(m"Position on next after take"):
-        val conduit = Conduit(stream)
-
-        conduit.skip(15)
-        (conduit.take(10).last, conduit.datum)
-
-      . assert(_ == (24.toByte, 25.toByte))
-
-      test(m"Breaking before starts on consistent datum"):
-        val conduit = Conduit(stream)
-
-        conduit.skip(15)
-        conduit.truncate()
-        conduit.remainder.head.head
-
-      . assert(_ == 15.toByte)
-
-      test(m"Breaking after starts on consistent datum"):
-        val conduit = Conduit(stream)
-
-        conduit.skip(15)
-        conduit.break()
-        conduit.remainder.head.head
-
-      . assert(_ == 16.toByte)
-
-    suite(m"Search tests"):
-      test(m"Can find first byte"):
-        val stream = Stream(Data(0x10, 0x11, 0x12, 0x13), Data(0x14, 0x15))
-        val conduit = Conduit(stream)
-        conduit.search(0x10)
-
-      . assert(_ == true)
-
-      test(m"Can't find nonexistent byte"):
-        val stream = Stream(Data(0x10, 0x11, 0x12, 0x13), Data(0x14, 0x15))
-        val conduit = Conduit(stream)
-        conduit.search(0x18)
-
-      . assert(_ == false)
-
-      test(m"Can find sequence of two bytes"):
-        val stream = Stream(Data(0x10, 0x11, 0x12, 0x13), Data(0x14, 0x15))
-        val conduit = Conduit(stream)
-        conduit.search(0x11, 0x12)
-
-      . assert(_ == true)
-
-      test(m"Gets correct offset for sequence of two bytes"):
-        val stream = Stream(Data(0x10, 0x11, 0x12, 0x13), Data(0x14, 0x15))
-        val conduit = Conduit(stream)
-        conduit.search(0x11, 0x12)
-        conduit.ordinal
-
-      . assert(_ == Sec)
-
-      test(m"Correct offset for three-byte sequence at start"):
-        val stream = Stream(Data(0x10, 0x11, 0x12, 0x13), Data(0x14, 0x15))
-        val conduit = Conduit(stream)
-        conduit.search(0x10, 0x11, 0x12)
-        conduit.ordinal
-
-      . assert(_ == Prim)
-
-      test(m"Finds sequence that crosses block boundary"):
-        val stream = Stream(Data(0x10, 0x11, 0x12, 0x13), Data(0x14, 0x15))
-        val conduit = Conduit(stream)
-        conduit.search(0x13, 0x14)
-        conduit.ordinal
-
-      . assert(_ == Quat)
 
     suite(m"Emitter tests"):
       test(m"mismatched block size"):
@@ -463,3 +347,121 @@ object Tests extends Suite(m"Zephyrine tests"):
           cursor.grab(start, cursor.mark)
 
       . assert(_ == "onetwot")
+
+    suite(m"Cursor[Data] tests"):
+      def stream = Stream(bytes).shred(10.0, 10.0).filter(_.nonEmpty)
+      def byteCursor = Cursor[Data](stream.iterator)
+
+      test(m"Cursor[Data] starts at first byte"):
+        byteCursor.datum(using Unsafe)
+
+      . assert(_ == 0.toByte)
+
+      test(m"Cursor[Data] second byte is 1"):
+        val cursor = byteCursor
+        cursor.next()
+        cursor.datum(using Unsafe)
+
+      . assert(_ == 1.toByte)
+
+      test(m"Cursor[Data] take first ten bytes"):
+        val cursor = byteCursor
+        cursor.take(Data())(10)
+
+      . assert(_ === Data(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
+
+      test(m"Cursor[Data] take second ten bytes"):
+        val cursor = byteCursor
+        for i <- 0 until 10 do cursor.next()
+        cursor.take(Data())(10)
+
+      . assert(_ === Data(10, 11, 12, 13, 14, 15, 16, 17, 18, 19))
+
+      test(m"Cursor[Data] grab between marks across block boundary"):
+        val cursor = byteCursor
+        for i <- 0 until 5 do cursor.next()
+        cursor.hold:
+          val start = cursor.mark
+          for i <- 0 until 10 do cursor.next()
+          cursor.grab(start, cursor.mark)
+
+      . assert(_ === Data(5, 6, 7, 8, 9, 10, 11, 12, 13, 14))
+
+      test(m"Cursor[Data] seek finds byte"):
+        val cursor = byteCursor
+        cursor.seek(15.toByte)
+        cursor.datum(using Unsafe)
+
+      . assert(_ == 15.toByte)
+
+      test(m"Cursor[Data] blockTail at start returns whole first block"):
+        val singleStream = Stream(Data(10, 11, 12, 13, 14))
+        val cursor = Cursor[Data](singleStream.iterator)
+        cursor.blockTail
+
+      . assert(_ === Data(10, 11, 12, 13, 14))
+
+      test(m"Cursor[Data] blockTail mid-block returns suffix"):
+        val singleStream = Stream(Data(10, 11, 12, 13, 14))
+        val cursor = Cursor[Data](singleStream.iterator)
+        cursor.next()
+        cursor.next()
+        cursor.blockTail
+
+      . assert(_ === Data(12, 13, 14))
+
+      test(m"Cursor[Data] advanceBlock from start jumps to next block"):
+        val twoBlocks = Stream(Data(1, 2, 3), Data(4, 5, 6))
+        val cursor = Cursor[Data](twoBlocks.iterator)
+        cursor.advanceBlock()
+        cursor.datum(using Unsafe)
+
+      . assert(_ == 4.toByte)
+
+      test(m"Cursor[Data] advanceBlock returns true when next block exists"):
+        val twoBlocks = Stream(Data(1, 2, 3), Data(4, 5, 6))
+        val cursor = Cursor[Data](twoBlocks.iterator)
+        cursor.advanceBlock()
+
+      . assert(_ == true)
+
+      test(m"Cursor[Data] advanceBlock returns false at last block"):
+        val twoBlocks = Stream(Data(1, 2, 3), Data(4, 5, 6))
+        val cursor = Cursor[Data](twoBlocks.iterator)
+        cursor.advanceBlock()
+        cursor.advanceBlock()
+
+      . assert(_ == false)
+
+      test(m"Cursor[Data] blockTail + advanceBlock reconstructs stream"):
+        val blocks = Stream(Data(1, 2, 3), Data(4, 5), Data(6, 7, 8, 9))
+        val cursor = Cursor[Data](blocks.iterator)
+        val out = scala.collection.mutable.ArrayBuffer[Byte]()
+        out.appendAll(cursor.blockTail.iterator)
+        while cursor.advanceBlock() do out.appendAll(cursor.blockTail.iterator)
+        Data(out.toArray*)
+
+      . assert(_ === Data(1, 2, 3, 4, 5, 6, 7, 8, 9))
+
+      test(m"Cursor[Data] remainder from start equals full stream"):
+        val blocks = Stream(Data(1, 2, 3), Data(4, 5), Data(6, 7))
+        val cursor = Cursor[Data](blocks.iterator)
+        cursor.remainder.flatten.to(List)
+
+      . assert(_ == List[Byte](1, 2, 3, 4, 5, 6, 7))
+
+      test(m"Cursor[Data] remainder mid-block emits cross-block tail"):
+        val blocks = Stream(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
+        val cursor = Cursor[Data](blocks.iterator)
+        for i <- 0 until 3 do cursor.next()
+        cursor.remainder.flatten.to(List)
+
+      . assert(_ == List[Byte](4, 5, 6, 7, 8))
+
+      test(m"Cursor[Data] remainder inside hold still emits unconsumed tail"):
+        val blocks = Stream(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
+        val cursor = Cursor[Data](blocks.iterator)
+        for i <- 0 until 3 do cursor.next()
+        cursor.hold(cursor.remainder.flatten.to(List))
+
+      . assert(_ == List[Byte](4, 5, 6, 7, 8))

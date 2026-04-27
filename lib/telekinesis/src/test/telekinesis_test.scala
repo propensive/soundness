@@ -106,7 +106,167 @@ object Tests extends Suite(m"Telekinesis tests"):
       . assert(_ == Couple(Person(t"Jack", 12), Person(t"Jill", 11)))
 
 
-    suite(m"Fetching tests"):
+    suite(m"Response parsing"):
+      def chunks(text: Text, size: Int): Stream[Data] =
+        val data: Data = text.data
+        def go(offset: Int): Stream[Data] =
+          if offset >= data.length then Stream() else
+            val end = math.min(offset + size, data.length)
+            data.slice(offset, end) #:: go(end)
+        go(0)
+
+      def bodyText(response: Http.Response): Text =
+        response.body.stream.read[Data].utf8
+
+      val blockSizes = List(1, 2, 3, 7, 13, 4096)
+
+      suite(m"Status line"):
+        val fixture = t"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nbody"
+        for blockSize <- blockSizes do
+          test(m"Parse 200 OK at block size $blockSize"):
+            Http.Response.parse(chunks(fixture, blockSize)).status
+
+          . assert(_ == Http.Ok)
+
+          test(m"Parse HTTP/1.1 version at block size $blockSize"):
+            Http.Response.parse(chunks(fixture, blockSize)).version
+
+          . assert(_ == 1.1)
+
+          test(m"Parse body at block size $blockSize"):
+            bodyText(Http.Response.parse(chunks(fixture, blockSize)))
+
+          . assert(_ == t"body")
+
+        for status <- List(Http.Continue, Http.Ok, Http.NoContent, Http.MovedPermanently,
+                           Http.NotModified, Http.BadRequest, Http.NotFound,
+                           Http.InternalServerError, Http.ServiceUnavailable) do
+          test(m"Parse status code ${status.code}"):
+            val fixture = t"HTTP/1.1 ${status.code} ${status.description}\r\n\r\n"
+            Http.Response.parse(chunks(fixture, 4096)).status
+
+          . assert(_ == status)
+
+        test(m"Parse HTTP/1.0 version"):
+          val fixture = t"HTTP/1.0 200 OK\r\n\r\n"
+          Http.Response.parse(chunks(fixture, 4096)).version
+
+        . assert(_ == 1.0)
+
+        test(m"Parse status with long reason phrase"):
+          val fixture = t"HTTP/1.1 503 Service Temporarily Unavailable, please try again later\r\n\r\n"
+          Http.Response.parse(chunks(fixture, 4096)).status
+
+        . assert(_ == Http.ServiceUnavailable)
+
+      suite(m"Headers"):
+        for blockSize <- blockSizes do
+          test(m"Zero headers at block size $blockSize"):
+            val fixture = t"HTTP/1.1 200 OK\r\n\r\nbody"
+            Http.Response.parse(chunks(fixture, blockSize)).textHeaders
+
+          . assert(_ == Nil)
+
+          test(m"Single header at block size $blockSize"):
+            val fixture = t"HTTP/1.1 200 OK\r\nX-Foo: bar\r\n\r\nbody"
+            Http.Response.parse(chunks(fixture, blockSize)).textHeaders
+
+          . assert(_ == List(Http.Header(t"X-Foo", t"bar")))
+
+          test(m"Multiple headers at block size $blockSize"):
+            val fixture =
+              t"HTTP/1.1 200 OK\r\nX-Foo: a\r\nX-Bar: b\r\nX-Baz: c\r\n\r\nbody"
+            Http.Response.parse(chunks(fixture, blockSize)).textHeaders
+
+          . assert(_ == List(Http.Header(t"X-Foo", t"a"),
+                             Http.Header(t"X-Bar", t"b"),
+                             Http.Header(t"X-Baz", t"c")))
+
+          test(m"Header value with leading whitespace at block size $blockSize"):
+            val fixture = t"HTTP/1.1 200 OK\r\nX-Foo:    spacey\r\n\r\n"
+            Http.Response.parse(chunks(fixture, blockSize)).textHeaders
+
+          . assert(_ == List(Http.Header(t"X-Foo", t"spacey")))
+
+          test(m"Header value with leading tab at block size $blockSize"):
+            val fixture = t"HTTP/1.1 200 OK\r\nX-Foo:\tspacey\r\n\r\n"
+            Http.Response.parse(chunks(fixture, blockSize)).textHeaders
+
+          . assert(_ == List(Http.Header(t"X-Foo", t"spacey")))
+
+        test(m"Header with hyphenated mixed-case name"):
+          val fixture = t"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
+          Http.Response.parse(chunks(fixture, 4096)).textHeaders
+
+        . assert(_ == List(Http.Header(t"Content-Type", t"text/html")))
+
+        test(m"Long header value"):
+          val long = t"a"*500
+          val fixture = t"HTTP/1.1 200 OK\r\nX-Long: $long\r\n\r\n"
+          Http.Response.parse(chunks(fixture, 4096)).textHeaders.head.value
+
+        . assert(_ == t"a"*500)
+
+        test(m"Duplicate header keys preserved"):
+          val fixture = t"HTTP/1.1 200 OK\r\nX-Same: a\r\nX-Same: b\r\n\r\n"
+          Http.Response.parse(chunks(fixture, 4096)).textHeaders
+
+        . assert(_ == List(Http.Header(t"X-Same", t"a"), Http.Header(t"X-Same", t"b")))
+
+      suite(m"Body"):
+        for blockSize <- blockSizes do
+          test(m"Empty body at block size $blockSize"):
+            val fixture = t"HTTP/1.1 204 No Content\r\nContent-Length: 0\r\n\r\n"
+            bodyText(Http.Response.parse(chunks(fixture, blockSize)))
+
+          . assert(_ == t"")
+
+          test(m"Multi-byte body at block size $blockSize"):
+            val fixture = t"HTTP/1.1 200 OK\r\n\r\nHello, world!"
+            bodyText(Http.Response.parse(chunks(fixture, blockSize)))
+
+          . assert(_ == t"Hello, world!")
+
+          test(m"Body containing CRLF at block size $blockSize"):
+            val fixture = t"HTTP/1.1 200 OK\r\n\r\nline1\r\nline2\r\n"
+            bodyText(Http.Response.parse(chunks(fixture, blockSize)))
+
+          . assert(_ == t"line1\r\nline2\r\n")
+
+          test(m"Long body at block size $blockSize"):
+            val payload = (0 until 1000).map(i => (i%10).toString.tt).reduce(_ + _)
+            val fixture = t"HTTP/1.1 200 OK\r\n\r\n$payload"
+            bodyText(Http.Response.parse(chunks(fixture, blockSize)))
+
+          . assert(_.length == 1000)
+
+      suite(m"Malformed input"):
+        test(m"Wrong protocol prefix raises Expectation"):
+          capture[HttpResponseError]:
+            Http.Response.parse(chunks(t"XTTP/1.1 200 OK\r\n\r\n", 4096))
+          . reason
+
+        . assert:
+          case HttpResponseError.Reason.Expectation('H', 'X') => true
+          case _                                              => false
+
+        test(m"Non-digit in status code raises Status"):
+          capture[HttpResponseError]:
+            Http.Response.parse(chunks(t"HTTP/1.1 2X0 OK\r\n\r\n", 4096))
+          . reason
+
+        . assert:
+          case HttpResponseError.Reason.Status(_) => true
+          case _                                  => false
+
+        test(m"Status code first digit out of range raises Status"):
+          capture[HttpResponseError]:
+            Http.Response.parse(chunks(t"HTTP/1.1 700 Weird\r\n\r\n", 4096))
+          . reason
+
+        . assert:
+          case HttpResponseError.Reason.Status(_) => true
+          case _                                  => false
 
       test(m"Fetch a URL"):
         url"https://httpbin.org/post"

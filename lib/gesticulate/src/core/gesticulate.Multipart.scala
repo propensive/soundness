@@ -55,65 +55,82 @@ object Multipart:
   def parse[input: Streamable by Data](input: input, boundary0: Optional[Text] = Unset)
   :   Multipart raises MultipartError =
 
-    val conduit = Conduit(input.stream[Data])
-    conduit.mark()
-    conduit.next()
-    if conduit.datum != '-' then raise(MultipartError(Reason.Expected('-')))
-    conduit.next()
-    if conduit.datum != '-' then raise(MultipartError(Reason.Expected('-')))
-    conduit.seek('\r')
-    val boundary = conduit.save()
-    conduit.next()
-    if conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
-    conduit.next()
+    val cursor = Cursor[Data](input.stream[Data].filter(_.nonEmpty).iterator)
+
+    inline def datum: Byte =
+      if cursor.finished then -1.toByte else cursor.datum(using Unsafe)
+
+    val boundary: Data = cursor.hold:
+      val start = cursor.mark
+      if datum != '-'.toByte then raise(MultipartError(Reason.Expected('-')))
+      cursor.next()
+      if datum != '-'.toByte then raise(MultipartError(Reason.Expected('-')))
+      cursor.next()
+      cursor.seek('\r'.toByte)
+      cursor.grab(start, cursor.mark)
+
+    cursor.next()
+    if datum != '\n'.toByte then raise(MultipartError(Reason.Expected('\n')))
+    cursor.next()
 
     def headers(list: List[(Text, Text)]): Map[Text, Text] =
-      conduit.datum match
-        case '\r' =>
-          conduit.next()
-          if conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
-          conduit.break()
-          conduit.cue()
-          list.to(Map)
+      if datum == '\r'.toByte then
+        cursor.next()
+        if datum != '\n'.toByte then raise(MultipartError(Reason.Expected('\n')))
+        cursor.next()
+        list.to(Map)
 
-        case other =>
-          conduit.mark()
-          conduit.seek(':')
-          val key = Text.ascii(conduit.save())
-          conduit.next()
-          if conduit.datum != ' ' then raise(MultipartError(Reason.Expected(' ')))
-          conduit.next()
-          conduit.mark()
-          conduit.seek('\r')
-          val value = Text.ascii(conduit.save())
-          conduit.next()
-          if conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
-          conduit.next()
-          headers((key, value) :: list)
+      else
+        val key: Text = cursor.hold:
+          val start = cursor.mark
+          cursor.seek(':'.toByte)
+          Text.ascii(cursor.grab(start, cursor.mark))
+        cursor.next()
+        if datum != ' '.toByte then raise(MultipartError(Reason.Expected(' ')))
+        cursor.next()
+        val value: Text = cursor.hold:
+          val start = cursor.mark
+          cursor.seek('\r'.toByte)
+          Text.ascii(cursor.grab(start, cursor.mark))
+        cursor.next()
+        if datum != '\n'.toByte then raise(MultipartError(Reason.Expected('\n')))
+        cursor.next()
+        headers((key, value) :: list)
 
-    def body(): Stream[Data] = conduit.step() match
-      case Conduit.State.Clutch =>
-        val block = conduit.block
-        conduit.cue()
-        block #:: body()
+    inline def skipBytes(count: Int): Unit =
+      var i = 0
+      while i < count && cursor.next() do i += 1
 
-      case Conduit.State.End =>
-        Stream()
+    def body(): Stream[Data] = cursor.hold:
+      val bodyStart = cursor.mark
+      var bodyEnd: Optional[Cursor.Mark] = Unset
+      var continue = true
+      while continue do
+        if cursor.finished then continue = false
+        else if datum != '\r'.toByte then
+          if !cursor.next() then continue = false
+        else
+          val matched = cursor.hold:
+            val crMark = cursor.mark
+            var ok = cursor.next() && datum == '\n'.toByte
+            var i = 0
+            while ok && i < boundary.length do
+              ok = cursor.next() && datum == boundary(i)
+              i += 1
+            cursor.cue(crMark)
+            ok
+          if matched then
+            bodyEnd = cursor.mark
+            continue = false
+          else if !cursor.next() then continue = false
 
-      case Conduit.State.Data =>
-        conduit.datum match
-          case '\r' =>
-            if conduit.lookahead:
-              conduit.next() && conduit.datum == '\n' && boundary.forall: char =>
-                conduit.next() && conduit.datum == char
-            then
-              conduit.truncate()
-              Stream(conduit.block).also:
-                conduit.skip(boundary.length + 3)
-            else body()
-
-          case other =>
-            body()
+      bodyEnd.let: end =>
+        val out = cursor.grab(bodyStart, end)
+        // Position is at the body-ending '\r'. Skip past "\r\n<boundary>" which
+        // is boundary.length + 2 bytes total.
+        skipBytes(boundary.length + 2)
+        Stream(out)
+      . or(Stream(cursor.grab(bodyStart, cursor.mark)))
 
     def parsePart(headers: Map[Text, Text], stream: Stream[Data]): Part =
       headers.at(t"Content-Disposition").let: disposition =>
@@ -150,23 +167,25 @@ object Multipart:
     def parts(): Stream[Part] =
       val part = parsePart(headers(Nil), body())
 
-      conduit.datum match
+      if cursor.finished then
+        raise(MultipartError(Reason.Expected('-')))
+        Stream()
+      else datum match
         case '\r' =>
-          if !conduit.next() || conduit.datum != '\n'
+          if !cursor.next() || datum != '\n'.toByte
           then raise(MultipartError(Reason.Expected('\n')))
 
-          part #:: { part.body.strict; conduit.next(); parts() }
+          part #:: { part.body.strict; cursor.next(); parts() }
 
         case '-' =>
-          if !conduit.next() || conduit.datum != '-'
+          if !cursor.next() || datum != '-'.toByte
           then raise(MultipartError(Reason.Expected('-')))
 
-          if !conduit.next() || conduit.datum != '\r'
+          if !cursor.next() || datum != '\r'.toByte
           then raise(MultipartError(Reason.Expected('\r')))
 
-          if !conduit.next() || conduit.datum != '\n'
+          if !cursor.next() || datum != '\n'.toByte
           then raise(MultipartError(Reason.Expected('\n')))
-          //if conduit.next() then raise(MultipartError(Reason.StreamContinues))
           Stream(part)
 
         case other =>
