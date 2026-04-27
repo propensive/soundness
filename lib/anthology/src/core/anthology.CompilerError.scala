@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class CompilerError()(using Diagnostics)
-extends Error(m"there was a problem with the compiler configuration")
+extends Error(realm"at", 1, 0)(m"there was a problem with the compiler configuration")

@@ -39,7 +39,7 @@ import proscenium.*
 import rudiments.*
 import spectacular.*
 
-private given realm: Realm = realm"cataclysm"
+private given realm: Realm = realm"ct"
 
 private[cataclysm] type Label = String & Singleton
 

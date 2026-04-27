@@ -38,4 +38,4 @@ import anticipation.*
 import fulminate.*
 
 case class NumberError(text: Text, specializable: Specializable)(using Diagnostics)
-extends Error(m"$text is not a valid $specializable")
+extends Error(realm"dl", 1, 0)(m"$text is not a valid $specializable")

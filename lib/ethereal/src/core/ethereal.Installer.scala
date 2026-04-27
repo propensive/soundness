@@ -61,7 +61,7 @@ import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
 object Installer:
-  private given realm: Realm = realm"ethereal"
+  private given realm: Realm = realm"et"
 
   object Result:
     given communicable: Result is Communicable =

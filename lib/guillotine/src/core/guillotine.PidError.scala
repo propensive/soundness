@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class PidError(pid: Pid)(using Diagnostics)
-extends Error(m"the process with PID ${pid.value} is not running")
+extends Error(realm"gu", 2, 0)(m"the process with PID ${pid.value} is not running")

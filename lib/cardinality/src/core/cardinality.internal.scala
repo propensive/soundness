@@ -60,7 +60,7 @@ object internal:
     Max[Max[Value1Type, Value2Type], Max[Value3Type, Value4Type]]
 
 
-  private given realm: Realm = realm"cardinality"
+  private given realm: Realm = realm"cr"
 
 
   def apply[left <: Double: Type, right <: Double: Type](digits: Expr[String])
@@ -77,26 +77,28 @@ object internal:
                 val value = string.toDouble
 
                 if value < lowerBound
-                then halt:
-                  m"""
-                    the value $string is less than the lower bound for this value,
-                    ${lowerBound.toString}
-                  """
+                then halt
+                  (1,
+                    m"""
+                      the value $string is less than the lower bound for this value,
+                      ${lowerBound.toString}
+                    """)
 
                 if value > upperBound
-                then halt:
-                  m"""
-                    the value $string is greater than the upper bound for this value,
-                    ${upperBound.toString}
-                  """
+                then halt
+                  (2,
+                    m"""
+                      the value $string is greater than the upper bound for this value,
+                      ${upperBound.toString}
+                    """)
 
                 '{${Expr(value)}.asInstanceOf[left ~ right]}
 
               case _ =>
-                halt(m"the upper bound must be a Double singleton literal types")
+                halt(3, m"the upper bound must be a Double singleton literal types")
 
           case _ =>
-            halt(m"the lower bound must be a Double singleton literal types")
+            halt(4, m"the lower bound must be a Double singleton literal types")
 
       case None =>
         '{NumericRange($digits.toDouble)}

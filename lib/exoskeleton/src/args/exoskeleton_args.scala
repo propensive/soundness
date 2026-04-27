@@ -38,7 +38,7 @@ import fulminate.*
 import gossamer.*
 import vacuous.*
 
-private given realm: Realm = realm"exoskeleton"
+private given realm: Realm = realm"ek"
 
 package interpreters:
   given simple: Interpreter:

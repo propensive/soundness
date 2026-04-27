@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class TimestampError(value: Text)(using Diagnostics)
-extends Error(m"the time $value could not be parsed")
+extends Error(realm"av", 2, 0)(m"the time $value could not be parsed")

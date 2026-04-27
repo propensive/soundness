@@ -44,8 +44,9 @@ object InstallError:
       case Io =>
         m"an I/O error occurred when trying to write an installation file"
 
-  enum Reason:
-    case Environment, Io
+  enum Reason(val number: Int) extends Clarification:
+    case Environment extends Reason(1)
+    case Io          extends Reason(2)
 
 case class InstallError(reason: InstallError.Reason)(using Diagnostics)
-extends Error(m"the installation failed because $reason")
+extends Error(realm"ek", 1, reason.number)(m"the installation failed because $reason")

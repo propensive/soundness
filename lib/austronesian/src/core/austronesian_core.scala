@@ -49,4 +49,4 @@ extension (context: StringContext)
   def o(): Proxy = Proxy(context.parts.head.tt, true)
   def c(): Proxy = Proxy(context.parts.head.tt, false)
 
-private given Realm = realm"austronesian"
+private given Realm = realm"au"

@@ -36,11 +36,11 @@ import anticipation.*
 import fulminate.*
 
 object FqcnError:
-  enum Reason:
-    case InvalidChar(char: Char)
-    case InvalidStart(char: Char)
-    case EmptyName
-    case JavaKeyword(keyword: Text)
+  enum Reason(val number: Int) extends Clarification:
+    case InvalidChar(char: Char)    extends Reason(1)
+    case InvalidStart(char: Char)   extends Reason(2)
+    case EmptyName                  extends Reason(3)
+    case JavaKeyword(keyword: Text) extends Reason(4)
 
   given communicable: Reason is Communicable =
     case Reason.InvalidChar(char)    => m"a package name may not contain the character $char"
@@ -49,4 +49,4 @@ object FqcnError:
     case Reason.JavaKeyword(keyword) => m"a package name cannot be the Java keyword, $keyword"
 
 case class FqcnError(name: Text, reason: FqcnError.Reason)(using Diagnostics)
-extends Error(m"the class name $name is not valid because $reason")
+extends Error(realm"dg", 1, reason.number)(m"the class name $name is not valid because $reason")

@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class TimezoneError(name: Text)(using Diagnostics)
-extends Error(m"the name $name does not refer to a known timezone")
+extends Error(realm"av", 3, 0)(m"the name $name does not refer to a known timezone")
