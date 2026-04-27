@@ -230,6 +230,9 @@ class Report(using Environment)(using palette: TestPalette):
     val summaryLines = lines.summaries
     val githubActions = Ci.githubActions
 
+    Out.println(t"::notice title=Probably diagnostic::Ci.githubActions=$githubActions; "
+        +t"GITHUB_ACTIONS=${safely(Environment.githubActions[Text]).or(t"<unset>")}")
+
     def truncate(text: Text, max: Int = 800): Text =
       if text.length <= max then text else t"${text.keep(max)}…"
 
