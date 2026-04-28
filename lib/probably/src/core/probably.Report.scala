@@ -325,7 +325,6 @@ class Report(using Environment)(using palette: TestPalette):
 
     val ghDetected: Text = if githubActions then t"true" else t"false"
     val ghEnv: Text = safely(Environment.githubActions[Text]).or(t"<unset>")
-    Out.println(t"::notice title=Probably diagnostic::Ci.githubActions=$ghDetected; GITHUB_ACTIONS=$ghEnv")
 
     def truncate(text: Text, max: Int = 800): Text =
       if text.length <= max then text else t"${text.keep(max)}…"
@@ -387,13 +386,17 @@ class Report(using Environment)(using palette: TestPalette):
       Scaffold[(Surface, Teletype)]
         ( Column(e""): row =>
             if row(0).juncture.branch then e"⎇" else e"",
+
           Column(e""): row =>
             if coverage.hits.contains(row(0).juncture.id) then e"${Bg(palette.detail)}(  )"
             else if coverage.oldHits.contains(row(0).juncture.id) then e"${Bg(palette.detail)}(  )"
             else e"${Bg(palette.highlight)}(  )",
+
           Column(e"Juncture")(_(1)),
+
           Column(e"Line"): row =>
             e"${Fg(palette.pass)}(${row(0).juncture.path})${Fg(palette.subdued)}(:)${Fg(palette.accented)}(${row(0).juncture.lineNo})",
+
           Column(e"Symbol")(_(0).juncture.symbolName) )
 
       . tabulate(render(junctures2))

@@ -93,7 +93,8 @@ trait Json2:
     case given Reflection[`value`]            => EncodableDerivation.derived
 
   object DecodableDerivation extends Derivable[Decodable in Json]:
-    inline def conjunction[derivation <: Product: ProductReflection]: derivation is Decodable in Json =
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   derivation is Decodable in Json =
       json =>
         provide[Foci[JsonPointer]]:
           provide[Tactic[JsonError]]:
@@ -120,7 +121,9 @@ trait Json2:
               context => context.decoded(json)
 
   object EncodableDerivation extends Derivable[Encodable in Json]:
-    inline def conjunction[derivation <: Product: ProductReflection]: derivation is Encodable in Json =
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   derivation is Encodable in Json =
+
       value =>
         provide[Foci[JsonPointer]]:
           val labels: scm.ArrayBuffer[String] = scm.ArrayBuffer()
@@ -260,8 +263,8 @@ object Json extends Json2, Dynamic:
       val (keys, values) = value.root.obj
 
       keys.indices.fuse(Map[key, element]()):
-        //focus(prior.or(JsonPointer()) / keys(next).tt):
-          state.updated(keys(next).tt.decode, decodable.decoded(Json.ast(values(next))))
+        // focus(prior.or(JsonPointer()) / keys(next).tt):
+        state.updated(keys(next).tt.decode, decodable.decoded(Json.ast(values(next))))
 
 
   given mapEncodable: [key: Encodable in Text, element]

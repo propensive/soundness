@@ -62,13 +62,13 @@ object internal:
 
       . absolve
       . match
-          case '{type keyType <: Label; $directive: (Directive { type Self = keyType })} =>
-            TypeRepr.of[keyType].absolve match
-              case ConstantType(StringConstant(key)) =>
-                val header =
-                  '{Http.Header(${Expr(key)}.tt.uncamel.kebab, $directive.encode($value))}
+        case '{type keyType <: Label; $directive: (Directive { type Self = keyType })} =>
+          TypeRepr.of[keyType].absolve match
+            case ConstantType(StringConstant(key)) =>
+              val header =
+                '{Http.Header(${Expr(key)}.tt.uncamel.kebab, $directive.encode($value))}
 
-                expand(tail, method, status, header :: done)
+              expand(tail, method, status, header :: done)
 
     todo.absolve match
       case '{$method2: Http.Method} +: tail =>

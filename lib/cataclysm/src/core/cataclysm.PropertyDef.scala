@@ -101,8 +101,8 @@ object PropertyDef:
   inline given backgroundRepeat2: ("backgroundRepeat" is PropertyDef[BackgroundRepeat]) = !!
 
 
-  inline given backgroundRepeat3: ("backgroundRepeat" is PropertyDef
-                                                          [ (BackgroundRepeat, BackgroundRepeat) ]) =
+  inline given backgroundRepeat3
+  :   ("backgroundRepeat" is PropertyDef[(BackgroundRepeat, BackgroundRepeat)]) =
 
       !!
 
@@ -388,10 +388,8 @@ object PropertyDef:
   inline given textDecoration1: ("textDecoration" is PropertyDef[TextDecorationLine]) = !!
 
 
-  inline given textDecoration2: ("textDecoration" is PropertyDef
-                                                      [ (TextDecorationLine,
-                                                         Text,
-                                                         TextDecorationStyle) ]) =
+  inline given textDecoration2
+  :   ("textDecoration" is PropertyDef[(TextDecorationLine, Text, TextDecorationStyle)]) =
 
     !!
 

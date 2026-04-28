@@ -104,7 +104,7 @@ object Command:
 
 case class Command(arguments: Text*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)
-      :   Job[Exec, result] logs ExecEvent raises ExecError =
+  :   Job[Exec, result] logs ExecEvent raises ExecError =
 
     val processBuilder = ProcessBuilder(arguments.ss*)
     processBuilder.directory(ji.File(working.directory().s))
@@ -127,7 +127,7 @@ object Pipeline:
 
 case class Pipeline(commands: Command*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)
-      :   Job[Exec, result] logs ExecEvent raises ExecError =
+  :   Job[Exec, result] logs ExecEvent raises ExecError =
 
     val processBuilders = commands.map: command =>
       val processBuilder = ProcessBuilder(command.arguments.ss*)

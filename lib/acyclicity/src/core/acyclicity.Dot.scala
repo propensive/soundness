@@ -125,8 +125,10 @@ object Dot:
       Stream(t"\"${id.key}\"", t"=", t"\"${id2.key}\"", t";")
 
     case Statement.Subgraph(id, statements*) =>
-      t"subgraph" #:: id.to(Stream).map(_.key) #::: t"{" #::
-          statements.to(Stream).flatMap(tokenize(_)) #::: Stream(t"}")
+      t"subgraph" #:: id.to(Stream).map(_.key)
+      #::: t"{"
+      #:: statements.to(Stream).flatMap(tokenize(_))
+      #::: Stream(t"}")
 
     case Dot.Graph(id, strict, statements*) =>
       Stream(

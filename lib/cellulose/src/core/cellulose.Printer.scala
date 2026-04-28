@@ -90,7 +90,7 @@ object Printer:
                 ps.each: param =>
                   param.absolve match
                     case CodlNode
-                          (Atom(key, IArray(CodlNode(Atom(value, _, layout, _), _)), _, _), _) =>
+                      ( Atom(key, IArray(CodlNode(Atom(value, _, layout, _), _)), _, _), _ ) =>
                       if layout.multiline then
                         out.write('\n')
                         printBlock(indent + 4, key)

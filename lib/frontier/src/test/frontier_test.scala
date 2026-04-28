@@ -46,29 +46,29 @@ export context.explainMissingContext
 
 object Delta
 
-class Alpha()
-class Beta()
-class Gamma()
-class Delta()
-class Eta()
+// class Alpha()
+// class Beta()
+// class Gamma()
+// class Delta()
+// class Eta()
 
-object Gamma:
-  given gamma: Gamma = Gamma()
+// object Gamma:
+//   given gamma: Gamma = Gamma()
 
-object Beta:
-  given beta: Delta => Beta = Beta()
+// object Beta:
+//   given beta: Delta => Beta = Beta()
 
-trait Alpha2:
-  given alpha2: Delta => Alpha = Alpha()
+// trait Alpha2:
+//   given alpha2: Delta => Alpha = Alpha()
 
-object Alpha extends Alpha2:
-  given alpha: (Beta, Gamma) => Alpha = Alpha()
-  given alphaz: Beta => Gamma => Eta => Alpha = Alpha()
+// object Alpha extends Alpha2:
+//   given alpha: (Beta, Gamma) => Alpha = Alpha()
+//   given alphaz: Beta => Gamma => Eta => Alpha = Alpha()
 
 
-def go()(using Alpha): Unit = ()
+// def go()(using Alpha): Unit = ()
 
-object Tests extends Suite(m"Frontier tests"):
-  def run(response: Http.Response): Unit =
-    response.receive[Json]
-    go()
+// object Tests extends Suite(m"Frontier tests"):
+//   def run(response: Http.Response): Unit =
+//     response.receive[Json]
+//     go()

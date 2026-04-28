@@ -925,9 +925,9 @@ object Xml extends Tag.Container
       cursor.lay(finish(parent, count)):
         case Nul =>
           callback.let(_(cursor.position, Hole.Node(parent.label)))
-                    next()
-                    append(TextNode("\u0000"))
-                    read(parent, map, count + 1)
+          next()
+          append(TextNode("\u0000"))
+          read(parent, map, count + 1)
 
         case '<' =>
           var level: Level = Level.Peer

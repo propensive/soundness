@@ -96,8 +96,8 @@ object Sh:
         state
 
     def parse(current: State, text: Text): State = text.chars.to(List).fuse(current):
-        (state, next).absolve match
-          case (State(Awaiting, _, arguments), ' ') => State(Awaiting, false, arguments)
+      (state, next).absolve match
+        case (State(Awaiting, _, arguments), ' ') => State(Awaiting, false, arguments)
 
           case (State(Quotes1, false, more :+ current), '\\') =>
             State(Quotes1, false, more :+ t"$current\\")
