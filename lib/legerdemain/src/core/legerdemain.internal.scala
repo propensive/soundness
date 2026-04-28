@@ -56,11 +56,11 @@ object internal:
             Expr.summon[keyType is Parametric].absolve match
               case Some('{$parametric: (Parametric { type Result = resultType })}) =>
                 halt
-                 (2,
-                  m"""
-                    the parameter ${key.valueOrAbort} takes values of ${Type.of[resultType].show}
-                    but the provided value had type ${Type.of[valueType].show}
-                  """)
+                  ( 2,
+                    m"""
+                      the parameter ${key.valueOrAbort} takes values of ${Type.of[resultType].show}
+                      but the provided value had type ${Type.of[valueType].show}
+                    """ )
 
               case None =>
                 halt(3, m"could not find a contextual Parametric value for ${key.valueOrAbort}")
@@ -68,11 +68,11 @@ object internal:
 
           val encodable = Expr.summon[valueType is Encodable in Query].getOrElse:
             halt
-             (4,
-              m"""
-                there is no contextual ${Type.of[Encodable in Query].show} instance for values of
-                ${Type.of[valueType].show}
-              """)
+              ( 4,
+                m"""
+                  there is no contextual ${Type.of[Encodable in Query].show} instance for values of
+                  ${Type.of[valueType].show}
+                """ )
 
           val parameters =
             ' {

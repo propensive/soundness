@@ -49,14 +49,14 @@ object TzdbError:
 
   enum Reason(val number: Int) extends Clarification:
     case CouldNotParseTime(time: Text) extends Reason(1)
-    case UnexpectedRule                extends Reason(2)
-    case UnexpectedLink                extends Reason(3)
-    case UnexpectedZoneInfo            extends Reason(4)
-    case UnparsableDate                extends Reason(5)
+    case UnexpectedRule extends Reason(2)
+    case UnexpectedLink extends Reason(3)
+    case UnexpectedZoneInfo extends Reason(4)
+    case UnparsableDate extends Reason(5)
     case BadZoneInfo(line: List[Text]) extends Reason(6)
-    case BadName(name: Text)           extends Reason(7)
-    case NoTzdbFile(name: Text)        extends Reason(8)
+    case BadName(name: Text) extends Reason(7)
+    case NoTzdbFile(name: Text) extends Reason(8)
 
 case class TzdbError(reason: TzdbError.Reason, line: Int)(using Diagnostics)
 extends Error(realm"av", 4, reason.number)
-              (m"the timezone could not be parsed at line $line: $reason")
+  ( m"the timezone could not be parsed at line $line: $reason" )

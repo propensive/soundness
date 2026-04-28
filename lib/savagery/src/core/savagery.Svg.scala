@@ -48,10 +48,10 @@ import zephyrine.*
 
 object Svg:
   given aggregable: (XmlSchema)
-        =>  Tactic[ParseError]
-        =>  Tactic[XmlError]
-        =>  Tactic[SvgError]
-        =>  Svg is Aggregable by Text =
+  =>  Tactic[ParseError]
+  =>  Tactic[XmlError]
+  =>  Tactic[SvgError]
+  =>  Svg is Aggregable by Text =
 
     source =>
       val xml: Xml = summon[Xml is Aggregable by Text].aggregate(source)
@@ -59,10 +59,10 @@ object Svg:
 
 
   given loadable: (XmlSchema)
-        =>  Tactic[ParseError]
-        =>  Tactic[XmlError]
-        =>  Tactic[SvgError]
-        =>  Svg is Loadable by Text =
+  =>  Tactic[ParseError]
+  =>  Tactic[XmlError]
+  =>  Tactic[SvgError]
+  =>  Svg is Loadable by Text =
 
     source =>
       val xmlDoc: Document[Xml] = summon[Xml is Loadable by Text].load(source)
@@ -87,8 +87,7 @@ object Svg:
       full.show
 
 
-case class Svg
-    (width: Float, height: Float, defs: List[SvgDef] = Nil, figures: List[Figure] = Nil)
+case class Svg(width: Float, height: Float, defs: List[SvgDef] = Nil, figures: List[Figure] = Nil)
 extends Documentary:
   type Self = Svg
   type Metadata = Encoding
@@ -96,11 +95,12 @@ extends Documentary:
   def xml: Xml =
     given showable: Float is Showable = _.toString.tt
 
-    val attrs: SeqMap[Text, Text] = SeqMap
-     (t"xmlns"   -> t"http://www.w3.org/2000/svg",
-      t"viewBox" -> t"0 0 ${width.show} ${height.show}",
-      t"width"   -> width.show,
-      t"height"  -> height.show)
+    val attrs: SeqMap[Text, Text] =
+      SeqMap
+        ( t"xmlns"   -> t"http://www.w3.org/2000/svg",
+          t"viewBox" -> t"0 0 ${width.show} ${height.show}",
+          t"width"   -> width.show,
+          t"height"  -> height.show)
 
     val defsElement: Seq[Xml] =
       if defs.isEmpty then Nil

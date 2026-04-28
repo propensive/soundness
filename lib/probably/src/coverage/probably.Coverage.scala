@@ -69,9 +69,10 @@ object Coverage:
 
     def recur(lines: Stream[Text], junctures: List[Juncture] = Nil): List[Juncture] =
       lines match
-        case As[Int](id) #:: path #:: _ #:: _ #:: _ #:: className #:: methodName #::
-            As[Int](start) #:: As[Int](end) #:: As[Int](lineNo) #:: symbolName #:: treeName #::
-            As[Boolean](branch) #:: _ #:: As[Boolean](ignored) #:: tail =>
+        case
+          ( As[Int](id) #:: path #:: _ #:: _ #:: _ #:: className #:: methodName
+            #:: As[Int](start) #:: As[Int](end) #:: As[Int](lineNo) #:: symbolName #:: treeName
+            #:: As[Boolean](branch) #:: _ #:: As[Boolean](ignored) #:: tail ) =>
 
           val juncture = Juncture(id, path, className, methodName, start, end, lineNo + 1,
               symbolName, treeName, branch, ignored, tail.takeWhile(!_.starts(t"\f")).to(List))

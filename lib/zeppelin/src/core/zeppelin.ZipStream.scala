@@ -72,10 +72,12 @@ class ZipStream(stream: () => Stream[Data], filter: (Path on Zip) => Boolean):
         else
           val matched = cursor.hold:
             val start = cursor.mark
+
             val ok =
               cursor.next() && cursor.lay(false)(_ == 0x4b.toByte)
               && cursor.next() && cursor.lay(false)(_ == 0x03.toByte)
               && cursor.next() && cursor.lay(false)(_ == 0x04.toByte)
+
             cursor.cue(start)
             ok
           if matched then

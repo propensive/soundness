@@ -385,7 +385,6 @@ object Tests extends Suite(m"Ethereal Tests"):
       ' {
           import executives.completions
           import interpreters.posix
-          import environments.daemonClient
 
           cli:
             arguments match
@@ -404,7 +403,6 @@ object Tests extends Suite(m"Ethereal Tests"):
       ' {
           import executives.completions
           import interpreters.posix
-          import environments.daemonClient
 
           cli:
             arguments match
@@ -456,7 +454,6 @@ object Tests extends Suite(m"Ethereal Tests"):
       ' {
           import executives.completions
           import interpreters.posix
-          import environments.daemonClient
 
           cli:
             arguments match
@@ -473,7 +470,6 @@ object Tests extends Suite(m"Ethereal Tests"):
       ' {
           import executives.completions
           import interpreters.posix
-          import environments.daemonClient
 
           cli:
             arguments match
@@ -509,7 +505,6 @@ object Tests extends Suite(m"Ethereal Tests"):
       ' {
           import executives.completions
           import interpreters.posix
-          import environments.daemonClient
 
           if jl.System.getProperty("ethereal.name") != null then jl.System.exit(1)
 

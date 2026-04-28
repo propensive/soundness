@@ -92,7 +92,9 @@ object Dsv:
       type Form = Dsv
       def decoded(row: Dsv): derivation = lambda(row)
 
-    inline def conjunction[derivation <: Product: ProductReflection]: derivation is Decodable in Dsv =
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   derivation is Decodable in Dsv =
+
       var rowNumber: Ordinal = Prim
 
       val spans: IArray[Int] = Spannable.derived[derivation].spans()
@@ -109,7 +111,9 @@ object Dsv:
               contextual.decoded(row2))
 
   object EncodableDerivation extends ProductDerivable[Encodable in Dsv]:
-    inline def conjunction[derivation <: Product: ProductReflection]: derivation is Encodable in Dsv =
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   derivation is Encodable in Dsv =
+
       value =>
         val cells =
           fields(value):

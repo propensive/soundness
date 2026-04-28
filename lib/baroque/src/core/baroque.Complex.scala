@@ -112,23 +112,23 @@ object Complex:
         divisible:       addition.Result is Divisible by addition2.Result )
   =>  dividend is Divisible:
 
-        type Self = dividend
-        type Operand = divisor
-        type Result = Complex[divisible.Result]
+    type Self = dividend
+    type Operand = divisor
+    type Result = Complex[divisible.Result]
 
-        def divide(left: dividend, right: divisor): Complex[divisible.Result] =
-          val denominator: addition2.Result =
-            right.real*right.real + right.imaginary*right.imaginary
+    def divide(left: dividend, right: divisor): Complex[divisible.Result] =
+      val denominator: addition2.Result =
+        right.real*right.real + right.imaginary*right.imaginary
 
-          Complex
-            ( (left.real*right.real + left.imaginary*right.imaginary)/denominator,
-              (left.imaginary*right.real + (-left.real)*right.imaginary)/denominator )
+      Complex
+        ( (left.real*right.real + left.imaginary*right.imaginary)/denominator,
+          (left.imaginary*right.real + (-left.real)*right.imaginary)/denominator )
 
 
   given negatable: [component: Negatable]
   =>  Complex[component] is Negatable to Complex[component.Result] = complex =>
 
-      Complex(-complex.real, -complex.imaginary)
+    Complex(-complex.real, -complex.imaginary)
 
 
   def apply[component: Multiplicable by Double as multiplication]

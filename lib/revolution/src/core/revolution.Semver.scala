@@ -114,8 +114,10 @@ object Semver:
           left.absolve match
             case left: Text => right.absolve match
               case right: Long => false
-              case right: Text => if left == right then compare(lefts, rights)
-                                  else left.s.compareTo(right.s) < 0
+
+              case right: Text =>
+                if left == right then compare(lefts, rights) else left.s.compareTo(right.s) < 0
+
             case left: Long => right.absolve match
               case right: Text => true
               case right: Long => if left == right then compare(lefts, rights) else left < right

@@ -96,8 +96,10 @@ object Keyboard:
               case code #:: ';' #:: modifiers #:: '~' #:: rest if '1' <= code <= '9' =>
                 Keyboard.modified(modifiers, Keyboard.vt(code)) #:: process(rest)
 
-              case '1' #:: ';' #:: modifiers #:: (code@('A' | 'B' | 'C' | 'D' | 'F' | 'H'))
-                  #:: rest =>
+              case
+                ( '1' #:: ';' #:: modifiers #:: (code@('A' | 'B' | 'C' | 'D' | 'F' | 'H'))
+                  #:: rest ) =>
+
                 Keyboard.modified(modifiers, Keyboard.navigation(code)) #:: process(rest)
 
               case '2' #:: '0' #:: '0' #:: '~' #:: tail =>

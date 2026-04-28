@@ -351,7 +351,8 @@ object Http:
 
       inline def expect(char: Char): Unit =
         if cursor.datum(using Unsafe) != char.toByte then raise:
-          HttpResponseError(HttpResponseError.Reason.Expectation(char, cursor.datum(using Unsafe).toChar))
+          HttpResponseError:
+            HttpResponseError.Reason.Expectation(char, cursor.datum(using Unsafe).toChar)
 
       val version: Http.Version = cursor.hold:
         val start = cursor.mark
@@ -371,20 +372,29 @@ object Http:
         if d1 < '1'.toByte || d1 > '5'.toByte then
           cursor.next()
           cursor.next()
-          abort(HttpResponseError(HttpResponseError.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show)))
+
+          abort:
+            HttpResponseError:
+              HttpResponseError.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show)
 
         var code = d1 - '0'.toByte
         cursor.next()
         val d2 = cursor.datum(using Unsafe)
+
         if d2 < '0'.toByte || d2 > '9'.toByte then
           cursor.next()
-          abort(HttpResponseError(HttpResponseError.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show)))
+
+          abort:
+            HttpResponseError
+              ( HttpResponseError.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show) )
 
         code = code*10 + (d2 - '0'.toByte)
         cursor.next()
         val d3 = cursor.datum(using Unsafe)
         if d3 < '0'.toByte || d3 > '9'.toByte then
-          abort(HttpResponseError(HttpResponseError.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show)))
+          abort:
+            HttpResponseError
+              ( HttpResponseError.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show) )
 
         code*10 + (d3 - '0'.toByte)
 
@@ -412,7 +422,7 @@ object Http:
             Ascii(cursor.grab(start, cursor.mark)).show
 
           cursor.next()
-          while cursor.datum(using Unsafe) == ' '.toByte || cursor.datum(using Unsafe) == '\t'.toByte
+          while cursor.datum(using Unsafe) == ' '.toByte || unsafely(cursor.datum) == '\t'.toByte
           do cursor.next()
 
           val value: Text = cursor.hold:

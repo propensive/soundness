@@ -60,4 +60,4 @@ object UrlError:
 
 case class UrlError(text: Text, offset: Ordinal, reason: UrlError.Reason)(using Diagnostics)
 extends Error(realm"ur", 7, reason.number)
-         (m"the URL $text is not valid: $reason at ${offset.n0}")
+  ( m"the URL $text is not valid: $reason at ${offset.n0}" )

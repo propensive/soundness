@@ -86,7 +86,7 @@ object internal:
     def matching(annotations: List[Term]): Expr[List[operand]] =
       Expr.ofList:
         annotations.map(_.asExpr).collect:
-            case '{$annotation: `operand`} => rebuild(annotation.asTerm)
+          case '{$annotation: `operand`} => rebuild(annotation.asTerm)
 
         . compact
         . map(_.asExprOf[operand])

@@ -47,8 +47,7 @@ object Control:
 
   case object Terminate extends Control[Nothing]
 
-  case class Continue[+state](state: Optional[state] = Unset)
-  extends Control[state], Interactive
+  case class Continue[+state](state: Optional[state] = Unset) extends Control[state], Interactive
 
   object Reply:
     def apply[transmissible: Transmissible, state]
@@ -57,11 +56,8 @@ object Control:
 
       Reply(transmissible.serialize(message), state)
 
-  case class Conclude[+state](message: Data, state: Optional[state])
-  extends Control[state]
-
-  case class Reply[+state](message: Data, state: Optional[state])
-  extends Control[state], Interactive
+  case class Conclude[+state](message: Data, state: Optional[state]) extends Control[state]
+  case class Reply[+state](message: Data, state: Optional[state]) extends Control[state], Interactive
 
 
 sealed trait Control[+state]

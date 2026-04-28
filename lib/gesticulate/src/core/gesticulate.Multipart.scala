@@ -130,6 +130,7 @@ object Multipart:
         // is boundary.length + 2 bytes total.
         skipBytes(boundary.length + 2)
         Stream(out)
+
       . or(Stream(cursor.grab(bodyStart, cursor.mark)))
 
     def parsePart(headers: Map[Text, Text], stream: Stream[Data]): Part =
@@ -141,8 +142,8 @@ object Multipart:
             param.cut(t"=", 2) match
               case List(key, value) =>
                 if value.starts(t"\"") && value.ends(t"\"")
-                                      then key -> value.segment(Sec thru value.pen.vouch)
-                                      else key -> value
+                then key -> value.segment(Sec thru value.pen.vouch)
+                else key -> value
 
               case _ =>
                 raise(MultipartError(Reason.BadDisposition)) yet (t"", t"")
