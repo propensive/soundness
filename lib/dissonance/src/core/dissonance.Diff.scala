@@ -197,7 +197,7 @@ case class Diff[element](edits: Edit[element]*):
             case ins: Ins[element] => ins
 
           Chunk(position, rightPosition, dels, inss) #::
-              recur
-                ( todo.drop(dels.size + inss.size), position + dels.length, position + inss.length )
+            recur
+              ( todo.drop(dels.size + inss.size), position + dels.length, position + inss.length )
 
     recur(edits.to(List), 0, 0)

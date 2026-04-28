@@ -35,7 +35,6 @@ package savagery
 import soundness.*
 
 import autopsies.contrastExpectations
-import decimalFormatters.java
 import errorDiagnostics.stackTraces
 import iridescence.WebColors.{Red, Blue, Green, Black, White}
 import strategies.throwUnsafely
@@ -346,9 +345,8 @@ object Tests extends Suite(m"Savagery tests"):
         . read[Svg]
 
         svg.defs.head
-      .assert:
-          case lg: LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
-          case _                     => false
+
+      . assert(_.stops.head.color == Srgb(1.0, 0.0, 0.0))
 
       test(m"Parse rgb function"):
         val svg =
@@ -356,9 +354,7 @@ object Tests extends Suite(m"Savagery tests"):
         . read[Svg]
 
         svg.defs.head
-      .assert:
-          case lg: LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
-          case _                     => false
+      . assert(_.stops.head.color == Srgb(1.0, 0.0, 0.0))
 
       test(m"Parse named color red"):
         val svg =
@@ -366,13 +362,13 @@ object Tests extends Suite(m"Savagery tests"):
         . read[Svg]
 
         svg.defs.head
-      .assert:
-          case lg: LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
-          case _                     => false
+
+      . assert(_.stops.head.color == Srgb(1.0, 0.0, 0.0))
 
       test(m"Parse linear gradient with id"):
         val svg =
           t"""<svg width="10" height="10"><defs><linearGradient id="myGrad"><stop offset="0" stop-color="#ff0000"/></linearGradient></defs></svg>"""
+
         . read[Svg]
 
         svg.defs.head

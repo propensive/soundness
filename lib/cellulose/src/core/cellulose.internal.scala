@@ -271,11 +271,12 @@ object internal extends protointernal:
             case key: Text =>
               val extra2 = extra.let { m => m.copy(comments = m.comments.reverse) }
 
-              val data = Atom
-                          ( key,
-                            IArray.from(children.reverse),
-                            Layout(params, multiline, col - margin),
-                            schema )
+              val data =
+                Atom
+                  ( key,
+                    IArray.from(children.reverse),
+                    Layout(params, multiline, col - margin),
+                    schema )
 
               val node = CodlNode(data, extra2)
 
@@ -640,19 +641,22 @@ object internal extends protointernal:
             state match
               case Word | Comment | Pending(_) => put(Indent, padding = false)
               case Margin                      => block()
-              case Indent | Space              => CodlToken.Blank
-                                                  #:: irecur(Indent, padding = false)
-              case _                           => recur(Indent, padding = false)
+
+              case Indent | Space =>
+                CodlToken.Blank #:: irecur(Indent, padding = false)
+
+              case _ =>
+                recur(Indent, padding = false)
 
           case ' ' =>
             state match
-              case Space              => recur(Space, padding = true)
-              case Pending(_)         => put(Space)
-              case Indent             => recur(Indent)
-              case Word               => if padding then recur(Pending(char)) else put(Space)
-              case Comment            => consume(state)
-              case Margin             => block()
-              case Hash               => reader.get(); recur(Comment)
+              case Space      => recur(Space, padding = true)
+              case Pending(_) => put(Space)
+              case Indent     => recur(Indent)
+              case Word       => if padding then recur(Pending(char)) else put(Space)
+              case Comment    => consume(state)
+              case Margin     => block()
+              case Hash       => reader.get(); recur(Comment)
 
           case '#' =>
             state match
@@ -668,13 +672,18 @@ object internal extends protointernal:
               case Pending(ch)    => reader.put(ch); consume(Word)
               case Space | Word   => consume(Word)
               case Comment        => consume(state)
-              case Indent         => reader.put(char)
-                                    if diff == 4 then recur(Margin) else newline(Word)
-              case Margin         => block()
 
-              case Hash => char.char match
-                case '!' if first.line == 0 && first.column == 1 => consume(Comment)
-                case ch                                          => consume(Word)
+              case Indent =>
+                reader.put(char)
+                if diff == 4 then recur(Margin) else newline(Word)
+
+              case Margin =>
+                block()
+
+              case Hash =>
+                char.char match
+                  case '!' if first.line == 0 && first.column == 1 => consume(Comment)
+                  case ch                                          => consume(Word)
 
       (first.column, stream(first, padding = false).drop(1))
 

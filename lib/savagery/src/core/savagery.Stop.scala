@@ -48,9 +48,7 @@ object Stop:
     val hex = Integer.toHexString(n & 0xff).nn
     if hex.length == 1 then t"0${hex.tt}" else hex.tt
 
-case class Stop[color]
-    (offset: 0.0 ~ 1.0, color: color)
-    (using val chromatic: color is Chromatic):
+case class Stop[color](offset: 0.0 ~ 1.0, color: color)(using val chromatic: color is Chromatic):
 
   def xml: Xml =
     val red = chromatic.red(color)
@@ -59,6 +57,6 @@ case class Stop[color]
     val hex = t"#${Stop.hex2(red)}${Stop.hex2(green)}${Stop.hex2(blue)}"
 
     Element
-     (t"stop",
-      SeqMap(t"offset" -> offset.double.show, t"stop-color" -> hex),
-      IArray())
+      ( t"stop",
+        SeqMap(t"offset" -> offset.double.show, t"stop-color" -> hex),
+        IArray() )

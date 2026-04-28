@@ -36,4 +36,4 @@ import fulminate.*
 
 case class CharEncodeError(char: Char, encoding: Encoding)(using Diagnostics)
 extends Error(realm"hi", 1, 0)
-              (m"character $char cannot be encoded with the encoding $encoding")
+  ( m"character $char cannot be encoded with the encoding $encoding" )

@@ -84,9 +84,8 @@ object internal:
         val arr = IArray.build[Any](length): array =>
           var i = 0
           while i < length do
-            array(i) = addable.add
-                        ( left.data(i).asInstanceOf[value],
-                          right.data(i).asInstanceOf[value2] )
+            array(i) =
+              addable.add(left.data(i).asInstanceOf[value], right.data(i).asInstanceOf[value2])
 
             i += 1
 
@@ -121,9 +120,9 @@ object internal:
           val arr = IArray.build[Any](length): array =>
             var i = 0
             while i < length do
-              array(i) = subtractable.subtract
-                          ( left.data(i).asInstanceOf[value],
-                            right.data(i).asInstanceOf[value2] )
+              array(i) =
+                subtractable.subtract
+                  ( left.data(i).asInstanceOf[value], right.data(i).asInstanceOf[value2] )
 
               i += 1
 
@@ -236,4 +235,3 @@ object internal:
       scala.util.hashing.MurmurHash3.arrayHash(data.mutable(using Unsafe))
 
     override def toString: String = data.mkString("Tensor(", ", ", ")")
-

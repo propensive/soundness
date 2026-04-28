@@ -55,4 +55,4 @@ object GeolocationError:
 
 case class GeolocationError(reason: GeolocationError.Reason)(using Diagnostics)
 extends Error(realm"gd", 1, reason.number)
-         (m"the geo URI is not in the correct format because $reason")
+  ( m"the geo URI is not in the correct format because $reason" )

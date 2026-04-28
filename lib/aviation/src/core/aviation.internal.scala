@@ -124,7 +124,7 @@ object internal:
           inline greaterThan: Boolean )
       :   Boolean =
 
-        if left == right then !strict else (left < right) ^ greaterThan
+        if left == right then !strict else (left < right)^greaterThan
 
   object Day:
     inline def apply(day: Int): Day = day
@@ -239,7 +239,7 @@ object internal:
           inline greaterThan: Boolean )
       :   Boolean =
 
-        if left == right then !strict else (left < right) ^ greaterThan
+        if left == right then !strict else (left < right)^greaterThan
 
     given ordering: Ordering[Date] = Ordering.Int
 

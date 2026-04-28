@@ -5,5 +5,4 @@
 out
 boot
 .bsp
-Cargo.lock
 bin

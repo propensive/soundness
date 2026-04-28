@@ -131,8 +131,8 @@ object Contrastable:
 
         val (left2, right2) =
           given Decimalizer
-                ( decimalPlaces = (-log10((left - right).abs)).ceiling.double.toInt,
-                  exponentThreshold = Unset )
+            ( decimalPlaces = (-log10((left - right).abs)).ceiling.double.toInt,
+              exponentThreshold = Unset )
           (left.show, right.show)
 
         Juxtaposition.Different(left2, right2, difference)

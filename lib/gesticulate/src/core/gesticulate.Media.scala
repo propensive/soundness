@@ -89,8 +89,9 @@ object Media:
     given showable: Suffix is Showable = _.toString.tt.lower
 
   enum Suffix:
-    case Xml, Json, Ber, Cbor, Der, FastInfoset, Wbxml, Zip, Tlv, JsonSeq, Sqlite3, Jwt, Gzip,
-        CborSeq, Zstd
+    case
+      Xml, Json, Ber, Cbor, Der, FastInfoset, Wbxml, Zip, Tlv, JsonSeq, Sqlite3, Jwt, Gzip,
+      CborSeq, Zstd
 
     def name: Text = this match
       case JsonSeq => t"json-seq"

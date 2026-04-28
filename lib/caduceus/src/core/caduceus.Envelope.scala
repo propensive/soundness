@@ -44,9 +44,9 @@ object Envelope:
 
 
 case class Envelope
-    ( from:    EmailAddress,
-      to:      List[EmailAddress],
-      cc:      List[EmailAddress],
-      bcc:     List[EmailAddress],
-      replyTo: List[EmailAddress],
-      subject: Text )
+  ( from:    EmailAddress,
+    to:      List[EmailAddress],
+    cc:      List[EmailAddress],
+    bcc:     List[EmailAddress],
+    replyTo: List[EmailAddress],
+    subject: Text )

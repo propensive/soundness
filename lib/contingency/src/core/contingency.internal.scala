@@ -262,29 +262,29 @@ object internal:
     ( mitigate: Expr[Mitigation[context]], lambda: Expr[context[result]] )
   :   Macro[result] =
 
-        import quotes.reflect.*
+    import quotes.reflect.*
 
-        val tactics = unwrap(mitigate.asTerm) match
-          case Apply(_, List(Inlined(_, _, matches))) =>
-            val partialFunction = matches.asExprOf[Exception ~> Exception]
+    val tactics = unwrap(mitigate.asTerm) match
+      case Apply(_, List(Inlined(_, _, matches))) =>
+        val partialFunction = matches.asExprOf[Exception ~> Exception]
 
-            mapping(partialFunction.asTerm).values.map: errorType =>
-              errorType.typeRef.asType.absolve match
-                case '[type errorType <: Exception; errorType] =>
-                  Expr.summon[Tactic[errorType]] match
-                    case Some(errorTactic) =>
-                      '{$errorTactic.contramap($partialFunction(_).asInstanceOf[errorType])}.asTerm
+        mapping(partialFunction.asTerm).values.map: errorType =>
+          errorType.typeRef.asType.absolve match
+            case '[type errorType <: Exception; errorType] =>
+              Expr.summon[Tactic[errorType]] match
+                case Some(errorTactic) =>
+                  '{$errorTactic.contramap($partialFunction(_).asInstanceOf[errorType])}.asTerm
 
-                    case None =>
-                      halt
-                       (13,
-                        m"There is no available handler for ${TypeRepr.of[errorType].show}")
+                case None =>
+                  halt
+                    ( 13,
+                      m"There is no available handler for ${TypeRepr.of[errorType].show}" )
 
-          case _ =>
-            halt(14, m"argument to `mitigate` should be a partial function implemented as match cases")
+      case _ =>
+        halt(14, m"argument to `mitigate` should be a partial function implemented as match cases")
 
-        val method = TypeRepr.of[context[result]].typeSymbol.declaredMethod("apply").head
-        lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
+    val method = TypeRepr.of[context[result]].typeSymbol.declaredMethod("apply").head
+    lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
 
 
   def recoverWithin[context[_]: Type, result: Type]
@@ -304,8 +304,11 @@ object internal:
 
                 case _ =>
                   halt
-                   (15,
-                    m"argument to `recover` should be a partial function implemented as match cases")
+                    ( 15,
+                      m"""
+                        argument to `recover` should be a partial function implemented as match
+                        cases
+                      """ )
 
               val pfExpr = partialFunction.asExprOf[Exception ~> result]
 
@@ -341,8 +344,10 @@ object internal:
 
                 case other =>
                   halt
-                   (16,
-                    m"argument to `accrue` should be a partial function implemented as match cases")
+                    ( 16,
+                      m"""
+                        argument to `accrue` should be a partial function implemented as match cases
+                      """ )
 
               val tactics = cases.map: (_, _) =>
                 '{AccrueTactic(label, ref, $accrue.initial)($accrue.lambda)(using $diagnostics)}

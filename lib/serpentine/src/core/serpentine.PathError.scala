@@ -61,4 +61,4 @@ object PathError:
 
 case class PathError(reason: PathError.Reason, path: Optional[Text])(using Diagnostics)
 extends Error(realm"se", 1, reason.number)
-         (m"the path ${path.lay(t"")(_+t" ")}was invalid because $reason")
+  ( m"the path ${path.lay(t"")(_+t" ")}was invalid because $reason" )

@@ -59,9 +59,10 @@ object internal:
     concrete[typeRef]
 
     if TypeRepr.of[typeRef] <:< TypeRepr.of[union]
-    then halt
-       (4,
-        m"type ${TypeRepr.of[typeRef].show} cannot be proven distinct from ${TypeRepr.of[union].show}")
+    then
+      halt
+        ( 4,
+          m"type ${TypeRepr.of[typeRef].show} cannot be proven distinct from ${TypeRepr.of[union].show}" )
     else '{Distinct[typeRef, union]()}
 
   def mandatable[typeRef: Type]: Macro[typeRef is Mandatable] =
@@ -92,8 +93,10 @@ object internal:
     optional.absolve match case '{$optional: optionalType} => check[optionalType]
 
     def optimize(term: Term): Term = term match
-      case inlined@Inlined
-            (call@Some(Apply(TypeApply(Ident("optimizable"), _), _)), bindings, term) =>
+      case
+        ( inlined@Inlined
+            ( call@Some(Apply(TypeApply(Ident("optimizable"), _), _)), bindings, term ) ) =>
+
         term match
           case Typed(Apply(select, List(_)), typeTree) =>
             Inlined(call, bindings, Typed(Apply(select, List(default.asTerm)), typeTree))

@@ -63,7 +63,7 @@ enum Dictionary[+element]:
 
     case Branch(value, map) =>
       val values = map.values.flatMap(_.iterator)
-                                value.lay(values) { value => Iterable(value) ++ values }
+      value.lay(values): value => Iterable(value) ++ values
 
   def element: Optional[element] = this match
     case Empty            => Unset

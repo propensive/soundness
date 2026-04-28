@@ -63,4 +63,4 @@ object PtyEscapeError:
 
 case class PtyEscapeError(reason: PtyEscapeError.Reason)(using Diagnostics)
 extends Error(realm"yo", 1, reason.number)
-         (m"an ANSI escape code could not be handled because $reason")
+  ( m"an ANSI escape code could not be handled because $reason" )

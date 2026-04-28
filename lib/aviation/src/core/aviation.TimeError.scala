@@ -53,9 +53,10 @@ object TimeError:
 
   enum Reason(val number: Int) extends Clarification:
     case Format(text: Text, format: Date.Format, offset: Ordinal)(val issue: format.Issue)
-                                                                            extends Reason(1)
-    case Invalid(year: Int, month: Int, day: Int, calendar: Calendar)       extends Reason(2)
-    case Unknown(text: Text, kind: Text)                                    extends Reason(3)
+    extends Reason(1)
+
+    case Invalid(year: Int, month: Int, day: Int, calendar: Calendar) extends Reason(2)
+    case Unknown(text: Text, kind: Text) extends Reason(3)
 
 case class TimeError(reason: TimeError.Reason)(using Diagnostics)
 extends Error(realm"av", 1, reason.number)(m"the date was not valid because $reason")
