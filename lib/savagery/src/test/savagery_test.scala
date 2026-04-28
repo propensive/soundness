@@ -39,7 +39,7 @@ import decimalFormatters.java
 import errorDiagnostics.stackTraces
 import iridescence.WebColors.{Red, Blue, Green, Black, White}
 import strategies.throwUnsafely
-import xylophone.{Xml, XmlSchema, Element, Header, Fragment, Node}
+import xylophone.XmlSchema
 
 object Tests extends Suite(m"Savagery tests"):
   def run(): Unit =
@@ -236,13 +236,13 @@ object Tests extends Suite(m"Savagery tests"):
           result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><defs><linearGradient id="g1"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient></defs><rect x="0.0" y="0.0" width="50.0" height="50.0"/></svg>"""
 
     suite(m"SVG document with header"):
-      test(m"SvgDoc with UTF-8 includes XML declaration"):
-        SvgDoc(Svg(10, 10), enc"UTF-8").xml.show
+      test(m"Document[Svg] with UTF-8 includes XML declaration"):
+        Document(Svg(10, 10), enc"UTF-8").show
       .assert: result =>
           result == t"""<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10.0 10.0" width="10.0" height="10.0"/>"""
 
-      test(m"SvgDoc with content"):
-        SvgDoc(Svg(50, 50, figures = List(Circle(25!25, 10))), enc"UTF-8").xml.show
+      test(m"Document[Svg] with content"):
+        Document(Svg(50, 50, figures = List(Circle(25!25, 10))), enc"UTF-8").show
       .assert: result =>
           result == t"""<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50.0 50.0" width="50.0" height="50.0"><circle cx="25.0" cy="25.0" r="10.0"/></svg>"""
 
@@ -452,12 +452,18 @@ object Tests extends Suite(m"Savagery tests"):
         encoded.read[Svg].xml.show == encoded
       .assert(_ == true)
 
-      test(m"Round-trip: SvgDoc"):
+      test(m"Round-trip: Document[Svg]"):
         val encoded =
-          SvgDoc(Svg(50, 50, figures = List(Circle(25!25, 10))), enc"UTF-8").xml.show
+          Document(Svg(50, 50, figures = List(Circle(25!25, 10))), enc"UTF-8").show
 
-        encoded.read[SvgDoc].xml.show == encoded
+        encoded.load[Svg].show == encoded
       .assert(_ == true)
+
+      test(m"load[Svg] preserves encoding metadata"):
+        val original = Document(Svg(10, 10), enc"UTF-8")
+        val parsed: Document[Svg] = original.show.load[Svg]
+        parsed.metadata.name
+      .assert(_ == t"UTF-8")
 
       test(m"Non-SVG root raises NotAnSvg"):
         capture[SvgError](t"""<html/>""".read[Svg])

@@ -37,10 +37,12 @@ import scala.collection.immutable.SeqMap
 import anticipation.*
 import contingency.*
 import gossamer.*
+import hieroglyph.*
 import prepositional.*
 import proscenium.*
 import spectacular.*
 import turbulence.*
+import vacuous.*
 import xylophone.*
 import zephyrine.*
 
@@ -56,8 +58,40 @@ object Svg:
       SvgParser.decodeSvg(SvgParser.rootElement(xml))
 
 
+  given loadable: (XmlSchema)
+        =>  Tactic[ParseError]
+        =>  Tactic[XmlError]
+        =>  Tactic[SvgError]
+        =>  Svg is Loadable by Text =
+
+    source =>
+      val xmlDoc: Document[Xml] = summon[Xml is Loadable by Text].load(source)
+      val svgElement = SvgParser.rootElement(xmlDoc.root)
+      val parsedSvg: Svg = SvgParser.decodeSvg(svgElement)
+
+      val encoding: Encoding =
+        xmlDoc.metadata.encoding.let { name => Encoding.unapply(name).getOrElse(enc"UTF-8") }
+        . or(enc"UTF-8")
+
+      Document[Svg](parsedSvg, encoding)
+
+
+  given showable: [doc <: Document[Svg]] => doc is Showable =
+    document =>
+      val header = Header(t"1.0", document.metadata.name, Unset)
+
+      val full: Xml = document.root.xml.absolve match
+        case node: Node       => Fragment(header, node)
+        case Fragment(nodes*) => Fragment((header +: nodes)*)
+
+      full.show
+
+
 case class Svg
-    (width: Float, height: Float, defs: List[SvgDef] = Nil, figures: List[Figure] = Nil):
+    (width: Float, height: Float, defs: List[SvgDef] = Nil, figures: List[Figure] = Nil)
+extends Documentary:
+  type Self = Svg
+  type Metadata = Encoding
 
   def xml: Xml =
     given showable: Float is Showable = _.toString.tt
