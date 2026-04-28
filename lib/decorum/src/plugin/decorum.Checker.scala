@@ -45,15 +45,16 @@ object Checker:
     scanRawTabs(file, rawText, out)
     checkFileNaming(file, out)
     var idx = 0
+
     while idx < lines.length do
       val lineNum = idx + 1
       checkLine(state, lineNum, lines(idx), out)
       idx += 1
+
     if state.prevWasAnnotation then
       out +=
-        Violation
-          ( file, state.prevLineNum, 1, "15.1",
-            "annotation is not followed by a declaration" )
+        Violation(file, state.prevLineNum, 1, "15.1", "annotation is not followed by a declaration")
+
     state.pendingR11.foreach(out += _)
     state.pendingR11 = Nil
     finalizeCaseRun(state, out)
@@ -350,7 +351,7 @@ object Checker:
         val maxAllowed = s.prevCodeLineIndent + step
         if leadingCols > maxAllowed then
           emit
-            ( leadingCols + 1, "R31-continuation-indent",
+            ( leadingCols + 1, "31.1",
               s"indent $leadingCols cannot exceed previous line's indent "
                 +s"${s.prevCodeLineIndent} by more than $step" )
 
@@ -418,7 +419,7 @@ object Checker:
             val openerCol = stack.pop()
             if openerCol >= 0 && cols(i) != openerCol then
               out += Violation
-                      ( s.file, lineNum, cols(i), "R31-quote-splice-close",
+                      ( s.file, lineNum, cols(i), "31.2",
                         s"closing `}` of a quote/splice block at column ${cols(i)} "
                           +s"does not align with its opening `{` at column $openerCol" )
       i += 1
@@ -454,7 +455,7 @@ object Checker:
       val sem = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
       if sem.headOption.exists(_.text == "=>") && leadingCols != s.givenSignatureIndent then
         emit
-          ( leadingCols + 1, "R32-given-arrow-align",
+          ( leadingCols + 1, "32",
             s"`=>` continuation of a `given` signature should align at column "
               +s"${s.givenSignatureIndent + 1} (found ${leadingCols + 1})" )
 
