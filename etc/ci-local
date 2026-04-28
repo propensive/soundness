@@ -39,12 +39,21 @@ docker run --rm \
     bash -c './mill --ticker false --silent test.assembly && make ci'
 
 echo "==> CI passed; signing manifest"
+signing_key=$(git config --get user.signingkey || true)
+if [ -z "$signing_key" ]; then
+    echo "error: git config user.signingkey is not set" >&2
+    echo "       set it to the GPG key whose public half is published on" >&2
+    echo "       https://github.com/<user>.gpg for a maintainer in" >&2
+    echo "       etc/ci-maintainers" >&2
+    exit 1
+fi
+
 manifest_file=$(mktemp)
 sig_file=$(mktemp)
 trap 'rm -f "$manifest_file" "$sig_file"' EXIT
 
 ./etc/ci-manifest > "$manifest_file"
-gpg --armor --detach-sign --output "$sig_file" "$manifest_file"
+gpg --armor --detach-sign --local-user "$signing_key" --output "$sig_file" "$manifest_file"
 
 git notes --ref=ci-verified add -f -F "$sig_file" "$commit"
 
