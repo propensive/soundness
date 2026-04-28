@@ -39,7 +39,8 @@ import environments.java
 import temporaryDirectories.system
 import workingDirectories.default
 import logging.silent
-import stdios.virtualMachine.ansi
+import stdios.virtualMachine
+import termcaps.environment
 
 import strategies.throwUnsafely
 import charEncoders.utf8
