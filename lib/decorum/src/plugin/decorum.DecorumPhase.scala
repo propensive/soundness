@@ -76,12 +76,6 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
         if errors then report.error(msg, pos) else report.warning(msg, pos)
     super.transformUnit(tree)
 
-  private def useColour(using context: Context): Boolean =
-    try
-      import dotty.tools.dotc.config.Settings.Setting.value
-      value(context.settings.color)(using context) != "never"
-    catch case _: Throwable => false
-
   private def position(source: SourceFile, line: Int, column: Int): SourcePosition =
     val lineStart =
       try source.lineToOffset((line - 1).max(0))
