@@ -34,10 +34,8 @@ package caduceus
 
 import anticipation.*
 import prepositional.*
-import proscenium.*
 import urticose.*
 import vacuous.*
-
 
 object Envelope:
   def many[entity: Distinct from List[?]](value: entity | List[entity]): List[entity] = value match
@@ -45,31 +43,10 @@ object Envelope:
     case one: (`entity` @unchecked)      => List(one)
 
 
-  def apply[sendable: Sendable]
-    ( email:   sendable,
-      to:      EmailAddress | List[EmailAddress],
-      cc:      EmailAddress | List[EmailAddress],
-      bcc:     EmailAddress | List[EmailAddress],
-      replyTo: EmailAddress | List[EmailAddress],
-      subject: Text )
-    ( using courier: Courier, sender: Sender )
-  :   Envelope =
-
-    Envelope
-      ( sender.email,
-        many(to),
-        many(cc),
-        many(bcc),
-        many(replyTo),
-        subject,
-        sendable.email(email) )
-
-
 case class Envelope
-  ( from:    EmailAddress,
-    to:      List[EmailAddress],
-    cc:      List[EmailAddress],
-    bcc:     List[EmailAddress],
-    replyTo: List[EmailAddress],
-    subject: Text,
-    email:   Email )
+    ( from:    EmailAddress,
+      to:      List[EmailAddress],
+      cc:      List[EmailAddress],
+      bcc:     List[EmailAddress],
+      replyTo: List[EmailAddress],
+      subject: Text )

@@ -79,8 +79,11 @@ package couriers:
         text:         Optional[Text],
         attachments:  List[Attachment] )
 
-    def send(envelope: Envelope): Resend.Receipt =
-      val attachments = envelope.email.attachments.map: attachment =>
+    def send(message: Document[Email]): Resend.Receipt =
+      val email = message.root
+      val envelope = message.metadata
+
+      val attachments = email.attachments.map: attachment =>
         Attachment(attachment.name, attachment.stream.read[Data].serialize[Base64])
 
       val request =
@@ -92,9 +95,9 @@ package couriers:
             envelope.cc,
             Unset,
             envelope.replyTo,
-            envelope.email.headers,
-            envelope.email.html,
-            envelope.email.text,
+            email.headers,
+            email.html,
+            email.text,
             attachments )
 
       def error = CourierError(envelope.from, envelope.to.head, envelope.subject)
