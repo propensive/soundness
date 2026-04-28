@@ -37,10 +37,12 @@ import scala.collection.immutable.SeqMap
 import anticipation.*
 import contingency.*
 import gossamer.*
+import hieroglyph.*
 import prepositional.*
 import proscenium.*
 import spectacular.*
 import turbulence.*
+import vacuous.*
 import xylophone.*
 import zephyrine.*
 
@@ -56,8 +58,68 @@ object Svg:
       SvgParser.decodeSvg(SvgParser.rootElement(xml))
 
 
+  given loadable: (XmlSchema)
+        =>  Tactic[ParseError]
+        =>  Tactic[XmlError]
+        =>  Tactic[SvgError]
+        =>  Svg is Loadable by Text =
+
+    source =>
+      val text: Text = summon[Text is Aggregable by Text].aggregate(source)
+      val s = text.s.trim.nn
+
+      val (encoding, body): (Encoding, Text) =
+        if s.startsWith("<?xml") then
+          val endIndex = s.indexOf("?>")
+
+          if endIndex < 0 then (enc"UTF-8", s.tt)
+          else
+            val header = s.substring(0, endIndex).nn
+            val encStart = header.indexOf("encoding")
+
+            val encoding: Encoding =
+              if encStart < 0 then enc"UTF-8"
+              else
+                val afterEq = header.indexOf("=", encStart)
+
+                if afterEq < 0 then enc"UTF-8"
+                else
+                  val rest = header.substring(afterEq + 1).nn.trim.nn
+                  val quote = if rest.length > 0 then rest.charAt(0) else '"'
+
+                  if quote != '"' && quote != '\'' then enc"UTF-8"
+                  else
+                    val close = rest.indexOf(quote.toInt, 1)
+                    if close < 0 then enc"UTF-8"
+                    else
+                      val name = rest.substring(1, close).nn
+                      Encoding.unapply(name.tt).getOrElse(enc"UTF-8")
+
+            (encoding, s.substring(endIndex + 2).nn.trim.nn.tt)
+        else (enc"UTF-8", text)
+
+      val xml: Xml = body.read[Xml]
+      val svgElement = SvgParser.rootElement(xml)
+      val parsedSvg: Svg = SvgParser.decodeSvg(svgElement)
+      Document[Svg](parsedSvg, encoding)
+
+
+  given showable: [doc <: Document[Svg]] => doc is Showable =
+    document =>
+      val header = Header(t"1.0", document.metadata.name, Unset)
+
+      val full: Xml = document.root.xml.absolve match
+        case node: Node       => Fragment(header, node)
+        case Fragment(nodes*) => Fragment((header +: nodes)*)
+
+      full.show
+
+
 case class Svg
-    (width: Float, height: Float, defs: List[SvgDef] = Nil, figures: List[Figure] = Nil):
+    (width: Float, height: Float, defs: List[SvgDef] = Nil, figures: List[Figure] = Nil)
+extends Documentary:
+  type Self = Svg
+  type Metadata = Encoding
 
   def xml: Xml =
     given showable: Float is Showable = _.toString.tt
