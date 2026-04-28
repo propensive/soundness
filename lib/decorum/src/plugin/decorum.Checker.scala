@@ -1085,6 +1085,21 @@ object Checker:
       "transparent", "infix", "open", "opaque", "erased", "tracked",
       "is", "of", "in", "by", "to", "under", "on", "raises", "until" )
 
+  // Control-flow keywords that separate sub-expressions: encountering one
+  // closes the current operator frame and opens a fresh one at the same
+  // nesting depth, just like `,` does. `case` is excluded when used as a
+  // modifier (`case class`, `case object`).
+  private val BoundaryWords: Set[String] = Set
+    ( "if", "then", "else", "match", "case", "do", "while", "for", "yield",
+      "return", "throw", "try", "catch", "finally" )
+
+  private def caseIsModifier(arr: Array[Token], i: Int): Boolean =
+    var j = i + 1
+    while j < arr.length && (arr(j).kind == Kind.Space || arr(j).kind == Kind.Comment) do
+      j += 1
+    j < arr.length && arr(j).kind == Kind.Code
+      && (arr(j).text == "class" || arr(j).text == "object")
+
   private def isBinaryContext(arr: Array[Token], i: Int): Boolean =
     val left =
       var j = i - 1
@@ -1144,6 +1159,14 @@ object Checker:
           // operator frame and open a fresh one at the same nesting level.
           checkOpFrame(frames.pop(), emit)
           frames.push(mutable.ArrayBuffer.empty)
+        else if BoundaryWords.contains(text)
+          && !(text == "case" && caseIsModifier(arr, i))
+        then
+          // Control-flow keywords cut the expression into sub-expressions:
+          // `if` predicates, `then`/`else` clauses, `match` scrutinee and
+          // `case` patterns/bodies, etc. should each be checked independently.
+          checkOpFrame(frames.pop(), emit)
+          frames.push(mutable.ArrayBuffer.empty)
         else if CheckedOps.contains(text) then
           val isAtStart  = i == firstSemantic
           val isAtEnd    = i == lastSemantic
@@ -1166,6 +1189,13 @@ object Checker:
                 ( cols(i), "16",
                   s"multi-character `$text` requires one space on each side" )
             frames.top += OpHit(text, i, cols(i), leftSpace, rightSpace)
+            // `=>` and `?=>` separate a pattern/parameter list from the body
+            // it produces, so they too cut the expression. Flush *after* the
+            // OpHit append so the arrow itself participates in the left-side
+            // frame's classification.
+            if text == "=>" || text == "?=>" then
+              checkOpFrame(frames.pop(), emit)
+              frames.push(mutable.ArrayBuffer.empty)
       i += 1
 
     while frames.nonEmpty do checkOpFrame(frames.pop(), emit)
@@ -1176,38 +1206,38 @@ object Checker:
 
     if ops.isEmpty then ()
     else
-      val withSpacing = ops.map: op =>
-        val s = if op.leftSpace || op.rightSpace then 1 else 0
-        (op, s)
-      val byPrec = withSpacing.groupBy((op, _) => operatorPrecedence(op.text))
-
-      // Same-precedence consistency
-      byPrec.values.foreach: opPairs =>
-        val spacings = opPairs.map(_._2).distinct
-        if spacings.length > 1 then
-          opPairs.foreach: (op, _) =>
+      // Same-precedence consistency: every operator at a given precedence
+      // must use the same spacing within this frame.
+      ops.groupBy(op => operatorPrecedence(op.text)).foreach: (_, group) =>
+        val mixed = group.exists(op => op.leftSpace || op.rightSpace)
+          && group.exists(op => !(op.leftSpace || op.rightSpace))
+        if mixed then
+          group.foreach: op =>
             emit
               ( op.col, "16",
                 s"`${op.text}` has inconsistent spacing with same-precedence operators" )
 
-      // Cross-precedence ordering: higher precedence should have ≤ spacing
-      val precSpacings = byPrec.toList.map: (p, pairs) =>
-        (p, pairs.head._2)
-      val sortedPrecs = precSpacings.sortBy(_._1)
-      var i = 0
-      while i < sortedPrecs.length do
-        val (pLow, sLow) = sortedPrecs(i)
-        var j = i + 1
-        while j < sortedPrecs.length do
-          val (pHigh, sHigh) = sortedPrecs(j)
-          if sHigh > sLow then
-            byPrec(pHigh).foreach: (op, _) =>
-              emit
-                ( op.col, "16",
-                  s"`${op.text}` cannot have more spacing than lower-precedence "
-                    +"operators in the same expression" )
-          j += 1
-        i += 1
+      // Cross-precedence ordering: every spaced operator must have *strictly*
+      // lower precedence than every unspaced operator.  Equivalently: the
+      // highest-precedence spaced operator must be lower than the
+      // lowest-precedence unspaced one.
+      var maxSpacedPrec   = Int.MinValue
+      var minUnspacedPrec = Int.MaxValue
+      ops.foreach: op =>
+        val prec   = operatorPrecedence(op.text)
+        val spaced = op.leftSpace || op.rightSpace
+        if spaced && prec > maxSpacedPrec then maxSpacedPrec = prec
+        if !spaced && prec < minUnspacedPrec then minUnspacedPrec = prec
+
+      if maxSpacedPrec > minUnspacedPrec then
+        ops.foreach: op =>
+          val prec   = operatorPrecedence(op.text)
+          val spaced = op.leftSpace || op.rightSpace
+          if spaced && prec > minUnspacedPrec then
+            emit
+              ( op.col, "16",
+                s"`${op.text}` cannot have more spacing than lower-precedence "
+                  +"operators in the same expression" )
 
   private def isSymbolicOperator(text: String): Boolean =
     text.nonEmpty && text.forall: c =>
