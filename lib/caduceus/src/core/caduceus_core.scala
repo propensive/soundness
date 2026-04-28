@@ -34,9 +34,12 @@ package caduceus
 
 import anticipation.*
 import proscenium.*
+import turbulence.*
 import urticose.*
 
-extension [sendable: Sendable](email: sendable)
+import Envelope.many
+
+extension [sendable: Sendable as sendableTC](email: sendable)
   def send
     ( subject: Text,
       to:      EmailAddress | List[EmailAddress],
@@ -46,4 +49,7 @@ extension [sendable: Sendable](email: sendable)
     ( using courier: Courier, sender: Sender )
   :   courier.Result =
 
-    courier.send(Envelope(email, to, cc, bcc, replyTo, subject))
+    val envelope =
+      Envelope(sender.email, many(to), many(cc), many(bcc), many(replyTo), subject)
+
+    courier.send(Document[Email](sendableTC.email(email), envelope))

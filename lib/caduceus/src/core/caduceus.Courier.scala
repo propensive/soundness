@@ -33,6 +33,7 @@
 package caduceus
 
 import prepositional.*
+import turbulence.*
 
 trait Courier extends Resultant:
-  def send(envelope: Envelope): Result
+  def send(message: Document[Email]): Result

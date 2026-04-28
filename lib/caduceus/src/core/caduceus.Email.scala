@@ -36,6 +36,7 @@ import anticipation.*
 import denominative.*
 import gesticulate.*
 import proscenium.*
+import turbulence.*
 import vacuous.*
 
 object Email:
@@ -75,7 +76,10 @@ object Email:
     def contentType: MediaType =
       if !attachments.nil then media"multipart/mixed" else content.contentType
 
-case class Email(headers: Map[Text, Text], message: Email.Message):
+case class Email(headers: Map[Text, Text], message: Email.Message) extends Documentary:
+  type Self = Email
+  type Metadata = Envelope
+
   def html: Optional[Text] = message.content.body.html
   def text: Optional[Text] = message.content.body.text
   def inlines: List[Email.Inline] = message.content.inlines.to(List)
