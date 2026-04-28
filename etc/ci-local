@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Run CI locally inside a Docker container. On success, sign the
+# canonical manifest from etc/ci-manifest with GPG and attach the
+# detached signature to HEAD as a git note on refs/notes/ci-verified.
+#
+# After this script succeeds, push the note alongside the commit:
+#
+#     git push origin HEAD refs/notes/ci-verified
+#
+# The remote workflow at .github/workflows/main.yml then verifies
+# the signature against the maintainer keys listed in etc/ci-maintainers.
+set -euo pipefail
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+image=${SOUNDNESS_CI_IMAGE:-soundness-ci:latest}
+commit=$(git rev-parse HEAD)
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+    echo "error: working tree has uncommitted changes" >&2
+    echo "       commit (or stash) before running local CI so the signed" >&2
+    echo "       manifest matches what HEAD points to" >&2
+    exit 1
+fi
+
+echo "==> Building CI image: $image"
+docker build -t "$image" -f etc/ci-docker .
+
+echo "==> Running CI for commit $commit"
+docker run --rm \
+    -v "$repo_root":/workspace \
+    -v soundness-ci-coursier:/root/.cache/coursier \
+    -v soundness-ci-mill:/root/.cache/mill \
+    -v soundness-ci-cargo-registry:/root/.cargo/registry \
+    -v soundness-ci-cargo-git:/root/.cargo/git \
+    -w /workspace \
+    "$image" \
+    bash -c './mill --ticker false --silent test.assembly && make ci'
+
+echo "==> CI passed; signing manifest"
+manifest_file=$(mktemp)
+sig_file=$(mktemp)
+trap 'rm -f "$manifest_file" "$sig_file"' EXIT
+
+./etc/ci-manifest > "$manifest_file"
+gpg --armor --detach-sign --output "$sig_file" "$manifest_file"
+
+git notes --ref=ci-verified add -f -F "$sig_file" "$commit"
+
+echo
+echo "Signature stored on refs/notes/ci-verified for $commit"
+echo "Push with:"
+echo "    git push origin HEAD refs/notes/ci-verified"

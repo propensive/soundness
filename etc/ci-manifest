@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Emit the canonical CI manifest for HEAD on stdout.
+#
+# This output is what gets signed by etc/ci-local and re-derived
+# by etc/ci-verify, so the byte sequence MUST stay identical
+# across both ends. Don't change the format without also bumping
+# the version tag and updating the verifier.
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+commit=$(git rev-parse HEAD)
+tree=$(git rev-parse 'HEAD^{tree}')
+
+printf 'soundness-ci-v1\ncommit: %s\ntree: %s\n' "$commit" "$tree"

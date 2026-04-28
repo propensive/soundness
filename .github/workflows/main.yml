@@ -1,61 +1,36 @@
-name: Build
+name: Verify CI Signature
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
-    - name: Install shells
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y bash zsh fish
-        touch ~/.zshrc
     - name: Checkout
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        fetch-tags: true
-    - name: Install tmux
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+    - name: Fetch CI signature notes
       run: |
-        sudo apt-get update
-        sudo apt-get install -y tmux
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin' # See 'Supported distributions' for available options
-        java-version: '23'
-    - name: Cache Coursier and Mill
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/coursier
-          ~/.cache/mill
-        key: ${{ runner.os }}-coursier-${{ hashFiles('.mill-version', 'build.mill', 'web/build.mill') }}
-        restore-keys: |
-          ${{ runner.os }}-coursier-
-    - name: Cache Cargo registry
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-        key: ${{ runner.os }}-cargo-${{ hashFiles('lib/ethereal/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
-    - name: Setup Zig
-      uses: mlugg/setup-zig@v1
-      with:
-        version: 0.13.0
-    - name: Setup Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: x86_64-pc-windows-gnu,x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu,x86_64-apple-darwin,aarch64-apple-darwin
-    - name: Install cargo-zigbuild
-      uses: taiki-e/install-action@v2
-      with:
-        tool: cargo-zigbuild
-    - name: Mill Build
-      run: ./mill --ticker false --silent test.assembly && make ci
+        git fetch origin 'refs/notes/ci-verified:refs/notes/ci-verified' \
+          || echo "no ci-verified notes ref on origin yet"
+
+    - name: Verify CI attestation
+      env:
+        GNUPGHOME: ${{ runner.temp }}/ci-gpg
+      run: |
+        set -e
+        mkdir -p "$GNUPGHOME"
+        chmod 700 "$GNUPGHOME"
+        while IFS= read -r user; do
+          [ -z "$user" ] && continue
+          case "$user" in \#*) continue ;; esac
+          echo "Importing GPG key for: $user"
+          curl -fsSL "https://github.com/${user}.gpg" | gpg --import
+        done < etc/ci-maintainers
+        ./etc/ci-verify

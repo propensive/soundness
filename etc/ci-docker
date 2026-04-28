@@ -1,0 +1,38 @@
+FROM eclipse-temurin:23-jdk
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+        bash zsh fish tmux \
+        curl git make build-essential pkg-config libssl-dev \
+        xz-utils ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN touch /root/.zshrc
+
+ENV CARGO_HOME=/root/.cargo \
+    RUSTUP_HOME=/root/.rustup \
+    PATH=/root/.cargo/bin:$PATH
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+        | sh -s -- -y --default-toolchain stable --profile minimal \
+    && rustup target add \
+        x86_64-pc-windows-gnu \
+        x86_64-unknown-linux-gnu \
+        aarch64-unknown-linux-gnu \
+        x86_64-apple-darwin \
+        aarch64-apple-darwin
+
+RUN ARCH=$(uname -m); \
+    case "$ARCH" in \
+        x86_64)         ZIG_ARCH=x86_64 ;; \
+        aarch64|arm64)  ZIG_ARCH=aarch64 ;; \
+        *) echo "unsupported arch: $ARCH" >&2; exit 1 ;; \
+    esac; \
+    curl -sSL "https://ziglang.org/download/0.13.0/zig-linux-${ZIG_ARCH}-0.13.0.tar.xz" \
+        | tar -xJ -C /opt && \
+    ln -s "/opt/zig-linux-${ZIG_ARCH}-0.13.0/zig" /usr/local/bin/zig
+
+RUN cargo install --locked cargo-zigbuild
+
+WORKDIR /workspace

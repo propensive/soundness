@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Verify the CI signature attached to HEAD as a git note on
+# refs/notes/ci-verified. Used by both the maintainer (locally)
+# and by .github/workflows/main.yml (against fresh GNUPGHOME
+# containing only the maintainer keys).
+#
+# Exits 0 iff a good signature is found from a key already in
+# the active GPG keyring. Trust level is intentionally not checked
+# (gpg --verify exits 0 on a cryptographically valid signature
+# from any imported key, which is the correct semantics here -
+# the keyring composition IS the trust decision).
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+commit=$(git rev-parse HEAD)
+
+manifest_file=$(mktemp)
+sig_file=$(mktemp)
+trap 'rm -f "$manifest_file" "$sig_file"' EXIT
+
+./etc/ci-manifest > "$manifest_file"
+
+if ! git notes --ref=ci-verified show "$commit" > "$sig_file" 2>/dev/null; then
+    echo "error: no CI signature found on refs/notes/ci-verified for $commit" >&2
+    echo "" >&2
+    echo "If running remotely, fetch notes first:" >&2
+    echo "    git fetch origin 'refs/notes/ci-verified:refs/notes/ci-verified'" >&2
+    echo "" >&2
+    echo "If running locally, generate one with:" >&2
+    echo "    etc/ci-local" >&2
+    exit 1
+fi
+
+gpg --verify "$sig_file" "$manifest_file"
+echo "CI signature for $commit verified."

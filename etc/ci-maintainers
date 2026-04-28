@@ -1,0 +1,5 @@
+# GitHub usernames whose published GPG keys are trusted to sign CI
+# attestations. The remote workflow fetches https://github.com/<user>.gpg
+# for each entry into a fresh GNUPGHOME at verify time. Lines starting
+# with `#` and blank lines are ignored.
+propensive
