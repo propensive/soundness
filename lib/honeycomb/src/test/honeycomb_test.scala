@@ -404,8 +404,9 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"position reporting on later line"):
           try t"<div>\nbad </span></div>".read[Html of "div"]
           catch case exception: Exception => exception
+
         . assert:
-            case ParseError(_, Html.Position(line, _), _) => line == 2.u
+          case ParseError(_, Html.Position(line, _), _) => line == 2.u
 
       suite(m"Attribute parsing depth"):
         test(m"multiple attributes preserved"):
@@ -606,6 +607,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"CDATA inside HTML errors"):
           try t"""<div><![CDATA[x]]></div>""".read[Html of "div"]
           catch case exception: Exception => exception
+
         . assert:
             case ParseError(_, _, Html.Issue.InvalidCdata) => true
 
@@ -617,30 +619,35 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"EOF inside open tag"):
           try t"""<div""".read[Html of "div"]
           catch case exception: Exception => exception
+
         . assert:
             case ParseError(_, _, Html.Issue.ExpectedMore) => true
 
         test(m"EOF inside attribute value"):
           try t"""<div style="ab""".read[Html of "div"]
           catch case exception: Exception => exception
+
         . assert:
             case ParseError(_, _, Html.Issue.ExpectedMore) => true
 
         test(m"EOF inside comment"):
           try t"""<!-- abc""".read[Html of Flow]
           catch case exception: Exception => exception
+
         . assert:
             case ParseError(_, _, Html.Issue.ExpectedMore) => true
 
         test(m"EOF inside CDATA"):
           try t"""<svg><![CDATA[abc""".read[Html of Flow]
           catch case exception: Exception => exception
+
         . assert:
             case ParseError(_, _, Html.Issue.ExpectedMore) => true
 
         test(m"EOF inside closing tag"):
           try t"""<div></div""".read[Html of "div"]
           catch case exception: Exception => exception
+
         . assert:
             case ParseError(_, _, Html.Issue.ExpectedMore) => true
 

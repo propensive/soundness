@@ -567,10 +567,12 @@ object Html extends Tag.Container
 
       skip() yet cursor.lay(fail(ExpectedMore)):
         case '>' | '/' => entries
-        case '\u0000'  => callback.let(_(cursor.position, Hole.Tagbody))
-                          next()
-                          skip()
-                          attributes(tag, foreign, entries.updated(t"\u0000", Unset))
+
+        case '\u0000'  =>
+          callback.let(_(cursor.position, Hole.Tagbody))
+          next()
+          skip()
+          attributes(tag, foreign, entries.updated(t"\u0000", Unset))
 
         case _ =>
           val key2 = if foreign then foreignKey(cursor.mark) else

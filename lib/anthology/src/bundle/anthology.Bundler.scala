@@ -90,7 +90,8 @@ object Bundler:
           case ClasspathEntry.Directory(directory) =>
             unsafely:
               val root = directory.decode[Path on Linux]
-              root.descendants.to(List).filter { entry => !omissions(entry.name) }.map: file =>
+              root.descendants.to(List).filter: entry => !omissions(entry.name)
+              . map: file =>
                 if file.entry() == Directory then Unset else file.open: handle =>
                   val ref = %.on[Zip] + root.toward(file).on[Zip]
                   Zip.Entry(ref, handle.read[Data])
@@ -99,8 +100,7 @@ object Bundler:
 
           case ClasspathEntry.Jar(jar) =>
             unsafely:
-              val jarfile = workingDirectory[Path on Linux].resolve(jar)
-              jarfile.open: handle =>
+              workingDirectory[Path on Linux].resolve(jar).open: handle =>
                 ZipStream(handle).keep(_.encode != t"META-INF/MANIFEST.MF").map: entry =>
                   Zip.Entry(entry.ref, entry.read[Data])
 

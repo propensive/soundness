@@ -86,14 +86,16 @@ object internal:
     val SetBackground = Foreground.next
     val Background: Interval = SetBackground.subsequent(24)
 
-    val Changes: B64 = B64.set(SetBold) | B64.set(SetItalic) | B64.set(SetUnderline) |
-        B64.set(Strike) | B64.set(Concealed) | B64.set(SetForeground) | B64.set(SetBackground)
+    val Changes: B64 =
+      B64.set(SetBold) | B64.set(SetItalic) | B64.set(SetUnderline) | B64.set(Strike)
+      | B64.set(Concealed) | B64.set(SetForeground) | B64.set(SetBackground)
 
-    val FlagChanges: B64 = B64.set(SetBold) | B64.set(SetItalic) | B64.set(SetUnderline) |
-        B64.set(Strike) | B64.set(Concealed)
+    val FlagChanges: B64 =
+      B64.set(SetBold) | B64.set(SetItalic) | B64.set(SetUnderline) | B64.set(Strike)
+      | B64.set(Concealed)
 
-    val Mask: B64 = B64.set(Bold) | B64.set(Italic) | B64.set(Underline) | B64.set(Strike) |
-        B64.set(Concealed)
+    val Mask: B64 =
+      B64.set(Bold) | B64.set(Italic) | B64.set(Underline) | B64.set(Strike) | B64.set(Concealed)
 
     val FgMask: B64 = B64.set(Foreground)
     val BgMask: B64 = B64.set(Background)

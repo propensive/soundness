@@ -61,4 +61,4 @@ object MediaTypeError:
 
 case class MediaTypeError(value: Text, reason: MediaTypeError.Reason)(using Diagnostics)
 extends Error(realm"ge", 1, reason.number)
-         (m"the value $value is not a valid media type; ${reason.message}")
+  ( m"the value $value is not a valid media type; ${reason.message}" )

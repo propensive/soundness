@@ -87,7 +87,7 @@ object protointernal:
       !(char >= '0' && char <= '9') && !(char >= 'a' && char <= 'f') && char != ' ' && char != '\n'
 
     . match
-        case -1 => ()
+      case -1 => ()
 
         case index =>
           val position =
@@ -102,9 +102,9 @@ object protointernal:
 
     if nibbles3.length%2 != 0
     then halt
-          (6,
-           m"a hexadecimal value must have an even number of digits",
-           Position.ofMacroExpansion)
+      ( 6,
+        m"a hexadecimal value must have an even number of digits",
+        Position.ofMacroExpansion )
 
     val bytes = nibbles3.grouped(2).map(Integer.parseInt(_, 16).toByte).to(List)
 

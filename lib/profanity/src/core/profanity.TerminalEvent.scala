@@ -82,10 +82,10 @@ enum WindowsSignal extends TerminalEvent:
 
 object CtrlChar:
   def unapply(code: Char)
-  :   Option
+  :   ( Option
         [ 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O'
           | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '[' | '\\' | ']' | '^'
-          | '_' | '@' ] =
+          | '_' | '@' ] ) =
 
       (code + 64).toChar match
         case char: ('@' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L'

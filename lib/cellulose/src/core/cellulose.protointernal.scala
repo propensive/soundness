@@ -43,7 +43,9 @@ import wisteria.*
 
 trait protointernal:
   object EncodableDerivation extends ProductDerivable[Encodable in Codl]:
-    inline def conjunction[derivation <: Product: ProductReflection]: derivation is Encodable in Codl =
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   derivation is Encodable in Codl =
+
       val mapping: Map[Text, Text] = compiletime.summonFrom:
         case relabelling: CodlRelabelling[derivation] => relabelling.relabelling()
         case _                                        => Map()
@@ -69,7 +71,9 @@ trait protointernal:
               . to(List).flatten
 
   class DecodableDerivation()(using Tactic[CodlError]) extends ProductDerivable[Decodable in Codl]:
-    inline def conjunction[derivation <: Product: ProductReflection]: derivation is Decodable in Codl =
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   derivation is Decodable in Codl =
+
       values =>
         build: [field] => context =>
           val label2 = compiletime.summonFrom:

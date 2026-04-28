@@ -53,16 +53,18 @@ object TtfTag extends Extractor[Text, TtfTag]:
     case other   => safely(TtfTag.valueOf(other.lower.capitalize.s))
 
 enum TtfTag extends TableTag:
-  case Avar, Cmap, Cvar, Cvt, Fpgm, Fvar, Gasp, Glyf, Gvar, Hdmx, Head, Hhea, Hmtx, Kern, Loca,
-      Maxp, Meta, Name, Post, Prep, Sbix, Vhea, Vmtx
+  case
+    Avar, Cmap, Cvar, Cvt, Fpgm, Fvar, Gasp, Glyf, Gvar, Hdmx, Head, Hhea, Hmtx, Kern, Loca, Maxp,
+    Meta, Name, Post, Prep, Sbix, Vhea, Vmtx
 
   def text: Text = this match
     case Cvt   => t"cvt "
     case table => table.toString.tt.lower
 
 enum OtfTag extends TableTag:
-  case Base, Cbdt, Cblc, Cff, Cff2, Colr, Cpal, Dsig, Ebdt, Eblc, Ebsc, Gdef, Gpos, Gsub, Hvar,
-      Jstf, Ltsh, Math, Merg, Mvar, Os2, Pclt, Stat, Svg, Vdmx, Vorg, Vvar
+  case
+    Base, Cbdt, Cblc, Cff, Cff2, Colr, Cpal, Dsig, Ebdt, Eblc, Ebsc, Gdef, Gpos, Gsub, Hvar, Jstf,
+    Ltsh, Math, Merg, Mvar, Os2, Pclt, Stat, Svg, Vdmx, Vorg, Vvar
 
   def text: Text = this match
     case Os2   => t"OS/2"

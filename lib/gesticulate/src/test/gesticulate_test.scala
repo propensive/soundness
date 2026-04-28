@@ -37,13 +37,16 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8, charDecoders.utf8
+import hieroglyph.*
 import probably.*
 import proscenium.*
 import rudiments.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
+
+import charEncoders.utf8
+import charDecoders.utf8
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces

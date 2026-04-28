@@ -39,10 +39,9 @@ object Error:
     case error: Error         => error
     case throwable: Throwable => UncheckedError(throwable)
 
-transparent abstract class Error
-    (val realm: Realm, val d: Int, val e: Int)
-    (val message: Message, private val cause: Throwable | Null)
-    (using val diagnostics: Diagnostics)
+transparent abstract class Error(val realm: Realm, val d: Int, val e: Int)
+  ( val message: Message, private val cause: Throwable | Null )
+  ( using val diagnostics: Diagnostics )
 extends Exception(message.text.s, cause, false, diagnostics.captureStack):
   this: Error =>
 

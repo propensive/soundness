@@ -38,7 +38,6 @@ import anticipation.*
 import cataclysm.{Float as _, *}
 import geodesy.*
 import gossamer.*
-import prepositional.*
 import proscenium.*
 import spectacular.*
 import vacuous.*
@@ -53,11 +52,12 @@ case class Rectangle(position: Point, width: Float, height: Float) extends Figur
     x"<rect x=${position.x.show} y=${position.y.show} width=${width.show} height=${height.show}/>"
 
 case class Outline
-    ( ops:        List[Stroke]       = Nil,
-      style:      Optional[CssStyle] = Unset,
-      id:         Optional[SvgId]    = Unset,
-      transforms: List[Transform]    = Nil )
+  ( ops:        List[Stroke]       = Nil,
+    style:      Optional[CssStyle] = Unset,
+    id:         Optional[SvgId]    = Unset,
+    transforms: List[Transform]    = Nil )
 extends Figure:
+
   import Stroke.*
 
   def xml: Xml =

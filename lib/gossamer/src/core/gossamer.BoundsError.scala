@@ -52,4 +52,4 @@ object BoundsError:
 
 case class BoundsError(value: Double, minimum: Double, maximum: Double)(using Diagnostics)
 extends Error(realm"go", 1, 0)
-              (m"the value ${value.show} is not in the range ${BoundsError.range(minimum, maximum)}")
+  ( m"the value ${value.show} is not in the range ${BoundsError.range(minimum, maximum)}" )

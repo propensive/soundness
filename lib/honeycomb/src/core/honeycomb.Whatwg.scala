@@ -455,8 +455,8 @@ class Whatwg() extends Dom:
   val Code = Tag.container["code", Phrasing, Whatwg]()
   val Col = Tag.void["col", Whatwg]()
 
-  val Colgroup = Tag.container["colgroup", "col", Whatwg]
-                  ( mode = Html.Mode.Whitespace, insertable = true )
+  val Colgroup =
+    Tag.container["colgroup", "col", Whatwg](mode = Html.Mode.Whitespace, insertable = true)
 
   val Data = Tag.container["data", Phrasing, Whatwg]()
   val Datalist = Tag.container["datalist", Phrasing | "option", Whatwg]()
@@ -467,8 +467,9 @@ class Whatwg() extends Dom:
   val Dialog = Tag.container["dialog", Flow, Whatwg]()
   val Div = Tag.container["div", Flow, Whatwg]()
 
-  val Dl = Tag.container["dl", "div" | "dt" | "dd" | ScriptSupporting, Whatwg]
-            ( autoclose = true, mode = Html.Mode.Whitespace )
+  val Dl =
+    Tag.container["dl", "div" | "dt" | "dd" | ScriptSupporting, Whatwg]
+      ( autoclose = true, mode = Html.Mode.Whitespace )
 
   val Dt = Tag.container["dt", Flow, Whatwg](autoclose = true)
   val Em = Tag.container["em", Phrasing, Whatwg]()
@@ -589,8 +590,9 @@ class Whatwg() extends Dom:
   val Object = Tag.transparent["object", "", Whatwg](boundary = true)
   val Ol = Tag.container["ol", "li" | ScriptSupporting, Whatwg](mode = Html.Mode.Whitespace)
 
-  val Optgroup = Tag.container["optgroup", "option" | "legend", Whatwg]
-                  ( autoclose = true, mode = Html.Mode.Whitespace )
+  val Optgroup =
+    Tag.container["optgroup", "option" | "legend", Whatwg]
+      ( autoclose = true, mode = Html.Mode.Whitespace )
 
   val Option = Tag.container["option", "#text", Whatwg](autoclose = true)
   val Output = Tag.container["output", Phrasing, Whatwg]()
@@ -653,8 +655,9 @@ class Whatwg() extends Dom:
   val Time = Tag.container["time", Phrasing, Whatwg]()
   val Title = Tag.container["title", "#text", Whatwg](mode = Html.Mode.Rcdata)
 
-  val Tr = Tag.container["tr", "td" | "th" | ScriptSupporting, Whatwg]
-            ( autoclose = true, mode = Html.Mode.Whitespace, insertable = true )
+  val Tr =
+    Tag.container["tr", "td" | "th" | ScriptSupporting, Whatwg]
+      ( autoclose = true, mode = Html.Mode.Whitespace, insertable = true )
 
   object Track extends Tag.Void("track", sci.Map(), false):
     type Topic = "track"

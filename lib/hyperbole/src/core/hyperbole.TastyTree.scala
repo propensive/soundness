@@ -83,7 +83,9 @@ object TastyTree:
 
       Scaffold[Expansion]
         ( Column(e"TASTy"): node =>
-            val param = node.param.let { param => e"$Italic(${Fg(palette.accented)}($param))" }.or(e"")
+            val param =
+              node.param.let { param => e"$Italic(${Fg(palette.accented)}($param))" }.or(e"")
+
             e"${node.text} $param",
           Column(e"Type"): node =>
             val name = StackTrace.rewrite(node.typeName.s, false)

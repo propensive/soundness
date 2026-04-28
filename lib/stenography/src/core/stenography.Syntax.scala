@@ -318,8 +318,9 @@ object Syntax:
             case FloatConstant(float)      => Primitive(s"${float.toString}F")
             case UnitConstant()            => Primitive("()")
             case NullConstant()            => Primitive("null")
-            case ClassOfConstant(cls)      => Application
-                                            ( Primitive("classOf"), List(apply(cls)), false )
+
+            case ClassOfConstant(cls) =>
+              Application(Primitive("classOf"), List(apply(cls)), false)
 
         case Refinement(base, "apply", member) =>
           apply(member)

@@ -69,4 +69,4 @@ object GitError:
 
 case class GitError(reason: GitError.Reason)(using Diagnostics)
 extends Error(realm"oc", 1, reason.number)
-              (m"the Git operation could not be completed because $reason")
+  ( m"the Git operation could not be completed because $reason" )
