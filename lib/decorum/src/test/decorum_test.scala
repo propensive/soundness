@@ -176,6 +176,26 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("infix def + (right: Int): Int = right\n")
       . assert(!_.contains("18"))
 
+      test(m"`if/then/else` does not pool predicate ops with else-clause ops"):
+        rules("def f(x: Int, y: Int, a: Int, b: Int): Int = if x == y then a else a^b\n")
+      . assert(!_.contains("16"))
+
+      test(m"`else if` chain does not pool ops across branches"):
+        rules("def f(x: Boolean, a: Int, b: Int): Int = if x then 1 else if a == b then 2 else a^b\n")
+      . assert(!_.contains("16"))
+
+      test(m"Parenthesised `if/then/else` followed by an operator is accepted"):
+        rules("def f(x: Int, a: Int, b: Int): Int = (if x == 0 then a else b) + 1\n")
+      . assert(!_.contains("16"))
+
+      test(m"`case class` modifier does not flush operator frames spuriously"):
+        rules("case class Foo(x: Int, y: Int)\n")
+      . assert(!_.contains("16"))
+
+      test(m"Cross-precedence violation is still rejected"):
+        rules("def f(a: Int, b: Int, c: Int): Int = a+b * c\n")
+      . assert(_.contains("16"))
+
     suite(m"Phase 3: Continuations and shape"):
 
       test(m"`=>` continuation with wrong space count is rejected"):
