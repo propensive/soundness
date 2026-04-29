@@ -415,6 +415,31 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("def f: Int =\n  try compute()\n  catch case e: Throwable => 0 finally cleanup()\n")
       . assert(_.contains("33.1"))
 
+      test(m"`try`/`finally` without `catch` is accepted (compact)"):
+        rules("def f(): Unit =\n  try block\n  finally cleanup()\n")
+      . assert(r => !r.contains("33.1") && !r.contains("33.2") && !r.contains("33.3"))
+
+      test(m"A `try`/`catch` with no `finally` doesn't steal a sibling's `finally`"):
+        // The first def's `try`/`catch` has no `finally`; the second
+        // def's `try foo finally bar` has its own. Without a dedent
+        // bail in `findKeyword`, the first `try` would walk past the
+        // function boundary, pair with the second def's `finally`,
+        // and produce a 33.2 violation against the inline body of
+        // that stolen `finally`.
+        rules
+         ( "def safely(): Unit =\n"
+            +"  try\n"
+            +"    val v = compute()\n"
+            +"    process(v)\n"
+            +"  catch\n"
+            +"    case e: Exception => log(e)\n"
+            +"    case e: Throwable => panic(e)\n"
+            +"\n"
+            +"def focus(): Unit =\n"
+            +"  try block\n"
+            +"  finally cleanup()\n" )
+      . assert(r => !r.contains("33.2"))
+
       test(m"Compact `for/yield` is accepted"):
         rules("def f: List[Int] = for x <- List(1, 2) yield x\n")
       . assert(r => !r.contains("33.1") && !r.contains("33.3"))

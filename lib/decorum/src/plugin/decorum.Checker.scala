@@ -1754,24 +1754,26 @@ object Checker:
   // `from`, returning the token index, or -1 if not found before the
   // enclosing scope ends.
   //
-  // For nestIfElse=true (matching the `else` of an outer `if`): the
-  // search is column-aware. Inner `if`s bump an `ifNesting` counter.
-  // When an `else` is seen, three cases apply, decided by its column
-  // relative to `minCol` (the originating `if`'s column):
+  // Indentation-bounded scope: when `minCol > 0`, any depth-0 token at
+  // column < minCol means we've dedented out of the originating
+  // construct's scope; the search abandons and returns -1. Without this
+  // bound, findKeyword would walk past a `def`/`val`/sibling statement
+  // and grab an unrelated keyword from a later scope (e.g. a `try` with
+  // no `finally` in its own body would absorb a sibling function's
+  // `finally`, anchoring the chain to the wrong K1).
   //
-  //   col <  minCol — the `else` is dedented out of our scope entirely;
-  //                   abandon the search and return -1.
+  // For nestIfElse=true (matching the `else` of an outer `if`): the
+  // search is also column-aware about `else` itself. Inner `if`s bump
+  // an `ifNesting` counter. When an `else` is seen, three cases apply,
+  // decided by its column relative to `minCol`:
+  //
+  //   col <  minCol — already covered by the outer dedent bail.
   //   col == minCol — the `else` is on the same indent as our `if`,
   //                   so it's our match; return it.
   //   col >  minCol — the `else` is nested inside the body. If
   //                   `ifNesting` > 0, decrement (it pairs with one of
   //                   the inner `if`s); otherwise it's a deeper inline
   //                   else for our chain, so return it.
-  //
-  // This avoids the indented-Scala-3 hazard where a then-only inner
-  // `if` would otherwise swallow the outer chain's `else`: an outer
-  // `else` at column == minCol is returned regardless of how many
-  // unmatched inner `if`s are pending.
   //
   // When searching for the `then` of an `if` (targets == {"then"}):
   // encountering `=>`, `<-`, `yield` or `do` at depth 0 means the `if`
@@ -1797,10 +1799,10 @@ object Checker:
         if bracketDepth == 0 then return -1
         bracketDepth -= 1
       else if bracketDepth > 0 then ()
+      else if minCol > 0 && toks(i).col < minCol then return -1
       else if nestIfElse && t == "else" then
         val c = toks(i).col
-        if c < minCol then return -1
-        else if c == minCol then
+        if c == minCol then
           if targets.contains("else") then return i
         else if ifNesting > 0 then ifNesting -= 1
         else if targets.contains("else") then return i
@@ -1885,9 +1887,9 @@ object Checker:
     ( toks: IndexedSeq[Pos], start: Int, file: String, out: mutable.ListBuffer[Violation] )
   :   Unit =
 
-    val firstThen = findKeyword(toks, start + 1, Set("then"), nestIfElse = false)
+    val ifCol     = toks(start).col
+    val firstThen = findKeyword(toks, start + 1, Set("then"), nestIfElse = false, minCol = ifCol)
     if firstThen < 0 then return
-    val ifCol = toks(start).col
     val chain = mutable.ListBuffer[ChainElem]()
     chain += chainElem(toks(start), start)
     chain += chainElem(toks(firstThen), firstThen)
@@ -1909,7 +1911,8 @@ object Checker:
           chain += chainElem(elsePos, elseIdx)
           done = true
         else
-          val innerThen = findKeyword(toks, nextIdx + 1, Set("then"), nestIfElse = false)
+          val innerThen =
+            findKeyword(toks, nextIdx + 1, Set("then"), nestIfElse = false, minCol = ifCol)
           if innerThen < 0 then
             chain += chainElem(elsePos, elseIdx)
             done = true
@@ -1923,7 +1926,9 @@ object Checker:
     ( toks: IndexedSeq[Pos], start: Int, file: String, out: mutable.ListBuffer[Violation] )
   :   Unit =
 
-    val k2Idx = findKeyword(toks, start + 1, Set("yield", "do"), nestIfElse = false)
+    val forCol = toks(start).col
+    val k2Idx  =
+      findKeyword(toks, start + 1, Set("yield", "do"), nestIfElse = false, minCol = forCol)
     if k2Idx < 0 then return
     val k1 = toks(start)
     val k2 = toks(k2Idx)
@@ -1934,7 +1939,9 @@ object Checker:
     ( toks: IndexedSeq[Pos], start: Int, file: String, out: mutable.ListBuffer[Violation] )
   :   Unit =
 
-    val k2Idx = findKeyword(toks, start + 1, Set("do"), nestIfElse = false)
+    val whileCol = toks(start).col
+    val k2Idx    =
+      findKeyword(toks, start + 1, Set("do"), nestIfElse = false, minCol = whileCol)
     if k2Idx < 0 then return
     val k1 = toks(start)
     val k2 = toks(k2Idx)
@@ -1944,12 +1951,16 @@ object Checker:
     ( toks: IndexedSeq[Pos], start: Int, file: String, out: mutable.ListBuffer[Violation] )
   :   Unit =
 
-    val k1     = toks(start)
-    val firstIdx = findKeyword(toks, start + 1, Set("catch", "finally"), nestIfElse = false)
+    val k1       = toks(start)
+    val tryCol   = k1.col
+    val firstIdx =
+      findKeyword
+        (toks, start + 1, Set("catch", "finally"), nestIfElse = false, minCol = tryCol)
     if firstIdx < 0 then return
     val first  = toks(firstIdx)
     if first.text == "catch" then
-      val finallyIdx = findKeyword(toks, firstIdx + 1, Set("finally"), nestIfElse = false)
+      val finallyIdx =
+        findKeyword(toks, firstIdx + 1, Set("finally"), nestIfElse = false, minCol = tryCol)
       if finallyIdx >= 0 then
         applySequenceRules
           ( file,
