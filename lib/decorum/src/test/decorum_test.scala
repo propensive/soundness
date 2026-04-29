@@ -314,6 +314,91 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("def f(x: Int): Int =\n  if x > 0 then\n    x\n  else\n    -x\n")
       . assert(r => !r.contains("33.1") && !r.contains("33.2") && !r.contains("33.3"))
 
+      test(m"Compact `else if` chain is accepted"):
+        rules("def f(x: Int): Int = if x > 0 then 1 else if x < 0 then -1 else 0\n")
+      . assert(r => !r.contains("33.1") && !r.contains("33.2") && !r.contains("33.3"))
+
+      test(m"`else if` chain with broken keywords and inline bodies is accepted"):
+        rules
+         ( "def f(x: Int): Int =\n"
+            +"  if x > 0 then 1\n"
+            +"  else if x < 0 then -1\n"
+            +"  else 0\n" )
+      . assert(r => !r.contains("33.1") && !r.contains("33.2") && !r.contains("33.3"))
+
+      test(m"`else if` chain with all bodies indented is accepted"):
+        rules
+         ( "def f(x: Int): Int =\n"
+            +"  if x > 0 then\n"
+            +"    1\n"
+            +"  else if x < 0 then\n"
+            +"    -1\n"
+            +"  else\n"
+            +"    0\n" )
+      . assert(r => !r.contains("33.1") && !r.contains("33.2") && !r.contains("33.3"))
+
+      test(m"`else if` chain with then-body indented but tail-body inline is rejected"):
+        rules
+         ( "def f(x: Int): Int =\n"
+            +"  if x > 0 then\n"
+            +"    1\n"
+            +"  else if x < 0 then -1\n"
+            +"  else 0\n" )
+      . assert(_.contains("33.2"))
+
+      test(m"`else if` chain with `else if` misaligned with original `if` is rejected"):
+        rules
+         ( "def f(x: Int): Int =\n"
+            +"  if x > 0 then 1\n"
+            +"    else if x < 0 then -1\n"
+            +"  else 0\n" )
+      . assert(_.contains("33.3"))
+
+      test(m"Inner then-only `if` doesn't steal the outer chain's `else`"):
+        // The inner `if char >= 0 then ...` (no else) sits inside the
+        // outer `then`-body. Without indentation-aware else-matching,
+        // findKeyword would absorb the outer `else if esc` as the
+        // inner `if`'s else, producing a spurious 33.3 misalignment.
+        rules
+         ( "def recur(text: String, esc: Boolean): Unit =\n"
+            +"  if 1 < text.length\n"
+            +"  then\n"
+            +"    val char = text.charAt(0)\n"
+            +"    if char >= 0 then println(char.toChar)\n"
+            +"    recur(text, esc)\n"
+            +"  else if esc then throw new RuntimeException(\"\")\n" )
+      . assert(r => !r.contains("33.3"))
+
+      test(m"Case-guard `if` in a pattern match doesn't get processed as an if-chain"):
+        // `case x if guard => …` looks like an `if` with no `then` to
+        // findKeyword unless we bail on `=>` at depth 0. Without the
+        // bail, the case-guard `if` would walk forward and pair with
+        // an unrelated `then` later in the file, producing spurious
+        // 33.3 violations against an `if` column nowhere near the
+        // actual chain.
+        rules
+         ( "def f(x: Int): Int = x match\n"
+            +"  case n if n > 0 => 1\n"
+            +"  case n if n < 0 => -1\n"
+            +"  case _          => 0\n"
+            +"\n"
+            +"def g(y: Int): Int =\n"
+            +"  if y > 0 then y\n"
+            +"  else -y\n" )
+      . assert(r => !r.contains("33.3"))
+
+      test(m"For-comprehension filter `if` doesn't get processed as an if-chain"):
+        // `if filter` inside a for-comprehension has no `then`. Without
+        // bailing on `yield`/`do`/`<-`, findKeyword would walk past the
+        // filter and pair with an unrelated `then` later in the file.
+        rules
+         ( "def f(xs: List[Int]): List[Int] = for x <- xs if x > 0 yield x\n"
+            +"\n"
+            +"def g(y: Int): Int =\n"
+            +"  if y > 0 then y\n"
+            +"  else -y\n" )
+      . assert(r => !r.contains("33.3"))
+
       test(m"Compact `while/do` is accepted"):
         rules("def f(): Unit = while running() do step()\n")
       . assert(r => !r.contains("33.1") && !r.contains("33.3"))
