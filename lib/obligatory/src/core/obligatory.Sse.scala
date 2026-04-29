@@ -91,7 +91,7 @@ object Sse:
 
     text.cut(Lf).each: line =>
       line.s.indexOf(':') match
-        case -1 => raise(SseError())
+        case -1 => raise(SseError(SseError.Reason.MalformedField))
 
         case n =>
           val value = line.skip(if line.at(n.z + 1) == ' ' then n + 2 else n + 1)
@@ -100,8 +100,11 @@ object Sse:
             case "event" => event = value
             case "data"  => data ::= value
             case "id"    => id = value
-            case "retry" => retry = safely(value.decode[Long]).lest(SseError())
-            case _       => raise(SseError())
+
+            case "retry" =>
+              retry = safely(value.decode[Long]).lest(SseError(SseError.Reason.BadRetryValue))
+
+            case _ => raise(SseError(SseError.Reason.UnknownField))
 
     Sse(event, data.reverse, id, retry)
 

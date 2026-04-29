@@ -56,7 +56,7 @@ class SseSource(capacity: Int):
     start.let: start =>
       spool.stop()
       spool = Spool()
-      if current - start - 1 > capacity then abort(SseError()) else
+      if current - start - 1 > capacity then abort(SseError(SseError.Reason.CapacityExceeded)) else
         ((start + 1) until current).map: index =>
           spool.put(buffer(index%capacity))
 

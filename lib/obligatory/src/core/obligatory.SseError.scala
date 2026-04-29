@@ -34,5 +34,22 @@ package obligatory
 
 import fulminate.*
 
-case class SseError()(using Diagnostics)
-extends Error(realm"ob", 1, 0)(m"the server-sent event was not valid")
+object SseError:
+  enum Reason(val number: Int) extends Clarification:
+    case MalformedField   extends Reason(1)
+    case UnknownField     extends Reason(2)
+    case BadRetryValue    extends Reason(3)
+    case CapacityExceeded extends Reason(4)
+
+  given communicable: Reason is Communicable =
+    case Reason.MalformedField   => m"a line did not contain the expected `field: value` separator"
+    case Reason.BadRetryValue    => m"the `retry` field value could not be parsed as an integer"
+
+    case Reason.UnknownField =>
+      m"the field name was not one of `event`, `data`, `id`, or `retry`"
+
+    case Reason.CapacityExceeded =>
+      m"the requested replay range exceeded the source buffer capacity"
+
+case class SseError(reason: SseError.Reason)(using Diagnostics)
+extends Error(realm"ob", 1, reason.number)(m"the server-sent event was not valid because $reason")
