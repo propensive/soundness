@@ -32,8 +32,8 @@
                                                                                                   */
 package cacophony
 
-sealed trait Stereo
-
 object Stereo:
   given channelLayout: Stereo is ChannelLayout:
     def channels = 2
+
+sealed trait Stereo

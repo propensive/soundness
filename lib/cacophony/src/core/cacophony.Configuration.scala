@@ -36,8 +36,8 @@ import quantitative.*
 import vacuous.*
 
 case class Configuration
-            (channels:      Int,
-             sampleRate:    Optional[Quantity[Seconds[-1]]],
-             bitsPerSample: Int,
-             encoding:      Encoding,
-             bigEndian:     Boolean)
+  ( channels:      Int,
+    sampleRate:    Optional[Quantity[Seconds[-1]]],
+    bitsPerSample: Int,
+    encoding:      Encoding,
+    bigEndian:     Boolean )

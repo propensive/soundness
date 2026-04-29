@@ -32,10 +32,10 @@
                                                                                                   */
 package cacophony
 
-sealed trait Surround[N <: Int & Singleton]
-
 object Surround:
   given channelLayout: [n <: Int & Singleton: ValueOf] => Surround[n] is ChannelLayout =
     new ChannelLayout:
       type Self = Surround[n]
       def channels = valueOf[n]
+
+sealed trait Surround[N <: Int & Singleton]

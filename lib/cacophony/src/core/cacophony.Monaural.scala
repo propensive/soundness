@@ -32,8 +32,8 @@
                                                                                                   */
 package cacophony
 
-sealed trait Monaural
-
 object Monaural:
   given channelLayout: Monaural is ChannelLayout:
     def channels = 1
+
+sealed trait Monaural
