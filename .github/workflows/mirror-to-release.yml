@@ -82,18 +82,31 @@ jobs:
             exit 0
           fi
 
-          # First-run bootstrap: create release as an orphan branch whose first
-          # commit holds the state of main *immediately before* the first PR
-          # being mirrored landed. We derive that state by checking out the
-          # first PR's merge-tip tree and reverse-applying its diff. This is
-          # method-agnostic (works for merge / rebase / squash merges).
+          # Compute the number of commits a PR introduced onto main, given its
+          # merge commit's SHA. Merge-commit and squash methods always add one
+          # commit; rebase adds N (the PR's commit count, queried from the
+          # API). The method is detected from the merge commit's parent count.
+          commits_on_main() {
+            local sha=$1 number=$2 parents
+            parents=$(git cat-file -p "$sha" | grep -c '^parent ')
+            if [ "$parents" -eq 2 ]; then
+              echo 1
+            else
+              gh pr view "$number" --repo "$REPO" --json commits \
+                --jq '.commits | length'
+            fi
+          }
+
+          # First-run bootstrap: create release as an orphan branch with a
+          # baseline commit holding the state of main *immediately before* the
+          # first PR being mirrored landed.
           if ! git rev-parse --verify refs/remotes/origin/release >/dev/null 2>&1; then
             first_sha=$(jq -r '.[0].mergeCommit.oid' /tmp/todo.json)
             first_num=$(jq -r '.[0].number' /tmp/todo.json)
-            echo "Bootstrapping release from state before PR #$first_num"
-            git checkout --orphan release "$first_sha"
-            gh pr diff "$first_num" --repo "$REPO" --patch \
-              | git apply -R --index
+            first_n=$(commits_on_main "$first_sha" "$first_num")
+            base_sha=$(git rev-parse "${first_sha}~${first_n}")
+            echo "Bootstrapping release from $base_sha (state before PR #$first_num)"
+            git checkout --orphan release "$base_sha"
             git commit -m 'Initial release branch baseline'
           else
             git checkout -B release origin/release
@@ -109,20 +122,16 @@ jobs:
 
             echo "::group::Mirroring #$number ($sha): $title"
 
-            # Pull the diff from the GitHub API so we don't depend on the merge
-            # method (merge-commit / rebase / squash all produce a usable
-            # patch this way). Same for the changed-files list used to build
-            # the Modules trailer.
-            gh pr diff "$number" --repo "$REPO" --patch > /tmp/pr.patch
-            gh pr view "$number" --repo "$REPO" --json files \
-              --jq '.files[].path' > /tmp/files.txt
+            n=$(commits_on_main "$sha" "$number")
+            base=$(git rev-parse "${sha}~${n}")
 
             # Modules trailer: lib/<module> for files inside lib/, "core" for
             # any file outside lib/. Deduped, comma-separated.
-            modules=$(awk -F/ '
-                $1=="lib" && NF>=3 { print "lib/" $2; next }
-                { print "core" }
-              ' /tmp/files.txt \
+            modules=$(git diff --name-only "$base" "$sha" \
+              | awk -F/ '
+                  $1=="lib" && NF>=3 { print "lib/" $2; next }
+                  { print "core" }
+                ' \
               | sort -u \
               | paste -sd, - \
               | sed 's/,/, /g')
@@ -150,6 +159,7 @@ jobs:
               printf 'PR: %s\n' "$url"
             } > /tmp/msg.txt
 
+            git diff "$base" "$sha" > /tmp/pr.patch
             if [ ! -s /tmp/pr.patch ]; then
               echo "PR #$number has empty diff; skipping."
               echo "::endgroup::"
