@@ -134,7 +134,9 @@ object internal:
 
                   val wildcard = Expr.summon[Tactic[JsonRpcError]] match
                     case Some(tactic) =>
-                      CaseDef(Wildcard(), None, '{abort(JsonRpcError())(using $tactic)}.asTerm)
+                      val rhs =
+                        '{abort(JsonRpcError(JsonRpcError.Reason.UnknownMethod))(using $tactic)}
+                      CaseDef(Wildcard(), None, rhs.asTerm)
 
                     case None =>
                       halt(5, m"could not find a contextual `Tactic[JsonRpcError]` instance")

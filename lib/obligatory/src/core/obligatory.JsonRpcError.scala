@@ -33,7 +33,13 @@
 package obligatory
 
 import fulminate.*
-import proscenium.*
 
-case class JsonRpcError()(using Diagnostics)
-extends Error(realm"ob", 4, 0)(m"an error occurred during a JSON-RPC operation")
+object JsonRpcError:
+  enum Reason(val number: Int) extends Clarification:
+    case UnknownMethod extends Reason(1)
+
+  given communicable: Reason is Communicable =
+    case Reason.UnknownMethod => m"the method name was not recognised by the dispatcher"
+
+case class JsonRpcError(reason: JsonRpcError.Reason)(using Diagnostics)
+extends Error(realm"ob", 4, reason.number)(m"the JSON-RPC operation failed because $reason")
