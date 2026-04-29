@@ -279,7 +279,7 @@ object test extends ScalaModule:
     revolution.test,
     rudiments.test,
     satirical.test,
-    //savagery.test,
+    savagery.test,
     scintillate.test,
     sedentary.test,
     serpentine.test,
