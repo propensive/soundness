@@ -345,8 +345,9 @@ object Tests extends Suite(m"Savagery tests"):
         . read[Svg]
 
         svg.defs.head
-
-      . assert(_.stops.head.color == Srgb(1.0, 0.0, 0.0))
+      .assert:
+          case lg: LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
+          case _                     => false
 
       test(m"Parse rgb function"):
         val svg =
@@ -354,7 +355,9 @@ object Tests extends Suite(m"Savagery tests"):
         . read[Svg]
 
         svg.defs.head
-      . assert(_.stops.head.color == Srgb(1.0, 0.0, 0.0))
+      .assert:
+          case lg: LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
+          case _                     => false
 
       test(m"Parse named color red"):
         val svg =
@@ -362,8 +365,9 @@ object Tests extends Suite(m"Savagery tests"):
         . read[Svg]
 
         svg.defs.head
-
-      . assert(_.stops.head.color == Srgb(1.0, 0.0, 0.0))
+      .assert:
+          case lg: LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
+          case _                     => false
 
       test(m"Parse linear gradient with id"):
         val svg =
