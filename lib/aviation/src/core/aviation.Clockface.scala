@@ -41,7 +41,11 @@ object Clockface:
   =>  Clockface is Showable =
 
     clockface =>
-      val hour = if summon[TimeFormat].halfDay then clockface.hour%12 else clockface.hour
+      val hour =
+        if summon[TimeFormat].halfDay then
+          val raw = clockface.hour%12
+          if raw == 0 then 12 else raw
+        else clockface.hour
 
       val hour2 = summon[TimeNumerics] match
         case TimeNumerics.VariableWidth => hour.show
@@ -61,7 +65,7 @@ object Clockface:
 
       val postfix = summon[TimeFormat].postfix(meridiem)
 
-      t"$hour${summon[TimeSeparation].separator}$minute$seconds$postfix"
+      t"$hour2${summon[TimeSeparation].separator}$minute$seconds$postfix"
 
 
 case class Clockface(hour: Base24, minute: Base60, second: Base60 = 0, nanos: Int = 0)
