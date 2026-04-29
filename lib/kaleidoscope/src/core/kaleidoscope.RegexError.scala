@@ -61,7 +61,7 @@ object RegexError:
         m"the pattern was invalid"
 
       case UnclosedEscape =>
-        m"nothing followed the escape character `\`"
+        m"nothing followed the escape character `\\`"
 
       case EmptyCharClass =>
         m"the character class is empty"
