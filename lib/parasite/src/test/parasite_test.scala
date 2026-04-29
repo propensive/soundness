@@ -1108,6 +1108,23 @@ object Tests extends Suite(m"Parasite tests"):
           result
         . assert(_ == t"fast")
 
+        test(m"Race cancels losing tasks"):
+          val loserGate = Promise[Unit]()
+          val winnerGate = Promise[Unit]()
+          val loser = async:
+            loserGate.await()
+            t"loser"
+          val winner = async:
+            winnerGate.await()
+            t"winner"
+          val tasks = Vector(winner, loser)
+          val raceTask = async(tasks.race())
+          winnerGate.fulfill(())
+          raceTask.await()
+          snooze(200.0*Milli(Second))
+          loser.ready
+        . assert(_ == true)
+
       suite(m"Heap"):
         test(m"Heap.used returns a positive number of bytes"):
           Heap.used.long > 0L
