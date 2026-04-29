@@ -42,6 +42,7 @@ object DaemonLogEvent:
     case WriteExecutable(location) => m"Writing executable to $location"
     case Shutdown                  => m"Shutting down"
     case Termination               => m"Terminating client connection"
+    case IdleTimeout               => m"Shutting down after idle timeout"
     case Failure                   => m"A failure occurred"
     case NewCli                    => m"Instantiating a new CLI"
     case UnrecognizedMessage       => m"Unrecognized message"
@@ -57,6 +58,7 @@ enum DaemonLogEvent:
   case WriteExecutable(location: Text)
   case Shutdown
   case Termination
+  case IdleTimeout
   case Failure
   case NewCli
   case UnrecognizedMessage
