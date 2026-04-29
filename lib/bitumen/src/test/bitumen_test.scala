@@ -32,6 +32,7 @@
                                                                                                   */
 package bitumen
 
+import fulminate.*
 import probably.*
 
 object Tests extends Suite(m"Bitumen Tests"):
