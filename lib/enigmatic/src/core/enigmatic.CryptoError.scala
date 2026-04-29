@@ -32,8 +32,22 @@
                                                                                                   */
 package enigmatic
 
-import anticipation.*
 import fulminate.*
 
-case class CryptoError(detail: Text)(using Diagnostics)
-extends Error(realm"en", 1, 0)(m"could not decode the encrypted data: $detail")
+object CryptoError:
+  given communicable: Reason is Communicable =
+    case Reason.BadPadding       => m"the ciphertext was corrupted or the key was wrong"
+    case Reason.IllegalBlockSize => m"the input length was not valid for the cipher"
+    case Reason.InvalidKey       => m"the key was not valid for the cipher"
+    case Reason.InvalidAlgorithm => m"the algorithm was not available"
+    case Reason.IoFailure        => m"data could not be read or written"
+
+  enum Reason(val number: Int) extends Clarification:
+    case BadPadding       extends Reason(1)
+    case IllegalBlockSize extends Reason(2)
+    case InvalidKey       extends Reason(3)
+    case InvalidAlgorithm extends Reason(4)
+    case IoFailure        extends Reason(5)
+
+case class CryptoError(reason: CryptoError.Reason)(using Diagnostics)
+extends Error(realm"en", 1, reason.number)(m"could not decode the encrypted data because $reason")
