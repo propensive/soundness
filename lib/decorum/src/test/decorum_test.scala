@@ -419,6 +419,39 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("def f(): Unit =\n  try block\n  finally cleanup()\n")
       . assert(r => !r.contains("33.1") && !r.contains("33.2") && !r.contains("33.3"))
 
+      test(m"`inline if` chain aligns broken `then`/`else` with `inline`, not `if`"):
+        // The `if` after `inline` starts mid-line, but visually the
+        // construct begins at `inline`. A broken `then`/`else` aligned
+        // with `inline` should be accepted.
+        rules
+         ( "inline def f(x: Int): Int =\n"
+            +"  inline if x > 0\n"
+            +"  then x\n"
+            +"  else -x\n" )
+      . assert(r => !r.contains("33.1") && !r.contains("33.2") && !r.contains("33.3"))
+
+      test(m"`else inline if … then` is recognised as a chain bridge"):
+        // The `else` is followed by `inline if` (modifier + `if`) on
+        // the same line; this should fold into a single bridge rather
+        // than be treated as a final `else` whose body happens to be
+        // an `if`.
+        rules
+         ( "inline def f(x: Int): Int =\n"
+            +"  inline if x > 0 then 1\n"
+            +"  else inline if x < 0 then -1\n"
+            +"  else 0\n" )
+      . assert(r => !r.contains("33.1") && !r.contains("33.2") && !r.contains("33.3"))
+
+      test(m"Inline inner `else` of `else if … then BODY else BODY` doesn't fire 33.1"):
+        // The bridge's inner `if/then` brings its own inline `else`;
+        // that inner `else` belongs to the bridge, not to the outer
+        // chain, so it must not be appended as the chain's K_(i+1).
+        rules
+         ( "inline def f(x: Int): Int =\n"
+            +"  inline if x > 0 then inline if x == 1 then 1 else 2\n"
+            +"  else inline if x == -1 then -1 else -2\n" )
+      . assert(r => !r.contains("33.1"))
+
       test(m"A `try`/`catch` with no `finally` doesn't steal a sibling's `finally`"):
         // The first def's `try`/`catch` has no `finally`; the second
         // def's `try foo finally bar` has its own. Without a dedent

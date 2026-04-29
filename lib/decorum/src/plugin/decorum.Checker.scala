@@ -1781,17 +1781,18 @@ object Checker:
   // there's no `then` to pair with — return -1. The bail is restricted
   // to this exact case so for/while/try searches aren't disturbed.
   private def findKeyword
-    ( toks:       IndexedSeq[Pos],
-      from:       Int,
-      targets:    Set[String],
-      nestIfElse: Boolean,
-      minCol:     Int = 0 )
+    ( toks:             IndexedSeq[Pos],
+      from:             Int,
+      targets:          Set[String],
+      nestIfElse:       Boolean,
+      minCol:           Int = 0,
+      initialIfNesting: Int = 0 )
   :   Int =
 
     val isThenSearch = !nestIfElse && targets == Set("then")
     var i            = from
     var bracketDepth = 0
-    var ifNesting    = 0
+    var ifNesting    = initialIfNesting
     while i < toks.length do
       val t = toks(i).text
       if t == "(" || t == "[" || t == "{" then bracketDepth += 1
@@ -1829,6 +1830,39 @@ object Checker:
 
   private def chainElem(pos: Pos, idx: Int): ChainElem =
     ChainElem(pos, idx, idx, pos.text)
+
+  // Walks backwards from `idx` through any modifier tokens (`inline`,
+  // `transparent`, `private`, …) preceding the keyword on the same
+  // line. Returns the index of the leftmost prefix token, or `idx`
+  // itself if there are no modifiers. This is used to anchor a chain
+  // at the visual start of the construct: in `inline if cond then …`
+  // the chain's K1 column is `inline`'s, not `if`'s, so a broken
+  // `then` aligned with `inline` is correctly accepted.
+  private def constructStart(toks: IndexedSeq[Pos], idx: Int): Int =
+    var k = idx
+    var prev = idx - 1
+    while prev >= 0 && toks(prev).line == toks(idx).line
+        && ModifierWords.contains(toks(prev).text)
+    do
+      k = prev
+      prev -= 1
+    k
+
+  // Builds the K1 chain element for a construct, taking modifier
+  // prefixes into account. The element's column is the leftmost
+  // modifier's column (or the keyword's, if no modifier), so all
+  // alignment checks for downstream broken keywords reference the
+  // visual start of the construct. The label includes the modifier
+  // sequence (e.g. `"inline if"`) so violation messages name what
+  // the user actually sees.
+  private def k1ChainElem(toks: IndexedSeq[Pos], start: Int): ChainElem =
+    val k1Idx = constructStart(toks, start)
+    if k1Idx == start then chainElem(toks(start), start)
+    else
+      val k1Col   = toks(k1Idx).col
+      val k1Pos   = Pos(toks(start).text, toks(start).line, k1Col)
+      val k1Label = (k1Idx to start).map(toks(_).text).mkString(" ")
+      ChainElem(k1Pos, k1Idx, start, k1Label)
 
   // Apply the cascade and alignment rules to a sequence of chain
   // elements. `seq.head` is K_1.
@@ -1887,38 +1921,55 @@ object Checker:
     ( toks: IndexedSeq[Pos], start: Int, file: String, out: mutable.ListBuffer[Violation] )
   :   Unit =
 
-    val ifCol     = toks(start).col
+    val k1        = k1ChainElem(toks, start)
+    val ifCol     = k1.pos.col
     val firstThen = findKeyword(toks, start + 1, Set("then"), nestIfElse = false, minCol = ifCol)
     if firstThen < 0 then return
     val chain = mutable.ListBuffer[ChainElem]()
-    chain += chainElem(toks(start), start)
+    chain += k1
     chain += chainElem(toks(firstThen), firstThen)
 
-    var afterThen = firstThen
-    var done      = false
+    var afterThen       = firstThen
+    var pendingInnerIfs = 0
+    var done            = false
     while !done do
       val elseIdx =
-        findKeyword(toks, afterThen + 1, Set("else"), nestIfElse = true, minCol = ifCol)
+        findKeyword
+          ( toks, afterThen + 1, Set("else"), nestIfElse = true, minCol = ifCol,
+            initialIfNesting = pendingInnerIfs )
       if elseIdx < 0 then done = true
       else
         val elsePos = toks(elseIdx)
-        val nextIdx = elseIdx + 1
+        // Walk forward past any modifiers between `else` and `if` so
+        // `else inline if cond then …` is recognised as a bridge.
+        var ifIdx = elseIdx + 1
+        while ifIdx < toks.length && toks(ifIdx).line == elsePos.line
+            && ModifierWords.contains(toks(ifIdx).text)
+        do ifIdx += 1
         val isBridge =
-          nextIdx < toks.length
-          && toks(nextIdx).text == "if"
-          && toks(nextIdx).line == elsePos.line
+          ifIdx < toks.length
+          && toks(ifIdx).text == "if"
+          && toks(ifIdx).line == elsePos.line
         if !isBridge then
           chain += chainElem(elsePos, elseIdx)
           done = true
         else
           val innerThen =
-            findKeyword(toks, nextIdx + 1, Set("then"), nestIfElse = false, minCol = ifCol)
+            findKeyword(toks, ifIdx + 1, Set("then"), nestIfElse = false, minCol = ifCol)
           if innerThen < 0 then
             chain += chainElem(elsePos, elseIdx)
             done = true
           else
-            chain += ChainElem(elsePos, elseIdx, innerThen, "else if")
+            val bridgeLabel =
+              if ifIdx == elseIdx + 1 then "else if"
+              else (elseIdx to ifIdx).map(toks(_).text).mkString(" ")
+            chain += ChainElem(elsePos, elseIdx, innerThen, bridgeLabel)
             afterThen = innerThen
+            // The bridge's inner `if` is now pending — its matching
+            // `else` (if any) might appear inline before the outer
+            // chain's next element. Tracking it keeps the inner
+            // `else` from being mistaken for the outer K_(i+1).
+            pendingInnerIfs += 1
 
     applySequenceRules(file, chain.toList, toks, out)
 
@@ -1926,33 +1977,33 @@ object Checker:
     ( toks: IndexedSeq[Pos], start: Int, file: String, out: mutable.ListBuffer[Violation] )
   :   Unit =
 
-    val forCol = toks(start).col
+    val k1     = k1ChainElem(toks, start)
+    val forCol = k1.pos.col
     val k2Idx  =
       findKeyword(toks, start + 1, Set("yield", "do"), nestIfElse = false, minCol = forCol)
     if k2Idx < 0 then return
-    val k1 = toks(start)
     val k2 = toks(k2Idx)
-    applySequenceRules(file, List(chainElem(k1, start), chainElem(k2, k2Idx)), toks, out)
+    applySequenceRules(file, List(k1, chainElem(k2, k2Idx)), toks, out)
     checkGeneratorAlignment(toks, start, k2Idx, file, out)
 
   private def processWhileSeq
     ( toks: IndexedSeq[Pos], start: Int, file: String, out: mutable.ListBuffer[Violation] )
   :   Unit =
 
-    val whileCol = toks(start).col
+    val k1       = k1ChainElem(toks, start)
+    val whileCol = k1.pos.col
     val k2Idx    =
       findKeyword(toks, start + 1, Set("do"), nestIfElse = false, minCol = whileCol)
     if k2Idx < 0 then return
-    val k1 = toks(start)
     val k2 = toks(k2Idx)
-    applySequenceRules(file, List(chainElem(k1, start), chainElem(k2, k2Idx)), toks, out)
+    applySequenceRules(file, List(k1, chainElem(k2, k2Idx)), toks, out)
 
   private def processTrySeq
     ( toks: IndexedSeq[Pos], start: Int, file: String, out: mutable.ListBuffer[Violation] )
   :   Unit =
 
-    val k1       = toks(start)
-    val tryCol   = k1.col
+    val k1       = k1ChainElem(toks, start)
+    val tryCol   = k1.pos.col
     val firstIdx =
       findKeyword
         (toks, start + 1, Set("catch", "finally"), nestIfElse = false, minCol = tryCol)
@@ -1965,17 +2016,15 @@ object Checker:
         applySequenceRules
           ( file,
             List
-             ( chainElem(k1, start),
+             ( k1,
                chainElem(first, firstIdx),
                chainElem(toks(finallyIdx), finallyIdx) ),
             toks,
             out )
       else
-        applySequenceRules
-          (file, List(chainElem(k1, start), chainElem(first, firstIdx)), toks, out)
+        applySequenceRules(file, List(k1, chainElem(first, firstIdx)), toks, out)
     else
-      applySequenceRules
-        (file, List(chainElem(k1, start), chainElem(first, firstIdx)), toks, out)
+      applySequenceRules(file, List(k1, chainElem(first, firstIdx)), toks, out)
 
   // R34: alignment within a for-comprehension's generator block. The block
   // spans tokens between `for` (at `forIdx`) and the matching `yield`/`do`
@@ -2075,11 +2124,16 @@ object Checker:
     while i < toks.length do
       toks(i).text match
         case "if" =>
-          // Skip the inline `if` of an `else if` chain — the outer
-          // `if`'s chain processor has already folded it into a single
-          // `else if … then` chain element.
+          // Skip the inline `if` of an `else [inline] if` chain — the
+          // outer `if`'s chain processor has already folded it into a
+          // single bridge chain element. Walk back through any
+          // modifiers (`inline`, …) between the `if` and `else`.
+          var prev = i - 1
+          while prev >= 0 && toks(prev).line == toks(i).line
+              && ModifierWords.contains(toks(prev).text)
+          do prev -= 1
           val partOfBridge =
-            i > 0 && toks(i - 1).text == "else" && toks(i - 1).line == toks(i).line
+            prev >= 0 && toks(prev).text == "else" && toks(prev).line == toks(i).line
           if !partOfBridge then processIfSeq(toks, i, file, out)
         case "for"   => processForSeq(toks, i, file, out)
         case "while" => processWhileSeq(toks, i, file, out)
