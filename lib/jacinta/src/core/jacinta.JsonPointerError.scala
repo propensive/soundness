@@ -34,5 +34,13 @@ package jacinta
 
 import fulminate.*
 
-case class JsonPointerError()(using Diagnostics)
-extends Error(realm"ja", 2, 0)(m"could not resolve JSON pointer")
+object JsonPointerError:
+  enum Reason(val number: Int) extends Clarification:
+    case UnknownDocument extends Reason(1)
+
+  given communicable: Reason is Communicable =
+    case Reason.UnknownDocument => m"the registry contains no document at the pointer's URL"
+
+case class JsonPointerError(reason: JsonPointerError.Reason)(using Diagnostics)
+extends Error(realm"ja", 2, reason.number)
+  ( m"the JSON pointer could not be resolved because $reason" )
