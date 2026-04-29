@@ -33,18 +33,15 @@
 package bitumen
 
 import anticipation.*
-import contingency.*
-import denominative.*
-import gossamer.*
-import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
-import hypotenuse.*, arithmeticOptions.overflow.unchecked
-import nomenclature.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import spectacular.*
-import turbulence.*
-import vacuous.*
+import fulminate.*
 
-case class TarPath(tarFile: Tar, ref: TarRef):
-  def entry: TarEntry = ???
+object TarError:
+  enum Reason(val number: Int) extends Clarification:
+    case NameTooLong(field: Text, length: Int, maximum: Int) extends Reason(1)
+
+  given communicable: Reason is Communicable =
+    case Reason.NameTooLong(field, length, maximum) =>
+      m"the $field field is $length bytes, exceeding the USTAR limit of $maximum bytes"
+
+case class TarError(reason: TarError.Reason)(using Diagnostics)
+extends Error(realm"bi", 1, reason.number)(m"the TAR archive could not be written because $reason")

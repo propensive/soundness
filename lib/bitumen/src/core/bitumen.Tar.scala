@@ -49,8 +49,8 @@ import vacuous.*
 object Tar:
   val zeroBlock: Data = IArray.fill[Byte](512)(0)
 
-  given streamable: Tar is Streamable by Data = _.serialize
+  given streamable: Tactic[TarError] => Tar is Streamable by Data = _.serialize
 
 case class Tar(entries: LazyList[TarEntry]):
-  def serialize: LazyList[Data] =
+  def serialize(using Tactic[TarError]): LazyList[Data] =
     entries.flatMap(_.serialize) #::: LazyList(Tar.zeroBlock, Tar.zeroBlock)

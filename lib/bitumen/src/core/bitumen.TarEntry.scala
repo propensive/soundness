@@ -109,7 +109,7 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
     case _          => 0
 
   def dataBlocks: LazyList[Data] = this match
-    case file: File => file.data.chunked(512)
+    case file: File => file.data.chunked(512, zeroPadding = true)
     case directory  => LazyList()
 
   def typeFlag: TypeFlag = this match
@@ -136,8 +136,11 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
   def format(number: U32, width: Int): Data =
     number.octal.pad(width - 1).data
 
-  lazy val header: Data = Data.build(512): array =>
-    array.place(entryName.data, Prim)
+  def header(using Tactic[TarError]): Data = Data.build(512): array =>
+    val nameData = entryName.data
+    if nameData.length > 100
+    then raise(TarError(TarError.Reason.NameTooLong(t"name", nameData.length, 100)))
+    array.place(if nameData.length > 100 then nameData.slice(0, 100) else nameData, Prim)
     array.place(mode.bytes, 100.z)
     array.place(user.bytes, 108.z)
     array.place(group.bytes, 116.z)
@@ -146,7 +149,11 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
     array.place(t"        ".data, 148.z)
     array(156) = typeFlag.id.toByte
 
-    link.let { link => array.place(link.data, 157.z) }
+    link.let: link =>
+      val linkData = link.data
+      if linkData.length > 100
+      then raise(TarError(TarError.Reason.NameTooLong(t"linkname", linkData.length, 100)))
+      array.place(if linkData.length > 100 then linkData.slice(0, 100) else linkData, 157.z)
 
     deviceNumbers.let: (devMajor, devMinor) =>
       array.place(format(devMajor, 8), 329.z)
@@ -161,4 +168,4 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
     val total = array.map(_.bits.u8.u32).reduce(_ + _)
     array.place(format(total, 8), 148.z)
 
-  def serialize: LazyList[Data] = header #:: dataBlocks
+  def serialize(using Tactic[TarError]): LazyList[Data] = header #:: dataBlocks
