@@ -102,7 +102,6 @@ package executives:
         environment:      Environment,
         workingDirectory: WorkingDirectory,
         stdio:            Stdio,
-        signals:          Spool[UnixSignal | WindowsSignal],
         entrypoint:       Entrypoint,
         login:            Login )
       ( using interpreter: Interpreter )
@@ -113,7 +112,6 @@ package executives:
           environments.java,
           workingDirectories.java,
           stdio,
-          signals,
           arguments.size == 0 || arguments.head != t"{admin}",
           login )
 
@@ -125,14 +123,16 @@ package executives:
 inline def effectful[result](lambda: (erased Effectful) ?=> result): result =
   lambda(using !![Effectful])
 
+inline def trap(handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse])
+  ( using cli: Cli )
+:   Unit =
+
+  cli.trap(handler)
+
 def application(using executive: Executive, interpreter: Interpreter)
   ( arguments: Iterable[Text], signals: List[UnixSignal] = Nil )
   ( block: Cli ?=> executive.Return )
 :   Unit =
-
-  val spool: Spool[UnixSignal | WindowsSignal] = Spool()
-  signals.each: signal =>
-    sm.Signal.handle(sm.Signal(signal.shortName.s), event => spool.put(signal))
 
   val entrypoint = new Entrypoint:
     def executable: Path on Linux =
@@ -149,8 +149,10 @@ def application(using executive: Executive, interpreter: Interpreter)
         environments.java,
         workingDirectories.java,
         stdios.virtualMachine,
-        spool,
         entrypoint,
         Login(ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt, Unset) )
+
+  signals.each: signal =>
+    sm.Signal.handle(sm.Signal(signal.shortName.s), _ => cli.dispatchSignal(signal))
 
   jl.System.exit(executive.process(cli)(block)())

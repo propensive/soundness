@@ -42,7 +42,6 @@ import gossamer.*
 import guillotine.*
 import hieroglyph.*, textMetrics.uniform
 import hypotenuse.*
-import profanity.*
 import proscenium.*
 import spectacular.*
 import symbolism.*
@@ -58,7 +57,6 @@ case class Completion
     currentArgument:  Int,
     focusPosition:    Optional[Int],
     stdio:            Stdio,
-    signals:          Spool[UnixSignal | WindowsSignal],
     tty:              Text,
     tab:              Ordinal,
     login:            Login )

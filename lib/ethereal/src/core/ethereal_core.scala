@@ -72,6 +72,7 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
+import anticipation.abstractables.durationIsAbstractable
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
@@ -299,7 +300,16 @@ def cli[bus <: Matchable](using executive: Executive)
 
         case DaemonEvent.Trap(pid, signal) =>
           Log.info(DaemonLogEvent.ReceivedSignal(signal))
-          client(pid).signals.put(signal)
+          val response: SignalResponse =
+            safely:
+              val invocation = client(pid).invocation.await(250L*1_000_000L)
+              invocation.dispatchSignal(signal)
+
+            . or(SignalResponse.Reject)
+
+          val ackByte: Byte = if response == SignalResponse.Accept then 'a' else 'r'
+          safely(rawOut.write(Array[Byte](ackByte, '\n'.toByte)))
+          safely(rawOut.flush())
           channel.close()
 
         case DaemonEvent.Exit(pid) =>
@@ -387,9 +397,10 @@ def cli[bus <: Matchable](using executive: Executive)
                   environment,
                   () => directory,
                   stdio,
-                  connection.signals,
                   service,
                   login )
+
+            connection.invocation.offer(cli)
 
             if cli.proceed then
               val result = block(using service, cli)

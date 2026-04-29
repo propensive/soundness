@@ -34,6 +34,7 @@ package ethereal
 
 import java.lang as jl
 import java.io as ji
+import java.util.concurrent as juc
 
 import soundness.*
 
@@ -118,10 +119,54 @@ object Tests extends Suite(m"Ethereal Tests"):
 
               case Argument("signal") :: Nil =>
                 execute:
-                  val name = summon[Invocation].signals.stream.head match
-                    case unix: UnixSignal       => unix.shortName
-                    case windows: WindowsSignal => windows.shortName
-                  Out.print(name) yet Exit.Ok
+                  val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
+
+                  trap:
+                    case sig: UnixSignal =>
+                      received.offer(sig.shortName)
+                      SignalResponse.Accept
+
+                    case sig: WindowsSignal =>
+                      received.offer(sig.shortName)
+                      SignalResponse.Accept
+
+                  val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
+                  val text: Text = if raw == null then t"(timeout)" else raw
+                  Out.print(text) yet Exit.Ok
+
+              case Argument("trap-reject") :: Nil =>
+                execute:
+                  trap { case _: UnixSignal => SignalResponse.Reject }
+                  snooze(5*Second) yet Exit.Ok
+
+              case Argument("trap-defer") :: Nil =>
+                execute:
+                  val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
+
+                  trap:
+                    case Signal.Int =>
+                      received.offer(t"outer")
+                      SignalResponse.Accept
+
+                  trap { case _: UnixSignal => SignalResponse.Defer }
+
+                  val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
+                  val text: Text = if raw == null then t"(timeout)" else raw
+                  Out.print(text) yet Exit.Ok
+
+              case Argument("trap-undefined") :: Nil =>
+                execute:
+                  trap { case Signal.Winch => SignalResponse.Accept }
+                  snooze(5*Second) yet Exit.Ok
+
+              case Argument("trap-slow") :: Nil =>
+                execute:
+                  trap:
+                    case _: UnixSignal =>
+                      snooze(2*Second)
+                      SignalResponse.Accept
+
+                  snooze(5*Second) yet Exit.Ok
 
               case _ =>
                 execute(Exit.Fail(1))
@@ -199,7 +244,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             val proc = sh"$tool sleep 1".fork[Exit]()
             snooze(0.1*Second)
             sh"kill -TERM ${proc.pid.value}".exec[Unit]()
-            proc.await()
+            proc.await(3*Second)
             jl.System.currentTimeMillis - t0
           .assert(_ < 750L)
 
@@ -207,14 +252,14 @@ object Tests extends Suite(m"Ethereal Tests"):
             val proc = sh"$tool signal".fork[Text]()
             snooze(0.1*Second)
             sh"kill -WINCH ${proc.pid.value}".exec[Unit]()
-            proc.await()
+            proc.await(3*Second)
           . assert(_ == t"WINCH")
 
           test(m"SIGUSR1 is forwarded to the application"):
             val proc = sh"$tool signal".fork[Text]()
             snooze(0.1*Second)
             sh"kill -USR1 ${proc.pid.value}".exec[Unit]()
-            proc.await()
+            proc.await(3*Second)
 
           . assert(_ == t"USR1")
 
@@ -222,7 +267,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             val proc = sh"$tool signal".fork[Text]()
             snooze(0.1*Second)
             sh"kill -USR2 ${proc.pid.value}".exec[Unit]()
-            proc.await()
+            proc.await(3*Second)
 
           . assert(_ == t"USR2")
 
@@ -230,7 +275,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             val proc = sh"$tool signal".fork[Text]()
             snooze(0.1*Second)
             sh"kill -HUP ${proc.pid.value}".exec[Unit]()
-            proc.await()
+            proc.await(3*Second)
 
           . assert(_ == t"HUP")
 
@@ -238,9 +283,54 @@ object Tests extends Suite(m"Ethereal Tests"):
             val proc = sh"$tool signal".fork[Text]()
             snooze(0.1*Second)
             sh"kill -INT ${proc.pid.value}".exec[Unit]()
-            proc.await()
+            proc.await(3*Second)
 
           . assert(_ == t"INT")
+
+          test(m"trap returning Reject lets the launcher fall back to OS default"):
+            val proc = sh"$tool trap-reject".fork[Exit]()
+            snooze(0.1*Second)
+            sh"kill -TERM ${proc.pid.value}".exec[Unit]()
+            proc.await(3*Second)
+          . assert(_ != Exit.Ok)
+
+          test(m"Defer cascades to a previously-defined trap"):
+            val proc = sh"$tool trap-defer".fork[Text]()
+            snooze(0.1*Second)
+            sh"kill -INT ${proc.pid.value}".exec[Unit]()
+            proc.await(3*Second)
+
+          . assert(_ == t"outer")
+
+          test(m"signal not matched by any trap PF causes launcher to fall back"):
+            val proc = sh"$tool trap-undefined".fork[Exit]()
+            snooze(0.1*Second)
+            sh"kill -INT ${proc.pid.value}".exec[Unit]()
+            proc.await(3*Second)
+
+          . assert(_ != Exit.Ok)
+
+          test(m"slow handler past timeout causes launcher to fall back"):
+            val t0 = jl.System.currentTimeMillis
+            val proc = sh"$tool trap-slow".fork[Exit]()
+            snooze(0.1*Second)
+            sh"kill -TERM ${proc.pid.value}".exec[Unit]()
+            proc.await(3*Second)
+            jl.System.currentTimeMillis - t0
+
+          . assert(elapsed => elapsed > 200L && elapsed < 1500L)
+
+          test(m"WINCH with no matching trap does not kill the launcher"):
+            val proc = sh"$tool trap-undefined".fork[Exit]()
+            snooze(0.1*Second)
+            sh"kill -WINCH ${proc.pid.value}".exec[Unit]()
+            snooze(0.3*Second)
+            val alive = safely(Process(proc.pid).alive).or(false)
+            safely(sh"kill -KILL ${proc.pid.value}".exec[Unit]())
+            safely(proc.await(2*Second))
+            alive
+
+          . assert(_ == true)
 
         suite(m"State file monitoring"):
           test(m"daemon restarts after pid file is deleted"):

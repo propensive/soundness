@@ -52,8 +52,7 @@ object Terminal:
   def enablePaste: Text = t"\e[?2004h"
   def disablePaste: Text = t"\e[?2004l"
 
-case class Terminal(signals: Spool[UnixSignal | WindowsSignal])
-  ( using console: Console, monitor: Monitor, codicil: Codicil )
+case class Terminal()(using console: Console, monitor: Monitor, codicil: Codicil)
 extends Interactivity[TerminalEvent]:
 
   export console.stdio.{in, out, err}
@@ -84,14 +83,15 @@ extends Interactivity[TerminalEvent]:
 
   def eventStream(): Stream[TerminalEvent] = events.stream
 
-  val pumpSignals: Daemon = daemon:
-    signals.stream.each:
-      case Signal.Winch =>
-        out.print(Terminal.reportSize)
-        events.put(Signal.Winch)
+  console.trap:
+    case Signal.Winch =>
+      out.print(Terminal.reportSize)
+      events.put(Signal.Winch)
+      SignalResponse.Accept
 
-      case signal =>
-        events.put(signal)
+    case signal =>
+      events.put(signal)
+      SignalResponse.Accept
 
   private def dark(red: Int, green: Int, blue: Int): Boolean =
     (0.299*red + 0.587*green + 0.114*blue) < 32768
