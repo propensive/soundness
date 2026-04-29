@@ -1051,7 +1051,7 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"civilian format at midnight"):
         import timeFormats.civilian
         midnight.show
-      . assert(_ == t"00:00 AM")
+      . assert(_ == t"12:00 AM")
 
       test(m"associatedPress format"):
         import timeFormats.associatedPress
