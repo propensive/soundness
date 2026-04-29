@@ -1,0 +1,1304 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="120mm"
+   height="120mm"
+   viewBox="0 0 120 120"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="logo.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#111111"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="true"
+     inkscape:zoom="1.1893044"
+     inkscape:cx="321.19615"
+     inkscape:cy="300.59588"
+     inkscape:window-width="1768"
+     inkscape:window-height="2981"
+     inkscape:window-x="0"
+     inkscape:window-y="17"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid132"
+       dotted="true"
+       originx="-20.000001"
+       originy="-49.999993" />
+  </sodipodi:namedview>
+  <defs
+     id="defs2">
+    <filter
+       inkscape:label="Soft Colors"
+       inkscape:menu="Color"
+       inkscape:menu-tooltip="Adds a colorizable edges glow inside objects and pictures"
+       style="color-interpolation-filters:sRGB"
+       id="filter995"
+       x="-0.15"
+       y="-0.15"
+       width="1.3"
+       height="1.3">
+      <feColorMatrix
+         type="saturate"
+         values="1"
+         result="result91"
+         id="feColorMatrix975" />
+      <feComposite
+         in2="result91"
+         result="result15"
+         operator="arithmetic"
+         k2="0.4"
+         k1="0.3"
+         k3="0.3"
+         id="feComposite977"
+         k4="0" />
+      <feGaussianBlur
+         in="result15"
+         result="result8"
+         stdDeviation="5"
+         id="feGaussianBlur979" />
+      <feColorMatrix
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 50 0 "
+         id="feColorMatrix981" />
+      <feComposite
+         in2="SourceGraphic"
+         operator="in"
+         result="result13"
+         id="feComposite983" />
+      <feComposite
+         in2="result13"
+         k3="0.3"
+         k1="0.3"
+         k2="0.4"
+         operator="arithmetic"
+         in="result15"
+         result="result6"
+         id="feComposite985"
+         k4="0" />
+      <feFlood
+         flood-color="rgb(128,172,0)"
+         flood-opacity="1"
+         result="result10"
+         id="feFlood987" />
+      <feBlend
+         in2="result10"
+         result="result12"
+         in="result6"
+         mode="darken"
+         id="feBlend989" />
+      <feBlend
+         in2="result6"
+         result="result14"
+         mode="screen"
+         id="feBlend991" />
+      <feComposite
+         in2="SourceGraphic"
+         in="result14"
+         operator="in"
+         id="feComposite993" />
+    </filter>
+    <filter
+       inkscape:label="Soft Colors"
+       inkscape:menu="Color"
+       inkscape:menu-tooltip="Adds a colorizable edges glow inside objects and pictures"
+       style="color-interpolation-filters:sRGB"
+       id="filter1017"
+       x="-0.1"
+       y="-0.1"
+       width="1.2"
+       height="1.2">
+      <feColorMatrix
+         type="saturate"
+         values="1"
+         result="result91"
+         id="feColorMatrix997" />
+      <feComposite
+         in2="result91"
+         result="result15"
+         operator="arithmetic"
+         k2="0.4"
+         k1="0.3"
+         k3="0.3"
+         id="feComposite999"
+         k4="0" />
+      <feGaussianBlur
+         in="result15"
+         result="result8"
+         stdDeviation="5"
+         id="feGaussianBlur1001" />
+      <feColorMatrix
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 50 0 "
+         id="feColorMatrix1003" />
+      <feComposite
+         in2="SourceGraphic"
+         operator="in"
+         result="result13"
+         id="feComposite1005" />
+      <feComposite
+         in2="result13"
+         k3="0.3"
+         k1="0.3"
+         k2="0.4"
+         operator="arithmetic"
+         in="result15"
+         result="result6"
+         id="feComposite1007"
+         k4="0" />
+      <feFlood
+         flood-color="rgb(128,172,0)"
+         flood-opacity="1"
+         result="result10"
+         id="feFlood1009" />
+      <feBlend
+         in2="result10"
+         result="result12"
+         in="result6"
+         mode="darken"
+         id="feBlend1011" />
+      <feBlend
+         in2="result6"
+         result="result14"
+         mode="screen"
+         id="feBlend1013" />
+      <feComposite
+         in2="SourceGraphic"
+         in="result14"
+         operator="in"
+         id="feComposite1015" />
+    </filter>
+    <filter
+       inkscape:label="Soft Colors"
+       inkscape:menu="Color"
+       inkscape:menu-tooltip="Adds a colorizable edges glow inside objects and pictures"
+       style="color-interpolation-filters:sRGB"
+       id="filter1039"
+       x="-0.1"
+       y="-0.1"
+       width="1.2"
+       height="1.2">
+      <feColorMatrix
+         type="saturate"
+         values="1"
+         result="result91"
+         id="feColorMatrix1019" />
+      <feComposite
+         in2="result91"
+         result="result15"
+         operator="arithmetic"
+         k2="0.4"
+         k1="0.3"
+         k3="0.3"
+         id="feComposite1021"
+         k4="0" />
+      <feGaussianBlur
+         in="result15"
+         result="result8"
+         stdDeviation="5"
+         id="feGaussianBlur1023" />
+      <feColorMatrix
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 50 0 "
+         id="feColorMatrix1025" />
+      <feComposite
+         in2="SourceGraphic"
+         operator="in"
+         result="result13"
+         id="feComposite1027" />
+      <feComposite
+         in2="result13"
+         k3="0.3"
+         k1="0.3"
+         k2="0.4"
+         operator="arithmetic"
+         in="result15"
+         result="result6"
+         id="feComposite1029"
+         k4="0" />
+      <feFlood
+         flood-color="rgb(128,172,0)"
+         flood-opacity="1"
+         result="result10"
+         id="feFlood1031" />
+      <feBlend
+         in2="result10"
+         result="result12"
+         in="result6"
+         mode="darken"
+         id="feBlend1033" />
+      <feBlend
+         in2="result6"
+         result="result14"
+         mode="screen"
+         id="feBlend1035" />
+      <feComposite
+         in2="SourceGraphic"
+         in="result14"
+         operator="in"
+         id="feComposite1037" />
+    </filter>
+    <filter
+       inkscape:label="Soft Colors"
+       inkscape:menu="Color"
+       inkscape:menu-tooltip="Adds a colorizable edges glow inside objects and pictures"
+       style="color-interpolation-filters:sRGB"
+       id="filter1061"
+       x="-0.1"
+       y="-0.1"
+       width="1.2"
+       height="1.2">
+      <feColorMatrix
+         type="saturate"
+         values="1"
+         result="result91"
+         id="feColorMatrix1041" />
+      <feComposite
+         in2="result91"
+         result="result15"
+         operator="arithmetic"
+         k2="0.4"
+         k1="0.3"
+         k3="0.3"
+         id="feComposite1043"
+         k4="0" />
+      <feGaussianBlur
+         in="result15"
+         result="result8"
+         stdDeviation="5"
+         id="feGaussianBlur1045" />
+      <feColorMatrix
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 50 0 "
+         id="feColorMatrix1047" />
+      <feComposite
+         in2="SourceGraphic"
+         operator="in"
+         result="result13"
+         id="feComposite1049" />
+      <feComposite
+         in2="result13"
+         k3="0.3"
+         k1="0.3"
+         k2="0.4"
+         operator="arithmetic"
+         in="result15"
+         result="result6"
+         id="feComposite1051"
+         k4="0" />
+      <feFlood
+         flood-color="rgb(128,172,0)"
+         flood-opacity="1"
+         result="result10"
+         id="feFlood1053" />
+      <feBlend
+         in2="result10"
+         result="result12"
+         in="result6"
+         mode="darken"
+         id="feBlend1055" />
+      <feBlend
+         in2="result6"
+         result="result14"
+         mode="screen"
+         id="feBlend1057" />
+      <feComposite
+         in2="SourceGraphic"
+         in="result14"
+         operator="in"
+         id="feComposite1059" />
+    </filter>
+    <filter
+       inkscape:label="Soft Colors"
+       inkscape:menu="Color"
+       inkscape:menu-tooltip="Adds a colorizable edges glow inside objects and pictures"
+       style="color-interpolation-filters:sRGB"
+       id="filter1083"
+       x="-0.1"
+       y="-0.1"
+       width="1.2"
+       height="1.2">
+      <feColorMatrix
+         type="saturate"
+         values="1"
+         result="result91"
+         id="feColorMatrix1063" />
+      <feComposite
+         in2="result91"
+         result="result15"
+         operator="arithmetic"
+         k2="0.4"
+         k1="0.3"
+         k3="0.3"
+         id="feComposite1065"
+         k4="0" />
+      <feGaussianBlur
+         in="result15"
+         result="result8"
+         stdDeviation="5"
+         id="feGaussianBlur1067" />
+      <feColorMatrix
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 50 0 "
+         id="feColorMatrix1069" />
+      <feComposite
+         in2="SourceGraphic"
+         operator="in"
+         result="result13"
+         id="feComposite1071" />
+      <feComposite
+         in2="result13"
+         k3="0.3"
+         k1="0.3"
+         k2="0.4"
+         operator="arithmetic"
+         in="result15"
+         result="result6"
+         id="feComposite1073"
+         k4="0" />
+      <feFlood
+         flood-color="rgb(128,172,0)"
+         flood-opacity="1"
+         result="result10"
+         id="feFlood1075" />
+      <feBlend
+         in2="result10"
+         result="result12"
+         in="result6"
+         mode="darken"
+         id="feBlend1077" />
+      <feBlend
+         in2="result6"
+         result="result14"
+         mode="screen"
+         id="feBlend1079" />
+      <feComposite
+         in2="SourceGraphic"
+         in="result14"
+         operator="in"
+         id="feComposite1081" />
+    </filter>
+    <filter
+       inkscape:label="Soft Colors"
+       inkscape:menu="Color"
+       inkscape:menu-tooltip="Adds a colorizable edges glow inside objects and pictures"
+       style="color-interpolation-filters:sRGB"
+       id="filter1105"
+       x="-0.3"
+       y="-0.3"
+       width="1.6"
+       height="1.6">
+      <feColorMatrix
+         type="saturate"
+         values="1"
+         result="result91"
+         id="feColorMatrix1085" />
+      <feComposite
+         in2="result91"
+         result="result15"
+         operator="arithmetic"
+         k2="0.4"
+         k1="0.3"
+         k3="0.3"
+         id="feComposite1087"
+         k4="0" />
+      <feGaussianBlur
+         in="result15"
+         result="result8"
+         stdDeviation="5"
+         id="feGaussianBlur1089" />
+      <feColorMatrix
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 50 0 "
+         id="feColorMatrix1091" />
+      <feComposite
+         in2="SourceGraphic"
+         operator="in"
+         result="result13"
+         id="feComposite1093" />
+      <feComposite
+         in2="result13"
+         k3="0.3"
+         k1="0.3"
+         k2="0.4"
+         operator="arithmetic"
+         in="result15"
+         result="result6"
+         id="feComposite1095"
+         k4="0" />
+      <feFlood
+         flood-color="rgb(128,172,0)"
+         flood-opacity="1"
+         result="result10"
+         id="feFlood1097" />
+      <feBlend
+         in2="result10"
+         result="result12"
+         in="result6"
+         mode="darken"
+         id="feBlend1099" />
+      <feBlend
+         in2="result6"
+         result="result14"
+         mode="screen"
+         id="feBlend1101" />
+      <feComposite
+         in2="SourceGraphic"
+         in="result14"
+         operator="in"
+         id="feComposite1103" />
+    </filter>
+    <filter
+       inkscape:label="Soft Colors"
+       inkscape:menu="Color"
+       inkscape:menu-tooltip="Adds a colorizable edges glow inside objects and pictures"
+       style="color-interpolation-filters:sRGB"
+       id="filter1127"
+       x="-0.6"
+       y="-0.60000011"
+       width="2.2"
+       height="2.2000002">
+      <feColorMatrix
+         type="saturate"
+         values="1"
+         result="result91"
+         id="feColorMatrix1107" />
+      <feComposite
+         in2="result91"
+         result="result15"
+         operator="arithmetic"
+         k2="0.4"
+         k1="0.3"
+         k3="0.3"
+         id="feComposite1109"
+         k4="0" />
+      <feGaussianBlur
+         in="result15"
+         result="result8"
+         stdDeviation="5"
+         id="feGaussianBlur1111" />
+      <feColorMatrix
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 50 0 "
+         id="feColorMatrix1113" />
+      <feComposite
+         in2="SourceGraphic"
+         operator="in"
+         result="result13"
+         id="feComposite1115" />
+      <feComposite
+         in2="result13"
+         k3="0.3"
+         k1="0.3"
+         k2="0.4"
+         operator="arithmetic"
+         in="result15"
+         result="result6"
+         id="feComposite1117"
+         k4="0" />
+      <feFlood
+         flood-color="rgb(128,172,0)"
+         flood-opacity="1"
+         result="result10"
+         id="feFlood1119" />
+      <feBlend
+         in2="result10"
+         result="result12"
+         in="result6"
+         mode="darken"
+         id="feBlend1121" />
+      <feBlend
+         in2="result6"
+         result="result14"
+         mode="screen"
+         id="feBlend1123" />
+      <feComposite
+         in2="SourceGraphic"
+         in="result14"
+         operator="in"
+         id="feComposite1125" />
+    </filter>
+    <filter
+       inkscape:label="Soft Colors"
+       inkscape:menu="Color"
+       inkscape:menu-tooltip="Adds a colorizable edges glow inside objects and pictures"
+       style="color-interpolation-filters:sRGB"
+       id="filter1061-7"
+       x="-0.1"
+       y="-0.1"
+       width="1.2"
+       height="1.2">
+      <feColorMatrix
+         type="saturate"
+         values="1"
+         result="result91"
+         id="feColorMatrix1041-5" />
+      <feComposite
+         in2="result91"
+         result="result15"
+         operator="arithmetic"
+         k2="0.4"
+         k1="0.3"
+         k3="0.3"
+         id="feComposite1043-9"
+         k4="0" />
+      <feGaussianBlur
+         in="result15"
+         result="result8"
+         stdDeviation="5"
+         id="feGaussianBlur1045-2" />
+      <feColorMatrix
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 50 0 "
+         id="feColorMatrix1047-2" />
+      <feComposite
+         in2="SourceGraphic"
+         operator="in"
+         result="result13"
+         id="feComposite1049-8" />
+      <feComposite
+         in2="result13"
+         k3="0.3"
+         k1="0.3"
+         k2="0.4"
+         operator="arithmetic"
+         in="result15"
+         result="result6"
+         id="feComposite1051-9"
+         k4="0" />
+      <feFlood
+         flood-color="rgb(128,172,0)"
+         flood-opacity="1"
+         result="result10"
+         id="feFlood1053-7" />
+      <feBlend
+         in2="result10"
+         result="result12"
+         in="result6"
+         mode="darken"
+         id="feBlend1055-3" />
+      <feBlend
+         in2="result6"
+         result="result14"
+         mode="screen"
+         id="feBlend1057-6" />
+      <feComposite
+         in2="SourceGraphic"
+         in="result14"
+         operator="in"
+         id="feComposite1059-1" />
+    </filter>
+    <filter
+       inkscape:label="Soft Colors"
+       inkscape:menu="Color"
+       inkscape:menu-tooltip="Adds a colorizable edges glow inside objects and pictures"
+       style="color-interpolation-filters:sRGB"
+       id="filter1017-2"
+       x="-0.1"
+       y="-0.1"
+       width="1.2"
+       height="1.2">
+      <feColorMatrix
+         type="saturate"
+         values="1"
+         result="result91"
+         id="feColorMatrix997-9" />
+      <feComposite
+         in2="result91"
+         result="result15"
+         operator="arithmetic"
+         k2="0.4"
+         k1="0.3"
+         k3="0.3"
+         id="feComposite999-3"
+         k4="0" />
+      <feGaussianBlur
+         in="result15"
+         result="result8"
+         stdDeviation="5"
+         id="feGaussianBlur1001-1" />
+      <feColorMatrix
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 50 0 "
+         id="feColorMatrix1003-9" />
+      <feComposite
+         in2="SourceGraphic"
+         operator="in"
+         result="result13"
+         id="feComposite1005-4" />
+      <feComposite
+         in2="result13"
+         k3="0.3"
+         k1="0.3"
+         k2="0.4"
+         operator="arithmetic"
+         in="result15"
+         result="result6"
+         id="feComposite1007-7"
+         k4="0" />
+      <feFlood
+         flood-color="rgb(128,172,0)"
+         flood-opacity="1"
+         result="result10"
+         id="feFlood1009-8" />
+      <feBlend
+         in2="result10"
+         result="result12"
+         in="result6"
+         mode="darken"
+         id="feBlend1011-4" />
+      <feBlend
+         in2="result6"
+         result="result14"
+         mode="screen"
+         id="feBlend1013-5" />
+      <feComposite
+         in2="SourceGraphic"
+         in="result14"
+         operator="in"
+         id="feComposite1015-0" />
+    </filter>
+    <filter
+       inkscape:label="Soft Colors"
+       inkscape:menu="Color"
+       inkscape:menu-tooltip="Adds a colorizable edges glow inside objects and pictures"
+       style="color-interpolation-filters:sRGB"
+       id="filter1083-3"
+       x="-0.1"
+       y="-0.1"
+       width="1.2"
+       height="1.2">
+      <feColorMatrix
+         type="saturate"
+         values="1"
+         result="result91"
+         id="feColorMatrix1063-6" />
+      <feComposite
+         in2="result91"
+         result="result15"
+         operator="arithmetic"
+         k2="0.4"
+         k1="0.3"
+         k3="0.3"
+         id="feComposite1065-1"
+         k4="0" />
+      <feGaussianBlur
+         in="result15"
+         result="result8"
+         stdDeviation="5"
+         id="feGaussianBlur1067-0" />
+      <feColorMatrix
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 50 0 "
+         id="feColorMatrix1069-6" />
+      <feComposite
+         in2="SourceGraphic"
+         operator="in"
+         result="result13"
+         id="feComposite1071-3" />
+      <feComposite
+         in2="result13"
+         k3="0.3"
+         k1="0.3"
+         k2="0.4"
+         operator="arithmetic"
+         in="result15"
+         result="result6"
+         id="feComposite1073-2"
+         k4="0" />
+      <feFlood
+         flood-color="rgb(128,172,0)"
+         flood-opacity="1"
+         result="result10"
+         id="feFlood1075-0" />
+      <feBlend
+         in2="result10"
+         result="result12"
+         in="result6"
+         mode="darken"
+         id="feBlend1077-6" />
+      <feBlend
+         in2="result6"
+         result="result14"
+         mode="screen"
+         id="feBlend1079-1" />
+      <feComposite
+         in2="SourceGraphic"
+         in="result14"
+         operator="in"
+         id="feComposite1081-5" />
+    </filter>
+    <filter
+       inkscape:label="Soft Colors"
+       inkscape:menu="Color"
+       inkscape:menu-tooltip="Adds a colorizable edges glow inside objects and pictures"
+       style="color-interpolation-filters:sRGB"
+       id="filter1039-5"
+       x="-0.1"
+       y="-0.1"
+       width="1.2"
+       height="1.2">
+      <feColorMatrix
+         type="saturate"
+         values="1"
+         result="result91"
+         id="feColorMatrix1019-4" />
+      <feComposite
+         in2="result91"
+         result="result15"
+         operator="arithmetic"
+         k2="0.4"
+         k1="0.3"
+         k3="0.3"
+         id="feComposite1021-7"
+         k4="0" />
+      <feGaussianBlur
+         in="result15"
+         result="result8"
+         stdDeviation="5"
+         id="feGaussianBlur1023-6" />
+      <feColorMatrix
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 50 0 "
+         id="feColorMatrix1025-5" />
+      <feComposite
+         in2="SourceGraphic"
+         operator="in"
+         result="result13"
+         id="feComposite1027-6" />
+      <feComposite
+         in2="result13"
+         k3="0.3"
+         k1="0.3"
+         k2="0.4"
+         operator="arithmetic"
+         in="result15"
+         result="result6"
+         id="feComposite1029-9"
+         k4="0" />
+      <feFlood
+         flood-color="rgb(128,172,0)"
+         flood-opacity="1"
+         result="result10"
+         id="feFlood1031-3" />
+      <feBlend
+         in2="result10"
+         result="result12"
+         in="result6"
+         mode="darken"
+         id="feBlend1033-7" />
+      <feBlend
+         in2="result6"
+         result="result14"
+         mode="screen"
+         id="feBlend1035-4" />
+      <feComposite
+         in2="SourceGraphic"
+         in="result14"
+         operator="in"
+         id="feComposite1037-5" />
+    </filter>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1825">
+      <g
+         id="g1829">
+        <circle
+           style="opacity:0.0928021;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+           id="circle1827"
+           cx="80"
+           cy="109.99999"
+           r="40" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1831">
+      <g
+         id="g1835">
+        <circle
+           style="opacity:0.0928021;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+           id="circle1833"
+           cx="80"
+           cy="109.99999"
+           r="40" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1837">
+      <g
+         id="g1841">
+        <circle
+           style="opacity:0.0928021;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+           id="circle1839"
+           cx="80"
+           cy="109.99999"
+           r="40" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1843">
+      <g
+         id="g1847">
+        <circle
+           style="opacity:0.0928021;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+           id="circle1845"
+           cx="80"
+           cy="109.99999"
+           r="40" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1849">
+      <g
+         id="g1853">
+        <circle
+           style="opacity:0.0928021;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+           id="circle1851"
+           cx="80"
+           cy="109.99999"
+           r="40" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1855">
+      <g
+         id="g1859">
+        <circle
+           style="opacity:0.0928021;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+           id="circle1857"
+           cx="80"
+           cy="109.99999"
+           r="40" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1861">
+      <g
+         id="g1865">
+        <circle
+           style="opacity:0.0928021;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+           id="circle1863"
+           cx="80"
+           cy="109.99999"
+           r="40" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1867">
+      <g
+         id="g1871">
+        <circle
+           style="opacity:0.0928021;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+           id="circle1869"
+           cx="80"
+           cy="109.99999"
+           r="40" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1873">
+      <g
+         id="g1877">
+        <circle
+           style="opacity:0.0928021;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+           id="circle1875"
+           cx="80"
+           cy="109.99999"
+           r="40" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1879">
+      <g
+         id="g1883">
+        <circle
+           style="opacity:0.0928021;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+           id="circle1881"
+           cx="80"
+           cy="109.99999"
+           r="40" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1885">
+      <g
+         id="g1889">
+        <circle
+           style="opacity:0.0928021;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+           id="circle1887"
+           cx="80"
+           cy="109.99999"
+           r="40" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1831-7">
+      <g
+         id="g1835-1">
+        <circle
+           style="opacity:0.0928021;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+           id="circle1833-1"
+           cx="80"
+           cy="109.99999"
+           r="40" />
+      </g>
+    </clipPath>
+    <filter
+       inkscape:label="Soft Colors"
+       inkscape:menu="Color"
+       inkscape:menu-tooltip="Adds a colorizable edges glow inside objects and pictures"
+       style="color-interpolation-filters:sRGB"
+       id="filter1105-5"
+       x="-0.3"
+       y="-0.3"
+       width="1.6"
+       height="1.6">
+      <feColorMatrix
+         type="saturate"
+         values="1"
+         result="result91"
+         id="feColorMatrix1085-9" />
+      <feComposite
+         in2="result91"
+         result="result15"
+         operator="arithmetic"
+         k2="0.4"
+         k1="0.3"
+         k3="0.3"
+         id="feComposite1087-7"
+         k4="0" />
+      <feGaussianBlur
+         in="result15"
+         result="result8"
+         stdDeviation="5"
+         id="feGaussianBlur1089-7" />
+      <feColorMatrix
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 50 0 "
+         id="feColorMatrix1091-6" />
+      <feComposite
+         in2="SourceGraphic"
+         operator="in"
+         result="result13"
+         id="feComposite1093-7" />
+      <feComposite
+         in2="result13"
+         k3="0.3"
+         k1="0.3"
+         k2="0.4"
+         operator="arithmetic"
+         in="result15"
+         result="result6"
+         id="feComposite1095-3"
+         k4="0" />
+      <feFlood
+         flood-color="rgb(128,172,0)"
+         flood-opacity="1"
+         result="result10"
+         id="feFlood1097-6" />
+      <feBlend
+         in2="result10"
+         result="result12"
+         in="result6"
+         mode="darken"
+         id="feBlend1099-5" />
+      <feBlend
+         in2="result6"
+         result="result14"
+         mode="screen"
+         id="feBlend1101-6" />
+      <feComposite
+         in2="SourceGraphic"
+         in="result14"
+         operator="in"
+         id="feComposite1103-3" />
+    </filter>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2005">
+      <g
+         id="g2009"
+         transform="matrix(0.66666667,0,0,0.66666667,26.666667,36.666664)">
+        <circle
+           style="opacity:0.152373;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0225;stroke-opacity:1;stop-color:#000000"
+           id="circle2007"
+           cx="80"
+           cy="109.99999"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2011">
+      <g
+         id="g2015"
+         transform="matrix(0.42666667,0,0,0.42666669,45.866667,63.066652)">
+        <circle
+           style="opacity:0.152373;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0225;stroke-opacity:1;stop-color:#000000"
+           id="circle2013"
+           cx="80"
+           cy="109.99999"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2017">
+      <g
+         id="g2021"
+         transform="matrix(0.66666667,0,0,0.66666667,26.666667,36.666664)">
+        <circle
+           style="opacity:0.152373;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0225;stroke-opacity:1;stop-color:#000000"
+           id="circle2019"
+           cx="80"
+           cy="109.99999"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2023">
+      <g
+         id="g2027"
+         transform="matrix(0.66666667,0,0,0.66666667,26.666667,36.666664)">
+        <circle
+           style="opacity:0.152373;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0225;stroke-opacity:1;stop-color:#000000"
+           id="circle2025"
+           cx="80"
+           cy="109.99999"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2029">
+      <g
+         id="g2033"
+         transform="matrix(0.66666667,0,0,0.66666667,26.666667,36.666664)">
+        <circle
+           style="opacity:0.152373;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0225;stroke-opacity:1;stop-color:#000000"
+           id="circle2031"
+           cx="80"
+           cy="109.99999"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2035">
+      <g
+         id="g2039"
+         transform="matrix(0.66666667,0,0,0.66666667,26.666667,36.666664)">
+        <circle
+           style="opacity:0.152373;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0225;stroke-opacity:1;stop-color:#000000"
+           id="circle2037"
+           cx="80"
+           cy="109.99999"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2041">
+      <g
+         id="g2045"
+         transform="matrix(0.66666667,0,0,0.66666667,26.666667,36.666664)">
+        <circle
+           style="opacity:0.152373;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0225;stroke-opacity:1;stop-color:#000000"
+           id="circle2043"
+           cx="80"
+           cy="109.99999"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2047">
+      <g
+         id="g2051"
+         transform="matrix(0.66666667,0,0,0.66666667,26.666667,36.666664)">
+        <circle
+           style="opacity:0.152373;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0225;stroke-opacity:1;stop-color:#000000"
+           id="circle2049"
+           cx="80"
+           cy="109.99999"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2053">
+      <g
+         id="g2057"
+         transform="matrix(0.66666667,0,0,0.66666667,26.666667,36.666664)">
+        <circle
+           style="opacity:0.152373;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0225;stroke-opacity:1;stop-color:#000000"
+           id="circle2055"
+           cx="80"
+           cy="109.99999"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2059">
+      <g
+         id="g2063"
+         transform="matrix(0.66666667,0,0,0.66666667,26.666667,36.666664)">
+        <circle
+           style="opacity:0.152373;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0225;stroke-opacity:1;stop-color:#000000"
+           id="circle2061"
+           cx="80"
+           cy="109.99999"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2065">
+      <g
+         id="g2069"
+         transform="matrix(0.66666667,0,0,0.66666667,26.666667,36.666664)">
+        <circle
+           style="opacity:0.152373;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0225;stroke-opacity:1;stop-color:#000000"
+           id="circle2067"
+           cx="80"
+           cy="109.99999"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2071">
+      <g
+         id="g2075"
+         transform="matrix(0.66666667,0,0,0.66666667,26.666667,36.666664)">
+        <circle
+           style="opacity:0.152373;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0225;stroke-opacity:1;stop-color:#000000"
+           id="circle2073"
+           cx="80"
+           cy="109.99999"
+           r="60" />
+      </g>
+    </clipPath>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-20.000001,-49.999992)">
+    <g
+       id="g2089">
+      <circle
+         style="mix-blend-mode:normal;fill:#00b2b2;fill-opacity:1;stroke-width:0.015;filter:url(#filter995);stop-color:#000000"
+         id="path236"
+         cx="80"
+         cy="109.99999"
+         r="40"
+         clip-path="url(#clipPath2071)"
+         transform="matrix(1.5,0,0,1.5,-40,-54.999996)" />
+      <circle
+         style="opacity:0.327458;mix-blend-mode:normal;fill:#feff00;fill-opacity:1;stroke-width:0.015;filter:url(#filter1017);stop-color:#000000"
+         id="path238"
+         cx="80"
+         cy="150"
+         r="60"
+         clip-path="url(#clipPath2065)"
+         transform="matrix(1.5,0,0,1.5,-40,-54.999996)" />
+      <circle
+         style="opacity:0.456358;mix-blend-mode:normal;fill:#88eeff;fill-opacity:1;stroke-width:0.015;filter:url(#filter1039);stop-color:#000000"
+         id="path238-3"
+         cx="80"
+         cy="60"
+         r="60"
+         clip-path="url(#clipPath2059)"
+         transform="matrix(1.5,0,0,1.5,-40,-54.999996)" />
+      <circle
+         style="opacity:0.500229;mix-blend-mode:normal;fill:#ebff88;fill-opacity:1;stroke-width:0.015;filter:url(#filter1061);stop-color:#000000"
+         id="path238-6"
+         cx="80"
+         cy="160"
+         r="60"
+         clip-path="url(#clipPath2053)"
+         transform="matrix(1.5,0,0,1.5,-40,-54.999996)" />
+      <circle
+         style="opacity:0.327458;mix-blend-mode:normal;fill:#00d5f9;fill-opacity:1;stroke-width:0.015;filter:url(#filter1083);stop-color:#000000"
+         id="path238-3-7"
+         cx="80"
+         cy="70"
+         r="60"
+         clip-path="url(#clipPath2047)"
+         transform="matrix(1.5,0,0,1.5,-40,-54.999996)" />
+      <circle
+         style="opacity:0.0928021;mix-blend-mode:normal;fill:#feff00;fill-opacity:1;stroke-width:0.015;filter:url(#filter1017-2);stop-color:#000000"
+         id="path238-2"
+         cx="80"
+         cy="150"
+         r="60"
+         clip-path="url(#clipPath2041)"
+         transform="matrix(1.5,0,0,1.5,-40,-54.999996)" />
+      <circle
+         style="opacity:0.456358;mix-blend-mode:normal;fill:#88eeff;fill-opacity:1;stroke-width:0.015;filter:url(#filter1039-5);stop-color:#000000"
+         id="path238-3-5"
+         cx="80"
+         cy="60"
+         r="60"
+         clip-path="url(#clipPath2035)"
+         transform="matrix(1.5,0,0,1.5,-40,-54.999996)" />
+      <circle
+         style="opacity:0.340368;mix-blend-mode:normal;fill:#ebff88;fill-opacity:1;stroke-width:0.015;filter:url(#filter1061-7);stop-color:#000000"
+         id="path238-6-4"
+         cx="80"
+         cy="160"
+         r="60"
+         clip-path="url(#clipPath2029)"
+         transform="matrix(1.5,0,0,1.5,-40,-54.999996)" />
+      <circle
+         style="opacity:0.0127481;mix-blend-mode:normal;fill:#00d5f9;fill-opacity:1;stroke-width:0.015;filter:url(#filter1083-3);stop-color:#000000"
+         id="path238-3-7-7"
+         cx="80"
+         cy="70"
+         r="60"
+         clip-path="url(#clipPath2023)"
+         transform="matrix(1.5,0,0,1.5,-40,-54.999996)" />
+      <circle
+         style="opacity:0.573559;mix-blend-mode:normal;fill:#ffffff;fill-opacity:1;stroke-width:0.015;filter:url(#filter1105);stop-color:#000000"
+         id="path370"
+         cx="80"
+         cy="109.99999"
+         r="20"
+         clip-path="url(#clipPath2017)"
+         transform="matrix(1.5,0,0,1.5,-40,-54.999996)" />
+      <circle
+         style="opacity:0.231263;mix-blend-mode:normal;fill:#00795a;fill-opacity:0.353801;stroke-width:0.015;filter:url(#filter1105-5);stop-color:#000000"
+         id="path370-9"
+         cx="80"
+         cy="109.99999"
+         r="20"
+         clip-path="url(#clipPath2011)"
+         transform="matrix(2.34375,0,0,2.3437499,-107.5,-147.81246)" />
+      <ellipse
+         style="mix-blend-mode:normal;fill:#0f104c;fill-opacity:1;stroke-width:0.0075;filter:url(#filter1127);stop-color:#000000"
+         id="path370-5"
+         cx="80"
+         cy="110"
+         rx="10"
+         ry="9.9999981"
+         clip-path="url(#clipPath2005)"
+         transform="matrix(1.5,0,0,1.5,-40,-54.999996)" />
+    </g>
+  </g>
+</svg>

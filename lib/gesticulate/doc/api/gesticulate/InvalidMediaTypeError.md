@@ -1,0 +1,1 @@
+exception that is thrown when attempting to parse a `:Text` value which does not represent a valid media type

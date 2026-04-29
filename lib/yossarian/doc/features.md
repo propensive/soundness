@@ -1,0 +1,5 @@
+- interprets ANSI control sequences, notably CSI and SGR codes
+- terminals of any dimensions can be emulated
+- the graphic rendition of each character cell is tracked independently
+- hyperlinks are also tracked for each cell
+- take snapshots of the terminal

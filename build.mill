@@ -1,0 +1,1122 @@
+//| mill-version: 1.1.5
+//| mill-jvm-version: temurin:25
+//| mill-jvm-opts: ["-XX:NonProfiledCodeHeapSize=250m", "-XX:ReservedCodeCacheSize=500m"]
+
+                                                                                                  /*
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                  ┃
+┃                                                   ╭───╮                                          ┃
+┃                                                   │   │                                          ┃
+┃                                                   │   │                                          ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
+┃                                                                                                  ┃
+┃    Soundness, version 0.54.0.                                                                    ┃
+┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
+┃                                                                                                  ┃
+┃    The primary distribution site is:                                                             ┃
+┃                                                                                                  ┃
+┃        https://soundness.dev/                                                                    ┃
+┃                                                                                                  ┃
+┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
+┃    except in compliance with the License. You may obtain a copy of the License at                ┃
+┃                                                                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
+┃                                                                                                  ┃
+┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
+┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
+┃    either express or implied. See the License for the specific language governing permissions    ┃
+┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                                                                                  */
+package build
+
+import mill.*
+import mill.api.Result
+import scalalib.*
+import publish.*
+import os.Path
+
+object settings:
+  val scalaVersion = "3.8.2"
+  val scalaOptions = Seq(
+    "-experimental",
+    "-new-syntax",
+    "-feature",
+    "-preview",
+    //"-explain",
+    "-deprecation",
+    "-Wunused:imports,privates",
+    "-Wimplausible-patterns",
+    // "-Wsafe-init",
+    "-Xmax-inlines", "32",
+    //"-Ycc-new",
+    "-Yno-flexible-types",
+    "-Yexplicit-nulls",
+    "-Ycheck-all-patmat",
+    // "-explain-cyclic",
+    "-language:experimental.modularity",
+    "-language:experimental.dependent",
+    "-language:experimental.relaxedLambdaSyntax",
+    "-language:experimental.genericNumberLiterals",
+    "-language:experimental.into",
+    "-language:experimental.erasedDefinitions",
+    //"-language:experimental.packageObjectValues",
+    "-language:implicitConversions",
+    "-language:experimental.saferExceptions",
+    "-language:experimental.strictEqualityPatternMatching",
+    "-language:experimental.subCases",
+    "-language:experimental.multiSpreads"
+  )
+
+  val scalaOptionsCC = scalaOptions ++ Seq("-Ycc-new")
+
+trait BaseScalaModule extends ScalaModule:
+  override def scalaVersion = settings.scalaVersion
+  override def scalacOptions = settings.scalaOptions
+  def consoleScalacOptions = scalacOptions()
+
+  def publishVersion = Task:
+    try
+      val lastTagged = os.proc("git", "rev-list", "--tags", "--max-count", "1").call().out.text().trim
+      os.proc("git", "describe", "--tags", lastTagged).call().out.text().trim
+    catch case error: Exception => "unknown"
+
+  override def docJar = Task:
+    val jar = Task.dest / "empty.jar"
+    val zos = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(jar.toIO))
+    zos.close()
+    PathRef(jar)
+
+  def artifactSuffix = Task("")
+  def pomSettings = Task(PomSettings(
+    description = "soundness-all",
+    organization = "dev.soundness",
+    url = "https://soundness.dev/",
+    licenses = Seq(License.`Apache-2.0`),
+    versionControl = VersionControl.github("propensive", "soundness"),
+    developers = Seq(Developer("propensive", "Jon Pretty", "https://github.com/propensive"))
+  ))
+
+trait Library extends Module:
+  def moduleDir = super.moduleDir / ".." / "lib" / super.moduleDir.last / "src"
+
+trait BareComponent(dependencies: PublishModule*)
+extends BaseScalaModule, SonatypeCentralPublishModule:
+  def moduleId: String = moduleDir.last
+  def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def sources = Task.Sources(moduleDir)
+  override def moduleDeps = dependencies
+
+trait Component(dependencies: PublishModule*)
+extends BaseScalaModule, SonatypeCentralPublishModule:
+  def moduleId: String = moduleDir.last
+  def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def sources = Task.Sources(moduleDir)
+  override def moduleDeps = dependencies
+
+  override def scalacOptions = Task:
+    settings.scalaOptions :+ s"-Xplugin:${decorum.plugin.assembly().path}"
+
+trait Tests(dependencies: PublishModule*) extends BaseScalaModule:
+  def moduleId: String = moduleDir.last
+  def finalMainClass = (moduleDir / ".." / "..").last + ".Tests"
+  def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def moduleDeps: Seq[PublishModule] = probably.cli +: dependencies
+  def sources = Task.Sources(moduleDir)
+  def consoleScalacOptions = scalacOptions()
+
+  def scalacOptions = Task:
+    settings.scalaOptions :+ s"-Xplugin:${larceny.plugin.assembly().path}"
+
+trait Bundle(dependencies: PublishModule*) extends BaseScalaModule, PublishModule:
+  def sources = Task.Sources()
+  def moduleDeps = dependencies
+
+// ------------------------ GROUPS ------------------------
+object soundness extends ScalaModule:
+  def scalaVersion = settings.scalaVersion
+  def moduleDeps = Seq()
+
+  object base extends Bundle(ambience.core, aviation.core, contextual.core, contingency.core,
+    denominative.core, digression.core, diuretic.core, feudalism.core, fulminate.core,
+    hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core, gossamer.core,
+    inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
+    parasite.core, rudiments.core, spectacular.core, symbolism.core, prepositional.core,
+    vacuous.core, wisteria.core, vicarious.core, serpentine.core, typonym.core, zephyrine.core,
+    frontier.core)
+
+  object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
+    exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi,
+    eucalyptus.syslog, guillotine.core, escapade.core, imperial.core, profanity.core,
+    surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core)
+
+  object data extends Bundle(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
+    gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core, panopticon.core,
+    camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core, xylophone.core,
+    anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, villainy.core, vexillology.core)
+
+  object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
+    charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
+    quantitative.core)
+
+  object test extends Bundle(capricious.core, larceny.plugin, sedentary.core, tarantula.core,
+    superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm, mandible.core)
+
+  object tool extends Bundle(anthology.core, decorum.plugin, harlequin.core, hellenism.core,
+    hyperbole.core, octogenarian.core, revolution.core, umbrageous.plugin, anthology.java,
+    harlequin.md, harlequin.ansi, austronesian.core)
+
+  object web extends Bundle(cacophony.core, cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
+    honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
+    punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
+    telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, /*perihelion.core,*/
+    legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http, jacinta.schema,
+    obligatory.core, synesthesia.core)
+
+  object all extends Bundle(base, cli, data, sci, test, tool, web)
+
+object test extends ScalaModule:
+  def scalaVersion = settings.scalaVersion
+  def scalacOptions = settings.scalaOptions
+  def moduleDeps = Seq(
+    abacist.test,
+    acyclicity.test,
+    adversaria.test,
+    ambience.test,
+    anamnesis.test,
+    anthology.test,
+    anticipation.test,
+    austronesian.test,
+    aviation.test,
+    baroque.test,
+    //bitumen.test,
+    burdock.test,
+    cacophony.test,
+    caduceus.test,
+    caesura.test,
+    camouflage.test,
+    capricious.test,
+    cardinality.test,
+    cataclysm.test,
+    cellulose.test,
+    charisma.test,
+    chiaroscuro.test,
+    //coaxial.test,
+    contextual.test,
+    contingency.test,
+    //cosmopolite.test,
+    decorum.test,
+    dendrology.test,
+    denominative.test,
+    digression.test,
+    dissonance.test,
+    distillate.test,
+    diuretic.test,
+    //embarcadero.test,
+    enigmatic.test,
+    //escapade.test,
+    //escritoire.test,
+    ethereal.test,
+    //eucalyptus.test,
+    exegesis.test,
+    exoskeleton.test,
+    feudalism.test,
+    //frontier.test,
+    fulminate.test,
+    galilei.test,
+    gastronomy.test,
+    geodesy.test,
+    gesticulate.test,
+    //gigantism.test,
+    gnossienne.test,
+    gossamer.test,
+    guillotine.test,
+    hallucination.test,
+    harlequin.test,
+    hellenism.test,
+    hieroglyph.test,
+    honeycomb.test,
+    hyperbole.test,
+    hypotenuse.test,
+    imperial.test,
+    inimitable.test,
+    iridescence.test,
+    jacinta.test,
+    kaleidoscope.test,
+    larceny.test,
+    //legerdemain.test,
+    mandible.test,
+    mercator.test,
+    merino.test,
+    metamorphose.test,
+    monotonous.test,
+    mosquito.test,
+    nomenclature.test,
+    obligatory.test,
+    octogenarian.test,
+    //orthodoxy.test,
+    panopticon.test,
+    parasite.test,
+    //perihelion.test,
+    phoenicia.test,
+    plutocrat.test,
+    polaris.test,
+    polyvinyl.test,
+    prepositional.test,
+    probably.test,
+    profanity.test,
+    proscenium.test,
+    punctuation.test,
+    quantitative.test,
+    revolution.test,
+    rudiments.test,
+    satirical.test,
+    //savagery.test,
+    scintillate.test,
+    sedentary.test,
+    serpentine.test,
+    spectacular.test,
+    stenography.test,
+    superlunary.test,
+    surveillance.test,
+    symbolism.test,
+    synesthesia.test,
+    tarantula.test,
+    telekinesis.test,
+    turbulence.test,
+    typonym.test,
+    ulysses.test,
+    umbrageous.test,
+    urticose.test,
+    vacuous.test,
+    vexillology.test,
+    vicarious.test,
+    villainy.test,
+    //wisteria.test,
+    xylophone.test,
+    yossarian.test,
+    zephyrine.test,
+    //zeppelin.test
+  )
+
+  def sources = Task.Sources(moduleDir / ".." / "src" / "test")
+  override def finalMainClass: Task.Simple[String] = "soundness.Tests"
+
+// ------------------------ SAMPLES ------------------------
+
+/*object sample extends ScalaModule:
+  def scalaVersion = settings.scalaVersion
+  def moduleDeps = Seq(soundness.all)
+
+  object tube extends ScalaModule:
+    def scalaVersion = settings.scalaVersion
+    def scalacOptions = settings.scalaOptions
+    def moduleDeps = Seq(soundness.all)
+    def sources = Task.Sources(moduleDir / "src" / "core")
+*/
+
+// ------------------------ MODULES ------------------------
+
+object abacist extends Library:
+  object core extends Component(quantitative.units)
+  object test extends Tests(core)
+
+object acyclicity extends Library:
+  object core extends Component(gossamer.core)
+  object test extends Tests(core)
+
+object adversaria extends Library:
+  object core extends Component(rudiments.core)
+  object examples extends Component(core)
+  object test extends Tests(examples)
+
+object ambience extends Library:
+  object core extends Component(gossamer.core)
+  object test extends Tests(core)
+
+object anamnesis extends Library:
+  object core extends Component(distillate.core)
+  object test extends Tests(core)
+
+object anthology extends Library:
+  object core extends Component(hellenism.core)
+
+  object `scala` extends Component(core):
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+  object `java` extends Component(core)
+  object bundle extends Component(core, zeppelin.core, revolution.core, eucalyptus.core)
+  object test extends Tests(`scala`, `java`, core)
+
+object anticipation extends Library:
+  object generic extends Component(prepositional.core)
+  object text extends Component(symbolism.core)
+  object opaque extends Component(text)
+  object gfx extends Component(prepositional.core, color)
+  object css extends Component(text, generic)
+  object url extends Component(text, generic)
+  object html extends Component(text, generic)
+  object print extends Component(text)
+  object http extends Component(codec, generic)
+  object codec extends Component(text)
+  object color extends Component(opaque, prepositional.core)
+  object log extends Component(text)
+  object path extends Component(text, generic)
+  object time extends Component(generic)
+  object test extends Tests
+
+object austronesian extends Library:
+  object core extends Component(probably.core, hellenism.core)
+  object test extends Tests(core)
+
+object aviation extends Library:
+  object core extends Component(abacist.core, quantitative.units)
+  object test extends Tests(core)
+
+object baroque extends Library:
+  object core extends Component(quantitative.core, geodesy.core)
+  object test extends Tests(core, abacist.core, quantitative.units, mosquito.core)
+
+// object bitumen extends Library:
+//   object core extends Component(polaris.core, serpentine.core, turbulence.core)
+//   object test extends Tests(core)
+
+object burdock extends Library:
+  object boot extends Component
+  object core extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core, gastronomy.core)
+  object test extends Tests(core)
+
+object cacophony extends Library:
+  object core extends Component(gesticulate.core, quantitative.units, anticipation.http)
+  object test extends Tests(core)
+
+object caduceus extends Library:
+  object core extends Component(honeycomb.core)
+  object resend extends Component(core, telekinesis.core, jacinta.core)
+  object test extends Tests(core)
+
+object caesura extends Library:
+  object core extends Component(turbulence.core, escritoire.core)
+  object test extends Tests(core)
+
+object camouflage extends Library:
+  object core extends Component(parasite.core)
+  object test extends Tests(core)
+
+object capricious extends Library:
+  object core extends Component(wisteria.core, hypotenuse.core)
+  object test extends Tests(core)
+
+object cardinality extends Library:
+  object core extends Component(fulminate.core)
+  object test extends Tests(core)
+
+object cataclysm extends Library:
+  object core extends Component(anticipation.html, serpentine.core, quantitative.core)
+  object test extends Tests(core)
+
+object cellulose extends Library:
+  object core extends Component(eucalyptus.core, chiaroscuro.core, polyvinyl.core, zephyrine.core)
+  object test extends Tests(core)
+
+object charisma extends Library:
+  object core extends Component(gossamer.core)
+  object test extends Tests(core)
+
+object chiaroscuro extends Library:
+  object core extends Component(escapade.core, dendrology.tree, escritoire.core, dissonance.core, larceny.plugin)
+  object test extends Tests(core)
+
+object coaxial extends Library:
+  object core extends Component(galilei.core, urticose.core)
+  //object test extends Tests(core, jacinta.core, superlunary.core)
+
+object contextual extends Library:
+  object core extends Component(rudiments.core)
+  object test extends Tests(core)
+
+object contingency extends Library:
+  object core extends Component(rudiments.core)
+  object test extends Tests(core)
+
+object cosmopolite extends Library:
+  object core extends Component(gossamer.core)
+  //object test extends Tests(core)
+
+object dendrology extends Library:
+  object tree extends Component(gossamer.core)
+  object dag extends Component(acyclicity.core)
+  object test extends Tests(tree, dag)
+
+object decorum extends Library:
+  object plugin extends BareComponent():
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+  object test extends Tests(plugin)
+
+object denominative extends Library:
+  object core extends Component(fulminate.core)
+  object test extends Tests(core)
+
+object digression extends Library:
+  object core extends Component(contingency.core)
+  object test extends Tests(core)
+
+object dissonance extends Library:
+  object core extends Component(turbulence.core)
+  object test extends Tests(core)
+
+object distillate extends Library:
+  object core extends Component(digression.core, inimitable.core, wisteria.core)
+  object test extends Tests(core, urticose.url)
+
+object diuretic extends Library:
+  object core extends Component(anticipation.path, anticipation.url, anticipation.time)
+  object test extends Tests(core)
+
+// object embarcadero extends Library:
+//   object core extends Component(jacinta.core, telekinesis.core, eucalyptus.core)
+//   object test extends Tests(core)
+
+object enigmatic extends Library:
+  object core extends Component(gastronomy.core)
+  object test extends Tests(core)
+
+object escapade extends Library:
+  object core extends Component(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core)
+  // object test extends Tests(core)
+
+object escritoire extends Library:
+  object core extends Component(gossamer.core)
+  // object test extends Tests(core)
+
+object ethereal extends Library:
+  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core):
+    val rustTargets: Seq[(String, String, String)] = Seq(
+      ("x86_64-pc-windows-gnu",       "windows-x64",   "runner.exe"),
+      ("x86_64-unknown-linux-gnu",    "linux-x64",     "runner"),
+      ("aarch64-unknown-linux-gnu",   "linux-arm64",   "runner"),
+      ("x86_64-apple-darwin",         "macos-x64",     "runner"),
+      ("aarch64-apple-darwin",        "macos-arm64",   "runner"))
+
+    def rustSources: T[Seq[PathRef]] = Task.Sources(
+      moduleDir / ".." / ".." / "Cargo.toml",
+      moduleDir / ".." / ".." / "src" / "runner")
+
+    def rustRunners: T[PathRef] = Task:
+      val _ = rustSources()
+      val ethDir = moduleDir / ".." / ".."
+      val manifest = ethDir / "Cargo.toml"
+      val targetDir = Task.dest / "target"
+      os.makeDir.all(targetDir)
+      val cmd = Seq("cargo", "zigbuild", "--release",
+        "--manifest-path", manifest.toString,
+        "--target-dir", targetDir.toString) ++
+        rustTargets.flatMap { case (triple, _, _) => Seq("--target", triple) }
+      os.proc(cmd).call(cwd = ethDir, stdout = os.Inherit, stderr = os.Inherit)
+      val outDir = Task.dest / "ethereal"
+      os.makeDir.all(outDir)
+      rustTargets.foreach { case (triple, label, binary) =>
+        val src = targetDir / triple / "release" / binary
+        val ext = if binary.endsWith(".exe") then ".exe" else ""
+        val dst = outDir / s"runner-$label$ext"
+        os.copy.over(src, dst)
+      }
+      PathRef(Task.dest)
+
+    override def resources: T[Seq[PathRef]] =
+      Task(super.resources() ++ Seq(rustRunners()))
+
+  object example extends Component(core, exoskeleton.completions):
+    override def finalMainClass: Task.Simple[String] = "ethereal.run"
+
+    def bin(): Command[PathRef] = Task.Command:
+      val jar = assembly().path
+      val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "hello"
+      os.makeDir.all(target / os.up)
+
+      val runnersBase = core.rustRunners().path / "ethereal"
+      val staging = Task.dest / "staging"
+      os.makeDir.all(staging)
+
+      core.rustTargets.foreach: (_, label, binary) =>
+        val ext = if binary.endsWith(".exe") then ".exe" else ""
+        val src = runnersBase / s"runner-$label$ext"
+        os.copy.over(src, staging / s"runner-$label$ext")
+
+      os.copy.over(jar, staging / "data")
+
+      val classpath = ziggurat.core.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+      os.proc("java", "-cp", classpath, "ziggurat.PolyglotInstaller", target.toString, staging.toString)
+        .call(stdout = os.Inherit, stderr = os.Inherit)
+
+      new java.io.File(target.toString).setExecutable(true)
+      PathRef(target)
+
+  object test extends Tests(core, exoskeleton.rig, quantitative.units)
+
+object eucalyptus extends Library:
+  object core extends Component(turbulence.core, gossamer.core)
+  object syslog extends Component(guillotine.core, core)
+  object gcp extends Component(jacinta.core, core)
+  object ansi extends Component(escapade.core, core)
+  object test extends Tests(ansi, core, syslog)
+
+object exegesis extends Library:
+  object core extends Component(obligatory.core)
+  object test extends Tests(core)
+
+object exoskeleton extends Library:
+  object args extends Component(escapade.core, profanity.core, ambience.core)
+  object core extends Component(args, galilei.core)
+  object completions extends Component(core)
+
+  object rig extends Component(completions, superlunary.core, ethereal.core, anthology.bundle, quantitative.units):
+    def mvnDeps =
+      Seq
+       (mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+        mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
+
+  object test extends Tests(rig)
+
+object feudalism extends Library:
+  object core extends Component(rudiments.core)
+  object test extends Tests(core)
+
+object frontier extends Library:
+  object core extends Component(dendrology.tree, escapade.core)
+  object test extends Tests(core, scintillate.servlet, jacinta.schema)
+
+object fulminate extends Library:
+  object core extends Component(anticipation.css, anticipation.http, anticipation.print, anticipation.log, proscenium.core, gigantism.core):
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+  object test extends Tests(core)
+
+object galilei extends Library:
+  object core extends Component(serpentine.core, guillotine.core)
+  object test extends Tests(core)
+
+object gastronomy extends Library:
+  object core extends Component(monotonous.core, turbulence.core)
+  object test extends Tests(core)
+
+object geodesy extends Library:
+  object core extends Component(gossamer.core)
+  object test extends Tests(core)
+
+object gesticulate extends Library:
+  object core extends Component(gossamer.core, anticipation.html, turbulence.core, zephyrine.core)
+  object test extends Tests(core)
+
+object gigantism extends Library:
+  object core extends Component():
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+  object test extends Tests(core)
+
+object gnossienne extends Library:
+  object core extends Component(distillate.core, adversaria.core)
+  object test extends Tests(core)
+
+object gossamer extends Library:
+  object core extends Component(mercator.core, hieroglyph.core, contextual.core, spectacular.core, hypotenuse.core, distillate.core)
+  object test extends Tests(core, serpentine.core)
+
+object guillotine extends Library:
+  object core extends Component(turbulence.core, ambience.core)
+  object test extends Tests(core, galilei.core)
+
+object hallucination extends Library:
+  object core extends Component(anticipation.gfx, iridescence.core, gesticulate.core)
+  object ansi extends Component(escapade.core, core)
+  object test extends Tests(ansi)
+
+object harlequin extends Library:
+  object core extends Component(anthology.scala):
+    def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+  object ansi extends Component(core, escapade.core)
+  object md extends Component(core, punctuation.html)
+  object test extends Tests(ansi, md)
+
+object hellenism extends Library:
+  object core extends Component(anticipation.url, galilei.core)
+  object test extends Tests(core, turbulence.core)
+
+object honeycomb extends Library:
+  object core extends Component(panopticon.core, gesticulate.core, xylophone.core, urticose.url)
+  object test extends Tests(core)
+
+object hieroglyph extends Library:
+  object core extends Component(kaleidoscope.core)
+  object test extends Tests(core)
+
+object hyperbole extends Library:
+  object core extends Component(harlequin.ansi, escritoire.core, dendrology.tree):
+    def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
+
+  object test extends Tests(core, quantitative.units, mandible.core)
+
+object hypotenuse extends Library:
+  object core extends Component(cardinality.core, anticipation.opaque, contingency.core)
+  object test extends Tests(core, quantitative.units, abacist.core)
+
+object imperial extends Library:
+  object core extends Component(guillotine.core)
+  object test extends Tests(core)
+
+object inimitable extends Library:
+  object core extends Component(contingency.core)
+  object test extends Tests(core)
+
+object iridescence extends Library:
+  object core extends Component(contextual.core, anticipation.color, hypotenuse.core)
+  object test extends Tests(core)
+
+object jacinta extends Library:
+  object core extends Component(merino.core, urticose.url, panopticon.core)
+  object time extends Component(core, aviation.core)
+  object http extends Component(core, telekinesis.core)
+  object schema extends Component(core, telekinesis.core)
+  object test extends Tests(time, http, schema)
+
+object kaleidoscope extends Library:
+  object core extends Component(contingency.core)
+  object test extends Tests(core)
+
+object larceny extends Library:
+  object plugin extends Component():
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+  object test extends Tests:
+    override def finalMainClass: Task.Simple[String] = "run"
+
+object legerdemain extends Library:
+  object core extends Component(honeycomb.core, anamnesis.core)
+  object test extends Tests(core, scintillate.server)
+
+object mandible extends Library:
+  object core extends Component(hyperbole.core):
+    def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
+
+  object test extends Tests(core, revolution.core, quantitative.units)
+
+object mercator extends Library:
+  object core extends Component(fulminate.core)
+  object test extends Tests(core)
+
+object merino extends Library:
+  object core extends Component(turbulence.core, zephyrine.core)
+  object test extends Tests(core, sedentary.core, diuretic.core, galilei.core)
+
+object metamorphose extends Library:
+  object core extends Component(contingency.core)
+  object test extends Tests(core)
+
+object monotonous extends Library:
+  object core extends Component(gossamer.core)
+  object test extends Tests(core)
+
+object mosquito extends Library:
+  object core extends Component(gossamer.core)
+  object test extends Tests(quantitative.units, core, baroque.core)
+
+object urticose extends Library:
+  object core extends Component(gossamer.core)
+  object url extends Component(escapade.core, serpentine.core, anticipation.html, core)
+  object test extends Tests(core, url)
+
+object nomenclature extends Library:
+  object core extends Component(gossamer.core)
+  object test extends Tests(core)
+
+object octogenarian extends Library:
+  object core extends Component(galilei.core, urticose.core, enigmatic.core, anticipation.url)
+  object test extends Tests(core)
+
+object orthodoxy extends Library:
+  object core extends Component(scintillate.server, jacinta.core)
+  object test extends Tests(core)
+
+object obligatory extends Library:
+  object core extends Component(scintillate.server, hyperbole.core, eucalyptus.core, revolution.core, jacinta.schema, jacinta.http)
+  object test extends Tests(core)
+
+object panopticon extends Library:
+  object core extends Component(rudiments.core)
+  object test extends Tests(core, honeycomb.core)
+
+object parasite extends Library:
+  object core extends Component(digression.core, mercator.core, anticipation.time)
+  object test extends Tests(core, quantitative.units)
+
+// object perihelion extends Library:
+//   object core extends Component(scintillate.server, gastronomy.core, eucalyptus.core)
+//   object test extends Tests(core)
+
+object phoenicia extends Library:
+  object core extends Component(quantitative.core, polaris.core)
+  object test extends Tests(core)
+
+object plutocrat extends Library:
+  object core extends Component(gossamer.core)
+  object test extends Tests(core)
+
+object polaris extends Library:
+  object core extends Component(hypotenuse.core, wisteria.core)
+  object test extends Tests(core)
+
+object polyvinyl extends Library:
+  object core extends Component(rudiments.core)
+  object test extends Tests(core)
+
+object prepositional extends Library:
+  object core extends Component
+  object test extends Tests(core)
+
+object proscenium extends Library:
+  object core extends Component
+  object test extends Tests(core)
+
+object probably extends Library:
+  object core extends Component(chiaroscuro.core, ambience.core, eucalyptus.core, coverage):
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+  object cli extends Component(core)
+  object coverage extends Component(dendrology.tree)
+  object test extends Tests(cli)
+
+object profanity extends Library:
+  object core extends Component(eucalyptus.core, diuretic.core, iridescence.core)
+  object test extends Tests(core)
+
+object punctuation extends Library:
+  object core extends Component(honeycomb.core):
+    def mvnDeps = Seq(mvn"org.commonmark:commonmark:0.27.0")
+
+  object html extends Component(core)
+  object ansi extends Component(core, harlequin.core)
+  object test extends Tests(core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
+
+object quantitative extends Library:
+  object core extends Component(hypotenuse.core, gossamer.core, anticipation.opaque, anticipation.time, probably.core)
+  object units extends Component(core)
+  object test extends Tests(core, units)
+
+object revolution extends Library:
+  object core extends Component(serpentine.core, turbulence.core)
+  object test extends Tests(core)
+
+object rudiments extends Library:
+  object core extends Component(
+      anticipation.http,
+      anticipation.path,
+      vacuous.core,
+      denominative.core
+    )
+
+  object test extends Tests(core, abacist.core, quantitative.units)
+
+object satirical extends Library:
+  object core extends Component(gossamer.core, turbulence.core, zephyrine.core)
+  object test extends Tests(core)
+
+object savagery extends Library:
+  object core extends Component(cataclysm.core, xylophone.core, geodesy.core, iridescence.core)
+  object test extends Tests(core)
+
+object scintillate extends Library:
+  object server extends Component(telekinesis.core)
+
+  object servlet extends Component(server):
+    def mvnDeps = Seq(mvn"jakarta.servlet:jakarta.servlet-api:6.0.0")
+
+  object test extends Tests(server, servlet)
+
+object sedentary extends Library:
+  object core extends Component(superlunary.jvm, anthology.bundle, diuretic.core)
+  object test extends Tests(core, quantitative.units)
+
+object serpentine extends Library:
+  object core extends Component(nomenclature.core, ambience.core)
+  object test extends Tests(core)
+
+object spectacular extends Library:
+  object core extends Component(stenography.core, inimitable.core, wisteria.core, digression.core)
+  object test extends Tests(core)
+
+object stenography extends Library:
+  object core extends Component(rudiments.core):
+    def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+  object test extends Tests(core)
+
+object superlunary extends Library:
+  object core extends Component(jacinta.core, gastronomy.core, anthology.scala, austronesian.core):
+    def mvnDeps = Seq(
+      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+      mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
+    )
+
+  object jvm extends Component(core):
+    def mvnDeps = Seq(
+      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+      mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
+    )
+
+  object test extends Tests(jvm):
+    override def finalMainClass: Task.Simple[String] = "superlunary.run"
+
+object surveillance extends Library:
+  object core extends Component(eucalyptus.core, feudalism.core)
+  object test extends Tests(core)
+
+object symbolism extends Library:
+  object core extends Component(prepositional.core)
+  object test extends Tests(core)
+
+object synesthesia extends Library:
+  object core extends Component(obligatory.core):
+    override def scalacOptions = settings.scalaOptions ++ Seq("-Xmax-inlines", "48")
+
+  object test extends Tests(core)
+
+object tarantula extends Library:
+  object core extends Component(jacinta.core, telekinesis.core, cataclysm.core, hallucination.core, diuretic.core, gastronomy.core)
+  object test extends Tests(core)
+
+object telekinesis extends Library:
+  object core extends Component(monotonous.core, coaxial.core, legerdemain.core)
+  object test extends Tests(core)
+
+object turbulence extends Library:
+  object core extends Component(hieroglyph.core, parasite.core, capricious.core, stenography.core)
+  object test extends Tests(core)
+
+object typonym extends Library:
+  object core extends Component(proscenium.core, gigantism.core, anticipation.text)
+  object test extends Tests(core)
+
+object ulysses extends Library:
+  object core extends Component(gastronomy.core)
+  object test extends Tests(core)
+
+object umbrageous extends Library:
+  object plugin extends Component():
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+  object test extends Tests(plugin)
+
+object vacuous extends Library:
+  object core extends Component(fulminate.core)
+  object test extends Tests(core)
+
+object vexillology extends Library:
+  object core extends Component(hypotenuse.core, distillate.core)
+  object test extends Tests(core)
+
+object vicarious extends Library:
+  object core extends Component(rudiments.core)
+  object test extends Tests(core)
+
+object villainy extends Library:
+  object core extends Component(polyvinyl.core, jacinta.core)
+  object test extends Tests(core)
+
+object wisteria extends Library:
+  object core extends Component(contingency.core)
+  //object test extends Tests(core)
+
+object xylophone extends Library:
+  object core extends Component(zephyrine.core, adversaria.core, typonym.core, hellenism.core, urticose.core)
+  object test extends Tests(core)
+
+object yossarian extends Library:
+  object core extends Component(iridescence.core, gossamer.core, turbulence.core)
+  object test extends Tests(core)
+
+object zephyrine extends Library:
+  object core extends Component(hieroglyph.core, hypotenuse.core)
+  object test extends Tests(core)
+
+object zeppelin extends Library:
+  object core extends Component(galilei.core, zephyrine.core)
+  object test extends Tests(core, imperial.core, diuretic.core)
+
+object ziggurat extends Library:
+  object core extends Component(hellenism.core, monotonous.core, turbulence.core)
+  object test extends Tests(core)
+
+object publishing extends Module:
+  def local(localIvyRepo: String = null): Command[Unit] = Task.Command:
+    abacist.core.publishLocal()()
+    acyclicity.core.publishLocal()()
+    adversaria.core.publishLocal()()
+    ambience.core.publishLocal()()
+    anamnesis.core.publishLocal()()
+    anthology.core.publishLocal()()
+    anthology.java.publishLocal()()
+    anthology.scala.publishLocal()()
+    anthology.bundle.publishLocal()()
+    anticipation.codec.publishLocal()()
+    anticipation.color.publishLocal()()
+    anticipation.css.publishLocal()()
+    anticipation.generic.publishLocal()()
+    anticipation.gfx.publishLocal()()
+    anticipation.html.publishLocal()()
+    anticipation.http.publishLocal()()
+    anticipation.log.publishLocal()()
+    anticipation.opaque.publishLocal()()
+    anticipation.path.publishLocal()()
+    anticipation.print.publishLocal()()
+    anticipation.text.publishLocal()()
+    anticipation.time.publishLocal()()
+    anticipation.url.publishLocal()()
+    austronesian.core.publishLocal()()
+    aviation.core.publishLocal()()
+    baroque.core.publishLocal()()
+    burdock.boot.publishLocal()()
+    burdock.core.publishLocal()()
+    caduceus.core.publishLocal()()
+    caduceus.resend.publishLocal()()
+    caesura.core.publishLocal()()
+    camouflage.core.publishLocal()()
+    capricious.core.publishLocal()()
+    cardinality.core.publishLocal()()
+    cataclysm.core.publishLocal()()
+    cellulose.core.publishLocal()()
+    charisma.core.publishLocal()()
+    chiaroscuro.core.publishLocal()()
+    coaxial.core.publishLocal()()
+    contextual.core.publishLocal()()
+    contingency.core.publishLocal()()
+    cosmopolite.core.publishLocal()()
+    dendrology.dag.publishLocal()()
+    dendrology.tree.publishLocal()()
+    denominative.core.publishLocal()()
+    digression.core.publishLocal()()
+    dissonance.core.publishLocal()()
+    distillate.core.publishLocal()()
+    diuretic.core.publishLocal()()
+    enigmatic.core.publishLocal()()
+    escapade.core.publishLocal()()
+    escritoire.core.publishLocal()()
+    ethereal.core.publishLocal()()
+    eucalyptus.ansi.publishLocal()()
+    eucalyptus.core.publishLocal()()
+    eucalyptus.gcp.publishLocal()()
+    eucalyptus.syslog.publishLocal()()
+    exegesis.core.publishLocal()()
+    exoskeleton.args.publishLocal()()
+    exoskeleton.completions.publishLocal()()
+    exoskeleton.core.publishLocal()()
+    feudalism.core.publishLocal()()
+    frontier.core.publishLocal()()
+    fulminate.core.publishLocal()()
+    galilei.core.publishLocal()()
+    gastronomy.core.publishLocal()()
+    geodesy.core.publishLocal()()
+    gesticulate.core.publishLocal()()
+    gnossienne.core.publishLocal()()
+    gossamer.core.publishLocal()()
+    guillotine.core.publishLocal()()
+    hallucination.ansi.publishLocal()()
+    hallucination.core.publishLocal()()
+    harlequin.ansi.publishLocal()()
+    harlequin.core.publishLocal()()
+    harlequin.md.publishLocal()()
+    hellenism.core.publishLocal()()
+    hieroglyph.core.publishLocal()()
+    honeycomb.core.publishLocal()()
+    hyperbole.core.publishLocal()()
+    hypotenuse.core.publishLocal()()
+    imperial.core.publishLocal()()
+    inimitable.core.publishLocal()()
+    iridescence.core.publishLocal()()
+    jacinta.core.publishLocal()()
+    jacinta.http.publishLocal()()
+    jacinta.time.publishLocal()()
+    jacinta.schema.publishLocal()()
+    kaleidoscope.core.publishLocal()()
+    larceny.plugin.publishLocal()()
+    legerdemain.core.publishLocal()()
+    mandible.core.publishLocal()()
+    mercator.core.publishLocal()()
+    merino.core.publishLocal()()
+    metamorphose.core.publishLocal()()
+    monotonous.core.publishLocal()()
+    mosquito.core.publishLocal()()
+    urticose.core.publishLocal()()
+    urticose.url.publishLocal()()
+    nomenclature.core.publishLocal()()
+    obligatory.core.publishLocal()()
+    octogenarian.core.publishLocal()()
+    orthodoxy.core.publishLocal()()
+    panopticon.core.publishLocal()()
+    parasite.core.publishLocal()()
+    //perihelion.core.publishLocal()()
+    phoenicia.core.publishLocal()()
+    plutocrat.core.publishLocal()()
+    polaris.core.publishLocal()()
+    polyvinyl.core.publishLocal()()
+    prepositional.core.publishLocal()()
+    probably.coverage.publishLocal()()
+    probably.cli.publishLocal()()
+    probably.core.publishLocal()()
+    profanity.core.publishLocal()()
+    proscenium.core.publishLocal()()
+    punctuation.ansi.publishLocal()()
+    punctuation.core.publishLocal()()
+    punctuation.html.publishLocal()()
+    quantitative.core.publishLocal()()
+    quantitative.units.publishLocal()()
+    revolution.core.publishLocal()()
+    rudiments.core.publishLocal()()
+    savagery.core.publishLocal()()
+    scintillate.server.publishLocal()()
+    scintillate.servlet.publishLocal()()
+    sedentary.core.publishLocal()()
+    serpentine.core.publishLocal()()
+    spectacular.core.publishLocal()()
+    stenography.core.publishLocal()()
+    superlunary.core.publishLocal()()
+    superlunary.jvm.publishLocal()()
+    surveillance.core.publishLocal()()
+    symbolism.core.publishLocal()()
+    synesthesia.core.publishLocal()()
+    tarantula.core.publishLocal()()
+    telekinesis.core.publishLocal()()
+    turbulence.core.publishLocal()()
+    typonym.core.publishLocal()()
+    ulysses.core.publishLocal()()
+    umbrageous.plugin.publishLocal()()
+    vacuous.core.publishLocal()()
+    vexillology.core.publishLocal()()
+    vicarious.core.publishLocal()()
+    villainy.core.publishLocal()()
+    wisteria.core.publishLocal()()
+    xylophone.core.publishLocal()()
+    yossarian.core.publishLocal()()
+    zephyrine.core.publishLocal()()
+    zeppelin.core.publishLocal()()
+    ziggurat.core.publishLocal()()
+    soundness.base.publishLocal()()
+    soundness.cli.publishLocal()()
+    soundness.data.publishLocal()()
+    soundness.sci.publishLocal()()
+    soundness.test.publishLocal()()
+    soundness.tool.publishLocal()()
+    soundness.web.publishLocal()()
+
+    soundness.all.publishLocal()()
+
+    Result.Success(())

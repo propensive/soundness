@@ -1,0 +1,1 @@
+a textual description of the nature of the error with the media type

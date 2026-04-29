@@ -1,0 +1,3 @@
+- implements a basic, generic mutex
+- provides fast and safe concurrent access to a variable
+- especially performant on Java 21 with virtual threads

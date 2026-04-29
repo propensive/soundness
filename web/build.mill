@@ -1,0 +1,53 @@
+package build
+
+import mill._
+import scalalib._
+import publish._
+import os.Path
+
+object settings {
+  val scalaVersion = "3.7.2"
+  val scalaOptions = Seq(
+    "-experimental",
+    "-new-syntax",
+    "-feature",
+    //"-explain",
+    "-deprecation",
+    "-Wunused:imports",
+    "-Wimplausible-patterns",
+    "-Wsafe-init",
+    "-Xmax-inlines", "100",
+    "-Yrequire-targetName",
+    "-Ycc-new",
+    "-Yno-flexible-types",
+    "-Yexplicit-nulls",
+    "-Ycheck-all-patmat",
+    "-language:experimental.modularity",
+    "-language:experimental.genericNumberLiterals",
+    "-language:experimental.into",
+    "-language:experimental.erasedDefinitions",
+    "-language:experimental.saferExceptions",
+    "-language:experimental.namedTypeArguments",
+    "-language:implicitConversions"
+  )
+}
+
+trait ProjectModule extends Module {
+  def millSourcePath = super.millSourcePath / "src"
+}
+
+trait Submodule extends ScalaModule {
+  override def scalaVersion = settings.scalaVersion
+  override def scalacOptions = settings.scalaOptions
+  def consoleScalacOptions = scalacOptions()
+  def resources = Task(Seq(PathRef(millSourcePath / ".." / ".." / ".." / "res")))
+}
+
+object soundnessweb extends ProjectModule {
+  object web extends Submodule {
+    def sources = Task.Sources(Seq(PathRef(millSourcePath / ".." / ".." / ".." / "src" / "web")))
+    def moduleDeps = Seq()
+    def ivyDeps = Agg(ivy"dev.soundness:soundness-all:0.44.0")
+  }
+
+}

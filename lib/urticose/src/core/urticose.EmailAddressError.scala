@@ -1,0 +1,73 @@
+                                                                                                  /*
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                  ┃
+┃                                                   ╭───╮                                          ┃
+┃                                                   │   │                                          ┃
+┃                                                   │   │                                          ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
+┃                                                                                                  ┃
+┃    Soundness, version 0.54.0.                                                                    ┃
+┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
+┃                                                                                                  ┃
+┃    The primary distribution site is:                                                             ┃
+┃                                                                                                  ┃
+┃        https://soundness.dev/                                                                    ┃
+┃                                                                                                  ┃
+┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
+┃    except in compliance with the License. You may obtain a copy of the License at                ┃
+┃                                                                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
+┃                                                                                                  ┃
+┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
+┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
+┃    either express or implied. See the License for the specific language governing permissions    ┃
+┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                                                                                  */
+package urticose
+
+import anticipation.*
+import fulminate.*
+
+object EmailAddressError:
+  object Reason:
+    given communicable: Reason is Communicable =
+      case Empty             => m"it is empty"
+      case LongLocalPart     => m"the local part is more than 64 characters long"
+      case TerminalPeriod    => m"the local part ends in a period, which is not allowed"
+      case SuccessivePeriods => m"the local part contains two adjacent periods"
+      case UnclosedQuote     => m"the quoted local part has no closing quote"
+      case MissingDomain     => m"the domain is missing"
+      case MissingAtSymbol   => m"the at-symbol is missing"
+      case InitialPeriod     => m"the local part starts with a period, which is not allowed"
+      case UnclosedIpAddress => m"the domain begins with ${'['} but does not end with ${']'}"
+      case UnescapedQuote    => m"the local part contains a quote character which is not escaped"
+      case InvalidChar(char) => m"the local part contains the character $char which is not allowed"
+
+      case InvalidDomain(error) =>
+        error match
+          case error: IpAddressError => m"the domain is not a valid IP address: ${error.message}"
+          case error: HostnameError  => m"the domain is not a valid hostname: ${error.message}"
+
+  enum Reason(val number: Int) extends Clarification:
+    case Empty                                              extends Reason(1)
+    case InvalidDomain(error: IpAddressError | HostnameError) extends Reason(2)
+    case LongLocalPart                                      extends Reason(3)
+    case TerminalPeriod                                     extends Reason(4)
+    case SuccessivePeriods                                  extends Reason(5)
+    case InitialPeriod                                      extends Reason(6)
+    case UnescapedQuote                                     extends Reason(7)
+    case UnclosedQuote                                      extends Reason(8)
+    case MissingDomain                                      extends Reason(9)
+    case MissingAtSymbol                                    extends Reason(10)
+    case UnclosedIpAddress                                  extends Reason(11)
+    case InvalidChar(char: Char)                            extends Reason(12)
+
+case class EmailAddressError(reason: EmailAddressError.Reason)(using Diagnostics)
+extends Error(realm"ur", 1, reason.number)(m"the email address is not valid because $reason")

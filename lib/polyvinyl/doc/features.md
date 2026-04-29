@@ -1,0 +1,7 @@
+- provides support for record types in Scala
+- allows the implementation of F#-style type providers
+- enforces namespace-safety on field access
+- record schemas may be defined programmatically, without writing explicit case classes
+- schemas can be defined dynamically, taking strings as field names
+- schemas may be defined in the same module, provided they are not used in the same file
+- uses Scala 3's `Selectable` trait internally

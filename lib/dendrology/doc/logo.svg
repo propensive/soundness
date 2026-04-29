@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="119.99999mm"
+   height="119.99999mm"
+   viewBox="0 0 119.99999 119.99999"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
+   sodipodi:docname="dendrology.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#111111"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="true"
+     inkscape:zoom="3.3638608"
+     inkscape:cx="303.37165"
+     inkscape:cy="360.003"
+     inkscape:window-width="4498"
+     inkscape:window-height="2978"
+     inkscape:window-x="0"
+     inkscape:window-y="20"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid790"
+       dotted="true"
+       originx="-29.999996"
+       originy="9.9999955" />
+  </sodipodi:namedview>
+  <defs
+     id="defs2">
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1567">
+      <ellipse
+         style="mix-blend-mode:normal;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0330089;stroke-opacity:1;stop-color:#000000"
+         id="ellipse1569"
+         cx="90"
+         cy="50"
+         rx="38.662201"
+         ry="38.662205" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1571">
+      <ellipse
+         style="mix-blend-mode:normal;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0330089;stroke-opacity:1;stop-color:#000000"
+         id="ellipse1573"
+         cx="90"
+         cy="50"
+         rx="38.662201"
+         ry="38.662205" />
+    </clipPath>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-29.999996,9.9999956)">
+    <g
+       id="g1548"
+       clip-path="url(#clipPath1571)"
+       transform="matrix(1.0973613,-1.0973613,1.0973613,1.0973613,-63.630588,93.894454)">
+      <ellipse
+         style="mix-blend-mode:normal;fill:#19002b;fill-opacity:1;stroke:none;stroke-width:0.033009;stroke-opacity:1;stop-color:#000000"
+         id="path788"
+         cx="90"
+         cy="50"
+         rx="38.662201"
+         ry="38.662205" />
+      <circle
+         style="opacity:1;mix-blend-mode:normal;fill:#6e0098;fill-opacity:1;stroke:none;stroke-width:0.0371428;stroke-opacity:1;stop-color:#000000"
+         id="path1153-27"
+         cx="90"
+         cy="50"
+         r="20" />
+      <circle
+         style="opacity:0.343842;mix-blend-mode:normal;fill:#00ca43;fill-opacity:1;stroke:none;stroke-width:0.0371428;stroke-opacity:1;stop-color:#000000"
+         id="path1153-3"
+         cx="110"
+         cy="30"
+         r="20" />
+      <circle
+         style="opacity:0.343842;mix-blend-mode:normal;fill:#00ca00;fill-opacity:1;stroke:none;stroke-width:0.0371428;stroke-opacity:1;stop-color:#000000"
+         id="path1153-6"
+         cx="90"
+         cy="30"
+         r="20" />
+      <circle
+         style="opacity:0.343842;mix-blend-mode:normal;fill:#43ca00;fill-opacity:1;stroke:none;stroke-width:0.0371428;stroke-opacity:1;stop-color:#000000"
+         id="path1153-2"
+         cx="90"
+         cy="70"
+         r="20" />
+      <circle
+         style="opacity:0.343842;mix-blend-mode:normal;fill:#65ca00;fill-opacity:1;stroke:none;stroke-width:0.0371428;stroke-opacity:1;stop-color:#000000"
+         id="path1153-9"
+         cx="70"
+         cy="70"
+         r="20" />
+      <circle
+         style="opacity:0.343842;mix-blend-mode:normal;fill:#a8ca00;fill-opacity:1;stroke:none;stroke-width:0.0371428;stroke-opacity:1;stop-color:#000000"
+         id="path1153-0"
+         cx="70"
+         cy="30"
+         r="20" />
+      <circle
+         style="opacity:0.343842;mix-blend-mode:normal;fill:#caca00;fill-opacity:1;stroke:none;stroke-width:0.0371428;stroke-opacity:1;stop-color:#000000"
+         id="path1153-93"
+         cx="70"
+         cy="50"
+         r="20" />
+      <circle
+         style="opacity:0.343842;mix-blend-mode:normal;fill:#00ca85;fill-opacity:1;stroke:none;stroke-width:0.0371428;stroke-opacity:1;stop-color:#000000"
+         id="path1153-60"
+         cx="110"
+         cy="70"
+         r="20" />
+      <circle
+         style="opacity:0.343842;mix-blend-mode:normal;fill:#00caa8;fill-opacity:1;stroke:none;stroke-width:0.0371428;stroke-opacity:1;stop-color:#000000"
+         id="path1153-60-6"
+         cx="110"
+         cy="50"
+         r="20" />
+      <ellipse
+         style="mix-blend-mode:normal;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.033009;stroke-opacity:1;stop-color:#000000"
+         id="path788-9"
+         cx="90"
+         cy="50"
+         rx="38.662201"
+         ry="38.662205" />
+    </g>
+    <ellipse
+       style="mix-blend-mode:normal;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.033009;stroke-opacity:1;stop-color:#000000"
+       id="path788-2"
+       cx="90"
+       cy="50"
+       rx="38.662201"
+       ry="38.662205"
+       clip-path="url(#clipPath1567)"
+       transform="matrix(1.0973613,-1.0973613,1.0973613,1.0973613,-63.630588,93.894454)" />
+  </g>
+</svg>

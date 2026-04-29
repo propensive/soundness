@@ -1,0 +1,137 @@
+name: Publish on Tag
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      should_publish: ${{ steps.check.outputs.should_publish }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Verify tag points into release branch
+        id: check
+        run: |
+          git fetch origin release || { echo "release branch not found"; exit 1; }
+          if git merge-base --is-ancestor "${{ github.sha }}" origin/release; then
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Tag ${{ github.ref_name }} does not point at a commit reachable from release; skipping publish."
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  publish:
+    needs: guard
+    if: needs.guard.outputs.should_publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write # Required for deployment API access
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '23'
+
+      - name: Cache Coursier and Mill
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/coursier
+            ~/.cache/mill
+          key: ${{ runner.os }}-coursier-${{ hashFiles('.mill-version', 'build.mill', 'web/build.mill') }}
+          restore-keys: |
+            ${{ runner.os }}-coursier-
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('lib/ethereal/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Setup Zig
+        uses: mlugg/setup-zig@v1
+        with:
+          version: 0.13.0
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-gnu,x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu,x86_64-apple-darwin,aarch64-apple-darwin
+
+      - name: Install cargo-zigbuild
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild
+
+      # - name: Create Deployment
+      #   id: deployment
+      #   uses: octokit/request-action@v2.x
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     route: POST /repos/:owner/:repo/deployments
+      #     owner: ${{ github.repository_owner }}
+      #     repo: ${{ github.event.repository.name }}
+      #     ref: ${{ github.ref }}
+      #     environment: maven-central
+      #     description: "Publish tag ${{ github.ref_name }} to Maven Central"
+      #     auto_merge: false
+      #     required_contexts: '[]'
+
+      - name: Publish to Maven Central
+        id: publish
+        run: ./mill mill.javalib.SonatypeCentralPublishModule/publishAll --publishArtifacts __.publishArtifacts --shouldRelease true --bundleName "dev.soundness-soundness:${{ github.ref_name }}"
+        env:
+          MILL_SONATYPE_USERNAME: ${{ secrets.MILL_SONATYPE_USERNAME }}
+          MILL_SONATYPE_PASSWORD: ${{ secrets.MILL_SONATYPE_PASSWORD }}
+          MILL_PGP_SECRET_BASE64: ${{ secrets.MILL_PGP_SECRET_BASE64 }}
+          MILL_PGP_PASSPHRASE: ${{ secrets.MILL_PGP_PASSPHRASE }}
+
+      # - name: Mark Deployment Success
+      #   if: success()
+      #   uses: octokit/request-action@v2.x
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     route: POST /repos/:owner/:repo/deployments/:deployment_id/statuses
+      #     owner: ${{ github.repository_owner }}
+      #     repo: ${{ github.event.repository.name }}
+      #     deployment_id: ${{ steps.deployment.outputs.id }}
+      #     state: success
+      #     environment: maven-central
+      #     log_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      # - name: Mark Deployment Failure
+      #   if: failure()
+      #   uses: octokit/request-action@v2.x
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     route: POST /repos/:owner/:repo/deployments/:deployment_id/statuses
+      #     owner: ${{ github.repository_owner }}
+      #     repo: ${{ github.event.repository.name }}
+      #     deployment_id: ${{ steps.deployment.outputs.id }}
+      #     state: failure
+      #     environment: maven-central
+      #     log_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

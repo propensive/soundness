@@ -1,0 +1,10 @@
+src/**/target
+project/target/
+target
+
+.metals
+.bsp
+.vscode
+.bloop
+.idea
+out

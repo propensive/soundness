@@ -1,0 +1,1 @@
+To _punctuate_ is "to mark with points" (or more specifically, symbolic characters) and also, "to stress or single out as important", which describes Markdown in both the literal sense that punctuation characters are added to text, and in the figurative sense that this punctuates a document with stress and other styled emphasis.

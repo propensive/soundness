@@ -1,0 +1,37 @@
+#!/bin/bash
+
+mkdir -p /opt/soundness/bin
+CLASSPATH="$(ls /opt/soundness/jar/* | tr '\n' :)"
+
+scalac=(
+  /opt/scala/bin/scalac
+    -cp "/opt/soundness/bin:$CLASSPATH"
+    -d /opt/soundness/bin
+    -experimental
+    -new-syntax
+    -feature
+    -deprecation
+    -Wimplausible-patterns
+    -Wsafe-init
+    -Xmax-inlines 100
+    -Ycc-new
+    -Yno-flexible-types
+    -Yexplicit-nulls
+    -Ycheck-all-patmat
+    -explain-cyclic
+    -language:experimental.modularity
+    -language:experimental.genericNumberLiterals
+    -language:experimental.into
+    -language:experimental.erasedDefinitions
+    -language:experimental.saferExceptions
+    -language:experimental.namedTypeArguments
+    -language:implicitConversions
+)
+
+echo —————————— STAGE 3 ——————————
+"${scalac[@]}" \
+  lib/eucalyptus/src/core/*.scala \
+  lib/adversaria/src/core/*.scala \
+  lib/anticipation/src/url/*.scala \
+  lib/diuretic/src/core/*.scala \
+  lib/quantitative/src/core/*.scala

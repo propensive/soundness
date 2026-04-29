@@ -1,0 +1,3 @@
+- provides several stream-related operations on `LazyList`s
+- can multiplex several streams into a single stream
+- can cluster together short sequences of events which happen within a predefined period of time

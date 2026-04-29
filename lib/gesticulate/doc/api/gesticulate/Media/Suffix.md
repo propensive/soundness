@@ -1,0 +1,1 @@
+a suffix to a media type, such as `+json` or `+xml`

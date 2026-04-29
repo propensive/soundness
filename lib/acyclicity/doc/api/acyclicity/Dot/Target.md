@@ -1,0 +1,1 @@
+the destination of an edge in the DOT language, which may optionally be chained to subsequent targets

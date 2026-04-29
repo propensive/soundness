@@ -1,0 +1,1 @@
+represents a property and its assigned value, as a key/value pair

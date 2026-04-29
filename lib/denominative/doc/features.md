@@ -1,0 +1,5 @@
+- provides an `Ordinal` type representing ordinal numbers
+- `Ordinal`s should be used for values which zero-indexed or one-indexed cardinal numbers could be ambiguous
+- `Ordinal`s are distinct from cardinal `Int`s
+- conversions between `Ordinal`s and `Int`s may be made only by specifying zero- or one-indexing
+- introduces a distinct namespace for the first ten ordinals

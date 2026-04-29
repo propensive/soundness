@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+echo \" <<'next' >/dev/null ">nul "\" \`" <#"
+@echo off & <nul set /p ="[6A[J"
+@@BAT@@
+goto :eof & type con >nul
+next
+#> | Out-Null
+echo \" <<'next' >/dev/null # " | Out-Null
+@@PS1@@
+while ( ! $MyInvocation.MyCommand.Source ) {
+    $input_line = Read-Host
+}; exit; <#
+next
+set +o histexpand 2>/dev/null
+@@SH@@
+case $- in *"i"*) cat /dev/stdin >/dev/null ;; esac
+exit

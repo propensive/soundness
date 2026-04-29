@@ -1,0 +1,1 @@
+_Yossarian_ was the protagonist in Joseph Heller's _Catch 22_, in which he desires to be declared _insane_ in order to be excused from flying combat missions. But in doing so, he must request an evaluation, which only a _sane_ person would do, and would thus be considered proof of sanity. This library makes it possible to evaluate the sanity of terminal output.

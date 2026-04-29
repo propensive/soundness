@@ -1,0 +1,1 @@
+the main type of the media type, named `group` here to avoid confusion with Scala's `type` keyword

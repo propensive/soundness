@@ -1,0 +1,1 @@
+enumeration of DOT graph types, either a `:Graph` or a `:Digraph`

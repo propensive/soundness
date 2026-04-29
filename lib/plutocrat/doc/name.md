@@ -1,0 +1,1 @@
+_Plutocracy_ is power through money, which this library provides; at least a representation thereof.

@@ -1,0 +1,1 @@
+the variable part of a media subtype in the unregistered tree, without the prefix `x-` or `x.`

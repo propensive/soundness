@@ -1,0 +1,1 @@
+the macro implementation of the given `:Annotations[A, T]` instance

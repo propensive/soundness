@@ -1,0 +1,1 @@
+constructs a new `:Digraph` instance

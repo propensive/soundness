@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="120mm"
+   height="120mm"
+   viewBox="0 0 120 120"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="logo.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#111111"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="1.1893044"
+     inkscape:cx="269.48526"
+     inkscape:cy="171.52884"
+     inkscape:window-width="2923"
+     inkscape:window-height="2978"
+     inkscape:window-x="0"
+     inkscape:window-y="20"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid686"
+       dotted="true"
+       originx="-39"
+       originy="-78" />
+  </sodipodi:namedview>
+  <defs
+     id="defs2">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient1033">
+      <stop
+         style="stop-color:#2b00ba;stop-opacity:1;"
+         offset="0"
+         id="stop1029" />
+      <stop
+         style="stop-color:#4d004d;stop-opacity:1;"
+         offset="1"
+         id="stop1031" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient1033"
+       id="linearGradient1035"
+       x1="67"
+       y1="170"
+       x2="132"
+       y2="104"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-39,-78)">
+    <g
+       id="g1231"
+       transform="matrix(1.5,0,0,1.5,-49.5,-69)">
+      <circle
+         style="opacity:1;fill:url(#linearGradient1035);fill-opacity:1;stroke-width:0.0649999;stop-color:#000000"
+         id="path859"
+         cx="99"
+         cy="138"
+         r="40" />
+      <circle
+         style="opacity:0.240371;mix-blend-mode:normal;fill:#ff2c2c;fill-opacity:1;stroke-width:0.0649999;stop-color:#000000"
+         id="path857"
+         cx="99"
+         cy="133.00002"
+         r="35" />
+      <circle
+         style="opacity:0.240371;mix-blend-mode:normal;fill:#ff2c2c;fill-opacity:1;stroke-width:0.0649999;stop-color:#000000"
+         id="path855"
+         cx="94"
+         cy="133.00002"
+         r="30.000002" />
+      <circle
+         style="opacity:0.240371;mix-blend-mode:normal;fill:#ff952c;fill-opacity:1;stroke-width:0.0649999;stop-color:#000000"
+         id="path853"
+         cx="94"
+         cy="138"
+         r="25" />
+      <circle
+         style="opacity:0.240371;mix-blend-mode:normal;fill:#ffca2c;fill-opacity:1;stroke-width:0.0649999;stop-color:#000000"
+         id="path851"
+         cx="99"
+         cy="138"
+         r="20" />
+      <circle
+         style="opacity:0.240371;mix-blend-mode:normal;fill:#ffff2c;fill-opacity:1;stroke-width:0.0649999;stop-color:#000000"
+         id="path849"
+         cx="99"
+         cy="133.00002"
+         r="15" />
+      <circle
+         style="opacity:0.240371;mix-blend-mode:normal;fill:#ff2c2c;fill-opacity:1;stroke-width:0.0649999;stop-color:#000000"
+         id="path857-6"
+         cx="98.999992"
+         cy="138.29169"
+         r="35" />
+      <circle
+         style="opacity:0.240371;mix-blend-mode:normal;fill:#ff2c2c;fill-opacity:1;stroke-width:0.0649999;stop-color:#000000"
+         id="path855-0"
+         cx="94"
+         cy="138.29169"
+         r="30.000002" />
+      <circle
+         style="opacity:0.240371;mix-blend-mode:normal;fill:#ff952c;fill-opacity:1;stroke-width:0.0649999;stop-color:#000000"
+         id="path853-6"
+         cx="94"
+         cy="143.29167"
+         r="25" />
+      <circle
+         style="opacity:0.240371;mix-blend-mode:normal;fill:#ffca2c;fill-opacity:1;stroke-width:0.0649999;stop-color:#000000"
+         id="path851-2"
+         cx="98.999992"
+         cy="143.29167"
+         r="20" />
+      <circle
+         style="opacity:0.240371;mix-blend-mode:normal;fill:#ffff2c;fill-opacity:1;stroke-width:0.0649999;stop-color:#000000"
+         id="path849-6"
+         cx="98.999992"
+         cy="138.29169"
+         r="15" />
+    </g>
+  </g>
+</svg>

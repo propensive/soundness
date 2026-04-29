@@ -1,0 +1,114 @@
+                                                                                                  /*
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                  ┃
+┃                                                   ╭───╮                                          ┃
+┃                                                   │   │                                          ┃
+┃                                                   │   │                                          ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
+┃                                                                                                  ┃
+┃    Soundness, version 0.54.0.                                                                    ┃
+┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
+┃                                                                                                  ┃
+┃    The primary distribution site is:                                                             ┃
+┃                                                                                                  ┃
+┃        https://soundness.dev/                                                                    ┃
+┃                                                                                                  ┃
+┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
+┃    except in compliance with the License. You may obtain a copy of the License at                ┃
+┃                                                                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
+┃                                                                                                  ┃
+┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
+┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
+┃    either express or implied. See the License for the specific language governing permissions    ┃
+┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                                                                                  */
+package anthology
+
+import ambience.*
+import anticipation.*
+import contingency.*
+import digression.*
+import distillate.*
+import eucalyptus.*
+import galilei.*
+import gossamer.*
+import hellenism.*
+import prepositional.*
+import revolution.*
+import serpentine.*
+import turbulence.*
+import vacuous.*
+import zeppelin.*
+
+import filesystemOptions.createNonexistent.disabled
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.enabled
+import filesystemTraversal.preOrder
+import logging.silent
+import manifestAttributes.*
+import systems.java
+import workingDirectories.java
+
+object Bundler:
+  def classpath(out: Path on Linux): LocalClasspath = LocalClasspath:
+    Classpath.Directory(out)
+    :: (classloaders.threadContext.classpath.match
+      case classpath: LocalClasspath => classpath.entries
+
+      case _ =>
+        unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)
+
+
+  def bundle(directory: Path on Linux, jarfile0: Optional[Path on Linux], main: Optional[Fqcn])
+  :   Path on Linux raises ZipError =
+
+    val jarfile = jarfile0.or(directory.peer("tmpfile.jar"))
+
+    val manifest =
+      main.let(MainClass(_)).let: main =>
+        Manifest(ManifestVersion(()), CreatedBy(t"Soundness"), main)
+
+      . or:
+          Manifest(ManifestVersion(()), CreatedBy(t"Soundness"))
+
+
+    val omissions: Set[Text] = Set("MANIFEST.MF", "plugin.properties")
+
+    Zipfile.write(jarfile):
+      val entries =
+        Zip.Entry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest)
+        :: classpath(directory).entries.to(List).flatMap:
+          case ClasspathEntry.Directory(directory) =>
+            unsafely:
+              val root = directory.decode[Path on Linux]
+              root.descendants.to(List).filter: entry => !omissions(entry.name)
+              . map: file =>
+                if file.entry() == Directory then Unset else file.open: handle =>
+                  val ref = %.on[Zip] + root.toward(file).on[Zip]
+                  Zip.Entry(ref, handle.read[Data])
+
+              . compact
+
+          case ClasspathEntry.Jar(jar) =>
+            unsafely:
+              workingDirectory[Path on Linux].resolve(jar).open: handle =>
+                ZipStream(handle).keep(_.encode != t"META-INF/MANIFEST.MF").map: entry =>
+                  Zip.Entry(entry.ref, entry.read[Data])
+
+                . to(List)
+
+          case _ =>
+            Nil
+
+      entries.distinctBy(_.ref)
+
+    jarfile

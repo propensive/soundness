@@ -1,0 +1,1 @@
+the main group of media types starting with `audio/`

@@ -1,0 +1,1 @@
+the nature of the highlighting for this token, typically rendered as a color

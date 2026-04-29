@@ -1,0 +1,116 @@
+                                                                                                  /*
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                  ┃
+┃                                                   ╭───╮                                          ┃
+┃                                                   │   │                                          ┃
+┃                                                   │   │                                          ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
+┃                                                                                                  ┃
+┃    Soundness, version 0.54.0.                                                                    ┃
+┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
+┃                                                                                                  ┃
+┃    The primary distribution site is:                                                             ┃
+┃                                                                                                  ┃
+┃        https://soundness.dev/                                                                    ┃
+┃                                                                                                  ┃
+┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
+┃    except in compliance with the License. You may obtain a copy of the License at                ┃
+┃                                                                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
+┃                                                                                                  ┃
+┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
+┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
+┃    either express or implied. See the License for the specific language governing permissions    ┃
+┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                                                                                  */
+package guillotine
+
+import language.experimental.pureFunctions
+
+import java.io as ji
+import java.util.concurrent as juc
+
+import anticipation.*
+import contingency.*
+import gossamer.*
+import parasite.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
+import turbulence.*
+import vacuous.*
+
+object Job:
+  given writable: [chunk, command <: Label, result]
+  =>  ji.OutputStream is Writable by chunk
+  =>  Job[command, result] is Writable by chunk =
+
+    (process, stream) => process.stdin(stream)
+
+
+  given writableText: [command <: Label, result] => Tactic[StreamError]
+  =>  Job[command, result] is Writable by Text =
+
+    (process, stream) => process.stdin(stream.map(_.sysData))
+
+
+class Job[+exec <: Label, result](process: java.lang.Process) extends ProcessRef:
+  def pid: Pid = Pid(process.pid)
+  def alive: Boolean = process.isAlive
+  def attend(): Unit = process.waitFor()
+
+  def stdout(): Stream[Data] raises StreamError =
+    Streamable.inputStream.stream(process.getInputStream.nn)
+
+  def stderr(): Stream[Data] raises StreamError =
+    Streamable.inputStream.stream(process.getErrorStream.nn)
+
+
+  def stdin[chunk](stream: Stream[chunk])(using writable: ji.OutputStream is Writable by chunk)
+  :   Unit =
+
+    writable.write(process.getOutputStream.nn, stream)
+
+
+  def await()(using computable: result is Computable): result = computable.compute(process)
+
+  def await[duration: Abstractable across Durations to Long](duration: duration)
+    ( using computable: result is Computable )
+  :   result raises AsyncError =
+
+    if process.waitFor(duration.generic/1_000_000L, juc.TimeUnit.MILLISECONDS)
+    then computable.compute(process)
+    else contingency.abort(AsyncError(AsyncError.Reason.Timeout))
+
+  def exitStatus(): Exit = process.waitFor() match
+    case 0     => Exit.Ok
+    case other => Exit.Fail(other)
+
+  def abort(): Unit logs ExecEvent =
+    Log.info(ExecEvent.AbortProcess(pid))
+    process.destroy()
+
+  def kill(): Unit logs ExecEvent =
+    Log.warn(ExecEvent.KillProcess(pid))
+    process.destroyForcibly()
+
+  def process(using Tactic[PidError]) = Process(pid)
+
+  def startTime[instant: Instantiable across Instants from Long]: Optional[instant] =
+    try
+      import strategies.throwUnsafely
+      process.startTime[instant]
+    catch case _: PidError => Unset
+
+  def cpuUsage[instant: Instantiable across Durations from Long]: Optional[instant] =
+    try
+      import strategies.throwUnsafely
+      process.cpuUsage[instant]
+    catch case _: PidError => Unset

@@ -1,0 +1,3 @@
+- intuitive and instructive API for most common filesystem operations
+- safe and precise error handling, without unnecessary handling
+- read from and write to files on disk with a variety of different types

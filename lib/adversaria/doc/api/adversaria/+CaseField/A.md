@@ -1,0 +1,1 @@
+the type of the annotation on this case field; a subtype of `:scala.annotation.StaticAnnotation`

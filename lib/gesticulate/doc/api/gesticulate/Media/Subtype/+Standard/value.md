@@ -1,0 +1,1 @@
+the textual name of a media subtype in the standard tree, which has no prefix
