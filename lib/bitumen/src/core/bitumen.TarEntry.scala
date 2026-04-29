@@ -35,6 +35,7 @@ package bitumen
 import anticipation.*
 import contingency.*
 import denominative.*
+import distillate.*
 import gossamer.*
 import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
@@ -60,6 +61,10 @@ object TarEntry:
       (mtime.let(_.generic).or(System.currentTimeMillis)/1000).toInt.bits.u32
 
     TarEntry.File(name, mode, user, group, mtimeU32, data.stream[Data])
+
+  private[bitumen] val paxRef: TarRef =
+    import strategies.throwUnsafely
+    t"PaxHeaders/0".decode[Relative on Posix]
 
 enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
   case File
@@ -103,13 +108,18 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
   case Fifo(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32)
   extends TarEntry(path, mode, user, group, mtime)
 
+  case Pax(records: Data)
+  extends TarEntry(TarEntry.paxRef, UnixMode(), UnixUser(0), UnixGroup(0), 0.bits.u32)
+
 
   def size: U32 = this match
     case file: File => file.data.sumBy(_.length).bits.u32
+    case pax: Pax   => pax.records.length.bits.u32
     case _          => 0
 
   def dataBlocks: LazyList[Data] = this match
     case file: File => file.data.chunked(512, zeroPadding = true)
+    case pax: Pax   => LazyList(pax.records).chunked(512, zeroPadding = true)
     case directory  => LazyList()
 
   def typeFlag: TypeFlag = this match
@@ -120,9 +130,11 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
     case _: BlockSpecial => TypeFlag.BlockSpecial
     case _: Directory    => TypeFlag.Directory
     case _: Fifo         => TypeFlag.Fifo
+    case _: Pax          => TypeFlag.NextFile
 
   def entryName: Text = this match
     case directory: Directory => t"${directory.path}/"
+    case _: Pax              => t"PaxHeaders/0"
     case other                => this.path.show
 
   def link: Optional[Text] = this.only:
@@ -136,10 +148,8 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
   def format(number: U32, width: Int): Data =
     number.octal.pad(width - 1).data
 
-  def header(using Tactic[TarError]): Data = Data.build(512): array =>
+  def header: Data = Data.build(512): array =>
     val nameData = entryName.data
-    if nameData.length > 100
-    then raise(TarError(TarError.Reason.NameTooLong(t"name", nameData.length, 100)))
     array.place(if nameData.length > 100 then nameData.slice(0, 100) else nameData, Prim)
     array.place(mode.bytes, 100.z)
     array.place(user.bytes, 108.z)
@@ -151,16 +161,19 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
 
     link.let: link =>
       val linkData = link.data
-      if linkData.length > 100
-      then raise(TarError(TarError.Reason.NameTooLong(t"linkname", linkData.length, 100)))
       array.place(if linkData.length > 100 then linkData.slice(0, 100) else linkData, 157.z)
 
     deviceNumbers.let: (devMajor, devMinor) =>
       array.place(format(devMajor, 8), 329.z)
       array.place(format(devMinor, 8), 337.z)
 
-    user.name.let { name => array.place(name.data, 265.z) }
-    group.name.let { name => array.place(name.data, 297.z) }
+    user.name.let: name =>
+      val nameData = name.data
+      array.place(if nameData.length > 32 then nameData.slice(0, 32) else nameData, 265.z)
+
+    group.name.let: name =>
+      val nameData = name.data
+      array.place(if nameData.length > 32 then nameData.slice(0, 32) else nameData, 297.z)
 
     array.place(t"ustar\u0000".data, 257.z)
     array.place(t"00".data, 263.z)
@@ -168,4 +181,4 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
     val total = array.map(_.bits.u8.u32).reduce(_ + _)
     array.place(format(total, 8), 148.z)
 
-  def serialize(using Tactic[TarError]): LazyList[Data] = header #:: dataBlocks
+  def serialize: LazyList[Data] = header #:: dataBlocks
