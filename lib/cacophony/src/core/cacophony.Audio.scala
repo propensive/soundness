@@ -63,14 +63,15 @@ object Audio:
       then raw
       else
         val src = raw.getFormat.nn
-        val target = jss.AudioFormat
-                      (jss.AudioFormat.Encoding.PCM_SIGNED,
-                       src.getSampleRate,
-                       16,
-                       src.getChannels,
-                       src.getChannels*2,
-                       src.getSampleRate,
-                       false)
+        val target =
+          jss.AudioFormat
+            ( jss.AudioFormat.Encoding.PCM_SIGNED,
+              src.getSampleRate,
+              16,
+              src.getChannels,
+              src.getChannels*2,
+              src.getSampleRate,
+              false )
 
         try jss.AudioSystem.getAudioInputStream(target, raw).nn
         catch case _: IllegalArgumentException => abort(AudioError(Unset))
@@ -84,17 +85,14 @@ object Audio:
     new Audio(format, data):
       type Form = form
 
-  private[cacophony] def of[layout]
-                            (format: jss.AudioFormat, data: Array[Byte])
-                          : Audio across layout =
+  private[cacophony] def of[layout](format: jss.AudioFormat, data: Array[Byte])
+  :   Audio across layout =
+
     new Audio(format, data):
       type Domain = layout
 
   private def writeAudio(audio: Audio, formatName: Text): Stream[Data] =
-    val ais = jss.AudioInputStream
-               (ji.ByteArrayInputStream(audio.data),
-                audio.format,
-                audio.frames)
+    val ais = jss.AudioInputStream(ji.ByteArrayInputStream(audio.data), audio.format, audio.frames)
 
     val fileType = jss.AudioSystem.getAudioFileTypes.nn.find(_.toString == formatName.s).getOrElse:
       throw RuntimeException(s"unregistered audio file format: ${formatName.s}")
@@ -128,8 +126,7 @@ object Audio:
   given aggregable2: Tactic[AudioError] => Audio is Aggregable by Data = Audio(_)
 
 case class Audio
-            (private[cacophony] val format: jss.AudioFormat,
-             private[cacophony] val data:   Array[Byte])
+  ( private[cacophony] val format: jss.AudioFormat, private[cacophony] val data: Array[Byte] )
 extends Formal, Domainal:
   audio =>
 
