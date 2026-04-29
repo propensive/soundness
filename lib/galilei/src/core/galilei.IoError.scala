@@ -42,8 +42,9 @@ object IoError:
     case Read, Write, Create, Copy, Move, Delete, Metadata, Open, Access
 
   enum Reason:
-    case PermissionDenied, Nonexistent, AlreadyExists, IsNotDirectory, IsDirectory,
-        DirectoryNotEmpty, NotSameVolume, Unsupported, Cycle
+    case
+      PermissionDenied, Nonexistent, AlreadyExists, IsNotDirectory, IsDirectory, DirectoryNotEmpty,
+      NotSameVolume, Unsupported, Cycle
 
   @targetName("apply2")
   def apply(path: Path, operation: Operation, reason: Reason)

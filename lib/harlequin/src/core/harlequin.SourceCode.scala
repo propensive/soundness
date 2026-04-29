@@ -107,15 +107,12 @@ object SourceCode:
         val start = scanner.offset max lastEnd
 
         val unparsed: Stream[Token] =
-          if lastEnd != start
-          then
+          if lastEnd == start then Stream() else
             text.segment(lastEnd.z thru start.u)
             . cut(t"\n")
             . to(Stream)
             . flatMap(untab(_).filter(_.length > 0))
             . init
-
-          else Stream()
 
         scanner.nextToken()
         val end = scanner.lastOffset max start

@@ -117,7 +117,8 @@ object Subcompiler:
                   error.point >= start && error.point <= end
 
                 . match
-                    case None                    => recompile(tail, done, source)
+                    case None =>
+                      recompile(tail, done, source)
 
                     case Some(region@(from, to)) =>
                       if done.contains(region) then recompile(tail, done, source) else

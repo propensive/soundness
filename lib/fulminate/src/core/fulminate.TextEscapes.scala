@@ -78,12 +78,12 @@ object TextEscapes:
 
     @tailrec
     def recur(cur: Int = 0, esc: Boolean): Unit =
-      if cur < text.s.length
-      then
+      if cur < text.s.length then
         val (char, index, escape) = standardEscape(text, cur, esc)
         if char >= 0 then buffer.append(char.toChar)
         recur(index, escape)
-      else if esc then throw EscapeError(Message("the final character cannot be an escape".tt))
+      else if esc
+      then throw EscapeError(Message("the final character cannot be an escape".tt))
 
     recur(0, false)
 

@@ -107,7 +107,9 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
           next()
           yearWeekDay(week, number(1))
 
-        else if !digit then fail(Digit) yet today() else
+        else if !digit
+        then fail(Digit) yet today()
+        else
           val month: Month = Month(number(2))
 
           next() match

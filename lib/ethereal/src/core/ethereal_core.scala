@@ -39,8 +39,6 @@ import java.lang as jl
 import java.net as jn
 import java.nio as jnio
 import java.nio.channels as jnc
-import java.util as ju
-import java.util.concurrent as juc
 import java.util.concurrent.atomic as juca
 
 import scala.collection.concurrent as scc
@@ -145,7 +143,8 @@ def cli[bus <: Matchable](using executive: Executive)
 
               val os =
                 if osName.contains(t"mac") || osName.contains(t"darwin") then t"macos"
-                else if osName.contains(t"win") then t"windows"
+                else if osName.contains(t"win")
+                then t"windows"
                 else t"linux"
 
               val arch =
@@ -365,8 +364,9 @@ def cli[bus <: Matchable](using executive: Executive)
               import workingDirectories.system
 
               if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
-              else ColorDepth
-                    ( safely(mute[ExecEvent](sh"tput colors".exec[Text]().decode[Int])).or(-1) )
+              else
+                ColorDepth
+                  ( safely(mute[ExecEvent](sh"tput colors".exec[Text]().decode[Int])).or(-1) )
 
           val stdio: Stdio =
             Stdio
@@ -408,7 +408,8 @@ def cli[bus <: Matchable](using executive: Executive)
               val exitStatus: Exit = executive.process(cli)(result)
 
               connection.exitPromise.fulfill(exitStatus)
-            else connection.exitPromise.fulfill(Exit.Ok)
+            else
+              connection.exitPromise.fulfill(Exit.Ok)
 
           catch
             case exception: Exception =>

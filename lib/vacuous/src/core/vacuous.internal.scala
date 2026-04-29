@@ -58,11 +58,13 @@ object internal:
 
     concrete[typeRef]
 
-    if TypeRepr.of[typeRef] <:< TypeRepr.of[union]
-    then
+    if TypeRepr.of[typeRef] <:< TypeRepr.of[union] then
       halt
         ( 4,
-          m"type ${TypeRepr.of[typeRef].show} cannot be proven distinct from ${TypeRepr.of[union].show}" )
+          m"""
+            type ${TypeRepr.of[typeRef].show} cannot be proven distinct from
+            ${TypeRepr.of[union].show}
+          """ )
     else '{Distinct[typeRef, union]()}
 
   def mandatable[typeRef: Type]: Macro[typeRef is Mandatable] =

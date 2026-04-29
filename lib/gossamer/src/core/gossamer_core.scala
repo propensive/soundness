@@ -222,13 +222,12 @@ extension [textual: Textual](text: textual)
   def extract[value](start: Ordinal)(lambda: Scanner ?=> textual ~> value): Stream[value] =
 
     val input = textual.text(text)
-    if start.n0 < input.s.length then
+
+    if start.n0 >= input.s.length then Stream() else
       val scanner = Scanner(start.n0)
       lambda(using scanner).lift(text) match
         case Some(head) => head #:: extract(scanner.nextStart.or(0).z)(lambda)
         case _          => Stream()
-
-    else Stream()
 
   def seek(regex: Regex): Optional[textual] = regex.seek(textual.text(text)).let(text.segment(_))
   def seek(substring: Text): Optional[Ordinal] = textual.indexOf(text, substring)

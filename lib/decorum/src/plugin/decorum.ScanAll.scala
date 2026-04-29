@@ -60,6 +60,7 @@ object ScanAll:
 
     filtered.foreach: v =>
       val short = v.file.split("/lib/").nn match
-        case parts if parts.length >= 2 => "lib/" + parts(1)
+        case parts if parts.length >= 2 => "lib/"+parts(1)
         case _                          => v.file
+
       println(s"${short}:${v.line}:${v.column}  [${v.rule}] ${v.message}")

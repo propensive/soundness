@@ -39,5 +39,6 @@ object Rev:
   given showable: Rev is Showable = _.toString.show.lower
 
 enum Rev:
-  case Alternate, Stylesheet, Start, Next, Prev, Contents, Index, Glossary, Copyright, Chapter,
-      Section, Subsection, Appendix, Help, Bookmark
+  case
+    Alternate, Stylesheet, Start, Next, Prev, Contents, Index, Glossary, Copyright, Chapter,
+    Section, Subsection, Appendix, Help, Bookmark

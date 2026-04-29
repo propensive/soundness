@@ -58,11 +58,13 @@ object Audio:
     val encoding = raw.getFormat.nn.getEncoding.nn
 
     val pcm: jss.AudioInputStream =
-      if encoding == jss.AudioFormat.Encoding.PCM_SIGNED
+      if
+        encoding == jss.AudioFormat.Encoding.PCM_SIGNED
         || encoding == jss.AudioFormat.Encoding.PCM_UNSIGNED
       then raw
       else
         val src = raw.getFormat.nn
+
         val target =
           jss.AudioFormat
             ( jss.AudioFormat.Encoding.PCM_SIGNED,
@@ -105,10 +107,12 @@ object Audio:
   given streamable: [form: Audible] => (Audio in form) is Streamable by Data = audio =>
     writeAudio(audio, form.name)
 
+
   given streamableAcross: [form: Audible, layout]
-        =>  (Audio in form across layout) is Streamable by Data =
+  =>  (Audio in form across layout) is Streamable by Data =
 
     audio => writeAudio(audio, form.name)
+
 
   given abstractable: [format: Audible] => (Audio in format) is Abstractable:
     type Domain = HttpStreams
@@ -159,7 +163,8 @@ extends Formal, Domainal:
     if signed && bytesPerSample < 4 then
       val shift = 32 - 8*bytesPerSample
       (value << shift) >> shift
-    else value
+    else
+      value
 
   def to[form: Audible as audible]: Audio in form across audio.Domain =
     new Audio(format, data):
