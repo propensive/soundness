@@ -75,7 +75,7 @@ object Task:
       val promise: Promise[result] = Promise()
       tasks.foreach(_.map(promise.offer(_)))
 
-      promise.await()
+      try promise.await() finally tasks.foreach(_.cancel())
 
 trait Task[+result]:
   def ready: Boolean
