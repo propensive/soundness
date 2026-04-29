@@ -6,7 +6,31 @@ on:
       - '[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      should_publish: ${{ steps.check.outputs.should_publish }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Verify tag points into release branch
+        id: check
+        run: |
+          git fetch origin release || { echo "release branch not found"; exit 1; }
+          if git merge-base --is-ancestor "${{ github.sha }}" origin/release; then
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Tag ${{ github.ref_name }} does not point at a commit reachable from release; skipping publish."
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+          fi
+
   publish:
+    needs: guard
+    if: needs.guard.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read

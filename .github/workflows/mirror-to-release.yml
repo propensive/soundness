@@ -1,0 +1,157 @@
+name: Mirror to release branch
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: release-branch
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Configure git identity
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      - name: Fetch release branch (if it exists)
+        run: git fetch origin release || true
+
+      - name: Mirror unmirrored PRs to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # Collect PR numbers already mirrored on release (extracted from the
+          # `(#N)` suffix of each commit subject).
+          if git rev-parse --verify refs/remotes/origin/release >/dev/null 2>&1; then
+            git log origin/release --format=%s \
+              | grep -oE '\(#[0-9]+\)$' \
+              | tr -d '()#' \
+              | sort -u > /tmp/mirrored.txt
+          else
+            : > /tmp/mirrored.txt
+          fi
+
+          if [ -s /tmp/mirrored.txt ]; then
+            jq -R . /tmp/mirrored.txt | jq -s . > /tmp/mirrored.json
+          else
+            echo '[]' > /tmp/mirrored.json
+          fi
+
+          # Fetch recent merged PRs against main.
+          gh pr list \
+            --repo "$REPO" \
+            --state merged \
+            --base main \
+            --limit 50 \
+            --json number,title,body,url,mergedAt,mergeCommit \
+            > /tmp/prs.json
+
+          # Drop already-mirrored PRs and PRs without a merge commit; sort
+          # ascending by mergedAt so we apply them in the order they landed.
+          jq --slurpfile m /tmp/mirrored.json '
+            map(select(.mergeCommit != null and .mergeCommit.oid != null))
+            | map(select((.number | tostring) as $n | ($m[0] // []) | index($n) | not))
+            | sort_by(.mergedAt)
+          ' /tmp/prs.json > /tmp/todo.json
+
+          count=$(jq 'length' /tmp/todo.json)
+          echo "::notice::$count PR(s) to mirror"
+          if [ "$count" -eq 0 ]; then
+            echo "Nothing to do."
+            exit 0
+          fi
+
+          # First-run bootstrap: create release as an orphan branch with a
+          # baseline commit holding the tree at the first PR's parent. This
+          # makes the demarcation between pre-mirror and mirrored history
+          # explicit (no pre-existing commits on release).
+          if ! git rev-parse --verify refs/remotes/origin/release >/dev/null 2>&1; then
+            first_sha=$(jq -r '.[0].mergeCommit.oid' /tmp/todo.json)
+            base_sha=$(git rev-parse "${first_sha}^1")
+            echo "Bootstrapping release from tree at $base_sha"
+            git checkout --orphan release "$base_sha"
+            git commit -m 'Initial release branch baseline'
+          else
+            git checkout -B release origin/release
+          fi
+
+          # Apply each PR's diff as a single commit on release.
+          for i in $(seq 0 $((count - 1))); do
+            number=$(jq -r ".[$i].number" /tmp/todo.json)
+            title=$(jq -r ".[$i].title" /tmp/todo.json)
+            url=$(jq -r ".[$i].url" /tmp/todo.json)
+            sha=$(jq -r ".[$i].mergeCommit.oid" /tmp/todo.json)
+            jq -r ".[$i].body // \"\"" /tmp/todo.json > /tmp/body.raw
+
+            echo "::group::Mirroring #$number ($sha): $title"
+
+            parent=$(git rev-parse "${sha}^1")
+
+            # Modules trailer: lib/<module> for files inside lib/, "core" for
+            # any file outside lib/. Deduped, comma-separated.
+            modules=$(git diff --name-only "$parent" "$sha" \
+              | awk -F/ '
+                  $1=="lib" && NF>=3 { print "lib/" $2; next }
+                  { print "core" }
+                ' \
+              | sort -u \
+              | paste -sd, - \
+              | sed 's/,/, /g')
+
+            # Strip HTML comments, collapse blank-line runs left behind, and
+            # trim surrounding whitespace.
+            perl -0777 -pe '
+              s/<!--.*?-->//gs;
+              s/\n{3,}/\n\n/g;
+              s/\A\s+//;
+              s/\s+\z//;
+            ' /tmp/body.raw > /tmp/body.clean
+
+            {
+              printf '%s (#%s)\n' "$title" "$number"
+              if [ -s /tmp/body.clean ]; then
+                printf '\n'
+                cat /tmp/body.clean
+                printf '\n'
+              fi
+              printf '\n'
+              if [ -n "$modules" ]; then
+                printf 'Modules: %s\n' "$modules"
+              fi
+              printf 'PR: %s\n' "$url"
+            } > /tmp/msg.txt
+
+            git diff "$parent" "$sha" > /tmp/pr.patch
+            if [ ! -s /tmp/pr.patch ]; then
+              echo "PR #$number has empty diff; skipping."
+              echo "::endgroup::"
+              continue
+            fi
+            git apply --3way --index /tmp/pr.patch
+            git commit -F /tmp/msg.txt
+
+            echo "::endgroup::"
+          done
+
+          git push origin release
