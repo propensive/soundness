@@ -37,6 +37,18 @@ import language.dynamics
 import proscenium.*
 import vacuous.*
 
+object Catalog:
+  extension [key, value: ClassTag](catalog: Catalog[key, value])
+    def brush(using proxy: Proxy[key, value, Nat])
+      ( lambda: (`*`: proxy.type) ?=> Proxy[key, value, Nat] ~> value )
+    :   Catalog[key, value] =
+
+      val partialFunction = lambda(using proxy)
+
+      Catalog(IArray.tabulate(catalog.size): index =>
+        partialFunction.applyOrElse
+          ( Proxy[key, value, index.type](), _ => catalog.values(index) ))
+
 //case class Catalog[key, value](values: Map[Text, value]):
 case class Catalog[key, value: ClassTag](values: IArray[value]):
   def size: Int = values.length

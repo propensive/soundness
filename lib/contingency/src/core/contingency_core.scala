@@ -187,16 +187,8 @@ inline def focus[focus, result](using foci: Foci[focus])
 transparent inline def mitigate(inline block: Exception ~> Exception): Mitigation[?] =
   ${contingency.internal.mitigate('block)}
 
-extension [lambda[_]](inline mitigation: Mitigation[lambda])
-  inline def within[result](inline lambda: lambda[result]): result =
-    ${contingency.internal.mitigateWithin[lambda, result]('mitigation, 'lambda)}
-
 transparent inline def recover[result](inline block: Exception ~> result): Recovery[result, ?] =
   ${contingency.internal.recover[result]('block)}
-
-extension [result, lambda[_]](inline recovery: Recovery[result, lambda])
-  inline def within[result2 >: result](inline lambda: lambda[result2]): result2 =
-    ${contingency.internal.recoverWithin[lambda, result2]('recovery, 'lambda)}
 
 
 transparent inline def track[focus](using erased Void)[accrual <: Exception](accrual: accrual)
@@ -218,36 +210,6 @@ transparent inline def accrue[accrual <: Exception](accrual: accrual)[result]
 :   Any =
 
   ${contingency.internal.accrue[accrual]('accrual, 'block)}
-
-
-extension [accrual <: Exception, lambda[_]](inline accrue: Accrue[accrual, lambda])
-  inline def within[result](inline lambda: lambda[result])
-    ( using tactic: Tactic[accrual], diagnostics: Diagnostics )
-  :   result =
-
-    $ {
-        contingency.internal.accrueWithin[accrual, lambda, result]
-          ( 'accrue, 'lambda, 'tactic, 'diagnostics )
-      }
-
-
-extension [accrual <: Exception, lambda[_], focus](inline track: Tracking[accrual, lambda, focus])
-  inline def within[result](inline lambda: Foci[focus] ?=> lambda[result])
-    ( using tactic: Tactic[accrual], diagnostics: Diagnostics )
-  :   result =
-
-    $ {
-        contingency.internal.trackWithin[accrual, lambda, result, focus]
-          ( 'track, 'lambda, 'tactic, 'diagnostics )
-      }
-
-
-extension [accrual <: Exception, lambda[_], focus]
-  ( inline validate: Validate[accrual, lambda, focus] )
-  inline def within(inline lambda: Foci[focus] ?=> lambda[Any])(using diagnostics: Diagnostics)
-  :   accrual =
-
-    ${contingency.internal.validateWithin[accrual, lambda, focus]('validate, 'lambda, 'diagnostics)}
 
 
 extension [element](sequence: Iterable[element])

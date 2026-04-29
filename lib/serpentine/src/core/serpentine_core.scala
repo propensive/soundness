@@ -42,10 +42,3 @@ extension (inline context: StringContext)
   transparent inline def p(): Path = ${serpentine.internal.path('context)}
 
 private given Realm = Realm("serpentine")
-
-extension [path <: Path: Precise](left: path)
-  transparent inline def conjunction[right <: Path: Precise](right: right): Optional[Path] =
-    ${serpentine.internal.conjunction[path, right]('left, 'right)}
-
-  transparent inline def toward[target <: Path: Precise](target: target): Optional[Relative] =
-    ${serpentine.internal.toward[path, target]('left, 'target)}

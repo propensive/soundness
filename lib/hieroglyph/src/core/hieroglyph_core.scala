@@ -40,9 +40,6 @@ import fulminate.*
 import rudiments.*
 import vacuous.*
 
-extension (encoding: Encoding { type CanEncode = true })
-  def encoder: CharEncoder = CharEncoder(encoding)
-
 extension (char: Char)
   def whitespace: Boolean = Character.isWhitespace(char)
   def control: Boolean = Character.isISOControl(char)

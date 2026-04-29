@@ -36,7 +36,7 @@ export
   contingency
   . { abort, abortive, accrue, Attempt, attempt, capture, certify, dare, Errors, ExpectationError,
       Fatal, Foci, focus, lest, mitigate, Pointer, raise, raises, recover, Recoverable, safely,
-      survive, Tactic, throwErrors, track, Unchecked, unsafely, validate, Validation, within }
+      survive, Tactic, throwErrors, track, Unchecked, unsafely, validate, Validation }
 
 package strategies:
   export

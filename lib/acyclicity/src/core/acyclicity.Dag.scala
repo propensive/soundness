@@ -34,6 +34,7 @@ package acyclicity
 
 import scala.collection.mutable as scm
 
+import anticipation.*
 import denominative.*
 import proscenium.*
 import rudiments.*
@@ -50,6 +51,9 @@ object Dag:
 
   @targetName("fromNodes")
   def apply[node](nodes: (node, Set[node])*): Dag[node] = Dag(Map(nodes*))
+
+  extension (dag: Dag[Text])
+    def dot: Dot = Digraph(dag.edges.to(List).map(Dot.Ref(_) --> Dot.Ref(_))*)
 
 case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   private val reachableCache: scm.HashMap[node, Set[node]] = scm.HashMap()

@@ -34,4 +34,9 @@ package contingency
 
 import proscenium.*
 
+object Recovery:
+  extension [result, lambda[_]](inline recovery: Recovery[result, lambda])
+    inline def within[result2 >: result](inline lambda: lambda[result2]): result2 =
+      ${contingency.internal.recoverWithin[lambda, result2]('recovery, 'lambda)}
+
 final class Recovery[result, lambda[_]](val lambda: Exception ~> result)

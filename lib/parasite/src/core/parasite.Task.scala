@@ -66,6 +66,17 @@ object Task:
     def apply[value, value2](value: Task[value])(lambda: value -> value2): Task[value2] =
       value.map(lambda)
 
+  extension [result](tasks: Seq[Task[result]])
+    def sequence(using Monitor, Codicil): Task[Seq[result]] raises AsyncError =
+      async(tasks.map(_.await()))
+
+  extension [result](tasks: Iterable[Task[result]])
+    def race()(using Monitor, Codicil): result raises AsyncError =
+      val promise: Promise[result] = Promise()
+      tasks.foreach(_.map(promise.offer(_)))
+
+      promise.await()
+
 trait Task[+result]:
   def ready: Boolean
   def await(): result raises AsyncError

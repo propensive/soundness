@@ -201,6 +201,25 @@ object Markdown:
     val linkRefs: List[Markdown.LinkRef] = Nil
     val children: Seq[Prose] = prose
 
+  extension (markdown: Markdown of Layout)
+    def sections: List[Markdown of Layout] =
+      def recur(todo: List[Layout], current: List[Layout], done: List[Markdown of Layout])
+      :   List[Markdown of Layout] =
+
+        todo match
+          case Nil =>
+            if current.nil then done.reverse
+            else recur(Nil, Nil, Markdown(Nil, current.reverse*) :: done)
+
+          case Layout.ThematicBreak(_) :: more =>
+            recur(more, Nil, Markdown(Nil, current.reverse*) :: done)
+
+          case head :: more =>
+            recur(more, head :: current, done)
+
+
+      recur(markdown.children.to(List), Nil, Nil)
+
 trait Markdown:
   type Topic <: Markdown.Node
   type Domain <: Label

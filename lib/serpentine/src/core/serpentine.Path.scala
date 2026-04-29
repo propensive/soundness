@@ -151,6 +151,13 @@ object Path:
         else Some((radical.decode(path.root), Relative(0, path.descent*))) )
     :   path is Quotient of root over (Relative on filesystem) | Text
 
+  extension [path <: Path: Precise](left: path)
+    transparent inline def conjunction[right <: Path: Precise](right: right): Optional[Path] =
+      ${serpentine.internal.conjunction[path, right]('left, 'right)}
+
+    transparent inline def toward[target <: Path: Precise](target: target): Optional[Relative] =
+      ${serpentine.internal.toward[path, target]('left, 'target)}
+
 
 case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   type Topic <: Tuple

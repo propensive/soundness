@@ -80,6 +80,28 @@ object Html extends Tag.Container
 
   def doctype: Doctype = Doctype(t"html")
 
+  extension (html: Seq[Html])
+    def nodes: IArray[Node] =
+      var count = 0
+
+      for item <- html do item match
+        case fragment: Fragment => count += fragment.nodes.length
+        case _                  => count += 1
+
+      val array = new Array[Node](count)
+
+      var index = 0
+      for item <- html do item match
+        case Fragment(nodes*) => for node <- nodes do
+          array(index) = node
+          index += 1
+
+        case node: Node =>
+          array(index) = node
+          index += 1
+
+      array.immutable(using Unsafe)
+
   inline given interpolator: Html is Interpolable:
     type Result = Html
 
