@@ -46,6 +46,7 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
   private val seen: mutable.Set[String] = mutable.Set.empty
 
   private val esc: Char = 27.toChar
+  private val bel: Char = 7.toChar
   private val gray   = s"$esc[38;2;128;128;128m"
   private val orange = s"$esc[38;2;255;165;0m"
   private val yellow = s"$esc[38;2;255;215;0m"
@@ -54,8 +55,12 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
 
   private def colourPrefix(rule: String, useColor: Boolean): String =
     if useColor then
-      val rendered = rule.replace(".", s"$gray.$cyan")
-      s"$gray[$orange↯SN$gray-${yellow}de$gray/$cyan$rendered$gray]$reset "
+      val hyperlink = false
+      val rendered  = rule.replace(".", s"$gray.$cyan")
+      val d         = rule.takeWhile(_ != '.')
+      val link      = if hyperlink then s"$esc]8;;https://soundness.dev/SN-de/$d$bel" else ""
+      val unlink    = if hyperlink then s"$esc]8;;$bel" else ""
+      s"$link$gray[$orange↯SN$gray-${yellow}de$gray/$cyan$rendered$gray]$reset$unlink "
     else
       s"[↯SN-de/$rule] "
 
