@@ -73,4 +73,4 @@ object LeapSeconds:
 
   def tai(unixTime: Long): Long =
     val n = ((unixTime - firstOffset)/halfYear).toInt
-    unixTime + before(if unixTime > leapSecond(n) then n else n - 1)*1000L
+    unixTime + before(if unixTime >= leapSecond(n - 2) then n else n - 1)*1000L
