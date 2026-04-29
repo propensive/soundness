@@ -198,7 +198,7 @@ object test extends ScalaModule:
     austronesian.test,
     aviation.test,
     baroque.test,
-    //bitumen.test,
+    bitumen.test,
     burdock.test,
     cacophony.test,
     caduceus.test,
@@ -385,9 +385,9 @@ object baroque extends Library:
   object core extends Component(quantitative.core, geodesy.core)
   object test extends Tests(core, abacist.core, quantitative.units, mosquito.core)
 
-// object bitumen extends Library:
-//   object core extends Component(polaris.core, serpentine.core, turbulence.core)
-//   object test extends Tests(core)
+object bitumen extends Library:
+  object core extends Component(serpentine.core, turbulence.core)
+  object test extends Tests(core)
 
 object burdock extends Library:
   object boot extends Component
