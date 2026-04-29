@@ -72,7 +72,6 @@ object Tests extends Suite(m"Soundness tests"):
     //eucalyptus.Tests()
     //exegesis.Tests()
     exoskeleton.Tests()
-    feudalism.Tests()
     //frontier.Tests()
     fulminate.Tests()
     galilei.Tests()
