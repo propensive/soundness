@@ -47,7 +47,7 @@ import turbulence.*
 import vacuous.*
 
 object TarEntry:
-  def apply[data: Readable by Data, instant: Abstractable across Instants]
+  def apply[data: Streamable by Data, instant: Abstractable across Instants to Long]
     ( name:  TarRef,
       data:  data,
       mode:  UnixMode          = UnixMode(),
@@ -57,7 +57,7 @@ object TarEntry:
           :   TarEntry =
 
     val mtimeU32: U32 =
-      (mtime.let(_.milliseconds).or(System.currentTimeMillis)/1000).toInt.bits.u32
+      (mtime.let(_.generic).or(System.currentTimeMillis)/1000).toInt.bits.u32
 
     TarEntry.File(name, mode, user, group, mtimeU32, data.stream[Data])
 
@@ -134,29 +134,29 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
     case special: BlockSpecial => special.device
 
   def format(number: U32, width: Int): Data =
-    number.octal.pad(width - 1).bytes
+    number.octal.pad(width - 1).data
 
   lazy val header: Data = Data.build(512): array =>
-    array.place(entryName.bytes, Prim)
+    array.place(entryName.data, Prim)
     array.place(mode.bytes, 100.z)
     array.place(user.bytes, 108.z)
     array.place(group.bytes, 116.z)
-    array.place(format(size, 12.z), 124.z)
-    array.place(format(mtime, 12.z), 136.z)
-    array.place(t"        ".bytes, 148.z)
+    array.place(format(size, 12), 124.z)
+    array.place(format(mtime, 12), 136.z)
+    array.place(t"        ".data, 148.z)
     array(156) = typeFlag.id.toByte
 
-    link.let { link => array.place(link.bytes, 157.z) }
+    link.let { link => array.place(link.data, 157.z) }
 
     deviceNumbers.let: (devMajor, devMinor) =>
       array.place(format(devMajor, 8), 329.z)
       array.place(format(devMinor, 8), 337.z)
 
-    user.name.let { name => array.place(name.bytes, 265.z) }
-    group.name.let { name => array.place(name.bytes, 297.z) }
+    user.name.let { name => array.place(name.data, 265.z) }
+    group.name.let { name => array.place(name.data, 297.z) }
 
-    array.place(t"ustar\u0000".bytes, 257.z)
-    array.place(t"00".bytes, 263.z)
+    array.place(t"ustar\u0000".data, 257.z)
+    array.place(t"00".data, 263.z)
 
     val total = array.map(_.bits.u8.u32).reduce(_ + _)
     array.place(format(total, 8), 148.z)

@@ -33,17 +33,6 @@
 package bitumen
 
 import anticipation.*
-import contingency.*
-import denominative.*
-import gossamer.*
-import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
-import hypotenuse.*, arithmeticOptions.overflow.unchecked
-import nomenclature.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import spectacular.*
-import turbulence.*
-import vacuous.*
 
-type InvalidTarNames = ".*[\u0000-\u0019].*" | ".*\u007f-\uffff.*" | ".*\\/.*" | ".*\\\\.*"
+private[bitumen] given Realm = Realm("bitumen")
+
