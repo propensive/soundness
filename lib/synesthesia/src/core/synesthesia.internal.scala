@@ -181,7 +181,8 @@ object internal:
 
                     val wildcard = Expr.summon[Tactic[McpError]] match
                       case Some(tactic) =>
-                        CaseDef(Wildcard(), None, '{abort(McpError())(using $tactic)}.asTerm)
+                        val rhs = '{abort(McpError(McpError.Reason.UnknownMethod))(using $tactic)}
+                        CaseDef(Wildcard(), None, rhs.asTerm)
 
                       case None =>
                         halt(m"could not find a contextual `Tactic[McpError]` instance")
@@ -218,7 +219,9 @@ object internal:
                                     given param is Decodable in Text = $decodable
                                     val key = ${Expr(param.name)}.tt
                                     if input.has(key) then input(key).decode[param]
-                                    else provide[Tactic[McpError]](abort(McpError()))
+                                    else
+                                      provide[Tactic[McpError]]:
+                                        abort(McpError(McpError.Reason.MissingParameter))
                                   }
 
                                 . asTerm
@@ -253,7 +256,8 @@ object internal:
                       CaseDef(Literal(StringConstant(method.name)), None, application)
 
                     val wildcard =
-                      val rhs = '{provide[Tactic[McpError]](abort(McpError()))}
+                      val rhs =
+                        '{provide[Tactic[McpError]](abort(McpError(McpError.Reason.UnknownMethod)))}
                       CaseDef(Wildcard(), None, rhs.asTerm)
 
                     Match('method.asTerm, cases :+ wildcard).asExprOf[List[Discourse]]
@@ -324,7 +328,10 @@ object internal:
 
                           (uri, rhs)
 
-                    cases.foldLeft('{provide[Tactic[McpError]](abort(McpError()))}):
+                    val initial =
+                      '{provide[Tactic[McpError]](abort(McpError(McpError.Reason.UnknownResource)))}
+
+                    cases.foldLeft(initial):
                       case (acc, (pattern, rhs)) => '{if uri == $pattern then $rhs else $acc}
                   }
             }
