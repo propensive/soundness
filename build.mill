@@ -147,7 +147,7 @@ object soundness extends ScalaModule:
   def moduleDeps = Seq()
 
   object base extends Bundle(ambience.core, aviation.core, contextual.core, contingency.core,
-    denominative.core, digression.core, diuretic.core, feudalism.core, fulminate.core,
+    denominative.core, digression.core, diuretic.core, fulminate.core,
     hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core, gossamer.core,
     inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
     parasite.core, rudiments.core, spectacular.core, symbolism.core, prepositional.core,
@@ -229,7 +229,6 @@ object test extends ScalaModule:
     //eucalyptus.test,
     exegesis.test,
     exoskeleton.test,
-    feudalism.test,
     //frontier.test,
     fulminate.test,
     galilei.test,
@@ -587,10 +586,6 @@ object exoskeleton extends Library:
 
   object test extends Tests(rig)
 
-object feudalism extends Library:
-  object core extends Component(rudiments.core)
-  object test extends Tests(core)
-
 object frontier extends Library:
   object core extends Component(dendrology.tree, escapade.core)
   object test extends Tests(core, scintillate.servlet, jacinta.schema)
@@ -877,7 +872,7 @@ object superlunary extends Library:
     override def finalMainClass: Task.Simple[String] = "superlunary.run"
 
 object surveillance extends Library:
-  object core extends Component(eucalyptus.core, feudalism.core)
+  object core extends Component(eucalyptus.core)
   object test extends Tests(core)
 
 object symbolism extends Library:
@@ -1019,7 +1014,6 @@ object publishing extends Module:
     exoskeleton.args.publishLocal()()
     exoskeleton.completions.publishLocal()()
     exoskeleton.core.publishLocal()()
-    feudalism.core.publishLocal()()
     frontier.core.publishLocal()()
     fulminate.core.publishLocal()()
     galilei.core.publishLocal()()
