@@ -219,6 +219,7 @@ def cli[bus <: Matchable](using executive: Executive)
   val socketFile: Path on Linux = baseDir/name/"socket"
   val clients: scc.TrieMap[Pid, Client of bus] = scc.TrieMap()
   val terminatePid: Promise[Pid] = Promise()
+  val idleTimeout: Long = 6L*60L*60L*1_000_000_000L
 
   def client(pid: Pid): Client of bus = clients.getOrElseUpdate(pid, Client[bus](pid))
 
@@ -459,7 +460,16 @@ def cli[bus <: Matchable](using executive: Executive)
               case other =>
                 ()
 
-      loop(safely(makeClient(channel.accept().nn))).run()
+      val inactivityTimer: Timeout = Timeout(idleTimeout):
+        Log.warn(DaemonLogEvent.IdleTimeout)
+        termination
+
+      loop:
+        val socket = channel.accept().nn
+        inactivityTimer.nudge()
+        safely(makeClient(socket))
+
+      . run()
 
     Exit.Ok
 
