@@ -365,6 +365,105 @@ object Tests extends Suite(m"Kaleidoscope tests"):
 
         . assert(_ == List('o', 'u'))
 
+      suite(m"Single-character matcher tests"):
+        test(m"Match any character"):
+          t"foo!bar" match
+            case r"foo$ch.bar" => ch
+            case _             => Nil
+
+        . assert(_ == '!')
+
+        test(m"Match a digit"):
+          t"foo5bar" match
+            case r"foo$d\dbar" => d
+            case _             => Nil
+
+        . assert(_ == '5')
+
+        test(m"Match a non-digit"):
+          t"foo!bar" match
+            case r"foo$c\Dbar" => c
+            case _             => Nil
+
+        . assert(_ == '!')
+
+        test(m"Match a word character"):
+          t"abcdef" match
+            case r"$c\wbcdef" => c
+            case _            => Nil
+
+        . assert(_ == 'a')
+
+        test(m"Match a non-word character"):
+          t"abc def" match
+            case r"abc$c\Wdef" => c
+            case _             => Nil
+
+        . assert(_ == ' ')
+
+        test(m"Match a whitespace character"):
+          t"hello world" match
+            case r"hello$ws\sworld" => ws
+            case _                  => Nil
+
+        . assert(_ == ' ')
+
+        test(m"Match a non-whitespace character"):
+          t" x " match
+            case r" $c\S " => c
+            case _         => Nil
+
+        . assert(_ == 'x')
+
+        test(m"Match one-or-more digits"):
+          t"foo123bar" match
+            case r"foo$ds\d+bar" => ds
+            case _               => Nil
+
+        . assert(_ == List('1', '2', '3'))
+
+        test(m"Match zero-or-more digits; absent"):
+          t"foobar" match
+            case r"foo$ds\d*bar" => ds
+            case _               => Nil
+
+        . assert(_ == Nil)
+
+        test(m"Match optional digit; present"):
+          t"foo5bar" match
+            case r"foo$d\d?bar" => d
+            case _              => Unset
+
+        . assert(_ == '5')
+
+        test(m"Match optional digit; absent"):
+          t"foobar" match
+            case r"foo$d\d?bar" => d
+            case _              => Unset
+
+        . assert(_ == Unset)
+
+        test(m"Match exact number of digits"):
+          t"foo123bar" match
+            case r"foo$ds\d{3}bar" => ds
+            case _                 => Nil
+
+        . assert(_ == List('1', '2', '3'))
+
+        test(m"Match a bounded run of any characters"):
+          t"foo!?#bar" match
+            case r"foo$cs.{2,4}bar" => cs
+            case _                  => Nil
+
+        . assert(_ == List('!', '?', '#'))
+
+        test(m"Match two single-character shorthands"):
+          t"a 9z" match
+            case r"$letter\w $digit\d$tail." => (letter, digit, tail)
+            case _                           => Nil
+
+        . assert(_ == ('a', '9', 'z'))
+
     suite(m"Glob tests"):
       test(m"Parse a plain glob"):
         Glob.parse(t"hello world").regex
