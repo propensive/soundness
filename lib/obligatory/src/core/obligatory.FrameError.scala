@@ -32,10 +32,20 @@
                                                                                                   */
 package obligatory
 
-import scala.annotation.*
-
-import anticipation.*
 import fulminate.*
 
-case class FrameError()(using Diagnostics)
-extends Error(realm"ob", 2, 0)(m"could not deframe the message")
+object FrameError:
+  enum Reason(val number: Int) extends Clarification:
+    case ShortRead       extends Reason(1)
+    case MissingLineFeed extends Reason(2)
+    case MalformedLength extends Reason(3)
+    case UnknownHeader   extends Reason(4)
+
+  given communicable: Reason is Communicable =
+    case Reason.ShortRead       => m"the input ended before a complete frame could be read"
+    case Reason.MissingLineFeed => m"a carriage return was not followed by a line feed"
+    case Reason.MalformedLength => m"the content-length header value could not be parsed"
+    case Reason.UnknownHeader   => m"an unrecognized header was encountered"
+
+case class FrameError(reason: FrameError.Reason)(using Diagnostics)
+extends Error(realm"ob", 2, reason.number)(m"could not deframe the message because $reason")
