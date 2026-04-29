@@ -49,7 +49,8 @@ object CrLf:
       if !cursor.finished && cursor.seek(Cr)
       then cursor.grab(start, cursor.mark).also:
         cursor.next()
-        if !cursor.lay(false)(_ == Lf) then abort(FrameError()) else cursor.next()
+        if !cursor.lay(false)(_ == Lf) then abort(FrameError(FrameError.Reason.MissingLineFeed))
+        else cursor.next()
       else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
 
     new Iterator[Text]:

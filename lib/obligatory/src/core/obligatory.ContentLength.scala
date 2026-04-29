@@ -47,7 +47,7 @@ object ContentLength:
   given framable: Tactic[FrameError] => Text is Framable by ContentLength = input =>
     val cursor = Cursor(input)
 
-    def fail(): Nothing = abort(FrameError())
+    def fail(): Nothing = abort(FrameError(FrameError.Reason.ShortRead))
     def skip(): Unit = while cursor.next() && cursor.datum(using Unsafe) == ' ' do ()
 
     def key(mark: Mark)(using Cursor.Held): Optional[Text] = cursor.lay(fail()):
@@ -61,7 +61,7 @@ object ContentLength:
         cursor.grab(mark, cursor.mark).also(skip())
 
       case chr =>
-        if cursor.next() then key(mark) else abort(FrameError())
+        if cursor.next() then key(mark) else abort(FrameError(FrameError.Reason.ShortRead))
 
     def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail()):
       case '\r' =>
@@ -78,10 +78,11 @@ object ContentLength:
         case t"content-type" => cursor.hold(value(cursor.mark)) yet frame(length)
 
         case t"content-length" =>
-          frame(safely(cursor.hold(value(cursor.mark)).decode[Int]).or(fail()))
+          val raw = cursor.hold(value(cursor.mark))
+          frame(safely(raw.decode[Int]).or(abort(FrameError(FrameError.Reason.MalformedLength))))
 
         case other =>
-          fail()
+          abort(FrameError(FrameError.Reason.UnknownHeader))
 
     new Iterator[Text]:
       private var ready: Optional[Text] = Unset

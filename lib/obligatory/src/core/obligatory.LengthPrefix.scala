@@ -41,7 +41,7 @@ import zephyrine.*
 
 object LengthPrefix:
   given framable: Tactic[FrameError] => Data is Framable by LengthPrefix = input =>
-    def fail() = abort(FrameError())
+    def fail() = abort(FrameError(FrameError.Reason.ShortRead))
 
     val cursor = Cursor(input)
 
