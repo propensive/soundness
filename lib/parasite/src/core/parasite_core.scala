@@ -117,17 +117,6 @@ def hibernate[instant: Abstractable across Instants to Long](instant: instant)(u
   while instant.generic > jl.System.currentTimeMillis do sleep(instant.generic)
 
 
-extension [result](tasks: Seq[Task[result]])
-  def sequence(using Monitor, Codicil): Task[Seq[result]] raises AsyncError =
-    async(tasks.map(_.await()))
-
-extension [result](tasks: Iterable[Task[result]])
-  def race()(using Monitor, Codicil): result raises AsyncError =
-    val promise: Promise[result] = Promise()
-    tasks.foreach(_.map(promise.offer(_)))
-
-    promise.await()
-
 extension [result](stream: Stream[result])
   def concurrent(using Monitor, Codicil): Stream[result] raises AsyncError =
     if async(stream.nil).await() then Stream() else stream.head #:: stream.tail.concurrent
