@@ -178,7 +178,10 @@ jobs:
               printf 'PR: %s\n' "$url"
             } > /tmp/msg.txt
 
-            git diff "$base" "$sha" > /tmp/pr.patch
+            # `--binary` includes full index lines and binary blob contents,
+            # which `git apply` requires when a PR adds, removes, or modifies
+            # any binary file (e.g. images).
+            git diff --binary "$base" "$sha" > /tmp/pr.patch
             if [ ! -s /tmp/pr.patch ]; then
               echo "PR #$number has empty diff; skipping."
               echo "::endgroup::"
