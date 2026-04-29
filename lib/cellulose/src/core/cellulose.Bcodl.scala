@@ -71,7 +71,7 @@ object Bcodl:
 
   def read(schema: CodlSchema, reader: ji.Reader)(using binary: Tactic[BcodlError]): CodlDoc =
     if reader.read() != '\u00b1' || reader.read() != '\u00c0' || reader.read() != '\u00d1'
-    then abort(BcodlError(t"header 0xb1c0d1", 0))
+    then abort(BcodlError(BcodlError.Reason.BadHeader, 0))
 
     def recur(schema: CodlSchema): List[CodlNode] =
       List.range(0, readNumber(reader)).map: _ =>
@@ -85,7 +85,8 @@ object Bcodl:
               case 0     => (Unset, CodlSchema.Free)
               case index => schema.entry(index - 1).tuple
 
-            val key = subschema(0).option.getOrElse(abort(BcodlError(t"unexpected key", 0)))
+            val key = subschema(0).option.getOrElse:
+              abort(BcodlError(BcodlError.Reason.MissingKey, 0))
 
             val children = IArray.from(recur(subschema(1)))
 

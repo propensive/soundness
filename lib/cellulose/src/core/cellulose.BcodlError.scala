@@ -32,8 +32,16 @@
                                                                                                   */
 package cellulose
 
-import anticipation.*
 import fulminate.*
 
-case class BcodlError(expectation: Text, position: Int)(using Diagnostics)
-extends Error(realm"cl", 1, 0)(m"expected $expectation at position $position")
+object BcodlError:
+  enum Reason(val number: Int) extends Clarification:
+    case BadHeader  extends Reason(1)
+    case MissingKey extends Reason(2)
+
+  given communicable: Reason is Communicable =
+    case Reason.BadHeader  => m"the magic bytes 0xb1c0d1 were not found at the start of the input"
+    case Reason.MissingKey => m"the schema entry has no key"
+
+case class BcodlError(reason: BcodlError.Reason, position: Int)(using Diagnostics)
+extends Error(realm"cl", 1, reason.number)(m"the BCoDL input was not valid at $position because $reason")
