@@ -429,14 +429,125 @@ line as the last parameter; it is never alone on a line.
     parse(input.iterator, root).of[content]
   ```
 
-### For-comprehensions and if/else
+### Keyword sequences
 
-Use indented syntax. Single-line forms are preferred when they fit:
+A "keyword sequence" is a multi-word control-flow construct whose keywords
+have to appear in a fixed order, with bodies between them. The recognised
+sequences are:
+
+- `if … then … else …` (with `else` optional)
+- `for … yield …` and `for … do …`
+- `while … do …`
+- `try … catch … finally …` (with one or both of `catch` and `finally`)
+
+Each sequence has the shape `K₁ B₁ K₂ B₂ … Kₙ Bₙ` — keywords interleaved with
+bodies. There are two layouts:
+
+- **Compact** — every keyword and body on a single line. Use this when it
+  fits.
+- **Split** — at least one keyword starts a new line, or at least one body
+  is indented onto its own line(s). Required when the compact form does
+  not fit, or any body is multi-line.
+
+In split mode, two cascade rules apply, both forward-only:
+
+- **Keyword cascade.** Once any Kᵢ starts a new line, every later keyword
+  must also start a new line. (Kᵢ₋₁ and earlier are unaffected.)
+- **Body cascade.** Once any Bᵢ (for i ≥ 2) is indented onto its own
+  line(s), every later body must be indented too. The first body B₁ —
+  the condition of `if`/`while`, the generators of `for`, the body of
+  `try` — does not trigger the cascade.
+
+The two cascades are independent: a keyword may start a new line with its
+body inline, and a body may be indented while its keyword stays on the
+previous line.
+
+A keyword that starts a new line must sit in the column of K₁.
+
+Examples — compact and split:
+
+```scala
+if x > 0 then x else -x
+
+if x > 0 then x       // `else` is the first to break; `then` is unaffected
+else -x
+
+if x > 0              // both follow-on keywords broken, aligned with `if`
+then x
+else -x
+
+if x > 0 then         // `then` inline, body indented; body cascade forces
+  longBody            // `else`'s body to be indented too
+else
+  other
+```
+
+Examples — rejected layouts:
+
+```scala
+if x > 0              // `then` broke, so `else` must too (33.1)
+then x else -x
+
+if x > 0              // `then` should align with `if` at column 1 (33.3)
+    then x
+    else -x
+
+if x > 0 then         // `then`-body indented, `else`-body inline (33.2)
+  longBody
+else other
+```
+
+The same rules apply to `try`/`catch`/`finally`:
+
+```scala
+try parse(s)
+catch case e: Error => log(e)
+finally close()
+```
+
+### For-comprehensions
+
+Single-line forms are preferred when they fit:
 
 ```scala
 for left <- elements; right <- elements
 do if element.compare(left, right) then map(left) += right
 ```
+
+When the comprehension is split across multiple lines, two layouts are
+acceptable:
+
+- **Aligned-LHS style.** The first generator follows `for ` on the same
+  line; subsequent generators are indented to put their LHS in the
+  column of the first generator's LHS (4 columns past `for`). `yield`
+  / `do` align with `for`.
+
+  ```scala
+  for x  <- xs
+      y  <- ys.filter(p)
+      zs =  gather(y)
+  yield x + y + zs.size
+  ```
+
+- **Indented-block style.** `for` sits alone on its line; generators
+  follow on subsequent lines indented two spaces, and `yield` / `do`
+  aligns with `for`.
+
+  ```scala
+  for
+    x <- xs
+    y <- ys
+  yield x + y
+  ```
+
+In either layout, when more than one generator/binding/filter line
+appears:
+
+- All `<-` and `=` operators are vertically aligned. The LHS is
+  right-padded with spaces as needed to make the columns match.
+- All generator/binding LHSs sit in the same column.
+- An `if` filter is placed in the column of the `<-`/`=` operators
+  (not in the LHS column).
 
 ### Hard-space rule
 
@@ -569,6 +680,15 @@ scope is always preceded by a blank.
   each paren; the closing bracket sits with the last argument, never alone.
 - Macro quotes/splices have inline (`'{x}`, `${x}`) and block (`' {`/`$ {`
   on its own line, content +2, closing `}` aligned with `{`) styles.
+- Keyword sequences (`if`/`then`/`else`, `for`/`yield`, `for`/`do`,
+  `while`/`do`, `try`/`catch`/`finally`): broken keywords align with K₁;
+  once one keyword breaks, all later keywords break (forward cascade);
+  once one body is indented, all later bodies are indented (forward
+  cascade, starting from B₂). Keyword and body cascades are independent.
+- For-comprehensions: aligned-LHS or indented-block layout. With more
+  than one generator, `<-`/`=` operators are vertically aligned, all
+  generator LHSs share a column, and `if` filters sit in the
+  `<-`/`=` column.
 - Blank-line padding: 0 / 1 / 2 around single-line / multi-line /
   heavy-signature definitions; greater-of rule between unequal neighbours;
   the first member of a non-heavy scope is exempt; never more than two

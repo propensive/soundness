@@ -283,3 +283,87 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"Aligned `using` clause is accepted"):
         rules("def f\n  ( using a: A,\n          b: B )\n:   Int = 0\n")
       . assert(!_.contains("22"))
+
+    suite(m"Phase 5: Keyword sequences (R33)"):
+
+      test(m"Compact `if/then/else` is accepted"):
+        rules("def f(x: Int): Int = if x > 0 then x else -x\n")
+      . assert(r => !r.contains("33.1") && !r.contains("33.2") && !r.contains("33.3"))
+
+      test(m"`if/then/else` with `else` on a new line is accepted"):
+        rules("def f(x: Int): Int =\n  if x > 0 then x\n  else -x\n")
+      . assert(!_.contains("33.1"))
+
+      test(m"`if/then/else` fully split with aligned keywords is accepted"):
+        rules("def f(x: Int): Int =\n  if x > 0\n  then x\n  else -x\n")
+      . assert(r => !r.contains("33.1") && !r.contains("33.3"))
+
+      test(m"`if/then/else` with `then` broken but `else` not is rejected"):
+        rules("def f(x: Int): Int =\n  if x > 0\n  then x else -x\n")
+      . assert(_.contains("33.1"))
+
+      test(m"`if/then/else` with `then` not aligned with `if` is rejected"):
+        rules("def f(x: Int): Int =\n  if x > 0\n      then x\n      else -x\n")
+      . assert(_.contains("33.3"))
+
+      test(m"`if/then/else` with `then`-body indented but `else`-body inline is rejected"):
+        rules("def f(x: Int): Int =\n  if x > 0 then\n    x\n  else -x\n")
+      . assert(_.contains("33.2"))
+
+      test(m"`if/then/else` with both bodies indented is accepted"):
+        rules("def f(x: Int): Int =\n  if x > 0 then\n    x\n  else\n    -x\n")
+      . assert(r => !r.contains("33.1") && !r.contains("33.2") && !r.contains("33.3"))
+
+      test(m"Compact `while/do` is accepted"):
+        rules("def f(): Unit = while running() do step()\n")
+      . assert(r => !r.contains("33.1") && !r.contains("33.3"))
+
+      test(m"`while/do` with `do` misaligned with `while` is rejected"):
+        rules("def f(): Unit =\n  while running()\n      do step()\n")
+      . assert(_.contains("33.3"))
+
+      test(m"Compact `try/catch/finally` is accepted"):
+        rules("def f: Int = try compute() catch case e: Throwable => 0 finally cleanup()\n")
+      . assert(r => !r.contains("33.1") && !r.contains("33.3"))
+
+      test(m"`try/catch/finally` with `catch` broken but `finally` inline is rejected"):
+        rules("def f: Int =\n  try compute()\n  catch case e: Throwable => 0 finally cleanup()\n")
+      . assert(_.contains("33.1"))
+
+      test(m"Compact `for/yield` is accepted"):
+        rules("def f: List[Int] = for x <- List(1, 2) yield x\n")
+      . assert(r => !r.contains("33.1") && !r.contains("33.3"))
+
+      test(m"Compact `for/do` is accepted"):
+        rules("def f(): Unit = for x <- List(1, 2) do println(x)\n")
+      . assert(r => !r.contains("33.1") && !r.contains("33.3"))
+
+    suite(m"Phase 5: For-comprehension generator alignment (R34)"):
+
+      test(m"For-comprehension aligned-LHS style is accepted"):
+        rules("val r =\n  for x <- List(1)\n      y <- List(2)\n  yield x + y\n")
+      . assert(r => !r.contains("34.1") && !r.contains("34.2") && !r.contains("34.3"))
+
+      test(m"For-comprehension indented-block style is accepted"):
+        rules("val r =\n  for\n    x <- List(1)\n    y <- List(2)\n  yield x + y\n")
+      . assert(r => !r.contains("34.1") && !r.contains("34.2") && !r.contains("34.3"))
+
+      test(m"For-comprehension with misaligned generator LHS is rejected"):
+        rules("val r =\n  for x <- List(1)\n     y <- List(2)\n  yield x + y\n")
+      . assert(_.contains("34.2"))
+
+      test(m"For-comprehension with misaligned `<-` operators is rejected"):
+        rules("val r =\n  for x  <- List(1)\n      y <- List(2)\n  yield x + y\n")
+      . assert(_.contains("34.1"))
+
+      test(m"For-comprehension with `if` filter aligned with `<-` is accepted"):
+        rules
+         ( "val r =\n  for x  <- List(1)\n         if x > 0\n      y  <- List(2)"
+            +"\n  yield x + y\n" )
+      . assert(r => !r.contains("34.3"))
+
+      test(m"For-comprehension with `if` filter at LHS column is rejected"):
+        rules
+         ( "val r =\n  for x  <- List(1)\n      if x > 0\n      y  <- List(2)"
+            +"\n  yield x + y\n" )
+      . assert(_.contains("34.3"))
