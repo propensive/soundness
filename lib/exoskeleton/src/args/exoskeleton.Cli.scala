@@ -32,6 +32,8 @@
                                                                                                   */
 package exoskeleton
 
+import java.util.concurrent.atomic as juca
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -77,6 +79,34 @@ trait Cli extends Console:
   def register(flag: Flag, discoverable: Discoverable): Unit = ()
   def present(flag: Flag): Unit = ()
   def explain(update: (Optional[Text] aka "prior") ?=> Optional[Text]): Unit = ()
+
+  private val signalHandlers:
+  juca.AtomicReference[List[PartialFunction[UnixSignal | WindowsSignal, SignalResponse]]] =
+    juca.AtomicReference(Nil)
+
+  override def trap
+    ( handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse] )
+  :   Unit =
+
+    signalHandlers.updateAndGet(handler :: _.nn)
+
+
+  def dispatchSignal(signal: UnixSignal | WindowsSignal): SignalResponse =
+    def loop(handlers: List[PartialFunction[UnixSignal | WindowsSignal, SignalResponse]])
+    :   SignalResponse =
+
+      handlers match
+        case Nil =>
+          SignalResponse.Reject
+
+        case pf :: rest =>
+          if pf.isDefinedAt(signal) then pf(signal) match
+            case SignalResponse.Defer => loop(rest)
+            case decided              => decided
+          else loop(rest)
+
+    loop(signalHandlers.get.nn)
+
 
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   :   Optional[operand]

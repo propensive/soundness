@@ -34,7 +34,6 @@ package exoskeleton
 
 import ambience.*
 import anticipation.*
-import profanity.*
 import rudiments.*
 import turbulence.*
 
@@ -47,7 +46,6 @@ trait Executive:
       environment:      Environment,
       workingDirectory: WorkingDirectory,
       stdio:            Stdio,
-      signals:          Spool[UnixSignal | WindowsSignal],
       entrypoint:       Entrypoint,
       login:            Login )
     ( using interpreter: Interpreter )

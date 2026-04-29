@@ -41,7 +41,6 @@ import eucalyptus.*
 import fulminate.*
 import gossamer.*
 import guillotine.*
-import profanity.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -67,7 +66,6 @@ package executives:
         environment:      Environment,
         workingDirectory: WorkingDirectory,
         stdio:            Stdio,
-        signals:          Spool[UnixSignal | WindowsSignal],
         entrypoint:       Entrypoint,
         login:            Login )
       ( using interpreter: Interpreter )
@@ -98,7 +96,6 @@ package executives:
                 focus,
                 posInWord,
                 stdio,
-                signals,
                 tty,
                 tab,
                 login )
@@ -142,7 +139,6 @@ package executives:
                 focus2,
                 position,
                 stdio,
-                signals,
                 tty,
                 tab,
                 login )
@@ -174,7 +170,6 @@ package executives:
               environment,
               workingDirectory,
               stdio,
-              signals,
               false,
               login )
 
@@ -184,7 +179,6 @@ package executives:
               environment,
               workingDirectory,
               stdio,
-              signals,
               true,
               login )
 

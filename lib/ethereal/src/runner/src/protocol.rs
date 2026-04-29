@@ -1,7 +1,15 @@
 use std::io::{Read, Write};
 use std::path::Path;
+use std::time::Duration;
 
 use crate::uds::UnixStream;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum SignalAck {
+    Accept,
+    Reject,
+    Timeout,
+}
 
 pub struct ClientInfo {
     pub pid:       u32,
@@ -34,10 +42,19 @@ pub fn send_stderr_request(connection: &mut UnixStream, pid: u32) {
     let _ = connection.flush();
 }
 
-pub fn send_signal(socket_path: &Path, pid: u32, name: &str) {
-    if let Ok(mut connection) = UnixStream::connect(socket_path) {
-        let _ = write!(connection, "s\n{}\n{}\n", pid, name);
-        let _ = connection.flush();
+pub fn send_signal(socket_path: &Path, pid: u32, name: &str, timeout_ms: u64) -> SignalAck {
+    let mut connection = match UnixStream::connect(socket_path) {
+        Ok(connection) => connection,
+        Err(_) => return SignalAck::Timeout,
+    };
+    if write!(connection, "s\n{}\n{}\n", pid, name).is_err() { return SignalAck::Timeout; }
+    if connection.flush().is_err() { return SignalAck::Timeout; }
+    let _ = connection.set_read_timeout(Some(Duration::from_millis(timeout_ms)));
+    let mut reply = [0u8; 1];
+    match connection.read_exact(&mut reply) {
+        Ok(()) if reply[0] == b'a' => SignalAck::Accept,
+        Ok(()) if reply[0] == b'r' => SignalAck::Reject,
+        _                          => SignalAck::Timeout,
     }
 }
 

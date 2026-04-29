@@ -32,15 +32,5 @@
                                                                                                   */
 package profanity
 
-import turbulence.*
-
-object Console:
-  def apply(stdio: Stdio): Console =
-    inline def stdio0: Stdio = stdio
-    new Console:
-      val stdio: Stdio = stdio0
-
-trait Console:
-  val stdio: Stdio
-
-  def trap(handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse]): Unit = ()
+enum SignalResponse:
+  case Accept, Reject, Defer

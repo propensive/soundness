@@ -52,7 +52,7 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
           TerminalSizeDetection )
 :   result raises TerminalError =
 
-  given terminal: Terminal = Terminal(console.signals)
+  given terminal: Terminal = Terminal()
 
   if summon[LuminosityDetection]() then Out.print(Terminal.reportBackground)
   if summon[TerminalFocusDetection]() then Out.print(Terminal.enableFocus)
@@ -69,10 +69,8 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
     block(using terminal)
 
   finally
-    terminal.signals.stop()
     terminal.stdio.in.close()
     terminal.events.stop()
-    safely(terminal.pumpSignals.attend())
     safely(terminal.pumpInput.await())
     if summon[BracketedPasteMode]() then Out.print(Terminal.disablePaste)
     if summon[TerminalFocusDetection]() then Out.print(Terminal.disableFocus)
