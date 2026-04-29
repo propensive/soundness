@@ -101,86 +101,111 @@ object Matrix:
                 tuple.productElement(column).asInstanceOf[element] )
 
 
-  private def submatrix[element: ClassTag]
-    (data: IArray[element], n: Int, skipRow: Int, skipCol: Int)
-  :   IArray[element] =
-
-    IArray.build[element]((n - 1)*(n - 1)): array =>
-      var idx = 0
-      var row = 0
-      while row < n do
-        if row != skipRow then
-          var col = 0
-          while col < n do
-            if col != skipCol then
-              array(idx) = data(n*row + col)
-              idx += 1
-            col += 1
-        row += 1
-
-
-  private def computeDeterminant[element]
-    (data: IArray[element], n: Int)
-    (using multiplication: element is Multiplicable by element to element,
-           addition:       element is Addable by element to element,
-           subtraction:    element is Subtractable by element to element,
-           classTag:       ClassTag[element])
+  private def laplaceExpansion[element]
+    ( elements:      IArray[element],
+      dimension:     Int,
+      rowMask:       Long,
+      columnMask:    Long,
+      submatrixSize: Int )
+    ( using multiplication: element is Multiplicable by element to element,
+            addition:       element is Addable by element to element,
+            subtraction:    element is Subtractable by element to element )
   :   element =
 
-    if n == 1 then data(0)
-    else if n == 2 then data(0)*data(3) - data(1)*data(2)
+    if submatrixSize == 1 then
+      val row = java.lang.Long.numberOfTrailingZeros(rowMask)
+      val column = java.lang.Long.numberOfTrailingZeros(columnMask)
+      elements(dimension*row + column)
+    else if submatrixSize == 2 then
+      val firstRow = java.lang.Long.numberOfTrailingZeros(rowMask)
+      val secondRow = java.lang.Long.numberOfTrailingZeros(rowMask & (rowMask - 1L))
+      val firstColumn = java.lang.Long.numberOfTrailingZeros(columnMask)
+      val secondColumn = java.lang.Long.numberOfTrailingZeros(columnMask & (columnMask - 1L))
+
+      elements(dimension*firstRow + firstColumn)*elements(dimension*secondRow + secondColumn)
+      - elements(dimension*firstRow + secondColumn)*elements(dimension*secondRow + firstColumn)
     else
-      var result: element = data(0)*computeDeterminant(submatrix(data, n, 0, 0), n - 1)
-      var j = 1
-      while j < n do
-        val term: element = data(j)*computeDeterminant(submatrix(data, n, 0, j), n - 1)
-        result = if j % 2 == 1 then result - term else result + term
-        j += 1
+      val expansionRow = java.lang.Long.numberOfTrailingZeros(rowMask)
+      val remainingRows = rowMask & ~(1L << expansionRow)
+      val firstColumn = java.lang.Long.numberOfTrailingZeros(columnMask)
+      val firstColumnsRemoved = columnMask & ~(1L << firstColumn)
+
+      val firstMinor =
+        laplaceExpansion(elements, dimension, remainingRows, firstColumnsRemoved, submatrixSize - 1)
+
+      var result: element = elements(dimension*expansionRow + firstColumn)*firstMinor
+      var remainingColumns = firstColumnsRemoved
+      var position = 1
+
+      while remainingColumns != 0L do
+        val column = java.lang.Long.numberOfTrailingZeros(remainingColumns)
+        val columnsRemoved = columnMask & ~(1L << column)
+
+        val minor =
+          laplaceExpansion(elements, dimension, remainingRows, columnsRemoved, submatrixSize - 1)
+
+        val term: element = elements(dimension*expansionRow + column)*minor
+        result = if position % 2 == 1 then result - term else result + term
+        remainingColumns = remainingColumns & ~(1L << column)
+        position += 1
 
       result
 
 
   extension [element, n <: Int](matrix: Matrix[element, n, n])
     def determinant
-      (using multiplication: element is Multiplicable by element to element,
-             addition:       element is Addable by element to element,
-             subtraction:    element is Subtractable by element to element,
-             classTag:       ClassTag[element])
+      ( using multiplication: element is Multiplicable by element to element,
+              addition:       element is Addable by element to element,
+              subtraction:    element is Subtractable by element to element )
     :   element =
 
-      computeDeterminant(matrix.elements, matrix.rows)
+      val dimension = matrix.rows
+      val fullMask: Long = (1L << dimension) - 1L
+      laplaceExpansion(matrix.elements, dimension, fullMask, fullMask, dimension)
 
 
     def inverse
-      (using multiplication: element is Multiplicable by element to element,
-             addition:       element is Addable by element to element,
-             subtraction:    element is Subtractable by element to element,
-             divisible:      element is Divisible by element to element,
-             zeroic:         element is Zeroic,
-             classTag:       ClassTag[element])
+      ( using multiplication: element is Multiplicable by element to element,
+              addition:       element is Addable by element to element,
+              subtraction:    element is Subtractable by element to element,
+              divisible:      element is Divisible by element to element,
+              zeroic:         element is Zeroic,
+              classTag:       ClassTag[element] )
     :   Optional[Matrix[element, n, n]] =
 
-      val size = matrix.rows
-      val data = matrix.elements
-      val det = computeDeterminant(data, size)
+      val dimension = matrix.rows
+      val elements = matrix.elements
+      val fullMask: Long = (1L << dimension) - 1L
+      val determinantValue = laplaceExpansion(elements, dimension, fullMask, fullMask, dimension)
 
-      if det == zeroic.zero then Unset
-      else if size == 1 then
-        val one: element = data(0)/data(0)
-        new Matrix[element, n, n](1, 1, IArray(one/data(0)))
+      if determinantValue == zeroic.zero then Unset
+      else if dimension == 1 then
+        val one: element = elements(0)/elements(0)
+        new Matrix[element, n, n](1, 1, IArray(one/elements(0)))
       else
-        val resultData = IArray.build[element](size*size): array =>
-          var i = 0
-          while i < size do
-            var j = 0
-            while j < size do
-              val minorDet = computeDeterminant(submatrix(data, size, j, i), size - 1)
-              val signed = if (i + j) % 2 == 0 then minorDet else zeroic.zero - minorDet
-              array(size*i + j) = signed/det
-              j += 1
-            i += 1
+        val resultElements = IArray.build[element](dimension*dimension): array =>
+          var outputRow = 0
 
-        new Matrix[element, n, n](size, size, resultData)
+          while outputRow < dimension do
+            var outputColumn = 0
+
+            while outputColumn < dimension do
+              val rowMask = fullMask & ~(1L << outputColumn)
+              val columnMask = fullMask & ~(1L << outputRow)
+
+              val minorDeterminant =
+                laplaceExpansion(elements, dimension, rowMask, columnMask, dimension - 1)
+
+              val signedMinor =
+                if (outputRow + outputColumn) % 2 == 0 then minorDeterminant
+                else zeroic.zero - minorDeterminant
+
+              array(dimension*outputRow + outputColumn) = signedMinor/determinantValue
+              outputColumn += 1
+
+            outputRow += 1
+
+        new Matrix[element, n, n](dimension, dimension, resultElements)
 
 
 class Matrix[element, rows <: Int, columns <: Int]

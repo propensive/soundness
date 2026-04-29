@@ -78,7 +78,7 @@ object internal:
 
                 if value < lowerBound
                 then halt
-                  (1,
+                  ( 1,
                     m"""
                       the value $string is less than the lower bound for this value,
                       ${lowerBound.toString}
@@ -86,7 +86,7 @@ object internal:
 
                 if value > upperBound
                 then halt
-                  (2,
+                  ( 2,
                     m"""
                       the value $string is greater than the upper bound for this value,
                       ${upperBound.toString}
