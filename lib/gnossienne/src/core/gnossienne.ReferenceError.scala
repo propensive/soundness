@@ -35,5 +35,13 @@ package gnossienne
 import anticipation.*
 import fulminate.*
 
-case class ReferenceError(reference: Text)(using Diagnostics)
-extends Error(realm"gn", 1, 0)(m"reference $reference could not be resolved")
+object ReferenceError:
+  enum Reason(val number: Int) extends Clarification:
+    case NotFound extends Reason(1)
+
+  given communicable: Reason is Communicable =
+    case Reason.NotFound => m"no target with that reference was found in the store"
+
+case class ReferenceError(reference: Text, reason: ReferenceError.Reason)(using Diagnostics)
+extends Error(realm"gn", 1, reason.number)
+  ( m"the reference $reference could not be resolved because $reason" )

@@ -57,7 +57,7 @@ object Resolvable:
           dereference.select(value, annotated.asInstanceOf[Annotated.Field].field)
 
         store.find(deref(_) == reference).getOrElse:
-          abort(ReferenceError(reference.encode))
+          abort(ReferenceError(reference.encode, ReferenceError.Reason.NotFound))
 
 
 trait Resolvable:
