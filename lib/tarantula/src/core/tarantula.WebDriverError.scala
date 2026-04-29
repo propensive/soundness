@@ -34,8 +34,30 @@ package tarantula
 
 import anticipation.*
 import fulminate.*
+import proscenium.*
 
-case class WebDriverError(error: Text, wdMsg: Text, browserStacktrace: List[Text])
+object WebDriverError:
+  enum Reason(val number: Int) extends Clarification:
+    case NoSuchElement     extends Reason(1)
+    case StaleElement      extends Reason(2)
+    case NoSuchWindow      extends Reason(3)
+    case JavascriptError   extends Reason(4)
+    case ScriptTimeout     extends Reason(5)
+    case Timeout           extends Reason(6)
+    case UnknownCommand    extends Reason(7)
+    case Other(code: Text) extends Reason(8)
+
+  given communicable: Reason is Communicable =
+    case Reason.NoSuchElement   => m"the requested element was not found"
+    case Reason.StaleElement    => m"the element is no longer attached to the page"
+    case Reason.NoSuchWindow    => m"the requested window was not found"
+    case Reason.JavascriptError => m"a JavaScript error occurred while evaluating the request"
+    case Reason.ScriptTimeout   => m"the asynchronous script did not complete in time"
+    case Reason.Timeout         => m"the operation timed out"
+    case Reason.UnknownCommand  => m"the WebDriver does not recognise the command"
+    case Reason.Other(code)     => m"the WebDriver reported the error code $code"
+
+case class WebDriverError
+  ( reason: WebDriverError.Reason, detail: Text, browserStacktrace: List[Text] )
   ( using Diagnostics )
-extends Error(realm"ta", 1, 0)
-         (m"the action caused the error $error in the browser, with the message: $wdMsg")
+extends Error(realm"ta", 1, reason.number)(m"the WebDriver action failed because $reason: $detail")
