@@ -23,10 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Before the first commit of any task
 - Never commit while on `main` or in detached-HEAD state. Stop and create a new branch first.
-- Always `git fetch origin` first, so the chosen base is current; never branch from a stale local ref.
-- Use `gh pr list --state open --base main` to find the open PR stack and identify the top-of-stack PR's head branch.
-- If the stack is non-empty, branch from `origin/<top-of-stack-head-ref>`: `git checkout -b <new-branch> origin/<top-of-stack-head-ref>`.
-- If the stack is empty, branch from `origin/main`: `git checkout -b <new-branch> origin/main`.
+- Identify the correct base by running steps 1–2 of **Before opening any PR** below, then create the new branch from that base: `git checkout -b <new-branch> origin/<base-head-ref>`.
 
 ### Commits
 - Commit incrementally as you edit. The bar is *incremental compilation passes* for the changed code — full clean compilation is not required per commit. If a change leaves the code uncompilable, keep editing until incremental compilation succeeds, then commit.
@@ -43,8 +40,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Body follows `.github/pull_request_template.md`: a single summary paragraph, a blank line, then Markdown release notes for users (with code examples if useful).
 - Whenever a new commit is added to a PR, re-read the PR description and update it if it no longer accurately describes the full set of commits.
 
+### Before opening any PR
+
+Run these checks in order, every time, no exceptions. They apply whether you created the branch yourself or picked one up that already existed.
+
+1. `git fetch origin`.
+2. `gh pr list --state open --base main` to identify the **top-of-stack** PR — the open PR most recently added to the stack. If the result is empty, the top of stack is `main` itself.
+3. Compare the branch's merge base against the top-of-stack head. If they don't match, the branch is not on the stack — rebase it onto `origin/<top-of-stack-head-ref>` (`git move --dest origin/<top-of-stack-head-ref>`) **before** opening the PR.
+4. Open the PR with `gh pr create --base <top-of-stack-head-ref>`, or `--base main` if the stack was empty in step 2.
+
 ### Stacked PRs
-- A new PR is always stacked on top of the highest open PR in the current stack, so the stack merges in order from the bottom up. Branch from `origin/<top-of-stack-branch>`, not from `main` or a local copy.
-- Open the PR with `gh pr create --base <top-of-stack-branch>` (or `--base main` for an empty stack), so the diff GitHub shows is just the new commits, not the whole parent stack.
+- A stacked PR sequence merges in order from bottom up. Each PR's branch is based on the head of the PR below it (or on `main` for the bottom-most PR). The mechanics for putting a new PR on the stack are in **Before opening any PR**.
 - If the parent stack moves (its branch gets new commits or is rebased), bring this branch up to date by rebasing onto the latest `origin/<parent-branch>` before adding more commits.
 - Use `git-branchless` (`git smartlog`, `git restack`, `git move`) to keep the stack consistent as commits are added to or rebased onto branches lower in the stack.
