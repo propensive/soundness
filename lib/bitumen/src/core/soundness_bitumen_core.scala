@@ -34,4 +34,4 @@ package soundness
 
 export
   bitumen
-  . { Tar, TarEntry, TarPath, TarRef, TypeFlag, UnixGroup, UnixMode, UnixUser }
+  . { Tar, TarEntry, TarError, TarRef, TypeFlag, UnixGroup, UnixMode, UnixUser }
