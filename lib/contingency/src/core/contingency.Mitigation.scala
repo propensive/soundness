@@ -34,4 +34,9 @@ package contingency
 
 import proscenium.*
 
+object Mitigation:
+  extension [lambda[_]](inline mitigation: Mitigation[lambda])
+    inline def within[result](inline lambda: lambda[result]): result =
+      ${contingency.internal.mitigateWithin[lambda, result]('mitigation, 'lambda)}
+
 class Mitigation[lambda[_]](val lambda: Exception ~> Exception)

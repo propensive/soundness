@@ -32,8 +32,20 @@
                                                                                                   */
 package contingency
 
+import fulminate.*
 import proscenium.*
 import vacuous.*
+
+object Validate:
+  extension [accrual <: Exception, lambda[_], focus]
+            (inline validate: Validate[accrual, lambda, focus])
+    inline def within(inline lambda: Foci[focus] ?=> lambda[Any])(using diagnostics: Diagnostics)
+    :   accrual =
+
+      ${
+          contingency.internal.validateWithin[accrual, lambda, focus]
+            ('validate, 'lambda, 'diagnostics)
+        }
 
 class Validate[accrual, lambda[_], focus]
   ( val initial: accrual,

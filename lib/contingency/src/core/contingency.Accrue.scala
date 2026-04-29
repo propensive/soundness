@@ -32,6 +32,19 @@
                                                                                                   */
 package contingency
 
+import fulminate.*
+
+object Accrue:
+  extension [accrual <: Exception, lambda[_]](inline accrue: Accrue[accrual, lambda])
+    inline def within[result](inline lambda: lambda[result])
+      ( using tactic: Tactic[accrual], diagnostics: Diagnostics )
+    :   result =
+
+      $ {
+          contingency.internal.accrueWithin[accrual, lambda, result]
+            ( 'accrue, 'lambda, 'tactic, 'diagnostics )
+        }
+
 class Accrue[accrual <: Exception, lambda[_]]
   ( val initial: accrual,
     val lambda:  (accrual: accrual) ?=> PartialFunction[Exception, accrual] )

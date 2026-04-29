@@ -32,4 +32,27 @@
                                                                                                   */
 package probably
 
+import proscenium.*
+
+object Test:
+  extension [test](test: Test[test])
+    inline def aspire(inline predicate: test => Boolean): Unit =
+      ${probably.internal.aspire[test]('test)}
+
+
+    inline def assert(inline predicate: test => Boolean): Unit =
+      ${probably.internal.assert[test]('test, 'predicate)}
+
+
+    inline def check(inline predicate: test => Boolean): test =
+      ${probably.internal.check[test]('test, 'predicate)}
+
+    inline def assert(): Unit =
+      ${probably.internal.assert[test]('test, '{probably.internal.succeed})}
+
+    inline def check(): test =
+      ${probably.internal.check[test]('test, '{probably.internal.succeed})}
+
+    inline def matches(inline pf: test ~> Any): Unit = assert(pf.isDefinedAt(_))
+
 case class Test[+result](id: TestId, action: Harness => result)
