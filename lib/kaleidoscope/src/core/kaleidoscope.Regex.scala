@@ -82,11 +82,13 @@ object Regex:
       quantifier: Quantifier  = Quantifier.Exactly(1),
       greed:      Greed       = Greed.Greedy,
       capture:    Boolean     = false,
-      charClass:  Boolean     = false ):
+      charClass:  Boolean     = false,
+      singleChar: Boolean     = false ):
 
-    def outerStart: Int = (start - 1).max(0)
+    def outerStart: Int = if singleChar && !charClass then start else (start - 1).max(0)
     def allGroups: List[Regex.Group] = groups.flatMap: group => group :: group.allGroups
     def captureGroups: List[Regex.Group] = allGroups.filter(_.capture)
+    def charMatcher: Boolean = charClass || singleChar
 
     def serialize(pattern: Text, index: Int): (Int, Text) =
       if charClass then
@@ -95,6 +97,11 @@ object Regex:
         else
           val chars = pattern.s.substring(start, end)
           (index, s"($groupName[$chars]${quantifier.serialize}${greed.serialize})")
+      else if singleChar then
+        val groupName = (if capture then s"?<g$index>" else "").tt
+        val token = pattern.s.substring(start, end)
+        if quantifier.unitary then (index, s"($groupName$token)")
+        else (index, s"($groupName$token${quantifier.serialize}${greed.serialize})")
       else
         val (index2, subpattern) = Regex.makePattern(pattern, groups, start, "".tt, end, index)
         val groupName = (if capture then s"?<g$index>" else "").tt
@@ -110,10 +117,14 @@ object Regex:
   def apply(text: Text): Regex raises RegexError = parse(List(text))
 
   def parse(parts: List[Text]): Regex raises RegexError =
+    def validStart(part: Text): Boolean =
+      val str = part.s
+      str.startsWith("(") || str.startsWith("[") || str.startsWith(".")
+      || (str.length >= 2 && str.charAt(0) == '\\' && "dDwWsS".indexOf(str.charAt(1)) >= 0)
+
     parts.absolve match
       case head :: tail =>
-        if !tail.all { part => part.s.startsWith("(") || part.s.startsWith("[") }
-        then abort(RegexError(0, ExpectedGroup))
+        if !tail.all(validStart) then abort(RegexError(0, ExpectedGroup))
 
     def captures(todo: List[Text], last: Int, done: Set[Int]): Set[Int] = todo match
       case Nil          => done
@@ -195,6 +206,29 @@ object Regex:
 
           Group(start, index, (index + 1).min(text.s.length), children.reverse,
               Quantifier.Exactly(1), Greed.Greedy, captured.has(start - 1), false)
+
+        case '.' if !escape && !charClass && captured.has(index) =>
+          val groupStart = index
+          index += 1
+          val tokenEnd = index
+          val q = quantifier()
+          val g = greed()
+
+          val newGroup = Group(groupStart, tokenEnd, index, Nil, q, g, true, false, true)
+          group(start, newGroup :: children, top, false, false)
+
+        case '\\' if !escape && !charClass && captured.has(index)
+              && index + 1 < text.s.length
+              && "dDwWsS".indexOf(text.s.charAt(index + 1)) >= 0 =>
+
+          val groupStart = index
+          index += 2
+          val tokenEnd = index
+          val q = quantifier()
+          val g = greed()
+
+          val newGroup = Group(groupStart, tokenEnd, index, Nil, q, g, true, false, true)
+          group(start, newGroup :: children, top, false, false)
 
         case '\\' =>
           index += 1
@@ -325,7 +359,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
 
           val matches2 =
             if group.capture then
-              if group.charClass then
+              if group.charMatcher then
                 if group.quantifier.unitary then matchedText.head :: matches
                 else if group.quantifier == Regex.Quantifier.Between(0, 1)
                 then matchedText.headOption.getOrElse(Unset) :: matches
