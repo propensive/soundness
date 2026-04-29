@@ -251,7 +251,6 @@ object test extends ScalaModule:
     inimitable.test,
     iridescence.test,
     jacinta.test,
-    //journalist.test,
     kaleidoscope.test,
     larceny.test,
     //legerdemain.test,
@@ -689,10 +688,6 @@ object jacinta extends Library:
   object http extends Component(core, telekinesis.core)
   object schema extends Component(core, telekinesis.core)
   object test extends Tests(time, http, schema)
-
-object journalist extends Library:
-  object core extends Component(galilei.core)
-  object test extends Tests(core)
 
 object kaleidoscope extends Library:
   object core extends Component(contingency.core)
