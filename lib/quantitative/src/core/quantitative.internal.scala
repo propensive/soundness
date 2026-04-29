@@ -100,7 +100,7 @@ object internal extends protointernal:
     @targetName("makeDerivedUnit")
     def apply[units <: Measure](value: Quantity[units]): MetricUnit[units] = value
 
-  object Quantity:
+  object Quantity extends Quantity2:
     inline given underlying: [units <: Measure] => Underlying[Quantity[units], Double] = !!
     inline given canEqual: [units <: Measure] => CanEqual[Quantity[units], Quantity[units]] = !!
 
