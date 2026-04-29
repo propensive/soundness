@@ -33,7 +33,17 @@
 package synesthesia
 
 import fulminate.*
-import proscenium.*
 
-case class McpError()(using Diagnostics)
-extends Error(realm"sn", 1, 0)(m"an error occurred during an MCP operation")
+object McpError:
+  enum Reason(val number: Int) extends Clarification:
+    case UnknownMethod    extends Reason(1)
+    case UnknownResource  extends Reason(2)
+    case MissingParameter extends Reason(3)
+
+  given communicable: Reason is Communicable =
+    case Reason.UnknownMethod    => m"the method name does not match any registered tool or prompt"
+    case Reason.UnknownResource  => m"the URI does not match any registered resource"
+    case Reason.MissingParameter => m"a required parameter was not present in the input"
+
+case class McpError(reason: McpError.Reason)(using Diagnostics)
+extends Error(realm"sn", 1, reason.number)(m"the MCP operation failed because $reason")
