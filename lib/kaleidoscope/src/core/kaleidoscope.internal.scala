@@ -64,13 +64,14 @@ object internal:
     val types: List[TypeRepr] = regex.captureGroups.map: group =>
       group.quantifier match
         case Regex.Quantifier.Exactly(1) =>
-          if group.charClass then TypeRepr.of[Char] else TypeRepr.of[Text]
+          if group.charMatcher then TypeRepr.of[Char] else TypeRepr.of[Text]
 
         case Regex.Quantifier.Between(0, 1) =>
-          if group.charClass then TypeRepr.of[Optional[Char]] else TypeRepr.of[Optional[Text]]
+          if group.charMatcher then TypeRepr.of[Optional[Char]]
+          else TypeRepr.of[Optional[Text]]
 
         case _ =>
-          if group.charClass then TypeRepr.of[List[Char]] else TypeRepr.of[List[Text]]
+          if group.charMatcher then TypeRepr.of[List[Char]] else TypeRepr.of[List[Text]]
 
     // This needs to be `lazy`
     lazy val tupleType: TypeRepr =
