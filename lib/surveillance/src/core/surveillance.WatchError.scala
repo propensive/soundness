@@ -32,11 +32,22 @@
                                                                                                   */
 package surveillance
 
-import anticipation.*
 import fulminate.*
 
-case class WatchError()(using Diagnostics)
-extends Error
-  ( m"""
-      the operating system's limit on the number of paths that can be watched has been exceeded
-    """ )
+object WatchError:
+  enum Reason(val number: Int) extends Clarification:
+    case LimitExceeded     extends Reason(1)
+    case Nonexistent       extends Reason(2)
+    case NotDirectory      extends Reason(3)
+    case PermissionDenied  extends Reason(4)
+
+  given communicable: Reason is Communicable =
+    case Reason.LimitExceeded =>
+      m"the operating system's limit on watched paths has been exceeded"
+
+    case Reason.Nonexistent      => m"the path does not exist"
+    case Reason.NotDirectory     => m"the path is not a directory"
+    case Reason.PermissionDenied => m"the user does not have permission to watch the path"
+
+case class WatchError(reason: WatchError.Reason)(using Diagnostics)
+extends Error(realm"su", 1, reason.number)(m"the path could not be watched because $reason")
