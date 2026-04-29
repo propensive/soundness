@@ -169,20 +169,3 @@ def diff[element]
           ( position - 1, deletes, rows, Par(position, rightPosition, left(position)) :: edits )
 
   trace(0, 0, Nil, Nil)
-
-
-extension (diff: Diff[Text])
-  def serialize: Stream[Text] = diff.chunks.flatMap:
-    case Chunk(left, right, dels, inss) =>
-      def range(start: Int, end: Int): Text = s"$start${if start == end then "" else s",$end"}".tt
-
-      val command: Text =
-        if dels.isEmpty then s"${left}a${range(right + 1, right + inss.size)}".tt
-        else if inss.isEmpty then s"${range(left + 1, left + dels.size)}d${right}".tt
-        else s"${range(left + 1, left + dels.size)}c${range(right + 1, right + inss.size)}".tt
-
-      val delSeq = dels.map { del => Text("< "+del.value) }
-      val sep = if inss.size > 0 && dels.size > 0 then List(Text("---")) else List()
-      val insSeq = inss.map { ins => Text("> "+ins.value) }
-
-      command :: delSeq ::: sep ::: insSeq

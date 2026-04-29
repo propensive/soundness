@@ -38,6 +38,7 @@ import anticipation.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import inimitable.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -95,6 +96,11 @@ object Cookie:
       expiry:   Optional[Long] = Unset,
       secure:   Boolean        = false,
       httpOnly: Boolean        = false )
+
+  extension (cookie: Cookie[Session])
+    def session(lambda: Session ?=> Http.Response)(using Http.Request): Http.Response =
+      val session = cookie().or(Session(Uuid().show))
+      lambda(using session) + cookie(session)
 
 case class Cookie[value: {Encodable in Text, Decodable in Text}]
   ( name:     Text,

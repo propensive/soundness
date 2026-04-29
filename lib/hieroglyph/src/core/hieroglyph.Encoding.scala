@@ -67,6 +67,9 @@ object Encoding:
   def apply(name: Text, canEncode: Boolean): Encoding { type CanEncode = canEncode.type } =
     new Encoding(name) { type CanEncode = canEncode.type }
 
+  extension (encoding: Encoding { type CanEncode = true })
+    def encoder: CharEncoder = CharEncoder(encoding)
+
 class Encoding(name0: Text):
   def name: Text = charset.displayName.nn.tt
 

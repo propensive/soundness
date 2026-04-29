@@ -36,7 +36,7 @@ export
   parasite
   . { async, AsyncError, cancel, Chain, Codicil, Daemon, daemon, delay, Destruction, Fulfillment,
       GarbageCollection, Heap, hibernate, Hook, intercept, Interceptable, Monitor, monitor,
-      Observation, Os, Promise, race, relent, retry, Shutdown, sleep, snooze, supervise, Task, task,
+      Observation, Os, Promise, relent, retry, Shutdown, sleep, snooze, supervise, Task, task,
       Tenacity, Threading, Timeout, Transgression }
 
 package threading:

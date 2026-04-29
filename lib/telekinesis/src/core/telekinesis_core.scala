@@ -37,12 +37,10 @@ import language.dynamics
 import anticipation.*
 import distillate.*
 import fulminate.*
-import inimitable.*
 import legerdemain.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import spectacular.*
 import urticose.*
 import vacuous.*
 
@@ -67,7 +65,3 @@ extension (url: into[HttpUrl])
     val query2 = url.query.let(query ++ _.decode[Query]).or(query)
     Url(url.origin, url.location, query2.encode, url.fragment)
 
-extension (cookie: Cookie[Session])
-  def session(lambda: Session ?=> Http.Response)(using Http.Request): Http.Response =
-    val session = cookie().or(Session(Uuid().show))
-    lambda(using session) + cookie(session)
