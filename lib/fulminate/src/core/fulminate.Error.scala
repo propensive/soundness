@@ -64,14 +64,19 @@ extends Exception(message.text.s, cause, false, diagnostics.captureStack):
   def colourCode: Text =
     if d == 0 then "".tt
     else
+      val hyperlink = false
       val esc = 27.toChar
+      val bel = 7.toChar
       val gray   = s"$esc[38;2;128;128;128m"
       val orange = s"$esc[38;2;255;165;0m"
       val yellow = s"$esc[38;2;255;215;0m"
       val cyan   = s"$esc[38;2;0;200;255m"
       val reset  = s"$esc[0m"
       val ePart  = if e == 0 then "" else s"$gray.$cyan$e"
-      s"$gray[$orange↯SN$gray-$yellow${realm.code}$gray/$cyan$d$ePart$gray]$reset".tt
+      val link   = if hyperlink then s"$esc]8;;https://soundness.dev/SN-${realm.code}/$d$bel" else ""
+      val unlink = if hyperlink then s"$esc]8;;$bel" else ""
+      s"$link$gray[$orange↯SN$gray-$yellow${realm.code}$gray/$cyan$d$ePart$gray]$reset$unlink"
+      .tt
 
   def labelled: Message =
     if d == 0 then message
