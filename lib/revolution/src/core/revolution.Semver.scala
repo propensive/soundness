@@ -90,7 +90,7 @@ object Semver:
             safely(element.decode[Long]).or(element)
 
           mitigate:
-            case NumberError(_, _) => SemverError(text, SemverError.Reason.BadFormat)
+            case NumberError(_, _, _) => SemverError(text, SemverError.Reason.BadFormat)
 
           . within:
               val major2 = major.decode[Long]

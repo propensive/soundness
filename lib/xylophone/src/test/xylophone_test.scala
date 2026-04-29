@@ -86,7 +86,7 @@ object Tests extends Suite(m"Xylophone tests"):
 
     test(m"fail to extract bad integer"):
       capture[NumberError](x"""<message>ABC</message>""".as[Int])
-    . assert(_ == NumberError("ABC", Int))
+    . assert(_ == NumberError("ABC", Int, NumberError.Reason.Unparseable))
 
     test(m"extract email address"):
       x"""<email>test@example.com</email>""".as[EmailAddress]

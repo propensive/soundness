@@ -37,5 +37,16 @@ import language.experimental.pureFunctions
 import anticipation.*
 import fulminate.*
 
-case class NumberError(text: Text, specializable: Specializable)(using Diagnostics)
-extends Error(realm"dl", 1, 0)(m"$text is not a valid $specializable")
+object NumberError:
+  enum Reason(val number: Int) extends Clarification:
+    case Unparseable extends Reason(1)
+    case OutOfRange  extends Reason(2)
+
+  given communicable: Reason is Communicable =
+    case Reason.Unparseable => m"the input could not be parsed as a number"
+    case Reason.OutOfRange  => m"the input was outside the target type's representable range"
+
+case class NumberError
+  ( text: Text, specializable: Specializable, reason: NumberError.Reason )
+  ( using Diagnostics )
+extends Error(realm"dl", 1, reason.number)(m"$text is not a valid $specializable because $reason")

@@ -47,7 +47,8 @@ object Pid:
     text => Pid(text.decode[Int])
 
   given decodable: Tactic[NumberError] => Pid is Decodable in Text = text =>
-    try Pid(text.s.toLong) catch case error: Exception => abort(NumberError(text, Int))
+    try Pid(text.s.toLong) catch case error: Exception =>
+      abort(NumberError(text, Int, NumberError.Reason.Unparseable))
 
 case class Pid(value: Long):
   override def toString(): String = "\u21af"+value
