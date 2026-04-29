@@ -34,5 +34,12 @@ package legerdemain
 
 import fulminate.*
 
-case class QueryError()(using Diagnostics)
-extends Error(realm"le", 1, 0)(m"the query parameter could not be read")
+object QueryError:
+  enum Reason(val number: Int) extends Clarification:
+    case Missing extends Reason(1)
+
+  given communicable: Reason is Communicable =
+    case Reason.Missing => m"the parameter was not present in the query string"
+
+case class QueryError(reason: QueryError.Reason)(using Diagnostics)
+extends Error(realm"le", 1, reason.number)(m"the query parameter could not be read because $reason")

@@ -105,10 +105,10 @@ object Query extends Dynamic:
         provide[Tactic[QueryError]]:
           summonFrom:
             case default: Default[`value`] =>
-              _().let(_.decode).or(raise(QueryError()) yet default())
+              _().let(_.decode).or(raise(QueryError(QueryError.Reason.Missing)) yet default())
 
             case _ =>
-              _().lest(QueryError()).decode
+              _().lest(QueryError(QueryError.Reason.Missing)).decode
 
       case given ProductReflection[`value` & Product] =>
         DecodableDerivation.conjunction[value & Product].asInstanceOf[value is Decodable in Query]
