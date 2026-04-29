@@ -38,6 +38,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
+          # Only mirror PRs merged strictly after this timestamp. The release
+          # branch starts the day this workflow lands; earlier `main` history
+          # (mixed merge methods, intervening "Merge main into ..." commits) is
+          # not retroactively mirrored. Adjust if you need to backfill.
+          WATERMARK_MERGED_AFTER: '2026-04-29T11:48:00Z'
         run: |
           set -euo pipefail
 
@@ -67,10 +72,12 @@ jobs:
             --json number,title,body,url,mergedAt,mergeCommit \
             > /tmp/prs.json
 
-          # Drop already-mirrored PRs and PRs without a merge commit; sort
-          # ascending by mergedAt so we apply them in the order they landed.
-          jq --slurpfile m /tmp/mirrored.json '
+          # Drop PRs without a merge commit, PRs merged at/before the
+          # watermark, and PRs already mirrored. Sort ascending by mergedAt so
+          # we apply them in the order they landed.
+          jq --slurpfile m /tmp/mirrored.json --arg w "$WATERMARK_MERGED_AFTER" '
             map(select(.mergeCommit != null and .mergeCommit.oid != null))
+            | map(select(.mergedAt > $w))
             | map(select((.number | tostring) as $n | ($m[0] // []) | index($n) | not))
             | sort_by(.mergedAt)
           ' /tmp/prs.json > /tmp/todo.json
@@ -85,16 +92,28 @@ jobs:
           # Compute the number of commits a PR introduced onto main, given its
           # merge commit's SHA. Merge-commit and squash methods always add one
           # commit; rebase adds N (the PR's commit count, queried from the
-          # API). The method is detected from the merge commit's parent count.
+          # API). Method detection:
+          #   - 2 parents → merge-commit
+          #   - 1 parent + subject ends with " (#<number>)" → squash (this is
+          #     GitHub's default subject format for squash merges)
+          #   - 1 parent otherwise → rebase
           commits_on_main() {
-            local sha=$1 number=$2 parents
+            local sha=$1 number=$2 parents subject
             parents=$(git cat-file -p "$sha" | grep -c '^parent ')
             if [ "$parents" -eq 2 ]; then
               echo 1
-            else
-              gh pr view "$number" --repo "$REPO" --json commits \
-                --jq '.commits | length'
+              return
             fi
+            subject=$(git log -1 --format=%s "$sha")
+            case "$subject" in
+              *" (#${number})")
+                echo 1
+                ;;
+              *)
+                gh pr view "$number" --repo "$REPO" --json commits \
+                  --jq '.commits | length'
+                ;;
+            esac
           }
 
           # First-run bootstrap: create release as an orphan branch with a
