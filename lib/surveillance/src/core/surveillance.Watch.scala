@@ -39,7 +39,6 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import denominative.*
-import feudalism.*
 import parasite.*, threading.platform
 import prepositional.*
 import proscenium.*
@@ -64,7 +63,7 @@ object Watch:
         WatchService(watchService, pollLoop(watchService)).tap: service =>
           serviceValue = service
 
-  private val watches: Mutex[scm.HashMap[jnf.WatchKey, Set[Watch#PathWatch]]] = Mutex(scm.HashMap())
+  private val watches: scm.HashMap[jnf.WatchKey, Set[Watch#PathWatch]] = scm.HashMap()
 
   private def register(paths: Map[jnf.Path, Text => Boolean]): Watch =
     new Watch().tap(_.watch(paths))
@@ -73,10 +72,7 @@ object Watch:
     service.take().nn match
       case key: jnf.WatchKey =>
         key.pollEvents().nn.iterator.nn.asScala.each: event =>
-          watches.use: ref =>
-            ref(key)
-
-          . each(_.put(event))
+          watches.synchronized(watches(key)).each(_.put(event))
 
         key.reset()
 
@@ -136,21 +132,21 @@ class Watch():
           path.register(Watch.service.watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
 
         new PathWatch(key, path, spool, filter).tap: watch =>
-          Watch.watches.isolate: map =>
-            map(key) = map.at(key).or(Set()) + watch
+          Watch.watches.synchronized:
+            Watch.watches(key) = Watch.watches.at(key).or(Set()) + watch
 
     synchronized(watches ++= watches2)
 
   def unregister(): Unit =
-    Watch.watches.isolate: map =>
+    Watch.watches.synchronized:
       watches.each: watch =>
-        map(watch.key) = map.at(watch.key).or(Set()) - watch
+        Watch.watches(watch.key) = Watch.watches.at(watch.key).or(Set()) - watch
 
-        if map(watch.key).nil then
+        if Watch.watches(watch.key).nil then
           watch.key.cancel()
-          map.remove(watch.key)
+          Watch.watches.remove(watch.key)
 
-        if map.nil then synchronized:
+        if Watch.watches.nil then synchronized:
           Watch.serviceValue.let: service =>
             service.stop()
             Watch.serviceValue = Unset
