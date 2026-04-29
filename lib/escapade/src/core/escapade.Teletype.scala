@@ -116,11 +116,10 @@ object Teletype:
       if limit <= 0 then acc
       else
         val matcher = pattern.matcher(source.plain.s).nn
-        if matcher.matches
-        then
+
+        if !matcher.matches then source :: acc else
           val output = source.keep(matcher.group(2).nn.length, Rtl)
           recur(source.keep(matcher.group(1).nn.length), limit - 1, output :: acc)
-        else source :: acc
 
     recur(text, limit, Nil)
 

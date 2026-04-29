@@ -82,7 +82,7 @@ object internal:
                     m"""
                       the value $string is less than the lower bound for this value,
                       ${lowerBound.toString}
-                    """)
+                    """ )
 
                 if value > upperBound
                 then halt

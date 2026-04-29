@@ -74,7 +74,7 @@ extends DecimalConverter:
         ( chars: Array[Char], bcd: Long, index: Int, carry: Boolean, point: Int )
       :   Array[Char] =
 
-        if index >= 0 then
+        if index < 0 then chars else
           var digit = bcd & 15
           var carry2 = carry
 
@@ -85,7 +85,6 @@ extends DecimalConverter:
               chars(index) = (digit + '0').toChar
 
           write(chars, if index != point then (bcd >> 4) else bcd, index - 1, carry2, point)
-        else chars
 
       @tailrec
       def recur(focus: Double, bcd: Long, index: Int): Array[Char] =
@@ -99,10 +98,9 @@ extends DecimalConverter:
           val length = shift + index - scale.min(0)
 
           val suffix: Int =
-            if exponentiate then
+            if !exponentiate then 0 else
               exponent.length + (if exponentValue < 0 then 1 else 0)
-              + (exponentScale(exponentValue, 0))
-            else 0
+              + exponentScale(exponentValue, 0)
 
           val fullLength = (if sign then 1 else 0) + (if point < length then 1 else 0) + length
           val array = new Array[Char](fullLength + suffix)
@@ -134,11 +132,15 @@ extends DecimalConverter:
               next >= 5,
               if sign then point + 1 else point )
 
-        else recur(next, bcd2, index + 1)
+        else
+          recur(next, bcd2, index + 1)
 
       val chars: Array[Char] = recur(norm, 0L, 1)
       if sign then chars(0) = (if negative then minusSign else plusSign.vouch)
 
       Text(new String(chars))
-    else if double.isNaN then nan
-    else if double.isNegInfinity then s"$minusSign$infinity".tt else infinity
+    else if double.isNaN
+    then nan
+    else if double.isNegInfinity
+    then s"$minusSign$infinity".tt
+    else infinity

@@ -246,7 +246,8 @@ object StackTrace:
 
       (rewritten.s.substring(0, pivot).nn+"."+sub+rewritten.s.substring(pivot + 1).nn.dropRight(1))
       . tt
-    else rewritten
+    else
+      rewritten
 
   def apply(exception: Throwable): StackTrace =
     val frames = List(exception.getStackTrace.nn.map(_.nn)*).map: frame =>

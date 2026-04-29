@@ -94,7 +94,8 @@ extends Dynamic:
 
   def param(index: Int): Optional[Entry] =
     if index < paramCount then subschemas(index)
-    else if endlessParams && paramCount > 0 then subschemas(paramCount - 1) else Unset
+    else if endlessParams && paramCount > 0 then subschemas(paramCount - 1)
+    else Unset
 
   def has(key: Optional[Text]): Boolean = dictionary.contains(key)
 

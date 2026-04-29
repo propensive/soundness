@@ -155,4 +155,5 @@ case class Teletype2(plain: Text, ansi: IArray[escapade.internal.AnsiStyle]):
 
             append(plain.s.charAt(index.n0))
             recur(current2, index + 1)
-          else recur(current, index + 1)
+          else
+            recur(current, index + 1)

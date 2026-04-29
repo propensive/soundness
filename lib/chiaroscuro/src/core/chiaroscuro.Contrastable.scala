@@ -101,8 +101,8 @@ object Contrastable:
           val rightOnly: Set[Text] = (right -- left).map(_.show)
 
           def describe(set: Set[Text]): Text =
-            ( if set.size > 5
-              then set.take(4).to(List) :+ t"…${(set.size - 4).show.subscripts}" else set.to(List) )
+            ( if set.size > 5 then set.take(4).to(List) :+ t"…${(set.size - 4).show.subscripts}"
+              else set.to(List) )
 
             . join(t"{", t", ", t"}")
 

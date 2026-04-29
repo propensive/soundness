@@ -72,7 +72,8 @@ package columnar:
         if textual.unsafeChar(text, position.z) == ' '
         then longestWord(text, position + 1, position + 1, max.max(position - lastStart))
         else longestWord(text, position + 1, lastStart, max)
-      else max.max(position - lastStart)
+      else
+        max.max(position - lastStart)
 
     def width[textual: Textual](lines: IArray[textual], maxWidth: Int, slack: Double)
     :   Optional[Int] =
@@ -100,7 +101,8 @@ package columnar:
                 text.segment(lineStart.z thru lastSpace.u) :: lines )
 
             else format(text, position + 1, lineStart, lastSpace, lines)
-        else if lineStart == position then lines
+        else if lineStart == position
+        then lines
         else text.segment(lineStart.z thru position.u) :: lines
 
 

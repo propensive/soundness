@@ -89,7 +89,8 @@ extends Indexed:
       if x.uniqueId.absent || y.uniqueId.absent then
         if x.data.absent || y.data.absent then x.extra == y.extra
         else x.data == y.data
-      else x.id == y.id
+      else
+        x.id == y.id
 
     def recur(original: IArray[CodlNode], updates: IArray[CodlNode]): IArray[CodlNode] =
       val changes = diff[CodlNode](children, updates, cmp).edits

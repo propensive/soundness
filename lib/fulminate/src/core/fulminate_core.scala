@@ -149,9 +149,9 @@ def warn(d: Int, message: Message, position: Matchable)(using quotes: Quotes, re
     case _                        => report.warning(text)
 
 
-def warn(d: Int, reason: Clarification, message: Message)
-  (using quotes: Quotes, realm: Realm)
+def warn(d: Int, reason: Clarification, message: Message)(using quotes: Quotes, realm: Realm)
 :   Unit =
+
   import quotes.reflect.*
   val body = if detectColor then message.colorText.s else message.text.s
   report.warning(errorPrefix(realm, d, reason.number, detectColor)+body)

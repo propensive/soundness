@@ -51,7 +51,8 @@ case class Bg(color: Chroma):
           + ((color.underlying >> 8)&255)*0.72
           + ((color.underlying >> 16)&255)*0.21 )
         > 128
-      then 0 else 16777215
+      then 0
+      else 16777215
 
   def ansi(colorDepth: ColorDepth): Text =
     val red = (color.underlying >> 16)&255
@@ -64,8 +65,10 @@ case class Bg(color: Chroma):
       case _ =>
         val n =
           if red == 0 && green == 0 && blue == 0 then 16
-          else if red == 255 && green == 255 && blue == 255 then 231
-          else if blue == red && red == green then 232 + red*23/255
+          else if red == 255 && green == 255 && blue == 255
+          then 231
+          else if blue == red && red == green
+          then 232 + red*23/255
           else 16 + red*5/255*36 + green*5/255*6 + blue*5/255
 
         t"\e[48;5;${n}m"
