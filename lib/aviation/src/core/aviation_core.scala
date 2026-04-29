@@ -210,7 +210,7 @@ package timeFormats:
     Clockface.showable.text(_)
 
   given iso8601: Clockface is Showable =
-    import hours.twentyFourHour, numerics.fixedWidth, separators.colon, specificity.seconds
+    import hours.twentyFourHourSeconds, numerics.fixedWidth, separators.colon, specificity.seconds
     Clockface.showable.text(_)
 
   given ledger: Clockface is Showable =
