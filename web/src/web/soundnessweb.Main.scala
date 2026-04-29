@@ -2,44 +2,42 @@ package dev.soundness
 
 import soundness.*
 
+import attributives.textAttributes
 import charDecoders.utf8
 import charEncoders.utf8
 import classloaders.scala
-import logFormats.ansiStandard
 import codicils.cancel
 import environments.java
-import termcaps.environment
-import stdios.virtualMachine
-import threading.platform
+import errorDiagnostics.stackTraces
 import httpServers.stdlibPublic
+import logging.silent
+import stdios.virtualMachine
+import stylesheets.uncheckedClasses
+import supervisors.global
+import termcaps.environment
+import threading.platform
+import webserverErrorPages.stackTraces
 
-import html5.{Map => _, *}
+import doms.html.whatwg
+import doms.html.whatwg.{Em as WhatwgEm, Map as _, *}
 
-given converter: HtmlTranslator()
+private val MetaCharset = Tag.void["meta", honeycomb.Whatwg]()
+
 given Realm = realm"soundness"
-given Message is Loggable = safely(supervise(Log.route(Out))).or(Log.silent)
 given Online = Online
 
-def page(content: Html[Flow]*): HtmlDoc =
-  HtmlDoc(Html
-    ( Head
-        ( Title(t"Soundness: The Direct-style Stack for Scala 3"),
-          Meta(charset = enc"UTF-8"),
-          Meta.Viewport(content = t"width=device-width, initial-scale=1"),
-          // Script(async = true, src = t"https://www.googletagmanager.com/gtag/js?id=G-VH9CJTWYR3"),
-          // Script(t"""window.dataLayer = window.dataLayer || [];
-          //            function gtag(){dataLayer.push(arguments);}
-          //            gtag('js', new Date());
-          //            gtag('config', 'G-VH9CJTWYR3');
-          //            """),
-          Link.Stylesheet(href = % / "styles" / "soundness.css")),
-        Body
-          ( Main(content),
-            Footer(P(t"© Copyright 2025 Jon Pretty")))) )
+def page(content: Html of Flow*): Document[Html] =
+  val html = Html
+   (Head
+     (Title(t"Soundness: The Direct-style Stack for Scala 3"),
+      MetaCharset(charset = t"UTF-8"),
+      Meta.Viewport(content = t"width=device-width, initial-scale=1"),
+      Link.Stylesheet(href = t"/styles/soundness.css")),
+    Body
+     (Main(content*),
+      Footer(P(t"© Copyright 2025 Jon Pretty"))))
 
-case class Reference(description: Text, link: Text)
-case class Comment(id: Text, content: Text)
-case class Event(date: Date, description: Text)
+  Document(html, doms.html.whatwg)
 
 @main
 def server(): Unit =
@@ -96,18 +94,19 @@ def handle(using HttpConnection): Http.Response =
                   H1("The direct-style stack for Scala"),
                   H2
                     ( t"elegant by design ",
-                      html5.Em(t"/"),
+                      WhatwgEm(t"/"),
                       t" typesafe by definition ",
-                      html5.Em(t"/"),
+                      WhatwgEm(t"/"),
                       t" sound by default" ),
                   P(t"""Soundness is an ecosystem of Scala libraries that constrains your programs
-                        to """, html5.Em(t"correctness"), t""" liberating you from the pain of runtime
+                        to """, WhatwgEm(t"correctness"), t""" liberating you from the pain of runtime
                         errors, without compromising the legibility of your code."""),
                   P(t"""Your code feels just as intuitive as JavaScript or Python, but carries
                         the safety of Haskell or Rust."""),
                   Div.modules
                     ( modules.map: module =>
-                        Div(Img(src = t"/images/$module.svg"), Code(module)) ),
+                        Div(Img(src = t"/images/$module.svg"), Code(module))
+                    *),
                   Section
                     ( H3(t"Next Generation Scala"),
                       P(t"""Soundness was developed natively for Scala 3, and exploits its extensive new
@@ -129,8 +128,8 @@ def handle(using HttpConnection): Http.Response =
                   Section
                     ( H3(t"Dependent Typing"),
                       P(t"""Soundness takes the idea that any static analysis a programmer can
-                            do, the compiler can do better. And any static analysis the compiler """, html5.Em(t"can"), t"""
-                            do, it """, html5.Em(t"should"), t""" do. So Soundness makes the Scala compiler do """, html5.Em(t"more"), t""" at
+                            do, the compiler can do better. And any static analysis the compiler """, WhatwgEm(t"can"), t"""
+                            do, it """, WhatwgEm(t"should"), t""" do. So Soundness makes the Scala compiler do """, WhatwgEm(t"more"), t""" at
                             compiletime so you don't have to, and so the runtime doesn't have to. Scala's
                             powerful type system makes it possible to track more invariants about values
                             at compiletime, and to use that information to your advantage."""),
@@ -150,12 +149,12 @@ def handle(using HttpConnection): Http.Response =
                       P(t"""Monads are the foundation of functional programming, but they don't compose. Lifting every
                             value into a monadic wrapper type is a burden that's familiar, but can never compose as easily as
                             expressions."""),
-                      P(t"""Soundness APIs are """, html5.Em(t"direct-style"), t""" APIs. They are
+                      P(t"""Soundness APIs are """, WhatwgEm(t"direct-style"), t""" APIs. They are
                             designed to compose. And they're ready for a whole new level of safety with
-                            Scala's advanced """, html5.Em(t"capture checking"), t""" functionality.""")),
+                            Scala's advanced """, WhatwgEm(t"capture checking"), t""" functionality.""")),
                   Section
                     ( H3(t"Null Safety"),
-                      P(t"The curse of ", Code(t"null"), ", the ", html5.Em(t"billion-dollar mistake"),
+                      P(t"The curse of ", Code(t"null"), ", the ", WhatwgEm(t"billion-dollar mistake"),
                             t" is well known by anyone who has ever encountered a ",
                             Code(t"NullPointerException"), t". In Soundness, ",
                             Code(t"null"),
@@ -187,7 +186,7 @@ def handle(using HttpConnection): Http.Response =
                     ( H3(t"Declarative Programming"),
                       P("""
                         Declarative code is easier to reason about because it's independent of control flow. Its essential
-                        structure arises from scopes and contexts, and in Scala 3 it's possible with """, html5.Em(t"contextual values"), t""".
+                        structure arises from scopes and contexts, and in Scala 3 it's possible with """, WhatwgEm(t"contextual values"), t""".
                         Declare a new """, Code(t"given"), t""" instance or import an existing one, and it's valid for the entire scope. And
                         you decide whether that's just a method body, or your entire project—on a continuum between local
                         and global. There's less repetition, and your code is more maintainable.""")),
@@ -208,7 +207,7 @@ def handle(using HttpConnection): Http.Response =
                     ( H3(t"Polymorphic and Small"),
                       P(t"""
                         For all the functionality it provides, Soundness's API is
-                        """, html5.Em(t"tiny"), t""". Instead of a multitude of similar methods and types,
+                        """, WhatwgEm(t"tiny"), t""". Instead of a multitude of similar methods and types,
                         and without encoding functionality in
                         method names, Soundness prefers fewer methods and fewer types,
                         but each more versatile and composable. Types can be composed
