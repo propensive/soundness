@@ -81,7 +81,8 @@ class Database(size: Int):
     . asInstanceOf[Ref of left in this.type]
 
   inline def ref[left](left: left): Ref of left in this.type raises DataError =
-    references.at(left).or(abort(DataError())).asInstanceOf[Ref of left in this.type]
+    references.at(left).or(abort(DataError(DataError.Reason.UnknownReference)))
+    . asInstanceOf[Ref of left in this.type]
 
 
   inline def assign[left, right]
