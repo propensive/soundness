@@ -34,5 +34,12 @@ package anamnesis
 
 import fulminate.*
 
-case class DataError()(using Diagnostics)
-extends Error(realm"an", 1, 0)(m"there was a database error")
+object DataError:
+  enum Reason(val number: Int) extends Clarification:
+    case UnknownReference extends Reason(1)
+
+  given communicable: Reason is Communicable =
+    case Reason.UnknownReference => m"the value has not been stored in the database"
+
+case class DataError(reason: DataError.Reason)(using Diagnostics)
+extends Error(realm"an", 1, reason.number)(m"the database operation failed because $reason")
