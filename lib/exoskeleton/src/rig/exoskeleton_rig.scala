@@ -44,7 +44,7 @@ extension (shell: Shell)
 
     mitigate:
       case ExecError(_, _, _) => TmuxError()
-      case NumberError(_, _)  => TmuxError()
+      case NumberError(_, _, _) => TmuxError()
 
     . within:
         given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)

@@ -119,7 +119,7 @@ object internal:
         val bytes = text.cut(t".")
         if bytes.length == 4 then
           mitigate:
-            case error@NumberError(text, _) =>
+            case error@NumberError(text, _, _) =>
               given diagnostics: Diagnostics = error.diagnostics
               IpAddressError(Ipv4ByteNotNumeric(text))
 
