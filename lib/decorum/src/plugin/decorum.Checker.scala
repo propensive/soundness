@@ -45,19 +45,21 @@ object Checker:
     scanRawTabs(file, rawText, out)
     checkFileNaming(file, out)
     var idx = 0
+
     while idx < lines.length do
       val lineNum = idx + 1
       checkLine(state, lineNum, lines(idx), out)
       idx += 1
+
     if state.prevWasAnnotation then
       out +=
-        Violation
-          ( file, state.prevLineNum, 1, "15.1",
-            "annotation is not followed by a declaration" )
+        Violation(file, state.prevLineNum, 1, "15.1", "annotation is not followed by a declaration")
+
     state.pendingR11.foreach(out += _)
     state.pendingR11 = Nil
     finalizeCaseRun(state, out)
     checkCompanionOrdering(file, state, out)
+    checkSequences(file, lines, out)
     LazyList.from(out)
 
   def expectedModule(filePath: String): Option[String] =
@@ -350,7 +352,7 @@ object Checker:
         val maxAllowed = s.prevCodeLineIndent + step
         if leadingCols > maxAllowed then
           emit
-            ( leadingCols + 1, "R31-continuation-indent",
+            ( leadingCols + 1, "31.1",
               s"indent $leadingCols cannot exceed previous line's indent "
                 +s"${s.prevCodeLineIndent} by more than $step" )
 
@@ -418,7 +420,7 @@ object Checker:
             val openerCol = stack.pop()
             if openerCol >= 0 && cols(i) != openerCol then
               out += Violation
-                      ( s.file, lineNum, cols(i), "R31-quote-splice-close",
+                      ( s.file, lineNum, cols(i), "31.2",
                         s"closing `}` of a quote/splice block at column ${cols(i)} "
                           +s"does not align with its opening `{` at column $openerCol" )
       i += 1
@@ -454,7 +456,7 @@ object Checker:
       val sem = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
       if sem.headOption.exists(_.text == "=>") && leadingCols != s.givenSignatureIndent then
         emit
-          ( leadingCols + 1, "R32-given-arrow-align",
+          ( leadingCols + 1, "32",
             s"`=>` continuation of a `given` signature should align at column "
               +s"${s.givenSignatureIndent + 1} (found ${leadingCols + 1})" )
 
@@ -1674,3 +1676,289 @@ object Checker:
 
   private def lineStartsAnnotation(firstReal: Option[Token]): Boolean =
     firstReal.exists(_.text.startsWith("@"))
+
+  // -----------------------------------------------------------------------
+  // R33: keyword-sequence layout (`if`/`then`/`else`, `for`/`yield`,
+  // `for`/`do`, `while`/`do`, `try`/`catch`/`finally`).
+  //
+  //   * Keyword cascade (33.1): once any K_i (i ≥ 2) starts a new line, every
+  //     later keyword must also start a new line.
+  //   * Body cascade (33.2): once any B_i (i ≥ 2) is indented onto its own
+  //     line(s), every later body must be indented too.
+  //   * Keyword alignment (33.3): a keyword that starts a new line must sit
+  //     in the column of K_1.
+  //
+  // R34: for-comprehension generator alignment.
+  //
+  //   * Operator alignment (34.1): `<-` and `=` operators in generators are
+  //     vertically aligned within the generator block.
+  //   * LHS alignment (34.2): the left-hand side of every generator/binding
+  //     line aligns with the first generator's LHS.
+  //   * Filter alignment (34.3): an `if` filter aligns with the `<-`/`=`
+  //     column of the generators.
+  //
+  // The cascades fire forward only — a break in K_i does not retroactively
+  // require K_1..K_{i-1} to break.
+  // -----------------------------------------------------------------------
+
+  private case class Pos(text: String, line: Int, col: Int)
+
+  private def flattenCode(lines: IndexedSeq[IndexedSeq[Token]]): IndexedSeq[Pos] =
+    val buf = mutable.ArrayBuffer[Pos]()
+    var lineIdx = 0
+    while lineIdx < lines.length do
+      val line = lines(lineIdx)
+      var col  = 1
+      var j    = 0
+      while j < line.length do
+        val tok = line(j)
+        // Strings count as body content (they are valid expressions), but
+        // their text never matches a keyword or a bracket so they don't
+        // disturb keyword-search or depth-tracking logic.
+        if tok.kind == Kind.Code || tok.kind == Kind.Strs then
+          buf += Pos(tok.text, lineIdx + 1, col)
+        col += tok.text.length
+        j += 1
+      lineIdx += 1
+    buf.toIndexedSeq
+
+  // True iff the token at `idx` is the first code token on its line — i.e.
+  // there is no preceding code token on the same line.
+  private def startsNewLine(toks: IndexedSeq[Pos], idx: Int): Boolean =
+    idx == 0 || toks(idx - 1).line < toks(idx).line
+
+  // True iff the body that follows the keyword at `kwIdx` is indented onto
+  // a new line (its first code token sits below the keyword's line).
+  private def isBodyIndented(toks: IndexedSeq[Pos], kwIdx: Int): Boolean =
+    kwIdx + 1 < toks.length && toks(kwIdx + 1).line > toks(kwIdx).line
+
+  // Find the first occurrence of any of `targets` at depth 0 from `from`,
+  // tracking parens/brackets and (for `if`/`else` matching) nested if-else
+  // pairs. Returns the token index, or -1 if not found before the end of
+  // the enclosing scope.
+  private def findKeyword
+    ( toks:       IndexedSeq[Pos],
+      from:       Int,
+      targets:    Set[String],
+      nestIfElse: Boolean )
+  :   Int =
+
+    var i     = from
+    var depth = 0
+    while i < toks.length do
+      val t = toks(i).text
+      if t == "(" || t == "[" || t == "{" then depth += 1
+      else if t == ")" || t == "]" || t == "}" then
+        if depth == 0 then return -1
+        depth -= 1
+      else if nestIfElse && t == "if" then depth += 1
+      else if nestIfElse && t == "else" then
+        if depth == 0 && targets.contains("else") then return i
+        else if depth > 0 then depth -= 1
+      else if depth == 0 && targets.contains(t) then return i
+      i += 1
+    -1
+
+  // Apply the cascade and alignment rules to a sequence of keywords. `seq`
+  // gives the (Pos, idx-in-toks) of each keyword in order; `seq.head` is K_1.
+  private def applySequenceRules
+    ( file: String,
+      seq:  List[(Pos, Int)],
+      toks: IndexedSeq[Pos],
+      out:  mutable.ListBuffer[Violation] )
+  :   Unit =
+
+    if seq.length < 2 then return
+    val k1 = seq.head._1
+
+    var splitMode    = false
+    var indentedMode = false
+    var i            = 1
+    while i < seq.length do
+      val (cur, _)   = seq(i)
+      val broke      = startsNewLine(toks, seq(i)._2)
+      if broke then
+        if cur.col != k1.col then
+          out += Violation
+                  ( file, cur.line, cur.col, "33.3",
+                    s"keyword `${cur.text}` on a new line should align with `${k1.text}` "
+                      +s"at column ${k1.col} (found ${cur.col})" )
+        splitMode = true
+      else if splitMode then
+        out += Violation
+                ( file, cur.line, cur.col, "33.1",
+                  s"keyword `${cur.text}` must start a new line because an earlier "
+                    +s"keyword in this sequence does" )
+      // Body cascade applies to bodies after K_2 onward (i.e. body following
+      // each K_i for i ≥ 2). The body following K_1 (the condition or
+      // generator block) does not trigger the cascade.
+      val curBodyIndented = isBodyIndented(toks, seq(i)._2)
+      if indentedMode && !curBodyIndented then
+        // The cur keyword's body should be indented but isn't.
+        val bodyCol = if seq(i)._2 + 1 < toks.length then toks(seq(i)._2 + 1).col else cur.col
+        out += Violation
+                ( file, cur.line, bodyCol, "33.2",
+                  s"body after `${cur.text}` must be indented onto a new line because "
+                    +s"an earlier body in this sequence is" )
+      if curBodyIndented then indentedMode = true
+      i += 1
+
+  private def processIfSeq
+    ( toks: IndexedSeq[Pos], start: Int, file: String, out: mutable.ListBuffer[Violation] )
+  :   Unit =
+
+    val k2Idx = findKeyword(toks, start + 1, Set("then"), nestIfElse = false)
+    if k2Idx < 0 then return
+    val k1    = toks(start)
+    val k2    = toks(k2Idx)
+    val k3Idx = findKeyword(toks, k2Idx + 1, Set("else"), nestIfElse = true)
+
+    if k3Idx >= 0 then
+      val k3 = toks(k3Idx)
+      applySequenceRules(file, List((k1, start), (k2, k2Idx), (k3, k3Idx)), toks, out)
+    else
+      applySequenceRules(file, List((k1, start), (k2, k2Idx)), toks, out)
+
+  private def processForSeq
+    ( toks: IndexedSeq[Pos], start: Int, file: String, out: mutable.ListBuffer[Violation] )
+  :   Unit =
+
+    val k2Idx = findKeyword(toks, start + 1, Set("yield", "do"), nestIfElse = false)
+    if k2Idx < 0 then return
+    val k1 = toks(start)
+    val k2 = toks(k2Idx)
+    applySequenceRules(file, List((k1, start), (k2, k2Idx)), toks, out)
+    checkGeneratorAlignment(toks, start, k2Idx, file, out)
+
+  private def processWhileSeq
+    ( toks: IndexedSeq[Pos], start: Int, file: String, out: mutable.ListBuffer[Violation] )
+  :   Unit =
+
+    val k2Idx = findKeyword(toks, start + 1, Set("do"), nestIfElse = false)
+    if k2Idx < 0 then return
+    val k1 = toks(start)
+    val k2 = toks(k2Idx)
+    applySequenceRules(file, List((k1, start), (k2, k2Idx)), toks, out)
+
+  private def processTrySeq
+    ( toks: IndexedSeq[Pos], start: Int, file: String, out: mutable.ListBuffer[Violation] )
+  :   Unit =
+
+    val k1     = toks(start)
+    val firstIdx = findKeyword(toks, start + 1, Set("catch", "finally"), nestIfElse = false)
+    if firstIdx < 0 then return
+    val first  = toks(firstIdx)
+    if first.text == "catch" then
+      val finallyIdx = findKeyword(toks, firstIdx + 1, Set("finally"), nestIfElse = false)
+      if finallyIdx >= 0 then
+        applySequenceRules
+          ( file, List((k1, start), (first, firstIdx), (toks(finallyIdx), finallyIdx)),
+            toks, out )
+      else
+        applySequenceRules(file, List((k1, start), (first, firstIdx)), toks, out)
+    else
+      applySequenceRules(file, List((k1, start), (first, firstIdx)), toks, out)
+
+  // R34: alignment within a for-comprehension's generator block. The block
+  // spans tokens between `for` (at `forIdx`) and the matching `yield`/`do`
+  // (at `kwIdx`). For every gen/bind/filter line that begins at depth-0
+  // within the block, check that the LHS column and `<-`/`=` column match
+  // the first generator's, and that an `if` filter sits at the operator
+  // column.
+  private def checkGeneratorAlignment
+    ( toks:   IndexedSeq[Pos],
+      forIdx: Int,
+      kwIdx:  Int,
+      file:   String,
+      out:    mutable.ListBuffer[Violation] )
+  :   Unit =
+
+    case class GenLine(line: Int, startCol: Int, opCol: Int, isFilter: Boolean)
+
+    // Group token indices by their line, in order of appearance.
+    val byLine = mutable.LinkedHashMap[Int, mutable.ArrayBuffer[Int]]()
+    var i      = forIdx + 1
+    while i < kwIdx do
+      val ln = toks(i).line
+      byLine.getOrElseUpdate(ln, mutable.ArrayBuffer[Int]()) += i
+      i += 1
+
+    // Walk lines in order, tracking paren/bracket depth so we can identify
+    // continuation lines (depth > 0 at line start).
+    val genLines = mutable.ArrayBuffer[GenLine]()
+    var depth    = 0
+    byLine.foreach: (ln, idxs) =>
+      val depthAtStart = depth
+      // Update depth across this line's tokens for the next iteration.
+      var j = 0
+      while j < idxs.length do
+        val t = toks(idxs(j)).text
+        if t == "(" || t == "[" || t == "{" then depth += 1
+        else if t == ")" || t == "]" || t == "}" then depth -= 1
+        j += 1
+
+      if depthAtStart == 0 && idxs.nonEmpty then
+        val first = toks(idxs(0))
+        if first.text == "if" then
+          genLines += GenLine(ln, first.col, first.col, isFilter = true)
+        else
+          // Find first `<-` or `=` at line-relative depth 0.
+          var d     = 0
+          var opCol = -1
+          var k     = 0
+          while k < idxs.length && opCol < 0 do
+            val t = toks(idxs(k)).text
+            if t == "(" || t == "[" || t == "{" then d += 1
+            else if t == ")" || t == "]" || t == "}" then d -= 1
+            else if d == 0 && (t == "<-" || t == "=") then opCol = toks(idxs(k)).col
+            k += 1
+          if opCol >= 0 then
+            genLines += GenLine(ln, first.col, opCol, isFilter = false)
+
+    // Need at least two generator/binding/filter lines for alignment to bite.
+    if genLines.length < 2 then return
+
+    // The first non-filter line establishes the LHS and operator columns.
+    val firstGen = genLines.find(!_.isFilter).getOrElse(genLines.head)
+    val refLhs   = firstGen.startCol
+    val refOp    = firstGen.opCol
+
+    var idx = 0
+    while idx < genLines.length do
+      val gl = genLines(idx)
+      if !(gl.line == firstGen.line && gl.startCol == firstGen.startCol) then
+        if gl.isFilter then
+          if gl.startCol != refOp then
+            out += Violation
+                    ( file, gl.line, gl.startCol, "34.3",
+                      s"`if` filter should align with `<-`/`=` at column $refOp "
+                        +s"(found ${gl.startCol})" )
+        else
+          if gl.startCol != refLhs then
+            out += Violation
+                    ( file, gl.line, gl.startCol, "34.2",
+                      s"generator should align with the first generator's LHS at column "
+                        +s"$refLhs (found ${gl.startCol})" )
+          if gl.opCol != refOp then
+            out += Violation
+                    ( file, gl.line, gl.opCol, "34.1",
+                      s"`<-`/`=` should be vertically aligned at column $refOp "
+                        +s"(found ${gl.opCol})" )
+      idx += 1
+
+  private def checkSequences
+    ( file:  String,
+      lines: IndexedSeq[IndexedSeq[Token]],
+      out:   mutable.ListBuffer[Violation] )
+  :   Unit =
+
+    val toks = flattenCode(lines)
+    var i    = 0
+    while i < toks.length do
+      toks(i).text match
+        case "if"    => processIfSeq(toks, i, file, out)
+        case "for"   => processForSeq(toks, i, file, out)
+        case "while" => processWhileSeq(toks, i, file, out)
+        case "try"   => processTrySeq(toks, i, file, out)
+        case _       => ()
+      i += 1
