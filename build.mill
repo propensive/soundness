@@ -310,6 +310,14 @@ object test extends ScalaModule:
   def sources = Task.Sources(moduleDir / ".." / "src" / "test")
   override def finalMainClass: Task.Simple[String] = "soundness.Tests"
 
+// ------------------------ WEBSITE ------------------------
+
+object website extends BaseScalaModule:
+  def moduleDeps = Seq(soundness.all)
+  def sources    = Task.Sources(moduleDir / ".." / "web" / "src" / "web")
+  def resources  = Task.Sources(moduleDir / ".." / "web" / "res")
+  override def finalMainClass: Task.Simple[String] = "dev.soundness.server"
+
 // ------------------------ SAMPLES ------------------------
 
 /*object sample extends ScalaModule:
