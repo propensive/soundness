@@ -73,14 +73,15 @@ object Semver:
           val prerelease2: List[Text] = prerelease.let(_.skip(1).cut(t".")).or(Nil)
           val build2: List[Text] = build.let(_.skip(1).cut(t".")).or(Nil)
 
-          if prerelease == t"-" || build == t"+" then raise(SemverError(text))
+          if prerelease == t"-" || build == t"+" then
+            raise(SemverError(text, SemverError.Reason.EmptyIdentifier))
 
           for extra   <- List(prerelease2, build2).compact
               element <- extra
           do element match
-            case r"0[0-9]+"       => raise(SemverError(text))
+            case r"0[0-9]+"       => raise(SemverError(text, SemverError.Reason.LeadingZero))
             case r"[0-9A-Za-z-]+" => ()
-            case _                => raise(SemverError(text))
+            case _                => raise(SemverError(text, SemverError.Reason.InvalidCharacter))
 
           val prerelease3: List[Text | Long] = prerelease2.map: element =>
             safely(element.decode[Long]).or(element)
@@ -89,19 +90,22 @@ object Semver:
             safely(element.decode[Long]).or(element)
 
           mitigate:
-            case NumberError(_, _) => SemverError(text)
+            case NumberError(_, _) => SemverError(text, SemverError.Reason.BadFormat)
 
           . within:
               val major2 = major.decode[Long]
-              if major.starts(t"0") && major2 != 0 then raise(SemverError(text))
+              if major.starts(t"0") && major2 != 0
+              then raise(SemverError(text, SemverError.Reason.LeadingZero))
               val minor2 = minor.decode[Long]
-              if minor.starts(t"0") && minor2 != 0 then raise(SemverError(text))
+              if minor.starts(t"0") && minor2 != 0
+              then raise(SemverError(text, SemverError.Reason.LeadingZero))
               val patch2 = patch.decode[Long]
-              if patch.starts(t"0") && patch2 != 0 then raise(SemverError(text))
+              if patch.starts(t"0") && patch2 != 0
+              then raise(SemverError(text, SemverError.Reason.LeadingZero))
               Semver(major2, minor2, patch2, prerelease3, build3)
 
         case _ =>
-          abort(SemverError(text))
+          abort(SemverError(text, SemverError.Reason.BadFormat))
 
   given ordering: Ordering[Semver] = Ordering.fromLessThan: (left, right) =>
     def compare(left: List[Long | Text], right: List[Long | Text]): Boolean =
