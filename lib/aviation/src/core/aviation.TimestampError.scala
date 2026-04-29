@@ -35,5 +35,16 @@ package aviation
 import anticipation.*
 import fulminate.*
 
-case class TimestampError(value: Text)(using Diagnostics)
-extends Error(realm"av", 2, 0)(m"the time $value could not be parsed")
+object TimestampError:
+  enum Reason(val number: Int) extends Clarification:
+    case BadFormat extends Reason(1)
+    case BadNumber extends Reason(2)
+    case BadTime   extends Reason(3)
+
+  given communicable: Reason is Communicable =
+    case Reason.BadFormat => m"the input did not match the expected timestamp format"
+    case Reason.BadNumber => m"a numeric component could not be parsed as an integer"
+    case Reason.BadTime   => m"a date or time component was outside the valid range"
+
+case class TimestampError(value: Text, reason: TimestampError.Reason)(using Diagnostics)
+extends Error(realm"av", 2, reason.number)(m"the time $value could not be parsed because $reason")
