@@ -33,36 +33,24 @@
 package bitumen
 
 import anticipation.*
-import contingency.*
-import denominative.*
 import gossamer.*
-import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
-import hypotenuse.*, arithmeticOptions.overflow.unchecked
-import nomenclature.*
-import prepositional.*
+import hieroglyph.*, charEncoders.utf8
 import rudiments.*
-import serpentine.*
-import spectacular.*
-import turbulence.*
-import vacuous.*
 
-object Tar:
-  val zeroBlock: Data = IArray.fill[Byte](512)(0)
+object Pax:
+  def record(key: Text, value: Text): Data =
+    val payload: Data = (key.s+"="+value.s+"\n").tt.data
+    val payloadLen: Int = payload.length
+    val total: Int = computeLength(payloadLen)
+    (total.toString+" "+key.s+"="+value.s+"\n").tt.data
 
-  given streamable: Tar is Streamable by Data = _.serialize
+  def records(pairs: Iterable[(Text, Text)]): Data =
+    pairs.foldLeft(IArray.empty[Byte]) { (acc, pair) => acc ++ record(pair(0), pair(1)) }
 
-  private def paxRecordsFor(entry: TarEntry): List[(Text, Text)] =
-    val builder = List.newBuilder[(Text, Text)]
-    if entry.entryName.data.length > 100 then builder += ((t"path", entry.entryName))
-    entry.link.let: link =>
-      if link.data.length > 100 then builder += ((t"linkpath", link))
-    builder.result()
-
-case class Tar(entries: LazyList[TarEntry]):
-  def serialize: LazyList[Data] =
-    entries.flatMap(emitEntry) #::: LazyList(Tar.zeroBlock, Tar.zeroBlock)
-
-  private def emitEntry(entry: TarEntry): LazyList[Data] =
-    Tar.paxRecordsFor(entry) match
-      case Nil     => entry.serialize
-      case records => TarEntry.Pax(Pax.records(records)).serialize #::: entry.serialize
+  private def computeLength(payloadLen: Int): Int =
+    var n = 1
+    var total = payloadLen+1+n
+    while total.toString.length != n do
+      n = total.toString.length
+      total = payloadLen+1+n
+    total
