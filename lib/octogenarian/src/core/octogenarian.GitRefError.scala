@@ -35,5 +35,25 @@ package octogenarian
 import anticipation.*
 import fulminate.*
 
-case class GitRefError(value: Text)(using Diagnostics)
-extends Error(realm"oc", 2, 0)(m"$value is not a valid Git reference")
+object GitRefError:
+  enum Reason(val number: Int) extends Clarification:
+    case LeadingOrTrailingDot extends Reason(1)
+    case ReservedSuffix       extends Reason(2)
+    case ReservedSequence     extends Reason(3)
+    case DoubleDot            extends Reason(4)
+    case EmptySegment         extends Reason(5)
+    case InvalidCharacter     extends Reason(6)
+    case BadHash              extends Reason(7)
+
+  given communicable: Reason is Communicable =
+    case Reason.LeadingOrTrailingDot => m"a path segment starts or ends with `.`"
+    case Reason.ReservedSuffix       => m"a path segment ends with the reserved suffix `.lock`"
+    case Reason.ReservedSequence     => m"the name contains the reserved sequence `@{`"
+    case Reason.DoubleDot            => m"the name contains `..`"
+    case Reason.EmptySegment         => m"the name contains an empty path segment"
+    case Reason.InvalidCharacter     => m"the name contains a character forbidden by Git"
+    case Reason.BadHash              => m"the value is not a 40-character hexadecimal hash"
+
+case class GitRefError(value: Text, reason: GitRefError.Reason)(using Diagnostics)
+extends Error(realm"oc", 2, reason.number)
+  ( m"$value is not a valid Git reference because $reason" )

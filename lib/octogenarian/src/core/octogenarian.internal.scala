@@ -53,15 +53,17 @@ object internal:
     def head(n: Int = 0): Refspec = t"HEAD~$n"
 
     def parse(text: Text)(using Tactic[GitRefError]): Text =
+      def fail(reason: GitRefError.Reason): Text = raise(GitRefError(text, reason)) yet text
+
       text.cut(t"/").each: part =>
-        if part.starts(t".") || part.ends(t".") then raise(GitRefError(text)) yet text
-        if part.ends(t".lock") then raise(GitRefError(text)) yet text
-        if part.contains(t"@{") then raise(GitRefError(text)) yet text
-        if part.contains(t"..") then raise(GitRefError(text)) yet text
-        if part.length == 0 then raise(GitRefError(text)) yet text
+        if part.starts(t".") || part.ends(t".") then fail(GitRefError.Reason.LeadingOrTrailingDot)
+        if part.ends(t".lock")                  then fail(GitRefError.Reason.ReservedSuffix)
+        if part.contains(t"@{")                 then fail(GitRefError.Reason.ReservedSequence)
+        if part.contains(t"..")                 then fail(GitRefError.Reason.DoubleDot)
+        if part.length == 0                     then fail(GitRefError.Reason.EmptySegment)
 
         for char <- List('*', '[', '\\', ' ', '^', '~', ':', '?')
-        do if part.contains(char) then raise(GitRefError(text)) yet text
+        do if part.contains(char) then fail(GitRefError.Reason.InvalidCharacter)
 
       text
 
@@ -86,7 +88,7 @@ object internal:
   object GitHash:
     def apply(text: Text)(using Tactic[GitRefError]): GitHash = text match
       case r"[a-f0-9]{40}" => text
-      case _               => raise(GitRefError(text)) yet text
+      case _               => raise(GitRefError(text, GitRefError.Reason.BadHash)) yet text
 
     def unsafe(text: Text): GitHash = text
 
