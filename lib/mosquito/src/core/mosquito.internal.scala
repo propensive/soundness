@@ -32,6 +32,7 @@
                                                                                                   */
 package mosquito
 
+import scala.annotation.targetName
 import scala.compiletime.*
 
 import anticipation.*
@@ -157,6 +158,49 @@ object internal:
       val third = left.element(0)*right.element(1) - left.element(1)*right.element(0)
 
       new Tensor[addition.Result, 3](IArray[Any](first, second, third))
+
+
+  extension [left](left: Tensor[left, 7])
+    @targetName("cross7")
+    def cross[right](right: Tensor[right, 7])
+      ( using multiplication: left is Multiplicable by right,
+              addition:       multiplication.Result is Addable by multiplication.Result,
+              subtraction:    multiplication.Result is Subtractable by multiplication.Result,
+              addEq:          addition.Result =:= multiplication.Result,
+              subEq:          subtraction.Result =:= multiplication.Result )
+    :   Tensor[addition.Result, 7] =
+
+      val a0 = left.element(0); val a1 = left.element(1); val a2 = left.element(2)
+      val a3 = left.element(3); val a4 = left.element(4); val a5 = left.element(5)
+      val a6 = left.element(6)
+
+      val b0 = right.element(0); val b1 = right.element(1); val b2 = right.element(2)
+      val b3 = right.element(3); val b4 = right.element(4); val b5 = right.element(5)
+      val b6 = right.element(6)
+
+      def combine
+        ( p1: multiplication.Result, n1: multiplication.Result,
+          p2: multiplication.Result, n2: multiplication.Result,
+          p3: multiplication.Result, n3: multiplication.Result )
+      :   multiplication.Result =
+
+        var acc: multiplication.Result = p1
+        acc = acc - n1
+        acc = acc + p2
+        acc = acc - n2
+        acc = acc + p3
+        acc = acc - n3
+        acc
+
+      val c0 = combine(a1*b3, a3*b1, a2*b6, a6*b2, a4*b5, a5*b4)
+      val c1 = combine(a2*b4, a4*b2, a3*b0, a0*b3, a5*b6, a6*b5)
+      val c2 = combine(a3*b5, a5*b3, a4*b1, a1*b4, a6*b0, a0*b6)
+      val c3 = combine(a4*b6, a6*b4, a5*b2, a2*b5, a0*b1, a1*b0)
+      val c4 = combine(a5*b0, a0*b5, a6*b3, a3*b6, a1*b2, a2*b1)
+      val c5 = combine(a6*b1, a1*b6, a0*b4, a4*b0, a2*b3, a3*b2)
+      val c6 = combine(a0*b2, a2*b0, a1*b5, a5*b1, a3*b4, a4*b3)
+
+      new Tensor[addition.Result, 7](IArray[Any](c0, c1, c2, c3, c4, c5, c6))
 
 
   extension [size <: Int, left](left: Tensor[left, size])

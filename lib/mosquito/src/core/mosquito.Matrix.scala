@@ -101,6 +101,88 @@ object Matrix:
                 tuple.productElement(column).asInstanceOf[element] )
 
 
+  private def submatrix[element: ClassTag]
+    (data: IArray[element], n: Int, skipRow: Int, skipCol: Int)
+  :   IArray[element] =
+
+    IArray.build[element]((n - 1)*(n - 1)): array =>
+      var idx = 0
+      var row = 0
+      while row < n do
+        if row != skipRow then
+          var col = 0
+          while col < n do
+            if col != skipCol then
+              array(idx) = data(n*row + col)
+              idx += 1
+            col += 1
+        row += 1
+
+
+  private def computeDeterminant[element]
+    (data: IArray[element], n: Int)
+    (using multiplication: element is Multiplicable by element to element,
+           addition:       element is Addable by element to element,
+           subtraction:    element is Subtractable by element to element,
+           classTag:       ClassTag[element])
+  :   element =
+
+    if n == 1 then data(0)
+    else if n == 2 then data(0)*data(3) - data(1)*data(2)
+    else
+      var result: element = data(0)*computeDeterminant(submatrix(data, n, 0, 0), n - 1)
+      var j = 1
+      while j < n do
+        val term: element = data(j)*computeDeterminant(submatrix(data, n, 0, j), n - 1)
+        result = if j % 2 == 1 then result - term else result + term
+        j += 1
+
+      result
+
+
+  extension [element, n <: Int](matrix: Matrix[element, n, n])
+    def determinant
+      (using multiplication: element is Multiplicable by element to element,
+             addition:       element is Addable by element to element,
+             subtraction:    element is Subtractable by element to element,
+             classTag:       ClassTag[element])
+    :   element =
+
+      computeDeterminant(matrix.elements, matrix.rows)
+
+
+    def inverse
+      (using multiplication: element is Multiplicable by element to element,
+             addition:       element is Addable by element to element,
+             subtraction:    element is Subtractable by element to element,
+             divisible:      element is Divisible by element to element,
+             zeroic:         element is Zeroic,
+             classTag:       ClassTag[element])
+    :   Optional[Matrix[element, n, n]] =
+
+      val size = matrix.rows
+      val data = matrix.elements
+      val det = computeDeterminant(data, size)
+
+      if det == zeroic.zero then Unset
+      else if size == 1 then
+        val one: element = data(0)/data(0)
+        new Matrix[element, n, n](1, 1, IArray(one/data(0)))
+      else
+        val resultData = IArray.build[element](size*size): array =>
+          var i = 0
+          while i < size do
+            var j = 0
+            while j < size do
+              val minorDet = computeDeterminant(submatrix(data, size, j, i), size - 1)
+              val signed = if (i + j) % 2 == 0 then minorDet else zeroic.zero - minorDet
+              array(size*i + j) = signed/det
+              j += 1
+            i += 1
+
+        new Matrix[element, n, n](size, size, resultData)
+
+
 class Matrix[element, rows <: Int, columns <: Int]
   ( val rows: Int, val columns: Int, val elements: IArray[element] ):
 
