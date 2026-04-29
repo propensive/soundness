@@ -261,6 +261,129 @@ object Tests extends Suite(m"Mosquito tests"):
         m1/2
       . assert(_ == Matrix[2, 3]((0, 1, 1), (2, 2, 3)))
 
+    suite(m"Determinant"):
+      test(m"Determinant of 2x2 matrix"):
+        Matrix[2, 2]((1, 2), (3, 4)).determinant
+      . assert(_ == -2)
+
+      test(m"Determinant of 2x2 zero matrix"):
+        Matrix[2, 2]((0, 0), (0, 0)).determinant
+      . assert(_ == 0)
+
+      test(m"Determinant of 2x2 identity"):
+        Matrix[2, 2]((1, 0), (0, 1)).determinant
+      . assert(_ == 1)
+
+      test(m"Determinant of 3x3 identity"):
+        Matrix[3, 3]((1, 0, 0), (0, 1, 0), (0, 0, 1)).determinant
+      . assert(_ == 1)
+
+      test(m"Determinant of 3x3 known matrix"):
+        Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1, 4, 5)).determinant
+      . assert(_ == 49)
+
+      test(m"Determinant of 3x3 upper triangular = product of diagonal"):
+        Matrix[3, 3]((2, 1, 5), (0, 3, 7), (0, 0, 4)).determinant
+      . assert(_ == 24)
+
+      test(m"Determinant of 3x3 singular matrix is zero"):
+        Matrix[3, 3]((1, 2, 3), (2, 4, 6), (1, 1, 1)).determinant
+      . assert(_ == 0)
+
+      test(m"Determinant of 4x4 matrix"):
+        Matrix[4, 4]
+         ((1, 0, 2, -1),
+          (3, 0, 0,  5),
+          (2, 1, 4, -3),
+          (1, 0, 5,  0))
+        . determinant
+      . assert(_ == 30)
+
+      test(m"Determinant of Double 2x2 matrix"):
+        Matrix[2, 2]((1.5, 2.0), (3.0, 4.0)).determinant
+      . assert(_ === 0.0 +/- 0.000001)
+
+      test(m"Type error if determinant called on non-square matrix"):
+        demilitarize:
+          Matrix[2, 3]((1, 2, 3), (4, 5, 6)).determinant
+      . assert(_.nonEmpty)
+
+    suite(m"Inverse"):
+      test(m"Inverse of 2x2 identity is identity"):
+        Matrix[2, 2]((1.0, 0.0), (0.0, 1.0)).inverse
+      . assert(_ == Matrix[2, 2]((1.0, 0.0), (0.0, 1.0)))
+
+      test(m"Inverse of 2x2 known matrix"):
+        Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse
+      . assert(_ == Matrix[2, 2]((-2.0, 1.0), (1.5, -0.5)))
+
+      test(m"Inverse of singular 2x2 matrix is Unset"):
+        Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).inverse
+      . assert(_ == Unset)
+
+      test(m"M times M-inverse is identity (2x2)"):
+        val m = Matrix[2, 2]((4.0, 7.0), (2.0, 6.0))
+        val product = m*m.inverse.vouch
+        val target = Matrix[2, 2]((1.0, 0.0), (0.0, 1.0))
+        product.elements.indices.map(i => math.abs(product.elements(i) - target.elements(i))).max
+      . assert(_ < 0.000001)
+
+      test(m"M times M-inverse is identity (3x3)"):
+        val m = Matrix[3, 3]((1.0, 2.0, 3.0), (0.0, 1.0, 4.0), (5.0, 6.0, 0.0))
+        val product = m*m.inverse.vouch
+        val target = Matrix[3, 3]((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
+        product.elements.indices.map(i => math.abs(product.elements(i) - target.elements(i))).max
+      . assert(_ < 0.000001)
+
+      test(m"Inverse of singular 3x3 matrix is Unset"):
+        Matrix[3, 3]((1.0, 2.0, 3.0), (2.0, 4.0, 6.0), (1.0, 1.0, 1.0)).inverse
+      . assert(_ == Unset)
+
+      test(m"Type error if inverse called on non-square matrix"):
+        demilitarize:
+          Matrix[2, 3]((1.0, 2.0, 3.0), (4.0, 5.0, 6.0)).inverse
+      . assert(_.nonEmpty)
+
+    suite(m"Seven-dimensional cross product"):
+      val a7 = Tensor(1, 2, 3, 4, 5, 6, 7)
+      val b7 = Tensor(2, 1, 4, 3, 6, 5, 0)
+
+      test(m"e0 cross e1 = e3"):
+        Tensor(1, 0, 0, 0, 0, 0, 0).cross(Tensor(0, 1, 0, 0, 0, 0, 0))
+      . assert(_ == Tensor(0, 0, 0, 1, 0, 0, 0))
+
+      test(m"7D cross product is anti-commutative"):
+        a7.cross(b7)
+      . assert(_ == -b7.cross(a7))
+
+      test(m"7D cross of vector with itself is zero"):
+        a7.cross(a7)
+      . assert(_ == Tensor(0, 0, 0, 0, 0, 0, 0))
+
+      test(m"7D cross product is orthogonal to first operand"):
+        a7.dot(a7.cross(b7))
+      . assert(_ == 0)
+
+      test(m"7D cross product is orthogonal to second operand"):
+        b7.dot(a7.cross(b7))
+      . assert(_ == 0)
+
+      test(m"7D Pythagorean identity |a x b|^2 = |a|^2 |b|^2 - (a.b)^2"):
+        val ad = Tensor(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0)
+        val bd = Tensor(2.0, 1.0, 4.0, 3.0, 6.0, 5.0, 0.0)
+        val cross = ad.cross(bd)
+        val crossNormSquared = cross.dot(cross)
+        val aDotA = ad.dot(ad)
+        val bDotB = bd.dot(bd)
+        val aDotB = ad.dot(bd)
+        crossNormSquared - (aDotA*bDotB - aDotB*aDotB)
+      . assert(d => math.abs(d) < 0.000001)
+
+      test(m"Type error if cross called on 4-tensor"):
+        demilitarize:
+          Tensor(1, 2, 3, 4).cross(Tensor(5, 6, 7, 8))
+      . assert(_.nonEmpty)
+
     suite(m"Interesting types"):
       test(m"Dot product of a tensor of quantities"):
         val v1 = Tensor(5*Inch, 2*Inch, Inch)
