@@ -23,8 +23,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Before the first commit of any task
 - Never commit while on `main` or in detached-HEAD state. Stop and create a new branch first.
-- The new branch must be based on the branch of the open PR at the top of the stack (not `main`). Use `gh pr list` / `gh pr view` to identify the top-of-stack PR and its head branch, then `git checkout -b <new-branch> <top-of-stack-branch>`.
-- If there are no open PRs in the stack, branch from `main`.
+- Always `git fetch origin` first, so the chosen base is current; never branch from a stale local ref.
+- Use `gh pr list --state open --base main` to find the open PR stack and identify the top-of-stack PR's head branch.
+- If the stack is non-empty, branch from `origin/<top-of-stack-head-ref>`: `git checkout -b <new-branch> origin/<top-of-stack-head-ref>`.
+- If the stack is empty, branch from `origin/main`: `git checkout -b <new-branch> origin/main`.
 
 ### Commits
 - Commit incrementally as you edit. The bar is *incremental compilation passes* for the changed code — full clean compilation is not required per commit. If a change leaves the code uncompilable, keep editing until incremental compilation succeeds, then commit.
@@ -42,5 +44,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Whenever a new commit is added to a PR, re-read the PR description and update it if it no longer accurately describes the full set of commits.
 
 ### Stacked PRs
-- A new PR is always stacked on top of the highest open PR in the current stack, so the stack merges in order from the bottom up. Branch from the top-of-stack branch, not from `main`.
+- A new PR is always stacked on top of the highest open PR in the current stack, so the stack merges in order from the bottom up. Branch from `origin/<top-of-stack-branch>`, not from `main` or a local copy.
+- Open the PR with `gh pr create --base <top-of-stack-branch>` (or `--base main` for an empty stack), so the diff GitHub shows is just the new commits, not the whole parent stack.
+- If the parent stack moves (its branch gets new commits or is rebased), bring this branch up to date by rebasing onto the latest `origin/<parent-branch>` before adding more commits.
 - Use `git-branchless` (`git smartlog`, `git restack`, `git move`) to keep the stack consistent as commits are added to or rebased onto branches lower in the stack.
