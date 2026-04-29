@@ -34,5 +34,16 @@ package coaxial
 
 import fulminate.*
 
-case class BindError()(using Diagnostics)
-extends Error(realm"cx", 1, 0)(m"the port was not available for binding")
+object BindError:
+  enum Reason(val number: Int) extends Clarification:
+    case PortInUse          extends Reason(1)
+    case PermissionDenied   extends Reason(2)
+    case AddressUnavailable extends Reason(3)
+
+  given communicable: Reason is Communicable =
+    case Reason.PortInUse          => m"another process is already bound to the port"
+    case Reason.PermissionDenied   => m"the user does not have permission to bind the port"
+    case Reason.AddressUnavailable => m"the requested address is not available on this host"
+
+case class BindError(reason: BindError.Reason)(using Diagnostics)
+extends Error(realm"cx", 1, reason.number)(m"the socket could not be bound because $reason")
