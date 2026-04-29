@@ -82,15 +82,18 @@ jobs:
             exit 0
           fi
 
-          # First-run bootstrap: create release as an orphan branch with a
-          # baseline commit holding the tree at the first PR's parent. This
-          # makes the demarcation between pre-mirror and mirrored history
-          # explicit (no pre-existing commits on release).
+          # First-run bootstrap: create release as an orphan branch whose first
+          # commit holds the state of main *immediately before* the first PR
+          # being mirrored landed. We derive that state by checking out the
+          # first PR's merge-tip tree and reverse-applying its diff. This is
+          # method-agnostic (works for merge / rebase / squash merges).
           if ! git rev-parse --verify refs/remotes/origin/release >/dev/null 2>&1; then
             first_sha=$(jq -r '.[0].mergeCommit.oid' /tmp/todo.json)
-            base_sha=$(git rev-parse "${first_sha}^1")
-            echo "Bootstrapping release from tree at $base_sha"
-            git checkout --orphan release "$base_sha"
+            first_num=$(jq -r '.[0].number' /tmp/todo.json)
+            echo "Bootstrapping release from state before PR #$first_num"
+            git checkout --orphan release "$first_sha"
+            gh pr diff "$first_num" --repo "$REPO" --patch \
+              | git apply -R --index
             git commit -m 'Initial release branch baseline'
           else
             git checkout -B release origin/release
@@ -106,15 +109,20 @@ jobs:
 
             echo "::group::Mirroring #$number ($sha): $title"
 
-            parent=$(git rev-parse "${sha}^1")
+            # Pull the diff from the GitHub API so we don't depend on the merge
+            # method (merge-commit / rebase / squash all produce a usable
+            # patch this way). Same for the changed-files list used to build
+            # the Modules trailer.
+            gh pr diff "$number" --repo "$REPO" --patch > /tmp/pr.patch
+            gh pr view "$number" --repo "$REPO" --json files \
+              --jq '.files[].path' > /tmp/files.txt
 
             # Modules trailer: lib/<module> for files inside lib/, "core" for
             # any file outside lib/. Deduped, comma-separated.
-            modules=$(git diff --name-only "$parent" "$sha" \
-              | awk -F/ '
-                  $1=="lib" && NF>=3 { print "lib/" $2; next }
-                  { print "core" }
-                ' \
+            modules=$(awk -F/ '
+                $1=="lib" && NF>=3 { print "lib/" $2; next }
+                { print "core" }
+              ' /tmp/files.txt \
               | sort -u \
               | paste -sd, - \
               | sed 's/,/, /g')
@@ -142,7 +150,6 @@ jobs:
               printf 'PR: %s\n' "$url"
             } > /tmp/msg.txt
 
-            git diff "$parent" "$sha" > /tmp/pr.patch
             if [ ! -s /tmp/pr.patch ]; then
               echo "PR #$number has empty diff; skipping."
               echo "::endgroup::"
