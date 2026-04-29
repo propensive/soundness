@@ -92,7 +92,7 @@ class Issuer
           case error@UuidError(_) =>
             OAuthError(OAuthError.Reason.Other)
 
-          case error@QueryError() =>
+          case error@QueryError(_) =>
             OAuthError(OAuthError.Reason.Other)
 
           case error@JsonError(reason) =>
