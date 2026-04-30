@@ -66,8 +66,8 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info):
           val f = f0.nn
 
           val encoding =
-            if f.getEncoding == jss.AudioFormat.Encoding.PCM_UNSIGNED then Encoding.PcmUnsigned
-            else Encoding.PcmSigned
+            if f.getEncoding == jss.AudioFormat.Encoding.PCM_UNSIGNED then Sonation.PcmUnsigned
+            else Sonation.PcmSigned
 
           val rate: Optional[Quantity[Seconds[-1]]] =
             if f.getSampleRate < 0 then Unset else f.getSampleRate.toDouble*Hertz

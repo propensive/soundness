@@ -32,5 +32,5 @@
                                                                                                   */
 package cacophony
 
-enum Encoding:
+enum Sonation:
   case PcmSigned, PcmUnsigned

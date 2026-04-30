@@ -39,5 +39,5 @@ case class Configuration
   ( channels:      Int,
     sampleRate:    Optional[Quantity[Seconds[-1]]],
     bitsPerSample: Int,
-    encoding:      Encoding,
+    encoding:      Sonation,
     bigEndian:     Boolean )
