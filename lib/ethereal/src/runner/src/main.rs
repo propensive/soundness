@@ -15,6 +15,7 @@ mod signals;
 mod tty;
 mod uds;
 mod update;
+mod wrapper;
 
 use protocol::ClientInfo;
 use uds::UnixStream;
@@ -22,8 +23,18 @@ use uds::UnixStream;
 const FORWARD_BUFFER_SIZE: usize = 4096;
 const TERMINATION_POLL: Duration = Duration::from_millis(50);
 const STARTUP_FAILURE_EXIT_CODE: i32 = 2;
+pub const WRAP_SENTINEL: &str = "{wrap-java}";
 
 fn main() {
+    // The runner re-invokes itself with this sentinel as argv[1] when launching
+    // the daemon, so the JVM runs as a child of a process whose name matches the
+    // client (since this binary IS the renamed launcher). Dispatch before any
+    // other parsing — the wrapper has its own minimal argv contract.
+    let raw: Vec<String> = env::args().collect();
+    if raw.get(1).is_some_and(|arg| arg == WRAP_SENTINEL) {
+        wrapper::run(&raw[2..]);
+    }
+
     let (script, args, download) = parse_arguments();
     let name = script.file_name().map(|name| name.to_string_lossy().into_owned()).unwrap_or_default();
     let build_config = config::read_config();

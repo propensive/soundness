@@ -28,7 +28,12 @@ pub fn launch(
         }
     };
 
-    let mut command = Command::new(&java);
+    // Re-invoke ourselves in wrapper mode so the daemon process appears under
+    // the client's name (the launcher binary is this runner with the JAR
+    // appended). The wrapper exec's java synchronously and forwards signals.
+    let executable = std::env::current_exe().unwrap_or_else(|_| script.to_path_buf());
+    let mut command = Command::new(&executable);
+    command.arg(crate::WRAP_SENTINEL).arg(&java);
     for argument in build_java_arguments(script, name, config) { command.arg(argument); }
     command.arg("-jar").arg(script);
     command.stdin(Stdio::null());

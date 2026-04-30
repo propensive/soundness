@@ -464,6 +464,29 @@ object Tests extends Suite(m"Ethereal Tests"):
 
           . assert(_ == t"piped input")
 
+        suite(m"Process renaming"):
+          // The JVM is still named `java`; the killable process is its parent
+          // wrapper, which the runner re-invoked under the client name.
+          test(m"daemon JVM's parent process is reported under the client name"):
+            sh"$tool".exec[Unit]()
+            val jvmPid = sh"$tool '{admin}' pid".exec[Text]().trim
+            val parent = sh"ps -p $jvmPid -o ppid=".exec[Text]().trim
+            sh"ps -p $parent -o comm=".exec[Text]().trim.cut(t"/").last
+
+          . assert(_ == t"abcde")
+
+          test(m"killall on the client name terminates the daemon"):
+            sh"$tool".exec[Unit]()
+            val jvmPid = sh"$tool '{admin}' pid".exec[Text]().trim.decode[Pid]
+            sh"killall abcde".exec[Exit]()
+            val deadline = jl.System.currentTimeMillis + 3000
+            while safely(Process(jvmPid).alive).or(false)
+              && jl.System.currentTimeMillis < deadline
+            do snooze(0.05*Second)
+            safely(Process(jvmPid).alive).or(false)
+
+          . assert(_ == false)
+
     val upgradeStateDir: Path on Linux =
       Xdg.runtimeDir[Path on Linux].or(Xdg.stateHome[Path on Linux]) / t"upgrd"
 
