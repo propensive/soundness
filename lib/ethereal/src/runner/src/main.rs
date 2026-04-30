@@ -139,7 +139,27 @@ fn parse_arguments() -> (PathBuf, Vec<String>, bool) {
     let script = std::fs::canonicalize(&executable)
         .or_else(|_| std::env::current_exe())
         .unwrap_or_else(|_| PathBuf::from(&executable));
-    (script, args, download)
+    (strip_extended_prefix(script), args, download)
+}
+
+// On Windows, `std::fs::canonicalize` returns the extended-length form
+// (`\\?\C:\…`). Java's JAR loader can read the manifest of a JAR opened via
+// `\\?\…` but cannot load class entries from it, so the daemon launches with
+// `Could not find or load main class …` even though the class is in the JAR.
+// Strip the prefix back to a conventional drive-letter path on Windows; on
+// Unix this is a no-op.
+fn strip_extended_prefix(path: PathBuf) -> PathBuf {
+    #[cfg(windows)]
+    {
+        let s = path.to_string_lossy();
+        if let Some(rest) = s.strip_prefix(r"\\?\UNC\") {
+            return PathBuf::from(format!(r"\\{}", rest));
+        }
+        if let Some(rest) = s.strip_prefix(r"\\?\") {
+            return PathBuf::from(rest);
+        }
+    }
+    path
 }
 
 fn connect_to_daemon(socket_path: &Path, info: &ClientInfo)
