@@ -50,7 +50,6 @@ import threading.platform
 import strategies.throwUnsafely
 import backstops.silent
 import autopsies.contrastExpectations
-import homeDirectories.system
 
 object Tests extends Suite(m"Ethereal Tests"):
   def run(): Unit =

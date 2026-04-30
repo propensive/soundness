@@ -35,13 +35,15 @@ package ambience
 import language.experimental.pureFunctions
 
 import anticipation.*
-import contingency.*
 import fulminate.*
+import gossamer.*
 import prepositional.*
 import vacuous.*
 
 object Directories:
   def home[path: Instantiable across Paths from Text](using system: System): path =
-    path:
-      safely(System.properties.user.home[Text]())
-      . or(panic(m"the `user.home` system property is not set"))
+    path(homeText)
+
+
+  def homeText(using system: System): Text =
+    system(t"user.home").or(panic(m"the `user.home` system property is not set"))

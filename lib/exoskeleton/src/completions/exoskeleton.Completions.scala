@@ -46,7 +46,7 @@ import guillotine.*
 import hieroglyph.*
 import nomenclature.*
 import prepositional.*
-import rudiments.*, homeDirectories.system
+import rudiments.*
 import serpentine.*
 import spectacular.*
 import symbolism.*

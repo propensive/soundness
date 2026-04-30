@@ -43,31 +43,31 @@ import vacuous.*
 
 object Xdg:
   def dataHome[path: Instantiable across Paths from Text]
-    ( using environment: Environment, home: HomeDirectory )
+    ( using environment: Environment, system: System )
   :   path =
 
-    safely(Environment.xdgDataHome[path]).or(path(t"${home.directory()}/.local/share"))
+    safely(Environment.xdgDataHome[path]).or(path(t"${Directories.homeText}/.local/share"))
 
 
   def configHome[path: Instantiable across Paths from Text]
-    ( using environment: Environment, home: HomeDirectory )
+    ( using environment: Environment, system: System )
   :   path =
 
-    safely(Environment.xdgConfigHome[path]).or(path(t"${home.directory()}/.config"))
+    safely(Environment.xdgConfigHome[path]).or(path(t"${Directories.homeText}/.config"))
 
 
   def cacheHome[path: Instantiable across Paths from Text]
-    ( using environment: Environment, home: HomeDirectory )
+    ( using environment: Environment, system: System )
   :   path =
 
-    safely(Environment.xdgCacheHome[path]).or(path(t"${home.directory()}/.cache"))
+    safely(Environment.xdgCacheHome[path]).or(path(t"${Directories.homeText}/.cache"))
 
 
   def stateHome[path: Instantiable across Paths from Text]
-    ( using environment: Environment, home: HomeDirectory )
+    ( using environment: Environment, system: System )
   :   path =
 
-    safely(Environment.xdgStateHome[path]).or(path(t"${home.directory()}/.local/state"))
+    safely(Environment.xdgStateHome[path]).or(path(t"${Directories.homeText}/.local/state"))
 
 
   def runtimeDir[path: Instantiable across Paths from Text](using environment: Environment)
@@ -77,10 +77,10 @@ object Xdg:
 
 
   def bin[path: Instantiable across Paths from Text]
-    ( using environment: Environment, home: HomeDirectory )
+    ( using environment: Environment, system: System )
   :   path =
 
-    safely(Environment.xdgConfigHome[path]).or(path(t"${home.directory()}/.local/bin"))
+    safely(Environment.xdgConfigHome[path]).or(path(t"${Directories.homeText}/.local/bin"))
 
 
   def dataDirs[path: Instantiable across Paths from Text]
