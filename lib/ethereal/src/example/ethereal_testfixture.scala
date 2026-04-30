@@ -33,6 +33,7 @@
 package ethereal
 
 import java.io as ji
+import java.lang as jl
 import java.util.concurrent as juc
 
 import soundness.*
@@ -43,6 +44,7 @@ import classloaders.threadContext
 import environments.daemonClient
 import executives.completions
 import interpreters.posix
+import systems.java
 import textSanitizers.strict
 import threading.platform
 import workingDirectories.system
@@ -84,7 +86,7 @@ def fixture(): Unit = cli:
     case Argument("pwd") :: Nil =>
       execute:
         val cwd: Text = safely(workingDirectory[Path on Local].encode).or:
-          java.lang.System.getProperty("user.dir").nn.tt
+          jl.System.getProperty("user.dir").nn.tt
         Out.print(cwd) yet Exit.Ok
 
     case Argument("cat") :: Nil =>
