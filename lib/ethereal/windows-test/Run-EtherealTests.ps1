@@ -267,7 +267,12 @@ function Stop-DaemonHard {
   if ($id) {
     try { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue } catch { }
   }
-  Get-Process -Name $Name -ErrorAction SilentlyContinue |
+  # Windows' Get-Process strips the `.exe` extension implicitly, so passing a
+  # name like 'abcde.exe' matches nothing. Strip it ourselves so leftover
+  # launcher / wrapper processes get killed too — without this the wrapper
+  # keeps the launcher binary file locked, blocking self-update's rename.
+  $procName = $Name -replace '\.exe$',''
+  Get-Process -Name $procName -ErrorAction SilentlyContinue |
     Stop-Process -Force -ErrorAction SilentlyContinue
   if (Test-Path -LiteralPath $script:StateDir) {
     Get-ChildItem -LiteralPath $script:StateDir -Force -ErrorAction SilentlyContinue |
@@ -283,41 +288,47 @@ $script:Fail         = 0
 $script:Skipped      = 0
 $script:Failures     = New-Object System.Collections.Generic.List[object]
 
-function Suite([string] $name, [scriptblock] $body) {
-  $script:CurrentSuite = $name
-  if ($Only -and ($Only -notcontains $name)) {
+function Suite([string] $SuiteName, [scriptblock] $Body) {
+  # Renamed from $name/$body to avoid shadowing the script-level $Name and the
+  # body-block's own `body` references; PowerShell uses dynamic scoping for
+  # script-block variables, so any `$Name` reference inside the body would
+  # otherwise resolve to the suite name rather than the daemon name.
+  $script:CurrentSuite = $SuiteName
+  if ($Only -and ($Only -notcontains $SuiteName)) {
     Write-Host ""
-    Write-Host "[$name] (skipped)" -ForegroundColor DarkGray
+    Write-Host "[$SuiteName] (skipped)" -ForegroundColor DarkGray
     return
   }
   Write-Host ""
-  Write-Host "[$name]" -ForegroundColor Cyan
-  & $body
+  Write-Host "[$SuiteName]" -ForegroundColor Cyan
+  & $Body
 }
 
 function It {
   param(
-    [Parameter(Mandatory)] [string] $Name,
+    # Renamed from $Name to avoid shadowing the script-level $Name parameter
+    # (the daemon name) when test bodies reference $Name from the outer scope.
+    [Parameter(Mandatory)] [string] $TestName,
     [Parameter(Mandatory)] [scriptblock] $Body
   )
-  $key = "$($script:CurrentSuite) :: $Name"
+  $key = "$($script:CurrentSuite) :: $TestName"
   if ($Skip -and (($Skip -contains $script:CurrentSuite) -or ($Skip -contains $key))) {
     $script:Skipped++
-    Write-Host "  - skip  $Name" -ForegroundColor DarkGray
+    Write-Host "  - skip  $TestName" -ForegroundColor DarkGray
     return
   }
   try {
     & $Body
     $script:Pass++
-    Write-Host "  + pass  $Name" -ForegroundColor Green
+    Write-Host "  + pass  $TestName" -ForegroundColor Green
   } catch {
     $script:Fail++
     [void]$script:Failures.Add([pscustomobject]@{
       Suite = $script:CurrentSuite
-      Name  = $Name
+      Name  = $TestName
       Error = $_.Exception.Message
     })
-    Write-Host "  ! FAIL  $Name" -ForegroundColor Red
+    Write-Host "  ! FAIL  $TestName" -ForegroundColor Red
     Write-Host "         $($_.Exception.Message)" -ForegroundColor Red
   }
 }
@@ -485,11 +496,13 @@ Suite 'Concurrent invocations' {
     $r1 = Wait-Tool $p1
     $r2 = Wait-Tool $p2
     $r3 = Wait-Tool $p3
-    $unique = @($r1.Stdout.Trim(), $r2.Stdout.Trim(), $r3.Stdout.Trim()) | Sort-Object -Unique
+    # Wrap in @(...) so that even a one-element result (all PIDs identical)
+    # exposes a `.Count` property; bare singletons in PS 5.1 do not.
+    $unique = @(@($r1.Stdout.Trim(), $r2.Stdout.Trim(), $r3.Stdout.Trim()) | Sort-Object -Unique)
     Should-Equal $unique.Count 1 'unique daemon-pid count'
   }
   It 'rapid sequential invocations succeed' {
-    $results = 1..5 | ForEach-Object { (Invoke-Tool -ToolArgs 'echo',[string]$_).Stdout.Trim() }
+    $results = 1..5 | ForEach-Object { (Invoke-Tool -ToolArgs 'echo',$_.ToString()).Stdout.Trim() }
     Should-Equal ($results -join ',') ((1..5) -join ',') 'echoed values'
   }
 }

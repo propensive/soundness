@@ -97,7 +97,8 @@ def fixture(): Unit = cli:
 
     case Argument("version") :: Nil =>
       execute:
-        val id: Text = safely((Classpath/"build.id").read[Text].trim).or(t"unknown")
+        val id: Text = safely(System.properties.build.id[Text]()).or:
+          safely((Classpath/"build.id").read[Text].trim).or(t"unknown")
         Out.print(t"v$id") yet Exit.Ok
 
     case Argument("signal") :: Nil =>
