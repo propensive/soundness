@@ -57,8 +57,8 @@ object Tests extends Suite(m"Ethereal Tests"):
     safely(sh"pkill abcde".exec[Exit]())
     snooze(0.1*Second)
 
-    val stateDir: Path on Linux =
-      Xdg.runtimeDir[Path on Linux].or(Xdg.stateHome[Path on Linux]) / t"abcde"
+    val stateDir: Path on Local =
+      Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / t"abcde"
 
     safely:
       val oldPid = sh"cat $stateDir/pid".exec[Text]().trim.decode[Pid]
@@ -108,7 +108,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
               case Argument("pwd") :: Nil =>
                 execute:
-                  Out.print(workingDirectory[Path on Linux].encode) yet Exit.Ok
+                  Out.print(workingDirectory[Path on Local].encode) yet Exit.Ok
 
               case Argument("cat") :: Nil =>
                 execute:
@@ -486,8 +486,8 @@ object Tests extends Suite(m"Ethereal Tests"):
 
           . assert(_ == false)
 
-    val upgradeStateDir: Path on Linux =
-      Xdg.runtimeDir[Path on Linux].or(Xdg.stateHome[Path on Linux]) / t"upgrd"
+    val upgradeStateDir: Path on Local =
+      Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / t"upgrd"
 
     sh"rm -f $upgradeStateDir/pid $upgradeStateDir/build $upgradeStateDir/socket $upgradeStateDir/fail".exec[Unit]()
     safely(sh"pkill upgrd".exec[Exit]())
@@ -555,9 +555,9 @@ object Tests extends Suite(m"Ethereal Tests"):
     safely(sh"pkill upgrd".exec[Exit]())
     sh"rm -rf $upgradeStateDir".exec[Unit]()
 
-    val selfuStateDir: Path on Linux =
-      Xdg.runtimeDir[Path on Linux].or(Xdg.stateHome[Path on Linux]) / t"selfu"
-    val selfuDataDir: Path on Linux = Xdg.dataHome[Path on Linux] / t"selfu"
+    val selfuStateDir: Path on Local =
+      Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / t"selfu"
+    val selfuDataDir: Path on Local = Xdg.dataHome[Path on Local] / t"selfu"
     sh"rm -rf $selfuStateDir $selfuDataDir".exec[Unit]()
     safely(sh"pkill selfu".exec[Exit]())
     snooze(0.1*Second)
@@ -603,15 +603,15 @@ object Tests extends Suite(m"Ethereal Tests"):
       .assert(_ == t"v2")
 
       test(m"old binary is preserved after upgrade"):
-        sh"test -f ${Xdg.dataHome[Path on Linux]}/selfu.old".exec[Exit]()
+        sh"test -f ${Xdg.dataHome[Path on Local]}/selfu.old".exec[Exit]()
 
       .assert(_ == Exit.Ok)
 
     safely(sh"pkill selfu".exec[Exit]())
     sh"rm -rf $selfuStateDir $selfuDataDir".exec[Unit]()
 
-    val brokenStateDir: Path on Linux =
-      Xdg.runtimeDir[Path on Linux].or(Xdg.stateHome[Path on Linux]) / t"brokn"
+    val brokenStateDir: Path on Local =
+      Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / t"brokn"
 
     val brokenExe: Path on Linux = Enclave("brokn").dispatch:
       ' {

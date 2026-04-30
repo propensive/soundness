@@ -346,7 +346,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             val output = sh"$tool '{admin}' install".exec[Text]()
             val paths = output.trim.lines.filter(_.length > 0)
             paths.forall: path =>
-              safely(path.decode[Path on Linux]).let(_.exists()).or(false)
+              safely(path.decode[Path on Local]).let(_.exists()).or(false)
           .assert(_ == true)
 
           test(m"'{admin}' kill terminates the daemon"):

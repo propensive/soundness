@@ -73,6 +73,7 @@ import internetAccess.enabled
 import interpreters.posix
 import logging.silent
 import stdios.virtualMachine
+import systems.java
 import termcaps.environment
 import textSanitizers.skip
 import workingDirectories.system
@@ -102,9 +103,9 @@ object Bootstrapper:
         Exit.Fail(1)
 
     . within:
-        val jarfile: Path on Linux =
+        val jarfile: Path on Local =
           ClassRef(Class.forName("burdock.Bootstrap").nn).classpathEntry match
-            case ClasspathEntry.Jar(file) => file.decode[Path on Linux]
+            case ClasspathEntry.Jar(file) => file.decode[Path on Local]
 
             case other =>
               abort(UserError(m"Could not determine location of bootstrap class"))
@@ -113,12 +114,12 @@ object Bootstrapper:
 
         if !jarfile.exists() then abort(UserError(m"The file $jarfile does not exist"))
 
-        val classpath: List[Path on Linux] =
-          arguments.map(_()).map(workingDirectory[Path on Linux].resolve(_))
+        val classpath: List[Path on Local] =
+          arguments.map(_()).map(workingDirectory[Path on Local].resolve(_))
 
         val maven = url"https://repo1.maven.org/"
 
-        val paths: List[Optional[(Path on Linux, Relative on Linux)]] =
+        val paths: List[Optional[(Path on Local, Relative on Local)]] =
           classpath.map: entry =>
             entry.ancestors.find(_.name == t"repo1.maven.org").optional.let: base =>
               if base.parent.let(_.name) == t"https"
