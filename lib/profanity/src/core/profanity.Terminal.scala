@@ -61,7 +61,7 @@ extends Interactivity[TerminalEvent]:
   val rows0: Promise[Int] = Promise()
   val columns0: Promise[Int] = Promise()
 
-  var mode: Optional[Luminosity] = Unset
+  var mode: Optional[Brightness] = Unset
   var rows: Optional[Int] = Unset
   var columns: Optional[Int] = Unset
 
@@ -106,7 +106,7 @@ extends Interactivity[TerminalEvent]:
         events.put(resize)
 
       case bgColor@TerminalInfo.BgColor(red, green, blue) =>
-        mode = if dark(red, green, blue) then Luminosity.Dark else Luminosity.Light
+        mode = if dark(red, green, blue) then Brightness.Dark else Brightness.Light
         events.put(bgColor)
 
       case other =>
