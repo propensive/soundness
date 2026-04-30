@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 pub fn find_java(minimum: u16, preferred: u16, bundle: &str, do_download: bool) -> Option<PathBuf> {
     if let Some(path) = which("java") {
@@ -137,13 +137,30 @@ pub fn download(preferred: u16, bundle: &str) -> Option<PathBuf> {
     }
 
     eprintln!("Downloading Java {} from {}", preferred, url);
-    let pipeline = if have_curl {
-        format!("curl -sL \"{}\" | tar xz -C \"{}\"", url, temp_dir.display())
+    // Pipe curl/wget directly into tar from Rust rather than via `sh -c`. The
+    // shell pipeline form fails on Windows, where there is no `sh` on PATH but
+    // `curl.exe` and `tar.exe` ship with the OS.
+    let mut downloader = if have_curl {
+        let mut command = Command::new("curl");
+        command.args(["-sL", &url]);
+        command
     } else {
-        format!("wget -q -O - \"{}\" | tar xz -C \"{}\"", url, temp_dir.display())
+        let mut command = Command::new("wget");
+        command.args(["-q", "-O", "-", &url]);
+        command
     };
-    let status = Command::new("sh").arg("-c").arg(&pipeline).status().ok()?;
-    if !status.success() {
+    let mut down_child = downloader.stdout(Stdio::piped()).spawn().ok()?;
+    let down_stdout = down_child.stdout.take()?;
+    let tar_status = Command::new("tar")
+        .arg("xz")
+        .arg("-C")
+        .arg(&temp_dir)
+        .stdin(Stdio::from(down_stdout))
+        .status();
+    let down_status = down_child.wait();
+    let success = matches!(&down_status, Ok(s) if s.success())
+        && matches!(&tar_status, Ok(s) if s.success());
+    if !success {
         eprintln!("The download failed.");
         let _ = std::fs::remove_dir_all(&temp_dir);
         return None;
