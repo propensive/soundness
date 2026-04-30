@@ -384,7 +384,7 @@ def cli[bus <: Matchable](using executive: Executive)
               ( pid,
                 () => shutdown(pid),
                 shellInput,
-                script.decode[Path on Linux],
+                script.decode[Path on Local],
                 deliver(pid, _),
                 connection.bus.stream,
                 name )
