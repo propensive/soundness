@@ -64,7 +64,7 @@ trait protointernal:
                   val schematic = infer[field is CodlSchematic]
 
                   contextual.encoded(field).list.map: value =>
-                    CodlNode(Atom(label2, value.children, Layout.empty, schemata(index).schema))
+                    CodlNode(Atom(label2, value.children, Formation.empty, schemata(index).schema))
 
                   . filter(!_.nil)
 

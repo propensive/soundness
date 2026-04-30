@@ -32,7 +32,7 @@
                                                                                                   */
 package cellulose
 
-object Layout:
-  final val empty = Layout(0, false, 0)
+object Formation:
+  final val empty = Formation(0, false, 0)
 
-case class Layout(params: Int, multiline: Boolean, col: Int)
+case class Formation(params: Int, multiline: Boolean, col: Int)

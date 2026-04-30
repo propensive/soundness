@@ -797,7 +797,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"Access parameters by name"):
         childWithTwoParams(One, One).parse(t"root\n  child first second").root().child().beta()
-      . assert(_ == Atom(t"second", IArray(), schema = Field(One), layout = Layout(0, false, 14)))
+      . assert(_ == Atom(t"second", IArray(), schema = Field(One), layout = Formation(0, false, 14)))
 
       test(m"Surplus parameters"):
         capture(childWithTwoParams(One, One).parse(t"root\n  child one two three"))
@@ -979,16 +979,16 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
       . assert(_ == t"root\n  child\n")
 
       test(m"Serialize a node and a child with params layout"):
-        CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child"))), Layout(1, false, 0))))
+        CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child"))), Formation(1, false, 0))))
         . write
       . assert(_ == t"root child\n")
 
       test(m"Serialize a node and a child with block param"):
-        CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child")), CodlNode(Atom(t"Hello World"))), Layout(2, true, 0)))).write
+        CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child")), CodlNode(Atom(t"Hello World"))), Formation(2, true, 0)))).write
       . assert(_ == t"root child\n    Hello World\n")
 
       test(m"Serialize a node and a child with multiline block param"):
-        CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child")), CodlNode(Atom(t"Hello\nWorld"))), Layout(2, true, 0)))).write
+        CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child")), CodlNode(Atom(t"Hello\nWorld"))), Formation(2, true, 0)))).write
       . assert(_ == t"root child\n    Hello\n    World\n")
 
       test(m"Serialize a node and a child with comment"):

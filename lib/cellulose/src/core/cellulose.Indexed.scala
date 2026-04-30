@@ -51,7 +51,7 @@ trait Codllike:
 trait Indexed extends Codllike, Dynamic:
   def children: IArray[CodlNode]
   def schema: CodlSchema
-  def layout: Layout
+  def layout: Formation
   def paramIndex: Map[Text, Int]
 
   lazy val index: Map[Text, List[Int]] =
@@ -89,7 +89,7 @@ trait Indexed extends Codllike, Dynamic:
 
       case Some(index) =>
         List.range(index, layout.params).map: index =>
-          Atom(key, IArray(unsafely(children(index))), Layout.empty, CodlSchema.Free)
+          Atom(key, IArray(unsafely(children(index))), Formation.empty, CodlSchema.Free)
 
   def selectDynamic(key: String)(using erased DynamicCodlEnabler): List[Atom] raises CodlError =
     index(key.show).map(children(_).data).collect:

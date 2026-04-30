@@ -78,7 +78,7 @@ object Bcodl:
         schema match
           case Field(_) =>
             val key = readText(reader)
-            CodlNode(Atom(key, IArray(), Layout.empty, CodlSchema.Free))
+            CodlNode(Atom(key, IArray(), Formation.empty, CodlSchema.Free))
 
           case schema =>
             val subschema = readNumber(reader) match
@@ -90,7 +90,7 @@ object Bcodl:
 
             val children = IArray.from(recur(subschema(1)))
 
-            CodlNode(Atom(key, children, Layout.empty, subschema(1)))
+            CodlNode(Atom(key, children, Formation.empty, subschema(1)))
 
     CodlDoc(IArray.from(recur(schema)), schema, 0)
 

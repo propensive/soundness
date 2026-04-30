@@ -276,7 +276,7 @@ object internal extends protointernal:
                 Atom
                   ( key,
                     IArray.from(children.reverse),
-                    Layout(params, multiline, col - margin),
+                    Formation(params, multiline, col - margin),
                     schema )
 
               val node = CodlNode(data, extra2)
