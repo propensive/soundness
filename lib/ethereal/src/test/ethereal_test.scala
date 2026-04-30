@@ -67,7 +67,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     snooze(0.2*Second)
     sh"rm -f $stateDir/pid $stateDir/build $stateDir/socket $stateDir/fail".exec[Unit]()
 
-    val launcher = Sandbox("abcde").dispatch:
+    val launcher = Enclave("abcde").dispatch:
       ' {
           import executives.completions
           import interpreters.posix
@@ -177,7 +177,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     sh"rm -f $stateDir/fail".exec[Unit]()
 
     launcher.sandbox:
-        val tool = summon[Sandbox.Tool].path
+        val tool = summon[Enclave.Tool].path
         suite(m"Basic invocation"):
           test(m"first invocation prints expected output"):
             sh"$tool echo hello".exec[Text]()
@@ -494,7 +494,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     safely(sh"pkill upgrd".exec[Exit]())
     snooze(0.2*Second)
 
-    val launcherV1 = Sandbox("upgrd", buildId = 1).dispatch:
+    val launcherV1 = Enclave("upgrd", buildId = 1).dispatch:
       ' {
           import executives.completions
           import interpreters.posix
@@ -512,7 +512,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
     val toolV1 = launcherV1.path
 
-    val launcherV2 = Sandbox("upgrd", buildId = 2).dispatch:
+    val launcherV2 = Enclave("upgrd", buildId = 2).dispatch:
       ' {
           import executives.completions
           import interpreters.posix
@@ -563,7 +563,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     safely(sh"pkill selfu".exec[Exit]())
     snooze(0.1*Second)
 
-    val selfuV1 = Sandbox("selfu", buildId = 1).dispatch:
+    val selfuV1 = Enclave("selfu", buildId = 1).dispatch:
       ' {
           import executives.completions
           import interpreters.posix
@@ -579,7 +579,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           t"finished"
         }
 
-    val selfuV2 = Sandbox("selfu", buildId = 2).dispatch:
+    val selfuV2 = Enclave("selfu", buildId = 2).dispatch:
       ' {
           import executives.completions
           import interpreters.posix
@@ -614,7 +614,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     val brokenStateDir: Path on Linux =
       Xdg.runtimeDir[Path on Linux].or(Xdg.stateHome[Path on Linux]) / t"brokn"
 
-    val brokenExe: Path on Linux = Sandbox("brokn").dispatch:
+    val brokenExe: Path on Linux = Enclave("brokn").dispatch:
       ' {
           import executives.completions
           import interpreters.posix

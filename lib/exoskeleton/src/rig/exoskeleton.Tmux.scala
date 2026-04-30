@@ -68,7 +68,7 @@ object Tmux:
       while init === screenshot().screen && count < 60 do delay(0.01*Second) yet (count += 1)
 
 
-  def completions(text: Text)(using tool: Sandbox.Tool, tmux: Tmux)(using Monitor, WorkingDirectory)
+  def completions(text: Text)(using tool: Enclave.Tool, tmux: Tmux)(using Monitor, WorkingDirectory)
   :   Text raises TmuxError =
 
     tmux.shell match
@@ -100,7 +100,7 @@ object Tmux:
 
 
   def progress(text: Text, decorate: Char => Text = char => t"^")
-    ( using tool: Sandbox.Tool, tmux: Tmux )
+    ( using tool: Enclave.Tool, tmux: Tmux )
     ( using Monitor, WorkingDirectory )
   :   Text raises TmuxError =
 

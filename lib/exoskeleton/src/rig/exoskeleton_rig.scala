@@ -39,7 +39,7 @@ import interfaces.paths.pathOnLinux
 
 extension (shell: Shell)
   def tmux(width: Int = 80, height: Int = 24)[result](action: (tmux: Tmux) ?=> result)
-    ( using WorkingDirectory, Sandbox.Tool, Monitor, TemporaryDirectory )
+    ( using WorkingDirectory, Enclave.Tool, Monitor, TemporaryDirectory )
   :   result raises TmuxError logs ExecEvent =
 
     mitigate:
@@ -49,7 +49,7 @@ extension (shell: Shell)
     . within:
         given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)
 
-        val path = summon[Sandbox.Tool].path.parent.vouch.encode
+        val path = summon[Enclave.Tool].path.parent.vouch.encode
 
         val shellInvocation = shell match
           case Shell.Zsh        => t"zsh -l"
@@ -57,7 +57,7 @@ extension (shell: Shell)
           case Shell.Bash       => t"bash -l"
 
           case Shell.Powershell =>
-            val cmd = summon[Sandbox.Tool].command
+            val cmd = summon[Enclave.Tool].command
 
             val psScript =
               s"""function global:prompt { '> ' }
