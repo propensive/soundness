@@ -71,102 +71,76 @@ object internal:
 
     val parts: List[String] = context.valueOrAbort.parts.toList
 
-    class Frame:
-      var textsAccum: List[String] = Nil
-      var messagesAccum: List[Expr[Message]] = Nil
-      val buffer: StringBuilder = StringBuilder()
-
-    var stack: List[Frame] = List(Frame())
-
-    def topFrame: Frame = stack.head
-
-    def finalizeBuffer(): Unit =
-      topFrame.textsAccum = topFrame.textsAccum :+ topFrame.buffer.toString
-      topFrame.buffer.setLength(0)
-
-    def buildMessageExpr(frame: Frame): Expr[Message] =
-      val textsExpr: Expr[List[Text]] =
-        Expr.ofList(frame.textsAccum.map { s => '{ ${Expr(s)}.tt } })
-      val messagesExpr: Expr[List[Message]] = Expr.ofList(frame.messagesAccum)
-      '{ Message($textsExpr, $messagesExpr) }
-
-    def openFrame(): Unit =
-      finalizeBuffer()
-      stack = Frame() :: stack
-
-    def closeFrame(): Unit =
-      finalizeBuffer()
-      val closed = topFrame
-      stack = stack.tail
-      topFrame.messagesAccum = topFrame.messagesAccum :+ buildMessageExpr(closed)
-
-    def appendSub(idx: Int, subListRef: Expr[List[Message]]): Unit =
-      finalizeBuffer()
-      topFrame.messagesAccum =
-        topFrame.messagesAccum :+ '{ $subListRef(${Expr(idx)}) }
-
-    def parseUnicode(part: String, cur: Int): Char =
-      if cur + 4 > part.length
+    def parseUnicode(part: String, current: Int): Char =
+      if current + 4 > part.length
       then report.errorAndAbort("the unicode escape is incomplete")
       else
-        try Integer.parseInt(part.substring(cur, cur + 4), 16).toChar
+        try Integer.parseInt(part.substring(current, current + 4), 16).toChar
         catch case _: NumberFormatException =>
-          report.errorAndAbort(s"invalid unicode escape: \\u${part.substring(cur, cur + 4)}")
+          report.errorAndAbort(s"invalid unicode escape: \\u${part.substring(current, current + 4)}")
 
-    def walkPart(part: String): Unit =
-      var cur = 0
-      var esc = false
-      while cur < part.length do
-        val ch = part.charAt(cur)
-        if ch == '`' && !esc then
-          if cur + 1 < part.length && part.charAt(cur + 1) == '`' then
-            topFrame.buffer.append('`')
-            cur += 2
-          else
-            if stack.size == 1 then openFrame() else closeFrame()
-            cur += 1
-        else if ch == '\\' && !esc then
-          esc = true
-          cur += 1
-        else if esc then
-          val decoded: Char = ch match
-            case 'n'  => '\n'
-            case 'r'  => '\r'
-            case 'f'  => '\f'
-            case 'b'  => '\b'
-            case 't'  => '\t'
-            case 'e'  => '\u001B'
-            case '\\' => '\\'
-            case '"'  => '"'
-            case '\'' => '\''
-            case 'u'  =>
-              val codePoint = parseUnicode(part, cur + 1)
-              cur += 4
-              codePoint
-            case other =>
-              report.errorAndAbort(s"the character $other should not be escaped")
-          topFrame.buffer.append(decoded)
-          esc = false
-          cur += 1
-        else
-          topFrame.buffer.append(ch)
-          cur += 1
-      if esc then
-        report.errorAndAbort("the final character of an m\"\" part cannot be an escape")
+    def decodeEscape(char: Char): Char = char match
+      case 'n'   => '\n'
+      case 'r'   => '\r'
+      case 'f'   => '\f'
+      case 'b'   => '\b'
+      case 't'   => '\t'
+      case 'e'   => '\u001b'
+      case '\\'  => '\\'
+      case '"'   => '"'
+      case '\''  => '\''
+      case other => report.errorAndAbort(s"the character $other should not be escaped")
 
-    val subListRef: Expr[List[Message]] => Expr[Message] = { subListExpr =>
-      parts.iterator.zipWithIndex.foreach: (part, idx) =>
-        walkPart(part)
-        if idx < parts.size - 1 then appendSub(idx, subListExpr)
+    def decode(segment: String): String =
+      def loop(current: Int, accumulator: String): String =
+        if current >= segment.length then accumulator else segment.charAt(current) match
+          case '\\' =>
+            if current + 1 >= segment.length
+            then report.errorAndAbort("the final character of an m\"\" part cannot be an escape")
+            else segment.charAt(current + 1) match
+              case 'u'  => loop(current + 6, accumulator + parseUnicode(segment, current + 2))
+              case char => loop(current + 2, accumulator + decodeEscape(char))
 
-      if stack.size != 1 then
-        report.errorAndAbort("the m\"\" interpolator has an unmatched backtick")
+          case char =>
+            loop(current + 1, accumulator + char)
 
-      finalizeBuffer()
-      buildMessageExpr(topFrame)
-    }
+      loop(0, "")
 
-    '{
-      val subList: List[Message] = mSubMessages[param]($subs)
-      ${ subListRef('subList) }
-    }
+    val groups: List[String] = parts.mkString("\u0000").split("`", -1).nn.map(_.nn).toList
+
+    if groups.size%2 == 0
+    then report.errorAndAbort("the m\"\" interpolator has an unmatched backtick")
+
+    def toMessage(items: List[String | Expr[Message]]): Expr[Message] =
+      val texts: List[String] = items.collect { case text: String => text }
+      val msgs:  List[Expr[Message]] = items.collect { case expr: Expr[Message] @unchecked => expr }
+      val textsExpr: Expr[List[Text]] = Expr.ofList(texts.map { text => '{${Expr(text)}.tt} })
+
+      '{Message($textsExpr, ${Expr.ofList(msgs)})}
+
+
+    def sequence(group: String, startIndex: Int, subListRef: Expr[List[Message]])
+    :   (List[String | Expr[Message]], Int) =
+
+      val segments = group.split("\u0000", -1).nn.map(_.nn).toList
+
+      val items: List[String | Expr[Message]] = segments.zipWithIndex.flatMap: (segment, index) =>
+        val text = decode(segment)
+
+        if index < segments.size - 1 then List(text, '{ $subListRef(${Expr(startIndex + index)}) })
+        else List(text)
+
+      (items, startIndex + segments.size - 1)
+
+
+    def assemble(subListRef: Expr[List[Message]]): Expr[Message] =
+      val (items, _) = groups.zipWithIndex.foldLeft((List[String | Expr[Message]](), 0)):
+        case ((accumulator, index), (group, i)) =>
+          val (groups, nextIndex) = sequence(group, index, subListRef)
+          val addition = if i % 2 == 0 then groups else List(toMessage(groups))
+
+          (accumulator ::: addition, nextIndex)
+
+      toMessage(items)
+
+    assemble('{mSubMessages[param]($subs)})
