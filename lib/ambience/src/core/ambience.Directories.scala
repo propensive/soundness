@@ -30,29 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ambience
 
-export
-  ambience
-  . { Architecture, Directories, Environment, EnvironmentError, HomeDirectory, homeDirectory,
-      HomeDirectoryError, Property, PropertyError, Protovariable, System, TemporaryDirectory,
-      temporaryDirectory, Variable, variables, WorkingDirectory, workingDirectory,
-      WorkingDirectoryError, Xdg }
+import language.experimental.pureFunctions
 
-package systems:
-  export ambience.systems.{empty, java}
+import anticipation.*
+import contingency.*
+import fulminate.*
+import prepositional.*
+import vacuous.*
 
-package environments:
-  export ambience.environments.{empty, java}
-
-package workingDirectories:
-  export ambience.workingDirectories.{default, system}
-
-package homeDirectories:
-  export ambience.homeDirectories.{environment, java, system}
-
-package temporaryDirectories:
-  export ambience.temporaryDirectories.{environment, java, system}
-
-package termcaps:
-  export ambience.termcaps.environment
+object Directories:
+  def home[path: Instantiable across Paths from Text](using system: System): path =
+    path:
+      safely(System.properties.user.home[Text]())
+      . or(panic(m"the `user.home` system property is not set"))
