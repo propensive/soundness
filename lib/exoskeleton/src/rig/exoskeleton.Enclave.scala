@@ -59,7 +59,7 @@ import logging.silent
 import workingDirectories.java
 
 
-object Sandbox:
+object Enclave:
   case class Tool(path: Path on Linux, pid: Pid):
     def command: Text = path.name
 
@@ -85,9 +85,9 @@ object Sandbox:
             safely(item.delete())
 
 
-case class Sandbox(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment)
+case class Enclave(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment)
 extends Rig:
-  type Result[output] = Sandbox.Launcher
+  type Result[output] = Enclave.Launcher
   type Form = Text
   type Target = Path on Linux
   type Transport = Json
@@ -112,7 +112,7 @@ extends Rig:
 
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux])
-  :   Sandbox.Launcher =
+  :   Enclave.Launcher =
 
     stage.remote: input =>
       unsafely:
@@ -121,4 +121,4 @@ extends Rig:
 
       t"""[""]"""
 
-    Sandbox.Launcher(stage.target)
+    Enclave.Launcher(stage.target)

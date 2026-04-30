@@ -52,7 +52,7 @@ import Shell.*
 object Tests extends Suite(m"Exoskeleton Tests"):
   def run(): Unit =
     val foo: Text = "hello"
-    Sandbox(t"abcd").dispatch:
+    Enclave(t"abcd").dispatch:
       ' {
           import executives.completions
           import interpreters.posix
@@ -183,7 +183,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         . assert(_ == t"--one   -- the first one\n--two   -- the second one")
 
         test(m"Test capture 1"):
-          summon[Sandbox.Tool].completions:
+          summon[Enclave.Tool].completions:
             Zsh.tmux()(Tmux.completions(t"distribution ubuntu "))
 
         . assert()
@@ -322,7 +322,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         . assert(_ == t"distribution gentoo -fblue ^")
 
         suite(m"Admin commands"):
-          val tool = summon[Sandbox.Tool].path
+          val tool = summon[Enclave.Tool].path
 
           test(m"'{admin}' pid returns a positive integer"):
             sh"$tool '{admin}' pid".exec[Text]().trim.decode[Int]
@@ -357,7 +357,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           .assert(_ == Exit.Fail(1))
 
         suite(m"Raw completion invocation"):
-          val tool = summon[Sandbox.Tool].path
+          val tool = summon[Enclave.Tool].path
 
           test(m"completion with bash args returns alpha"):
             sh"$tool '{completions}' bash 1 0 /dev/null -- abcd ''".exec[Text]()
