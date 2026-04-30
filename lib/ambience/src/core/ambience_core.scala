@@ -64,22 +64,6 @@ package workingDirectories:
 
   given default: WorkingDirectory = () => jnf.Paths.get("").nn.toAbsolutePath.toString
 
-package homeDirectories:
-  given system: (properties: System) => HomeDirectory =
-    () => properties(t"user.home").or(panic(m"the property `user.home` should be present"))
-
-  given java: HomeDirectory = system(using ambience.systems.java)
-
-  given system: HomeDirectory = () =>
-    Optional(jl.System.getProperty("user.home")).let(_.tt).or:
-      panic(m"the `user.home` system property is not set")
-
-  given environment: HomeDirectory = () =>
-    List("HOME", "USERPROFILE", "HOMEPATH").map(jl.System.getenv(_)).map(Optional(_)).compact.prim
-    . let(_.tt)
-    . or(panic(m"none of `HOME`, `USERPROFILE` or `HOMEPATH` environment variables is set"))
-
-
 package environments:
   given empty: Environment:
     def variable(name: Text): Unset.type = Unset
@@ -118,9 +102,6 @@ inline def workingDirectory[path: Representative of Paths](using work: WorkingDi
 
     case given (`path` is Instantiable across Paths from Text) =>
       work.directory().instantiate
-
-def homeDirectory[path: Instantiable across Paths from Text](using directory: HomeDirectory): path =
-  directory.path[path]
 
 package termcaps:
   given environment: Environment => Termcap:
