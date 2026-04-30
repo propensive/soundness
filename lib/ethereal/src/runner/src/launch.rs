@@ -19,9 +19,11 @@ pub fn launch(
     config: &BuildConfig,
     download: bool,
 ) {
+    crate::debug!("launch: start name={} script={}", name, script.display());
     let java = match crate::java::find_java(config.java_min, config.java_pref, config.bundle, download) {
-        Some(path) => path,
+        Some(path) => { crate::debug!("launch: java found at {}", path.display()); path },
         None => {
+            crate::debug!("launch: java not found");
             crate::java::java_not_found_message(config.java_min, &script.to_string_lossy());
             crate::state::abort(fail_file);
             std::process::exit(1);
@@ -44,14 +46,27 @@ pub fn launch(
     }
 
     detach(&mut command);
+    // On Windows, `Command::spawn` calls `CreateProcessW` with
+    // `bInheritHandles=TRUE`, which propagates *every* inheritable handle in
+    // the parent — not just the configured stdio. The launcher's own
+    // stdin/stdout/stderr were inheritable when our caller (e.g. PowerShell's
+    // `Process` API) created them, so they would otherwise leak into the
+    // daemon and stay open for as long as the daemon runs, blocking the
+    // caller's `ReadToEndAsync` long after the launcher itself has exited.
+    // Mark them non-inheritable just before the spawn; the launcher continues
+    // to use them normally afterwards.
+    mark_stdio_non_inheritable();
+    crate::debug!("launch: spawning daemon: {} (wrapper)", executable.display());
 
     let child = match command.spawn() {
         Ok(child) => child,
-        Err(_) => {
+        Err(e) => {
+            crate::debug!("launch: spawn failed: {}", e);
             crate::state::abort(fail_file);
             std::process::exit(1);
         }
     };
+    crate::debug!("launch: spawned, child pid={}", child.id());
 
     let _ = std::fs::write(pid_file, format!("{}\n", child.id()));
 
@@ -63,8 +78,11 @@ pub fn launch(
         std::thread::sleep(STARTUP_POLL);
         attempts += 1;
     }
+    crate::debug!("launch: post-poll attempts={} socket_ready={} fail_exists={}",
+        attempts, crate::state::socket_ready(socket_file), fail_file.exists());
 
     if !crate::state::socket_ready(socket_file) {
+        crate::debug!("launch: socket never appeared, aborting");
         crate::state::abort(fail_file);
         crate::state::backout(fail_file, pid_file, name);
         std::process::exit(1);
@@ -73,8 +91,10 @@ pub fn launch(
     // The daemon writes the build-id file shortly after binding the socket.
     // We don't need it to connect, but staleness checks on later invocations do.
     let _ = crate::state::await_file(build_file, BUILD_FILE_GRACE_ATTEMPTS);
+    crate::debug!("launch: build_file ready={}", crate::state::file_has_content(build_file));
 
     crate::state::backout(fail_file, pid_file, name);
+    crate::debug!("launch: returning");
 }
 
 fn build_java_arguments(script: &Path, name: &str, config: &BuildConfig) -> Vec<String> {
@@ -120,6 +140,25 @@ fn detach(command: &mut Command) {
             libc::setsid();
             Ok(())
         });
+    }
+}
+
+#[cfg(unix)]
+fn mark_stdio_non_inheritable() {}
+
+#[cfg(windows)]
+fn mark_stdio_non_inheritable() {
+    use std::os::windows::io::AsRawHandle;
+    use windows_sys::Win32::Foundation::{HANDLE, SetHandleInformation, HANDLE_FLAG_INHERIT};
+    let handles: [HANDLE; 3] = [
+        std::io::stdin().as_raw_handle() as HANDLE,
+        std::io::stdout().as_raw_handle() as HANDLE,
+        std::io::stderr().as_raw_handle() as HANDLE,
+    ];
+    for handle in handles {
+        if !handle.is_null() {
+            unsafe { SetHandleInformation(handle, HANDLE_FLAG_INHERIT, 0); }
+        }
     }
 }
 
