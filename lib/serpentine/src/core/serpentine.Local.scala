@@ -50,7 +50,7 @@ object Local:
     type UniqueRoot = false
 
     val name: Text = System.properties.os.name().show
-    val separator: Text = System.properties.path.separator().show
+    val separator: Text = System.properties.file.separator().show
     val self: Text = t"."
     val parent: Text = t".."
 
