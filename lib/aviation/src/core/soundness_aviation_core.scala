@@ -34,14 +34,14 @@ package soundness
 
 export
   aviation
-  . { am, Anniversary, Apr, Aug, Base24, Base60, Calendar, Chronology, Clock, Clockface, Date,
-      DateNumerics, DateSeparation, Day, days, Dec, Duration, Endianness, Feb, Fri, Hebdomad,
-      Holiday, Holidays, Horology, hours, Instant, Jan, Jul, Jun, LeapSeconds, Mar, May, Meridiem,
-      minutes, Moment, Mon, Month, Months, months, Monthstamp, Nov, now, Oct, Period, pm,
-      RomanCalendar, Sat, seconds, Sep, StandardTime, Sun, Thu, TimeError, TimeEvent, TimeFormat,
-      TimeNumerics, TimeSeparation, Timespan, TimeSpecificity, Timestamp, TimestampError, Timezone,
-      TimezoneError, today, Tue, tz, Tzdb, TzdbError, Wed, Weekday, Weekdays, weeks, WorkingDays,
-      Year, Years, years }
+  . { am, Anniversary, Apr, Aug, Base24, base24Extractable, Base60, base60Extractable, Calendar,
+      Chronology, Clock, Clockface, Date, DateNumerics, DateSeparation, Day, days, Dec, Duration,
+      Endianness, Feb, Fri, Hebdomad, Holiday, Holidays, Horology, hours, Instant, Iso8601, Jan,
+      Jul, Jun, LeapSeconds, Mar, May, Meridiem, minutes, Moment, Mon, Month, Months, months,
+      Monthstamp, Nov, now, Oct, Period, pm, Rfc1123, RomanCalendar, Sat, seconds, Sep,
+      StandardTime, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics, TimeSeparation,
+      Timespan, TimeSpecificity, Timestamp, TimestampError, Timezone, TimezoneError, today, Tue, tz,
+      Tzdb, TzdbError, Wed, Weekday, Weekdays, weeks, WorkingDays, Year, Years, years }
 
 package calendars:
   export aviation.calendars.{gregorian, julian}

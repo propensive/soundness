@@ -34,9 +34,9 @@ package soundness
 
 export
   ambience
-  . { Environment, EnvironmentError, HomeDirectory, homeDirectory, HomeDirectoryError, Property,
-      PropertyError, System, TemporaryDirectory, temporaryDirectory, Variable, variables,
-      WorkingDirectory, workingDirectory, WorkingDirectoryError, Xdg }
+  . { Architecture, Environment, EnvironmentError, HomeDirectory, homeDirectory, HomeDirectoryError,
+      Property, PropertyError, Protovariable, System, TemporaryDirectory, temporaryDirectory,
+      Variable, variables, WorkingDirectory, workingDirectory, WorkingDirectoryError, Xdg }
 
 package systems:
   export ambience.systems.{empty, java}

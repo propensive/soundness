@@ -32,5 +32,7 @@
                                                                                                   */
 package soundness
 
+export harlequin.{ScalaSyntaxPalette}
+
 package syntaxHighlighting:
   export harlequin.syntaxHighlighting.{numbered, unnumbered}

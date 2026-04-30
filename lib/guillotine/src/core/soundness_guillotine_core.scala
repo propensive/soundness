@@ -35,4 +35,4 @@ package soundness
 export
   guillotine
   . { Command, Computable, ExecError, ExecEvent, Executable, Intelligible, Job, Parameterizable,
-      Pid, PidError, Pipeline, Process, ProcessRef, sh, Stderr }
+      Pid, PidError, Pipeline, PosixCommands, Process, ProcessRef, Sh, sh, Stderr }

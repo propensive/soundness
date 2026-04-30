@@ -34,6 +34,6 @@ package soundness
 
 export
   nomenclature
-  . { Check, MustContain, MustEnd, MustMatch, MustNotContain, MustNotEnd, MustNotEqual,
-      MustNotMatch, MustNotStart, MustStart, n, Name, NameError, NameExtractor, Nominative,
-      Required, Rule }
+  . { Check, disintersect, MustContain, MustEnd, MustMatch, MustNotContain, MustNotEnd,
+      MustNotEqual, MustNotMatch, MustNotStart, MustStart, n, Name, NameError, NameExtractor,
+      Nominative, Required, Rule, staticCompanion }

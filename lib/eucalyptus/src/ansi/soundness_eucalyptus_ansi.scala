@@ -32,5 +32,7 @@
                                                                                                   */
 package soundness
 
+export eucalyptus.{LogPalette}
+
 package logFormats:
   export eucalyptus.logFormats.ansiStandard

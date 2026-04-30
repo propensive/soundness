@@ -32,4 +32,6 @@
                                                                                                   */
 package soundness
 
-export decorum.{Checker, Kind, Phase, Token, Tokenizer, Violation}
+export
+  decorum
+  . { Checker, DecorumPhase, DecorumPlugin, Kind, Phase, ScanAll, Token, Tokenizer, Violation }

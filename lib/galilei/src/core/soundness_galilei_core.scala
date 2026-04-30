@@ -36,11 +36,12 @@ export
   galilei
   . { accessed, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo, Creatable,
       create, created, CreateNonexistent, CreateNonexistentParents, D, delete, DeleteRecursively,
-      DereferenceSymlinks, descendants, Directory, Entry, entry, executable, exists, Fifo, File,
-      FilesystemAttribute, Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent, javaFile,
-      javaPath, modified, MoveAtomically, moveInto, moveTo, open, Openable, OverwritePreexisting,
-      readable, ReadAccess, size, Socket, Symlink, symlinkInto, symlinkTo, touch, TraversalOrder,
-      UnixEntry, Volume, volume, WindowsEntry, wipe, writable, WriteAccess, WriteSynchronously }
+      DereferenceSymlinks, descendants, Directory, Entry, entry, executable, exists, Explorable,
+      Fifo, File, FilesystemAttribute, Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent,
+      javaFile, javaPath, modified, MoveAtomically, moveInto, moveTo, open, Openable,
+      OverwritePreexisting, readable, ReadAccess, size, Socket, Substantiable, Symlink, symlinkInto,
+      symlinkTo, touch, TraversalOrder, UnixEntry, Volume, volume, WindowsEntry, wipe, writable,
+      WriteAccess, WriteSynchronously }
 
 package filesystemOptions:
   export
