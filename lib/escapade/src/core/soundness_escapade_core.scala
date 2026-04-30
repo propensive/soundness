@@ -34,8 +34,8 @@ package soundness
 
 export
   escapade
-  . { Ansi, Ansi2, Bg, Bold, CharSpan, Colorable, Conceal, csi, e, Escape, escapes, Fg, internal,
-      Italic, Reverse, Ribbon, Strike, Stylize, Teletype, teletype, Teletypeable, TeletypeBuilder,
+  . { Ansi, Ansi2, Bg, Bold, CharSpan, Colorable, Conceal, csi, e, Escape, escapes, Fg, Italic,
+      Reverse, Ribbon, Strike, Stylize, Teletype, teletype, Teletypeable, TeletypeBuilder,
       TextStyle, Underline }
 
 package displayableTypes:
