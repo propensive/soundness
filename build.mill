@@ -543,7 +543,11 @@ object ethereal extends Library:
       Task(super.resources() ++ Seq(rustRunners()))
 
   object example extends Component(core, exoskeleton.completions):
-    override def finalMainClass: Task.Simple[String] = "ethereal.run"
+    // `mainClass` (not `finalMainClass`) is what flows into the assembly
+    // manifest's `Main-Class:` line, so set this explicitly. Auto-detection
+    // would otherwise fail because the module has multiple `@main` defs
+    // (`ethereal.run` and `ethereal.fixture`).
+    override def mainClass: Task.Simple[Option[String]] = Some("ethereal.run")
 
     def bin(): Command[PathRef] = Task.Command:
       val jar = assembly().path
