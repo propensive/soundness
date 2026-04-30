@@ -129,14 +129,14 @@ inline def trap(handler: PartialFunction[UnixSignal | WindowsSignal, SignalRespo
 
   cli.trap(handler)
 
-def application(using executive: Executive, interpreter: Interpreter)
+def application(using executive: Executive, interpreter: Interpreter, system: System)
   ( arguments: Iterable[Text], signals: List[UnixSignal] = Nil )
   ( block: Cli ?=> executive.Return )
 :   Unit =
 
   val entrypoint = new Entrypoint:
-    def executable: Path on Linux =
-      safely(ProcessHandle.current.nn.info.nn.command.nn.get.nn.tt.decode[Path on Linux])
+    def executable: Path on Local =
+      safely(ProcessHandle.current.nn.info.nn.command.nn.get.nn.tt.decode[Path on Local])
       . or(panic(m"cannot determine java invocation"))
 
     def script: Text = executable.name

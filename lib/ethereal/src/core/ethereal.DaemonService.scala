@@ -45,7 +45,7 @@ case class DaemonService[bus <: Matchable]
   ( pid:        Pid,
     shutdown:   () => Unit,
     cliInput:   Stdin,
-    executable: Path on Linux,
+    executable: Path on Local,
     deliver:    bus => Unit,
     bus:        Stream[bus],
     script:     Text )

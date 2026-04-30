@@ -38,4 +38,4 @@ import serpentine.*
 
 trait Entrypoint:
   def script: Text
-  def executable: Path on Linux
+  def executable: Path on Local

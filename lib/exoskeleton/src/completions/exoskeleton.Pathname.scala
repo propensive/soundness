@@ -45,10 +45,10 @@ import symbolism.*
 import vacuous.*
 
 import filesystemOptions.dereferenceSymlinks.enabled
-import interfaces.paths.pathOnLinux
+import interfaces.paths.pathOnLocal
 
 object Pathname:
-  def unapply(argument: Argument)(using WorkingDirectory, Cli): Option[Path on Linux] =
+  def unapply(argument: Argument)(using WorkingDirectory, Cli, System): Option[Path on Local] =
     safely:
       def suggest(path: Text): Suggestion =
         val point = path.s.lastIndexOf('/', path.length - 2) + 1
@@ -57,7 +57,7 @@ object Pathname:
         Suggestion(core, Unset, incomplete = path != argument(), prefix = prefix)
 
       if argument() == t"." then argument.suggest:
-        val wd: Path on Linux = workingDirectory
+        val wd: Path on Local = workingDirectory
         suggest(t"../")
         :: workingDirectory.children.to(List).filter(_.name.starts(t".")).map: path =>
           val directory = safely(path.entry() == galilei.Directory).or(false)
@@ -83,7 +83,7 @@ object Pathname:
         val directory = argument().ends(t"/")
         val prototype = workingDirectory.resolve(argument())
         val showAll = argument.tab.or(Prim) > Prim || prototype.name.starts(t".")
-        val base: Optional[Path on Linux] = if directory then prototype else prototype.parent
+        val base: Optional[Path on Local] = if directory then prototype else prototype.parent
         val children0 = base.lay(Nil)(_.children.to(List))
 
         val children =
