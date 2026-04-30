@@ -17,6 +17,22 @@ mod uds;
 mod update;
 mod wrapper;
 
+// Debug-trace helper: when `ETHEREAL_DEBUG=1` is set, writes a timestamped
+// line to stderr from the launcher. Intentionally lazy — avoids any cost
+// when the env var isn't set.
+#[macro_export]
+macro_rules! debug {
+    ($($arg:tt)*) => {{
+        if std::env::var_os("ETHEREAL_DEBUG").is_some_and(|v| !v.is_empty() && v != "0") {
+            let ms = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_millis())
+                .unwrap_or(0);
+            eprintln!("[eth +{ms}] {}", format!($($arg)*));
+        }
+    }};
+}
+
 use protocol::ClientInfo;
 use uds::UnixStream;
 
@@ -31,15 +47,20 @@ fn main() {
     // client (since this binary IS the renamed launcher). Dispatch before any
     // other parsing — the wrapper has its own minimal argv contract.
     let raw: Vec<String> = env::args().collect();
+    debug!("main: argv={:?}", raw);
     if raw.get(1).is_some_and(|arg| arg == WRAP_SENTINEL) {
+        debug!("main: dispatching to wrapper");
         wrapper::run(&raw[2..]);
     }
 
     let (script, args, download) = parse_arguments();
     let name = script.file_name().map(|name| name.to_string_lossy().into_owned()).unwrap_or_default();
+    debug!("main: script={} name={} args={:?}", script.display(), name, args);
     let build_config = config::read_config();
+    debug!("main: build_id={} java_min={} java_pref={}", build_config.build_id, build_config.java_min, build_config.java_pref);
 
     update::check_updates(&script, &args, &name);
+    debug!("main: post-update-check");
 
     let base_dir = state::base_dir(&name);
     let _ = std::fs::create_dir_all(&base_dir);
@@ -47,28 +68,35 @@ fn main() {
     let pid_file    = base_dir.join("pid");
     let socket_file = base_dir.join("socket");
     let fail_file   = base_dir.join("fail");
+    debug!("main: base_dir={}", base_dir.display());
 
     // Non-interactive invocations (completions, admin) must not touch the TTY,
     // fork a stdin-forwarding thread, or install signal handlers — doing so
     // can steal input from the parent shell or trigger SIGTTOU when the
     // process runs in a background process group (e.g. under `< <(...)`).
     let interactive = !args.first().is_some_and(|arg| arg == "{completions}" || arg == "{admin}");
+    debug!("main: interactive={}", interactive);
 
     state::backout(&fail_file, &pid_file, &name);
     state::check_state(&pid_file, &build_file, &socket_file, build_config.build_id);
+    debug!("main: post check_state, pid_file_has_content={}", state::file_has_content(&pid_file));
 
     if !state::file_has_content(&pid_file) {
         let lock_path = base_dir.join("lock");
         match state::try_exclusive_lock(&lock_path) {
             Some(_lock) => {
+                debug!("main: acquired lock, launching daemon");
                 launch::launch(
                     &script, &name, &base_dir,
                     &build_file, &pid_file, &socket_file, &fail_file,
                     &build_config, download,
                 );
+                debug!("main: launch::launch returned");
             }
             None => {
+                debug!("main: another launcher holds the lock; awaiting socket");
                 if !state::await_socket(&socket_file, 40) {
+                    debug!("main: socket did not appear");
                     state::abort(&fail_file);
                     state::backout(&fail_file, &pid_file, &name);
                     std::process::exit(1);
@@ -78,7 +106,11 @@ fn main() {
     }
     state::backout(&fail_file, &pid_file, &name);
 
-    if !state::socket_alive(&socket_file) { std::process::exit(STARTUP_FAILURE_EXIT_CODE); }
+    if !state::socket_alive(&socket_file) {
+        debug!("main: socket not alive, exiting STARTUP_FAILURE");
+        std::process::exit(STARTUP_FAILURE_EXIT_CODE);
+    }
+    debug!("main: socket is alive");
 
     if !interactive {
         std::process::exit(run_non_interactive(&socket_file, &script, &args));
@@ -88,9 +120,11 @@ fn main() {
     tty::set_raw_mode();
 
     let info = ClientInfo::collect(&script, &args, tty::stdin_is_tty());
+    debug!("main: connecting to daemon (pid={})", info.pid);
     let (main_socket, stderr_socket) = match connect_to_daemon(&socket_file, &info) {
-        Ok(connections) => connections,
-        Err(_) => {
+        Ok(connections) => { debug!("main: connected to daemon"); connections },
+        Err(e) => {
+            debug!("main: connect failed: {}", e);
             tty::restore_tty_state(&saved_tty);
             std::process::exit(STARTUP_FAILURE_EXIT_CODE);
         }
