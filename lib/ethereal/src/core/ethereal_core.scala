@@ -210,12 +210,12 @@ def cli[bus <: Matchable](using executive: Executive)
   val userId: Optional[Int] = safely(System.properties.ethereal.user.id[Int]())
   val userName: Optional[Text] = safely(System.properties.ethereal.user.name[Text]())
 
-  val runtimeDir: Optional[Path on Linux] = Xdg.runtimeDir
-  val stateHome: Path on Linux = Xdg.stateHome
-  val baseDir: Path on Linux = runtimeDir.or(stateHome) //name
-  val buildFile: Path on Linux = baseDir/name/"build"
-  val pidFile: Path on Linux = baseDir/name/"pid"
-  val socketFile: Path on Linux = baseDir/name/"socket"
+  val runtimeDir: Optional[Path on Local] = Xdg.runtimeDir
+  val stateHome: Path on Local = Xdg.stateHome
+  val baseDir: Path on Local = runtimeDir.or(stateHome) //name
+  val buildFile: Path on Local = baseDir/name/"build"
+  val pidFile: Path on Local = baseDir/name/"pid"
+  val socketFile: Path on Local = baseDir/name/"socket"
   val clients: scc.TrieMap[Pid, Client of bus] = scc.TrieMap()
   val terminatePid: Promise[Pid] = Promise()
   val idleTimeout: Long = 6L*60L*60L*1_000_000_000L
@@ -452,7 +452,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
       task(t"pid-watcher"):
         safely:
-          List[Path on Linux](socketFile, buildFile, pidFile).watch: watcher =>
+          List[Path on Local](socketFile, buildFile, pidFile).watch: watcher =>
             watcher.stream.each:
               case Delete(_, _) | Modify(_, _) =>
                 Log.warn(DaemonLogEvent.Termination)
