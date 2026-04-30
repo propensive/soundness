@@ -83,7 +83,7 @@ def fixture(): Unit = cli:
 
     case Argument("pwd") :: Nil =>
       execute:
-        val cwd: Text = safely(workingDirectory[Path on Linux].encode).or:
+        val cwd: Text = safely(workingDirectory[Path on Local].encode).or:
           java.lang.System.getProperty("user.dir").nn.tt
         Out.print(cwd) yet Exit.Ok
 
