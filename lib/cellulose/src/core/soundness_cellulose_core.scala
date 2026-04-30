@@ -36,7 +36,7 @@ export
   cellulose
   . { Arity, Atom, Bcodl, BcodlError, Character, Codl, codl, CodlDoc, CodlError, CodlNode,
       CodlPrinter, CodlRelabelling, CodlSchema, CodlToken, DynamicCodlEnabler, Extra, Indexed,
-      Layout, PositionReader, Printer }
+      Formation, PositionReader, Printer }
 
 package codlPrinters:
   export cellulose.codlPrinters.standard

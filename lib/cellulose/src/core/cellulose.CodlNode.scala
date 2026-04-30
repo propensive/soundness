@@ -77,7 +77,7 @@ case class CodlNode(data: Optional[Atom] = Unset, extra: Optional[Extra] = Unset
   def nil: Boolean = unsafely(data.absent || data.assume.children.nil)
   def blank: Boolean = data.absent && extra.absent
   def schema: Optional[CodlSchema] = data.let(_.schema)
-  def layout: Optional[Layout] = data.let(_.layout)
+  def layout: Optional[Formation] = data.let(_.layout)
   def id: Optional[Text] = data.let(_.id)
   def uniqueId: Optional[Text] = data.let(_.uniqueId)
   def children: IArray[CodlNode] = data.let(_.children).or(IArray[CodlNode]())
@@ -107,7 +107,7 @@ case class CodlNode(data: Optional[Atom] = Unset, extra: Optional[Extra] = Unset
 
   def uncommented: CodlNode =
     val data2 = data.let: data =>
-      Atom(data.key, children = data.children.map(_.uncommented), Layout.empty, data.schema)
+      Atom(data.key, children = data.children.map(_.uncommented), Formation.empty, data.schema)
 
     CodlNode(data2, Unset)
 

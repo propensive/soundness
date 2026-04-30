@@ -50,7 +50,7 @@ object Atom:
 
   given inspectable: Atom is Inspectable = data => t"Atom(${data.key}, ${data.children.length})"
 
-case class Atom(key: Text, children: IArray[CodlNode] = IArray(), layout: Layout = Layout.empty,
+case class Atom(key: Text, children: IArray[CodlNode] = IArray(), layout: Formation = Formation.empty,
                     schema: CodlSchema = CodlSchema.Free)
 extends Indexed:
 

@@ -80,7 +80,7 @@ extends Indexed:
       false
 
   override def hashCode: Int = children.toSeq.hashCode ^ schema.hashCode ^ margin.hashCode
-  def layout: Layout = Layout.empty
+  def layout: Formation = Formation.empty
   def paramIndex: Map[Text, Int] = Map()
   def materialize(using Topic is Decodable in Codl): Topic raises CodlError = as[Topic]
 
