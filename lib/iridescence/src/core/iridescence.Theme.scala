@@ -36,7 +36,7 @@ import prepositional.*
 
 trait Theme:
   type Form <: Color: Perceptual in Srgb
-  def luminosity: Luminosity
+  def luminosity: Brightness
   def background: Color in Form
   def foreground: Color in Form
   def colors: List[Color in Form]

@@ -32,5 +32,5 @@
                                                                                                   */
 package iridescence
 
-enum Luminosity:
+enum Brightness:
   case Dark, Light

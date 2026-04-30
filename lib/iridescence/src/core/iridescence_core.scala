@@ -41,18 +41,18 @@ extension (inline context: StringContext)
 
 private[iridescence] inline def unitary(d: Double): Double = d - d.toInt + (if d < 0 then 1 else 0)
 
-inline def dark(using luminosity: Luminosity): Boolean = luminosity == Luminosity.Dark
-inline def light(using luminosity: Luminosity): Boolean = luminosity != Luminosity.Dark
+inline def dark(using luminosity: Brightness): Boolean = luminosity == Brightness.Dark
+inline def light(using luminosity: Brightness): Boolean = luminosity != Brightness.Dark
 
 package themes:
-  given solarized: Luminosity => Theme = new Theme with Solarized:
-    val luminosity = summon[Luminosity]
+  given solarized: Brightness => Theme = new Theme with Solarized:
+    val luminosity = summon[Brightness]
     val background = if dark then base03 else base3
     val foreground = if dark then base3 else base03
 
 package luminosity:
-  given dark: Luminosity = Luminosity.Dark
-  given light: Luminosity = Luminosity.Light
+  given dark: Brightness = Brightness.Dark
+  given light: Brightness = Brightness.Light
 
 package colorimetry:
   given incandescentTungsten: Colorimetry = Colorimetry(109.850, 100, 35.585, 111.144, 100, 35.2)
