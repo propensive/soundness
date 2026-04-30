@@ -70,9 +70,7 @@ object Cuttable:
       @tailrec
       def recur(start: Ordinal, results: List[textual]): List[textual] =
         if matcher.find(start.n0)
-        then
-          val interval = matcher.start.z thru matcher.end.z
-          recur(matcher.end.z, text.segment(interval) :: results)
+        then recur(matcher.end.z, text.segment(matcher.start.z thru matcher.end.z) :: results)
         else results
 
       recur(Prim, Nil).reverse

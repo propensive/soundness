@@ -50,7 +50,8 @@ object Weekday:
 
     val extra =
       if dayOrdinal + (if dayOrdinal < startOrdinal then 7 else 0) < startOrdinal + extras
-      then 1 else 0
+      then 1
+      else 0
 
     (total/7) + extra
 

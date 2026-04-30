@@ -257,7 +257,8 @@ object internal extends protointernal:
 
           val uniqueId2 =
             if child.schema.arity == Arity.Unique
-            then (child.key.vouch, (child.line, child.col)) else Unset
+            then (child.key.vouch, (child.line, child.col))
+            else Unset
 
           (uniqueId2, copy(children = closed :: children, params = params + 1))
 
@@ -484,8 +485,8 @@ object internal extends protointernal:
               case _ =>
                 go(Stream(CodlToken.Outdent(stack.length + 1)))
 
-      if stream.nil
-      then CodlDoc() else recur(stream, Proto(), Nil, Map(), Nil, 0, subs.reverse, Stream(), Nil)
+      if stream.nil then CodlDoc()
+      else recur(stream, Proto(), Nil, Map(), Nil, 0, subs.reverse, Stream(), Nil)
 
 
     def tokenize(in: Stream[Text], fromStart: Boolean = false)(using Diagnostics)
@@ -626,10 +627,11 @@ object internal extends protointernal:
                 ParseError
                   ( Codl, Position(char.line, col(char), 1), UnevenIndent(margin, char.column) ),
                 char.column + 1 )
-          else diff match
-            case 2 => CodlToken.Indent #:: irecur(next, indent = char.column)
-            case 0 => CodlToken.Peer #:: irecur(next, indent = char.column)
-            case n => CodlToken.Outdent(-diff/2) #:: irecur(next, indent = char.column)
+          else
+            diff match
+              case 2 => CodlToken.Indent #:: irecur(next, indent = char.column)
+              case 0 => CodlToken.Peer #:: irecur(next, indent = char.column)
+              case n => CodlToken.Outdent(-diff/2) #:: irecur(next, indent = char.column)
 
         char.char match
           case _ if char == Character.End =>

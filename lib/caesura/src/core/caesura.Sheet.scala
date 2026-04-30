@@ -163,7 +163,8 @@ object Sheet:
           case '\n' | '\r' =>
             if column == 0 && builder.nil
             then recur(content, index + 1, 0, cells, builder, State.Fresh, headings)
-            else if state != State.Quoted then putDsv()
+            else if state != State.Quoted
+            then putDsv()
             else proceed(next.s.charAt(index.n0))
 
           case char =>

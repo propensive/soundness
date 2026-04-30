@@ -1,10 +1,12 @@
+ROOT := $(realpath $(CURDIR)/..)
+
 compile:
-	mill soundnessweb.web.assembly
+	cd $(ROOT) && mill website.assembly
 
 build: compile
 	rm -rf tmp
 	mkdir -p tmp
-	unzip -d tmp -o out/soundnessweb/web/assembly.dest/out.jar || echo ignoring error
+	unzip -d tmp -o $(ROOT)/out/website/assembly.dest/out.jar || echo ignoring error
 	cd tmp && zip -r -q -o ../web/WEB-INF/lib/out.jar .
 
 run: build

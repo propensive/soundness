@@ -406,7 +406,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
           catch case exception: Exception => exception
 
         . assert:
-          case ParseError(_, Html.Position(line, _), _) => line == 2.u
+            case ParseError(_, Html.Position(line, _), _) => line == 2.u
 
       suite(m"Attribute parsing depth"):
         test(m"multiple attributes preserved"):
@@ -449,6 +449,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"duplicate attribute"):
           try t"""<img alt="a" alt="b">""".read[Html of "img"]
           catch case exception: Exception => exception
+
         . assert:
             case ParseError(_, _, Html.Issue.DuplicateAttribute(name)) => name == t"alt"
 
