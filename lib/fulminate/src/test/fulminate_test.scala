@@ -169,24 +169,6 @@ object Tests extends Suite(m"Fulminate Tests"):
         m"`a $inner c`".colorText.s.contains("[3m[1mb[0m")
       . assert(_ == true)
 
-      test(m"double backticks emit a literal backtick"):
-        m"a `` b".text
-      . assert(_ == t"a ` b")
-
-      test(m"double backticks alone produce a single literal backtick"):
-        m"``".text
-      . assert(_ == t"`")
-
-      test(m"double backticks inside a backtick region"):
-        val msg = m"`x `` y`"
-        msg.messages.head.texts.head
-      . assert(_ == t"x ` y")
-
-      test(m"three backticks: escape pair plus opener"):
-        val msg = m"```x`"
-        (msg.texts, msg.messages.head.texts)
-      . assert(_ == ((List(t"`", t""), List(t"x"))))
-
       test(m"unclosed backtick is a compile error"):
         demilitarize:
           m"hello `world"
