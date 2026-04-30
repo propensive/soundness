@@ -36,7 +36,7 @@ export
   cataclysm
   . { &&, >>, AnimationFillMode, BackgroundRepeat, BorderStyle, ch, cm, Css, CssProperty, CssRule,
       CssStyle, CssStylesheet, Dir, Display, em, ex, Float, Font, FontFace, FontStyle, FontWeight,
-      From, Import, inches, Inherit, Initial, internal, Keyframe, Keyframes, Length, max, MediaRule,
+      From, Import, inches, Inherit, Initial, Keyframe, Keyframes, Length, max, MediaRule,
       min, MixBlendMode, mm, Overflow, pc, PointerEvents, Position, PropertyDef, PropertyValue, pt,
       px, rem, select, Selectable, Selector, ShowProperty, TextAlign, TextDecorationLine,
       TextDecorationStyle, To, Transparent, UserSelect, VerticalAlign, vh, vmax, ~~ }
