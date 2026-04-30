@@ -144,10 +144,10 @@ fn detach(command: &mut Command) {
 }
 
 #[cfg(unix)]
-fn mark_stdio_non_inheritable() {}
+pub(crate) fn mark_stdio_non_inheritable() {}
 
 #[cfg(windows)]
-fn mark_stdio_non_inheritable() {
+pub(crate) fn mark_stdio_non_inheritable() {
     use std::os::windows::io::AsRawHandle;
     use windows_sys::Win32::Foundation::{HANDLE, SetHandleInformation, HANDLE_FLAG_INHERIT};
     let handles: [HANDLE; 3] = [
