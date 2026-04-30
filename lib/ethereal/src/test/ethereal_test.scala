@@ -71,6 +71,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           import executives.completions
           import interpreters.posix
           import environments.daemonClient
+          import systems.java
 
           cli:
             arguments match
