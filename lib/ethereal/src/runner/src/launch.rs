@@ -85,7 +85,15 @@ fn build_java_arguments(script: &Path, name: &str, config: &BuildConfig) -> Vec<
         #[cfg(unix)] unsafe { libc::geteuid() as u32 }
         #[cfg(windows)] { 0 }
     };
-    let fpath = capture_stdout("zsh", &["-c", "printf '%s\\n' $fpath"]).unwrap_or_default();
+    // zsh's `$fpath` is the canonical source for shell-installed completion
+    // function paths, but probe for zsh on PATH first: without this, every
+    // daemon launch pays the cost of a failed `Command::spawn("zsh")` on
+    // Windows (no zsh) and minimal Linux images, masked by `unwrap_or_default`.
+    let fpath = if crate::java::which("zsh").is_some() {
+        capture_stdout("zsh", &["-c", "printf '%s\\n' $fpath"]).unwrap_or_default()
+    } else {
+        String::new()
+    };
     let command_path = crate::java::which(name)
         .map(|path| path.to_string_lossy().into_owned())
         .unwrap_or_default();
