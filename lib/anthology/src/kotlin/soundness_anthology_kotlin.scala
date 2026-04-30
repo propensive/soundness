@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export anthology.Kotlinc
+export anthology.{Kotlinc, KotlinVersions}

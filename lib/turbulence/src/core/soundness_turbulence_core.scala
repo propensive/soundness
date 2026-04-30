@@ -35,10 +35,11 @@ package soundness
 export
   turbulence
   . { Aggregable, chunked, cluster, compress, Compression, Compressor, decompress, deduplicate,
-      defer, discard, Document, Documentary, Eof, Err, gunzip, Gzip, gzip, In, inputStream, Io,
-      Line, LineSeparation, load, Loadable, metronome, more, multiplex, Multiplexer, multiplexer,
-      Out, parallelMap, Pistol, Pulsar, rate, read, regulate, shred, Spool, spool, Stdio, stream,
-      Streamable, StreamError, StreamOutputStream, strict, take, Tap, Writable, writeTo, Zlib }
+      defer, Deflate, discard, Document, Documentary, Eof, Err, gunzip, Gzip, gzip, In, inputStream,
+      Io, Line, LineSeparation, load, Loadable, metronome, more, multiplex, Multiplexer,
+      multiplexer, Out, parallelMap, Pistol, Pulsar, rate, read, regulate, shred, Spool, spool,
+      Stdio, stream, Streamable, StreamError, StreamOutputStream, strict, take, Tap, Writable,
+      writeTo, Zlib }
 
 package stdios:
   export turbulence.stdios.{mute, system, virtualMachine}

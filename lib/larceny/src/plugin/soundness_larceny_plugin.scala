@@ -32,4 +32,7 @@
                                                                                                   */
 package soundness
 
-export larceny.{CompileError, CompileErrorId, demilitarize, procrastinate}
+export
+  larceny
+  . { CompileError, CompileErrorId, demilitarize, LarcenyPlugin, LarcenyTransformer, procrastinate,
+      Subcompiler }

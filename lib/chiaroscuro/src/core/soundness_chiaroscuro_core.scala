@@ -34,4 +34,5 @@ package soundness
 
 export
   chiaroscuro
-  . { contrast, Contrastable, Decomposable, decompose, Decomposition, Juxtaposition, Similarity }
+  . { contrast, Contrastable, Decomposable, Decomposable2, Decomposable3, decompose, Decomposition,
+      Juxtaposition, Similarity }

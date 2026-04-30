@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export spectacular.{Affirmation, inspect, Inspectable, show, Showable}
+export spectacular.{Affirmation, inspect, Inspectable, Inspectable2, show, Showable}
 
 package affirmations:
   export spectacular.affirmations.{oneZero, onOff, trueFalse, yesNo}

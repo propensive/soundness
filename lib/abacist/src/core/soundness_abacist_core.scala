@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export abacist.{Quanta, quanta, UnitsNames}
+export abacist.{Quanta, quanta, TimeMinutes, TimeSeconds, UnitsNames}

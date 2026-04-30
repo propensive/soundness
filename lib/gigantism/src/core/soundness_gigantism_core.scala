@@ -32,32 +32,4 @@
                                                                                                   */
 package soundness
 
-export
-  gossamer
-  . { add, after, append, appendln, Ascii, ascii, AsciiBuilder, before, Bidi, BoundsError, broken,
-      build, Builder, builder, camel, capitalize, CaseSensitivity, center, chars, contains, count,
-      cut, Cuttable, data, Decimalizer, Dictionary, dropWhile, ends, erase, fill, fit, from, init,
-      join, Joinable, kebab, keep, length, Lexicon, lines, lower, Ltr, Numerous, pad, pascal, plain,
-      Proximity, proximity, Pue, pue, punycode, RangeError, reverse, Rtl, search, seek,
-      SimpleTExtractor, skip, slices, snake, snip, spaced, starts, sub, subscripts, superscripts,
-      sysData, t, tail, text, TextBuilder, Textual, tr, translate, trim, txt, uncamel, uncapitalize,
-      unkebab, unsnake, upper, upto, urlDecode, urlEncode, utf16, utf8, where, words }
-
-package decimalFormatters:
-  export gossamer.decimalFormatters.java
-
-package enumIdentification:
-  export gossamer.enumIdentification.kebabCase
-  export gossamer.enumIdentification.pascalCase
-  export gossamer.enumIdentification.snakeCase
-  export gossamer.enumIdentification.camelCase
-
-package proximities:
-  export gossamer.proximities.jaroDistance
-  export gossamer.proximities.jaroWinklerDistance
-  export gossamer.proximities.prefixMatch
-  export gossamer.proximities.levenshteinDistance
-  export gossamer.proximities.normalizedLevenshteinDistance
-
-package caseSensitivity:
-  export gossamer.caseSensitivity.{insensitive, sensitive, smart}
+export gigantism.{Macro, Metaprogramming, metaprogramming}

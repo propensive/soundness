@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export mandible.{Bytecode, Classfile, disassemble}
+export mandible.{Bytecode, BytecodePalette, Classfile, ClassfileError, disassemble}

@@ -32,5 +32,7 @@
                                                                                                   */
 package soundness
 
+export eucalyptus.{EucalyptusGcp}
+
 package logFormats:
   export eucalyptus.logFormats.googleCloudPlatform

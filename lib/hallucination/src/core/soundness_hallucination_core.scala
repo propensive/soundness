@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export hallucination.{Bmp, Gif, Jpeg, Png, Raster, Rasterizable}
+export hallucination.{Bmp, Gif, Jpeg, Png, Raster, RasterError, Rasterizable}

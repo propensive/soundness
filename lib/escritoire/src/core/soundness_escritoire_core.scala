@@ -36,7 +36,7 @@ export
   escritoire
   . { Attenuation, BoxDrawing, BoxLine, Column, ColumnAlignment, Columnar, Grid, LineCharset,
       Scaffold, TableCell, TableError, TableRelabelling, TableRow, TableSection, TableStyle,
-      Tabulable, Tabulation, tabulation, TextAlignment, VerticalAlignment }
+      Tabulable, Tabular, Tabulation, tabulation, TextAlignment, VerticalAlignment }
 
 package columnAttenuation:
   export escritoire.columnAttenuation.{fail, ignore}

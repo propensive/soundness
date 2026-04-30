@@ -34,8 +34,8 @@ package soundness
 
 export
   monotonous
-  . { Alphabet, Base32, Base64, Binary, Deserializable, deserialize, Hex, Octal, Quaternary,
-      Serializable, Serialization, SerializationError, serialize }
+  . { Alphabet, Base256, Base32, Base64, Binary, Deserializable, deserialize, Hex, Octal,
+      Quaternary, Serializable, Serialization, SerializationError, serialize }
 
 package alphabets:
   package binary:

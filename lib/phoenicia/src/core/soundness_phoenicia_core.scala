@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export phoenicia.{Em, Ems, FontError, FontSize, Glyph, internal, TableTag, Ttf}
+export phoenicia.{Em, Ems, FontError, FontSize, Glyph, internal, OtfTag, TableTag, Ttf, TtfTag}

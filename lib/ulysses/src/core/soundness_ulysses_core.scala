@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export ulysses.BloomFilter
+export ulysses.{Bibliography, BloomFilter, Palimpsest}

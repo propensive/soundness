@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export hyperbole.{Introspect, semantics, syntax, TastySymbol, TastyTree}
+export hyperbole.{Introspect, semantics, syntax, TastyPalette, TastySymbol, TastyTree}

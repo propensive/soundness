@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export anticipation.Paths
+export anticipation.{Nominable, Paths}
