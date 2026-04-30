@@ -87,5 +87,16 @@ object Explorable:
         . map(_.toString.tt.decode[Path on MacOs])
         . to(Stream)
 
+  given local: ambience.System => Local is Explorable:
+    def children(path: Path on Local): Stream[Path on Local] =
+      given tactic: Tactic[PathError] = strategies.throwUnsafely
+
+      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then Stream() else
+        jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
+        . iterator().nn
+        . asScala
+        . map(_.toString.tt.decode[Path on Local])
+        . to(Stream)
+
 trait Explorable extends Typeclass:
   def children(path: Path on Self): Stream[Path on Self]
