@@ -153,7 +153,7 @@ object Sheet:
 
     content.flow(if column == 0 && builder.nil then Stream() else putDsv()):
       if !next.has(index) then recur(more, Prim, column, cells, builder, state, headings) else
-        next.s.charAt(index.n0) match
+        next.at(index).vouch match
           case format.Delimiter =>
             if state != State.Quoted then advance() else proceed(format.Delimiter)
 
@@ -165,7 +165,7 @@ object Sheet:
             then recur(content, index + 1, 0, cells, builder, State.Fresh, headings)
             else if state != State.Quoted
             then putDsv()
-            else proceed(next.s.charAt(index.n0))
+            else proceed(next.at(index).vouch)
 
           case char =>
             builder.put(char)
