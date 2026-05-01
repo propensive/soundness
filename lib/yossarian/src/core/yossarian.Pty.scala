@@ -34,6 +34,7 @@ package yossarian
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gossamer.*
 import hypotenuse.*
@@ -41,6 +42,7 @@ import kaleidoscope.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 
 import PtyEscapeError.Reason, Reason.*
@@ -64,14 +66,29 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
     val buffer2: Screen = buffer.copy()
 
     object cursor:
-      private var index: Int = state0.cursor
+      private var index: Ordinal = state0.cursor
 
-      def apply(): Int = index
-      def update(value: Int): Unit = index = value
-      def x: Int = index%buffer2.width
-      def y: Int = index/buffer2.width
-      def x_=(x2: Int): Unit = index = y*buffer2.width + x2.min(buffer2.width - 1).max(0)
-      def y_=(y2: Int): Unit = index = y2.min(buffer2.height - 1).max(0)*buffer2.width + x
+      def apply(): Ordinal = index
+      def update(value: Ordinal): Unit = index = value
+
+      def x: Ordinal = (index.n0%buffer2.width).z
+      def y: Ordinal = (index.n0/buffer2.width).z
+
+      def x_=(x2: Ordinal): Unit =
+        val clamped: Ordinal =
+          if x2 < Prim then Prim
+          else if x2 >= buffer2.width.z then (buffer2.width - 1).z
+          else x2
+
+        index = (y.n0*buffer2.width + clamped.n0).z
+
+      def y_=(y2: Ordinal): Unit =
+        val clamped: Ordinal =
+          if y2 < Prim then Prim
+          else if y2 >= buffer2.height.z then (buffer2.height - 1).z
+          else y2
+
+        index = (clamped.n0*buffer2.width + x.n0).z
 
     var style = state0.style
     var state = state0
@@ -82,9 +99,9 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
 
     import Context.{Normal, Escape, Csi, Csi2, Osc, Osc2}
 
-    def wipe(cursor: Int): Unit = buffer2.set(cursor, ' ', style, link)
+    def wipe(cursor: Ordinal): Unit = buffer2.set(cursor, ' ', style, link)
 
-    def set(x: Int, y: Int, char: Char, style: Style = style, link: Text = link): Unit =
+    def set(x: Ordinal, y: Ordinal, char: Char, style: Style = style, link: Text = link): Unit =
       buffer2.set(x, y, char, style, link)
 
     def cuu(n: Int): Unit = cursor.y = cursor.y - n
@@ -93,42 +110,42 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
     def cub(n: Int): Unit = cursor.x = cursor.x - n
 
     def cnl(n: Int): Unit =
-      cursor.x = 0
+      cursor.x = Prim
       cursor.y = cursor.y + n
 
     def cpl(n: Int): Unit =
-      cursor.x = 0
+      cursor.x = Prim
       cursor.y = cursor.y - n
 
-    def cha(n: Int): Unit = cursor.x = n - 1
+    def cha(col: Ordinal): Unit = cursor.x = col
 
-    def cup(row: Int, col: Int): Unit =
-      cursor.y = row - 1
-      cursor.x = col - 1
+    def cup(row: Ordinal, col: Ordinal): Unit =
+      cursor.y = row
+      cursor.x = col
 
     def ed(n: Int): Unit = n match
-      case 0 => for i <- cursor() until buffer2.capacity do wipe(i)
-      case 1 => for i <- 0 until cursor() do wipe(i)
+      case 0 => for i <- cursor().n0 until buffer2.capacity do wipe(i.z)
+      case 1 => for i <- 0 until cursor().n0 do wipe(i.z)
 
       case 2 | 3 =>
-        for i <- 0 until buffer2.capacity do wipe(i)
-        cursor() = 0
+        for i <- 0 until buffer2.capacity do wipe(i.z)
+        cursor() = Prim
 
       case n =>
         raise(PtyEscapeError(BadCsiParameter(n, t"ED")))
 
     def el(n: Int): Unit = n match
-      case 0 => for x <- cursor.x until buffer2.width do set(x, cursor.y, ' ')
-      case 1 => for x <- 0 to cursor.x do set(x, cursor.y, ' ')
-      case 2 => for x <- 0 until buffer2.width do set(x, cursor.y, ' ')
+      case 0 => for x <- cursor.x.n0 until buffer2.width do set(x.z, cursor.y, ' ')
+      case 1 => for x <- 0 to cursor.x.n0 do set(x.z, cursor.y, ' ')
+      case 2 => for x <- 0 until buffer2.width do set(x.z, cursor.y, ' ')
       case n => raise(PtyEscapeError(BadCsiParameter(n, t"EL")))
 
     def title(text: Text): Unit = state = state.copy(title = text)
     def setLink(text: Text): Unit = link = text
     def su(n: Int): Unit = buffer2.scroll(n)
     def sd(n: Int): Unit = buffer2.scroll(-n)
-    def hvp(row: Int, col: Int): Unit = cup(row, col)
-    def dsr(): Unit = output.put(t"\e[${cursor.y + 1};${cursor.x + 1}R")
+    def hvp(row: Ordinal, col: Ordinal): Unit = cup(row, col)
+    def dsr(): Unit = output.put(t"\e[${cursor.y.n1};${cursor.x.n1}R")
     def dectcem(visible: Boolean): Unit = state = state.copy(hideCursor = !visible)
     def scp(): Unit = state = state.copy(savedCursor = cursor())
     def rcp(): Unit = cursor() = state.savedCursor
@@ -220,14 +237,14 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
         case 'D' => cub(parseInt(params, 1))
         case 'E' => cnl(parseInt(params, 1))
         case 'F' => cpl(parseInt(params, 1))
-        case 'G' => cha(parseInt(params, 1))
+        case 'G' => cha(parseInt(params, 1).u)
         case 'J' => ed(parseInt(params, 0))
         case 'K' => el(parseInt(params, 0))
         case 'S' => su(parseInt(params, 1))
         case 'T' => sd(parseInt(params, 1))
 
-        case 'H' => val (r, c) = parsePair(params, 1); cup(r, c)
-        case 'f' => val (r, c) = parsePair(params, 1); hvp(r, c)
+        case 'H' => val (r, c) = parsePair(params, 1); cup(r.u, c.u)
+        case 'f' => val (r, c) = parsePair(params, 1); hvp(r.u, c.u)
 
         case 'n' if parseInt(params, 0) == 6                     => dsr()
         case 's' if params.s.isEmpty || parseInt(params, 0) == 6 => scp()
@@ -283,21 +300,21 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
         proceed(Normal)
 
       inline def lf(): Pty =
-        cursor.x = 0
+        cursor.x = Prim
         ff()
 
       inline def ff(): Pty =
-        if cursor.y < buffer2.height - 1 then cursor.y = cursor.y + 1 else su(1)
+        if cursor.y.n0 < buffer2.height - 1 then cursor.y = cursor.y + 1 else su(1)
         proceed(Normal)
 
       inline def cr(): Pty =
-        cursor.x = 0
+        cursor.x = Prim
         proceed(Normal)
 
       inline def put(char: Char): Pty =
         set(cursor.x, cursor.y, char)
         cursor() += 1
-        if cursor() == buffer2.capacity then
+        if cursor().n0 == buffer2.capacity then
           buffer2.scroll(1)
           cursor() -= buffer2.width
 

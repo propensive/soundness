@@ -33,6 +33,7 @@
 package yossarian
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
@@ -51,10 +52,10 @@ object internal:
     def linkBuffer: Array[Text] = buffer(3)
     def capacity: Int = charBuffer.length
     def height: Int = capacity/width
-    def offset(x: Int, y: Int): Int = y*width + x
-    def style(x: Int, y: Int): Style = styleBuffer(offset(x, y))
-    def char(x: Int, y: Int): Char = charBuffer(offset(x, y))
-    def link(x: Int, y: Int): Text = linkBuffer(offset(x, y))
+    def offset(x: Ordinal, y: Ordinal): Int = y.n0*width + x.n0
+    def style(x: Ordinal, y: Ordinal): Style = styleBuffer(offset(x, y))
+    def char(x: Ordinal, y: Ordinal): Char = charBuffer(offset(x, y))
+    def link(x: Ordinal, y: Ordinal): Text = linkBuffer(offset(x, y))
     def line: Screen = (charBuffer.length, styleBuffer, charBuffer, linkBuffer)
     def render: Text = String(charBuffer).grouped(width).to(List).map(_.tt).join(t"\n")
 
@@ -85,15 +86,15 @@ object internal:
         charBuffer(start + i) = ' '
         linkBuffer(start + i) = t""
 
-    def set(x: Int, y: Int, char: Char, style: Style, link: Text): Unit =
+    def set(x: Ordinal, y: Ordinal, char: Char, style: Style, link: Text): Unit =
       styleBuffer(offset(x, y)) = style
       charBuffer(offset(x, y)) = char
       linkBuffer(offset(x, y)) = link
 
-    def set(cursor: Int, char: Char, style: Style, link: Text): Unit =
-      styleBuffer(cursor) = style
-      charBuffer(cursor) = char
-      linkBuffer(cursor) = link
+    def set(cursor: Ordinal, char: Char, style: Style, link: Text): Unit =
+      styleBuffer(cursor.n0) = style
+      charBuffer(cursor.n0) = char
+      linkBuffer(cursor.n0) = link
 
     def copy(): Screen =
       val styles = new Array[Style](capacity)
