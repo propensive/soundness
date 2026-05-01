@@ -47,4 +47,7 @@ case class PtyState
     bracketedPasteMode: Boolean = false,
     hideCursor:         Boolean = false,
     title:              Text    = t"",
-    link:               Text    = t"" )
+    link:               Text    = t"",
+    scrollTop:          Ordinal = Prim,
+    scrollBottom:       Ordinal = Prim,
+    pendingWrap:        Boolean = false )

@@ -48,7 +48,8 @@ import turbulence.*
 import PtyEscapeError.Reason, Reason.*
 
 object Pty:
-  def apply(width: Int, height: Int): Pty = Pty(Screen(width, height), PtyState(), Spool())
+  def apply(width: Int, height: Int): Pty =
+    Pty(Screen(width, height), PtyState(scrollBottom = (height - 1).z), Spool())
 
   def stream(pty: Pty, in: Stream[Text]): Stream[Pty] raises PtyEscapeError = in match
     case head #:: tail =>
@@ -69,16 +70,23 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
     val escBuffer = StringBuilder()
     val buffer2: Screen = buffer.copy()
 
+    var pendingWrap: Boolean = state.pendingWrap
+    var lastChar: Char = ' '
+
     object cursor:
       private var index: Ordinal = state.cursor
 
       def apply(): Ordinal = index
-      def update(value: Ordinal): Unit = index = value
+
+      def update(value: Ordinal): Unit =
+        pendingWrap = false
+        index = value
 
       def x: Ordinal = (index.n0%buffer2.width).z
       def y: Ordinal = (index.n0/buffer2.width).z
 
       def x_=(x2: Ordinal): Unit =
+        pendingWrap = false
         val clamped: Ordinal =
           if x2 < Prim then Prim
           else if x2 >= buffer2.width.z then (buffer2.width - 1).z
@@ -87,6 +95,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         index = (y.n0*buffer2.width + clamped.n0).z
 
       def y_=(y2: Ordinal): Unit =
+        pendingWrap = false
         val clamped: Ordinal =
           if y2 < Prim then Prim
           else if y2 >= buffer2.height.z then (buffer2.height - 1).z
@@ -94,9 +103,14 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
 
         index = (clamped.n0*buffer2.width + x.n0).z
 
+      // Internal advancement that does NOT clear pendingWrap (used by put).
+      def setIndex(value: Ordinal): Unit = index = value
+
     var style = state.style
     var state2 = state
     var link = state.link
+    var scrollTop: Ordinal = state.scrollTop
+    var scrollBottom: Ordinal = state.scrollBottom
 
     enum Context:
       case Normal, Escape, Csi, Csi2, Osc, Osc2, EatString, EatString2
@@ -146,8 +160,29 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
 
     def title(text: Text): Unit = state2 = state2.copy(title = text)
     def setLink(text: Text): Unit = link = text
-    def su(n: Int): Unit = buffer2.scroll(n)
-    def sd(n: Int): Unit = buffer2.scroll(-n)
+    def su(n: Int): Unit = buffer2.scroll(n, scrollTop.n0, scrollBottom.n0)
+    def sd(n: Int): Unit = buffer2.scroll(-n, scrollTop.n0, scrollBottom.n0)
+
+    def decstbm(top: Ordinal, bottom: Ordinal): Unit =
+      val t = if top < Prim then Prim else top
+      val b = if bottom >= buffer2.height.z then (buffer2.height - 1).z else bottom
+      if t < b then
+        scrollTop = t
+        scrollBottom = b
+        cursor() = (t.n0*buffer2.width).z
+
+    def ind(): Unit =
+      if cursor.y == scrollBottom then su(1)
+      else if cursor.y.n0 < buffer2.height - 1 then cursor.y = cursor.y + 1
+
+    def ri(): Unit =
+      if cursor.y == scrollTop then sd(1)
+      else if cursor.y > Prim then cursor.y = cursor.y - 1
+
+    def nel(): Unit =
+      cursor.x = Prim
+      ind()
+
     def hvp(row: Ordinal, col: Ordinal): Unit = cup(row, col)
     def dsr(): Unit = output.put(t"\e[${cursor.y.n1};${cursor.x.n1}R")
     def dectcem(visible: Boolean): Unit = state2 = state2.copy(hideCursor = !visible)
@@ -202,45 +237,51 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
 
     def il(n: Int): Unit =
       val top = cursor.y.n0
-      val height = buffer2.height
-      val width = buffer2.width
-      val shift = n.min(height - top)
-      var r = height - 1
-      while r >= top + shift do
-        var c = 0
-        while c < width do
-          buffer2.set(c.z, r.z, buffer2.char(c.z, (r - shift).z),
-              buffer2.style(c.z, (r - shift).z), buffer2.link(c.z, (r - shift).z))
-          c += 1
-        r -= 1
-      var rr = top
-      while rr < top + shift do
-        var c = 0
-        while c < width do
-          buffer2.set(c.z, rr.z, ' ', style, link)
-          c += 1
-        rr += 1
+      // IL only operates if cursor is inside the scroll region. The bottom
+      // limit is the scroll region's bottom (not the screen bottom).
+      if top < scrollTop.n0 || top > scrollBottom.n0 then ()
+      else
+        val width = buffer2.width
+        val bottom = scrollBottom.n0
+        val shift = n.min(bottom - top + 1)
+        var r = bottom
+        while r >= top + shift do
+          var c = 0
+          while c < width do
+            buffer2.set(c.z, r.z, buffer2.char(c.z, (r - shift).z),
+                buffer2.style(c.z, (r - shift).z), buffer2.link(c.z, (r - shift).z))
+            c += 1
+          r -= 1
+        var rr = top
+        while rr < top + shift do
+          var c = 0
+          while c < width do
+            buffer2.set(c.z, rr.z, ' ', style, link)
+            c += 1
+          rr += 1
 
     def dl(n: Int): Unit =
       val top = cursor.y.n0
-      val height = buffer2.height
-      val width = buffer2.width
-      val shift = n.min(height - top)
-      var r = top
-      while r < height - shift do
-        var c = 0
-        while c < width do
-          buffer2.set(c.z, r.z, buffer2.char(c.z, (r + shift).z),
-              buffer2.style(c.z, (r + shift).z), buffer2.link(c.z, (r + shift).z))
-          c += 1
-        r += 1
-      var rr = height - shift
-      while rr < height do
-        var c = 0
-        while c < width do
-          buffer2.set(c.z, rr.z, ' ', style, link)
-          c += 1
-        rr += 1
+      if top < scrollTop.n0 || top > scrollBottom.n0 then ()
+      else
+        val width = buffer2.width
+        val bottom = scrollBottom.n0
+        val shift = n.min(bottom - top + 1)
+        var r = top
+        while r <= bottom - shift do
+          var c = 0
+          while c < width do
+            buffer2.set(c.z, r.z, buffer2.char(c.z, (r + shift).z),
+                buffer2.style(c.z, (r + shift).z), buffer2.link(c.z, (r + shift).z))
+            c += 1
+          r += 1
+        var rr = bottom - shift + 1
+        while rr <= bottom do
+          var c = 0
+          while c < width do
+            buffer2.set(c.z, rr.z, ' ', style, link)
+            c += 1
+          rr += 1
 
     def decsc(): Unit =
       state2 = state2.copy(savedCursor = cursor(), savedStyle = style, savedLink = link)
@@ -253,9 +294,11 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
     def ris(): Unit =
       style = Style()
       link = t""
+      scrollTop = Prim
+      scrollBottom = (buffer2.height - 1).z
       for i <- 0 until buffer2.capacity do wipe(i.z)
       cursor() = Prim
-      state2 = PtyState()
+      state2 = PtyState(scrollBottom = scrollBottom)
 
     def osc(command: Text): Unit = command match
       case r"8;([^;]*);$text(.*)" => setLink(text)
@@ -355,6 +398,12 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         case 'H' => val (r, c) = parsePair(params, 1); cup(r.u, c.u)
         case 'f' => val (r, c) = parsePair(params, 1); hvp(r.u, c.u)
 
+        case 'r' =>
+          if params.s.isEmpty then decstbm(Prim, (buffer2.height - 1).z)
+          else
+            val (top, bot) = parsePair(params, 1)
+            decstbm(top.u, bot.u)
+
         case 'n' if parseInt(params, 0) == 6                     => dsr()
         case 's' if params.s.isEmpty || parseInt(params, 0) == 6 => scp()
         case 'u' if params.s.isEmpty                             => rcp()
@@ -409,10 +458,11 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
 
       inline def lf(): Pty =
         cursor.x = Prim
-        ff()
+        ind()
+        proceed(Normal)
 
       inline def ff(): Pty =
-        if cursor.y.n0 < buffer2.height - 1 then cursor.y = cursor.y + 1 else su(1)
+        ind()
         proceed(Normal)
 
       inline def cr(): Pty =
@@ -420,16 +470,22 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         proceed(Normal)
 
       inline def put(char: Char): Pty =
+        if pendingWrap then
+          cursor.x = Prim
+          ind()
+          // Setters above cleared pendingWrap; nothing more to do.
         set(cursor.x, cursor.y, char)
-        cursor() += 1
-        if cursor().n0 == buffer2.capacity then
-          buffer2.scroll(1)
-          cursor() -= buffer2.width
+        lastChar = char
+        if cursor.x.n0 == buffer2.width - 1 then pendingWrap = true
+        else cursor.x = cursor.x + 1
 
         proceed(Normal)
 
       if index >= input.length
-      then Pty(buffer2, state2.copy(cursor = cursor(), style = style, link = link), output = output)
+      then Pty(buffer2,
+          state2.copy(cursor = cursor(), style = style, link = link, scrollTop = scrollTop,
+              scrollBottom = scrollBottom, pendingWrap = pendingWrap),
+          output = output)
       else
         val current: Char = unsafely(input.s.charAt(index))
 
@@ -472,14 +528,17 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
 
           case Escape =>
             current match
-              case '['                            => recur(index + 1, Csi)
-              case ']'                            => recur(index + 1, Osc)
-              case 'P' | 'X' | '^' | '_'          => recur(index + 1, EatString)
-              case '7'                            => decsc(); proceed(Normal)
-              case '8'                            => decrc(); proceed(Normal)
-              case 'c'                            => ris(); proceed(Normal)
-              case 'D' | 'E' | 'M' | 'N' | 'O'    => proceed(Normal) // single-char Fe escapes
-              case '\\'                           => proceed(Normal) // bare ST is ignored
+              case '['                   => recur(index + 1, Csi)
+              case ']'                   => recur(index + 1, Osc)
+              case 'P' | 'X' | '^' | '_' => recur(index + 1, EatString)
+              case '7'                   => decsc(); proceed(Normal)
+              case '8'                   => decrc(); proceed(Normal)
+              case 'c'                   => ris(); proceed(Normal)
+              case 'D'                   => ind(); proceed(Normal)
+              case 'E'                   => nel(); proceed(Normal)
+              case 'M'                   => ri(); proceed(Normal)
+              case 'N' | 'O'             => proceed(Normal) // SS2 / SS3 — charset not supported
+              case '\\'                  => proceed(Normal) // bare ST is ignored
 
               case char =>
                 raise(PtyEscapeError(BadFeEscape(char)))
