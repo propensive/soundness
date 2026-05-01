@@ -223,7 +223,7 @@ object test extends ScalaModule:
     diuretic.test,
     //embarcadero.test,
     enigmatic.test,
-    //escapade.test,
+    escapade.test,
     //escritoire.test,
     ethereal.test,
     //eucalyptus.test,
@@ -499,7 +499,7 @@ object enigmatic extends Library:
 
 object escapade extends Library:
   object core extends Component(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core)
-  // object test extends Tests(core)
+  object test extends Tests(core, yossarian.core)
 
 object escritoire extends Library:
   object core extends Component(gossamer.core)
