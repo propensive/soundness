@@ -55,6 +55,21 @@ object Writing:
     type Operand = Writing
     def concat(left: Writing, right: Writing): Writing = textual.concat(left, right)
 
+  // The display width of a Writing is the sum of its grapheme widths. This is more accurate
+  // than `Text is Measurable` (which sums per-codepoint widths), since complex graphemes
+  // — RI flag pairs, ZWJ-joined emoji, Hangul jamo syllables — occupy a single "wide" cell
+  // rather than the over-counted sum of their constituent codepoints.
+  given measurable: (graphemeM: Grapheme is Measurable) => Writing is Measurable = writing =>
+    val s = writing.text.s
+    val boundaries = writing.boundaries
+    var total = 0
+    var i = 0
+    val n = boundaries.length - 1
+    while i < n do
+      total += graphemeM.width(Grapheme(s.substring(boundaries(i), boundaries(i + 1)).nn))
+      i += 1
+    total
+
   given textual: Writing is Textual:
     type Operand = Grapheme
     type Show[value] = value is Showable
