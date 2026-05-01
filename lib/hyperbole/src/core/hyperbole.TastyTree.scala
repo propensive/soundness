@@ -77,7 +77,7 @@ object TastyTree:
       val expansions = expand(tastyTree)
 
       val indents =
-        expansions.filter(!_.source.nil).map(_.source.plain.whilst(_ == ' ').length)
+        expansions.filter(!_.source.nil).map(_.source.plain.keep(_ == ' ').length)
 
       val crop = indents.min
 
