@@ -90,7 +90,7 @@ extension (inline context: StringContext)
 package textMetrics:
   given uniform: Char is Measurable = _ => 1
   given eastAsianScripts: Char is Measurable = Unicode.eastAsianWidth(_).let(_.width).or(1)
-  given kuhn: Char is Measurable = char => Wcwidth.width(char.toInt).max(0)
+  given wideCharacterWidth: Char is Measurable = char => WideCharacterWidth.width(char.toInt).max(0)
 
 extension (char: Char)
   def superscript: Optional[Char] = Chars.superscript.applyOrElse(char, _ => Unset)

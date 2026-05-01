@@ -32,12 +32,7 @@
                                                                                                   */
 package hieroglyph
 
-// A port of Markus Kuhn's `wcwidth` algorithm, the de-facto width function used by xterm and
-// most Unix terminals. Combining marks and format characters contribute zero columns; East-Asian
-// Wide and Full-Width characters contribute two; everything else contributes one. Java's built-in
-// Unicode general-category data covers combining marks across Unicode versions, so no extra
-// resource file is needed; the wide-character set comes from `Unicode.eastAsianWidths`.
-object Wcwidth:
+object WideCharacterWidth:
   import hieroglyph.internal.*
 
   def width(codePoint: Int): Int =
@@ -46,16 +41,13 @@ object Wcwidth:
     else
       val category = Character.getType(codePoint)
 
-      if category == Character.NON_SPACING_MARK
-          || category == Character.ENCLOSING_MARK
-          || category == Character.FORMAT
+      if
+        ( category == Character.NON_SPACING_MARK || category == Character.ENCLOSING_MARK
+          || category == Character.FORMAT )
       then 0
       else if isWide(codePoint) then 2 else 1
 
   private def isWide(codePoint: Int): Boolean =
-    // The packed key is `(from << 32) + to`, so entries sort by `from` first. Searching with
-    // `(codePoint + 1) << 32` and `maxBefore` (strict <) returns the entry with the largest
-    // `from` ≤ `codePoint`; the membership test then confirms `codePoint` falls inside `to`.
     val searchKey: CharRange = CharRange(codePoint + 1, 0)
 
     Unicode.eastAsianWidths.maxBefore(searchKey) match

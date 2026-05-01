@@ -1095,7 +1095,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == "abc")
 
     suite(m"Grapheme widths via Kuhn"):
-      import textMetrics.kuhn
+      import textMetrics.wideCharacterWidth
 
       test(m"ASCII grapheme width 1"):
         Grapheme("a").metrics
