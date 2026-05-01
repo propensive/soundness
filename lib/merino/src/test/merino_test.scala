@@ -69,24 +69,36 @@ object Tests extends Suite(m"Merino tests"):
 
     val tests: Path on Linux = jsonSuite/"test_parsing"
 
-    suite(m"Positive tests"):
-      tests.children.filter(_.name.starts(t"y_")).each: file =>
-        test(Message(file.name.skip(5, Rtl))):
-          file.open(_.read[JsonAst])
-        .check()
-
     val deeplyNested: Set[Text] =
       Set(t"n_structure_100000_opening_arrays.json", t"n_structure_open_array_object.json")
 
-    suite(m"Negative tests"):
+    val positiveCases: List[(Text, Data)] =
+      tests.children
+        . filter(_.name.starts(t"y_"))
+        . map: file =>
+            (file.name, file.open(_.read[Data]))
+        . to(List)
+
+    val negativeCases: List[(Text, Data)] =
       tests.children
         . filter(_.name.starts(t"n_"))
         . filter { file => !deeplyNested.contains(file.name) }
-        . each: file =>
-            test(Message(file.name.skip(5, Rtl))):
-              capture[ParseError](file.open(_.read[JsonAst]))
-            .matches:
-              case ParseError(_, _, _) => true
+        . map: file =>
+            (file.name, file.open(_.read[Data]))
+        . to(List)
+
+    suite(m"Positive tests"):
+      positiveCases.each: (name, data) =>
+        test(Message(name.skip(5, Rtl))):
+          JsonAst.parse(data)
+        .check()
+
+    suite(m"Negative tests"):
+      negativeCases.each: (name, data) =>
+        test(Message(name.skip(5, Rtl))):
+          capture[ParseError](JsonAst.parse(data))
+        .matches:
+          case ParseError(_, _, _) => true
 
     suite(m"Number tests"):
       test(m"Parse 0e+1"):
