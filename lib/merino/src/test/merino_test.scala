@@ -169,6 +169,49 @@ object Tests extends Suite(m"Merino tests"):
         t"\"\"".read[JsonAst]
       . assert(_ == JsonAst(""))
 
+    suite(m"Streaming over multi-block input"):
+      def chunks(text: Text, sizes: Int*): Iterator[Data] =
+        val bytes = text.s.getBytes("UTF-8").nn
+        var offset = 0
+
+        sizes.iterator.flatMap: size =>
+          if offset >= bytes.length then None else
+            val end = math.min(offset + size, bytes.length)
+            val slice: Data = IArray.from(bytes.slice(offset, end))
+            offset = end
+            Some(slice)
+
+      test(m"Number split across two blocks"):
+        JsonAst.parse(chunks(t"123456", 3, 3))
+      . assert(_ == JsonAst(123456L))
+
+      test(m"String split mid-content across two blocks"):
+        JsonAst.parse(chunks(t"\"hello world\"", 4, 9))
+      . assert(_ == JsonAst("hello world"))
+
+      test(m"String split mid-escape across two blocks"):
+        JsonAst.parse(chunks(t"\"a\\nb\"", 2, 4))
+      . assert(_ == JsonAst("a\nb"))
+
+      test(m"Keyword true split across blocks"):
+        JsonAst.parse(chunks(t"true", 1, 1, 1, 1))
+      . assert(_ == JsonAst(true))
+
+      test(m"Keyword false split across blocks"):
+        JsonAst.parse(chunks(t"false", 2, 3))
+      . assert(_ == JsonAst(false))
+
+      test(m"Keyword null split across blocks"):
+        JsonAst.parse(chunks(t"null", 1, 1, 2))
+      . assert(_ == JsonAst(null))
+
+      test(m"Decimal number split at decimal point"):
+        JsonAst.parse(chunks(t"123.456", 3, 4))
+      . assert(_ == JsonAst(123.456))
+
+      test(m"Whitespace then value across blocks"):
+        JsonAst.parse(chunks(t"   42", 2, 3))
+      . assert(_ == JsonAst(42L))
 
 
 private given realm: Realm = Realm(t"tests")
