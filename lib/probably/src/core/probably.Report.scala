@@ -72,7 +72,7 @@ object Report:
   given detail: Inclusion[Report, Verdict.Detail] = _.addDetail(_, _)
 
 class Report(using Environment)(using palette: TestPalette):
-  val metrics = textMetrics.eastAsianScripts
+  val metrics = textMetrics.kuhn
 
   given measurable: Char is Measurable:
     def width(char: Char): Int = char match

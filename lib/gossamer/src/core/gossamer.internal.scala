@@ -39,6 +39,7 @@ import contextual.*
 import denominative.*
 import fulminate.*
 import gigantism.*
+import hieroglyph.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -90,6 +91,26 @@ object internal:
       def apply(string: String): Grapheme = string
 
       given showable: Grapheme is Showable = grapheme => grapheme.tt
+
+      // Width of a grapheme is the maximum width of its constituent codepoints. For
+      // combining-mark sequences (e.g. e + ́) this gives the base character's width;
+      // for joiner-glued graphemes (RI flag pairs, ZWJ family emoji, Hangul jamo
+      // syllables) this avoids the over-counting that summing per-codepoint widths
+      // would produce — one cell on the terminal regardless of how many codepoints
+      // make up the cluster.
+      given measurable: (charM: Char is Measurable) => Grapheme is Measurable = grapheme =>
+        val s: String = grapheme
+        var max = 0
+        var i = 0
+        while i < s.length do
+          val cp = Character.codePointAt(s, i)
+          val w =
+            if Character.charCount(cp) == 2
+            then charM.width(s.charAt(i)) + charM.width(s.charAt(i + 1))
+            else charM.width(s.charAt(i))
+          if w > max then max = w
+          i += Character.charCount(cp)
+        max
 
       extension (grapheme: Grapheme)
         def text: Text = grapheme.tt
