@@ -239,23 +239,43 @@ object Tests extends Suite(m"Decorum Tests"):
     suite(m"Phase 3: Match-case rules"):
 
       test(m"Misaligned `=>` in case run is rejected"):
-        rules("x match\n  case Short      => 1\n  case LongerName => 2\n  case Med => 3\n")
+        rules
+         ( "def f(x: Any): Any = x match\n"
+            +"  case Short      => 1\n"
+            +"  case LongerName => 2\n"
+            +"  case Med => 3\n" )
       . assert(_.contains("19"))
 
       test(m"Aligned `=>` in case run is accepted"):
-        rules("x match\n  case Short      => 1\n  case LongerName => 2\n  case Medium     => 3\n")
+        rules
+         ( "def f(x: Any): Any = x match\n"
+            +"  case Short      => 1\n"
+            +"  case LongerName => 2\n"
+            +"  case Medium     => 3\n" )
       . assert(!_.contains("19"))
 
       test(m"Multi-line case without preceding blank line is rejected"):
-        rules("x match\n  case Foo => 1\n  case Bar =>\n    bigBody\n")
+        rules
+         ( "def f(x: Any): Any = x match\n"
+            +"  case Foo => 1\n"
+            +"  case Bar =>\n"
+            +"    bigBody\n" )
       . assert(_.contains("20"))
 
       test(m"Multi-line case as first case (after `match`) is accepted"):
-        rules("x match\n  case Bar =>\n    bigBody\n")
+        rules
+         ( "def f(x: Any): Any = x match\n"
+            +"  case Bar =>\n"
+            +"    bigBody\n" )
       . assert(!_.contains("20"))
 
       test(m"Multi-line case after blank is accepted"):
-        rules("x match\n  case Foo => 1\n\n  case Bar =>\n    bigBody\n")
+        rules
+         ( "def f(x: Any): Any = x match\n"
+            +"  case Foo => 1\n"
+            +"\n"
+            +"  case Bar =>\n"
+            +"    bigBody\n" )
       . assert(!_.contains("20"))
 
     suite(m"Phase 3: Sibling padding and using alignment"):
