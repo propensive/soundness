@@ -175,7 +175,7 @@ object SvgParser:
   // Absolute H/V are converted to relative shifts (lossy — Savagery has no
   // absolute-horizontal-only stroke variant).
   private def parsePathData(d: Text)(using Tactic[SvgError]): List[Stroke] =
-    if d.s.trim.nn.isEmpty then return Nil
+    if d.blank then return Nil
 
     val s = d.s
     var pos = 0

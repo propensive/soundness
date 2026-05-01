@@ -35,7 +35,9 @@ package probably
 import ambience.*, environments.java
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
+import rudiments.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
@@ -44,7 +46,7 @@ object GithubActions:
   def workspaceRelative(path: Text): Text =
     safely(Environment.githubWorkspace[Text]).let: workspace =>
       if path.starts(workspace) && path.length > workspace.length
-         && path.s.charAt(workspace.length) == '/'
+         && path.at(workspace.length.z) == '/'
       then path.skip(workspace.length + 1)
       else path
 

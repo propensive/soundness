@@ -455,6 +455,9 @@ package proximities:
     (left, right) => levenshteinDistance.distance(left, right)/left.length.max(right.length)
 
 extension (text: Text)
+  inline def has(substring: Text): Boolean = text.contains(substring)
+  inline def has(char: Char): Boolean = text.contains(char)
+
   def sub(from: Text, to: Text): Text =
     text.subPattern(jur.Pattern.compile(jur.Pattern.quote(from.s)).nn, to, Int.MaxValue)
 

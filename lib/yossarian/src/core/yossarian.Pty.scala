@@ -45,6 +45,7 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import turbulence.*
+import vacuous.*
 
 import PtyEscapeError.Reason, Reason.*
 
@@ -222,7 +223,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
             else left
 
         val current = buffer2.grapheme(targetX, cursor.y)
-        val base = if current.text.s.isEmpty then Grapheme(" ") else current
+        val base = if current.text.nil then Grapheme(" ") else current
         buffer2.set(targetX, cursor.y, Grapheme(base.text.s + grapheme.text.s), style, link)
       else
         if pendingWrap then
@@ -410,16 +411,16 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         sgr(tail)
 
     def parseInt(text: Text, default: Int): Int =
-      if text.s.isEmpty then default
+      if text.nil then default
       else text.s.toIntOption.getOrElse:
         raise(PtyEscapeError(NonintegerSgrParameter(text))) yet default
 
     def parseInts(text: Text): List[Int] =
-      if text.s.isEmpty then Nil
+      if text.nil then Nil
       else text.cut(t";").to(List).map(parseInt(_, 0))
 
     def parsePair(text: Text, default: Int): (Int, Int) =
-      if text.s.isEmpty then (default, default) else
+      if text.nil then (default, default) else
         val parts = text.cut(t";").to(List)
         val first = if parts.length >= 1 then parseInt(parts(0), default) else default
         val second = if parts.length >= 2 then parseInt(parts(1), default) else default
@@ -436,7 +437,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
       case _               => raise(PtyEscapeError(BadCsiCommand(params, char)))
 
     def csi(params: Text, char: Char): Unit =
-      if params.s.startsWith("?") then privateMode(params, char) else char match
+      if params.starts(t"?") then privateMode(params, char) else char match
         case 'm' => sgr(parseInts(params))
         case 'A' => cuu(parseInt(params, 1))
         case 'B' => cud(parseInt(params, 1))
@@ -460,18 +461,18 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         case 'f' => val (r, c) = parsePair(params, 1); hvp(r.u, c.u)
 
         case 'r' =>
-          if params.s.isEmpty then decstbm(Prim, (buffer2.height - 1).z)
+          if params.nil then decstbm(Prim, (buffer2.height - 1).z)
           else
             val (top, bot) = parsePair(params, 1)
             decstbm(top.u, bot.u)
 
         case 'n' if parseInt(params, 0) == 6                     => dsr()
-        case 's' if params.s.isEmpty || parseInt(params, 0) == 6 => scp()
-        case 'u' if params.s.isEmpty                             => rcp()
-        case 'I' if params.s.isEmpty                             => focus(true)
-        case 'O' if params.s.isEmpty                             => focus(false)
-        case 'c' if params.s.isEmpty || params.s == "0"          => primaryDa()
-        case 'c' if params.s.startsWith(">")                     => secondaryDa()
+        case 's' if params.nil || parseInt(params, 0) == 6       => scp()
+        case 'u' if params.nil                                   => rcp()
+        case 'I' if params.nil                                   => focus(true)
+        case 'O' if params.nil                                   => focus(false)
+        case 'c' if params.nil || params == t"0"                 => primaryDa()
+        case 'c' if params.starts(t">")                          => secondaryDa()
 
         case _ => raise(PtyEscapeError(BadCsiCommand(params, char)))
 
@@ -541,7 +542,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         do boundaryCursor += 1
 
         val end = boundaries(boundaryCursor)
-        writeGrapheme(Grapheme(input.s.substring(index, end).nn))
+        writeGrapheme(Grapheme(input.segment(index.z till end.z).s))
         recur(end, Normal)
 
       if index >= input.length
@@ -550,7 +551,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
               scrollBottom = scrollBottom, pendingWrap = pendingWrap),
           output = output)
       else
-        val current: Char = unsafely(input.s.charAt(index))
+        val current: Char = input.at(index.z).vouch
 
         context match
           case Normal =>
