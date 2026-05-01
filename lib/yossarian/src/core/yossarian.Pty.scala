@@ -34,7 +34,6 @@ package yossarian
 
 import anticipation.*
 import contingency.*
-import distillate.*
 import fulminate.*
 import gossamer.*
 import hypotenuse.*
@@ -83,27 +82,15 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
 
     import Context.{Normal, Escape, Csi, Csi2, Osc, Osc2}
 
-    object SgrParam:
-      def unapply[default <: Int: ValueOf](params: Text): Some[Int] = params match
-        case t""          => Some(valueOf[default])
-        case As[Int](int) => Some(int)
-
-        case text =>
-          raise(PtyEscapeError(NonintegerSgrParameter(text))) yet Some(valueOf[default])
-
-    object SgrParams:
-      def unapplySeq(params: Text): Some[List[Int]] =
-        Some(params.cut(t";").flatMap(SgrParam.unapply[0](_)))
-
     def wipe(cursor: Int): Unit = buffer2.set(cursor, ' ', style, link)
 
     def set(x: Int, y: Int, char: Char, style: Style = style, link: Text = link): Unit =
       buffer2.set(x, y, char, style, link)
 
-    def cuu(n: Int): Unit = cursor.x = cursor.y - n
-    def cud(n: Int): Unit = cursor.x = cursor.y + n
-    def cuf(n: Int): Unit = cursor() = (cursor() + n).min(buffer2.width*buffer2.height - 1)
-    def cub(n: Int): Unit = cursor() = (cursor() - n).max(0)
+    def cuu(n: Int): Unit = cursor.y = cursor.y - n
+    def cud(n: Int): Unit = cursor.y = cursor.y + n
+    def cuf(n: Int): Unit = cursor.x = cursor.x + n
+    def cub(n: Int): Unit = cursor.x = cursor.x - n
 
     def cnl(n: Int): Unit =
       cursor.x = 0
@@ -115,9 +102,9 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
 
     def cha(n: Int): Unit = cursor.x = n - 1
 
-    def cup(n: Int, m: Int): Unit =
-      cursor.x = n - 1
-      cursor.y = m - 1
+    def cup(row: Int, col: Int): Unit =
+      cursor.y = row - 1
+      cursor.x = col - 1
 
     def ed(n: Int): Unit = n match
       case 0 => for i <- cursor() until buffer2.capacity do wipe(i)
@@ -140,28 +127,28 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
     def setLink(text: Text): Unit = link = text
     def su(n: Int): Unit = buffer2.scroll(n)
     def sd(n: Int): Unit = buffer2.scroll(-n)
-    def hvp(n: Int, m: Int): Unit = cup(n, m)
-    def dsr(): Unit = output.put(t"\e[${cursor.x + 1};${cursor.y + 1}s")
-    def dectcem(state: Boolean): Unit = ()
+    def hvp(row: Int, col: Int): Unit = cup(row, col)
+    def dsr(): Unit = output.put(t"\e[${cursor.y + 1};${cursor.x + 1}R")
+    def dectcem(visible: Boolean): Unit = state = state.copy(hideCursor = !visible)
     def scp(): Unit = state = state.copy(savedCursor = cursor())
     def rcp(): Unit = cursor() = state.savedCursor
-    def detectFocus(boolean: Boolean): Unit = state.copy(focusDetectionMode = boolean)
-    def focus(boolean: Boolean): Unit = state.copy(focus = boolean)
-    def bcp(boolean: Boolean): Unit = state.copy(bracketedPasteMode = boolean)
+    def detectFocus(value: Boolean): Unit = state = state.copy(focusDetectionMode = value)
+    def focus(value: Boolean): Unit = state = state.copy(focus = value)
+    def bcp(value: Boolean): Unit = state = state.copy(bracketedPasteMode = value)
 
     def osc(command: Text): Unit = command match
-      case r"8;;$text(.*)" => setLink(text)
-      case r"0;$text(.*)"  => title(text)
-      case parameter       => raise(PtyEscapeError(BadOscParameter(parameter)))
+      case r"8;([^;]*);$text(.*)" => setLink(text)
+      case r"0;$text(.*)"         => title(text)
+      case parameter              => raise(PtyEscapeError(BadOscParameter(parameter)))
 
     import Style.{Bit, Foreground, Background}, Bit.*
 
     def sgr(params: List[Int]): Unit = params match
       case Nil                            => ()
-      case 38 :: 5 :: n :: tail           => style = Foreground(style) = color8(n)
-      case 38 :: 2 :: r :: g :: b :: tail => style = Foreground(style) = Chroma(r, g, b)
-      case 48 :: 5 :: n :: tail           => style = Background(style) = color8(n)
-      case 48 :: 2 :: r :: g :: b :: tail => style = Background(style) = Chroma(r, g, b)
+      case 38 :: 5 :: n :: tail           => style = Foreground(style) = color8(n); sgr(tail)
+      case 38 :: 2 :: r :: g :: b :: tail => style = Foreground(style) = Chroma(r, g, b); sgr(tail)
+      case 48 :: 5 :: n :: tail           => style = Background(style) = color8(n); sgr(tail)
+      case 48 :: 2 :: r :: g :: b :: tail => style = Background(style) = Chroma(r, g, b); sgr(tail)
 
       case head :: tail =>
         style = head match
@@ -198,32 +185,57 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
 
         sgr(tail)
 
-    def csi(params: Text, char: Char): Unit = (params, char) match
-      case (SgrParams(params*), 'm') => sgr(params.to(List))
-      case (SgrParam[1](n),     'A') => cuu(n)
-      case (SgrParam[1](n),     'B') => cud(n)
-      case (SgrParam[1](n),     'C') => cuf(n)
-      case (SgrParam[1](n),     'D') => cub(n)
-      case (SgrParam[1](n),     'E') => cnl(n)
-      case (SgrParam[1](n),     'F') => cpl(n)
-      case (SgrParam[1](n),     'G') => cha(n)
-      case (SgrParams(n, m),    'H') => cup(n, m)
-      case (SgrParam[0](n),     'J') => ed(n)
-      case (SgrParam[0](n),     'K') => el(n)
-      case (SgrParam[1](n),     'S') => su(n)
-      case (SgrParam[1](n),     'T') => sd(n)
-      case (SgrParams(n, m),    'f') => hvp(n, m)
-      case (SgrParam[0](6),     'n') => dsr()
-      case (SgrParam[0](6),     's') => scp()
-      case (t"?25",             'h') => dectcem(true)
-      case (t"?25",             'l') => dectcem(false)
-      case (t"?1004",           'h') => detectFocus(true)
-      case (t"?1004",           'l') => detectFocus(false)
-      case (t"?2004",           'h') => bcp(true)
-      case (t"?2004",           'l') => bcp(false)
-      case (t"",                'I') => focus(true)
-      case (t"",                'O') => focus(false)
-      case (param,             char) => raise(PtyEscapeError(BadCsiCommand(param, char)))
+    def parseInt(text: Text, default: Int): Int =
+      if text.s.isEmpty then default
+      else text.s.toIntOption.getOrElse:
+        raise(PtyEscapeError(NonintegerSgrParameter(text))) yet default
+
+    def parseInts(text: Text): List[Int] =
+      if text.s.isEmpty then Nil
+      else text.cut(t";").to(List).map(parseInt(_, 0))
+
+    def parsePair(text: Text, default: Int): (Int, Int) =
+      if text.s.isEmpty then (default, default) else
+        val parts = text.cut(t";").to(List)
+        val first = if parts.length >= 1 then parseInt(parts(0), default) else default
+        val second = if parts.length >= 2 then parseInt(parts(1), default) else default
+        (first, second)
+
+    def privateMode(params: Text, char: Char): Unit = (params, char) match
+      case (t"?25",   'h') => dectcem(true)
+      case (t"?25",   'l') => dectcem(false)
+      case (t"?1004", 'h') => detectFocus(true)
+      case (t"?1004", 'l') => detectFocus(false)
+      case (t"?2004", 'h') => bcp(true)
+      case (t"?2004", 'l') => bcp(false)
+      case (_, 'h' | 'l')  => () // unknown DEC private modes are silently ignored
+      case _               => raise(PtyEscapeError(BadCsiCommand(params, char)))
+
+    def csi(params: Text, char: Char): Unit =
+      if params.s.startsWith("?") then privateMode(params, char) else char match
+        case 'm' => sgr(parseInts(params))
+        case 'A' => cuu(parseInt(params, 1))
+        case 'B' => cud(parseInt(params, 1))
+        case 'C' => cuf(parseInt(params, 1))
+        case 'D' => cub(parseInt(params, 1))
+        case 'E' => cnl(parseInt(params, 1))
+        case 'F' => cpl(parseInt(params, 1))
+        case 'G' => cha(parseInt(params, 1))
+        case 'J' => ed(parseInt(params, 0))
+        case 'K' => el(parseInt(params, 0))
+        case 'S' => su(parseInt(params, 1))
+        case 'T' => sd(parseInt(params, 1))
+
+        case 'H' => val (r, c) = parsePair(params, 1); cup(r, c)
+        case 'f' => val (r, c) = parsePair(params, 1); hvp(r, c)
+
+        case 'n' if parseInt(params, 0) == 6                     => dsr()
+        case 's' if params.s.isEmpty || parseInt(params, 0) == 6 => scp()
+        case 'u' if params.s.isEmpty                             => rcp()
+        case 'I' if params.s.isEmpty                             => focus(true)
+        case 'O' if params.s.isEmpty                             => focus(false)
+
+        case _ => raise(PtyEscapeError(BadCsiCommand(params, char)))
 
     // Uses the Ubuntu color palette
     def palette(n: Int): Chroma = n match
@@ -235,7 +247,7 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
       case 5  => Chroma(118, 038, 113)
       case 6  => Chroma(044, 181, 233)
       case 7  => Chroma(204, 204, 204)
-      case 8  => Chroma(001, 001, 001)
+      case 8  => Chroma(085, 085, 085)
       case 9  => Chroma(255, 000, 000)
       case 10 => Chroma(000, 255, 000)
       case 11 => Chroma(255, 255, 000)
@@ -267,9 +279,7 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
         recur(index + 1, context)
 
       inline def bs(): Pty =
-        set(cursor.x, cursor.y, ' ', buffer2.style(cursor.x, cursor.y))
-        cursor() -= 1
-        if cursor() < 0 then cursor() = 0
+        cursor.x = cursor.x - 1
         proceed(Normal)
 
       inline def lf(): Pty =
@@ -351,7 +361,7 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
                 osc(escBuffer.text.also(escBuffer.clear()))
                 proceed(Normal)
 
-              case '\u0027' =>
+              case '\u001b' =>
                 proceed(Osc2)
 
               case char =>
@@ -365,8 +375,9 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
                 proceed(Normal)
 
               case char =>
+                escBuffer.append('\u001b')
                 escBuffer.append(char)
-                proceed(Normal)
+                proceed(Osc)
 
           case Csi =>
             current match
