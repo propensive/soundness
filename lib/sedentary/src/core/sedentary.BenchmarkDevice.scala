@@ -77,6 +77,7 @@ object LocalhostDevice extends BenchmarkDevice:
   def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError = ()
 
   def invoke(path: Path on Linux, input: Text): Text raises BenchError =
-    safely(sh"java -jar $path $input".exec[Text]()).lest(BenchError())
+    val cmd = sh"java -XX:+AlwaysPreTouch -Xms1g -Xmx1g -XX:CICompilerCount=2 -XX:+UseSerialGC -jar $path $input"
+    safely(cmd.exec[Text]()).lest(BenchError())
 
   def undeploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError = ()
