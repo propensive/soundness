@@ -32,6 +32,8 @@
                                                                                                   */
 package hieroglyph
 
+import java.lang as jl
+
 import soundness.*
 
 import strategies.throwUnsafely
@@ -113,3 +115,61 @@ object Tests extends Suite(m"Hieroglyph tests"):
       test(m"Encoding has an encoder method"):
         demilitarize(enc"ISO-8859-1".encoder).map(_.message)
       . assert(_ == List())
+
+    suite(m"Grapheme cluster boundaries"):
+      test(m"empty string yields single sentinel"):
+        GraphemeBreak.boundaries(t"").toList
+      . assert(_ == List(0))
+
+      test(m"ASCII string boundaries"):
+        GraphemeBreak.boundaries(t"abc").toList
+      . assert(_ == List(0, 1, 2, 3))
+
+      test(m"CR LF stays one cluster"):
+        GraphemeBreak.boundaries(t"a\r\nb").toList
+      . assert(_ == List(0, 1, 3, 4))
+
+      test(m"combining diaeresis joins with space"):
+        GraphemeBreak.boundaries(Text(" ̈ ")).toList
+      . assert(_ == List(0, 2, 3))
+
+      test(m"two regional indicators form one flag"):
+        GraphemeBreak.boundaries(Text("🇬🇧🇫🇷")).toList.size
+      . assert(_ == 3)
+
+      // UAX #29 conformance against the official GraphemeBreakTest.txt fixture.
+      // GB9c (Indic Conjunct Break, rule 9.3) is intentionally not implemented
+      // in this first pass, so those cases are tolerated.
+      test(m"UAX #29 conformance (excluding GB9c)"):
+        val resourcePath = "/hieroglyph/GraphemeBreakTest.txt"
+        val stream = getClass.getResourceAsStream(resourcePath).nn
+        val lines = scala.io.Source.fromInputStream(stream).getLines.toList
+
+        var failures: List[(Int, String)] = Nil
+
+        lines.zipWithIndex.foreach: (rawLine, idx) =>
+          val withoutComment =
+            if rawLine.indexOf('#') >= 0 then rawLine.substring(0, rawLine.indexOf('#')).nn
+            else rawLine
+          val trimmed = withoutComment.trim.nn
+          if trimmed.nonEmpty && !rawLine.contains("[9.3]") then
+            val tokens: List[String] = trimmed.split("\\s+").nn.toList.map(_.nn)
+            val sb = jl.StringBuilder()
+            val expected = scala.collection.mutable.ArrayBuffer[Int]()
+
+            tokens.foreach:
+              case "÷" =>
+                expected += sb.length
+              case "×" =>
+                ()
+              case hex =>
+                val cp = Integer.parseInt(hex, 16)
+                sb.appendCodePoint(cp)
+
+            val input = sb.toString.nn.tt
+            val actual = GraphemeBreak.boundaries(input).toList
+            if actual != expected.toList then failures = (idx + 1, rawLine) :: failures
+
+        failures.size
+
+      . assert(_ == 0)

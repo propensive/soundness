@@ -54,7 +54,7 @@ object Textual:
     val classTag: ClassTag[Text] = summon[ClassTag[Text]]
 
     def show[value](value: value)(using show: Show[value]): Text = show.text(value)
-    def apply(operand: Char): Text = operand.toString.tt
+    def single(operand: Char): Text = operand.toString.tt
     def fromChar(char: Char): Char = char
     def text(text: Text): Text = text
     def length(text: Text): Int = text.s.length
@@ -87,7 +87,7 @@ trait Textual extends Typeclass, Countable, Segmentable, Zeroic:
 
   def show[value](value: value)(using show: Show[value]): Self
   def apply(text: Text): Self
-  def apply(operand: Operand): Self
+  def single(operand: Operand): Self
   def fromChar(char: Char): Operand
   def classTag: ClassTag[Self]
   def length(text: Self): Int
