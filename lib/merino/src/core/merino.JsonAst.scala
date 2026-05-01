@@ -175,7 +175,7 @@ object JsonAst extends Format:
   given Tactic[ParseError] => JsonAst is Aggregable by Data =
     source => parse(source.iterator)
 
-  def parse(source: Data): JsonAst raises ParseError = parse(Iterator.single(source))
+  def parse(source: Data): JsonAst raises ParseError = JsonAst(JsonParser(source).parse())
 
   def parse(input: Iterator[Data]): JsonAst raises ParseError =
     import lineation.linefeedByte
