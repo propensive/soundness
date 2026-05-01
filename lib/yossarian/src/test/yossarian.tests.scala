@@ -377,7 +377,7 @@ object Tests extends Suite(m"Yossarian Tests"):
         drainOutput(pty)
       . assert(_ == t"$Esc[5;10R")
 
-      test(m"DA \\e[c responds with device attributes [da-query]"):
+      test(m"DA \\e[c responds with device attributes"):
         // Real VT100 responds \e[?1;2c. Yossarian doesn't reply at all.
         // Aspirational until DA is implemented.
         safely:

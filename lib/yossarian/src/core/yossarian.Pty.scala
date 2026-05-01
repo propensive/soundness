@@ -185,6 +185,11 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
 
     def hvp(row: Ordinal, col: Ordinal): Unit = cup(row, col)
     def dsr(): Unit = output.put(t"\e[${cursor.y.n1};${cursor.x.n1}R")
+    // Primary DA: claim VT102 with advanced video option. The response
+    // shape `\e[?1;2c` is what xterm and most modern terminals reply.
+    def primaryDa(): Unit = output.put(t"\e[?1;2c")
+    // Secondary DA: terminal type 0 (VT100), firmware version 0, hardware 0.
+    def secondaryDa(): Unit = output.put(t"\e[>0;0;0c")
     def dectcem(visible: Boolean): Unit = state2 = state2.copy(hideCursor = !visible)
     def scp(): Unit = state2 = state2.copy(savedCursor = cursor())
     def rcp(): Unit = cursor() = state2.savedCursor
@@ -409,6 +414,8 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         case 'u' if params.s.isEmpty                             => rcp()
         case 'I' if params.s.isEmpty                             => focus(true)
         case 'O' if params.s.isEmpty                             => focus(false)
+        case 'c' if params.s.isEmpty || params.s == "0"          => primaryDa()
+        case 'c' if params.s.startsWith(">")                     => secondaryDa()
 
         case _ => raise(PtyEscapeError(BadCsiCommand(params, char)))
 
@@ -476,8 +483,10 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
           // Setters above cleared pendingWrap; nothing more to do.
         set(cursor.x, cursor.y, char)
         lastChar = char
-        if cursor.x.n0 == buffer2.width - 1 then pendingWrap = true
-        else cursor.x = cursor.x + 1
+        if cursor.x.n0 == buffer2.width - 1
+        then pendingWrap = true
+        else
+          cursor.x = cursor.x + 1
 
         proceed(Normal)
 
