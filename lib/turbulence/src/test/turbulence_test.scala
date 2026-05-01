@@ -442,6 +442,6 @@ object Tests extends Suite(m"Turbulence tests"):
         Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].decompress[Deflate]
       . assert: stream => stream === Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
 
-      test(m"Roundtrip compress/decompress a long repetitive stream with Deflate"):
+      test(m"Roundtrip a long repetitive Deflate stream"):
         longData.compress[Deflate].decompress[Deflate]
       . assert: stream => stream === longData
