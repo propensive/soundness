@@ -459,7 +459,7 @@ object Tests extends Suite(m"Yossarian Tests"):
         Pty24x80().consume(t"$Esc[4;24mX").buffer.style(Prim, Prim).underline
       . assert(_ == false)
 
-    suite(m"vttest §11.7: REP [REP]"):
+    suite(m"vttest §11.7: REP"):
       test(m"REP \\e[3b repeats the previous char 3 times"):
         // After printing 'X', \e[3b should write 'X' three more times.
         safely:
