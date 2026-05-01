@@ -32,42 +32,46 @@
                                                                                                   */
 package jacinta
 
+import scala.quoted.*
+
+import ambience.*, environments.java, systems.java
+import anticipation.*
+import contingency.*, strategies.throwUnsafely
+import fulminate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8
+import hellenism.*, classloaders.threadContext
+import merino.*
 import probably.*
+import quantitative.*
 import rudiments.*
-import turbulence.*
+import sedentary.*
+import symbolism.*
+import temporaryDirectories.system
+import vacuous.*
 
-import unsafeExceptions.canThrowAny
+object Benchmarks extends Suite(m"Jacinta benchmarks"):
+  given device: BenchmarkDevice = LocalhostDevice
 
-object Bench extends Suite(m"Jacinta benchmarks"):
   def run(): Unit =
-    test(m"Parse a simple object with one string value"):
-      Json.parse(t"""{"foo": "bar"}""")
+    val bench = Bench()
 
-    . benchmark(duration = 3000L, warmup = 3000L)
+    bench(m"Parse a simple object with one string value")(target = 3*Second):
+      '{ parse(t"""{"foo": "bar"}""") }
 
-    test(m"Parse a simple object with one numerical value"):
-      Json.parse(t"""{"foo": 3.1415926 }""")
+    bench(m"Parse a simple object with one numerical value")(target = 3*Second):
+      '{ parse(t"""{"foo": 3.1415926 }""") }
 
-    . benchmark(duration = 3000L, warmup = 3000L)
+    bench(m"Parse true value")(target = 3*Second):
+      '{ parse(t"""{"foo": true }""") }
 
-    test(m"Parse true value"):
-      Json.parse(t"""{"foo": true }""")
+    bench(m"Parse false value")(target = 3*Second):
+      '{ parse(t"""{"foo": false }""") }
 
-    . benchmark(duration = 3000L, warmup = 3000L)
+    bench(m"Parse array of strings")(target = 3*Second):
+      '{ parse(t"""["foo", "bar", "baz", "quux", "abcd", "defg", "hijk"]""") }
 
-    test(m"Parse false value"):
-      Json.parse(t"""{"foo": false }""")
+    bench(m"Parse array of numbers")(target = 3*Second):
+      '{ parse(t"""[12345.6789, 98765.4321, 142536.475869]""") }
 
-    . benchmark(duration = 3000L, warmup = 3000L)
-
-    test(m"Parse array of strings"):
-      Json.parse(t"""["foo", "bar", "baz", "quux", "abcd", "defg", "hijk"]""")
-
-    . benchmark(duration = 3000L, warmup = 3000L)
-
-    test(m"Parse array of numbers"):
-      Json.parse(t"""[12345.6789, 98765.4321, 142536.475869]""")
-
-    . benchmark(duration = 3000L, warmup = 3000L)
+  def parse(text: Text): Json = unsafely:
+    Json(JsonAst.parse(text.s.getBytes("UTF-8").nn.immutable(using Unsafe)))

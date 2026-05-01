@@ -137,6 +137,15 @@ trait Tests(dependencies: PublishModule*) extends BaseScalaModule:
   def scalacOptions = Task:
     settings.scalaOptions :+ s"-Xplugin:${larceny.plugin.assembly().path}"
 
+trait Benchmarks(dependencies: PublishModule*) extends BaseScalaModule:
+  def moduleId: String = moduleDir.last
+  def finalMainClass = (moduleDir / ".." / "..").last + ".Benchmarks"
+  def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def moduleDeps: Seq[PublishModule] = probably.cli +: sedentary.core +: dependencies
+  def sources = Task.Sources(moduleDir)
+  def consoleScalacOptions = scalacOptions()
+
 trait Bundle(dependencies: PublishModule*) extends BaseScalaModule, PublishModule:
   def sources = Task.Sources()
   def moduleDeps = dependencies
@@ -695,6 +704,7 @@ object jacinta extends Library:
   object http extends Component(core, telekinesis.core)
   object schema extends Component(core, telekinesis.core)
   object test extends Tests(time, http, schema)
+  object bench extends Benchmarks(core, quantitative.units)
 
 object kaleidoscope extends Library:
   object core extends Component(contingency.core)
@@ -724,6 +734,8 @@ object mercator extends Library:
 object merino extends Library:
   object core extends Component(turbulence.core, zephyrine.core)
   object test extends Tests(core, sedentary.core, diuretic.core, galilei.core, octogenarian.core, eucalyptus.core)
+  object bench extends Benchmarks(core, quantitative.units):
+    def mvnDeps = Seq(mvn"org.typelevel::jawn-ast:1.6.0")
 
 object metamorphose extends Library:
   object core extends Component(contingency.core)
@@ -856,6 +868,7 @@ object sedentary extends Library:
 object serpentine extends Library:
   object core extends Component(nomenclature.core, ambience.core)
   object test extends Tests(core)
+  object bench extends Benchmarks(core, quantitative.units)
 
 object spectacular extends Library:
   object core extends Component(stenography.core, inimitable.core, wisteria.core, digression.core)
