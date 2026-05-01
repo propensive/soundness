@@ -43,12 +43,10 @@ import kaleidoscope.*
 import rudiments.*
 import vacuous.*
 
-// Unicode 16.0.0 grapheme cluster boundary detection (UAX #29 GB1–GB13).
-// GB9c (Indic Conjunct Break, added in 15.1) is intentionally not implemented.
 object GraphemeBreak:
   enum Property:
-    case Other, CR, LF, Control, Extend, ZWJ, RegionalIndicator, Prepend, SpacingMark,
-        L, V, T, LV, LVT
+    case
+      Other, Cr, Lf, Control, Extend, Zwj, RegionalIndicator, Prepend, SpacingMark, L, V, T, Lv, Lvt
 
   private object Hex:
     def unapply(text: Text): Option[Int] =
@@ -65,50 +63,57 @@ object GraphemeBreak:
     . or(panic(m"could not find $path on the classpath"))
 
   private def parseEntries
-       (in: ji.InputStream, classify: Text => Optional[Int])
-  :    List[Entry] =
+    ( in: ji.InputStream, classify: Text => Optional[Int] )
+  :   List[Entry] =
 
-    scala.io.Source.fromInputStream(in).getLines.toList.flatMap: line =>
+    scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
       Text(line) match
-        case r"${Hex(from)}([0-9A-Fa-f]+)\.\.${Hex(to)}([0-9A-Fa-f]+)\s*;\s*${name}([A-Za-z_]+).*" =>
+        case r"${Hex(from)}([0-9A-Fa-f]+)\.\.${Hex(to)}([0-9A-Fa-f]+)\s*;\s*$name([A-Za-z_]+).*" =>
           classify(name).option.map(Entry(from, to, _))
+
         case r"${Hex(from)}([0-9A-Fa-f]+)\s*;\s*${name}([A-Za-z_]+).*" =>
           classify(name).option.map(Entry(from, from, _))
+
         case _ =>
           None
 
-  private def gbpClassify(name: Text): Optional[Int] = name.s match
-    case "CR"                 => Property.CR.ordinal
-    case "LF"                 => Property.LF.ordinal
-    case "Control"            => Property.Control.ordinal
-    case "Extend"             => Property.Extend.ordinal
-    case "ZWJ"                => Property.ZWJ.ordinal
-    case "Regional_Indicator" => Property.RegionalIndicator.ordinal
-    case "Prepend"            => Property.Prepend.ordinal
-    case "SpacingMark"        => Property.SpacingMark.ordinal
-    case "L"                  => Property.L.ordinal
-    case "V"                  => Property.V.ordinal
-    case "T"                  => Property.T.ordinal
-    case "LV"                 => Property.LV.ordinal
-    case "LVT"                => Property.LVT.ordinal
-    case _                    => Unset
+  private def gbpClassify(name: Text): Optional[Int] =
+    name.s.match
+      case "CR"                 => Property.Cr
+      case "LF"                 => Property.Lf
+      case "Control"            => Property.Control
+      case "Extend"             => Property.Extend
+      case "ZWJ"                => Property.Zwj
+      case "Regional_Indicator" => Property.RegionalIndicator
+      case "Prepend"            => Property.Prepend
+      case "SpacingMark"        => Property.SpacingMark
+      case "L"                  => Property.L
+      case "V"                  => Property.V
+      case "T"                  => Property.T
+      case "LV"                 => Property.Lv
+      case "LVT"                => Property.Lvt
+      case _                    => Unset
+
+    . let(_.ordinal)
 
   private case class Tables(starts: IArray[Int], ends: IArray[Int], props: IArray[Byte])
 
   private def buildTables(entries: List[Entry]): Tables =
     val sorted = entries.sortBy(_.start).toArray
-    val n = sorted.length
-    val starts = new Array[Int](n)
-    val ends = new Array[Int](n)
-    val props = new Array[Byte](n)
-    var i = 0
-    while i < n do
-      starts(i) = sorted(i).start
-      ends(i) = sorted(i).end
-      props(i) = sorted(i).prop.toByte
-      i += 1
+    val count = sorted.length
+    val starts = new Array[Int](count)
+    val ends = new Array[Int](count)
+    val props = new Array[Byte](count)
 
-    Tables(starts.immutable(using Unsafe), ends.immutable(using Unsafe), props.immutable(using Unsafe))
+    var index = 0
+
+    while index < count do
+      starts(index) = sorted(index).start
+      ends(index) = sorted(index).end
+      props(index) = sorted(index).prop.toByte
+      index += 1
+
+    unsafely(Tables(starts.immutable, ends.immutable, props.immutable))
 
   private lazy val gbpTables: Tables =
     val in = loadResource(
@@ -124,77 +129,78 @@ object GraphemeBreak:
 
     buildTables(parseEntries(in, name => if name.s == "Extended_Pictographic" then 0 else Unset))
 
-  private def lookup(tables: Tables, cp: Int): Int =
+  private def lookup(tables: Tables, codepoint: Int): Int =
     val starts = tables.starts
-    var lo = 0
-    var hi = starts.length - 1
+    var low = 0
+    var high = starts.length - 1
     var found = -1
-    while lo <= hi do
-      val mid = (lo + hi) >>> 1
-      if starts(mid) <= cp then
+
+    while low <= high do
+      val mid = (low + high) >>> 1
+
+      if starts(mid) > codepoint then high = mid - 1 else
         found = mid
-        lo = mid + 1
-      else hi = mid - 1
+        low = mid + 1
 
-    if found >= 0 && cp <= tables.ends(found) then tables.props(found).toInt else -1
+    if found >= 0 && codepoint <= tables.ends(found) then tables.props(found).toInt else -1
 
-  def property(cp: Int): Property =
-    val ord = lookup(gbpTables, cp)
+  def property(codepoint: Int): Property =
+    val ord = lookup(gbpTables, codepoint)
     if ord < 0 then Property.Other else Property.fromOrdinal(ord)
 
-  def extendedPictographic(cp: Int): Boolean = lookup(extPictTables, cp) >= 0
+  def extendedPictographic(codepoint: Int): Boolean = lookup(extPictTables, codepoint) >= 0
 
   def boundaries(text: Text): IArray[Int] =
     import Property.*
+
     val s = text.s
     val n = s.length
     val builder = ArrayBuilder.make[Int]
+
     builder.addOne(0)
+
     if n == 0 then builder.result().immutable(using Unsafe) else
-      var i = 0
-      val firstCp = Character.codePointAt(s, 0)
-      var prev = property(firstCp)
+      var index = 0
+      val firstCodepoint = Character.codePointAt(s, 0)
+      var prev = property(firstCodepoint)
       var regionalCount = if prev == RegionalIndicator then 1 else 0
-      var inEmojiSeq = extendedPictographic(firstCp)
-      i = Character.charCount(firstCp)
+      var inEmojiSeq = extendedPictographic(firstCodepoint)
+      index = Character.charCount(firstCodepoint)
 
-      while i < n do
-        val cp = Character.codePointAt(s, i)
-        val curr = property(cp)
-        val currExtPict = extendedPictographic(cp)
+      while index < n do
+        val codepoint = Character.codePointAt(s, index)
+        val curr = property(codepoint)
+        val currExtPict = extendedPictographic(codepoint)
 
-        // GB1/GB2 are implicit (sentinels at 0 and n).
-        // GB3..GB13 in order; first match wins; default GB999 = break.
         val brk =
-          if prev == CR && curr == LF then false
-          else if prev == Control || prev == CR || prev == LF then true
-          else if curr == Control || curr == CR || curr == LF then true
-          else if prev == L && (curr == L || curr == V || curr == LV || curr == LVT) then false
-          else if (prev == LV || prev == V) && (curr == V || curr == T) then false
-          else if (prev == LVT || prev == T) && curr == T then false
-          else if curr == Extend || curr == ZWJ then false
+          if prev == Cr && curr == Lf then false
+          else if prev == Control || prev == Cr || prev == Lf then true
+          else if curr == Control || curr == Cr || curr == Lf then true
+          else if prev == L && (curr == L || curr == V || curr == Lv || curr == Lvt) then false
+          else if (prev == Lv || prev == V) && (curr == V || curr == T) then false
+          else if (prev == Lvt || prev == T) && curr == T then false
+          else if curr == Extend || curr == Zwj then false
           else if curr == SpacingMark then false
           else if prev == Prepend then false
-          else if inEmojiSeq && prev == ZWJ && currExtPict then false
-          else if
-            prev == RegionalIndicator && curr == RegionalIndicator && regionalCount % 2 == 1
+          else if inEmojiSeq && prev == Zwj && currExtPict then false
+          else if prev == RegionalIndicator && curr == RegionalIndicator && regionalCount%2 == 1
           then false
           else true
 
-        if brk then builder.addOne(i)
+        if brk then builder.addOne(index)
 
         inEmojiSeq =
           if currExtPict then true
-          else if inEmojiSeq && (curr == Extend || curr == ZWJ) then true
+          else if inEmojiSeq && (curr == Extend || curr == Zwj) then true
           else false
 
         regionalCount =
-          if curr == RegionalIndicator then
-            if prev == RegionalIndicator && !brk then regionalCount + 1 else 1
+          if curr == RegionalIndicator
+          then if prev == RegionalIndicator && !brk then regionalCount + 1 else 1
           else 0
 
         prev = curr
-        i += Character.charCount(cp)
+        index += Character.charCount(codepoint)
 
       builder.addOne(n)
       builder.result().immutable(using Unsafe)

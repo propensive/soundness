@@ -116,70 +116,70 @@ object Tests extends Suite(m"Hieroglyph tests"):
         demilitarize(enc"ISO-8859-1".encoder).map(_.message)
       . assert(_ == List())
 
-    suite(m"Wcwidth (Kuhn algorithm)"):
+    suite(m"Wide-Character Width (Kuhn algorithm)"):
       test(m"ASCII letter is width 1"):
-        Wcwidth.width('a'.toInt)
+        WideCharacterWidth.width('a'.toInt)
       . assert(_ == 1)
 
       test(m"NUL is zero-width"):
-        Wcwidth.width(0)
+        WideCharacterWidth.width(0)
       . assert(_ == 0)
 
       test(m"C0 control char is zero-width"):
-        Wcwidth.width(0x07)
+        WideCharacterWidth.width(0x07)
       . assert(_ == 0)
 
       test(m"DEL (0x7F) is zero-width"):
-        Wcwidth.width(0x7f)
+        WideCharacterWidth.width(0x7f)
       . assert(_ == 0)
 
       test(m"combining grave accent is zero-width"):
-        Wcwidth.width(0x0300)
+        WideCharacterWidth.width(0x0300)
       . assert(_ == 0)
 
       test(m"zero-width joiner is zero-width"):
-        Wcwidth.width(0x200d)
+        WideCharacterWidth.width(0x200d)
       . assert(_ == 0)
 
       test(m"CJK ideograph is wide"):
-        Wcwidth.width('日'.toInt)
+        WideCharacterWidth.width('日'.toInt)
       . assert(_ == 2)
 
       test(m"Hangul syllable is wide"):
-        Wcwidth.width(0xac00)
+        WideCharacterWidth.width(0xac00)
       . assert(_ == 2)
 
       test(m"Fullwidth Latin is wide"):
-        Wcwidth.width(0xff21)
+        WideCharacterWidth.width(0xff21)
       . assert(_ == 2)
 
       test(m"narrow halfwidth katakana is width 1"):
-        Wcwidth.width(0xff66)
+        WideCharacterWidth.width(0xff66)
       . assert(_ == 1)
 
       test(m"emoji man (supplementary plane) is wide via codepoint"):
-        Wcwidth.width(0x1f468)
+        WideCharacterWidth.width(0x1f468)
       . assert(_ == 2)
 
     suite(m"Grapheme cluster boundaries"):
       test(m"empty string yields single sentinel"):
-        GraphemeBreak.boundaries(t"").toList
+        GraphemeBreak.boundaries(t"").to(List)
       . assert(_ == List(0))
 
       test(m"ASCII string boundaries"):
-        GraphemeBreak.boundaries(t"abc").toList
+        GraphemeBreak.boundaries(t"abc").to(List)
       . assert(_ == List(0, 1, 2, 3))
 
       test(m"CR LF stays one cluster"):
-        GraphemeBreak.boundaries(t"a\r\nb").toList
+        GraphemeBreak.boundaries(t"a\r\nb").to(List)
       . assert(_ == List(0, 1, 3, 4))
 
       test(m"combining diaeresis joins with space"):
-        GraphemeBreak.boundaries(Text(" ̈ ")).toList
+        GraphemeBreak.boundaries(Text(" ̈ ")).to(List)
       . assert(_ == List(0, 2, 3))
 
       test(m"two regional indicators form one flag"):
-        GraphemeBreak.boundaries(Text("🇬🇧🇫🇷")).toList.size
+        GraphemeBreak.boundaries(Text("🇬🇧🇫🇷")).to(List).size
       . assert(_ == 3)
 
       // UAX #29 conformance against the official GraphemeBreakTest.txt fixture.
@@ -188,7 +188,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
       test(m"UAX #29 conformance (excluding GB9c)"):
         val resourcePath = "/hieroglyph/GraphemeBreakTest.txt"
         val stream = getClass.getResourceAsStream(resourcePath).nn
-        val lines = scala.io.Source.fromInputStream(stream).getLines.toList
+        val lines = scala.io.Source.fromInputStream(stream).getLines().to(List)
 
         var failures: List[(Int, String)] = Nil
 
@@ -196,24 +196,23 @@ object Tests extends Suite(m"Hieroglyph tests"):
           val withoutComment =
             if rawLine.indexOf('#') >= 0 then rawLine.substring(0, rawLine.indexOf('#')).nn
             else rawLine
+
           val trimmed = withoutComment.trim.nn
+
           if trimmed.nonEmpty && !rawLine.contains("[9.3]") then
-            val tokens: List[String] = trimmed.split("\\s+").nn.toList.map(_.nn)
+            val tokens: List[String] = trimmed.split("\\s+").nn.to(List).map(_.nn)
             val sb = jl.StringBuilder()
             val expected = scala.collection.mutable.ArrayBuffer[Int]()
 
-            tokens.foreach:
-              case "÷" =>
-                expected += sb.length
-              case "×" =>
-                ()
-              case hex =>
-                val cp = Integer.parseInt(hex, 16)
-                sb.appendCodePoint(cp)
+            tokens.each:
+              case "÷" => expected += sb.length
+              case "×" => ()
+              case hex => sb.appendCodePoint(Integer.parseInt(hex, 16))
 
             val input = sb.toString.nn.tt
-            val actual = GraphemeBreak.boundaries(input).toList
-            if actual != expected.toList then failures = (idx + 1, rawLine) :: failures
+            val actual = GraphemeBreak.boundaries(input).to(List)
+
+            if actual != expected.to(List) then failures = (idx + 1, rawLine) :: failures
 
         failures.size
 

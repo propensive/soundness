@@ -37,13 +37,13 @@ export
   . { Bel, Bs, Bsl, CharDecodeError, CharDecoder, CharEncodeError, CharEncoder, Chars, Cr,
       description, Dqt, enc, Encoding, Esc, Ff, GraphemeBreak, Ht, Lf, majuscule, Measurable,
       metrics, minuscule, Nul, Sqt, subscript, superscript, TextSanitizer, ucs, Unicode,
-      Wcwidth }
+      WideCharacterWidth }
 
 package textSanitizers:
   export hieroglyph.textSanitizers.{skip, strict, substitute}
 
 package textMetrics:
-  export hieroglyph.textMetrics.{eastAsianScripts, kuhn, uniform}
+  export hieroglyph.textMetrics.{eastAsianScripts, wideCharacterWidth, uniform}
 
 package charDecoders:
   export hieroglyph.charDecoders.{ascii, utf16, utf16Be, utf16Le, utf8}
