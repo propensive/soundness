@@ -60,9 +60,10 @@ object Checker:
     val state = State(file, expectedModule)
     val lines = Tokenizer.tokenize(rawText)
     val imports = Imports.extract(untpdTree, source)
-    state.packageInfo   = Packages.extract(untpdTree, source)
-    state.importLineSet = imports.iterator.flatMap(i => i.startLine to i.endLine).toSet
-    state.hasImports    = imports.nonEmpty
+    state.packageInfo        = Packages.extract(untpdTree, source)
+    state.importLineSet      = imports.iterator.flatMap(i => i.startLine to i.endLine).toSet
+    state.hasImports         = imports.nonEmpty
+    state.annotationEndLines = Annotations.collectEndLines(untpdTree, source)
     scanRawTabs(file, rawText, out)
     checkFileNaming(file, out)
     checkPackageRules(file, expectedModule, state.packageInfo, out)
@@ -117,6 +118,7 @@ object Checker:
     var importLineSet:        Set[Int]                   = Set.empty
     var hasImports:           Boolean                    = false
     var packageInfo:          Option[PackageInfo]        = None
+    var annotationEndLines:   Set[Int]                   = Set.empty
     var prevLineWasBlank:     Boolean                    = false
     var prevWasAnnotation:    Boolean                    = false
     var prevLineNum:          Int                        = 0
@@ -282,7 +284,7 @@ object Checker:
             "blank line is not permitted between an annotation and the declaration it annotates" )
         s.prevWasAnnotation = false
     else
-      s.prevWasAnnotation = lineStartsAnnotation(firstReal)
+      s.prevWasAnnotation = s.annotationEndLines.contains(lineNum)
       s.prevLineNum = lineNum
       // Comment-only and annotation-only lines belong to the next declaration:
       // they must not update `prevCodeLineIndent`, otherwise sibling-scope
