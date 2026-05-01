@@ -34,13 +34,15 @@ package monotonous
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import rudiments.*
+import vacuous.*
 
 case class Alphabet[encoding <: Serialization]
   ( chars: Text, padding: Boolean, tolerance: Map[Char, Int] = Map() ):
 
-  def apply(index: Int): Char = chars.s.charAt(index)
+  def apply(index: Int): Char = chars.at(index.z).vouch
 
   def invert(position: Int, char: Char): Int raises SerializationError =
     inverse.getOrElse(char, raise(SerializationError(position, char)) yet 0)
