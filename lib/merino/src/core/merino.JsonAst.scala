@@ -214,6 +214,8 @@ object JsonAst extends Format:
     var stringCursor: Int = 0
     inline def resetString(): Unit = stringCursor = 0
 
+    val numberBuilder: java.lang.StringBuilder = java.lang.StringBuilder(32)
+
     def appendChar(char: Char): Unit =
       if stringCursor == arraySize then
         arraySize *= 2
@@ -335,32 +337,35 @@ object JsonAst extends Format:
       null
 
     def parseNumber(first: Int, negative: Boolean): Double | Long | BigDecimal =
-      val string: StringBuilder = StringBuilder((if negative then "-" else "")+first)
+      numberBuilder.setLength(0)
+      if negative then numberBuilder.append('-')
+      numberBuilder.append(('0' + first).toChar)
       var floating: Boolean = false
       var continue: Boolean = true
 
       while continue && cursor.more do
-        cursor.datum(using Unsafe) match
+        val ch = cursor.datum(using Unsafe)
+        ch match
           case Period =>
             floating = true
-            string.append('.')
+            numberBuilder.append('.')
             cursor.next()
 
           case UpperE | LowerE =>
             floating = true
-            string.append('e')
+            numberBuilder.append('e')
             cursor.next()
 
           case
             Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 | Minus | Plus =>
-            string.append(cursor.datum(using Unsafe).toChar)
+            numberBuilder.append(ch.toChar)
             cursor.next()
 
           case _ =>
             continue = false
 
-      if floating then java.lang.Double.parseDouble(string.toString)
-      else java.lang.Long.parseLong(string.toString)
+      if floating then java.lang.Double.parseDouble(numberBuilder.toString)
+      else java.lang.Long.parseLong(numberBuilder, 0, numberBuilder.length, 10)
 
     def parseValue(minus: Boolean = false): JsonAst =
       cursor.lay(error(Issue.PrematureEnd)): ch =>
