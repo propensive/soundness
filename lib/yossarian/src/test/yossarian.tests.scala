@@ -58,7 +58,7 @@ object Tests extends Suite(m"Yossarian Tests"):
       . assert(_ == t"hi        ")
 
       test(m"cursor advances after writing"):
-        fresh.consume(t"hi").state0.cursor
+        fresh.consume(t"hi").state.cursor
       . assert(_ == Ter)
 
       test(m"writing past row width wraps to next row"):
@@ -80,17 +80,17 @@ object Tests extends Suite(m"Yossarian Tests"):
     suite(m"Backspace"):
       test(m"BS moves cursor left without erasing"):
         val pty = fresh.consume(t"abc\b")
-        (row(pty, Prim), pty.state0.cursor)
+        (row(pty, Prim), pty.state.cursor)
       . assert(_ == (t"abc       ", Ter))
 
       test(m"BS+SP+BS erases the previous character"):
         val pty = fresh.consume(t"abc\b \b")
-        (row(pty, Prim), pty.state0.cursor)
+        (row(pty, Prim), pty.state.cursor)
       . assert(_ == (t"ab        ", Ter))
 
       test(m"BS at column 0 stays at column 0"):
         val pty = fresh.consume(t"\b")
-        pty.state0.cursor
+        pty.state.cursor
       . assert(_ == Prim)
 
     suite(m"Cursor positioning"):
@@ -164,12 +164,12 @@ object Tests extends Suite(m"Yossarian Tests"):
     suite(m"OSC"):
       test(m"OSC 0 sets the window title (BEL terminator)"):
         val pty = fresh.consume(t"$Esc]0;My Title$Bel")
-        pty.state0.title
+        pty.state.title
       . assert(_ == t"My Title")
 
       test(m"OSC 0 sets the window title (ST terminator)"):
         val pty = fresh.consume(t"$Esc]0;My Title$Esc\\")
-        pty.state0.title
+        pty.state.title
       . assert(_ == t"My Title")
 
       test(m"OSC 8 with empty params sets a hyperlink"):
@@ -188,11 +188,11 @@ object Tests extends Suite(m"Yossarian Tests"):
       . assert(_ == 'X')
 
       test(m"DECTCEM ?25 l sets hideCursor in state"):
-        fresh.consume(t"$Esc[?25l").state0.hideCursor
+        fresh.consume(t"$Esc[?25l").state.hideCursor
       . assert(_ == true)
 
       test(m"DECTCEM ?25 h clears hideCursor in state"):
-        fresh.consume(t"$Esc[?25l$Esc[?25h").state0.hideCursor
+        fresh.consume(t"$Esc[?25l$Esc[?25h").state.hideCursor
       . assert(_ == false)
 
     suite(m"Output channel"):
@@ -206,3 +206,54 @@ object Tests extends Suite(m"Yossarian Tests"):
         val brightBlack = fresh.consume(t"$Esc[90mA").buffer.style(Prim, Prim).foreground
         black != brightBlack
       . assert(_ == true)
+
+    suite(m"Tab"):
+      test(m"tab from column 0 advances to column 8"):
+        fresh.consume(t"\tX").state.cursor
+      . assert(_ == 9.z)
+
+      test(m"tab from column 7 still advances to column 8"):
+        Pty(20, 4).consume(t"abcdefg\tX").state.cursor
+      . assert(_ == 9.z)
+
+      test(m"tab past last tab stop clamps to last column"):
+        fresh.consume(t"abcdefghi\t").state.cursor
+      . assert(_ == 9.z)
+
+    suite(m"DECSC / DECRC"):
+      test(m"ESC 8 restores cursor saved by ESC 7"):
+        fresh.consume(t"$Esc[3;5H${Esc}7$Esc[1;1H${Esc}8X").state.cursor
+      . assert(_ == (2*10 + 5).z)
+
+      test(m"ESC 8 restores style saved by ESC 7"):
+        val pty = fresh.consume(t"$Esc[1m${Esc}7$Esc[0m${Esc}8X")
+        pty.buffer.style(Prim, Prim).bold
+      . assert(_ == true)
+
+    suite(m"RIS"):
+      test(m"ESC c clears screen, homes cursor, and resets style"):
+        val pty = fresh.consume(t"$Esc[1;31mhello${Esc}c")
+        (row(pty, Prim), pty.state.cursor, pty.buffer.style(Prim, Prim).bold)
+      . assert(_ == (t"          ", Prim, false))
+
+    suite(m"String-discard sequences"):
+      test(m"DCS string is silently absorbed up to ST"):
+        fresh.consume(t"${Esc}Psome data$Esc\\X").buffer.char(Prim, Prim)
+      . assert(_ == 'X')
+
+      test(m"APC string is silently absorbed up to BEL"):
+        fresh.consume(t"${Esc}_app data${Bel}X").buffer.char(Prim, Prim)
+      . assert(_ == 'X')
+
+    suite(m"Top-level accessors"):
+      test(m"pty.title forwards to state.title"):
+        fresh.consume(t"$Esc]0;My Window$Bel").title
+      . assert(_ == t"My Window")
+
+      test(m"pty.cursor forwards to state.cursor"):
+        fresh.consume(t"hi").cursor
+      . assert(_ == Ter)
+
+      test(m"pty.cursorVisible reflects DECTCEM"):
+        (fresh.cursorVisible, fresh.consume(t"$Esc[?25l").cursorVisible)
+      . assert(_ == (true, false))
