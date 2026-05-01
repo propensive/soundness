@@ -36,12 +36,13 @@ export
   gossamer
   . { add, after, append, appendln, Ascii, ascii, AsciiBuilder, before, Bidi, blank, BoundsError,
       broken, build, Builder, builder, camel, capitalize, CaseSensitivity, center, chars, contains,
-      count, cut, Cuttable, data, Decimalizer, Dictionary, ends, erase, fill, fit, from, init, join,
-      Joinable, kebab, keep, length, Lexicon, lines, lower, Ltr, Numerous, ossify, pad, pascal,
-      plain, Proximity, proximity, Pue, pue, punycode, RangeError, reverse, Rtl, search, seek,
-      SimpleTExtractor, skip, slices, snake, snip, spaced, starts, strip, sub, subscripts,
-      superscripts, sysData, t, tail, text, TextBuilder, Textual, tr, translate, trim, txt, uncamel,
-      uncapitalize, unkebab, unsnake, upper, upto, urlDecode, urlEncode, utf16, utf8, where, words }
+      count, cut, Cuttable, data, Decimalizer, Dictionary, ends, erase, fill, fit, from, Grapheme,
+      init, join, Joinable, kebab, keep, length, Lexicon, lines, lower,
+      Ltr, Numerous, ossify, pad, pascal, plain, Proximity, proximity, Pue, pue, punycode,
+      RangeError, reverse, Rtl, search, seek, SimpleTExtractor, skip, slices, snake, snip, spaced,
+      starts, strip, sub, subscripts, superscripts, sysData, t, tail, text, TextBuilder, Textual,
+      tr, translate, trim, txt, uncamel, uncapitalize, unkebab, unsnake, upper, upto, urlDecode,
+      urlEncode, utf16, utf8, where, words, Writing, WritingBuilder }
 
 package decimalFormatters:
   export gossamer.decimalFormatters.java

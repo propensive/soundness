@@ -82,7 +82,7 @@ object Teletype:
     def text(teletype: Teletype): Text = teletype.plain
     def length(text: Teletype): Int = text.plain.length
     def apply(text: Text): Teletype = Teletype(text)
-    def apply(operand: Char): Teletype = Teletype(operand.show)
+    def single(operand: Char): Teletype = Teletype(operand.show)
     def fromChar(char: Char): Char = char
 
     def map(text: Teletype)(lambda: Char => Char): Teletype =

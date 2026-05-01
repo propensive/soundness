@@ -58,7 +58,7 @@ import vacuous.*
 
 import Textual.concatenable
 
-export gossamer.internal.opaques.Ascii
+export gossamer.internal.opaques.{Ascii, Grapheme}
 
 inline def append[textual: Textual, value](using builder: Builder[textual] aka "builder")
   ( value: value )
@@ -189,7 +189,7 @@ extension [textual: Textual](text: textual)
     val builder = textual.builder(n)
     var index = n - 1
     while index >= 0 do
-      builder.append(textual(textual.at(text, index.z)))
+      builder.append(textual.single(textual.at(text, index.z)))
       index -= 1
     builder()
 
