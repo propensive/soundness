@@ -66,11 +66,13 @@ object Checker:
     state.annotationEndLines = Annotations.collectEndLines(untpdTree, source)
     state.companions         = Companions.extract(untpdTree, source)
     val caseGroups           = Cases.extract(untpdTree, source)
+    val forGroups            = Comprehensions.extract(untpdTree, source)
     scanRawTabs(file, rawText, out)
     checkFileNaming(file, untpdTree, out)
     checkPackageRules(file, expectedModule, state.packageInfo, out)
     checkImportRules(file, imports, lines, out)
     checkCaseRules(file, caseGroups, lines, out)
+    checkForRules(file, forGroups, out)
     var idx = 0
 
     while idx < lines.length do
@@ -1993,7 +1995,6 @@ object Checker:
     if k2Idx < 0 then return
     val k2 = toks(k2Idx)
     applySequenceRules(file, List(k1, chainElem(k2, k2Idx)), toks, out)
-    checkGeneratorAlignment(toks, start, k2Idx, file, out)
 
   private def processWhileSeq
     ( toks: IndexedSeq[Pos], start: Int, file: String, out: mutable.ListBuffer[Violation] )
@@ -2035,92 +2036,43 @@ object Checker:
     else
       applySequenceRules(file, List(k1, chainElem(first, firstIdx)), toks, out)
 
-  // R34: alignment within a for-comprehension's generator block. The block
-  // spans tokens between `for` (at `forIdx`) and the matching `yield`/`do`
-  // (at `kwIdx`). For every gen/bind/filter line that begins at depth-0
-  // within the block, check that the LHS column and `<-`/`=` column match
-  // the first generator's, and that an `if` filter sits at the operator
-  // column.
-  private def checkGeneratorAlignment
-    ( toks:   IndexedSeq[Pos],
-      forIdx: Int,
-      kwIdx:  Int,
-      file:   String,
-      out:    mutable.ListBuffer[Violation] )
+  // R34: alignment within each for-comprehension's enumerator block. The
+  // first non-filter generator's LHS column and `<-`/`=` column define the
+  // reference. Other generators must match both; bindings (`y = e`) match
+  // the same way; filter lines (`if expr`) must instead sit at the
+  // operator column. Single-line comprehensions collapse to one
+  // enumerator per group and skip the check.
+  private def checkForRules
+    ( file:    String,
+      groups:  List[List[GenLine]],
+      out:     mutable.ListBuffer[Violation] )
   :   Unit =
 
-    case class GenLine(line: Int, startCol: Int, opCol: Int, isFilter: Boolean)
+    groups.foreach: gens =>
+      if gens.length >= 2 then
+        val firstGen = gens.find(!_.isFilter).getOrElse(gens.head)
+        val refLhs   = firstGen.startCol
+        val refOp    = firstGen.opCol
 
-    // Group token indices by their line, in order of appearance.
-    val byLine = mutable.LinkedHashMap[Int, mutable.ArrayBuffer[Int]]()
-    var i      = forIdx + 1
-    while i < kwIdx do
-      val ln = toks(i).line
-      byLine.getOrElseUpdate(ln, mutable.ArrayBuffer[Int]()) += i
-      i += 1
-
-    // Walk lines in order, tracking paren/bracket depth so we can identify
-    // continuation lines (depth > 0 at line start).
-    val genLines = mutable.ArrayBuffer[GenLine]()
-    var depth    = 0
-    byLine.foreach: (ln, idxs) =>
-      val depthAtStart = depth
-      // Update depth across this line's tokens for the next iteration.
-      var j = 0
-      while j < idxs.length do
-        val t = toks(idxs(j)).text
-        if t == "(" || t == "[" || t == "{" then depth += 1
-        else if t == ")" || t == "]" || t == "}" then depth -= 1
-        j += 1
-
-      if depthAtStart == 0 && idxs.nonEmpty then
-        val first = toks(idxs(0))
-        if first.text == "if" then
-          genLines += GenLine(ln, first.col, first.col, isFilter = true)
-        else
-          // Find first `<-` or `=` at line-relative depth 0.
-          var d     = 0
-          var opCol = -1
-          var k     = 0
-          while k < idxs.length && opCol < 0 do
-            val t = toks(idxs(k)).text
-            if t == "(" || t == "[" || t == "{" then d += 1
-            else if t == ")" || t == "]" || t == "}" then d -= 1
-            else if d == 0 && (t == "<-" || t == "=") then opCol = toks(idxs(k)).col
-            k += 1
-          if opCol >= 0 then
-            genLines += GenLine(ln, first.col, opCol, isFilter = false)
-
-    // Need at least two generator/binding/filter lines for alignment to bite.
-    if genLines.length < 2 then return
-
-    // The first non-filter line establishes the LHS and operator columns.
-    val firstGen = genLines.find(!_.isFilter).getOrElse(genLines.head)
-    val refLhs   = firstGen.startCol
-    val refOp    = firstGen.opCol
-
-    var idx = 0
-    while idx < genLines.length do
-      val gl = genLines(idx)
-      if !(gl.line == firstGen.line && gl.startCol == firstGen.startCol) then
-        if gl.isFilter then
-          if gl.startCol != refOp then
-            out += Violation
-                    ( file, gl.line, gl.startCol, "34.3",
-                      s"`if` filter should align with `<-`/`=` at column $refOp "
-                        +s"(found ${gl.startCol})" )
-        else
-          if gl.startCol != refLhs then
-            out += Violation
-                    ( file, gl.line, gl.startCol, "34.2",
-                      s"generator should align with the first generator's LHS at column "
-                        +s"$refLhs (found ${gl.startCol})" )
-          if gl.opCol != refOp then
-            out += Violation
-                    ( file, gl.line, gl.opCol, "34.1",
-                      s"`<-`/`=` should be vertically aligned at column $refOp "
-                        +s"(found ${gl.opCol})" )
-      idx += 1
+        gens.foreach: gl =>
+          if !(gl.line == firstGen.line && gl.startCol == firstGen.startCol) then
+            if gl.isFilter then
+              if gl.startCol != refOp then
+                out += Violation
+                        ( file, gl.line, gl.startCol, "34.3",
+                          s"`if` filter should align with `<-`/`=` at column $refOp "
+                            +s"(found ${gl.startCol})" )
+            else
+              if gl.startCol != refLhs then
+                out += Violation
+                        ( file, gl.line, gl.startCol, "34.2",
+                          s"generator should align with the first generator's LHS at column "
+                            +s"$refLhs (found ${gl.startCol})" )
+              if gl.opCol != refOp then
+                out += Violation
+                        ( file, gl.line, gl.opCol, "34.1",
+                          s"`<-`/`=` should be vertically aligned at column $refOp "
+                            +s"(found ${gl.opCol})" )
 
   private def checkSequences
     ( file:  String,
