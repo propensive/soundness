@@ -39,6 +39,8 @@ import gossamer.*
 case class PtyState
   ( cursor:             Ordinal = Prim,
     savedCursor:        Ordinal = Prim,
+    savedStyle:         Style   = Style(),
+    savedLink:          Text    = t"",
     style:              Style   = Style(),
     focusDetectionMode: Boolean = false,
     focus:              Boolean = true,

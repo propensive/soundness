@@ -58,15 +58,19 @@ object Pty:
     case _ =>
       Stream()
 
-case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
+case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
   def stream: Stream[Text] = output.stream
+
+  def title: Text = state.title
+  def cursor: Ordinal = state.cursor
+  def cursorVisible: Boolean = !state.hideCursor
 
   def consume(input: Text): Pty raises PtyEscapeError =
     val escBuffer = StringBuilder()
     val buffer2: Screen = buffer.copy()
 
     object cursor:
-      private var index: Ordinal = state0.cursor
+      private var index: Ordinal = state.cursor
 
       def apply(): Ordinal = index
       def update(value: Ordinal): Unit = index = value
@@ -90,14 +94,14 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
 
         index = (clamped.n0*buffer2.width + x.n0).z
 
-    var style = state0.style
-    var state = state0
-    var link = state0.link
+    var style = state.style
+    var state2 = state
+    var link = state.link
 
     enum Context:
-      case Normal, Escape, Csi, Csi2, Osc, Osc2
+      case Normal, Escape, Csi, Csi2, Osc, Osc2, EatString, EatString2
 
-    import Context.{Normal, Escape, Csi, Csi2, Osc, Osc2}
+    import Context.{Normal, Escape, Csi, Csi2, Osc, Osc2, EatString, EatString2}
 
     def wipe(cursor: Ordinal): Unit = buffer2.set(cursor, ' ', style, link)
 
@@ -140,18 +144,37 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
       case 2 => for x <- 0 until buffer2.width do set(x.z, cursor.y, ' ')
       case n => raise(PtyEscapeError(BadCsiParameter(n, t"EL")))
 
-    def title(text: Text): Unit = state = state.copy(title = text)
+    def title(text: Text): Unit = state2 = state2.copy(title = text)
     def setLink(text: Text): Unit = link = text
     def su(n: Int): Unit = buffer2.scroll(n)
     def sd(n: Int): Unit = buffer2.scroll(-n)
     def hvp(row: Ordinal, col: Ordinal): Unit = cup(row, col)
     def dsr(): Unit = output.put(t"\e[${cursor.y.n1};${cursor.x.n1}R")
-    def dectcem(visible: Boolean): Unit = state = state.copy(hideCursor = !visible)
-    def scp(): Unit = state = state.copy(savedCursor = cursor())
-    def rcp(): Unit = cursor() = state.savedCursor
-    def detectFocus(value: Boolean): Unit = state = state.copy(focusDetectionMode = value)
-    def focus(value: Boolean): Unit = state = state.copy(focus = value)
-    def bcp(value: Boolean): Unit = state = state.copy(bracketedPasteMode = value)
+    def dectcem(visible: Boolean): Unit = state2 = state2.copy(hideCursor = !visible)
+    def scp(): Unit = state2 = state2.copy(savedCursor = cursor())
+    def rcp(): Unit = cursor() = state2.savedCursor
+    def detectFocus(value: Boolean): Unit = state2 = state2.copy(focusDetectionMode = value)
+    def focus(value: Boolean): Unit = state2 = state2.copy(focus = value)
+    def bcp(value: Boolean): Unit = state2 = state2.copy(bracketedPasteMode = value)
+
+    def ht(): Unit =
+      val nextStop = ((cursor.x.n0/8 + 1)*8).z
+      cursor.x = if nextStop >= buffer2.width.z then (buffer2.width - 1).z else nextStop
+
+    def decsc(): Unit =
+      state2 = state2.copy(savedCursor = cursor(), savedStyle = style, savedLink = link)
+
+    def decrc(): Unit =
+      cursor() = state2.savedCursor
+      style = state2.savedStyle
+      link = state2.savedLink
+
+    def ris(): Unit =
+      style = Style()
+      link = t""
+      for i <- 0 until buffer2.capacity do wipe(i.z)
+      cursor() = Prim
+      state2 = PtyState()
 
     def osc(command: Text): Unit = command match
       case r"8;([^;]*);$text(.*)" => setLink(text)
@@ -254,7 +277,6 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
 
         case _ => raise(PtyEscapeError(BadCsiCommand(params, char)))
 
-    // Uses the Ubuntu color palette
     def palette(n: Int): Chroma = n match
       case 0  => Chroma(001, 001, 001)
       case 1  => Chroma(222, 056, 043)
@@ -321,7 +343,7 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
         proceed(Normal)
 
       if index >= input.length
-      then Pty(buffer2, state.copy(cursor = cursor(), style = style, link = link), output = output)
+      then Pty(buffer2, state2.copy(cursor = cursor(), style = style, link = link), output = output)
       else
         val current: Char = unsafely(input.s.charAt(index))
 
@@ -337,7 +359,7 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
               case '\u0006' => proceed(Normal) // ack()
               case '\u0007' => proceed(Normal) // bel()
               case '\u0008' => bs()
-              case '\u0009' => proceed(Normal) // ht()
+              case '\u0009' => ht(); proceed(Normal)
               case '\u000a' => lf()
               case '\u000b' => proceed(Normal) // vt()
               case '\u000c' => ff()
@@ -364,13 +386,29 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
 
           case Escape =>
             current match
-              case '['                                      => recur(index + 1, Csi)
-              case ']'                                      => recur(index + 1, Osc)
-              case 'N' | 'O' | 'P' | '\\' | 'X' | '^' | '_' => proceed(Normal)
+              case '['                            => recur(index + 1, Csi)
+              case ']'                            => recur(index + 1, Osc)
+              case 'P' | 'X' | '^' | '_'          => recur(index + 1, EatString)
+              case '7'                            => decsc(); proceed(Normal)
+              case '8'                            => decrc(); proceed(Normal)
+              case 'c'                            => ris(); proceed(Normal)
+              case 'D' | 'E' | 'M' | 'N' | 'O'    => proceed(Normal) // single-char Fe escapes
+              case '\\'                           => proceed(Normal) // bare ST is ignored
 
               case char =>
                 raise(PtyEscapeError(BadFeEscape(char)))
                 proceed(Normal)
+
+          case EatString =>
+            current match
+              case '\u0007'                          => proceed(Normal) // BEL ends the string
+              case '\u001b'                          => proceed(EatString2)
+              case _                                 => proceed(EatString)
+
+          case EatString2 =>
+            current match
+              case '\\' => proceed(Normal)
+              case _    => proceed(EatString)
 
           case Osc =>
             current match
