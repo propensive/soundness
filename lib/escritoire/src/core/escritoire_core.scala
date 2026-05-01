@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
+import gossamer.Textual.concatenable
 import rudiments.*
 import symbolism.*
 import vacuous.*
@@ -69,7 +70,7 @@ package columnar:
   object Prose extends Columnar:
     def longestWord[textual: Textual](text: textual, position: Int, lastStart: Int, max: Int): Int =
       if position < text.length then
-        if textual.unsafeChar(text, position.z) == ' '
+        if textual.at(text, position.z) == textual.fromChar(' ')
         then longestWord(text, position + 1, position + 1, max.max(position - lastStart))
         else longestWord(text, position + 1, lastStart, max)
       else
@@ -90,7 +91,7 @@ package columnar:
       :   List[textual] =
 
         if position < text.length then
-          if textual.unsafeChar(text, position.z) == ' '
+          if textual.at(text, position.z) == textual.fromChar(' ')
           then format(text, position + 1, lineStart, position, lines)
           else
             if position - lineStart >= width then format

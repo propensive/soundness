@@ -91,24 +91,29 @@ object internal:
       given showable: Ascii is Showable =
         ascii => String(ascii.mutable(using Unsafe), "ASCII").nn.tt
 
+      given concatenable: Ascii is Concatenable:
+        type Operand = Ascii
+        def concat(left: Ascii, right: Ascii): Ascii = textual.concat(left, right)
+
       extension (ascii: Ascii) def bytes: Data = ascii
 
       given textual: Ascii is Textual:
+        type Operand = Byte
         type Show[value] = value is Showable
 
         val empty: Ascii = IArray.from[Byte](Nil)
         val classTag: ClassTag[Ascii] = summon[ClassTag[Ascii]]
 
         def apply(text: Text): Ascii = text.sysData
-        def apply(char: Char): Ascii = IArray(char.toByte)
+        def apply(operand: Byte): Ascii = IArray(operand)
+        def fromChar(char: Char): Byte = char.toByte
         def length(ascii: Ascii): Int = ascii.size
         def text(ascii: Ascii): Text = String(ascii.mutable(using Unsafe), "ASCII").nn.tt
-        def unsafeChar(ascii: Ascii, index: Ordinal): Char = ascii(index.n0).toChar
+        def at(ascii: Ascii, index: Ordinal): Byte = ascii(index.n0)
         def builder(size: Optional[Int]): Builder[Ascii] = AsciiBuilder(size)
         def size(ascii: Ascii): Int = ascii.length
 
-        def map(ascii: Ascii)(lambda: Char => Char): Ascii = ascii.map: byte =>
-          lambda(byte.toChar).toByte
+        def map(ascii: Ascii)(lambda: Byte => Byte): Ascii = ascii.map(lambda)
 
         def concat(left: Ascii, right: Ascii): Ascii =
           IArray.build[Byte](left.length + right.length): array =>

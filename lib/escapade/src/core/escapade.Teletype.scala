@@ -55,6 +55,10 @@ object Teletype:
 
     inline def add(left: Teletype, right: Teletype): Teletype = left.append(right)
 
+  given concatenable: Teletype is Concatenable:
+    type Operand = Teletype
+    def concat(left: Teletype, right: Teletype): Teletype = left.append(right)
+
   given out: Stdio => Out.type is Writable by Teletype = new Writable:
     type Self = Out.type
     type Operand = Teletype
@@ -70,6 +74,7 @@ object Teletype:
       stream.flow(())(Err.print(next) yet write(target, more))
 
   given textual: Teletype is Textual:
+    type Operand = Char
     type Show[value] = value is Teletypeable
 
     def classTag: ClassTag[Teletype] = summon[ClassTag[Teletype]]
@@ -77,7 +82,8 @@ object Teletype:
     def text(teletype: Teletype): Text = teletype.plain
     def length(text: Teletype): Int = text.plain.length
     def apply(text: Text): Teletype = Teletype(text)
-    def apply(char: Char): Teletype = Teletype(char.show)
+    def apply(operand: Char): Teletype = Teletype(operand.show)
+    def fromChar(char: Char): Char = char
 
     def map(text: Teletype)(lambda: Char => Char): Teletype =
       val array = text.plain.s.toCharArray.nn
@@ -93,7 +99,7 @@ object Teletype:
     val empty: Teletype = Teletype.empty
 
     def concat(left: Teletype, right: Teletype): Teletype = left.append(right)
-    def unsafeChar(text: Teletype, index: Ordinal): Char = text.plain.s.charAt(index.n0)
+    def at(text: Teletype, index: Ordinal): Char = text.plain.s.charAt(index.n0)
 
     def indexOf(text: Teletype, sub: Text, start: Ordinal): Optional[Ordinal] =
       text.plain.s.indexOf(sub.s, start.n0).puncture(-1).let(_.z)

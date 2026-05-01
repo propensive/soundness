@@ -56,6 +56,8 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
+import Textual.concatenable
+
 export gossamer.internal.opaques.Ascii
 
 inline def append[textual: Textual, value](using builder: Builder[textual] aka "builder")
@@ -64,7 +66,7 @@ inline def append[textual: Textual, value](using builder: Builder[textual] aka "
 
   inline value match
     case text: Text => builder().append(textual(text))
-    case char: Char => builder().append(textual(char))
+    case char: Char => builder().append(char)
     case other      => provide[textual.Show[value]](builder().append(textual.show(value)))
 
 
@@ -73,7 +75,7 @@ inline def appendln[textual: Textual, value](using builder: Builder[textual] aka
 :   Unit =
 
   append[textual, value](value)
-  builder().append(textual('\n'))
+  builder().append('\n')
 
 
 inline def builder[value](using value: value aka "builder"): value = value()
@@ -130,7 +132,7 @@ extension [textual](text: textual)
 
     cuttable.cut(text, delimiter, limit)
 
-extension [textual: Textual](words: Iterable[textual])
+extension [textual: Textual { type Operand = Char }](words: Iterable[textual])
   def pascal: textual = words.map(_.lower.capitalize).join
   def camel: textual = pascal.uncapitalize
   def snake: textual = words.join(textual("_".tt))
@@ -139,28 +141,7 @@ extension [textual: Textual](words: Iterable[textual])
 
 extension [textual: Textual](text: textual)
   inline def length: Int = textual.length(text)
-  inline def lower: textual = textual.map(text)(_.toLower)
-  inline def upper: textual = textual.map(text)(_.toUpper)
   def plain: Text = textual.text(text)
-
-  def broken(predicate: (Char, Char) => Boolean, break: Char = '\u200b'): textual =
-    val breakText = textual(break.toString.tt)
-    val builder = textual.builder()
-
-    @tailrec
-    def recur(from: Ordinal = Prim, index: Ordinal = Sec): textual =
-      if index >= text.limit - 1 then
-        builder.append(text.from(from))
-        builder()
-      else
-        if !predicate(textual.unsafeChar(text, index - 1), textual.unsafeChar(text, index))
-        then recur(from, index + 1)
-        else
-          builder.append(text.segment(from till index))
-          builder.append(breakText)
-          recur(index, index + 1)
-
-    recur()
 
   // FIXME
   def justify(width: Int): textual =
@@ -192,31 +173,10 @@ extension [textual: Textual](text: textual)
     case Ltr => text.segment(Interval.initial(count))
     case Rtl => text.segment(text.limit - count till text.limit)
 
-  def skip(predicate: Char => Boolean): textual = text.skip(predicate, Ltr)
-
-  def skip(predicate: Char => Boolean, bidi: Bidi): textual = bidi match
-    case Ltr => text.where(!predicate(_)).lay(textual.empty)(text.from(_))
-    case Rtl => text.where(!predicate(_), bidi = Rtl).lay(textual.empty)(text.upto(_))
-
-  def keep(predicate: Char => Boolean): textual = text.keep(predicate, Ltr)
-
-  def keep(predicate: Char => Boolean, bidi: Bidi): textual = bidi match
-    case Ltr => text.where(!predicate(_)).lay(text)(text.before(_))
-    case Rtl => text.where(!predicate(_), bidi = Rtl).lay(text)(text.after(_))
-
-  def capitalize: textual = textual.concat(text.keep(1).upper, text.after(Prim))
-  def uncapitalize: textual = textual.concat(text.keep(1).lower, text.after(Prim))
-
   inline def tail: textual = text.skip(1, Ltr)
   inline def init: textual = text.skip(1, Rtl)
 
-  def chars: IArray[Char] =
-    val n = text.length
-    IArray.build[Char](n): array =>
-      var i = 0
-      while i < n do
-        array(i) = textual.unsafeChar(text, i.z)
-        i += 1
+  def chars: IArray[Char] = textual.text(text).s.toCharArray.nn.immutable(using Unsafe)
 
   def snip(n: Int): (textual, textual) =
     (text.segment(Prim till n.z), text.segment(n.z till text.limit))
@@ -229,12 +189,11 @@ extension [textual: Textual](text: textual)
     val builder = textual.builder(n)
     var index = n - 1
     while index >= 0 do
-      builder.append(textual.unsafeChar(text, index.z))
+      builder.append(textual(textual.at(text, index.z)))
       index -= 1
     builder()
 
   def contains(substring: Text): Boolean = textual.indexOf(text, substring).present
-  def contains(char: Char): Boolean = textual.indexOf(text, char.show).present
 
   def search(regex: Regex, overlap: Boolean = false): Stream[textual] =
     regex.search(textual.text(text), overlap = overlap).map(text.segment(_))
@@ -255,6 +214,66 @@ extension [textual: Textual](text: textual)
     case Ltr => textual.indexOf(text, substring)
     case Rtl => if substring.nil then Unset else textual.lastIndexOf(text, substring)
 
+  def count(substring: Text): Int =
+    if substring.nil then 0 else
+      def recur(start: Ordinal, total: Int): Int =
+        textual.indexOf(text, substring, start).lay(total): found =>
+          recur(found + substring.length, total + 1)
+
+      recur(Prim, 0)
+
+  def words: List[textual] = text.cut(" ".tt)
+  def lines: List[textual] = text.cut("\n".tt)
+  def unkebab: List[textual] = text.cut("-".tt)
+  def unsnake: List[textual] = text.cut("_".tt)
+
+  def starts(prefix: Text): Boolean = textual.text(text).s.startsWith(prefix.s)
+  def ends(suffix: Text): Boolean = textual.text(text).s.endsWith(suffix.s)
+
+  def strip(affix: Text, bidi: Bidi = Ltr): textual = bidi match
+    case Ltr => if text.starts(affix) then text.skip(affix.length) else text
+    case Rtl => if text.ends(affix) then text.skip(affix.length, Rtl) else text
+
+extension [textual: Textual { type Operand = Char }](text: textual)
+  inline def lower: textual = textual.map(text)(_.toLower)
+  inline def upper: textual = textual.map(text)(_.toUpper)
+
+  def broken(predicate: (Char, Char) => Boolean, break: Char = '\u200b'): textual =
+    val breakText = textual(break.toString.tt)
+    val builder = textual.builder()
+
+    @tailrec
+    def recur(from: Ordinal = Prim, index: Ordinal = Sec): textual =
+      if index >= text.limit - 1 then
+        builder.append(text.from(from))
+        builder()
+      else
+        if !predicate(textual.at(text, index - 1), textual.at(text, index))
+        then recur(from, index + 1)
+        else
+          builder.append(text.segment(from till index))
+          builder.append(breakText)
+          recur(index, index + 1)
+
+    recur()
+
+  def skip(predicate: Char => Boolean): textual = text.skip(predicate, Ltr)
+
+  def skip(predicate: Char => Boolean, bidi: Bidi): textual = bidi match
+    case Ltr => text.where(!predicate(_)).lay(textual.empty)(text.from(_))
+    case Rtl => text.where(!predicate(_), bidi = Rtl).lay(textual.empty)(text.upto(_))
+
+  def keep(predicate: Char => Boolean): textual = text.keep(predicate, Ltr)
+
+  def keep(predicate: Char => Boolean, bidi: Bidi): textual = bidi match
+    case Ltr => text.where(!predicate(_)).lay(text)(text.before(_))
+    case Rtl => text.where(!predicate(_), bidi = Rtl).lay(text)(text.after(_))
+
+  def capitalize: textual = textual.concat(text.keep(1).upper, text.after(Prim))
+  def uncapitalize: textual = textual.concat(text.keep(1).lower, text.after(Prim))
+
+  def contains(char: Char): Boolean = textual.indexOf(text, char.show).present
+
   inline def trim: textual =
     val start = text.where(!_.isWhitespace).or(text.limit - 1)
     val end = text.where(!_.isWhitespace, bidi = Rtl).or(Prim)
@@ -271,11 +290,11 @@ extension [textual: Textual](text: textual)
 
     val first: Ordinal = bidi match
       case Ltr => start.or(Prim)
-      case Rtl => start.or(length.limit - 1)
+      case Rtl => start.or(text.length.limit - 1)
 
     def recur(ordinal: Ordinal): Optional[Ordinal] =
       if ordinal >= text.limit || ordinal < Prim then Unset
-      else if predicate(textual.unsafeChar(text, ordinal)) then ordinal
+      else if predicate(textual.at(text, ordinal)) then ordinal
       else recur(ordinal + step)
 
     recur(first)
@@ -302,18 +321,10 @@ extension [textual: Textual](text: textual)
 
   inline def count(predicate: Char => Boolean): Int =
     def recur(index: Ordinal, sum: Int): Int = if index >= text.limit then sum else
-      val increment = if predicate(textual.unsafeChar(text, index)) then 1 else 0
+      val increment = if predicate(textual.at(text, index)) then 1 else 0
       recur(index + 1, sum + increment)
 
     recur(Prim, 0)
-
-  def count(substring: Text): Int =
-    if substring.nil then 0 else
-      def recur(start: Ordinal, total: Int): Int =
-        textual.indexOf(text, substring, start).lay(total): found =>
-          recur(found + substring.length, total + 1)
-
-      recur(Prim, 0)
 
   def blank: Boolean = text.where(!_.isWhitespace).absent
 
@@ -351,24 +362,6 @@ extension [textual: Textual](text: textual)
         text.before(index).lower :: recur(text.from(index))
 
     recur(text)
-
-  def words: List[textual] = text.cut(" ".tt)
-  def lines: List[textual] = text.cut("\n".tt)
-  def unkebab: List[textual] = text.cut("-".tt)
-  def unsnake: List[textual] = text.cut("_".tt)
-
-  def starts(prefix: Text): Boolean =
-    def recur(index: Ordinal): Boolean =
-      index > (prefix.length - 1).z
-      || textual.unsafeChar(text, index) == prefix.s.charAt(index.n0) && recur(index + 1)
-
-    prefix.length <= text.length && recur(Prim)
-
-  def ends(suffix: Text): Boolean = text.keep(suffix.length, Rtl) == suffix
-
-  def strip(affix: Text, bidi: Bidi = Ltr): textual = bidi match
-    case Ltr => if text.starts(affix) then text.skip(affix.length) else text
-    case Rtl => if text.ends(affix) then text.skip(affix.length, Rtl) else text
 
   inline def tr(from: Char, to: Char): textual =
     textual.map(text)(char => if char == from then to else char)
