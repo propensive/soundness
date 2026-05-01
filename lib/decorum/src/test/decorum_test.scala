@@ -206,7 +206,7 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("given x: [a]\n=>  a is Foo =\n\n  ???\n")
       . assert(!_.contains("25"))
 
-      test(m"Heavy-signature `:` continuation with wrong space count is rejected"):
+      test(m"Heavy-signature `:` continuation with wrong spaces is rejected"):
         rules("def foo\n  ( x: Int )\n: Int =\n\n  x\n")
       . assert(_.contains("25"))
 
@@ -222,7 +222,7 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("val a = foo\n\n. method\n")
       . assert(_.contains("26.2"))
 
-      test(m"Chain `. method` after more-indented line without blank is rejected"):
+      test(m"Chain `. method` after deeper line without blank is rejected"):
         rules("val a = foo:\n  bar\n. method\n")
       . assert(_.contains("26.1"))
 
@@ -272,7 +272,7 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("class Foo:\n  def a: Int =\n    1\n\n  def b: Int =\n    2\n")
       . assert(!_.contains("27"))
 
-      test(m"Same-indent decls in unrelated scopes don't trigger sibling check"):
+      test(m"Same-indent decls in unrelated scopes skip sibling check"):
         rules("class A:\n  def a: Int = 1\n\nclass B:\n  def b: Int = 2\n")
       . assert(!_.contains("27"))
 
@@ -306,7 +306,7 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("def f(x: Int): Int =\n  if x > 0\n      then x\n      else -x\n")
       . assert(_.contains("33.3"))
 
-      test(m"`if/then/else` with `then`-body indented but `else`-body inline is rejected"):
+      test(m"`if/then/else` with `then` indented, `else` inline is rejected"):
         rules("def f(x: Int): Int =\n  if x > 0 then\n    x\n  else -x\n")
       . assert(_.contains("33.2"))
 
@@ -318,7 +318,7 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("def f(x: Int): Int = if x > 0 then 1 else if x < 0 then -1 else 0\n")
       . assert(r => !r.contains("33.1") && !r.contains("33.2") && !r.contains("33.3"))
 
-      test(m"`else if` chain with broken keywords and inline bodies is accepted"):
+      test(m"`else if` with broken keywords and inline bodies is accepted"):
         rules
          ( "def f(x: Int): Int =\n"
             +"  if x > 0 then 1\n"
@@ -337,7 +337,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"    0\n" )
       . assert(r => !r.contains("33.1") && !r.contains("33.2") && !r.contains("33.3"))
 
-      test(m"`else if` chain with then-body indented but tail-body inline is rejected"):
+      test(m"`else if` chain: indented then-body, inline tail-body rejected"):
         rules
          ( "def f(x: Int): Int =\n"
             +"  if x > 0 then\n"
@@ -346,7 +346,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  else 0\n" )
       . assert(_.contains("33.2"))
 
-      test(m"`else if` chain with `else if` misaligned with original `if` is rejected"):
+      test(m"`else if` chain misaligned with original `if` is rejected"):
         rules
          ( "def f(x: Int): Int =\n"
             +"  if x > 0 then 1\n"
@@ -369,7 +369,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  else if esc then throw new RuntimeException(\"\")\n" )
       . assert(r => !r.contains("33.3"))
 
-      test(m"Case-guard `if` in a pattern match doesn't get processed as an if-chain"):
+      test(m"Case-guard `if` in pattern match isn't processed as if-chain"):
         // `case x if guard => …` looks like an `if` with no `then` to
         // findKeyword unless we bail on `=>` at depth 0. Without the
         // bail, the case-guard `if` would walk forward and pair with
@@ -387,7 +387,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  else -y\n" )
       . assert(r => !r.contains("33.3"))
 
-      test(m"For-comprehension filter `if` doesn't get processed as an if-chain"):
+      test(m"For-comprehension filter `if` isn't processed as if-chain"):
         // `if filter` inside a for-comprehension has no `then`. Without
         // bailing on `yield`/`do`/`<-`, findKeyword would walk past the
         // filter and pair with an unrelated `then` later in the file.
@@ -411,7 +411,7 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("def f: Int = try compute() catch case e: Throwable => 0 finally cleanup()\n")
       . assert(r => !r.contains("33.1") && !r.contains("33.3"))
 
-      test(m"`try/catch/finally` with `catch` broken but `finally` inline is rejected"):
+      test(m"`try/catch/finally`: broken `catch`, inline `finally` rejected"):
         rules("def f: Int =\n  try compute()\n  catch case e: Throwable => 0 finally cleanup()\n")
       . assert(_.contains("33.1"))
 
@@ -419,7 +419,7 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("def f(): Unit =\n  try block\n  finally cleanup()\n")
       . assert(r => !r.contains("33.1") && !r.contains("33.2") && !r.contains("33.3"))
 
-      test(m"`inline if` chain aligns broken `then`/`else` with `inline`, not `if`"):
+      test(m"`inline if` aligns broken `then`/`else` with `inline`, not `if`"):
         // The `if` after `inline` starts mid-line, but visually the
         // construct begins at `inline`. A broken `then`/`else` aligned
         // with `inline` should be accepted.
@@ -442,7 +442,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  else 0\n" )
       . assert(r => !r.contains("33.1") && !r.contains("33.2") && !r.contains("33.3"))
 
-      test(m"Inline inner `else` of `else if … then BODY else BODY` doesn't fire 33.1"):
+      test(m"Inline inner `else` in bridge doesn't fire 33.1"):
         // The bridge's inner `if/then` brings its own inline `else`;
         // that inner `else` belongs to the bridge, not to the outer
         // chain, so it must not be appended as the chain's K_(i+1).
@@ -452,7 +452,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  else inline if x == -1 then -1 else -2\n" )
       . assert(r => !r.contains("33.1"))
 
-      test(m"A `try`/`catch` with no `finally` doesn't steal a sibling's `finally`"):
+      test(m"`try`/`catch` without `finally` won't steal sibling's `finally`"):
         // The first def's `try`/`catch` has no `finally`; the second
         // def's `try foo finally bar` has its own. Without a dedent
         // bail in `findKeyword`, the first `try` would walk past the

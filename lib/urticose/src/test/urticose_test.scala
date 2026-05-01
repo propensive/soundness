@@ -253,7 +253,7 @@ object Tests extends Suite(m"Urticose tests"):
         capture(t"this\\ still\\\"not\\\\allowed@example.com".decode[EmailAddress])
       . assert(_ == EmailAddressError(InvalidChar('\\')))
 
-      test(m"1234567890123456789012345678901234567890123456789012345678901234+x@example.com"):
+      test(m"64-digit local part with tag is too long"):
         capture(t"1234567890123456789012345678901234567890123456789012345678901234+x@example.com".decode[EmailAddress])
       . assert(_ == EmailAddressError(LongLocalPart))
 

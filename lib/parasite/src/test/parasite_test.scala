@@ -795,7 +795,7 @@ object Tests extends Suite(m"Parasite tests"):
           promise.apply()
         . assert(_ == 5)
 
-        test(m"Await on already-fulfilled promise returns immediately even if no waiters were enqueued"):
+        test(m"Await on pre-fulfilled promise returns immediately, no waiters"):
           val promise = Promise[Int]()
           promise.fulfill(99)
           val before = System.currentTimeMillis
@@ -839,7 +839,7 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == AsyncError.Reason.Timeout)
 
       suite(m"Cancellation edge cases"):
-        test(m"Cancelling a task before it has had a chance to start still works"):
+        test(m"Cancelling a task before it has started still works"):
           val task = async:
             42
           task.cancel()

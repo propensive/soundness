@@ -90,7 +90,7 @@ object Tests extends Suite(m"Fulminate Tests"):
         outer.colorText
       . assert(_ == t"hello [3mworld[0m end")
 
-      test(m"Doubly-embedded message renders bold-italics at depth 2 in colorText"):
+      test(m"Doubly-embedded renders bold-italics at depth 2 in colorText"):
         val deepest = m"deep"
         val mid = m"mid $deepest mid"
         val outer = m"start $mid end"
