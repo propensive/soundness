@@ -6,3 +6,4 @@ out
 boot
 .bsp
 bin
+tests/JSONTestSuite
