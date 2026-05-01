@@ -378,43 +378,35 @@ object Tests extends Suite(m"Yossarian Tests"):
       . assert(_ == t"$Esc[5;10R")
 
       test(m"DA \\e[c responds with device attributes"):
-        // Real VT100 responds \e[?1;2c. Yossarian doesn't reply at all.
-        // Aspirational until DA is implemented.
-        safely:
-          val pty = Pty24x80().consume(t"$Esc[c")
-          drainOutput(pty).s.startsWith(s"${0x1b.toChar}[?")
-      . aspire(_ == true)
+        val pty = Pty24x80().consume(t"$Esc[c")
+        drainOutput(pty)
+      . assert(_.s.startsWith(s"${0x1b.toChar}[?"))
 
     suite(m"vttest §8: Insert / delete characters"):
       test(m"ICH \\e[3@ inserts 3 spaces at cursor"):
-        safely:
-          val pty = Pty24x80().consume(t"$Esc[1;1HABCDEFGH$Esc[1;4H$Esc[3@")
-          take(row(pty, Prim), 11)
-      . aspire(_ == t"ABC   DEFGH")
+        val pty = Pty24x80().consume(t"$Esc[1;1HABCDEFGH$Esc[1;4H$Esc[3@")
+        take(row(pty, Prim), 11)
+      . assert(_ == t"ABC   DEFGH")
 
       test(m"DCH \\e[3P deletes 3 chars at cursor"):
-        safely:
-          val pty = Pty24x80().consume(t"$Esc[1;1HABCDEFGH$Esc[1;4H$Esc[3P")
-          take(row(pty, Prim), 5)
-      . aspire(_ == t"ABCGH")
+        val pty = Pty24x80().consume(t"$Esc[1;1HABCDEFGH$Esc[1;4H$Esc[3P")
+        take(row(pty, Prim), 5)
+      . assert(_ == t"ABCGH")
 
       test(m"IL \\e[2L inserts 2 blank lines at cursor row"):
-        safely:
-          val pty = Pty24x80().consume(t"$Esc[1;1HA\nB\nC$Esc[2;1H$Esc[2L")
-          (head(row(pty, Prim)), head(row(pty, 3.z)))
-      . aspire(_ == ('A', 'B'))
+        val pty = Pty24x80().consume(t"$Esc[1;1HA\nB\nC$Esc[2;1H$Esc[2L")
+        (head(row(pty, Prim)), head(row(pty, 3.z)))
+      . assert(_ == ('A', 'B'))
 
       test(m"DL \\e[2M deletes 2 lines at cursor row"):
-        safely:
-          val pty = Pty24x80().consume(t"$Esc[1;1HA\nB\nC\nD$Esc[2;1H$Esc[2M")
-          (head(row(pty, Sec)), head(row(pty, Prim)))
-      . aspire(_ == ('D', 'A'))
+        val pty = Pty24x80().consume(t"$Esc[1;1HA\nB\nC\nD$Esc[2;1H$Esc[2M")
+        (head(row(pty, Sec)), head(row(pty, Prim)))
+      . assert(_ == ('D', 'A'))
 
       test(m"ECH \\e[3X overwrites 3 cells with spaces"):
-        safely:
-          val pty = Pty24x80().consume(t"$Esc[1;1HABCDEFGH$Esc[1;4H$Esc[3X")
-          take(row(pty, Prim), 8)
-      . aspire(_ == t"ABC   GH")
+        val pty = Pty24x80().consume(t"$Esc[1;1HABCDEFGH$Esc[1;4H$Esc[3X")
+        take(row(pty, Prim), 8)
+      . assert(_ == t"ABC   GH")
 
     suite(m"vttest §10: Reset"):
       test(m"RIS clears screen, homes cursor, resets style"):
@@ -462,10 +454,9 @@ object Tests extends Suite(m"Yossarian Tests"):
     suite(m"vttest §11.7: REP"):
       test(m"REP \\e[3b repeats the previous char 3 times"):
         // After printing 'X', \e[3b should write 'X' three more times.
-        safely:
-          val pty = Pty24x80().consume(t"X$Esc[3b")
-          take(row(pty, Prim), 4)
-      . aspire(_ == t"XXXX")
+        val pty = Pty24x80().consume(t"X$Esc[3b")
+        take(row(pty, Prim), 4)
+      . assert(_ == t"XXXX")
 
     suite(m"vttest §11.8: XTerm features"):
       test(m"OSC 0 sets the window title"):
