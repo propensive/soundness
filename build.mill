@@ -43,7 +43,7 @@ import publish.*
 import os.Path
 
 object settings:
-  val scalaVersion = "3.8.2"
+  val scalaVersion = "3.8.3"
   val scalaOptions = Seq(
     "-experimental",
     "-new-syntax",
