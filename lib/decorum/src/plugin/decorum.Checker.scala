@@ -64,6 +64,7 @@ object Checker:
     state.importLineSet      = imports.iterator.flatMap(i => i.startLine to i.endLine).toSet
     state.hasImports         = imports.nonEmpty
     state.annotationEndLines = Annotations.collectEndLines(untpdTree, source)
+    state.companions         = Companions.extract(untpdTree, source)
     scanRawTabs(file, rawText, out)
     checkFileNaming(file, out)
     checkPackageRules(file, expectedModule, state.packageInfo, out)
@@ -134,8 +135,7 @@ object Checker:
     var usingNameColumn:      Option[Int]                = None
     var prevLineHadAlignment: Boolean                    = false
     var pendingR11:           List[Violation]            = Nil
-    val typeDecls:            mutable.Map[String, Int]   = mutable.Map.empty
-    val objectDecls:          mutable.Map[String, Int]   = mutable.Map.empty
+    var companions:           CompanionDecls             = CompanionDecls(Map.empty, Map.empty)
     // Cross-line tracking for R30: each unclosed `(`/`[` records whether it
     // looked like a formal-block opener and the indent of the line it
     // opened on. Closers on later lines pop to decide whether the bracket
@@ -227,7 +227,6 @@ object Checker:
     checkMatchCases(s, lineNum, leadingCols, isBlank, rest, line, out)
     checkSiblingPadding(s, lineNum, leadingCols, isBlank, rest, out)
     checkUsingAlignment(s, lineNum, leadingCols, rest, emit)
-    recordDeclarations(s, lineNum, rest)
     if !isBlank then
       s.prevLineEndedMatch = lineEndsWithMatch(rest)
       val sem = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
@@ -1366,20 +1365,6 @@ object Checker:
     rest.length >= 2 && rest(0).text == ":" && rest(1).kind == Kind.Space
       && rest(1).text == "   " && rest.lastOption.exists(_.text == "=")
 
-  private def recordDeclarations(s: State, lineNum: Int, rest: IndexedSeq[Token]): Unit =
-    val nonWs = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
-    if nonWs.nonEmpty then
-      val (kw, idx) = skipModifiers(nonWs, 0)
-      if idx < nonWs.length then
-        val keyword = nonWs(idx).text
-        val nameIdx = idx + 1
-        if nameIdx < nonWs.length && nonWs(nameIdx).kind == Kind.Code then
-          val name = nonWs(nameIdx).text
-          if keyword == "class" || keyword == "trait" || keyword == "enum" then
-            if !s.typeDecls.contains(name) then s.typeDecls(name) = lineNum
-          else if keyword == "object" then
-            if !s.objectDecls.contains(name) then s.objectDecls(name) = lineNum
-
   private val ModifierWords: Set[String] = Set
     ( "private", "protected", "public", "final", "sealed", "abstract",
       "implicit", "lazy", "override", "case", "inline", "transparent",
@@ -1400,8 +1385,8 @@ object Checker:
     ( file: String, s: State, out: mutable.ListBuffer[Violation] )
   :   Unit =
 
-    s.objectDecls.foreach: (name, objLine) =>
-      s.typeDecls.get(name).foreach: typeLine =>
+    s.companions.objectLines.foreach: (name, objLine) =>
+      s.companions.typeLines.get(name).foreach: typeLine =>
         if objLine > typeLine then
           out +=
             Violation
