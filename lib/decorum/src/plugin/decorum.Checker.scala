@@ -65,10 +65,12 @@ object Checker:
     state.hasImports         = imports.nonEmpty
     state.annotationEndLines = Annotations.collectEndLines(untpdTree, source)
     state.companions         = Companions.extract(untpdTree, source)
+    val caseGroups           = Cases.extract(untpdTree, source)
     scanRawTabs(file, rawText, out)
     checkFileNaming(file, untpdTree, out)
     checkPackageRules(file, expectedModule, state.packageInfo, out)
     checkImportRules(file, imports, lines, out)
+    checkCaseRules(file, caseGroups, lines, out)
     var idx = 0
 
     while idx < lines.length do
@@ -82,7 +84,6 @@ object Checker:
 
     state.pendingR11.foreach(out += _)
     state.pendingR11 = Nil
-    finalizeCaseRun(state, out)
     checkCompanionOrdering(file, state, out)
     checkSequences(file, lines, out)
     LazyList.from(out)
@@ -108,9 +109,6 @@ object Checker:
       val idx    = base.indexOf(prefix)
       if idx > 0 then Some(base.substring(0, idx).nn) else Some(moduleDir)
 
-  private case class CaseEntry(lineNum: Int, arrowCol: Int)
-  private class CaseRun(val indent: Int, val cases: mutable.ListBuffer[CaseEntry])
-
   private case class DeclShape(line: Int, indent: Int, kwSeq: String, padding: Int)
 
   private class State(val file: String, val expectedModule: Option[String]):
@@ -126,9 +124,7 @@ object Checker:
     var prevWasReturnType:    Boolean                    = false
     var prevReturnTypeLine:   Int                        = 0
     var prevCodeLineIndent:   Int                        = -1
-    var prevLineEndedMatch:   Boolean                    = false
     var prevCodeLineLastTok:  String                     = ""
-    var caseRun:              Option[CaseRun]            = None
     var blanksSinceDecl:      Int                        = 0
     var prevDeclByIndent:     mutable.Map[Int, DeclShape] = mutable.Map.empty
     var openParens:           Int                        = 0
@@ -224,11 +220,9 @@ object Checker:
     checkChainContinuation(s, lineNum, leadingCols, isBlank, firstReal, emit)
     checkR32GivenArrowAlign(s, leadingCols, isBlank, rest, emit)
     checkReturnTypeBlank(s, lineNum, isBlank, rest, emit)
-    checkMatchCases(s, lineNum, leadingCols, isBlank, rest, line, out)
     checkSiblingPadding(s, lineNum, leadingCols, isBlank, rest, out)
     checkUsingAlignment(s, lineNum, leadingCols, rest, emit)
     if !isBlank then
-      s.prevLineEndedMatch = lineEndsWithMatch(rest)
       val sem = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
       sem.lastOption.foreach: t => s.prevCodeLineLastTok = t.text
       s.prevFormalOpenerIndent = s.currentFormalOpenerIndent
@@ -1455,103 +1449,76 @@ object Checker:
       // Cross-module export pattern: <other-module>_<this-module>_core or <other-module>.<TypeName>
       prefix.headOption.exists(_.isLower)
 
-  private def lineEndsWithMatch(rest: IndexedSeq[Token]): Boolean =
-    val sem = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
-    sem.lastOption.exists(_.text == "match")
-      || (sem.length >= 2 && sem(sem.length - 2).text == "match" && sem.last.text == ":")
-
-  private case class CaseLine(arrowCol: Int, isSingleLine: Boolean, isCase: Boolean)
-
-  private def parseCaseLine(rest: IndexedSeq[Token], leadingCols: Int): CaseLine =
-    if rest.isEmpty || rest(0).text != "case" then CaseLine(-1, false, false)
-    else
-      val secondSem = rest.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment, 1)
-      if secondSem >= 0 && (rest(secondSem).text == "class" || rest(secondSem).text == "object")
-      then CaseLine(-1, false, false)
-      else
-        val arrowIdx = rest.indexWhere(t => t.text == "=>")
-        // No `=>` on this line — it's an enum case (or a match case with a
-        // multi-line pattern, which is uncommon). Either way, skip both R19 and R20.
-        if arrowIdx < 0 then CaseLine(-1, false, false)
-        else
-          var col = leadingCols + 1
-          var k = 0
-          while k < arrowIdx do
-            col += rest(k).text.length
-            k += 1
-          val hasBodyAfter = rest.drop(arrowIdx + 1).exists: t =>
-            t.kind != Kind.Space && t.kind != Kind.Comment
-          CaseLine(col, hasBodyAfter, true)
-
-  private def checkMatchCases
-    ( s:           State,
-      lineNum:     Int,
-      leadingCols: Int,
-      isBlank:     Boolean,
-      rest:        IndexedSeq[Token],
-      line:        IndexedSeq[Token],
-      out:         mutable.ListBuffer[Violation] )
+  // R19/R20: walk each `Match`/`Try` case group from the parsed tree.
+  // Within a group, runs of *single-line* cases at the same indent with no
+  // intervening blank lines must have their `=>` columns aligned (R19);
+  // any *multi-line* case other than the first in its group must be
+  // preceded by a blank line (R20). A separate sub-check requires exactly
+  // one space before `=>` in a multi-line case.
+  private def checkCaseRules
+    ( file:   String,
+      groups: List[List[CaseInfo]],
+      lines:  IndexedSeq[IndexedSeq[Token]],
+      out:    mutable.ListBuffer[Violation] )
   :   Unit =
 
-    inline def emit(col: Int, rule: String, msg: String): Unit =
-      out += Violation(s.file, lineNum, col, rule, msg)
+    groups.foreach: group =>
+      // R20: blank line required before each non-first multi-line case
+      // unless the source already has one.
+      group.zipWithIndex.foreach: (c, i) =>
+        if !c.isSingleLine then
+          if i > 0 && !blankBetween(group(i - 1).endLine, c.caseLine, lines) then
+            out += Violation
+                    ( file, c.caseLine, c.caseCol, "20",
+                      "a blank line is required before a multi-line case "
+                        +"(except for the first case)" )
+          // Sub-check: exactly one space before `=>` in a multi-line case.
+          if c.spacesBeforeArrow != 1 then
+            out += Violation
+                    ( file, c.arrowLine, c.arrowCol, "R33-multiline-case-arrow-space",
+                      "exactly one space is required before `=>` in a multi-line case" )
 
-    if isBlank then
-      finalizeCaseRun(s, out)
-      return
+      // R19: split into runs of consecutive single-line cases at the same
+      // case-keyword column with no blank line between them; align `=>` in
+      // any run of size ≥ 2.
+      val runs = mutable.ListBuffer[mutable.ListBuffer[CaseInfo]]()
+      var current: Option[mutable.ListBuffer[CaseInfo]] = None
+      var prev:    Option[CaseInfo]                     = None
+      group.foreach: c =>
+        val canExtend = c.isSingleLine && current.exists: run =>
+          val head = run.head
+          head.caseCol == c.caseCol && !blankBetween(prev.get.endLine, c.caseLine, lines)
+        if canExtend then current.get += c
+        else
+          current = if c.isSingleLine then
+            val r = mutable.ListBuffer[CaseInfo](c)
+            runs += r
+            Some(r)
+          else None
+        prev = Some(c)
 
-    val info = parseCaseLine(rest, leadingCols)
-    if !info.isCase then
-      // Non-case line: close any active run
-      finalizeCaseRun(s, out)
-    else
-      // Multi-line case isolation (Rule 20)
-      if !info.isSingleLine then
-        val isFirstInScope = s.prevCodeLineIndent < leadingCols
-        if !s.prevLineWasBlank && !s.prevLineEndedMatch && !isFirstInScope then
-          emit
-            ( leadingCols + 1, "20",
-              "a blank line is required before a multi-line case (except for the first case)" )
+      runs.foreach: run =>
+        if run.size >= 2 then
+          val expected = run.iterator.map(_.arrowCol).max
+          run.foreach: c =>
+            if c.arrowCol != expected then
+              out += Violation
+                      ( file, c.arrowLine, c.arrowCol, "19",
+                        s"`=>` should be at column $expected to align with the case run" )
 
-        // R33: a multi-line case must have exactly one space before `=>` —
-        // alignment-padding only applies to runs of single-line cases (R19).
-        val arrowIdx = rest.indexWhere(_.text == "=>")
-        if arrowIdx > 0 then
-          val before = rest(arrowIdx - 1)
-          if before.kind != Kind.Space || before.text != " " then
-            var c = leadingCols + 1
-            var k = 0
-            while k < arrowIdx do
-              c += rest(k).text.length
-              k += 1
-            emit
-              ( c, "R33-multiline-case-arrow-space",
-                "exactly one space is required before `=>` in a multi-line case" )
-
-        finalizeCaseRun(s, out)
-      else
-        // Single-line case
-        s.caseRun match
-          case Some(run) if run.indent == leadingCols && !s.prevLineWasBlank =>
-            run.cases += CaseEntry(lineNum, info.arrowCol)
-
-          case _ =>
-            finalizeCaseRun(s, out)
-            val newRun = CaseRun(leadingCols, mutable.ListBuffer.empty)
-            newRun.cases += CaseEntry(lineNum, info.arrowCol)
-            s.caseRun = Some(newRun)
-
-  private def finalizeCaseRun(s: State, out: mutable.ListBuffer[Violation]): Unit =
-    s.caseRun.foreach: run =>
-      if run.cases.size >= 2 then
-        val expected = run.cases.iterator.map(_.arrowCol).max
-        run.cases.foreach: entry =>
-          if entry.arrowCol != expected then
-            out +=
-              Violation
-                ( s.file, entry.lineNum, entry.arrowCol, "19",
-                  s"`=>` should be at column $expected to align with the case run" )
-    s.caseRun = None
+  private def blankBetween
+    ( prevEnd:  Int,
+      curStart: Int,
+      lines:    IndexedSeq[IndexedSeq[Token]] )
+  :   Boolean =
+    var l = prevEnd + 1
+    while l < curStart do
+      val idx = l - 1
+      if idx >= 0 && idx < lines.length then
+        val toks = lines(idx)
+        if toks.isEmpty || toks.forall(_.kind == Kind.Space) then return true
+      l += 1
+    false
 
   private val DeclKeywords: Set[String] =
     Set("def", "val", "var", "type", "class", "trait", "object", "enum", "given")
