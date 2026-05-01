@@ -43,13 +43,19 @@ import vacuous.*
 object Textual:
   def apply[textual: Textual](text: Text): textual = textual(text)
 
+  given concatenable: [textual: Textual] => textual is Concatenable:
+    type Operand = textual
+    def concat(left: textual, right: textual): textual = textual.concat(left, right)
+
   given text: Text is Textual:
+    type Operand = Char
     type Show[value] = value is spectacular.Showable
 
     val classTag: ClassTag[Text] = summon[ClassTag[Text]]
 
     def show[value](value: value)(using show: Show[value]): Text = show.text(value)
-    def apply(char: Char): Text = char.toString.tt
+    def apply(operand: Char): Text = operand.toString.tt
+    def fromChar(char: Char): Char = char
     def text(text: Text): Text = text
     def length(text: Text): Int = text.s.length
     def apply(text: Text): Text = text
@@ -64,7 +70,7 @@ object Textual:
 
     def empty: Text = Text("")
     def concat(left: Text, right: Text): Text = Text(left.s+right.s)
-    def unsafeChar(text: Text, index: Ordinal): Char = text.s.charAt(index.n0)
+    def at(text: Text, index: Ordinal): Char = text.s.charAt(index.n0)
 
     def indexOf(text: Text, sub: Text, start: Ordinal): Optional[Ordinal] =
       text.s.indexOf(sub.s, start.n0).puncture(-1).let(_.z)
@@ -75,20 +81,21 @@ object Textual:
     def builder(size: Optional[Int]): Builder[Text] = TextBuilder(size)
     def size(text: Self): Int = text.length
 
-trait Textual extends Typeclass, Concatenable, Countable, Segmentable, Zeroic:
-  type Operand = Self
+trait Textual extends Typeclass, Countable, Segmentable, Zeroic:
+  type Operand
   type Show[value]
 
   def show[value](value: value)(using show: Show[value]): Self
   def apply(text: Text): Self
-  def apply(char: Char): Self
+  def apply(operand: Operand): Self
+  def fromChar(char: Char): Operand
   def classTag: ClassTag[Self]
   def length(text: Self): Int
   def text(text: Self): Text
-  def map(text: Self)(lambda: Char => Char): Self
+  def map(text: Self)(lambda: Operand => Operand): Self
   def empty: Self
   def concat(left: Self, right: Self): Self
-  def unsafeChar(text: Self, index: Ordinal): Char
+  def at(text: Self, index: Ordinal): Operand
   def indexOf(text: Self, sub: Text, start: Ordinal = Prim): Optional[Ordinal]
 
   def lastIndexOf(text: Self, sub: Text): Optional[Ordinal] =
