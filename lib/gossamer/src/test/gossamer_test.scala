@@ -1116,3 +1116,19 @@ object Tests extends Suite(m"Gossamer Tests"):
       test(m"ZWJ family emoji width 2 not 6"):
         Grapheme("👨‍👩‍👧").metrics
       . assert(_ == 2)
+
+      test(m"Writing width sums grapheme widths"):
+        Writing(t"abc").metrics
+      . assert(_ == 3)
+
+      test(m"Writing CJK width is 2 per character"):
+        Writing(Text("日本")).metrics
+      . assert(_ == 4)
+
+      test(m"Writing flag emoji counts as 2 cells per flag"):
+        Writing(Text("🇬🇧🇫🇷")).metrics
+      . assert(_ == 4)
+
+      test(m"Writing combining accent doesn't double-count"):
+        Writing(Text("café")).metrics // c, a, f, é (e+combining)
+      . assert(_ == 4)
