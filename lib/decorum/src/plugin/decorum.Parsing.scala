@@ -32,60 +32,26 @@
                                                                                                   */
 package decorum
 
-import scala.collection.mutable
+import dotty.tools.dotc.ast.untpd
+import dotty.tools.dotc.core.Contexts.{Context, ContextBase}
+import dotty.tools.dotc.parsing.Parsers
+import dotty.tools.dotc.reporting.{Diagnostic, Reporter}
+import dotty.tools.dotc.util.SourceFile
 
-import dotty.tools.dotc.*, ast.tpd, core.Contexts.*, plugins.*, util.{SourceFile, SourcePosition}
-import dotty.tools.dotc.util.Spans.Span
+object Parsing:
+  // A Reporter that discards everything; we don't surface parser diagnostics
+  // from Decorum — the main compiler will report parse errors itself.
+  private class SilentReporter extends Reporter:
+    def doReport(dia: Diagnostic)(using Context): Unit = ()
 
-class DecorumPhase(options: List[String]) extends PluginPhase:
-  val phaseName: String                = "decorum"
-  override val runsAfter: Set[String]  = Set("typer")
-  override val runsBefore: Set[String] = Set("pickler")
-
-  private val errors: Boolean   = options.contains("errors")
-  private val seen: mutable.Set[String] = mutable.Set.empty
-
-  private val esc: Char = 27.toChar
-  private val bel: Char = 7.toChar
-  private val gray   = s"$esc[38;2;128;128;128m"
-  private val orange = s"$esc[38;2;255;165;0m"
-  private val yellow = s"$esc[38;2;255;215;0m"
-  private val cyan   = s"$esc[38;2;0;200;255m"
-  private val reset  = s"$esc[0m"
-
-  private def colourPrefix(rule: String, useColor: Boolean): String =
-    if useColor then
-      val hyperlink = false
-      val rendered  = rule.replace(".", s"$gray.$cyan")
-      val d         = rule.takeWhile(_ != '.')
-      val link      = if hyperlink then s"$esc]8;;https://soundness.dev/SN-de/$d$bel" else ""
-      val unlink    = if hyperlink then s"$esc]8;;$bel" else ""
-      s"$link$gray[$orange↯SN$gray-${yellow}de$gray/$cyan$rendered$gray]$reset$unlink "
-    else
-      s"[↯SN-de/$rule] "
-
-  override def transformUnit(tree: tpd.Tree)(using context: Context): tpd.Tree =
-    val source: SourceFile = context.compilationUnit.source
-    val path: String       = source.file.path
-    if seen.add(path) then
-      val text: String = String(source.content)
-      val module       = Checker.expectedModule(path)
-      val useColor     =
-        try
-          import dotty.tools.dotc.config.Settings.Setting.value
-          value(context.settings.color)(using context) != "never"
-        catch case _: Throwable => false
-      val unitTree = context.compilationUnit.untpdTree
-      Checker.check(path, module, text, unitTree, source).foreach: violation =>
-        val pos = position(source, violation.line, violation.column)
-        val msg = colourPrefix(violation.rule, useColor)+violation.message
-        if errors then report.error(msg, pos) else report.warning(msg, pos)
-    super.transformUnit(tree)
-
-  private def position(source: SourceFile, line: Int, column: Int): SourcePosition =
-    val lineStart =
-      try source.lineToOffset((line - 1).max(0))
-      catch case _: Throwable => 0
-
-    val offset = (lineStart + (column - 1).max(0)).min(source.content.length)
-    SourcePosition(source, Span(offset))
+  // Parse the given source text into an untyped Scala 3 AST. Returns the
+  // tree paired with its SourceFile. If parsing throws, returns the empty
+  // tree — callers should treat that as "no structural info available".
+  def parse(file: String, text: String): (untpd.Tree, SourceFile) =
+    val source = SourceFile.virtual(file, text)
+    try
+      val base   = new ContextBase
+      val ctx    = base.initialCtx.fresh.setReporter(new SilentReporter).setSource(source)
+      val parser = new Parsers.Parser(source)(using ctx)
+      (parser.parse(), source)
+    catch case _: Throwable => (untpd.EmptyTree, source)
