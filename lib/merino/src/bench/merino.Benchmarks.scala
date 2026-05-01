@@ -32,66 +32,62 @@
                                                                                                   */
 package merino
 
-import ambience.*, environments.system
-import anticipation.* //, interfaces.paths.galileiApi
-import eucalyptus.*
+import scala.quoted.*
+
+import ambience.*, environments.java, systems.java
+import anticipation.*
+import contingency.*, strategies.throwUnsafely
+import fulminate.*
 import gossamer.*
-import hieroglyph.*, characterEncodings.utf8, badEncodingHandlers.strict
-import parasite.*, monitors.global
+import hellenism.*, classloaders.threadContext
+import hieroglyph.*, charEncoders.utf8
 import probably.*
-import rudiments.*
-import turbulence.*, stdios.virtualMachine
+import quantitative.*
+import sedentary.*
+import superlunary.*, embeddings.automatic
+import symbolism.*
+import temporaryDirectories.system
 
-import LogFormat.standardAnsi
-import unsafeExceptions.canThrowAny
+object Benchmarks extends Suite(m"Merino benchmarks"):
+  given device: BenchmarkDevice = LocalhostDevice
 
-val OutSink = Out.sink
-given log: Log({ case _ => OutSink })
-
-object Benchmarks extends Suite(m"Merino tests"):
   def run(): Unit =
+    val bench = Bench()
+
     suite(m"Parse example 1"):
-      test(m"Parse file with Jawn"):
-        import org.typelevel.jawn.*, ast.*
-        JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample1).nn)
+      bench(m"Parse file with Jawn")
+        (target = 1*Second, baseline = Baseline(compare = Min)):
+        '{
+            import org.typelevel.jawn.ast.JParser
+            JParser.parseFromString(${jsonExample1}.s)
+          }
 
-      . benchmark
-        ( warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99 )
-
-      test(m"Parse file with Merino"):
-        JsonAst.parse(jsonExample1.nn.immutable(using Unsafe))
-
-      . benchmark(warmup = 1000L, duration = 1000L, confidence = 99)
+      bench(m"Parse file with Merino")(target = 1*Second):
+        '{ JsonAst.parse(summon[CharEncoder].encoded(${jsonExample1})) }
 
     suite(m"Parse example 2"):
-      test(m"Parse file with Jawn"):
-        import org.typelevel.jawn.*, ast.*
-        JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample2).nn)
+      bench(m"Parse file with Jawn")
+        (target = 1*Second, baseline = Baseline(compare = Min)):
+        '{
+            import org.typelevel.jawn.ast.JParser
+            JParser.parseFromString(${jsonExample2}.s)
+          }
 
-      . benchmark
-        ( warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99 )
-
-      test(m"Parse file with Merino"):
-        JsonAst.parse(jsonExample2.nn.immutable(using Unsafe))
-
-      . benchmark(warmup = 1000L, duration = 1000L, confidence = 99)
+      bench(m"Parse file with Merino")(target = 1*Second):
+        '{ JsonAst.parse(summon[CharEncoder].encoded(${jsonExample2})) }
 
     suite(m"Parse example 3"):
-      test(m"Parse file with Jawn"):
-        import org.typelevel.jawn.*, ast.*
-        JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample3).nn)
+      bench(m"Parse file with Jawn")
+        (target = 1*Second, baseline = Baseline(compare = Min)):
+        '{
+            import org.typelevel.jawn.ast.JParser
+            JParser.parseFromString(${jsonExample3}.s)
+          }
 
-      . benchmark
-        ( warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99 )
+      bench(m"Parse file with Merino")(target = 1*Second):
+        '{ JsonAst.parse(summon[CharEncoder].encoded(${jsonExample3})) }
 
-      test(m"Parse file with Merino"):
-        JsonAst.parse(jsonExample3.nn.immutable(using Unsafe))
-
-      . benchmark(warmup = 1000L, duration = 1000L, confidence = 99)
-
-private given realm: Realm = Realm(t"tests")
-
-lazy val jsonExample1 = """
+  val jsonExample1: Text = t"""
 
 {"web-app": {
   "servlet": [
@@ -181,14 +177,14 @@ lazy val jsonExample1 = """
   "taglib": {
     "taglib-uri": "cofax.tld",
     "taglib-location": "/WEB-INF/tlds/cofax.tld"}}}
-""".getData("UTF-8")
+"""
 
-val jsonExample2 = """
+  val jsonExample2: Text = t"""
 {"menu":{"id":"file","value":"File","popup":{"menuitem":[{"value":"New","onclick":"CreateNewDoc()"},
 {"value":"Open","onclick":"OpenDoc()"},{"value":"Close","onclick":"CloseDoc()"}]}}}
-""".getData("UTF-8")
+"""
 
-lazy val jsonExample3 = """
+  val jsonExample3: Text = t"""
 {"menu": {
   "header": "SVG Viewer",
     "items": [
@@ -216,4 +212,4 @@ lazy val jsonExample3 = """
         {"id": "About", "label": "About Adobe CVG Viewer..."}
     ]
 }}
-""".getData("UTF-8")
+"""

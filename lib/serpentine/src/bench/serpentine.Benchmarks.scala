@@ -32,55 +32,64 @@
                                                                                                   */
 package serpentine
 
-import digression.*
-import gossamer.*
+import scala.quoted.*
+
+import ambience.*, environments.java, systems.java
+import contingency.*, strategies.throwUnsafely
+import fulminate.*
+import hellenism.*, classloaders.threadContext
 import probably.*
-import rudiments.*
+import quantitative.*
+import sedentary.*
+import symbolism.*
+import temporaryDirectories.system
 
-object Benchmarks extends Suite(m"internal Benchmarks"):
+object Benchmarks extends Suite(m"Serpentine benchmarks"):
+  given device: BenchmarkDevice = LocalhostDevice
+
   def run(): Unit =
+    val bench = Bench()
+
     suite(m"Conjunctions"):
-      test(m"Find conjunction of 2-element paths"):
-        val p1 = ^ / p"foo" / p"bar"
-        val p2 = ^ / p"foo" / p"baz"
-        p1.conjunction(p2)
+      bench(m"Find conjunction of 2-element paths")
+        (target = 500*Milli(Second), baseline = Baseline(compare = Min)):
+        '{
+            val p1 = % / "foo" / "bar"
+            val p2 = % / "foo" / "baz"
+            p1.conjunction(p2)
+          }
 
-      . benchmark
-        ( warmup   = 500L,
-          duration = 500L,
-          baseline = Baseline(ratio = Ratio.Time, compare = Compare.Min) )
+      bench(m"Find conjunction of 3-element paths")(target = 500*Milli(Second)):
+        '{
+            val p1 = % / "foo" / "bar" / "quux"
+            val p2 = % / "foo" / "baz" / "quux"
+            p1.conjunction(p2)
+          }
 
-      test(m"Find conjunction of 3-element paths"):
-        val p1 = ^ / p"foo" / p"bar" / p"quux"
-        val p2 = ^ / p"foo" / p"baz" / p"quux"
-        p1.conjunction(p2)
+      bench(m"Find conjunction of 4-element paths")(target = 500*Milli(Second)):
+        '{
+            val p1 = % / "foo" / "bar" / "quux" / "bippy"
+            val p2 = % / "foo" / "baz" / "quux" / "bop"
+            p1.conjunction(p2)
+          }
 
-      . benchmark(warmup = 500L, duration = 500L)
+      bench(m"Find conjunction of 5-element paths")(target = 500*Milli(Second)):
+        '{
+            val p1 = % / "foo" / "bar" / "quux" / "bippy" / "abc"
+            val p2 = % / "foo" / "baz" / "quux" / "bop" / "def"
+            p1.conjunction(p2)
+          }
 
-      test(m"Find conjunction of 4-element paths"):
-        val p1 = ^ / p"foo" / p"bar" / p"quux" / p"bippy"
-        val p2 = ^ / p"foo" / p"baz" / p"quux" / p"bop"
-        p1.conjunction(p2)
+      bench(m"Find conjunction of 6-element paths")(target = 500*Milli(Second)):
+        '{
+            val p1 = % / "foo" / "bar" / "quux" / "bippy" / "abc" / "ghi"
+            val p2 = % / "foo" / "baz" / "quux" / "bop" / "def" / "jkl"
+            p1.conjunction(p2)
+          }
 
-      . benchmark(warmup = 500L, duration = 500L)
-
-      test(m"Find conjunction of 5-element paths"):
-        val p1 = ^ / p"foo" / p"bar" / p"quux" / p"bippy" / p"abc"
-        val p2 = ^ / p"foo" / p"baz" / p"quux" / p"bop" / p"def"
-        p1.conjunction(p2)
-
-      . benchmark(warmup = 500L, duration = 500L)
-
-      test(m"Find conjunction of 6-element paths"):
-        val p1 = ^ / p"foo" / p"bar" / p"quux" / p"bippy" / p"abc" / p"ghi"
-        val p2 = ^ / p"foo" / p"baz" / p"quux" / p"bop" / p"def" / p"jkl"
-        p1.conjunction(p2)
-
-      . benchmark(warmup = 500L, duration = 500L)
-
-      test(m"Find conjunction of 7-element paths"):
-        val p1 = ^ / p"foo" / p"bar" / p"quux" / p"bippy" / p"abc" / p"ghi" / p"mno"
-        val p2 = ^ / p"foo" / p"baz" / p"quux" / p"bop" / p"def" / p"jkl" / p"pqr"
-        p1.conjunction(p2)
-
-      . benchmark(warmup = 500L, duration = 500L)
+      bench(m"Find conjunction of 7-element paths")(target = 500*Milli(Second)):
+        '{
+            val p1 = % / "foo" / "bar" / "quux" / "bippy" / "abc" / "ghi" / "mno"
+            val p2 = % / "foo" / "baz" / "quux" / "bop" / "def" / "jkl" / "pqr"
+            p1.conjunction(p2)
+          }

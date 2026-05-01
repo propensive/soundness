@@ -72,7 +72,6 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
       confidence: Optional[Benchmark.Percentiles] = Unset,
       baseline:   Optional[Baseline]              = Unset )
     ( body0: (References over Transport) ?=> Quotes ?=> Expr[Unit] )
-    [ version <: Scalac.Versions ]
     ( using System, TemporaryDirectory, Stageable over Transport in Form )
     ( using runner:    Runner[report],
             inclusion: Inclusion[report, Benchmark],
