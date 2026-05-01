@@ -161,6 +161,87 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
       val nextStop = ((cursor.x.n0/8 + 1)*8).z
       cursor.x = if nextStop >= buffer2.width.z then (buffer2.width - 1).z else nextStop
 
+    def ich(n: Int): Unit =
+      val row = cursor.y.n0
+      val col = cursor.x.n0
+      val width = buffer2.width
+      val shift = n.min(width - col)
+      var i = width - 1
+      while i >= col + shift do
+        buffer2.set(i.z, row.z, buffer2.char((i - shift).z, row.z),
+            buffer2.style((i - shift).z, row.z), buffer2.link((i - shift).z, row.z))
+        i -= 1
+      var j = col
+      while j < col + shift do
+        buffer2.set(j.z, row.z, ' ', style, link)
+        j += 1
+
+    def dch(n: Int): Unit =
+      val row = cursor.y.n0
+      val col = cursor.x.n0
+      val width = buffer2.width
+      val shift = n.min(width - col)
+      var i = col
+      while i < width - shift do
+        buffer2.set(i.z, row.z, buffer2.char((i + shift).z, row.z),
+            buffer2.style((i + shift).z, row.z), buffer2.link((i + shift).z, row.z))
+        i += 1
+      var j = width - shift
+      while j < width do
+        buffer2.set(j.z, row.z, ' ', style, link)
+        j += 1
+
+    def ech(n: Int): Unit =
+      val row = cursor.y.n0
+      val col = cursor.x.n0
+      val end = (col + n).min(buffer2.width)
+      var i = col
+      while i < end do
+        buffer2.set(i.z, row.z, ' ', style, link)
+        i += 1
+
+    def il(n: Int): Unit =
+      val top = cursor.y.n0
+      val height = buffer2.height
+      val width = buffer2.width
+      val shift = n.min(height - top)
+      var r = height - 1
+      while r >= top + shift do
+        var c = 0
+        while c < width do
+          buffer2.set(c.z, r.z, buffer2.char(c.z, (r - shift).z),
+              buffer2.style(c.z, (r - shift).z), buffer2.link(c.z, (r - shift).z))
+          c += 1
+        r -= 1
+      var rr = top
+      while rr < top + shift do
+        var c = 0
+        while c < width do
+          buffer2.set(c.z, rr.z, ' ', style, link)
+          c += 1
+        rr += 1
+
+    def dl(n: Int): Unit =
+      val top = cursor.y.n0
+      val height = buffer2.height
+      val width = buffer2.width
+      val shift = n.min(height - top)
+      var r = top
+      while r < height - shift do
+        var c = 0
+        while c < width do
+          buffer2.set(c.z, r.z, buffer2.char(c.z, (r + shift).z),
+              buffer2.style(c.z, (r + shift).z), buffer2.link(c.z, (r + shift).z))
+          c += 1
+        r += 1
+      var rr = height - shift
+      while rr < height do
+        var c = 0
+        while c < width do
+          buffer2.set(c.z, rr.z, ' ', style, link)
+          c += 1
+        rr += 1
+
     def decsc(): Unit =
       state2 = state2.copy(savedCursor = cursor(), savedStyle = style, savedLink = link)
 
@@ -265,6 +346,11 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         case 'K' => el(parseInt(params, 0))
         case 'S' => su(parseInt(params, 1))
         case 'T' => sd(parseInt(params, 1))
+        case '@' => ich(parseInt(params, 1))
+        case 'P' => dch(parseInt(params, 1))
+        case 'L' => il(parseInt(params, 1))
+        case 'M' => dl(parseInt(params, 1))
+        case 'X' => ech(parseInt(params, 1))
 
         case 'H' => val (r, c) = parsePair(params, 1); cup(r.u, c.u)
         case 'f' => val (r, c) = parsePair(params, 1); hvp(r.u, c.u)

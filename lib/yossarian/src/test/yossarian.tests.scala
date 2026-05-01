@@ -372,7 +372,7 @@ object Tests extends Suite(m"Yossarian Tests"):
           drainOutput(pty).s.startsWith(s"${0x1b.toChar}[?")
       . aspire(_ == true)
 
-    suite(m"vttest §8: Insert / delete characters [insert-delete]"):
+    suite(m"vttest §8: Insert / delete characters"):
       test(m"ICH \\e[3@ inserts 3 spaces at cursor"):
         safely:
           val pty = Pty24x80().consume(t"$Esc[1;1HABCDEFGH$Esc[1;4H$Esc[3@")
