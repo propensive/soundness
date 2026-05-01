@@ -90,21 +90,19 @@ object Sse:
     var retry: Optional[Long] = Unset
 
     text.cut(Lf).each: line =>
-      line.s.indexOf(':') match
-        case -1 => raise(SseError(SseError.Reason.MalformedField))
+      line.seek(t":").lay(raise(SseError(SseError.Reason.MalformedField))): ordinal =>
+        val n = ordinal.n0
+        val value = line.skip(if line.at(n.z + 1) == ' ' then n + 2 else n + 1)
 
-        case n =>
-          val value = line.skip(if line.at(n.z + 1) == ' ' then n + 2 else n + 1)
+        line.keep(n) match
+          case "event" => event = value
+          case "data"  => data ::= value
+          case "id"    => id = value
 
-          line.keep(n) match
-            case "event" => event = value
-            case "data"  => data ::= value
-            case "id"    => id = value
+          case "retry" =>
+            retry = safely(value.decode[Long]).lest(SseError(SseError.Reason.BadRetryValue))
 
-            case "retry" =>
-              retry = safely(value.decode[Long]).lest(SseError(SseError.Reason.BadRetryValue))
-
-            case _ => raise(SseError(SseError.Reason.UnknownField))
+          case _ => raise(SseError(SseError.Reason.UnknownField))
 
     Sse(event, data.reverse, id, retry)
 
