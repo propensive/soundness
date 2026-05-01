@@ -73,13 +73,13 @@ object internal:
     // First Char of the cell's grapheme, or ' ' for trailing-half cells.
     // Convenience accessor for narrow-ASCII assertions.
     def char(x: Ordinal, y: Ordinal): Char =
-      val s = graphemeBuffer(offset(x, y)).text.s
-      if s.isEmpty then ' ' else s.charAt(0)
+      val grapheme = graphemeBuffer(offset(x, y)).text
+      if grapheme.nil then ' ' else grapheme.at(Prim).vouch
 
     // True if this cell is the trailing half of a wide grapheme stored in the
     // cell to the left.
     def isWideTrailing(x: Ordinal, y: Ordinal): Boolean =
-      graphemeBuffer(offset(x, y)).text.s.isEmpty
+      graphemeBuffer(offset(x, y)).text.nil
 
     def line: Screen =
       new Screen(graphemeBuffer.length, styleBuffer, graphemeBuffer, linkBuffer)
@@ -99,14 +99,12 @@ object internal:
 
       sb.text
 
-    def find(text: Text): Optional[Screen] = line.render.s.indexOf(text.s) match
-      case -1 => Unset
-
-      case index =>
-        new Screen
-          ( text.length, styleBuffer.slice(index, index + text.length),
-            graphemeBuffer.slice(index, index + text.length),
-            linkBuffer.slice(index, index + text.length) )
+    def find(text: Text): Optional[Screen] = line.render.seek(text).let: ordinal =>
+      val index = ordinal.n0
+      new Screen
+        ( text.length, styleBuffer.slice(index, index + text.length),
+          graphemeBuffer.slice(index, index + text.length),
+          linkBuffer.slice(index, index + text.length) )
 
     def styles: IArray[Style] = styleBuffer.clone().immutable(using Unsafe)
 
