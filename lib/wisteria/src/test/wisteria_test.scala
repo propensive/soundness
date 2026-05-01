@@ -81,7 +81,7 @@ object Presentation extends Derivation[Presentation]:
       [variant <: derivation] =>
         variant => (typeName.s+"."+contextual.present(variant)).tt
 
-trait Presentation[-value]:
+trait Presentation[value]:
   def present(value: value): Text
 
 extension [value](value: value)
@@ -120,7 +120,7 @@ trait Readable[value]:
 extension (text: Text)
   def read[value](using readable: Readable[value]): value = readable.read(text)
 
-trait Eq[-value]:
+trait Eq[value]:
   def equal(left: value, right: value): Boolean
 
 extension [value](left: value)
@@ -186,7 +186,7 @@ object Show extends Derivation[Show]:
     inline if choice then
       variant(value):
         [variant <: derivation] =>
-          arm => typeName.s+"."+arm.show
+          arm => typeName.s+"."+contextual.show(arm)
     else
       compiletime.error("cannot derive Show for adt")
 
@@ -213,10 +213,143 @@ object Tests extends Suite(m"Wisteria tests"):
   def run(): Unit =
     given Tactic[VariantError] = strategies.throwUnsafely
 
-    suite(m"Arithmetic tests"):
-      case class User(name: Text, age: Int)
+    suite(m"Product derivation"):
+      test(m"Parse a product via construct"):
+        Parser.derived[ParserTestCaseClass].parse("42,true")
+      . assert(_ == Some(ParserTestCaseClass(42, true)))
 
-      test(m"Addable tests"):
+      test(m"Failed parse returns None via construct"):
+        Parser.derived[ParserTestCaseClass].parse("notanint,true")
+      . assert(_ == None)
+
+      test(m"Present a product with default arguments"):
+        Person().present
+      . assert(_ == t"Person(0:name=noone, 1:age=100, 2:male=yes)")
+
+      test(m"Present a nested product"):
+        User(person = Person()).present
+      . assert(_ == t"User(0:person=Person(0:name=noone, 1:age=100, 2:male=yes), 1:email=nobody@nowhere.com)")
+
+      test(m"Read a product by comma-separated text"):
+        t"alice,32,yes".read[Person]
+      . assert(_ == Person(t"alice", 32, true))
+
+      test(m"Read a product falling back to defaults"):
+        t"alice".read[Person]
+      . assert(_ == Person(t"alice"))
+
+      test(m"Compare equal products"):
+        Eq.derived[Person].equal(Person(), Person())
+      . assert(_ == true)
+
+      test(m"Compare unequal products"):
+        Eq.derived[Person].equal(Person(t"alice"), Person(t"bob"))
+      . assert(_ == false)
+
+      test(m"Equality is case-insensitive (per Eq[Text] given)"):
+        Eq.derived[Person].equal(Person(t"ALICE"), Person(t"alice"))
+      . assert(_ == true)
+
+    suite(m"Sum derivation"):
+      test(m"Present a singleton variant"):
+        val tree: Tree = Tree.Leaf
+        tree.present
+      . assert(_ == t"Tree.Leaf")
+
+      test(m"Present a recursive variant"):
+        val tree: Tree = Tree.Branch(1, Tree.Leaf, Tree.Leaf)
+        tree.present
+      . assert(_ == t"Tree.Branch(0:value=1, 1:left=Tree.Leaf, 2:right=Tree.Leaf)")
+
+      test(m"Read a product with multiple Int fields"):
+        Readable.derived[Time].read(t"1,30,45")
+      . assert(_ == Time(1, 30, 45))
+
+      test(m"Equal sum variants compare equal"):
+        sealed trait Shape
+        case class Circle(radius: Int) extends Shape
+        case class Square(side: Int) extends Shape
+
+        val left: Shape = Circle(3)
+        val right: Shape = Circle(3)
+        Eq.derived[Shape].equal(left, right)
+      . assert(_ == true)
+
+      test(m"Different sum variants compare unequal"):
+        sealed trait Shape
+        case class Circle(radius: Int) extends Shape
+        case class Square(side: Int) extends Shape
+
+        val left: Shape = Circle(3)
+        val right: Shape = Square(3)
+        Eq.derived[Shape].equal(left, right)
+      . assert(_ == false)
+
+      test(m"VariantError is raised for unknown variant tag"):
+        sealed trait Wrapped
+        case class WrappedInt(value: Int) extends Wrapped
+        case class WrappedBool(value: Boolean) extends Wrapped
+
+        try
+          Readable.derived[Wrapped].read(t"Unknown:42")
+          t""
+        catch case error: VariantError => error.inputLabel
+      . assert(_ == t"Unknown")
+
+      test(m"SumOnly applies to a manually-given variant"):
+        val sumOnly = summon[SumOnly[SumOnlyEnum]]
+        sumOnly.applyTo(SumOnlyEnum.Alpha(42))
+        sumOnly.applyTo(SumOnlyEnum.Beta("hi"))
+      . assert()
+
+    suite(m"Arithmetic derivation"):
+      case class Pair(name: Text, age: Int)
+      case class Pt(x: Int, y: Int)
+
+      test(m"Addable composes products field-wise"):
         import arithmetic.addable
-        User("foo", 10) + User("bar", 15)
-      . assert(_ == User("foobar", 25))
+        Pair(t"foo", 10) + Pair(t"bar", 15)
+      . assert(_ == Pair(t"foobar", 25))
+
+      test(m"Subtractable composes products field-wise"):
+        import arithmetic.subtractable
+        Pt(10, 7) - Pt(3, 4)
+      . assert(_ == Pt(7, 3))
+
+      test(m"Multiplicable composes products field-wise"):
+        import arithmetic.multiplicable
+        Pt(3, 4) * Pt(5, 6)
+      . assert(_ == Pt(15, 24))
+
+      test(m"Divisible composes products field-wise"):
+        import arithmetic.divisible
+        Pt(20, 18) / Pt(5, 3)
+      . assert(_ == Pt(4, 6))
+
+    suite(m"Compile-time errors"):
+      test(m"Show fails on a non-choice ADT"):
+        demilitarize:
+          Show.derived[Adt]
+      . assert(_.nonEmpty)
+
+      test(m"Producer fails on a non-choice ADT"):
+        demilitarize:
+          Producer.derived[Adt]
+      . assert(_.nonEmpty)
+
+      test(m"Producer fails on a regular product"):
+        demilitarize:
+          Producer.derived[ParserTestCaseClass]
+      . assert(_.nonEmpty)
+
+      test(m"Derivation fails when no Mirror is available"):
+        demilitarize:
+          trait NotADataType
+          Eq.derived[NotADataType]
+      . assert(_.nonEmpty)
+
+      test(m"Derivation fails when a field's typeclass is missing"):
+        demilitarize:
+          case class HasUnknown(unknown: java.io.File)
+          Eq.derived[HasUnknown]
+      . assert(_.nonEmpty)
