@@ -60,10 +60,12 @@ object Checker:
     val state = State(file, expectedModule)
     val lines = Tokenizer.tokenize(rawText)
     val imports = Imports.extract(untpdTree, source)
+    state.packageInfo   = Packages.extract(untpdTree, source)
     state.importLineSet = imports.iterator.flatMap(i => i.startLine to i.endLine).toSet
     state.hasImports    = imports.nonEmpty
     scanRawTabs(file, rawText, out)
     checkFileNaming(file, out)
+    checkPackageRules(file, expectedModule, state.packageInfo, out)
     checkImportRules(file, imports, lines, out)
     var idx = 0
 
@@ -114,6 +116,7 @@ object Checker:
     var consecutiveBlanks:    Int                        = 0
     var importLineSet:        Set[Int]                   = Set.empty
     var hasImports:           Boolean                    = false
+    var packageInfo:          Option[PackageInfo]        = None
     var prevLineWasBlank:     Boolean                    = false
     var prevWasAnnotation:    Boolean                    = false
     var prevLineNum:          Int                        = 0
@@ -208,7 +211,7 @@ object Checker:
 
     s.phase match
       case Phase.License      => checkLicense(s, lineNum, line, emit)
-      case Phase.Package      => checkPackage(s, lineNum, rest, emit)
+      case Phase.Package      => checkPackage(s)
       case Phase.AfterPackage => checkAfterPackage(s, isBlank, emit)
       case Phase.Imports      => checkImports(s, isBlank, lineNum, emit)
       case Phase.Body         => ()
@@ -495,44 +498,55 @@ object Checker:
         emit(1, "6", "line 32 must close the license-header block comment with `*/`")
       s.phase = Phase.Package
 
-  private def checkPackage
-    ( s:       State,
-      lineNum: Int,
-      rest:    IndexedSeq[Token],
-      emit:    (Int, String, String) => Unit )
+  // Phase machine: when the line containing the package declaration is
+  // reached (or any line beyond the license region if the file has no
+  // valid package), advance the phase. R7 violations are emitted from
+  // `checkPackageRules` over the parsed `PackageDef`.
+  private def checkPackage(s: State): Unit =
+    s.packageInfo match
+      case Some(p) if p.line == PackageLine => s.phase = Phase.AfterPackage
+      case _                                => s.phase = Phase.Body
+
+  // R7: validate the file's `package` declaration. The parsed package
+  // info distinguishes "no real declaration" (empty-package wrapper)
+  // from a real `PackageDef`. Multi-segment paths (`a.b`), wrong line,
+  // names that don't match `expectedModule`, names with invalid
+  // characters (e.g. backticked identifiers), and extra statements on
+  // the same line are each rejected with rule "7".
+  private def checkPackageRules
+    ( file:           String,
+      expectedModule: Option[String],
+      pkg:            Option[PackageInfo],
+      out:            mutable.ListBuffer[Violation] )
   :   Unit =
 
-    if lineNum != PackageLine then
-      emit
-        ( 1, "7",
-          s"expected `package` declaration on line 33, found content on line $lineNum" )
-      s.phase = Phase.Body
-    else
-      val nonWs = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment).toList
-      nonWs match
-        case keyword :: ident :: tail
-          if keyword.text == "package" && ident.kind == Kind.Code =>
+    pkg match
+      case None =>
+        out += Violation(file, PackageLine, 1, "7", "line 33 must be `package <module>`")
 
-          if !ident.text.matches("[A-Za-z_][A-Za-z0-9_]*") then
-            emit
-              ( 1, "7",
-                s"package declaration must be a single identifier segment, not `${ident.text}`" )
+      case Some(p) if p.line != PackageLine =>
+        out += Violation
+                ( file, p.line, 1, "7",
+                  s"expected `package` declaration on line 33, "
+                    +s"found content on line ${p.line}" )
 
-          s.expectedModule.foreach: expected =>
-            if ident.text != expected then
-              emit
-                ( 1, "7",
-                  s"package `${ident.text}` does not match expected module `$expected`" )
+      case Some(p) =>
+        val name = p.segments.mkString(".")
+        if p.segments.length > 1 || !p.segments.head.matches("[A-Za-z_][A-Za-z0-9_]*") then
+          out += Violation
+                  ( file, p.line, 1, "7",
+                    s"package declaration must be a single identifier segment, not `$name`" )
+        else
+          expectedModule.foreach: expected =>
+            if name != expected then
+              out += Violation
+                      ( file, p.line, 1, "7",
+                        s"package `$name` does not match expected module `$expected`" )
 
-          if tail.nonEmpty then
-            emit
-              ( 1, "7",
-                "package declaration must contain only `package <ident>` on line 33" )
-
-        case _ =>
-          emit(1, "7", "line 33 must be `package <module>`")
-
-      s.phase = Phase.AfterPackage
+        if p.extraStatementOnSameLine then
+          out += Violation
+                  ( file, p.line, 1, "7",
+                    "package declaration must contain only `package <ident>` on line 33" )
 
   private def checkAfterPackage
     ( s: State, isBlank: Boolean, emit: (Int, String, String) => Unit )
