@@ -210,7 +210,13 @@ extension [textual: Textual](text: textual)
   inline def tail: textual = text.skip(1, Ltr)
   inline def init: textual = text.skip(1, Rtl)
 
-  def chars: IArray[Char] = textual.text(text).s.toCharArray.nn.immutable(using Unsafe)
+  def chars: IArray[Char] =
+    val n = text.length
+    IArray.build[Char](n): array =>
+      var i = 0
+      while i < n do
+        array(i) = textual.unsafeChar(text, i.z)
+        i += 1
 
   def snip(n: Int): (textual, textual) =
     (text.segment(Prim till n.z), text.segment(n.z till text.limit))
@@ -219,12 +225,13 @@ extension [textual: Textual](text: textual)
     (text.segment(Prim till n), text.segment((n + 1) till text.limit))
 
   def reverse: textual =
-    def recur(index: Ordinal, result: textual): textual =
-      if index < text.limit
-      then recur(index + 1, textual.concat(text.segment(index thru index), result))
-      else result
-
-    recur(Prim, textual.empty)
+    val n = text.length
+    val builder = textual.builder(n)
+    var index = n - 1
+    while index >= 0 do
+      builder.append(textual.unsafeChar(text, index.z))
+      index -= 1
+    builder()
 
   def contains(substring: Text): Boolean = textual.indexOf(text, substring).present
   def contains(char: Char): Boolean = textual.indexOf(text, char.show).present
@@ -246,13 +253,7 @@ extension [textual: Textual](text: textual)
 
   def seek(substring: Text, bidi: Bidi = Ltr): Optional[Ordinal] = bidi match
     case Ltr => textual.indexOf(text, substring)
-    case Rtl =>
-      if substring.nil then Unset else
-        def recur(start: Ordinal, last: Optional[Ordinal]): Optional[Ordinal] =
-          textual.indexOf(text, substring, start).lay(last): found =>
-            recur(found + 1, found)
-
-        recur(Prim, Unset)
+    case Rtl => if substring.nil then Unset else textual.lastIndexOf(text, substring)
 
   inline def trim: textual =
     val start = text.where(!_.isWhitespace).or(text.limit - 1)
@@ -317,12 +318,24 @@ extension [textual: Textual](text: textual)
   def blank: Boolean = text.where(!_.isWhitespace).absent
 
   def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using Text is Measurable): textual =
-    if text.plain.metrics >= length then text else
-      val padding = textual(char.toString.tt)*(length - text.plain.metrics)
-
+    val current = text.plain.metrics
+    if current >= length then text else
+      val padSize = length - current
+      val builder = textual.builder(text.length + padSize)
       bidi match
-        case Ltr => textual.concat(text, padding)
-        case Rtl => textual.concat(padding, text)
+        case Ltr =>
+          builder.append(text)
+          var i = 0
+          while i < padSize do
+            builder.append(char)
+            i += 1
+        case Rtl =>
+          var i = 0
+          while i < padSize do
+            builder.append(char)
+            i += 1
+          builder.append(text)
+      builder()
 
   def center(length: Int, char: Char = ' ')(using Text is Measurable): textual =
     text.pad((length + text.plain.metrics)/2, char = char).pad(length, Rtl, char = char)

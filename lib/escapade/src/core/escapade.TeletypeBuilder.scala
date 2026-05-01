@@ -61,5 +61,9 @@ class TeletypeBuilder(size: Optional[Int] = Unset) extends Builder[Teletype]:
     text.insertions.each { (position, value) => insertions(position + offset) = value }
     offset += text.length
 
+  protected def putChar(char: Char): Unit =
+    builder.append(char)
+    offset += 1
+
   protected def result(): Teletype =
     Teletype(builder.toString.tt, spans.to(TreeMap), insertions.to(TreeMap))
