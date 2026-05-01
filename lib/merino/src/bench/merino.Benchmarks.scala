@@ -56,35 +56,35 @@ object Benchmarks extends Suite(m"Merino benchmarks"):
 
     suite(m"Parse example 1"):
       bench(m"Parse file with Jawn")
-        (target = 250*Milli(Second), baseline = Baseline(compare = Min)):
+        (target = 1*Second, baseline = Baseline(compare = Min)):
         '{
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(merino.Benchmarks.jsonText1)
           }
 
-      bench(m"Parse file with Merino")(target = 250*Milli(Second)):
+      bench(m"Parse file with Merino")(target = 1*Second):
         '{ JsonAst.parse(merino.Benchmarks.jsonBytes1) }
 
     suite(m"Parse example 2"):
       bench(m"Parse file with Jawn")
-        (target = 250*Milli(Second), baseline = Baseline(compare = Min)):
+        (target = 1*Second, baseline = Baseline(compare = Min)):
         '{
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(merino.Benchmarks.jsonText2)
           }
 
-      bench(m"Parse file with Merino")(target = 250*Milli(Second)):
+      bench(m"Parse file with Merino")(target = 1*Second):
         '{ JsonAst.parse(merino.Benchmarks.jsonBytes2) }
 
     suite(m"Parse example 3"):
       bench(m"Parse file with Jawn")
-        (target = 250*Milli(Second), baseline = Baseline(compare = Min)):
+        (target = 1*Second, baseline = Baseline(compare = Min)):
         '{
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(merino.Benchmarks.jsonText3)
           }
 
-      bench(m"Parse file with Merino")(target = 250*Milli(Second)):
+      bench(m"Parse file with Merino")(target = 1*Second):
         '{ JsonAst.parse(merino.Benchmarks.jsonBytes3) }
 
   lazy val jsonText1: String = jsonExample1.s
