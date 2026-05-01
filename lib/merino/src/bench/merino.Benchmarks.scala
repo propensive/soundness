@@ -40,13 +40,13 @@ import contingency.*, strategies.throwUnsafely
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContext
-import hieroglyph.*, charEncoders.utf8
 import probably.*
 import quantitative.*
+import rudiments.*
 import sedentary.*
-import superlunary.*, embeddings.automatic
 import symbolism.*
 import temporaryDirectories.system
+import vacuous.*
 
 object Benchmarks extends Suite(m"Merino benchmarks"):
   given device: BenchmarkDevice = LocalhostDevice
@@ -56,36 +56,43 @@ object Benchmarks extends Suite(m"Merino benchmarks"):
 
     suite(m"Parse example 1"):
       bench(m"Parse file with Jawn")
-        (target = 1*Second, baseline = Baseline(compare = Min)):
+        (target = 250*Milli(Second), baseline = Baseline(compare = Min)):
         '{
             import org.typelevel.jawn.ast.JParser
-            JParser.parseFromString(${jsonExample1}.s)
+            JParser.parseFromString(merino.Benchmarks.jsonText1)
           }
 
-      bench(m"Parse file with Merino")(target = 1*Second):
-        '{ JsonAst.parse(summon[CharEncoder].encoded(${jsonExample1})) }
+      bench(m"Parse file with Merino")(target = 250*Milli(Second)):
+        '{ JsonAst.parse(merino.Benchmarks.jsonBytes1) }
 
     suite(m"Parse example 2"):
       bench(m"Parse file with Jawn")
-        (target = 1*Second, baseline = Baseline(compare = Min)):
+        (target = 250*Milli(Second), baseline = Baseline(compare = Min)):
         '{
             import org.typelevel.jawn.ast.JParser
-            JParser.parseFromString(${jsonExample2}.s)
+            JParser.parseFromString(merino.Benchmarks.jsonText2)
           }
 
-      bench(m"Parse file with Merino")(target = 1*Second):
-        '{ JsonAst.parse(summon[CharEncoder].encoded(${jsonExample2})) }
+      bench(m"Parse file with Merino")(target = 250*Milli(Second)):
+        '{ JsonAst.parse(merino.Benchmarks.jsonBytes2) }
 
     suite(m"Parse example 3"):
       bench(m"Parse file with Jawn")
-        (target = 1*Second, baseline = Baseline(compare = Min)):
+        (target = 250*Milli(Second), baseline = Baseline(compare = Min)):
         '{
             import org.typelevel.jawn.ast.JParser
-            JParser.parseFromString(${jsonExample3}.s)
+            JParser.parseFromString(merino.Benchmarks.jsonText3)
           }
 
-      bench(m"Parse file with Merino")(target = 1*Second):
-        '{ JsonAst.parse(summon[CharEncoder].encoded(${jsonExample3})) }
+      bench(m"Parse file with Merino")(target = 250*Milli(Second)):
+        '{ JsonAst.parse(merino.Benchmarks.jsonBytes3) }
+
+  lazy val jsonText1: String = jsonExample1.s
+  lazy val jsonText2: String = jsonExample2.s
+  lazy val jsonText3: String = jsonExample3.s
+  lazy val jsonBytes1: Data = jsonText1.getBytes("UTF-8").nn.immutable(using Unsafe)
+  lazy val jsonBytes2: Data = jsonText2.getBytes("UTF-8").nn.immutable(using Unsafe)
+  lazy val jsonBytes3: Data = jsonText3.getBytes("UTF-8").nn.immutable(using Unsafe)
 
   val jsonExample1: Text = t"""
 
