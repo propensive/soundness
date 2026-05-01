@@ -34,6 +34,7 @@ package escritoire
 
 import anticipation.*
 import gossamer.*
+import gossamer.Textual.concatenable
 import hieroglyph.*
 import rudiments.*
 import symbolism.*

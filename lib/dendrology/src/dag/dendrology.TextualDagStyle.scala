@@ -34,6 +34,7 @@ package dendrology
 
 import anticipation.*
 import gossamer.*
+import gossamer.Textual.concatenable
 import symbolism.*
 
 import DagTile.*
