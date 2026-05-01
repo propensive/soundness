@@ -34,9 +34,6 @@ package wisteria
 
 import soundness.*
 
-import scala.deriving.Mirror.ProductOf
-import scala.deriving.Mirror.SumOf
-
 object SumOnly extends SumDerivation[SumOnly]:
 
   given SumOnly[SumOnlyEnum.Alpha] = alpha => ()
@@ -76,13 +73,13 @@ object Presentation extends Derivation[Presentation]:
     inline if singleton then typeName else
       val prefix = inline if tuple then "".tt else typeName
       fields(value):
-        [field] => field => s"$index:$label=${field.present}".tt
+        [field] => field => s"$index:$label=${contextual.present(field)}".tt
       .mkString((prefix.s+"("), ", ", ")").tt
 
   inline def disjunction[derivation: SumReflection]: Presentation[derivation] = value =>
     variant(value):
       [variant <: derivation] =>
-        variant => (typeName.s+"."+variant.present).tt
+        variant => (typeName.s+"."+contextual.present(variant)).tt
 
 trait Presentation[-value]:
   def present(value: value): Text
@@ -143,14 +140,14 @@ object Eq extends Derivation[Eq]:
   inline def conjunction[derivation <: Product: ProductReflection]: Eq[derivation] =
     (left, right) =>
       fields(left):
-        [field] => leftValue => leftValue === complement(right)
+        [field] => leftValue => contextual.equal(leftValue, complement(right))
       . all { boolean => boolean }
 
   inline def disjunction[derivation: SumReflection]: Eq[derivation] =
     (left, right) =>
       variant(left):
         [variant <: derivation] => leftValue =>
-          complement(right).lay(false): rightValue => leftValue === rightValue
+          complement(right).lay(false): rightValue => contextual.equal(leftValue, rightValue)
 
 trait Parser[value]:
   def parse(s: String): Option[value]
@@ -206,9 +203,10 @@ trait Producer[value]:
   def produce(s: String): Option[value]
 
 object Producer extends Derivation[Producer]:
-  inline def conjunction[derivation <: Product: ProductOf]: Producer[derivation] = ???
+  inline def conjunction[derivation <: Product: ProductReflection]: Producer[derivation] =
+    compiletime.error("not a product choice")
 
-  inline def disjunction[derivation: SumOf]: Producer[derivation] = input =>
+  inline def disjunction[derivation: SumReflection]: Producer[derivation] = input =>
     inline if choice then Some(singleton(input)) else compiletime.error("not a choice")
 
 object Tests extends Suite(m"Wisteria tests"):

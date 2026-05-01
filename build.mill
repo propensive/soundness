@@ -941,7 +941,7 @@ object villainy extends Library:
 
 object wisteria extends Library:
   object core extends Component(contingency.core)
-  //object test extends Tests(core)
+  object test extends Tests(core)
 
 object xylophone extends Library:
   object core extends Component(zephyrine.core, adversaria.core, typonym.core, hellenism.core, urticose.core)
