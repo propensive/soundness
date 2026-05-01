@@ -34,17 +34,19 @@ package serpentine
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
+import vacuous.*
 
 object Radical:
   given drive: Tactic[PathError] => Drive is Radical:
     type Plane = Windows
 
     def decode(text: Text): Drive =
-      if text.length >= 3 && text.s.charAt(1) == ':' && text.s.charAt(2) == '\\'
-      then Drive(text.s.charAt(0))
+      if text.length >= 3 && text.at(Sec) == ':' && text.at(Ter) == '\\'
+      then Drive(text.at(Prim).vouch)
       else raise(PathError(_.InvalidRoot)) yet Drive('C')
 
     def length(text: Text): Int = 3
