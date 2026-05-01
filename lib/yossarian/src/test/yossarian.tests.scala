@@ -482,33 +482,43 @@ object Tests extends Suite(m"Yossarian Tests"):
         take(row(pty, Prim), 4)
       . assert(_ == t"main")
 
-    suite(m"vttest §wide: Grapheme width [grapheme]"):
+    suite(m"vttest §wide: Grapheme width"):
       test(m"a wide CJK character occupies 2 cells"):
-        // '中' (U+4E2D) is East-Asian-Wide. Two cells should render it; the
-        // next character should land at column 2. Yossarian today stores it
-        // as a single Char in cell 0, and the next char lands at column 1.
+        // '中' (U+4E2D) is East-Asian-Wide. The leading cell holds the
+        // grapheme; the trailing cell is the wide-trailing sentinel; X lands
+        // at column 2.
         val pty = Pty24x80().consume(t"中X")
-        pty.buffer.char(Sec, Prim)
-      . assert(_ == 'X')
+        ( pty.buffer.grapheme(Prim, Prim),
+          pty.buffer.isWideTrailing(Sec, Prim),
+          pty.buffer.char(Ter, Prim) )
+      . assert(_ == (Grapheme("中"), true, 'X'))
 
       test(m"a combining mark attaches to the previous cell, no advance"):
-        // 'a' + COMBINING ACUTE ACCENT (U+0301) is one grapheme. Cursor
-        // should be at column 1 after writing it; the combining mark should
-        // NOT take its own cell. Aspirational until grapheme support lands.
-        val pty = Pty24x80().consume(t"áX")
+        // 'a' + COMBINING ACUTE ACCENT (U+0301) is one grapheme; cursor is
+        // at column 2 after writing 'áX'; X lands at column 1.
+        val pty = Pty24x80().consume(t"áX")
         (pty.cursor, pty.buffer.char(Sec, Prim))
-      . aspire(_ == (Sec, 'X'))
+      . assert(_ == (Ter, 'X'))
 
       test(m"single-codepoint emoji occupies 2 cells"):
-        // '😀' (U+1F600) is Extended_Pictographic and should be width 2.
-        // Aspirational until grapheme support lands.
+        // '😀' (U+1F600) is Extended_Pictographic and is width 2; X
+        // lands at column 2.
         val pty = Pty24x80().consume(t"😀X")
-        pty.buffer.char(Sec, Prim)
-      . aspire(_ == 'X')
+        pty.buffer.char(Ter, Prim)
+      . assert(_ == 'X')
 
       test(m"ZWJ family emoji '👨‍👩‍👧' occupies 2 cells as a single grapheme"):
-        // Three emoji codepoints joined by U+200D should collapse to one
-        // 2-cell grapheme. Aspirational until grapheme support lands.
+        // Three emoji codepoints joined by U+200D collapse to one 2-cell
+        // grapheme; X lands at column 2.
         val pty = Pty24x80().consume(t"👨‍👩‍👧X")
-        pty.buffer.char(Sec, Prim)
-      . aspire(_ == 'X')
+        pty.buffer.char(Ter, Prim)
+      . assert(_ == 'X')
+
+      test(m"wide character at the right edge wraps to next row"):
+        // A wide char with one column left wraps before writing; the leading
+        // cell at the previous right edge stays blank.
+        val pty = Pty24x80().consume(t"$Esc[1;80H中")
+        ( pty.buffer.char(79.z, Prim),
+          pty.buffer.grapheme(Prim, Sec),
+          pty.buffer.isWideTrailing(Sec, Sec) )
+      . assert(_ == (' ', Grapheme("中"), true))

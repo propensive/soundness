@@ -37,6 +37,7 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.*
+import hieroglyph.*, textMetrics.wideCharacterWidth
 import hypotenuse.*
 import kaleidoscope.*
 import proscenium.*
@@ -70,8 +71,15 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
     val escBuffer = StringBuilder()
     val buffer2: Screen = buffer.copy()
 
+    // Pre-compute UAX #29 grapheme boundaries for the whole input. Normal-
+    // state printable handling walks this array to find the smallest
+    // boundary > index, extracts the substring as a Grapheme, and advances
+    // recursion to that boundary. Escape-state handling stays char-by-char.
+    val boundaries: IArray[Int] = GraphemeBreak.boundaries(input)
+    var boundaryCursor: Int = 0
+
     var pendingWrap: Boolean = state.pendingWrap
-    var lastChar: Char = ' '
+    var lastGrapheme: Grapheme = Grapheme(" ")
 
     object cursor:
       private var index: Ordinal = state.cursor
@@ -117,10 +125,12 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
 
     import Context.{Normal, Escape, Csi, Csi2, Osc, Osc2, EatString, EatString2}
 
-    def wipe(cursor: Ordinal): Unit = buffer2.set(cursor, ' ', style, link)
+    def wipe(cursor: Ordinal): Unit = buffer2.set(cursor, Grapheme(" "), style, link)
 
-    def set(x: Ordinal, y: Ordinal, char: Char, style: Style = style, link: Text = link): Unit =
-      buffer2.set(x, y, char, style, link)
+    def set(x: Ordinal, y: Ordinal, grapheme: Grapheme, style: Style = style, link: Text = link)
+    :   Unit =
+
+      buffer2.set(x, y, grapheme, style, link)
 
     def cuu(n: Int): Unit = cursor.y = cursor.y - n
     def cud(n: Int): Unit = cursor.y = cursor.y + n
@@ -153,9 +163,9 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         raise(PtyEscapeError(BadCsiParameter(n, t"ED")))
 
     def el(n: Int): Unit = n match
-      case 0 => for x <- cursor.x.n0 until buffer2.width do set(x.z, cursor.y, ' ')
-      case 1 => for x <- 0 to cursor.x.n0 do set(x.z, cursor.y, ' ')
-      case 2 => for x <- 0 until buffer2.width do set(x.z, cursor.y, ' ')
+      case 0 => for x <- cursor.x.n0 until buffer2.width do set(x.z, cursor.y, Grapheme(" "))
+      case 1 => for x <- 0 to cursor.x.n0 do set(x.z, cursor.y, Grapheme(" "))
+      case 2 => for x <- 0 until buffer2.width do set(x.z, cursor.y, Grapheme(" "))
       case n => raise(PtyEscapeError(BadCsiParameter(n, t"EL")))
 
     def title(text: Text): Unit = state2 = state2.copy(title = text)
@@ -197,22 +207,49 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
     def focus(value: Boolean): Unit = state2 = state2.copy(focus = value)
     def bcp(value: Boolean): Unit = state2 = state2.copy(bracketedPasteMode = value)
 
-    def writeChar(char: Char): Unit =
-      if pendingWrap then
-        cursor.x = Prim
-        ind()
-      set(cursor.x, cursor.y, char)
-      lastChar = char
-      if cursor.x.n0 == buffer2.width - 1
-      then pendingWrap = true
+    def writeGrapheme(grapheme: Grapheme): Unit =
+      val w = grapheme.metrics
+
+      if w == 0 then
+        // Combining mark / zero-width: attach to the cell on the left. If
+        // that cell is the trailing half of a wide grapheme, attach to the
+        // wide leading cell two columns back.
+        val targetX: Ordinal =
+          if cursor.x == Prim then Prim
+          else
+            val left = cursor.x - 1
+            if buffer2.isWideTrailing(left, cursor.y) && left > Prim then left - 1
+            else left
+
+        val current = buffer2.grapheme(targetX, cursor.y)
+        val base = if current.text.s.isEmpty then Grapheme(" ") else current
+        buffer2.set(targetX, cursor.y, Grapheme(base.text.s + grapheme.text.s), style, link)
       else
-        cursor.x = cursor.x + 1
+        if pendingWrap then
+          cursor.x = Prim
+          ind()
+
+        // A wide grapheme at the right edge can't fit; wrap first.
+        if w == 2 && cursor.x.n0 >= buffer2.width - 1 then
+          cursor.x = Prim
+          ind()
+
+        buffer2.set(cursor.x, cursor.y, grapheme, style, link)
+
+        if w == 2 then
+          buffer2.set(cursor.x + 1, cursor.y, Grapheme(""), style, link)
+
+        lastGrapheme = grapheme
+
+        if cursor.x.n0 == buffer2.width - w then pendingWrap = true
+        else
+          cursor.x = cursor.x + w
 
     def rep(n: Int): Unit =
       val count = if n == 0 then 1 else n
       var i = 0
       while i < count do
-        writeChar(lastChar)
+        writeGrapheme(lastGrapheme)
         i += 1
 
     def ht(): Unit =
@@ -226,12 +263,12 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
       val shift = n.min(width - col)
       var i = width - 1
       while i >= col + shift do
-        buffer2.set(i.z, row.z, buffer2.char((i - shift).z, row.z),
+        buffer2.set(i.z, row.z, buffer2.grapheme((i - shift).z, row.z),
             buffer2.style((i - shift).z, row.z), buffer2.link((i - shift).z, row.z))
         i -= 1
       var j = col
       while j < col + shift do
-        buffer2.set(j.z, row.z, ' ', style, link)
+        buffer2.set(j.z, row.z, Grapheme(" "), style, link)
         j += 1
 
     def dch(n: Int): Unit =
@@ -241,12 +278,12 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
       val shift = n.min(width - col)
       var i = col
       while i < width - shift do
-        buffer2.set(i.z, row.z, buffer2.char((i + shift).z, row.z),
+        buffer2.set(i.z, row.z, buffer2.grapheme((i + shift).z, row.z),
             buffer2.style((i + shift).z, row.z), buffer2.link((i + shift).z, row.z))
         i += 1
       var j = width - shift
       while j < width do
-        buffer2.set(j.z, row.z, ' ', style, link)
+        buffer2.set(j.z, row.z, Grapheme(" "), style, link)
         j += 1
 
     def ech(n: Int): Unit =
@@ -255,7 +292,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
       val end = (col + n).min(buffer2.width)
       var i = col
       while i < end do
-        buffer2.set(i.z, row.z, ' ', style, link)
+        buffer2.set(i.z, row.z, Grapheme(" "), style, link)
         i += 1
 
     def il(n: Int): Unit =
@@ -271,7 +308,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         while r >= top + shift do
           var c = 0
           while c < width do
-            buffer2.set(c.z, r.z, buffer2.char(c.z, (r - shift).z),
+            buffer2.set(c.z, r.z, buffer2.grapheme(c.z, (r - shift).z),
                 buffer2.style(c.z, (r - shift).z), buffer2.link(c.z, (r - shift).z))
             c += 1
           r -= 1
@@ -279,7 +316,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         while rr < top + shift do
           var c = 0
           while c < width do
-            buffer2.set(c.z, rr.z, ' ', style, link)
+            buffer2.set(c.z, rr.z, Grapheme(" "), style, link)
             c += 1
           rr += 1
 
@@ -294,7 +331,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         while r <= bottom - shift do
           var c = 0
           while c < width do
-            buffer2.set(c.z, r.z, buffer2.char(c.z, (r + shift).z),
+            buffer2.set(c.z, r.z, buffer2.grapheme(c.z, (r + shift).z),
                 buffer2.style(c.z, (r + shift).z), buffer2.link(c.z, (r + shift).z))
             c += 1
           r += 1
@@ -302,7 +339,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         while rr <= bottom do
           var c = 0
           while c < width do
-            buffer2.set(c.z, rr.z, ' ', style, link)
+            buffer2.set(c.z, rr.z, Grapheme(" "), style, link)
             c += 1
           rr += 1
 
@@ -495,9 +532,17 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         cursor.x = Prim
         proceed(Normal)
 
-      inline def put(char: Char): Pty =
-        writeChar(char)
-        proceed(Normal)
+      // Find the next grapheme boundary > index, extract that cluster from
+      // the input, and feed it to writeGrapheme. The boundary cursor only
+      // advances forwards (matching recur's monotonic index walk), so amortised
+      // cost is O(1) per character.
+      inline def putGrapheme(): Pty =
+        while boundaryCursor < boundaries.length && boundaries(boundaryCursor) <= index
+        do boundaryCursor += 1
+
+        val end = boundaries(boundaryCursor)
+        writeGrapheme(Grapheme(input.s.substring(index, end).nn))
+        recur(end, Normal)
 
       if index >= input.length
       then Pty(buffer2,
@@ -542,7 +587,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
               case '\u001d' => proceed(Normal) // gs()
               case '\u001e' => proceed(Normal) // rs()
               case '\u001f' => proceed(Normal) // us()
-              case ch       => put(ch)
+              case _        => putGrapheme()
 
           case Escape =>
             current match
