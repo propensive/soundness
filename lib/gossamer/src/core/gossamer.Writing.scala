@@ -32,127 +32,92 @@
                                                                                                   */
 package gossamer
 
-import scala.quoted.*
+import java.lang as jl
+
+import scala.reflect.*
 
 import anticipation.*
-import contextual.*
 import denominative.*
-import fulminate.*
-import gigantism.*
+import hieroglyph.*
 import proscenium.*
-import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
 
-import errorDiagnostics.empty
+object Writing:
+  def apply(text: Text): Writing = new Writing(text, GraphemeBreak.boundaries(text))
 
-object internal:
-  private given realm: Realm = realm"go"
+  val empty: Writing = new Writing(Text(""), IArray(0))
 
-  case class Input(txt: Text)
+  given showable: Writing is Showable = _.text
 
-  given showable: [value: Showable] => Insertion[Input, value] = value => Input(value.show)
-  given input: Insertion[Input, Nothing] = value => Input("".tt)
+  given concatenable: Writing is Concatenable:
+    type Operand = Writing
+    def concat(left: Writing, right: Writing): Writing = textual.concat(left, right)
 
-  object T extends Interpolator[Input, Text, Text]:
-    def initial: Text = anticipation.Text("")
+  given textual: Writing is Textual:
+    type Operand = Grapheme
+    type Show[value] = value is Showable
 
-    def parse(state: Text, next: Text): Text =
-      try anticipation.Text(state.s+TextEscapes.escape(next).s)
-      catch case error: EscapeError => error match
-        case EscapeError(message) => throw InterpolationError(message)
+    val classTag: ClassTag[Writing] = summon[ClassTag[Writing]]
 
-    def skip(state: Text): Text = state
-    def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
-    def complete(state: Text): Text = state
+    def show[value](value: value)(using show: Show[value]): Writing = Writing(show.text(value))
+    def apply(text: Text): Writing = Writing(text)
+    def single(operand: Grapheme): Writing = Writing(operand.text)
+    def fromChar(char: Char): Grapheme = Grapheme(char.toString)
+    def length(writing: Writing): Int = writing.boundaries.length - 1
+    def size(writing: Writing): Int = writing.boundaries.length - 1
+    def text(writing: Writing): Text = writing.text
 
-  object Text extends Interpolator[Input, Text, Text]:
-    def initial: Text = anticipation.Text("")
+    def map(writing: Writing)(lambda: Grapheme => Grapheme): Writing =
+      val builder = jl.StringBuilder()
+      val n = writing.boundaries.length - 1
+      var i = 0
+      while i < n do
+        val piece = writing.text.s.substring(writing.boundaries(i), writing.boundaries(i + 1)).nn
+        builder.append(lambda(Grapheme(piece)).text.s)
+        i += 1
 
-    def parse(state: Text, next: Text): Text =
-      try anticipation.Text(state.s+TextEscapes.escape(next).s)
-      catch case error: EscapeError => error match
-        case EscapeError(message) => throw InterpolationError(message)
+      Writing(builder.toString.nn.tt)
 
-    def skip(state: Text): Text = state
-    def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
+    def empty: Writing = Writing.empty
+    def concat(left: Writing, right: Writing): Writing = Writing(Text(left.text.s+right.text.s))
 
-    def complete(state: Text): Text =
-      val array = state.s.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
-      anticipation.Text(String.join("\n", array*).nn)
+    def at(writing: Writing, index: Ordinal): Grapheme =
+      Grapheme:
+        writing.text.s.substring(writing.boundaries(index.n0), writing.boundaries(index.n0 + 1)).nn
 
-  object opaques:
-    opaque type Ascii = anticipation.Data
-    opaque type Grapheme = String
+    def indexOf(writing: Writing, sub: Text, start: Ordinal): Optional[Ordinal] =
+      val charStart = writing.boundaries(start.n0.min(writing.boundaries.length - 1))
+      val foundChar = writing.text.s.indexOf(sub.s, charStart)
+      if foundChar < 0 then Unset else
+        val idx = writing.boundaries.indexWhere(_ == foundChar)
+        if idx < 0 then Unset else idx.z
 
-    object Grapheme:
-      def apply(string: String): Grapheme = string
+    def builder(size: Optional[Int]): Builder[Writing] = WritingBuilder(size)
 
-      given showable: Grapheme is Showable = grapheme => grapheme.tt
+    def segment(writing: Writing, interval: Interval): Writing =
+      val limit = length(writing)
+      val s = interval.start.n0.max(0).min(limit)
+      val e = interval.end.n0.max(s).min(limit)
+      val slice = writing.text.s.substring(writing.boundaries(s), writing.boundaries(e)).nn
+      Writing(slice.tt)
 
-      extension (grapheme: Grapheme)
-        def text: Text = grapheme.tt
-        def chars: Int = grapheme.length
+  extension (writing: Writing)
+    def graphemes: IndexedSeq[Grapheme] =
+      val n = writing.boundaries.length - 1
+      IndexedSeq.tabulate(n): i =>
+        Grapheme(writing.text.s.substring(writing.boundaries(i), writing.boundaries(i + 1)).nn)
 
-    object Ascii:
-      def apply(bytes: Data): Ascii = bytes
+    def graphemeCount: Int = writing.boundaries.length - 1
 
-      given showable: Ascii is Showable =
-        ascii => String(ascii.mutable(using Unsafe), "ASCII").nn.tt
+case class Writing(text: Text, boundaries: IArray[Int])
 
-      given concatenable: Ascii is Concatenable:
-        type Operand = Ascii
-        def concat(left: Ascii, right: Ascii): Ascii = textual.concat(left, right)
+class WritingBuilder(size: Optional[Int] = Unset) extends Builder[Writing](size):
+  private val builder: jl.StringBuilder = size.lay(jl.StringBuilder())(jl.StringBuilder(_))
 
-      extension (ascii: Ascii) def bytes: Data = ascii
-
-      given textual: Ascii is Textual:
-        type Operand = Byte
-        type Show[value] = value is Showable
-
-        val empty: Ascii = IArray.from[Byte](Nil)
-        val classTag: ClassTag[Ascii] = summon[ClassTag[Ascii]]
-
-        def apply(text: Text): Ascii = text.sysData
-        def single(operand: Byte): Ascii = IArray(operand)
-        def fromChar(char: Char): Byte = char.toByte
-        def length(ascii: Ascii): Int = ascii.size
-        def text(ascii: Ascii): Text = String(ascii.mutable(using Unsafe), "ASCII").nn.tt
-        def at(ascii: Ascii, index: Ordinal): Byte = ascii(index.n0)
-        def builder(size: Optional[Int]): Builder[Ascii] = AsciiBuilder(size)
-        def size(ascii: Ascii): Int = ascii.length
-
-        def map(ascii: Ascii)(lambda: Byte => Byte): Ascii = ascii.map(lambda)
-
-        def concat(left: Ascii, right: Ascii): Ascii =
-          IArray.build[Byte](left.length + right.length): array =>
-            array.place(left, Prim)
-            array.place(right, left.length.z)
-
-        def indexOf(ascii: Ascii, sub: Text, start: Ordinal): Optional[Ordinal] =
-          ascii.indexOfSlice(apply(sub)).puncture(-1).let(_.z)
-
-        def show[value](value: value)(using show: Show[value]): Ascii =
-          Ascii(show.text(value).sysData)
-
-        def segment(ascii: Ascii, interval: Interval): Ascii =
-          ascii.slice(interval.start.n0, interval.end.n0)
-
-  def ascii(context: Expr[StringContext], parts: Expr[Seq[Ascii]]): Macro[Ascii] =
-    val dynamicParts: List[Expr[Ascii]] = parts.absolve match
-      case Varargs(parts) => parts.to(List)
-
-    val staticParts: List[Expr[Ascii]] = context.value.get.parts.to(List).map: part =>
-      val bytes: IArray[Expr[Byte]] = part.tt.chars.map: char =>
-        if char >= 128 then halt(3, m"$char is not a valid ASCII character")
-        Expr[Byte](char.toByte)
-
-      '{Ascii(Data(${Varargs(bytes)}*))}
-
-    def recur(first: List[Expr[Ascii]], second: List[Expr[Ascii]], expr: Expr[Ascii]): Expr[Ascii] =
-      first match
-        case head :: tail => recur(second, tail, '{$expr+$head})
-        case Nil          => expr
-
-    recur(staticParts.tail.to(List), dynamicParts, staticParts.head)
+  protected def put(writing: Writing): Unit = builder.append(writing.text.s)
+  protected def putChar(char: Char): Unit = builder.append(char)
+  protected def wipe(): Unit = builder.setLength(0)
+  protected def result(): Writing = Writing(builder.toString.nn.tt)
+  def length: Int = builder.length

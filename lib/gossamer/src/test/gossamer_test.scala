@@ -1048,3 +1048,48 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert: dictionary =>
           words2.all: word =>
             dictionary(word) == word.upper
+
+    suite(m"Writing and grapheme clusters"):
+      test(m"empty Text has zero graphemes"):
+        Writing(t"").graphemeCount
+      . assert(_ == 0)
+
+      test(m"empty Text has single sentinel boundary"):
+        Writing(t"").boundaries.toList
+      . assert(_ == List(0))
+
+      test(m"ASCII text grapheme count equals char count"):
+        Writing(t"abc").graphemeCount
+      . assert(_ == 3)
+
+      test(m"ASCII text boundaries are sentinels at every char"):
+        Writing(t"abc").boundaries.toList
+      . assert(_ == List(0, 1, 2, 3))
+
+      test(m"CR LF stays one grapheme"):
+        Writing(t"a\r\nb").boundaries.toList
+      . assert(_ == List(0, 1, 3, 4))
+
+      test(m"CR LF grapheme count"):
+        Writing(t"a\r\nb").graphemeCount
+      . assert(_ == 3)
+
+      test(m"combining mark joins with base character"):
+        Writing(Text("é")).graphemeCount
+      . assert(_ == 1)
+
+      test(m"family emoji ZWJ sequence is one grapheme"):
+        Writing(Text("👨‍👩‍👧")).graphemeCount
+      . assert(_ == 1)
+
+      test(m"two flag emoji are exactly two graphemes"):
+        Writing(Text("🇬🇧🇫🇷")).graphemeCount
+      . assert(_ == 2)
+
+      test(m"Textual[Writing].length returns grapheme count"):
+        summon[Writing is Textual].length(Writing(t"abc"))
+      . assert(_ == 3)
+
+      test(m"Writing graphemes view round-trips"):
+        Writing(t"abc").graphemes.map(_.text).mkString
+      . assert(_ == "abc")
