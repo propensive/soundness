@@ -37,6 +37,11 @@ pub fn launch(
     let mut command = Command::new(&executable);
     command.arg(crate::WRAP_SENTINEL).arg(&java);
     for argument in build_java_arguments(script, name, config) { command.arg(argument); }
+    // Capture the JVM invocation time as late as possible — after the slow
+    // argument-building work (zsh probe, $fpath capture) — so `uptime` in the
+    // daemon measures from the moment java is actually spawned, not from when
+    // launch() was entered.
+    command.arg(format!("-Dethereal.startTime={}", crate::now_ms()));
     command.arg("-jar").arg(script);
     command.stdin(Stdio::null());
     command.stdout(Stdio::null());
@@ -98,7 +103,6 @@ pub fn launch(
 }
 
 fn build_java_arguments(script: &Path, name: &str, config: &BuildConfig) -> Vec<String> {
-    let start_time = crate::now_ms();
     let jar_size = std::fs::metadata(script).map(|metadata| metadata.len()).unwrap_or(0);
     let user_name = std::env::var("USER").or_else(|_| std::env::var("USERNAME")).unwrap_or_default();
     let uid: u32 = {
@@ -120,7 +124,6 @@ fn build_java_arguments(script: &Path, name: &str, config: &BuildConfig) -> Vec<
 
     vec![
         format!("-Dbuild.id={}", config.build_id),
-        format!("-Dethereal.startTime={}", start_time),
         format!("-Dethereal.name={}", name),
         format!("-Dethereal.user.id={}", uid),
         format!("-Dethereal.user.name={}", user_name),

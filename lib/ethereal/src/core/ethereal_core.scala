@@ -209,6 +209,8 @@ def cli[bus <: Matchable](using executive: Executive)
 
   val userId: Optional[Int] = safely(System.properties.ethereal.user.id[Int]())
   val userName: Optional[Text] = safely(System.properties.ethereal.user.name[Text]())
+  val startTime: Long =
+    safely(System.properties.ethereal.startTime[Long]()).or(jl.System.currentTimeMillis())
 
   val runtimeDir: Optional[Path on Local] = Xdg.runtimeDir
   val stateHome: Path on Local = Xdg.stateHome
@@ -387,7 +389,8 @@ def cli[bus <: Matchable](using executive: Executive)
                 script.decode[Path on Local],
                 deliver(pid, _),
                 connection.bus.stream,
-                name )
+                name,
+                startTime )
 
           Log.fine(DaemonLogEvent.NewCli)
 
