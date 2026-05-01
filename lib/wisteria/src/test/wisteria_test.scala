@@ -102,8 +102,10 @@ object Tests extends Suite(m"Wisteria tests"):
 
     inline def conjunction[derivation <: Product: ProductReflection]: Eq[derivation] =
       (left, right) =>
-        fields(left):
-          [field] => leftValue => contextual.equal(leftValue, complement(right))
+        contexts[derivation]:
+          [field] => typeclass =>
+            val extract: derivation => field = dereference
+            typeclass.equal(extract(left), extract(right))
         . all { boolean => boolean }
 
     inline def disjunction[derivation: SumReflection]: Eq[derivation] =
