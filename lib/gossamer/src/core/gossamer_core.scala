@@ -35,6 +35,7 @@ package gossamer
 import language.experimental.into
 import language.experimental.pureFunctions
 
+import java.lang as jl
 import java.net.{URLEncoder, URLDecoder}
 import java.util.regex as jur
 
@@ -191,6 +192,18 @@ extension [textual: Textual](text: textual)
     case Ltr => text.segment(Interval.initial(count))
     case Rtl => text.segment(text.limit - count till text.limit)
 
+  def skip(predicate: Char => Boolean): textual = text.skip(predicate, Ltr)
+
+  def skip(predicate: Char => Boolean, bidi: Bidi): textual = bidi match
+    case Ltr => text.where(!predicate(_)).lay(textual.empty)(text.from(_))
+    case Rtl => text.where(!predicate(_), bidi = Rtl).lay(textual.empty)(text.upto(_))
+
+  def keep(predicate: Char => Boolean): textual = text.keep(predicate, Ltr)
+
+  def keep(predicate: Char => Boolean, bidi: Bidi): textual = bidi match
+    case Ltr => text.where(!predicate(_)).lay(text)(text.before(_))
+    case Rtl => text.where(!predicate(_), bidi = Rtl).lay(text)(text.after(_))
+
   def capitalize: textual = textual.concat(text.keep(1).upper, text.after(Prim))
   def uncapitalize: textual = textual.concat(text.keep(1).lower, text.after(Prim))
 
@@ -230,12 +243,23 @@ extension [textual: Textual](text: textual)
         case _          => Stream()
 
   def seek(regex: Regex): Optional[textual] = regex.seek(textual.text(text)).let(text.segment(_))
-  def seek(substring: Text): Optional[Ordinal] = textual.indexOf(text, substring)
+
+  def seek(substring: Text, bidi: Bidi = Ltr): Optional[Ordinal] = bidi match
+    case Ltr => textual.indexOf(text, substring)
+    case Rtl =>
+      if substring.nil then Unset else
+        def recur(start: Ordinal, last: Optional[Ordinal]): Optional[Ordinal] =
+          textual.indexOf(text, substring, start).lay(last): found =>
+            recur(found + 1, found)
+
+        recur(Prim, Unset)
 
   inline def trim: textual =
     val start = text.where(!_.isWhitespace).or(text.limit - 1)
     val end = text.where(!_.isWhitespace, bidi = Rtl).or(Prim)
     text.segment(start thru end)
+
+  def trim(bidi: Bidi): textual = text.skip(_.isWhitespace, bidi)
 
   def where(predicate: Char => Boolean, start: Optional[Ordinal] = Unset, bidi: Bidi = Ltr)
   :   Optional[Ordinal] =
@@ -263,14 +287,6 @@ extension [textual: Textual](text: textual)
     val end: Ordinal = text.where(predicate).or(text.limit - 1)
     text.upto(end)
 
-  def dropWhile(predicate: Char => Boolean): textual =
-    text.where(!predicate(_)).lay(textual.empty): ordinal =>
-      text.segment(ordinal till text.limit)
-
-  def whilst(predicate: Char => Boolean): textual =
-    text.where(!predicate(_)).lay(textual.empty): ordinal =>
-      text.before(ordinal)
-
   def snip(predicate: Char => Boolean, index: Ordinal = Prim): Optional[(textual, textual)] =
     text.where(predicate, index).let(_.n0).let(text.snip(_))
 
@@ -289,6 +305,16 @@ extension [textual: Textual](text: textual)
       recur(index + 1, sum + increment)
 
     recur(Prim, 0)
+
+  def count(substring: Text): Int =
+    if substring.nil then 0 else
+      def recur(start: Ordinal, total: Int): Int =
+        textual.indexOf(text, substring, start).lay(total): found =>
+          recur(found + substring.length, total + 1)
+
+      recur(Prim, 0)
+
+  def blank: Boolean = text.where(!_.isWhitespace).absent
 
   def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using Text is Measurable): textual =
     if text.plain.metrics >= length then text else
@@ -327,8 +353,14 @@ extension [textual: Textual](text: textual)
 
   def ends(suffix: Text): Boolean = text.keep(suffix.length, Rtl) == suffix
 
+  def strip(affix: Text, bidi: Bidi = Ltr): textual = bidi match
+    case Ltr => if text.starts(affix) then text.skip(affix.length) else text
+    case Rtl => if text.ends(affix) then text.skip(affix.length, Rtl) else text
+
   inline def tr(from: Char, to: Char): textual =
     textual.map(text)(char => if char == from then to else char)
+
+  inline def ossify: textual = text.tr(' ', ' ')
 
   // Extension method is applied explicitly because it appears ambiguous otherwise
   inline def subscripts: textual = textual.map(text)(_.subscript.or(' '))
@@ -417,10 +449,28 @@ package proximities:
     (left, right) => levenshteinDistance.distance(left, right)/left.length.max(right.length)
 
 extension (text: Text)
-  inline def sub(from: Text, to: Text): Text =
-    text.s.replaceAll(jur.Pattern.quote(from.s).nn, to.s).nn.tt
+  def sub(from: Text, to: Text): Text =
+    text.subPattern(jur.Pattern.compile(jur.Pattern.quote(from.s)).nn, to, Int.MaxValue)
 
-  inline def sub(from: Regex, to: Text): Text = text.s.replaceAll(from.pattern.s, to.s).nn.tt
+  def sub(from: Text, to: Text, count: Int): Text =
+    text.subPattern(jur.Pattern.compile(jur.Pattern.quote(from.s)).nn, to, count)
+
+  def sub(from: Regex, to: Text): Text =
+    text.subPattern(jur.Pattern.compile(from.pattern.s).nn, to, Int.MaxValue)
+
+  def sub(from: Regex, to: Text, count: Int): Text =
+    text.subPattern(jur.Pattern.compile(from.pattern.s).nn, to, count)
+
+  private def subPattern(pattern: jur.Pattern, to: Text, count: Int): Text =
+    if count <= 0 then text else
+      val matcher = pattern.matcher(text.s).nn
+      val builder = jl.StringBuilder()
+      var n = 0
+      while n < count && matcher.find() do
+        matcher.appendReplacement(builder, to.s)
+        n += 1
+      matcher.appendTail(builder)
+      builder.toString.nn.tt
 
   inline def urlEncode: Text = URLEncoder.encode(text.s, "UTF-8").nn.tt
   inline def urlDecode: Text = URLDecoder.decode(text.s, "UTF-8").nn.tt

@@ -510,17 +510,17 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == 10.z)
 
       test(m"Take characters while predicate is true"):
-        t"HELLOworld".whilst(_.isUpper)
+        t"HELLOworld".keep(_.isUpper)
 
       . assert(_ == t"HELLO")
 
       test(m"Take chars when predicate is never true"):
-        t"hello world".whilst(_.isUpper)
+        t"hello world".keep(_.isUpper)
 
       . assert(_ == t"")
 
       test(m"Take chars when predicate isn't initially true"):
-        t"Helloworld".whilst(_.isLower)
+        t"Helloworld".keep(_.isLower)
 
       . assert(_ == t"")
 

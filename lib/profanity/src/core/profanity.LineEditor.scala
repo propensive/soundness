@@ -57,7 +57,7 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
     case Right       => copy(position0 = (position + 1) `min` value.length)
 
     case Ctrl('W') =>
-      val prefix = value.keep(0 max (position - 1)).reverse.dropWhile(_ != ' ').reverse
+      val prefix = value.keep(0 max (position - 1)).skip(_ != ' ', Rtl)
       copy(t"$prefix${value.skip(position)}", prefix.length)
 
     case Backspace =>
