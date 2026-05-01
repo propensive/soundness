@@ -150,7 +150,41 @@ private final class JsonParser(input: Data):
     acc.toChar
 
   private def parseString()(using Tactic[ParseError]): String =
+    val start = pos
+
+    // Fast scan for plain printable ASCII that needs no escape handling.
+    // A signed Byte is >= 32 only when it's printable ASCII (32..127);
+    // negative bytes (0x80..0xFF) come out as -128..-1 < 32, so this single
+    // comparison rejects both control characters and UTF-8 lead bytes.
+    while pos < end && {
+      val b = bytes(pos)
+      b >= 32 && b != Quote && b != Backslash
+    } do pos += 1
+
+    if pos >= end then error(Issue.PrematureEnd)
+
+    if bytes(pos) == Quote then
+      val result =
+        new String(bytes, start, pos - start, java.nio.charset.StandardCharsets.US_ASCII)
+      pos += 1
+      result
+    else parseStringTail(start)
+
+  private def parseStringTail(start: Int)(using Tactic[ParseError]): String =
     resetString()
+    val n = pos - start
+    if n > 0 then
+      while stringCursor + n > arraySize do arraySize *= 2
+      if stringArray.length < arraySize then
+        val newArr = new Array[Char](arraySize)
+        System.arraycopy(stringArray, 0, newArr, 0, stringCursor)
+        stringArray = newArr
+      var i = 0
+      while i < n do
+        stringArray(stringCursor + i) = (bytes(start + i) & 0xFF).toChar
+        i += 1
+      stringCursor += n
+
     var continue = true
     while continue do
       if pos >= end then error(Issue.PrematureEnd)
