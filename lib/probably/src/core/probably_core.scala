@@ -66,6 +66,8 @@ type TestPalette = Palette:
   def detail: Color in Srgb
   def pass: Color in Srgb
   def fail: Color in Srgb
+  def aspirePass: Color in Srgb
+  def aspireFail: Color in Srgb
   def subdued: Color in Srgb
 
 extension [left](left: left)

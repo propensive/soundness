@@ -37,8 +37,10 @@ import proscenium.*
 object Test:
   extension [test](test: Test[test])
     inline def aspire(inline predicate: test => Boolean): Unit =
-      ${probably.internal.aspire[test]('test)}
+      ${probably.internal.aspire[test]('test, 'predicate)}
 
+    inline def aspire(): Unit =
+      ${probably.internal.aspire[test]('test, '{probably.internal.succeed})}
 
     inline def assert(inline predicate: test => Boolean): Unit =
       ${probably.internal.assert[test]('test, 'predicate)}

@@ -73,6 +73,10 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
       def highlight:   Color in Srgb = accent(yellow)
       def pass:        Color in Srgb = theme.spectrum.green.in[Srgb]
       def fail:        Color in Srgb = red
+      def aspirePass:  Color in Srgb =
+        mix(theme.spectrum.green.in[Srgb], theme.spectrum.cyan.in[Srgb], 0.5)
+
+      def aspireFail:  Color in Srgb = subdue(yellow, 0.5)
       def detail:      Color in Srgb = blue
       def background:  Color in Srgb = theme.background.in[Srgb]
       def foreground:  Color in Srgb = theme.foreground.in[Srgb]

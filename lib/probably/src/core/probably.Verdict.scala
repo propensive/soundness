@@ -49,6 +49,8 @@ enum Verdict:
   case Fail(duration: Long)
   case Throws(exception: Exception, duration: Long)
   case CheckThrows(exception: Exception, duration: Long)
+  case AspirePass(duration: Long)
+  case AspireFail(duration: Long)
 
   val timestamp: Long = System.currentTimeMillis
 
