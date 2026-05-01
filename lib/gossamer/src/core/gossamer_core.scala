@@ -194,6 +194,7 @@ extension [textual: Textual](text: textual)
     builder()
 
   def contains(substring: Text): Boolean = textual.indexOf(text, substring).present
+  inline def has(substring: Text): Boolean = text.contains(substring)
 
   def search(regex: Regex, overlap: Boolean = false): Stream[textual] =
     regex.search(textual.text(text), overlap = overlap).map(text.segment(_))
@@ -273,6 +274,7 @@ extension [textual: Textual { type Operand = Char }](text: textual)
   def uncapitalize: textual = textual.concat(text.keep(1).lower, text.after(Prim))
 
   def contains(char: Char): Boolean = textual.indexOf(text, char.show).present
+  inline def has(char: Char): Boolean = text.contains(char)
 
   inline def trim: textual =
     val start = text.where(!_.isWhitespace).or(text.limit - 1)
