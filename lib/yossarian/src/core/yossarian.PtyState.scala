@@ -33,11 +33,12 @@
 package yossarian
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 
 case class PtyState
-  ( cursor:             Int     = 0,
-    savedCursor:        Int     = 0,
+  ( cursor:             Ordinal = Prim,
+    savedCursor:        Ordinal = Prim,
     style:              Style   = Style(),
     focusDetectionMode: Boolean = false,
     focus:              Boolean = true,
