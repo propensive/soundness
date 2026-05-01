@@ -183,9 +183,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
       . assert(_ == 3)
 
       // UAX #29 conformance against the official GraphemeBreakTest.txt fixture.
-      // GB9c (Indic Conjunct Break, rule 9.3) is intentionally not implemented
-      // in this first pass, so those cases are tolerated.
-      test(m"UAX #29 conformance (excluding GB9c)"):
+      test(m"UAX #29 conformance"):
         val resourcePath = "/hieroglyph/GraphemeBreakTest.txt"
         val stream = getClass.getResourceAsStream(resourcePath).nn
         val lines = scala.io.Source.fromInputStream(stream).getLines().to(List)
@@ -199,7 +197,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
           val trimmed = withoutComment.trim.nn
 
-          if trimmed.nonEmpty && !rawLine.contains("[9.3]") then
+          if trimmed.nonEmpty then
             val tokens: List[String] = trimmed.split("\\s+").nn.to(List).map(_.nn)
             val sb = jl.StringBuilder()
             val expected = scala.collection.mutable.ArrayBuffer[Int]()

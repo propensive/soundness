@@ -80,8 +80,17 @@ object Unicode:
       case Wide | FullWidth => 2
       case _                => 1
 
-  def eastAsianWidth(char: Char): Optional[EaWidth] =
-    eastAsianWidths.minAfter(CharRange(char.toInt, char.toInt)).optional.let(_(1))
+  def eastAsianWidth(char: Char): Optional[EaWidth] = eastAsianWidth(char.toInt)
+
+  def eastAsianWidth(codepoint: Int): Optional[EaWidth] =
+    // Each entry's packed key is `(from << 32) + to`, so entries sort by `from` first. Searching
+    // with `(codepoint + 1) << 32` and `maxBefore` (strict <) returns the entry with the largest
+    // `from` ≤ `codepoint`; the membership test then confirms `codepoint` falls inside `to`.
+    val searchKey: CharRange = CharRange(codepoint + 1, 0)
+
+    eastAsianWidths.maxBefore(searchKey).match
+      case Some((range, ea)) if codepoint >= range.from && codepoint <= range.to => ea
+      case _                                                                     => Unset
 
   def visible(char: Char): Char = char match
     case '\u007f'            => '␥'

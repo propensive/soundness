@@ -33,8 +33,6 @@
 package hieroglyph
 
 object WideCharacterWidth:
-  import hieroglyph.internal.*
-
   def width(codePoint: Int): Int =
     if codePoint <= 0 then 0
     else if codePoint < 0x20 || codePoint >= 0x7f && codePoint < 0xa0 then 0
@@ -45,14 +43,6 @@ object WideCharacterWidth:
         ( category == Character.NON_SPACING_MARK || category == Character.ENCLOSING_MARK
           || category == Character.FORMAT )
       then 0
-      else if isWide(codePoint) then 2 else 1
-
-  private def isWide(codePoint: Int): Boolean =
-    val searchKey: CharRange = CharRange(codePoint + 1, 0)
-
-    Unicode.eastAsianWidths.maxBefore(searchKey) match
-      case Some((range, ea)) if codePoint >= range.from && codePoint <= range.to =>
-        ea == Unicode.EaWidth.Wide || ea == Unicode.EaWidth.FullWidth
-
-      case _ =>
-        false
+      else Unicode.eastAsianWidth(codePoint).match
+        case Unicode.EaWidth.Wide | Unicode.EaWidth.FullWidth => 2
+        case _                                                => 1

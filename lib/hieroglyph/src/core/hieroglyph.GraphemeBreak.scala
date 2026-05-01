@@ -96,6 +96,31 @@ object GraphemeBreak:
 
     . let(_.ordinal)
 
+  // Indic Conjunct Break property (UAX #44 §5.7.7) — feeds rule GB9c.
+  private object IncbValue:
+    val Consonant: Int = 0
+    val Extend: Int = 1
+    val Linker: Int = 2
+
+  private def parseIncbEntries(in: ji.InputStream): List[Entry] =
+    scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
+      Text(line) match
+        case
+          r"${Hex(from)}([0-9A-Fa-f]+)\.\.${Hex(to)}([0-9A-Fa-f]+)\s*;\s*InCB\s*;\s*$name([A-Za-z]+).*" =>
+            incbClassify(name).option.map(Entry(from, to, _))
+
+        case r"${Hex(from)}([0-9A-Fa-f]+)\s*;\s*InCB\s*;\s*$name([A-Za-z]+).*" =>
+          incbClassify(name).option.map(Entry(from, from, _))
+
+        case _ =>
+          None
+
+  private def incbClassify(name: Text): Optional[Int] = name.s match
+    case "Consonant" => IncbValue.Consonant
+    case "Extend"    => IncbValue.Extend
+    case "Linker"    => IncbValue.Linker
+    case _           => Unset
+
   private case class Tables(starts: IArray[Int], ends: IArray[Int], props: IArray[Byte])
 
   private def buildTables(entries: List[Entry]): Tables =
@@ -129,6 +154,13 @@ object GraphemeBreak:
 
     buildTables(parseEntries(in, name => if name.s == "Extended_Pictographic" then 0 else Unset))
 
+  private lazy val incbTables: Tables =
+    val in = loadResource(
+      "/hieroglyph/IndicConjunctBreak.txt",
+      "https://www.unicode.org/Public/16.0.0/ucd/DerivedCoreProperties.txt")
+
+    buildTables(parseIncbEntries(in))
+
   private def lookup(tables: Tables, codepoint: Int): Int =
     val starts = tables.starts
     var low = 0
@@ -149,6 +181,7 @@ object GraphemeBreak:
     if ord < 0 then Property.Other else Property.fromOrdinal(ord)
 
   def extendedPictographic(codepoint: Int): Boolean = lookup(extPictTables, codepoint) >= 0
+  def incb(codepoint: Int): Int = lookup(incbTables, codepoint)
 
   def boundaries(text: Text): IArray[Int] =
     import Property.*
@@ -165,12 +198,19 @@ object GraphemeBreak:
       var prev = property(firstCodepoint)
       var regionalCount = if prev == RegionalIndicator then 1 else 0
       var inEmojiSeq = extendedPictographic(firstCodepoint)
+
+      // GB9c state: have we seen an InCB=Consonant whose tail (any number of InCB=Extend or
+      // InCB=Linker codepoints up to and including `prev`) contains at least one Linker?
+      var incbAfterConsonant = incb(firstCodepoint) == IncbValue.Consonant
+      var incbHasLinker = false
+
       index = Character.charCount(firstCodepoint)
 
       while index < n do
         val codepoint = Character.codePointAt(s, index)
         val curr = property(codepoint)
         val currExtPict = extendedPictographic(codepoint)
+        val currIncb = incb(codepoint)
 
         val brk =
           if prev == Cr && curr == Lf then false
@@ -182,6 +222,9 @@ object GraphemeBreak:
           else if curr == Extend || curr == Zwj then false
           else if curr == SpacingMark then false
           else if prev == Prepend then false
+          // GB9c: InCB Consonant ([Extend Linker]* Linker [Extend Linker]*) × Consonant
+          else if currIncb == IncbValue.Consonant && incbAfterConsonant && incbHasLinker
+          then false
           else if inEmojiSeq && prev == Zwj && currExtPict then false
           else if prev == RegionalIndicator && curr == RegionalIndicator && regionalCount%2 == 1
           then false
@@ -198,6 +241,23 @@ object GraphemeBreak:
           if curr == RegionalIndicator
           then if prev == RegionalIndicator && !brk then regionalCount + 1 else 1
           else 0
+
+        // Update GB9c state: a Consonant resets the chain to a fresh "after-consonant"; an
+        // Extend or Linker continues an existing chain; anything else clears it.
+        val nextIncbAfterConsonant =
+          if currIncb == IncbValue.Consonant then true
+          else if currIncb == IncbValue.Extend || currIncb == IncbValue.Linker
+          then incbAfterConsonant
+          else false
+
+        val nextIncbHasLinker =
+          if currIncb == IncbValue.Consonant then false
+          else if currIncb == IncbValue.Linker && incbAfterConsonant then true
+          else if currIncb == IncbValue.Extend && incbAfterConsonant then incbHasLinker
+          else false
+
+        incbAfterConsonant = nextIncbAfterConsonant
+        incbHasLinker = nextIncbHasLinker
 
         prev = curr
         index += Character.charCount(codepoint)
