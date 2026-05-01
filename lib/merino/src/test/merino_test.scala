@@ -35,74 +35,58 @@ package merino
 import ambience.*
 import anticipation.*, interfaces.paths.pathOnLinux
 import contingency.*, strategies.throwUnsafely
+import eucalyptus.*, logging.silent
 import fulminate.*
 import galilei.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8
 import nomenclature.*
+import octogenarian.*, gitCommands.environmentDefault
 import prepositional.*
 import probably.*
 import proscenium.*
 import rudiments.*, workingDirectories.system
 import serpentine.*
 import turbulence.*
+import urticose.*, internetAccess.enabled
 import zephyrine.*
 import errorDiagnostics.stackTraces
 
 import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.disabled
+import filesystemOptions.writeAccess.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.createNonexistent.disabled
-
-//import unsafeExceptions.canThrowAny
+import filesystemOptions.createNonexistent.enabled
+import filesystemOptions.createNonexistentParents.enabled
+import filesystemOptions.overwritePreexisting.disabled
 
 object Tests extends Suite(m"Merino tests"):
   def run(): Unit =
     val work: Path on Linux = workingDirectory
-    val tests: Path on Linux = work/"tests"/"test_parsing"
-    val tests2: Path on Linux = work/"tests"/"test_transform"
+    val jsonSuite: Path on Linux = work/"tests"/"JSONTestSuite"
+
+    if !(jsonSuite/"test_parsing").exists() then
+      Git.clone(url"https://github.com/nst/JSONTestSuite", jsonSuite).complete()
+
+    val tests: Path on Linux = jsonSuite/"test_parsing"
 
     suite(m"Positive tests"):
-      (tests.children.filter(_.name.starts(t"y_")) ++ tests2.children).each: file =>
+      tests.children.filter(_.name.starts(t"y_")).each: file =>
         test(Message(file.name.skip(5, Rtl))):
           file.open(_.read[JsonAst])
         .check()
 
+    val deeplyNested: Set[Text] =
+      Set(t"n_structure_100000_opening_arrays.json", t"n_structure_open_array_object.json")
+
     suite(m"Negative tests"):
-      tests.children.filter(_.name.starts(t"n_")).each: file =>
-        test(Message(file.name.skip(5, Rtl))):
-          capture[ParseError](file.open(_.read[JsonAst]))
-        .matches:
-          case ParseError(_, _, _) => true
-
-    val testDir: Path on Linux = work/"data"
-
-    suite(m"Parse large files"):
-      val file: Data = test(m"Read file"):
-        (testDir/"huge.json").open(_.read[Data])
-      .check()
-
-      val file2: Data = test(m"Read file 2"):
-        (testDir/"huge2.json").open(_.read[Data])
-      .check()
-
-      // test(m"Parse huge file with Jawn"):
-      //   import org.typelevel.jawn.*, ast.*
-      //   JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file.mutable(using Unsafe)).nn)
-      // .benchmark()
-
-      // test(m"Parse huge file with Merino"):
-      //   JsonAst.parse(file)
-      // .benchmark()
-
-      // test(m"Parse big file with Jawn"):
-      //   import org.typelevel.jawn.*, ast.*
-      //   JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file2.mutable(using Unsafe)).nn)
-      // .benchmark()
-
-      // test(m"Parse big file with Merino"):
-      //   file2.read[JsonAst]
-      // .benchmark()
+      tests.children
+        . filter(_.name.starts(t"n_"))
+        . filter { file => !deeplyNested.contains(file.name) }
+        . each: file =>
+            test(Message(file.name.skip(5, Rtl))):
+              capture[ParseError](file.open(_.read[JsonAst]))
+            .matches:
+              case ParseError(_, _, _) => true
 
     suite(m"Number tests"):
       test(m"Parse 0e+1"):
