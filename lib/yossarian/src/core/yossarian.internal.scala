@@ -41,31 +41,32 @@ import vacuous.*
 
 object internal:
   opaque type Style = Long
-  opaque type Screen = (Int, Array[Style], Array[Char], Array[Text])
 
 
-  extension (buffer: Screen)
-    def width: Int = buffer(0)
+  class Screen
+       (val width: Int,
+        styleBuffer: Array[Style],
+        charBuffer: Array[Char],
+        linkBuffer: Array[Text]):
 
-    def styleBuffer: Array[Style] = buffer(1)
-    def charBuffer: Array[Char] = buffer(2)
-    def linkBuffer: Array[Text] = buffer(3)
     def capacity: Int = charBuffer.length
     def height: Int = capacity/width
     def offset(x: Ordinal, y: Ordinal): Int = y.n0*width + x.n0
     def style(x: Ordinal, y: Ordinal): Style = styleBuffer(offset(x, y))
     def char(x: Ordinal, y: Ordinal): Char = charBuffer(offset(x, y))
     def link(x: Ordinal, y: Ordinal): Text = linkBuffer(offset(x, y))
-    def line: Screen = (charBuffer.length, styleBuffer, charBuffer, linkBuffer)
+    def line: Screen = new Screen(charBuffer.length, styleBuffer, charBuffer, linkBuffer)
     def render: Text = String(charBuffer).grouped(width).to(List).map(_.tt).join(t"\n")
 
     def find(text: Text): Optional[Screen] = line.render.s.indexOf(text.s) match
       case -1 => Unset
 
       case index =>
-        ( text.length, styleBuffer.slice(index, index + text.length),
+        new Screen
+         (text.length,
+          styleBuffer.slice(index, index + text.length),
           charBuffer.slice(index, index + text.length),
-          linkBuffer.slice(index, index + text.length) )
+          linkBuffer.slice(index, index + text.length))
 
     def styles: IArray[Style] = styleBuffer.clone().immutable(using Unsafe)
 
@@ -109,7 +110,7 @@ object internal:
       System.arraycopy(charBuffer, 0, chars, 0, chars.length)
       val links = new Array[Text](capacity)
       System.arraycopy(linkBuffer, 0, links, 0, links.length)
-      (width, styles, chars, links)
+      new Screen(width, styles, chars, links)
 
 
   object Screen:
@@ -117,7 +118,7 @@ object internal:
       val chars = Array.fill[Char](width*height)(' ')
       val styles = Array.fill[Style](width*height)(Style())
       val links = Array.fill[Text](width*height)(t"")
-      (width, styles, chars, links)
+      new Screen(width, styles, chars, links)
 
 
   extension (style: Style)
