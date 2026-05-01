@@ -66,7 +66,7 @@ object Checker:
     state.annotationEndLines = Annotations.collectEndLines(untpdTree, source)
     state.companions         = Companions.extract(untpdTree, source)
     scanRawTabs(file, rawText, out)
-    checkFileNaming(file, out)
+    checkFileNaming(file, untpdTree, out)
     checkPackageRules(file, expectedModule, state.packageInfo, out)
     checkImportRules(file, imports, lines, out)
     var idx = 0
@@ -1393,7 +1393,10 @@ object Checker:
               ( file, objLine, 1, "28",
                 s"object `$name` must appear before class/trait/enum `$name`" )
 
-  private def checkFileNaming(file: String, out: mutable.ListBuffer[Violation]): Unit =
+  private def checkFileNaming
+    ( file: String, untpdTree: untpd.Tree, out: mutable.ListBuffer[Violation] )
+  :   Unit =
+
     val segments = file.split("/").nn
     val name     = segments(segments.length - 1).nn
     if !name.endsWith(".scala") then ()
@@ -1413,6 +1416,34 @@ object Checker:
           Violation
             ( file, 1, 1, "29",
               s"file name `$name` does not match a documented soundness convention" )
+      else
+        // Patterns of the form `<lowercase>.<Uppercase>.scala` name a single
+        // top-level type. Verify the parsed file declares it as a class,
+        // trait, enum, object, or type alias. Lowercase-tail patterns
+        // (`gossamer.internal.scala`, `ambience.variables.scala`) are
+        // namespace-style files and remain exempt.
+        val typedName = """[a-z][a-zA-Z0-9_]*\.([A-Z][a-zA-Z0-9_]*)""".r
+        typedName.findFirstMatchIn(base).foreach: m =>
+          val typeName = m.group(1).nn
+          if !declaresTopLevel(untpdTree, typeName) then
+            out += Violation
+                    ( file, 1, 1, "29",
+                      s"file name `$name` declares no top-level `$typeName` "
+                        +"(class/trait/enum/object/type)" )
+
+  // True iff the package body (or any nested package body) holds a `TypeDef`
+  // or `ModuleDef` whose name matches `target`. Used by R29 to verify that
+  // a `<module>.<Type>.scala` filename actually declares that type.
+  private def declaresTopLevel(tree: untpd.Tree, target: String): Boolean =
+    tree match
+      case untpd.EmptyTree       => true  // parse failure: don't false-positive
+      case pkg: untpd.PackageDef =>
+        pkg.stats.exists:
+          case td: untpd.TypeDef    => td.name.toString == target
+          case md: untpd.ModuleDef  => md.name.toString == target
+          case nested: untpd.PackageDef => declaresTopLevel(nested, target)
+          case _                    => false
+      case _                     => false
 
   private def isCrossModuleExport(base: String): Boolean =
     val u = base.indexOf('_')
