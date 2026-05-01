@@ -114,7 +114,7 @@ object Ansi extends Ansi2:
           case Bsl => closures(state.copy(last = None), text.skip(1))
 
           case '[' | '(' | '<' | '«' | '{' =>
-            val frame = Frame(complement(text.s.head), state.text.length, transform)
+            val frame = Frame(complement(text.at(Prim).vouch), state.text.length, transform)
             closures(state.copy(stack = frame :: state.stack, last = None), text.skip(1))
 
           case _ =>

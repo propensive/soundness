@@ -39,7 +39,9 @@ import denominative.*
 import gossamer.*
 import hypotenuse.*
 import proscenium.*
+import rudiments.*
 import symbolism.*
+import vacuous.*
 
 object internal:
   opaque type CharSpan = Long
@@ -153,7 +155,7 @@ case class Teletype2(plain: Text, ansi: IArray[escapade.internal.AnsiStyle]):
 
             val current2 = current.update(style)
 
-            append(plain.s.charAt(index.n0))
+            append(plain.at(index).vouch)
             recur(current2, index + 1)
           else
             recur(current, index + 1)
