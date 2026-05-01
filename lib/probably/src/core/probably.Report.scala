@@ -60,8 +60,10 @@ object Report:
     def include(report: Report, testId: TestId, verdict: Verdict): Report =
       val report2 = report.addVerdict(testId, verdict)
       verdict match
-        case Verdict.Pass(_) => report2
-        case Verdict.Fail(_) => report2
+        case Verdict.Pass(_)       => report2
+        case Verdict.Fail(_)       => report2
+        case Verdict.AspirePass(_) => report2
+        case Verdict.AspireFail(_) => report2
 
         case Verdict.Throws(error, _) =>
           report2.addDetail(testId, Verdict.Detail.Throws(StackTrace(error)))
@@ -76,8 +78,8 @@ class Report(using Environment)(using palette: TestPalette):
 
   given measurable: Char is Measurable:
     def width(char: Char): Int = char match
-      case '✓' | '✗' | '⎇' => 1
-      case _               => metrics.width(char)
+      case '✓' | '✗' | '⎇' | '↑' | '↓' => 1
+      case _                            => metrics.width(char)
 
   private var failure: Optional[(Throwable, Set[TestId])] = Unset
   private var pass: Boolean = false
@@ -123,6 +125,8 @@ class Report(using Environment)(using palette: TestPalette):
           else if buffer.all(_.typed[Verdict.Fail]) then Status.Fail
           else if buffer.all(_.typed[Verdict.Throws]) then Status.Throws
           else if buffer.all(_.typed[Verdict.CheckThrows]) then Status.CheckThrows
+          else if buffer.all(_.typed[Verdict.AspirePass]) then Status.AspirePass
+          else if buffer.all(_.typed[Verdict.AspireFail]) then Status.AspireFail
           else Status.Mixed
 
         val min: Long = buffer.map(_.duration).min
@@ -157,7 +161,7 @@ class Report(using Environment)(using palette: TestPalette):
     this.also(details(testId) = details(testId).append(info))
 
   enum Status:
-    case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench
+    case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench, AspirePass, AspireFail
 
     private val nbsp = '\u00a0'
 
@@ -169,6 +173,8 @@ class Report(using Environment)(using palette: TestPalette):
       case Mixed       => e"${Bg(palette.mixed)}($Bold(${Fg(palette.black)}( ? )))"
       case Suite       => e"   "
       case Bench       => e"${Bg(palette.benchmark)}($Bold(${Fg(palette.black)}($nbsp*$nbsp)))"
+      case AspirePass  => e"${Bg(palette.aspirePass)}($Bold(${Fg(palette.black)}( ↑ )))"
+      case AspireFail  => e"${Bg(palette.aspireFail)}($Bold(${Fg(palette.black)}( ↓ )))"
 
     def describe: Teletype = this match
       case Pass        => e"Pass"
@@ -178,6 +184,8 @@ class Report(using Environment)(using palette: TestPalette):
       case Mixed       => e"Mixed"
       case Suite       => e"Suite"
       case Bench       => e"Benchmark"
+      case AspirePass  => e"Aspire passed"
+      case AspireFail  => e"Aspire failed"
 
   val unitsSeq: List[Teletype] =
     List(e"${Fg(palette.cold)}(µs)", e"${Fg(palette.warm)}(ms)", e"${Fg(palette.hot)}(s) ")
@@ -215,12 +223,14 @@ class Report(using Environment)(using palette: TestPalette):
     val summaryLines = lines.summaries
     val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
     val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
+    val aspirePassed: Int = totals.getOrElse(Status.AspirePass, 0)
+    val aspireFailed: Int = totals.getOrElse(Status.AspireFail, 0)
     val total: Int = totals.values.sum
-    val failed: Int = total - passed
-    if total == passed && failure.absent then pass = true
+    val failed: Int = total - passed - aspirePassed - aspireFailed
+    if failed == 0 && failure.absent then pass = true
 
     if total == 0 then Out.println(t"No tests were run.")
-    else Out.println(t"$passed passed, $failed failed, $total total")
+    else Out.println(t"$passed passed, $failed failed, $aspirePassed aspire-passed, $aspireFailed aspire-failed, $total total")
 
     def truncate(text: Text, max: Int = 800): Text =
       if text.length <= max then text else t"${text.keep(max)}…"
@@ -233,6 +243,8 @@ class Report(using Environment)(using palette: TestPalette):
       case Status.Mixed       => t"mixed"
       case Status.Suite       => t"suite"
       case Status.Bench       => t"bench"
+      case Status.AspirePass  => t"aspire-pass"
+      case Status.AspireFail  => t"aspire-fail"
 
     def formatFrame(frame: StackTrace.Frame): Text =
       val ln = frame.line.let(_.toString.tt).or(t"?")
@@ -433,9 +445,11 @@ class Report(using Environment)(using palette: TestPalette):
       if summaryLines.exists(_.count > 0) then
         val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
         val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
+        val aspirePassed: Int = totals.getOrElse(Status.AspirePass, 0)
+        val aspireFailed: Int = totals.getOrElse(Status.AspireFail, 0)
         val total: Int = totals.values.sum
-        val failed: Int = total - passed
-        if total == passed && failure.absent then pass = true
+        val failed: Int = total - passed - aspirePassed - aspireFailed
+        if failed == 0 && failure.absent then pass = true
 
         if !tabulation then
           Out.print(e"${escapes.Reset}")
@@ -480,14 +494,20 @@ class Report(using Environment)(using palette: TestPalette):
           given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)
           val passText = e"$Bold(${Fg(palette.foreground)}($passed)) passed (${100.0*passed/total}%)"
           val failText = e"$Bold(${Fg(palette.foreground)}($failed)) failed (${100.0*failed/total}%)"
-          val allText = e"$Bold(${Fg(palette.foreground)}(${passed + failed})) total"
+          val aspirePassText =
+            e"$Bold(${Fg(palette.foreground)}($aspirePassed)) aspire-passed (${100.0*aspirePassed/total}%)"
+          val aspireFailText =
+            e"$Bold(${Fg(palette.foreground)}($aspireFailed)) aspire-failed (${100.0*aspireFailed/total}%)"
+          val allText = e"$Bold(${Fg(palette.foreground)}($total)) total"
 
-          Out.println(e" $passText, $failText, $allText")
+          if aspirePassed + aspireFailed == 0
+          then Out.println(e" $passText, $failText, $allText")
+          else Out.println(e" $passText, $failText, $aspirePassText, $aspireFailText, $allText")
           Out.println(t"─"*72)
 
         import Status.*
 
-        List(Pass, Bench, Throws, Fail, Mixed, CheckThrows).grouped(3).each: statuses =>
+        List(Pass, Bench, AspirePass, Throws, Fail, AspireFail, Mixed, CheckThrows).grouped(4).each: statuses =>
           Out.println:
             statuses.map[Teletype]: status =>
               gossamer.pad[Teletype](e"  ${status.symbol} ${status.describe}")(20)

@@ -49,12 +49,15 @@ import vacuous.*
 
 object internal:
   private def handle[test: Type, result: Type]
-    ( test:      Expr[Test[test]],
-      predicate: Expr[test => Boolean],
-      action:    Expr[Trial[test] => result] )
+    ( test:         Expr[Test[test]],
+      predicate:    Expr[test => Boolean],
+      action:       Expr[Trial[test] => result],
+      aspirational: Boolean )
   :   Macro[result] =
 
     import quotes.reflect.*
+
+    val aspirationalExpr: Expr[Boolean] = Expr(aspirational)
 
     Expr.summon[Runner[?]].getOrElse(halt(m"No `Runner` instance is available")).absolve match
       case '{$runner: Runner[report]} =>
@@ -105,7 +108,8 @@ object internal:
                     Some($expr),
                     $inclusion,
                     $inclusion2,
-                    decompose )
+                    decompose,
+                    $aspirationalExpr )
               }
 
           case _ =>
@@ -119,7 +123,8 @@ object internal:
                       None,
                       $inclusion,
                       $inclusion2,
-                      Decomposable.any[test] ) )
+                      Decomposable.any[test],
+                      $aspirationalExpr ) )
               }
 
         else
@@ -133,18 +138,19 @@ object internal:
                     None,
                     $inclusion,
                     $inclusion2,
-                    Decomposable.any[test] ) )
+                    Decomposable.any[test],
+                    $aspirationalExpr ) )
             }
 
 
   def check[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[test] =
-    handle[test, test](test, predicate, '{(t: Trial[test]) => t.get})
+    handle[test, test](test, predicate, '{(t: Trial[test]) => t.get}, false)
 
   def assert[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[Unit] =
-    handle[test, Unit](test, predicate, '{_ => ()})
+    handle[test, Unit](test, predicate, '{_ => ()}, false)
 
-  def aspire[test: Type](test: Expr[Test[test]]): Macro[Unit] =
-    handle[test, Unit](test, '{_ => true}, '{_ => ()})
+  def aspire[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[Unit] =
+    handle[test, Unit](test, predicate, '{_ => ()}, true)
 
   def succeed: Any => Boolean = (value: Any) => true
 
@@ -158,7 +164,8 @@ object internal:
       exp:          Option[test],
       inc:          Inclusion[report, Verdict],
       inc2:         Inclusion[report, Verdict.Detail],
-      decomposable: test is Decomposable )
+      decomposable: test is Decomposable,
+      aspirational: Boolean )
   :   result =
 
     runner.run(test).pipe: run =>
@@ -166,10 +173,13 @@ object internal:
         case Trial.Throws(err, duration, map) =>
           val exception: Exception = try err() catch case exc: Exception => exc
           if !map.nil then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
-          Verdict.Throws(exception, duration)
+          if aspirational then Verdict.AspireFail(duration)
+          else Verdict.Throws(exception, duration)
 
         case Trial.Returns(value, duration, map) =>
-          try if predicate(value) then Verdict.Pass(duration) else
+          try if predicate(value) then
+            if aspirational then Verdict.AspirePass(duration) else Verdict.Pass(duration)
+          else
             exp match
               case Some(exp) =>
                 inc2.include
@@ -187,8 +197,10 @@ object internal:
             if !map.nil
             then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
 
-            Verdict.Fail(duration)
-          catch case error: Exception => Verdict.CheckThrows(error, duration)
+            if aspirational then Verdict.AspireFail(duration) else Verdict.Fail(duration)
+          catch case error: Exception =>
+            if aspirational then Verdict.AspireFail(duration)
+            else Verdict.CheckThrows(error, duration)
 
       inc.include(runner.report, test.id, verdict)
       result(run)
