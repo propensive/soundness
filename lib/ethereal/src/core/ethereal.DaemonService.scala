@@ -34,6 +34,8 @@ package ethereal
 
 import language.experimental.pureFunctions
 
+import java.lang as jl
+
 import anticipation.*
 import exoskeleton.*
 import guillotine.*
@@ -48,6 +50,13 @@ case class DaemonService[bus <: Matchable]
     executable: Path on Local,
     deliver:    bus => Unit,
     bus:        Stream[bus],
-    script:     Text )
+    script:     Text,
+    startTime:  Long )
 extends Entrypoint:
   def broadcast(message: bus): Unit = deliver(message)
+
+  def started[instant: Instantiable across Instants from Long]: instant =
+    instant(startTime)
+
+  def uptime[duration: Instantiable across Durations from Long]: duration =
+    duration((jl.System.currentTimeMillis() - startTime).max(0L)*1_000_000L)
