@@ -197,6 +197,24 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
     def focus(value: Boolean): Unit = state2 = state2.copy(focus = value)
     def bcp(value: Boolean): Unit = state2 = state2.copy(bracketedPasteMode = value)
 
+    def writeChar(char: Char): Unit =
+      if pendingWrap then
+        cursor.x = Prim
+        ind()
+      set(cursor.x, cursor.y, char)
+      lastChar = char
+      if cursor.x.n0 == buffer2.width - 1
+      then pendingWrap = true
+      else
+        cursor.x = cursor.x + 1
+
+    def rep(n: Int): Unit =
+      val count = if n == 0 then 1 else n
+      var i = 0
+      while i < count do
+        writeChar(lastChar)
+        i += 1
+
     def ht(): Unit =
       val nextStop = ((cursor.x.n0/8 + 1)*8).z
       cursor.x = if nextStop >= buffer2.width.z then (buffer2.width - 1).z else nextStop
@@ -399,6 +417,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         case 'L' => il(parseInt(params, 1))
         case 'M' => dl(parseInt(params, 1))
         case 'X' => ech(parseInt(params, 1))
+        case 'b' => rep(parseInt(params, 1))
 
         case 'H' => val (r, c) = parsePair(params, 1); cup(r.u, c.u)
         case 'f' => val (r, c) = parsePair(params, 1); hvp(r.u, c.u)
@@ -477,17 +496,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         proceed(Normal)
 
       inline def put(char: Char): Pty =
-        if pendingWrap then
-          cursor.x = Prim
-          ind()
-          // Setters above cleared pendingWrap; nothing more to do.
-        set(cursor.x, cursor.y, char)
-        lastChar = char
-        if cursor.x.n0 == buffer2.width - 1
-        then pendingWrap = true
-        else
-          cursor.x = cursor.x + 1
-
+        writeChar(char)
         proceed(Normal)
 
       if index >= input.length
