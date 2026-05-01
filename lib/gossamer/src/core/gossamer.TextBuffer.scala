@@ -39,6 +39,7 @@ class TextBuilder(size: Optional[Int] = Unset) extends Builder[Text](size):
   private val builder: StringBuilder = size.lay(StringBuilder())(StringBuilder(_))
 
   protected def put(text: Text): Unit = builder.append(text)
+  protected def putChar(char: Char): Unit = builder.append(char)
   def put(char: Char): Unit = builder.append(char)
   protected def wipe(): Unit = builder.clear()
   protected def result(): Text = builder.toString().tt

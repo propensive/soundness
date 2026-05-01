@@ -69,6 +69,9 @@ object Textual:
     def indexOf(text: Text, sub: Text, start: Ordinal): Optional[Ordinal] =
       text.s.indexOf(sub.s, start.n0).puncture(-1).let(_.z)
 
+    override def lastIndexOf(text: Text, sub: Text): Optional[Ordinal] =
+      text.s.lastIndexOf(sub.s).puncture(-1).let(_.z)
+
     def builder(size: Optional[Int]): Builder[Text] = TextBuilder(size)
     def size(text: Self): Int = text.length
 
@@ -87,6 +90,14 @@ trait Textual extends Typeclass, Concatenable, Countable, Segmentable, Zeroic:
   def concat(left: Self, right: Self): Self
   def unsafeChar(text: Self, index: Ordinal): Char
   def indexOf(text: Self, sub: Text, start: Ordinal = Prim): Optional[Ordinal]
+
+  def lastIndexOf(text: Self, sub: Text): Optional[Ordinal] =
+    if sub.s.isEmpty then Unset else
+      def recur(start: Ordinal, last: Optional[Ordinal]): Optional[Ordinal] =
+        indexOf(text, sub, start).lay(last): found =>
+          recur(found + 1, found)
+      recur(Prim, Unset)
+
   def builder(size: Optional[Int] = Unset): Builder[Self]
   def segment(text: Self, interval: Interval): Self
   inline def zero: Self = empty

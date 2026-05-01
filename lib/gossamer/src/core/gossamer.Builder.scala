@@ -38,9 +38,11 @@ import vacuous.*
 
 abstract class Builder[textual](size: Optional[Int] = Unset):
   protected def put(text: textual): Unit
+  protected def putChar(char: Char): Unit
   protected def wipe(): Unit
   protected def result(): textual
   def append(text: textual): this.type = this.also(put(text))
+  def append(char: Char): this.type = this.also(putChar(char))
 
   def build(block: this.type aka "builder" ?=> Unit): textual =
     block(using this.aka["builder"])
