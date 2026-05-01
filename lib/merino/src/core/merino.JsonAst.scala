@@ -148,6 +148,20 @@ object JsonAst extends Format:
     Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean
     | Null | Unset.type
 
+  private val TenPow: Array[Double] = Array.tabulate(23): i =>
+    var p = 1.0
+    var n = i
+    while n > 0 do { p *= 10.0; n -= 1 }
+    p
+
+  private inline val NumZero       = 0
+  private inline val NumInt        = 1
+  private inline val NumAfterDot   = 2
+  private inline val NumFrac       = 3
+  private inline val NumAfterE     = 4
+  private inline val NumAfterESign = 5
+  private inline val NumExp        = 6
+
 
   def apply
     ( value
@@ -337,35 +351,178 @@ object JsonAst extends Format:
       null
 
     def parseNumber(first: Int, negative: Boolean): Double | Long | BigDecimal =
-      numberBuilder.setLength(0)
-      if negative then numberBuilder.append('-')
-      numberBuilder.append(('0' + first).toChar)
+      var content: Long = first.toLong
+      var nibbleCount: Int = 1
+      var bcdValid: Boolean = true
       var floating: Boolean = false
       var continue: Boolean = true
+      var state: Int = if first == 0 then NumZero else NumInt
+
+      def fallback(extraNibble: Int): Unit =
+        numberBuilder.setLength(0)
+        var i = nibbleCount - 1
+        while i >= 0 do
+          val n = ((content >>> (i * 4)) & 0xFL).toInt
+          if n <= 9 then numberBuilder.append(('0' + n).toChar)
+          else if n == 0xA then numberBuilder.append('.')
+          else if n == 0xB then numberBuilder.append('e')
+          else if n == 0xC then numberBuilder.append("e-")
+          i -= 1
+        bcdValid = false
+        appendChar0(extraNibble)
+
+      def appendChar0(n: Int): Unit =
+        if n <= 9 then numberBuilder.append(('0' + n).toChar)
+        else if n == 0xA then numberBuilder.append('.')
+        else if n == 0xB then numberBuilder.append('e')
+        else if n == 0xC then numberBuilder.append("e-")
+
+      def appendNibble(n: Int): Unit =
+        if bcdValid then
+          if nibbleCount >= 15 then fallback(n) else
+            content = (content << 4) | n.toLong
+            nibbleCount += 1
+        else
+          appendChar0(n)
+
+      def rewriteEAsNeg(): Unit =
+        if bcdValid then content = (content & ~0xFL) | 0xCL
+        else numberBuilder.append('-')
 
       while continue && cursor.more do
         val ch = cursor.datum(using Unsafe)
-        ch match
-          case Period =>
-            floating = true
-            numberBuilder.append('.')
-            cursor.next()
+        (state: @switch) match
+          case NumZero =>
+            ch match
+              case Period =>
+                appendNibble(0xA); floating = true; state = NumAfterDot; cursor.next()
 
-          case UpperE | LowerE =>
-            floating = true
-            numberBuilder.append('e')
-            cursor.next()
+              case UpperE | LowerE =>
+                appendNibble(0xB); floating = true; state = NumAfterE; cursor.next()
 
-          case
-            Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 | Minus | Plus =>
-            numberBuilder.append(ch.toChar)
-            cursor.next()
+              case _ =>
+                continue = false
 
-          case _ =>
-            continue = false
+          case NumInt =>
+            ch match
+              case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 =>
+                appendNibble(ch & 0xF); cursor.next()
 
-      if floating then java.lang.Double.parseDouble(numberBuilder.toString)
-      else java.lang.Long.parseLong(numberBuilder, 0, numberBuilder.length, 10)
+              case Period =>
+                appendNibble(0xA); floating = true; state = NumAfterDot; cursor.next()
+
+              case UpperE | LowerE =>
+                appendNibble(0xB); floating = true; state = NumAfterE; cursor.next()
+
+              case _ =>
+                continue = false
+
+          case NumAfterDot =>
+            ch match
+              case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 =>
+                appendNibble(ch & 0xF); state = NumFrac; cursor.next()
+
+              case _ =>
+                error(Issue.ExpectedDigit(ch.toChar))
+
+          case NumFrac =>
+            ch match
+              case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 =>
+                appendNibble(ch & 0xF); cursor.next()
+
+              case UpperE | LowerE =>
+                appendNibble(0xB); state = NumAfterE; cursor.next()
+
+              case _ =>
+                continue = false
+
+          case NumAfterE =>
+            ch match
+              case Plus =>
+                cursor.next(); state = NumAfterESign
+
+              case Minus =>
+                rewriteEAsNeg(); cursor.next(); state = NumAfterESign
+
+              case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 =>
+                appendNibble(ch & 0xF); state = NumExp; cursor.next()
+
+              case _ =>
+                error(Issue.ExpectedDigit(ch.toChar))
+
+          case NumAfterESign =>
+            ch match
+              case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 =>
+                appendNibble(ch & 0xF); state = NumExp; cursor.next()
+
+              case _ =>
+                error(Issue.ExpectedDigit(ch.toChar))
+
+          case NumExp =>
+            ch match
+              case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 =>
+                appendNibble(ch & 0xF); cursor.next()
+
+              case _ =>
+                continue = false
+
+          case _ => ()
+
+      (state: @switch) match
+        case NumAfterDot | NumAfterE | NumAfterESign => error(Issue.PrematureEnd)
+        case _                                       => ()
+
+      if bcdValid then
+        var mantissa: Long = 0L
+        var decimalDigits: Int = 0
+        var explicitExp: Int = 0
+        var expSign: Int = 1
+        var inFraction: Boolean = false
+        var inExponent: Boolean = false
+
+        var i = nibbleCount - 1
+        while i >= 0 do
+          val n = ((content >>> (i * 4)) & 0xFL).toInt
+          if n <= 9 then
+            if inExponent then explicitExp = explicitExp*10 + n
+            else
+              mantissa = mantissa*10 + n
+              if inFraction then decimalDigits += 1
+          else if n == 0xA then
+            inFraction = true
+          else if n == 0xB then
+            inExponent = true
+          else if n == 0xC then
+            inExponent = true
+            expSign = -1
+          i -= 1
+
+        if !floating then
+          if negative then -mantissa else mantissa
+        else
+          val totalExp = expSign * explicitExp - decimalDigits
+
+          val mag =
+            if mantissa == 0L then 0.0
+            else if mantissa < (1L << 53) && totalExp >= 0 && totalExp <= 22 then
+              mantissa.toDouble * TenPow(totalExp)
+            else if mantissa < (1L << 53) && totalExp < 0 && totalExp >= -22 then
+              mantissa.toDouble / TenPow(-totalExp)
+            else
+              java.math.BigDecimal.valueOf(mantissa).nn.scaleByPowerOfTen(totalExp).nn.doubleValue
+
+          if negative then -mag else mag
+      else
+        if floating then
+          val d = java.lang.Double.parseDouble(numberBuilder.toString)
+          if negative then -d else d
+        else
+          try
+            val v = java.lang.Long.parseLong(numberBuilder, 0, numberBuilder.length, 10)
+            if negative then -v else v
+          catch case _: NumberFormatException =>
+            val d = java.lang.Double.parseDouble(numberBuilder.toString)
+            if negative then -d else d
 
     def parseValue(minus: Boolean = false): JsonAst =
       cursor.lay(error(Issue.PrematureEnd)): ch =>
