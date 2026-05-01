@@ -295,15 +295,12 @@ object Tests extends Suite(m"Yossarian Tests"):
         Pty24x80().consume(t"abc$Esc[HX").buffer.char(Prim, Prim)
       . assert(_ == 'X')
 
-      test(m"CUP at last row+col writes to last cell [deferred-wrap]"):
-        // Real terminals defer the wrap when writing to the bottom-right cell
-        // and don't scroll. Yossarian wraps eagerly: after writing 'X' at
-        // (79, 23), the cursor lands one past the screen, the buffer scrolls
-        // up by one row, and 'X' ends up at (79, 22). Aspirational until
-        // deferred-wrap support lands.
+      test(m"CUP at last row+col writes to last cell (deferred wrap)"):
+        // The cursor stays at the bottom-right cell with a pending wrap;
+        // the next character would scroll, but we don't write one here.
         val pty = Pty24x80().consume(t"$Esc[24;80HX")
         pty.buffer.char(79.z, 23.z)
-      . aspire(_ == 'X')
+      . assert(_ == 'X')
 
       test(m"CUP beyond last row clamps to last row"):
         val pty = Pty24x80().consume(t"$Esc[99;1HX")
@@ -348,15 +345,31 @@ object Tests extends Suite(m"Yossarian Tests"):
         (pty.buffer.char(4.z, Prim), pty.buffer.style(4.z, Prim).bold, pty.cursor)
       . assert(_ == ('X', true, Sen))
 
-    suite(m"vttest §2: Scrolling regions [scrolling-region]"):
+    suite(m"vttest §2: Scrolling regions"):
       test(m"DECSTBM \\e[3;7r limits LF scrolling to rows 3..7"):
         // Set scroll region 3..7, position at row 7, LF — should scroll content
         // within rows 3..7 only, leaving rows 1-2 and 8+ untouched.
-        // Yossarian doesn't implement DECSTBM yet, so this raises BadCsiCommand.
-        safely:
-          val pty = Pty24x80().consume(t"top$Esc[3;7r$Esc[7;1H\nlast")
-          trim(row(pty, Prim))
-      . aspire(_ == t"top")
+        val pty = Pty24x80().consume(t"top$Esc[3;7r$Esc[7;1H\nlast")
+        trim(row(pty, Prim))
+      . assert(_ == t"top")
+
+      test(m"IND (\\eD) at scroll-region bottom scrolls within region"):
+        val pty = Pty24x80().consume(
+            t"$Esc[3;7r$Esc[3;1HA$Esc[4;1HB$Esc[7;1HZ${Esc}D")
+        // Region rows 3..7 (0-indexed 2..6) before IND: A B _ _ Z. After IND,
+        // each row in the region shifts up: row 3 ← row 4 = B, row 6 ← row 7
+        // = Z, row 7 = blank.
+        (head(row(pty, Ter)), head(row(pty, Sen)))
+      . assert(_ == ('B', 'Z'))
+
+      test(m"RI (\\eM) at scroll-region top scrolls region down"):
+        val pty = Pty24x80().consume(
+            t"$Esc[3;7r$Esc[5;1HA$Esc[3;1H${Esc}M")
+        // Region rows 3..7 (0-indexed 2..6) before RI: _ _ A _ _. After RI
+        // each row shifts down by one within the region: A goes from row 5
+        // (idx 4) to row 6 (idx 5).
+        head(row(pty, Sen))
+      . assert(_ == 'A')
 
     suite(m"vttest §6: Terminal reports"):
       test(m"DSR \\e[6n responds with cursor position"):

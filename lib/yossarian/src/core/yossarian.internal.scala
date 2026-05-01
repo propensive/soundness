@@ -69,22 +69,28 @@ object internal:
 
     def styles: IArray[Style] = styleBuffer.clone().immutable(using Unsafe)
 
-    def scroll(n: Int): Unit =
-      val offset = math.abs(width*n)
-      val length = capacity - offset
-      val source = if n < 0 then 0 else offset
-      val destination = if n < 0 then offset else 0
+    def scroll(n: Int): Unit = scroll(n, 0, height - 1)
+
+    def scroll(n: Int, top: Int, bottom: Int): Unit =
+      val regionRows = bottom - top + 1
+      val absN = math.abs(n).min(regionRows)
+      val offset = width*absN
+      val length = width*(regionRows - absN)
+      val regionStart = top*width
+
+      val source = if n < 0 then regionStart else regionStart + offset
+      val destination = if n < 0 then regionStart + offset else regionStart
 
       System.arraycopy(styleBuffer, source, styleBuffer, destination, length)
       System.arraycopy(charBuffer, source, charBuffer, destination, length)
       System.arraycopy(linkBuffer, source, linkBuffer, destination, length)
 
-      val start = if n < 0 then 0 else length
+      val fillStart = if n < 0 then regionStart else regionStart + length
 
       for i <- 0 until offset do
-        styleBuffer(start + i) = Style()
-        charBuffer(start + i) = ' '
-        linkBuffer(start + i) = t""
+        styleBuffer(fillStart + i) = Style()
+        charBuffer(fillStart + i) = ' '
+        linkBuffer(fillStart + i) = t""
 
     def set(x: Ordinal, y: Ordinal, char: Char, style: Style, link: Text): Unit =
       styleBuffer(offset(x, y)) = style
