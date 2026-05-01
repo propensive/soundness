@@ -32,124 +32,35 @@
                                                                                                   */
 package hieroglyph
 
-import java.io as ji
-
-import scala.collection.immutable.TreeMap
-
-import anticipation.*
-import contingency.*
-import denominative.*
-import fulminate.*
-import kaleidoscope.*
-import proscenium.*
-import rudiments.*
-import vacuous.*
-
-object Unicode:
+// A port of Markus Kuhn's `wcwidth` algorithm, the de-facto width function used by xterm and
+// most Unix terminals. Combining marks and format characters contribute zero columns; East-Asian
+// Wide and Full-Width characters contribute two; everything else contributes one. Java's built-in
+// Unicode general-category data covers combining marks across Unicode versions, so no extra
+// resource file is needed; the wide-character set comes from `Unicode.eastAsianWidths`.
+object Wcwidth:
   import hieroglyph.internal.*
 
-  private object Hex:
-    def unapply(text: Text): Option[Int] =
-      try Some(Integer.parseInt(text.s, 16)) catch case error: NumberFormatException => None
+  def width(codePoint: Int): Int =
+    if codePoint <= 0 then 0
+    else if codePoint < 0x20 || codePoint >= 0x7f && codePoint < 0xa0 then 0
+    else
+      val category = Character.getType(codePoint)
 
-  private val smallCapsAlphabet: String = "ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢ"
+      if category == Character.NON_SPACING_MARK
+          || category == Character.ENCLOSING_MARK
+          || category == Character.FORMAT
+      then 0
+      else if isWide(codePoint) then 2 else 1
 
-  def smallCaps(text: Text): Text =
-    text.s.map:
-      case char if char >= 'a' && char <= 'z' => smallCapsAlphabet(char - 'a')
-      case char                               => char
+  private def isWide(codePoint: Int): Boolean =
+    // The packed key is `(from << 32) + to`, so entries sort by `from` first. Searching with
+    // `(codePoint + 1) << 32` and `maxBefore` (strict <) returns the entry with the largest
+    // `from` ≤ `codePoint`; the membership test then confirms `codePoint` falls inside `to`.
+    val searchKey: CharRange = CharRange(codePoint + 1, 0)
 
-    . tt
-
-  object EaWidth:
-    def unapply(code: Text): Option[EaWidth] =
-      code.s.only:
-        case "N"  => Neutral
-        case "W"  => Wide
-        case "A"  => Ambiguous
-        case "H"  => HalfWidth
-        case "F"  => FullWidth
-        case "Na" => Narrow
-
-      . option
-
-  enum EaWidth:
-    case Neutral, Narrow, Wide, Ambiguous, FullWidth, HalfWidth
-
-    def width: Int = this match
-      case Wide | FullWidth => 2
-      case _                => 1
-
-  def eastAsianWidth(char: Char): Optional[EaWidth] =
-    eastAsianWidths.minAfter(CharRange(char.toInt, char.toInt)).optional.let(_(1))
-
-  def visible(char: Char): Char = char match
-    case '\u007f'            => '␥'
-    case ' '                 => '␣'
-    case char if char <= ' ' => ('\u2400' + char).toChar
-    case char                => char
-
-  def apply(name: Text): Optional[Char | Text] = unicodeData.at(name)
-  def name(char: Char): Optional[Text] = unicodeNames.at(char)
-
-  lazy val unicodeData: Map[Text, Char | Text] =
-    val in: ji.InputStream =
-      Optional(getClass.getResourceAsStream("/hieroglyph/UnicodeData.txt")).or:
-        safely:
-          val uri = new java.net.URI("https://www.unicode.org/Public/UNIDATA/UnicodeData.txt")
-          uri.toURL().nn.openStream().nn: ji.InputStream
-
-      . or(panic(m"could not find hieroglyph/UnicodeData.txt on the classpath"))
-
-    scala.io.Source.fromInputStream(in).getLines.map(_.split(";").nn.to(List)).flatMap:
-      case hex :: name :: _ if !name.nn.startsWith("<") =>
-        val hexInt = Integer.parseInt(hex, 16)
-
-        if hexInt < 65536 then List((name.nn.tt, hexInt.toChar))
-        else List((name.nn.tt, new String(Character.toChars(hexInt)).tt))
+    Unicode.eastAsianWidths.maxBefore(searchKey) match
+      case Some((range, ea)) if codePoint >= range.from && codePoint <= range.to =>
+        ea == Unicode.EaWidth.Wide || ea == Unicode.EaWidth.FullWidth
 
       case _ =>
-        Nil
-
-    . to(Map)
-
-  lazy val unicodeNames: Map[Char | Text, Text] = unicodeData.map: (key, value) =>
-    value -> key.s.split(" ").nn.map(_.nn.toLowerCase.nn.capitalize).mkString(" ").tt
-
-  lazy val eastAsianWidths: TreeMap[CharRange, EaWidth] =
-    extension (map: TreeMap[CharRange, EaWidth])
-      def append(range: CharRange, width: EaWidth): TreeMap[CharRange, EaWidth] =
-        if map.nil then map.updated(range, width)
-        else if map.lastKey.to == (range.from - 1) && map(map.lastKey) == width
-        then map.removed(map.lastKey).updated(CharRange(map.lastKey.from, range.to), width)
-        else map.updated(range, width)
-
-    @tailrec
-    def recur(stream: Stream[Text], map: TreeMap[CharRange, EaWidth]): TreeMap[CharRange, EaWidth] =
-      stream match
-        case
-          r"${Hex(from)}([0-9A-F]{4,6})\.\.${Hex(to)}([0-9A-F]{4,6});${EaWidth(w)}([AFHNW]a?).*"
-          #:: tail =>
-            recur(tail, map.append(CharRange(from, to), w))
-
-        case r"${Hex(from)}([0-9A-F]{4,6});${EaWidth(w)}([AFHNW]a?).*" #:: tail =>
-          recur(tail, map.append(CharRange(from, from), w))
-
-        case head #:: tail =>
-          recur(tail, map)
-
-        case _ =>
-          map
-
-    val in: ji.InputStream =
-      Optional(getClass.getResourceAsStream("/hieroglyph/EastAsianWidth.txt")).or:
-        safely:
-          val uri = new java.net.URI("https://www.unicode.org/Public/UNIDATA/EastAsianWidth.txt")
-          uri.toURL().nn.openStream().nn: ji.InputStream
-
-        . or:
-            panic(m"could not find hieroglyph/EastAsianWidth.txt on the classpath")
-
-    val stream = scala.io.Source.fromInputStream(in).getLines.map(Text(_)).to(Stream)
-
-    recur(stream, TreeMap())
+        false

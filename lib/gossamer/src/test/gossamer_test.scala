@@ -1093,3 +1093,26 @@ object Tests extends Suite(m"Gossamer Tests"):
       test(m"Writing graphemes view round-trips"):
         Writing(t"abc").graphemes.map(_.text).mkString
       . assert(_ == "abc")
+
+    suite(m"Grapheme widths via Kuhn"):
+      import textMetrics.kuhn
+
+      test(m"ASCII grapheme width 1"):
+        Grapheme("a").metrics
+      . assert(_ == 1)
+
+      test(m"e + combining acute width 1"):
+        Grapheme("é").metrics
+      . assert(_ == 1)
+
+      test(m"CJK grapheme width 2"):
+        Grapheme("日").metrics
+      . assert(_ == 2)
+
+      test(m"Regional-indicator pair (flag) width 2 not 4"):
+        Grapheme("🇬🇧").metrics
+      . assert(_ == 2)
+
+      test(m"ZWJ family emoji width 2 not 6"):
+        Grapheme("👨‍👩‍👧").metrics
+      . assert(_ == 2)

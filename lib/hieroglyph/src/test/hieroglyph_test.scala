@@ -116,6 +116,51 @@ object Tests extends Suite(m"Hieroglyph tests"):
         demilitarize(enc"ISO-8859-1".encoder).map(_.message)
       . assert(_ == List())
 
+    suite(m"Wcwidth (Kuhn algorithm)"):
+      test(m"ASCII letter is width 1"):
+        Wcwidth.width('a'.toInt)
+      . assert(_ == 1)
+
+      test(m"NUL is zero-width"):
+        Wcwidth.width(0)
+      . assert(_ == 0)
+
+      test(m"C0 control char is zero-width"):
+        Wcwidth.width(0x07)
+      . assert(_ == 0)
+
+      test(m"DEL (0x7F) is zero-width"):
+        Wcwidth.width(0x7f)
+      . assert(_ == 0)
+
+      test(m"combining grave accent is zero-width"):
+        Wcwidth.width(0x0300)
+      . assert(_ == 0)
+
+      test(m"zero-width joiner is zero-width"):
+        Wcwidth.width(0x200d)
+      . assert(_ == 0)
+
+      test(m"CJK ideograph is wide"):
+        Wcwidth.width('日'.toInt)
+      . assert(_ == 2)
+
+      test(m"Hangul syllable is wide"):
+        Wcwidth.width(0xac00)
+      . assert(_ == 2)
+
+      test(m"Fullwidth Latin is wide"):
+        Wcwidth.width(0xff21)
+      . assert(_ == 2)
+
+      test(m"narrow halfwidth katakana is width 1"):
+        Wcwidth.width(0xff66)
+      . assert(_ == 1)
+
+      test(m"emoji man (supplementary plane) is wide via codepoint"):
+        Wcwidth.width(0x1f468)
+      . assert(_ == 2)
+
     suite(m"Grapheme cluster boundaries"):
       test(m"empty string yields single sentinel"):
         GraphemeBreak.boundaries(t"").toList
