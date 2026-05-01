@@ -63,11 +63,29 @@ private object JsonParser:
     while n > 0 do { p *= 10.0; n -= 1 }
     p
 
-private final class JsonParser(input: Data):
+  // Per-thread parser pool. Reusing the parser keeps the ArrayBuffer pools, the
+  // stringArray, and the numberBuilder warm across calls.
+  private val pool: ThreadLocal[JsonParser] =
+    ThreadLocal.withInitial(() => new JsonParser).nn
+
+  def parse(source: Data)(using Tactic[ParseError]): Raw =
+    val parser = pool.get.nn
+    parser.reset(source)
+    parser.parse()
+
+private final class JsonParser:
   import JsonParser.*
-  private val bytes: Array[Byte] = input.asInstanceOf[Array[Byte]]
+  private var bytes: Array[Byte] = Array.empty
   private var pos: Int = 0
-  private val end: Int = bytes.length
+  private var end: Int = 0
+
+  private def reset(input: Data): Unit =
+    bytes = input.asInstanceOf[Array[Byte]]
+    pos = 0
+    end = bytes.length
+    stringCursor = 0
+    arrayBufferId = -1
+    stringArrayBufferId = -1
 
   private var arraySize: Int = 16
   private var stringArray: Array[Char] = new Array(arraySize)
