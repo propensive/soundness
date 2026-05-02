@@ -32,4 +32,5 @@
                                                                                                   */
 package soundness
 
-export sedentary.{Bench, BenchError, BenchmarkDevice, LocalhostDevice, NetworkDevice}
+export sedentary.{Bench, BenchError, BenchmarkDevice, LocalhostDevice, NetworkDevice,
+    OperationSize}

@@ -862,8 +862,8 @@ object scintillate extends Library:
   object test extends Tests(server, servlet)
 
 object sedentary extends Library:
-  object core extends Component(superlunary.jvm, anthology.bundle, diuretic.core)
-  object test extends Tests(core, quantitative.units)
+  object core extends Component(superlunary.jvm, anthology.bundle, diuretic.core, quantitative.units)
+  object test extends Tests(core)
 
 object serpentine extends Library:
   object core extends Component(nomenclature.core, ambience.core)
