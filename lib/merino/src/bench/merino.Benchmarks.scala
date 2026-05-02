@@ -62,6 +62,14 @@ object Benchmarks extends Suite(m"Merino benchmarks"):
   // table prints "1.3 GB·s¯¹" instead of "1.3×10⁹ B·s¯¹".
   given prefixes: Prefixes = Prefixes(List(Kilo, Mega, Giga, Tera))
 
+  // Codec used by the Jsoniter benchmark to parse into a circe `Json` AST.
+  val jsoniterCodec: com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[io.circe.Json] =
+    com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec.jsonCodec()
+
+  def parseWithJsoniter(text: String): io.circe.Json =
+    com.github.plokhotnyuk.jsoniter_scala.core.readFromString[io.circe.Json](text)
+      (using jsoniterCodec)
+
   def run(): Unit =
     val bench = Bench()
 
@@ -72,59 +80,89 @@ object Benchmarks extends Suite(m"Merino benchmarks"):
     val size5 = jsonBytes5.length*Byte
 
     suite(m"Parse example 1"):
-      bench(m"Parse file with Jawn")
+      bench(m"Parse file with Merino")
         (target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min)):
+        '{ JsonAst.parse(merino.Benchmarks.jsonBytes1) }
+
+      bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size1):
         '{
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(merino.Benchmarks.jsonText1)
           }
 
-      bench(m"Parse file with Merino")(target = 1*Second, operationSize = size1):
-        '{ JsonAst.parse(merino.Benchmarks.jsonBytes1) }
+      bench(m"Parse file with Circe")(target = 1*Second, operationSize = size1):
+        '{ io.circe.parser.parse(merino.Benchmarks.jsonText1) }
+
+      bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size1):
+        '{ merino.Benchmarks.parseWithJsoniter(merino.Benchmarks.jsonText1) }
 
     suite(m"Parse example 2"):
-      bench(m"Parse file with Jawn")
+      bench(m"Parse file with Merino")
         (target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min)):
+        '{ JsonAst.parse(merino.Benchmarks.jsonBytes2) }
+
+      bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size2):
         '{
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(merino.Benchmarks.jsonText2)
           }
 
-      bench(m"Parse file with Merino")(target = 1*Second, operationSize = size2):
-        '{ JsonAst.parse(merino.Benchmarks.jsonBytes2) }
+      bench(m"Parse file with Circe")(target = 1*Second, operationSize = size2):
+        '{ io.circe.parser.parse(merino.Benchmarks.jsonText2) }
+
+      bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size2):
+        '{ merino.Benchmarks.parseWithJsoniter(merino.Benchmarks.jsonText2) }
 
     suite(m"Parse example 3"):
-      bench(m"Parse file with Jawn")
+      bench(m"Parse file with Merino")
         (target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min)):
+        '{ JsonAst.parse(merino.Benchmarks.jsonBytes3) }
+
+      bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size3):
         '{
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(merino.Benchmarks.jsonText3)
           }
 
-      bench(m"Parse file with Merino")(target = 1*Second, operationSize = size3):
-        '{ JsonAst.parse(merino.Benchmarks.jsonBytes3) }
+      bench(m"Parse file with Circe")(target = 1*Second, operationSize = size3):
+        '{ io.circe.parser.parse(merino.Benchmarks.jsonText3) }
+
+      bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size3):
+        '{ merino.Benchmarks.parseWithJsoniter(merino.Benchmarks.jsonText3) }
 
     suite(m"Parse example 4 (100 user records)"):
-      bench(m"Parse file with Jawn")
+      bench(m"Parse file with Merino")
         (target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min)):
+        '{ JsonAst.parse(merino.Benchmarks.jsonBytes4) }
+
+      bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size4):
         '{
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(merino.Benchmarks.jsonText4)
           }
 
-      bench(m"Parse file with Merino")(target = 1*Second, operationSize = size4):
-        '{ JsonAst.parse(merino.Benchmarks.jsonBytes4) }
+      bench(m"Parse file with Circe")(target = 1*Second, operationSize = size4):
+        '{ io.circe.parser.parse(merino.Benchmarks.jsonText4) }
+
+      bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size4):
+        '{ merino.Benchmarks.parseWithJsoniter(merino.Benchmarks.jsonText4) }
 
     suite(m"Parse example 5 (500 log entries)"):
-      bench(m"Parse file with Jawn")
+      bench(m"Parse file with Merino")
         (target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min)):
+        '{ JsonAst.parse(merino.Benchmarks.jsonBytes5) }
+
+      bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size5):
         '{
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(merino.Benchmarks.jsonText5)
           }
 
-      bench(m"Parse file with Merino")(target = 1*Second, operationSize = size5):
-        '{ JsonAst.parse(merino.Benchmarks.jsonBytes5) }
+      bench(m"Parse file with Circe")(target = 1*Second, operationSize = size5):
+        '{ io.circe.parser.parse(merino.Benchmarks.jsonText5) }
+
+      bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size5):
+        '{ merino.Benchmarks.parseWithJsoniter(merino.Benchmarks.jsonText5) }
 
   lazy val jsonText1: String = jsonExample1.s
   lazy val jsonText2: String = jsonExample2.s
