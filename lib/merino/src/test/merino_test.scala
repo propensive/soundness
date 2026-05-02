@@ -49,8 +49,11 @@ import rudiments.*, workingDirectories.system
 import serpentine.*
 import turbulence.*
 import urticose.*, internetAccess.enabled
+import vacuous.*
 import zephyrine.*
 import errorDiagnostics.stackTraces
+
+import scala.compiletime.*
 
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
@@ -224,6 +227,51 @@ object Tests extends Suite(m"Merino tests"):
       test(m"Whitespace then value across blocks"):
         JsonAst.parse(chunks(t"   42", 2, 3))
       . assert(_ == JsonAst(42L))
+
+    suite(m"Hole-mode parsing"):
+      def bytes(text: Text): Data = IArray.from(text.s.getBytes("UTF-8").nn)
+
+      def shape(node: Any): Any = node.asMatchable match
+        case t: Tuple2[?, ?] @unchecked =>
+          val keys = t._1.asInstanceOf[IArray[String]].toList
+          val values = t._2.asInstanceOf[IArray[Any]].toList.map(shape)
+          (keys, values)
+        case arr: IArray[?] @unchecked => arr.toList.map(shape)
+        case other                     => other
+
+      test(m"Hole as a top-level value"):
+        shape(JsonAst.parse(bytes(t" "), holes = true))
+      . assert(_ == Unset)
+
+      test(m"Hole as an array element"):
+        shape(JsonAst.parse(bytes(t"[ ]"), holes = true))
+      . assert(_ == List(Unset))
+
+      test(m"Hole as an object value"):
+        shape(JsonAst.parse(bytes(t"""{"a":   }"""), holes = true))
+      . assert(_ == (List("a"), List(Unset)))
+
+      test(m"Hole as an object rest, no other entries"):
+        shape(JsonAst.parse(bytes(t"{ }"), holes = true))
+      . assert(_ == (List("\u0000"), List(Unset)))
+
+      test(m"Hole as an object rest after literal entry"):
+        shape(JsonAst.parse(bytes(t"""{"a": 1,   }"""), holes = true))
+      . assert(_ == (List("a", "\u0000"), List(1L, Unset)))
+
+      test(m"Hole inside a string is preserved"):
+        shape(JsonAst.parse(bytes(t""" "x y" """), holes = true))
+      . assert(_ == "x\u0000y")
+
+      test(m"Plain mode rejects a value-position hole"):
+        capture[ParseError](JsonAst.parse(bytes(t" ")))
+      . matches:
+          case ParseError(_, _, _) => true
+
+      test(m"Plain mode rejects a hole inside a string"):
+        capture[ParseError](JsonAst.parse(bytes(t""" "a b" """)))
+      . matches:
+          case ParseError(_, _, _) => true
 
 
 private given realm: Realm = Realm(t"tests")

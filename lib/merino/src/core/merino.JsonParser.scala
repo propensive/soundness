@@ -72,11 +72,25 @@ private object JsonParser:
   def parse(source: Data): Raw raises ParseError =
     val parser = directPool.get.nn
     parser.reset(source)
+    parser.holes = false
+    parser.parse()
+
+  def parse(source: Data, holes: Boolean): Raw raises ParseError =
+    val parser = directPool.get.nn
+    parser.reset(source)
+    parser.holes = holes
     parser.parse()
 
   def parse(input: Iterator[Data]): Raw raises ParseError =
     val parser = streamingPool.get.nn
     parser.reset(input)
+    parser.holes = false
+    parser.parse()
+
+  def parse(input: Iterator[Data], holes: Boolean): Raw raises ParseError =
+    val parser = streamingPool.get.nn
+    parser.reset(input)
+    parser.holes = holes
     parser.parse()
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -229,6 +243,7 @@ private abstract class JsonParser:
   protected var arraySize: Int = 16
   protected var chars: Array[Char] = new Array(arraySize)
   protected var stringCursor: Int = 0
+  protected[merino] var holes: Boolean = false
   protected var arrayBufferId: Int = -1
   protected val arrayBuffers: ArrayBuffer[ArrayBuffer[Any]] = ArrayBuffer.empty
   protected var stringArrayBufferId: Int = -1
@@ -358,7 +373,8 @@ private abstract class JsonParser:
             case bad       => errorAt(Issue.IncorrectEscape(bad.toChar))
 
         case _ =>
-          ((ch >> 5): @switch) match
+          if ch == 0 && holes then appendChar(' ')
+          else ((ch >> 5): @switch) match
             case 0                 => errorAt(Issue.NotEscaped(ch.toChar))
             case 1 | 2 | 3 | 4 | 5 => appendChar(ch.toChar)
 
@@ -595,6 +611,9 @@ private abstract class JsonParser:
       parseNumber(ch & 0x0F, minus)
     else if minus then
       errorAt(Issue.ExpectedDigit(ch.toChar))
+    else if holes && ch == 0 then
+      advance()
+      Unset
     else
       (ch: @switch) match
         case Quote       => advance() yet parseString()
@@ -670,6 +689,44 @@ private abstract class JsonParser:
 
                 case ch  => errorAt(Issue.UnexpectedChar(ch.toChar))
             case ch => errorAt(Issue.ExpectedColon(ch.toChar))
+
+        case 0 if holes =>
+          advance()
+          skip()
+          must() match
+            case Colon =>
+              advance()
+              skip()
+              val value = parseValue()
+              skip()
+              must() match
+                case Comma =>
+                  advance()
+                  keys += " "
+                  values += value
+                  skip()
+
+                case CloseBrace =>
+                  advance()
+                  keys += " "
+                  values += value
+                  continue = false
+
+                case ch => errorAt(Issue.UnexpectedChar(ch.toChar))
+
+            case Comma =>
+              advance()
+              keys += " "
+              values += Unset
+              skip()
+
+            case CloseBrace =>
+              advance()
+              keys += " "
+              values += Unset
+              continue = false
+
+            case ch => errorAt(Issue.UnexpectedChar(ch.toChar))
 
         case CloseBrace =>
           if !keys.nil then errorAt(Issue.ExpectedSomeValue('}'))
