@@ -57,6 +57,7 @@ object internal:
 
       override def transformTerm(tree: Term)(sym: Symbol): Term =
         tree match
+          case Inlined(_, Nil, expr)   => transformTerm(expr)(sym)
           case Ident(id)               => Ident(tree.symbol.termRef)
           case Select(qualifier, name) => Select(transformTerm(qualifier)(sym), tree.symbol)
           case New(tpt)                => New(transformTypeTree(tpt)(sym))
