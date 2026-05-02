@@ -457,6 +457,333 @@ object Xml extends Tag.Container
     case Attribute(tag: Text, attribute: Text)
     case Node(parent: Text)
 
+  // Direct parser: bypasses Cursor entirely. Operates on the underlying
+  // String with a `var pos`. Currently handles only the freeform schema +
+  // `headers0 = true` case (which is what `text.load[Xml]` exercises). Falls
+  // back to the cursor-based `parse` for schemas with element validation,
+  // callbacks, and other features the Direct path doesn't support yet.
+  private[xylophone] def parseDirect(text: Text, headers0: Boolean)
+    (using schema: XmlSchema): Xml raises ParseError =
+
+    val s: String = text.s
+    val len: Int = s.length
+    var pos: Int = 0
+
+    // Position computation for error reports. Walks from start.
+    def position(): Position =
+      var line: Int = 1
+      var column: Int = 1
+      var i = 0
+      val limit = if pos > 0 then pos - 1 else 0
+      while i < limit do
+        if s.charAt(i) == '\n' then
+          line += 1
+          column = 1
+        else
+          column += 1
+        i += 1
+      Position(line.u, column.u)
+
+    inline def fail(issue: Issue): Nothing = abort(ParseError(Xml, position(), issue))
+
+    inline def isNameStart(chr: Char): Boolean =
+      ('a' <= chr && chr <= 'z') || ('A' <= chr && chr <= 'Z') || chr == '_' || chr == ':'
+      || (chr > 127 && chr.isLetter)
+
+    inline def isNameChar(chr: Char): Boolean =
+      ('a' <= chr && chr <= 'z') || ('A' <= chr && chr <= 'Z') || ('0' <= chr && chr <= '9')
+      || chr == '_' || chr == '-' || chr == '.' || chr == ':'
+      || (chr > 127 && (chr == '·' || chr.isLetter || chr.isDigit))
+
+    inline def isWhitespace(chr: Char): Boolean =
+      chr == ' ' || chr == '\n' || chr == '\r' || chr == '\t' || chr == '\f'
+
+    def skipWs(): Unit =
+      while pos < len && isWhitespace(s.charAt(pos)) do pos += 1
+
+    def expect(chr: Char): Unit =
+      if pos >= len then fail(Issue.ExpectedMore)
+      if s.charAt(pos) != chr then fail(Issue.Unexpected(s.charAt(pos)))
+      pos += 1
+
+    def readName(): Text =
+      val start = pos
+      if pos >= len then fail(Issue.ExpectedMore)
+      val first = s.charAt(pos)
+      if !isNameStart(first) then fail(Issue.Unexpected(first))
+      pos += 1
+      while pos < len && isNameChar(s.charAt(pos)) do pos += 1
+      s.substring(start, pos).nn.tt
+
+    // Parse `&entity;` and append decoded chars directly to the buffer.
+    def appendEntity(buf: jl.StringBuilder): Unit =
+      // Already at the char after '&'.
+      if pos < len && s.charAt(pos) == '#' then
+        pos += 1
+        var value = 0
+        if pos < len && (s.charAt(pos) == 'x' || s.charAt(pos) == 'X') then
+          pos += 1
+          while pos < len && s.charAt(pos) != ';' do
+            val ch = s.charAt(pos)
+            value =
+              if '0' <= ch && ch <= '9' then 16*value + (ch - '0')
+              else if 'a' <= ch && ch <= 'f' then 16*value + (ch - 87)
+              else if 'A' <= ch && ch <= 'F' then 16*value + (ch - 55)
+              else fail(Issue.Unexpected(ch))
+            pos += 1
+        else
+          while pos < len && s.charAt(pos) != ';' do
+            val ch = s.charAt(pos)
+            if '0' <= ch && ch <= '9' then value = 10*value + (ch - '0')
+            else fail(Issue.Unexpected(ch))
+            pos += 1
+        if pos >= len then fail(Issue.ExpectedMore)
+        pos += 1 // skip ';'
+        buf.appendCodePoint(value)
+      else
+        val nameStart = pos
+        while pos < len && s.charAt(pos) != ';' do pos += 1
+        if pos >= len then fail(Issue.ExpectedMore)
+        val name = s.substring(nameStart, pos).nn
+        pos += 1 // skip ';'
+        val expansion = schema.entities(name.tt).or:
+          fail(Issue.UnknownEntity(name.tt))
+        buf.append(expansion.s)
+
+    def readAttrValue(quote: Char): Text =
+      // Position is just after the opening quote.
+      val start = pos
+      var hasEntity = false
+      while pos < len && s.charAt(pos) != quote do
+        val c = s.charAt(pos)
+        if c == '<' then fail(Issue.Unexpected('<'))
+        if c == '&' then hasEntity = true
+        pos += 1
+      if pos >= len then fail(Issue.ExpectedMore)
+      val raw =
+        if !hasEntity then s.substring(start, pos).nn.tt
+        else
+          val buf = jl.StringBuilder()
+          var i = start
+          while i < pos do
+            val c = s.charAt(i)
+            if c == '&' then
+              pos = i + 1
+              appendEntity(buf)
+              i = pos
+            else
+              buf.append(c)
+              i += 1
+          pos = i // restore
+          buf.toString.nn.tt
+      // Re-find the closing quote for the entity-expansion path
+      while pos < len && s.charAt(pos) != quote do pos += 1
+      pos += 1 // skip closing quote
+      raw
+
+    def readAttributes(): Map[Text, Text] =
+      var entries: Map[Text, Text] = ListMap()
+      while
+        skipWs()
+        pos < len && s.charAt(pos) != '>' && s.charAt(pos) != '/'
+      do
+        val key = readName()
+        skipWs()
+        expect('=')
+        skipWs()
+        if pos >= len then fail(Issue.ExpectedMore)
+        val q = s.charAt(pos)
+        if q != '"' && q != '\'' then fail(Issue.UnquotedAttribute)
+        pos += 1
+        val value = readAttrValue(q)
+        entries = entries.updated(key, value)
+      entries
+
+    // Read text up to `<`; expand entities into a buffer if any are seen.
+    def readText(): Text =
+      val start = pos
+      var hasEntity = false
+      while pos < len && s.charAt(pos) != '<' do
+        if s.charAt(pos) == '&' then hasEntity = true
+        pos += 1
+      if !hasEntity then s.substring(start, pos).nn.tt
+      else
+        val buf = jl.StringBuilder()
+        var i = start
+        while i < pos do
+          val c = s.charAt(i)
+          if c == '&' then
+            pos = i + 1
+            appendEntity(buf)
+            i = pos
+          else
+            buf.append(c)
+            i += 1
+        // Restore pos to '<'
+        pos = i
+        while pos < len && s.charAt(pos) != '<' do pos += 1
+        buf.toString.nn.tt
+
+    def readComment(): Text =
+      // Position is just after `<!--`
+      val start = pos
+      while pos < len - 2 && !(s.charAt(pos) == '-' && s.charAt(pos + 1) == '-' && s.charAt(pos + 2) == '>') do
+        pos += 1
+      if pos >= len - 2 then fail(Issue.ExpectedMore)
+      val text = s.substring(start, pos).nn.tt
+      pos += 3 // skip -->
+      text
+
+    def readCdata(): Text =
+      // Position is just after `<![CDATA[`
+      val start = pos
+      while pos < len - 2 && !(s.charAt(pos) == ']' && s.charAt(pos + 1) == ']' && s.charAt(pos + 2) == '>') do
+        pos += 1
+      if pos >= len - 2 then fail(Issue.ExpectedMore)
+      val text = s.substring(start, pos).nn.tt
+      pos += 3
+      text
+
+    def readProcessingInstruction(): Node =
+      // Position is just after `<?`
+      val nameStart = pos
+      while pos < len && s.charAt(pos) != '?' && !isWhitespace(s.charAt(pos)) do pos += 1
+      val target = s.substring(nameStart, pos).nn.tt
+      val isHeader =
+        target.s.length == 3
+        && (target.s.charAt(0) == 'x' || target.s.charAt(0) == 'X')
+        && (target.s.charAt(1) == 'm' || target.s.charAt(1) == 'M')
+        && (target.s.charAt(2) == 'l' || target.s.charAt(2) == 'L')
+
+      if isHeader then
+        // Parse XML header attributes (version, encoding, standalone)
+        skipWs()
+        // We just skip past attributes in the header; full parse is in the
+        // Streaming path. For Direct, we recognise the header as a Header
+        // node but use defaults for the values we don't parse.
+        val dataStart = pos
+        while pos < len && s.charAt(pos) != '?' do pos += 1
+        if pos >= len - 1 then fail(Issue.ExpectedMore)
+        // Quick attribute extraction: look for version, encoding, standalone.
+        val data = s.substring(dataStart, pos).nn
+        pos += 2 // skip ?>
+        // Lazy parse of header attributes
+        var version: Text = t"1.0"
+        var encoding: Optional[Text] = Unset
+        var standalone: Optional[Boolean] = Unset
+        // (Not parsing for the prototype; just record defaults.)
+        Header(version, encoding, standalone)
+      else
+        val dataStart = pos
+        skipWs()
+        val dataActual = pos
+        while pos < len - 1 && !(s.charAt(pos) == '?' && s.charAt(pos + 1) == '>') do
+          pos += 1
+        if pos >= len - 1 then fail(Issue.ExpectedMore)
+        val data = if dataActual < pos then s.substring(dataActual, pos).nn.tt else t""
+        pos += 2 // skip ?>
+        ProcessingInstruction(target, data)
+
+    def readDoctype(): Text =
+      // Position is just after `<!DOCTYPE` (we already consumed)
+      skipWs()
+      val start = pos
+      while pos < len && s.charAt(pos) != '>' do pos += 1
+      if pos >= len then fail(Issue.ExpectedMore)
+      val text = s.substring(start, pos).nn.tt
+      pos += 1
+      text
+
+    def readElement(): Element =
+      // Position is just after `<`
+      val name = readName()
+      val attrs = readAttributes()
+      // pos is at '/' or '>'
+      if pos >= len then fail(Issue.ExpectedMore)
+      if s.charAt(pos) == '/' then
+        pos += 1
+        expect('>')
+        Element(name, attrs, IArray.empty[Node])
+      else
+        // '>' case
+        pos += 1
+        val children = readChildren(name)
+        Element(name, attrs, children)
+
+    def readChildren(parentName: Text): IArray[Node] =
+      val children = scala.collection.mutable.ArrayBuffer[Node]()
+      var done = false
+      while !done do
+        if pos >= len then fail(Issue.Incomplete(parentName))
+        val c = s.charAt(pos)
+        if c == '<' then
+          // Look at next char
+          if pos + 1 >= len then fail(Issue.ExpectedMore)
+          val c2 = s.charAt(pos + 1)
+          if c2 == '/' then
+            // Close tag
+            pos += 2
+            val close = readName()
+            skipWs()
+            expect('>')
+            if close != parentName then fail(Issue.MismatchedTag(parentName, close))
+            done = true
+          else if c2 == '!' then
+            if pos + 3 < len && s.charAt(pos + 2) == '-' && s.charAt(pos + 3) == '-' then
+              pos += 4
+              children += Comment(readComment())
+            else if pos + 8 < len && s.substring(pos + 2, pos + 9).nn == "[CDATA[" then
+              pos += 9
+              children += Cdata(readCdata())
+            else
+              fail(Issue.Unexpected(s.charAt(pos + 2)))
+          else if c2 == '?' then
+            pos += 2
+            children += readProcessingInstruction()
+          else
+            // New element
+            pos += 1
+            children += readElement()
+        else
+          val text = readText()
+          if text.length > 0 then children += TextNode(text)
+      IArray.from(children)
+
+    // Top-level: skip leading whitespace, then parse node(s).
+    skipWs()
+    val nodes = scala.collection.mutable.ArrayBuffer[Node]()
+    while pos < len do
+      if s.charAt(pos) != '<' then
+        val text = readText()
+        if text.length > 0 then nodes += TextNode(text)
+      else
+        if pos + 1 >= len then fail(Issue.ExpectedMore)
+        val c2 = s.charAt(pos + 1)
+        if c2 == '?' then
+          pos += 2
+          nodes += readProcessingInstruction()
+        else if c2 == '!' then
+          if pos + 3 < len && s.charAt(pos + 2) == '-' && s.charAt(pos + 3) == '-' then
+            pos += 4
+            nodes += Comment(readComment())
+          else if pos + 8 < len && s.substring(pos + 2, pos + 9).nn.equalsIgnoreCase("DOCTYPE") then
+            pos += 9
+            nodes += Doctype(readDoctype())
+          else if pos + 8 < len && s.substring(pos + 2, pos + 9).nn == "[CDATA[" then
+            pos += 9
+            nodes += Cdata(readCdata())
+          else
+            fail(Issue.Unexpected(s.charAt(pos + 2)))
+        else if c2 == '/' then
+          fail(Issue.UnopenedTag(t""))
+        else
+          pos += 1
+          nodes += readElement()
+      skipWs()
+
+    if nodes.length == 1 then nodes(0)
+    else Fragment(nodes.toSeq*)
+
   private[xylophone] def parse[schema <: XmlSchema]
     ( input:        Iterator[Text],
       root:         Tag,
