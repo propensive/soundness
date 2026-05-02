@@ -141,17 +141,20 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
     val results = results0.drop(1)
     val total = results.sum
     val iterations0: Optional[Int] = iterations
-    val count = sample*iterations0.or(5)
+    val runs = iterations0.or(5)
+    val count = sample*runs
     val sampleMean0 = results.map(_.toDouble/sample).mean
     val sampleMean = sampleMean0.or(0.0)
     val sum = results.map(_.toDouble/sample - sampleMean).bi.map(_*_).sum
-    val variance = sample*sum/(iterations0.or(5) - 1)
+    val variance = sum/(runs - 1)
     val sd = math.sqrt(variance)
     val min = results.min.toDouble/sample
     val max = results.max.toDouble/sample
 
     val benchmark =
-      Benchmark(total, count, total.toDouble/count, min, max, sd, confidence0.or(95), baseline)
+      Benchmark
+        ( total, count, runs, total.toDouble/count, min, max, sd, confidence0.or(95),
+          baseline )
 
     inclusion.include(runner.report, testId, benchmark)
 

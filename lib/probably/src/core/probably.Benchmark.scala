@@ -44,6 +44,7 @@ object Benchmark:
 case class Benchmark
   ( nanoseconds: Long,
     iterations:  Long,
+    runs:        Int,
     mean:        Double,
     min:         Double,
     max:         Double,
@@ -51,15 +52,60 @@ case class Benchmark
     confidence:  Benchmark.Percentiles,
     baseline:    Optional[Baseline] ):
 
-  def zScore(percentile: Benchmark.Percentiles): Double = percentile match
-    case 80 => 0.842
-    case 85 => 1.036
-    case 90 => 1.282
-    case 95 => 1.645
-    case 96 => 1.751
-    case 97 => 1.881
-    case 98 => 2.054
-    case 99 => 2.326
+  // One-sided quantiles of Student's t-distribution, used for CI half-widths
+  // computed from `runs` independent measurement-run means with df = runs - 1.
+  // For df ≥ 30 the t-distribution is within ~4% of the standard normal, so we
+  // fall through to the normal quantiles. For an out-of-table df we round down
+  // to the nearest tabulated value, giving a slightly wider (more conservative)
+  // CI rather than a tighter one.
+  def tQuantile(percentile: Benchmark.Percentiles, df: Int): Double =
+    if df <= 4 then percentile match
+      case 80 => 0.941
+      case 85 => 1.190
+      case 90 => 1.533
+      case 95 => 2.132
+      case 96 => 2.333
+      case 97 => 2.601
+      case 98 => 2.999
+      case 99 => 3.747
+    else if df <= 9 then percentile match
+      case 80 => 0.883
+      case 85 => 1.100
+      case 90 => 1.383
+      case 95 => 1.833
+      case 96 => 1.973
+      case 97 => 2.167
+      case 98 => 2.398
+      case 99 => 2.821
+    else if df <= 19 then percentile match
+      case 80 => 0.861
+      case 85 => 1.066
+      case 90 => 1.328
+      case 95 => 1.729
+      case 96 => 1.850
+      case 97 => 2.012
+      case 98 => 2.205
+      case 99 => 2.539
+    else if df <= 29 then percentile match
+      case 80 => 0.854
+      case 85 => 1.055
+      case 90 => 1.311
+      case 95 => 1.699
+      case 96 => 1.815
+      case 97 => 1.967
+      case 98 => 2.150
+      case 99 => 2.462
+    else percentile match
+      case 80 => 0.842
+      case 85 => 1.036
+      case 90 => 1.282
+      case 95 => 1.645
+      case 96 => 1.751
+      case 97 => 1.881
+      case 98 => 2.054
+      case 99 => 2.326
 
-  def confidenceInterval: Long = (zScore(confidence)*sd/math.sqrt(iterations.toDouble)).toLong
+  def confidenceInterval: Long =
+    (tQuantile(confidence, runs - 1)*sd/math.sqrt(runs.toDouble)).toLong
+
   def throughput: Long = (1000000000.0/mean).toLong

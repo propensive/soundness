@@ -116,7 +116,7 @@ class Report(using Environment)(using palette: TestPalette):
         if suite.absent then rest
         else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
 
-      case Bench(testId, bench@Benchmark(_, _, _, _, _, _, _, _)) =>
+      case Bench(testId, bench@Benchmark(_, _, _, _, _, _, _, _, _)) =>
         List(Summary(Status.Bench, testId, 0, 0, 0, 0))
 
       case Test(testId, buffer) =>
