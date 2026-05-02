@@ -49,6 +49,7 @@ import jacinta.*
 import nomenclature.*
 import prepositional.*
 import probably.*
+import quantitative.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
@@ -66,11 +67,12 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
 
   inline def apply[duration: Abstractable across Durations to Long, report]
     ( name: Message )
-    ( target:     duration,
-      iterations: Optional[Int]                   = Unset,
-      warmups:    Optional[Int]                   = Unset,
-      confidence: Optional[Benchmark.Percentiles] = Unset,
-      baseline:   Optional[Baseline]              = Unset )
+    ( target:        duration,
+      operationSize: Optional[OperationSize]         = Unset,
+      iterations:    Optional[Int]                   = Unset,
+      warmups:       Optional[Int]                   = Unset,
+      confidence:    Optional[Benchmark.Percentiles] = Unset,
+      baseline:      Optional[Baseline]              = Unset )
     ( body0: (References over Transport) ?=> Quotes ?=> Expr[Any] )
     ( using System, TemporaryDirectory, Stageable over Transport in Form )
     ( using runner:    Runner[report],
@@ -172,10 +174,14 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
     val min = results.min.toDouble/sample
     val max = results.max.toDouble/sample
 
+    val operationSizeText: Optional[Text] = operationSize.let(_.sizeText)
+    val operationRateText: Optional[Text] = operationSize.let: os =>
+      os.rateText((total.toDouble/count)/1e9)
+
     val benchmark =
       Benchmark
         ( total, count, runs, total.toDouble/count, min, max, sd, confidence0.or(95),
-          baseline )
+          baseline, operationSizeText, operationRateText )
 
     inclusion.include(runner.report, testId, benchmark)
 
