@@ -87,12 +87,73 @@ object Benchmarks extends Suite(m"Merino benchmarks"):
       bench(m"Parse file with Merino")(target = 1*Second):
         '{ JsonAst.parse(merino.Benchmarks.jsonBytes3) }
 
+    suite(m"Parse example 4 (100 user records)"):
+      bench(m"Parse file with Jawn")
+        (target = 1*Second, baseline = Baseline(compare = Min)):
+        '{
+            import org.typelevel.jawn.ast.JParser
+            JParser.parseFromString(merino.Benchmarks.jsonText4)
+          }
+
+      bench(m"Parse file with Merino")(target = 1*Second):
+        '{ JsonAst.parse(merino.Benchmarks.jsonBytes4) }
+
+    suite(m"Parse example 5 (500 log entries)"):
+      bench(m"Parse file with Jawn")
+        (target = 1*Second, baseline = Baseline(compare = Min)):
+        '{
+            import org.typelevel.jawn.ast.JParser
+            JParser.parseFromString(merino.Benchmarks.jsonText5)
+          }
+
+      bench(m"Parse file with Merino")(target = 1*Second):
+        '{ JsonAst.parse(merino.Benchmarks.jsonBytes5) }
+
   lazy val jsonText1: String = jsonExample1.s
   lazy val jsonText2: String = jsonExample2.s
   lazy val jsonText3: String = jsonExample3.s
   lazy val jsonBytes1: Data = jsonText1.getBytes("UTF-8").nn.immutable(using Unsafe)
   lazy val jsonBytes2: Data = jsonText2.getBytes("UTF-8").nn.immutable(using Unsafe)
   lazy val jsonBytes3: Data = jsonText3.getBytes("UTF-8").nn.immutable(using Unsafe)
+
+  // Example 4: array of 100 user records — the typical "JSON array of records"
+  // pattern with a small fixed key set repeated across all elements.
+  lazy val jsonText4: String =
+    val sb = new _root_.java.lang.StringBuilder
+    sb.append("{\"users\":[")
+    var i = 0
+    while i < 100 do
+      if i > 0 then sb.append(',')
+      val active = if (i & 1) == 0 then "true" else "false"
+      val role = if i % 10 == 0 then "admin" else "user"
+      sb.append(s"""{"id":$i,"username":"user$i","email":"user$i@example.com","active":$active,"role":"$role"}""")
+      i += 1
+    sb.append("]}")
+    sb.toString.nn
+
+  lazy val jsonBytes4: Data = jsonText4.getBytes("UTF-8").nn.immutable(using Unsafe)
+
+  // Example 5: a longer NDJSON-style log array with 500 entries; 6 keys per
+  // entry, all repeating across entries. Larger than Example 4 and stresses
+  // the per-key path more heavily.
+  lazy val jsonText5: String =
+    val sb = new _root_.java.lang.StringBuilder
+    sb.append("{\"logs\":[")
+    val levels = Array("info", "debug", "warn", "error")
+    val services = Array("auth", "api", "db", "cache", "worker")
+    var i = 0
+    while i < 500 do
+      if i > 0 then sb.append(',')
+      val ts = 1700000000L + i
+      val level = levels(i & 3)
+      val service = services(i % 5)
+      val userId = 1000 + (i % 50)
+      sb.append(s"""{"timestamp":$ts,"level":"$level","service":"$service","requestId":"req-$i","userId":$userId,"message":"event $i processed"}""")
+      i += 1
+    sb.append("]}")
+    sb.toString.nn
+
+  lazy val jsonBytes5: Data = jsonText5.getBytes("UTF-8").nn.immutable(using Unsafe)
 
   val jsonExample1: Text = t"""
 
