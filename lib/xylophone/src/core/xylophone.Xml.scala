@@ -840,7 +840,7 @@ object Xml extends Tag.Container
       case Sqt => next() yet singleQuoted(cursor.mark)
       case _   => fail(UnquotedAttribute)
 
-    def tag(headers: Boolean): Token = cursor.lay(fail(ExpectedMore)):
+    def tag(headers: Boolean)(using Cursor.Held): Token = cursor.lay(fail(ExpectedMore)):
       case '?' if headers =>
         cursor.consume(fail(ExpectedMore))("xml")
         next()
@@ -852,7 +852,7 @@ object Xml extends Tag.Container
         cursor.consume(fail(ExpectedMore))("ersion")
         next()
         equality()
-        content = cursor.hold(quotedValue())
+        content = quotedValue()
 
         headerEncoding = Unset
         headerStandalone = Unset
@@ -864,7 +864,7 @@ object Xml extends Tag.Container
             cursor.consume(fail(ExpectedMore))("ncoding")
             next()
             equality()
-            headerEncoding = cursor.hold(quotedValue())
+            headerEncoding = quotedValue()
             skip()
 
           case _ =>
@@ -875,7 +875,7 @@ object Xml extends Tag.Container
             cursor.consume(fail(ExpectedMore))("tandalone")
             next()
             equality()
-            val standaloneValue: Text = cursor.hold(quotedValue())
+            val standaloneValue: Text = quotedValue()
             headerStandalone = standaloneValue.s match
               case "yes" => true
               case "no"  => false
@@ -893,7 +893,7 @@ object Xml extends Tag.Container
 
       case '?' =>
         next()
-        content = cursor.hold(piTarget(cursor.mark))
+        content = piTarget(cursor.mark)
 
         if content.length == 3 then
           val chars  = content.chars
@@ -915,14 +915,14 @@ object Xml extends Tag.Container
           case '-' =>
             expect('-')
             next()
-            content = cursor.hold(comment(cursor.mark))
+            content = comment(cursor.mark)
             cursor.next()
             Token.Comment
 
           case '[' =>
             cursor.consume(fail(ExpectedMore))("CDATA[")
             next()
-            content = cursor.hold(cdata(cursor.mark))
+            content = cdata(cursor.mark)
             cursor.next()
             Token.Cdata
 
@@ -930,7 +930,7 @@ object Xml extends Tag.Container
             cursor.consume(fail(ExpectedMore))("OCTYPE")
             next()
             skip()
-            content = cursor.hold(doctype(cursor.mark))
+            content = doctype(cursor.mark)
             Token.Doctype
 
           case chr =>
@@ -938,7 +938,7 @@ object Xml extends Tag.Container
 
       case '/' =>
         next()
-        content = cursor.hold:
+        content =
           tagname(cursor.mark, schema.elements.unless(schema.freeform), false).label
         Token.Close
 
@@ -946,9 +946,9 @@ object Xml extends Tag.Container
         fail(BadInsertion)
 
       case chr =>
-        content = cursor.hold:
+        content =
           tagname(cursor.mark, schema.elements.unless(schema.freeform), false).label
-        extra = cursor.hold(attributes(content))
+        extra = attributes(content)
 
         cursor.lay(fail(ExpectedMore)):
           case '/' => expect('>') yet cursor.next() yet Token.Empty
@@ -967,10 +967,10 @@ object Xml extends Tag.Container
       index -= count
       result.immutable(using Unsafe)
 
-    def descend(parent: Tag, admissible: Set[Text]): Node = read(parent, extra, 0)
+    def descend(parent: Tag, admissible: Set[Text])(using Cursor.Held): Node = read(parent, extra, 0)
 
     @tailrec
-    def read(parent: Tag, map: Map[Text, Text], count: Int): Node =
+    def read(parent: Tag, map: Map[Text, Text], count: Int)(using Cursor.Held): Node =
 
       def admit(child: Text): Boolean = schema.freeform || parent.admissible(child)
 
@@ -986,7 +986,7 @@ object Xml extends Tag.Container
           var current: Node = parent
           var focus: Tag = parent
 
-          cursor.hold:
+          locally:
             val mark = cursor.mark
 
             def node(): Unit =
@@ -1020,7 +1020,7 @@ object Xml extends Tag.Container
                 current = Doctype(content)
 
               case Token.Pi =>
-                val data = cursor.hold(piData(cursor.mark))
+                val data = piData(cursor.mark)
                 cursor.next()
                 current = ProcessingInstruction(content, data)
 
@@ -1057,11 +1057,11 @@ object Xml extends Tag.Container
               read(parent, map, count + 1)
 
         case chr =>
-          val text = cursor.hold(textual(cursor.mark))
+          val text = textual(cursor.mark)
           if text.length == 0 then read(parent, map, count + 1)
           else append(TextNode(text)) yet read(parent, map, count + 1)
 
-    if cursor.finished then Fragment() else
+    if cursor.finished then Fragment() else cursor.hold:
       skip()
       append(root)
       val head = read(root, ListMap(), 0)
