@@ -237,14 +237,14 @@ private abstract class JsonParser:
 
   protected inline def resetString(): Unit = stringCursor = 0
 
-  protected def ensureStringSpace(n: Int): Unit =
+  protected inline def ensureStringSpace(n: Int): Unit =
     while stringCursor + n > arraySize do arraySize *= 2
     if chars.length < arraySize then
       val newArr = new Array[Char](arraySize)
       System.arraycopy(chars, 0, newArr, 0, stringCursor)
       chars = newArr
 
-  protected def appendChar(char: Char): Unit =
+  protected inline def appendChar(char: Char): Unit =
     if stringCursor == arraySize then
       arraySize *= 2
       val newArray = new Array[Char](arraySize)
@@ -253,9 +253,9 @@ private abstract class JsonParser:
     chars(stringCursor) = char
     stringCursor += 1
 
-  protected def getString(): String = String(chars, 0, stringCursor)
+  protected inline def getString(): String = String(chars, 0, stringCursor)
 
-  protected def getArrayBuffer(): ArrayBuffer[Any] =
+  protected inline def getArrayBuffer(): ArrayBuffer[Any] =
     arrayBufferId += 1
     if arrayBuffers.length <= arrayBufferId then
       val newBuffer = ArrayBuffer.empty[Any]
@@ -266,9 +266,9 @@ private abstract class JsonParser:
       buffer.clear()
       buffer
 
-  protected def relinquishArrayBuffer(): Unit = arrayBufferId -= 1
+  protected inline def relinquishArrayBuffer(): Unit = arrayBufferId -= 1
 
-  protected def getStringArrayBuffer(): ArrayBuffer[String] =
+  protected inline def getStringArrayBuffer(): ArrayBuffer[String] =
     stringArrayBufferId += 1
     if stringArrayBuffers.length <= stringArrayBufferId then
       val newBuffer = ArrayBuffer.empty[String]
@@ -279,7 +279,7 @@ private abstract class JsonParser:
       buffer.clear()
       buffer
 
-  protected def relinquishStringArrayBuffer(): Unit = stringArrayBufferId -= 1
+  protected inline def relinquishStringArrayBuffer(): Unit = stringArrayBufferId -= 1
 
   // ──────────────────────────────────────────────────────────────────────────
   // Parser body (shared by both backends).
