@@ -894,6 +894,12 @@ object Tests extends Suite(m"Jacinta Tests"):
           case _                      => 0
       . assert(_ == 2)
 
+      test(m"@memo annotation sets a description on a field"):
+        JsonSchema.derived[Marked].schema() match
+          case obj: JsonSchema.Object => obj.properties.at(t"n").let(_.description).or(t"")
+          case _                      => t""
+      . assert(_ == t"the count")
+
       test(m"description_= sets the description on a String schema"):
         val schema = JsonSchema.String().`description_=`(t"a name")
         schema.description
