@@ -735,7 +735,12 @@ object merino extends Library:
   object core extends Component(turbulence.core, zephyrine.core)
   object test extends Tests(core, sedentary.core, diuretic.core, galilei.core, octogenarian.core, eucalyptus.core)
   object bench extends Benchmarks(core, quantitative.units):
-    def mvnDeps = Seq(mvn"org.typelevel::jawn-ast:1.6.0")
+    def mvnDeps = Seq(
+      mvn"org.typelevel::jawn-ast:1.6.0",
+      mvn"io.circe::circe-parser:0.14.13",
+      mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.30.7",
+      mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-circe:2.30.7"
+    )
 
 object metamorphose extends Library:
   object core extends Component(contingency.core)
@@ -862,8 +867,8 @@ object scintillate extends Library:
   object test extends Tests(server, servlet)
 
 object sedentary extends Library:
-  object core extends Component(superlunary.jvm, anthology.bundle, diuretic.core)
-  object test extends Tests(core, quantitative.units)
+  object core extends Component(superlunary.jvm, anthology.bundle, diuretic.core, quantitative.units)
+  object test extends Tests(core)
 
 object serpentine extends Library:
   object core extends Component(nomenclature.core, ambience.core)

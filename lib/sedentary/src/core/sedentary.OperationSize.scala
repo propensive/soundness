@@ -30,45 +30,28 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
+package sedentary
 
 import anticipation.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
+import quantitative.*
 import symbolism.*
+import vacuous.*
 
-object internal2:
-  trait Protoquantity:
-    extension [units <: Measure](quantity: Quantity[units])
-      transparent inline def in[units2[power <: Nat] <: Units[power, ?]]: Any =
-        ${quantitative.internal.norm[units, units2]('quantity)}
+case class OperationSize(sizeText: Text, rateText: Double => Text)
 
-      transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
+object OperationSize:
+  // Captures the `Decimalizer` available where `Quantity` is used as an
+  // `operationSize` argument to `Bench.apply`. The captured closure renders
+  // both the per-operation size text and (later, given a measured mean time)
+  // the throughput rate text, so `Bench.apply` itself doesn't need to be
+  // generic over the unit or carry a `Decimalizer` of its own.
+  inline given conversion: [size <: Measure] => Decimalizer
+        =>  Conversion[Quantity[size], OperationSize] = quantity =>
 
-
-      inline def normalize[units2 <: Measure](using normalizable: units is Normalizable to units2)
-      :   Quantity[units2] =
-
-        normalizable.normalize(quantity)
-
-
-      inline def sqrt(using root: Quantity[units] is Rootable[2]): root.Result = root.root(quantity)
-      inline def cbrt(using root: Quantity[units] is Rootable[3]): root.Result = root.root(quantity)
-      inline def units: Map[Text, Int] = ${quantitative.internal.collectUnits[units]}
-
-      inline def express(using Decimalizer): Text = compiletime.summonFrom:
-        case prefixes: (Prefixes `on` `units`) =>
-          val prefix = prefixes.select(quantity.value)
-          val scaled = quantity.value/math.pow(prefix.base.toDouble, prefix.exponent.toDouble)
-          t"$scaled ${prefix.symbol.tt}${Quantity.expressUnits(units)}"
-
-        case prefixes: Prefixes =>
-          val prefix = prefixes.select(quantity.value)
-          val scaled = quantity.value/math.pow(prefix.base.toDouble, prefix.exponent.toDouble)
-          t"$scaled ${prefix.symbol.tt}${Quantity.expressUnits(units)}"
-
-        case _ =>
-          t"${quantity.value} ${Quantity.expressUnits(units)}"
-
-      inline def dimension: Text = ${quantitative.internal.describe[units]}
+    OperationSize
+      ( quantity.express,
+        meanSeconds =>
+          val rate: Quantity[size & Seconds[-1]] = Quantity(quantity.value/meanSeconds)
+          rate.express )

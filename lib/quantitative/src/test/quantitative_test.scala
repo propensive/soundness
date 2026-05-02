@@ -37,6 +37,8 @@ import soundness.*
 import language.strictEquality
 import language.experimental.into
 
+import autopsies.contrastExpectations
+
 given decimalizer: Decimalizer = Decimalizer(3)
 
 object Tests extends Suite(m"Quantitative Tests"):
@@ -391,3 +393,76 @@ object Tests extends Suite(m"Quantitative Tests"):
       test(m"Standard deviation of some values"):
         List(1*Second, 2*Second, 3*Second).std.vouch
       . assert(_ == (2/3.0).sqrt*Second)
+
+    suite(m"Prefix-scaled rendering"):
+      sealed trait Information extends Dimension
+      sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
+      val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
+      given byteDesignation: Designation[Bytes[1]] = () => t"B"
+
+      test(m"Without `Prefixes` in scope, falls back to raw rendering"):
+        (5000*Byte).show
+      . assert(_ == t"5.00×10³ B")
+
+      test(m"SI prefix scales 5000 B to kB"):
+        given Prefixes on Bytes[1] = Prefixes(List(Kilo, Mega, Giga, Tera))
+        (5000*Byte).show
+      . assert(_ == t"5.00 kB")
+
+      test(m"SI prefix scales 5_000_000 B to MB"):
+        given Prefixes on Bytes[1] = Prefixes(List(Kilo, Mega, Giga, Tera))
+        (5_000_000*Byte).show
+      . assert(_ == t"5.00 MB")
+
+      test(m"SI prefix scales 1.5×10⁹ B to GB"):
+        given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))
+        (1_500_000_000.0*Byte).show
+      . assert(_ == t"1.50 GB")
+
+      test(m"Default floor 1.0 keeps 500 B unscaled"):
+        given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kilo, Mega, Giga))
+        (500*Byte).show
+      . assert(_ == t"500 B")
+
+      test(m"Lower floor 0.1 scales 100 B to kB"):
+        given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kilo, Mega, Giga), 0.1)
+        (100*Byte).show
+      . assert(_ == t"0.100 kB")
+
+      test(m"Binary prefix scales 5000 B to KiB"):
+        given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kibi, Mebi, Gibi))
+        (5000*Byte).show
+      . assert(_ == t"4.88 KiB")
+
+      test(m"Binary prefix scales 5_000_000 B to MiB"):
+        given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kibi, Mebi, Gibi))
+        (5_000_000*Byte).show
+      . assert(_ == t"4.77 MiB")
+
+      test(m"Binary prefix scales 4×10⁹ B to GiB"):
+        given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kibi, Mebi, Gibi))
+        (4_000_000_000.0*Byte).show
+      . assert(_ == t"3.73 GiB")
+
+      test(m"Negative value uses absolute magnitude for prefix selection"):
+        given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kilo, Mega, Giga))
+        (-5000*Byte).show
+      . assert(_ == t"-5.00 kB")
+
+      test(m"Zero uses no prefix"):
+        given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kilo, Mega))
+        (Quantity[Bytes[1]](0.0)).show
+      . assert(_ == t"0.00 B")
+
+      test(m"Compound dimension scales as a whole"):
+        given prefixes: (Prefixes on Bytes[1] & Seconds[-1]) = Prefixes(List(Kilo, Mega, Giga))
+        ((1_500_000_000.0*Byte)/Second).show
+      . assert(_ == t"1.50 GB·s¯¹")
+
+      test(m"Value below floor with no smaller prefix falls through to lowest"):
+        // 0.5 is below the floor of 1.0 and no sub-1 prefix is configured, so
+        // no candidate satisfies the floor; the algorithm falls through to the
+        // candidate with the smallest exponent (here `NoPrefix`).
+        given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Mega, Giga), 1.0)
+        (0.5*Byte).show
+      . assert(_ == t"0.500 B")

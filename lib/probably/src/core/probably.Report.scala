@@ -116,7 +116,7 @@ class Report(using Environment)(using palette: TestPalette):
         if suite.absent then rest
         else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
 
-      case Bench(testId, bench@Benchmark(_, _, _, _, _, _, _, _)) =>
+      case Bench(testId, bench@Benchmark(_, _, _, _, _, _, _, _, _, _, _)) =>
         List(Summary(Status.Bench, testId, 0, 0, 0, 0))
 
       case Test(testId, buffer) =>
@@ -569,6 +569,13 @@ class Report(using Environment)(using palette: TestPalette):
 
           Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): s =>
             e"${frequency(s.benchmark)}")
+        ::: (
+          if benchmarks.exists(_.benchmark.operationSize.present) then List(
+            Column(e"$Bold(Size)", textAlign = TextAlignment.Right):
+              (s: ReportLine.Bench) => s.benchmark.operationSize.lay(e"")(t => e"$t"),
+            Column(e"$Bold(Rate)", textAlign = TextAlignment.Right):
+              (s: ReportLine.Bench) => s.benchmark.operationRate.lay(e"")(t => e"$t"))
+          else Nil)
         ::: comparisons.map: comparison =>
           import Baseline.*
           val baseline = comparison.benchmark.baseline.vouch
@@ -582,8 +589,11 @@ class Report(using Environment)(using palette: TestPalette):
               def metric(value: Double) = if baseline.metric == Temporal then value else 1/value
 
               val value = baseline.compare match
-                case Compare.Min => metric(bench.benchmark.min)
-                case Compare.Max => metric(bench.benchmark.max)
+                case Compare.Min =>
+                  operations(metric(bench.benchmark.min), metric(comparison.benchmark.min))
+
+                case Compare.Max =>
+                  operations(metric(bench.benchmark.max), metric(comparison.benchmark.max))
 
                 case Compare.Mean =>
                   operations(metric(bench.benchmark.mean), metric(comparison.benchmark.mean))
