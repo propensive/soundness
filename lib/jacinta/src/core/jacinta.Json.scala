@@ -390,7 +390,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
         val keys2 = new Array[String](keys.length - 1)
         System.arraycopy(keys, 0, keys2, 0, index)
         System.arraycopy(keys, index + 1, keys2, index, keys.length - index - 1)
-        val values2 = new Array[String](values.length - 1)
+        val values2 = new Array[JsonAst](values.length - 1)
         System.arraycopy(values, 0, values2, 0, index)
         System.arraycopy(values, index + 1, values2, index, values.length - index - 1)
         Json.ast(JsonAst(keys2.immutable(using Unsafe) -> values2.immutable(using Unsafe)))
