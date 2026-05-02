@@ -966,6 +966,8 @@ object wisteria extends Library:
 object xylophone extends Library:
   object core extends Component(zephyrine.core, adversaria.core, typonym.core, hellenism.core, urticose.core)
   object test extends Tests(core)
+  object bench extends Benchmarks(core, quantitative.units):
+    def mvnDeps = Seq(mvn"org.scala-lang.modules::scala-xml:2.4.0")
 
 object yossarian extends Library:
   object core extends Component(iridescence.core, gossamer.core, turbulence.core)
