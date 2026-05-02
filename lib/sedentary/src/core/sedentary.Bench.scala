@@ -133,8 +133,8 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
     val sum = results.map(_.toDouble/sample - sampleMean).bi.map(_*_).sum
     val variance = sample*sum/(iterations0.or(5) - 1)
     val sd = math.sqrt(variance)
-    val min = results.min.toDouble
-    val max = results.max.toDouble
+    val min = results.min.toDouble/sample
+    val max = results.max.toDouble/sample
 
     val benchmark =
       Benchmark(total, count, total.toDouble/count, min, max, sd, confidence0.or(95), baseline)
