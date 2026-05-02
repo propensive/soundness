@@ -789,6 +789,7 @@ object Tests extends Suite(m"Jacinta Tests"):
 
     suite(m"Time encodables/decodables"):
       import jsonEncodables.encodeInstantsAsUnixEpochMilliseconds
+      import jsonEncodables.encodeDurationsAsMilliseconds
       import jsonDecodables.decodeInstantsAsUnixEpochMilliseconds
       import jsonDecodables.decodeDurationsAsMilliseconds
       import aviation.*
@@ -806,9 +807,17 @@ object Tests extends Suite(m"Jacinta Tests"):
         Instant(1234567890L).json.as[Instant].long
       . assert(_ == 1234567890L)
 
-      test(m"Decode a Duration from a Long"):
+      test(m"Encode a Duration as a Long of milliseconds"):
+        Duration(5000L).json.show
+      . assert(_ == t"5000")
+
+      test(m"Decode a Duration from a Long of milliseconds"):
         t"5000".read[Json].as[Duration].value
       . assert(_ == 5.0)
+
+      test(m"Round-trip a Duration"):
+        Duration(60_000L).json.as[Duration].value
+      . assert(_ == 60.0)
 
     suite(m"JsonSchema tests"):
       test(m"Schematic for Int yields an Integer schema"):
