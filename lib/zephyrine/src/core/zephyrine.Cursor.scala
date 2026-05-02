@@ -181,7 +181,7 @@ final class Cursor[data]
     while mark.block.n0 > focusBlock.n0 do forward()
     focus = mark.index
 
-    inline if lineation.active then
+    if lineation.active then
       val offset2 = offset(mark)
       lineNo = offset2.line
       columnNo = offset2.column
@@ -196,7 +196,7 @@ final class Cursor[data]
     if focus.next.n0 >= addressable.length(current) then forward() else focus = focus.next
 
     if finished then false else
-      inline if lineation.active then
+      if lineation.active then
         columnNo =
           if !lineation.track(addressable.address(current2, focus2)) then columnNo.next else
             lineNo = lineNo.next
@@ -227,7 +227,7 @@ final class Cursor[data]
     found
 
   inline def mark(using held: Cursor.Held): Mark = Mark(focusBlock, focus).tap: mark =>
-    inline if lineation.active then
+    if lineation.active then
       marks.append(mark)
       offsets.append(Offset(lineNo, columnNo))
 

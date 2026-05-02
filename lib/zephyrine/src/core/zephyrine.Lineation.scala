@@ -48,5 +48,8 @@ object Lineation:
     inline def track(datum: Byte): false = false
 
 trait Lineation extends Operable:
-  inline def active: Boolean
-  inline def track(datum: Operand): Boolean
+  // Declared non-inline so `Cursor.next`'s slow path and any other non-inline
+  // caller can dispatch through them; concrete instances are still
+  // `inline def`, so hot-path inline call sites resolve at compile time.
+  def active: Boolean
+  def track(datum: Operand): Boolean
