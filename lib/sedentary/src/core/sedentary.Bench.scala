@@ -87,37 +87,51 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
       val iterations2: Int = iterations0.or(5)
       val target2: Expr[Long] = Expr(target.generic/iterations2)
       ' {
-          var count: Int = 1
-          var d: Long = 0
+          var count: Long = 1L
+          var d: Long = 0L
 
-          // Run 10 times initially
-          for j <- 0 until 10 do $body0
+          // Run 10 times initially as untimed warmup
+          var w = 0
+          while w < 10 do
+            $body0
+            w += 1
 
-          // Keep doubling the count until we get one run
+          // Keep doubling the count until we get one run exceeding target
           while d < $target2 do
-            count *= 2
+            if count >= (1L << 34) then
+              throw new RuntimeException(
+                "sedentary: benchmark body produced no measurable timing after 2^34 "
+                  + "iterations; suspected dead-code elimination")
+            count *= 2L
             val t0 = jl.System.nanoTime
-            for i <- 0 until count do $body0
+            var i = 0L
+            while i < count do { $body0; i += 1L }
             d = jl.System.nanoTime - t0
 
           var rate: Double = d.toDouble/count
-          count = ($target2/rate).toInt
+          count = math.max(1L, ($target2/rate).toLong)
           val result = new Array[Long](${Expr(iterations2)} + 1)
 
-          for i <- 0 until ${Expr(5)} do
+          var c = 0
+          while c < 5 do
             val t0 = jl.System.nanoTime
-            for j <- 0 until count do $body0
+            var j = 0L
+            while j < count do { $body0; j += 1L }
             val t1 = jl.System.nanoTime - t0
             rate = t1.toDouble/count
-            count = ($target2/rate).toInt
+            count = math.max(1L, ($target2/rate).toLong)
+            c += 1
 
           result(0) = count
 
-          for i <- 1 to ${Expr(iterations2)} do
+          var m = 1
+          while m <= ${Expr(iterations2)} do
             val t0 = jl.System.nanoTime
-            for j <- 0 until count do $body0
+            var j = 0L
+            while j < count do { $body0; j += 1L }
             val t1 = jl.System.nanoTime - t0
-            result(i) = t1
+            result(m) = t1
+            m += 1
 
           result.to(List)
         }
