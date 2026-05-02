@@ -109,8 +109,10 @@ private object JsonParser:
 
     protected def beginRegion(): Region = pos
 
-    protected def asciiSliceFromRegion(start: Region): Optional[String] =
-      // Direct backend never crosses blocks; the slice is always available.
+    // Direct backend never crosses blocks; the slice is always available.
+    protected def regionContiguous(start: Region): Boolean = true
+
+    protected def extractAsciiSlice(start: Region): String =
       new String(bytes, start, pos - start, java.nio.charset.StandardCharsets.US_ASCII)
 
     protected def appendRegionToBuffer(start: Region): Unit =
@@ -160,18 +162,18 @@ private object JsonParser:
       val held = heldToken.nn
       (cursor.mark(using held), cursor.block, cursor.offsetInBlock)
 
-    protected def asciiSliceFromRegion(start: Region): Optional[String] =
+    protected def regionContiguous(start: Region): Boolean =
+      val (_, startBlock, _) = start
+      cursor.block.asInstanceOf[AnyRef] eq startBlock.asInstanceOf[AnyRef]
+
+    protected def extractAsciiSlice(start: Region): String =
       val (_, startBlock, startOffset) = start
-      // Same-block fast path: build the String straight from the underlying
-      // byte array without going through `grab`.
-      if cursor.block.asInstanceOf[AnyRef] eq startBlock.asInstanceOf[AnyRef] then
-        val arr = startBlock.asInstanceOf[Array[Byte]]
-        new String
-         ( arr,
-           startOffset,
-           cursor.offsetInBlock - startOffset,
-           java.nio.charset.StandardCharsets.US_ASCII )
-      else Unset
+      val arr = startBlock.asInstanceOf[Array[Byte]]
+      new String
+       ( arr,
+         startOffset,
+         cursor.offsetInBlock - startOffset,
+         java.nio.charset.StandardCharsets.US_ASCII )
 
     protected def appendRegionToBuffer(start: Region): Unit =
       val (mark, _, _) = start
@@ -220,7 +222,10 @@ private abstract class JsonParser:
   // starting block + offset so it can detect block-boundary crossings.
   type Region
   protected def beginRegion(): Region
-  protected def asciiSliceFromRegion(start: Region): Optional[String]
+  // Whether the data from `start` to the current position is in a single
+  // contiguous block (i.e. trivially extractable via array slicing).
+  protected def regionContiguous(start: Region): Boolean
+  protected def extractAsciiSlice(start: Region): String
   protected def appendRegionToBuffer(start: Region): Unit
 
   // The streaming backend opens `Cursor.hold` around `parseString`; the
@@ -330,14 +335,10 @@ private abstract class JsonParser:
 
     if !more then errorAt(Issue.PrematureEnd)
 
-    if peek == Quote then
-      asciiSliceFromRegion(region) match
-        case slice: String =>
-          advance()
-          slice
-        case Unset =>
-          // Crossed a block boundary: take the slow path.
-          parseStringTail(region)
+    if peek == Quote && regionContiguous(region) then
+      val slice = extractAsciiSlice(region)
+      advance()
+      slice
     else parseStringTail(region)
 
   private def parseStringTail(start: Region)(using Tactic[ParseError]): String =
