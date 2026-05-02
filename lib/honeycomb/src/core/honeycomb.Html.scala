@@ -700,8 +700,10 @@ object Html extends Tag.Container
           dictionary.element
 
 
+    // Slow path: an entity reference or RCDATA close-tag check forced us to
+    // switch to the buffer. Identical to the original textual() body.
     @tailrec
-    def textual(mark: Mark, close: Optional[Text], entities: Boolean)(using Cursor.Held): Text =
+    def textualSlow(mark: Mark, close: Optional[Text], entities: Boolean)(using Cursor.Held): Text =
       cursor.lay(cursor.clone(mark, cursor.mark)(buffer) yet result()):
         case '<' | '\u0000' =>
           close.lay(cursor.clone(mark, cursor.mark)(buffer) yet result()): tag =>
@@ -718,9 +720,9 @@ object Html extends Tag.Container
                 if cursor.lay(false)(_ == '>')
                 then
                   cursor.clone(mark, end)(buffer) yet result().also(cursor.next())
-                else cursor.cue(resume) yet textual(mark, tag, entities)
-              else cursor.cue(resume) yet textual(mark, tag, entities)
-            else cursor.cue(resume) yet textual(mark, tag, entities)
+                else cursor.cue(resume) yet textualSlow(mark, tag, entities)
+              else cursor.cue(resume) yet textualSlow(mark, tag, entities)
+            else cursor.cue(resume) yet textualSlow(mark, tag, entities)
 
         case '&' if entities =>
           val start = cursor.mark
@@ -729,10 +731,33 @@ object Html extends Tag.Container
             cursor.clone(mark, start)(buffer)
             buffer.append(text)
             cursor.mark
-          textual(mark2, close, entities)
+          textualSlow(mark2, close, entities)
 
         case char =>
-          cursor.next() yet textual(mark, close, entities)
+          cursor.next() yet textualSlow(mark, close, entities)
+
+    // Fast path: snapshot the starting block and offset; while scanning stays
+    // inside the same block, hits no entity reference, and `close` is absent
+    // (no RCDATA close-tag check needed), build the result via
+    // `String.substring` (a JVM intrinsic) without round-tripping through
+    // `buffer`. Falls back to `textualSlow` for the harder cases.
+    def textual(mark: Mark, close: Optional[Text], entities: Boolean)(using Cursor.Held): Text =
+      if close.present then textualSlow(mark, close, entities) else
+        val startBlock: Text = cursor.block
+        val startOffset: Int = cursor.offsetInBlock
+
+        def slice(): Text =
+          if cursor.block.asInstanceOf[AnyRef] eq startBlock.asInstanceOf[AnyRef]
+          then startBlock.s.substring(startOffset, cursor.offsetInBlock).nn.tt
+          else cursor.clone(mark, cursor.mark)(buffer) yet result()
+
+        @tailrec
+        def fast(): Text = cursor.lay(slice()):
+          case '<' | '\u0000' => slice()
+          case '&' if entities => textualSlow(mark, close, entities)
+          case char => cursor.next() yet fast()
+
+        fast()
 
     def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case '-' =>
