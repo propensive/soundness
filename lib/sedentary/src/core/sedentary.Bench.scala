@@ -85,6 +85,8 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
     val body: (References over Transport) ?=> Quotes ?=> Expr[List[Long]] =
       val iterations0: Optional[Int] = iterations
       val iterations2: Int = iterations0.or(5)
+      val warmups0: Optional[Int] = warmups
+      val warmups2: Int = warmups0.or(iterations2)
       val target2: Expr[Long] = Expr(target.generic/iterations2)
       ' {
           // Blackhole sink. Each body result is written here via lazySet so that
@@ -118,20 +120,31 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
           count = math.max(1L, ($target2/rate).toLong)
           val result = new Array[Long](${Expr(iterations2)} + 1)
 
+          // Warmup / calibration: run `warmups` full-count batches, adjusting
+          // count run-by-run so it converges on `target2`, then pick the final
+          // count from the median of all observed rates so a single GC-affected
+          // run can't bias the measurement count.
+          val rates = new Array[Double](${Expr(warmups2)})
           var c = 0
-          while c < 5 do
+          while c < ${Expr(warmups2)} do
             val t0 = jl.System.nanoTime
             var j = 0L
             while j < count do { sink.lazySet($body0); j += 1L }
             val t1 = jl.System.nanoTime - t0
-            rate = t1.toDouble/count
-            count = math.max(1L, ($target2/rate).toLong)
+            rates(c) = t1.toDouble/count
+            count = math.max(1L, ($target2/rates(c)).toLong)
             c += 1
+          java.util.Arrays.sort(rates)
+          count = math.max(1L, ($target2/rates(rates.length/2)).toLong)
 
           result(0) = count
 
           var m = 1
           while m <= ${Expr(iterations2)} do
+            // Trigger a young-gen collection between runs so a GC pause is less
+            // likely to land inside a measurement window. SerialGC honours this
+            // hint promptly.
+            jl.System.gc()
             val t0 = jl.System.nanoTime
             var j = 0L
             while j < count do { sink.lazySet($body0); j += 1L }
