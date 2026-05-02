@@ -155,5 +155,11 @@ object JsonAst extends Format:
 
   def parse(source: Data): JsonAst raises ParseError = JsonAst(JsonParser.parse(source))
 
+  def parse(source: Data, holes: Boolean): JsonAst raises ParseError =
+    JsonAst(JsonParser.parse(source, holes))
+
   def parse(input: Iterator[Data]): JsonAst raises ParseError = JsonAst(JsonParser.parse(input))
+
+  def parse(input: Iterator[Data], holes: Boolean): JsonAst raises ParseError =
+    JsonAst(JsonParser.parse(input, holes))
 

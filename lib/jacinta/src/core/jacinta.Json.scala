@@ -40,6 +40,7 @@ import scala.collection.mutable as scm
 import scala.compiletime.*
 
 import anticipation.*
+import contextual.*
 import contingency.*
 import denominative.*
 import distillate.*
@@ -148,6 +149,20 @@ trait Json2:
 
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
+
+
+  inline given interpolator: Json is Interpolable:
+    type Result = Json
+
+    transparent inline def interpolate[parts <: Tuple](inline insertions: Any*): Json =
+      ${jacinta.internal.interpolator[parts]('insertions)}
+
+
+  inline given extrapolator: Json is Extrapolable:
+    transparent inline def extrapolate[parts <: Tuple](scrutinee: Json)
+    :   Boolean | Option[Tuple | Json] =
+
+      ${jacinta.internal.extractor[parts]('scrutinee)}
 
 
   given lens: [name <: Label: ValueOf] => (erased DynamicJsonEnabler) => Tactic[JsonError]
