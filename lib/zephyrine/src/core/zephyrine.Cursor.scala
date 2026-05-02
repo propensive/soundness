@@ -208,6 +208,14 @@ final class Cursor[data]
   inline def line: Ordinal = lineNo
   inline def column: Ordinal = columnNo
 
+  // Read-only views of the current block and the cursor's offset within it.
+  // Hot-path consumers can record the block and offset before a tight scan,
+  // then check (via reference equality on `block`) whether the scan stayed
+  // inside the same block; if so, they can slice the block directly without
+  // going through `hold`/`mark`/`grab`.
+  inline def block: data = current
+  inline def offsetInBlock: Int = focus.n0
+
   inline def seek(target: addressable.Operand): Boolean =
     var found = false
     var continue = true
