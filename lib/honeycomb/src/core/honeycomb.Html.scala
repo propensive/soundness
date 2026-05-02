@@ -789,14 +789,14 @@ object Html extends Tag.Container
       case '>'   => cursor.grab(mark, cursor.mark).also(next())
       case other => next() yet doctype(mark)
 
-    def tag(doctypes: Boolean, foreign: Boolean): Token = cursor.lay(fail(ExpectedMore)):
+    def tag(doctypes: Boolean, foreign: Boolean)(using Cursor.Held): Token = cursor.lay(fail(ExpectedMore)):
       case '!' =>
         next()
         cursor.lay(fail(ExpectedMore)):
           case '-' =>
             expect('-')
             next()
-            content = cursor.hold(comment(cursor.mark))
+            content = comment(cursor.mark)
             cursor.next()
             Token.Comment
 
@@ -808,7 +808,7 @@ object Html extends Tag.Container
             expectInsensitive('a')
             expect('[')
             next()
-            content = cursor.hold(cdata(cursor.mark))
+            content = cdata(cursor.mark)
             cursor.next()
             Token.Cdata
 
@@ -821,7 +821,7 @@ object Html extends Tag.Container
             expectInsensitive('e')
             next()
             skip()
-            content = cursor.hold(doctype(cursor.mark))
+            content = doctype(cursor.mark)
             skip()
             Token.Doctype
 
@@ -830,7 +830,7 @@ object Html extends Tag.Container
 
       case '/' =>
         next()
-        content = cursor.hold:
+        content =
           if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, dom.elements).label
 
         Token.Close
@@ -838,7 +838,7 @@ object Html extends Tag.Container
       case '\u0000' => fail(BadInsertion)
 
       case char =>
-        val newForeign: Boolean = cursor.hold:
+        val newForeign: Boolean =
           if foreign then
             content = foreignTag(cursor.mark)
             true
@@ -847,7 +847,7 @@ object Html extends Tag.Container
             content = tagDef.label
             tagDef.foreign
 
-        extra = cursor.hold(attributes(content, foreign || newForeign))
+        extra = attributes(content, foreign || newForeign)
 
         cursor.lay(fail(ExpectedMore)):
           case '/'       => expect('>') yet cursor.next() yet Token.Empty
@@ -869,12 +869,12 @@ object Html extends Tag.Container
       index -= count
       result.immutable(using Unsafe)
 
-    def descend(parent: Tag, admissible: Set[Text], attrs: Map[Text, Optional[Text]]): Node =
+    def descend(parent: Tag, admissible: Set[Text], attrs: Map[Text, Optional[Text]])(using Cursor.Held): Node =
       val admissible2 = if parent.transparent then admissible else parent.admissible
       read(parent, admissible2, attrs, 0)
 
     @tailrec
-    def read(parent: Tag, admissible: Set[Text], map: Map[Text, Optional[Text]], count: Int): Node =
+    def read(parent: Tag, admissible: Set[Text], map: Map[Text, Optional[Text]], count: Int)(using Cursor.Held): Node =
 
       def admit(child: Text): Boolean =
         parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
@@ -891,7 +891,7 @@ object Html extends Tag.Container
           var current: Node = parent
           var focus: Tag = parent
 
-          cursor.hold:
+          locally:
             val mark = cursor.mark
 
             def node(): Unit =
@@ -1055,7 +1055,7 @@ object Html extends Tag.Container
         case char => parent.mode match
           case Mode.Whitespace =>
             if isTableLikeContext(parent) then
-              val text = cursor.hold(textual(cursor.mark, Unset, true))
+              val text = textual(cursor.mark, Unset, true)
               val trimmed = text.trim
               if trimmed.length > 0 then
                 val node = TextNode(trimmed)
@@ -1066,21 +1066,21 @@ object Html extends Tag.Container
               whitespace() yet read(parent, admissible, map, count)
 
           case Mode.Raw =>
-            val text = cursor.hold(textual(cursor.mark, parent.label, false))
+            val text = textual(cursor.mark, parent.label, false)
             if text.nil then Element(parent.label, parent.attributes, IArray(), parent.foreign)
             else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
 
           case Mode.Rcdata =>
-            val text = cursor.hold(textual(cursor.mark, parent.label, true))
+            val text = textual(cursor.mark, parent.label, true)
             if text.nil then Element(parent.label, parent.attributes, IArray(), parent.foreign)
             else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
 
           case Mode.Normal =>
-            val text = cursor.hold(textual(cursor.mark, Unset, true))
+            val text = textual(cursor.mark, Unset, true)
             if text.length == 0 then read(parent, admissible, map, count + 1)
             else append(TextNode(text)) yet read(parent, admissible, map, count + 1)
 
-    if cursor.finished then Fragment() else
+    if cursor.finished then Fragment() else cursor.hold:
       skip()
       if cursor.finished then Fragment() else
         append(root)
