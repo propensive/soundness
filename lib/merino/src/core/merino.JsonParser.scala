@@ -38,6 +38,7 @@ import scala.collection.mutable.ArrayBuffer
 import anticipation.*
 import contingency.*
 import denominative.*
+import rudiments.*
 import vacuous.*
 import zephyrine.*
 
@@ -63,20 +64,17 @@ private object JsonParser:
     while n > 0 do { p *= 10.0; n -= 1 }
     p
 
-  // Per-thread pools: re-using parser instances avoids re-allocating the
-  // stringArray / ArrayBuffer pools / numberBuilder on every parse.
-  private val directPool: ThreadLocal[Direct] =
-    ThreadLocal.withInitial(() => new Direct).nn
+  private val directPool: ThreadLocal[Direct] = ThreadLocal.withInitial(() => new Direct).nn
 
   private val streamingPool: ThreadLocal[Streaming] =
     ThreadLocal.withInitial(() => new Streaming).nn
 
-  def parse(source: Data)(using Tactic[ParseError]): Raw =
+  def parse(source: Data): Raw raises ParseError =
     val parser = directPool.get.nn
     parser.reset(source)
     parser.parse()
 
-  def parse(input: Iterator[Data])(using Tactic[ParseError]): Raw =
+  def parse(input: Iterator[Data]): Raw raises ParseError =
     val parser = streamingPool.get.nn
     parser.reset(input)
     parser.parse()
@@ -107,12 +105,11 @@ private object JsonParser:
     protected def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing =
       abort(ParseError(JsonAst, Position(0, pos), issue))
 
-    protected def beginRegion(): Region = pos
+    protected def begin(): Region = pos
 
-    // Direct backend never crosses blocks; the slice is always available.
-    protected def regionContiguous(start: Region): Boolean = true
+    protected def contiguous(start: Region): Boolean = true
 
-    protected def extractAsciiSlice(start: Region): String =
+    protected def slice(start: Region): String =
       new String(bytes, start, pos - start, java.nio.charset.StandardCharsets.US_ASCII)
 
     protected def appendRegionToBuffer(start: Region): Unit =
@@ -121,11 +118,11 @@ private object JsonParser:
         ensureStringSpace(len)
         var i = 0
         while i < len do
-          stringArray(stringCursor + i) = (bytes(start + i) & 0xFF).toChar
+          chars(stringCursor + i) = (bytes(start + i) & 0xFF).toChar
           i += 1
         stringCursor += len
 
-    protected def detectBom(): Unit =
+    protected def bom(): Unit =
       if end >= 3 && bytes(0) == -17 && bytes(1) == -69 && bytes(2) == -65 then pos = 3
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -155,25 +152,26 @@ private object JsonParser:
     protected def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing =
       abort(ParseError(JsonAst, Position(cursor.line.n1, cursor.column.n1), issue))
 
-    protected def beginRegion(): Region =
+    protected def begin(): Region =
       // `Cursor.mark` requires `Cursor.Held`; when called from inside
-      // `parseString` we've entered hold via `withHeld`, so the contextual
+      // `parseString` we've entered hold via `holding`, so the contextual
       // token is stored in `heldToken` and we summon it explicitly here.
       val held = heldToken.nn
       (cursor.mark(using held), cursor.block, cursor.offsetInBlock)
 
-    protected def regionContiguous(start: Region): Boolean =
+    protected def contiguous(start: Region): Boolean =
       val (_, startBlock, _) = start
       cursor.block.asInstanceOf[AnyRef] eq startBlock.asInstanceOf[AnyRef]
 
-    protected def extractAsciiSlice(start: Region): String =
+    protected def slice(start: Region): String =
       val (_, startBlock, startOffset) = start
       val arr = startBlock.asInstanceOf[Array[Byte]]
+
       new String
-       ( arr,
-         startOffset,
-         cursor.offsetInBlock - startOffset,
-         java.nio.charset.StandardCharsets.US_ASCII )
+        ( arr,
+          startOffset,
+          cursor.offsetInBlock - startOffset,
+          java.nio.charset.StandardCharsets.US_ASCII )
 
     protected def appendRegionToBuffer(start: Region): Unit =
       val (mark, _, _) = start
@@ -181,27 +179,27 @@ private object JsonParser:
       val prefix = cursor.grab(mark, cursor.mark(using held))
       val prefixArr = prefix.asInstanceOf[Array[Byte]]
       val prefixLen = prefixArr.length
+
       if prefixLen > 0 then
         ensureStringSpace(prefixLen)
         var i = 0
         while i < prefixLen do
-          stringArray(stringCursor + i) = (prefixArr(i) & 0xFF).toChar
+          chars(stringCursor + i) = (prefixArr(i) & 0xFF).toChar
           i += 1
         stringCursor += prefixLen
 
-    protected def detectBom(): Unit =
+    protected def bom(): Unit =
       cursor.hold:
         val mk = cursor.mark
+
         val bom =
           cursor.more && cursor.datum(using Unsafe) == -17.toByte
           && { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -69.toByte }
           && { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -65.toByte }
+
         if bom then cursor.next() else cursor.cue(mk)
 
-    // Only the streaming backend actually needs hold; for cross-block string
-    // safety it has to keep the buffered blocks alive between `beginRegion`
-    // and `asciiSliceFromRegion` / `appendRegionToBuffer`.
-    override protected def withHeld[T](action: => T): T =
+    override protected def holding[result](action: => result): result =
       cursor.hold:
         heldToken = summon[Cursor.Held]
         try action finally heldToken = null
@@ -209,62 +207,53 @@ private object JsonParser:
 private abstract class JsonParser:
   import JsonParser.*
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // Substrate operations (provided by each backend).
   protected def more: Boolean
   protected def peek: Byte
   protected def advance(): Unit
   protected def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing
-  protected def detectBom(): Unit
+  protected def bom(): Unit
 
   // A `Region` is whatever the backend uses to remember a starting position
   // for the ASCII fast path. The streaming backend records a `Mark` plus the
   // starting block + offset so it can detect block-boundary crossings.
   type Region
-  protected def beginRegion(): Region
+  protected def begin(): Region
   // Whether the data from `start` to the current position is in a single
   // contiguous block (i.e. trivially extractable via array slicing).
-  protected def regionContiguous(start: Region): Boolean
-  protected def extractAsciiSlice(start: Region): String
+  protected def contiguous(start: Region): Boolean
+  protected def slice(start: Region): String
   protected def appendRegionToBuffer(start: Region): Unit
 
-  // The streaming backend opens `Cursor.hold` around `parseString`; the
-  // direct backend has nothing to do.
-  protected def withHeld[T](action: => T): T = action
+  protected def holding[result](action: => result): result = action
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // Shared parser state.
   protected var arraySize: Int = 16
-  protected var stringArray: Array[Char] = new Array(arraySize)
+  protected var chars: Array[Char] = new Array(arraySize)
   protected var stringCursor: Int = 0
-
   protected var arrayBufferId: Int = -1
   protected val arrayBuffers: ArrayBuffer[ArrayBuffer[Any]] = ArrayBuffer.empty
-
   protected var stringArrayBufferId: Int = -1
   protected val stringArrayBuffers: ArrayBuffer[ArrayBuffer[String]] = ArrayBuffer.empty
-
   protected val numberBuilder: java.lang.StringBuilder = java.lang.StringBuilder(32)
 
   protected inline def resetString(): Unit = stringCursor = 0
 
   protected def ensureStringSpace(n: Int): Unit =
     while stringCursor + n > arraySize do arraySize *= 2
-    if stringArray.length < arraySize then
+    if chars.length < arraySize then
       val newArr = new Array[Char](arraySize)
-      System.arraycopy(stringArray, 0, newArr, 0, stringCursor)
-      stringArray = newArr
+      System.arraycopy(chars, 0, newArr, 0, stringCursor)
+      chars = newArr
 
   protected def appendChar(char: Char): Unit =
     if stringCursor == arraySize then
       arraySize *= 2
       val newArray = new Array[Char](arraySize)
-      System.arraycopy(stringArray, 0, newArray, 0, stringCursor)
-      stringArray = newArray
-    stringArray(stringCursor) = char
+      System.arraycopy(chars, 0, newArray, 0, stringCursor)
+      chars = newArray
+    chars(stringCursor) = char
     stringCursor += 1
 
-  protected def getString(): String = String(stringArray, 0, stringCursor)
+  protected def getString(): String = String(chars, 0, stringCursor)
 
   protected def getArrayBuffer(): ArrayBuffer[Any] =
     arrayBufferId += 1
@@ -298,7 +287,7 @@ private abstract class JsonParser:
   protected inline def must()(using Tactic[ParseError]): Byte =
     if more then peek else errorAt(Issue.PrematureEnd)
 
-  protected inline def getNext()(using Tactic[ParseError]): Byte =
+  protected inline def next()(using Tactic[ParseError]): Byte =
     advance()
     if more then peek else errorAt(Issue.PrematureEnd)
 
@@ -315,14 +304,14 @@ private abstract class JsonParser:
     else errorAt(Issue.ExpectedHexDigit(ch.toChar))
 
   private def parseUnicode()(using Tactic[ParseError]): Char =
-    var acc = fromHex(getNext()) << 12
-    acc |= fromHex(getNext()) << 8
-    acc |= fromHex(getNext()) << 4
-    acc |= fromHex(getNext())
+    var acc = fromHex(next()) << 12
+    acc |= fromHex(next()) << 8
+    acc |= fromHex(next()) << 4
+    acc |= fromHex(next())
     acc.toChar
 
-  private def parseString()(using Tactic[ParseError]): String = withHeld:
-    val region = beginRegion()
+  private def parseString()(using Tactic[ParseError]): String = holding:
+    val region = begin()
 
     // Fast scan for plain printable ASCII that needs no escape handling. A
     // signed Byte is >= 32 only when it's printable ASCII (32..127); negative
@@ -335,13 +324,10 @@ private abstract class JsonParser:
 
     if !more then errorAt(Issue.PrematureEnd)
 
-    if peek == Quote && regionContiguous(region) then
-      val slice = extractAsciiSlice(region)
-      advance()
-      slice
-    else parseStringTail(region)
+    if peek == Quote && contiguous(region) then slice(region).also(advance())
+    else tail(region)
 
-  private def parseStringTail(start: Region)(using Tactic[ParseError]): String =
+  private def tail(start: Region): String raises ParseError =
     resetString()
     appendRegionToBuffer(start)
 
@@ -379,18 +365,18 @@ private abstract class JsonParser:
             case _ =>
               if (ch & 0xE0) == 0xC0 then
                 var char: Int = (ch & 0x1F) << 6
-                char |= getNext() & 0x3F
+                char |= next() & 0x3F
                 appendChar(char.toChar)
               else if (ch & 0xF0) == 0xE0 then
                 var char: Int = (ch & 0x0F) << 12
-                char |= (getNext() & 0x3F) << 6
-                char |= getNext() & 0x3F
+                char |= (next() & 0x3F) << 6
+                char |= next() & 0x3F
                 appendChar(char.toChar)
               else if (ch & 0xF8) == 0xF0 then
                 var char: Int = (ch & 0x07) << 18
-                char |= (getNext() & 0x3F) << 12
-                char |= (getNext() & 0x3F) << 6
-                char |= getNext() & 0x3F
+                char |= (next() & 0x3F) << 12
+                char |= (next() & 0x3F) << 6
+                char |= next() & 0x3F
                 appendChar(char.toChar)
 
       if continue then advance()
@@ -398,10 +384,10 @@ private abstract class JsonParser:
     advance()
     getString()
 
-  protected inline def expect(byte: Byte, issue: Issue)(using Tactic[ParseError]): Unit =
-    if getNext() != byte then errorAt(issue)
+  protected inline def expect(byte: Byte, issue: Issue): Unit raises ParseError =
+    if next() != byte then errorAt(issue)
 
-  private def parseFalse()(using Tactic[ParseError]): false =
+  private def parseFalse(): false raises ParseError =
     expect(LowerA, Issue.ExpectedFalse)
     expect(LowerL, Issue.ExpectedFalse)
     expect(LowerS, Issue.ExpectedFalse)
@@ -409,25 +395,25 @@ private abstract class JsonParser:
     advance()
     false
 
-  private def parseTrue()(using Tactic[ParseError]): Boolean =
+  private def parseTrue(): true raises ParseError =
     expect(LowerR, Issue.ExpectedTrue)
     expect(LowerU, Issue.ExpectedTrue)
     expect(LowerE, Issue.ExpectedTrue)
     advance()
     true
 
-  private def parseNull()(using Tactic[ParseError]): Null =
+  private def parseNull(): Null raises ParseError =
     expect(LowerU, Issue.ExpectedNull)
     expect(LowerL, Issue.ExpectedNull)
     expect(LowerL, Issue.ExpectedNull)
     advance()
     null
 
-  private def parseNumber(first: Int, negative: Boolean)(using Tactic[ParseError])
-  :   Double | Long | BigDecimal =
+  private def parseNumber(first: Int, negative: Boolean)
+  :   Double | Long | BigDecimal raises ParseError =
 
     var content: Long = first.toLong
-    var nibbleCount: Int = 1
+    var nibbles: Int = 1
     var bcdValid: Boolean = true
     var floating: Boolean = false
     var continue: Boolean = true
@@ -441,7 +427,7 @@ private abstract class JsonParser:
 
     inline def fallback(extraNibble: Int): Unit =
       numberBuilder.setLength(0)
-      var i = nibbleCount - 1
+      var i = nibbles - 1
       while i >= 0 do
         val n = ((content >>> (i * 4)) & 0xFL).toInt
         if n <= 9 then numberBuilder.append(('0' + n).toChar)
@@ -454,10 +440,10 @@ private abstract class JsonParser:
 
     inline def appendNibble(n: Int): Unit =
       if bcdValid then
-        if nibbleCount >= 15 then fallback(n)
+        if nibbles >= 15 then fallback(n)
         else
           content = (content << 4) | n.toLong
-          nibbleCount += 1
+          nibbles += 1
       else
         appendChar0(n)
 
@@ -557,7 +543,7 @@ private abstract class JsonParser:
       var inFraction: Boolean = false
       var inExponent: Boolean = false
 
-      var i = nibbleCount - 1
+      var i = nibbles - 1
       while i >= 0 do
         val n = ((content >>> (i * 4)) & 0xFL).toInt
         if n <= 9 then
@@ -611,37 +597,44 @@ private abstract class JsonParser:
       errorAt(Issue.ExpectedDigit(ch.toChar))
     else
       (ch: @switch) match
-        case Quote       => advance(); parseString()
-        case Minus       => advance(); parseValue(true)
-        case OpenBracket => advance(); parseArray()
+        case Quote       => advance() yet parseString()
+        case Minus       => advance() yet parseValue(true)
+        case OpenBracket => advance() yet parseArray()
         case LowerF      => parseFalse()
         case LowerN      => parseNull()
         case LowerT      => parseTrue()
-        case OpenBrace   => advance(); parseObject()
+        case OpenBrace   => advance() yet parseObject()
         case other       => errorAt(Issue.ExpectedSomeValue(other.toChar))
 
   private def parseArray()(using Tactic[ParseError]): IArray[Any] =
-    val arrayItems: ArrayBuffer[Any] = getArrayBuffer()
+    val items: ArrayBuffer[Any] = getArrayBuffer()
     var continue = true
 
     while continue do
       skip()
+
       must() match
         case CloseBracket =>
-          if !arrayItems.nil then errorAt(Issue.ExpectedSomeValue(']'))
+          if !items.nil then errorAt(Issue.ExpectedSomeValue(']'))
           continue = false
 
         case _ =>
           val value = parseValue()
           skip()
+
           must() match
-            case Comma        => arrayItems += value
-            case CloseBracket => arrayItems += value; continue = false
-            case ch           => errorAt(Issue.ExpectedSomeValue(ch.toChar))
+            case Comma => items += value
+
+            case CloseBracket =>
+              items += value
+              continue = false
+
+            case char =>
+              errorAt(Issue.ExpectedSomeValue(char.toChar))
 
       advance()
 
-    val result: IArray[Any] = arrayItems.toArray.asInstanceOf[IArray[Any]]
+    val result: IArray[Any] = items.toArray.asInstanceOf[IArray[Any]]
     relinquishArrayBuffer()
     result
 
@@ -693,7 +686,7 @@ private abstract class JsonParser:
     result
 
   def parse()(using Tactic[ParseError]): Raw =
-    detectBom()
+    bom()
     skip()
     if !more then abort(ParseError(JsonAst, Position(0, 0), Issue.EmptyInput))
     val result = parseValue()
