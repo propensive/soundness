@@ -41,6 +41,7 @@ import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContext
 import probably.*
+import proscenium.*
 import quantitative.*
 import rudiments.*
 import sedentary.*
@@ -49,64 +50,80 @@ import temporaryDirectories.system
 import vacuous.*
 
 object Benchmarks extends Suite(m"Merino benchmarks"):
-  given device: BenchmarkDevice = LocalhostDevice
+  sealed trait Information extends Dimension
+  sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
+  val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
+
+  given byteDesignation: Designation[Bytes[1]] = () => t"B"
+  given decimalizer:     Decimalizer            = Decimalizer(2)
+  given device:          BenchmarkDevice        = LocalhostDevice
+
+  // Auto-scale byte sizes (B → kB → MB → GB → TB) and byte rates so the
+  // table prints "1.3 GB·s¯¹" instead of "1.3×10⁹ B·s¯¹".
+  given prefixes: Prefixes = Prefixes(List(Kilo, Mega, Giga, Tera))
 
   def run(): Unit =
     val bench = Bench()
 
+    val size1 = jsonBytes1.length*Byte
+    val size2 = jsonBytes2.length*Byte
+    val size3 = jsonBytes3.length*Byte
+    val size4 = jsonBytes4.length*Byte
+    val size5 = jsonBytes5.length*Byte
+
     suite(m"Parse example 1"):
       bench(m"Parse file with Jawn")
-        (target = 1*Second, baseline = Baseline(compare = Min)):
+        (target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min)):
         '{
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(merino.Benchmarks.jsonText1)
           }
 
-      bench(m"Parse file with Merino")(target = 1*Second):
+      bench(m"Parse file with Merino")(target = 1*Second, operationSize = size1):
         '{ JsonAst.parse(merino.Benchmarks.jsonBytes1) }
 
     suite(m"Parse example 2"):
       bench(m"Parse file with Jawn")
-        (target = 1*Second, baseline = Baseline(compare = Min)):
+        (target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min)):
         '{
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(merino.Benchmarks.jsonText2)
           }
 
-      bench(m"Parse file with Merino")(target = 1*Second):
+      bench(m"Parse file with Merino")(target = 1*Second, operationSize = size2):
         '{ JsonAst.parse(merino.Benchmarks.jsonBytes2) }
 
     suite(m"Parse example 3"):
       bench(m"Parse file with Jawn")
-        (target = 1*Second, baseline = Baseline(compare = Min)):
+        (target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min)):
         '{
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(merino.Benchmarks.jsonText3)
           }
 
-      bench(m"Parse file with Merino")(target = 1*Second):
+      bench(m"Parse file with Merino")(target = 1*Second, operationSize = size3):
         '{ JsonAst.parse(merino.Benchmarks.jsonBytes3) }
 
     suite(m"Parse example 4 (100 user records)"):
       bench(m"Parse file with Jawn")
-        (target = 1*Second, baseline = Baseline(compare = Min)):
+        (target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min)):
         '{
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(merino.Benchmarks.jsonText4)
           }
 
-      bench(m"Parse file with Merino")(target = 1*Second):
+      bench(m"Parse file with Merino")(target = 1*Second, operationSize = size4):
         '{ JsonAst.parse(merino.Benchmarks.jsonBytes4) }
 
     suite(m"Parse example 5 (500 log entries)"):
       bench(m"Parse file with Jawn")
-        (target = 1*Second, baseline = Baseline(compare = Min)):
+        (target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min)):
         '{
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(merino.Benchmarks.jsonText5)
           }
 
-      bench(m"Parse file with Merino")(target = 1*Second):
+      bench(m"Parse file with Merino")(target = 1*Second, operationSize = size5):
         '{ JsonAst.parse(merino.Benchmarks.jsonBytes5) }
 
   lazy val jsonText1: String = jsonExample1.s
