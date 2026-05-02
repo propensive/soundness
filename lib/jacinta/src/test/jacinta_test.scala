@@ -470,6 +470,27 @@ object Tests extends Suite(m"Jacinta Tests"):
         updated.show
       . assert(_ == t"""{"x":1,"greeting":"hi"}""")
 
+      test(m"Delete a field by assigning Unset"):
+        import dynamicJsonAccess.enabled
+        val base = t"""{"x": 1, "y": 2}""".read[Json]
+        val updated = base.x = Unset
+        updated.show
+      . assert(_ == t"""{"y":2}""")
+
+      test(m"Delete a field whose value is a nested object"):
+        import dynamicJsonAccess.enabled
+        val base = t"""{"x": {"k":1}, "y": 2}""".read[Json]
+        val updated = base.x = Unset
+        updated.show
+      . assert(_ == t"""{"y":2}""")
+
+      test(m"Deleting a missing field is a no-op"):
+        import dynamicJsonAccess.enabled
+        val base = t"""{"x": 1}""".read[Json]
+        val updated = base.missing = Unset
+        updated.show
+      . assert(_ == t"""{"x":1}""")
+
     suite(m"Json equality and hashing"):
       test(m"Two equal JSON objects compare equal"):
         t"""{"x": 1}""".read[Json] == t"""{"x": 1}""".read[Json]
