@@ -178,7 +178,7 @@ object JsonAst extends Format:
   def parse(source: Data): JsonAst raises ParseError = parse(Iterator.single(source))
 
   def parse(input: Iterator[Data]): JsonAst raises ParseError =
-    import lineation.linefeedByte
+    import Lineation.untrackedData
     val cursor = Cursor(input)
 
     def error(issue: Issue): Nothing =
