@@ -38,6 +38,7 @@ import language.experimental.pureFunctions
 import scala.compiletime.*
 
 import anticipation.*
+import contextual.*
 import contingency.*
 import merino.*
 import prepositional.*
@@ -113,6 +114,9 @@ extension (json: JsonAst)
     else expected(JsonPrimitive.Number) yet 0L
 
 extension [entity: Encodable in Json](value: entity) def json: Json = value.encode
+
+extension (inline context: StringContext)
+  transparent inline def j: Interpolation = interpolation[Json](context)
 
 package jsonPrinters:
   given indented: JsonPrinter = JsonPrinter.print(_, true)

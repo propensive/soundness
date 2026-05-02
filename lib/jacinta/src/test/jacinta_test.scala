@@ -927,3 +927,103 @@ object Tests extends Suite(m"Jacinta Tests"):
           t"true".read[Json])
         Ndjson(stream).stream.length
       . assert(_ == 3)
+
+    suite(m"j\"\" interpolator"):
+      test(m"Construct a number"):
+        j"42"
+      . assert(_ == t"42".read[Json])
+
+      test(m"Construct an empty object"):
+        j"{}"
+      . assert(_ == t"{}".read[Json])
+
+      test(m"Construct an empty array"):
+        j"[]"
+      . assert(_ == t"[]".read[Json])
+
+      test(m"Object with literal value"):
+        j"""{"a": 1}"""
+      . assert(_ == t"""{"a": 1}""".read[Json])
+
+      test(m"Array with literals"):
+        j"""[1, 2, 3]"""
+      . assert(_ == t"""[1, 2, 3]""".read[Json])
+
+      test(m"Object with single value-position hole"):
+        val x = 42
+        j"""{"a": $x}"""
+      . assert(_ == t"""{"a": 42}""".read[Json])
+
+      test(m"Array with single value-position hole"):
+        val x = 42
+        j"""[1, $x, 3]"""
+      . assert(_ == t"""[1, 42, 3]""".read[Json])
+
+      test(m"Top-level value hole"):
+        val x: Json = t"""{"y": true}""".read[Json]
+        j"$x"
+      . assert(_ == t"""{"y": true}""".read[Json])
+
+      test(m"String literal"):
+        j""""hello""""
+      . assert(_ == t""""hello"""".read[Json])
+
+      test(m"String with interior hole"):
+        val name = t"world"
+        j""""hello, $name!""""
+      . assert(_ == t""""hello, world!"""".read[Json])
+
+      test(m"Array tail spread"):
+        val xs: List[Int] = List(2, 3, 4)
+        j"""[1, $xs*]"""
+      . assert(_ == t"""[1, 2, 3, 4]""".read[Json])
+
+      test(m"Object rest splice"):
+        val rest: Map[Text, Json] = Map(
+          t"b" -> t"2".read[Json],
+          t"c" -> t"3".read[Json])
+
+        j"""{"a": 1, $rest}"""
+      . assert(_ == t"""{"a": 1, "b": 2, "c": 3}""".read[Json])
+
+    suite(m"j\"\" extractor"):
+      test(m"Extract single value"):
+        val scrutinee: Json = t"""{"a": 42}""".read[Json]
+        scrutinee match
+          case j"""{"a": $a}""" => a.as[Int]
+          case _                => -1
+      . assert(_ == 42)
+
+      test(m"Match exact array"):
+        val scrutinee: Json = t"""[1, 2, 3]""".read[Json]
+        scrutinee match
+          case j"""[$a, $b, $c]""" => (a.as[Int], b.as[Int], c.as[Int])
+          case _                   => (0, 0, 0)
+      . assert(_ == (1, 2, 3))
+
+      test(m"Mismatched array length is rejected"):
+        val scrutinee: Json = t"""[1, 2]""".read[Json]
+        scrutinee match
+          case j"""[$a, $b, $c]""" => true
+          case _                   => false
+      . assert(!_)
+
+      test(m"Head/tail destructure"):
+        val scrutinee: Json = t"""[1, 2, 3, 4]""".read[Json]
+        scrutinee match
+          case j"""[$head, $tail*]""" => (head.as[Int], tail.as[List[Int]])
+          case _                      => (0, Nil)
+      . assert(_ == (1, List(2, 3, 4)))
+
+      test(m"Capture top-level Json"):
+        val scrutinee: Json = t"""{"k": 1}""".read[Json]
+        scrutinee match
+          case j"$x" => x
+      . assert(_ == t"""{"k": 1}""".read[Json])
+
+      test(m"Match number literal"):
+        val scrutinee: Json = t"""{"a": 42}""".read[Json]
+        scrutinee match
+          case j"""{"a": 42}""" => true
+          case _                => false
+      . assert(identity)
