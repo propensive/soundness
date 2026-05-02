@@ -582,8 +582,11 @@ class Report(using Environment)(using palette: TestPalette):
               def metric(value: Double) = if baseline.metric == Temporal then value else 1/value
 
               val value = baseline.compare match
-                case Compare.Min => metric(bench.benchmark.min)
-                case Compare.Max => metric(bench.benchmark.max)
+                case Compare.Min =>
+                  operations(metric(bench.benchmark.min), metric(comparison.benchmark.min))
+
+                case Compare.Max =>
+                  operations(metric(bench.benchmark.max), metric(comparison.benchmark.max))
 
                 case Compare.Mean =>
                   operations(metric(bench.benchmark.mean), metric(comparison.benchmark.mean))
