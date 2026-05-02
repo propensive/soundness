@@ -671,6 +671,8 @@ object hellenism extends Library:
 object honeycomb extends Library:
   object core extends Component(panopticon.core, gesticulate.core, xylophone.core, urticose.url)
   object test extends Tests(core)
+  object bench extends Benchmarks(core, quantitative.units):
+    def mvnDeps = Seq(mvn"org.jsoup:jsoup:1.18.3")
 
 object hieroglyph extends Library:
   object core extends Component(kaleidoscope.core)
