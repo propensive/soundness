@@ -469,7 +469,12 @@ object Xml extends Tag.Container
 
     import Lineation.untrackedChars
 
-    val cursor = Cursor(input)
+    // Capture the input so we can compute line/column lazily on the error
+    // path. The hot parsing path uses untracked lineation (zero overhead per
+    // char in `Cursor.next`); accurate positions are recovered on demand by
+    // walking `sourceBlocks` up to `cursor.position` only when an error fires.
+    val sourceBlocks: IArray[Text] = IArray.from(input)
+    val cursor = Cursor(sourceBlocks.iterator)
     val buffer: jl.StringBuilder = jl.StringBuilder()
     def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
     var content: Text = t""
@@ -502,9 +507,34 @@ object Xml extends Tag.Container
 
     def pop(): Unit = depth -= 1
 
+    def currentPosition(): Position =
+      // Walk through the captured input up to the cursor's absolute position,
+      // counting newlines for line and column. Tracked-lineation
+      // `Cursor.next()` skips the line/column update on the final advance
+      // (where `finished` becomes true), so when the cursor is already
+      // finished we walk one character less to stay byte-compatible.
+      var line: Int = 1
+      var column: Int = 1
+      val target: Int = cursor.position.n0 - (if cursor.finished then 1 else 0)
+      var remaining: Int = target
+      var i = 0
+      while remaining > 0 && i < sourceBlocks.length do
+        val block = sourceBlocks(i).s
+        val take = remaining.min(block.length)
+        var j = 0
+        while j < take do
+          if block.charAt(j) == '\n' then
+            line += 1
+            column = 1
+          else
+            column += 1
+          j += 1
+        remaining -= take
+        i += 1
+      Position(line.u, column.u)
+
     def next(): Unit =
-      if !cursor.next()
-      then raise(ParseError(Xml, Position(cursor.line, cursor.column), ExpectedMore))
+      if !cursor.next() then raise(ParseError(Xml, currentPosition(), ExpectedMore))
 
     inline def ensure(chr: Char): Unit =
       cursor.let: datum =>
@@ -515,8 +545,7 @@ object Xml extends Tag.Container
       cursor.lay(fail(ExpectedMore)): datum =>
         if datum != chr then fail(Unexpected(datum))
 
-    def fail(issue: Issue): Nothing =
-      abort(ParseError(Xml, Position(cursor.line, cursor.column), issue))
+    def fail(issue: Issue): Nothing = abort(ParseError(Xml, currentPosition(), issue))
 
     @tailrec
     def skip(): Unit = cursor.let:
