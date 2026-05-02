@@ -271,10 +271,58 @@ object JsonAst extends Format:
       acc = acc | fromHex(getNext())
       acc.toChar
 
-    def parseString(): String =
-      resetString()
-      var continue = true
+    def parseString(): String = cursor.hold:
+      // Fast scan for plain printable ASCII that needs no escape handling. A
+      // signed Byte is >= 32 only when it's printable ASCII (32..127); negative
+      // bytes (0x80..0xFF) come out as -128..-1 < 32, so this single
+      // comparison rejects both control characters and UTF-8 lead bytes.
+      val startBlock = cursor.block
+      val startOffset = cursor.offsetInBlock
+      val startMark = cursor.mark
+      while cursor.more && {
+        val b = cursor.datum(using Unsafe)
+        b >= 32 && b != Quote && b != Backslash
+      } do cursor.next()
 
+      if !cursor.more then error(Issue.PrematureEnd)
+
+      val ch = cursor.datum(using Unsafe)
+
+      // Same-block fast path: build the String straight from the underlying
+      // byte array without going through `grab`. We didn't cross a block
+      // boundary if `cursor.block` is still the same instance as `startBlock`.
+      if ch == Quote && (cursor.block.asInstanceOf[AnyRef] eq startBlock.asInstanceOf[AnyRef]) then
+        val arr = startBlock.asInstanceOf[Array[Byte]]
+        val str = new String
+                   ( arr,
+                     startOffset,
+                     cursor.offsetInBlock - startOffset,
+                     java.nio.charset.StandardCharsets.US_ASCII )
+        cursor.next()
+        str
+      else parseStringTail(startMark)
+
+    def parseStringTail(start: Cursor.Mark)(using Cursor.Held): String =
+      resetString()
+
+      // Pull the prefix bytes via `cursor.grab`, which handles the
+      // cross-block case correctly (uses the buffer kept by `hold`).
+      val prefix = cursor.grab(start, cursor.mark)
+      val prefixArr = prefix.asInstanceOf[Array[Byte]]
+      val prefixLen = prefixArr.length
+      if prefixLen > 0 then
+        while stringCursor + prefixLen > arraySize do arraySize *= 2
+        if stringArray.length < arraySize then
+          val newArr = new Array[Char](arraySize)
+          System.arraycopy(stringArray, 0, newArr, 0, stringCursor)
+          stringArray = newArr
+        var i = 0
+        while i < prefixLen do
+          stringArray(stringCursor + i) = (prefixArr(i) & 0xFF).toChar
+          i += 1
+        stringCursor += prefixLen
+
+      var continue = true
       while continue do
         cursor.lay(error(Issue.PrematureEnd)): ch =>
           ch match
