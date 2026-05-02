@@ -71,7 +71,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
       warmups:    Optional[Int]                   = Unset,
       confidence: Optional[Benchmark.Percentiles] = Unset,
       baseline:   Optional[Baseline]              = Unset )
-    ( body0: (References over Transport) ?=> Quotes ?=> Expr[Unit] )
+    ( body0: (References over Transport) ?=> Quotes ?=> Expr[Any] )
     ( using System, TemporaryDirectory, Stageable over Transport in Form )
     ( using runner:    Runner[report],
             inclusion: Inclusion[report, Benchmark],
@@ -87,13 +87,19 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
       val iterations2: Int = iterations0.or(5)
       val target2: Expr[Long] = Expr(target.generic/iterations2)
       ' {
+          // Blackhole sink. Each body result is written here via lazySet so that
+          // the JIT cannot prove the body's value is unused and elide it. The
+          // never-true read at the end forces the AtomicReference to escape,
+          // preventing escape-analysis from scalarising the writes away.
+          val sink = new java.util.concurrent.atomic.AtomicReference[Any](null)
+
           var count: Long = 1L
           var d: Long = 0L
 
           // Run 10 times initially as untimed warmup
           var w = 0
           while w < 10 do
-            $body0
+            sink.lazySet($body0)
             w += 1
 
           // Keep doubling the count until we get one run exceeding target
@@ -105,7 +111,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
             count *= 2L
             val t0 = jl.System.nanoTime
             var i = 0L
-            while i < count do { $body0; i += 1L }
+            while i < count do { sink.lazySet($body0); i += 1L }
             d = jl.System.nanoTime - t0
 
           var rate: Double = d.toDouble/count
@@ -116,7 +122,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
           while c < 5 do
             val t0 = jl.System.nanoTime
             var j = 0L
-            while j < count do { $body0; j += 1L }
+            while j < count do { sink.lazySet($body0); j += 1L }
             val t1 = jl.System.nanoTime - t0
             rate = t1.toDouble/count
             count = math.max(1L, ($target2/rate).toLong)
@@ -128,10 +134,12 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
           while m <= ${Expr(iterations2)} do
             val t0 = jl.System.nanoTime
             var j = 0L
-            while j < count do { $body0; j += 1L }
+            while j < count do { sink.lazySet($body0); j += 1L }
             val t1 = jl.System.nanoTime - t0
             result(m) = t1
             m += 1
+
+          if jl.System.nanoTime < 0L then jl.System.err.nn.println(sink.get)
 
           result.to(List)
         }
