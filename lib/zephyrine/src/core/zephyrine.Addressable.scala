@@ -86,16 +86,15 @@ object Addressable:
 
 trait Addressable extends Typeclass, Operable, Targetable:
   def empty: Self
-  inline def blank(size: Int): Target
-  inline def build(target: Target): Self
-  // `length` and `address` are called from both inline (hot path: `next`,
-  // `datum`) and non-inline (slow path: `forward`) sites. Keeping the abstract
-  // declaration non-inline lets the slow path call them as a regular virtual
-  // dispatch; the JIT devirtualizes once it sees the concrete instance type,
-  // and the inline implementations on the concrete instances still allow the
-  // hot-path inline expansions in `Cursor.next`/`Cursor.datum` to lower to
-  // direct `getfield`/`baload` after typeclass resolution.
+  // All operations are declared non-inline at the trait level so non-inline
+  // call sites (e.g. inside `Cursor.forward`, or in parser plumbing that
+  // wraps Cursor calls) can still dispatch through them. Concrete instances
+  // are still `inline def`, so any hot-path inline call site (e.g. inside
+  // `Cursor.next` / `Cursor.datum` / `Cursor.grab`) where the typeclass is
+  // resolved at compile time still lowers to direct primitive operations.
+  def blank(size: Int): Target
+  def build(target: Target): Self
   def length(block: Self): Int
   def address(block: Self, index: Ordinal): Operand
-  inline def clone(source: Self, start: Ordinal, end: Ordinal)(target: Target): Unit
-  inline def grab(text: Self, start: Ordinal, end: Ordinal): Self
+  def clone(source: Self, start: Ordinal, end: Ordinal)(target: Target): Unit
+  def grab(text: Self, start: Ordinal, end: Ordinal): Self
