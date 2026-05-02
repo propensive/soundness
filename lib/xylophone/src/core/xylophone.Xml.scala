@@ -467,7 +467,7 @@ object Xml extends Tag.Container
 
     var headers: Boolean = headers0
 
-    import lineation.linefeedChars
+    import Lineation.untrackedChars
 
     val cursor = Cursor(input)
     val buffer: jl.StringBuilder = jl.StringBuilder()
