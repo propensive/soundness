@@ -122,7 +122,12 @@ final class Cursor[data]
     first = (first.n0 + diff).z
     buffer.drop(diff)
 
-  protected inline def forward(): Unit =
+  // Slow path: only run when we step out of the current block. Kept as a
+  // regular method so it isn't inlined into every `next()` call site — the
+  // bytecode bloat from inlining buffer + iterator handling at every call was
+  // pushing methods past the JIT's `FreqInlineSize` and `MaxInlineLevel`
+  // budgets and forcing weaker compilation tiers.
+  protected def forward(): Unit =
     val block: Ordinal = focusBlock.next
     val offset: Int = block - first
 
@@ -147,7 +152,7 @@ final class Cursor[data]
       focus = focus.next
       length = position.n1
 
-  protected inline def backward(): Unit =
+  protected def backward(): Unit =
     val block = focusBlock.previous
     val offset = block - first
     current = buffer(offset)
