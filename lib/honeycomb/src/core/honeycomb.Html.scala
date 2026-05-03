@@ -645,40 +645,50 @@ object Html extends Tag.Container
         case char                                  => fail(Unexpected(char))
 
 
-      @tailrec
-      def attributes(tag: Text, foreign: Boolean, entries: Map[Text, Optional[Text]] = ListMap())
-      :   Map[Text, Optional[Text]] =
+      def attributes(tag: Text, foreign: Boolean): Map[Text, Optional[Text]] =
+        // Accumulate into a mutable LinkedHashMap (preserves insertion order)
+        // and freeze to immutable at the end. Avoids the per-attribute
+        // ListMap.updated allocation in the previous tail-recursive form.
+        val entries = scala.collection.mutable.LinkedHashMap.empty[Text, Optional[Text]]
+        var done = false
+        while !done do
+          skip()
+          lay(fail(ExpectedMore)):
+            case '>' | '/' => done = true
 
-        skip() yet lay(fail(ExpectedMore)):
-          case '>' | '/' => entries
+            case '\u0000' =>
+              callback.let(_(position.z, Hole.Tagbody))
+              next()
+              skip()
+              entries(t"\u0000") = Unset
 
-          case '\u0000'  =>
-            callback.let(_(position.z, Hole.Tagbody))
-            next()
-            skip()
-            attributes(tag, foreign, entries.updated(t"\u0000", Unset))
+            case _ =>
+              val key2 = if foreign then foreignKey(begin()) else
+                key(begin(), dom.attributes).tap: key =>
+                  if !key.targets(tag) then fail(InvalidAttributeUse(key.label, tag))
 
-          case _ =>
-            val key2 = if foreign then foreignKey(begin()) else
-              key(begin(), dom.attributes).tap: key =>
-                if !key.targets(tag) then fail(InvalidAttributeUse(key.label, tag))
+                . label
 
-              . label
+              if entries.contains(key2) then fail(DuplicateAttribute(key2))
 
-            if entries.has(key2) then fail(DuplicateAttribute(key2))
+              val assignment = if !equality() then Unset else lay(fail(ExpectedMore)):
+                case '"'  => next() yet value(begin())
+                case '\'' => next() yet singleQuoted(begin())
 
-            val assignment = if !equality() then Unset else lay(fail(ExpectedMore)):
-              case '"'  => next() yet value(begin())
-              case '\'' => next() yet singleQuoted(begin())
+                case '\u0000' =>
+                  callback.let(_(position.z, Hole.Attribute(tag, key2)))
+                  next() yet t"\u0000"
 
-              case '\u0000' =>
-                callback.let(_(position.z, Hole.Attribute(tag, key2)))
-                next() yet t"\u0000"
+                case _ =>
+                  unquoted(begin()) // FIXME: Only alphanumeric characters
 
-              case _ =>
-                unquoted(begin()) // FIXME: Only alphanumeric characters
+              entries(key2) = assignment
 
-            attributes(tag, foreign, entries.updated(key2, assignment))
+        if entries.isEmpty then ListMap.empty
+        else
+          val builder = ListMap.newBuilder[Text, Optional[Text]]
+          entries.foreach(builder += _)
+          builder.result()
 
 
       def entity(mark: Mark): Optional[Text] = lay(fail(ExpectedMore)):
