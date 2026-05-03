@@ -47,6 +47,7 @@ sealed trait InlineData
 
 case class TextData(text: Text)                                                extends InlineData
 case class CodeData(code: Text)                                                extends InlineData
+case class HtmlInlineData(html: Text)                                          extends InlineData
 case object SoftbreakData                                                      extends InlineData
 case object LinebreakData                                                      extends InlineData
 case class LinkData
@@ -255,6 +256,7 @@ object EmphasisProcessor:
   private def proseOf(node: InlineNode): Option[Prose] = node.data match
     case TextData(t)             => Some(Prose.Textual(t))
     case CodeData(c)             => Some(Prose.Code(c))
+    case HtmlInlineData(h)       => Some(Prose.HtmlInline(h))
     case SoftbreakData           => Some(Prose.Softbreak)
     case LinebreakData           => Some(Prose.Linebreak)
     case LinkData(d, title, ch)  => Some(Prose.Link(d, title, ch.flatMap(proseOf)*))

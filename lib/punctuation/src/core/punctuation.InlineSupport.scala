@@ -51,15 +51,15 @@ object InlineSupport:
     case ']' | '^' | '_' | '`' | '{' | '|' | '}' | '~'                          => true
     case _                                                                      => false
 
-  private inline def isDecDigit(c: Char): Boolean = c >= '0' && c <= '9'
+  inline def isDecDigit(c: Char): Boolean = c >= '0' && c <= '9'
 
-  private inline def isHexDigit(c: Char): Boolean =
+  inline def isHexDigit(c: Char): Boolean =
     (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')
 
-  private inline def isAsciiAlpha(c: Char): Boolean =
+  inline def isAsciiAlpha(c: Char): Boolean =
     (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
 
-  private inline def isAsciiAlnum(c: Char): Boolean = isAsciiAlpha(c) || isDecDigit(c)
+  inline def isAsciiAlnum(c: Char): Boolean = isAsciiAlpha(c) || isDecDigit(c)
 
   // Try to parse an HTML entity at position `start` (which points at `&`).
   // Returns the decoded string and index past the closing `;`, or Unset.
@@ -326,6 +326,142 @@ object InlineSupport:
         buf.append(c)
         i += 1
     Unset
+
+  case class HtmlInlineMatch(html: Text, end: Int)
+
+  // Try to parse a raw-HTML inline starting at `<` (position `start`).
+  // Recognises open tags, close tags, HTML comments, processing
+  // instructions, declarations, and CDATA sections, per CommonMark §6.5.
+  def parseRawHtml(s: String, start: Int, end: Int): Optional[HtmlInlineMatch] =
+    if start >= end || s.charAt(start) != '<' then return Unset
+    if start + 1 >= end then return Unset
+
+    val c = s.charAt(start + 1)
+
+    val matchedEnd: Int =
+      if c == '!' then parseHtmlBangForm(s, start, end)
+      else if c == '?' then parseHtmlProcessingInstruction(s, start, end)
+      else if c == '/' then parseHtmlClosingTag(s, start, end)
+      else if isAsciiAlpha(c) then parseHtmlOpenTag(s, start, end)
+      else -1
+
+    if matchedEnd < 0 then Unset
+    else HtmlInlineMatch(Text(s.substring(start, matchedEnd).nn), matchedEnd)
+
+  private def parseHtmlBangForm(s: String, start: Int, end: Int): Int =
+    // <!-- ... -->  /  <![CDATA[ ... ]]>  /  <! ... >  (declaration)
+    if start + 4 < end && s.charAt(start + 2) == '-' && s.charAt(start + 3) == '-' then
+      // HTML comment
+      var i = start + 4
+      while i + 2 < end do
+        if s.charAt(i) == '-' && s.charAt(i + 1) == '-' && s.charAt(i + 2) == '>' then
+          return i + 3
+        i += 1
+      -1
+    else if start + 9 < end && s.regionMatches(start + 2, "[CDATA[", 0, 7) then
+      var i = start + 9
+      while i + 2 < end do
+        if s.charAt(i) == ']' && s.charAt(i + 1) == ']' && s.charAt(i + 2) == '>' then
+          return i + 3
+        i += 1
+      -1
+    else if start + 2 < end && isAsciiUpper(s.charAt(start + 2)) then
+      var i = start + 2
+      while i < end do
+        if s.charAt(i) == '>' then return i + 1
+        i += 1
+      -1
+    else
+      -1
+
+  private def parseHtmlProcessingInstruction(s: String, start: Int, end: Int): Int =
+    var i = start + 2
+    while i + 1 < end do
+      if s.charAt(i) == '?' && s.charAt(i + 1) == '>' then return i + 2
+      i += 1
+    -1
+
+  private def parseHtmlClosingTag(s: String, start: Int, end: Int): Int =
+    // </ tag-name space* >
+    var i = start + 2
+    if i >= end || !isAsciiAlpha(s.charAt(i)) then return -1
+    i += 1
+    while i < end && (isAsciiAlnum(s.charAt(i)) || s.charAt(i) == '-') do i += 1
+    while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do
+      i += 1
+    if i < end && s.charAt(i) == '>' then i + 1 else -1
+
+  private def parseHtmlOpenTag(s: String, start: Int, end: Int): Int =
+    // < tag-name (attr)* space* /? >
+    var i = start + 1
+    if i >= end || !isAsciiAlpha(s.charAt(i)) then return -1
+    i += 1
+    while i < end && (isAsciiAlnum(s.charAt(i)) || s.charAt(i) == '-') do i += 1
+
+    var done = false
+    var failed = false
+    while !done && !failed do
+      val before = i
+      while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do
+        i += 1
+
+      if i >= end then failed = true
+      else if s.charAt(i) == '>' then done = true
+      else if s.charAt(i) == '/' then
+        if i + 1 < end && s.charAt(i + 1) == '>' then { i += 2; return i }
+        else failed = true
+      else
+        // attribute requires preceding whitespace
+        if i == before then failed = true
+        else
+          val attrEnd = parseHtmlAttribute(s, i, end)
+          if attrEnd < 0 then failed = true
+          else i = attrEnd
+
+    if failed then -1
+    else if done then i + 1
+    else -1
+
+  private inline def isAttrNameChar(c: Char): Boolean =
+    isAsciiAlnum(c) || c == '_' || c == '.' || c == ':' || c == '-'
+
+  private inline def isUnquotedValueChar(c: Char): Boolean =
+    c != ' ' && c != '\t' && c != '\n'
+    && c != '"' && c != '\''
+    && c != '=' && c != '<' && c != '>' && c != '`'
+
+  private def parseHtmlAttribute(s: String, start: Int, end: Int): Int =
+    var i = start
+    val c = s.charAt(i)
+    if !(isAsciiAlpha(c) || c == '_' || c == ':') then return -1
+    i += 1
+    while i < end && isAttrNameChar(s.charAt(i)) do i += 1
+
+    // Optional value
+    val nameEnd = i
+    while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do
+      i += 1
+
+    if i < end && s.charAt(i) == '=' then
+      i += 1
+      while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do
+        i += 1
+      if i >= end then return -1
+      val q = s.charAt(i)
+      if q == '"' || q == '\'' then
+        i += 1
+        while i < end && s.charAt(i) != q do i += 1
+        if i >= end then return -1
+        i + 1
+      else
+        // unquoted value: no whitespace, ", ', =, <, >, `
+        val vstart = i
+        while i < end && isUnquotedValueChar(s.charAt(i)) do i += 1
+        if i == vstart then -1 else i
+    else
+      nameEnd
+
+  private def isAsciiUpper(c: Char): Boolean = c >= 'A' && c <= 'Z'
 
   case class InlineLinkBody(dest: Text, title: Optional[Text], end: Int)
 
