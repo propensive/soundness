@@ -834,6 +834,7 @@ object punctuation extends Library:
   object html extends Component(core)
   object ansi extends Component(core, harlequin.core)
   object test extends Tests(core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
+  object bench extends Benchmarks(core, quantitative.units)
 
 object quantitative extends Library:
   object core extends Component(hypotenuse.core, gossamer.core, anticipation.opaque, anticipation.time, probably.core)
