@@ -45,13 +45,25 @@ import vacuous.*
 
 sealed trait InlineData
 
-case class TextData(text: Text)                                            extends InlineData
-case class CodeData(code: Text)                                            extends InlineData
-case object SoftbreakData                                                  extends InlineData
-case object LinebreakData                                                  extends InlineData
-case class LinkData(dest: Text, title: Optional[Text], children: Seq[Prose]) extends InlineData
-case class EmphasisData(children: List[InlineNode])                        extends InlineData
-case class StrongData(children: List[InlineNode])                          extends InlineData
+case class TextData(text: Text)                                                extends InlineData
+case class CodeData(code: Text)                                                extends InlineData
+case object SoftbreakData                                                      extends InlineData
+case object LinebreakData                                                      extends InlineData
+case class LinkData
+  ( dest: Text, title: Optional[Text], children: List[InlineNode] )
+extends InlineData
+
+case class ImageData
+  ( dest: Text, title: Optional[Text], children: List[InlineNode] )
+extends InlineData
+case class EmphasisData(children: List[InlineNode])                            extends InlineData
+case class StrongData(children: List[InlineNode])                              extends InlineData
+
+// `[` or `![` marker placed in the inline list when a link/image bracket
+// opens. After tokenization the corresponding `BracketEntry` in the parser's
+// bracket stack tells us whether to wrap as a link, leave as literal text,
+// or skip (if the marker was deactivated by a containing link).
+final class BracketData(val isImage: Boolean) extends InlineData
 
 // `*` or `_` delimiter run. `length` may be reduced as the emphasis
 // algorithm consumes characters from the run.
@@ -245,9 +257,11 @@ object EmphasisProcessor:
     case CodeData(c)             => Some(Prose.Code(c))
     case SoftbreakData           => Some(Prose.Softbreak)
     case LinebreakData           => Some(Prose.Linebreak)
-    case LinkData(d, title, ch)  => Some(Prose.Link(d, title, ch*))
+    case LinkData(d, title, ch)  => Some(Prose.Link(d, title, ch.flatMap(proseOf)*))
+    case ImageData(d, title, ch) => Some(Prose.Image(d, title, ch.flatMap(proseOf)*))
     case EmphasisData(children)  => Some(Prose.Emphasis(children.flatMap(proseOf)*))
     case StrongData(children)    => Some(Prose.Strong(children.flatMap(proseOf)*))
+    case b: BracketData          => Some(Prose.Textual(Text(if b.isImage then "![" else "[")))
     case d: DelimData            => unmatchedDelim(d)
 
   private def unmatchedDelim(d: DelimData): Option[Prose] =
