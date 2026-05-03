@@ -207,6 +207,7 @@ object test extends ScalaModule:
     austronesian.test,
     aviation.test,
     baroque.test,
+    beneficence.test,
     bitumen.test,
     burdock.test,
     cacophony.test,
@@ -401,6 +402,12 @@ object aviation extends Library:
 object baroque extends Library:
   object core extends Component(quantitative.core, geodesy.core)
   object test extends Tests(core, abacist.core, quantitative.units, mosquito.core)
+
+object beneficence extends Library:
+  object core extends Component()
+  object plugin extends BareComponent():
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+  object test extends Tests(core, plugin)
 
 object bitumen extends Library:
   object core extends Component(serpentine.core, turbulence.core)
