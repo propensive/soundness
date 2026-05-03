@@ -34,5 +34,7 @@ package soundness
 
 import frontier.*
 
+export frontier.Every
+
 package context:
   transparent inline given explainMissingContext: [any] => any = internal.explanation[any]

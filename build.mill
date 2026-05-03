@@ -238,7 +238,7 @@ object test extends ScalaModule:
     //eucalyptus.test,
     exegesis.test,
     exoskeleton.test,
-    //frontier.test,
+    frontier.test,
     fulminate.test,
     galilei.test,
     gastronomy.test,

@@ -32,74 +32,7 @@
                                                                                                   */
 package frontier
 
-import soundness.{every as _, *}
+object Every:
+  transparent inline given default: [value] => Every[value] = ${internal.every[value]}
 
-object Tests extends Suite(m"Frontier Tests"):
-  trait Plug
-
-  object NoPlugs:
-    def explicit: Int = every[Plug].values.length
-    def viaSummon: Int = summon[Every[Plug]].values.length
-
-  object OnePlug:
-    given p1: Plug = new Plug {}
-
-    def explicit: Int = every[Plug].values.length
-    def viaSummon: Int = summon[Every[Plug]].values.length
-
-  object TwoPlugs:
-    given p1: Plug = new Plug {}
-    given p2: Plug = new Plug {}
-
-    def explicit: Int = every[Plug].values.length
-    def viaSummon: Int = summon[Every[Plug]].values.length
-
-  def run(): Unit =
-    test(m"every[X] returns empty Every when no givens in scope"):
-      NoPlugs.explicit
-    . assert(_ == 0)
-
-    test(m"summon[Every[X]] returns empty Every when no givens in scope"):
-      NoPlugs.viaSummon
-    . assert(_ == 0)
-
-    test(m"every[X] with one given in scope returns 1"):
-      OnePlug.explicit
-    . assert(_ == 1)
-
-    test(m"summon[Every[X]] with one given in scope returns 1"):
-      OnePlug.viaSummon
-    . assert(_ == 1)
-
-    test(m"every[X] collects two ambiguous givens in scope"):
-      TwoPlugs.explicit
-    . assert(_ == 2)
-
-    test(m"summon[Every[X]] collects two ambiguous givens in scope"):
-      TwoPlugs.viaSummon
-    . assert(_ == 2)
-
-    test(m"every[X] compiles cleanly with givens in scope"):
-      demilitarize:
-        trait Widget
-        given w1: Widget = new Widget {}
-        given w2: Widget = new Widget {}
-        val all: Every[Widget] = every[Widget]
-      . map(_.message)
-    . assert(_ == Nil)
-
-    test(m"summon[Every[X]] compiles cleanly with givens in scope"):
-      demilitarize:
-        trait Widget
-        given w1: Widget = new Widget {}
-        given w2: Widget = new Widget {}
-        val all: Every[Widget] = summon[Every[Widget]]
-      . map(_.message)
-    . assert(_ == Nil)
-
-    test(m"every[X] compiles cleanly when no givens are in scope"):
-      demilitarize:
-        trait Widget
-        val all: Every[Widget] = every[Widget]
-      . map(_.message)
-    . assert(_ == Nil)
+case class Every[+value](values: List[value])
