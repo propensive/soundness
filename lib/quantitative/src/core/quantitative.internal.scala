@@ -109,6 +109,77 @@ object internal extends protointernal:
 
     inline def units[units <: Measure]: Text = expressUnits(unitsMap[units])
 
+    // Concrete inline-friendly operator instances. These are summoned via
+    // `transparent inline given`s below so the static type at the use site
+    // is the concrete class (with its `inline def op`), enabling
+    // end-to-end inline expansion to primitive `Dadd`/`Dsub`/`Dmul`/`Ddiv`
+    // bytecode.
+    final class QuantityAddOp[u <: Measure, v <: Measure, r <: Measure] extends AddOp:
+      type Self = Quantity[u]
+      type Operand = Quantity[v]
+      type Result = Quantity[r]
+
+      inline def op(left: Quantity[u], right: Quantity[v]): Quantity[r] =
+        ${quantitative.internal.addQuantity[u, v, r]('left, 'right)}
+
+    final class QuantitySubOp[u <: Measure, v <: Measure, r <: Measure] extends SubOp:
+      type Self = Quantity[u]
+      type Operand = Quantity[v]
+      type Result = Quantity[r]
+
+      inline def op(left: Quantity[u], right: Quantity[v]): Quantity[r] =
+        ${quantitative.internal.subQuantity[u, v, r]('left, 'right)}
+
+    final class QuantityMulOp[u <: Measure, v <: Measure, r <: Measure] extends MulOp:
+      type Self = Quantity[u]
+      type Operand = Quantity[v]
+      type Result = Quantity[r]
+
+      inline def op(left: Quantity[u], right: Quantity[v]): Quantity[r] =
+        ${quantitative.internal.mulQuantity[u, v, r]('left, 'right)}
+
+    final class QuantityMulOpDouble[u <: Measure, v <: Measure] extends MulOp:
+      type Self = Quantity[u]
+      type Operand = Quantity[v]
+      type Result = Double
+
+      inline def op(left: Quantity[u], right: Quantity[v]): Double =
+        ${quantitative.internal.mulQuantityDouble[u, v]('left, 'right)}
+
+    final class QuantityDivOp[u <: Measure, v <: Measure, r <: Measure] extends DivOp:
+      type Self = Quantity[u]
+      type Operand = Quantity[v]
+      type Result = Quantity[r]
+
+      inline def op(left: Quantity[u], right: Quantity[v]): Quantity[r] =
+        ${quantitative.internal.divQuantity[u, v, r]('left, 'right)}
+
+    final class QuantityDivOpDouble[u <: Measure, v <: Measure] extends DivOp:
+      type Self = Quantity[u]
+      type Operand = Quantity[v]
+      type Result = Double
+
+      inline def op(left: Quantity[u], right: Quantity[v]): Double =
+        ${quantitative.internal.divQuantityDouble[u, v]('left, 'right)}
+
+
+    transparent inline given quantityAddOp
+    :   [ u <: Measure, v <: Measure ] => Quantity[u] is AddOp by Quantity[v] =
+      ${quantitative.internal.makeAddOp[u, v]}
+
+    transparent inline given quantitySubOp
+    :   [ u <: Measure, v <: Measure ] => Quantity[u] is SubOp by Quantity[v] =
+      ${quantitative.internal.makeSubOp[u, v]}
+
+    transparent inline given quantityMulOp
+    :   [ u <: Measure, v <: Measure ] => Quantity[u] is MulOp by Quantity[v] =
+      ${quantitative.internal.makeMulOp[u, v]}
+
+    transparent inline given quantityDivOp
+    :   [ u <: Measure, v <: Measure ] => Quantity[u] is DivOp by Quantity[v] =
+      ${quantitative.internal.makeDivOp[u, v]}
+
+
     given zeroic: [units <: Measure] => Quantity[units] is Zeroic:
       inline def zero: Quantity[units] = Quantity(0.0)
 

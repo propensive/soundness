@@ -646,6 +646,121 @@ trait protointernal:
         }
 
 
+  def addQuantity[u <: Measure: Type, v <: Measure: Type, r <: Measure: Type]
+    (left: Expr[Quantity[u]], right: Expr[Quantity[v]])
+    (using Quotes)
+  :   Expr[Quantity[r]] =
+
+    add[u, v](left, right).asExprOf[Quantity[r]]
+
+
+  def subQuantity[u <: Measure: Type, v <: Measure: Type, r <: Measure: Type]
+    (left: Expr[Quantity[u]], right: Expr[Quantity[v]])
+    (using Quotes)
+  :   Expr[Quantity[r]] =
+
+    sub[u, v](left, right).asExprOf[Quantity[r]]
+
+
+  def mulQuantity[u <: Measure: Type, v <: Measure: Type, r <: Measure: Type]
+    (left: Expr[Quantity[u]], right: Expr[Quantity[v]])
+    (using Quotes)
+  :   Expr[Quantity[r]] =
+
+    multiply[u, v](left, right).asExprOf[Quantity[r]]
+
+
+  def mulQuantityDouble[u <: Measure: Type, v <: Measure: Type]
+    (left: Expr[Quantity[u]], right: Expr[Quantity[v]])
+    (using Quotes)
+  :   Expr[Double] =
+
+    multiply[u, v](left, right).asExprOf[Double]
+
+
+  def divQuantity[u <: Measure: Type, v <: Measure: Type, r <: Measure: Type]
+    (left: Expr[Quantity[u]], right: Expr[Quantity[v]])
+    (using Quotes)
+  :   Expr[Quantity[r]] =
+
+    divide[u, v](left, right).asExprOf[Quantity[r]]
+
+
+  def divQuantityDouble[u <: Measure: Type, v <: Measure: Type]
+    (left: Expr[Quantity[u]], right: Expr[Quantity[v]])
+    (using Quotes)
+  :   Expr[Double] =
+
+    divide[u, v](left, right).asExprOf[Double]
+
+
+  def makeAddOp[u <: Measure: Type, v <: Measure: Type](using Quotes)
+  :   Expr[Quantity[u] is AddOp by Quantity[v]] =
+
+    val left = UnitsMap[u]
+    val right = UnitsMap[v]
+    val (left2, _) = normalize(left, right, '{0.0})
+    val (right2, _) = normalize(right, left, '{0.0})
+
+    if left2 != right2 then
+      // Incompatible units. Abort silently so that `summonFrom` falls
+      // through to the regular `Addable`-based path, which produces the
+      // canonical error message exactly once.
+      import quotes.reflect.report
+      report.errorAndAbort(incompatibleTypeText(left, right))
+    else
+      left2.repr.map(_.asType).absolve match case Some('[type result <: Measure; result]) =>
+        '{new quantitative.internal.Quantity.QuantityAddOp[u, v, result]}
+
+
+  def makeSubOp[u <: Measure: Type, v <: Measure: Type](using Quotes)
+  :   Expr[Quantity[u] is SubOp by Quantity[v]] =
+
+    val left = UnitsMap[u]
+    val right = UnitsMap[v]
+    val (left2, _) = normalize(left, right, '{0.0})
+    val (right2, _) = normalize(right, left, '{0.0})
+
+    if left2 != right2 then
+      import quotes.reflect.report
+      report.errorAndAbort(incompatibleTypeText(left, right))
+    else
+      left2.repr.map(_.asType).absolve match case Some('[type result <: Measure; result]) =>
+        '{new quantitative.internal.Quantity.QuantitySubOp[u, v, result]}
+
+
+  def makeMulOp[u <: Measure: Type, v <: Measure: Type](using Quotes)
+  :   Expr[Quantity[u] is MulOp by Quantity[v]] =
+
+    val left = UnitsMap[u]
+    val right = UnitsMap[v]
+    val (leftNorm, _) = normalize(left, right, '{1.0})
+    val (rightNorm, _) = normalize(right, left, '{1.0})
+
+    (leftNorm*rightNorm).repr.map(_.asType).absolve match
+      case Some('[type result <: Measure; result]) =>
+        '{new quantitative.internal.Quantity.QuantityMulOp[u, v, result]}
+
+      case None =>
+        '{new quantitative.internal.Quantity.QuantityMulOpDouble[u, v]}
+
+
+  def makeDivOp[u <: Measure: Type, v <: Measure: Type](using Quotes)
+  :   Expr[Quantity[u] is DivOp by Quantity[v]] =
+
+    val left = UnitsMap[u]
+    val right = UnitsMap[v]
+    val (leftNorm, _) = normalize(left, right, '{1.0})
+    val (rightNorm, _) = normalize(right, left, '{1.0})
+
+    (leftNorm/rightNorm).repr.map(_.asType).absolve match
+      case Some('[type result <: Measure; result]) =>
+        '{new quantitative.internal.Quantity.QuantityDivOp[u, v, result]}
+
+      case None =>
+        '{new quantitative.internal.Quantity.QuantityDivOpDouble[u, v]}
+
+
   def checkable
     [ left      <: Measure:         Type,
       quantity  <: Quantity[left]:  Type,

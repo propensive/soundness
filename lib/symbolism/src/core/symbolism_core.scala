@@ -51,7 +51,11 @@ extension [augend](left: augend)
   inline infix def + [addend](right: addend)(using addable: augend is Addable by addend)
   :   addable.Result =
 
-    addable.add(left, right)
+    scala.compiletime.summonFrom:
+      case op: (`augend` is AddOp by `addend`) =>
+        op.op(left.asInstanceOf, right.asInstanceOf).asInstanceOf[addable.Result]
+      case _ =>
+        addable.add(left, right)
 
 
 extension [minuend](left: minuend)
@@ -59,7 +63,11 @@ extension [minuend](left: minuend)
     ( using subtractable: minuend is Subtractable by subtrahend )
   :   subtractable.Result =
 
-    subtractable.subtract(left, right)
+    scala.compiletime.summonFrom:
+      case op: (`minuend` is SubOp by `subtrahend`) =>
+        op.op(left.asInstanceOf, right.asInstanceOf).asInstanceOf[subtractable.Result]
+      case _ =>
+        subtractable.subtract(left, right)
 
 
 extension [dividend](left: dividend)
@@ -67,7 +75,11 @@ extension [dividend](left: dividend)
   inline infix def / [divisor](right: divisor)(using divisible: dividend is Divisible by divisor)
   :   divisible.Result =
 
-    divisible.divide(left, right)
+    scala.compiletime.summonFrom:
+      case op: (`dividend` is DivOp by `divisor`) =>
+        op.op(left.asInstanceOf, right.asInstanceOf).asInstanceOf[divisible.Result]
+      case _ =>
+        divisible.divide(left, right)
 
 
 extension [multiplicand](left: multiplicand)
@@ -76,7 +88,11 @@ extension [multiplicand](left: multiplicand)
     ( using multiplicable: multiplicand is Multiplicable by multiplier )
   :   multiplicable.Result =
 
-    multiplicable.multiply(left, right)
+    scala.compiletime.summonFrom:
+      case op: (`multiplicand` is MulOp by `multiplier`) =>
+        op.op(left.asInstanceOf, right.asInstanceOf).asInstanceOf[multiplicable.Result]
+      case _ =>
+        multiplicable.multiply(left, right)
 
 object `/:`:
   def unapply[entity: Quotient](value: entity): Option[(entity.Numerator, entity.Denominator)] =
