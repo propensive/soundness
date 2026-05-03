@@ -81,6 +81,11 @@ object Ansi extends Ansi2:
   given strike: Stylize[Strike.type] = _ => Stylize(_.copy(strike = true))
   given conceal: Stylize[Conceal.type] = _ => Stylize(_.copy(conceal = true))
   given reverse: Stylize[Reverse.type] = _ => Stylize(_.copy(reverse = true))
+  given faint: Stylize[Faint.type] = _ => Stylize(_.copy(faint = true))
+  given doubleUnderline: Stylize[DoubleUnderline.type] = _ => Stylize(_.copy(doubleUnderline = true))
+  given blinkSlow: Stylize[BlinkSlow.type] = _ => Stylize(_.copy(blinkSlow = true))
+  given blinkFast: Stylize[BlinkFast.type] = _ => Stylize(_.copy(blinkFast = true))
+  given overline: Stylize[Overline.type] = _ => Stylize(_.copy(overline = true))
 
   given hyperlink: Substitution[Input, Hyperlink, "esc"] = h => Input.Hyperlink(h.url)
 
