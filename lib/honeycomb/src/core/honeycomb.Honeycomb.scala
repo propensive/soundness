@@ -113,7 +113,7 @@ object Honeycomb:
 
           case "\u0000" :: tail =>
             index += 1
-            types ::= TypeRepr.of[Map[Text, Optional[Text]]]
+            types ::= TypeRepr.of[Attributes]
             iterator.next()
             val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
             '{$expr && { $array(${Expr(index)}) = ${scrutinee}.attributes -- $others; true }}
@@ -134,7 +134,7 @@ object Honeycomb:
 
               '{$expr && $boolean}
 
-        val attributesChecked = attributes(pattern.attributes.to(List).map(_(0)))('{true})
+        val attributesChecked = attributes(pattern.attributes.toList.map(_(0)))('{true})
 
         val children = '{$scrutinee.children}
 
@@ -360,7 +360,7 @@ object Honeycomb:
         case Fragment(children*) => children.flatMap(serialize(_))
 
         case Element(label, attributes, children, foreign) =>
-          val exprs = attributes.to(List).map: (key, value) =>
+          val exprs = attributes.toList.map: (key, value) =>
             ' {
                 ( ${Expr(key)},
                   $ {
@@ -372,10 +372,10 @@ object Honeycomb:
 
             . asExprOf[(Text, Optional[Text])]
 
-          val map = '{Map(${Expr.ofList(exprs)}*)}
+          val attrs = '{Attributes(${Expr.ofList(exprs)}*)}
           val elements = '{IArray(${Expr.ofList(children.flatMap(serialize(_)))}*)}
 
-          List('{Element(${Expr(label)}, $map, $elements, ${Expr(foreign)})})
+          List('{Element(${Expr(label)}, $attrs, $elements, ${Expr(foreign)})})
 
         case Doctype(text) =>
           if text.contains(t"\u0000")
@@ -490,4 +490,4 @@ object Honeycomb:
 
                 . or(halt(m"unexpected type"))
 
-    '{$tag.node($presets ++ ${Expr.ofList(attributes)}.compact.to(Map))}.asExprOf[result]
+    '{$tag.node(Attributes.from($presets ++ ${Expr.ofList(attributes)}.compact.to(Map)))}.asExprOf[result]

@@ -54,7 +54,7 @@ object Tag:
             case element@Element(tag.label, _, _, _) => lambda(element)
             case other                               => other
 
-          Element(label, attributes, children2, boundary).asInstanceOf[html]
+          new Element(label, attributes, children2, boundary).asInstanceOf[html]
 
         case other =>
           other
@@ -63,7 +63,7 @@ object Tag:
     new Tag("#root", false, Html.Mode.Normal, Map(), children, false, false, false):
       type Result = this.type
 
-      def node(attributes: Map[Text, Optional[Text]]): Result = this
+      def node(attributes: Attributes): Result = this
 
 
   def void[label <: Label: ValueOf, dom <: Dom]
@@ -73,10 +73,10 @@ object Tag:
     new Void(valueOf[label].tt, presets, boundary).of[label].in[dom]
 
 
-  def foreign[dom <: Dom](label: Text, attributes0: Map[Text, Optional[Text]])
+  def foreign[dom <: Dom](label: Text, attributes0: Attributes)
   :   Tag of "#foreign" over "#foreign" in dom =
 
-    new Tag.Container(label, false, Html.Mode.Normal, attributes0, Set(), false, true)
+    new Tag.Container(label, false, Html.Mode.Normal, attributes0.toMap, Set(), false, true)
     . of["#foreign"]
     . over["#foreign"]
     . in[dom]
@@ -149,10 +149,11 @@ object Tag:
         val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
         presets.updated("class", value)
 
-      Element(label, presets2, nodes, foreign).of[Topic].over[Transport].in[Form]
+      Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].over[Transport].in[Form]
 
-    def node(attributes: Map[Text, Optional[Text]]): Result =
-      new Element(label, presets ++ attributes, IArray(), foreign) with Html.Populable()
+    def node(attributes: Attributes): Result =
+      new Element(label, Attributes.from(presets) ++ attributes, IArray(), foreign)
+      with Html.Populable()
       . of[Topic]
       . over[Transport]
       . in[Form]
@@ -188,11 +189,12 @@ object Tag:
         presets.updated("class", value)
 
       val nodes: IArray[Node] = children.compact.nodes
-      Element(label, presets2, nodes, foreign).of[Topic].in[Form]
+      Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].in[Form]
 
 
-    def node(attributes: Map[Text, Optional[Text]]): Result =
-      new Element(label, presets ++ attributes, IArray(), foreign) with Html.Transparent()
+    def node(attributes: Attributes): Result =
+      new Element(label, Attributes.from(presets) ++ attributes, IArray(), foreign)
+      with Html.Transparent()
       . of[Topic]
       . over[Transport]
       . in[Form]
@@ -202,8 +204,8 @@ object Tag:
   extends Tag(label, presets = presets, void = true, boundary = boundary):
     type Result = Element of Topic in Form
 
-    def node(attributes: Map[Text, Optional[Text]]): Result =
-      new Element(label, presets ++ attributes, IArray(), this.foreign)
+    def node(attributes: Attributes): Result =
+      new Element(label, Attributes.from(presets) ++ attributes, IArray(), this.foreign)
       . of[Topic]
       . in[Form]
 
@@ -218,7 +220,7 @@ abstract class Tag
     val void:        Boolean                   = false,
     val transparent: Boolean                   = false,
     val boundary:    Boolean                   = false )
-extends Element(label, presets, IArray(), foreign), Formal, Dynamic:
+extends Element(label, Attributes.from(presets), IArray(), foreign), Formal, Dynamic:
   type Result <: Element
 
 
@@ -234,4 +236,4 @@ extends Element(label, presets, IArray(), foreign), Formal, Dynamic:
   inline def element(presets: Map[Text, Text], inline attributes: (String, Any)*): Result =
     ${honeycomb.internal.attributes[Result, this.type]('this, 'presets, 'attributes)}
 
-  def node(attributes: Map[Text, Optional[Text]]): Result
+  def node(attributes: Attributes): Result

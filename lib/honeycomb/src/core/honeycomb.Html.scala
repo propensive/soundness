@@ -474,13 +474,18 @@ object Html extends Tag.Container
       val buffer: jl.StringBuilder = jl.StringBuilder()
       def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
       var content: Text = t""
-      var extra: Map[Text, Optional[Text]] = ListMap()
+      var extra: Attributes = Attributes.empty
+      // Shared scratch buffer for attribute accumulation (parser-lifetime).
+      // `attributes()` writes here, then snapshots the populated prefix into
+      // freshly-sized IArrays for an `Attributes`. Doubles in size if filled.
+      var attrKeys: Array[Text] = new Array(8)
+      var attrValues: Array[Optional[Text]] = new Array(8)
       var nodes: Array[Node] = new Array(4)
       var index: Int = 0
       var stack: Array[Tag] = new Array(4)
       var depth: Int = 0
       var fragment: IArray[Node] = IArray()
-      var pendingFormatting: List[(Text, Map[Text, Optional[Text]])] = Nil
+      var pendingFormatting: List[(Text, Attributes)] = Nil
       var pendingAtDepth: Int = -1
       var fosteredBefore: List[Node] = Nil
       var fosteredAfter: List[Node] = Nil
@@ -645,12 +650,15 @@ object Html extends Tag.Container
         case char                                  => fail(Unexpected(char))
 
 
-      def attributes(tag: Text, foreign: Boolean): Map[Text, Optional[Text]] =
-        // Accumulate into a mutable LinkedHashMap (preserves insertion order)
-        // and freeze to immutable at the end. Avoids the per-attribute
-        // ListMap.updated allocation in the previous tail-recursive form.
-        val entries = scala.collection.mutable.LinkedHashMap.empty[Text, Optional[Text]]
+      def attributes(tag: Text, foreign: Boolean): Attributes =
+        // Append into the parser-shared scratch buffer; on close, snapshot the
+        // populated prefix into freshly-sized IArrays and wrap in `Attributes`.
+        // Linear duplicate-scan suits the typical 0–5 attribute count and
+        // skips both the LinkedHashMap accumulator and the ListMap finalisation
+        // that the previous form went through.
+        var n = 0
         var done = false
+
         while !done do
           skip()
           lay(fail(ExpectedMore)):
@@ -660,7 +668,16 @@ object Html extends Tag.Container
               callback.let(_(position.z, Hole.Tagbody))
               next()
               skip()
-              entries(t"\u0000") = Unset
+              if n == attrKeys.length then
+                val nk = new Array[Text](n*2)
+                val nv = new Array[Optional[Text]](n*2)
+                jl.System.arraycopy(attrKeys, 0, nk, 0, n)
+                jl.System.arraycopy(attrValues, 0, nv, 0, n)
+                attrKeys = nk
+                attrValues = nv
+              attrKeys(n) = t"\u0000"
+              attrValues(n) = Unset
+              n += 1
 
             case _ =>
               val key2 = if foreign then foreignKey(begin()) else
@@ -669,7 +686,10 @@ object Html extends Tag.Container
 
                 . label
 
-              if entries.contains(key2) then fail(DuplicateAttribute(key2))
+              var dup = 0
+              while dup < n do
+                if attrKeys(dup) == key2 then fail(DuplicateAttribute(key2))
+                dup += 1
 
               val assignment = if !equality() then Unset else lay(fail(ExpectedMore)):
                 case '"'  => next() yet value(begin())
@@ -682,13 +702,24 @@ object Html extends Tag.Container
                 case _ =>
                   unquoted(begin()) // FIXME: Only alphanumeric characters
 
-              entries(key2) = assignment
+              if n == attrKeys.length then
+                val nk = new Array[Text](n*2)
+                val nv = new Array[Optional[Text]](n*2)
+                jl.System.arraycopy(attrKeys, 0, nk, 0, n)
+                jl.System.arraycopy(attrValues, 0, nv, 0, n)
+                attrKeys = nk
+                attrValues = nv
+              attrKeys(n) = key2
+              attrValues(n) = assignment
+              n += 1
 
-        if entries.isEmpty then ListMap.empty
+        if n == 0 then Attributes.empty
         else
-          val builder = ListMap.newBuilder[Text, Optional[Text]]
-          entries.foreach(builder += _)
-          builder.result()
+          val ks = new Array[Text](n)
+          val vs = new Array[Optional[Text]](n)
+          jl.System.arraycopy(attrKeys, 0, ks, 0, n)
+          jl.System.arraycopy(attrValues, 0, vs, 0, n)
+          Attributes.fromArrays(ks.immutable(using Unsafe), vs.immutable(using Unsafe))
 
 
       def entity(mark: Mark): Optional[Text] = lay(fail(ExpectedMore)):
@@ -914,12 +945,12 @@ object Html extends Tag.Container
         index -= count
         result.immutable(using Unsafe)
 
-      def descend(parent: Tag, admissible: Set[Text], attrs: Map[Text, Optional[Text]]): Node =
+      def descend(parent: Tag, admissible: Set[Text], attrs: Attributes): Node =
         val admissible2 = if parent.transparent then admissible else parent.admissible
         read(parent, admissible2, attrs, 0)
 
       @tailrec
-      def read(parent: Tag, admissible: Set[Text], map: Map[Text, Optional[Text]], count: Int): Node =
+      def read(parent: Tag, admissible: Set[Text], map: Attributes, count: Int): Node =
 
         def admit(child: Text): Boolean =
           parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
@@ -1129,7 +1160,7 @@ object Html extends Tag.Container
         skip()
         if !more then Fragment() else
           append(root)
-          val head = read(root, root.admissible, ListMap(), 0)
+          val head = read(root, root.admissible, Attributes.empty, 0)
           if fragment.nil then head else Fragment(fragment*)
 
 
@@ -1287,14 +1318,20 @@ case class TextNode(text: Text) extends Node:
   def body: Fragment of Topic over Transport in Form = Fragment[Topic]().over[Transport].in[Form]
 
 object Element:
-  def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
+  def foreign(label: Text, attributes: Attributes, children: Html of "#foreign"*)
   :   Element of "#foreign" =
 
     Element(label, attributes, children.nodes, true).of["#foreign"]
 
+  // Convenience for callers that still hold a Map.
+  def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
+  :   Element of "#foreign" =
+
+    Element(label, Attributes.from(attributes), children.nodes, true).of["#foreign"]
+
 case class Element
   ( label:      Text,
-    attributes: Map[Text, Optional[Text]],
+    attributes: Attributes,
     children:   IArray[Node],
     foreign:    Boolean )
 extends Node, Topical, Transportive, Dynamic:
@@ -1352,12 +1389,12 @@ extends Node, Topical, Transportive, Dynamic:
       case attribute: (name.type is Attribute on (? >: Topic) in Form) =>
         compiletime.summonFrom:
           case unattributive: (attribute.Topic is Unattributive) =>
-            unattributive.unattribute(attributes.at(name.tt))
+            unattributive.unattribute(attributes(name.tt))
 
       case attribute: (name.type is Attribute in Form) =>
         compiletime.summonFrom:
           case unattributive: (attribute.Topic is Unattributive) =>
-            unattributive.unattribute(attributes.at(name.tt))
+            unattributive.unattribute(attributes(name.tt))
 
 
   inline def updateDynamic[value](name: Label)(value: value)
