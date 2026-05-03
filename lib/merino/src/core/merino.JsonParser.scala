@@ -47,8 +47,7 @@ import JsonAst.{Issue, Position}
 
 private object JsonParser:
   private[merino] type Raw =
-    Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean
-    | Null | Unset.type
+    Long | Double | BigDecimal | String | IArray[Any] | Boolean | Null | Unset.type
 
   private inline val NumZero       = 0
   private inline val NumInt        = 1
@@ -110,22 +109,18 @@ private final class JsonParser:
   protected var stringCursor:        Int = 0
   protected var arrayBufferId:       Int = -1
   protected val arrayBuffers:        ArrayBuffer[ArrayBuffer[Any]] = ArrayBuffer.empty
-  protected var stringArrayBufferId: Int = -1
-  protected val stringArrayBuffers:  ArrayBuffer[ArrayBuffer[String]] = ArrayBuffer.empty
   protected val numberBuilder:       java.lang.StringBuilder = java.lang.StringBuilder(32)
 
   def resetData(input: Data): Unit =
     cursor = Cursor[Data](input)
     stringCursor = 0
     arrayBufferId = -1
-    stringArrayBufferId = -1
     heldToken = null
 
   def resetIterator(input: Iterator[Data]): Unit =
     cursor = Cursor[Data](input)
     stringCursor = 0
     arrayBufferId = -1
-    stringArrayBufferId = -1
     heldToken = null
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -216,19 +211,6 @@ private final class JsonParser:
       buffer
 
   protected inline def relinquishArrayBuffer(): Unit = arrayBufferId -= 1
-
-  protected inline def getStringArrayBuffer(): ArrayBuffer[String] =
-    stringArrayBufferId += 1
-    if stringArrayBuffers.length <= stringArrayBufferId then
-      val newBuffer = ArrayBuffer.empty[String]
-      stringArrayBuffers += newBuffer
-      newBuffer
-    else
-      val buffer = stringArrayBuffers(stringArrayBufferId)
-      buffer.clear()
-      buffer
-
-  protected inline def relinquishStringArrayBuffer(): Unit = stringArrayBufferId -= 1
 
   // ──────────────────────────────────────────────────────────────────────────
   // Parser body (unchanged from the previous abstract base).
@@ -587,13 +569,29 @@ private final class JsonParser:
 
       advance()
 
-    val result: IArray[Any] = items.toArray.asInstanceOf[IArray[Any]]
-    relinquishArrayBuffer()
-    result
+    // Pad arrays of even length (including the empty array) with the sentinel
+    // so that all array nodes have odd `IArray[Any]` length, distinguishing
+    // them from objects (always even).
+    val n = items.length
+    val out =
+      if (n & 1) == 1 then
+        val arr = new Array[Any](n)
+        items.copyToArray(arr)
+        arr
+      else
+        val arr = new Array[Any](n + 1)
+        items.copyToArray(arr)
+        arr(n) = JsonAst.arrayPad
+        arr
 
-  private def parseObject()(using Tactic[ParseError]): (IArray[String], IArray[Any]) =
-    val keys: ArrayBuffer[String] = getStringArrayBuffer()
-    val values: ArrayBuffer[Any] = getArrayBuffer()
+    relinquishArrayBuffer()
+    out.asInstanceOf[IArray[Any]]
+
+  // Parse an object directly into the flat alternating-key/value layout. The
+  // buffer always grows in pairs, so its length stays even, which is the
+  // object/array parity invariant.
+  private def parseObject()(using Tactic[ParseError]): IArray[Any] =
+    val items: ArrayBuffer[Any] = getArrayBuffer()
     var continue = true
     while continue do
       skip()
@@ -611,14 +609,14 @@ private final class JsonParser:
               must() match
                 case Comma =>
                   advance()
-                  keys += string
-                  values += value
+                  items += string
+                  items += value
                   skip()
 
                 case CloseBrace =>
                   advance()
-                  keys += string
-                  values += value
+                  items += string
+                  items += value
                   continue = false
 
                 case ch  => errorAt(Issue.UnexpectedChar(ch.toChar))
@@ -636,45 +634,44 @@ private final class JsonParser:
               must() match
                 case Comma =>
                   advance()
-                  keys += " "
-                  values += value
+                  items += " "
+                  items += value
                   skip()
 
                 case CloseBrace =>
                   advance()
-                  keys += " "
-                  values += value
+                  items += " "
+                  items += value
                   continue = false
 
                 case ch => errorAt(Issue.UnexpectedChar(ch.toChar))
 
             case Comma =>
               advance()
-              keys += " "
-              values += Unset
+              items += " "
+              items += Unset
               skip()
 
             case CloseBrace =>
               advance()
-              keys += " "
-              values += Unset
+              items += " "
+              items += Unset
               continue = false
 
             case ch => errorAt(Issue.UnexpectedChar(ch.toChar))
 
         case CloseBrace =>
-          if !keys.nil then errorAt(Issue.ExpectedSomeValue('}'))
+          if !items.nil then errorAt(Issue.ExpectedSomeValue('}'))
           advance()
           continue = false
 
         case ch =>
           errorAt(Issue.ExpectedString(ch.toChar))
 
-    val result = (keys.toArray, values.toArray).asInstanceOf[(IArray[String], IArray[Any])]
-
-    relinquishStringArrayBuffer()
+    val out = new Array[Any](items.length)
+    items.copyToArray(out)
     relinquishArrayBuffer()
-    result
+    out.asInstanceOf[IArray[Any]]
 
   def parse()(using Tactic[ParseError]): Raw =
     bom()

@@ -99,15 +99,20 @@ trait Json2:
       json =>
         provide[Foci[JsonPointer]]:
           provide[Tactic[JsonError]]:
-            val keyValues = json.root.obj
-            val values = keyValues(0).zip(keyValues(1)).to(Map)
+            val root = json.root
+            val n = root.objectSize
+            val values = scm.HashMap.empty[String, JsonAst]
+            var i = 0
+            while i < n do
+              values.update(root.objectKey(i), root.objectValue(i))
+              i += 1
 
             build: [field] =>
               context =>
                 focus(prior.or(JsonPointer()) / label):
-                  if !values.contains(label.s)
-                  then default.or(context.decoded(new Json(JsonAst(Unset))))
-                  else context.decoded(new Json(values(label.s)))
+                  values.get(label.s) match
+                    case Some(value) => context.decoded(new Json(value))
+                    case None        => default.or(context.decoded(new Json(JsonAst(Unset))))
 
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Json =
       json =>
@@ -138,8 +143,8 @@ trait Json2:
                   values += encoded
 
           Json.ast
-            ( JsonAst
-                ( (unsafely(labels.toArray.immutable), unsafely(values.toArray.immutable)) ) )
+            ( JsonAst.obj
+                ( unsafely(labels.toArray.immutable), unsafely(values.toArray.immutable) ) )
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Json = value =>
       val discriminable = infer[derivation is Discriminable in Json]
@@ -175,9 +180,17 @@ object Json extends Json2, Dynamic:
     ordinal =>
       Optic: (origin, lambda) =>
         if origin.root.isArray then
-          val array = origin.root.asInstanceOf[IArray[JsonAst]]
-          if array.length <= ordinal.n0 then origin else Json.ast:
-            JsonAst(array.updated(ordinal.n0, lambda(Json.ast(array(ordinal.n0))).root))
+          val n = origin.root.arrayLength
+          if n <= ordinal.n0 then origin else Json.ast:
+            val updated = new Array[Any](n)
+            var i = 0
+            while i < n do
+              updated(i) =
+                if i == ordinal.n0
+                then lambda(Json.ast(origin.root.arrayElement(i))).root
+                else origin.root.arrayElement(i)
+              i += 1
+            JsonAst.arr(updated.asInstanceOf[IArray[Any]])
         else origin
 
   given boolean: Json is Decodable in Json = identity(_)
@@ -239,19 +252,19 @@ object Json extends Json2, Dynamic:
   given listEncodable: [list <: List, element] => (encodable: => element is Encodable in Json)
   =>  list[element] is Encodable in Json =
 
-    values => Json.ast(JsonAst(IArray.from(values.map(encodable.encoded(_).root))))
+    values => Json.ast(JsonAst.arr(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given setEncodable: [set <: Set, element] => (encodable: => element is Encodable in Json)
   =>  set[element] is Encodable in Json =
 
-    values => Json.ast(JsonAst(IArray.from(values.map(encodable.encoded(_).root))))
+    values => Json.ast(JsonAst.arr(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given trieEncodable: [trie <: Trie, element] => (encodable: => element is Encodable in Json)
   =>  trie[element] is Encodable in Json =
 
-    values => Json.ast(JsonAst(IArray.from(values.map(encodable.encoded(_).root))))
+    values => Json.ast(JsonAst.arr(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given array: [collection <: Iterable, element]
@@ -275,11 +288,16 @@ object Json extends Json2, Dynamic:
   =>  Map[key, element] is Decodable in Json =
 
     value =>
-      val (keys, values) = value.root.obj
-
-      keys.indices.fuse(Map[key, element]()):
-        // focus(prior.or(JsonPointer()) / keys(next).tt):
-        state.updated(keys(next).tt.decode, decodable.decoded(Json.ast(values(next))))
+      val root = value.root
+      val n = root.objectSize
+      var i = 0
+      var acc = Map.empty[key, element]
+      while i < n do
+        acc = acc.updated
+                  ( root.objectKey(i).tt.decode,
+                    decodable.decoded(Json.ast(root.objectValue(i))) )
+        i += 1
+      acc
 
 
   given mapEncodable: [key: Encodable in Text, element]
@@ -289,7 +307,7 @@ object Json extends Json2, Dynamic:
     map =>
       val keys: List[key] = map.keys.to(List)
       val values = IArray.from(keys.map(map(_).encode.root))
-      Json.ast(JsonAst((IArray.from(keys.map(_.encode.s)), values)))
+      Json.ast(JsonAst.obj(IArray.from(keys.map(_.encode.s)), values))
 
 
   given jsonEncodableInText: Json is Encodable in Text = json => JsonPrinter.print(json.root, false)
@@ -328,7 +346,7 @@ object Json extends Json2, Dynamic:
   def applyDynamicNamed(methodName: "make")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0)))
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
-    Json(JsonAst((keys, values)))
+    Json(JsonAst.obj(keys, values.asInstanceOf[IArray[Any]]))
 
   def discriminatedUnion[value](label: Text): value is Discriminable in Json = new Discriminable:
     type Form = Json
@@ -359,7 +377,16 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def update[value: Encodable in Json](index: Int, value: value)(using erased DynamicJsonEnabler)
   :   Json raises JsonError =
 
-    Json.ast(JsonAst(root.array.updated(index, value.encode.root)))
+    if !root.isArray then raise(JsonError(Reason.NotType(root.primitive, JsonPrimitive.Array)))
+    val n = root.arrayLength
+    val updated = new Array[Any](n)
+    var i = 0
+    while i < n do
+      updated(i) =
+        if i == index then value.encode.root
+        else root.arrayElement(i)
+      i += 1
+    Json.ast(JsonAst.arr(updated.asInstanceOf[IArray[Any]]))
 
 
   def updateDynamic(field: String)[value: Encodable in Json](value: value)
@@ -376,37 +403,52 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
 
   private[jacinta] def modify(field: String, value: Json): Json raises JsonError =
-    root.obj(0).indexWhere(_ == field) match
-      case -1    => Json.ast(JsonAst((root.obj(0) :+ field), (root.obj(1) :+ value.root)))
-      case index => Json.ast(JsonAst(root.obj(0), (root.obj(1).updated(index, value.root))))
-
-  private[jacinta] def delete(field: String): Json raises JsonError =
-    root.obj(0).indexWhere(_ == field) match
-      case -1 => Json.ast(JsonAst(root.obj))
+    val arr = root.asInstanceOf[IArray[Any]]
+    val len = arr.length
+    val n = len/2
+    root.objectIndexOf(field) match
+      case -1 =>
+        val out = new Array[Any](len + 2)
+        System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, len)
+        out(len) = field
+        out(len + 1) = value.root
+        Json.ast(JsonAst(out.asInstanceOf[IArray[Any]]))
 
       case index =>
-        val keys = root.obj(0)
-        val values = root.obj(1)
-        val keys2 = new Array[String](keys.length - 1)
-        System.arraycopy(keys, 0, keys2, 0, index)
-        System.arraycopy(keys, index + 1, keys2, index, keys.length - index - 1)
-        val values2 = new Array[JsonAst](values.length - 1)
-        System.arraycopy(values, 0, values2, 0, index)
-        System.arraycopy(values, index + 1, values2, index, values.length - index - 1)
-        Json.ast(JsonAst(keys2.immutable(using Unsafe) -> values2.immutable(using Unsafe)))
+        val out = new Array[Any](len)
+        System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, len)
+        out(index*2 + 1) = value.root
+        Json.ast(JsonAst(out.asInstanceOf[IArray[Any]]))
+
+  private[jacinta] def delete(field: String): Json raises JsonError =
+    val arr = root.asInstanceOf[IArray[Any]]
+    val len = arr.length
+    root.objectIndexOf(field) match
+      case -1 =>
+        Json.ast(root)
+
+      case index =>
+        val out = new Array[Any](len - 2)
+        System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, index*2)
+        System.arraycopy
+                ( arr.asInstanceOf[Array[Any]],
+                  index*2 + 2,
+                  out,
+                  index*2,
+                  len - index*2 - 2 )
+        Json.ast(JsonAst(out.asInstanceOf[IArray[Any]]))
 
   def apply(field: Text): Json raises JsonError =
     if root.isAbsent then Json.ast(JsonAst(Unset))
-    else root.obj(0).indexWhere(_ == field.s) match
+    else root.objectIndexOf(field.s) match
       case -1    => Json.ast(JsonAst(Unset))
-      case index => Json(root.obj(1)(index))
+      case index => Json(root.objectValue(index))
 
   def unsafeApply(field: Text): Json =
     if root.isAbsent then Json.ast(JsonAst(Unset))
-    else unsafely:
-      root.obj(0).indexWhere(_ == field.s) match
-        case -1    => Json.ast(JsonAst(Unset))
-        case index => Json(root.obj(1)(index))
+    else root.objectIndexOf(field.s) match
+      case -1    => Json.ast(JsonAst(Unset))
+      case index => Json(root.objectValue(index))
 
   override def hashCode: Int =
     def recur(value: JsonAst): Int = value.asMatchable match
@@ -416,14 +458,23 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
       case value: String     => value.hashCode
       case value: Boolean    => value.hashCode
 
-      case value: IArray[JsonAst] @unchecked =>
-        value.fuse(value.length.hashCode)(state*31^recur(next))
-
-      case (keys, values) =>
-        keys.asMatchable.absolve match
-          case keys: IArray[String] @unchecked => values.asMatchable.absolve match
-            case values: IArray[JsonAst] @unchecked =>
-              keys.zip(values).to(Map).view.mapValues(recur(_)).hashCode
+      case value: IArray[Any] @unchecked =>
+        if value.isObject then
+          val n = value.objectSize
+          var acc = Map.empty[String, Int]
+          var i = 0
+          while i < n do
+            acc = acc.updated(value.objectKey(i), recur(value.objectValue(i)))
+            i += 1
+          acc.hashCode
+        else
+          val n = value.arrayLength
+          var acc = n.hashCode
+          var i = 0
+          while i < n do
+            acc = acc*31 ^ recur(value.arrayElement(i))
+            i += 1
+          acc
 
       case _ =>
         0
@@ -459,29 +510,36 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           case left: Boolean => left == right
           case _             => false
 
-        case right: IArray[JsonAst] @unchecked => left.asMatchable match
-          case left: IArray[JsonAst] @unchecked =>
-            right.length == left.length && right.indices.all: index =>
-              recur(left(index), right(index))
+        case right: IArray[Any] @unchecked => left.asMatchable match
+          case left: IArray[Any] @unchecked =>
+            (right.isObject, left.isObject) match
+              case (false, false) =>
+                val rn = right.arrayLength
+                val ln = left.arrayLength
+                rn == ln && (0 until rn).forall: index =>
+                  recur(left.arrayElement(index), right.arrayElement(index))
 
-          case _ =>
-            false
+              case (true, true) =>
+                val rn = right.objectSize
+                val ln = left.objectSize
+                if rn != ln then false
+                else
+                  var leftMap = Map.empty[String, JsonAst]
+                  var i = 0
+                  while i < ln do
+                    leftMap = leftMap.updated(left.objectKey(i), left.objectValue(i))
+                    i += 1
+                  var rightMap = Map.empty[String, JsonAst]
+                  i = 0
+                  while i < rn do
+                    rightMap = rightMap.updated(right.objectKey(i), right.objectValue(i))
+                    i += 1
+                  leftMap.keySet == rightMap.keySet && leftMap.keySet.forall: key =>
+                    recur(leftMap(key), rightMap(key))
 
-        case (rightKeys, rightValues) => rightKeys.asMatchable.absolve match
-          case rightKeys: IArray[String] @unchecked => rightValues.asMatchable.absolve match
-            case rightValues: IArray[JsonAst] @unchecked => left.asMatchable.absolve match
-              case (leftKeys, leftValues) => leftKeys.asMatchable.absolve match
-                case leftKeys: IArray[String] @unchecked =>
-                  leftValues.asMatchable.absolve match
-                    case leftValues: IArray[JsonAst] @unchecked =>
-                      val leftMap = leftKeys.zip(leftValues).to(Map)
-                      val rightMap = rightKeys.zip(rightValues).to(Map)
+              case _ => false
 
-                      leftMap.keySet == rightMap.keySet && leftMap.keySet.all: key =>
-                        recur(leftMap(key), rightMap(key))
-
-              case _ =>
-                false
+          case _ => false
 
         case _ =>
           false

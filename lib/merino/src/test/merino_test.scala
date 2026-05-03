@@ -232,11 +232,19 @@ object Tests extends Suite(m"Merino tests"):
       def bytes(text: Text): Data = IArray.from(text.s.getBytes("UTF-8").nn)
 
       def shape(node: Any): Any = node.asMatchable match
-        case t: Tuple2[?, ?] @unchecked =>
-          val keys = t._1.asInstanceOf[IArray[String]].toList
-          val values = t._2.asInstanceOf[IArray[Any]].toList.map(shape)
-          (keys, values)
-        case arr: IArray[?] @unchecked => arr.toList.map(shape)
+        case arr: IArray[?] @unchecked =>
+          val raw = arr.toList
+          if (raw.length & 1) == 0 then
+            // Object: alternating key/value
+            val keys = (0 until raw.length/2).toList.map(i => raw(i*2).asInstanceOf[String])
+            val values = (0 until raw.length/2).toList.map(i => shape(raw(i*2 + 1)))
+            (keys, values)
+          else
+            // Array: strip sentinel pad if present
+            val elems =
+              if raw.nonEmpty && raw.last.asInstanceOf[AnyRef] == JsonAst.arrayPad
+              then raw.init else raw
+            elems.map(shape)
         case other                     => other
 
       test(m"Hole as a top-level value"):

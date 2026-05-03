@@ -56,46 +56,49 @@ object JsonPrinter:
       append('"')
 
     def recur(json: JsonAst, indent: Int): Unit = json.asMatchable match
-      case (keys, values) =>
-        keys.asMatchable.absolve match
-          case keys: Array[String] => values.asMatchable.absolve match
-            case values: Array[JsonAst] @unchecked =>
-              append('{')
-              val last = keys.length - 1
+      case arr: Array[?] @unchecked =>
+        if json.isObject then
+          val n = json.objectSize
+          append('{')
+          val last = n - 1
 
-              keys.indices.each: index =>
-                if indentation then
-                  append('\n')
-                  for i <- 0 until indent*2 do append(' ')
-                appendString(keys(index))
-                append(':')
-                if indentation then append(' ')
-                recur(values(index), indent + 1)
+          var index = 0
+          while index < n do
+            if indentation then
+              append('\n')
+              for i <- 0 until indent*2 do append(' ')
+            appendString(json.objectKey(index))
+            append(':')
+            if indentation then append(' ')
+            recur(json.objectValue(index), indent + 1)
 
-                if index < last then append(',')
+            if index < last then append(',')
+            index += 1
 
-              if indentation then
-                append('\n')
-                for i <- 0 until indent*2 - 2 do append(' ')
-              append('}')
-
-      case array: Array[JsonAst] @unchecked =>
-        append('[')
-        val last = array.length - 1
-
-        array.indices.each: index =>
           if indentation then
             append('\n')
-            for i <- 0 until indent*2 do append(' ')
+            for i <- 0 until indent*2 - 2 do append(' ')
+          append('}')
+        else
+          val n = json.arrayLength
+          append('[')
+          val last = n - 1
 
-          recur(array(index), indent + 1)
-          if index < last then append(',')
+          var index = 0
+          while index < n do
+            if indentation then
+              append('\n')
+              for i <- 0 until indent*2 do append(' ')
 
-        if indentation then
-          append('\n')
-          for i <- 0 until indent*2 - 2 do append(' ')
+            recur(json.arrayElement(index), indent + 1)
+            if index < last then append(',')
+            index += 1
 
-        append(']')
+          if indentation then
+            append('\n')
+            for i <- 0 until indent*2 - 2 do append(' ')
+
+          append(']')
 
       case long: Long =>
         append(long.toString)
