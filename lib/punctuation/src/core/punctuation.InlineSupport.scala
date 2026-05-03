@@ -35,6 +35,7 @@ package punctuation
 import java.util.regex as jur
 
 import anticipation.*
+import gossamer.*
 import vacuous.*
 
 case class EntityMatch(decoded: String, end: Int)
@@ -325,3 +326,78 @@ object InlineSupport:
         buf.append(c)
         i += 1
     Unset
+
+  case class InlineLinkBody(dest: Text, title: Optional[Text], end: Int)
+
+  // Parse the body of an inline link `(dest "title")` starting at the `(`.
+  // Returns the destination, optional title, and the index past the closing
+  // `)`, or Unset if the body doesn't parse.
+  def parseInlineLinkBody(s: String, start: Int, end: Int): Optional[InlineLinkBody] =
+    if start >= end || s.charAt(start) != '(' then return Unset
+    var i = start + 1
+    i = skipLinkWhitespace(s, i, end)
+
+    val (dest, afterDest): (Text, Int) =
+      if i < end && s.charAt(i) != ')' then
+        parseLinkDestination(s, i, end) match
+          case Unset        => return Unset
+          case d: DestMatch => (d.dest, d.end)
+      else
+        (t"", i)
+
+    i = afterDest
+    val beforeWs = i
+    i = skipLinkWhitespace(s, i, end)
+
+    var title: Optional[Text] = Unset
+    if i > beforeWs && i < end then
+      parseLinkTitle(s, i, end) match
+        case t: TitleMatch =>
+          title = Text(t.title)
+          i = t.end
+
+        case Unset =>
+          // No title; rewind to before the inter-token whitespace
+          i = beforeWs
+
+    i = skipLinkWhitespace(s, i, end)
+    if i >= end || s.charAt(i) != ')' then return Unset
+    InlineLinkBody(dest, title, i + 1)
+
+  case class RefLabelMatch(label: Text, end: Int)
+
+  // Parse a reference link label `[label]` starting at the `[`. Returns the
+  // raw label text (or empty for `[]`) and the index past the closing `]`,
+  // or Unset if no valid label parses.
+  def parseRefLabel(s: String, start: Int, end: Int): Optional[RefLabelMatch] =
+    if start >= end || s.charAt(start) != '[' then return Unset
+    var i = start + 1
+    val labelStart = i
+    var done = false
+
+    while i < end && !done do
+      val c = s.charAt(i)
+      if c == ']' then done = true
+      else if c == '[' then return Unset
+      else if c == '\\' && i + 1 < end then i += 2
+      else i += 1
+
+    if !done then return Unset
+    val label = if i == labelStart then t"" else Text(s.substring(labelStart, i).nn)
+    RefLabelMatch(label, i + 1)
+
+  // Skip whitespace allowed in link bodies — spaces, tabs, and up to one
+  // newline (per CommonMark §6.6).
+  private def skipLinkWhitespace(s: String, start: Int, end: Int): Int =
+    var i = start
+    var newlines = 0
+    var done = false
+    while i < end && !done do
+      val c = s.charAt(i)
+      if c == ' ' || c == '\t' then i += 1
+      else if c == '\n' && newlines < 1 then
+        newlines += 1
+        i += 1
+      else
+        done = true
+    i
