@@ -481,7 +481,7 @@ object Tests extends Suite(m"Quantitative Tests"):
       // given accessor (such as `Quantity$.negatable()`) are dead code once
       // the typeclass operation is inlined and don't count.
       def callsTypeclassOp(bytecode: Bytecode): Boolean =
-        val ops = Set(t"negate", t"add", t"subtract", t"multiply", t"divide", t"root")
+        val ops = Set(t"negate", t"add", t"subtract", t"multiply", t"divide", t"root", t"op")
         bytecode.instructions.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Invokevirtual(_, name, _)      => ops.contains(name)
@@ -515,6 +515,18 @@ object Tests extends Suite(m"Quantitative Tests"):
             case Bytecode.Opcode.Ddiv => true
             case _                    => false
 
+      def containsDadd(bytecode: Bytecode): Boolean =
+        bytecode.instructions.exists: instruction =>
+          instruction.opcode match
+            case Bytecode.Opcode.Dadd => true
+            case _                    => false
+
+      def containsDsub(bytecode: Bytecode): Boolean =
+        bytecode.instructions.exists: instruction =>
+          instruction.opcode match
+            case Bytecode.Opcode.Dsub => true
+            case _                    => false
+
       test(m"Quantity negation has no virtual call to `negate`"):
         callsTypeclassOp(methodBytecode(t"viaQuantity_negate"))
       . assert(_ == false)
@@ -543,6 +555,38 @@ object Tests extends Suite(m"Quantitative Tests"):
         callsTypeclassOp(methodBytecode(t"viaQuantity_divScalar"))
       . assert(_ == false)
 
+      test(m"Quantity + Quantity contains the primitive `Dadd` instruction"):
+        containsDadd(methodBytecode(t"viaQuantity_addQ"))
+      . assert(_ == true)
+
+      test(m"Quantity + Quantity has no virtual call to `add` or `op`"):
+        callsTypeclassOp(methodBytecode(t"viaQuantity_addQ"))
+      . assert(_ == false)
+
+      test(m"Quantity - Quantity contains the primitive `Dsub` instruction"):
+        containsDsub(methodBytecode(t"viaQuantity_subQ"))
+      . assert(_ == true)
+
+      test(m"Quantity - Quantity has no virtual call to `subtract` or `op`"):
+        callsTypeclassOp(methodBytecode(t"viaQuantity_subQ"))
+      . assert(_ == false)
+
+      test(m"Quantity * Quantity contains the primitive `Dmul` instruction"):
+        containsDmul(methodBytecode(t"viaQuantity_mulQ"))
+      . assert(_ == true)
+
+      test(m"Quantity * Quantity has no virtual call to `multiply` or `op`"):
+        callsTypeclassOp(methodBytecode(t"viaQuantity_mulQ"))
+      . assert(_ == false)
+
+      test(m"Quantity / Quantity contains the primitive `Ddiv` instruction"):
+        containsDdiv(methodBytecode(t"viaQuantity_divQ"))
+      . assert(_ == true)
+
+      test(m"Quantity / Quantity has no virtual call to `divide` or `op`"):
+        callsTypeclassOp(methodBytecode(t"viaQuantity_divQ"))
+      . assert(_ == false)
+
 
 // `Probes` whose bytecode is inspected by the bytecode tests. Kept in the
 // same source file as `Tests` because the `demilitarize` macro is sensitive
@@ -556,3 +600,8 @@ object Probes:
 
   def viaQuantity_divScalar(x: Quantity[Metres[1]], y: Double): Quantity[Metres[1]] = x/y
   def viaDouble_div(x: Double, y: Double): Double = x/y
+
+  def viaQuantity_addQ(x: Quantity[Metres[1]], y: Quantity[Metres[1]]): Quantity[Metres[1]] = x + y
+  def viaQuantity_subQ(x: Quantity[Metres[1]], y: Quantity[Metres[1]]): Quantity[Metres[1]] = x - y
+  def viaQuantity_mulQ(x: Quantity[Metres[1]], y: Quantity[Metres[1]]): Quantity[Metres[2]] = x*y
+  def viaQuantity_divQ(x: Quantity[Metres[2]], y: Quantity[Metres[1]]): Quantity[Metres[1]] = x/y
