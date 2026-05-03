@@ -32,46 +32,48 @@
                                                                                                   */
 package punctuation
 
-import soundness.*
+import scala.collection.mutable
 
-import strategies.throwUnsafely
+import anticipation.*
 
-import doms.html.whatwg
-import classloaders.system
+// Accumulates link reference definitions discovered during the block-parse
+// pass; consulted by the inline-parse pass for shortcut/collapsed/full
+// reference links. Stage 4 will populate this from `[label]: dest "title"`
+// definitions in paragraphs; for now it stays empty.
+final class LinkRefs:
+  private val table: mutable.LinkedHashMap[Text, Markdown.LinkRef] =
+    mutable.LinkedHashMap()
 
-object Tests extends Suite(m"Punctuation tests"):
-  def run(): Unit =
-    case class Testcase
-      ( markdown:   Text,
-        html:       Text,
-        example:    Int,
-        start_line: Int,
-        end_line:   Int,
-        section:    Text )
+  // CommonMark normalisation: trim, collapse internal whitespace runs, then
+  // Unicode case-fold (approximated here by `toLowerCase` since the JDK's
+  // `String.toLowerCase` does Unicode case-folding for the BMP).
+  def normalize(label: Text): Text =
+    val s = label.s
+    val n = s.length
+    val builder = new StringBuilder
+    var i = 0
+    var inSpace = false
+    var trimmingLeft = true
+    while i < n do
+      val c = s.charAt(i)
+      if c == ' ' || c == '\t' || c == '\n' || c == '\r' then
+        if !trimmingLeft then inSpace = true
+      else
+        if inSpace then builder.append(' ')
+        builder.append(c)
+        inSpace = false
+        trimmingLeft = false
+      i += 1
+    Text(builder.toString.toLowerCase.nn)
 
-    val testCases =
-      cp"/punctuation/mdspec.json"
-      . read[Json]
-      . as[List[Testcase]]
-      . groupBy(_.section)
-      . filter(_(0) != "HTML blocks")
+  // First definition wins (per CommonMark).
+  def add(ref: Markdown.LinkRef): Unit =
+    val key = normalize(ref.label)
+    if !table.contains(key) then table(key) = ref
 
-    suite(m"Java parser (commonmark-java)"):
-      testCases.each: (section, cases) =>
-        suite(section.communicate):
-          cases.each: testcase =>
-            safely(testcase.html.read[Html of whatwg.Flow]).let: html =>
-              if !Set(308, 309, 475, 598, 605)(testcase.example) then
-                test(m"Commonmark test case ${testcase.example}"):
-                  Commonmark.parse(testcase.markdown).html.show
-                . assert(_ == html.show)
+  def lookup(label: Text): vacuous.Optional[Markdown.LinkRef] =
+    table.get(normalize(label)) match
+      case Some(ref) => ref
+      case None      => vacuous.Unset
 
-    suite(m"Native parser (in-development)"):
-      testCases.each: (section, cases) =>
-        suite(section.communicate):
-          cases.each: testcase =>
-            safely(testcase.html.read[Html of whatwg.Flow]).let: html =>
-              if !Set(308, 309, 475, 598, 605)(testcase.example) then
-                test(m"Native test case ${testcase.example}"):
-                  Parser.parse(testcase.markdown).html.show
-                . assert(_ == html.show)
+  def all: List[Markdown.LinkRef] = table.values.to(List)
