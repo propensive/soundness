@@ -509,6 +509,7 @@ object enigmatic extends Library:
 object escapade extends Library:
   object core extends Component(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core)
   object test extends Tests(core, yossarian.core)
+  object bench extends Benchmarks(core, quantitative.units)
 
 object escritoire extends Library:
   object core extends Component(gossamer.core)
