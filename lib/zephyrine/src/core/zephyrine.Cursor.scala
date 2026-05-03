@@ -272,6 +272,17 @@ final class Cursor[data]
         if addressable.length(chunk) > 0 then chunk #:: loaderStream
         else loaderStream
 
+  // ─── unsafe direct buffer access ──────────────────────────────────────────
+  //
+  // These bypass `addressable.storageAddress`, which compiles to an
+  // `invokeinterface` returning `Object` (the abstract `Storage` type member
+  // erases that way) plus a `BoxesRuntime.unbox*` per access. For raw
+  // byte/char scan loops this is a major hot-path tax. Callers who know the
+  // concrete buffer type can `asInstanceOf` it once at the call site and let
+  // the JIT keep the array reference in a register across the inner loop.
+  inline def unsafeBuffer(using erased Unsafe): addressable.Storage = buffer
+  inline def unsafePos(using erased Unsafe): Int = pos
+
   // ─── current element ──────────────────────────────────────────────────────
 
   inline def datum(using erased Unsafe): addressable.Operand =

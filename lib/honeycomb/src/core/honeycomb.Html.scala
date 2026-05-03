@@ -426,7 +426,10 @@ object Html extends Tag.Container
     type Region = Cursor.Mark
 
     protected inline def more: Boolean = cursor.more
-    protected inline def peek: Char = cursor.datum(using Unsafe).asInstanceOf[Char]
+
+    protected inline def peek: Char =
+      cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]](cursor.unsafePos(using Unsafe))
+
     protected inline def advance(): Unit = cursor.next()
     protected inline def position: Int = cursor.position.n0
 
