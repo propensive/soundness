@@ -81,10 +81,56 @@ object Bytecode:
       case L(name)      => t"*$name"
       case other        => other.toString.tt
 
+    def parseOne(text: Text, cursor: Int): (Frame, Int) =
+      val s = text.s
+      s.charAt(cursor) match
+        case 'Z' => (Z, cursor + 1)
+        case 'B' => (B, cursor + 1)
+        case 'C' => (C, cursor + 1)
+        case 'S' => (S, cursor + 1)
+        case 'I' => (I, cursor + 1)
+        case 'J' => (J, cursor + 1)
+        case 'F' => (F, cursor + 1)
+        case 'D' => (D, cursor + 1)
+
+        case '[' =>
+          val (inner, end) = parseOne(text, cursor + 1)
+          (Array(inner), end)
+
+        case 'L' =>
+          val end = s.indexOf(';', cursor + 1)
+          val name = s.substring(cursor + 1, end).nn.replace('/', '.').nn.tt
+          (L(name), end + 1)
+
+        case other =>
+          panic(m"unexpected character '${other.toString.tt}' in descriptor")
+
+    def fromFieldDescriptor(descriptor: Text): Frame = parseOne(descriptor, 0)._1
+
   enum Frame:
     case Z, B, C, S, I, J, F, D
     case L(name: Text)
     case Array(frame: Frame)
+
+  object Descriptor:
+    def parse(descriptor: Text): Descriptor =
+      val s = descriptor.s
+      assert(s.charAt(0) == '(', "method descriptor must start with '('")
+      val argsBuf = scala.collection.mutable.ListBuffer.empty[Frame]
+      var cursor = 1
+
+      while s.charAt(cursor) != ')' do
+        val (frame, next) = Frame.parseOne(descriptor, cursor)
+        argsBuf += frame
+        cursor = next
+
+      cursor += 1
+      val result: Optional[Frame] =
+        if s.charAt(cursor) == 'V' then Unset else Frame.parseOne(descriptor, cursor)._1
+
+      Descriptor(argsBuf.toList, result)
+
+  case class Descriptor(args: List[Frame], result: Optional[Frame])
 
   case class Instruction
     ( opcode: Opcode, line: Optional[Int], stack: Optional[List[Frame]], offset: Int )
@@ -92,18 +138,31 @@ object Bytecode:
   object Opcode:
     def apply(source: jlc.Instruction): Opcode = source match
       case invocation: jlci.InvokeInstruction =>
-        val classname = invocation.owner.nn.name.nn.stringValue.nn.replace("/", ".").nn
-        val method = invocation.name.nn.stringValue.nn
+        val classname = invocation.owner.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+        val method = invocation.name.nn.stringValue.nn.tt
+        val descriptor = invocation.`type`.nn.stringValue.nn.tt
 
         source.opcode.nn.bytecode.absolve match
-          case 182 => Invokevirtual(classname, method)
-          case 183 => Invokespecial(classname, method)
-          case 184 => Invokestatic(classname, method)
-          case 185 => Invokeinterface(classname, method, 0)
+          case 182 => Invokevirtual(classname, method, descriptor)
+          case 183 => Invokespecial(classname, method, descriptor)
+          case 184 => Invokestatic(classname, method, descriptor)
+          case 185 => Invokeinterface(classname, method, descriptor, invocation.count.toByte)
 
       case invocation: jlci.InvokeDynamicInstruction =>
         val method = StackTrace.rewrite(invocation.name.nn.stringValue.nn, true)
-        Invokedynamic(method)
+        val descriptor = invocation.`type`.nn.stringValue.nn.tt
+        Invokedynamic(method, descriptor)
+
+      case field: jlci.FieldInstruction =>
+        val classname = field.owner.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+        val name = field.name.nn.stringValue.nn.tt
+        val descriptor = field.`type`.nn.stringValue.nn.tt
+
+        source.opcode.nn.bytecode.absolve match
+          case 178 => Getstatic(classname, name, descriptor)
+          case 179 => Putstatic(classname, name, descriptor)
+          case 180 => Getfield(classname, name, descriptor)
+          case 181 => Putfield(classname, name, descriptor)
 
       case other =>
         source.opcode.nn.bytecode match
@@ -285,10 +344,6 @@ object Bytecode:
           case 175 => Dreturn
           case 176 => Areturn
           case 177 => Return
-          case 178 => Getstatic(0)
-          case 179 => Putstatic(0)
-          case 180 => Getfield(0)
-          case 181 => Putfield(0)
           case 187 => New(0)
           case 188 => Newarray(0)
           case 189 => Anewarray(0)
@@ -493,10 +548,26 @@ object Bytecode:
       case Dreturn              => t"d·return"
       case Areturn              => t"a·return"
       case Return               => t"return"
-      case Getstatic(_)         => t"get·static"
-      case Putstatic(_)         => t"put·static"
-      case Getfield(_)          => t"get·field"
-      case Putfield(_)          => t"put·field"
+
+      case Getstatic(owner, field, _) =>
+        val owner2 = StackTrace.rewrite(owner.s)
+        val field2 = StackTrace.rewrite(field.s, true)
+        t"get·static $owner2 . $field2"
+
+      case Putstatic(owner, field, _) =>
+        val owner2 = StackTrace.rewrite(owner.s)
+        val field2 = StackTrace.rewrite(field.s, true)
+        t"put·static $owner2 . $field2"
+
+      case Getfield(owner, field, _) =>
+        val owner2 = StackTrace.rewrite(owner.s)
+        val field2 = StackTrace.rewrite(field.s, true)
+        t"get·field $owner2 ⌗ $field2"
+
+      case Putfield(owner, field, _) =>
+        val owner2 = StackTrace.rewrite(owner.s)
+        val field2 = StackTrace.rewrite(field.s, true)
+        t"put·field $owner2 ⌗ $field2"
       case New(_)               => t"new"
       case Newarray(_)          => t"new·array"
       case Anewarray(_)         => t"a·new·array"
@@ -567,27 +638,27 @@ object Bytecode:
       case Impdep1              => t"imp·dep₁"
       case Impdep2              => t"imp·dep₂"
 
-      case Invokevirtual(cls, name) =>
+      case Invokevirtual(cls, name, _) =>
         val cls2 = StackTrace.rewrite(cls.s)
         val name2 = StackTrace.rewrite(name.s, true)
         t"invoke·virtual $cls2 ⌗ $name2"
 
-      case Invokespecial(cls, name) =>
+      case Invokespecial(cls, name, _) =>
         val cls2 = StackTrace.rewrite(cls.s)
         val name2 = StackTrace.rewrite(name.s, true)
         t"invoke·special $cls2 . $name2"
 
-      case Invokestatic(cls, name) =>
+      case Invokestatic(cls, name, _) =>
         val cls2 = StackTrace.rewrite(cls.s)
         val name2 = StackTrace.rewrite(name.s, true)
         t"invoke·static $cls2 . $name2"
 
-      case Invokeinterface(cls, name, _) =>
+      case Invokeinterface(cls, name, _, _) =>
         val cls2 = StackTrace.rewrite(cls.s)
         val name2 = StackTrace.rewrite(name.s, true)
         t"invoke·interface $cls2 ⌗ $name2"
 
-      case Invokedynamic(name) =>
+      case Invokedynamic(name, _) =>
         val name2 = StackTrace.rewrite(name.s, true)
         t"invoke·dynamic $name2"
 
@@ -770,15 +841,15 @@ object Bytecode:
     case Dreturn
     case Areturn
     case Return
-    case Getstatic(index: Short)
-    case Putstatic(index: Short)
-    case Getfield(index: Short)
-    case Putfield(index: Short)
-    case Invokevirtual(owner: Text, method: Text)
-    case Invokespecial(owner: Text, method: Text)
-    case Invokestatic(owner: Text, method: Text)
-    case Invokeinterface(owner: Text, method: Text, count: Byte)
-    case Invokedynamic(method: Text)
+    case Getstatic(owner: Text, field: Text, descriptor: Text)
+    case Putstatic(owner: Text, field: Text, descriptor: Text)
+    case Getfield(owner: Text, field: Text, descriptor: Text)
+    case Putfield(owner: Text, field: Text, descriptor: Text)
+    case Invokevirtual(owner: Text, method: Text, descriptor: Text)
+    case Invokespecial(owner: Text, method: Text, descriptor: Text)
+    case Invokestatic(owner: Text, method: Text, descriptor: Text)
+    case Invokeinterface(owner: Text, method: Text, descriptor: Text, count: Byte)
+    case Invokedynamic(method: Text, descriptor: Text)
     case New(index: Short)
     case Newarray(atype: Byte)
     case Anewarray(index: Short)
@@ -1100,7 +1171,12 @@ object Bytecode:
         case Nop                      => stack
         case New(_)                   => L(t"class") :: stack
         case Dup                      => stack.head :: stack.head :: stack.tail
-        case Invokespecial(_, _)      => L(t"unknown") :: stack.tail // FIXME
+
+        case Invokespecial(_, _, descriptor) =>
+          val parsed = Descriptor.parse(descriptor)
+          parsed.result.lay(stack.drop(parsed.args.size + 1)): result =>
+            result :: stack.drop(parsed.args.size + 1)
+
         case Astore(_)                => stack.tail
         case Astore1                  => stack.tail
         case Astore2                  => stack.tail
@@ -1114,11 +1190,29 @@ object Bytecode:
         case Areturn                  => L(t"?") :: Nil
         case Iload1                   => I :: stack
         case Checkcast(_)             => L(t"?") :: stack.tail
-        case Invokedynamic(_)         => L(t"?") :: stack.tail // FIXME
-        case Getstatic(_)             => L(t"?") :: stack
-        case Invokevirtual(_, _)      => L(t"?") :: stack.tail
-        case Invokestatic(_, _)       => L(t"?") :: stack.tail
-        case Invokeinterface(_, _, _) => L(t"?") :: stack.tail
+
+        case Invokedynamic(_, descriptor) =>
+          val parsed = Descriptor.parse(descriptor)
+          parsed.result.lay(stack.drop(parsed.args.size)): result =>
+            result :: stack.drop(parsed.args.size)
+
+        case Getstatic(_, _, descriptor) => Frame.fromFieldDescriptor(descriptor) :: stack
+
+        case Invokevirtual(_, _, descriptor) =>
+          val parsed = Descriptor.parse(descriptor)
+          parsed.result.lay(stack.drop(parsed.args.size + 1)): result =>
+            result :: stack.drop(parsed.args.size + 1)
+
+        case Invokestatic(_, _, descriptor) =>
+          val parsed = Descriptor.parse(descriptor)
+          parsed.result.lay(stack.drop(parsed.args.size)): result =>
+            result :: stack.drop(parsed.args.size)
+
+        case Invokeinterface(_, _, descriptor, _) =>
+          val parsed = Descriptor.parse(descriptor)
+          parsed.result.lay(stack.drop(parsed.args.size + 1)): result =>
+            result :: stack.drop(parsed.args.size + 1)
+
         case Ifnonnull(_)             => stack.tail
         case Ifeq(_)                  => stack.tail
         case Instanceof(_)            => L(t"?") :: stack.tail
