@@ -42,7 +42,7 @@ import zephyrine.*
 
 object CrLf:
   given framable: Tactic[FrameError] => Text is Framable by CrLf = input =>
-    val cursor = Cursor2(input)
+    val cursor = Cursor(input)
 
     def frame(): Optional[Text] = cursor.hold:
       val start = cursor.mark

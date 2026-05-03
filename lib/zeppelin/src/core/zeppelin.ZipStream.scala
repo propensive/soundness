@@ -62,7 +62,7 @@ class ZipStream(stream: () => Stream[Data], filter: (Path on Zip) => Boolean):
   def each(lambda: Zip.Entry => Unit): Unit raises ZipError = map[Unit](lambda).strict
 
   def map[element](lambda: Zip.Entry => element): Stream[element] raises ZipError =
-    val cursor = Cursor2[Data](stream().filter(_.nonEmpty).iterator)
+    val cursor = Cursor[Data](stream().filter(_.nonEmpty).iterator)
 
     def findMagic(): Boolean =
       var done = false

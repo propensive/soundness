@@ -95,13 +95,13 @@ private final class JsonParser:
   import JsonParser.*
   import Lineation.untrackedData
 
-  // Single Cursor2-backed substrate. The same parser body runs whether the
+  // Single Cursor-backed substrate. The same parser body runs whether the
   // input was supplied as an in-memory `Data` (pre-fills the cursor's buffer)
   // or as an `Iterator[Data]` (pulls chunks via the loader). Slicing is
   // uniform: `cursor.slice` exposes the buffer/offset/length triple, so
   // there's no longer a same-block fast path versus cross-block grab path.
-  private var cursor:    Cursor2[Data]      = null.asInstanceOf[Cursor2[Data]]
-  private var heldToken: Cursor2.Held | Null = null
+  private var cursor:    Cursor[Data]      = null.asInstanceOf[Cursor[Data]]
+  private var heldToken: Cursor.Held | Null = null
 
   protected[merino] var holes: Boolean = false
 
@@ -115,14 +115,14 @@ private final class JsonParser:
   protected val numberBuilder:       java.lang.StringBuilder = java.lang.StringBuilder(32)
 
   def resetData(input: Data): Unit =
-    cursor = Cursor2[Data](input)
+    cursor = Cursor[Data](input)
     stringCursor = 0
     arrayBufferId = -1
     stringArrayBufferId = -1
     heldToken = null
 
   def resetIterator(input: Iterator[Data]): Unit =
-    cursor = Cursor2[Data](input)
+    cursor = Cursor[Data](input)
     stringCursor = 0
     arrayBufferId = -1
     stringArrayBufferId = -1
@@ -138,20 +138,20 @@ private final class JsonParser:
   protected def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing =
     abort(ParseError(JsonAst, Position(0, cursor.position.n0), issue))
 
-  // A `Region` is just a `Cursor2.Mark` (an absolute `Long` position). With
+  // A `Region` is just a `Cursor.Mark` (an absolute `Long` position). With
   // the single-buffer model there's no need to remember the starting block
   // for boundary detection.
-  type Region = Cursor2.Mark
+  type Region = Cursor.Mark
 
-  protected inline def begin(): Cursor2.Mark = cursor.mark(using heldToken.nn)
+  protected inline def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
 
-  protected inline def slice(start: Cursor2.Mark): String =
+  protected inline def slice(start: Cursor.Mark): String =
     val end = cursor.mark(using heldToken.nn)
     cursor.slice(start, end): (storage, off, len) =>
       val arr = storage.asInstanceOf[Array[Byte]]
       new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
 
-  protected inline def appendRegionToBuffer(start: Cursor2.Mark): Unit =
+  protected inline def appendRegionToBuffer(start: Cursor.Mark): Unit =
     val end = cursor.mark(using heldToken.nn)
     cursor.slice(start, end): (storage, off, len) =>
       if len > 0 then
@@ -175,7 +175,7 @@ private final class JsonParser:
 
   protected inline def holding[result](inline action: => result): result =
     cursor.hold:
-      heldToken = summon[Cursor2.Held]
+      heldToken = summon[Cursor.Held]
       try action finally heldToken = null
 
   // ──────────────────────────────────────────────────────────────────────────

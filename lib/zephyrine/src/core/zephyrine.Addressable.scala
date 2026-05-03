@@ -143,9 +143,9 @@ object Addressable:
 
 
 trait Addressable extends Typeclass, Operable, Targetable:
-  // Mutable backing storage for `Cursor2`'s single-buffer model. For `Data`,
+  // Mutable backing storage for `Cursor`'s single-buffer model. For `Data`,
   // this is `Array[Byte]`; for `Text`, `Array[Char]`. Hot-path reads in
-  // `Cursor2.peek` / `Cursor2.datum` go through `storageAddress` and lower
+  // `Cursor.peek` / `Cursor.datum` go through `storageAddress` and lower
   // to a single array access.
   type Storage
 

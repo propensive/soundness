@@ -41,7 +41,7 @@ import zephyrine.*
 
 object Linefeed:
   given framable: Text is Framable by Linefeed = input =>
-    val cursor = Cursor2(input)
+    val cursor = Cursor(input)
 
     def frame(): Optional[Text] = cursor.hold:
       val start = cursor.mark
