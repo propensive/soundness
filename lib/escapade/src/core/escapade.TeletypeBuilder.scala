@@ -61,7 +61,7 @@ class TeletypeBuilder(size: Optional[Int] = Unset) extends Builder[Teletype]:
     builder.append(text.plain.s)
     var i = 0
     while i < text.plain.length do
-      styles += text.styles(i)
+      styles += text.styleAt(i)
       i += 1
 
     text.hyperlinks.each { (k, v) => hyperlinks(k + offset) = v }
@@ -77,8 +77,13 @@ class TeletypeBuilder(size: Optional[Int] = Unset) extends Builder[Teletype]:
   protected def result(): Teletype =
     styles += 0L
 
+    val plainText = builder.toString.tt
+    val denseStyles = IArray.unsafeFromArray(styles.toArray)
+    val (newStyles, newBoundaries) = Teletype.compressIfBeneficial(plainText, denseStyles)
+
     Teletype
-      ( builder.toString.tt,
-        IArray.unsafeFromArray(styles.toArray),
+      ( plainText,
+        newStyles,
         hyperlinks.toMap,
-        insertions.to(TreeMap) )
+        insertions.to(TreeMap),
+        newBoundaries )

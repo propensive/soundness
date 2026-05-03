@@ -978,10 +978,12 @@ object Tests extends Suite(m"Escapade tests"):
         (rendered.contains(t"[1m"), rendered.contains(t"[3m"))
       . assert(_ == ((true, true)))
 
-      test(m"styles array length is plain.length + 1"):
-        e"$Bold(abc)def".styles.length
-      . assert(_ == 7)
+      test(m"styleAt returns the correct style for each position"):
+        val tt = e"$Bold(abc)def"
+        val boldBit = StyleWord.Bold
+        ((tt.styleAt(0) & boldBit) != 0, (tt.styleAt(3) & boldBit) != 0)
+      . assert(_ == ((true, false)))
 
-      test(m"append concatenates styles arrays correctly"):
-        e"$Bold(hi)".append(e"$Italic(yo)").styles.length
-      . assert(_ == 5)
+      test(m"trailing style is reset after styled prefix"):
+        e"$Bold(abc)def".trailingStyle
+      . assert(_ == 0L)
