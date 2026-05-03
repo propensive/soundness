@@ -1414,3 +1414,32 @@ case class Bytecode
       instruction.copy(line = instruction.line.let(_ + codepoint.line - 1))
 
     copy(sourceFile = codepoint.source.cut(t"/").last, instructions = instructions2)
+
+  def effectivelyStaticCalls: Set[Int] =
+    import Bytecode.Opcode.*
+    val byOffset = instructions.iterator.map(i => i.offset -> i).toMap
+    val priorStacks: Map[Int, List[Bytecode.Frame]] =
+      var prev: Optional[List[Bytecode.Frame]] = Nil
+      val builder = Map.newBuilder[Int, List[Bytecode.Frame]]
+
+      instructions.foreach: instr =>
+        prev.let(builder += instr.offset -> _)
+        prev = instr.stack
+
+      builder.result()
+
+    instructions.iterator.flatMap: instr =>
+      val (owner, descriptor) = instr.opcode match
+        case Invokevirtual(owner, _, descriptor)        => (owner, descriptor)
+        case Invokeinterface(owner, _, descriptor, _)   => (owner, descriptor)
+        case _                                          => (t"", t"")
+
+      if owner == t"" then None else
+        priorStacks.get(instr.offset).flatMap: pre =>
+          val argCount = Bytecode.Descriptor.parse(descriptor).args.size
+          if pre.size <= argCount then None
+          else pre.drop(argCount).head match
+            case Bytecode.Frame.L(name) if name == owner => Some(instr.offset)
+            case _                                       => None
+
+    . toSet
