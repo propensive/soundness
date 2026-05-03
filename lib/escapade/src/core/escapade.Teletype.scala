@@ -91,7 +91,7 @@ object Teletype:
       array.indices.each: index =>
         array(index) = lambda(array(index))
 
-      Teletype(new String(array).tt, text.spans, text.insertions)
+      Teletype(new String(array).tt, text.styles, text.hyperlinks, text.insertions)
 
     def segment(text: Teletype, interval: Interval): Teletype =
       text.dropChars(interval.start.n0).takeChars(interval.size)
@@ -107,7 +107,7 @@ object Teletype:
     def show[value: Teletypeable](value: value) = value.teletype
     def builder(size: Optional[Int] = Unset): TeletypeBuilder = TeletypeBuilder(size)
 
-  val empty: Teletype = Teletype(t"")
+  val empty: Teletype = new Teletype(t"", IArray(0L), Map.empty, TreeMap.empty)
 
   given joinable: Teletype is Joinable = _.fold(empty)(_ + _)
   given printable: Teletype is Printable = _.render(_)
@@ -131,102 +131,119 @@ object Teletype:
 
   given ordering: Ordering[Teletype] = Ordering.by(_.plain)
 
-  def apply[value: Showable](value: value)(transform: Ansi.Transform): Teletype =
+  def apply(text: Text): Teletype =
+    val styles = IArray.fill(text.length + 1)(0L)
+    new Teletype(text, styles, Map.empty, TreeMap.empty)
+
+  def styled[value: Showable](value: value)(transform: Ansi.Transform): Teletype =
     val text: Text = value.show
-    Teletype(text, TreeMap(CharSpan(0, text.length) -> transform))
+    val styled: Long = transform(TextStyle()).styleWord
+    val styles = IArray.tabulate(text.length + 1) { i => if i < text.length then styled else 0L }
+    new Teletype(text, styles, Map.empty, TreeMap.empty)
 
 case class Teletype
   ( plain:      Text,
-    spans:      TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
-    insertions: TreeMap[Int, Text]                = TreeMap() ):
+    styles:     IArray[Long],
+    hyperlinks: Map[Int, Text]            = Map.empty,
+    insertions: TreeMap[Int, Text]        = TreeMap.empty ):
 
   def explicit: Text = render(termcapDefinitions.xtermTrueColor).bind: char =>
     if char.toInt == 27 then t"\\e" else char.show
 
   @targetName("add")
-  def append(text: Text): Teletype = Teletype(t"$plain$text", spans)
+  def append(text: Text): Teletype =
+    if text.length == 0 then this else
+      val tail = styles(plain.length)
+      val newLength = plain.length + text.length + 1
+      val arr = new Array[Long](newLength)
+      var i = 0
+      while i < plain.length do
+        arr(i) = styles(i)
+        i += 1
+      while i < newLength do
+        arr(i) = tail
+        i += 1
+      Teletype(t"$plain$text", IArray.unsafeFromArray(arr), hyperlinks, insertions)
 
   @targetName("add2")
-  def append(text: Teletype): Teletype =
-    val newSpans: TreeMap[CharSpan, Ansi.Transform] = text.spans.map:
-      case (span, transform) => (span.shift(plain.length): CharSpan) -> transform
+  def append(that: Teletype): Teletype =
+    if that.plain.length == 0 then this else if plain.length == 0 then that else
+      val n = plain.length
+      val newLength = n + that.plain.length + 1
+      val arr = new Array[Long](newLength)
+      var i = 0
+      while i < n do
+        arr(i) = styles(i)
+        i += 1
+      var j = 0
+      while j < that.styles.length do
+        arr(i) = that.styles(j)
+        i += 1
+        j += 1
 
-    Teletype(plain+text.plain, spans ++ newSpans)
+      val shiftedLinks = if that.hyperlinks.isEmpty then hyperlinks else
+        hyperlinks ++ that.hyperlinks.map((k, v) => (k + n) -> v)
+
+      val shiftedInsertions = if that.insertions.isEmpty then insertions else
+        insertions ++ that.insertions.map((k, v) => (k + n) -> v)
+
+      Teletype(plain+that.plain, IArray.unsafeFromArray(arr), shiftedLinks, shiftedInsertions)
 
   def dropChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
     case Rtl => takeChars(plain.length - n)
 
     case Ltr =>
-      val newSpans: TreeMap[CharSpan, Ansi.Transform] =
-        spans.map:
-          case (span, transform) =>
-            val charSpan: CharSpan = span.trimLeft(n)
-            charSpan -> transform
-
-        . view.filterKeys { k => k.nil || k != CharSpan.Nowhere }.to(TreeMap)
-
-      Teletype(plain.skip(n), newSpans)
+      val keepLength = plain.length - n
+      if keepLength <= 0 then Teletype.empty
+      else
+        val arr = new Array[Long](keepLength + 1)
+        var i = 0
+        while i <= keepLength do
+          arr(i) = styles(n + i)
+          i += 1
+        val newHyperlinks = hyperlinks.collect { case (k, v) if k >= n => (k - n) -> v }
+        val newInsertions = insertions.collect { case (k, v) if k >= n => (k - n) -> v }.to(TreeMap)
+        Teletype(plain.skip(n), IArray.unsafeFromArray(arr), newHyperlinks, newInsertions)
 
   def takeChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
     case Rtl => dropChars(plain.length - n)
 
     case Ltr =>
-      val newSpans: TreeMap[CharSpan, Ansi.Transform] =
-        spans.map:
-          case (span, tf) =>
-            val charSpan: CharSpan = span.takeLeft(n)
-            charSpan -> tf
-
-        . view.filterKeys { k => k.nil || k != CharSpan.Nowhere }.to(TreeMap)
-
-      Teletype(plain.keep(n), newSpans)
+      if n <= 0 then Teletype.empty
+      else if n >= plain.length then this
+      else
+        val arr = new Array[Long](n + 1)
+        var i = 0
+        while i < n do
+          arr(i) = styles(i)
+          i += 1
+        arr(n) = 0L
+        val newHyperlinks = hyperlinks.filter((k, _) => k < n)
+        val newInsertions = insertions.rangeUntil(n)
+        Teletype(plain.keep(n), IArray.unsafeFromArray(arr), newHyperlinks, newInsertions)
 
   def render(termcap: Termcap): Text =
-    val buffer = StringBuilder()
+    if !termcap.ansi then plain else
+      val buffer = StringBuilder()
+      val depth = termcap.color
+      var prev: Long = 0L
+      var i = 0
+      val n = plain.length
 
+      while i < n do
+        val s = styles(i)
+        if s != prev then StyleWord.emitDiff(buffer, prev, s, depth)
+        insertions.get(i).foreach { content => buffer.add(content) }
+        if (s & StyleWord.HyperlinkChange) != 0 then
+          hyperlinks.get(i) match
+            case Some(url) => buffer.add(t"\e]8;;$url\e\\")
+            case None      => buffer.add(t"\e]8;;\e\\")
+        buffer.add(plain.s.charAt(i))
+        prev = s
+        i += 1
 
-    @tailrec
-    def recur
-      ( spans:      TreeMap[CharSpan, Ansi.Transform],
-        position:        Int                               = 0,
-        style:      TextStyle                         = TextStyle(),
-        stack:      List[(CharSpan, TextStyle)]       = Nil,
-        insertions: TreeMap[Int, Text]                = TreeMap() )
-    :   Text =
+      val tail = styles(n)
+      if tail != prev then StyleWord.emitDiff(buffer, prev, tail, depth)
+      insertions.rangeFrom(n).values.each { content => buffer.add(content) }
 
-      inline def addSpan(): Text =
-        val newInsertions = addText(position, spans.head(0).start, insertions)
-        val newStyle = spans.head(1)(style)
-        style.addChanges(buffer, newStyle, termcap.color)
-        val newStack = if spans.head(0).nil then stack else (spans.head(0) -> style) :: stack
-        recur(spans.tail, spans.head(0).start, newStyle, newStack, newInsertions)
-
-      @tailrec
-      def addText(from: Int, to: Int, insertions: TreeMap[Int, Text]): TreeMap[Int, Text] =
-        if insertions.nil then
-          buffer.add(plain.segment(from.max(0).z thru to.max(0).u))
-          insertions
-        else if insertions.head(0) < to then
-          buffer.add(plain.segment(position.z thru insertions.head(0).u))
-          buffer.add(insertions.head(1))
-          addText(insertions.head(0), to, insertions.tail)
-        else
-          buffer.add(plain.segment(from.z thru to.u))
-          insertions
-
-      if stack.nil then
-        if spans.nil then
-          val remaining = addText(position, plain.length, insertions)
-          remaining.values.each(buffer.add(_))
-          buffer.text
-        else addSpan()
-      else
-        if spans.nil || stack.head(0).end <= spans.head(0).start then
-          val newInsertions = addText(position, stack.head(0).end, insertions)
-          val newStyle = stack.head(1)
-          style.addChanges(buffer, newStyle, termcap.color)
-          recur(spans, stack.head(0).end, newStyle, stack.tail, newInsertions)
-        else addSpan()
-
-
-    if termcap.ansi then recur(spans, insertions = insertions) else plain
+      buffer.text

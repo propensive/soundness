@@ -34,6 +34,8 @@ package escapade
 
 import language.experimental.pureFunctions
 
+import scala.collection.mutable as scm
+
 import anticipation.*
 import contextual.*
 import contingency.*
@@ -85,22 +87,61 @@ object Ansi extends Ansi2:
     case Markup(transform: Transform)
     case Escape(on: Text, off: Text)
 
-  case class Frame(bracket: Char, start: Int, transform: Transform)
+  case class Frame(bracket: Char)
 
+  class State:
+    val plain: StringBuilder = StringBuilder()
+    val styles: scm.ArrayBuffer[Long] = scm.ArrayBuffer.empty
+    val hyperlinks: scm.HashMap[Int, Text] = scm.HashMap.empty
+    val insertions: scm.TreeMap[Int, Text] = scm.TreeMap.empty
+    var last: Optional[Transform] = Unset
+    var stack: List[Frame] = Nil
+    var styleStack: List[TextStyle] = Nil
+    var currentStyle: TextStyle = TextStyle()
 
-  case class State
-    ( text:       Text                         = t"",
-      last:       Option[Transform]            = None,
-      stack:      List[Frame]                  = Nil,
-      spans:      TreeMap[CharSpan, Transform] = TreeMap(),
-      insertions: TreeMap[Int, Text]           = TreeMap() ):
+    def appendChar(char: Char): Unit =
+      plain.append(char)
+      styles += currentStyle.styleWord
 
-    def add(span: CharSpan, transform: Transform): State =
-      copy(spans = spans.updated(span, spans.get(span).fold(transform)(transform.andThen(_))))
+    def appendChars(text: Text): Unit =
+      var i = 0
+      val s = text.s
+      while i < s.length do
+        appendChar(s.charAt(i))
+        i += 1
 
-    def add(position: Int, esc: Escape): State =
-      val insertions2 = insertions.get(position).fold(t"\e"+esc.on)(_+t"\e"+esc.on)
-      copy(insertions = insertions.updated(position, insertions2))
+    def appendTeletype(text: Teletype): Unit =
+      val outer = currentStyle.styleWord
+      val n = plain.length
+      var i = 0
+      while i < text.plain.length do
+        plain.append(text.plain.s.charAt(i))
+        styles += StyleWord.combine(outer, text.styles(i))
+        i += 1
+
+      if text.hyperlinks.nonEmpty then
+        text.hyperlinks.each { (k, v) => hyperlinks(n + k) = v }
+
+      if text.insertions.nonEmpty then
+        text.insertions.each { (k, v) => insertions(n + k) = v }
+
+    def addInsertion(position: Int, content: Text): Unit =
+      insertions.updateWith(position):
+        case None             => Some(content)
+        case Some(existing)   => Some(existing+content)
+
+    def pushFrame(bracket: Char, transform: Transform): Unit =
+      stack = Frame(bracket) :: stack
+      styleStack = currentStyle :: styleStack
+      currentStyle = transform(currentStyle)
+
+    def popFrame(): Unit =
+      stack = stack.tail
+      currentStyle = styleStack.head
+      styleStack = styleStack.tail
+
+    def applyOnce(transform: Transform): Unit =
+      currentStyle = transform(currentStyle)
 
 
   object Interpolator extends contextual.Interpolator[Input, State, Teletype]:
@@ -109,55 +150,72 @@ object Ansi extends Ansi2:
     def initial: State = State()
 
     def parse(state: State, text: Text): State =
-      state.last.fold(closures(state, text)): transform =>
-        text.at(Prim) match
-          case Bsl => closures(state.copy(last = None), text.skip(1))
+      state.last match
+        case Unset =>
+          closures(state, text)
 
-          case '[' | '(' | '<' | '«' | '{' =>
-            val frame = Frame(complement(text.at(Prim).vouch), state.text.length, transform)
-            closures(state.copy(stack = frame :: state.stack, last = None), text.skip(1))
+        case transform: Transform =>
+          text.at(Prim) match
+            case Bsl =>
+              state.last = Unset
+              closures(state, text.skip(1))
 
-          case _ =>
-            val state2 = state.add(CharSpan(state.text.length, state.text.length), transform)
-            closures(state2.copy(last = None), text)
+            case '[' | '(' | '<' | '«' | '{' =>
+              state.pushFrame(complement(text.at(Prim).vouch), transform)
+              state.last = Unset
+              closures(state, text.skip(1))
+
+            case _ =>
+              state.applyOnce(transform)
+              state.last = Unset
+              closures(state, text)
 
     private def closures(state: State, text: Text): State =
-      try state.stack.headOption.fold(state.copy(text = state.text+TextEscapes.escape(text))):
-        frame =>
+      try state.stack match
+        case Nil =>
+          state.appendChars(TextEscapes.escape(text))
+          state
+
+        case frame :: _ =>
           safely(text.where(_ == frame.bracket)).let(_.n0) match
-            case Unset => state.copy(text = state.text+text)
+            case Unset =>
+              state.appendChars(text)
+              state
 
             case index: Int =>
-              val text2 = state.text+text.keep(index)
-              val span2: CharSpan = CharSpan(frame.start, state.text.length + index)
-              val state2: State = state.add(span2, frame.transform)
-              val state3: State = state2.copy(text = text2, last = None, stack = state.stack.tail)
-              closures(state3, text.skip(index + 1))
+              state.appendChars(text.keep(index))
+              state.popFrame()
+              state.last = Unset
+              closures(state, text.skip(index + 1))
 
       catch case error: EscapeError => error match
         case EscapeError(message) => throw InterpolationError(message)
 
     def insert(state: State, value: Input): State = value match
       case Input.TextInput(text) =>
-        val textSpans: TreeMap[CharSpan, Transform] = text.spans.map:
-          case (span, transform) => (span.shift(state.text.length): CharSpan) -> transform
-
-        val textInsertions: TreeMap[Int, Text] = text.insertions.map:
-          case (position, ins) => (position + state.text.length) -> ins
-
-        state.copy(text = state.text+text.plain, last = None, spans = state.spans ++ textSpans,
-            insertions = state.insertions ++ textInsertions)
+        state.appendTeletype(text)
+        state.last = Unset
+        state
 
       case Input.Markup(transform) =>
-        state.copy(last = Some(transform))
+        state.last = transform
+        state
 
-      case esc@Input.Escape(on, off) =>
-        state.copy(last = None).add(state.text.length, esc)
+      case Input.Escape(on, _) =>
+        state.last = Unset
+        state.addInsertion(state.plain.length, t"\e"+on)
+        state
 
     def skip(state: State): State = insert(state, Input.TextInput(Teletype.empty))
 
     def complete(state: State): Teletype =
-      if !state.stack.nil
+      if state.stack.nonEmpty
       then throw InterpolationError(m"the closing brace does not match an opening brace")
 
-      Teletype(state.text, state.spans, state.insertions)
+      state.styles += 0L
+
+      Teletype
+       ( state.plain.toString.tt,
+         IArray.unsafeFromArray(state.styles.toArray),
+         state.hyperlinks.toMap,
+         state.insertions.to(TreeMap) )

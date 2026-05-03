@@ -65,6 +65,19 @@ object StyleWord:
 
   inline def apply(raw: Long): StyleWord = raw
 
+  def combine(outer: Long, inner: Long): Long =
+    val flagsOnly = ~(FgMask | BgMask | FgSet | BgSet)
+    val combinedFlags = (outer | inner) & flagsOnly
+    val fgBits =
+      if (inner & FgSet) != 0 then inner & (FgMask | FgSet)
+      else if (outer & FgSet) != 0 then outer & (FgMask | FgSet)
+      else 0L
+    val bgBits =
+      if (inner & BgSet) != 0 then inner & (BgMask | BgSet)
+      else if (outer & BgSet) != 0 then outer & (BgMask | BgSet)
+      else 0L
+    combinedFlags | fgBits | bgBits
+
   def emitDiff(buffer: StringBuilder, prev: Long, next: Long, depth: ColorDepth): Unit =
     val diff = prev^next
 
