@@ -548,3 +548,105 @@ object Tests extends Suite(m"Mosquito tests"):
         val product = mat*Matrix.identity[Int, 3]
         product == mat
       . assert(_ == true)
+
+    suite(m"Submatrix"):
+      val m3 = Matrix[3, 3]((1, 2, 3), (4, 5, 6), (7, 8, 9))
+
+      test(m"Submatrix removing row 0 column 0"):
+        m3.submatrix(0, 0)
+      . assert(_ == Matrix[2, 2]((5, 6), (8, 9)))
+
+      test(m"Submatrix removing center"):
+        m3.submatrix(1, 1)
+      . assert(_ == Matrix[2, 2]((1, 3), (7, 9)))
+
+      test(m"Submatrix removing last row and column"):
+        m3.submatrix(2, 2)
+      . assert(_ == Matrix[2, 2]((1, 2), (4, 5)))
+
+      test(m"Submatrix of 2x3 matrix has shape 1x2"):
+        Matrix[2, 3]((1, 2, 3), (4, 5, 6)).submatrix(0, 1)
+      . assert(_ == Matrix[1, 2](Tuple1((4, 6))))
+
+    suite(m"Frobenius norm"):
+      test(m"Frobenius norm of [[3, 0], [0, 4]] = 5"):
+        Matrix[2, 2]((3.0, 0.0), (0.0, 4.0)).frobeniusNorm
+      . assert(_ === 5.0 +/- 0.000001)
+
+      test(m"Frobenius norm of [[1, 2], [3, 4]]"):
+        Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).frobeniusNorm
+      . assert(_ === math.sqrt(30.0) +/- 0.000001)
+
+      test(m"Frobenius norm of identity equals sqrt(n)"):
+        Matrix.identity[Double, 4].frobeniusNorm
+      . assert(_ === 2.0 +/- 0.000001)
+
+    suite(m"Rank"):
+      test(m"Rank of 3x3 identity is 3"):
+        Matrix.identity[Double, 3].rank
+      . assert(_ == 3)
+
+      test(m"Rank of 3x3 zero is 0"):
+        Matrix.zero[Double, 3, 3].rank
+      . assert(_ == 0)
+
+      test(m"Rank of singular 2x2"):
+        Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).rank
+      . assert(_ == 1)
+
+      test(m"Rank of 3x3 matrix with linearly dependent columns"):
+        Matrix[3, 3]((1.0, 2.0, 3.0), (4.0, 5.0, 6.0), (7.0, 8.0, 9.0)).rank
+      . assert(_ == 2)
+
+      test(m"Rank of non-square 2x3 with full row rank"):
+        Matrix[2, 3]((1.0, 0.0, 2.0), (0.0, 1.0, 3.0)).rank
+      . assert(_ == 2)
+
+    suite(m"Eigenvalues and eigenvectors"):
+      test(m"Eigenvalues of 2x2 diagonal matrix"):
+        val sorted =
+          Matrix[2, 2]((2.0, 0.0), (0.0, 3.0)).eigenvalues.let(_.list.sorted).vouch
+
+        math.abs(sorted(0) - 2.0) + math.abs(sorted(1) - 3.0)
+      . assert(_ < 0.000001)
+
+      test(m"Eigenvalues of [[2, 1], [1, 2]] are 1 and 3"):
+        val sorted =
+          Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues.let(_.list.sorted).vouch
+
+        math.abs(sorted(0) - 1.0) + math.abs(sorted(1) - 3.0)
+      . assert(_ < 0.000001)
+
+      test(m"Eigenvalues of identity are all 1"):
+        val list = Matrix.identity[Double, 3].eigenvalues.let(_.list).vouch
+        list.map(v => math.abs(v - 1.0)).max
+      . assert(_ < 0.000001)
+
+      test(m"Eigensystem of non-symmetric matrix is Unset"):
+        Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).eigensystem
+      . assert(_ == Unset)
+
+      test(m"M * v = lambda * v for each eigenvector"):
+        val mat = Matrix[2, 2]((2.0, 1.0), (1.0, 2.0))
+        val pair = mat.eigensystem.vouch
+        val vals = pair(0)
+        val vecs = pair(1)
+        val v0 = vecs.column(0)
+        val v1 = vecs.column(1)
+        val lambda0 = vals(0)
+        val lambda1 = vals(1)
+        val mv0 = mat*v0
+        val mv1 = mat*v1
+        val d0 = math.abs(mv0(0) - lambda0*v0(0)) + math.abs(mv0(1) - lambda0*v0(1))
+        val d1 = math.abs(mv1(0) - lambda1*v1(0)) + math.abs(mv1(1) - lambda1*v1(1))
+        math.max(d0, d1)
+      . assert(_ < 0.000001)
+
+      test(m"Eigenvectors are unit vectors"):
+        val mat = Matrix[3, 3]((4.0, 1.0, 2.0), (1.0, 5.0, 3.0), (2.0, 3.0, 6.0))
+        val vecs = mat.eigenvectors.vouch
+        val norms = (0 until 3).map: column =>
+          math.abs(vecs.column(column).norm - 1.0)
+
+        norms.max
+      . assert(_ < 0.000001)
