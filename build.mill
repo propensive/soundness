@@ -71,7 +71,9 @@ object settings:
     "-language:experimental.saferExceptions",
     "-language:experimental.strictEqualityPatternMatching",
     "-language:experimental.subCases",
-    "-language:experimental.multiSpreads"
+    "-language:experimental.multiSpreads",
+    "-opt",
+    "-opt-inline:**"
   )
 
   val scalaOptionsCC = scalaOptions ++ Seq("-Ycc-new")
