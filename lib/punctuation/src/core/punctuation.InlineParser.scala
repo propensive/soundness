@@ -137,8 +137,15 @@ object InlineParser:
               i = al.end
 
             case Unset =>
-              pending.append('<')
-              i += 1
+              InlineSupport.parseRawHtml(s, i, end) match
+                case h: InlineSupport.HtmlInlineMatch =>
+                  flushPending()
+                  list.append(HtmlInlineData(h.html))
+                  i = h.end
+
+                case Unset =>
+                  pending.append('<')
+                  i += 1
 
         case '\n' =>
           var j = pending.length
