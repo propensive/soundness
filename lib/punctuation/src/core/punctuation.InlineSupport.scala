@@ -1,0 +1,327 @@
+                                                                                                  /*
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                  ┃
+┃                                                   ╭───╮                                          ┃
+┃                                                   │   │                                          ┃
+┃                                                   │   │                                          ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
+┃                                                                                                  ┃
+┃    Soundness, version 0.54.0.                                                                    ┃
+┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
+┃                                                                                                  ┃
+┃    The primary distribution site is:                                                             ┃
+┃                                                                                                  ┃
+┃        https://soundness.dev/                                                                    ┃
+┃                                                                                                  ┃
+┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
+┃    except in compliance with the License. You may obtain a copy of the License at                ┃
+┃                                                                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
+┃                                                                                                  ┃
+┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
+┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
+┃    either express or implied. See the License for the specific language governing permissions    ┃
+┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                                                                                  */
+package punctuation
+
+import java.util.regex as jur
+
+import anticipation.*
+import vacuous.*
+
+case class EntityMatch(decoded: String, end: Int)
+case class CodeSpanMatch(content: Text, end: Int)
+case class AutolinkMatch(link: Prose, end: Int)
+
+object InlineSupport:
+
+  // CommonMark "ASCII punctuation": !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~
+  def isAsciiPunctuation(c: Char): Boolean = c match
+    case '!' | '"' | '#' | '$' | '%' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' => true
+    case '-' | '.' | '/' | ':' | ';' | '<' | '=' | '>' | '?' | '@' | '[' | '\\' => true
+    case ']' | '^' | '_' | '`' | '{' | '|' | '}' | '~'                          => true
+    case _                                                                      => false
+
+  private inline def isDecDigit(c: Char): Boolean = c >= '0' && c <= '9'
+
+  private inline def isHexDigit(c: Char): Boolean =
+    (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')
+
+  private inline def isAsciiAlpha(c: Char): Boolean =
+    (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+
+  private inline def isAsciiAlnum(c: Char): Boolean = isAsciiAlpha(c) || isDecDigit(c)
+
+  // Try to parse an HTML entity at position `start` (which points at `&`).
+  // Returns the decoded string and index past the closing `;`, or Unset.
+  def parseEntity(s: String, start: Int, end: Int): Optional[EntityMatch] =
+    var i = start + 1
+    if i >= end then return Unset
+
+    if s.charAt(i) == '#' then
+      i += 1
+      if i >= end then return Unset
+      val isHex = s.charAt(i) == 'x' || s.charAt(i) == 'X'
+      if isHex then i += 1
+      val digitStart = i
+      val maxDigits = if isHex then 6 else 7
+
+      def hasDigit: Boolean =
+        if isHex then isHexDigit(s.charAt(i)) else isDecDigit(s.charAt(i))
+
+      while i < end && (i - digitStart) < maxDigits && hasDigit do i += 1
+
+      if i == digitStart then return Unset
+      if i >= end || s.charAt(i) != ';' then return Unset
+      val numStr = s.substring(digitStart, i).nn
+
+      val codePoint =
+        try Integer.parseInt(numStr, if isHex then 16 else 10)
+        catch case _: NumberFormatException => return Unset
+
+      val ch =
+        if codePoint == 0 || codePoint > 0x10FFFF then "�"
+        else String.valueOf(Character.toChars(codePoint).nn).nn
+
+      EntityMatch(ch, i + 1)
+    else
+      val nameStart = i
+      while i < end && isAsciiAlnum(s.charAt(i)) do i += 1
+      if i == nameStart then return Unset
+      if i >= end || s.charAt(i) != ';' then return Unset
+      val name = s.substring(nameStart, i).nn
+      val decoded = HtmlEntities.lookup(name)
+      if decoded == null then Unset else EntityMatch(decoded, i + 1)
+
+  // Try to parse a code span starting at the run of backticks at position
+  // `start`. Returns the content text and index past the closing run.
+  def parseCodeSpan(s: String, start: Int, end: Int): Optional[CodeSpanMatch] =
+    var i = start
+    while i < end && s.charAt(i) == '`' do i += 1
+    val openerLen = i - start
+    val contentStart = i
+
+    while i < end do
+      while i < end && s.charAt(i) != '`' do i += 1
+      if i >= end then return Unset
+      val closerStart = i
+      while i < end && s.charAt(i) == '`' do i += 1
+      val closerLen = i - closerStart
+      if closerLen == openerLen then
+        val raw = s.substring(contentStart, closerStart).nn
+        // Replace newlines with spaces (CommonMark §6.1)
+        val noNewlines = raw.replace('\n', ' ').nn
+
+        // Strip one leading + one trailing space if both ends have space and
+        // content is not all spaces
+        val needsTrim =
+          noNewlines.length >= 2
+          && noNewlines.charAt(0) == ' '
+          && noNewlines.charAt(noNewlines.length - 1) == ' '
+          && existsNonSpace(noNewlines)
+
+        val stripped =
+          if needsTrim then noNewlines.substring(1, noNewlines.length - 1).nn
+          else noNewlines
+
+        return CodeSpanMatch(Text(stripped), i)
+    Unset
+
+  private def existsNonSpace(s: String): Boolean =
+    val n = s.length
+    var i = 0
+    while i < n do
+      if s.charAt(i) != ' ' then return true
+      i += 1
+    false
+
+  // Email autolink pattern from the CommonMark spec (§6.4)
+  private val EmailRegex: jur.Pattern =
+    val local = "[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+"
+    val labelChars = "[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?"
+    jur.Pattern.compile(s"^${local}@${labelChars}(?:\\.${labelChars})*$$").nn
+
+  // Try to parse an autolink starting at `<` at position `start`.
+  // Returns a `Prose.Link` and index past `>`, or Unset.
+  def parseAutolink(s: String, start: Int, end: Int): Optional[AutolinkMatch] =
+    var i = start + 1
+    var keep = true
+    while keep && i < end do
+      val c = s.charAt(i)
+      if c == '>' || c <= 0x20 || c == '<' then keep = false
+      else i += 1
+
+    if i >= end || s.charAt(i) != '>' then return Unset
+    val content = s.substring(start + 1, i).nn
+
+    if isUriAutolink(content) then
+      val text = Text(content)
+      val link = Prose.Link(text, Unset, Prose.Textual(text))
+      AutolinkMatch(link, i + 1)
+    else if EmailRegex.matcher(content).nn.matches then
+      val text = Text(content)
+      val mailto = Text("mailto:" + content)
+      val link = Prose.Link(mailto, Unset, Prose.Textual(text))
+      AutolinkMatch(link, i + 1)
+    else
+      Unset
+
+  // Scheme: [A-Za-z][A-Za-z0-9+.-]{1,31} followed by `:` then a body of
+  // characters that are neither whitespace, controls, `<`, nor `>` (already
+  // ensured by the caller).
+  private def isUriAutolink(content: String): Boolean =
+    val n = content.length
+    if n < 3 then return false
+    if !isAsciiAlpha(content.charAt(0)) then return false
+    var i = 1
+    while i < n && i <= 32 do
+      val c = content.charAt(i)
+      val isSchemeChar = isAsciiAlnum(c) || c == '+' || c == '.' || c == '-'
+      if c == ':' then
+        if i < 2 then return false
+        return validateUriBody(content, i + 1, n)
+      if !isSchemeChar then return false
+      i += 1
+    false
+
+  private def validateUriBody(content: String, start: Int, end: Int): Boolean =
+    var i = start
+    while i < end do
+      val c = content.charAt(i)
+      if c <= 0x20 || c == '<' || c == '>' then return false
+      i += 1
+    true
+
+  // Parse a single-line link reference definition: `[label]: dest "title"`.
+  // Multi-line link refs are not yet supported. Returns the definition and
+  // the consumed-character count, or Unset.
+  def parseLinkRefDef(line: Text): Optional[Markdown.LinkRef] =
+    val s = line.s
+    val n = s.length
+    var i = 0
+    var indent = 0
+    while i < n && s.charAt(i) == ' ' && indent < 4 do { i += 1; indent += 1 }
+    if indent >= 4 then return Unset
+    if i >= n || s.charAt(i) != '[' then return Unset
+    i += 1
+
+    val labelStart = i
+    var labelDone = false
+    while i < n && !labelDone do
+      val c = s.charAt(i)
+      if c == ']' then labelDone = true
+      else if c == '[' then return Unset
+      else if c == '\\' && i + 1 < n then i += 2
+      else i += 1
+
+    if !labelDone then return Unset
+    if i == labelStart then return Unset
+    val label = Text(s.substring(labelStart, i).nn)
+    i += 1
+
+    if i >= n || s.charAt(i) != ':' then return Unset
+    i += 1
+
+    while i < n && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
+    if i >= n then return Unset
+
+    val destResult = parseLinkDestination(s, i, n)
+    if destResult.absent then return Unset
+    val (destination, afterDest) = (destResult.vouch.dest, destResult.vouch.end)
+    i = afterDest
+
+    val beforeWs = i
+    while i < n && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
+
+    var title: Optional[Text] = Unset
+    if i > beforeWs && i < n then
+      parseLinkTitle(s, i, n) match
+        case Unset =>
+          // No title: backtrack to before the whitespace to allow trailing-only
+          i = beforeWs
+
+        case t: TitleMatch =>
+          title = Text(t.title)
+          i = t.end
+
+    while i < n && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
+    if i < n then return Unset
+
+    Markdown.LinkRef(label, title, destination)
+
+  case class DestMatch(dest: Text, end: Int)
+  case class TitleMatch(title: String, end: Int)
+
+  // Link destination: either `<...>` (allows escapes; no unescaped < or >),
+  // or a sequence of non-whitespace characters with balanced parentheses.
+  def parseLinkDestination(s: String, start: Int, end: Int): Optional[DestMatch] =
+    if start >= end then return Unset
+    if s.charAt(start) == '<' then
+      var i = start + 1
+      val buf = new StringBuilder
+      while i < end do
+        val c = s.charAt(i)
+        if c == '>' then return DestMatch(Text(buf.toString), i + 1)
+        else if c == '<' || c == '\n' then return Unset
+        else if c == '\\' && i + 1 < end && isAsciiPunctuation(s.charAt(i + 1)) then
+          buf.append(s.charAt(i + 1))
+          i += 2
+        else
+          buf.append(c)
+          i += 1
+      Unset
+    else
+      var i = start
+      var depth = 0
+      val buf = new StringBuilder
+      while i < end do
+        val c = s.charAt(i)
+        if c <= 0x20 then
+          if i == start then return Unset
+          return DestMatch(Text(buf.toString), i)
+        else if c == '\\' && i + 1 < end && isAsciiPunctuation(s.charAt(i + 1)) then
+          buf.append(s.charAt(i + 1))
+          i += 2
+        else if c == '(' then
+          depth += 1; buf.append(c); i += 1
+        else if c == ')' then
+          if depth == 0 then return DestMatch(Text(buf.toString), i)
+          depth -= 1; buf.append(c); i += 1
+        else
+          buf.append(c)
+          i += 1
+
+      if depth != 0 then return Unset
+      if i == start then Unset else DestMatch(Text(buf.toString), i)
+
+  // Link title: `"..."`, `'...'`, or `(...)` with backslash-escapes.
+  def parseLinkTitle(s: String, start: Int, end: Int): Optional[TitleMatch] =
+    if start >= end then return Unset
+    val opener = s.charAt(start)
+    val closer = opener match
+      case '"'  => '"'
+      case '\'' => '\''
+      case '('  => ')'
+      case _    => return Unset
+
+    var i = start + 1
+    val buf = new StringBuilder
+    while i < end do
+      val c = s.charAt(i)
+      if c == closer then return TitleMatch(buf.toString, i + 1)
+      else if c == opener && opener == '(' then return Unset  // unbalanced inner (
+      else if c == '\\' && i + 1 < end && isAsciiPunctuation(s.charAt(i + 1)) then
+        buf.append(s.charAt(i + 1))
+        i += 2
+      else
+        buf.append(c)
+        i += 1
+    Unset

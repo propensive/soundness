@@ -32,106 +32,31 @@
                                                                                                   */
 package punctuation
 
-import scala.collection.mutable
-
 import anticipation.*
-import vacuous.*
+import hellenism.*, classloaders.threadContext
+import hieroglyph.*, charDecoders.utf8, textSanitizers.skip
+import turbulence.*
 
-// Inline parser. Consumes the raw text of one paragraph or heading and emits
-// a `Seq[Prose]`. Stage 4 covers literal text, backslash escapes, character
-// entities, code spans, autolinks, and hard/soft line breaks. Emphasis,
-// links, images, and reference-link resolution arrive in stages 5–6.
-
-object InlineParser:
-  def parse(text: Text, refs: LinkRefs): Seq[Prose] =
-    val s = text.s
-    val n = s.length
-
-    // CommonMark §4.8: strip trailing whitespace from the paragraph's raw
-    // content before inline parsing. Internal-line trailing whitespace is
-    // preserved here so the per-line hard-break detection still works.
-    var end = n
-    while end > 0 && (s.charAt(end - 1) == ' ' || s.charAt(end - 1) == '\t') do end -= 1
-
-    val builder = mutable.ListBuffer[Prose]()
-    val pending = new StringBuilder
-
-    def flushPending(): Unit =
-      if pending.length > 0 then
-        builder += Prose.Textual(Text(pending.toString))
-        pending.clear()
-
+// HTML5 named character references, loaded once from the `entities-extra.tsv`
+// resource shipped by Honeycomb. Only entries with a trailing semicolon are
+// kept, since CommonMark requires the `;` terminator for named entities to
+// be valid.
+object HtmlEntities:
+  private lazy val table: Map[String, String] =
+    val tsv = cp"/honeycomb/entities-extra.tsv".read[Text].s
+    val builder = Map.newBuilder[String, String]
+    val lines = tsv.split("\n").nn
     var i = 0
-    while i < end do
-      val c = s.charAt(i)
-      c match
-        case '\\' =>
-          if i + 1 < end then
-            val next = s.charAt(i + 1)
-            if next == '\n' then
-              flushPending()
-              builder += Prose.Linebreak
-              i += 2
-              while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
-            else if InlineSupport.isAsciiPunctuation(next) then
-              pending.append(next)
-              i += 2
-            else
-              pending.append('\\')
-              i += 1
-          else
-            pending.append('\\')
-            i += 1
+    while i < lines.length do
+      val line = lines(i).nn
+      val tab = line.indexOf('\t')
+      if tab > 0 && line.charAt(tab - 1) == ';' then
+        val name = line.substring(0, tab - 1).nn
+        val value = line.substring(tab + 1).nn
+        builder += (name -> value)
+      i += 1
+    builder.result()
 
-        case '&' =>
-          InlineSupport.parseEntity(s, i, end) match
-            case e: EntityMatch =>
-              pending.append(e.decoded)
-              i = e.end
-
-            case Unset =>
-              pending.append('&')
-              i += 1
-
-        case '`' =>
-          InlineSupport.parseCodeSpan(s, i, end) match
-            case cs: CodeSpanMatch =>
-              flushPending()
-              builder += Prose.Code(cs.content)
-              i = cs.end
-
-            case Unset =>
-              pending.append('`')
-              i += 1
-
-        case '<' =>
-          InlineSupport.parseAutolink(s, i, end) match
-            case al: AutolinkMatch =>
-              flushPending()
-              builder += al.link
-              i = al.end
-
-            case Unset =>
-              pending.append('<')
-              i += 1
-
-        case '\n' =>
-          // Hard break if pending ends with 2+ trailing spaces, else soft.
-          var j = pending.length
-          var spaces = 0
-          while j > 0 && pending.charAt(j - 1) == ' ' do
-            j -= 1
-            spaces += 1
-          pending.setLength(j)
-          flushPending()
-          if spaces >= 2 then builder += Prose.Linebreak
-          else builder += Prose.Softbreak
-          i += 1
-          while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
-
-        case _ =>
-          pending.append(c)
-          i += 1
-
-    flushPending()
-    builder.toSeq
+  // Returns the decoded text for a named entity (without `&` or `;`), or
+  // `null` if no such entity exists.
+  def lookup(name: String): String | Null = table.getOrElse(name, null)
