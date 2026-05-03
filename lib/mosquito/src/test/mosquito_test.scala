@@ -409,3 +409,142 @@ object Tests extends Suite(m"Mosquito tests"):
 
         val sum = v1 + v1
       . assert()
+
+    suite(m"Row and column extraction"):
+      val mat = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+
+      test(m"row(0) of a 2x3 matrix"):
+        mat.row(0)
+      . assert(_ == Tensor(1, 2, 3))
+
+      test(m"row(1) of a 2x3 matrix"):
+        mat.row(1)
+      . assert(_ == Tensor(4, 5, 6))
+
+      test(m"column(0) of a 2x3 matrix"):
+        mat.column(0)
+      . assert(_ == Tensor(1, 4))
+
+      test(m"column(2) of a 2x3 matrix"):
+        mat.column(2)
+      . assert(_ == Tensor(3, 6))
+
+      test(m"row size matches column count"):
+        mat.row(0).size
+      . assert(_ == 3)
+
+      test(m"column size matches row count"):
+        mat.column(0).size
+      . assert(_ == 2)
+
+    suite(m"Transpose"):
+      test(m"Transpose of 2x3 matrix"):
+        Matrix[2, 3]((1, 2, 3), (4, 5, 6)).transpose
+      . assert(_ == Matrix[3, 2]((1, 4), (2, 5), (3, 6)))
+
+      test(m"Transpose round-trip is identity"):
+        val mat = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+        val roundTripped = mat.transpose.transpose
+        roundTripped == mat
+      . assert(_ == true)
+
+      test(m"Determinant invariant under transpose"):
+        val mat = Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1, 4, 5))
+        mat.determinant - mat.transpose.determinant
+      . assert(_ == 0)
+
+    suite(m"Trace"):
+      test(m"Trace of 3x3 matrix"):
+        Matrix[3, 3]((1, 2, 3), (4, 5, 6), (7, 8, 10)).trace
+      . assert(_ == 16)
+
+      test(m"Trace of 2x2 zero is zero"):
+        Matrix[2, 2]((0, 0), (0, 0)).trace
+      . assert(_ == 0)
+
+      test(m"Trace of identity matrix is dimension"):
+        Matrix.identity[Int, 4].trace
+      . assert(_ == 4)
+
+    suite(m"Minor and cofactor"):
+      val mat = Matrix[3, 3]((1, 2, 3), (4, 5, 6), (7, 8, 10))
+
+      test(m"Minor at (0, 0) is determinant of submatrix"):
+        mat.minor(0, 0)
+      . assert(_ == 2)
+
+      test(m"Minor at (0, 1)"):
+        mat.minor(0, 1)
+      . assert(_ == -2)
+
+      test(m"Minor at (1, 2)"):
+        mat.minor(1, 2)
+      . assert(_ == -6)
+
+      test(m"Cofactor at (0, 0) matches its minor"):
+        mat.cofactor(0, 0)
+      . assert(_ == 2)
+
+      test(m"Cofactor at (0, 1) flips sign"):
+        mat.cofactor(0, 1)
+      . assert(_ == 2)
+
+      test(m"Cofactor at (1, 2) flips sign"):
+        mat.cofactor(1, 2)
+      . assert(_ == 6)
+
+    suite(m"Adjugate"):
+      test(m"Adjugate of 2x2 matrix"):
+        Matrix[2, 2]((1, 2), (3, 4)).adjugate
+      . assert(_ == Matrix[2, 2]((4, -2), (-3, 1)))
+
+      test(m"Adjugate of 3x3 matrix"):
+        Matrix[3, 3]((1, 2, 3), (4, 5, 6), (7, 8, 10)).adjugate
+      . assert(_ == Matrix[3, 3]((2, 4, -3), (2, -11, 6), (-3, 6, -3)))
+
+      test(m"M * adjugate(M) = det(M) * I (3x3)"):
+        val mat = Matrix[3, 3]((1, 2, 3), (4, 5, 6), (7, 8, 10))
+        mat*mat.adjugate
+      . assert(_ == Matrix[3, 3]((-3, 0, 0), (0, -3, 0), (0, 0, -3)))
+
+    suite(m"Matrix addition and subtraction"):
+      test(m"Add two 2x3 matrices"):
+        Matrix[2, 3]((1, 2, 3), (4, 5, 6)) + Matrix[2, 3]((6, 5, 4), (3, 2, 1))
+      . assert(_ == Matrix[2, 3]((7, 7, 7), (7, 7, 7)))
+
+      test(m"Subtract two 2x3 matrices"):
+        Matrix[2, 3]((10, 9, 8), (7, 6, 5)) - Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+      . assert(_ == Matrix[2, 3]((9, 7, 5), (3, 1, -1)))
+
+      test(m"Add matrices of quantities"):
+        Matrix[2, 2]((1.0*Metre, 2.0*Metre), (3.0*Metre, 4.0*Metre))
+        + Matrix[2, 2]((5.0*Metre, 6.0*Metre), (7.0*Metre, 8.0*Metre))
+      . assert(_ == Matrix[2, 2]((6.0*Metre, 8.0*Metre), (10.0*Metre, 12.0*Metre)))
+
+    suite(m"Matrix-vector multiplication"):
+      test(m"2x3 matrix times 3-vector"):
+        Matrix[2, 3]((1, 2, 3), (4, 5, 6))*Tensor(7, 8, 9)
+      . assert(_ == Tensor(50, 122))
+
+      test(m"Identity matrix times vector is the vector"):
+        Matrix.identity[Int, 3]*Tensor(2, 3, 5)
+      . assert(_ == Tensor(2, 3, 5))
+
+    suite(m"Identity and zero constructors"):
+      test(m"Identity 3x3 of Int"):
+        Matrix.identity[Int, 3]
+      . assert(_ == Matrix[3, 3]((1, 0, 0), (0, 1, 0), (0, 0, 1)))
+
+      test(m"Identity 2x2 of Double"):
+        Matrix.identity[Double, 2]
+      . assert(_ == Matrix[2, 2]((1.0, 0.0), (0.0, 1.0)))
+
+      test(m"Zero 2x3 of Double"):
+        Matrix.zero[Double, 2, 3]
+      . assert(_ == Matrix[2, 3]((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)))
+
+      test(m"M * identity equals M"):
+        val mat = Matrix[3, 3]((1, 2, 3), (4, 5, 6), (7, 8, 9))
+        val product = mat*Matrix.identity[Int, 3]
+        product == mat
+      . assert(_ == true)
