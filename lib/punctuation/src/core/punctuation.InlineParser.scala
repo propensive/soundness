@@ -32,46 +32,15 @@
                                                                                                   */
 package punctuation
 
-import soundness.*
+import anticipation.*
 
-import strategies.throwUnsafely
-
-import doms.html.whatwg
-import classloaders.system
-
-object Tests extends Suite(m"Punctuation tests"):
-  def run(): Unit =
-    case class Testcase
-      ( markdown:   Text,
-        html:       Text,
-        example:    Int,
-        start_line: Int,
-        end_line:   Int,
-        section:    Text )
-
-    val testCases =
-      cp"/punctuation/mdspec.json"
-      . read[Json]
-      . as[List[Testcase]]
-      . groupBy(_.section)
-      . filter(_(0) != "HTML blocks")
-
-    suite(m"Java parser (commonmark-java)"):
-      testCases.each: (section, cases) =>
-        suite(section.communicate):
-          cases.each: testcase =>
-            safely(testcase.html.read[Html of whatwg.Flow]).let: html =>
-              if !Set(308, 309, 475, 598, 605)(testcase.example) then
-                test(m"Commonmark test case ${testcase.example}"):
-                  Commonmark.parse(testcase.markdown).html.show
-                . assert(_ == html.show)
-
-    suite(m"Native parser (in-development)"):
-      testCases.each: (section, cases) =>
-        suite(section.communicate):
-          cases.each: testcase =>
-            safely(testcase.html.read[Html of whatwg.Flow]).let: html =>
-              if !Set(308, 309, 475, 598, 605)(testcase.example) then
-                test(m"Native test case ${testcase.example}"):
-                  Parser.parse(testcase.markdown).html.show
-                . assert(_ == html.show)
+// Skeleton inline parser. Stage 4 will introduce text/escape/entity/codespan/
+// autolink/hardbreak/softbreak handling; stage 5 the emphasis delimiter
+// algorithm; stage 6 link/image and reference resolution. For now the entire
+// raw text is wrapped as a single `Prose.Textual`, which means anything other
+// than literal text (emphasis, links, code spans, escapes) will not match the
+// reference parser's output.
+object InlineParser:
+  def parse(text: Text, refs: LinkRefs): Seq[Prose] =
+    if text.s.isEmpty then Nil
+    else Seq(Prose.Textual(text))
