@@ -393,6 +393,304 @@ object Html extends Tag.Container
     case Attribute(tag: Text, attribute: Text)
     case Node(parent: Text)
 
+  // Direct parser: bypasses Cursor entirely. Operates directly on the
+  // underlying String with a `var pos`. Currently handles a focused subset
+  // of WHATWG HTML5 — doctype, regular elements (with attributes and text),
+  // void elements (looked up via `dom.elements`), comments, character/named
+  // entities. Does NOT yet handle: RCDATA / Raw modes (script/style/title),
+  // foster parenting in tables, autoclose inference, DOM inference (head/
+  // body insertion), foreign elements (svg, math), or macro callbacks. The
+  // existing cursor-based `parse` below remains the fall-back for those.
+  private[honeycomb] def parseDirect[dom <: Dom](text: Text, doctypes: Boolean)
+    (using dom: Dom): Html raises ParseError =
+
+    val s: String = text.s
+    val len: Int = s.length
+    var pos: Int = 0
+
+    def position(): Position =
+      var line: Int = 1
+      var column: Int = 1
+      var i = 0
+      val limit = if pos > 0 then pos - 1 else 0
+      while i < limit do
+        if s.charAt(i) == '\n' then
+          line += 1
+          column = 1
+        else
+          column += 1
+        i += 1
+      Position(line.u, column.u)
+
+    inline def fail(issue: Issue): Nothing = abort(ParseError(Html, position(), issue))
+
+    inline def isAsciiLetter(chr: Char): Boolean =
+      ('a' <= chr && chr <= 'z') || ('A' <= chr && chr <= 'Z')
+
+    inline def isAsciiDigit(chr: Char): Boolean = '0' <= chr && chr <= '9'
+
+    inline def isWs(chr: Char): Boolean =
+      chr == ' ' || chr == '\n' || chr == '\r' || chr == '\t' || chr == '\f'
+
+    def skipWs(): Unit = while pos < len && isWs(s.charAt(pos)) do pos += 1
+
+    def expect(chr: Char): Unit =
+      if pos >= len then fail(Issue.ExpectedMore)
+      if s.charAt(pos) != chr then fail(Issue.Unexpected(s.charAt(pos)))
+      pos += 1
+
+    // Read a name (tag or attribute), lowercased per HTML rules.
+    def readName(): Text =
+      val start = pos
+      if pos >= len then fail(Issue.ExpectedMore)
+      val first = s.charAt(pos)
+      if !isAsciiLetter(first) && !isAsciiDigit(first) && first != '-' then
+        fail(Issue.Unexpected(first))
+      pos += 1
+      while pos < len && {
+        val c = s.charAt(pos)
+        isAsciiLetter(c) || isAsciiDigit(c) || c == '-' || c == '_'
+      } do pos += 1
+      // Lowercase: HTML tag names are case-insensitive.
+      val raw = s.substring(start, pos).nn
+      // Use a cheap ASCII-lowercase via toLowerCase (locale-independent).
+      raw.toLowerCase(java.util.Locale.ROOT).nn.tt
+
+    def readEntity(): Text =
+      // Position is just after '&'. Returns expansion or original text on
+      // unknown.
+      val start = pos
+      if pos >= len then fail(Issue.ExpectedMore)
+      if s.charAt(pos) == '#' then
+        pos += 1
+        if pos >= len then fail(Issue.ExpectedMore)
+        var value = 0
+        if s.charAt(pos) == 'x' || s.charAt(pos) == 'X' then
+          pos += 1
+          while pos < len && s.charAt(pos) != ';' do
+            val ch = s.charAt(pos)
+            value =
+              if '0' <= ch && ch <= '9' then 16*value + (ch - '0')
+              else if 'a' <= ch && ch <= 'f' then 16*value + (ch - 87)
+              else if 'A' <= ch && ch <= 'F' then 16*value + (ch - 55)
+              else fail(Issue.Unexpected(ch))
+            pos += 1
+        else
+          while pos < len && s.charAt(pos) != ';' do
+            val ch = s.charAt(pos)
+            if '0' <= ch && ch <= '9' then value = 10*value + (ch - '0')
+            else fail(Issue.Unexpected(ch))
+            pos += 1
+        if pos >= len then fail(Issue.ExpectedMore)
+        pos += 1
+        if value <= 0xffff then String.valueOf(value.toChar).nn.tt
+        else String.valueOf(Character.toChars(value).nn).nn.tt
+      else
+        val nameStart = pos
+        while pos < len && {
+          val c = s.charAt(pos); isAsciiLetter(c) || isAsciiDigit(c)
+        } do pos += 1
+        if pos >= len || s.charAt(pos) != ';' then
+          // Unknown entity: leave & literal in the buffer
+          val raw = s.substring(start - 1, pos).nn.tt
+          raw
+        else
+          val name = s.substring(nameStart, pos).nn.tt
+          pos += 1
+          dom.entities(name).or:
+            // Unknown entity: pass through literally
+            t"&" + name + t";"
+
+    def readAttrValue(quote: Char): Text =
+      val start = pos
+      var hasEntity = false
+      while pos < len && s.charAt(pos) != quote do
+        if s.charAt(pos) == '&' then hasEntity = true
+        pos += 1
+      if pos >= len then fail(Issue.ExpectedMore)
+      val end = pos
+      pos += 1
+      if !hasEntity then s.substring(start, end).nn.tt
+      else
+        val buf = jl.StringBuilder()
+        var i = start
+        while i < end do
+          val c = s.charAt(i)
+          if c == '&' then
+            val savedPos = pos
+            pos = i + 1
+            buf.append(readEntity().s)
+            i = pos
+            pos = savedPos
+          else
+            buf.append(c)
+            i += 1
+        buf.toString.nn.tt
+
+    def readUnquotedValue(): Text =
+      val start = pos
+      while pos < len && {
+        val c = s.charAt(pos)
+        c != '>' && !isWs(c) && c != '/'
+      } do pos += 1
+      s.substring(start, pos).nn.tt
+
+    def readAttributes(): Map[Text, Optional[Text]] =
+      var entries: Map[Text, Optional[Text]] = ListMap()
+      var done = false
+      while !done do
+        skipWs()
+        if pos >= len then fail(Issue.ExpectedMore)
+        val ch = s.charAt(pos)
+        if ch == '>' || ch == '/' then done = true
+        else
+          val key = readName()
+          if entries.contains(key) then fail(Issue.DuplicateAttribute(key))
+          // Possible '=' (skip whitespace around it)
+          skipWs()
+          if pos < len && s.charAt(pos) == '=' then
+            pos += 1
+            skipWs()
+            if pos >= len then fail(Issue.ExpectedMore)
+            val q = s.charAt(pos)
+            val value =
+              if q == '"' || q == '\'' then
+                pos += 1
+                readAttrValue(q)
+              else readUnquotedValue()
+            entries = entries.updated(key, value)
+          else
+            entries = entries.updated(key, Unset)
+      entries
+
+    def readText(): Text =
+      val start = pos
+      var hasEntity = false
+      while pos < len && s.charAt(pos) != '<' do
+        if s.charAt(pos) == '&' then hasEntity = true
+        pos += 1
+      if !hasEntity then s.substring(start, pos).nn.tt
+      else
+        val buf = jl.StringBuilder()
+        var i = start
+        val end = pos
+        while i < end do
+          val c = s.charAt(i)
+          if c == '&' then
+            val savedPos = pos
+            pos = i + 1
+            buf.append(readEntity().s)
+            i = pos
+            pos = savedPos
+          else
+            buf.append(c)
+            i += 1
+        buf.toString.nn.tt
+
+    def readComment(): Text =
+      val start = pos
+      while pos < len - 2 && !(s.charAt(pos) == '-' && s.charAt(pos + 1) == '-' && s.charAt(pos + 2) == '>') do
+        pos += 1
+      if pos >= len - 2 then fail(Issue.ExpectedMore)
+      val text = s.substring(start, pos).nn.tt
+      pos += 3
+      text
+
+    def readDoctype(): Text =
+      // Position is just after '<!doctype' (case-insensitive). Skip to '>'.
+      skipWs()
+      val start = pos
+      while pos < len && s.charAt(pos) != '>' do pos += 1
+      if pos >= len then fail(Issue.ExpectedMore)
+      val text = s.substring(start, pos).nn.tt
+      pos += 1
+      text
+
+    // Read a single element starting just after '<'.
+    def readElement(): Element =
+      val name = readName()
+      val attrs = readAttributes()
+      if pos >= len then fail(Issue.ExpectedMore)
+      val isVoid =
+        dom.elements(name).lay(false)(_.void)
+      if s.charAt(pos) == '/' then
+        pos += 1
+        if pos >= len then fail(Issue.ExpectedMore)
+        if s.charAt(pos) != '>' then fail(Issue.Unexpected(s.charAt(pos)))
+        pos += 1
+        Element(name, attrs, IArray.empty[Node], false)
+      else
+        // '>'
+        pos += 1
+        if isVoid then Element(name, attrs, IArray.empty[Node], false)
+        else
+          val children = readChildren(name)
+          Element(name, attrs, children, false)
+
+    def readChildren(parentName: Text): IArray[Node] =
+      val children = scala.collection.mutable.ArrayBuffer[Node]()
+      var done = false
+      while !done do
+        if pos >= len then fail(Issue.Incomplete(parentName))
+        val c = s.charAt(pos)
+        if c == '<' then
+          if pos + 1 >= len then fail(Issue.ExpectedMore)
+          val c2 = s.charAt(pos + 1)
+          if c2 == '/' then
+            pos += 2
+            val close = readName()
+            skipWs()
+            if pos >= len then fail(Issue.ExpectedMore)
+            if s.charAt(pos) != '>' then fail(Issue.Unexpected(s.charAt(pos)))
+            pos += 1
+            if close != parentName then fail(Issue.MismatchedTag(parentName, close))
+            done = true
+          else if c2 == '!' then
+            if pos + 3 < len && s.charAt(pos + 2) == '-' && s.charAt(pos + 3) == '-' then
+              pos += 4
+              children += Comment(readComment())
+            else
+              fail(Issue.Unexpected(s.charAt(pos + 2)))
+          else
+            pos += 1
+            children += readElement()
+        else
+          val text = readText()
+          if text.length > 0 then children += TextNode(text)
+      IArray.from(children)
+
+    // Top level
+    skipWs()
+    val nodes = scala.collection.mutable.ArrayBuffer[Node]()
+    while pos < len do
+      if s.charAt(pos) != '<' then
+        val text = readText()
+        if text.length > 0 then nodes += TextNode(text)
+      else
+        if pos + 1 >= len then fail(Issue.ExpectedMore)
+        val c2 = s.charAt(pos + 1)
+        if c2 == '!' then
+          if pos + 3 < len && s.charAt(pos + 2) == '-' && s.charAt(pos + 3) == '-' then
+            pos += 4
+            nodes += Comment(readComment())
+          else if doctypes && pos + 8 < len &&
+            s.substring(pos + 2, pos + 9).nn.equalsIgnoreCase("doctype") then
+            pos += 9
+            nodes += Doctype(readDoctype())
+          else
+            fail(Issue.Unexpected(s.charAt(pos + 2)))
+        else if c2 == '/' then
+          pos += 2
+          val close = readName()
+          fail(Issue.UnopenedTag(close))
+        else
+          pos += 1
+          nodes += readElement()
+      skipWs()
+
+    if nodes.length == 1 then nodes(0)
+    else Fragment(nodes.toSeq*)
+
   private[honeycomb] def parse[dom <: Dom]
     ( input:       Iterator[Text],
       root:        Tag,
