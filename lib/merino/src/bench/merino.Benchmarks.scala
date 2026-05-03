@@ -78,6 +78,7 @@ object Benchmarks extends Suite(m"Merino benchmarks"):
     val size3 = jsonBytes3.length*Byte
     val size4 = jsonBytes4.length*Byte
     val size5 = jsonBytes5.length*Byte
+    val size6 = jsonBytes6.length*Byte
 
     suite(m"Parse example 1"):
       bench(m"Parse file with Merino")
@@ -164,6 +165,23 @@ object Benchmarks extends Suite(m"Merino benchmarks"):
       bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size5):
         '{ merino.Benchmarks.parseWithJsoniter(merino.Benchmarks.jsonText5) }
 
+    suite(m"Parse example 6 (50 high-precision blockchain transactions)"):
+      bench(m"Parse file with Merino")
+        (target = 1*Second, operationSize = size6, baseline = Baseline(compare = Min)):
+        '{ JsonAst.parse(merino.Benchmarks.jsonBytes6) }
+
+      bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size6):
+        '{
+            import org.typelevel.jawn.ast.JParser
+            JParser.parseFromString(merino.Benchmarks.jsonText6)
+          }
+
+      bench(m"Parse file with Circe")(target = 1*Second, operationSize = size6):
+        '{ io.circe.parser.parse(merino.Benchmarks.jsonText6) }
+
+      bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size6):
+        '{ merino.Benchmarks.parseWithJsoniter(merino.Benchmarks.jsonText6) }
+
   lazy val jsonText1: String = jsonExample1.s
   lazy val jsonText2: String = jsonExample2.s
   lazy val jsonText3: String = jsonExample3.s
@@ -209,6 +227,35 @@ object Benchmarks extends Suite(m"Merino benchmarks"):
     sb.toString.nn
 
   lazy val jsonBytes5: Data = jsonText5.getBytes("UTF-8").nn.immutable(using Unsafe)
+
+  // Example 6: 50 blockchain-style transaction records exercising high-
+  // precision numbers — wei values are 25-digit integers (overflowing
+  // `Long`), gas prices are ~22-digit decimals, both well beyond the
+  // 15-nibble fast path of `parseNumber`. Today these silently round to
+  // `Double`; the future Array[Long] BCD work would preserve precision.
+  lazy val jsonText6: String =
+    val sb = new _root_.java.lang.StringBuilder
+    sb.append("{\"transactions\":[")
+    var i = 0
+    while i < 50 do
+      if i > 0 then sb.append(',')
+      val nonce = i
+      val blockNumber = 18500000 + i
+      val gasUsed = 21000 + i*100
+      // 25-digit integer (overflows Long ~19 digits)
+      val valueWei = s"12345678901234567890${1000 + i}"
+      // 22-digit decimal (overflows Double precision ~15-17 digits)
+      val valueEth = s"1234567890.12345678901${i % 10}"
+      // 22-digit decimal
+      val gasPriceWei = s"30000000000.0123456789${i % 10}"
+      // Scientific notation, ~20 sig figs
+      val temperature = s"2.7345678901234567890${i % 10}e-3"
+      sb.append(s"""{"from":"0xabcdef${i}","to":"0x123456${i}","value":$valueWei,"valueEth":$valueEth,"gasPriceWei":$gasPriceWei,"gasUsed":$gasUsed,"blockNumber":$blockNumber,"nonce":$nonce,"temperatureDelta":$temperature}""")
+      i += 1
+    sb.append("]}")
+    sb.toString.nn
+
+  lazy val jsonBytes6: Data = jsonText6.getBytes("UTF-8").nn.immutable(using Unsafe)
 
   val jsonExample1: Text = t"""
 
