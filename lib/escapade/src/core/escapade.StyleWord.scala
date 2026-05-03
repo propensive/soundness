@@ -78,16 +78,16 @@ object StyleWord:
 
     val flagDiff = diff & (FlagsMask & ~(FgSet | BgSet | HyperlinkChange))
     if flagDiff != 0 then
-      if (flagDiff & Bold)            != 0 then buffer.add(if (next & Bold)            != 0 then t"\e[1m"  else t"\e[22m")
-      if (flagDiff & Faint)           != 0 then buffer.add(if (next & Faint)           != 0 then t"\e[2m"  else t"\e[22m")
       if (flagDiff & Italic)          != 0 then buffer.add(if (next & Italic)          != 0 then t"\e[3m"  else t"\e[23m")
+      if (flagDiff & Bold)            != 0 then buffer.add(if (next & Bold)            != 0 then t"\e[1m"  else t"\e[22m")
+      if (flagDiff & Reverse)         != 0 then buffer.add(if (next & Reverse)         != 0 then t"\e[7m"  else t"\e[27m")
       if (flagDiff & Underline)       != 0 then buffer.add(if (next & Underline)       != 0 then t"\e[4m"  else t"\e[24m")
+      if (flagDiff & Conceal)         != 0 then buffer.add(if (next & Conceal)         != 0 then t"\e[8m"  else t"\e[28m")
+      if (flagDiff & Strike)          != 0 then buffer.add(if (next & Strike)          != 0 then t"\e[9m"  else t"\e[29m")
+      if (flagDiff & Faint)           != 0 then buffer.add(if (next & Faint)           != 0 then t"\e[2m"  else t"\e[22m")
       if (flagDiff & DoubleUnderline) != 0 then buffer.add(if (next & DoubleUnderline) != 0 then t"\e[21m" else t"\e[24m")
       if (flagDiff & BlinkSlow)       != 0 then buffer.add(if (next & BlinkSlow)       != 0 then t"\e[5m"  else t"\e[25m")
       if (flagDiff & BlinkFast)       != 0 then buffer.add(if (next & BlinkFast)       != 0 then t"\e[6m"  else t"\e[25m")
-      if (flagDiff & Reverse)         != 0 then buffer.add(if (next & Reverse)         != 0 then t"\e[7m"  else t"\e[27m")
-      if (flagDiff & Conceal)         != 0 then buffer.add(if (next & Conceal)         != 0 then t"\e[8m"  else t"\e[28m")
-      if (flagDiff & Strike)          != 0 then buffer.add(if (next & Strike)          != 0 then t"\e[9m"  else t"\e[29m")
       if (flagDiff & Overline)        != 0 then buffer.add(if (next & Overline)        != 0 then t"\e[53m" else t"\e[55m")
 
 extension (style: StyleWord)
