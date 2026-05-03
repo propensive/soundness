@@ -47,7 +47,7 @@ sealed trait BlockBuilder:
   val line: Ordinal
 
 sealed trait LeafBuilder extends BlockBuilder:
-  def finish(refs: LinkRefs): Layout
+  def finish(refs: LinkRefs): Optional[Layout]
 
 sealed trait ContainerBuilder extends BlockBuilder:
   val children: ArrayBuffer[Layout] = ArrayBuffer()
@@ -134,7 +134,9 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
 
   def addLine(text: Text): Unit =
     // CommonMark §4.8: leading whitespace on each line of a paragraph is
-    // stripped before forming the paragraph's raw content.
+    // stripped before forming the paragraph's raw content. Trailing
+    // whitespace is preserved per-line so the inline parser can detect
+    // hard line breaks (two-trailing-spaces rule).
     val s = text.s
     val n = s.length
     var i = 0
@@ -144,21 +146,54 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
 
   def isEmpty: Boolean = lines.isEmpty
 
-  def joined: Text =
+  // Joined raw content of the (post-link-ref) paragraph. The first
+  // `linkRefCount` lines are dropped — they were consumed as link reference
+  // definitions during `extractLinkRefs`.
+  private var linkRefCount: Int = 0
+
+  private def joined: Text =
     val builder = new StringBuilder
     var first = true
-    for line <- lines do
+    var idx = linkRefCount
+    while idx < lines.length do
       if first then first = false else builder.append('\n')
-      builder.append(line.s)
+      builder.append(lines(idx).s)
+      idx += 1
     Text(builder.toString)
 
-  def finish(refs: LinkRefs): Layout =
-    Layout.Paragraph(line, InlineParser.parse(joined, refs)*)
+  // Try to consume leading lines as link reference definitions. Returns the
+  // count consumed; updates `linkRefCount`.
+  private def extractLinkRefs(refs: LinkRefs): Int =
+    var count = 0
+    var done = false
+    while !done && count < lines.length do
+      val parsed = InlineSupport.parseLinkRefDef(lines(count))
+      if parsed.absent then done = true
+      else
+        refs.add(parsed.vouch)
+        count += 1
+    linkRefCount = count
+    count
+
+  def finish(refs: LinkRefs): Optional[Layout] =
+    extractLinkRefs(refs)
+    if linkRefCount >= lines.length then Unset
+    else Layout.Paragraph(line, InlineParser.parse(joined, refs)*)
 
   // Setext headings rewrite an open paragraph as a heading; the underline
-  // line itself is consumed by the dispatcher, not added here.
+  // line itself is consumed by the dispatcher, not added here. No link-ref
+  // extraction here — setext underlines stop link-ref accumulation by
+  // turning the paragraph into a heading.
   def toHeading(level: 1 | 2 | 3 | 4 | 5 | 6, refs: LinkRefs): Layout =
-    Layout.Heading(line, level, InlineParser.parse(joined, refs)*)
+    val text =
+      val builder = new StringBuilder
+      var first = true
+      for line <- lines do
+        if first then first = false else builder.append('\n')
+        builder.append(line.s)
+      Text(builder.toString)
+
+    Layout.Heading(line, level, InlineParser.parse(text, refs)*)
 
 final class FencedCodeBlockBuilder
   ( val line:      Ordinal,
@@ -171,7 +206,7 @@ extends LeafBuilder:
 
   def addLine(text: Text): Unit = content += text
 
-  def finish(refs: LinkRefs): Layout =
+  def finish(refs: LinkRefs): Optional[Layout] =
     val builder = new StringBuilder
     for line <- content do
       builder.append(line.s)
@@ -185,7 +220,7 @@ final class IndentedCodeBlockBuilder(val line: Ordinal) extends LeafBuilder:
 
   def addLine(text: Text): Unit = content += text
 
-  def finish(refs: LinkRefs): Layout =
+  def finish(refs: LinkRefs): Optional[Layout] =
     while content.nonEmpty && ParserSupport.isBlank(content.last) do
       content.dropRightInPlace(1)
     val builder = new StringBuilder
