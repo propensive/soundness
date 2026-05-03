@@ -138,16 +138,56 @@ object JsonAst extends Format:
     inline final val CloseBrace:   125 = 125 // '}'
 
   opaque type RawJson =
-    Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean
-    | Null | Unset.type
+    Long | Double | BigDecimal | String | IArray[Any] | Boolean | Null | Unset.type
+
+  // Sentinel used to pad an array whose original length is even, so that all
+  // arrays have odd `IArray[Any]` length and can be distinguished from objects
+  // (which are encoded as alternating `key, value, …` and therefore always
+  // have even length). The sentinel only ever appears as the last element of a
+  // padded array and is never part of the user-visible array contents.
+  val arrayPad: AnyRef = new Object
 
   def apply
     ( value
-      : Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean
-        | Null | Unset.type )
+      : Long | Double | BigDecimal | String | IArray[Any] | Boolean | Null | Unset.type )
   :   JsonAst =
 
     value
+
+  // Build an object node from parallel `keys` and `values` arrays. The result
+  // is stored as a single `IArray[Any]` of length `2 * keys.length`, with keys
+  // at even indices and values at odd indices.
+  def obj(keys: IArray[String], values: IArray[Any]): JsonAst =
+    val n = keys.length
+    val arr = new Array[Any](n*2)
+    var i = 0
+    while i < n do
+      arr(i*2) = keys(i)
+      arr(i*2 + 1) = values(i)
+      i += 1
+    arr.asInstanceOf[IArray[Any]]
+
+  // Build an array node from `elements`. If the element count is even, a
+  // single sentinel `arrayPad` is appended so the stored `IArray[Any]` has
+  // odd length.
+  def arr(elements: IArray[Any]): JsonAst =
+    val n = elements.length
+    if (n & 1) == 1 then elements
+    else
+      val padded = new Array[Any](n + 1)
+      System.arraycopy(elements.asInstanceOf[Array[Any]], 0, padded, 0, n)
+      padded(n) = arrayPad
+      padded.asInstanceOf[IArray[Any]]
+
+  // The number of user-visible elements in an array node (excludes the
+  // sentinel padding, if present).
+  def arrayLength(json: JsonAst): Int =
+    val arr = json.asInstanceOf[Array[?]]
+    val n = arr.length
+    if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq arrayPad) then n - 1 else n
+
+  // The number of key/value pairs in an object node.
+  def objectSize(json: JsonAst): Int = json.asInstanceOf[Array[?]].length/2
 
 
   given Tactic[ParseError] => JsonAst is Aggregable by Data =
