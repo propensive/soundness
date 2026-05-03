@@ -77,7 +77,8 @@ object Teletypeable:
         do
           val fg = graphical.pixel(graphic, x, y)
           val bg = graphical.pixel(graphic, x, y + 1)
-          append(Teletype(t"▀", TreeMap((CharSpan(0, 1), { _ => TextStyle(fg, bg) }))))
+          val styled = TextStyle(fg, bg).styleWord
+          append(Teletype(t"▀", IArray(styled, 0L)))
 
         append(e"\n")
 
@@ -164,10 +165,10 @@ object Teletypeable:
     e"$className${Fg(Chroma(0x808080))}( ⌗ )$methodName"
 
   given double: (decimalizer: Decimalizer) => Double is Teletypeable = double =>
-    Teletype(decimalizer.decimalize(double))(_.copy(fg = Chroma(0xffd600)))
+    Teletype.styled(decimalizer.decimalize(double))(_.copy(fg = Chroma(0xffd600)))
 
   given throwable: Throwable is Teletypeable = throwable =>
-    Teletype[String]
+    Teletype.styled[String]
       (throwable.getClass.getName.nn.show.cut(t".").last.s)(_.copy(fg = Chroma(0xdc133b)))
 
 trait Teletypeable extends Typeclass:

@@ -42,8 +42,9 @@ import vacuous.*
 
 class TeletypeBuilder(size: Optional[Int] = Unset) extends Builder[Teletype]:
   private val builder: StringBuilder = StringBuilder()
-  private val spans: scm.Map[CharSpan, Ansi.Transform] = scm.HashMap()
-  private val insertions: scm.Map[Int, Text] = scm.HashMap()
+  private val styles: scm.ArrayBuffer[Long] = scm.ArrayBuffer.empty
+  private val hyperlinks: scm.HashMap[Int, Text] = scm.HashMap()
+  private val insertions: scm.TreeMap[Int, Text] = scm.TreeMap()
 
   private var offset: Int = 0
 
@@ -52,18 +53,32 @@ class TeletypeBuilder(size: Optional[Int] = Unset) extends Builder[Teletype]:
   protected def wipe(): Unit =
     offset = 0
     builder.clear()
-    spans.clear()
+    styles.clear()
+    hyperlinks.clear()
     insertions.clear()
 
   protected def put(text: Teletype): Unit =
     builder.append(text.plain.s)
-    text.spans.each { (span, value) => spans(span.shift(offset)) = value }
-    text.insertions.each { (position, value) => insertions(position + offset) = value }
-    offset += text.length
+    var i = 0
+    while i < text.plain.length do
+      styles += text.styles(i)
+      i += 1
+
+    text.hyperlinks.each { (k, v) => hyperlinks(k + offset) = v }
+    text.insertions.each { (k, v) => insertions(k + offset) = v }
+
+    offset += text.plain.length
 
   protected def putChar(char: Char): Unit =
     builder.append(char)
+    styles += 0L
     offset += 1
 
   protected def result(): Teletype =
-    Teletype(builder.toString.tt, spans.to(TreeMap), insertions.to(TreeMap))
+    styles += 0L
+
+    Teletype
+     ( builder.toString.tt,
+       IArray.unsafeFromArray(styles.toArray),
+       hyperlinks.toMap,
+       insertions.to(TreeMap) )
