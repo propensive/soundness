@@ -70,3 +70,42 @@ object Tests extends Suite(m"Mandible tests"):
       Bytecode.Descriptor.parse(t"([[Ljava/lang/Object;J)Z")
     . assert: parsed =>
         parsed.args.size == 2 && parsed.result == Bytecode.Frame.Z
+
+    test(m"Detect virtual call as effectively static when receiver is a singleton"):
+      // Construct: GETSTATIC Foo$.MODULE$:LFoo$;  followed by  INVOKEVIRTUAL Foo$.doIt()V
+      val moduleFrame = Bytecode.Frame.L(t"Foo$$")
+      val getstatic =
+        Bytecode.Instruction
+          ( Bytecode.Opcode.Getstatic(t"Foo$$", t"MODULE$$", t"LFoo$$;"),
+            Unset,
+            moduleFrame :: Nil,
+            0 )
+
+      val invoke =
+        Bytecode.Instruction
+          ( Bytecode.Opcode.Invokevirtual(t"Foo$$", t"doIt", t"()V"),
+            Unset,
+            Nil,
+            3 )
+
+      Bytecode(Unset, List(getstatic, invoke), 1, 0).effectivelyStaticCalls
+    . assert(_ == Set(3))
+
+    test(m"A virtual call on an opaque receiver is not flagged as static"):
+      val opaqueFrame = Bytecode.Frame.L(t"?")
+      val getstatic =
+        Bytecode.Instruction
+          ( Bytecode.Opcode.Getstatic(t"Bar", t"thing", t"Ljava/lang/Object;"),
+            Unset,
+            opaqueFrame :: Nil,
+            0 )
+
+      val invoke =
+        Bytecode.Instruction
+          ( Bytecode.Opcode.Invokevirtual(t"Foo$$", t"doIt", t"()V"),
+            Unset,
+            Nil,
+            3 )
+
+      Bytecode(Unset, List(getstatic, invoke), 1, 0).effectivelyStaticCalls
+    . assert(_.isEmpty)
