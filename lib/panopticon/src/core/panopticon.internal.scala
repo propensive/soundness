@@ -145,9 +145,17 @@ object internal:
 
     // ─── tree types (live inside this method scope) ──────────────────────
 
+    /** Parsed prefix tree, before lens resolution. */
     sealed trait Branch
     case class FieldB(name: String, children: List[Branch]) extends Branch
     case class LeafB(leaf: Term) extends Branch
+
+    /** After resolution: each FieldB's `Lens` typeclass instance has been summoned
+      * for the appropriate origin type, and its Target type is captured. */
+    sealed trait Resolved
+    case class FieldR(name: String, lens: Term, target: TypeRepr, children: List[Resolved])
+        extends Resolved
+    case class LeafR(leaf: Term) extends Resolved
 
     def toBranches(parsed: (List[String], Term)): Branch =
       val (fields, leaf) = parsed
@@ -161,6 +169,52 @@ object internal:
         case (b, rest) =>
           b :: rest
 
+    // ─── resolve: summon a Lens for each (name, originTpe) ───────────────
+
+    /** Summons `name.type is Lens from originTpe`, i.e. `Lens { type Self = name.type;
+      * type Origin = originTpe }`. Returns the summoned term, or None if no Lens given
+      * is in scope (in which case we fall back to the foldLeft path).
+      */
+    def summonLens(name: String, originTpe: TypeRepr): Option[Term] =
+      val nameTpe = ConstantType(StringConstant(name))
+      // `name.type is Lens from originT` desugars to `Lens { type Self = name.type;
+      // type Origin = originT }`. Type-member refinements need TypeBounds with equal
+      // lower and upper bounds.
+      val refined = Refinement
+                     ( Refinement(TypeRepr.of[Lens], "Self", TypeBounds(nameTpe, nameTpe)),
+                       "Origin", TypeBounds(originTpe, originTpe) )
+      refined.asType match
+        case '[lensT] => Expr.summon[lensT].map(_.asTerm)
+
+    /** Pulls the concrete `Target` type out of a resolved Lens's term. Type-member
+      * refinements store their info as `TypeBounds(lo, hi)`; for an alias `type X = T`,
+      * `lo == hi == T`, so we return either bound.
+      */
+    def extractTarget(lensTerm: Term): Option[TypeRepr] =
+      def unbounds(info: TypeRepr): TypeRepr = info match
+        case TypeBounds(_, hi) => hi
+        case other             => other
+
+      def walk(t: TypeRepr): Option[TypeRepr] = t.dealias match
+        case Refinement(_, "Target", info) => Some(unbounds(info))
+        case Refinement(parent, _, _)      => walk(parent)
+        case _                             => None
+
+      walk(lensTerm.tpe)
+
+    /** Walks the prefix tree, summoning a Lens at each step. Returns None if any
+      * step fails to resolve — the orchestrator then falls back to `applyFold`. */
+    def resolveAll(branches: List[Branch], originTpe: TypeRepr): Option[List[Resolved]] =
+      val opts: List[Option[Resolved]] = branches.map:
+        case LeafB(leaf) => Some(LeafR(leaf))
+        case FieldB(name, children) =>
+          summonLens(name, originTpe).flatMap: lensTerm =>
+            extractTarget(lensTerm).flatMap: targetTpe =>
+              resolveAll(children, targetTpe).map: resolvedChildren =>
+                FieldR(name, lensTerm, targetTpe, resolvedChildren)
+
+      if opts.forall(_.isDefined) then Some(opts.flatten) else None
+
     // ─── emit ────────────────────────────────────────────────────────────
 
     def applyLeaf[T: Type](acc: Expr[T], leafTerm: Term): Expr[T] =
@@ -168,21 +222,21 @@ object internal:
       // at runtime tagging is a no-op. We pass `acc` directly via aka to satisfy the typer.
       '{ ${ leafTerm.asExprOf[(T `aka` "prior") ?=> T] }(using $acc.aka["prior"]) }
 
-    def emit[T: Type](origin: Expr[T], branches: List[Branch]): Expr[T] =
-      val merged = mergeAdjacent(branches)
+    def emit[T: Type](origin: Expr[T], branches: List[Resolved]): Expr[T] =
       // Each iteration must see `acc` as a cheap reference, otherwise multi-use of the
-      // accumulator inside `emitFieldUpdate` (one read + N–1 case-field passthroughs)
-      // would cause the previous step's expression to be inlined N times. We bind every
+      // accumulator inside `emitFieldUpdate` (one read + one update, sharing `origin`)
+      // would inline the previous step's expression more than once. We bind every
       // non-final intermediate result to a fresh val.
-      if merged.isEmpty then origin else
+      if branches.isEmpty then origin else
         var acc: Term = origin.asTerm
         val defs = scala.collection.mutable.ListBuffer.empty[Statement]
-        val last = merged.length - 1
+        val last = branches.length - 1
 
-        merged.zipWithIndex.foreach: (branch, idx) =>
+        branches.zipWithIndex.foreach: (branch, idx) =>
           val nextExpr: Expr[T] = branch match
-            case LeafB(leaf)            => applyLeaf[T](acc.asExprOf[T], leaf)
-            case FieldB(name, children) => emitFieldUpdate[T](acc.asExprOf[T], name, children)
+            case LeafR(leaf) => applyLeaf[T](acc.asExprOf[T], leaf)
+            case FieldR(name, lens, target, children) =>
+              emitFieldUpdate[T](acc.asExprOf[T], name, lens, target, children)
 
           if idx < last then
             val sym = Symbol.newVal
@@ -195,39 +249,85 @@ object internal:
         if defs.isEmpty then acc.asExprOf[T]
         else Block(defs.toList, acc).asExprOf[T]
 
-    def emitFieldUpdate[T: Type](origin: Expr[T], name: String, children: List[Branch]): Expr[T] =
-      val symbol = TypeRepr.of[T].typeSymbol
-      val field  = symbol.caseFields.find(_.name == name).getOrElse:
-        report.errorAndAbort(s"panopticon.fuse: ${TypeRepr.of[T].show} has no field called $name")
+    /** If `lensTerm` is `Lens.apply(getLambda, setLambda)` (possibly under Inlined
+      * wrappers), peel off the wrappers and return the two lambdas. This catches both
+      * `Optic.deref` (which is `transparent inline given` expanding to the case-class
+      * Lens constructor) and any user-defined Lens built via `Lens(...)`/`Lens.apply(...)`
+      * — including Jacinta's `Lens(_.selectDynamic(name), _.modify(name, _))`.
+      */
+    def lensConstructorLambdas(lensTerm: Term): Option[(Term, Term)] =
+      def stripWrappers(t: Term): Term = t match
+        case Inlined(_, Nil, inner) => stripWrappers(inner)
+        case Block(Nil, expr)       => stripWrappers(expr)
+        case Typed(expr, _)         => stripWrappers(expr)
+        case _                      => t
 
-      val make = symbol.companionModule.methodMember("apply").head
+      stripWrappers(lensTerm) match
+        case Apply(applyFn, List(getLambda, setLambda))
+          if applyFn.symbol.exists && applyFn.symbol.owner == TypeRepr.of[Lens.type].typeSymbol
+          && applyFn.symbol.name == "apply" =>
+          Some((getLambda, setLambda))
+        case _ => None
 
-      field.info.asType match
-        case '[fieldT] =>
+    def emitFieldUpdate[T: Type]
+      (origin: Expr[T], name: String, lensTerm: Term, targetTpe: TypeRepr, children: List[Resolved])
+    :   Expr[T] =
+      targetTpe.asType match
+        case '[targetT] =>
+          // Build the get expression. If the lens was constructed via `Lens.apply(getFn,
+          // setFn)`, beta-reduce `getFn(origin)` so the typer can inline a direct field
+          // access (for case classes) or a direct `selectDynamic` call (for Jacinta's
+          // Json lens). Falls back to `lens.apply(origin)` for opaque lens shapes.
+          val (lensPrelude, getTerm, doSet) = lensConstructorLambdas(lensTerm) match
+            case Some((getLambda, setLambda)) =>
+              // Inline-friendly lens: cast lambdas to Function types so the typer
+              // resolves apply, then beta-reduce. For case classes this collapses to
+              // `origin.field`; for any other inline lens to its own get/set body.
+              val getFn = getLambda.asExprOf[T => targetT]
+              val setFn = setLambda.asExprOf[(T, targetT) => T]
+              val rawGet = '{ $getFn($origin) }.asTerm
+              val get = Term.betaReduce(rawGet).getOrElse(rawGet)
+              val set: Term => Term = (newValue: Term) =>
+                val rawSet = '{ $setFn($origin, ${ newValue.asExprOf[targetT] }) }.asTerm
+                Term.betaReduce(rawSet).getOrElse(rawSet)
+              (Nil, get, set)
+
+            case None =>
+              // Opaque lens (e.g. Jacinta's `given lens`, which isn't inline). Bind it
+              // to a val so apply + update share it. Use a quoted block so the typer picks
+              // the right overload of apply (Lens.apply takes Origin; Optic.apply takes a
+              // traversal — Select.unique can't disambiguate by name).
+              val lensSym = Symbol.newVal
+                             ( Symbol.spliceOwner, s"l$$$name", lensTerm.tpe, Flags.EmptyFlags,
+                               Symbol.noSymbol )
+              val lensDef = ValDef(lensSym, Some(lensTerm.changeOwner(lensSym)))
+              val lensExpr = Ref(lensSym)
+                              . asExprOf[Lens { type Origin = T; type Target = targetT }]
+              val getRaw = '{ $lensExpr($origin) }.asTerm
+              val set: Term => Term = (newValue: Term) =>
+                val newValueExpr = newValue.asExprOf[targetT]
+                '{ $lensExpr.update($origin, $newValueExpr) }.asTerm
+              (List(lensDef), getRaw, set)
+
           val inSym = Symbol.newVal
-                       ( Symbol.spliceOwner, s"v$$$name", TypeRepr.of[fieldT], Flags.EmptyFlags,
+                       ( Symbol.spliceOwner, s"v$$$name", targetTpe, Flags.EmptyFlags,
                          Symbol.noSymbol )
-          val getTerm = origin.asTerm.select(field)
           val inDef   = ValDef(inSym, Some(getTerm.changeOwner(inSym)))
-          val inRef   = Ref(inSym).asExprOf[fieldT]
+          val inRef   = Ref(inSym).asExprOf[targetT]
 
-          val updated = emit[fieldT](inRef, children)
+          val updated = emit[targetT](inRef, children)
 
           val outSym = Symbol.newVal
-                        ( Symbol.spliceOwner, s"v$$$name'", TypeRepr.of[fieldT], Flags.EmptyFlags,
+                        ( Symbol.spliceOwner, s"v$$$name'", targetTpe, Flags.EmptyFlags,
                           Symbol.noSymbol )
           val outDef  = ValDef(outSym, Some(updated.asTerm.changeOwner(outSym)))
           val outRef  = Ref(outSym)
 
-          val params = symbol.caseFields.map: f =>
-            if f.name == name then outRef else origin.asTerm.select(f)
+          val rebuilt = doSet(outRef)
 
-          val rebuilt = Ref(symbol.companionModule).select(make).appliedToArgs(params)
-          Block(List(inDef, outDef), rebuilt).asExprOf[T]
-        case _ =>
-          report.errorAndAbort(s"panopticon.fuse: cannot derive type for field $name")
+          Block(lensPrelude ++ List(inDef, outDef), rebuilt).asExprOf[T]
 
-    def emitTop(branches: List[Branch]): Expr[value] =
+    def emitTop(branches: List[Resolved]): Expr[value] =
       val rootSym  = Symbol.newVal
                       ( Symbol.spliceOwner, "v$root", TypeRepr.of[value], Flags.EmptyFlags,
                         Symbol.noSymbol )
@@ -253,4 +353,7 @@ object internal:
               '{ $singleLambda(Optic.identity[value])($valueExpr) }
             else fallback
           else
-            emitTop(parsed.flatten.map(toBranches))
+            val merged = mergeAdjacent(parsed.flatten.map(toBranches))
+            resolveAll(merged, TypeRepr.of[value]) match
+              case Some(resolved) => emitTop(resolved)
+              case None           => fallback
