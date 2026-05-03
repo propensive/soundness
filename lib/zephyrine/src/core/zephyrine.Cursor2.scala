@@ -250,6 +250,28 @@ final class Cursor2[data]
   inline def line: Ordinal = lineNo
   inline def column: Ordinal = columnNo
 
+  // Stream of all unconsumed data from the current position onwards. Yields
+  // the buffered tail first (one chunk materialised from `pos` to `writeEnd`),
+  // then drains the loader, returning chunks as it goes. Caller-driven, so a
+  // streaming consumer pays nothing until it pulls.
+  def remainder: Stream[data] =
+    val tailLen = writeEnd - pos
+    val tail: data =
+      if tailLen <= 0 then addressable.empty
+      else addressable.materialize(buffer, pos, tailLen)
+    pos = writeEnd
+    if tailLen > 0 then tail #:: loaderStream else loaderStream
+
+  private def loaderStream: Stream[data] =
+    if ended then Stream.empty
+    else load() match
+      case Unset =>
+        ended = true
+        Stream.empty
+      case chunk: data @unchecked =>
+        if addressable.length(chunk) > 0 then chunk #:: loaderStream
+        else loaderStream
+
   // ─── current element ──────────────────────────────────────────────────────
 
   inline def datum(using erased Unsafe): addressable.Operand =

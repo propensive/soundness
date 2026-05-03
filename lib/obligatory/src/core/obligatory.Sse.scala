@@ -55,9 +55,9 @@ object Sse:
       Http.Body.Streaming(stream.map(_.encode.data))
 
   given framable: Text is Framable by Sse = input =>
-    val cursor = Cursor(input)
+    val cursor = Cursor2(input)
 
-    def frame(start: Cursor.Mark)(using Cursor.Held): Optional[Text] = cursor.hold:
+    def frame(start: Cursor2.Mark)(using Cursor2.Held): Optional[Text] = cursor.hold:
       if !cursor.finished && cursor.seek(Lf) then
         val end = cursor.mark
         cursor.next()

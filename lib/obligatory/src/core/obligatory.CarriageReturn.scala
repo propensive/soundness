@@ -41,7 +41,7 @@ import zephyrine.*
 
 object CarriageReturn:
   given framable: Text is Framable by CarriageReturn = input =>
-    val cursor = Cursor(input)
+    val cursor = Cursor2(input)
 
     def frame(): Optional[Text] = cursor.hold:
       val start = cursor.mark
