@@ -465,3 +465,264 @@ object Tests extends Suite(m"Zephyrine tests"):
         cursor.hold(cursor.remainder.flatten.to(List))
 
       . assert(_ == List[Byte](4, 5, 6, 7, 8))
+
+    suite(m"Cursor2 tests"):
+      def hello = Cursor2(t"Hello world!".chars.to(List).map(_.show).iterator)
+      def numbers = Cursor2(t"0123456789abc".chars.to(List).map(_.show).iterator)
+
+      test(m"Iterate over elements"):
+        val cursor = hello
+        val builder = java.lang.StringBuilder()
+        while
+          builder.append(cursor.datum(using Unsafe))
+          cursor.next()
+        do ()
+
+        builder.toString
+      . assert(_ == "Hello world!")
+
+      test(m"Capture part of first block"):
+        val cursor = hello
+        val builder = java.lang.StringBuilder()
+        cursor.next()
+
+        cursor.hold:
+          val mark = cursor.mark
+          for i <- 1 to 2 do cursor.next()
+          cursor.clone(mark, cursor.mark)(builder)
+
+        builder.toString
+      . assert(_ == "el")
+
+      test(m"Capture spanning block"):
+        val cursor = hello
+        val builder = java.lang.StringBuilder()
+        for i <- 1 to 2 do cursor.next()
+
+        cursor.hold:
+          val mark = cursor.mark
+          for i <- 1 to 3 do cursor.next()
+          cursor.clone(mark, cursor.mark)(builder)
+
+        builder.toString
+      . assert(_ == "llo")
+
+      test(m"Capture multiply-spanning block"):
+        val cursor = hello
+        val builder = java.lang.StringBuilder()
+        for i <- 1 to 3 do cursor.next()
+
+        cursor.hold:
+          val mark = cursor.mark
+          for i <- 1 to 4 do cursor.next()
+          cursor.clone(mark, cursor.mark)(builder)
+
+        builder.toString
+      . assert(_ == "lo w")
+
+      test(m"Capture multiply-spanning block with nesting"):
+        val cursor = hello
+        val builder = java.lang.StringBuilder()
+        for i <- 1 to 3 do cursor.next()
+
+        cursor.hold:
+          val mark1 = cursor.mark
+          for i <- 1 to 2 do cursor.next()
+          val mark2 = cursor.mark
+          cursor.clone(mark1, mark2)(builder)
+          for i <- 1 to 2 do cursor.next()
+
+        builder.toString
+      . assert(_ == "lo")
+
+      test(m"Capture multiply-spanning block with nesting 2"):
+        val cursor = hello
+        val builder = java.lang.StringBuilder()
+        for i <- 1 to 3 do cursor.next()
+
+        cursor.hold:
+          val mark1 = cursor.mark
+          for i <- 1 to 2 do cursor.next()
+          val mark2 = cursor.mark
+          cursor.clone(mark1, mark2)(builder)
+          for i <- 1 to 3 do cursor.next()
+          cursor.clone(mark1, cursor.mark)(builder)
+
+        builder.toString
+      . assert(_ == "lolo wo")
+
+      test(m"Rewind, release and resume"):
+        val iterator = Iterator[Text]("one", "two", "three", "four")
+        val cursor = Cursor2(iterator)
+        val builder = new StringBuilder()
+        builder.append(cursor.datum(using Unsafe))
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        cursor.hold:
+          cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+          cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+          val mark = cursor.mark
+          cursor.next()
+          cursor.next()
+          cursor.next()
+          cursor.next()
+          cursor.cue(mark)
+          cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        builder.toString
+      . assert(_ == "onetwothreef")
+
+      test(m"Rewinding"):
+        val cursor = numbers
+        for i <- 1 to 3 do cursor.next()
+
+        cursor.hold:
+          val mark = cursor.mark
+          for i <- 1 to 3 do cursor.next()
+          cursor.cue(mark)
+
+        cursor.datum(using Unsafe)
+      . assert(_ == '3')
+
+      test(m"Rewinding and continuing"):
+        val cursor = numbers
+        for i <- 1 to 3 do cursor.next()
+
+        cursor.hold:
+          val mark = cursor.mark
+          for i <- 1 to 3 do cursor.next()
+          cursor.cue(mark)
+
+        cursor.next()
+        cursor.datum(using Unsafe)
+      . assert(_ == '4')
+
+      test(m"Rewinding and continuing to next block"):
+        val cursor = numbers
+        for i <- 1 to 3 do cursor.next()
+
+        cursor.hold:
+          val mark = cursor.mark
+          for i <- 1 to 3 do cursor.next()
+          cursor.cue(mark)
+
+        for i <- 1 to 2 do cursor.next()
+        cursor.datum(using Unsafe)
+      . assert(_ == '5')
+
+      test(m"Capture from start to end"):
+        val cursor = hello
+        val builder = java.lang.StringBuilder()
+
+        cursor.hold:
+          val mark = cursor.mark
+          while cursor.next() do ()
+          cursor.clone(mark, cursor.mark)(builder)
+
+        builder.toString
+      . assert(_ == "Hello world!")
+
+      for offset <- 0 to 8 do
+        for length <- 1 to 4 do
+          test(m"Spans, offset $offset, length $length"):
+            val cursor = hello
+
+            for j <- 0 until offset do cursor.next()
+            cursor.hold:
+              val start = cursor.mark
+              for i <- 0 until length do cursor.next()
+              cursor.grab(start, cursor.mark)
+
+          . assert(_ == "Hello world!".substring(offset, offset + length).nn)
+
+      test(m"Grab spanning multi-character blocks"):
+        val cursor = Cursor2(Iterator[Text]("hello", "world"))
+        for j <- 1 to 2 do cursor.next()
+        cursor.hold:
+          val start = cursor.mark
+          for i <- 1 to 4 do cursor.next()
+          cursor.grab(start, cursor.mark)
+
+      . assert(_ == "llow")
+
+      test(m"Grab spanning three multi-character blocks"):
+        val cursor = Cursor2(Iterator[Text]("one", "two", "three", "four"))
+        cursor.hold:
+          val start = cursor.mark
+          for i <- 1 to 7 do cursor.next()
+          cursor.grab(start, cursor.mark)
+
+      . assert(_ == "onetwot")
+
+      test(m"Pre-filled buffer (Direct mode)"):
+        val cursor = Cursor2(t"Hello world!")
+        val builder = java.lang.StringBuilder()
+        while
+          builder.append(cursor.datum(using Unsafe))
+          cursor.next()
+        do ()
+        builder.toString
+      . assert(_ == "Hello world!")
+
+      test(m"Cursor2 from explicit loader"):
+        val chunks = scala.collection.mutable.Queue(t"abc", t"def", t"ghi")
+        val cursor = Cursor2[Text](() => if chunks.isEmpty then Unset else chunks.dequeue())
+        val builder = java.lang.StringBuilder()
+        while
+          builder.append(cursor.datum(using Unsafe))
+          cursor.next()
+        do ()
+        builder.toString
+      . assert(_ == "abcdefghi")
+
+    suite(m"Cursor2[Data] tests"):
+      def stream = Stream(bytes).shred(10.0, 10.0).filter(_.nonEmpty)
+      def byteCursor = Cursor2[Data](stream.iterator)
+
+      test(m"Cursor2[Data] starts at first byte"):
+        byteCursor.datum(using Unsafe)
+
+      . assert(_ == 0.toByte)
+
+      test(m"Cursor2[Data] second byte is 1"):
+        val cursor = byteCursor
+        cursor.next()
+        cursor.datum(using Unsafe)
+
+      . assert(_ == 1.toByte)
+
+      test(m"Cursor2[Data] take first ten bytes"):
+        val cursor = byteCursor
+        cursor.take(Data())(10)
+
+      . assert(_ === Data(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
+
+      test(m"Cursor2[Data] take second ten bytes"):
+        val cursor = byteCursor
+        for i <- 0 until 10 do cursor.next()
+        cursor.take(Data())(10)
+
+      . assert(_ === Data(10, 11, 12, 13, 14, 15, 16, 17, 18, 19))
+
+      test(m"Cursor2[Data] grab between marks across block boundary"):
+        val cursor = byteCursor
+        for i <- 0 until 5 do cursor.next()
+        cursor.hold:
+          val start = cursor.mark
+          for i <- 0 until 10 do cursor.next()
+          cursor.grab(start, cursor.mark)
+
+      . assert(_ === Data(5, 6, 7, 8, 9, 10, 11, 12, 13, 14))
+
+      test(m"Cursor2[Data] seek finds byte"):
+        val cursor = byteCursor
+        cursor.seek(15.toByte)
+        cursor.datum(using Unsafe)
+
+      . assert(_ == 15.toByte)

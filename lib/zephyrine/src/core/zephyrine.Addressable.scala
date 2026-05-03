@@ -45,6 +45,7 @@ object Addressable:
   inline given bytes: Data is Addressable:
     type Operand = Byte
     type Target = ji.ByteArrayOutputStream
+    type Storage = Array[Byte]
 
     val empty: Data = IArray.from(Nil)
 
@@ -63,9 +64,39 @@ object Addressable:
 
       target.write(source.mutable(using Unsafe), start.n0, end.n0 - start.n0 + 1)
 
+    inline def allocate(size: Int): Array[Byte] = new Array[Byte](size)
+    inline def storageSize(storage: Array[Byte]): Int = storage.length
+    inline def storageAddress(storage: Array[Byte], index: Int): Byte = storage(index)
+
+    inline def copyChunk
+                (source:  Data,
+                 srcOff:  Int,
+                 dest:    Array[Byte],
+                 destOff: Int,
+                 len:     Int)
+    :   Unit =
+      System.arraycopy(source.mutable(using Unsafe), srcOff, dest, destOff, len)
+
+    inline def transfer
+                (src:     Array[Byte],
+                 srcOff:  Int,
+                 dest:    Array[Byte],
+                 destOff: Int,
+                 len:     Int)
+    :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
+
+    inline def materialize(storage: Array[Byte], off: Int, len: Int): Data =
+      java.util.Arrays.copyOfRange(storage, off, off + len).nn.immutable(using Unsafe)
+
+    inline def cloneStorage
+                (storage: Array[Byte], off: Int, len: Int)(target: ji.ByteArrayOutputStream)
+    :   Unit = target.write(storage, off, len)
+
+
   inline given text: Text is Addressable:
     type Operand = Char
     type Target = jl.StringBuilder
+    type Storage = Array[Char]
 
     val empty: Text = ""
 
@@ -83,8 +114,41 @@ object Addressable:
 
       target.append(source.s, start.n0, end.n1)
 
+    inline def allocate(size: Int): Array[Char] = new Array[Char](size)
+    inline def storageSize(storage: Array[Char]): Int = storage.length
+    inline def storageAddress(storage: Array[Char], index: Int): Char = storage(index)
+
+    inline def copyChunk
+                (source:  Text,
+                 srcOff:  Int,
+                 dest:    Array[Char],
+                 destOff: Int,
+                 len:     Int)
+    :   Unit = source.s.getChars(srcOff, srcOff + len, dest, destOff)
+
+    inline def transfer
+                (src:     Array[Char],
+                 srcOff:  Int,
+                 dest:    Array[Char],
+                 destOff: Int,
+                 len:     Int)
+    :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
+
+    inline def materialize(storage: Array[Char], off: Int, len: Int): Text =
+      String(storage, off, len).tt
+
+    inline def cloneStorage
+                (storage: Array[Char], off: Int, len: Int)(target: jl.StringBuilder)
+    :   Unit = target.append(storage, off, len)
+
 
 trait Addressable extends Typeclass, Operable, Targetable:
+  // Mutable backing storage for `Cursor2`'s single-buffer model. For `Data`,
+  // this is `Array[Byte]`; for `Text`, `Array[Char]`. Hot-path reads in
+  // `Cursor2.peek` / `Cursor2.datum` go through `storageAddress` and lower
+  // to a single array access.
+  type Storage
+
   def empty: Self
   // All operations are declared non-inline at the trait level so non-inline
   // call sites (e.g. inside `Cursor.forward`, or in parser plumbing that
@@ -98,3 +162,17 @@ trait Addressable extends Typeclass, Operable, Targetable:
   def address(block: Self, index: Ordinal): Operand
   def clone(source: Self, start: Ordinal, end: Ordinal)(target: Target): Unit
   def grab(text: Self, start: Ordinal, end: Ordinal): Self
+
+  def allocate(size: Int): Storage
+  def storageSize(storage: Storage): Int
+  def storageAddress(storage: Storage, index: Int): Operand
+  def copyChunk
+       (source: Self, srcOff: Int, dest: Storage, destOff: Int, len: Int)
+  :   Unit
+
+  def transfer
+       (src: Storage, srcOff: Int, dest: Storage, destOff: Int, len: Int)
+  :   Unit
+
+  def materialize(storage: Storage, off: Int, len: Int): Self
+  def cloneStorage(storage: Storage, off: Int, len: Int)(target: Target): Unit

@@ -167,6 +167,75 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
     val c = Cursor(Iterator(text))
     c.take(t"")(64).s.length
 
+  // ─── Cursor2 mirrors ──────────────────────────────────────────────────────
+
+  def cursor2NextSingleBlock(text: Text): Int =
+    val c = Cursor2(text)
+    var n = 0
+    while c.next() do n += 1
+    n
+
+  def cursor2NextWithLinefeeds(text: Text): Int =
+    import zephyrine.lineation.linefeedChars
+    val c = Cursor2(text)
+    var n = 0
+    while c.next() do n += 1
+    n
+
+  def cursor2NextFragmented(blocks: List[Text]): Int =
+    val c = Cursor2(blocks.iterator)
+    var n = 0
+    while c.next() do n += 1
+    n
+
+  def cursor2NextData(data: Data): Int =
+    val c = Cursor2[Data](data)
+    var n = 0
+    while c.next() do n += 1
+    n
+
+  def cursor2EmptyHoldLoop(text: Text, count: Int): Int =
+    val c = Cursor2(text)
+    var i = 0
+    while i < count do { c.hold(()); i += 1 }
+    i
+
+  def cursor2HoldMarkGrabInBlock(text: Text, repeats: Int, span: Int): Int =
+    val c = Cursor2(text)
+    var acc = 0
+    var i = 0
+    while i < repeats do
+      c.hold:
+        val mk = c.mark
+        var k = 0
+        while k < span do { c.next(); k += 1 }
+        acc ^= c.grab(mk, c.mark).s.length
+
+      i += 1
+    acc
+
+  def cursor2HoldMarkGrabCrossBlock(blocks: List[Text], span: Int): Int =
+    val c = Cursor2(blocks.iterator)
+    c.hold:
+      val mk = c.mark
+      var k = 0
+      while k < span do { c.next(); k += 1 }
+      c.grab(mk, c.mark).s.length
+
+  def cursor2ConsumeXml(text: Text): Int =
+    val c: Cursor2[Text] = Cursor2(text)
+    var matched = 0
+    c.consume({ matched = -1 })("xml")
+    matched
+
+  def cursor2SeekSpace(text: Text): Boolean =
+    val c = Cursor2(text)
+    c.seek(' ')
+
+  def cursor2Take64(text: Text): Int =
+    val c = Cursor2(text)
+    c.take(t"")(64).s.length
+
   // ─── benchmarks ───────────────────────────────────────────────────────────
 
   def run(): Unit =
@@ -185,26 +254,53 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
        (target = 1*Second, operationSize = text10kSize):
         '{ zephyrine.Benchmarks.cursorNextSingleBlock(zephyrine.Benchmarks.text10k) }
 
+      bench(m"Cursor2.next, single 10 KB block (pre-filled)")
+       (target = 1*Second, operationSize = text10kSize):
+        '{ zephyrine.Benchmarks.cursor2NextSingleBlock(zephyrine.Benchmarks.text10k) }
+
       bench(m"Cursor.next + linefeed tracking, single 10 KB block")
        (target = 1*Second, operationSize = text10kSize):
         '{ zephyrine.Benchmarks.cursorNextWithLinefeeds(zephyrine.Benchmarks.text10k) }
+
+      bench(m"Cursor2.next + linefeed tracking, single 10 KB block")
+       (target = 1*Second, operationSize = text10kSize):
+        '{ zephyrine.Benchmarks.cursor2NextWithLinefeeds(zephyrine.Benchmarks.text10k) }
 
       bench(m"Cursor.next, 100 × 100-char fragmented blocks")
        (target = 1*Second, operationSize = text10kSize):
         '{ zephyrine.Benchmarks.cursorNextFragmented(zephyrine.Benchmarks.text10kFragments) }
 
+      bench(m"Cursor2.next, 100 × 100-char fragmented blocks")
+       (target = 1*Second, operationSize = text10kSize):
+        '{ zephyrine.Benchmarks.cursor2NextFragmented(zephyrine.Benchmarks.text10kFragments) }
+
       bench(m"Cursor[Data].next, 10 KB single block")
        (target = 1*Second, operationSize = text10kSize):
         '{ zephyrine.Benchmarks.cursorNextData(zephyrine.Benchmarks.data10k) }
+
+      bench(m"Cursor2[Data].next, 10 KB single block (pre-filled)")
+       (target = 1*Second, operationSize = text10kSize):
+        '{ zephyrine.Benchmarks.cursor2NextData(zephyrine.Benchmarks.data10k) }
 
     suite(m"Hold and capture"):
       bench(m"empty hold {} × 1000 (Held alloc)")
        (target = 1*Second, baseline = Baseline(compare = Min)):
         '{ zephyrine.Benchmarks.cursorEmptyHoldLoop(zephyrine.Benchmarks.text10k, 1000) }
 
+      bench(m"Cursor2: empty hold {} × 1000 (Held alloc)")
+       (target = 1*Second):
+        '{ zephyrine.Benchmarks.cursor2EmptyHoldLoop(zephyrine.Benchmarks.text10k, 1000) }
+
       bench(m"hold + mark + grab 16 chars in-block × 100")
        (target = 1*Second):
         '{ zephyrine.Benchmarks.cursorHoldMarkGrabInBlock(zephyrine.Benchmarks.text10k, 100, 16) }
+
+      bench(m"Cursor2: hold + mark + grab 16 chars in-block × 100")
+       (target = 1*Second):
+        '{
+            zephyrine.Benchmarks.cursor2HoldMarkGrabInBlock
+             (zephyrine.Benchmarks.text10k, 100, 16)
+          }
 
       bench(m"hold + mark + grab cross-block (350 chars across 4 blocks)")
        (target = 1*Second):
@@ -213,14 +309,32 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
              (zephyrine.Benchmarks.text10kFragments, 350)
           }
 
+      bench(m"Cursor2: hold + mark + grab cross-block (350 chars across 4 blocks)")
+       (target = 1*Second):
+        '{
+            zephyrine.Benchmarks.cursor2HoldMarkGrabCrossBlock
+             (zephyrine.Benchmarks.text10kFragments, 350)
+          }
+
     suite(m"Primitives"):
       bench(m"consume(\"xml\") match")
        (target = 1*Second, operationSize = xmlInputSize):
         '{ zephyrine.Benchmarks.cursorConsumeXml(zephyrine.Benchmarks.xmlInput) }
 
+      bench(m"Cursor2: consume(\"xml\") match")
+       (target = 1*Second, operationSize = xmlInputSize):
+        '{ zephyrine.Benchmarks.cursor2ConsumeXml(zephyrine.Benchmarks.xmlInput) }
+
       bench(m"seek to delimiter at offset 9000")
        (target = 1*Second, operationSize = textWithSpaceSize):
         '{ zephyrine.Benchmarks.cursorSeekSpace(zephyrine.Benchmarks.textWithSpace) }
 
+      bench(m"Cursor2: seek to delimiter at offset 9000")
+       (target = 1*Second, operationSize = textWithSpaceSize):
+        '{ zephyrine.Benchmarks.cursor2SeekSpace(zephyrine.Benchmarks.textWithSpace) }
+
       bench(m"take(64)")(target = 1*Second):
         '{ zephyrine.Benchmarks.cursorTake64(zephyrine.Benchmarks.text10k) }
+
+      bench(m"Cursor2: take(64)")(target = 1*Second):
+        '{ zephyrine.Benchmarks.cursor2Take64(zephyrine.Benchmarks.text10k) }
