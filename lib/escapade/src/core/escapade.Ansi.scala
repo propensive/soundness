@@ -82,26 +82,39 @@ object Ansi extends Ansi2:
   given conceal: Stylize[Conceal.type] = _ => Stylize(_.copy(conceal = true))
   given reverse: Stylize[Reverse.type] = _ => Stylize(_.copy(reverse = true))
 
+  given hyperlink: Substitution[Input, Hyperlink, "esc"] = h => Input.Hyperlink(h.url)
+
   enum Input:
     case TextInput(text: Teletype)
     case Markup(transform: Transform)
     case Escape(on: Text, off: Text)
+    case Hyperlink(url: Text)
 
-  case class Frame(bracket: Char)
+  enum Pending:
+    case Style(transform: Transform)
+    case Link(url: Text)
+
+  enum Frame(val bracket: Char):
+    case Style(override val bracket: Char) extends Frame(bracket)
+    case Link(override val bracket: Char)  extends Frame(bracket)
 
   class State:
     val plain: StringBuilder = StringBuilder()
     val styles: scm.ArrayBuffer[Long] = scm.ArrayBuffer.empty
     val hyperlinks: scm.HashMap[Int, Text] = scm.HashMap.empty
     val insertions: scm.TreeMap[Int, Text] = scm.TreeMap.empty
-    var last: Optional[Transform] = Unset
+    var last: Optional[Pending] = Unset
     var stack: List[Frame] = Nil
     var styleStack: List[TextStyle] = Nil
     var currentStyle: TextStyle = TextStyle()
+    var linkArmed: Boolean = false
 
     def appendChar(char: Char): Unit =
       plain.append(char)
-      styles += currentStyle.styleWord
+      val base = currentStyle.styleWord
+      val styled = if linkArmed then base | StyleWord.HyperlinkChange else base
+      styles += styled
+      linkArmed = false
 
     def appendChars(text: Text): Unit =
       var i = 0
@@ -114,10 +127,15 @@ object Ansi extends Ansi2:
       val outer = currentStyle.styleWord
       val n = plain.length
       var i = 0
+      val triggerLink = linkArmed
       while i < text.plain.length do
         plain.append(text.plain.s.charAt(i))
-        styles += StyleWord.combine(outer, text.styles(i))
+        var combined = StyleWord.combine(outer, text.styles(i))
+        if i == 0 && triggerLink then combined = combined | StyleWord.HyperlinkChange
+        styles += combined
         i += 1
+
+      if triggerLink then linkArmed = false
 
       if text.hyperlinks.nonEmpty then
         text.hyperlinks.each { (k, v) => hyperlinks(n + k) = v }
@@ -130,15 +148,26 @@ object Ansi extends Ansi2:
         case None             => Some(content)
         case Some(existing)   => Some(existing+content)
 
-    def pushFrame(bracket: Char, transform: Transform): Unit =
-      stack = Frame(bracket) :: stack
+    def pushStyleFrame(bracket: Char, transform: Transform): Unit =
+      stack = Frame.Style(bracket) :: stack
       styleStack = currentStyle :: styleStack
       currentStyle = transform(currentStyle)
 
+    def pushLinkFrame(bracket: Char, url: Text): Unit =
+      stack = Frame.Link(bracket) :: stack
+      hyperlinks(plain.length) = url
+      linkArmed = true
+
     def popFrame(): Unit =
-      stack = stack.tail
-      currentStyle = styleStack.head
-      styleStack = styleStack.tail
+      stack.head match
+        case _: Frame.Style =>
+          stack = stack.tail
+          currentStyle = styleStack.head
+          styleStack = styleStack.tail
+
+        case _: Frame.Link =>
+          stack = stack.tail
+          linkArmed = true
 
     def applyOnce(transform: Transform): Unit =
       currentStyle = transform(currentStyle)
@@ -154,19 +183,34 @@ object Ansi extends Ansi2:
         case Unset =>
           closures(state, text)
 
-        case transform: Transform =>
+        case Pending.Style(transform) =>
           text.at(Prim) match
             case Bsl =>
               state.last = Unset
               closures(state, text.skip(1))
 
             case '[' | '(' | '<' | '«' | '{' =>
-              state.pushFrame(complement(text.at(Prim).vouch), transform)
+              state.pushStyleFrame(complement(text.at(Prim).vouch), transform)
               state.last = Unset
               closures(state, text.skip(1))
 
             case _ =>
               state.applyOnce(transform)
+              state.last = Unset
+              closures(state, text)
+
+        case Pending.Link(url) =>
+          text.at(Prim) match
+            case Bsl =>
+              state.last = Unset
+              closures(state, text.skip(1))
+
+            case '[' | '(' | '<' | '«' | '{' =>
+              state.pushLinkFrame(complement(text.at(Prim).vouch), url)
+              state.last = Unset
+              closures(state, text.skip(1))
+
+            case _ =>
               state.last = Unset
               closures(state, text)
 
@@ -198,12 +242,16 @@ object Ansi extends Ansi2:
         state
 
       case Input.Markup(transform) =>
-        state.last = transform
+        state.last = Pending.Style(transform)
         state
 
       case Input.Escape(on, _) =>
         state.last = Unset
         state.addInsertion(state.plain.length, t"\e"+on)
+        state
+
+      case Input.Hyperlink(url) =>
+        state.last = Pending.Link(url)
         state
 
     def skip(state: State): State = insert(state, Input.TextInput(Teletype.empty))
@@ -212,7 +260,8 @@ object Ansi extends Ansi2:
       if state.stack.nonEmpty
       then throw InterpolationError(m"the closing brace does not match an opening brace")
 
-      state.styles += 0L
+      val tail = if state.linkArmed then StyleWord.HyperlinkChange else 0L
+      state.styles += tail
 
       Teletype
        ( state.plain.toString.tt,

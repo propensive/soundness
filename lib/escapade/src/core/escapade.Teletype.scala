@@ -244,6 +244,10 @@ case class Teletype
 
       val tail = styles(n)
       if tail != prev then StyleWord.emitDiff(buffer, prev, tail, depth)
+      if (tail & StyleWord.HyperlinkChange) != 0 then
+        hyperlinks.get(n) match
+          case Some(url) => buffer.add(t"\e]8;;$url\e\\")
+          case None      => buffer.add(t"\e]8;;\e\\")
       insertions.rangeFrom(n).values.each { content => buffer.add(content) }
 
       buffer.text
