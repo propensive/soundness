@@ -82,7 +82,8 @@ object Ansi extends Ansi2:
   given conceal: Stylize[Conceal.type] = _ => Stylize(_.copy(conceal = true))
   given reverse: Stylize[Reverse.type] = _ => Stylize(_.copy(reverse = true))
   given faint: Stylize[Faint.type] = _ => Stylize(_.copy(faint = true))
-  given doubleUnderline: Stylize[DoubleUnderline.type] = _ => Stylize(_.copy(doubleUnderline = true))
+  given doubleUnderline: Stylize[DoubleUnderline.type] =
+    _ => Stylize(_.copy(doubleUnderline = true))
   given blinkSlow: Stylize[BlinkSlow.type] = _ => Stylize(_.copy(blinkSlow = true))
   given blinkFast: Stylize[BlinkFast.type] = _ => Stylize(_.copy(blinkFast = true))
   given overline: Stylize[Overline.type] = _ => Stylize(_.copy(overline = true))
@@ -269,7 +270,7 @@ object Ansi extends Ansi2:
       state.styles += tail
 
       Teletype
-       ( state.plain.toString.tt,
-         IArray.unsafeFromArray(state.styles.toArray),
-         state.hyperlinks.toMap,
-         state.insertions.to(TreeMap) )
+        ( state.plain.toString.tt,
+          IArray.unsafeFromArray(state.styles.toArray),
+          state.hyperlinks.toMap,
+          state.insertions.to(TreeMap) )
