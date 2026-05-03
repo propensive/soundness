@@ -103,3 +103,10 @@ object Tests extends Suite(m"Frontier Tests"):
         val all: Every[Widget] = every[Widget]
       . map(_.message)
     . assert(_ == Nil)
+
+    test(m"explainMissingContext lists classpath givens for missing implicit"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        summon[rudiments.DecimalConverter]
+      . map(_.message)
+    . assert(_.exists(_.contains("decimalFormatters.java")))

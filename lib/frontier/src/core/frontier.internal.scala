@@ -91,8 +91,25 @@ object internal:
       case quotes: runtime.impl.QuotesImpl => quotes.ctx
 
     case class Candidate(name: Text, missing: List[Result]) extends Result
-    case class Missing(name: Text, candidates: List[Candidate]) extends Result
+    case class Available(name: Text) extends Result
+
+    case class Missing(name: Text, available: List[Available], candidates: List[Candidate])
+    extends Result
+
     case class Found(name: Text, expr: Expr[Any]) extends Result
+
+    def availableFor(repr: TypeRepr): List[Available] =
+      beneficence.givens(repr).map: symbol =>
+        Available(displayName(symbol.fullName).tt)
+
+    def displayName(fqn: String): String =
+      fqn.split('.').iterator.filterNot: segment =>
+        val stripped = if segment.endsWith("$") then segment.dropRight(1) else segment
+        stripped.endsWith("$package")
+      .mkString(".")
+
+    def missing(repr: TypeRepr, candidates: List[Candidate]): Missing =
+      Missing(stenography.internal.name(repr), availableFor(repr), candidates)
 
     def seek(repr: TypeRepr, exclusions: List[Symbol], depth: Int): Result =
       Implicits.searchIgnoring(repr)(self :: exclusions*).absolve match
@@ -102,22 +119,22 @@ object internal:
         case failure: ImplicitSearchFailure =>
           failure match
             case _: dotty.tools.dotc.ast.untpd.SearchFailureIdent =>
-              Missing(stenography.internal.name(repr), Nil)
+              missing(repr, Nil)
 
             case SafeInlined(call, bindings, body) => call match
               case None =>
-                Missing(stenography.internal.name(repr), Nil)
+                missing(repr, Nil)
 
               case Some(term) => term match
                 case TypeApply(left, right) =>
                   if term.symbol.name == "explainMissingContext"
-                  then Missing(stenography.internal.name(repr), Nil)
+                  then missing(repr, Nil)
                   else
                     Candidate
                       ( "???", List(seek(right.head.tpe, term.symbol :: exclusions, depth + 1)) )
 
                 case _ =>
-                  Missing(stenography.internal.name(repr), Nil)
+                  missing(repr, Nil)
 
 
             case apply: Apply @unchecked => apply match case Apply(function, arguments) =>
@@ -130,39 +147,43 @@ object internal:
                   val candidate = Candidate(name, types.map(seek(_, Nil, depth + 1)))
 
                   val candidates = seek(repr, function.symbol :: exclusions, depth) match
-                    case Missing(_, candidates) => candidate :: candidates
-                    case _                      => Nil
+                    case Missing(_, _, candidates) => candidate :: candidates
+                    case _                         => Nil
 
-                  Missing(stenography.internal.name(repr), candidates)
+                  missing(repr, candidates)
 
                 case _ =>
-                  Missing(stenography.internal.name(repr), Nil)
+                  missing(repr, Nil)
 
               resolve(function.symbol.info)
 
             case _ =>
-              Missing(stenography.internal.name(repr), Nil)
+              missing(repr, Nil)
 
 
     seek(TypeRepr.of[target], Nil, 1).absolve match
       case Found(_, expr) => expr.asExprOf[target]
 
-      case Missing(_, results) =>
+      case Missing(_, available, candidates) =>
         report.errorAndAbort:
           given Result is Expandable =
-            case Candidate(_, missing)  => missing
-            case Missing(_, candidates) => candidates
-            case Found(_, _)            => Nil
+            case Candidate(_, missing)             => missing
+            case Missing(_, available, candidates) => available ::: candidates
+            case Found(_, _)                       => Nil
+            case Available(_)                      => Nil
 
-          TreeDiagram[Result](results*).render:
+          TreeDiagram[Result]((available ::: candidates)*).render:
             case Found(name, _) =>
               e" \e[38;5;34m$Bold(✓)\e[0m found \e[38;5;119m$Italic($name)\e[0m"
 
-            case Missing(name, _) =>
+            case Missing(name, _, _) =>
               e" \e[38;5;88m$Bold(✗)\e[0m requires \e[38;5;114m$Italic($name)\e[0m"
 
             case Candidate(name, _) =>
               e" \e[38;5;208m$Bold(▪)\e[0m candidate \e[38;5;227m$Italic($name)\e[0m"
+
+            case Available(name) =>
+              e" \e[38;5;75m$Bold(▸)\e[0m propose \e[38;5;117m$Italic($name)\e[0m"
 
           . join
               ( e"contextual value not found\n\n \e[38;5;88m$Bold(■)\e[0m resolving "

@@ -621,7 +621,7 @@ object exoskeleton extends Library:
   object test extends Tests(rig)
 
 object frontier extends Library:
-  object core extends Component(dendrology.tree, escapade.core)
+  object core extends Component(dendrology.tree, escapade.core, beneficence.core)
   object test extends Tests(core, scintillate.servlet, jacinta.schema)
 
 object fulminate extends Library:
