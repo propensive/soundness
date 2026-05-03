@@ -64,7 +64,6 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
   given prefixes: Prefixes = Prefixes(List(Kilo, Mega, Giga, Tera))
 
   def parseHoneycomb(text: Text): Document[Html] = unsafely(text.load[Html])
-  def parseHoneycombDirect(text: Text): Html = unsafely(Html.parseDirect(text, doctypes = true))
 
   def parseJsoup(text: String): org.jsoup.nodes.Document = org.jsoup.Jsoup.parse(text).nn
 
@@ -82,9 +81,6 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
         (target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min)):
         '{ honeycomb.Benchmarks.parseHoneycomb(honeycomb.Benchmarks.html1) }
 
-      bench(m"Parse file with Honeycomb Direct")(target = 1*Second, operationSize = size1):
-        '{ honeycomb.Benchmarks.parseHoneycombDirect(honeycomb.Benchmarks.html1) }
-
       bench(m"Parse file with jsoup")(target = 1*Second, operationSize = size1):
         '{ honeycomb.Benchmarks.parseJsoup(honeycomb.Benchmarks.htmlText1) }
 
@@ -92,9 +88,6 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
       bench(m"Parse file with Honeycomb")
         (target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min)):
         '{ honeycomb.Benchmarks.parseHoneycomb(honeycomb.Benchmarks.html2) }
-
-      bench(m"Parse file with Honeycomb Direct")(target = 1*Second, operationSize = size2):
-        '{ honeycomb.Benchmarks.parseHoneycombDirect(honeycomb.Benchmarks.html2) }
 
       bench(m"Parse file with jsoup")(target = 1*Second, operationSize = size2):
         '{ honeycomb.Benchmarks.parseJsoup(honeycomb.Benchmarks.htmlText2) }
@@ -104,9 +97,6 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
         (target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min)):
         '{ honeycomb.Benchmarks.parseHoneycomb(honeycomb.Benchmarks.html3) }
 
-      bench(m"Parse file with Honeycomb Direct")(target = 1*Second, operationSize = size3):
-        '{ honeycomb.Benchmarks.parseHoneycombDirect(honeycomb.Benchmarks.html3) }
-
       bench(m"Parse file with jsoup")(target = 1*Second, operationSize = size3):
         '{ honeycomb.Benchmarks.parseJsoup(honeycomb.Benchmarks.htmlText3) }
 
@@ -115,9 +105,6 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
         (target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min)):
         '{ honeycomb.Benchmarks.parseHoneycomb(honeycomb.Benchmarks.html4) }
 
-      bench(m"Parse file with Honeycomb Direct")(target = 1*Second, operationSize = size4):
-        '{ honeycomb.Benchmarks.parseHoneycombDirect(honeycomb.Benchmarks.html4) }
-
       bench(m"Parse file with jsoup")(target = 1*Second, operationSize = size4):
         '{ honeycomb.Benchmarks.parseJsoup(honeycomb.Benchmarks.htmlText4) }
 
@@ -125,9 +112,6 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
       bench(m"Parse file with Honeycomb")
         (target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min)):
         '{ honeycomb.Benchmarks.parseHoneycomb(honeycomb.Benchmarks.html5) }
-
-      bench(m"Parse file with Honeycomb Direct")(target = 1*Second, operationSize = size5):
-        '{ honeycomb.Benchmarks.parseHoneycombDirect(honeycomb.Benchmarks.html5) }
 
       bench(m"Parse file with jsoup")(target = 1*Second, operationSize = size5):
         '{ honeycomb.Benchmarks.parseJsoup(honeycomb.Benchmarks.htmlText5) }
