@@ -78,7 +78,7 @@ class TeletypeBuilder(size: Optional[Int] = Unset) extends Builder[Teletype]:
     styles += 0L
 
     Teletype
-     ( builder.toString.tt,
-       IArray.unsafeFromArray(styles.toArray),
-       hyperlinks.toMap,
-       insertions.to(TreeMap) )
+      ( builder.toString.tt,
+        IArray.unsafeFromArray(styles.toArray),
+        hyperlinks.toMap,
+        insertions.to(TreeMap) )

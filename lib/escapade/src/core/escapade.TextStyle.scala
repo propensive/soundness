@@ -35,8 +35,6 @@ package escapade
 import language.experimental.pureFunctions
 
 import anticipation.*
-import gossamer.*
-import spectacular.*
 import vacuous.*
 
 object TextStyle:
