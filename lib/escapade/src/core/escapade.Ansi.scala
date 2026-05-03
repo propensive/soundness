@@ -136,7 +136,7 @@ object Ansi extends Ansi2:
       val triggerLink = linkArmed
       while i < text.plain.length do
         plain.append(text.plain.s.charAt(i))
-        var combined = StyleWord.combine(outer, text.styles(i))
+        var combined = StyleWord.combine(outer, text.styleAt(i))
         if i == 0 && triggerLink then combined = combined | StyleWord.HyperlinkChange
         styles += combined
         i += 1
@@ -269,8 +269,13 @@ object Ansi extends Ansi2:
       val tail = if state.linkArmed then StyleWord.HyperlinkChange else 0L
       state.styles += tail
 
+      val plainText = state.plain.toString.tt
+      val denseStyles = IArray.unsafeFromArray(state.styles.toArray)
+      val (newStyles, newBoundaries) = Teletype.compressIfBeneficial(plainText, denseStyles)
+
       Teletype
-        ( state.plain.toString.tt,
-          IArray.unsafeFromArray(state.styles.toArray),
+        ( plainText,
+          newStyles,
           state.hyperlinks.toMap,
-          state.insertions.to(TreeMap) )
+          state.insertions.to(TreeMap),
+          newBoundaries )
