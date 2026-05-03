@@ -545,8 +545,12 @@ class Report(using Environment)(using palette: TestPalette):
         benchmarks.filter(!_.benchmark.baseline.absent).to(List)
 
       def confInt(b: Benchmark): Teletype =
-        if b.confidenceInterval == 0 then e""
-        else e"${Fg(palette.accented)}(±)${showTime(b.confidenceInterval)}"
+        if b.confidenceInterval == 0 || b.mean == 0.0 then e""
+        else
+          val basisPoints = (b.confidenceInterval*10000.0/b.mean).toLong
+          val sig = (basisPoints/100).show
+          val frac = (basisPoints%100).show.pad(2, Rtl, '0')
+          e"${Fg(palette.accented)}(±)${Fg(palette.foreground)}($sig.$frac)%"
 
       def frequency(benchmark: Benchmark): Teletype =
         if benchmark.throughput == 0 then e""
