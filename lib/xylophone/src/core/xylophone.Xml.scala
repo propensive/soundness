@@ -124,20 +124,30 @@ object Xml extends Tag.Container
       ${xylophone.internal.extractor[parts]('scrutinee)}
 
 
+  // Materialise an `Iterator[Text]` into a single `Text` so the Direct path
+  // can scan it directly. For the common case (one-element iterator from
+  // `Iterator(text)`), this is just the original Text. For multi-block input,
+  // the Cursor-based parser already buffered the whole input before
+  // returning, so we don't lose memory complexity by gathering up-front.
+  private def gather(input: Iterator[Text]): Text =
+    if !input.hasNext then t"" else
+      val first = input.next()
+      if !input.hasNext then first else
+        val buf = jl.StringBuilder(first.s)
+        while input.hasNext do buf.append(input.next().s)
+        buf.toString.nn.tt
+
   given aggregable: [content <: Label: Reifiable to List[String]] => (schema: XmlSchema)
   =>  Tactic[ParseError]
   =>  (Xml of content) is Aggregable by Text =
 
-    input =>
-      val root = Tag.root(content.reification().map(_.tt).to(Set))
-      parse(input.iterator, root).of[content]
+    input => parseDirect(gather(input.iterator), headers0 = false).of[content]
 
   given aggregable2: (schema: XmlSchema) => Tactic[ParseError] => Xml is Aggregable by Text =
-    input => parse(input.iterator, schema.generic, headers0 = false)
+    input => parseDirect(gather(input.iterator), headers0 = false)
 
   given loadable: (schema: XmlSchema) => Tactic[ParseError] => Xml is Loadable by Text = stream =>
-    val root = Tag.root(Set(t"xml"))
-    parse(stream.iterator, root, headers0 = true) match
+    parseDirect(gather(stream.iterator), headers0 = true) match
       case Fragment((header: Header), rest*) =>
         if rest.length == 1 then Document(rest.head, header)
         else Document(Fragment(rest*), header)
@@ -457,586 +467,664 @@ object Xml extends Tag.Container
     case Attribute(tag: Text, attribute: Text)
     case Node(parent: Text)
 
+  // ───────────────────────────────────────────────────────────────────────
+  // Unified parser: a single algorithm split across substrates.
+  //
+  // The abstract `XmlParser` base implements the entire XML parsing
+  // algorithm (tags, attributes, text, entities, comments, CDATA,
+  // processing instructions, doctype, header) in terms of a small
+  // substrate API: `more`/`peek`/`advance`, `position`, `begin`/`slice`/
+  // `reset`/`appendSlice`, and `computePosition` (for lazy line/column on
+  // error). Two concrete substrates supply that API:
+  //
+  //   * `XmlDirect`   — operates directly on an underlying `String` with a
+  //                     `var pos`. Used by `aggregable` / `loadable`. Faster
+  //                     because all primitives are trivial integer
+  //                     arithmetic; `final` lets the JIT devirtualise them.
+  //   * `XmlStreaming` — operates over a `Cursor[Text]` against an
+  //                     `Iterator[Text]`. Used by macro interpolators
+  //                     (which need callbacks for `\u0000` placeholders);
+  //                     handles unbounded streaming inputs.
+  //
+  // Both substrates share the same parsing algorithm — schema-validation,
+  // header parsing, error reporting, entity expansion etc. all live in the
+  // base class.
+
+  private[xylophone] abstract class XmlParser(using schema: XmlSchema):
+    type Region
+
+    // Substrate position primitives — implemented by Direct/Streaming.
+    protected def more: Boolean
+    protected def peek: Char
+    protected def advance(): Unit
+    protected def position: Int
+    protected def begin(): Region
+    protected def slice(start: Region): Text
+    protected def slice(start: Region, end: Region): Text
+    protected def reset(start: Region): Unit
+    protected def appendSlice(start: Region, buf: jl.StringBuilder): Unit
+    protected def computePosition(): Position
+
+    // Optional callback invoked when a `\u0000` placeholder is encountered.
+    // Used by the macro interpolators to record hole positions; the
+    // substrate must still recognise `\u0000` as a special character at
+    // each insertion point. Default no-op for non-macro use.
+    var callback: Optional[(Ordinal, Hole) => Unit] = Unset
+
+    protected inline def fail(issue: Issue)(using Tactic[ParseError]): Nothing =
+      abort(ParseError(Xml, computePosition(), issue))
+
+    protected inline def isAsciiLetter(c: Char): Boolean =
+      ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
+
+    protected inline def isAsciiDigit(c: Char): Boolean = '0' <= c && c <= '9'
+
+    protected inline def isNameStart(c: Char): Boolean =
+      isAsciiLetter(c) || c == '_' || c == ':' || (c > 127 && c.isLetter)
+
+    protected inline def isNameChar(c: Char): Boolean =
+      isAsciiLetter(c) || isAsciiDigit(c) || c == '_' || c == '-' || c == '.' || c == ':'
+      || (c > 127 && (c == '·' || c.isLetter || c.isDigit))
+
+    protected inline def isWs(c: Char): Boolean =
+      c == ' ' || c == '\n' || c == '\r' || c == '\t' || c == '\f'
+
+    protected def skipWs(): Unit = while more && isWs(peek) do advance()
+
+    protected def expectChar(chr: Char)(using Tactic[ParseError]): Unit =
+      if !more then fail(Issue.ExpectedMore)
+      if peek != chr then fail(Issue.Unexpected(peek))
+      advance()
+
+    protected def readName()(using Tactic[ParseError]): Text =
+      val start = begin()
+      if !more then fail(Issue.ExpectedMore)
+      val first = peek
+      if !isNameStart(first) then fail(Issue.Unexpected(first))
+      advance()
+      while more && isNameChar(peek) do advance()
+      slice(start)
+
+    // Parse an entity reference. Position must be just after the '&'.
+    // Returns the expansion as a Text; leaves position just after the ';'.
+    protected def readEntity()(using Tactic[ParseError]): Text =
+      if !more then fail(Issue.ExpectedMore)
+      if peek == '#' then
+        advance()
+        if !more then fail(Issue.ExpectedMore)
+        var value = 0
+        if peek == 'x' || peek == 'X' then
+          advance()
+          while more && peek != ';' do
+            val c = peek
+            value =
+              if '0' <= c && c <= '9' then 16*value + (c - '0')
+              else if 'a' <= c && c <= 'f' then 16*value + (c - 87)
+              else if 'A' <= c && c <= 'F' then 16*value + (c - 55)
+              else fail(Issue.Unexpected(c))
+            advance()
+        else
+          while more && peek != ';' do
+            val c = peek
+            if '0' <= c && c <= '9' then value = 10*value + (c - '0')
+            else fail(Issue.Unexpected(c))
+            advance()
+        if !more then fail(Issue.ExpectedMore)
+        advance()
+        if value <= 0xffff then String.valueOf(value.toChar).nn.tt
+        else String.valueOf(Character.toChars(value).nn).nn.tt
+      else
+        val nameStart = begin()
+        while more && peek != ';' do
+          val c = peek
+          if !isNameChar(c) then fail(Issue.Unexpected(c))
+          advance()
+        if !more then fail(Issue.ExpectedMore)
+        val name = slice(nameStart)
+        advance()
+        schema.entities(name).or(fail(Issue.UnknownEntity(name)))
+
+    // Read attribute value enclosed in `quote`. Returns the unescaped
+    // value as Text. Position starts just after the opening quote and
+    // ends just after the closing quote.
+    protected def readAttrValue(tag: Text, quote: Char)(using Tactic[ParseError]): Text =
+      val start = begin()
+      var hasEntity = false
+      var hasHole = false
+      while more && peek != quote do
+        val c = peek
+        if c == '<' then fail(Issue.Unexpected('<'))
+        if c == '&' then hasEntity = true
+        if c == '\u0000' then hasHole = true
+        advance()
+      if !more then fail(Issue.ExpectedMore)
+      val end = begin()
+      advance() // consume closing quote
+      if !hasEntity && !hasHole then slice(start, end)
+      else
+        // Mixed: entities and/or holes. Walk again with a buffer.
+        // We rewind to start and re-scan with appendSlice between events.
+        val buf = jl.StringBuilder()
+        reset(start)
+        var segStart = begin()
+        while more && peek != quote do
+          val c = peek
+          if c == '&' then
+            appendSlice(segStart, buf)
+            advance()
+            buf.append(readEntity().s)
+            segStart = begin()
+          else if c == '\u0000' then
+            // Macro hole inside attribute value. Per existing semantics,
+            // we report it but include U+0000 in the value text so the
+            // macro post-processor can locate it.
+            appendSlice(segStart, buf)
+            callback.let(_(position.z, Hole.Attribute(tag, t"")))
+            buf.append('\u0000')
+            advance()
+            segStart = begin()
+          else
+            advance()
+        if !more then fail(Issue.ExpectedMore)
+        appendSlice(segStart, buf)
+        advance() // consume closing quote
+        buf.toString.nn.tt
+
+    protected def readAttributes(tag: Text)(using Tactic[ParseError]): Map[Text, Text] =
+      var entries: Map[Text, Text] = ListMap()
+      var done = false
+      while !done do
+        skipWs()
+        if !more then fail(Issue.ExpectedMore)
+        val ch = peek
+        if ch == '>' || ch == '/' || ch == '?' then done = true
+        else if ch == '\u0000' then
+          callback.let(_(position.z, Hole.Tagbody))
+          advance()
+          skipWs()
+          entries = entries.updated(t"\u0000", t"")
+        else
+          val key = readName()
+          if entries.contains(key) then fail(Issue.DuplicateAttribute(key))
+          skipWs()
+          expectChar('=')
+          skipWs()
+          if !more then fail(Issue.ExpectedMore)
+          val q = peek
+          val value =
+            if q == '\u0000' then
+              callback.let(_(position.z, Hole.Attribute(tag, key)))
+              advance()
+              t"\u0000"
+            else if q == '"' || q == '\'' then
+              advance()
+              readAttrValue(tag, q)
+            else fail(Issue.UnquotedAttribute)
+          entries = entries.updated(key, value)
+      entries
+
+    // Read text up to the next '<'; returns the (possibly entity-expanded)
+    // Text. Detects literal `]]>` as an error. Reports `\u0000` holes via
+    // the callback.
+    protected def readText(parentLabel: Text)(using Tactic[ParseError]): Text =
+      val start = begin()
+      var hasEntity = false
+      var hasHole = false
+      var bracketCount = 0
+      while more && peek != '<' do
+        val c = peek
+        if c == '&' then hasEntity = true
+        if c == '\u0000' then hasHole = true
+        if c == ']' then bracketCount += 1
+        else
+          if bracketCount >= 2 && c == '>' then fail(Issue.Unexpected('>'))
+          bracketCount = 0
+        advance()
+      if !hasEntity && !hasHole then slice(start)
+      else
+        val buf = jl.StringBuilder()
+        reset(start)
+        var segStart = begin()
+        while more && peek != '<' do
+          val c = peek
+          if c == '&' then
+            appendSlice(segStart, buf)
+            advance()
+            buf.append(readEntity().s)
+            segStart = begin()
+          else if c == '\u0000' then
+            appendSlice(segStart, buf)
+            callback.let(_(position.z, Hole.Node(parentLabel)))
+            buf.append('\u0000')
+            advance()
+            segStart = begin()
+          else
+            advance()
+        appendSlice(segStart, buf)
+        buf.toString.nn.tt
+
+    protected def readComment()(using Tactic[ParseError]): Text =
+      val start = begin()
+      while
+        if !more then fail(Issue.ExpectedMore)
+        !(peek == '-')
+      do advance()
+      // Try to match `-->`
+      val end = begin()
+      advance()
+      if !more then fail(Issue.ExpectedMore)
+      if peek != '-' then
+        // Not the end; continue from here
+        readComment_continue(start)
+      else
+        advance()
+        if !more then fail(Issue.ExpectedMore)
+        if peek != '>' then fail(Issue.Unexpected(peek))
+        advance()
+        slice(start, end)
+
+    private def readComment_continue(start: Region)(using Tactic[ParseError]): Text =
+      // We saw '-' but the next wasn't '-' or '>'. Continue scanning.
+      while more && peek != '-' do advance()
+      if !more then fail(Issue.ExpectedMore)
+      val end = begin()
+      advance()
+      if !more then fail(Issue.ExpectedMore)
+      if peek != '-' then readComment_continue(start)
+      else
+        advance()
+        if !more then fail(Issue.ExpectedMore)
+        if peek != '>' then fail(Issue.Unexpected(peek))
+        advance()
+        slice(start, end)
+
+    protected def readCdata()(using Tactic[ParseError]): Text =
+      val start = begin()
+      var done = false
+      var endRegion: Region = start
+      while !done do
+        if !more then fail(Issue.ExpectedMore)
+        if peek == ']' then
+          val maybeEnd = begin()
+          advance()
+          if more && peek == ']' then
+            advance()
+            if more && peek == '>' then
+              endRegion = maybeEnd
+              advance()
+              done = true
+        else advance()
+      slice(start, endRegion)
+
+    // Position must be just after '<?'. Reads PI target + data, returning
+    // the appropriate Node.
+    protected def readProcessingInstruction()(using Tactic[ParseError]): Node =
+      val nameStart = begin()
+      if !more then fail(Issue.ExpectedMore)
+      val first = peek
+      if !isNameStart(first) then fail(Issue.Unexpected(first))
+      advance()
+      while more && isNameChar(peek) do advance()
+      val target = slice(nameStart)
+
+      val isXmlName =
+        target.s.length == 3
+        && (target.s.charAt(0) == 'x' || target.s.charAt(0) == 'X')
+        && (target.s.charAt(1) == 'm' || target.s.charAt(1) == 'M')
+        && (target.s.charAt(2) == 'l' || target.s.charAt(2) == 'L')
+
+      if isXmlName then
+        if !headers then fail(Issue.InvalidTag(target))
+        headers = false
+        skipWs()
+        val versionKey = readName()
+        if versionKey != t"version" then fail(Issue.Unexpected(versionKey.s.charAt(0)))
+        skipWs()
+        expectChar('=')
+        skipWs()
+        if !more then fail(Issue.ExpectedMore)
+        val q = peek
+        if q != '"' && q != '\'' then fail(Issue.UnquotedAttribute)
+        advance()
+        val version = readAttrValue(target, q)
+        skipWs()
+        var encoding: Optional[Text] = Unset
+        var standalone: Optional[Boolean] = Unset
+        if more && peek == 'e' then
+          val key = readName()
+          if key != t"encoding" then fail(Issue.Unexpected(key.s.charAt(0)))
+          skipWs()
+          expectChar('=')
+          skipWs()
+          if !more then fail(Issue.ExpectedMore)
+          val q2 = peek
+          if q2 != '"' && q2 != '\'' then fail(Issue.UnquotedAttribute)
+          advance()
+          encoding = readAttrValue(target, q2)
+          skipWs()
+        if more && peek == 's' then
+          val key = readName()
+          if key != t"standalone" then fail(Issue.Unexpected(key.s.charAt(0)))
+          skipWs()
+          expectChar('=')
+          skipWs()
+          if !more then fail(Issue.ExpectedMore)
+          val q2 = peek
+          if q2 != '"' && q2 != '\'' then fail(Issue.UnquotedAttribute)
+          advance()
+          val v = readAttrValue(target, q2)
+          standalone = v.s match
+            case "yes" => true
+            case "no"  => false
+            case _     => fail(Issue.Unexpected(v.s.charAt(0)))
+          skipWs()
+        if !more then fail(Issue.ExpectedMore)
+        if peek != '?' then fail(Issue.Unexpected(peek))
+        advance()
+        if !more then fail(Issue.ExpectedMore)
+        if peek != '>' then fail(Issue.Unexpected(peek))
+        advance()
+        Header(version, encoding, standalone)
+      else
+        skipWs()
+        val dataStart = begin()
+        while
+          if !more then fail(Issue.ExpectedMore)
+          !(peek == '?')
+        do advance()
+        // Now at '?'. Need '?>'.
+        val dataEnd = begin()
+        advance()
+        if !more then fail(Issue.ExpectedMore)
+        if peek != '>' then
+          // Not the terminator, continue
+          readPiData(dataStart, target)
+        else
+          advance()
+          val data = slice(dataStart, dataEnd)
+          ProcessingInstruction(target, data)
+
+    private def readPiData(dataStart: Region, target: Text)
+      (using Tactic[ParseError])
+    :   ProcessingInstruction =
+
+      while more && peek != '?' do advance()
+      if !more then fail(Issue.ExpectedMore)
+      val dataEnd = begin()
+      advance()
+      if !more then fail(Issue.ExpectedMore)
+      if peek != '>' then readPiData(dataStart, target)
+      else
+        advance()
+        ProcessingInstruction(target, slice(dataStart, dataEnd))
+
+    protected def readDoctype()(using Tactic[ParseError]): Text =
+      skipWs()
+      val start = begin()
+      while more && peek != '>' do advance()
+      if !more then fail(Issue.ExpectedMore)
+      val end = begin()
+      advance()
+      slice(start, end)
+
+    // Read a single element starting just after '<'.
+    protected def readElement()(using Tactic[ParseError]): Element =
+      // Detect `<\u0000` (macro element hole)
+      if more && peek == '\u0000' then
+        callback.let(_(position.z, Hole.Element(t"")))
+        advance()
+        if !more then fail(Issue.ExpectedMore)
+        if peek != '>' then fail(Issue.Unexpected(peek))
+        advance()
+        Element(t"\u0000", ListMap(), IArray.empty[Node])
+      else
+        val name = readName()
+        val attrs = readAttributes(name)
+        if !more then fail(Issue.ExpectedMore)
+        if peek == '/' then
+          advance()
+          if !more then fail(Issue.ExpectedMore)
+          if peek != '>' then fail(Issue.Unexpected(peek))
+          advance()
+          Element(name, attrs, IArray.empty[Node])
+        else
+          if peek != '>' then fail(Issue.Unexpected(peek))
+          advance()
+          val children = readChildren(name)
+          Element(name, attrs, children)
+
+    protected def readChildren(parentName: Text)(using Tactic[ParseError]): IArray[Node] =
+      val children = scala.collection.mutable.ArrayBuffer[Node]()
+      var done = false
+      while !done do
+        if !more then fail(Issue.Incomplete(parentName))
+        val c = peek
+        if c == '<' then
+          advance()
+          if !more then fail(Issue.ExpectedMore)
+          val c2 = peek
+          if c2 == '/' then
+            advance()
+            val close = readName()
+            skipWs()
+            if !more then fail(Issue.ExpectedMore)
+            if peek != '>' then fail(Issue.Unexpected(peek))
+            advance()
+            if close != parentName then fail(Issue.MismatchedTag(parentName, close))
+            done = true
+          else if c2 == '!' then
+            advance()
+            if more && peek == '-' then
+              advance()
+              if !more then fail(Issue.ExpectedMore)
+              if peek != '-' then fail(Issue.Unexpected(peek))
+              advance()
+              children += Comment(readComment())
+            else if more && peek == '[' then
+              advance()
+              consumeLiteral("CDATA[")
+              children += Cdata(readCdata())
+            else
+              if !more then fail(Issue.ExpectedMore)
+              fail(Issue.Unexpected(peek))
+          else if c2 == '?' then
+            advance()
+            children += readProcessingInstruction()
+          else
+            children += readElement()
+        else
+          val text = readText(parentName)
+          if text.length > 0 then children += TextNode(text)
+      IArray.from(children)
+
+    protected def consumeLiteral(literal: String)(using Tactic[ParseError]): Unit =
+      var i = 0
+      while i < literal.length do
+        if !more then fail(Issue.ExpectedMore)
+        if peek != literal.charAt(i) then fail(Issue.Unexpected(peek))
+        advance()
+        i += 1
+
+    private var headers: Boolean = false
+
+    def parseXml(headers0: Boolean)(using Tactic[ParseError]): Xml =
+      headers = headers0
+      skipWs()
+      val nodes = scala.collection.mutable.ArrayBuffer[Node]()
+      while more do
+        if peek != '<' then
+          val text = readText(t"")
+          if text.length > 0 then nodes += TextNode(text)
+        else
+          advance()
+          if !more then fail(Issue.ExpectedMore)
+          val c2 = peek
+          if c2 == '!' then
+            advance()
+            if more && peek == '-' then
+              advance()
+              if !more then fail(Issue.ExpectedMore)
+              if peek != '-' then fail(Issue.Unexpected(peek))
+              advance()
+              nodes += Comment(readComment())
+            else if more && (peek == 'D' || peek == 'd') then
+              consumeLiteralCi("DOCTYPE")
+              nodes += Doctype(readDoctype())
+            else if more && peek == '[' then
+              advance()
+              consumeLiteral("CDATA[")
+              nodes += Cdata(readCdata())
+            else
+              if !more then fail(Issue.ExpectedMore)
+              fail(Issue.Unexpected(peek))
+          else if c2 == '?' then
+            advance()
+            nodes += readProcessingInstruction()
+          else if c2 == '/' then
+            advance()
+            val close = readName()
+            fail(Issue.UnopenedTag(close))
+          else
+            nodes += readElement()
+        skipWs()
+
+      if nodes.length == 1 then nodes(0)
+      else Fragment(nodes.toSeq*)
+
+    protected def consumeLiteralCi(literal: String)(using Tactic[ParseError]): Unit =
+      var i = 0
+      while i < literal.length do
+        if !more then fail(Issue.ExpectedMore)
+        val expected = literal.charAt(i)
+        val got = peek
+        val matches =
+          got == expected
+          || (isAsciiLetter(expected) && (got == (expected | 0x20).toChar || got == (expected & ~0x20).toChar))
+        if !matches then fail(Issue.Unexpected(got))
+        advance()
+        i += 1
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Direct substrate: scans the underlying `String` with `var pos`.
+
+  private[xylophone] final class XmlDirect(text: Text)(using XmlSchema) extends XmlParser:
+    type Region = Int
+    private val s: String = text.s
+    private val len: Int = s.length
+    private var pos: Int = 0
+
+    protected inline def more: Boolean = pos < len
+    protected inline def peek: Char = s.charAt(pos)
+    protected inline def advance(): Unit = pos += 1
+    protected inline def position: Int = pos
+    protected inline def begin(): Int = pos
+    protected inline def slice(start: Int): Text = s.substring(start, pos).nn.tt
+    protected inline def slice(start: Int, end: Int): Text = s.substring(start, end).nn.tt
+    protected inline def reset(start: Int): Unit = pos = start
+
+    protected inline def appendSlice(start: Int, buf: jl.StringBuilder): Unit =
+      buf.append(s, start, pos)
+
+    protected def computePosition(): Position =
+      var line: Int = 1
+      var column: Int = 1
+      var i = 0
+      val limit = if pos > 0 then pos - 1 else 0
+      while i < limit do
+        if s.charAt(i) == '\n' then
+          line += 1
+          column = 1
+        else
+          column += 1
+        i += 1
+      Position(line.u, column.u)
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Streaming substrate: scans an `Iterator[Text]` via `zephyrine.Cursor`.
+  // Currently used only by macro interpolators (which need callbacks for
+  // `\u0000` placeholders); `aggregable` and `loadable` use Direct.
+
+  private[xylophone] final class XmlStreaming(input: Iterator[Text])(using XmlSchema)
+  extends XmlParser:
+    import Lineation.untrackedChars
+    type Region = Cursor.Mark
+
+    private val sourceBlocks: IArray[Text] = IArray.from(input)
+    private val cursor: Cursor[Text] = Cursor(sourceBlocks.iterator)
+    private var heldToken: Cursor.Held | Null = null
+
+    // Open the cursor's outer hold once around the entire parse so the
+    // substrate methods can issue `cursor.mark` / `cursor.cue` / `cursor.grab`
+    // without re-opening per call. The held token is captured into a field
+    // for use by the substrate methods.
+    override def parseXml(headers0: Boolean)(using Tactic[ParseError]): Xml =
+      cursor.hold:
+        heldToken = summon[Cursor.Held]
+        try super.parseXml(headers0) finally heldToken = null
+
+    protected def more: Boolean = cursor.more
+    protected def peek: Char = cursor.datum(using Unsafe).asInstanceOf[Char]
+    protected def advance(): Unit = cursor.next()
+    protected def position: Int = cursor.position.n0
+
+    protected def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
+
+    protected def slice(start: Cursor.Mark): Text =
+      val end = cursor.mark(using heldToken.nn)
+      cursor.grab(start, end).asInstanceOf[Text]
+
+    protected def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
+      cursor.grab(start, end).asInstanceOf[Text]
+
+    protected def reset(start: Cursor.Mark): Unit = cursor.cue(start)
+
+    protected def appendSlice(start: Cursor.Mark, buf: jl.StringBuilder): Unit =
+      val end = cursor.mark(using heldToken.nn)
+      cursor.clone(start, end)(buf.asInstanceOf[cursor.addressable.Target])
+
+    protected def computePosition(): Position =
+      var line: Int = 1
+      var column: Int = 1
+      val target: Int = cursor.position.n0 - (if cursor.finished then 1 else 0)
+      var remaining: Int = target
+      var i = 0
+      while remaining > 0 && i < sourceBlocks.length do
+        val block = sourceBlocks(i).s
+        val take = remaining.min(block.length)
+        var j = 0
+        while j < take do
+          if block.charAt(j) == '\n' then
+            line += 1
+            column = 1
+          else
+            column += 1
+          j += 1
+        remaining -= take
+        i += 1
+      Position(line.u, column.u)
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Public entry points.
+
+  private[xylophone] def parseDirect(text: Text, headers0: Boolean)
+    (using schema: XmlSchema): Xml raises ParseError =
+    XmlDirect(text).parseXml(headers0)
+
+  // Back-compat for macro interpolators: matches the previous cursor-based
+  // signature (Iterator[Text] + callback). Routes to the new `XmlStreaming`
+  // substrate.
   private[xylophone] def parse[schema <: XmlSchema]
-    ( input:        Iterator[Text],
-      root:         Tag,
-      callback:     Optional[(Ordinal, Hole) => Unit] = Unset,
-      fastforward:  Int                               = 0,
-      headers0:     Boolean                           = false )
-    ( using schema: XmlSchema ): Xml raises ParseError =
+    ( input:    Iterator[Text],
+      root:     Tag,
+      callback: Optional[(Ordinal, Hole) => Unit] = Unset,
+      headers0: Boolean                           = false )
+    ( using schema: XmlSchema )
+  :   Xml raises ParseError =
+
+    val parser = XmlStreaming(input)
+    parser.callback = callback
+    parser.parseXml(headers0)
 
-    var headers: Boolean = headers0
-
-    import lineation.linefeedChars
-
-    val cursor = Cursor(input)
-    val buffer: jl.StringBuilder = jl.StringBuilder()
-    def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
-    var content: Text = t""
-    var extra: Map[Text, Text] = ListMap()
-    var headerEncoding: Optional[Text] = Unset
-    var headerStandalone: Optional[Boolean] = Unset
-    var nodes: Array[Node] = new Array(4)
-    var index: Int = 0
-    var stack: Array[Tag] = new Array(4)
-    var depth: Int = 0
-    var fragment: IArray[Node] = IArray()
-
-    def append(node: Node): Unit =
-      if index >= nodes.length then
-        val nodes2 = new Array[Node](nodes.length*2)
-        System.arraycopy(nodes, 0, nodes2, 0, nodes.length)
-        nodes = nodes2
-
-      nodes(index) = node
-      index += 1
-
-    def push(tag: Tag): Unit =
-      if depth >= stack.length then
-        val stack2 = new Array[Tag](stack.length*2)
-        System.arraycopy(stack, 0, stack2, 0, stack.length)
-        stack = stack2
-
-      stack(depth) = tag
-      depth += 1
-
-    def pop(): Unit = depth -= 1
-
-    def next(): Unit =
-      if !cursor.next()
-      then raise(ParseError(Xml, Position(cursor.line, cursor.column), ExpectedMore))
-
-    inline def ensure(chr: Char): Unit =
-      cursor.let: datum =>
-        if datum != chr then fail(Unexpected(datum))
-
-    inline def expect(chr: Char): Unit =
-      cursor.next()
-      cursor.lay(fail(ExpectedMore)): datum =>
-        if datum != chr then fail(Unexpected(datum))
-
-    def fail(issue: Issue): Nothing =
-      abort(ParseError(Xml, Position(cursor.line, cursor.column), issue))
-
-    @tailrec
-    def skip(): Unit = cursor.let:
-      case ' ' | Ff | Lf | Cr | Ht => cursor.next() yet skip()
-      case _                       => ()
-
-    inline def isNameStart(chr: Char): Boolean =
-      chr.isLetter || chr == '_' || chr == ':'
-
-    inline def isNameChar(chr: Char): Boolean =
-      chr.isLetter || chr.isDigit || chr == '_' || chr == '-' || chr == '.' || chr == ':'
-      || chr == '·'
-
-    @tailrec
-    def tagname(mark: Mark, dictionary: Optional[Dictionary[Tag]], started: Boolean)
-      ( using Cursor.Held )
-    :   Tag =
-
-      cursor.lay(fail(ExpectedMore)):
-        case chr if (if started then isNameChar(chr) else isNameStart(chr)) =>
-          dictionary.lay(next() yet tagname(mark, Unset, true)): dictionary =>
-            dictionary(chr.minuscule) match
-              case Dictionary.Empty =>
-                cursor.next()
-                val name = cursor.grab(mark, cursor.mark)
-                cursor.cue(mark) yet fail(InvalidTagStart(name.lower))
-
-              case other =>
-                next() yet tagname(mark, other, true)
-
-        case ' ' | Ff | Lf | Cr | Ht | '/' | '>' if started =>
-          dictionary match
-            case Dictionary.Just("", tag)       => tag
-            case Dictionary.Branch(tag: Tag, _) => tag
-            case _                              => Tag.freeform(cursor.grab(mark, cursor.mark))
-
-        case Nul =>
-          fail(BadInsertion)
-
-        case chr =>
-          fail(Unexpected(chr))
-
-
-    @tailrec
-    def key(mark: Mark, dictionary: Optional[Dictionary[XmlAttribute]], started: Boolean)
-      ( using Cursor.Held )
-    :   XmlAttribute =
-
-      cursor.lay(fail(ExpectedMore)):
-        case chr if (if started then isNameChar(chr) else isNameStart(chr)) =>
-          dictionary.let(_(chr.minuscule)) match
-            case Unset            => next() yet key(mark, Unset, true)
-            case Dictionary.Empty => fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
-            case dictionary       => next() yet key(mark, dictionary, true)
-
-        case ' ' | Ff | Lf | Cr | Ht | '=' | '>' if started =>
-          dictionary.let: dictionary =>
-            dictionary.element.or:
-              val name = cursor.grab(mark, cursor.mark)
-              cursor.cue(mark)
-              fail(UnknownAttribute(name))
-
-          . or:
-              XmlAttribute(cursor.grab(mark, cursor.mark), Set(), true)
-
-        case chr =>
-          fail(Unexpected(chr))
-
-
-    @tailrec
-    def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '&' =>
-        val start = cursor.mark
-        next()
-        cursor.clone(mark, start)(buffer)
-        buffer.append(entity())
-        value(cursor.mark)
-
-      case '<' =>
-        fail(Unexpected('<'))
-
-      case '"' =>
-        cursor.clone(mark, cursor.mark)(buffer)
-        next() yet result()
-
-      case Nul =>
-        callback.let(_(cursor.position, Hole.Text)) yet next() yet value(mark)
-
-      case chr =>
-        next() yet value(mark)
-
-    @tailrec
-    def singleQuoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '&' =>
-        val start = cursor.mark
-        next()
-        cursor.clone(mark, start)(buffer)
-        buffer.append(entity())
-        singleQuoted(cursor.mark)
-
-      case '<' =>
-        fail(Unexpected('<'))
-
-      case Sqt =>
-        cursor.clone(mark, cursor.mark)(buffer)
-        next() yet result()
-
-      case chr =>
-        next() yet singleQuoted(mark)
-
-    def equality(): Unit = skip() yet cursor.lay(fail(ExpectedMore)):
-      case '=' => next() yet skip() yet true
-      case Nul => fail(BadInsertion)
-      case chr => fail(Unexpected(chr))
-
-
-    @tailrec
-    def attributes(tag: Text, entries: Map[Text, Text] = ListMap())(using Cursor.Held)
-    :   Map[Text, Text] =
-
-      skip() yet cursor.lay(fail(ExpectedMore)):
-        case '>' | '/' => entries
-
-        case Nul =>
-          callback.let(_(cursor.position, Hole.Tagbody))
-          next()
-          skip()
-          attributes(tag, entries.updated(t"\u0000", t""))
-
-        case _ =>
-          val key2 =
-            key(cursor.mark, schema.attributes.unless(schema.freeform), false).tap: key =>
-              if !schema.freeform && !key.targets(tag)
-              then fail(InvalidAttributeUse(key.label, tag))
-
-            . label
-
-          if entries.has(key2) then fail(DuplicateAttribute(key2))
-
-          equality()
-
-          val assignment: Text = cursor.lay(fail(ExpectedMore)):
-            case Nul =>
-              callback.let(_(cursor.position, Hole.Attribute(tag, key2)))
-              next() yet t"\u0000"
-
-            case Dqt =>
-              next() yet value(cursor.mark)
-
-            case Sqt =>
-              next() yet singleQuoted(cursor.mark)
-
-            case _ =>
-              fail(UnquotedAttribute)
-
-          attributes(tag, entries.updated(key2, assignment))
-
-
-    def entity()(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '#'   => next() yet numericEntity()
-      case other => textEntity()
-
-    def numericEntity()(using Cursor.Held): Text =
-      cursor.lay(fail(ExpectedMore)):
-        case 'x' | 'X' => next() yet hexEntity(0)
-        case _         => decimalEntity(0)
-
-    @tailrec
-    def hexEntity(value: Int)(using Cursor.Held): Text =
-      cursor.lay(fail(ExpectedMore)):
-        case digit if digit.isDigit =>
-          cursor.next() yet hexEntity(16*value + (digit - '0'))
-
-        case letter if 'a' <= letter <= 'f' =>
-          cursor.next() yet hexEntity(16*value + (letter - 87))
-
-        case letter if 'A' <= letter <= 'F' =>
-          cursor.next() yet hexEntity(16*value + (letter - 55))
-
-        case ';' =>
-          cursor.next() yet value.unicode
-
-        case chr =>
-          fail(Unexpected(chr))
-
-    @tailrec
-    def decimalEntity(value: Int): Text = cursor.lay(fail(ExpectedMore)):
-      case digit if digit.isDigit => next() yet decimalEntity(10*value + (digit - '0'))
-      case ';'                    => next() yet t"${value.toChar}"
-      case chr                    => fail(Unexpected(chr))
-
-    @tailrec
-    def entityName(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case chr if isNameChar(chr) => next() yet entityName(mark)
-      case ';'                    => cursor.grab(mark, cursor.mark)
-      case Nul                    => fail(BadInsertion)
-      case chr                    => fail(Unexpected(chr))
-
-    def textEntity()(using Cursor.Held): Text =
-      val mark = cursor.mark
-      val name = entityName(mark)
-      cursor.next()
-      schema.entities(name).or:
-        cursor.cue(mark)
-        fail(UnknownEntity(name))
-
-
-    @tailrec
-    def textual(mark: Mark)(using Cursor.Held): Text =
-      cursor.lay(cursor.clone(mark, cursor.mark)(buffer) yet result()):
-        case '<' | Nul =>
-          cursor.clone(mark, cursor.mark)(buffer) yet result()
-
-        case '&' =>
-          val start = cursor.mark
-          next()
-          cursor.clone(mark, start)(buffer)
-          buffer.append(entity())
-          textual(cursor.mark)
-
-        case ']' =>
-          next()
-          cursor.lay(textual(mark)):
-            case ']' =>
-              next()
-              cursor.lay(textual(mark)):
-                case '>' => fail(Unexpected('>'))
-                case _   => textual(mark)
-
-            case _ => textual(mark)
-
-        case chr =>
-          cursor.next() yet textual(mark)
-
-    def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '-' =>
-        val end = cursor.mark
-        next()
-        cursor.lay(fail(ExpectedMore)):
-          case '-' => expect('>') yet cursor.grab(mark, end)
-          case _   => comment(mark)
-
-      case Nul =>
-        callback.let(_(cursor.position, Hole.Comment))
-        next() yet comment(mark)
-
-      case chr =>
-        next() yet comment(mark)
-
-    @tailrec
-    def cdata(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case ']' =>
-        val end = cursor.mark
-        next()
-        cursor.lay(fail(ExpectedMore)):
-          case ']' =>
-            val secondEnd = cursor.mark
-            next()
-            cursor.lay(fail(ExpectedMore)):
-              case '>' => cursor.grab(mark, end)
-              case _   => cdata(secondEnd)
-
-          case _   => cdata(mark)
-
-      case chr =>
-        next() yet cdata(mark)
-
-    @tailrec
-    def piData(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '?' =>
-        val end = cursor.mark
-        next()
-        cursor.lay(fail(ExpectedMore)):
-          case '>' => cursor.grab(mark, end)
-          case _   => piData(mark)
-
-      case chr =>
-        next() yet piData(mark)
-
-    @tailrec
-    def piTarget(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case ' ' | Lf | Cr | Ff | Ht | '?' => cursor.grab(mark, cursor.mark)
-      case chr                           => next() yet piTarget(mark)
-
-    @tailrec
-    def doctype(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '>' => cursor.grab(mark, cursor.mark).also(next())
-      case _   => next() yet doctype(mark)
-
-    def quotedValue()(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case Dqt => next() yet value(cursor.mark)
-      case Sqt => next() yet singleQuoted(cursor.mark)
-      case _   => fail(UnquotedAttribute)
-
-    def tag(headers: Boolean): Token = cursor.lay(fail(ExpectedMore)):
-      case '?' if headers =>
-        cursor.consume(fail(ExpectedMore))("xml")
-        next()
-        skip()
-        cursor.lay(fail(ExpectedMore)):
-          case 'v' => ()
-          case chr => fail(Unexpected(chr))
-
-        cursor.consume(fail(ExpectedMore))("ersion")
-        next()
-        equality()
-        content = cursor.hold(quotedValue())
-
-        headerEncoding = Unset
-        headerStandalone = Unset
-
-        skip()
-
-        cursor.let:
-          case 'e' =>
-            cursor.consume(fail(ExpectedMore))("ncoding")
-            next()
-            equality()
-            headerEncoding = cursor.hold(quotedValue())
-            skip()
-
-          case _ =>
-            ()
-
-        cursor.let:
-          case 's' =>
-            cursor.consume(fail(ExpectedMore))("tandalone")
-            next()
-            equality()
-            val standaloneValue: Text = cursor.hold(quotedValue())
-            headerStandalone = standaloneValue.s match
-              case "yes" => true
-              case "no"  => false
-              case _     => fail(Unexpected(standaloneValue.chars(0)))
-            skip()
-
-          case _ =>
-            ()
-
-        ensure('?')
-        expect('>')
-        next()
-        skip()
-        Token.Header
-
-      case '?' =>
-        next()
-        content = cursor.hold(piTarget(cursor.mark))
-
-        if content.length == 3 then
-          val chars  = content.chars
-          val first  = chars(0)
-          val second = chars(1)
-          val third  = chars(2)
-
-          if (first == 'x' || first == 'X')
-          && (second == 'm' || second == 'M')
-          && (third == 'l' || third == 'L')
-          then fail(InvalidTag(content))
-
-        skip()
-        Token.Pi
-
-      case '!' =>
-        next()
-        cursor.lay(fail(ExpectedMore)):
-          case '-' =>
-            expect('-')
-            next()
-            content = cursor.hold(comment(cursor.mark))
-            cursor.next()
-            Token.Comment
-
-          case '[' =>
-            cursor.consume(fail(ExpectedMore))("CDATA[")
-            next()
-            content = cursor.hold(cdata(cursor.mark))
-            cursor.next()
-            Token.Cdata
-
-          case 'D' =>
-            cursor.consume(fail(ExpectedMore))("OCTYPE")
-            next()
-            skip()
-            content = cursor.hold(doctype(cursor.mark))
-            Token.Doctype
-
-          case chr =>
-            fail(Unexpected(chr))
-
-      case '/' =>
-        next()
-        content = cursor.hold:
-          tagname(cursor.mark, schema.elements.unless(schema.freeform), false).label
-        Token.Close
-
-      case Nul =>
-        fail(BadInsertion)
-
-      case chr =>
-        content = cursor.hold:
-          tagname(cursor.mark, schema.elements.unless(schema.freeform), false).label
-        extra = cursor.hold(attributes(content))
-
-        cursor.lay(fail(ExpectedMore)):
-          case '/' => expect('>') yet cursor.next() yet Token.Empty
-          case '>' => cursor.next() yet Token.Open
-          case Nul => fail(BadInsertion)
-          case chr => fail(Unexpected(chr))
-
-    def finish(parent: Tag, count: Int): Node =
-      if parent != root then fail(Incomplete(parent.label)) else
-        if count > 1 then fragment = array(count)
-        nodes(index - 1)
-
-    def array(count: Int): IArray[Node] =
-      val result = new Array[Node](count)
-      System.arraycopy(nodes, 0.max(index - count), result, 0, count)
-      index -= count
-      result.immutable(using Unsafe)
-
-    def descend(parent: Tag, admissible: Set[Text]): Node = read(parent, extra, 0)
-
-    @tailrec
-    def read(parent: Tag, map: Map[Text, Text], count: Int): Node =
-
-      def admit(child: Text): Boolean = schema.freeform || parent.admissible(child)
-
-      cursor.lay(finish(parent, count)):
-        case Nul =>
-          callback.let(_(cursor.position, Hole.Node(parent.label)))
-          next()
-          append(TextNode("\u0000"))
-          read(parent, map, count + 1)
-
-        case '<' =>
-          var level: Level = Level.Peer
-          var current: Node = parent
-          var focus: Tag = parent
-
-          cursor.hold:
-            val mark = cursor.mark
-
-            def node(): Unit =
-              current = Element(content, extra, array(count))
-
-            def empty(): Unit =
-              current = Element(content, extra, IArray())
-
-            def close(): Unit =
-              current = Element(parent.label, parent.attributes, array(count))
-              level = Level.Ascend
-
-            next()
-            if cursor.lay(false)(_ == Nul) then
-              callback.let(_(cursor.position, Hole.Element(parent.label)))
-              content = t"\u0000"
-              node()
-              expect('>')
-              next()
-            else tag(headers && parent == root) match
-              case Token.Comment => current = Comment(content)
-
-              case Token.Header =>
-                current = Header(content, headerEncoding, headerStandalone)
-                headers = false
-
-              case Token.Cdata =>
-                current = Cdata(content)
-
-              case Token.Doctype =>
-                current = Doctype(content)
-
-              case Token.Pi =>
-                val data = cursor.hold(piData(cursor.mark))
-                cursor.next()
-                current = ProcessingInstruction(content, data)
-
-              case Token.Empty =>
-                if admit(content) then empty() else fail(InvalidTag(content))
-
-              case Token.Open =>
-                focus =
-                  if schema.freeform then Tag.freeform(content) else schema.elements(content).or:
-                    cursor.cue(mark)
-                    fail(InvalidTag(content))
-
-                if !admit(content) then fail(InvalidTag(content)) else level = Level.Descend
-
-              case Token.Close =>
-                if content != parent.label then
-                  cursor.cue(mark)
-                  if parent == root then fail(UnopenedTag(content))
-                  else fail(MismatchedTag(parent.label, content))
-                else
-                  cursor.next()
-                  level = Level.Ascend
-                  current = Element(content, map, array(count))
-
-          level match
-            case Level.Ascend  => current
-            case Level.Peer    => append(current) yet read(parent, map, count + 1)
-
-            case Level.Descend =>
-              push(focus)
-              val child = descend(focus, admissible)
-              pop()
-              append(child)
-              read(parent, map, count + 1)
-
-        case chr =>
-          val text = cursor.hold(textual(cursor.mark))
-          if text.length == 0 then read(parent, map, count + 1)
-          else append(TextNode(text)) yet read(parent, map, count + 1)
-
-    if cursor.finished then Fragment() else
-      skip()
-      append(root)
-      val head = read(root, ListMap(), 0)
-      if fragment.nil then head else Fragment(fragment*)
 
 sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
   type Topic <: Label

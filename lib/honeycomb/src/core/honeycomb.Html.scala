@@ -125,20 +125,31 @@ object Html extends Tag.Container
       Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
 
 
+  // Materialise an `Iterator[Text]` into a single `Text` so the Direct path
+  // can scan it directly. See the matching helper in xylophone.Xml.
+  private def gather(input: Iterator[Text]): Text =
+    if !input.hasNext then t"" else
+      val first = input.next()
+      if !input.hasNext then first else
+        val buf = jl.StringBuilder(first.s)
+        while input.hasNext do buf.append(input.next().s)
+        buf.toString.nn.tt
+
   given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
   =>  Tactic[ParseError]
   =>  (Html of content) is Aggregable by Text =
 
     input =>
       val root = Tag.root(content.reify.map(_.tt).to(Set))
-      parse(input.iterator, root).of[content]
+      HtmlDirect(gather(input.iterator)).parseHtml(root).of[content]
 
   given aggregable2: (dom: Dom) => Tactic[ParseError] => Html is Aggregable by Text =
-    input => parse(input.iterator, dom.generic, doctypes = false)
+    input =>
+      HtmlDirect(gather(input.iterator)).parseHtml(dom.generic, doctypes = false)
 
   given loadable: (dom: Dom) => Tactic[ParseError] => Html is Loadable by Text = stream =>
     val root = Tag.root(Set(t"html"))
-    parse(stream.iterator, root, doctypes = true) match
+    HtmlDirect(gather(stream.iterator)).parseHtml(root, doctypes = true) match
       case Fragment(Doctype(doctype), content) => Document(content, dom)
       case html@Element("html", _, _, _)       => Document(html, dom)
 
@@ -393,648 +404,880 @@ object Html extends Tag.Container
     case Attribute(tag: Text, attribute: Text)
     case Node(parent: Text)
 
+  // Direct parser: bypasses Cursor entirely. Operates directly on the
+  // underlying String with a `var pos`. Currently handles a focused subset
+  // of WHATWG HTML5 — doctype, regular elements (with attributes and text),
+  // void elements (looked up via `dom.elements`), comments, character/named
+  // entities. Does NOT yet handle: RCDATA / Raw modes (script/style/title),
+  // foster parenting in tables, autoclose inference, DOM inference (head/
+  // body insertion), foreign elements (svg, math), or macro callbacks. The
+  // existing cursor-based `parse` below remains the fall-back for those.
+  // ───────────────────────────────────────────────────────────────────────
+  // Unified parser: a single algorithm split across substrates.
+  //
+  // The abstract `HtmlParser` base implements the WHATWG HTML5 parsing
+  // algorithm (autoclose, foster parenting, RCDATA / Raw modes, void
+  // elements, foreign elements, DOM inference, comments, CDATA, doctype)
+  // in terms of a small substrate API: `more`/`peek`/`advance`,
+  // `position`, `begin`/`slice`/`reset`/`cloneTo`, `currentBlock`/
+  // `currentOffset` (for the same-block fast path), and
+  // `computePosition` (for lazy line/column on error). Two concrete
+  // substrates supply that API:
+  //
+  //   * `HtmlDirect`   — operates directly on `String` + `var pos`.
+  //                      Used by `aggregable` / `loadable`.
+  //   * `HtmlStreaming` — operates on `Cursor[Text]` over `Iterator[Text]`.
+  //                      Used by macro interpolators (which need the
+  //                      null-placeholder callback).
+  //
+  // Both substrates share the same parsing algorithm — autoclose, foster
+  // parenting, all the WHATWG state machinery — all live in the base
+  // class.
+
+  private[honeycomb] abstract class HtmlParser(using dom: Dom):
+    type Region
+
+    // Substrate position primitives — implemented by Direct/Streaming.
+    protected def more: Boolean
+    protected def peek: Char
+    protected def advance(): Unit
+    protected def position: Int
+    protected def begin(): Region
+    protected def slice(start: Region, end: Region): Text
+    protected def reset(start: Region): Unit
+    protected def cloneTo(start: Region, end: Region)(target: jl.StringBuilder): Unit
+    // For the same-block fast-path in `textual()`. Used via reference equality.
+    protected def currentBlock: Text
+    protected def currentOffset: Int
+    protected def computePosition(): Position
+
+    // Optional callback invoked for null-placeholder holes during macro
+    // interpolation. Default no-op.
+    var callback: Optional[(Ordinal, Hole) => Unit] = Unset
+
+    // Cursor-compat helpers so the algorithm body can stay close to the
+    // original cursor-based code.
+    protected inline def lay[R](inline otherwise: => R)(inline body: Char => R): R =
+      if more then body(peek) else otherwise
+
+    protected inline def let(inline body: Char => Unit): Unit =
+      if more then body(peek)
+
+    type Mark = Region
+
+    // Render line/column on demand for error messages.
+    protected inline def currentPosition(): Position = computePosition()
+
+    import Issue.*
+
+    def parseHtml(root: Tag, doctypes: Boolean = false): Html raises ParseError =
+      val buffer: jl.StringBuilder = jl.StringBuilder()
+      def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
+      var content: Text = t""
+      var extra: Attributes = Attributes.empty
+      // Shared scratch buffer for attribute accumulation (parser-lifetime).
+      // `attributes()` writes here, then snapshots the populated prefix into
+      // freshly-sized IArrays for an `Attributes`. Doubles in size if filled.
+      var attrKeys: Array[Text] = new Array(8)
+      var attrValues: Array[Optional[Text]] = new Array(8)
+      var nodes: Array[Node] = new Array(4)
+      var index: Int = 0
+      var stack: Array[Tag] = new Array(4)
+      var depth: Int = 0
+      var fragment: IArray[Node] = IArray()
+      var pendingFormatting: List[(Text, Attributes)] = Nil
+      var pendingAtDepth: Int = -1
+      var fosteredBefore: List[Node] = Nil
+      var fosteredAfter: List[Node] = Nil
+      var inTableContent: Boolean = false
+      var pendingFosterDescend: Boolean = false
+
+      def findAncestorIndex(label: Text): Int =
+        var i = 0
+        val end = depth - 1
+        while i < end do
+          if stack(i).label == label then return i
+          i += 1
+        -1
+
+      def stackContainsAncestor(label: Text): Boolean = findAncestorIndex(label) >= 0
+
+      def isTableLikeContext(tag: Tag): Boolean =
+        tag.label == t"table" || tag.label == t"tbody" || tag.label == t"thead"
+        || tag.label == t"tfoot" || tag.label == t"tr"
+
+      def append(node: Node): Unit =
+        if index >= nodes.length then
+          val nodes2 = new Array[Node](nodes.length*2)
+          System.arraycopy(nodes, 0, nodes2, 0, nodes.length)
+          nodes = nodes2
+
+        nodes(index) = node
+        index += 1
+
+      def push(tag: Tag): Unit =
+        if depth >= stack.length then
+          val stack2 = new Array[Tag](stack.length*2)
+          System.arraycopy(stack, 0, stack2, 0, stack.length)
+          stack = stack2
+
+        stack(depth) = tag
+        depth += 1
+
+      def pop(): Unit = depth -= 1
+
+      def next(): Unit =
+        advance()
+        if !more then raise(ParseError(Html, currentPosition(), ExpectedMore))
+
+      inline def expect(char: Char): Unit =
+        advance()
+        lay(fail(ExpectedMore)): datum =>
+          if datum != char then fail(Unexpected(datum))
+
+      inline def expectInsensitive(char: Char): Unit =
+        advance()
+        lay(fail(ExpectedMore)): datum =>
+          if datum.minuscule != char.minuscule then fail(Unexpected(datum))
+
+      def fail(issue: Issue): Nothing = abort(ParseError(Html, currentPosition(), issue))
+      def warn(issue: Issue): Unit = raise(ParseError(Html, currentPosition(), issue))
+
+      @tailrec
+      def skip(): Unit = let:
+        case ' ' | '\f' | '\n' | '\r' | '\t' => advance() yet skip()
+        case _                               => ()
+
+      @tailrec
+      def whitespace(): Unit = lay(()):
+        case ' ' | '\f' | '\n' | '\r' | '\t' => advance() yet whitespace()
+        case '<'                             => ()
+        case char                            => fail(OnlyWhitespace(char))
+
+      @tailrec
+      def tagname(mark: Mark, dictionary: Dictionary[Tag]): Tag =
+        lay(fail(ExpectedMore)):
+          case char if char.isLetter || char.isDigit => dictionary(char.minuscule) match
+            case Dictionary.Empty =>
+              advance()
+              val name = slice(mark, begin())
+              reset(mark) yet fail(InvalidTagStart(name.lower))
+
+            case other =>
+              next() yet tagname(mark, other)
+
+          case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => dictionary match
+            case Dictionary.Just("", tag)       => tag
+            case Dictionary.Branch(tag: Tag, _) => tag
+
+            case other =>
+              val name = slice(mark, begin())
+              reset(mark) yet fail(InvalidTag(name))
+
+          case '\u0000' =>
+            fail(BadInsertion)
+
+          case char =>
+            fail(Unexpected(char))
+
+      @tailrec
+      def foreignTag(mark: Mark): Text = lay(fail(ExpectedMore)):
+        case char if char.isLetter                       => next() yet foreignTag(mark)
+        case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => slice(mark, begin()).lower
+        case '\u0000'                                    => fail(BadInsertion)
+        case char                                        => fail(Unexpected(char))
+
+      @tailrec
+      def key(mark: Mark, dictionary: Dictionary[Attribute]): Attribute =
+        lay(fail(ExpectedMore)):
+          case char if char.isLetter || char == '-' => dictionary(char.minuscule) match
+            case Dictionary.Empty => fail(UnknownAttributeStart(slice(mark, begin())))
+            case dictionary       => next() yet key(mark, dictionary)
+
+          case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>
+            dictionary.element.or:
+              val name = slice(mark, begin())
+              reset(mark)
+              fail(UnknownAttribute(name))
+
+          case char =>
+            fail(Unexpected(char))
+
+      @tailrec
+      def foreignKey(mark: Mark): Text = lay(fail(ExpectedMore)):
+        case char if char.isLetter || char == '-'        => next() yet foreignKey(mark)
+        case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' => slice(mark, begin())
+        case '\u0000'                                    => fail(BadInsertion)
+        case char                                        => fail(Unexpected(char))
+
+
+      @tailrec
+      def value(mark: Mark): Text = lay(fail(ExpectedMore)):
+        case '\u0000' => callback.let(_(position.z, Hole.Text)) yet next() yet value(mark)
+
+        case '"' =>
+          cloneTo(mark, begin())(buffer)
+          next() yet result()
+
+        case '&' =>
+          val start = begin()
+          next()
+          val mark2 = entity(begin()).lay(mark): text =>
+            cloneTo(mark, start)(buffer)
+            buffer.append(text)
+            begin()
+          value(mark2)
+
+        case char =>
+          next() yet value(mark)
+
+      @tailrec
+      def singleQuoted(mark: Mark): Text = lay(fail(ExpectedMore)):
+        case '\'' => slice(mark, begin()).also(next())
+        case char => next() yet singleQuoted(mark)
+
+      @tailrec
+      def unquoted(mark: Mark): Text = lay(fail(ExpectedMore)):
+        case '>' | ' ' | '\f' | '\n' | '\r' | '\t' => slice(mark, begin())
+        case char@('"' | '\'' | '<' | '=' | '`')   => fail(ForbiddenUnquoted(char))
+        case '\u0000'                              => fail(BadInsertion)
+        case char                                  => next() yet unquoted(mark)
+
+      def equality(): Boolean = skip() yet lay(fail(ExpectedMore)):
+        case '='                                   => next() yet skip() yet true
+        case '>' | ' ' | '\f' | '\n' | '\r' | '\t' => false
+        case '\u0000'                              => fail(BadInsertion)
+        case char                                  => fail(Unexpected(char))
+
+
+      def attributes(tag: Text, foreign: Boolean): Attributes =
+        // Append into the parser-shared scratch buffer; on close, snapshot the
+        // populated prefix into freshly-sized IArrays and wrap in `Attributes`.
+        // Linear duplicate-scan suits the typical 0–5 attribute count and
+        // skips both the LinkedHashMap accumulator and the ListMap finalisation
+        // that the previous form went through.
+        var n = 0
+        var done = false
+
+        while !done do
+          skip()
+          lay(fail(ExpectedMore)):
+            case '>' | '/' => done = true
+
+            case '\u0000' =>
+              callback.let(_(position.z, Hole.Tagbody))
+              next()
+              skip()
+              if n == attrKeys.length then
+                val nk = new Array[Text](n*2)
+                val nv = new Array[Optional[Text]](n*2)
+                jl.System.arraycopy(attrKeys, 0, nk, 0, n)
+                jl.System.arraycopy(attrValues, 0, nv, 0, n)
+                attrKeys = nk
+                attrValues = nv
+              attrKeys(n) = t"\u0000"
+              attrValues(n) = Unset
+              n += 1
+
+            case _ =>
+              val key2 = if foreign then foreignKey(begin()) else
+                key(begin(), dom.attributes).tap: key =>
+                  if !key.targets(tag) then fail(InvalidAttributeUse(key.label, tag))
+
+                . label
+
+              var dup = 0
+              while dup < n do
+                if attrKeys(dup) == key2 then fail(DuplicateAttribute(key2))
+                dup += 1
+
+              val assignment = if !equality() then Unset else lay(fail(ExpectedMore)):
+                case '"'  => next() yet value(begin())
+                case '\'' => next() yet singleQuoted(begin())
+
+                case '\u0000' =>
+                  callback.let(_(position.z, Hole.Attribute(tag, key2)))
+                  next() yet t"\u0000"
+
+                case _ =>
+                  unquoted(begin()) // FIXME: Only alphanumeric characters
+
+              if n == attrKeys.length then
+                val nk = new Array[Text](n*2)
+                val nv = new Array[Optional[Text]](n*2)
+                jl.System.arraycopy(attrKeys, 0, nk, 0, n)
+                jl.System.arraycopy(attrValues, 0, nv, 0, n)
+                attrKeys = nk
+                attrValues = nv
+              attrKeys(n) = key2
+              attrValues(n) = assignment
+              n += 1
+
+        if n == 0 then Attributes.empty
+        else
+          val ks = new Array[Text](n)
+          val vs = new Array[Optional[Text]](n)
+          jl.System.arraycopy(attrKeys, 0, ks, 0, n)
+          jl.System.arraycopy(attrValues, 0, vs, 0, n)
+          Attributes.fromArrays(ks.immutable(using Unsafe), vs.immutable(using Unsafe))
+
+
+      def entity(mark: Mark): Optional[Text] = lay(fail(ExpectedMore)):
+        case '#'   => next() yet numericEntity(mark)
+        case other => textEntity(mark, dom.entities)
+
+      def numericEntity(mark: Mark): Optional[Text] =
+        lay(fail(ExpectedMore)):
+          case 'x' => next() yet hexEntity(mark, 0)
+          case _   => decimalEntity(mark, 0)
+
+      @tailrec
+      def hexEntity(mark: Mark, value: Int): Optional[Text] =
+        lay(fail(ExpectedMore)):
+          case digit if digit.isDigit =>
+            advance() yet hexEntity(mark, 16*value + (digit - '0'))
+
+          case letter if 'a' <= letter <= 'f' =>
+            advance() yet hexEntity(mark, 16*value + (letter - 87))
+
+          case letter if 'A' <= letter <= 'F' =>
+            advance() yet hexEntity(mark, 16*value + (letter - 55))
+
+          case ';' =>
+            advance() yet value.unicode
+
+          case char =>
+            Unset
+
+      @tailrec
+      def decimalEntity(mark: Mark, value: Int): Optional[Text] = lay(fail(ExpectedMore)):
+        case digit if digit.isDigit => next() yet decimalEntity(mark, 10*value + (digit - '0'))
+        case ';'                    => next() yet value.unicode
+        case char                   => Unset
+
+      @tailrec
+      def textEntity(mark: Mark, dictionary: Dictionary[Text]): Optional[Text] =
+        lay(fail(ExpectedMore)):
+          case char if char.isLetter | char.isDigit =>
+            dictionary(char) match
+              case Dictionary.Empty => Unset
+              case dictionary       => advance() yet textEntity(mark, dictionary)
+
+          case ';' =>
+            advance() yet dictionary(';').element
+
+          case '=' =>
+            Unset
+
+          case '\u0000' =>
+            fail(BadInsertion)
+
+          case char =>
+            dictionary.element
+
+
+      // Slow path: an entity reference or RCDATA close-tag check forced us to
+      // switch to the buffer. Identical to the original textual() body.
+      @tailrec
+      def textualSlow(mark: Mark, close: Optional[Text], entities: Boolean): Text =
+        lay(cloneTo(mark, begin())(buffer) yet result()):
+          case '<' | '\u0000' =>
+            close.lay(cloneTo(mark, begin())(buffer) yet result()): tag =>
+              val end = begin()
+              advance()
+              val resume = begin()
+
+              if lay(false)(_ == '/') then
+                next()
+                val tagStart = begin()
+                repeat(tag.length)(advance())
+                val candidate = slice(tagStart, begin())
+                if more && candidate == tag then
+                  if lay(false)(_ == '>')
+                  then
+                    cloneTo(mark, end)(buffer) yet result().also(advance())
+                  else reset(resume) yet textualSlow(mark, tag, entities)
+                else reset(resume) yet textualSlow(mark, tag, entities)
+              else reset(resume) yet textualSlow(mark, tag, entities)
+
+          case '&' if entities =>
+            val start = begin()
+            next()
+            val mark2 = entity(begin()).lay(mark): text =>
+              cloneTo(mark, start)(buffer)
+              buffer.append(text)
+              begin()
+            textualSlow(mark2, close, entities)
+
+          case char =>
+            advance() yet textualSlow(mark, close, entities)
+
+      // Fast path: snapshot the starting block and offset; while scanning stays
+      // inside the same block, hits no entity reference, and `close` is absent
+      // (no RCDATA close-tag check needed), build the result via
+      // `String.substring` (a JVM intrinsic) without round-tripping through
+      // `buffer`. Falls back to `textualSlow` for the harder cases.
+      def textual(mark: Mark, close: Optional[Text], entities: Boolean): Text =
+        if close.present then textualSlow(mark, close, entities) else
+          val startBlock: Text = currentBlock
+          val startOffset: Int = currentOffset
+
+          def slice(): Text =
+            if currentBlock.asInstanceOf[AnyRef] eq startBlock.asInstanceOf[AnyRef]
+            then startBlock.s.substring(startOffset, currentOffset).nn.tt
+            else cloneTo(mark, begin())(buffer) yet result()
+
+          @tailrec
+          def fast(): Text = lay(slice()):
+            case '<' | '\u0000' => slice()
+            case '&' if entities => textualSlow(mark, close, entities)
+            case char => advance() yet fast()
+
+          fast()
+
+      def comment(mark: Mark): Text = lay(fail(ExpectedMore)):
+        case '-' =>
+          val end = begin()
+          next()
+          lay(fail(ExpectedMore)):
+            case '-' => expect('>') yet slice(mark, end)
+            case _   => comment(mark)
+
+        case '\u0000' =>
+          callback.let(_(position.z, Hole.Comment))
+          next() yet comment(mark)
+
+        case char =>
+          next() yet comment(mark)
+
+      def cdata(mark: Mark): Text = lay(fail(ExpectedMore)):
+        case ']' =>
+          val end = begin()
+          next()
+          lay(fail(ExpectedMore)):
+            case ']' => expect('>') yet slice(mark, end)
+            case _   => cdata(mark)
+
+        case char =>
+          next() yet cdata(mark)
+
+      def doctype(mark: Mark): Text = lay(fail(ExpectedMore)):
+        case '>'   => slice(mark, begin()).also(next())
+        case other => next() yet doctype(mark)
+
+      def tag(doctypes: Boolean, foreign: Boolean): Token = lay(fail(ExpectedMore)):
+        case '!' =>
+          next()
+          lay(fail(ExpectedMore)):
+            case '-' =>
+              expect('-')
+              next()
+              content = comment(begin())
+              advance()
+              Token.Comment
+
+            case '[' =>
+              expectInsensitive('c')
+              expectInsensitive('d')
+              expectInsensitive('a')
+              expectInsensitive('t')
+              expectInsensitive('a')
+              expect('[')
+              next()
+              content = cdata(begin())
+              advance()
+              Token.Cdata
+
+            case 'D' | 'd' if doctypes =>
+              expectInsensitive('o')
+              expectInsensitive('c')
+              expectInsensitive('t')
+              expectInsensitive('y')
+              expectInsensitive('p')
+              expectInsensitive('e')
+              next()
+              skip()
+              content = doctype(begin())
+              skip()
+              Token.Doctype
+
+            case char =>
+              fail(Unexpected(char))
+
+        case '/' =>
+          next()
+          content =
+            if foreign then foreignTag(begin()) else tagname(begin(), dom.elements).label
+
+          Token.Close
+
+        case '\u0000' => fail(BadInsertion)
+
+        case char =>
+          val newForeign: Boolean =
+            if foreign then
+              content = foreignTag(begin())
+              true
+            else
+              val tagDef = tagname(begin(), dom.elements)
+              content = tagDef.label
+              tagDef.foreign
+
+          extra = attributes(content, foreign || newForeign)
+
+          lay(fail(ExpectedMore)):
+            case '/'       => expect('>') yet advance() yet Token.Empty
+            case '>'       => advance() yet Token.Open
+            case '\u0000'  => fail(BadInsertion)
+            case char      => fail(Unexpected(char))
+
+      def finish(parent: Tag, count: Int): Node =
+        if parent != root then
+          if parent.autoclose then Element(parent.label, parent.attributes, array(count), false)
+          else fail(Incomplete(parent.label))
+        else
+          if count > 1 then fragment = array(count)
+          nodes(index - 1)
+
+      def array(count: Int): IArray[Node] =
+        val result = new Array[Node](count)
+        System.arraycopy(nodes, 0.max(index - count), result, 0, count)
+        index -= count
+        result.immutable(using Unsafe)
+
+      def descend(parent: Tag, admissible: Set[Text], attrs: Attributes): Node =
+        val admissible2 = if parent.transparent then admissible else parent.admissible
+        read(parent, admissible2, attrs, 0)
+
+      @tailrec
+      def read(parent: Tag, admissible: Set[Text], map: Attributes, count: Int): Node =
+
+        def admit(child: Text): Boolean =
+          parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
+
+        lay(finish(parent, count)):
+          case '\u0000' =>
+            callback.let(_(position.z, Hole.Node(parent.label)))
+            next()
+            append(TextNode("\u0000"))
+            read(parent, admissible, map, count + 1)
+
+          case '<' if parent.mode != Mode.Raw && parent.mode != Mode.Rcdata =>
+            var level: Level = Level.Peer
+            var current: Node = parent
+            var focus: Tag = parent
+
+            locally:
+              val mark = begin()
+
+              inline def node(): Unit =
+                current = Element(content, extra, array(count), parent.foreign)
+
+              inline def empty(): Unit =
+                current = Element(content, extra, IArray(), parent.foreign)
+
+              inline def close(): Unit =
+                current = Element(parent.label, map, array(count), parent.foreign)
+                level = Level.Ascend
+
+              inline def infer(inline tag: Tag): Unit =
+                reset(mark)
+
+                dom.infer(parent, tag).let: tag =>
+                  focus = tag
+                  level = Level.Descend
+
+                . or:
+                    if parent.autoclose then close()
+                    else fail(InadmissibleTag(content, parent.label))
+
+              next()
+              if lay(false)(_ == '\u0000') then
+                callback.let(_(position.z, Hole.Element(parent.label)))
+                content = t"\u0000"
+                node()
+                expect('>')
+                next()
+              else tag(doctypes && parent == root, parent.foreign) match
+                case Token.Comment => current = Comment(content)
+                case Token.Doctype => current = Doctype(content)
+                case Token.Cdata   => current =
+                  if parent.foreign then TextNode(content) else
+                    fail(InvalidCdata)
+                    Comment(t"[CDATA[${content}]]")
+
+                case Token.Empty =>
+                  if admit(content) then empty() else infer:
+                    if parent.foreign then Tag.foreign(content, extra)
+                    else dom.elements(content).or(reset(mark) yet fail(InvalidTag(content)))
+
+                case Token.Open =>
+                  focus =
+                    if parent.foreign then Tag.foreign(content, extra)
+                    else dom.elements(content).or:
+                      reset(mark)
+                      fail(InvalidTag(content))
+
+                  if !admit(content) then
+                    val inferred = dom.infer(parent, focus)
+                    if inferred.absent then
+                      if parent.autoclose then
+                        reset(mark)
+                        close()
+                      else if isTableLikeContext(parent) && !focus.void then
+                        pendingFosterDescend = true
+                        level = Level.Descend
+                      else
+                        reset(mark)
+                        fail(InadmissibleTag(content, parent.label))
+                    else
+                      reset(mark)
+                      focus = inferred.vouch
+                      level = Level.Descend
+                  else if focus.void then empty()
+                  else if (content == t"a" || content == t"nobr")
+                  && (parent.label == content || stackContainsAncestor(content)) then
+                    reset(mark)
+                    close()
+                  else level = Level.Descend
+
+                case Token.Close =>
+                  if content != parent.label then
+                    if parent.autoclose then
+                      reset(mark)
+                      close()
+                    else if stackContainsAncestor(content) then
+                      if formattingTags.contains(parent.label) then
+                        pendingAtDepth = findAncestorIndex(content)
+                        pendingFormatting = pendingFormatting :+ ((parent.label, map))
+                      reset(mark)
+                      close()
+                    else if formattingTags.contains(content) then
+                      advance()
+                      level = Level.Skip
+                    else
+                      reset(mark)
+                      if parent == root then fail(UnopenedTag(content))
+                      else fail(MismatchedTag(parent.label, content))
+                  else
+                    advance()
+                    level = Level.Ascend
+                    current = Element(content, map, array(count), parent.foreign)
+
+            def reconstructPending(): Int =
+              if pendingFormatting.isEmpty || depth != pendingAtDepth then 0
+              else if !more || lay(false)(_ == '<') then
+                pendingFormatting = Nil
+                pendingAtDepth = -1
+                0
+              else
+                val pending = pendingFormatting
+                pendingFormatting = Nil
+                pendingAtDepth = -1
+                var added = 0
+                pending.foreach: (label, attrs) =>
+                  dom.elements(label).let: cloneTag =>
+                    push(cloneTag)
+                    val cloneChild = descend(cloneTag, admissible, attrs)
+                    pop()
+                    cloneChild match
+                      case Element(_, _, children, _) if children.length == 0 => ()
+
+                      case _ =>
+                        append(cloneChild)
+                        added += 1
+                added
+
+            level match
+              case Level.Ascend =>
+                current
+
+              case Level.Skip =>
+                read(parent, admissible, map, count)
+
+              case Level.Peer =>
+                append(current)
+                val added = reconstructPending()
+                read(parent, admissible, map, count + 1 + added)
+
+              case Level.Descend =>
+                push(focus)
+                val savedFosterFlag = pendingFosterDescend
+                pendingFosterDescend = false
+                if parent.label == t"table" && !savedFosterFlag then inTableContent = true
+                val child = descend(focus, admissible, extra)
+                pop()
+                if savedFosterFlag then
+                  if inTableContent then fosteredAfter = fosteredAfter :+ child
+                  else fosteredBefore = fosteredBefore :+ child
+                  val added = reconstructPending()
+                  read(parent, admissible, map, count + added)
+                else if focus.label == t"table" then
+                  val beforeAdded = fosteredBefore.size
+                  fosteredBefore.foreach(append)
+                  fosteredBefore = Nil
+                  append(child)
+                  val afterAdded = fosteredAfter.size
+                  fosteredAfter.foreach(append)
+                  fosteredAfter = Nil
+                  inTableContent = false
+                  val added = reconstructPending()
+                  read(parent, admissible, map, count + 1 + beforeAdded + afterAdded + added)
+                else
+                  append(child)
+                  val added = reconstructPending()
+                  read(parent, admissible, map, count + 1 + added)
+
+          case char => parent.mode match
+            case Mode.Whitespace =>
+              if isTableLikeContext(parent) then
+                val text = textual(begin(), Unset, true)
+                val trimmed = text.trim
+                if trimmed.length > 0 then
+                  val node = TextNode(trimmed)
+                  if inTableContent then fosteredAfter = fosteredAfter :+ node
+                  else fosteredBefore = fosteredBefore :+ node
+                read(parent, admissible, map, count)
+              else
+                whitespace() yet read(parent, admissible, map, count)
+
+            case Mode.Raw =>
+              val text = textual(begin(), parent.label, false)
+              if text.nil then Element(parent.label, parent.attributes, IArray(), parent.foreign)
+              else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
+
+            case Mode.Rcdata =>
+              val text = textual(begin(), parent.label, true)
+              if text.nil then Element(parent.label, parent.attributes, IArray(), parent.foreign)
+              else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
+
+            case Mode.Normal =>
+              val text = textual(begin(), Unset, true)
+              if text.length == 0 then read(parent, admissible, map, count + 1)
+              else append(TextNode(text)) yet read(parent, admissible, map, count + 1)
+
+      if !more then Fragment() else locally:
+        skip()
+        if !more then Fragment() else
+          append(root)
+          val head = read(root, root.admissible, Attributes.empty, 0)
+          if fragment.nil then head else Fragment(fragment*)
+
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Direct substrate: scans the underlying `String` with `var pos`.
+
+  private[honeycomb] final class HtmlDirect(text: Text)(using Dom) extends HtmlParser:
+    type Region = Int
+    private val s: String = text.s
+    private val len: Int = s.length
+    private var pos: Int = 0
+
+    protected inline def more: Boolean = pos < len
+    protected inline def peek: Char = s.charAt(pos)
+    protected inline def advance(): Unit = pos += 1
+    protected inline def position: Int = pos
+    protected inline def begin(): Int = pos
+    protected inline def slice(start: Int, end: Int): Text = s.substring(start, end).nn.tt
+    protected inline def reset(start: Int): Unit = pos = start
+
+    protected inline def cloneTo(start: Int, end: Int)(target: jl.StringBuilder): Unit =
+      target.append(s, start, end)
+
+    // For the same-block fast path: there's only one block (the input
+    // string), so this is constant.
+    protected inline def currentBlock: Text = text
+    protected inline def currentOffset: Int = pos
+
+    protected def computePosition(): Position =
+      var line: Int = 1
+      var column: Int = 1
+      var i = 0
+      // Match the tracked-cursor convention: skip the column update on the
+      // final advance (when the cursor is past the end), but otherwise
+      // count `pos` chars.
+      val limit = if pos >= len then math.max(pos - 1, 0) else pos
+      while i < limit do
+        if s.charAt(i) == '\n' then
+          line += 1
+          column = 1
+        else
+          column += 1
+        i += 1
+      Position(line.u, column.u)
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Streaming substrate: scans an `Iterator[Text]` via `zephyrine.Cursor`.
+  // Used by macro interpolators (which need callbacks).
+
+  private[honeycomb] final class HtmlStreaming(input: Iterator[Text])(using Dom)
+  extends HtmlParser:
+    import Lineation.untrackedChars
+    type Region = Cursor.Mark
+
+    private val sourceBlocks: IArray[Text] = IArray.from(input)
+    private val cursor: Cursor[Text] = Cursor(sourceBlocks.iterator)
+    private var heldToken: Cursor.Held | Null = null
+
+    override def parseHtml(root: Tag, doctypes: Boolean = false): Html raises ParseError =
+      cursor.hold:
+        heldToken = summon[Cursor.Held]
+        try super.parseHtml(root, doctypes) finally heldToken = null
+
+    protected def more: Boolean = cursor.more
+    protected def peek: Char = cursor.datum(using Unsafe).asInstanceOf[Char]
+    protected def advance(): Unit = cursor.next()
+    protected def position: Int = cursor.position.n0
+
+    protected def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
+
+    protected def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
+      cursor.grab(start, end).asInstanceOf[Text]
+
+    protected def reset(start: Cursor.Mark): Unit = cursor.cue(start)
+
+    protected def cloneTo(start: Cursor.Mark, end: Cursor.Mark)(target: jl.StringBuilder): Unit =
+      cursor.clone(start, end)(target.asInstanceOf[cursor.addressable.Target])
+
+    protected def currentBlock: Text = cursor.block
+    protected def currentOffset: Int = cursor.offsetInBlock
+
+    protected def computePosition(): Position =
+      var line: Int = 1
+      var column: Int = 1
+      val target: Int = cursor.position.n0 - (if cursor.finished then 1 else 0)
+      var remaining: Int = target
+      var i = 0
+      while remaining > 0 && i < sourceBlocks.length do
+        val block = sourceBlocks(i).s
+        val take = remaining.min(block.length)
+        var j = 0
+        while j < take do
+          if block.charAt(j) == '\n' then
+            line += 1
+            column = 1
+          else
+            column += 1
+          j += 1
+        remaining -= take
+        i += 1
+      Position(line.u, column.u)
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Public entry points.
+
   private[honeycomb] def parse[dom <: Dom]
     ( input:       Iterator[Text],
       root:        Tag,
       callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
       fastforward: Int                               = 0,
-      doctypes:    Boolean = false )
+      doctypes:    Boolean                           = false )
     ( using dom: Dom )
   :   Html raises ParseError =
 
-    import lineation.linefeedChars
-
-    val cursor = Cursor(input)
-    val buffer: jl.StringBuilder = jl.StringBuilder()
-    def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
-    var content: Text = t""
-    var extra: Map[Text, Optional[Text]] = ListMap()
-    var nodes: Array[Node] = new Array(4)
-    var index: Int = 0
-    var stack: Array[Tag] = new Array(4)
-    var depth: Int = 0
-    var fragment: IArray[Node] = IArray()
-    var pendingFormatting: List[(Text, Map[Text, Optional[Text]])] = Nil
-    var pendingAtDepth: Int = -1
-    var fosteredBefore: List[Node] = Nil
-    var fosteredAfter: List[Node] = Nil
-    var inTableContent: Boolean = false
-    var pendingFosterDescend: Boolean = false
-
-    def findAncestorIndex(label: Text): Int =
-      var i = 0
-      val end = depth - 1
-      while i < end do
-        if stack(i).label == label then return i
-        i += 1
-      -1
-
-    def stackContainsAncestor(label: Text): Boolean = findAncestorIndex(label) >= 0
-
-    def isTableLikeContext(tag: Tag): Boolean =
-      tag.label == t"table" || tag.label == t"tbody" || tag.label == t"thead"
-      || tag.label == t"tfoot" || tag.label == t"tr"
-
-    def append(node: Node): Unit =
-      if index >= nodes.length then
-        val nodes2 = new Array[Node](nodes.length*2)
-        System.arraycopy(nodes, 0, nodes2, 0, nodes.length)
-        nodes = nodes2
-
-      nodes(index) = node
-      index += 1
-
-    def push(tag: Tag): Unit =
-      if depth >= stack.length then
-        val stack2 = new Array[Tag](stack.length*2)
-        System.arraycopy(stack, 0, stack2, 0, stack.length)
-        stack = stack2
-
-      stack(depth) = tag
-      depth += 1
-
-    def pop(): Unit = depth -= 1
-
-    def next(): Unit =
-      if !cursor.next()
-      then raise(ParseError(Html, Position(cursor.line, cursor.column), ExpectedMore))
-
-    inline def expect(char: Char): Unit =
-      cursor.next()
-      cursor.lay(fail(ExpectedMore)): datum =>
-        if datum != char then fail(Unexpected(datum))
-
-    inline def expectInsensitive(char: Char): Unit =
-      cursor.next()
-      cursor.lay(fail(ExpectedMore)): datum =>
-        if datum.minuscule != char.minuscule then fail(Unexpected(datum))
-
-    def fail(issue: Issue): Nothing =
-      abort(ParseError(Html, Position(cursor.line, cursor.column), issue))
-
-    def warn(issue: Issue): Unit =
-      raise(ParseError(Html, Position(cursor.line, cursor.column), issue))
-
-    @tailrec
-    def skip(): Unit = cursor.let:
-      case ' ' | '\f' | '\n' | '\r' | '\t' => cursor.next() yet skip()
-      case _                               => ()
-
-    @tailrec
-    def whitespace(): Unit = cursor.lay(()):
-      case ' ' | '\f' | '\n' | '\r' | '\t' => cursor.next() yet whitespace()
-      case '<'                             => ()
-      case char                            => fail(OnlyWhitespace(char))
-
-    @tailrec
-    def tagname(mark: Mark, dictionary: Dictionary[Tag])(using Cursor.Held): Tag =
-      cursor.lay(fail(ExpectedMore)):
-        case char if char.isLetter || char.isDigit => dictionary(char.minuscule) match
-          case Dictionary.Empty =>
-            cursor.next()
-            val name = cursor.grab(mark, cursor.mark)
-            cursor.cue(mark) yet fail(InvalidTagStart(name.lower))
-
-          case other =>
-            next() yet tagname(mark, other)
-
-        case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => dictionary match
-          case Dictionary.Just("", tag)       => tag
-          case Dictionary.Branch(tag: Tag, _) => tag
-
-          case other =>
-            val name = cursor.grab(mark, cursor.mark)
-            cursor.cue(mark) yet fail(InvalidTag(name))
-
-        case '\u0000' =>
-          fail(BadInsertion)
-
-        case char =>
-          fail(Unexpected(char))
-
-    @tailrec
-    def foreignTag(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case char if char.isLetter                       => next() yet foreignTag(mark)
-      case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => cursor.grab(mark, cursor.mark).lower
-      case '\u0000'                                    => fail(BadInsertion)
-      case char                                        => fail(Unexpected(char))
-
-    @tailrec
-    def key(mark: Mark, dictionary: Dictionary[Attribute])(using Cursor.Held): Attribute =
-      cursor.lay(fail(ExpectedMore)):
-        case char if char.isLetter || char == '-' => dictionary(char.minuscule) match
-          case Dictionary.Empty => fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
-          case dictionary       => next() yet key(mark, dictionary)
-
-        case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>
-          dictionary.element.or:
-            val name = cursor.grab(mark, cursor.mark)
-            cursor.cue(mark)
-            fail(UnknownAttribute(name))
-
-        case char =>
-          fail(Unexpected(char))
-
-    @tailrec
-    def foreignKey(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case char if char.isLetter || char == '-'        => next() yet foreignKey(mark)
-      case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' => cursor.grab(mark, cursor.mark)
-      case '\u0000'                                    => fail(BadInsertion)
-      case char                                        => fail(Unexpected(char))
-
-
-    @tailrec
-    def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '\u0000' => callback.let(_(cursor.position, Hole.Text)) yet next() yet value(mark)
-
-      case '"' =>
-        cursor.clone(mark, cursor.mark)(buffer)
-        next() yet result()
-
-      case '&' =>
-        val start = cursor.mark
-        next()
-        val mark2 = entity(cursor.mark).lay(mark): text =>
-          cursor.clone(mark, start)(buffer)
-          buffer.append(text)
-          cursor.mark
-        value(mark2)
-
-      case char =>
-        next() yet value(mark)
-
-    @tailrec
-    def singleQuoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '\'' => cursor.grab(mark, cursor.mark).also(next())
-      case char => next() yet singleQuoted(mark)
-
-    @tailrec
-    def unquoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '>' | ' ' | '\f' | '\n' | '\r' | '\t' => cursor.grab(mark, cursor.mark)
-      case char@('"' | '\'' | '<' | '=' | '`')   => fail(ForbiddenUnquoted(char))
-      case '\u0000'                              => fail(BadInsertion)
-      case char                                  => next() yet unquoted(mark)
-
-    def equality(): Boolean = skip() yet cursor.lay(fail(ExpectedMore)):
-      case '='                                   => next() yet skip() yet true
-      case '>' | ' ' | '\f' | '\n' | '\r' | '\t' => false
-      case '\u0000'                              => fail(BadInsertion)
-      case char                                  => fail(Unexpected(char))
-
-
-    @tailrec
-    def attributes(tag: Text, foreign: Boolean, entries: Map[Text, Optional[Text]] = ListMap())
-      ( using Cursor.Held )
-    :   Map[Text, Optional[Text]] =
-
-      skip() yet cursor.lay(fail(ExpectedMore)):
-        case '>' | '/' => entries
-
-        case '\u0000'  =>
-          callback.let(_(cursor.position, Hole.Tagbody))
-          next()
-          skip()
-          attributes(tag, foreign, entries.updated(t"\u0000", Unset))
-
-        case _ =>
-          val key2 = if foreign then foreignKey(cursor.mark) else
-            key(cursor.mark, dom.attributes).tap: key =>
-              if !key.targets(tag) then fail(InvalidAttributeUse(key.label, tag))
-
-            . label
-
-          if entries.has(key2) then fail(DuplicateAttribute(key2))
-
-          val assignment = if !equality() then Unset else cursor.lay(fail(ExpectedMore)):
-            case '"'  => next() yet value(cursor.mark)
-            case '\'' => next() yet singleQuoted(cursor.mark)
-
-            case '\u0000' =>
-              callback.let(_(cursor.position, Hole.Attribute(tag, key2)))
-              next() yet t"\u0000"
-
-            case _ =>
-              unquoted(cursor.mark) // FIXME: Only alphanumeric characters
-
-          attributes(tag, foreign, entries.updated(key2, assignment))
-
-
-    def entity(mark: Mark)(using Cursor.Held): Optional[Text] = cursor.lay(fail(ExpectedMore)):
-      case '#'   => next() yet numericEntity(mark)
-      case other => textEntity(mark, dom.entities)
-
-    def numericEntity(mark: Mark)(using Cursor.Held): Optional[Text] =
-      cursor.lay(fail(ExpectedMore)):
-        case 'x' => next() yet hexEntity(mark, 0)
-        case _   => decimalEntity(mark, 0)
-
-    @tailrec
-    def hexEntity(mark: Mark, value: Int)(using Cursor.Held): Optional[Text] =
-      cursor.lay(fail(ExpectedMore)):
-        case digit if digit.isDigit =>
-          cursor.next() yet hexEntity(mark, 16*value + (digit - '0'))
-
-        case letter if 'a' <= letter <= 'f' =>
-          cursor.next() yet hexEntity(mark, 16*value + (letter - 87))
-
-        case letter if 'A' <= letter <= 'F' =>
-          cursor.next() yet hexEntity(mark, 16*value + (letter - 55))
-
-        case ';' =>
-          cursor.next() yet value.unicode
-
-        case char =>
-          Unset
-
-    @tailrec
-    def decimalEntity(mark: Mark, value: Int): Optional[Text] = cursor.lay(fail(ExpectedMore)):
-      case digit if digit.isDigit => next() yet decimalEntity(mark, 10*value + (digit - '0'))
-      case ';'                    => next() yet value.unicode
-      case char                   => Unset
-
-    @tailrec
-    def textEntity(mark: Mark, dictionary: Dictionary[Text])(using Cursor.Held): Optional[Text] =
-      cursor.lay(fail(ExpectedMore)):
-        case char if char.isLetter | char.isDigit =>
-          dictionary(char) match
-            case Dictionary.Empty => Unset
-            case dictionary       => cursor.next() yet textEntity(mark, dictionary)
-
-        case ';' =>
-          cursor.next() yet dictionary(';').element
-
-        case '=' =>
-          Unset
-
-        case '\u0000' =>
-          fail(BadInsertion)
-
-        case char =>
-          dictionary.element
-
-
-    @tailrec
-    def textual(mark: Mark, close: Optional[Text], entities: Boolean)(using Cursor.Held): Text =
-      cursor.lay(cursor.clone(mark, cursor.mark)(buffer) yet result()):
-        case '<' | '\u0000' =>
-          close.lay(cursor.clone(mark, cursor.mark)(buffer) yet result()): tag =>
-            val end = cursor.mark
-            cursor.next()
-            val resume = cursor.mark
-
-            if cursor.lay(false)(_ == '/') then
-              next()
-              val tagStart = cursor.mark
-              repeat(tag.length)(cursor.next())
-              val candidate = cursor.grab(tagStart, cursor.mark)
-              if cursor.more && candidate == tag then
-                if cursor.lay(false)(_ == '>')
-                then
-                  cursor.clone(mark, end)(buffer) yet result().also(cursor.next())
-                else cursor.cue(resume) yet textual(mark, tag, entities)
-              else cursor.cue(resume) yet textual(mark, tag, entities)
-            else cursor.cue(resume) yet textual(mark, tag, entities)
-
-        case '&' if entities =>
-          val start = cursor.mark
-          next()
-          val mark2 = entity(cursor.mark).lay(mark): text =>
-            cursor.clone(mark, start)(buffer)
-            buffer.append(text)
-            cursor.mark
-          textual(mark2, close, entities)
-
-        case char =>
-          cursor.next() yet textual(mark, close, entities)
-
-    def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '-' =>
-        val end = cursor.mark
-        next()
-        cursor.lay(fail(ExpectedMore)):
-          case '-' => expect('>') yet cursor.grab(mark, end)
-          case _   => comment(mark)
-
-      case '\u0000' =>
-        callback.let(_(cursor.position, Hole.Comment))
-        next() yet comment(mark)
-
-      case char =>
-        next() yet comment(mark)
-
-    def cdata(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case ']' =>
-        val end = cursor.mark
-        next()
-        cursor.lay(fail(ExpectedMore)):
-          case ']' => expect('>') yet cursor.grab(mark, end)
-          case _   => cdata(mark)
-
-      case char =>
-        next() yet cdata(mark)
-
-    def doctype(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '>'   => cursor.grab(mark, cursor.mark).also(next())
-      case other => next() yet doctype(mark)
-
-    def tag(doctypes: Boolean, foreign: Boolean): Token = cursor.lay(fail(ExpectedMore)):
-      case '!' =>
-        next()
-        cursor.lay(fail(ExpectedMore)):
-          case '-' =>
-            expect('-')
-            next()
-            content = cursor.hold(comment(cursor.mark))
-            cursor.next()
-            Token.Comment
-
-          case '[' =>
-            expectInsensitive('c')
-            expectInsensitive('d')
-            expectInsensitive('a')
-            expectInsensitive('t')
-            expectInsensitive('a')
-            expect('[')
-            next()
-            content = cursor.hold(cdata(cursor.mark))
-            cursor.next()
-            Token.Cdata
-
-          case 'D' | 'd' if doctypes =>
-            expectInsensitive('o')
-            expectInsensitive('c')
-            expectInsensitive('t')
-            expectInsensitive('y')
-            expectInsensitive('p')
-            expectInsensitive('e')
-            next()
-            skip()
-            content = cursor.hold(doctype(cursor.mark))
-            skip()
-            Token.Doctype
-
-          case char =>
-            fail(Unexpected(char))
-
-      case '/' =>
-        next()
-        content = cursor.hold:
-          if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, dom.elements).label
-
-        Token.Close
-
-      case '\u0000' => fail(BadInsertion)
-
-      case char =>
-        val newForeign: Boolean = cursor.hold:
-          if foreign then
-            content = foreignTag(cursor.mark)
-            true
-          else
-            val tagDef = tagname(cursor.mark, dom.elements)
-            content = tagDef.label
-            tagDef.foreign
-
-        extra = cursor.hold(attributes(content, foreign || newForeign))
-
-        cursor.lay(fail(ExpectedMore)):
-          case '/'       => expect('>') yet cursor.next() yet Token.Empty
-          case '>'       => cursor.next() yet Token.Open
-          case '\u0000'  => fail(BadInsertion)
-          case char      => fail(Unexpected(char))
-
-    def finish(parent: Tag, count: Int): Node =
-      if parent != root then
-        if parent.autoclose then Element(parent.label, parent.attributes, array(count), false)
-        else fail(Incomplete(parent.label))
-      else
-        if count > 1 then fragment = array(count)
-        nodes(index - 1)
-
-    def array(count: Int): IArray[Node] =
-      val result = new Array[Node](count)
-      System.arraycopy(nodes, 0.max(index - count), result, 0, count)
-      index -= count
-      result.immutable(using Unsafe)
-
-    def descend(parent: Tag, admissible: Set[Text], attrs: Map[Text, Optional[Text]]): Node =
-      val admissible2 = if parent.transparent then admissible else parent.admissible
-      read(parent, admissible2, attrs, 0)
-
-    @tailrec
-    def read(parent: Tag, admissible: Set[Text], map: Map[Text, Optional[Text]], count: Int): Node =
-
-      def admit(child: Text): Boolean =
-        parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
-
-      cursor.lay(finish(parent, count)):
-        case '\u0000' =>
-          callback.let(_(cursor.position, Hole.Node(parent.label)))
-          next()
-          append(TextNode("\u0000"))
-          read(parent, admissible, map, count + 1)
-
-        case '<' if parent.mode != Mode.Raw && parent.mode != Mode.Rcdata =>
-          var level: Level = Level.Peer
-          var current: Node = parent
-          var focus: Tag = parent
-
-          cursor.hold:
-            val mark = cursor.mark
-
-            def node(): Unit =
-              current = Element(content, extra, array(count), parent.foreign)
-
-            def empty(): Unit =
-              current = Element(content, extra, IArray(), parent.foreign)
-
-            def close(): Unit =
-              current = Element(parent.label, map, array(count), parent.foreign)
-              level = Level.Ascend
-
-            def infer(tag: Tag): Unit =
-              cursor.cue(mark)
-
-              dom.infer(parent, tag).let: tag =>
-                focus = tag
-                level = Level.Descend
-
-              . or:
-                  if parent.autoclose then close()
-                  else fail(InadmissibleTag(content, parent.label))
-
-            next()
-            if cursor.lay(false)(_ == '\u0000') then
-              callback.let(_(cursor.position, Hole.Element(parent.label)))
-              content = t"\u0000"
-              node()
-              expect('>')
-              next()
-            else tag(doctypes && parent == root, parent.foreign) match
-              case Token.Comment => current = Comment(content)
-              case Token.Doctype => current = Doctype(content)
-              case Token.Cdata   => current =
-                if parent.foreign then TextNode(content) else
-                  fail(InvalidCdata)
-                  Comment(t"[CDATA[${content}]]")
-
-              case Token.Empty =>
-                if admit(content) then empty() else infer:
-                  if parent.foreign then Tag.foreign(content, extra)
-                  else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
-
-              case Token.Open =>
-                focus =
-                  if parent.foreign then Tag.foreign(content, extra)
-                  else dom.elements(content).or:
-                    cursor.cue(mark)
-                    fail(InvalidTag(content))
-
-                if !admit(content) then
-                  val inferred = dom.infer(parent, focus)
-                  if inferred.absent then
-                    if parent.autoclose then
-                      cursor.cue(mark)
-                      close()
-                    else if isTableLikeContext(parent) && !focus.void then
-                      pendingFosterDescend = true
-                      level = Level.Descend
-                    else
-                      cursor.cue(mark)
-                      fail(InadmissibleTag(content, parent.label))
-                  else
-                    cursor.cue(mark)
-                    focus = inferred.vouch
-                    level = Level.Descend
-                else if focus.void then empty()
-                else if (content == t"a" || content == t"nobr")
-                && (parent.label == content || stackContainsAncestor(content)) then
-                  cursor.cue(mark)
-                  close()
-                else level = Level.Descend
-
-              case Token.Close =>
-                if content != parent.label then
-                  if parent.autoclose then
-                    cursor.cue(mark)
-                    close()
-                  else if stackContainsAncestor(content) then
-                    if formattingTags.contains(parent.label) then
-                      pendingAtDepth = findAncestorIndex(content)
-                      pendingFormatting = pendingFormatting :+ ((parent.label, map))
-                    cursor.cue(mark)
-                    close()
-                  else if formattingTags.contains(content) then
-                    cursor.next()
-                    level = Level.Skip
-                  else
-                    cursor.cue(mark)
-                    if parent == root then fail(UnopenedTag(content))
-                    else fail(MismatchedTag(parent.label, content))
-                else
-                  cursor.next()
-                  level = Level.Ascend
-                  current = Element(content, map, array(count), parent.foreign)
-
-          def reconstructPending(): Int =
-            if pendingFormatting.isEmpty || depth != pendingAtDepth then 0
-            else if cursor.finished || cursor.lay(false)(_ == '<') then
-              pendingFormatting = Nil
-              pendingAtDepth = -1
-              0
-            else
-              val pending = pendingFormatting
-              pendingFormatting = Nil
-              pendingAtDepth = -1
-              var added = 0
-              pending.foreach: (label, attrs) =>
-                dom.elements(label).let: cloneTag =>
-                  push(cloneTag)
-                  val cloneChild = descend(cloneTag, admissible, attrs)
-                  pop()
-                  cloneChild match
-                    case Element(_, _, children, _) if children.length == 0 => ()
-
-                    case _ =>
-                      append(cloneChild)
-                      added += 1
-              added
-
-          level match
-            case Level.Ascend =>
-              current
-
-            case Level.Skip =>
-              read(parent, admissible, map, count)
-
-            case Level.Peer =>
-              append(current)
-              val added = reconstructPending()
-              read(parent, admissible, map, count + 1 + added)
-
-            case Level.Descend =>
-              push(focus)
-              val savedFosterFlag = pendingFosterDescend
-              pendingFosterDescend = false
-              if parent.label == t"table" && !savedFosterFlag then inTableContent = true
-              val child = descend(focus, admissible, extra)
-              pop()
-              if savedFosterFlag then
-                if inTableContent then fosteredAfter = fosteredAfter :+ child
-                else fosteredBefore = fosteredBefore :+ child
-                val added = reconstructPending()
-                read(parent, admissible, map, count + added)
-              else if focus.label == t"table" then
-                val beforeAdded = fosteredBefore.size
-                fosteredBefore.foreach(append)
-                fosteredBefore = Nil
-                append(child)
-                val afterAdded = fosteredAfter.size
-                fosteredAfter.foreach(append)
-                fosteredAfter = Nil
-                inTableContent = false
-                val added = reconstructPending()
-                read(parent, admissible, map, count + 1 + beforeAdded + afterAdded + added)
-              else
-                append(child)
-                val added = reconstructPending()
-                read(parent, admissible, map, count + 1 + added)
-
-        case char => parent.mode match
-          case Mode.Whitespace =>
-            if isTableLikeContext(parent) then
-              val text = cursor.hold(textual(cursor.mark, Unset, true))
-              val trimmed = text.trim
-              if trimmed.length > 0 then
-                val node = TextNode(trimmed)
-                if inTableContent then fosteredAfter = fosteredAfter :+ node
-                else fosteredBefore = fosteredBefore :+ node
-              read(parent, admissible, map, count)
-            else
-              whitespace() yet read(parent, admissible, map, count)
-
-          case Mode.Raw =>
-            val text = cursor.hold(textual(cursor.mark, parent.label, false))
-            if text.nil then Element(parent.label, parent.attributes, IArray(), parent.foreign)
-            else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
-
-          case Mode.Rcdata =>
-            val text = cursor.hold(textual(cursor.mark, parent.label, true))
-            if text.nil then Element(parent.label, parent.attributes, IArray(), parent.foreign)
-            else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
-
-          case Mode.Normal =>
-            val text = cursor.hold(textual(cursor.mark, Unset, true))
-            if text.length == 0 then read(parent, admissible, map, count + 1)
-            else append(TextNode(text)) yet read(parent, admissible, map, count + 1)
-
-    if cursor.finished then Fragment() else
-      skip()
-      if cursor.finished then Fragment() else
-        append(root)
-        val head = read(root, root.admissible, ListMap(), 0)
-        if fragment.nil then head else Fragment(fragment*)
-
+    val parser = HtmlStreaming(input)
+    parser.callback = callback
+    parser.parseHtml(root, doctypes)
 sealed into trait Html extends Topical, Documentary, Formal:
   type Topic <: Label
   type Transport <: Label
@@ -1075,14 +1318,20 @@ case class TextNode(text: Text) extends Node:
   def body: Fragment of Topic over Transport in Form = Fragment[Topic]().over[Transport].in[Form]
 
 object Element:
-  def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
+  def foreign(label: Text, attributes: Attributes, children: Html of "#foreign"*)
   :   Element of "#foreign" =
 
     Element(label, attributes, children.nodes, true).of["#foreign"]
 
+  // Convenience for callers that still hold a Map.
+  def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
+  :   Element of "#foreign" =
+
+    Element(label, Attributes.from(attributes), children.nodes, true).of["#foreign"]
+
 case class Element
   ( label:      Text,
-    attributes: Map[Text, Optional[Text]],
+    attributes: Attributes,
     children:   IArray[Node],
     foreign:    Boolean )
 extends Node, Topical, Transportive, Dynamic:
@@ -1140,12 +1389,12 @@ extends Node, Topical, Transportive, Dynamic:
       case attribute: (name.type is Attribute on (? >: Topic) in Form) =>
         compiletime.summonFrom:
           case unattributive: (attribute.Topic is Unattributive) =>
-            unattributive.unattribute(attributes.at(name.tt))
+            unattributive.unattribute(attributes(name.tt))
 
       case attribute: (name.type is Attribute in Form) =>
         compiletime.summonFrom:
           case unattributive: (attribute.Topic is Unattributive) =>
-            unattributive.unattribute(attributes.at(name.tt))
+            unattributive.unattribute(attributes(name.tt))
 
 
   inline def updateDynamic[value](name: Label)(value: value)
