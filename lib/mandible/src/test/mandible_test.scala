@@ -109,3 +109,41 @@ object Tests extends Suite(m"Mandible tests"):
 
       Bytecode(Unset, List(getstatic, invoke), 1, 0).effectivelyStaticCalls
     . assert(_.isEmpty)
+
+    test(m"Linearizer inlines a resolvable static-dispatchable call"):
+      val moduleFrame = Bytecode.Frame.L(t"Foo$$")
+      val getstatic =
+        Bytecode.Instruction
+          ( Bytecode.Opcode.Getstatic(t"Foo$$", t"MODULE$$", t"LFoo$$;"),
+            Unset,
+            moduleFrame :: Nil,
+            0 )
+
+      val invoke =
+        Bytecode.Instruction
+          ( Bytecode.Opcode.Invokevirtual(t"Foo$$", t"doIt", t"()V"),
+            Unset,
+            Nil,
+            3 )
+
+      val caller = Bytecode(Unset, List(getstatic, invoke), 1, 0)
+
+      val calleeBody =
+        Bytecode.Instruction(Bytecode.Opcode.Iconst1, Unset, Bytecode.Frame.I :: Nil, 0)
+        :: Bytecode.Instruction(Bytecode.Opcode.Ireturn, Unset, Nil, 1)
+        :: Nil
+      val callee = Bytecode(Unset, calleeBody, 1, 0)
+
+      val resolver: (Text, Text, Text) => Optional[Bytecode] =
+        (o, n, d) => if o == t"Foo$$" && n == t"doIt" then callee else Unset
+
+      caller.linearize(resolver, maxDepth = 2).map(_.depth)
+    . assert(_ == List(0, 0, 1, 1))
+
+    test(m"Linearizer respects maxInstructions budget"):
+      val noop =
+        Bytecode.Instruction(Bytecode.Opcode.Nop, Unset, Nil, 0)
+      val caller = Bytecode(Unset, List.fill(50)(noop), 0, 0)
+
+      caller.linearize((_, _, _) => Unset, maxInstructions = 7).size
+    . assert(_ == 7)

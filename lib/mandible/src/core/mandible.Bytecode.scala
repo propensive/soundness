@@ -163,6 +163,20 @@ object Bytecode:
   case class Instruction
     ( opcode: Opcode, line: Optional[Int], stack: Optional[List[Frame]], offset: Int )
 
+  case class Linearized(depth: Int, source: Text, instruction: Instruction)
+
+  object Linearized:
+    given teletypeable: (palette: BytecodePalette) => List[Linearized] is Teletypeable = lines =>
+      lines.map: line =>
+        val indent: Text = Text("  ".repeat(line.depth).nn)
+        val src =
+          if line.source == t"" then e""
+          else e"${Fg(palette.bytecode)}(${line.source})  "
+
+        e"$indent$src${line.instruction.opcode.teletype}"
+
+      . join(e"\n")
+
   object Opcode:
     private def typeKindToFrame(kind: jlc.TypeKind): Frame = kind match
       case jlc.TypeKind.BOOLEAN   => Frame.Z
@@ -1414,6 +1428,44 @@ case class Bytecode
       instruction.copy(line = instruction.line.let(_ + codepoint.line - 1))
 
     copy(sourceFile = codepoint.source.cut(t"/").last, instructions = instructions2)
+
+  def linearize
+    ( resolver:        (Text, Text, Text) => Optional[Bytecode],
+      maxDepth:        Int = 3,
+      maxInstructions: Int = 1000 )
+  :   List[Bytecode.Linearized] =
+
+    import Bytecode.Opcode.*
+    val staticCalls = effectivelyStaticCalls
+    val results = scala.collection.mutable.ListBuffer.empty[Bytecode.Linearized]
+    var budget = maxInstructions
+
+    def expand(bc: Bytecode, depth: Int, source: Text): Unit =
+      val callsite = bc.effectivelyStaticCalls
+
+      bc.instructions.iterator.takeWhile(_ => budget > 0).foreach: instr =>
+        budget -= 1
+
+        val target: Optional[(Text, Text, Text)] = instr.opcode match
+          case Invokestatic(o, n, d)                                          => (o, n, d)
+          case Invokevirtual(o, n, d)    if callsite.contains(instr.offset)   => (o, n, d)
+          case Invokeinterface(o, n, d, _) if callsite.contains(instr.offset) => (o, n, d)
+          case _                                                              => Unset
+
+        target.let: (owner, name, descriptor) =>
+          if depth >= maxDepth then results += Bytecode.Linearized(depth, source, instr)
+          else resolver(owner, name, descriptor) match
+            case bytecode: Bytecode =>
+              results += Bytecode.Linearized(depth, source, instr)
+              expand(bytecode, depth + 1, t"$owner.$name")
+
+            case _ =>
+              results += Bytecode.Linearized(depth, source, instr)
+
+        . or(results += Bytecode.Linearized(depth, source, instr))
+
+    expand(this, 0, t"")
+    results.toList
 
   def effectivelyStaticCalls: Set[Int] =
     import Bytecode.Opcode.*
