@@ -1375,9 +1375,14 @@ object Bytecode:
         case Wide() | Breakpoint | Impdep1 | Impdep2 => stack
         case _: Opcode => stack
 
-case class Bytecode(sourceFile: Optional[Text], instructions: List[Bytecode.Instruction]):
+case class Bytecode
+  ( sourceFile:   Optional[Text],
+    instructions: List[Bytecode.Instruction],
+    maxStack:     Int,
+    maxLocals:    Int ):
+
   def embed(codepoint: Codepoint): Bytecode =
     val instructions2 = instructions.map: instruction =>
       instruction.copy(line = instruction.line.let(_ + codepoint.line - 1))
 
-    Bytecode(codepoint.source.cut(t"/").last, instructions2)
+    copy(sourceFile = codepoint.source.cut(t"/").last, instructions = instructions2)

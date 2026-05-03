@@ -38,7 +38,35 @@ import classloaders.threadContext
 
 object Tests extends Suite(m"Mandible tests"):
   def run(): Unit =
-    test(m"Compile something"):
+    test(m"Locate a known method on a classfile"):
       val rewrite =
         Classfile[StackTrace].let(_.methods.find(_.name == t"rewrite").getOrElse(Unset)).vouch
     . assert()
+
+    test(m"Disassemble a known method's bytecode"):
+      val bytecode =
+        Classfile[StackTrace]
+        . let(_.methods.find(_.name == t"rewrite").getOrElse(Unset))
+        . let(_.bytecode)
+        . vouch
+      bytecode.instructions.size
+    . assert(_ > 0)
+
+    test(m"Bytecode carries declared maxStack and maxLocals"):
+      val bytecode =
+        Classfile[StackTrace]
+        . let(_.methods.find(_.name == t"rewrite").getOrElse(Unset))
+        . let(_.bytecode)
+        . vouch
+      (bytecode.maxStack, bytecode.maxLocals)
+    . assert((s, l) => s >= 0 && l >= 0)
+
+    test(m"Method descriptor parser handles primitives and references"):
+      Bytecode.Descriptor.parse(t"(Ljava/lang/String;I)V")
+    . assert: parsed =>
+        parsed.args.size == 2 && parsed.result.absent
+
+    test(m"Method descriptor parser handles array types and return"):
+      Bytecode.Descriptor.parse(t"([[Ljava/lang/Object;J)Z")
+    . assert: parsed =>
+        parsed.args.size == 2 && parsed.result == Bytecode.Frame.Z

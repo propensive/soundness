@@ -70,7 +70,10 @@ class Classfile(data: Data):
   class Method(model: jlc.MethodModel):
     def name: Text = model.methodName.nn.toString.tt
 
-    def bytecode: Optional[Bytecode] = Optional(model.code().nn.get()).let: code =>
+    def bytecode: Optional[Bytecode] = Optional(model.code().nn.get()).let: codeModel =>
+      val code: jlca.CodeAttribute = codeModel match
+        case attr: jlca.CodeAttribute => attr
+        case _                        => panic(m"code attribute not present")
       val elements = code.elementList.nn.asScala.to(List)
 
       val labels: Map[jlc.Label, Int] =
@@ -123,7 +126,7 @@ class Classfile(data: Data):
 
       val instructions = recur(elements, Unset, Nil, Nil, 0)
 
-      Bytecode(sourceFile, instructions)
+      Bytecode(sourceFile, instructions, code.maxStack, code.maxLocals)
 
   private lazy val model: jlc.ClassModel = jlc.ClassFile.of().nn.parse(unsafely(data.mutable)).nn
   lazy val methods: List[Method] = model.methods.nn.asScala.to(List).map(Method(_))
