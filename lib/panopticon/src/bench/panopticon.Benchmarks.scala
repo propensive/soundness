@@ -106,6 +106,20 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
      ( _.depts(Each).lead.role.name  = t"Boss",
        _.depts(Each).lead.role.count = 0 )
 
+  // Same updates routed through the pre-fusion `lensFold` (the original `def lens`
+  // body). Used to measure the speedup of singleton-traversal fusion.
+  def eachTwoLeavesFold(o: Org): Org =
+    o.lensFold
+     ( _.depts(Each).lead.role.name  = t"Boss",
+       _.depts(Each).lead.role.count = 0 )
+
+  // Manual map-and-copy: the theoretical optimum for `_.depts(Each).lead.role.…`.
+  def eachTwoLeavesManual(o: Org): Org =
+    o.copy(depts = o.depts.map { d =>
+      val r = d.lead.role
+      d.copy(lead = d.lead.copy(role = r.copy(name = t"Boss", count = 0)))
+    })
+
   // ─── field-only fusion targets (no traversals) ────────────────────────────
 
   // Single field-only update at depth 2 — this exercises the macro on the simplest
@@ -183,8 +197,14 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
         '{ panopticon.Benchmarks.fourDisjoint(panopticon.Benchmarks.org) }
 
     suite(m"Traversal"):
-      bench(m"2 updates under shared Each traversal")(target = 1*Second):
+      bench(m"Each ×2 — fused")(target = 1*Second):
         '{ panopticon.Benchmarks.eachTwoLeaves(panopticon.Benchmarks.org) }
+
+      bench(m"Each ×2 — pre-fusion foldLeft")(target = 1*Second):
+        '{ panopticon.Benchmarks.eachTwoLeavesFold(panopticon.Benchmarks.org) }
+
+      bench(m"Each ×2 — manual .copy + .map (optimum)")(target = 1*Second):
+        '{ panopticon.Benchmarks.eachTwoLeavesManual(panopticon.Benchmarks.org) }
 
     suite(m"Field-only fusion (no traversals)"):
       bench(m"single update — fused")(target = 1*Second):
