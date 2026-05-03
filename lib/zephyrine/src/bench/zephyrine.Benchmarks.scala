@@ -154,7 +154,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
       c.grab(mk, c.mark).s.length
 
   def cursorConsumeXml(text: Text): Int =
-    val c = Cursor(Iterator(text))
+    val c: Cursor[Text] = Cursor(Iterator(text))
     var matched = 0
     c.consume({ matched = -1 })("xml")
     matched

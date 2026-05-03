@@ -781,6 +781,7 @@ object obligatory extends Library:
 object panopticon extends Library:
   object core extends Component(rudiments.core)
   object test extends Tests(core, honeycomb.core)
+  object bench extends Benchmarks(core, quantitative.units)
 
 object parasite extends Library:
   object core extends Component(digression.core, mercator.core, anticipation.time)

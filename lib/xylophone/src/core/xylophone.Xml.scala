@@ -124,30 +124,17 @@ object Xml extends Tag.Container
       ${xylophone.internal.extractor[parts]('scrutinee)}
 
 
-  // Materialise an `Iterator[Text]` into a single `Text` so the Direct path
-  // can scan it directly. For the common case (one-element iterator from
-  // `Iterator(text)`), this is just the original Text. For multi-block input,
-  // the Cursor-based parser already buffered the whole input before
-  // returning, so we don't lose memory complexity by gathering up-front.
-  private def gather(input: Iterator[Text]): Text =
-    if !input.hasNext then t"" else
-      val first = input.next()
-      if !input.hasNext then first else
-        val buf = jl.StringBuilder(first.s)
-        while input.hasNext do buf.append(input.next().s)
-        buf.toString.nn.tt
-
   given aggregable: [content <: Label: Reifiable to List[String]] => (schema: XmlSchema)
   =>  Tactic[ParseError]
   =>  (Xml of content) is Aggregable by Text =
 
-    input => parseDirect(gather(input.iterator), headers0 = false).of[content]
+    input => XmlParser.fromIterator(input.iterator).parseXml(headers0 = false).of[content]
 
   given aggregable2: (schema: XmlSchema) => Tactic[ParseError] => Xml is Aggregable by Text =
-    input => parseDirect(gather(input.iterator), headers0 = false)
+    input => XmlParser.fromIterator(input.iterator).parseXml(headers0 = false)
 
   given loadable: (schema: XmlSchema) => Tactic[ParseError] => Xml is Loadable by Text = stream =>
-    parseDirect(gather(stream.iterator), headers0 = true) match
+    XmlParser.fromIterator(stream.iterator).parseXml(headers0 = true) match
       case Fragment((header: Header), rest*) =>
         if rest.length == 1 then Document(rest.head, header)
         else Document(Fragment(rest*), header)
@@ -490,20 +477,48 @@ object Xml extends Tag.Container
   // header parsing, error reporting, entity expansion etc. all live in the
   // base class.
 
-  private[xylophone] abstract class XmlParser(using schema: XmlSchema):
-    type Region
+  private[xylophone] object XmlParser:
+    import zephyrine.lineation.linefeedChars
 
-    // Substrate position primitives — implemented by Direct/Streaming.
-    protected def more: Boolean
-    protected def peek: Char
-    protected def advance(): Unit
-    protected def position: Int
-    protected def begin(): Region
-    protected def slice(start: Region): Text
-    protected def slice(start: Region, end: Region): Text
-    protected def reset(start: Region): Unit
-    protected def appendSlice(start: Region, buf: jl.StringBuilder): Unit
-    protected def computePosition(): Position
+    def fromText(text: Text)(using XmlSchema): XmlParser = new XmlParser(Cursor[Text](text))
+
+    def fromIterator(input: Iterator[Text])(using XmlSchema): XmlParser =
+      new XmlParser(Cursor[Text](input))
+
+  private[xylophone] final class XmlParser(cursor: Cursor[Text])(using schema: XmlSchema):
+    type Region = Cursor.Mark
+
+    private var heldToken: Cursor.Held | Null = null
+
+    protected inline def more: Boolean = cursor.more
+
+    protected inline def peek: Char =
+      cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]](cursor.unsafePos(using Unsafe))
+
+    protected inline def advance(): Unit = cursor.next()
+    protected inline def position: Int = cursor.position.n0
+
+    protected inline def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
+
+    protected inline def slice(start: Cursor.Mark): Text =
+      val end = cursor.mark(using heldToken.nn)
+      cursor.grab(start, end).asInstanceOf[Text]
+
+    protected inline def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
+      cursor.grab(start, end).asInstanceOf[Text]
+
+    protected inline def reset(start: Cursor.Mark): Unit = cursor.cue(start)
+
+    protected def appendSlice(start: Cursor.Mark, buf: jl.StringBuilder): Unit =
+      val end = cursor.mark(using heldToken.nn)
+      cursor.clone(start, end)(buf.asInstanceOf[cursor.addressable.Target])
+
+    protected def computePosition(): Position =
+      // Lineation increments column AFTER each `advance`, so it tracks the
+      // column of the next char to read. At end-of-input we want the column
+      // of the LAST char read, matching the Direct/Streaming convention.
+      val col = cursor.column.n1 - (if cursor.more then 0 else 1)
+      Position(cursor.line.n1.u, col.max(1).u)
 
     // Optional callback invoked when a `\u0000` placeholder is encountered.
     // Used by the macro interpolators to record hole positions; the
@@ -948,6 +963,11 @@ object Xml extends Tag.Container
     private var headers: Boolean = false
 
     def parseXml(headers0: Boolean)(using Tactic[ParseError]): Xml =
+      cursor.hold:
+        heldToken = summon[Cursor.Held]
+        try parseXml0(headers0) finally heldToken = null
+
+    private def parseXml0(headers0: Boolean)(using Tactic[ParseError]): Xml =
       headers = headers0
       skipWs()
       val nodes = scala.collection.mutable.ArrayBuffer[Node]()
@@ -1005,114 +1025,10 @@ object Xml extends Tag.Container
         i += 1
 
   // ───────────────────────────────────────────────────────────────────────
-  // Direct substrate: scans the underlying `String` with `var pos`.
-
-  private[xylophone] final class XmlDirect(text: Text)(using XmlSchema) extends XmlParser:
-    type Region = Int
-    private val s: String = text.s
-    private val len: Int = s.length
-    private var pos: Int = 0
-
-    protected inline def more: Boolean = pos < len
-    protected inline def peek: Char = s.charAt(pos)
-    protected inline def advance(): Unit = pos += 1
-    protected inline def position: Int = pos
-    protected inline def begin(): Int = pos
-    protected inline def slice(start: Int): Text = s.substring(start, pos).nn.tt
-    protected inline def slice(start: Int, end: Int): Text = s.substring(start, end).nn.tt
-    protected inline def reset(start: Int): Unit = pos = start
-
-    protected inline def appendSlice(start: Int, buf: jl.StringBuilder): Unit =
-      buf.append(s, start, pos)
-
-    protected def computePosition(): Position =
-      var line: Int = 1
-      var column: Int = 1
-      var i = 0
-      val limit = if pos > 0 then pos - 1 else 0
-      while i < limit do
-        if s.charAt(i) == '\n' then
-          line += 1
-          column = 1
-        else
-          column += 1
-        i += 1
-      Position(line.u, column.u)
-
-  // ───────────────────────────────────────────────────────────────────────
-  // Streaming substrate: scans an `Iterator[Text]` via `zephyrine.Cursor`.
-  // Currently used only by macro interpolators (which need callbacks for
-  // `\u0000` placeholders); `aggregable` and `loadable` use Direct.
-
-  private[xylophone] final class XmlStreaming(input: Iterator[Text])(using XmlSchema)
-  extends XmlParser:
-    import Lineation.untrackedChars
-    type Region = Cursor.Mark
-
-    private val sourceBlocks: IArray[Text] = IArray.from(input)
-    private val cursor: Cursor[Text] = Cursor(sourceBlocks.iterator)
-    private var heldToken: Cursor.Held | Null = null
-
-    // Open the cursor's outer hold once around the entire parse so the
-    // substrate methods can issue `cursor.mark` / `cursor.cue` / `cursor.grab`
-    // without re-opening per call. The held token is captured into a field
-    // for use by the substrate methods.
-    override def parseXml(headers0: Boolean)(using Tactic[ParseError]): Xml =
-      cursor.hold:
-        heldToken = summon[Cursor.Held]
-        try super.parseXml(headers0) finally heldToken = null
-
-    protected def more: Boolean = cursor.more
-    protected def peek: Char = cursor.datum(using Unsafe).asInstanceOf[Char]
-    protected def advance(): Unit = cursor.next()
-    protected def position: Int = cursor.position.n0
-
-    protected def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
-
-    protected def slice(start: Cursor.Mark): Text =
-      val end = cursor.mark(using heldToken.nn)
-      cursor.grab(start, end).asInstanceOf[Text]
-
-    protected def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
-      cursor.grab(start, end).asInstanceOf[Text]
-
-    protected def reset(start: Cursor.Mark): Unit = cursor.cue(start)
-
-    protected def appendSlice(start: Cursor.Mark, buf: jl.StringBuilder): Unit =
-      val end = cursor.mark(using heldToken.nn)
-      cursor.clone(start, end)(buf.asInstanceOf[cursor.addressable.Target])
-
-    protected def computePosition(): Position =
-      var line: Int = 1
-      var column: Int = 1
-      val target: Int = cursor.position.n0 - (if cursor.finished then 1 else 0)
-      var remaining: Int = target
-      var i = 0
-      while remaining > 0 && i < sourceBlocks.length do
-        val block = sourceBlocks(i).s
-        val take = remaining.min(block.length)
-        var j = 0
-        while j < take do
-          if block.charAt(j) == '\n' then
-            line += 1
-            column = 1
-          else
-            column += 1
-          j += 1
-        remaining -= take
-        i += 1
-      Position(line.u, column.u)
-
-  // ───────────────────────────────────────────────────────────────────────
   // Public entry points.
 
-  private[xylophone] def parseDirect(text: Text, headers0: Boolean)
-    (using schema: XmlSchema): Xml raises ParseError =
-    XmlDirect(text).parseXml(headers0)
-
   // Back-compat for macro interpolators: matches the previous cursor-based
-  // signature (Iterator[Text] + callback). Routes to the new `XmlStreaming`
-  // substrate.
+  // signature (Iterator[Text] + callback).
   private[xylophone] def parse[schema <: XmlSchema]
     ( input:    Iterator[Text],
       root:     Tag,
@@ -1121,7 +1037,7 @@ object Xml extends Tag.Container
     ( using schema: XmlSchema )
   :   Xml raises ParseError =
 
-    val parser = XmlStreaming(input)
+    val parser = XmlParser.fromIterator(input)
     parser.callback = callback
     parser.parseXml(headers0)
 

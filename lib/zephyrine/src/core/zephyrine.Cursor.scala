@@ -46,244 +46,321 @@ object Cursor:
 
   class Held()
 
-  object Mark:
-    final val Initial: Mark = -1
+  type Loader[data] = () => Optional[data]
 
-    def apply(block: Ordinal, position: Ordinal): Mark =
-      (block.n0.toLong << 32) | (position.n0.toLong & 0xffffffffL)
+  object Mark:
+    final val Initial: Mark = 0L
+
+    inline def apply(absolute: Long): Mark = absolute
 
     given ordered: Ordering[Mark] = Ordering.Long
 
+
   object Offset:
-    def apply(line: Ordinal, column: Ordinal): Offset =
+    inline def apply(line: Ordinal, column: Ordinal): Offset =
       (line.n0.toLong << 32) | (column.n0.toLong & 0xffffffffL)
 
     given ordered: Ordering[Offset] = Ordering.Long
 
 
   extension (mark: Mark)
-    inline def block: Ordinal = (mark >> 32 & 0xffffffff).toInt.z
-
-    inline def index: Ordinal = mark.toInt.z
+    inline def absolute: Long = mark
     private[zephyrine] inline def increment: Mark = mark + 1
     private[zephyrine] inline def decrement: Mark = mark - 1
 
 
   extension (offset: Offset)
     inline def line: Ordinal = (offset >> 32 & 0xffffffff).toInt.z
-
     inline def column: Ordinal = offset.toInt.z
 
 
+  // Default initial buffer size for streaming use; pre-filled buffers use the
+  // exact size of the initial chunk.
+  private final val DefaultCapacity: Int = 256
+
+  // Build a Cursor from an explicit loader. The cursor starts empty; the
+  // first `next()` triggers a load.
+  transparent inline def apply[data](inline load: Loader[data])
+    ( using addressable0: data is Addressable,
+            lineation0:   Lineation by addressable0.Operand )
+  :   Cursor[data] =
+
+    new Cursor[data]
+      ( () => load(),
+        Unset,
+        DefaultCapacity,
+        addressable0,
+        lineation0 )
+
+
+  // Build a Cursor pre-filled with a single chunk; the loader is a no-op.
+  // This is the "Direct" mode: parsers that already have all the data in
+  // memory pay no per-call refill cost.
+  transparent inline def apply[data](initial: data)
+    ( using addressable0: data is Addressable,
+            lineation0:   Lineation by addressable0.Operand )
+  :   Cursor[data] =
+
+    new Cursor[data]
+      ( () => Unset,
+        initial,
+        addressable0.length(initial).max(1),
+        addressable0,
+        lineation0 )
+
+
+  // Backwards-compatible factory that adapts an Iterator to the loader API.
+  // Lets the existing test suite cross-compile against Cursor.
   transparent inline def apply[data](iterator: Iterator[data])
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand )
   :   Cursor[data] =
 
-    if iterator.hasNext then
-      val initial = iterator.next()
+    new Cursor[data]
+      ( () => if iterator.hasNext then iterator.next() else Unset,
+        Unset,
+        DefaultCapacity,
+        addressable0,
+        lineation0 )
 
-      new Cursor[data]
-        ( initial, addressable0.length(initial), iterator, addressable0, lineation0 )
-
-    else
-      new Cursor[data](addressable0.empty, 0, Iterator.empty, addressable0, lineation0)
 
 final class Cursor[data]
-  (             initial:    data,
-                extent0:    Int,
-                iterator:   Iterator[data],
+  (             load:        () => Optional[data],
+                initial:     Optional[data],
+                initialSize: Int,
     tracked val addressable: data is Addressable,
     tracked val lineation:   Lineation by addressable.Operand ):
 
-  private val buffer: scm.ArrayDeque[data] = scm.ArrayDeque()
-  private val marks: scm.ArrayDeque[Mark] = scm.ArrayDeque()
-  private val offsets: scm.ArrayDeque[Offset] = scm.ArrayDeque()
-  private var first: Ordinal = Prim
-  private var current: data = initial
-  private var focusBlock: Ordinal = Prim
-  private var focus: Ordinal = Prim
-  private var length: Int = if extent0 == 0 then 0 else Int.MaxValue
-  private var keep: Boolean = false
-  private var extent: Int = extent0
-  private var lineNo: Ordinal = Prim
+  // ─── state ────────────────────────────────────────────────────────────────
+  // A single contiguous buffer holds all currently-live data. `pos` is the
+  // hot-path read index into `buffer` (an `Int`, so `peek` lowers to one
+  // array access). `writeEnd` is the count of valid bytes/chars in the
+  // buffer. `basePos` is the absolute stream position of `buffer(0)`, used
+  // to translate buffer indices to/from `Mark` values that survive
+  // compaction. `holdStart` is the buffer index at the start of the held
+  // region (or -1 when no hold is active); compaction may not advance past
+  // it. `ended` becomes true when the loader has returned `Unset`.
+
+  private var buffer:    addressable.Storage = addressable.allocate(initialSize)
+  private var pos:       Int = 0
+  private var writeEnd:  Int = 0
+  private var basePos:   Long = 0L
+  private var holdStart: Int = -1
+  private var ended:     Boolean = false
+
+  private val marks:   scm.ArrayDeque[Cursor.Mark] = scm.ArrayDeque()
+  private val offsets: scm.ArrayDeque[Cursor.Offset] = scm.ArrayDeque()
+
+  private var lineNo:   Ordinal = Prim
   private var columnNo: Ordinal = Prim
-  private var done: Int = 0
 
-  protected inline def store(ordinal: Ordinal, value: data): Unit =
-    val index = ordinal - first
-    if buffer.length <= index then buffer.append(value)
+  // Seed the buffer: prefer an explicit pre-fill chunk; otherwise pull from
+  // the loader until we have non-empty data or hit EOF. Matches the existing
+  // `Cursor.apply` behaviour, which pre-loads the first block so `datum` is
+  // valid before any `next()` call.
+  locally:
+    initial.let: chunk =>
+      val len = addressable.length(chunk)
+      if len > 0 then
+        if len > addressable.storageSize(buffer) then
+          buffer = addressable.allocate(len)
+        addressable.copyChunk(chunk, 0, buffer, 0, len)
+        writeEnd = len
+    if writeEnd == 0 then refill()
 
-  protected inline def load(): data = iterator.next().tap: value =>
-    extent += addressable.length(value)
+  // ─── slow path: refill ────────────────────────────────────────────────────
+  // Kept as a regular (non-inline) method so the slow path's bytecode bloat
+  // doesn't push `next()` past the JIT's inline budgets. Mirrors the rationale
+  // for the original `Cursor.forward()`.
+  private def refill(): Unit =
+    if !ended then
+      // Compact: drop any data that is no longer reachable. Outside a hold,
+      // everything before `pos` is dead; inside a hold, everything before
+      // `holdStart` is dead. `keep` is capped at `writeEnd` because `pos` may
+      // sit one past the last loaded byte after a `next()` that consumed the
+      // tail of the buffer.
+      val rawKeep = if holdStart >= 0 then holdStart else pos
+      val keep = rawKeep.min(writeEnd)
+      if keep > 0 then
+        val live = writeEnd - keep
+        if live > 0 then addressable.transfer(buffer, keep, buffer, 0, live)
+        basePos += keep
+        pos -= keep
+        writeEnd = live
+        if holdStart >= 0 then holdStart = 0
 
-  protected inline def drop(): Unit =
-    val diff = focusBlock - first
-    first = (first.n0 + diff).z
-    buffer.drop(diff)
+      // Pull chunks until we either receive non-empty data or hit EOF.
+      var loaded = false
+      while !loaded && !ended do
+        val chunk = load()
+        if chunk.absent then ended = true
+        else
+          val data = chunk.vouch
+          val len = addressable.length(data)
+          if len > 0 then
+            ensureCapacity(writeEnd + len)
+            addressable.copyChunk(data, 0, buffer, writeEnd, len)
+            writeEnd += len
+            loaded = true
 
-  // Slow path: only run when we step out of the current block. Kept as a
-  // regular method so it isn't inlined into every `next()` call site — the
-  // bytecode bloat from inlining buffer + iterator handling at every call was
-  // pushing methods past the JIT's `FreqInlineSize` and `MaxInlineLevel`
-  // budgets and forcing weaker compilation tiers.
-  protected def forward(): Unit =
-    val block: Ordinal = focusBlock.next
-    val offset: Int = block - first
+  private def ensureCapacity(needed: Int): Unit =
+    val cap = addressable.storageSize(buffer)
+    if needed > cap then
+      var newCap = if cap == 0 then needed.max(16) else cap
+      while newCap < needed do newCap *= 2
+      val newBuf = addressable.allocate(newCap)
+      if writeEnd > 0 then addressable.transfer(buffer, 0, newBuf, 0, writeEnd)
+      buffer = newBuf
 
-    if offset < buffer.length then
-      focusBlock = block
-      focus = Prim
-      done += addressable.length(current)
-      current = buffer(offset)
-      if !keep then
-        buffer.dropInPlace(1)
-        first = first.next
-    else if iterator.hasNext then
-      var next = load()
-      while addressable.length(next) == 0 do next = load()
-      if keep then store(block, next)
-      focusBlock = block
-      focus = Prim
-      done += addressable.length(current)
-      current = next
+  // ─── core navigation ──────────────────────────────────────────────────────
 
-    else
-      focus = focus.next
-      length = position.n1
-
-  protected def backward(): Unit =
-    val block = focusBlock.previous
-    val offset = block - first
-    current = buffer(offset)
-    done -= addressable.length(current)
-    focusBlock = block
-    focus = Prim
-
-  inline def blockTail: data =
-    val len = addressable.length(current)
-    if focus.n0 == 0 && len > 0 then current
-    else if focus.n0 >= len then addressable.empty
-    else
-      val target = addressable.blank(len - focus.n0)
-      addressable.clone(current, focus, (len - 1).z)(target)
-      addressable.build(target)
-
-  inline def advanceBlock(): Boolean =
-    val nextBlock = focusBlock.next
-    val offset = nextBlock - first
-    if offset < buffer.length || iterator.hasNext then forward() yet true else false
-
-  inline def remainder: Stream[data] = blockTail #:: Stream.from(iterator)
-
-  inline def cue(mark: Mark): Unit =
-    while mark.block.n0 < focusBlock.n0 do backward()
-    while mark.block.n0 > focusBlock.n0 do forward()
-    focus = mark.index
-
+  // `advance()` is unchecked (it just increments `pos`); it's safe to leave
+  // `pos` past `writeEnd` because the next `more` / `peek` / `next()` call
+  // forces a refill before the buffer is read. This mirrors the existing
+  // `Cursor.forward` rationale and keeps the inner loop one instruction
+  // tighter — important for raw byte-scan parsers like Merino where the
+  // hot loop is `while more && {peek-test} do advance()`.
+  inline def advance(): Unit =
     if lineation.active then
-      val offset2 = offset(mark)
-      lineNo = offset2.line
-      columnNo = offset2.column
+      val operand = addressable.storageAddress(buffer, pos)
+      pos += 1
+      columnNo =
+        if !lineation.track(operand) then columnNo.next
+        else { lineNo = lineNo.next; Prim }
+    else pos += 1
 
-  inline def consume(inline otherwise: => Unit)(inline text: String): Unit =
-    ${zephyrine.internal.consume('this, 'text, 'otherwise)}
-
+  // `next()` is `advance(); more`, so it returns `true` while more data is
+  // available and `false` when the stream is exhausted.
   inline def next(): Boolean =
-    val current2 = current
-    val focus2 = focus
+    advance()
+    more
 
-    if focus.next.n0 >= addressable.length(current) then forward() else focus = focus.next
+  // Hot path. The first comparison short-circuits when there's still data
+  // in the buffer; only when the buffer is drained do we pay for the slow
+  // path. `moreSlow` is non-inline so the inline budget for `more` stays
+  // small enough that callers (parser hot loops) get tight bytecode.
+  inline def more: Boolean = pos < writeEnd || moreSlow()
 
-    if finished then false else
-      if lineation.active then
-        columnNo =
-          if !lineation.track(addressable.address(current2, focus2)) then columnNo.next else
-            lineNo = lineNo.next
-            Prim
-      true
+  private def moreSlow(): Boolean =
+    !ended && { refill(); pos < writeEnd }
 
-  inline def more: Boolean = !finished
-  inline def offset(mark: Mark): Offset = offsets(marks.lastIndexOf(mark))
+  inline def finished: Boolean = !more
+  inline def position: Ordinal = (basePos + pos).toInt.z
+  inline def available: Int = writeEnd - pos
   inline def line: Ordinal = lineNo
   inline def column: Ordinal = columnNo
 
-  // Read-only views of the current block and the cursor's offset within it.
-  // Hot-path consumers can record the block and offset before a tight scan,
-  // then check (via reference equality on `block`) whether the scan stayed
-  // inside the same block; if so, they can slice the block directly without
-  // going through `hold`/`mark`/`grab`.
-  inline def block: data = current
-  inline def offsetInBlock: Int = focus.n0
+  // Stream of all unconsumed data from the current position onwards. Yields
+  // the buffered tail first (one chunk materialised from `pos` to `writeEnd`),
+  // then drains the loader, returning chunks as it goes. Caller-driven, so a
+  // streaming consumer pays nothing until it pulls.
+  def remainder: Stream[data] =
+    val tailLen = writeEnd - pos
+    val tail: data =
+      if tailLen <= 0 then addressable.empty
+      else addressable.materialize(buffer, pos, tailLen)
+    pos = writeEnd
+    if tailLen > 0 then tail #:: loaderStream else loaderStream
 
-  inline def seek(target: addressable.Operand): Boolean =
-    var found = false
-    var continue = true
+  private def loaderStream: Stream[data] =
+    if ended then Stream.empty
+    else load() match
+      case Unset =>
+        ended = true
+        Stream.empty
+      case chunk: data @unchecked =>
+        if addressable.length(chunk) > 0 then chunk #:: loaderStream
+        else loaderStream
 
-    while continue do
-      found = datum(using Unsafe) == target
-      continue = !found && next()
+  // ─── unsafe direct buffer access ──────────────────────────────────────────
+  //
+  // These bypass `addressable.storageAddress`, which compiles to an
+  // `invokeinterface` returning `Object` (the abstract `Storage` type member
+  // erases that way) plus a `BoxesRuntime.unbox*` per access. For raw
+  // byte/char scan loops this is a major hot-path tax. Callers who know the
+  // concrete buffer type can `asInstanceOf` it once at the call site and let
+  // the JIT keep the array reference in a register across the inner loop.
+  inline def unsafeBuffer(using erased Unsafe): addressable.Storage = buffer
+  inline def unsafePos(using erased Unsafe): Int = pos
 
-    found
+  // ─── current element ──────────────────────────────────────────────────────
 
-  inline def mark(using held: Cursor.Held): Mark = Mark(focusBlock, focus).tap: mark =>
-    if lineation.active then
-      marks.append(mark)
-      offsets.append(Offset(lineNo, columnNo))
-
-  inline def datum(using erased Unsafe): addressable.Operand = addressable.address(current, focus)
+  inline def datum(using erased Unsafe): addressable.Operand =
+    addressable.storageAddress(buffer, pos)
 
   inline def lay[result](inline otherwise: => result)(inline lambda: addressable.Operand => result)
   :   result =
 
-    if !finished then lambda(addressable.address(current, focus)) else otherwise
+    if !finished then lambda(addressable.storageAddress(buffer, pos)) else otherwise
 
   inline def let(inline lambda: addressable.Operand => Unit): Unit =
-    if !finished then lambda(addressable.address(current, focus))
-
+    if !finished then lambda(addressable.storageAddress(buffer, pos))
 
   inline def process[result](inline lambda: addressable.Operand => result): Unit =
-    if !finished then lambda(addressable.address(current, focus))
+    if !finished then lambda(addressable.storageAddress(buffer, pos))
 
-  inline def position: Ordinal = (done + focus.n0).z
-  inline def finished: Boolean = position.n0 >= length - 1
-  inline def available = extent - position.n0
+  // ─── search primitives ────────────────────────────────────────────────────
+
+  inline def seek(target: addressable.Operand): Boolean =
+    var found = false
+    var continue = true
+    while continue do
+      found = datum(using Unsafe) == target
+      continue = !found && next()
+    found
+
+  inline def consume(inline otherwise: => Unit)(inline text: String): Unit =
+    ${zephyrine.internal.consume('this, 'text, 'otherwise)}
+
+  // ─── hold / mark / cue / grab / clone ─────────────────────────────────────
+
+  // `mark` requires `using Cursor.Held` so callers can only mark inside a
+  // hold block, where compaction cannot drop the marked region.
+  inline def mark(using held: Cursor.Held): Cursor.Mark =
+    Cursor.Mark(basePos + pos).tap: mark =>
+      if lineation.active then
+        marks.append(mark)
+        offsets.append(Cursor.Offset(lineNo, columnNo))
+
+  inline def offset(mark: Cursor.Mark): Cursor.Offset = offsets(marks.lastIndexOf(mark))
+
+  inline def cue(mark: Cursor.Mark): Unit =
+    pos = (mark.absolute - basePos).toInt
+    if lineation.active then
+      val o = offset(mark)
+      lineNo = o.line
+      columnNo = o.column
 
   inline def hold[result](inline action: Cursor.Held ?=> result): result =
-    val keep0 = keep
-
-    if !keep0 then
-      keep = true
-      buffer.clear()
-      first = focusBlock
-      store(focusBlock, current)
-
+    val wasHeld = holdStart >= 0
+    if !wasHeld then holdStart = pos
     action(using new Cursor.Held()).also:
-      keep = keep0
-      if !keep then
-        buffer.dropInPlace(focusBlock - first)
-        first = focusBlock
+      if !wasHeld then
+        holdStart = -1
         marks.clear()
         offsets.clear()
 
-  inline def grab(start: Mark, end: Mark): data =
-    val size =
-      if start.block == end.block then end.index - start.index else
-        val startOffset = start.block - first
-        val endOffset = end.block - first
-        var total = addressable.length(buffer(startOffset)) - start.index.n0
-        var i = startOffset + 1
-        while i < endOffset do
-          total += addressable.length(buffer(i))
-          i += 1
-        total + end.index.n0
+  inline def grab(start: Cursor.Mark, end: Cursor.Mark): data =
+    val len = (end.absolute - start.absolute).toInt
+    if len <= 0 then addressable.empty
+    else addressable.materialize(buffer, (start.absolute - basePos).toInt, len)
 
-    val target = addressable.blank(size)
-    clone(start, end)(target)
-    addressable.build(target)
+  // Zero-copy access to the live region between two marks. The lambda
+  // receives the buffer, offset, and length; it must not retain the storage
+  // reference, since compaction may invalidate it after the call returns.
+  inline def slice[result](start: Cursor.Mark, end: Cursor.Mark)
+                          (inline lambda: (addressable.Storage, Int, Int) => result)
+  :   result =
+    val off = (start.absolute - basePos).toInt
+    val len = (end.absolute - start.absolute).toInt
+    lambda(buffer, off, len)
+
+  inline def clone(start: Cursor.Mark, end: Cursor.Mark)(target: addressable.Target): Unit =
+    val len = (end.absolute - start.absolute).toInt
+    if len > 0
+    then addressable.cloneStorage(buffer, (start.absolute - basePos).toInt, len)(target)
 
   inline def take(inline otherwise: => data)(length: Int): data =
-    var buffer = addressable.blank(length)
     var count = 0
     hold:
       val start = mark
@@ -292,26 +369,3 @@ final class Cursor[data]
         count += 1
 
       grab(start, mark)
-
-
-  inline def clone(start: Mark, end: Mark)(target: addressable.Target): Unit = if start != end then
-    val last = end.block - first
-    var offset = start.block - first
-
-    if start.block == end.block then
-      if end.index.previous.n0 >= start.index.n0
-      then addressable.clone(buffer(offset), start.index, end.index.previous)(target)
-
-    else
-      var focus = buffer(offset)
-      addressable.clone(focus, start.index, addressable.length(focus).u)(target)
-
-      while
-        offset += 1
-        offset < last
-      do
-        focus = buffer(offset)
-        addressable.clone(focus, Prim, addressable.length(focus).u)(target)
-
-      if end.index != Prim
-      then addressable.clone(buffer(offset), Prim, end.index.previous)(target)

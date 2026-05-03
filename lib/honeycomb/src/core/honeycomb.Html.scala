@@ -125,31 +125,21 @@ object Html extends Tag.Container
       Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
 
 
-  // Materialise an `Iterator[Text]` into a single `Text` so the Direct path
-  // can scan it directly. See the matching helper in xylophone.Xml.
-  private def gather(input: Iterator[Text]): Text =
-    if !input.hasNext then t"" else
-      val first = input.next()
-      if !input.hasNext then first else
-        val buf = jl.StringBuilder(first.s)
-        while input.hasNext do buf.append(input.next().s)
-        buf.toString.nn.tt
-
   given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
   =>  Tactic[ParseError]
   =>  (Html of content) is Aggregable by Text =
 
     input =>
       val root = Tag.root(content.reify.map(_.tt).to(Set))
-      HtmlDirect(gather(input.iterator)).parseHtml(root).of[content]
+      HtmlParser.fromIterator(input.iterator).parseHtml(root).of[content]
 
   given aggregable2: (dom: Dom) => Tactic[ParseError] => Html is Aggregable by Text =
     input =>
-      HtmlDirect(gather(input.iterator)).parseHtml(dom.generic, doctypes = false)
+      HtmlParser.fromIterator(input.iterator).parseHtml(dom.generic, doctypes = false)
 
   given loadable: (dom: Dom) => Tactic[ParseError] => Html is Loadable by Text = stream =>
     val root = Tag.root(Set(t"html"))
-    HtmlDirect(gather(stream.iterator)).parseHtml(root, doctypes = true) match
+    HtmlParser.fromIterator(stream.iterator).parseHtml(root, doctypes = true) match
       case Fragment(Doctype(doctype), content) => Document(content, dom)
       case html@Element("html", _, _, _)       => Document(html, dom)
 
@@ -413,49 +403,61 @@ object Html extends Tag.Container
   // body insertion), foreign elements (svg, math), or macro callbacks. The
   // existing cursor-based `parse` below remains the fall-back for those.
   // ───────────────────────────────────────────────────────────────────────
-  // Unified parser: a single algorithm split across substrates.
-  //
-  // The abstract `HtmlParser` base implements the WHATWG HTML5 parsing
-  // algorithm (autoclose, foster parenting, RCDATA / Raw modes, void
-  // elements, foreign elements, DOM inference, comments, CDATA, doctype)
-  // in terms of a small substrate API: `more`/`peek`/`advance`,
-  // `position`, `begin`/`slice`/`reset`/`cloneTo`, `currentBlock`/
-  // `currentOffset` (for the same-block fast path), and
-  // `computePosition` (for lazy line/column on error). Two concrete
-  // substrates supply that API:
-  //
-  //   * `HtmlDirect`   — operates directly on `String` + `var pos`.
-  //                      Used by `aggregable` / `loadable`.
-  //   * `HtmlStreaming` — operates on `Cursor[Text]` over `Iterator[Text]`.
-  //                      Used by macro interpolators (which need the
-  //                      null-placeholder callback).
-  //
-  // Both substrates share the same parsing algorithm — autoclose, foster
-  // parenting, all the WHATWG state machinery — all live in the base
-  // class.
+  // Single Cursor-backed parser. The same body runs whether the input is
+  // an in-memory `Text` (pre-fills the cursor's buffer) or an
+  // `Iterator[Text]` (pulls chunks via the loader). Slicing is uniform
+  // (one buffer; one `arraycopy`) so there's no separate same-block fast
+  // path versus cross-block grab path. Line/column tracking is delegated
+  // to Cursor via `linefeedChars` lineation, so `computePosition` is
+  // O(1) — the per-byte tracking cost is small and avoids re-walking the
+  // source on each error (which used to be O(n)).
 
-  private[honeycomb] abstract class HtmlParser(using dom: Dom):
-    type Region
+  private[honeycomb] object HtmlParser:
+    import zephyrine.lineation.linefeedChars
 
-    // Substrate position primitives — implemented by Direct/Streaming.
-    protected def more: Boolean
-    protected def peek: Char
-    protected def advance(): Unit
-    protected def position: Int
-    protected def begin(): Region
-    protected def slice(start: Region, end: Region): Text
-    protected def reset(start: Region): Unit
-    protected def cloneTo(start: Region, end: Region)(target: jl.StringBuilder): Unit
-    // For the same-block fast-path in `textual()`. Used via reference equality.
-    protected def currentBlock: Text
-    protected def currentOffset: Int
-    protected def computePosition(): Position
+    def fromText(text: Text)(using Dom): HtmlParser = new HtmlParser(Cursor[Text](text))
+
+    def fromIterator(input: Iterator[Text])(using Dom): HtmlParser =
+      new HtmlParser(Cursor[Text](input))
+
+  private[honeycomb] final class HtmlParser(cursor: Cursor[Text])(using dom: Dom):
+    private var heldToken: Cursor.Held | Null = null
+
+    type Region = Cursor.Mark
+
+    protected inline def more: Boolean = cursor.more
+
+    protected inline def peek: Char =
+      cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]](cursor.unsafePos(using Unsafe))
+
+    protected inline def advance(): Unit = cursor.next()
+    protected inline def position: Int = cursor.position.n0
+
+    protected inline def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
+
+    protected inline def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
+      cursor.grab(start, end).asInstanceOf[Text]
+
+    protected inline def reset(start: Cursor.Mark): Unit = cursor.cue(start)
+
+    protected def cloneTo
+                  (start: Cursor.Mark, end: Cursor.Mark)
+                  (target: jl.StringBuilder)
+    :   Unit = cursor.clone(start, end)(target.asInstanceOf[cursor.addressable.Target])
+
+    protected def computePosition(): Position =
+      // Lineation increments column AFTER each `advance`, so it tracks the
+      // column of the next char to read. At end-of-input we want the column
+      // of the LAST char read, matching the existing Direct/Streaming
+      // off-by-one convention.
+      val col = cursor.column.n1 - (if cursor.more then 0 else 1)
+      Position(cursor.line.n1.u, col.max(1).u)
 
     // Optional callback invoked for null-placeholder holes during macro
     // interpolation. Default no-op.
     var callback: Optional[(Ordinal, Hole) => Unit] = Unset
 
-    // Cursor-compat helpers so the algorithm body can stay close to the
+    // Cursor-compat helpers so the algorithm body stays close to the
     // original cursor-based code.
     protected inline def lay[R](inline otherwise: => R)(inline body: Char => R): R =
       if more then body(peek) else otherwise
@@ -471,6 +473,11 @@ object Html extends Tag.Container
     import Issue.*
 
     def parseHtml(root: Tag, doctypes: Boolean = false): Html raises ParseError =
+      cursor.hold:
+        heldToken = summon[Cursor.Held]
+        try parseHtml0(root, doctypes) finally heldToken = null
+
+    private def parseHtml0(root: Tag, doctypes: Boolean): Html raises ParseError =
       val buffer: jl.StringBuilder = jl.StringBuilder()
       def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
       var content: Text = t""
@@ -819,17 +826,9 @@ object Html extends Tag.Container
       // `buffer`. Falls back to `textualSlow` for the harder cases.
       def textual(mark: Mark, close: Optional[Text], entities: Boolean): Text =
         if close.present then textualSlow(mark, close, entities) else
-          val startBlock: Text = currentBlock
-          val startOffset: Int = currentOffset
-
-          def slice(): Text =
-            if currentBlock.asInstanceOf[AnyRef] eq startBlock.asInstanceOf[AnyRef]
-            then startBlock.s.substring(startOffset, currentOffset).nn.tt
-            else cloneTo(mark, begin())(buffer) yet result()
-
           @tailrec
-          def fast(): Text = lay(slice()):
-            case '<' | '\u0000' => slice()
+          def fast(): Text = lay(slice(mark, begin())):
+            case '<' | '\u0000' => slice(mark, begin())
             case '&' if entities => textualSlow(mark, close, entities)
             case char => advance() yet fast()
 
@@ -1165,105 +1164,6 @@ object Html extends Tag.Container
 
 
   // ───────────────────────────────────────────────────────────────────────
-  // Direct substrate: scans the underlying `String` with `var pos`.
-
-  private[honeycomb] final class HtmlDirect(text: Text)(using Dom) extends HtmlParser:
-    type Region = Int
-    private val s: String = text.s
-    private val len: Int = s.length
-    private var pos: Int = 0
-
-    protected inline def more: Boolean = pos < len
-    protected inline def peek: Char = s.charAt(pos)
-    protected inline def advance(): Unit = pos += 1
-    protected inline def position: Int = pos
-    protected inline def begin(): Int = pos
-    protected inline def slice(start: Int, end: Int): Text = s.substring(start, end).nn.tt
-    protected inline def reset(start: Int): Unit = pos = start
-
-    protected inline def cloneTo(start: Int, end: Int)(target: jl.StringBuilder): Unit =
-      target.append(s, start, end)
-
-    // For the same-block fast path: there's only one block (the input
-    // string), so this is constant.
-    protected inline def currentBlock: Text = text
-    protected inline def currentOffset: Int = pos
-
-    protected def computePosition(): Position =
-      var line: Int = 1
-      var column: Int = 1
-      var i = 0
-      // Match the tracked-cursor convention: skip the column update on the
-      // final advance (when the cursor is past the end), but otherwise
-      // count `pos` chars.
-      val limit = if pos >= len then math.max(pos - 1, 0) else pos
-      while i < limit do
-        if s.charAt(i) == '\n' then
-          line += 1
-          column = 1
-        else
-          column += 1
-        i += 1
-      Position(line.u, column.u)
-
-  // ───────────────────────────────────────────────────────────────────────
-  // Streaming substrate: scans an `Iterator[Text]` via `zephyrine.Cursor`.
-  // Used by macro interpolators (which need callbacks).
-
-  private[honeycomb] final class HtmlStreaming(input: Iterator[Text])(using Dom)
-  extends HtmlParser:
-    import Lineation.untrackedChars
-    type Region = Cursor.Mark
-
-    private val sourceBlocks: IArray[Text] = IArray.from(input)
-    private val cursor: Cursor[Text] = Cursor(sourceBlocks.iterator)
-    private var heldToken: Cursor.Held | Null = null
-
-    override def parseHtml(root: Tag, doctypes: Boolean = false): Html raises ParseError =
-      cursor.hold:
-        heldToken = summon[Cursor.Held]
-        try super.parseHtml(root, doctypes) finally heldToken = null
-
-    protected def more: Boolean = cursor.more
-    protected def peek: Char = cursor.datum(using Unsafe).asInstanceOf[Char]
-    protected def advance(): Unit = cursor.next()
-    protected def position: Int = cursor.position.n0
-
-    protected def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
-
-    protected def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
-      cursor.grab(start, end).asInstanceOf[Text]
-
-    protected def reset(start: Cursor.Mark): Unit = cursor.cue(start)
-
-    protected def cloneTo(start: Cursor.Mark, end: Cursor.Mark)(target: jl.StringBuilder): Unit =
-      cursor.clone(start, end)(target.asInstanceOf[cursor.addressable.Target])
-
-    protected def currentBlock: Text = cursor.block
-    protected def currentOffset: Int = cursor.offsetInBlock
-
-    protected def computePosition(): Position =
-      var line: Int = 1
-      var column: Int = 1
-      val target: Int = cursor.position.n0 - (if cursor.finished then 1 else 0)
-      var remaining: Int = target
-      var i = 0
-      while remaining > 0 && i < sourceBlocks.length do
-        val block = sourceBlocks(i).s
-        val take = remaining.min(block.length)
-        var j = 0
-        while j < take do
-          if block.charAt(j) == '\n' then
-            line += 1
-            column = 1
-          else
-            column += 1
-          j += 1
-        remaining -= take
-        i += 1
-      Position(line.u, column.u)
-
-  // ───────────────────────────────────────────────────────────────────────
   // Public entry points.
 
   private[honeycomb] def parse[dom <: Dom]
@@ -1275,7 +1175,7 @@ object Html extends Tag.Container
     ( using dom: Dom )
   :   Html raises ParseError =
 
-    val parser = HtmlStreaming(input)
+    val parser = HtmlParser.fromIterator(input)
     parser.callback = callback
     parser.parseHtml(root, doctypes)
 sealed into trait Html extends Topical, Documentary, Formal:
