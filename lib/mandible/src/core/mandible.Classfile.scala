@@ -87,6 +87,18 @@ class Classfile(data: Data):
 
         builder.result()
 
+      val stackMaps: Map[jlc.Label, List[Bytecode.Frame]] =
+        val attr =
+          code.attributes.nn.iterator.nn.asScala.collectFirst:
+            case smt: jlca.StackMapTableAttribute => smt
+
+        attr.fold(Map.empty): smt =>
+          smt.entries.nn.asScala.iterator.map: entry =>
+            val frames =
+              entry.stack.nn.asScala.toList.map(Bytecode.Frame.fromVerificationType).reverse
+            entry.target.nn -> frames
+          . toMap
+
       def recur
         ( todo:  List[jlc.CodeElement],
           line:  Optional[Int],
@@ -118,7 +130,10 @@ class Classfile(data: Data):
                 recur(todo, line, done, stack, count)
 
               case other: jlci.LabelTarget =>
-                recur(todo, line, done, stack, count)
+                val resetStack: Optional[List[Bytecode.Frame]] =
+                  stackMaps.get(other.label.nn).fold(stack)(identity)
+
+                recur(todo, line, done, resetStack, count)
 
               case other =>
                 panic(m"did not handle ${other.toString.tt}")
