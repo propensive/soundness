@@ -39,7 +39,6 @@ import java.lang.classfile.instruction as jlci
 import scala.reflect.*
 
 import anticipation.*
-import contingency.*
 import digression.*
 import escapade.*
 import escritoire.*
@@ -163,8 +162,6 @@ object Bytecode:
   case class Instruction
     ( opcode: Opcode, line: Optional[Int], stack: Optional[List[Frame]], offset: Int )
 
-  case class Linearized(depth: Int, source: Text, instruction: Instruction)
-
   object Linearized:
     given teletypeable: (palette: BytecodePalette) => List[Linearized] is Teletypeable = lines =>
       lines.map: line =>
@@ -176,6 +173,8 @@ object Bytecode:
         e"$indent$src${line.instruction.opcode.teletype}"
 
       . join(e"\n")
+
+  case class Linearized(depth: Int, source: Text, instruction: Instruction)
 
   object Opcode:
     private def typeKindToFrame(kind: jlc.TypeKind): Frame = kind match
@@ -1486,12 +1485,11 @@ case class Bytecode
         case Invokeinterface(owner, _, descriptor, _)   => (owner, descriptor)
         case _                                          => (t"", t"")
 
-      if owner == t"" then None else
-        priorStacks.get(instr.offset).flatMap: pre =>
-          val argCount = Bytecode.Descriptor.parse(descriptor).args.size
-          if pre.size <= argCount then None
-          else pre.drop(argCount).head match
-            case Bytecode.Frame.L(name) if name == owner => Some(instr.offset)
-            case _                                       => None
-
+      if owner == t"" then None
+      else priorStacks.get(instr.offset).flatMap: pre =>
+        val argCount = Bytecode.Descriptor.parse(descriptor).args.size
+        if pre.size <= argCount then None
+        else pre.drop(argCount).head match
+          case Bytecode.Frame.L(name) if name == owner => Some(instr.offset)
+          case _                                       => None
     . toSet
