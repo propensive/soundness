@@ -403,42 +403,42 @@ object Html extends Tag.Container
   // body insertion), foreign elements (svg, math), or macro callbacks. The
   // existing cursor-based `parse` below remains the fall-back for those.
   // ───────────────────────────────────────────────────────────────────────
-  // Single Cursor2-backed parser. The same body runs whether the input is
+  // Single Cursor-backed parser. The same body runs whether the input is
   // an in-memory `Text` (pre-fills the cursor's buffer) or an
   // `Iterator[Text]` (pulls chunks via the loader). Slicing is uniform
   // (one buffer; one `arraycopy`) so there's no separate same-block fast
   // path versus cross-block grab path. Line/column tracking is delegated
-  // to Cursor2 via `linefeedChars` lineation, so `computePosition` is
+  // to Cursor via `linefeedChars` lineation, so `computePosition` is
   // O(1) — the per-byte tracking cost is small and avoids re-walking the
   // source on each error (which used to be O(n)).
 
   private[honeycomb] object HtmlParser:
     import zephyrine.lineation.linefeedChars
 
-    def fromText(text: Text)(using Dom): HtmlParser = new HtmlParser(Cursor2[Text](text))
+    def fromText(text: Text)(using Dom): HtmlParser = new HtmlParser(Cursor[Text](text))
 
     def fromIterator(input: Iterator[Text])(using Dom): HtmlParser =
-      new HtmlParser(Cursor2[Text](input))
+      new HtmlParser(Cursor[Text](input))
 
-  private[honeycomb] final class HtmlParser(cursor: Cursor2[Text])(using dom: Dom):
-    private var heldToken: Cursor2.Held | Null = null
+  private[honeycomb] final class HtmlParser(cursor: Cursor[Text])(using dom: Dom):
+    private var heldToken: Cursor.Held | Null = null
 
-    type Region = Cursor2.Mark
+    type Region = Cursor.Mark
 
     protected inline def more: Boolean = cursor.more
     protected inline def peek: Char = cursor.datum(using Unsafe).asInstanceOf[Char]
     protected inline def advance(): Unit = cursor.next()
     protected inline def position: Int = cursor.position.n0
 
-    protected inline def begin(): Cursor2.Mark = cursor.mark(using heldToken.nn)
+    protected inline def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
 
-    protected inline def slice(start: Cursor2.Mark, end: Cursor2.Mark): Text =
+    protected inline def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
       cursor.grab(start, end).asInstanceOf[Text]
 
-    protected inline def reset(start: Cursor2.Mark): Unit = cursor.cue(start)
+    protected inline def reset(start: Cursor.Mark): Unit = cursor.cue(start)
 
     protected def cloneTo
-                  (start: Cursor2.Mark, end: Cursor2.Mark)
+                  (start: Cursor.Mark, end: Cursor.Mark)
                   (target: jl.StringBuilder)
     :   Unit = cursor.clone(start, end)(target.asInstanceOf[cursor.addressable.Target])
 
@@ -471,7 +471,7 @@ object Html extends Tag.Container
 
     def parseHtml(root: Tag, doctypes: Boolean = false): Html raises ParseError =
       cursor.hold:
-        heldToken = summon[Cursor2.Held]
+        heldToken = summon[Cursor.Held]
         try parseHtml0(root, doctypes) finally heldToken = null
 
     private def parseHtml0(root: Tag, doctypes: Boolean): Html raises ParseError =

@@ -480,33 +480,33 @@ object Xml extends Tag.Container
   private[xylophone] object XmlParser:
     import zephyrine.lineation.linefeedChars
 
-    def fromText(text: Text)(using XmlSchema): XmlParser = new XmlParser(Cursor2[Text](text))
+    def fromText(text: Text)(using XmlSchema): XmlParser = new XmlParser(Cursor[Text](text))
 
     def fromIterator(input: Iterator[Text])(using XmlSchema): XmlParser =
-      new XmlParser(Cursor2[Text](input))
+      new XmlParser(Cursor[Text](input))
 
-  private[xylophone] final class XmlParser(cursor: Cursor2[Text])(using schema: XmlSchema):
-    type Region = Cursor2.Mark
+  private[xylophone] final class XmlParser(cursor: Cursor[Text])(using schema: XmlSchema):
+    type Region = Cursor.Mark
 
-    private var heldToken: Cursor2.Held | Null = null
+    private var heldToken: Cursor.Held | Null = null
 
     protected inline def more: Boolean = cursor.more
     protected inline def peek: Char = cursor.datum(using Unsafe).asInstanceOf[Char]
     protected inline def advance(): Unit = cursor.next()
     protected inline def position: Int = cursor.position.n0
 
-    protected inline def begin(): Cursor2.Mark = cursor.mark(using heldToken.nn)
+    protected inline def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
 
-    protected inline def slice(start: Cursor2.Mark): Text =
+    protected inline def slice(start: Cursor.Mark): Text =
       val end = cursor.mark(using heldToken.nn)
       cursor.grab(start, end).asInstanceOf[Text]
 
-    protected inline def slice(start: Cursor2.Mark, end: Cursor2.Mark): Text =
+    protected inline def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
       cursor.grab(start, end).asInstanceOf[Text]
 
-    protected inline def reset(start: Cursor2.Mark): Unit = cursor.cue(start)
+    protected inline def reset(start: Cursor.Mark): Unit = cursor.cue(start)
 
-    protected def appendSlice(start: Cursor2.Mark, buf: jl.StringBuilder): Unit =
+    protected def appendSlice(start: Cursor.Mark, buf: jl.StringBuilder): Unit =
       val end = cursor.mark(using heldToken.nn)
       cursor.clone(start, end)(buf.asInstanceOf[cursor.addressable.Target])
 
@@ -961,7 +961,7 @@ object Xml extends Tag.Container
 
     def parseXml(headers0: Boolean)(using Tactic[ParseError]): Xml =
       cursor.hold:
-        heldToken = summon[Cursor2.Held]
+        heldToken = summon[Cursor.Held]
         try parseXml0(headers0) finally heldToken = null
 
     private def parseXml0(headers0: Boolean)(using Tactic[ParseError]): Xml =
