@@ -900,3 +900,88 @@ object Tests extends Suite(m"Escapade tests"):
       test(m"styled text is at the expected screen position"):
         emulate(e"abc$Bold(def)ghi").buffer.char(3.z, 0.z)
       . assert(_ == 'd')
+
+    // ─── hyperlinks (OSC 8) ────────────────────────────────────────────────
+
+    suite(m"Hyperlinks"):
+      test(m"open emits OSC 8 with url"):
+        emit(e"${Hyperlink(t"https://example.com")}[here]").contains(t"\e]8;;https://example.com\e\\")
+      . assert(_ == true)
+
+      test(m"close emits empty OSC 8 after the link"):
+        emit(e"${Hyperlink(t"https://example.com")}[here] more").contains(t"\e]8;;\e\\")
+      . assert(_ == true)
+
+      test(m"link contents are the visible text"):
+        e"a${Hyperlink(t"https://x.test")}[middle]b".plain
+      . assert(_ == t"amiddleb")
+
+      test(m"link at end of text emits trailing close"):
+        emit(e"${Hyperlink(t"https://x.test")}[link]").contains(t"]8;;")
+      . assert(_ == true)
+
+      test(m"basic termcap drops hyperlink escapes"):
+        plainRender(e"${Hyperlink(t"https://x.test")}[link]")
+      . assert(_ == t"link")
+
+      test(m"styled text inside a hyperlink keeps both"):
+        val rendered = emit(e"${Hyperlink(t"https://x.test")}[$Bold(bold link)]")
+        (rendered.contains(t"\e[1m"), rendered.contains(t"\e]8;;https://x.test"))
+      . assert(_ == ((true, true)))
+
+      test(m"hyperlink stored at correct position"):
+        e"hi ${Hyperlink(t"https://x.test")}[click]".hyperlinks(3)
+      . assert(_ == t"https://x.test")
+
+    // ─── new style attributes ─────────────────────────────────────────────
+
+    suite(m"New style attributes"):
+      test(m"faint emits SGR 2"):
+        emit(e"$Faint(x)").contains(t"\e[2m")
+      . assert(_ == true)
+
+      test(m"double-underline emits SGR 21"):
+        emit(e"$DoubleUnderline(x)").contains(t"\e[21m")
+      . assert(_ == true)
+
+      test(m"blink-slow emits SGR 5"):
+        emit(e"$BlinkSlow(x)").contains(t"\e[5m")
+      . assert(_ == true)
+
+      test(m"blink-fast emits SGR 6"):
+        emit(e"$BlinkFast(x)").contains(t"\e[6m")
+      . assert(_ == true)
+
+      test(m"overline emits SGR 53"):
+        emit(e"$Overline(x)").contains(t"\e[53m")
+      . assert(_ == true)
+
+      test(m"overline closes with SGR 55"):
+        emit(e"a$Overline(b)c").contains(t"\e[55m")
+      . assert(_ == true)
+
+      test(m"plain renderer drops new attributes"):
+        plainRender(e"a$Faint($Overline(b))c")
+      . assert(_ == t"abc")
+
+    // ─── concat invariant ──────────────────────────────────────────────────
+
+    suite(m"Concat invariant"):
+      test(m"plain text of append matches concatenation of plains"):
+        val a = e"$Bold(hello) "
+        val b = e"$Italic(world)"
+        a.append(b).plain
+      . assert(_ == t"hello world")
+
+      test(m"appended teletype carries both left and right SGR codes"):
+        val rendered = emit(e"$Bold(hello) ".append(e"$Italic(world)"))
+        (rendered.contains(t"[1m"), rendered.contains(t"[3m"))
+      . assert(_ == ((true, true)))
+
+      test(m"styles array length is plain.length + 1"):
+        e"$Bold(abc)def".styles.length
+      . assert(_ == 7)
+
+      test(m"append concatenates styles arrays correctly"):
+        e"$Bold(hi)".append(e"$Italic(yo)").styles.length
+      . assert(_ == 5)
