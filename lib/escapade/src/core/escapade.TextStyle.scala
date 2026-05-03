@@ -52,22 +52,19 @@ case class TextStyle
     conceal:   Boolean          = false,
     strike:    Boolean          = false ):
 
-  import escapes.*
-  import TextStyle.esc
-
-  private def italicEsc: Text = if italic then styles.Italic.on else styles.Italic.off
-  private def boldEsc: Text = if bold then styles.Bold.on else styles.Bold.off
-  private def reverseEsc: Text = if reverse then styles.Reverse.on else styles.Reverse.off
-  private def underlineEsc: Text = if underline then styles.Underline.on else styles.Underline.off
-  private def concealEsc: Text = if conceal then styles.Conceal.on else styles.Conceal.off
-  private def strikeEsc: Text = if strike then styles.Strike.on else styles.Strike.off
+  def styleWord: Long =
+    var s: Long = 0L
+    if italic    then s |= StyleWord.Italic
+    if bold      then s |= StyleWord.Bold
+    if reverse   then s |= StyleWord.Reverse
+    if underline then s |= StyleWord.Underline
+    if conceal   then s |= StyleWord.Conceal
+    if strike    then s |= StyleWord.Strike
+    fg.let: c =>
+      s = s | (c.underlying.toLong & 0xffffffL) | StyleWord.FgSet
+    bg.let: c =>
+      s = s | ((c.underlying.toLong & 0xffffffL) << 24) | StyleWord.BgSet
+    s
 
   def addChanges(buffer: StringBuilder, next: TextStyle, colorDepth: ColorDepth): Unit =
-    if fg != next.fg then buffer.add(next.fg.let(Fg(_).ansi(colorDepth)).or(t"$esc[39m"))
-    if bg != next.bg then buffer.add(next.bg.let(Bg(_).ansi(colorDepth)).or(t"$esc[49m"))
-    if italic != next.italic then buffer.add(t"${esc}${next.italicEsc}")
-    if bold != next.bold then buffer.add(t"${esc}${next.boldEsc}")
-    if reverse != next.reverse then buffer.add(t"${esc}${next.reverseEsc}")
-    if underline != next.underline then buffer.add(t"${esc}${next.underlineEsc}")
-    if conceal != next.conceal then buffer.add(t"${esc}${next.concealEsc}")
-    if strike != next.strike then buffer.add(t"${esc}${next.strikeEsc}")
+    StyleWord.emitDiff(buffer, styleWord, next.styleWord, colorDepth)
