@@ -136,6 +136,18 @@ object Bytecode:
     ( opcode: Opcode, line: Optional[Int], stack: Optional[List[Frame]], offset: Int )
 
   object Opcode:
+    private def typeKindToFrame(kind: jlc.TypeKind): Frame = kind match
+      case jlc.TypeKind.BOOLEAN   => Frame.Z
+      case jlc.TypeKind.BYTE      => Frame.B
+      case jlc.TypeKind.CHAR      => Frame.C
+      case jlc.TypeKind.SHORT     => Frame.S
+      case jlc.TypeKind.INT       => Frame.I
+      case jlc.TypeKind.LONG      => Frame.J
+      case jlc.TypeKind.FLOAT     => Frame.F
+      case jlc.TypeKind.DOUBLE    => Frame.D
+      case jlc.TypeKind.REFERENCE => Frame.L(t"?")
+      case jlc.TypeKind.VOID      => panic(m"void TypeKind has no Frame representation")
+
     def apply(source: jlc.Instruction): Opcode = source match
       case invocation: jlci.InvokeInstruction =>
         val classname = invocation.owner.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
@@ -163,6 +175,28 @@ object Bytecode:
           case 179 => Putstatic(classname, name, descriptor)
           case 180 => Getfield(classname, name, descriptor)
           case 181 => Putfield(classname, name, descriptor)
+
+      case typeCheck: jlci.TypeCheckInstruction =>
+        val classname = typeCheck.`type`.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+
+        source.opcode.nn.bytecode.absolve match
+          case 192 => Checkcast(classname)
+          case 193 => Instanceof(classname)
+
+      case newObject: jlci.NewObjectInstruction =>
+        val classname = newObject.className.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+        New(classname)
+
+      case newRefArray: jlci.NewReferenceArrayInstruction =>
+        val classname = newRefArray.componentType.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+        Anewarray(classname)
+
+      case newMultiArray: jlci.NewMultiArrayInstruction =>
+        val classname = newMultiArray.arrayType.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+        Multianewarray(classname, newMultiArray.dimensions)
+
+      case newPrimArray: jlci.NewPrimitiveArrayInstruction =>
+        Newarray(typeKindToFrame(newPrimArray.typeKind.nn))
 
       case other =>
         source.opcode.nn.bytecode match
@@ -344,17 +378,11 @@ object Bytecode:
           case 175 => Dreturn
           case 176 => Areturn
           case 177 => Return
-          case 187 => New(0)
-          case 188 => Newarray(0)
-          case 189 => Anewarray(0)
           case 190 => Arraylength
           case 191 => Athrow
-          case 192 => Checkcast(0)
-          case 193 => Instanceof(0)
           case 194 => Monitorenter
           case 195 => Monitorexit
           case 196 => Wide()
-          case 197 => Multianewarray(0, 0)
           case 198 => Ifnull(0)
           case 199 => Ifnonnull(0)
           case 200 => GotoW(0)
@@ -568,17 +596,19 @@ object Bytecode:
         val owner2 = StackTrace.rewrite(owner.s)
         val field2 = StackTrace.rewrite(field.s, true)
         t"put·field $owner2 ⌗ $field2"
-      case New(_)               => t"new"
-      case Newarray(_)          => t"new·array"
-      case Anewarray(_)         => t"a·new·array"
+      case New(cls)             => t"new ${StackTrace.rewrite(cls.s)}"
+      case Newarray(element)    => t"new·array $element"
+      case Anewarray(cls)       => t"a·new·array ${StackTrace.rewrite(cls.s)}"
       case Arraylength          => t"array·length"
       case Athrow               => t"a·throw"
-      case Checkcast(_)         => t"check·cast"
-      case Instanceof(_)        => t"instance·of"
+      case Checkcast(cls)       => t"check·cast ${StackTrace.rewrite(cls.s)}"
+      case Instanceof(cls)      => t"instance·of ${StackTrace.rewrite(cls.s)}"
       case Monitorenter         => t"monitor·enter"
       case Monitorexit          => t"monitor·exit"
       case Wide()               => t"wide"
-      case Multianewarray(_, _) => t"multi·a·new·array"
+
+      case Multianewarray(cls, dims) =>
+        t"multi·a·new·array ${StackTrace.rewrite(cls.s)} $dims"
       case Ifnull(_)            => t"if·null"
       case Ifnonnull(_)         => t"if·!null"
       case GotoW(_)             => t"gotoʷ"
@@ -850,17 +880,17 @@ object Bytecode:
     case Invokestatic(owner: Text, method: Text, descriptor: Text)
     case Invokeinterface(owner: Text, method: Text, descriptor: Text, count: Byte)
     case Invokedynamic(method: Text, descriptor: Text)
-    case New(index: Short)
-    case Newarray(atype: Byte)
-    case Anewarray(index: Short)
+    case New(className: Text)
+    case Newarray(elementType: Frame)
+    case Anewarray(componentClass: Text)
     case Arraylength
     case Athrow
-    case Checkcast(index: Short)
-    case Instanceof(index: Short)
+    case Checkcast(className: Text)
+    case Instanceof(className: Text)
     case Monitorenter
     case Monitorexit
     case Wide()
-    case Multianewarray(index: Short, dimensions: Byte)
+    case Multianewarray(arrayClass: Text, dimensions: Int)
     case Ifnull(branch: Short)
     case Ifnonnull(branch: Short)
     case GotoW(branch: Int)
