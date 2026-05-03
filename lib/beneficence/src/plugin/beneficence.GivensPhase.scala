@@ -71,12 +71,34 @@ class GivensPhase() extends PluginPhase:
         traverseChildren(tree)
 
       private def record(symbol: Symbols.Symbol, tpe: Types.Type)(using Context): Unit =
-        val typeclassSymbol = tpe.dealias.classSymbol
+        val typeclassSymbol = typeclassOf(tpe, symbol)
         if typeclassSymbol.exists then
           val typeclassFqn = sourcePath(typeclassSymbol)
           val givenFqn     = sourcePath(symbol)
           val buffer       = collected.getOrElseUpdate(typeclassFqn, mutable.Buffer())
           buffer += Entry(givenFqn, sourceFile)
+
+      private def typeclassOf(tpe: Types.Type, valSymbol: Symbols.Symbol)(using Context)
+      :     Symbols.Symbol =
+
+        // For a "normal" given like `given foo: Show[Int] = ...` baseClasses leads with
+        // the typeclass class. For a modular `given X: T:` (with a refining body), the
+        // typer creates a synthesized class named after the val (a `module class X$`
+        // for value-style givens, or a plain `class X` for parameterised ones). In both
+        // shapes, stripping the trailing `$` from the class name and comparing with the
+        // val's name detects the synth class so we can skip past it to T.
+        val valName = valSymbol.name.toString
+
+        tpe.baseClasses.iterator.filter: cls =>
+          cls.exists
+          && cls != Symbols.defn.ObjectClass
+          && cls != Symbols.defn.AnyClass
+          && cls != Symbols.defn.MatchableClass
+          && stripDollar(cls.name.toString) != valName
+        .nextOption().getOrElse(tpe.dealias.classSymbol)
+
+      private def stripDollar(name: String): String =
+        if name.endsWith("$") then name.substring(0, name.length - 1).nn else name
 
       private def sourcePath(symbol: Symbols.Symbol)(using Context): String =
         val raw: String = symbol.fullName.toString.replace("$.", ".").nn
