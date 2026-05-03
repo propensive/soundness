@@ -171,7 +171,7 @@ object internal extends protointernal:
       type Self = operand
       type Result = Quantity[left]
 
-      def negate(operand: Self): Quantity[left] = -operand
+      inline def negate(operand: Self): Quantity[left] = -operand
 
 
     given multiplicable2: [left <: Measure, multiplicand <: Quantity[left]]
