@@ -33,6 +33,7 @@
 package mosquito
 
 import scala.compiletime.*
+import scala.compiletime.ops.int.-
 
 import anticipation.*
 import gossamer.*
@@ -382,6 +383,129 @@ object Matrix:
         new Matrix[element, n, n](dimension, dimension, resultElements)
 
 
+  extension [n <: Int](matrix: Matrix[Double, n, n])
+    def eigensystem(using ValueOf[n])
+    :   Optional[(Tensor[Double, n], Matrix[Double, n, n])] =
+
+      val dimension = matrix.rows
+      val tolerance = 1.0e-12
+      val maxIterations = 100*dimension*dimension
+
+      var symmetric = true
+      var checkRow = 0
+      while checkRow < dimension && symmetric do
+        var checkCol = checkRow + 1
+        while checkCol < dimension && symmetric do
+          if math.abs(matrix(checkRow, checkCol) - matrix(checkCol, checkRow)) > tolerance
+          then symmetric = false
+          checkCol += 1
+
+        checkRow += 1
+
+      if !symmetric then Unset
+      else
+        val mat: Array[Double] = matrix.elements.mutable(using Unsafe).clone()
+        val vec: Array[Double] = new Array[Double](dimension*dimension)
+        var diagIndex = 0
+        while diagIndex < dimension do
+          vec(dimension*diagIndex + diagIndex) = 1.0
+          diagIndex += 1
+
+        var iteration = 0
+        var converged = false
+
+        while !converged && iteration < maxIterations do
+          var maxAbs = 0.0
+          var p = 0
+          var q = 0
+          var i = 0
+          while i < dimension do
+            var j = i + 1
+            while j < dimension do
+              val absValue = math.abs(mat(dimension*i + j))
+              if absValue > maxAbs then
+                maxAbs = absValue
+                p = i
+                q = j
+
+              j += 1
+
+            i += 1
+
+          if maxAbs < tolerance then converged = true
+          else
+            val mpp = mat(dimension*p + p)
+            val mqq = mat(dimension*q + q)
+            val mpq = mat(dimension*p + q)
+
+            val theta = (mqq - mpp)/(2.0*mpq)
+
+            val tan =
+              if theta >= 0.0 then 1.0/(theta + math.sqrt(theta*theta + 1.0))
+              else 1.0/(theta - math.sqrt(theta*theta + 1.0))
+
+            val cos = 1.0/math.sqrt(1.0 + tan*tan)
+            val sin = tan*cos
+
+            val newMpp = cos*cos*mpp - 2.0*cos*sin*mpq + sin*sin*mqq
+            val newMqq = sin*sin*mpp + 2.0*cos*sin*mpq + cos*cos*mqq
+
+            mat(dimension*p + p) = newMpp
+            mat(dimension*q + q) = newMqq
+            mat(dimension*p + q) = 0.0
+            mat(dimension*q + p) = 0.0
+
+            var rotateIndex = 0
+            while rotateIndex < dimension do
+              if rotateIndex != p && rotateIndex != q then
+                val mip = mat(dimension*rotateIndex + p)
+                val miq = mat(dimension*rotateIndex + q)
+                val updatedMip = cos*mip - sin*miq
+                val updatedMiq = sin*mip + cos*miq
+                mat(dimension*rotateIndex + p) = updatedMip
+                mat(dimension*rotateIndex + q) = updatedMiq
+                mat(dimension*p + rotateIndex) = updatedMip
+                mat(dimension*q + rotateIndex) = updatedMiq
+
+              rotateIndex += 1
+
+            var vecIndex = 0
+            while vecIndex < dimension do
+              val vkp = vec(dimension*vecIndex + p)
+              val vkq = vec(dimension*vecIndex + q)
+              vec(dimension*vecIndex + p) = cos*vkp - sin*vkq
+              vec(dimension*vecIndex + q) = sin*vkp + cos*vkq
+              vecIndex += 1
+
+          iteration += 1
+
+        if !converged then Unset
+        else
+          val eigvalArr = IArray.build[Any](dimension): array =>
+            var i = 0
+            while i < dimension do
+              array(i) = mat(dimension*i + i)
+              i += 1
+
+          val eigvecArr = IArray.build[Double](dimension*dimension): array =>
+            var i = 0
+            while i < dimension*dimension do
+              array(i) = vec(i)
+              i += 1
+
+          val eigvals = new Tensor[Double, n](eigvalArr)
+          val eigvecs = new Matrix[Double, n, n](dimension, dimension, eigvecArr)
+          (eigvals, eigvecs)
+
+
+    def eigenvalues(using ValueOf[n]): Optional[Tensor[Double, n]] =
+      matrix.eigensystem.let(_(0))
+
+
+    def eigenvectors(using ValueOf[n]): Optional[Matrix[Double, n, n]] =
+      matrix.eigensystem.let(_(1))
+
+
 class Matrix[element, rows <: Int, columns <: Int]
   ( val rows: Int, val columns: Int, val elements: IArray[element] ):
 
@@ -420,6 +544,94 @@ class Matrix[element, rows <: Int, columns <: Int]
         row += 1
 
     new Matrix[element, columns, rows](columns, rows, arr)
+
+
+  def submatrix(droppedRow: Int, droppedColumn: Int)(using ClassTag[element])
+  :   Matrix[element, rows - 1, columns - 1] =
+
+    val newRows = rows - 1
+    val newCols = columns - 1
+
+    val arr = IArray.build[element](newRows*newCols): array =>
+      var r = 0
+      while r < newRows do
+        var c = 0
+        while c < newCols do
+          val origRow = if r < droppedRow then r else r + 1
+          val origCol = if c < droppedColumn then c else c + 1
+          array(newCols*r + c) = elements(columns*origRow + origCol)
+          c += 1
+
+        r += 1
+
+    new Matrix[element, rows - 1, columns - 1](newRows, newCols, arr)
+
+
+  def frobeniusNorm
+    ( using multiplicable: element is Multiplicable by element,
+            addable:       multiplicable.Result is Addable by multiplicable.Result
+                           to multiplicable.Result,
+            rootable:      multiplicable.Result is Rootable[2] to element )
+  :   element =
+
+    val length = elements.length
+    var sum: multiplicable.Result = elements(0)*elements(0)
+    var i = 1
+    while i < length do
+      sum = addable.add(sum, elements(i)*elements(i))
+      i += 1
+
+    sum.sqrt
+
+
+  def rank
+    ( using zeroic:         element is Zeroic,
+            subtraction:    element is Subtractable by element to element,
+            multiplication: element is Multiplicable by element to element,
+            divisible:      element is Divisible by element to element )
+  :   Int =
+
+    val r = rows
+    val c = columns
+    val zero = zeroic.zero
+    val a: Array[element] = elements.mutable(using Unsafe).clone()
+
+    var rankCount = 0
+    var col = 0
+
+    while col < c && rankCount < r do
+      var pivotRow = -1
+      var i = rankCount
+      while i < r && pivotRow < 0 do
+        if a(c*i + col) != zero then pivotRow = i
+        i += 1
+
+      if pivotRow >= 0 then
+        if pivotRow != rankCount then
+          var k = 0
+          while k < c do
+            val tmp = a(c*rankCount + k)
+            a(c*rankCount + k) = a(c*pivotRow + k)
+            a(c*pivotRow + k) = tmp
+            k += 1
+
+        val pivotValue = a(c*rankCount + col)
+        var rowIdx = rankCount + 1
+
+        while rowIdx < r do
+          val factor = a(c*rowIdx + col)/pivotValue
+          var k = col
+          while k < c do
+            a(c*rowIdx + k) = a(c*rowIdx + k) - factor*a(c*rankCount + k)
+            k += 1
+
+          rowIdx += 1
+
+        rankCount += 1
+
+      col += 1
+
+    rankCount
 
   override def equals(right: Any): Boolean = right.asMatchable match
     case matrix: Matrix[?, ?, ?] => elements.sameElements(matrix.elements)
