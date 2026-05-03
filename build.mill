@@ -126,7 +126,9 @@ extends BaseScalaModule, SonatypeCentralPublishModule:
   override def moduleDeps = dependencies
 
   override def scalacOptions = Task:
-    settings.scalaOptions :+ s"-Xplugin:${decorum.plugin.assembly().path}"
+    settings.scalaOptions
+      :+ s"-Xplugin:${decorum.plugin.assembly().path}"
+      :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
 
 trait Tests(dependencies: PublishModule*) extends BaseScalaModule:
   def moduleId: String = moduleDir.last

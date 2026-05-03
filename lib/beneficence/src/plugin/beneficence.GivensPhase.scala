@@ -73,9 +73,13 @@ class GivensPhase() extends PluginPhase:
       private def record(symbol: Symbols.Symbol, tpe: Types.Type)(using Context): Unit =
         val typeclassSymbol = tpe.dealias.classSymbol
         if typeclassSymbol.exists then
-          val typeclassFqn = typeclassSymbol.fullName.toString
-          val givenFqn     = symbol.fullName.toString
+          val typeclassFqn = sourcePath(typeclassSymbol)
+          val givenFqn     = sourcePath(symbol)
           val buffer       = collected.getOrElseUpdate(typeclassFqn, mutable.Buffer())
           buffer += Entry(givenFqn, sourceFile)
+
+      private def sourcePath(symbol: Symbols.Symbol)(using Context): String =
+        val raw: String = symbol.fullName.toString.replace("$.", ".").nn
+        if raw.endsWith("$") then raw.substring(0, raw.length - 1).nn else raw
 
     traverser.traverse(unit.tpdTree)
