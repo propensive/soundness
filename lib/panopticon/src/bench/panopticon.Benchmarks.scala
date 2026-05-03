@@ -129,24 +129,35 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
        _.hq    = addr,
        _.depts = Nil )
 
-  // Comparison baselines for the field-only fusion targets above. `Sequential` chains
-  // single-update `.lens` calls (forces foldLeft-equivalent allocation behaviour).
-  // `Manual` uses direct `.copy(...)` — the theoretical optimum.
+  // Comparison baselines for the field-only fusion targets above. `Manual` uses direct
+  // `.copy(...)` — the theoretical optimum any optic library should be measured against.
 
   def singleFieldDepth2Manual(o: Org): Org =
     o.copy(hq = o.hq.copy(city = t"X"))
 
-  def threeSharedHqSequential(o: Org): Org =
-    o.lens(_.hq.street = t"S").lens(_.hq.city = t"C").lens(_.hq.postcode = t"P")
-
   def threeSharedHqManual(o: Org): Org =
     o.copy(hq = o.hq.copy(street = t"S", city = t"C", postcode = t"P"))
 
-  def threeDisjointTopSequential(o: Org): Org =
-    o.lens(_.name = t"N").lens(_.hq = addr).lens(_.depts = Nil)
-
   def threeDisjointTopManual(o: Org): Org =
     o.copy(name = t"N", hq = addr, depts = Nil)
+
+  // True pre-fusion baselines — call `lensFold` (the original `def lens` body),
+  // bypassing the macro entirely. Single-call multi-lambda foldLeft semantics.
+
+  def singleFieldDepth2Fold(o: Org): Org =
+    o.lensFold(_.hq.city = t"X")
+
+  def threeSharedHqFold(o: Org): Org =
+    o.lensFold
+     ( _.hq.street   = t"S",
+       _.hq.city     = t"C",
+       _.hq.postcode = t"P" )
+
+  def threeDisjointTopFold(o: Org): Org =
+    o.lensFold
+     ( _.name  = t"N",
+       _.hq    = addr,
+       _.depts = Nil )
 
   // ─── benchmarks ───────────────────────────────────────────────────────────
 
@@ -179,14 +190,17 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
       bench(m"single update — fused")(target = 1*Second):
         '{ panopticon.Benchmarks.singleFieldDepth2(panopticon.Benchmarks.org) }
 
+      bench(m"single update — pre-fusion foldLeft")(target = 1*Second):
+        '{ panopticon.Benchmarks.singleFieldDepth2Fold(panopticon.Benchmarks.org) }
+
       bench(m"single update — manual .copy (optimum)")(target = 1*Second):
         '{ panopticon.Benchmarks.singleFieldDepth2Manual(panopticon.Benchmarks.org) }
 
       bench(m"3 shared-prefix — fused")(target = 1*Second):
         '{ panopticon.Benchmarks.threeSharedHq(panopticon.Benchmarks.org) }
 
-      bench(m"3 shared-prefix — sequential .lens (foldLeft-equiv)")(target = 1*Second):
-        '{ panopticon.Benchmarks.threeSharedHqSequential(panopticon.Benchmarks.org) }
+      bench(m"3 shared-prefix — pre-fusion foldLeft")(target = 1*Second):
+        '{ panopticon.Benchmarks.threeSharedHqFold(panopticon.Benchmarks.org) }
 
       bench(m"3 shared-prefix — manual .copy (optimum)")(target = 1*Second):
         '{ panopticon.Benchmarks.threeSharedHqManual(panopticon.Benchmarks.org) }
@@ -194,8 +208,8 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
       bench(m"3 disjoint — fused")(target = 1*Second):
         '{ panopticon.Benchmarks.threeDisjointTop(panopticon.Benchmarks.org) }
 
-      bench(m"3 disjoint — sequential .lens (foldLeft-equiv)")(target = 1*Second):
-        '{ panopticon.Benchmarks.threeDisjointTopSequential(panopticon.Benchmarks.org) }
+      bench(m"3 disjoint — pre-fusion foldLeft")(target = 1*Second):
+        '{ panopticon.Benchmarks.threeDisjointTopFold(panopticon.Benchmarks.org) }
 
       bench(m"3 disjoint — manual .copy (optimum)")(target = 1*Second):
         '{ panopticon.Benchmarks.threeDisjointTopManual(panopticon.Benchmarks.org) }
