@@ -32,5 +32,7 @@
                                                                                                   */
 package frontier
 
+inline def every[value]: Every[value] = ${internal.every[value]}
+
 package context:
   transparent inline given explainMissingContext: [any] => any = internal.explanation[any]
