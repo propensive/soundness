@@ -929,17 +929,17 @@ object Html extends Tag.Container
             locally:
               val mark = begin()
 
-              def node(): Unit =
+              inline def node(): Unit =
                 current = Element(content, extra, array(count), parent.foreign)
 
-              def empty(): Unit =
+              inline def empty(): Unit =
                 current = Element(content, extra, IArray(), parent.foreign)
 
-              def close(): Unit =
+              inline def close(): Unit =
                 current = Element(parent.label, map, array(count), parent.foreign)
                 level = Level.Ascend
 
-              def infer(tag: Tag): Unit =
+              inline def infer(inline tag: Tag): Unit =
                 reset(mark)
 
                 dom.infer(parent, tag).let: tag =>
