@@ -37,10 +37,10 @@ import scala.annotation.*
 import prepositional.*
 
 extension [value: Rootable[2] as rootable](value: value)
-  def sqrt: rootable.Result = rootable.root(value)
+  inline def sqrt: rootable.Result = rootable.root(value)
 
 extension [value: Rootable[3] as rootable](value: value)
-  def cbrt: rootable.Result = rootable.root(value)
+  inline def cbrt: rootable.Result = rootable.root(value)
 
 extension [self](operand: self)
   @targetName("negate")
