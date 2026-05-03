@@ -95,11 +95,22 @@ object internal:
 
     // ─── parse helpers ────────────────────────────────────────────────────
 
+    /** A path step in a parsed `.lens` lambda. `FieldStep` is a `selectDynamic`/
+      * `updateDynamic` call; `TraversalStep` carries the operand of an `applyDynamic`/
+      * `update`/`apply` call together with its TypeRepr (the singleton type of the
+      * operand, used as the merge identity).
+      */
+    sealed trait Step
+    case class FieldStep(name: String) extends Step
+    case class TraversalStep(operand: Term, operandTpe: TypeRepr) extends Step
+
     def strip(t: Term): Term = t match
       case Inlined(_, Nil, inner) => strip(inner)
       case Block(Nil, expr)       => strip(expr)
       case Typed(expr, _)         => strip(expr)
       case other                  => other
+
+    def isSingleton(tpe: TypeRepr): Boolean = tpe.widen != tpe
 
     /** Matches `receiver.selectDynamic("name")(<using lens>)`. */
     def matchSelectDynamic(t: Term): Option[(Term, String)] = t match
@@ -121,21 +132,94 @@ object internal:
         Some((receiver, name, value))
       case _ => None
 
-    def gatherSelectDynamic(body: Term, paramSym: Symbol): Option[List[String]] =
+    /** Strips `Apply` and `TypeApply` layers off a term, recording the term-arg lists in
+      * order. After typer, dynamic/traversal calls have several nested
+      * Apply/TypeApply layers; the matchers below identify the call shape from the
+      * innermost `Select(receiver, methodName)` plus the recorded term-arg lists.
+      */
+    def stripApplyLayers(t: Term): (Term, List[List[Term]]) =
+      var cur: Term = t
+      val termArgss = scala.collection.mutable.ListBuffer.empty[List[Term]]
+      var done = false
+      while !done do
+        cur match
+          case Apply(inner, args)  => termArgss.prepend(args); cur = inner
+          case TypeApply(inner, _) => cur = inner
+          case _                   => done = true
+      (cur, termArgss.toList)
+
+    /** Matches `receiver.applyDynamic("name")(<using lens>)(traversal)(<using optical>)`.
+      * Term-arg layout: `[(name)] [(using lens)] [(traversal)] [(using optical)]`. */
+    def matchApplyDynamic(t: Term): Option[(Term, String, Term)] =
+      val (core, termArgss) = stripApplyLayers(t)
+      core match
+        case Select(receiver, "applyDynamic") if termArgss.length >= 3 =>
+          (termArgss(0), termArgss(2)) match
+            case (List(Literal(StringConstant(name))), List(traversalArg)) =>
+              Some((receiver, name, traversalArg))
+            case _ => None
+        case _ => None
+
+    /** Matches `receiver.update[T](traversal, value)(<using optical>)` — the terminal
+      * write through a traversal (`_.field(Prim) = value`). */
+    def matchUpdate(t: Term): Option[(Term, Term, Term)] =
+      val (core, termArgss) = stripApplyLayers(t)
+      core match
+        case Select(receiver, "update") if termArgss.nonEmpty =>
+          termArgss.head match
+            case List(traversalArg, valueArg) => Some((receiver, traversalArg, valueArg))
+            case _                            => None
+        case _ => None
+
+    /** Matches `receiver.apply[T, O](traversal)(<using optical>)` — the bare
+      * `_(traversal)` form (one traversal step, no field). */
+    def matchOpticApply(t: Term): Option[(Term, Term)] =
+      val (core, termArgss) = stripApplyLayers(t)
+      core match
+        case Select(receiver, "apply") if termArgss.nonEmpty =>
+          termArgss.head match
+            case List(traversalArg) => Some((receiver, traversalArg))
+            case _                  => None
+        case _ => None
+
+    /** Walks a non-terminal chain, building the list of steps from the parameter
+      * outward. Returns None if any step is unrecognised, or if a TraversalStep
+      * operand isn't singleton-typed (we can't safely fuse non-singleton operands).
+      */
+    def gatherSteps(body: Term, paramSym: Symbol): Option[List[Step]] =
       val s = strip(body)
       s match
         case Ident(_) if s.symbol == paramSym => Some(Nil)
         case _ => matchSelectDynamic(s) match
-          case Some((receiver, name)) => gatherSelectDynamic(receiver, paramSym).map(_ :+ name)
-          case None                   => None
+          case Some((receiver, name)) =>
+            gatherSteps(receiver, paramSym).map(_ :+ FieldStep(name))
+          case None => matchApplyDynamic(s) match
+            case Some((receiver, name, opTerm)) if isSingleton(opTerm.tpe) =>
+              gatherSteps(receiver, paramSym).map: steps =>
+                steps :+ FieldStep(name) :+ TraversalStep(opTerm, opTerm.tpe)
+            case Some(_) => None  // non-singleton operand — can't fuse
+            case None    => matchOpticApply(s) match
+              case Some((receiver, opTerm)) if isSingleton(opTerm.tpe) =>
+                gatherSteps(receiver, paramSym).map: steps =>
+                  steps :+ TraversalStep(opTerm, opTerm.tpe)
+              case Some(_) => None
+              case None    => None
 
-    def parseChain(body: Term, paramSym: Symbol): Option[(List[String], Term)] =
+    def parseChain(body: Term, paramSym: Symbol): Option[(List[Step], Term, Boolean)] =
       matchUpdateDynamic(body) match
         case Some((receiver, name, leaf)) =>
-          gatherSelectDynamic(receiver, paramSym).map(prefix => (prefix :+ name, leaf))
-        case None => None
+          // updateDynamic's value param is a context function `(T aka "prior") ?=> T`.
+          gatherSteps(receiver, paramSym).map: prefix =>
+            (prefix :+ FieldStep(name), leaf, true)
+        case None => matchUpdate(body) match
+          case Some((receiver, opTerm, leaf)) if isSingleton(opTerm.tpe) =>
+            // update's value param is a plain T.
+            gatherSteps(receiver, paramSym).map: prefix =>
+              (prefix :+ TraversalStep(opTerm, opTerm.tpe), leaf, false)
+          case Some(_) => None
+          case None    => None
 
-    def parseLambda(lam: Expr[Any]): Option[(List[String], Term)] =
+    def parseLambda(lam: Expr[Any]): Option[(List[Step], Term, Boolean)] =
       strip(lam.asTerm) match
         case Block(List(DefDef(_, paramss, _, Some(body))), _) =>
           paramss.head match
@@ -145,27 +229,41 @@ object internal:
 
     // ─── tree types (live inside this method scope) ──────────────────────
 
-    /** Parsed prefix tree, before lens resolution. */
+    /** Parsed prefix tree, before resolution. */
     sealed trait Branch
-    case class FieldB(name: String, children: List[Branch]) extends Branch
-    case class LeafB(leaf: Term) extends Branch
+    case class StepB(step: Step, children: List[Branch]) extends Branch
+    /** A leaf write. `isCtxFn` is true when the leaf is the `(T aka "prior") ?=> T`
+      * context function produced by `updateDynamic(name)(value)`; false when it's a
+      * plain `T` value produced by `update(traversal, value)`. */
+    case class LeafB(leaf: Term, isCtxFn: Boolean) extends Branch
 
-    /** After resolution: each FieldB's `Lens` typeclass instance has been summoned
-      * for the appropriate origin type, and its Target type is captured. */
+    /** After resolution: a `Lens` (for field steps) or `Optical`+optic (for traversal
+      * steps) typeclass instance has been summoned for the appropriate origin type,
+      * and the inner Target type is captured.
+      */
     sealed trait Resolved
     case class FieldR(name: String, lens: Term, target: TypeRepr, children: List[Resolved])
         extends Resolved
-    case class LeafR(leaf: Term) extends Resolved
+    case class TravR(operand: Term, optical: Term, target: TypeRepr, children: List[Resolved])
+        extends Resolved
+    case class LeafR(leaf: Term, isCtxFn: Boolean) extends Resolved
 
-    def toBranches(parsed: (List[String], Term)): Branch =
-      val (fields, leaf) = parsed
-      fields.foldRight[Branch](LeafB(leaf)): (name, child) =>
-        FieldB(name, List(child))
+    def toBranches(parsed: (List[Step], Term, Boolean)): Branch =
+      val (steps, leaf, isCtxFn) = parsed
+      steps.foldRight[Branch](LeafB(leaf, isCtxFn)): (step, child) =>
+        StepB(step, List(child))
+
+    /** Two adjacent step nodes merge if their step identities match: FieldStep by name,
+      * TraversalStep by singleton operand type (`=:=`). */
+    def stepEq(a: Step, b: Step): Boolean = (a, b) match
+      case (FieldStep(n1), FieldStep(n2))           => n1 == n2
+      case (TraversalStep(_, t1), TraversalStep(_, t2)) => t1 =:= t2
+      case _                                         => false
 
     def mergeAdjacent(branches: List[Branch]): List[Branch] =
       branches.foldRight[List[Branch]](Nil):
-        case (FieldB(n, cs), FieldB(n2, cs2) :: rest) if n == n2 =>
-          FieldB(n, mergeAdjacent(cs ++ cs2)) :: rest
+        case (StepB(s, cs), StepB(s2, cs2) :: rest) if stepEq(s, s2) =>
+          StepB(s, mergeAdjacent(cs ++ cs2)) :: rest
         case (b, rest) =>
           b :: rest
 
@@ -202,25 +300,49 @@ object internal:
 
       walk(lensTerm.tpe)
 
-    /** Walks the prefix tree, summoning a Lens at each step. Returns None if any
-      * step fails to resolve — the orchestrator then falls back to `applyFold`. */
+    /** Summons `(? >: operandTpe) is Optical from originTpe`. Used for traversal steps
+      * (`Each`, `Prim`/`Ordinal`, map keys). The Self bound is `>: operandTpe` (not
+      * exact equality), matching the wildcard `(? >: traversal.type)` shape that
+      * `Optic.applyDynamic` summons at runtime — so e.g. a `Prim.type` operand is
+      * served by the `Ordinal is Optical from List[…]` given. Origin is exact.
+      */
+    def summonOptical(operandTpe: TypeRepr, originTpe: TypeRepr): Option[Term] =
+      val refined = Refinement
+                     ( Refinement
+                        ( TypeRepr.of[Optical], "Self",
+                          TypeBounds(operandTpe, TypeRepr.of[Any]) ),
+                       "Origin", TypeBounds(originTpe, originTpe) )
+      refined.asType match
+        case '[opT] => Expr.summon[opT].map(_.asTerm)
+
+    /** Walks the prefix tree, resolving each step. Returns None if any step fails
+      * to resolve — the orchestrator then falls back to `applyFold`. */
     def resolveAll(branches: List[Branch], originTpe: TypeRepr): Option[List[Resolved]] =
       val opts: List[Option[Resolved]] = branches.map:
-        case LeafB(leaf) => Some(LeafR(leaf))
-        case FieldB(name, children) =>
+        case LeafB(leaf, isCtxFn) => Some(LeafR(leaf, isCtxFn))
+        case StepB(FieldStep(name), children) =>
           summonLens(name, originTpe).flatMap: lensTerm =>
             extractTarget(lensTerm).flatMap: targetTpe =>
               resolveAll(children, targetTpe).map: resolvedChildren =>
                 FieldR(name, lensTerm, targetTpe, resolvedChildren)
+        case StepB(TraversalStep(operand, _), children) =>
+          summonOptical(operand.tpe, originTpe).flatMap: opticalTerm =>
+            extractTarget(opticalTerm).flatMap: targetTpe =>
+              resolveAll(children, targetTpe).map: resolvedChildren =>
+                TravR(operand, opticalTerm, targetTpe, resolvedChildren)
 
       if opts.forall(_.isDefined) then Some(opts.flatten) else None
 
     // ─── emit ────────────────────────────────────────────────────────────
 
-    def applyLeaf[T: Type](acc: Expr[T], leafTerm: Term): Expr[T] =
-      // Leaf is a context function `(T aka "prior") ?=> T`. `aka` is opaque (Tagged), so
-      // at runtime tagging is a no-op. We pass `acc` directly via aka to satisfy the typer.
-      '{ ${ leafTerm.asExprOf[(T `aka` "prior") ?=> T] }(using $acc.aka["prior"]) }
+    def applyLeaf[T: Type](acc: Expr[T], leafTerm: Term, isCtxFn: Boolean): Expr[T] =
+      if isCtxFn then
+        // From updateDynamic — leaf is `(T aka "prior") ?=> T`. `aka` is opaque (Tagged),
+        // so at runtime tagging is a no-op; we pass `acc` via aka to satisfy the typer.
+        '{ ${ leafTerm.asExprOf[(T `aka` "prior") ?=> T] }(using $acc.aka["prior"]) }
+      else
+        // From update(traversal, value) — leaf is a plain `T`; `acc` is unused.
+        leafTerm.asExprOf[T]
 
     def emit[T: Type](origin: Expr[T], branches: List[Resolved]): Expr[T] =
       // Each iteration must see `acc` as a cheap reference, otherwise multi-use of the
@@ -234,9 +356,12 @@ object internal:
 
         branches.zipWithIndex.foreach: (branch, idx) =>
           val nextExpr: Expr[T] = branch match
-            case LeafR(leaf) => applyLeaf[T](acc.asExprOf[T], leaf)
+            case LeafR(leaf, isCtxFn) =>
+              applyLeaf[T](acc.asExprOf[T], leaf, isCtxFn)
             case FieldR(name, lens, target, children) =>
               emitFieldUpdate[T](acc.asExprOf[T], name, lens, target, children)
+            case TravR(operand, optical, target, children) =>
+              emitTraversalUpdate[T](acc.asExprOf[T], operand, optical, target, children)
 
           if idx < last then
             val sym = Symbol.newVal
@@ -326,6 +451,41 @@ object internal:
           val rebuilt = doSet(outRef)
 
           Block(lensPrelude ++ List(inDef, outDef), rebuilt).asExprOf[T]
+
+    def emitTraversalUpdate[T: Type]
+      ( origin: Expr[T], operand: Term, opticalTerm: Term, targetTpe: TypeRepr,
+        children: List[Resolved] )
+    :   Expr[T] =
+      targetTpe.asType match
+        case '[targetT] =>
+          // Build the optic by calling `optical.optic(operand)`, then `.modify(origin)
+          // { inner => emit(inner, children) }`. We bind the resulting Optic to a val
+          // so the typer can dispatch its `modify` method without ambiguity.
+          val opticTerm = Apply
+                           ( Select.unique(opticalTerm, "optic"), List(operand) )
+          val opticTpe = opticTerm.tpe
+
+          val opticSym = Symbol.newVal
+                          ( Symbol.spliceOwner, "o$trav", opticTpe, Flags.EmptyFlags,
+                            Symbol.noSymbol )
+          val opticDef = ValDef(opticSym, Some(opticTerm.changeOwner(opticSym)))
+          val opticExpr = Ref(opticSym)
+                           . asExprOf[Optic { type Origin = T; type Target = targetT }]
+
+          // Build the inner lambda: (inner: Target) => emit(inner, children)
+          val innerLambda = Lambda
+                             ( Symbol.spliceOwner,
+                               MethodType(List("inner"))
+                                ( _ => List(targetTpe), _ => targetTpe ),
+                               (lambdaSym, args) =>
+                                 val innerRef = args.head.asInstanceOf[Term]
+                                                 . asExprOf[targetT]
+                                 emit[targetT](innerRef, children).asTerm.changeOwner(lambdaSym) )
+
+          val innerLambdaExpr = innerLambda.asExprOf[targetT => targetT]
+          val modifyCall = '{ $opticExpr.modify($origin)($innerLambdaExpr) }.asTerm
+
+          Block(List(opticDef), modifyCall).asExprOf[T]
 
     def emitTop(branches: List[Resolved]): Expr[value] =
       val rootSym  = Symbol.newVal

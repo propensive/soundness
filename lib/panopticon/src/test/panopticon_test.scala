@@ -180,6 +180,55 @@ object Tests extends Suite(m"Panopticon tests"):
       ( r.name, r.hq.city )
     . assert(_ == ("Acme!", "Townville?"))
 
+    // ─── singleton-typed traversal fusion ─────────────────────────────────
+
+    test(m"two updates sharing a Each traversal"):
+      // both leaves under `_.depts(Each).lead.role.…` — must rebuild the depts list
+      // once and each Department/Employee/Role once.
+      val r = org.lens
+       ( _.depts(Each).lead.role.name  = "Boss",
+         _.depts(Each).lead.role.count = 0 )
+      r.depts.map(_.lead.role)
+    . assert(_ == List(Role("Boss", 0), Role("Boss", 0)))
+
+    test(m"different singleton traversals do not fuse, apply sequentially"):
+      // First sets ALL depts' lead.role.name to "Boss" (Each).
+      // Then sets the FIRST dept's lead.role.count to 0 (Prim).
+      // Second update only modifies the first dept; second dept keeps Boss + count=300
+      // (it had Carol's CFO role with count=300).
+      val r = org.lens
+       ( _.depts(Each).lead.role.name  = "Boss",
+         _.depts(Prim).lead.role.count = 0 )
+      ( r.depts(0).lead.role, r.depts(1).lead.role )
+    . assert(_ == (Role("Boss", 0), Role("Boss", 300)))
+
+    test(m"Filter[T] traversal forces fallback"):
+      // Filter has a non-singleton operand type; the macro must fall back to the
+      // foldLeft path. Result still correct.
+      org.lens
+       ( _.depts(Prim).members(Filter[Employee](_.age > 35)).age = 99 )
+      . depts.head.members.map(_.age)
+    . assert(_ == List(30, 99))  // emp1 age 30, emp2 age 40 → only emp2 changed
+
+    test(m"two Each updates after non-fusable, still correct"):
+      // Mix a Filter (non-fusable) with two Each updates. The whole call falls back
+      // to foldLeft; we verify the result is still right.
+      val r = org.lens
+       ( _.depts(Prim).members(Filter[Employee](_.age > 35)).age = 99,
+         _.depts(Each).lead.role.name  = "Boss",
+         _.depts(Each).lead.role.count = 0 )
+      ( r.depts(0).lead.role, r.depts(0).members.map(_.age) )
+    . assert(_ == (Role("Boss", 0), List(30, 99)))
+
+    test(m"three updates sharing a Prim traversal"):
+      // All under `_.depts(Prim).lead.…` — Department + Employee should rebuild once.
+      val r = org.lens
+       ( _.depts(Prim).lead.name     = "Renamed",
+         _.depts(Prim).lead.age      = 99,
+         _.depts(Prim).lead.role.name = "Boss" )
+      ( r.depts.head.lead.name, r.depts.head.lead.age, r.depts.head.lead.role.name )
+    . assert(_ == ("Renamed", 99, "Boss"))
+
     import doms.html.whatwg.*
 
     test(m"adjust an HTML value"):
