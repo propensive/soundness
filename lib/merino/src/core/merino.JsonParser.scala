@@ -64,191 +64,125 @@ private object JsonParser:
     while n > 0 do { p *= 10.0; n -= 1 }
     p
 
-  private val directPool: ThreadLocal[Direct] = ThreadLocal.withInitial(() => new Direct).nn
-
-  private val streamingPool: ThreadLocal[Streaming] =
-    ThreadLocal.withInitial(() => new Streaming).nn
+  private val pool: ThreadLocal[JsonParser] =
+    ThreadLocal.withInitial(() => new JsonParser).nn
 
   def parse(source: Data): Raw raises ParseError =
-    val parser = directPool.get.nn
-    parser.reset(source)
+    val parser = pool.get.nn
+    parser.resetData(source)
     parser.holes = false
     parser.parse()
 
   def parse(source: Data, holes: Boolean): Raw raises ParseError =
-    val parser = directPool.get.nn
-    parser.reset(source)
+    val parser = pool.get.nn
+    parser.resetData(source)
     parser.holes = holes
     parser.parse()
 
   def parse(input: Iterator[Data]): Raw raises ParseError =
-    val parser = streamingPool.get.nn
-    parser.reset(input)
+    val parser = pool.get.nn
+    parser.resetIterator(input)
     parser.holes = false
     parser.parse()
 
   def parse(input: Iterator[Data], holes: Boolean): Raw raises ParseError =
-    val parser = streamingPool.get.nn
-    parser.reset(input)
+    val parser = pool.get.nn
+    parser.resetIterator(input)
     parser.holes = holes
     parser.parse()
 
+private final class JsonParser:
+  import JsonParser.*
+  import Lineation.untrackedData
+
+  // Single Cursor-backed substrate. The same parser body runs whether the
+  // input was supplied as an in-memory `Data` (pre-fills the cursor's buffer)
+  // or as an `Iterator[Data]` (pulls chunks via the loader). Slicing is
+  // uniform: `cursor.slice` exposes the buffer/offset/length triple, so
+  // there's no longer a same-block fast path versus cross-block grab path.
+  private var cursor:    Cursor[Data]      = null.asInstanceOf[Cursor[Data]]
+  private var heldToken: Cursor.Held | Null = null
+
+  protected[merino] var holes: Boolean = false
+
+  protected var arraySize:           Int = 16
+  protected var chars:               Array[Char] = new Array(arraySize)
+  protected var stringCursor:        Int = 0
+  protected var arrayBufferId:       Int = -1
+  protected val arrayBuffers:        ArrayBuffer[ArrayBuffer[Any]] = ArrayBuffer.empty
+  protected var stringArrayBufferId: Int = -1
+  protected val stringArrayBuffers:  ArrayBuffer[ArrayBuffer[String]] = ArrayBuffer.empty
+  protected val numberBuilder:       java.lang.StringBuilder = java.lang.StringBuilder(32)
+
+  def resetData(input: Data): Unit =
+    cursor = Cursor[Data](input)
+    stringCursor = 0
+    arrayBufferId = -1
+    stringArrayBufferId = -1
+    heldToken = null
+
+  def resetIterator(input: Iterator[Data]): Unit =
+    cursor = Cursor[Data](input)
+    stringCursor = 0
+    arrayBufferId = -1
+    stringArrayBufferId = -1
+    heldToken = null
+
   // ──────────────────────────────────────────────────────────────────────────
-  // Direct backend: operates on a single `Data` block via raw `Array[Byte]`
-  // with a `var pos: Int` cursor. No `Cursor`, no buffer, no `Held`.
+  // Substrate (now inlined directly into the parser, since there is only one).
 
-  final class Direct extends JsonParser:
-    private var bytes: Array[Byte] = Array.empty
-    private var pos: Int = 0
-    private var end: Int = 0
+  protected inline def more: Boolean = cursor.more
 
-    def reset(input: Data): Unit =
-      bytes = input.asInstanceOf[Array[Byte]]
-      pos = 0
-      end = bytes.length
-      stringCursor = 0
-      arrayBufferId = -1
-      stringArrayBufferId = -1
+  protected inline def peek: Byte =
+    cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]](cursor.unsafePos(using Unsafe))
 
-    type Region = Int
+  protected inline def advance(): Unit = cursor.next()
 
-    protected def more: Boolean = pos < end
-    protected def peek: Byte = bytes(pos)
-    protected def advance(): Unit = pos += 1
+  protected def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing =
+    abort(ParseError(JsonAst, Position(0, cursor.position.n0), issue))
 
-    protected def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing =
-      abort(ParseError(JsonAst, Position(0, pos), issue))
+  // A `Region` is just a `Cursor.Mark` (an absolute `Long` position). With
+  // the single-buffer model there's no need to remember the starting block
+  // for boundary detection.
+  type Region = Cursor.Mark
 
-    protected def begin(): Region = pos
+  protected inline def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
 
-    protected def contiguous(start: Region): Boolean = true
+  protected inline def slice(start: Cursor.Mark): String =
+    val end = cursor.mark(using heldToken.nn)
+    cursor.slice(start, end): (storage, off, len) =>
+      val arr = storage.asInstanceOf[Array[Byte]]
+      new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
 
-    protected def slice(start: Region): String =
-      new String(bytes, start, pos - start, java.nio.charset.StandardCharsets.US_ASCII)
-
-    protected def appendRegionToBuffer(start: Region): Unit =
-      val len = pos - start
+  protected inline def appendRegionToBuffer(start: Cursor.Mark): Unit =
+    val end = cursor.mark(using heldToken.nn)
+    cursor.slice(start, end): (storage, off, len) =>
       if len > 0 then
+        val arr = storage.asInstanceOf[Array[Byte]]
         ensureStringSpace(len)
         var i = 0
         while i < len do
-          chars(stringCursor + i) = (bytes(start + i) & 0xFF).toChar
+          chars(stringCursor + i) = (arr(off + i) & 0xFF).toChar
           i += 1
         stringCursor += len
 
-    protected def bom(): Unit =
-      if end >= 3 && bytes(0) == -17 && bytes(1) == -69 && bytes(2) == -65 then pos = 3
+  protected def bom(): Unit =
+    cursor.hold:
+      val mk = cursor.mark
+      val bom =
+        cursor.more && cursor.datum(using Unsafe) == -17.toByte
+        && { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -69.toByte }
+        && { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -65.toByte }
+
+      if bom then cursor.next() else cursor.cue(mk)
+
+  protected inline def holding[result](inline action: => result): result =
+    cursor.hold:
+      heldToken = summon[Cursor.Held]
+      try action finally heldToken = null
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Streaming backend: operates over a multi-block `Iterator[Data]` via
-  // `zephyrine.Cursor`. The same `parse` body runs; `Cursor.hold` is opened
-  // around each `parseString` to preserve cross-block slicing safety.
-
-  final class Streaming extends JsonParser:
-    import Lineation.untrackedData
-
-    private var cursor: Cursor[Data] = null.asInstanceOf[Cursor[Data]]
-    private var heldToken: Cursor.Held | Null = null
-
-    def reset(input: Iterator[Data]): Unit =
-      cursor = Cursor(input)
-      stringCursor = 0
-      arrayBufferId = -1
-      stringArrayBufferId = -1
-      heldToken = null
-
-    type Region = (Cursor.Mark, Data, Int)
-
-    protected def more: Boolean = cursor.more
-    protected def peek: Byte = cursor.datum(using Unsafe).asInstanceOf[Byte]
-    protected def advance(): Unit = cursor.next()
-
-    protected def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing =
-      abort(ParseError(JsonAst, Position(cursor.line.n1, cursor.column.n1), issue))
-
-    protected def begin(): Region =
-      // `Cursor.mark` requires `Cursor.Held`; when called from inside
-      // `parseString` we've entered hold via `holding`, so the contextual
-      // token is stored in `heldToken` and we summon it explicitly here.
-      val held = heldToken.nn
-      (cursor.mark(using held), cursor.block, cursor.offsetInBlock)
-
-    protected def contiguous(start: Region): Boolean =
-      val (_, startBlock, _) = start
-      cursor.block.asInstanceOf[AnyRef] eq startBlock.asInstanceOf[AnyRef]
-
-    protected def slice(start: Region): String =
-      val (_, startBlock, startOffset) = start
-      val arr = startBlock.asInstanceOf[Array[Byte]]
-
-      new String
-        ( arr,
-          startOffset,
-          cursor.offsetInBlock - startOffset,
-          java.nio.charset.StandardCharsets.US_ASCII )
-
-    protected def appendRegionToBuffer(start: Region): Unit =
-      val (mark, _, _) = start
-      val held = heldToken.nn
-      val prefix = cursor.grab(mark, cursor.mark(using held))
-      val prefixArr = prefix.asInstanceOf[Array[Byte]]
-      val prefixLen = prefixArr.length
-
-      if prefixLen > 0 then
-        ensureStringSpace(prefixLen)
-        var i = 0
-        while i < prefixLen do
-          chars(stringCursor + i) = (prefixArr(i) & 0xFF).toChar
-          i += 1
-        stringCursor += prefixLen
-
-    protected def bom(): Unit =
-      cursor.hold:
-        val mk = cursor.mark
-
-        val bom =
-          cursor.more && cursor.datum(using Unsafe) == -17.toByte
-          && { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -69.toByte }
-          && { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -65.toByte }
-
-        if bom then cursor.next() else cursor.cue(mk)
-
-    override protected def holding[result](action: => result): result =
-      cursor.hold:
-        heldToken = summon[Cursor.Held]
-        try action finally heldToken = null
-
-private abstract class JsonParser:
-  import JsonParser.*
-
-  protected def more: Boolean
-  protected def peek: Byte
-  protected def advance(): Unit
-  protected def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing
-  protected def bom(): Unit
-
-  // A `Region` is whatever the backend uses to remember a starting position
-  // for the ASCII fast path. The streaming backend records a `Mark` plus the
-  // starting block + offset so it can detect block-boundary crossings.
-  type Region
-  protected def begin(): Region
-  // Whether the data from `start` to the current position is in a single
-  // contiguous block (i.e. trivially extractable via array slicing).
-  protected def contiguous(start: Region): Boolean
-  protected def slice(start: Region): String
-  protected def appendRegionToBuffer(start: Region): Unit
-
-  protected def holding[result](action: => result): result = action
-
-  protected var arraySize: Int = 16
-  protected var chars: Array[Char] = new Array(arraySize)
-  protected var stringCursor: Int = 0
-  protected[merino] var holes: Boolean = false
-  protected var arrayBufferId: Int = -1
-  protected val arrayBuffers: ArrayBuffer[ArrayBuffer[Any]] = ArrayBuffer.empty
-  protected var stringArrayBufferId: Int = -1
-  protected val stringArrayBuffers: ArrayBuffer[ArrayBuffer[String]] = ArrayBuffer.empty
-  protected val numberBuilder: java.lang.StringBuilder = java.lang.StringBuilder(32)
+  // String buffer plumbing (unchanged).
 
   protected inline def resetString(): Unit = stringCursor = 0
 
@@ -297,7 +231,7 @@ private abstract class JsonParser:
   protected inline def relinquishStringArrayBuffer(): Unit = stringArrayBufferId -= 1
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Parser body (shared by both backends).
+  // Parser body (unchanged from the previous abstract base).
 
   protected inline def must()(using Tactic[ParseError]): Byte =
     if more then peek else errorAt(Issue.PrematureEnd)
@@ -339,7 +273,7 @@ private abstract class JsonParser:
 
     if !more then errorAt(Issue.PrematureEnd)
 
-    if peek == Quote && contiguous(region) then slice(region).also(advance())
+    if peek == Quote then slice(region).also(advance())
     else tail(region)
 
   private def tail(start: Region): String raises ParseError =

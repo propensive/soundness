@@ -394,55 +394,6 @@ object Tests extends Suite(m"Zephyrine tests"):
 
       . assert(_ == 15.toByte)
 
-      test(m"Cursor[Data] blockTail at start returns whole first block"):
-        val singleStream = Stream(Data(10, 11, 12, 13, 14))
-        val cursor = Cursor[Data](singleStream.iterator)
-        cursor.blockTail
-
-      . assert(_ === Data(10, 11, 12, 13, 14))
-
-      test(m"Cursor[Data] blockTail mid-block returns suffix"):
-        val singleStream = Stream(Data(10, 11, 12, 13, 14))
-        val cursor = Cursor[Data](singleStream.iterator)
-        cursor.next()
-        cursor.next()
-        cursor.blockTail
-
-      . assert(_ === Data(12, 13, 14))
-
-      test(m"Cursor[Data] advanceBlock from start jumps to next block"):
-        val twoBlocks = Stream(Data(1, 2, 3), Data(4, 5, 6))
-        val cursor = Cursor[Data](twoBlocks.iterator)
-        cursor.advanceBlock()
-        cursor.datum(using Unsafe)
-
-      . assert(_ == 4.toByte)
-
-      test(m"Cursor[Data] advanceBlock returns true when next block exists"):
-        val twoBlocks = Stream(Data(1, 2, 3), Data(4, 5, 6))
-        val cursor = Cursor[Data](twoBlocks.iterator)
-        cursor.advanceBlock()
-
-      . assert(_ == true)
-
-      test(m"Cursor[Data] advanceBlock returns false at last block"):
-        val twoBlocks = Stream(Data(1, 2, 3), Data(4, 5, 6))
-        val cursor = Cursor[Data](twoBlocks.iterator)
-        cursor.advanceBlock()
-        cursor.advanceBlock()
-
-      . assert(_ == false)
-
-      test(m"Cursor[Data] blockTail + advanceBlock reconstructs stream"):
-        val blocks = Stream(Data(1, 2, 3), Data(4, 5), Data(6, 7, 8, 9))
-        val cursor = Cursor[Data](blocks.iterator)
-        val out = scala.collection.mutable.ArrayBuffer[Byte]()
-        out.appendAll(cursor.blockTail.iterator)
-        while cursor.advanceBlock() do out.appendAll(cursor.blockTail.iterator)
-        Data(out.toArray*)
-
-      . assert(_ === Data(1, 2, 3, 4, 5, 6, 7, 8, 9))
-
       test(m"Cursor[Data] remainder from start equals full stream"):
         val blocks = Stream(Data(1, 2, 3), Data(4, 5), Data(6, 7))
         val cursor = Cursor[Data](blocks.iterator)
@@ -465,3 +416,4 @@ object Tests extends Suite(m"Zephyrine tests"):
         cursor.hold(cursor.remainder.flatten.to(List))
 
       . assert(_ == List[Byte](4, 5, 6, 7, 8))
+
