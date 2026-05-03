@@ -81,6 +81,9 @@ trait BaseScalaModule extends ScalaModule:
   override def scalacOptions = settings.scalaOptions
   def consoleScalacOptions = scalacOptions()
 
+  override def assemblyRules =
+    super.assemblyRules :+ mill.javalib.Assembly.Rule.AppendPattern("META-INF/givens/.*")
+
   def publishVersion = Task:
     try
       val lastTagged = os.proc("git", "rev-list", "--tags", "--max-count", "1").call().out.text().trim
