@@ -99,7 +99,8 @@ final class BlockParser:
           addToParent(parent, layout)
 
       case leaf: LeafBuilder =>
-        addToParent(parent, leaf.finish(refs))
+        leaf.finish(refs).let: layout =>
+          addToParent(parent, layout)
 
   private def addToParent(parent: BlockBuilder, layout: Layout): Unit = parent match
     case item: ListItemBuilder       => item.children += layout
@@ -289,7 +290,7 @@ final class BlockParser:
 
     if canLazyContinue then
       val para = deepest.asInstanceOf[ParagraphBuilder]
-      para.addLine(ParserSupport.stripTrailingSpaces(residual0))
+      para.addLine(residual0)
       return
 
     // Mark blank-line-induced loose flag on enclosing list items before
@@ -364,12 +365,13 @@ final class BlockParser:
       openStack += indented
       return
 
-    val text = ParserSupport.stripTrailingSpaces(residual)
+    // Trailing whitespace per-line is preserved so the inline parser can
+    // detect hard line breaks via the two-trailing-spaces rule.
     deepest match
-      case para: ParagraphBuilder => para.addLine(text)
+      case para: ParagraphBuilder => para.addLine(residual)
 
       case _ =>
         closeOpenLeafForNewBlock()
         val para = ParagraphBuilder(ln)
-        para.addLine(text)
+        para.addLine(residual)
         openStack += para
