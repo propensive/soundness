@@ -44,6 +44,8 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
+import mosquito.internal.Tensor
+
 object Matrix:
   given showable: [element: Showable] => Text is Measurable => Matrix[element, ?, ?] is Showable =
     matrix =>
@@ -66,6 +68,102 @@ object Matrix:
         . join(before, t" ", after)
 
       . join(t"\n")
+
+  given addable
+  :   [ a,
+        rows <: Int,
+        columns <: Int,
+        left <: Matrix[a, rows, columns],
+        b,
+        right <: Matrix[b, rows, columns],
+        result ]
+  =>  ( addable: a is Addable by b to result, classTag: ClassTag[result] )
+  =>  left is Addable:
+
+    type Operand = right
+    type Result = Matrix[result, rows, columns]
+
+    def add(left: left, right: right): Matrix[result, rows, columns] =
+      val length = left.elements.length
+
+      val arr = IArray.build[result](length): array =>
+        var i = 0
+        while i < length do
+          array(i) = addable.add(left.elements(i), right.elements(i))
+          i += 1
+
+      new Matrix[result, rows, columns](left.rows, left.columns, arr)
+
+
+  given subtractable
+  :   [ a,
+        rows <: Int,
+        columns <: Int,
+        left <: Matrix[a, rows, columns],
+        b,
+        right <: Matrix[b, rows, columns],
+        result ]
+  =>  ( subtractable: a is Subtractable by b to result, classTag: ClassTag[result] )
+  =>  left is Subtractable:
+
+    type Operand = right
+    type Result = Matrix[result, rows, columns]
+
+    def subtract(left: left, right: right): Matrix[result, rows, columns] =
+      val length = left.elements.length
+
+      val arr = IArray.build[result](length): array =>
+        var i = 0
+        while i < length do
+          array(i) = subtractable.subtract(left.elements(i), right.elements(i))
+          i += 1
+
+      new Matrix[result, rows, columns](left.rows, left.columns, arr)
+
+
+  def identity[element, dimension <: Int]
+    ( using unital:        element is Unital,
+            zeroic:        element is Zeroic,
+            classTag:      ClassTag[element],
+            dimensionSize: ValueOf[dimension] )
+  :   Matrix[element, dimension, dimension] =
+
+    val size = dimensionSize.value
+    val one = unital.one
+    val zero = zeroic.zero
+
+    val arr = IArray.build[element](size*size): array =>
+      var i = 0
+      while i < size do
+        var j = 0
+        while j < size do
+          array(size*i + j) = if i == j then one else zero
+          j += 1
+
+        i += 1
+
+    new Matrix[element, dimension, dimension](size, size, arr)
+
+
+  def zero[element, rowCount <: Int, columnCount <: Int]
+    ( using zeroic:   element is Zeroic,
+            classTag: ClassTag[element],
+            rowValue: ValueOf[rowCount],
+            colValue: ValueOf[columnCount] )
+  :   Matrix[element, rowCount, columnCount] =
+
+    val rowsValue = valueOf[rowCount]
+    val colsValue = valueOf[columnCount]
+    val zero = zeroic.zero
+
+    val arr = IArray.build[element](rowsValue*colsValue): array =>
+      var i = 0
+      while i < rowsValue*colsValue do
+        array(i) = zero
+        i += 1
+
+    new Matrix[element, rowCount, columnCount](rowsValue, colsValue, arr)
+
 
   private type Constraint[rows <: Tuple, element] =
     Tuple.Union
@@ -164,6 +262,82 @@ object Matrix:
       laplaceExpansion(matrix.elements, dimension, fullMask, fullMask, dimension)
 
 
+    def trace(using addition: element is Addable by element to element): element =
+      val dimension = matrix.rows
+      var sum: element = matrix(0, 0)
+      var i = 1
+      while i < dimension do
+        sum = sum + matrix(i, i)
+        i += 1
+
+      sum
+
+
+    def minor(row: Int, column: Int)
+      ( using multiplication: element is Multiplicable by element to element,
+              addition:       element is Addable by element to element,
+              subtraction:    element is Subtractable by element to element )
+    :   element =
+
+      val dimension = matrix.rows
+      val fullMask: Long = (1L << dimension) - 1L
+      val rowMask = fullMask & ~(1L << row)
+      val columnMask = fullMask & ~(1L << column)
+      laplaceExpansion(matrix.elements, dimension, rowMask, columnMask, dimension - 1)
+
+
+    def cofactor(row: Int, column: Int)
+      ( using multiplication: element is Multiplicable by element to element,
+              addition:       element is Addable by element to element,
+              subtraction:    element is Subtractable by element to element,
+              zeroic:         element is Zeroic )
+    :   element =
+
+      val minorValue = matrix.minor(row, column)
+      if (row + column) % 2 == 0 then minorValue else zeroic.zero - minorValue
+
+
+    def adjugate
+      ( using multiplication: element is Multiplicable by element to element,
+              addition:       element is Addable by element to element,
+              subtraction:    element is Subtractable by element to element,
+              zeroic:         element is Zeroic,
+              unital:         element is Unital,
+              classTag:       ClassTag[element] )
+    :   Matrix[element, n, n] =
+
+      val dimension = matrix.rows
+      val elements = matrix.elements
+
+      if dimension == 1 then new Matrix[element, n, n](1, 1, IArray(unital.one))
+      else
+        val fullMask: Long = (1L << dimension) - 1L
+
+        val resultElements = IArray.build[element](dimension*dimension): array =>
+          var outputRow = 0
+
+          while outputRow < dimension do
+            var outputColumn = 0
+
+            while outputColumn < dimension do
+              val rowMask = fullMask & ~(1L << outputColumn)
+              val columnMask = fullMask & ~(1L << outputRow)
+
+              val minorDeterminant =
+                laplaceExpansion(elements, dimension, rowMask, columnMask, dimension - 1)
+
+              val signedMinor =
+                if (outputRow + outputColumn) % 2 == 0 then minorDeterminant
+                else zeroic.zero - minorDeterminant
+
+              array(dimension*outputRow + outputColumn) = signedMinor
+              outputColumn += 1
+
+            outputRow += 1
+
+        new Matrix[element, n, n](dimension, dimension, resultElements)
+
+
     def inverse
       ( using multiplication: element is Multiplicable by element to element,
               addition:       element is Addable by element to element,
@@ -212,6 +386,40 @@ class Matrix[element, rows <: Int, columns <: Int]
   ( val rows: Int, val columns: Int, val elements: IArray[element] ):
 
   def apply(row: Int, column: Int): element = elements(columns*row + column)
+
+  def row(index: Int): Tensor[element, columns] =
+    val cols = columns
+    val arr = IArray.build[Any](cols): array =>
+      var i = 0
+      while i < cols do
+        array(i) = elements(cols*index + i)
+        i += 1
+
+    new Tensor[element, columns](arr)
+
+
+  def column(index: Int): Tensor[element, rows] =
+    val arr = IArray.build[Any](rows): array =>
+      var i = 0
+      while i < rows do
+        array(i) = elements(columns*i + index)
+        i += 1
+
+    new Tensor[element, rows](arr)
+
+
+  def transpose(using ClassTag[element]): Matrix[element, columns, rows] =
+    val arr = IArray.build[element](rows*columns): array =>
+      var row = 0
+      while row < rows do
+        var col = 0
+        while col < columns do
+          array(rows*col + row) = elements(columns*row + col)
+          col += 1
+
+        row += 1
+
+    new Matrix[element, columns, rows](columns, rows, arr)
 
   override def equals(right: Any): Boolean = right.asMatchable match
     case matrix: Matrix[?, ?, ?] => elements.sameElements(matrix.elements)
@@ -279,3 +487,31 @@ class Matrix[element, rows <: Int, columns <: Int]
         row += 1
 
     new Matrix(rows, columns2, elements)
+
+
+  @targetName("mulVec")
+  def * [right]
+    ( right: Tensor[right, columns] )
+    ( using multiplication: element is Multiplicable by right,
+            addition:       multiplication.Result is Addable by multiplication.Result,
+            equality:       addition.Result =:= multiplication.Result,
+            columnValue:    ValueOf[columns] )
+  :   Tensor[multiplication.Result, rows] =
+
+    val inner = valueOf[columns]
+
+    val arr = IArray.build[Any](rows): array =>
+      var row = 0
+      while row < rows do
+        var sum: multiplication.Result =
+          apply(row, 0)*right.data(0).asInstanceOf[right]
+
+        var k = 1
+        while k < inner do
+          sum = sum + apply(row, k)*right.data(k).asInstanceOf[right]
+          k += 1
+
+        array(row) = sum
+        row += 1
+
+    new Tensor[multiplication.Result, rows](arr)
