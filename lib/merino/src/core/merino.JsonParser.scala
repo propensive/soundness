@@ -94,13 +94,29 @@ private final class JsonParser:
   import JsonParser.*
   import Lineation.untrackedData
 
-  // Single Cursor-backed substrate. The same parser body runs whether the
-  // input was supplied as an in-memory `Data` (pre-fills the cursor's buffer)
-  // or as an `Iterator[Data]` (pulls chunks via the loader). Slicing is
-  // uniform: `cursor.slice` exposes the buffer/offset/length triple, so
-  // there's no longer a same-block fast path versus cross-block grab path.
+  // The cursor remains the source of truth at refill, mark, slice and error
+  // points, but for the per-byte hot loops (`peek`, `advance`, `more`) the
+  // parser maintains its own snapshot of the current buffer reference and
+  // read position. Keeping `pos` and `bytes` as parser fields (rather than
+  // accessing them through the cursor on every byte) gives the JIT the
+  // freedom to keep both in registers across long inner loops, recovering
+  // most of the per-byte cost of the Direct/Streaming split removed during
+  // the substrate unification.
+  //
+  // Invariant: between `syncTo()` and `syncFrom()` calls, `pos` is the
+  // authoritative read position; `cursor.unsafePos` is allowed to lag.
+  // Whenever a cursor operation that depends on `pos` is performed (refill
+  // via `more`'s slow path, mark, slice, error reporting, BOM probing) the
+  // parser pushes `pos` to the cursor first, then refreshes its snapshot
+  // from the cursor afterwards — refill may compact the buffer, reallocate
+  // it, or reset `pos`.
   private var cursor:    Cursor[Data]      = null.asInstanceOf[Cursor[Data]]
   private var heldToken: Cursor.Held | Null = null
+
+  // Parser-local snapshot (see comment above).
+  private var bytes:  Array[Byte] = null.asInstanceOf[Array[Byte]]
+  private var pos:    Int = 0
+  private var bufEnd: Int = 0
 
   protected[merino] var holes: Boolean = false
 
@@ -113,27 +129,49 @@ private final class JsonParser:
 
   def resetData(input: Data): Unit =
     cursor = Cursor[Data](input)
+    syncFrom()
     stringCursor = 0
     arrayBufferId = -1
     heldToken = null
 
   def resetIterator(input: Iterator[Data]): Unit =
     cursor = Cursor[Data](input)
+    syncFrom()
     stringCursor = 0
     arrayBufferId = -1
     heldToken = null
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Substrate (now inlined directly into the parser, since there is only one).
+  // Substrate.
 
-  protected inline def more: Boolean = cursor.more
+  // Push the parser's local `pos` back to the cursor. Required before any
+  // cursor operation that consults `pos` (mark, slice, refill, position).
+  private inline def syncTo(): Unit =
+    cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
-  protected inline def peek: Byte =
-    cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]](cursor.unsafePos(using Unsafe))
+  // Refresh the parser's snapshot from the cursor. Required after any
+  // cursor operation that may have changed the buffer reference, the read
+  // position, or the write end (refill, cue).
+  private inline def syncFrom(): Unit =
+    bytes  = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
+    pos    = cursor.unsafePos(using Unsafe)
+    bufEnd = cursor.unsafeWriteEnd(using Unsafe)
 
-  protected inline def advance(): Unit = cursor.next()
+  protected inline def more: Boolean = pos < bufEnd || moreSlow()
+
+  // Out-of-line slow path so the inline budget for `more` stays small enough
+  // for the JIT to keep `pos < bufEnd` as a single register comparison in
+  // hot loops.
+  private def moreSlow(): Boolean =
+    syncTo()
+    if cursor.more then { syncFrom(); true } else false
+
+  protected inline def peek: Byte = bytes(pos)
+
+  protected inline def advance(): Unit = pos += 1
 
   protected def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing =
+    syncTo()
     abort(ParseError(JsonAst, Position(0, cursor.position.n0), issue))
 
   // A `Region` is just a `Cursor.Mark` (an absolute `Long` position). With
@@ -141,15 +179,19 @@ private final class JsonParser:
   // for boundary detection.
   type Region = Cursor.Mark
 
-  protected inline def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
+  protected inline def begin(): Cursor.Mark =
+    syncTo()
+    cursor.mark(using heldToken.nn)
 
   protected inline def slice(start: Cursor.Mark): String =
+    syncTo()
     val end = cursor.mark(using heldToken.nn)
     cursor.slice(start, end): (storage, off, len) =>
       val arr = storage.asInstanceOf[Array[Byte]]
       new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
 
   protected inline def appendRegionToBuffer(start: Cursor.Mark): Unit =
+    syncTo()
     val end = cursor.mark(using heldToken.nn)
     cursor.slice(start, end): (storage, off, len) =>
       if len > 0 then
@@ -161,7 +203,11 @@ private final class JsonParser:
           i += 1
         stringCursor += len
 
+  // BOM probing runs once per parse. It uses the cursor directly (via
+  // `cursor.next` and `cursor.cue`, both of which mutate `pos`), so the
+  // parser snapshot is synchronised before and refreshed after.
   protected def bom(): Unit =
+    syncTo()
     cursor.hold:
       val mk = cursor.mark
       val bom =
@@ -170,8 +216,10 @@ private final class JsonParser:
         && { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -65.toByte }
 
       if bom then cursor.next() else cursor.cue(mk)
+    syncFrom()
 
   protected inline def holding[result](inline action: => result): result =
+    syncTo()
     cursor.hold:
       heldToken = summon[Cursor.Held]
       try action finally heldToken = null

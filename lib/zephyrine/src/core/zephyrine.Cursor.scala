@@ -282,6 +282,13 @@ final class Cursor[data]
   // the JIT keep the array reference in a register across the inner loop.
   inline def unsafeBuffer(using erased Unsafe): addressable.Storage = buffer
   inline def unsafePos(using erased Unsafe): Int = pos
+  inline def unsafeWriteEnd(using erased Unsafe): Int = writeEnd
+
+  // Bulk-advance without per-byte lineation tracking. Caller is responsible
+  // for line/column updates if `lineation.active`. Intended for callers that
+  // maintain a parser-local copy of `pos` for register-resident hot loops
+  // and only push it back to the cursor at refill or mark/slice points.
+  inline def unsafeAdvanceBy(n: Int)(using erased Unsafe): Unit = pos += n
 
   // ─── current element ──────────────────────────────────────────────────────
 
