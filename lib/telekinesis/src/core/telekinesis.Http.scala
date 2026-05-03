@@ -345,7 +345,7 @@ object Http:
       new Response(1.1, status, headers, body)
 
     def parse(stream: Stream[Data]): Response raises HttpResponseError =
-      val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)
+      val cursor = Cursor2[Data](stream.filter(_.nonEmpty).iterator)
 
       inline def expect(char: Char): Unit =
         if cursor.datum(using Unsafe) != char.toByte then raise:

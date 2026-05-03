@@ -55,7 +55,7 @@ object Multipart:
   def parse[input: Streamable by Data](input: input, boundary0: Optional[Text] = Unset)
   :   Multipart raises MultipartError =
 
-    val cursor = Cursor[Data](input.stream[Data].filter(_.nonEmpty).iterator)
+    val cursor = Cursor2[Data](input.stream[Data].filter(_.nonEmpty).iterator)
 
     inline def datum: Byte =
       if cursor.finished then -1.toByte else cursor.datum(using Unsafe)
@@ -103,7 +103,7 @@ object Multipart:
 
     def body(): Stream[Data] = cursor.hold:
       val bodyStart = cursor.mark
-      var bodyEnd: Optional[Cursor.Mark] = Unset
+      var bodyEnd: Optional[Cursor2.Mark] = Unset
       var continue = true
       while continue do
         if cursor.finished then continue = false

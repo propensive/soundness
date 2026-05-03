@@ -43,7 +43,7 @@ object LengthPrefix:
   given framable: Tactic[FrameError] => Data is Framable by LengthPrefix = input =>
     def fail() = abort(FrameError(FrameError.Reason.ShortRead))
 
-    val cursor = Cursor(input)
+    val cursor = Cursor2(input)
 
     def length: Optional[Int] =
       cursor.lay(Unset): byte0 =>
