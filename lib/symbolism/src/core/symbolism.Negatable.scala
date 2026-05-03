@@ -32,8 +32,6 @@
                                                                                                   */
 package symbolism
 
-import scala.annotation.targetName
-
 import prepositional.*
 
 object Negatable:
@@ -57,8 +55,3 @@ object Negatable:
 
 trait Negatable extends Typeclass, Resultant:
   def negate(operand: Self): Result
-
-
-  extension (operand: Self)
-    @targetName("negate")
-    inline def `unary_-`: Result = negate(operand)

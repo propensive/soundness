@@ -837,7 +837,7 @@ object punctuation extends Library:
 object quantitative extends Library:
   object core extends Component(hypotenuse.core, gossamer.core, anticipation.opaque, anticipation.time, probably.core)
   object units extends Component(core)
-  object test extends Tests(core, units)
+  object test extends Tests(core, units, mandible.core)
 
 object revolution extends Library:
   object core extends Component(serpentine.core, turbulence.core)

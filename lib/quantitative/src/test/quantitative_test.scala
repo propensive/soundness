@@ -466,3 +466,59 @@ object Tests extends Suite(m"Quantitative Tests"):
         given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Mega, Giga), 1.0)
         (0.5*Byte).show
       . assert(_ == t"0.500 B")
+
+    suite(m"Bytecode shape"):
+      import classloaders.threadContext
+
+      def methodBytecode(method: Text)(using Classloader): Bytecode =
+        Classfile[Probes.type]
+        . let(_.methods.find(_.name == method).getOrElse(Unset))
+        . let(_.bytecode)
+        . vouch
+
+      // True when the bytecode contains a virtual / interface dispatch to a
+      // typeclass operation (`negate`, `add`, etc.). Virtual calls to a
+      // given accessor (such as `Quantity$.negatable()`) are dead code once
+      // the typeclass operation is inlined and don't count.
+      def callsTypeclassOp(bytecode: Bytecode): Boolean =
+        val ops = Set(t"negate", t"add", t"subtract", t"multiply", t"divide", t"root")
+        bytecode.instructions.exists: instruction =>
+          instruction.opcode match
+            case Bytecode.Opcode.Invokevirtual(_, name, _)      => ops.contains(name)
+            case Bytecode.Opcode.Invokeinterface(_, name, _, _) => ops.contains(name)
+            case _                                              => false
+
+      def hasBoxing(bytecode: Bytecode): Boolean =
+        bytecode.instructions.exists: instruction =>
+          instruction.opcode match
+            case Bytecode.Opcode.Invokestatic(owner, method, _) =>
+              (owner.s.contains("Double") || owner.s.contains("BoxesRunTime"))
+              && (method.s.contains("box") || method == t"valueOf")
+            case _ =>
+              false
+
+      def containsDneg(bytecode: Bytecode): Boolean =
+        bytecode.instructions.exists: instruction =>
+          instruction.opcode match
+            case Bytecode.Opcode.Dneg => true
+            case _                    => false
+
+      test(m"Quantity negation has no virtual call to `negate`"):
+        callsTypeclassOp(methodBytecode(t"viaQuantity_negate"))
+      . assert(_ == false)
+
+      test(m"Quantity negation has no boxing"):
+        hasBoxing(methodBytecode(t"viaQuantity_negate"))
+      . assert(_ == false)
+
+      test(m"Quantity negation contains the primitive `Dneg` instruction"):
+        containsDneg(methodBytecode(t"viaQuantity_negate"))
+      . assert(_ == true)
+
+
+// `Probes` whose bytecode is inspected by the bytecode tests. Kept in the
+// same source file as `Tests` because the `demilitarize` macro is sensitive
+// to cross-file references in the same package's test source set.
+object Probes:
+  def viaQuantity_negate(x: Quantity[Metres[1]]): Quantity[Metres[1]] = -x
+  def viaDouble_negate(x: Double): Double = -x
