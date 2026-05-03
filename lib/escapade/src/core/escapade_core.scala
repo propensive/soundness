@@ -48,6 +48,11 @@ object Underline
 object Strike
 object Reverse
 object Conceal
+object Faint
+object DoubleUnderline
+object BlinkSlow
+object BlinkFast
+object Overline
 
 extension (inline context: StringContext)
   transparent inline def e(inline parts: Any*): Teletype =

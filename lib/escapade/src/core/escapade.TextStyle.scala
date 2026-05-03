@@ -43,23 +43,33 @@ object TextStyle:
   val esc: Char = 27.toChar
 
 case class TextStyle
-  ( fg:        Optional[Chroma] = Unset,
-    bg:        Optional[Chroma] = Unset,
-    italic:    Boolean          = false,
-    bold:      Boolean          = false,
-    reverse:   Boolean          = false,
-    underline: Boolean          = false,
-    conceal:   Boolean          = false,
-    strike:    Boolean          = false ):
+  ( fg:              Optional[Chroma] = Unset,
+    bg:              Optional[Chroma] = Unset,
+    italic:          Boolean          = false,
+    bold:            Boolean          = false,
+    reverse:         Boolean          = false,
+    underline:       Boolean          = false,
+    conceal:         Boolean          = false,
+    strike:          Boolean          = false,
+    faint:           Boolean          = false,
+    doubleUnderline: Boolean          = false,
+    blinkSlow:       Boolean          = false,
+    blinkFast:       Boolean          = false,
+    overline:        Boolean          = false ):
 
   def styleWord: Long =
     var s: Long = 0L
-    if italic    then s |= StyleWord.Italic
-    if bold      then s |= StyleWord.Bold
-    if reverse   then s |= StyleWord.Reverse
-    if underline then s |= StyleWord.Underline
-    if conceal   then s |= StyleWord.Conceal
-    if strike    then s |= StyleWord.Strike
+    if italic          then s |= StyleWord.Italic
+    if bold            then s |= StyleWord.Bold
+    if reverse         then s |= StyleWord.Reverse
+    if underline       then s |= StyleWord.Underline
+    if conceal         then s |= StyleWord.Conceal
+    if strike          then s |= StyleWord.Strike
+    if faint           then s |= StyleWord.Faint
+    if doubleUnderline then s |= StyleWord.DoubleUnderline
+    if blinkSlow       then s |= StyleWord.BlinkSlow
+    if blinkFast       then s |= StyleWord.BlinkFast
+    if overline        then s |= StyleWord.Overline
     fg.let: c =>
       s = s | (c.underlying.toLong & 0xffffffL) | StyleWord.FgSet
     bg.let: c =>
