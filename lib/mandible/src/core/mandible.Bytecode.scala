@@ -33,6 +33,7 @@
 package mandible
 
 import java.lang.classfile as jlc
+import java.lang.classfile.attribute as jlca
 import java.lang.classfile.instruction as jlci
 
 import scala.reflect.*
@@ -106,6 +107,33 @@ object Bytecode:
           panic(m"unexpected character '${other.toString.tt}' in descriptor")
 
     def fromFieldDescriptor(descriptor: Text): Frame = parseOne(descriptor, 0)._1
+
+    def fromVerificationType(vti: jlca.StackMapFrameInfo.VerificationTypeInfo): Frame =
+      vti match
+        case s: jlca.StackMapFrameInfo.SimpleVerificationTypeInfo =>
+          s match
+            case jlca.StackMapFrameInfo.SimpleVerificationTypeInfo.INTEGER => I
+            case jlca.StackMapFrameInfo.SimpleVerificationTypeInfo.FLOAT   => F
+            case jlca.StackMapFrameInfo.SimpleVerificationTypeInfo.DOUBLE  => D
+            case jlca.StackMapFrameInfo.SimpleVerificationTypeInfo.LONG    => J
+            case jlca.StackMapFrameInfo.SimpleVerificationTypeInfo.NULL    => L(t"null")
+
+            case jlca.StackMapFrameInfo.SimpleVerificationTypeInfo.UNINITIALIZED_THIS =>
+              L(t"this")
+
+            case jlca.StackMapFrameInfo.SimpleVerificationTypeInfo.TOP =>
+              L(t"top")
+
+        case obj: jlca.StackMapFrameInfo.ObjectVerificationTypeInfo =>
+          val raw = obj.className.nn.name.nn.stringValue.nn
+          if raw.startsWith("[") then parseOne(raw.tt, 0)._1
+          else L(raw.replace('/', '.').nn.tt)
+
+        case _: jlca.StackMapFrameInfo.UninitializedVerificationTypeInfo =>
+          L(t"uninit")
+
+        case other =>
+          L(t"unknown")
 
   enum Frame:
     case Z, B, C, S, I, J, F, D
