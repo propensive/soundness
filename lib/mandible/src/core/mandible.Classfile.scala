@@ -71,6 +71,19 @@ class Classfile(data: Data):
     def name: Text = model.methodName.nn.toString.tt
 
     def bytecode: Optional[Bytecode] = Optional(model.code().nn.get()).let: code =>
+      val elements = code.elementList.nn.asScala.to(List)
+
+      val labels: Map[jlc.Label, Int] =
+        val builder = Map.newBuilder[jlc.Label, Int]
+        var offset = 0
+
+        elements.foreach:
+          case instr: jlc.Instruction       => offset += instr.sizeInBytes
+          case target: jlci.LabelTarget     => builder += target.label.nn -> offset
+          case _                            => ()
+
+        builder.result()
+
       def recur
         ( todo:  List[jlc.CodeElement],
           line:  Optional[Int],
@@ -85,7 +98,7 @@ class Classfile(data: Data):
           case next :: todo =>
             next match
               case instruction: jlc.Instruction =>
-                val opcode = Bytecode.Opcode(instruction)
+                val opcode = Bytecode.Opcode(instruction, labels)
                 val stack2 = stack.let(opcode.transform(_))
 
                 recur
@@ -108,7 +121,7 @@ class Classfile(data: Data):
                 panic(m"did not handle ${other.toString.tt}")
 
 
-      val instructions = recur(code.elementList.nn.asScala.to(List), Unset, Nil, Nil, 0)
+      val instructions = recur(elements, Unset, Nil, Nil, 0)
 
       Bytecode(sourceFile, instructions)
 

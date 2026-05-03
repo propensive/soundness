@@ -148,7 +148,8 @@ object Bytecode:
       case jlc.TypeKind.REFERENCE => Frame.L(t"?")
       case jlc.TypeKind.VOID      => panic(m"void TypeKind has no Frame representation")
 
-    def apply(source: jlc.Instruction): Opcode = source match
+    def apply(source: jlc.Instruction, labels: Map[jlc.Label, Int] = Map.empty)
+    :   Opcode = source match
       case invocation: jlci.InvokeInstruction =>
         val classname = invocation.owner.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
         val method = invocation.name.nn.stringValue.nn.tt
@@ -272,6 +273,42 @@ object Bytecode:
           case 19 => LdcW(text)
           case 20 => Ldc2W(text)
 
+      case tswitch: jlci.TableSwitchInstruction =>
+        val default = labels.getOrElse(tswitch.defaultTarget.nn, 0)
+        val targets = tswitch.cases.nn.asScala.toList.map: c =>
+          labels.getOrElse(c.nn.target.nn, 0)
+        Tableswitch(default, tswitch.lowValue, tswitch.highValue, targets)
+
+      case lswitch: jlci.LookupSwitchInstruction =>
+        val default = labels.getOrElse(lswitch.defaultTarget.nn, 0)
+        val cases = lswitch.cases.nn.asScala.toList.map: c =>
+          (c.nn.caseValue, labels.getOrElse(c.nn.target.nn, 0))
+        Lookupswitch(default, cases)
+
+      case branch: jlci.BranchInstruction =>
+        val target = labels.getOrElse(branch.target.nn, 0)
+        source.opcode.nn.bytecode.absolve match
+          case 153 => Ifeq(target)
+          case 154 => Ifne(target)
+          case 155 => Iflt(target)
+          case 156 => Ifge(target)
+          case 157 => Ifgt(target)
+          case 158 => Ifle(target)
+          case 159 => IfIcmpeq(target)
+          case 160 => IfIcmpne(target)
+          case 161 => IfIcmplt(target)
+          case 162 => IfIcmpge(target)
+          case 163 => IfIcmpgt(target)
+          case 164 => IfIcmple(target)
+          case 165 => IfAcmpeq(target)
+          case 166 => IfAcmpne(target)
+          case 167 => Goto(target)
+          case 168 => Jsr(target)
+          case 198 => Ifnull(target)
+          case 199 => Ifnonnull(target)
+          case 200 => GotoW(target)
+          case 201 => JsrW(target)
+
       case other =>
         source.opcode.nn.bytecode match
           case 0   => Nop
@@ -371,25 +408,7 @@ object Bytecode:
           case 150 => Fcmpg
           case 151 => Dcmpl
           case 152 => Dcmpg
-          case 153 => Ifeq(0)
-          case 154 => Ifne(0)
-          case 155 => Iflt(0)
-          case 156 => Ifge(0)
-          case 157 => Ifgt(0)
-          case 158 => Ifle(0)
-          case 159 => IfIcmpeq(0)
-          case 160 => IfIcmpne(0)
-          case 161 => IfIcmplt(0)
-          case 162 => IfIcmpge(0)
-          case 163 => IfIcmpgt(0)
-          case 164 => IfIcmple(0)
-          case 165 => IfAcmpeq(0)
-          case 166 => IfAcmpne(0)
-          case 167 => Goto(0)
-          case 168 => Jsr(0)
           case 169 => Ret(0)
-          case 170 => Tableswitch()
-          case 171 => Lookupswitch()
           case 172 => Ireturn
           case 173 => Lreturn
           case 174 => Freturn
@@ -401,10 +420,6 @@ object Bytecode:
           case 194 => Monitorenter
           case 195 => Monitorexit
           case 196 => Wide()
-          case 198 => Ifnull(0)
-          case 199 => Ifnonnull(0)
-          case 200 => GotoW(0)
-          case 201 => JsrW(0)
 
           case opcode =>
             panic(m"unrecognized opcode $opcode")
@@ -569,25 +584,30 @@ object Bytecode:
       case Fcmpg                => t"f·cmpg"
       case Dcmpl                => t"d·cmpl"
       case Dcmpg                => t"d·cmpg"
-      case Ifeq(_)              => t"if·eq"
-      case Ifne(_)              => t"if·ne"
-      case Iflt(_)              => t"if·lt"
-      case Ifge(_)              => t"if·ge"
-      case Ifgt(_)              => t"if·gt"
-      case Ifle(_)              => t"if·le"
-      case IfIcmpeq(_)          => t"if·i·cmp·eq"
-      case IfIcmpne(_)          => t"if·i·cmp·ne"
-      case IfIcmplt(_)          => t"if·i·cmp·lt"
-      case IfIcmpge(_)          => t"if·i·cmp·ge"
-      case IfIcmpgt(_)          => t"if·i·cmp·gt"
-      case IfIcmple(_)          => t"if·i·cmp·le"
-      case IfAcmpeq(_)          => t"if·a·cmp·eq"
-      case IfAcmpne(_)          => t"if·a·cmp·ne"
-      case Goto(_)              => t"goto"
-      case Jsr(_)               => t"jsr"
+      case Ifeq(target)         => t"if·eq →$target"
+      case Ifne(target)         => t"if·ne →$target"
+      case Iflt(target)         => t"if·lt →$target"
+      case Ifge(target)         => t"if·ge →$target"
+      case Ifgt(target)         => t"if·gt →$target"
+      case Ifle(target)         => t"if·le →$target"
+      case IfIcmpeq(target)     => t"if·i·cmp·eq →$target"
+      case IfIcmpne(target)     => t"if·i·cmp·ne →$target"
+      case IfIcmplt(target)     => t"if·i·cmp·lt →$target"
+      case IfIcmpge(target)     => t"if·i·cmp·ge →$target"
+      case IfIcmpgt(target)     => t"if·i·cmp·gt →$target"
+      case IfIcmple(target)     => t"if·i·cmp·le →$target"
+      case IfAcmpeq(target)     => t"if·a·cmp·eq →$target"
+      case IfAcmpne(target)     => t"if·a·cmp·ne →$target"
+      case Goto(target)         => t"goto →$target"
+      case Jsr(target)          => t"jsr →$target"
       case Ret(slot)            => t"ret $slot"
-      case Tableswitch()        => t"table·switch"
-      case Lookupswitch()       => t"lookup·switch"
+
+      case Tableswitch(default, low, high, targets) =>
+        t"table·switch [$low..$high] →${targets.map(_.show).join(t",")} default →$default"
+
+      case Lookupswitch(default, cases) =>
+        val rendered = cases.map((v, t) => t"$v→$t").join(t",")
+        t"lookup·switch $rendered default →$default"
       case Ireturn              => t"i·return"
       case Lreturn              => t"l·return"
       case Freturn              => t"f·return"
@@ -627,10 +647,10 @@ object Bytecode:
 
       case Multianewarray(cls, dims) =>
         t"multi·a·new·array ${StackTrace.rewrite(cls.s)} $dims"
-      case Ifnull(_)            => t"if·null"
-      case Ifnonnull(_)         => t"if·!null"
-      case GotoW(_)             => t"gotoʷ"
-      case JsrW(_)              => t"jsrʷ"
+      case Ifnull(target)       => t"if·null →$target"
+      case Ifnonnull(target)    => t"if·!null →$target"
+      case GotoW(target)        => t"gotoʷ →$target"
+      case JsrW(target)         => t"jsrʷ →$target"
       case Breakpoint           => t"breakpoint"
       case OpCb                 => t"-CB-"
       case OpCc                 => t"-CC-"
@@ -864,25 +884,25 @@ object Bytecode:
     case Fcmpg
     case Dcmpl
     case Dcmpg
-    case Ifeq(offset: Short)
-    case Ifne(offset: Short)
-    case Iflt(offset: Short)
-    case Ifge(offset: Short)
-    case Ifgt(offset: Short)
-    case Ifle(offset: Short)
-    case IfIcmpeq(offset: Short)
-    case IfIcmpne(offset: Short)
-    case IfIcmplt(offset: Short)
-    case IfIcmpge(offset: Short)
-    case IfIcmpgt(offset: Short)
-    case IfIcmple(offset: Short)
-    case IfAcmpeq(offset: Short)
-    case IfAcmpne(offset: Short)
-    case Goto(offset: Short)
-    case Jsr(offset: Short)
+    case Ifeq(target: Int)
+    case Ifne(target: Int)
+    case Iflt(target: Int)
+    case Ifge(target: Int)
+    case Ifgt(target: Int)
+    case Ifle(target: Int)
+    case IfIcmpeq(target: Int)
+    case IfIcmpne(target: Int)
+    case IfIcmplt(target: Int)
+    case IfIcmpge(target: Int)
+    case IfIcmpgt(target: Int)
+    case IfIcmple(target: Int)
+    case IfAcmpeq(target: Int)
+    case IfAcmpne(target: Int)
+    case Goto(target: Int)
+    case Jsr(target: Int)
     case Ret(slot: Int)
-    case Tableswitch()
-    case Lookupswitch()
+    case Tableswitch(default: Int, low: Int, high: Int, targets: List[Int])
+    case Lookupswitch(default: Int, cases: List[(Int, Int)])
     case Ireturn
     case Lreturn
     case Freturn
@@ -909,10 +929,10 @@ object Bytecode:
     case Monitorexit
     case Wide()
     case Multianewarray(arrayClass: Text, dimensions: Int)
-    case Ifnull(branch: Short)
-    case Ifnonnull(branch: Short)
-    case GotoW(branch: Int)
-    case JsrW(branch: Int)
+    case Ifnull(target: Int)
+    case Ifnonnull(target: Int)
+    case GotoW(target: Int)
+    case JsrW(target: Int)
     case Breakpoint
     case OpCb
     case OpCc
