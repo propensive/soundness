@@ -154,24 +154,19 @@ final class Cursor2[data]
   private var lineNo:   Ordinal = Prim
   private var columnNo: Ordinal = Prim
 
-  // Seed the buffer: prefer an explicit pre-fill chunk; otherwise pull the
-  // first chunk from the loader so `datum` is valid before any `next()` call
-  // (matches the existing `Cursor.apply` behaviour, which pre-loads the first
-  // block).
+  // Seed the buffer: prefer an explicit pre-fill chunk; otherwise pull from
+  // the loader until we have non-empty data or hit EOF. Matches the existing
+  // `Cursor.apply` behaviour, which pre-loads the first block so `datum` is
+  // valid before any `next()` call.
   locally:
-    val seed: Optional[data] = initial.or(load())
-    if seed.absent then ended = true
-    else
-      val chunk = seed.vouch
+    initial.let: chunk =>
       val len = addressable.length(chunk)
       if len > 0 then
         if len > addressable.storageSize(buffer) then
           buffer = addressable.allocate(len)
         addressable.copyChunk(chunk, 0, buffer, 0, len)
         writeEnd = len
-      else
-        // Empty seed; treat as "need a refill on first next()".
-        ()
+    if writeEnd == 0 then refill()
 
   // ─── slow path: refill ────────────────────────────────────────────────────
   // Kept as a regular (non-inline) method so the slow path's bytecode bloat
@@ -219,26 +214,37 @@ final class Cursor2[data]
 
   // ─── core navigation ──────────────────────────────────────────────────────
 
-  // Hot path. When `lineation.active` is the static `false` (the untracked
-  // instances), the entire lineation branch is dead-code-eliminated and this
-  // lowers to: `pos += 1; if pos >= writeEnd then refill(); !finished`.
-  inline def next(): Boolean =
+  // `advance()` is unchecked (it just increments `pos`); it's safe to leave
+  // `pos` past `writeEnd` because the next `more` / `peek` / `next()` call
+  // forces a refill before the buffer is read. This mirrors the existing
+  // `Cursor.forward` rationale and keeps the inner loop one instruction
+  // tighter — important for raw byte-scan parsers like Merino where the
+  // hot loop is `while more && {peek-test} do advance()`.
+  inline def advance(): Unit =
     if lineation.active then
       val operand = addressable.storageAddress(buffer, pos)
       pos += 1
-      if pos >= writeEnd then refill()
-      if finished then false else
-        columnNo =
-          if !lineation.track(operand) then columnNo.next
-          else { lineNo = lineNo.next; Prim }
-        true
-    else
-      pos += 1
-      if pos >= writeEnd then refill()
-      !finished
+      columnNo =
+        if !lineation.track(operand) then columnNo.next
+        else { lineNo = lineNo.next; Prim }
+    else pos += 1
 
-  inline def more: Boolean = !finished
-  inline def finished: Boolean = ended && pos >= writeEnd
+  // `next()` is `advance(); more`, so it returns `true` while more data is
+  // available and `false` when the stream is exhausted.
+  inline def next(): Boolean =
+    advance()
+    more
+
+  // Hot path. The first comparison short-circuits when there's still data
+  // in the buffer; only when the buffer is drained do we pay for the slow
+  // path. `moreSlow` is non-inline so the inline budget for `more` stays
+  // small enough that callers (parser hot loops) get tight bytecode.
+  inline def more: Boolean = pos < writeEnd || moreSlow()
+
+  private def moreSlow(): Boolean =
+    !ended && { refill(); pos < writeEnd }
+
+  inline def finished: Boolean = !more
   inline def position: Ordinal = (basePos + pos).toInt.z
   inline def available: Int = writeEnd - pos
   inline def line: Ordinal = lineNo
@@ -305,6 +311,16 @@ final class Cursor2[data]
     val len = (end.absolute - start.absolute).toInt
     if len <= 0 then addressable.empty
     else addressable.materialize(buffer, (start.absolute - basePos).toInt, len)
+
+  // Zero-copy access to the live region between two marks. The lambda
+  // receives the buffer, offset, and length; it must not retain the storage
+  // reference, since compaction may invalidate it after the call returns.
+  inline def slice[result](start: Cursor2.Mark, end: Cursor2.Mark)
+                          (inline lambda: (addressable.Storage, Int, Int) => result)
+  :   result =
+    val off = (start.absolute - basePos).toInt
+    val len = (end.absolute - start.absolute).toInt
+    lambda(buffer, off, len)
 
   inline def clone(start: Cursor2.Mark, end: Cursor2.Mark)(target: addressable.Target): Unit =
     val len = (end.absolute - start.absolute).toInt
