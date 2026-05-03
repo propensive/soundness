@@ -198,6 +198,80 @@ object Bytecode:
       case newPrimArray: jlci.NewPrimitiveArrayInstruction =>
         Newarray(typeKindToFrame(newPrimArray.typeKind.nn))
 
+      case load: jlci.LoadInstruction =>
+        val slot = load.slot
+        source.opcode.nn.bytecode.absolve match
+          case 21 => Iload(slot)
+          case 22 => Lload(slot)
+          case 23 => Fload(slot)
+          case 24 => Dload(slot)
+          case 25 => Aload(slot)
+          case 26 => Iload0
+          case 27 => Iload1
+          case 28 => Iload2
+          case 29 => Iload3
+          case 30 => Lload0
+          case 31 => Lload1
+          case 32 => Lload2
+          case 33 => Lload3
+          case 34 => Fload0
+          case 35 => Fload1
+          case 36 => Fload2
+          case 37 => Fload3
+          case 38 => Dload0
+          case 39 => Dload1
+          case 40 => Dload2
+          case 41 => Dload3
+          case 42 => Aload0
+          case 43 => Aload1
+          case 44 => Aload2
+          case 45 => Aload3
+
+      case store: jlci.StoreInstruction =>
+        val slot = store.slot
+        source.opcode.nn.bytecode.absolve match
+          case 54 => Istore(slot)
+          case 55 => Lstore(slot)
+          case 56 => Fstore(slot)
+          case 57 => Dstore(slot)
+          case 58 => Astore(slot)
+          case 59 => Istore0
+          case 60 => Istore1
+          case 61 => Istore2
+          case 62 => Istore3
+          case 63 => Lstore0
+          case 64 => Lstore1
+          case 65 => Lstore2
+          case 66 => Lstore3
+          case 67 => Fstore0
+          case 68 => Fstore1
+          case 69 => Fstore2
+          case 70 => Fstore3
+          case 71 => Dstore0
+          case 72 => Dstore1
+          case 73 => Dstore2
+          case 74 => Dstore3
+          case 75 => Astore0
+          case 76 => Astore1
+          case 77 => Astore2
+          case 78 => Astore3
+
+      case inc: jlci.IncrementInstruction =>
+        Iinc(inc.slot, inc.constant)
+
+      case arg: jlci.ConstantInstruction.ArgumentConstantInstruction =>
+        val intValue = arg.constantValue.nn.toString.toInt
+        source.opcode.nn.bytecode.absolve match
+          case 16 => Bipush(intValue.toByte)
+          case 17 => Sipush(intValue.toShort)
+
+      case ldc: jlci.ConstantInstruction.LoadConstantInstruction =>
+        val text = ldc.constantValue.nn.toString.tt
+        source.opcode.nn.bytecode.absolve match
+          case 18 => Ldc(text)
+          case 19 => LdcW(text)
+          case 20 => Ldc2W(text)
+
       case other =>
         source.opcode.nn.bytecode match
           case 0   => Nop
@@ -216,36 +290,6 @@ object Bytecode:
           case 13  => Fconst2
           case 14  => Dconst0
           case 15  => Dconst1
-          case 16  => Bipush(0)
-          case 17  => Sipush(0)
-          case 18  => Ldc(0)
-          case 19  => LdcW(0)
-          case 20  => Ldc2W(0)
-          case 21  => Iload(0)
-          case 22  => Lload(0)
-          case 23  => Fload(0)
-          case 24  => Dload(0)
-          case 25  => Aload(0)
-          case 26  => Iload0
-          case 27  => Iload1
-          case 28  => Iload2
-          case 29  => Iload3
-          case 30  => Lload0
-          case 31  => Lload1
-          case 32  => Lload2
-          case 33  => Lload3
-          case 34  => Fload0
-          case 35  => Fload1
-          case 36  => Fload2
-          case 37  => Fload3
-          case 38  => Dload0
-          case 39  => Dload1
-          case 40  => Dload2
-          case 41  => Dload3
-          case 42  => Aload0
-          case 43  => Aload1
-          case 44  => Aload2
-          case 45  => Aload3
           case 46  => Iaload
           case 47  => Laload
           case 48  => Faload
@@ -254,31 +298,6 @@ object Bytecode:
           case 51  => Baload
           case 52  => Caload
           case 53  => Saload
-          case 54  => Istore(0)
-          case 55  => Lstore(0)
-          case 56  => Fstore(0)
-          case 57  => Dstore(0)
-          case 58  => Astore(0)
-          case 59  => Istore0
-          case 60  => Istore1
-          case 61  => Istore2
-          case 62  => Istore3
-          case 63  => Lstore0
-          case 64  => Lstore1
-          case 65  => Lstore2
-          case 66  => Lstore3
-          case 67  => Fstore0
-          case 68  => Fstore1
-          case 69  => Fstore2
-          case 70  => Fstore3
-          case 71  => Dstore0
-          case 72  => Dstore1
-          case 73  => Dstore2
-          case 74  => Dstore3
-          case 75  => Astore0
-          case 76  => Astore1
-          case 77  => Astore2
-          case 78  => Astore3
           case 79  => Iastore
           case 80  => Lastore
           case 81  => Fastore
@@ -332,7 +351,6 @@ object Bytecode:
           case 129 => Lor
           case 130 => Ixor
           case 131 => Lxor
-          case 132 => Iinc(0, 0)
           case 133 => I2l
           case 134 => I2f
           case 135 => I2d
@@ -414,16 +432,16 @@ object Bytecode:
       case Fconst2              => t"f·const₂"
       case Dconst0              => t"d·const₀"
       case Dconst1              => t"d·const₁"
-      case Bipush(_)            => t"b·i·push"
-      case Sipush(_)            => t"s·i·push"
-      case Ldc(_)               => t"ldc"
-      case LdcW(_)              => t"ldcʷ"
-      case Ldc2W(_)             => t"ldc²ʷ"
-      case Iload(_)             => t"i·load"
-      case Lload(_)             => t"l·load"
-      case Fload(_)             => t"f·load"
-      case Dload(_)             => t"d·load"
-      case Aload(_)             => t"a·load"
+      case Bipush(value)        => t"b·i·push $value"
+      case Sipush(value)        => t"s·i·push $value"
+      case Ldc(value)           => t"ldc $value"
+      case LdcW(value)          => t"ldcʷ $value"
+      case Ldc2W(value)         => t"ldc²ʷ $value"
+      case Iload(slot)          => t"i·load $slot"
+      case Lload(slot)          => t"l·load $slot"
+      case Fload(slot)          => t"f·load $slot"
+      case Dload(slot)          => t"d·load $slot"
+      case Aload(slot)          => t"a·load $slot"
       case Iload0               => t"i·load₀"
       case Iload1               => t"i·load₁"
       case Iload2               => t"i·load₂"
@@ -452,11 +470,11 @@ object Bytecode:
       case Baload               => t"bᴬ·load"
       case Caload               => t"cᴬ·load"
       case Saload               => t"sᴬ·load"
-      case Istore(_)            => t"i·store"
-      case Lstore(_)            => t"l·store"
-      case Fstore(_)            => t"f·store"
-      case Dstore(_)            => t"d·store"
-      case Astore(_)            => t"a·store"
+      case Istore(slot)         => t"i·store $slot"
+      case Lstore(slot)         => t"l·store $slot"
+      case Fstore(slot)         => t"f·store $slot"
+      case Dstore(slot)         => t"d·store $slot"
+      case Astore(slot)         => t"a·store $slot"
       case Istore0              => t"i·store₀"
       case Istore1              => t"i·store₁"
       case Istore2              => t"i·store₂"
@@ -530,7 +548,7 @@ object Bytecode:
       case Lor                  => t"l·or"
       case Ixor                 => t"i·xor"
       case Lxor                 => t"l·xor"
-      case Iinc(_, _)           => t"i·inc"
+      case Iinc(slot, const)    => t"i·inc $slot $const"
       case I2l                  => t"i→l"
       case I2f                  => t"i→"
       case I2d                  => t"i→d"
@@ -567,7 +585,7 @@ object Bytecode:
       case IfAcmpne(_)          => t"if·a·cmp·ne"
       case Goto(_)              => t"goto"
       case Jsr(_)               => t"jsr"
-      case Ret(_)               => t"ret"
+      case Ret(slot)            => t"ret $slot"
       case Tableswitch()        => t"table·switch"
       case Lookupswitch()       => t"lookup·switch"
       case Ireturn              => t"i·return"
@@ -709,16 +727,16 @@ object Bytecode:
     case Fconst2
     case Dconst0
     case Dconst1
-    case Bipush(byte: Byte)
-    case Sipush(short: Short)
-    case Ldc(index: Byte)
-    case LdcW(index: Short)
-    case Ldc2W(index: Short)
-    case Iload(index: Byte)
-    case Lload(index: Byte)
-    case Fload(index: Byte)
-    case Dload(index: Byte)
-    case Aload(index: Byte)
+    case Bipush(value: Byte)
+    case Sipush(value: Short)
+    case Ldc(value: Text)
+    case LdcW(value: Text)
+    case Ldc2W(value: Text)
+    case Iload(slot: Int)
+    case Lload(slot: Int)
+    case Fload(slot: Int)
+    case Dload(slot: Int)
+    case Aload(slot: Int)
     case Iload0
     case Iload1
     case Iload2
@@ -747,11 +765,11 @@ object Bytecode:
     case Baload
     case Caload
     case Saload
-    case Istore(variable: Byte)
-    case Lstore(variable: Byte)
-    case Fstore(variable: Byte)
-    case Dstore(variable: Byte)
-    case Astore(variable: Byte)
+    case Istore(slot: Int)
+    case Lstore(slot: Int)
+    case Fstore(slot: Int)
+    case Dstore(slot: Int)
+    case Astore(slot: Int)
     case Istore0
     case Istore1
     case Istore2
@@ -825,7 +843,7 @@ object Bytecode:
     case Lor
     case Ixor
     case Lxor
-    case Iinc(index: Byte, const: Byte)
+    case Iinc(slot: Int, const: Int)
     case I2l
     case I2f
     case I2d
@@ -862,7 +880,7 @@ object Bytecode:
     case IfAcmpne(offset: Short)
     case Goto(offset: Short)
     case Jsr(offset: Short)
-    case Ret(index: Byte)
+    case Ret(slot: Int)
     case Tableswitch()
     case Lookupswitch()
     case Ireturn
