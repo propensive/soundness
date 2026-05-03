@@ -503,6 +503,18 @@ object Tests extends Suite(m"Quantitative Tests"):
             case Bytecode.Opcode.Dneg => true
             case _                    => false
 
+      def containsDmul(bytecode: Bytecode): Boolean =
+        bytecode.instructions.exists: instruction =>
+          instruction.opcode match
+            case Bytecode.Opcode.Dmul => true
+            case _                    => false
+
+      def containsDdiv(bytecode: Bytecode): Boolean =
+        bytecode.instructions.exists: instruction =>
+          instruction.opcode match
+            case Bytecode.Opcode.Ddiv => true
+            case _                    => false
+
       test(m"Quantity negation has no virtual call to `negate`"):
         callsTypeclassOp(methodBytecode(t"viaQuantity_negate"))
       . assert(_ == false)
@@ -515,6 +527,22 @@ object Tests extends Suite(m"Quantitative Tests"):
         containsDneg(methodBytecode(t"viaQuantity_negate"))
       . assert(_ == true)
 
+      test(m"Quantity * Double contains the primitive `Dmul` instruction"):
+        containsDmul(methodBytecode(t"viaQuantity_mulScalar"))
+      . assert(_ == true)
+
+      test(m"Quantity / Double contains the primitive `Ddiv` instruction"):
+        containsDdiv(methodBytecode(t"viaQuantity_divScalar"))
+      . assert(_ == true)
+
+      test(m"Quantity * Double has no virtual call to `multiply`"):
+        callsTypeclassOp(methodBytecode(t"viaQuantity_mulScalar"))
+      . assert(_ == false)
+
+      test(m"Quantity / Double has no virtual call to `divide`"):
+        callsTypeclassOp(methodBytecode(t"viaQuantity_divScalar"))
+      . assert(_ == false)
+
 
 // `Probes` whose bytecode is inspected by the bytecode tests. Kept in the
 // same source file as `Tests` because the `demilitarize` macro is sensitive
@@ -522,3 +550,9 @@ object Tests extends Suite(m"Quantitative Tests"):
 object Probes:
   def viaQuantity_negate(x: Quantity[Metres[1]]): Quantity[Metres[1]] = -x
   def viaDouble_negate(x: Double): Double = -x
+
+  def viaQuantity_mulScalar(x: Quantity[Metres[1]], y: Double): Quantity[Metres[1]] = x*y
+  def viaDouble_mul(x: Double, y: Double): Double = x*y
+
+  def viaQuantity_divScalar(x: Quantity[Metres[1]], y: Double): Quantity[Metres[1]] = x/y
+  def viaDouble_div(x: Double, y: Double): Double = x/y
