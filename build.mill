@@ -977,6 +977,7 @@ object yossarian extends Library:
 object zephyrine extends Library:
   object core extends Component(hieroglyph.core, hypotenuse.core)
   object test extends Tests(core)
+  object bench extends Benchmarks(core, quantitative.units)
 
 object zeppelin extends Library:
   object core extends Component(galilei.core, zephyrine.core)
