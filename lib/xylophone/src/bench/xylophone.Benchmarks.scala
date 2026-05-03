@@ -64,7 +64,6 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
   given prefixes: Prefixes = Prefixes(List(Kilo, Mega, Giga, Tera))
 
   def parseXylophone(text: Text): Document[Xml] = unsafely(text.load[Xml])
-  def parseXylophoneDirect(text: Text): Xml = unsafely(Xml.parseDirect(text, headers0 = true))
 
   def parseScalaXml(text: String): scala.xml.Elem = scala.xml.XML.loadString(text)
 
@@ -82,9 +81,6 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
         (target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min)):
         '{ xylophone.Benchmarks.parseXylophone(xylophone.Benchmarks.xml1) }
 
-      bench(m"Parse file with Xylophone Direct")(target = 1*Second, operationSize = size1):
-        '{ xylophone.Benchmarks.parseXylophoneDirect(xylophone.Benchmarks.xml1) }
-
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size1):
         '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText1) }
 
@@ -92,9 +88,6 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
       bench(m"Parse file with Xylophone")
         (target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min)):
         '{ xylophone.Benchmarks.parseXylophone(xylophone.Benchmarks.xml2) }
-
-      bench(m"Parse file with Xylophone Direct")(target = 1*Second, operationSize = size2):
-        '{ xylophone.Benchmarks.parseXylophoneDirect(xylophone.Benchmarks.xml2) }
 
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size2):
         '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText2) }
@@ -104,9 +97,6 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
         (target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min)):
         '{ xylophone.Benchmarks.parseXylophone(xylophone.Benchmarks.xml3) }
 
-      bench(m"Parse file with Xylophone Direct")(target = 1*Second, operationSize = size3):
-        '{ xylophone.Benchmarks.parseXylophoneDirect(xylophone.Benchmarks.xml3) }
-
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size3):
         '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText3) }
 
@@ -115,9 +105,6 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
         (target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min)):
         '{ xylophone.Benchmarks.parseXylophone(xylophone.Benchmarks.xml4) }
 
-      bench(m"Parse file with Xylophone Direct")(target = 1*Second, operationSize = size4):
-        '{ xylophone.Benchmarks.parseXylophoneDirect(xylophone.Benchmarks.xml4) }
-
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size4):
         '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText4) }
 
@@ -125,9 +112,6 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
       bench(m"Parse file with Xylophone")
         (target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min)):
         '{ xylophone.Benchmarks.parseXylophone(xylophone.Benchmarks.xml5) }
-
-      bench(m"Parse file with Xylophone Direct")(target = 1*Second, operationSize = size5):
-        '{ xylophone.Benchmarks.parseXylophoneDirect(xylophone.Benchmarks.xml5) }
 
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size5):
         '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText5) }
