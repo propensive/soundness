@@ -36,6 +36,15 @@ import anticipation.*
 import gossamer.*
 import vacuous.*
 
+case class BulletMarker(char: Char, markerIndent: Int, contentIndent: Int, rest: Text)
+
+case class OrderedMarker
+  ( start:         Int,
+    delimiter:     '.' | ')',
+    markerIndent:  Int,
+    contentIndent: Int,
+    rest:          Text )
+
 object ParserSupport:
 
   // CommonMark treats every horizontal-tab as advancing to the next 4-column
@@ -237,3 +246,98 @@ object ParserSupport:
       while i < n && s.charAt(i) != ' ' && s.charAt(i) != '\t' do i += 1
       if i > start then result += Text(s.substring(start, i).nn)
     result.toList
+
+  // Bullet list marker: ^ {0,3}([-*+])( +|\t|$)(.*)$
+  // Returns (marker char, marker indent, content indent, remainder).
+  // `contentIndent` is the column at which the item's content begins (used
+  // by `ListItemBuilder` to know how many columns to strip from continuation
+  // lines).
+  def bulletMarker(line: Text): Optional[BulletMarker] =
+    val s = line.s
+    val n = s.length
+    var i = 0
+    var indent = 0
+    while i < n && s.charAt(i) == ' ' && indent < 4 do { i += 1; indent += 1 }
+    if indent >= 4 || i >= n then return Unset
+    val ch = s.charAt(i)
+    if ch != '-' && ch != '+' && ch != '*' then return Unset
+    val markerEnd = i + 1
+    // Must be followed by space, tab, or end-of-line
+    if markerEnd < n && s.charAt(markerEnd) != ' ' && s.charAt(markerEnd) != '\t' then return Unset
+    // Count post-marker whitespace columns (1..4); if 5+, treat as 1 (content
+    // becomes indented code) — caller handles that by not stripping past 1.
+    var j = markerEnd
+    var postCol = 0
+    while j < n && (s.charAt(j) == ' ' || s.charAt(j) == '\t') && postCol < 5 do
+      if s.charAt(j) == ' ' then postCol += 1
+      else postCol += 4 - ((indent + 1 + postCol) & 3)
+      j += 1
+
+    val followSpace =
+      if markerEnd >= n then 1
+      else if isBlank(Text(s.substring(markerEnd, n).nn)) then 1
+      else if postCol >= 5 then 1
+      else postCol
+
+    val contentStart =
+      markerEnd + (if markerEnd >= n then 0 else followSpace.min(n - markerEnd))
+
+    val contentIndent = indent + 1 + followSpace
+    val rest = if contentStart >= n then t"" else Text(s.substring(contentStart, n).nn)
+    BulletMarker(ch, indent, contentIndent, rest)
+
+  // Ordered list marker: ^ {0,3}(\d{1,9})([.)])( +|\t|$)(.*)$
+  def orderedMarker(line: Text): Optional[OrderedMarker] =
+    val s = line.s
+    val n = s.length
+    var i = 0
+    var indent = 0
+    while i < n && s.charAt(i) == ' ' && indent < 4 do { i += 1; indent += 1 }
+    if indent >= 4 || i >= n then return Unset
+    val digitStart = i
+    while i < n && s.charAt(i) >= '0' && s.charAt(i) <= '9' && (i - digitStart) < 9 do i += 1
+    val digitCount = i - digitStart
+    if digitCount < 1 then return Unset
+    if i >= n then return Unset
+    val delimChar = s.charAt(i)
+    if delimChar != '.' && delimChar != ')' then return Unset
+    val markerEnd = i + 1
+    if markerEnd < n && s.charAt(markerEnd) != ' ' && s.charAt(markerEnd) != '\t' then
+      return Unset
+    val start =
+      try Integer.parseInt(s.substring(digitStart, digitStart + digitCount))
+      catch case _: NumberFormatException => return Unset
+
+    var j = markerEnd
+    var postCol = 0
+    while j < n && (s.charAt(j) == ' ' || s.charAt(j) == '\t') && postCol < 5 do
+      if s.charAt(j) == ' ' then postCol += 1
+      else postCol += 4 - ((indent + digitCount + 1 + postCol) & 3)
+      j += 1
+
+    val followSpace =
+      if markerEnd >= n then 1
+      else if isBlank(Text(s.substring(markerEnd, n).nn)) then 1
+      else if postCol >= 5 then 1
+      else postCol
+
+    val contentStart =
+      markerEnd + (if markerEnd >= n then 0 else followSpace.min(n - markerEnd))
+
+    val contentIndent = indent + digitCount + 1 + followSpace
+    val rest = if contentStart >= n then t"" else Text(s.substring(contentStart, n).nn)
+    val delim: '.' | ')' = if delimChar == '.' then '.' else ')'
+    OrderedMarker(start, delim, indent, contentIndent, rest)
+
+  // Whether the line, ignoring leading 0..3 spaces, starts a new block
+  // (other than a paragraph). Used for lazy-paragraph-continuation: if a line
+  // doesn't start a new block, it can continue an open paragraph regardless
+  // of failed container continuation.
+  def startsNonParagraphBlock(line: Text): Boolean =
+    if isBlank(line) then return true
+    if isThematicBreak(line) then return true
+    if atxHeading(line).present then return true
+    if fenceOpener(line).present then return true
+    if bulletMarker(line).present then return true
+    if orderedMarker(line).present then return true
+    false
