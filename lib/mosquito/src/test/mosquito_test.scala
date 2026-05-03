@@ -650,3 +650,42 @@ object Tests extends Suite(m"Mosquito tests"):
 
         norms.max
       . assert(_ < 0.000001)
+
+    suite(m"Solve linear system"):
+      test(m"Solve 2x2 system"):
+        val mat = Matrix[2, 2]((2.0, 1.0), (1.0, 3.0))
+        val rhs = Tensor(3.0, 4.0)
+        val solution = mat.solve(rhs).vouch
+        math.abs(solution(0) - 1.0) + math.abs(solution(1) - 1.0)
+      . assert(_ < 0.000001)
+
+      test(m"Solve identity system returns RHS"):
+        val solution = Matrix.identity[Double, 3].solve(Tensor(7.0, 8.0, 9.0)).vouch
+        solution
+      . assert(_ == Tensor(7.0, 8.0, 9.0))
+
+      test(m"Solve 3x3 system"):
+        val mat = Matrix[3, 3]((1.0, 1.0, 1.0), (0.0, 2.0, 5.0), (2.0, 5.0, -1.0))
+        val rhs = Tensor(6.0, -4.0, 27.0)
+        val solution = mat.solve(rhs).vouch
+        val expected = Tensor(5.0, 3.0, -2.0)
+        (0 until 3).map(i => math.abs(solution(i) - expected(i))).max
+      . assert(_ < 0.000001)
+
+      test(m"Solve verifies A * x = b"):
+        val mat = Matrix[3, 3]((4.0, 1.0, 2.0), (1.0, 5.0, 3.0), (2.0, 3.0, 6.0))
+        val rhs = Tensor(7.0, 8.0, 9.0)
+        val solution = mat.solve(rhs).vouch
+        val recovered = mat*solution
+        (0 until 3).map(i => math.abs(recovered(i) - rhs(i))).max
+      . assert(_ < 0.000001)
+
+      test(m"Solve singular system returns Unset"):
+        Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).solve(Tensor(3.0, 6.0))
+      . assert(_ == Unset)
+
+      test(m"Solve requires row swap (zero in pivot)"):
+        val mat = Matrix[2, 2]((0.0, 1.0), (1.0, 0.0))
+        val solution = mat.solve(Tensor(2.0, 3.0)).vouch
+        math.abs(solution(0) - 3.0) + math.abs(solution(1) - 2.0)
+      . assert(_ < 0.000001)

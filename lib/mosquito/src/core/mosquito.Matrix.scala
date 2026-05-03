@@ -298,6 +298,84 @@ object Matrix:
       if (row + column) % 2 == 0 then minorValue else zeroic.zero - minorValue
 
 
+    def solve(rhs: Tensor[element, n])
+      ( using zeroic:         element is Zeroic,
+              subtraction:    element is Subtractable by element to element,
+              multiplication: element is Multiplicable by element to element,
+              divisible:      element is Divisible by element to element,
+              classTag:       ClassTag[element] )
+    :   Optional[Tensor[element, n]] =
+
+      val size = matrix.rows
+      val zero = zeroic.zero
+      val a: Array[element] = matrix.elements.mutable(using Unsafe).clone()
+      val b: Array[element] = new Array[element](size)
+      var copyIndex = 0
+      while copyIndex < size do
+        b(copyIndex) = rhs.data(copyIndex).asInstanceOf[element]
+        copyIndex += 1
+
+      var col = 0
+      var singular = false
+
+      while col < size && !singular do
+        var pivotRow = -1
+        var search = col
+        while search < size && pivotRow < 0 do
+          if a(size*search + col) != zero then pivotRow = search
+          search += 1
+
+        if pivotRow < 0 then singular = true
+        else
+          if pivotRow != col then
+            var swap = col
+            while swap < size do
+              val tmp = a(size*col + swap)
+              a(size*col + swap) = a(size*pivotRow + swap)
+              a(size*pivotRow + swap) = tmp
+              swap += 1
+
+            val rhsTmp = b(col)
+            b(col) = b(pivotRow)
+            b(pivotRow) = rhsTmp
+
+          val pivotValue = a(size*col + col)
+          var rowIdx = col + 1
+          while rowIdx < size do
+            val factor = a(size*rowIdx + col)/pivotValue
+            var elim = col
+            while elim < size do
+              a(size*rowIdx + elim) = a(size*rowIdx + elim) - factor*a(size*col + elim)
+              elim += 1
+
+            b(rowIdx) = b(rowIdx) - factor*b(col)
+            rowIdx += 1
+
+        col += 1
+
+      if singular then Unset
+      else
+        val x: Array[element] = new Array[element](size)
+        var i = size - 1
+        while i >= 0 do
+          var sum: element = b(i)
+          var j = i + 1
+          while j < size do
+            sum = sum - a(size*i + j)*x(j)
+            j += 1
+
+          x(i) = sum/a(size*i + i)
+          i -= 1
+
+        val tensorData = IArray.build[Any](size): array =>
+          var k = 0
+          while k < size do
+            array(k) = x(k)
+            k += 1
+
+        new Tensor[element, n](tensorData)
+
+
     def adjugate
       ( using multiplication: element is Multiplicable by element to element,
               addition:       element is Addable by element to element,
