@@ -30,10 +30,36 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package symbolism
 
-export
-  symbolism
-  . { +, -, /, /:, `*`, `unary_-`, Addable, AddOp, cbrt, Concatenable, Divisible, DivOp,
-      Multiplicable, MulOp, Negatable, Quotient, Rootable, sqrt, Subtractable, SubOp, Unital, zero,
-      Zeroic }
+import prepositional.*
+
+// Inline-friendly counterparts of `Addable`, `Subtractable`, `Multiplicable`,
+// `Divisible`. They exist so that downstream modules (like `quantitative`)
+// can opt arithmetic into compile-time inlining without losing the generic
+// typeclass-based dispatch path for other types.
+//
+// The `+`/`-`/`*`/`/` extensions in `symbolism_core` use `inline summonFrom`
+// to prefer the corresponding `*Op` instance when one is available, and fall
+// back to the regular typeclass otherwise. The key constraint for inlining
+// to work end-to-end:
+//
+// 1. The `op` method must be `inline def` (so the body inlines into the
+//    operator extension after expansion).
+// 2. The instance must be a *concrete subtype* with `inline def op`, summoned
+//    via a `transparent inline given` so the static type at the use site is
+//    the concrete subclass — not the trait. (Macros can't emit `inline def`
+//    inside quotes, so the inline instance needs to be a hand-written class
+//    parameterized by the relevant types, instantiated by the macro.)
+
+trait AddOp extends Typeclass, Operable, Resultant:
+  inline def op(left: Self, right: Operand): Result
+
+trait SubOp extends Typeclass, Operable, Resultant:
+  inline def op(left: Self, right: Operand): Result
+
+trait MulOp extends Typeclass, Operable, Resultant:
+  inline def op(left: Self, right: Operand): Result
+
+trait DivOp extends Typeclass, Operable, Resultant:
+  inline def op(left: Self, right: Operand): Result
