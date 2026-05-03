@@ -132,7 +132,10 @@ private final class JsonParser:
   // Substrate (now inlined directly into the parser, since there is only one).
 
   protected inline def more: Boolean = cursor.more
-  protected inline def peek: Byte = cursor.datum(using Unsafe).asInstanceOf[Byte]
+
+  protected inline def peek: Byte =
+    cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]](cursor.unsafePos(using Unsafe))
+
   protected inline def advance(): Unit = cursor.next()
 
   protected def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing =
