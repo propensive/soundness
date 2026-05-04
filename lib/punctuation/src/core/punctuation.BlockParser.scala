@@ -345,7 +345,7 @@ final class BlockParser:
         case _ => ()
 
     val contentIndent = bullet.map(_.contentIndent).getOrElse(ordered.get.contentIndent)
-    val item = ListItemBuilder(ln, contentIndent)
+    val item = ListItemBuilder(ln, contentIndent.n0)
     openStack += item
 
     (rest, true)
@@ -450,10 +450,10 @@ final class BlockParser:
       return
 
     ParserSupport.fenceOpener(residual) match
-      case (ch: Char, count: Int, indent: Int, info: Text) =>
+      case (ch: Char, count: Int, indent: Ordinal, info: Text) =>
         closeOpenLeafForNewBlock()
         val tokens = ParserSupport.cutInfo(info).map(InlineSupport.decodeEscapesAndEntities)
-        val fenced = FencedCodeBlockBuilder(ln, ch, count, indent, tokens)
+        val fenced = FencedCodeBlockBuilder(ln, ch, count, indent.n0, tokens)
         openStack += fenced
         return
 
