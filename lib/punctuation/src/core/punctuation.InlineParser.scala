@@ -219,8 +219,8 @@ object InlineParser:
     val entry = brackets.pop()
 
     if !entry.active then
-      // Inactive marker: drop bracket node, emit literal `]`
-      list.remove(entry.node)
+      // Inactive marker: leave bracket node (renders as literal `[`/`![`),
+      // emit literal `]`
       list.append(TextData(t"]"))
       return closePos + 1
 
@@ -228,9 +228,8 @@ object InlineParser:
     val afterClose = closePos + 1
     tryMatchLink(s, afterClose, end, entry, refs) match
       case Unset =>
-        // No link match: bracket and `]` become literal text
-        list.remove(entry.node)
-        list.append(TextData(if entry.isImage then t"![" else t"["))
+        // No link match: leave bracket node in place (its data renders as the
+        // literal `[` or `![`); emit `]` as text
         list.append(TextData(t"]"))
         afterClose
 
@@ -255,8 +254,9 @@ object InlineParser:
         if entry.isImage then list.append(ImageData(lm.dest, lm.title, children.toList))
         else
           list.append(LinkData(lm.dest, lm.title, children.toList))
-          // Deactivate any earlier `[` markers (no nested links)
-          brackets.foreach(_.active = false)
+          // Deactivate any earlier `[` link markers (no nested links). Image
+          // markers stay active — images can contain links.
+          brackets.foreach(b => if !b.isImage then b.active = false)
 
         lm.end
 
@@ -270,13 +270,15 @@ object InlineParser:
       refs:     LinkRefs )
   :   Optional[LinkResolution] =
 
-    // 1. Inline link: ( dest title? )
+    // 1. Inline link: ( dest title? )  — if it parses, use it; if not, fall
+    // through to reference forms (`[foo](bad](url)` may still resolve `[foo]`
+    // as a shortcut reference if defined elsewhere).
     if after < end && s.charAt(after) == '(' then
       InlineSupport.parseInlineLinkBody(s, after, end) match
         case b: InlineSupport.InlineLinkBody =>
           return LinkResolution(b.dest, b.title, b.end)
 
-        case Unset => return Unset
+        case Unset => ()  // fall through
 
     // 2. Reference forms
     val bracketContent = Text(s.substring(entry.sourceStart, after - 1).nn)
@@ -289,7 +291,10 @@ object InlineParser:
           if resolved.present then
             val ref = resolved.vouch
             return LinkResolution(ref.destination, ref.title, r.end)
-          // ref not found; fall through to shortcut
+          // Per spec: when the `[label]` parses but the label doesn't
+          // resolve, the link attempt fails entirely — don't fall back to
+          // shortcut. The full-ref `[label]` is consumed by this attempt.
+          return Unset
 
         case Unset => ()  // fall through to shortcut
 
