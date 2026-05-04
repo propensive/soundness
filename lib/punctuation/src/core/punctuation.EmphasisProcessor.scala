@@ -150,20 +150,35 @@ object EmphasisProcessor:
     || t == Character.MATH_SYMBOL
     || t == Character.OTHER_SYMBOL
 
-  // Compute (canOpen, canClose) for a delimiter run.
-  def classifyDelim
-    ( char:     Char,
-      prevChar: Char,
-      nextChar: Char )
-  :   (Boolean, Boolean) =
-
+  // Compute can-open/can-close for a delimiter run, packed into the low two
+  // bits of an Int (bit 0 = canOpen, bit 1 = canClose). Returning a packed
+  // Int avoids a per-call `Tuple2` allocation in the inline parser's hot
+  // path, which is significant for emphasis-dense input.
+  def classifyDelim(char: Char, prevChar: Char, nextChar: Char): Int =
     val left = isLeftFlanking(prevChar, nextChar)
     val right = isRightFlanking(prevChar, nextChar)
-    if char == '*' then (left, right)
-    else
-      val canOpen = left && (!right || isUnicodePunctuation(prevChar))
-      val canClose = right && (!left || isUnicodePunctuation(nextChar))
-      (canOpen, canClose)
+
+    val canOpen =
+      if char == '*' then left
+      else left && (!right || isUnicodePunctuation(prevChar))
+
+    val canClose =
+      if char == '*' then right
+      else right && (!left || isUnicodePunctuation(nextChar))
+
+    (if canOpen then 1 else 0) | (if canClose then 2 else 0)
+
+  inline def hasOpen(flags: Int): Boolean = (flags & 1) != 0
+  inline def hasClose(flags: Int): Boolean = (flags & 2) != 0
+
+  // openers_bottom is conceptually a map keyed by `(char, length%3, canOpen)`
+  // → InlineNode. There are exactly 12 keys (2 chars × 3 mods × 2 booleans);
+  // a fixed Array beats a HashMap allocation per emphasis pass.
+  private inline def floorIdx
+    ( inline char: Char, inline lenMod3: Int, inline canOpen: Boolean )
+  :   Int =
+
+    (if char == '*' then 0 else 6) + lenMod3 * 2 + (if canOpen then 1 else 0)
 
   // Implements CommonMark's "process emphasis" algorithm (§6.2). Walks the
   // doubly-linked list, pairing matching opener/closer delimiter runs and
@@ -173,11 +188,13 @@ object EmphasisProcessor:
     var current: InlineNode | Null =
       if stackBottom == null then list.first else stackBottom.next
 
-    // openers_bottom indexed by (char, length % 3, canOpen-of-closer)
-    val openersBottom = mutable.Map[(Char, Int, Boolean), InlineNode | Null]()
+    val openersBottom = new Array[InlineNode | Null](12)
+    if stackBottom != null then
+      var k = 0
+      while k < 12 do { openersBottom(k) = stackBottom; k += 1 }
 
-    def floorOf(closer: DelimData): InlineNode | Null =
-      openersBottom.getOrElse((closer.char, closer.length % 3, closer.canOpen), stackBottom)
+    inline def floorOf(closer: DelimData): InlineNode | Null =
+      openersBottom(floorIdx(closer.char, closer.length % 3, closer.canOpen))
 
     while current != null do
       val curNode = current
@@ -235,7 +252,7 @@ object EmphasisProcessor:
               case _ => opener = openerNode.prev
 
           if !matched then
-            openersBottom((closer.char, closer.length % 3, closer.canOpen)) = curNode.prev
+            openersBottom(floorIdx(closer.char, closer.length % 3, closer.canOpen)) = curNode.prev
             if !closer.canOpen then
               // Remove from the delimiter "stack" but keep its characters as
               // literal text in the inline list.
@@ -253,26 +270,35 @@ object EmphasisProcessor:
     val builder = mutable.ListBuffer[Prose]()
     var cur: InlineNode | Null = list.first
     while cur != null do
-      val node = cur
-      proseOf(node).foreach(builder += _)
-      cur = node.next
+      appendProse(cur, builder)
+      cur = cur.next
     builder.toSeq
 
-  private def proseOf(node: InlineNode): Option[Prose] = node.data match
-    case TextData(t)             => Some(Prose.Textual(t))
-    case CodeData(c)             => Some(Prose.Code(c))
-    case HtmlInlineData(h)       => Some(Prose.HtmlInline(h))
-    case SoftbreakData           => Some(Prose.Softbreak)
-    case LinebreakData           => Some(Prose.Linebreak)
-    case LinkData(d, title, ch)  => Some(Prose.Link(d, title, ch.flatMap(proseOf)*))
-    case ImageData(d, title, ch) => Some(Prose.Image(d, title, ch.flatMap(proseOf)*))
-    case EmphasisData(children)  => Some(Prose.Emphasis(children.flatMap(proseOf)*))
-    case StrongData(children)    => Some(Prose.Strong(children.flatMap(proseOf)*))
-    case b: BracketData          => Some(Prose.Textual(Text(if b.isImage then "![" else "[")))
-    case d: DelimData            => unmatchedDelim(d)
+  // Appends the Prose representation of a single inline node to `builder`,
+  // recursing into `LinkData`/`ImageData`/`EmphasisData`/`StrongData`. Avoids
+  // the per-node `Option[Prose]` allocation that the previous `proseOf` had.
+  private def appendProse(node: InlineNode, builder: mutable.ListBuffer[Prose]): Unit =
+    node.data match
+      case TextData(t)         => builder += Prose.Textual(t)
+      case CodeData(c)         => builder += Prose.Code(c)
+      case HtmlInlineData(h)   => builder += Prose.HtmlInline(h)
+      case SoftbreakData       => builder += Prose.Softbreak
+      case LinebreakData       => builder += Prose.Linebreak
+      case LinkData(d, t, ch)  => builder += Prose.Link(d, t, childProse(ch)*)
+      case ImageData(d, t, ch) => builder += Prose.Image(d, t, childProse(ch)*)
+      case EmphasisData(ch)    => builder += Prose.Emphasis(childProse(ch)*)
+      case StrongData(ch)      => builder += Prose.Strong(childProse(ch)*)
+      case b: BracketData      => builder += Prose.Textual(Text(if b.isImage then "![" else "["))
+      case d: DelimData        => appendUnmatchedDelim(d, builder)
 
-  private def unmatchedDelim(d: DelimData): Option[Prose] =
-    val sb = new StringBuilder
-    var k = 0
-    while k < d.length do { sb.append(d.char); k += 1 }
-    if d.length > 0 then Some(Prose.Textual(Text(sb.toString))) else None
+  private def appendUnmatchedDelim(d: DelimData, builder: mutable.ListBuffer[Prose]): Unit =
+    if d.length > 0 then
+      val sb = new java.lang.StringBuilder(d.length)
+      var k = 0
+      while k < d.length do { sb.append(d.char); k += 1 }
+      builder += Prose.Textual(Text(sb.toString))
+
+  private def childProse(children: List[InlineNode]): Seq[Prose] =
+    val builder = mutable.ListBuffer[Prose]()
+    children.foreach(appendProse(_, builder))
+    builder.toSeq

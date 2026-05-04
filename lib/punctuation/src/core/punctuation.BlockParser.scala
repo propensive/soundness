@@ -39,8 +39,6 @@ import denominative.*
 import fulminate.*
 import prepositional.*
 import vacuous.*
-import zephyrine.*
-import zephyrine.lineation.linefeedChars
 
 // Pass 1: line-by-line dispatch over a stack of open block builders. The
 // algorithm follows CommonMark's "phase 1" (block parsing):
@@ -62,19 +60,22 @@ final class BlockParser:
   private val openStack: ArrayBuffer[BlockBuilder] = ArrayBuffer(docBuilder)
 
   def parse(text: Text): Markdown of Layout =
-    val cursor = Cursor(Iterator(text))
-    while cursor.more do
-      val ln = cursor.line
-
-      val line = cursor.hold:
-        val start = cursor.mark
-        val foundLf = cursor.seek('\n')
-        val end = cursor.mark
-        val captured = cursor.grab(start, end)
-        if foundLf then cursor.advance()
-        captured
-
-      processLine(line, ln)
+    // Iterate lines directly via `String.indexOf('\n')` rather than going
+    // through a char-by-char Cursor — `indexOf(char)` is a JIT intrinsic
+    // (uses SWAR/SIMD on most JVMs) and much faster than the per-char loop.
+    val s = text.s
+    val len = s.length
+    var pos = 0
+    var lineNum = 0
+    while pos < len do
+      val nlPos = s.indexOf('\n', pos)
+      val end = if nlPos < 0 then len else nlPos
+      val line = if pos == 0 && end == len then text else Text(s.substring(pos, end).nn)
+      processLine(line, lineNum.z)
+      if nlPos < 0 then pos = len
+      else
+        pos = nlPos + 1
+        lineNum += 1
 
     closeAll()
 
