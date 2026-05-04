@@ -114,6 +114,7 @@ object internal:
       val matched =
         beneficence.givens(repr)
         . filterNot(exclusions.contains)
+        . filter(respectsOpaqueScope(_, repr))
         . flatMap(matchAgainst(_, repr))
 
       dedupeExportsByCanonical(matched).map: m =>
@@ -276,6 +277,52 @@ object internal:
       // method type. In dotty's quotes.reflect, `MethodType.isImplicit` is
       // exposed for contextual/implicit clauses.
       if mt.isImplicit then paramTypes else Nil
+
+    // Detect when a candidate is a member of an opaque type's companion
+    // object. For a `given` declared in such a companion, dotty's `<:<` will
+    // (incorrectly, from the call site's perspective) see through the opaque
+    // alias when matching it against types based on the opaque's underlying.
+    // Scan the owner chain for any module whose enclosing scope contains a
+    // sibling opaque type with the same name.
+    def opaqueCompanionType(symbol: Symbol): Option[Symbol] =
+      def loop(current: Symbol): Option[Symbol] =
+        if current.isNoSymbol || current == defn.RootClass then None
+        else if current.flags.is(Flags.Module) then
+          val moduleName = current.name.toString match
+            case n if n.endsWith("$") => n.substring(0, n.length - 1).nn
+            case n                    => n
+
+          val sibling = current.owner.declaredTypes.find: t =>
+            t.name.toString == moduleName && t.flags.is(Flags.Opaque)
+
+          sibling.orElse(loop(current.owner))
+        else loop(current.owner)
+
+      loop(symbol.owner)
+
+    // For a candidate from an opaque companion, only accept it if `target`
+    // literally mentions the opaque type — otherwise the apparent match is
+    // only via the opaque's underlying alias, which isn't supposed to be
+    // visible at the call site.
+    def respectsOpaqueScope(symbol: Symbol, target: TypeRepr): Boolean =
+      opaqueCompanionType(symbol) match
+        case Some(opaqueType) => mentions(target, opaqueType)
+        case None             => true
+
+    def mentions(t: TypeRepr, sym: Symbol): Boolean =
+      if t.typeSymbol == sym then true
+      else t.dealias match
+        case AppliedType(tycon, args) =>
+          mentions(tycon, sym) || args.exists(mentions(_, sym))
+
+        case Refinement(parent, _, info) =>
+          mentions(parent, sym) || mentions(info, sym)
+
+        case TypeBounds(lo, hi) =>
+          mentions(lo, sym) || mentions(hi, sym)
+
+        case _ =>
+          false
 
     // Walk a `template` type (which may reference type parameters from `params`)
     // alongside a concrete `target` and collect the implied parameter bindings.
