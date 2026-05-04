@@ -38,19 +38,20 @@ import anticipation.*
 import fulminate.*
 import gigantism.*
 import rudiments.*
-import vacuous.*
 
 object internal:
   private given realm: Realm = realm"iridescence"
 
-  def rgbInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[Chroma] =
+  def rgbMacro(context: Expr[StringContext], insertions: Expr[Seq[Any]])(using Quotes)
+  :   Expr[Chroma] =
+
     import quotes.reflect.*
 
-    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
-      case _               => strings
+    val parts: List[String] =
+      context.value.getOrElse:
+        halt(m"the StringContext extension method parameter does not appear to be inline")
 
-    val parts = recur[parts](Nil)
+      . parts.toList
 
     if parts.length != 1 then halt(m"an rgb literal cannot have substitutions")
 
