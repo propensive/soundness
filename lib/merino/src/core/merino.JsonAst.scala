@@ -138,7 +138,7 @@ object JsonAst extends Format:
     inline final val CloseBrace:   125 = 125 // '}'
 
   opaque type RawJson =
-    Long | Double | BigDecimal | String | IArray[Any] | Boolean | Null | Unset.type
+    Long | Double | Bcd | String | IArray[Any] | Boolean | Null | Unset.type
 
   // Sentinel used to pad an array whose original length is even, so that all
   // arrays have odd `IArray[Any]` length and can be distinguished from objects
@@ -149,7 +149,7 @@ object JsonAst extends Format:
 
   def apply
     ( value
-      : Long | Double | BigDecimal | String | IArray[Any] | Boolean | Null | Unset.type )
+      : Long | Double | Bcd | String | IArray[Any] | Boolean | Null | Unset.type )
   :   JsonAst =
 
     value

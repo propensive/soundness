@@ -47,7 +47,7 @@ import JsonAst.{Issue, Position}
 
 private object JsonParser:
   private[merino] type Raw =
-    Long | Double | BigDecimal | String | IArray[Any] | Boolean | Null | Unset.type
+    Long | Double | Bcd | String | IArray[Any] | Boolean | Null | Unset.type
 
   private inline val NumZero       = 0
   private inline val NumInt        = 1
@@ -125,7 +125,6 @@ private final class JsonParser:
   protected var stringCursor:        Int = 0
   protected var arrayBufferId:       Int = -1
   protected val arrayBuffers:        ArrayBuffer[ArrayBuffer[Any]] = ArrayBuffer.empty
-  protected val numberBuilder:       java.lang.StringBuilder = java.lang.StringBuilder(32)
 
   def resetData(input: Data): Unit =
     cursor = Cursor[Data](input)
@@ -390,7 +389,7 @@ private final class JsonParser:
     null
 
   private def parseNumber(first: Int, negative: Boolean)
-  :   Double | Long | BigDecimal raises ParseError =
+  :   Double | Long | Bcd raises ParseError =
 
     var content: Long = first.toLong
     var nibbles: Int = 1
@@ -398,25 +397,18 @@ private final class JsonParser:
     var floating: Boolean = false
     var continue: Boolean = true
     var state: Int = if first == 0 then NumZero else NumInt
+    var bcdBuilder: Bcd.Builder | Null = null
 
-    inline def appendChar0(n: Int): Unit =
-      if n <= 9 then numberBuilder.append(('0' + n).toChar)
-      else if n == 0xA then numberBuilder.append('.')
-      else if n == 0xB then numberBuilder.append('e')
-      else if n == 0xC then numberBuilder.append("e-")
-
+    // When the in-Long fast path overflows (the 16th nibble is about to be
+    // appended), seed a `Bcd.Builder` with the existing 15 nibbles plus the
+    // overflowing one and continue accumulation there instead of degrading
+    // to a `StringBuilder` + `Double.parseDouble` pipeline.
     inline def fallback(extraNibble: Int): Unit =
-      numberBuilder.setLength(0)
-      var i = nibbles - 1
-      while i >= 0 do
-        val n = ((content >>> (i * 4)) & 0xFL).toInt
-        if n <= 9 then numberBuilder.append(('0' + n).toChar)
-        else if n == 0xA then numberBuilder.append('.')
-        else if n == 0xB then numberBuilder.append('e')
-        else if n == 0xC then numberBuilder.append("e-")
-        i -= 1
+      val b = new Bcd.Builder
+      b.seedFromLong(content, nibbles)
+      b.add(extraNibble)
+      bcdBuilder = b
       bcdValid = false
-      appendChar0(extraNibble)
 
     inline def appendNibble(n: Int): Unit =
       if bcdValid then
@@ -425,11 +417,11 @@ private final class JsonParser:
           content = (content << 4) | n.toLong
           nibbles += 1
       else
-        appendChar0(n)
+        bcdBuilder.nn.add(n)
 
     inline def rewriteEAsNeg(): Unit =
       if bcdValid then content = (content & ~0xFL) | 0xCL
-      else numberBuilder.append('-')
+      else bcdBuilder.nn.overwriteLast(0xC)
 
     while continue && more do
       val ch = peek
@@ -556,16 +548,13 @@ private final class JsonParser:
 
         if negative then -mag else mag
     else
-      if floating then
-        val d = java.lang.Double.parseDouble(numberBuilder.toString)
-        if negative then -d else d
-      else
-        try
-          val v = java.lang.Long.parseLong(numberBuilder, 0, numberBuilder.length, 10)
-          if negative then -v else v
-        catch case _: NumberFormatException =>
-          val d = java.lang.Double.parseDouble(numberBuilder.toString)
-          if negative then -d else d
+      // High-precision path: hand back the `Bcd` directly. Consumers can
+      // narrow to `Long`, `Double`, or `BigDecimal` via `Bcd`'s extension
+      // methods if they want — but the parser preserves full precision
+      // either way, in contrast to the previous string-then-parseDouble
+      // round-trip which silently truncated.
+      val result: Bcd = bcdBuilder.nn.finish(negative)
+      result
 
   private def parseValue(minus: Boolean = false)(using Tactic[ParseError]): Raw =
     if !more then errorAt(Issue.PrematureEnd)

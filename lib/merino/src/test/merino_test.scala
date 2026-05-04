@@ -117,8 +117,15 @@ object Tests extends Suite(m"Merino tests"):
       . assert(_ == JsonAst(4L))
 
       test(m"Parse small negative number"):
-        t"-0.000000000000000000000000000000000000000000000000000000000000000000000000000001".read[JsonAst]
-      . assert(_ == JsonAst(-1.0e-78))
+        // Number exceeds 15 nibbles, so the parser hands back a `Bcd`
+        // (high-precision representation) rather than a `Double`. The Bcd
+        // round-trips back to the same `Double` the old fallback path used
+        // to return.
+        val raw =
+          t"-0.000000000000000000000000000000000000000000000000000000000000000000000000000001"
+          . read[JsonAst]
+        raw.asInstanceOf[Array[Long]].asInstanceOf[Bcd].toDouble
+      . assert(_ == -1.0e-78)
 
       test(m"Parse 20e1"):
         t"20e1".read[JsonAst]
