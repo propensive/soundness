@@ -32,46 +32,39 @@
                                                                                                   */
 package punctuation
 
-import soundness.*
+import anticipation.*
+import hellenism.*, classloaders.threadContext
+import hieroglyph.*, charDecoders.utf8, textSanitizers.skip
+import turbulence.*
 
-import strategies.throwUnsafely
+// HTML5 named character references, loaded once from the entity TSV resources
+// shipped by Honeycomb (`entities-html4.tsv` for the legacy HTML4 set and
+// `entities-extra.tsv` for the HTML5 additions). Only entries with a
+// trailing semicolon are kept, since CommonMark requires the `;` terminator
+// for named entities to be valid.
+object HtmlEntities:
+  private lazy val table: Map[String, String] =
+    val builder = Map.newBuilder[String, String]
+    loadInto(cp"/honeycomb/entities-html4.tsv".read[Text].s, builder)
+    loadInto(cp"/honeycomb/entities-extra.tsv".read[Text].s, builder)
+    builder.result()
 
-import doms.html.whatwg
-import classloaders.system
+  private def loadInto
+    ( tsv:     String,
+      builder: scala.collection.mutable.Builder[(String, String), Map[String, String]] )
+  :   Unit =
 
-object Tests extends Suite(m"Punctuation tests"):
-  def run(): Unit =
-    case class Testcase
-      ( markdown:   Text,
-        html:       Text,
-        example:    Int,
-        start_line: Int,
-        end_line:   Int,
-        section:    Text )
+    val lines = tsv.split("\n").nn
+    var i = 0
+    while i < lines.length do
+      val line = lines(i).nn
+      val tab = line.indexOf('\t')
+      if tab > 0 && line.charAt(tab - 1) == ';' then
+        val name = line.substring(0, tab - 1).nn
+        val value = line.substring(tab + 1).nn
+        builder += (name -> value)
+      i += 1
 
-    val testCases =
-      cp"/punctuation/mdspec.json"
-      . read[Json]
-      . as[List[Testcase]]
-      . groupBy(_.section)
-      . filter(_(0) != "HTML blocks")
-
-    suite(m"Java parser (commonmark-java)"):
-      testCases.each: (section, cases) =>
-        suite(section.communicate):
-          cases.each: testcase =>
-            safely(testcase.html.read[Html of whatwg.Flow]).let: html =>
-              if !Set(308, 309, 475, 598, 605)(testcase.example) then
-                test(m"Commonmark test case ${testcase.example}"):
-                  Commonmark.parse(testcase.markdown).html.show
-                . assert(_ == html.show)
-
-    suite(m"Native parser (in-development)"):
-      testCases.each: (section, cases) =>
-        suite(section.communicate):
-          cases.each: testcase =>
-            safely(testcase.html.read[Html of whatwg.Flow]).let: html =>
-              if !Set(308, 309, 475, 598, 605)(testcase.example) then
-                test(m"Native test case ${testcase.example}"):
-                  Parser.parse(testcase.markdown).html.show
-                . assert(_ == html.show)
+  // Returns the decoded text for a named entity (without `&` or `;`), or
+  // `null` if no such entity exists.
+  def lookup(name: String): String | Null = table.getOrElse(name, null)
