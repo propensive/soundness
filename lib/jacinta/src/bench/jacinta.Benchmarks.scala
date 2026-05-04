@@ -40,7 +40,6 @@ import contingency.*, strategies.throwUnsafely
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContext
-import merino.*
 import probably.*
 import quantitative.*
 import rudiments.*
@@ -80,7 +79,7 @@ object Benchmarks extends Suite(m"Jacinta benchmarks"):
   def parse(text: Text): Json = unsafely:
     Json(JsonAst.parse(text.s.getBytes("UTF-8").nn.immutable(using Unsafe)))
 
-  // Parsed AST of the same blockchain example used by `merino.Benchmarks` —
+  // Parsed AST of the same blockchain example used by `jacinta.ParserBenchmarks` —
   // contains many numbers that overflow the parser's 15-nibble BCD fast path
   // and currently materialise as `Double` (precision-lossy). After the
   // Array[Long] BCD work in `RawJson`, the AST's number slots will hold BCD

@@ -46,7 +46,6 @@ import denominative.*
 import distillate.*
 import gossamer.*
 import hieroglyph.*
-import merino.*
 import panopticon.*
 import prepositional.*
 import proscenium.*

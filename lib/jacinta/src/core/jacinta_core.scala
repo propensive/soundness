@@ -40,7 +40,6 @@ import scala.compiletime.*
 import anticipation.*
 import contextual.*
 import contingency.*
-import merino.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
