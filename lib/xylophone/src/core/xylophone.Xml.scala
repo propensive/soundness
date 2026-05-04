@@ -136,11 +136,18 @@ object Xml extends Tag.Container
   given loadable: (schema: XmlSchema) => Tactic[ParseError] => Xml is Loadable by Text = stream =>
     XmlParser.fromIterator(stream.iterator).parseXml(headers0 = true) match
       case Fragment((header: Header), rest*) =>
-        if rest.length == 1 then Document(rest.head, header)
+        if rest.nil then abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
+        else if rest.length == 1 then Document(rest.head, header)
         else Document(Fragment(rest*), header)
 
-      case other =>
+      case _: Header =>
         abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
+
+      case fragment: Fragment =>
+        Document(fragment, Xml.header)
+
+      case node: Node =>
+        Document(node, Xml.header)
 
   given streamable: (Monitor, Codicil) => Document[Xml] is Streamable by Text =
     emit(_).to(Stream)

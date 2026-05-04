@@ -603,6 +603,55 @@ object Tests extends Suite(m"Xylophone tests"):
           doc == Document(elem(t"a"), Header(t"1.0", Unset, Unset))
 
 
+    suite(m"Headerless documents"):
+      test(m"Single root element without XML declaration"):
+        supervise:
+          t"<a/>".load[Xml]
+      . assert(_ == Document(elem(t"a"), Xml.header))
+
+      test(m"Root element with content but no XML declaration"):
+        supervise:
+          t"<a>hello</a>".load[Xml]
+      . assert(_ == Document(elem(t"a", TextNode(t"hello")), Xml.header))
+
+      test(m"Nested elements without XML declaration"):
+        supervise:
+          t"<a><b/></a>".load[Xml]
+      . assert(_ == Document(elem(t"a", elem(t"b")), Xml.header))
+
+      test(m"Headerless document with prolog comment"):
+        supervise:
+          t"<!--prolog comment--><a/>".load[Xml]
+      . assert: doc =>
+          doc == Document(
+            Fragment(Comment(t"prolog comment"), elem(t"a")),
+            Xml.header)
+
+      test(m"Headerless document with prolog PI"):
+        supervise:
+          t"""<?stylesheet href="x"?><a/>""".load[Xml]
+      . assert: doc =>
+          doc == Document(
+            Fragment(ProcessingInstruction(t"stylesheet", t"""href="x""""), elem(t"a")),
+            Xml.header)
+
+      test(m"Headerless document with DOCTYPE"):
+        supervise:
+          t"<!DOCTYPE a><a/>".load[Xml]
+      . assert: doc =>
+          doc == Document(
+            Fragment(Doctype(t"a"), elem(t"a")),
+            Xml.header)
+
+      test(m"Lone XML declaration is rejected"):
+        supervise:
+          capture[ParseError](t"""<?xml version="1.0"?>""".load[Xml]).issue
+      . assert: issue =>
+          issue match
+            case Xml.Issue.BadDocument => true
+            case _                     => false
+
+
     suite(m"Additional element tests"):
       test(m"Element with multiple attributes preserves order"):
         t"""<a x="1" y="2" z="3"/>""".read[Xml].absolve match
