@@ -65,10 +65,26 @@ class GivensPhase() extends PluginPhase:
     val traverser = new tpd.TreeTraverser:
       def traverse(tree: tpd.Tree)(using Context): Unit =
         tree match
-          case d: tpd.ValDef if d.symbol.flags.is(Given) => record(d.symbol, d.tpt.tpe)
-          case d: tpd.DefDef if d.symbol.flags.is(Given) => record(d.symbol, d.tpt.tpe)
-          case _                                         => ()
+          case d: tpd.ValDef if eligible(d.symbol) => record(d.symbol, d.tpt.tpe)
+          case d: tpd.DefDef if eligible(d.symbol) => record(d.symbol, d.tpt.tpe)
+          case _                                   => ()
         traverseChildren(tree)
+
+      private def eligible(symbol: Symbols.Symbol)(using Context): Boolean =
+        symbol.flags.is(Given) && isStablyAccessible(symbol)
+
+      // A given is stably accessible if every enclosing scope on the path from
+      // the root is a package or a module (object). Givens nested inside a
+      // non-module class, a trait, a method body, or a refinement aren't usable
+      // via a plain `import` — listing them would just be noise.
+      private def isStablyAccessible(symbol: Symbols.Symbol)(using Context): Boolean =
+        var owner = symbol.owner
+        var stable = true
+        while stable && owner.exists && owner != Symbols.defn.RootClass do
+          if owner.is(Method) then stable = false
+          else if owner.isClass && !owner.is(Module) && !owner.is(Package) then stable = false
+          else owner = owner.owner
+        stable
 
       private def record(symbol: Symbols.Symbol, tpe: Types.Type)(using Context): Unit =
         val typeclassSymbol = typeclassOf(tpe, symbol)
