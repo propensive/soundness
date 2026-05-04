@@ -97,5 +97,6 @@ enum Typename:
       case Type(parent, _) => s"${parent.url}${symbol("~")}$name2".tt
       case Term(parent, _) => s"${parent.url}${symbol("~")}$name2".tt
 
-  def text(using imports: Imports): Text = parent.lay(name): parent =>
-    if imports.has(parent) then name else s"${parent.text}${symbol("#")}$name".tt
+  def text(using imports: Imports): Text =
+    if imports.hasDirect(this) then name else parent.lay(name): parent =>
+      if imports.has(parent) then name else s"${parent.text}${symbol("#")}$name".tt

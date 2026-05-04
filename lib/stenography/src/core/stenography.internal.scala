@@ -49,21 +49,62 @@ object internal:
   def name[typename <: AnyKind: Type](using Quotes): Text =
     import quotes.reflect.*
 
-    val outer = quotes.absolve match
+    val (outer, direct): (List[Typename], Set[Typename]) = quotes.absolve match
       case quotes: runtime.impl.QuotesImpl =>
         given context: core.Contexts.Context = quotes.ctx
 
         context.compilationUnit.tpdTree.absolve match
           case ast.tpd.PackageDef(root, statements) =>
-            Typename(root.show) :: statements.collect:
-              case ast.tpd.Import(name, selectors) if selectors.exists(_.isWildcard) =>
-                Typename(name.show)
+            val outerNames = Typename(root.show) :: statements.collect:
+              case ast.tpd.Import(name, _) => Typename(name.show)
+
+            // For each wildcard import, find type aliases declared in that
+            // scope that were introduced by `export X.foo` clauses (carrying
+            // the `Exported` flag). Their *target* typenames are accessible
+            // via just the leaf, so add those to `direct`.
+            val directNames =
+              statements.collect:
+                case ast.tpd.Import(qualifier, selectors)
+                if selectors.exists(_.isWildcard) =>
+                  val rootSym = qualifier.symbol
+                  if !rootSym.exists then Nil
+                  else exportedTargets(rootSym)
+              .flatten.toSet
+
+            (outerNames, directNames)
 
           case _ =>
-            Nil
+            (Nil, Set.empty[Typename])
 
     val imports: Set[Typename] = metaprogramming.imports.map(_.term).map(Syntax.term(_)).to(Set)
 
-    given Imports = Imports(Set(Typename("scala"), Typename("scala.Predef")) ++ imports ++ outer)
+    given Imports =
+      Imports(Set(Typename("scala"), Typename("scala.Predef")) ++ imports ++ outer, direct)
 
     Syntax(TypeRepr.of[typename]).text
+
+  private def exportedTargets(using Quotes, dotty.tools.dotc.core.Contexts.Context)
+                             (rootSym: dotty.tools.dotc.core.Symbols.Symbol)
+  :     List[Typename] =
+
+    import dotty.tools.dotc.core.{Flags, Types}
+    import quotes.reflect.TypeRepr
+
+    // Top-level definitions in a package are stored inside synthetic
+    // `<filename>$package` classes; export forwarders for types live there.
+    val directDecls = rootSym.info.decls.toList
+    val packageClasses = directDecls.filter(_.name.toString.endsWith("$package"))
+    val nestedDecls = packageClasses.flatMap(_.info.decls.toList)
+
+    (directDecls ++ nestedDecls).filter(_.is(Flags.Exported)).flatMap: decl =>
+      decl.info match
+        case alias: Types.TypeAlias =>
+          Syntax(alias.alias.asInstanceOf[TypeRepr]) match
+            // Add both forms so the same import path can shorten references
+            // to either the type itself or its companion (e.g. `Textual` and
+            // `Textual.foo` both resolve via `import soundness.*`).
+            case Syntax.Simple(typename) => List(typename, typename.companionObject)
+            case _                       => Nil
+
+        case _ =>
+          Nil
