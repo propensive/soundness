@@ -106,16 +106,58 @@ object internal:
       case _                      => t
 
     def availableFor(repr: TypeRepr, exclusions: List[Symbol], gas: Int): List[Available] =
-      beneficence.givens(repr)
-      . filterNot(exclusions.contains)
-      . filter(conforms(_, repr))
-      . map: symbol =>
-          val requirements =
-            if gas <= 0 then Nil
-            else usingTypesInstantiated(symbol, repr).map: paramType =>
-              val nextAvailable = availableFor(paramType, symbol :: exclusions, gas - 1)
-              Missing(stenography.internal.name(paramType), nextAvailable, Nil)
-          Available(displayName(symbol.fullName).tt, requirements)
+      val candidates =
+        beneficence.givens(repr)
+        . filterNot(exclusions.contains)
+        . filter(conforms(_, repr))
+
+      dedupeExports(candidates).map: symbol =>
+        val requirements =
+          if gas <= 0 then Nil
+          else usingTypesInstantiated(symbol, repr).map: paramType =>
+            val nextAvailable = availableFor(paramType, symbol :: exclusions, gas - 1)
+            Missing(stenography.internal.name(paramType), nextAvailable, Nil)
+        Available(renderSymbol(symbol), requirements)
+
+    // A symbol introduced via `export X.y` carries the `Exported` flag and its
+    // tree's body forwards to the original. Walk through forwarders to find
+    // the canonical (non-exported) symbol that ultimately backs it.
+    def canonical(symbol: Symbol): Symbol =
+      if !symbol.flags.is(Flags.Exported) then symbol
+      else
+        val target = symbol.tree.absolve match
+          case d: DefDef => d.rhs.fold(Symbol.noSymbol)(underlyingSymbol)
+          case _         => Symbol.noSymbol
+
+        if target.exists && target != symbol then canonical(target) else symbol
+
+    def underlyingSymbol(tree: Term): Symbol = tree match
+      case Apply(fun, _)     => underlyingSymbol(fun)
+      case TypeApply(fun, _) => underlyingSymbol(fun)
+      case Inlined(_, _, b)  => underlyingSymbol(b)
+      case Block(_, expr)    => underlyingSymbol(expr)
+      case Typed(expr, _)    => underlyingSymbol(expr)
+      case _                 => tree.symbol
+
+    // Several classpath givens can be exports/re-exports of the same canonical
+    // definition. Group by canonical symbol and keep only the one whose
+    // stenography rendering is shortest (i.e. the most readable in the current
+    // import scope).
+    def dedupeExports(symbols: List[Symbol]): List[Symbol] =
+      symbols.groupBy(canonical).values.toList.map: group =>
+        group.minBy(s => renderSymbol(s).s.length)
+
+    // Render a symbol's path via Stenography (so import-scope abbreviations
+    // apply). Strip the trailing `.type` that comes from rendering a singleton
+    // TermRef, and the synthetic `<filename>$package` segments Scala 3 inserts
+    // for top-level definitions.
+    def renderSymbol(symbol: Symbol): Text =
+      val raw = stenography.internal.name(symbol.termRef).s
+      val noType = if raw.endsWith(".type") then raw.substring(0, raw.length - 5).nn else raw
+      noType.split('.').iterator.filterNot: segment =>
+        val stripped = if segment.endsWith("$") then segment.dropRight(1).nn else segment
+        stripped.endsWith("$package")
+      .mkString(".").tt
 
     def conforms(symbol: Symbol, target: TypeRepr): Boolean =
       val resultType = resultOf(symbol.info)
@@ -186,12 +228,6 @@ object internal:
 
         case _ =>
           Nil
-
-    def displayName(fqn: String): String =
-      fqn.split('.').iterator.filterNot: segment =>
-        val stripped = if segment.endsWith("$") then segment.dropRight(1) else segment
-        stripped.endsWith("$package")
-      .mkString(".")
 
     def missing(repr: TypeRepr, candidates: List[Candidate]): Missing =
       Missing(stenography.internal.name(repr), availableFor(repr, Nil, initialGas), candidates)
