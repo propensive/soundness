@@ -36,16 +36,68 @@ import language.experimental.pureFunctions
 
 import scala.quoted.*
 
-import gigantism.*
+import anticipation.*
+import contextual.*
+import fulminate.*
 import proscenium.*
 
 object internal:
-  def sh(context: Expr[StringContext], parts: Expr[Seq[Any]]): Macro[Command] =
+  private given realm: Realm = realm"guillotine"
+
+  def sh(context: Expr[StringContext], insertions: Expr[Seq[Any]])(using Quotes)
+  :   Expr[Any] =
+
     import quotes.reflect.*
 
-    val execType = ConstantType(StringConstant(context.value.get.parts.head.split(" ").nn.head.nn))
+    val parts: List[String] =
+      context.value.getOrElse:
+        halt(m"the StringContext extension method parameter does not appear to be inline")
+
+      . parts.toList
+
+    val insertionExprs: List[Expr[Any]] = insertions.absolve match
+      case Varargs(exprs) => exprs.toList
+
+    def rethrow[result](block: => result): result =
+      try block catch case error: Sh.ShError => halt(error.detail)
+
+    val checkState = Sh.Runtime.initial
+    rethrow(Sh.Runtime.parse(checkState, parts.head.tt))
+
+    var runtimeExpr: Expr[Sh.State] =
+      '{Sh.Runtime.parse(Sh.Runtime.initial, ${Expr(parts.head)}.tt)}
+
+    var i = 0
+    while i < insertionExprs.length do
+      val head = insertionExprs(i)
+      val nextPart = parts(i + 1)
+
+      head.absolve match
+        case '{$value: tpe} =>
+          val typeclassExpr: Expr[Insertion[Sh.Parameters, tpe]] =
+            Expr.summon[Insertion[Sh.Parameters, tpe]].getOrElse:
+              halt(m"can't substitute ${TypeRepr.of[tpe].show} into a sh-interpolator")
+
+          rethrow(Sh.Runtime.skip(checkState))
+          rethrow(Sh.Runtime.parse(checkState, nextPart.tt))
+
+          val current = runtimeExpr
+          runtimeExpr =
+            '{
+              Sh.Runtime.parse
+                ( Sh.Runtime.insert($current, $typeclassExpr.embed($value)),
+                  ${Expr(nextPart)}.tt )
+            }
+
+      i += 1
+
+    rethrow(Sh.Runtime.complete(checkState))
+
+    val execType =
+      ConstantType(StringConstant(parts.head.split(" ").nn.head.nn))
+
     val bounds = TypeBounds(execType, execType)
 
     Refinement(TypeRepr.of[Command], "Exec", bounds).asType.absolve match
       case '[type commandType <: Command; commandType] =>
-        '{${Sh.Prefix.expand(context, parts)}.asInstanceOf[commandType]}
+        '{Sh.Runtime.complete($runtimeExpr).asInstanceOf[commandType]}

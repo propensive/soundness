@@ -180,7 +180,7 @@ object Ansi extends Ansi2:
 
 
   object Runtime:
-    private given canThrow: CanThrow[AnsiError] = unsafeExceptions.canThrowAny
+    import unsafeExceptions.canThrowAny
     private val complement = Map('[' -> ']', '(' -> ')', '{' -> '}', '<' -> '>', '«' -> '»')
 
     def initial: State = State()
