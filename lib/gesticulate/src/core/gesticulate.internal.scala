@@ -32,59 +32,30 @@
                                                                                                   */
 package gesticulate
 
-import language.dynamics
+import scala.quoted.*
 
 import anticipation.*
-import contextual.*
 import contingency.*
-import distillate.*
-import gossamer.{where as _, *}
-import prepositional.*
+import fulminate.*
+import gigantism.*
 import rudiments.*
-import spectacular.*
 import vacuous.*
 
-object MediaType:
-  given inspectable: MediaType is Inspectable = mt => t"""media"${mt}""""
+object internal:
+  private given realm: Realm = realm"gesticulate"
 
-  given showable: MediaType is Showable =
-    mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
+  def mediaInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[MediaType] =
+    import quotes.reflect.*
 
-  given encodable: MediaType is Encodable in Text = _.show
-  given decodable: Tactic[MediaTypeError] => MediaType is Decodable in Text = Media.parse(_)
+    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case _               => strings
 
-  given formenctype: ("formenctype" is GenericHtmlAttribute2[MediaType]):
-    def name: Text = t"formenctype"
-    def serialize(mediaType: MediaType): Text = mediaType.show
+    val parts = recur[parts](Nil)
+    if parts.length != 1 then halt(m"a media type literal cannot have substitutions")
 
-  given media: ("media" is GenericHtmlAttribute2[MediaType]):
-    def name: Text = t"media"
-    def serialize(mediaType: MediaType): Text = mediaType.show
+    val raw: String = parts.head
 
-  given enctype: ("enctype" is GenericHtmlAttribute2[MediaType]):
-    def name: Text = t"enctype"
-    def serialize(mediaType: MediaType): Text = mediaType.show
+    Media.validateLiteral(raw.tt).let(halt(_))
 
-  given htype: ("htype" is GenericHtmlAttribute2[MediaType]):
-    def name: Text = t"type"
-    def serialize(mediaType: MediaType): Text = mediaType.show
-
-  def unapply(value: Text): Option[MediaType] = safely(Some(Media.parse(value))).or(None)
-
-  inline given interpolable: MediaType is Interpolable:
-    transparent inline def interpolate[parts <: Tuple](inline insertions: Any*): MediaType =
-      ${gesticulate.internal.mediaInterpolator[parts]('insertions)}
-
-case class MediaType
-  ( group:      Media.Group,
-    subtype:    Media.Subtype,
-    suffixes:   List[Media.Suffix] = Nil,
-    parameters: List[(Text, Text)] = Nil )
-extends Dynamic:
-  private def suffixString: Text = suffixes.map { s => t"+${s.name}" }.join
-  def basic: Text = t"${group.name}/${subtype.name}$suffixString"
-  def base: MediaType = MediaType(group, subtype, suffixes)
-  def at(name: Text): Optional[Text] = parameters.where(_(0) == name).let(_(1))
-
-  def applyDynamicNamed(apply: "apply")(kvs: (String, Text)*): MediaType =
-    copy(parameters = parameters ::: kvs.map(_.show -> _).to(List))
+    '{unsafely(Media.parse(${Expr(raw)}.tt))}
