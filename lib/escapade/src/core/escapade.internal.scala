@@ -34,8 +34,13 @@ package escapade
 
 import language.experimental.pureFunctions
 
+import scala.quoted.*
+
 import anticipation.*
+import contextual.*
 import denominative.*
+import fulminate.*
+import gigantism.*
 import gossamer.*
 import hypotenuse.*
 import proscenium.*
@@ -43,7 +48,78 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
+import errorDiagnostics.empty
+
 object internal:
+  private given realm: Realm = realm"escapade"
+
+  // Mirrors what contextual.Interpolator.expand used to do for the e""
+  // interpolator, without going through the trait. We summon Insertion
+  // typeclasses at the macro level, run the State machine at compile time
+  // to surface bracket-matching errors, and emit a runtime sequence of
+  // parse/insert calls against the same State machine.
+  def eMacro(context: Expr[StringContext], insertions: Expr[Seq[Any]])(using Quotes)
+  :   Expr[Teletype] =
+
+    import quotes.reflect.*
+
+    val parts: List[String] =
+      context.value.getOrElse:
+        halt(m"the StringContext extension method parameter does not appear to be inline")
+
+      . parts.toList
+
+    val insertionExprs: List[Expr[Any]] = insertions.absolve match
+      case Varargs(exprs) => exprs.toList
+
+    val checkState = Ansi.Runtime.initial
+
+    def rethrow[result](block: => result): result =
+      try block catch case error: Ansi.AnsiError => halt(error.detail)
+
+    rethrow(Ansi.Runtime.parse(checkState, parts.head.tt))
+
+    var runtimeExpr: Expr[Ansi.State] =
+      '{Ansi.Runtime.parse(Ansi.Runtime.initial, ${Expr(parts.head)}.tt)}
+
+    var i = 0
+    while i < insertionExprs.length do
+      val head = insertionExprs(i)
+      val nextPart = parts(i + 1)
+
+      head.absolve match
+        case '{$value: tpe} =>
+          val typeclassExpr: Expr[Insertion[Ansi.Input, tpe]] =
+            Expr.summon[Insertion[Ansi.Input, tpe]].getOrElse:
+              halt(m"can't substitute ${TypeRepr.of[tpe].show} into an e-interpolator")
+
+          typeclassExpr.absolve match
+            case '{$_ : Substitution[Ansi.Input, tpe, sub]} =>
+              val label: String = TypeRepr.of[sub] match
+                case ConstantType(StringConstant(s)) => s
+                case _ => halt(m"expected a literal string label for the substitution")
+              rethrow(Ansi.Runtime.parse(checkState, label.tt))
+
+            case _ =>
+              rethrow(Ansi.Runtime.skip(checkState))
+
+          rethrow(Ansi.Runtime.parse(checkState, nextPart.tt))
+
+          val current = runtimeExpr
+          runtimeExpr =
+            '{
+              Ansi.Runtime.parse
+                ( Ansi.Runtime.insert($current, $typeclassExpr.embed($value)),
+                  ${Expr(nextPart)}.tt )
+            }
+
+      i += 1
+
+    rethrow(Ansi.Runtime.complete(checkState))
+
+    '{Ansi.Runtime.complete($runtimeExpr)}
+
+
   opaque type CharSpan = Long
 
   object CharSpan:
