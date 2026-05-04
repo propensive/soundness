@@ -179,7 +179,8 @@ object Ansi extends Ansi2:
       currentStyle = transform(currentStyle)
 
 
-  object Interpolator extends contextual.Interpolator[Input, State, Teletype]:
+  object Runtime:
+    private given canThrow: CanThrow[AnsiError] = unsafeExceptions.canThrowAny
     private val complement = Map('[' -> ']', '(' -> ')', '{' -> '}', '<' -> '>', '«' -> '»')
 
     def initial: State = State()
@@ -239,7 +240,7 @@ object Ansi extends Ansi2:
               closures(state, text.skip(index + 1))
 
       catch case error: EscapeError => error match
-        case EscapeError(message) => throw InterpolationError(message)
+        case EscapeError(message) => throw AnsiError(message)
 
     def insert(state: State, value: Input): State = value match
       case Input.TextInput(text) =>
@@ -264,7 +265,7 @@ object Ansi extends Ansi2:
 
     def complete(state: State): Teletype =
       if state.stack.nonEmpty
-      then throw InterpolationError(m"the closing brace does not match an opening brace")
+      then throw AnsiError(m"the closing brace does not match an opening brace")
 
       val tail = if state.linkArmed then StyleWord.HyperlinkChange else 0L
       state.styles += tail
@@ -279,3 +280,6 @@ object Ansi extends Ansi2:
           state.hyperlinks.toMap,
           state.insertions.to(TreeMap),
           newBoundaries )
+
+  case class AnsiError(detail: Message)
+  extends Exception(s"escapade: ${detail.text.s}")

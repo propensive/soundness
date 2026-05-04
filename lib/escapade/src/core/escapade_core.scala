@@ -56,7 +56,7 @@ object Overline
 
 extension (inline context: StringContext)
   transparent inline def e(inline parts: Any*): Teletype =
-    ${Ansi.Interpolator.expand('context, 'parts)}
+    ${escapade.internal.eMacro('context, 'parts)}
 
 extension [teletypeable: Teletypeable](value: teletypeable) def teletype: Teletype =
   teletypeable.teletype(value)
