@@ -32,8 +32,10 @@
                                                                                                   */
 package caesura
 
+import java.lang as jl
 import java.util as ju
 
+import scala.collection.mutable as scm
 import scala.compiletime.*
 
 import anticipation.*
@@ -92,84 +94,164 @@ object Sheet:
                 ( _[Text](name).or(t"") ) )* )
 
   given aggregable: (format: DsvFormat) => Tactic[DsvError] => Sheet is Aggregable by Text = text =>
-    val rows = recur(text)
+    val rows = parse(text)
     if format.header then Sheet(rows, format, rows.prim.let(_.header)) else Sheet(rows, format)
 
   given showable: DsvFormat => Sheet is Showable = _.rows.map(_.show).join(t"\n")
   given streamable: DsvFormat => Sheet is Streamable by Text = _.rows.to(Stream).map(_.show+t"\n")
 
 
-  private def recur
-    ( content:  Stream[Text],
-      index:    Ordinal                  = Prim,
-      column:   Int                      = 0,
-      cells:    Array[Text]              = new Array[Text](0),
-      builder:  TextBuilder              = TextBuilder(),
-      state:    State                    = State.Fresh,
-      headings: Optional[Map[Text, Int]] = Unset )
+  private def parse(content: Stream[Text])
     ( using format: DsvFormat, tactic: Tactic[DsvError] )
   :   Stream[Dsv] =
 
-    inline def putCell(): Array[Text] =
-      val cells2 = if cells.length <= column then cells :+ builder() else
-        cells(column) = builder()
-        cells
+    new Parser(content).stream
 
-      cells2.also(builder.clear())
 
-    inline def advance() =
-      val cells = putCell()
-      recur(content, index + 1, column + 1, cells, builder, State.Fresh, headings)
+  private class Parser(initial: Stream[Text])
+    ( using format: DsvFormat, tactic: Tactic[DsvError] ):
+    private var content: Stream[Text] = initial
+    private var current: String = ""
+    private var currentLen: Int = 0
+    private var pos: Int = 0
+    private val builder: jl.StringBuilder = new jl.StringBuilder(64)
+    private val cellsBuf: scm.ArrayBuffer[Text] = new scm.ArrayBuffer[Text](16)
+    private var state: State = State.Fresh
+    private var headings: Optional[Map[Text, Int]] = Unset
 
-    inline def proceed(char: Char): Stream[Dsv] =
-      builder.put(char) yet recur(content, index + 1, column, cells, builder, state, headings)
+    private val delim: Char = format.delimiter
+    private val quoteChar: Char = format.quote
+    private val isHeader: Boolean = format.header
 
-    inline def quote(): Stream[Dsv] = state match
-      case State.Fresh =>
-        if !builder.nil then raise(DsvError(format, DsvError.Reason.MisplacedQuote))
-        recur(content, index + 1, column, cells, builder, State.Quoted, headings)
+    @scala.annotation.tailrec
+    private def loadChunk(): Boolean =
+      if pos < currentLen then true
+      else content match
+        case head #:: tail =>
+          current = head.s
+          currentLen = current.length
+          pos = 0
+          content = tail
+          if currentLen == 0 then loadChunk() else true
 
-      case State.Quoted =>
-        recur(content, index + 1, column, cells, builder, State.DoubleQuoted, headings)
+        case _ =>
+          false
 
-      case State.DoubleQuoted =>
-        builder.put(format.Quote)
-        recur(content, index + 1, column, cells, builder, State.Quoted, headings)
+    private def closeCell(): Unit =
+      cellsBuf += Text(builder.toString.nn)
+      builder.setLength(0)
 
-    inline def fresh(): Array[Text] = new Array[Text](cells.length)
+    private def emitRow(): Dsv =
+      val n = cellsBuf.length
+      val arr = new Array[Text](n)
+      cellsBuf.copyToArray(arr)
+      cellsBuf.clear()
+      Dsv(IArray.unsafeFromArray(arr), headings)
 
-    inline def putDsv(): Stream[Dsv] =
-      val cells = putCell()
+    // Scan ahead in Fresh state for the next delimiter, quote, or line-ending,
+    // bulk-appending the run of regular characters in one operation, then
+    // dispatch on the trigger char. Returns Unset to continue parsing or a
+    // Dsv when a row has just been closed.
+    private def scanFresh(): Optional[Dsv] =
+      val str = current
+      val len = currentLen
+      val d = delim
+      val q = quoteChar
+      val s = pos
+      var p = s
+      while p < len do
+        val ch = str.charAt(p)
+        if ch == d || ch == q || ch == '\n' || ch == '\r' then
+          if p > s then builder.append(str, s, p)
+          pos = p + 1
+          if ch == d then
+            closeCell()
+            return Unset
+          else if ch == q then
+            if builder.length > 0 then
+              raise(DsvError(format, DsvError.Reason.MisplacedQuote))
+            state = State.Quoted
+            return Unset
+          else
+            if cellsBuf.isEmpty && builder.length == 0 then return Unset
+            else
+              closeCell()
+              return emitRow()
+        p += 1
+      if p > s then builder.append(str, s, p)
+      pos = p
+      Unset
 
-      if format.header && headings.absent then
-        val map: Map[Text, Int] = cells.to(List).zipWithIndex.to(Map)
-        recur(content, index + 1, 0, fresh(), builder, State.Fresh, map)
+    // Scan ahead in Quoted state for the next quote, bulk-appending all other
+    // characters (including delimiters and newlines) verbatim.
+    private def scanQuoted(): Unit =
+      val str = current
+      val len = currentLen
+      val q = quoteChar
+      val s = pos
+      var p = s
+      while p < len && str.charAt(p) != q do p += 1
+      if p > s then builder.append(str, s, p)
+      if p < len then
+        pos = p + 1
+        state = State.DoubleQuoted
       else
-        (column + 1).until(cells.length).each: index =>
-          cells(index) = t""
+        pos = p
 
-        val row = Dsv(unsafely(cells.immutable), headings)
-        row #:: recur(content, index + 1, 0, fresh(), builder, State.Fresh, headings)
+    private def handleDoubleQuoted(): Optional[Dsv] =
+      val ch = current.charAt(pos)
+      pos += 1
+      if ch == quoteChar then
+        builder.append(quoteChar)
+        state = State.Quoted
+        Unset
+      else if ch == delim then
+        closeCell()
+        state = State.Fresh
+        Unset
+      else if ch == '\n' || ch == '\r' then
+        closeCell()
+        state = State.Fresh
+        emitRow()
+      else
+        builder.append(ch)
+        Unset
 
-    content.flow(if column == 0 && builder.nil then Stream() else putDsv()):
-      if !next.has(index) then recur(more, Prim, column, cells, builder, state, headings) else
-        next.at(index).vouch match
-          case format.Delimiter =>
-            if state != State.Quoted then advance() else proceed(format.Delimiter)
+    private def parseRow(): Optional[Dsv] =
+      while loadChunk() do
+        val emitted: Optional[Dsv] = state match
+          case State.Fresh        => scanFresh()
+          case State.Quoted       => scanQuoted(); Unset
+          case State.DoubleQuoted => handleDoubleQuoted()
 
-          case format.Quote =>
-            quote()
+        emitted match
+          case row: Dsv => return row
+          case _        => ()
 
-          case '\n' | '\r' =>
-            if column == 0 && builder.nil
-            then recur(content, index + 1, 0, cells, builder, State.Fresh, headings)
-            else if state != State.Quoted
-            then putDsv()
-            else proceed(next.at(index).vouch)
+      if cellsBuf.nonEmpty || builder.length > 0 then
+        closeCell()
+        emitRow()
+      else
+        Unset
 
-          case char =>
-            builder.put(char)
-            recur(content, index + 1, column, cells, builder, state, headings)
+    def stream: Stream[Dsv] = next()
+
+    private def next(): Stream[Dsv] = parseRow() match
+      case row: Dsv =>
+        if isHeader && headings.absent then
+          val data = row.data
+          val mapBuilder = Map.newBuilder[Text, Int]
+          var i = 0
+          while i < data.length do
+            mapBuilder += data(i) -> i
+            i += 1
+          headings = mapBuilder.result()
+          next()
+        else
+          row #:: next()
+
+      case _ =>
+        Stream()
 
 case class Sheet
   ( rows:    Stream[Dsv],
