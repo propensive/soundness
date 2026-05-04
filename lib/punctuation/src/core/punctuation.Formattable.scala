@@ -35,18 +35,9 @@ package punctuation
 import anticipation.*
 import honeycomb.*
 import prepositional.*
-import proscenium.*
 import vacuous.*
-import wisteria.*
 
 import doms.html.whatwg, whatwg.*
-
-object Formattable extends ProductDerivable[Formattable]:
-  inline def conjunction[derivation <: Product: ProductReflection]: derivation is Formattable =
-    (language, content) =>
-      contexts: [field] => (context: field is Formattable) => context
-      . foldLeft(Unset: Optional[Html of Flow]): (acc, next) =>
-        acc.or(next.format(language, content))
 
 trait Formattable:
   type Self

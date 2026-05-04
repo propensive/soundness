@@ -841,7 +841,7 @@ object profanity extends Library:
   object test extends Tests(core)
 
 object punctuation extends Library:
-  object core extends Component(honeycomb.core)
+  object core extends Component(honeycomb.core, frontier.core)
   object html extends Component(core)
   object ansi extends Component(core, harlequin.core)
   object test extends Tests(core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
