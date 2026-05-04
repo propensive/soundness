@@ -110,3 +110,10 @@ object Tests extends Suite(m"Frontier Tests"):
         summon[rudiments.DecimalConverter]
       . map(_.message)
     . assert(_.exists(_.contains("decimalFormatters.java")))
+
+    test(m"explainMissingContext shows type-parameter bindings for polymorphic givens"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        summon[Char is symbolism.Concatenable]
+      . map(_.message)
+    . assert(_.exists(_.contains("textual = Char")))
