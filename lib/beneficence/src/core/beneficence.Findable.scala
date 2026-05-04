@@ -30,24 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package vacuous
+package beneficence
 
-import scala.collection.immutable as sci
-
-import anticipation.*
-import beneficence.*
-
-object Default:
-  def apply[value](value: => value): Default[value] = () => value
-
-  given int: Default[Int] = () => 0
-  given singleton: [value: ValueOf] => Default[value] = () => valueOf[value]
-  given default: Default[Long] = () => 0L
-  given text: Default[Text] = () => "".tt
-  given string: Default[String] = () => ""
-  given list: [element] => Default[List[element]] = () => Nil
-  given set: [element] => Default[Set[element]] = () => Set()
-  given vector: [element] => Default[sci.Vector[element]] = () => sci.Vector()
-
-trait Default[+value] extends Findable:
-  def apply(): value
+trait Findable

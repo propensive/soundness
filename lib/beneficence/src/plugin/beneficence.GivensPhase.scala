@@ -42,21 +42,28 @@ class GivensPhase() extends PluginPhase:
   override val runsBefore: Set[String] = Set("pickler")
 
   override def runOn(units: List[CompilationUnit])(using Context): List[CompilationUnit] =
-    val collected: mutable.LinkedHashMap[String, mutable.Buffer[Entry]] =
-      mutable.LinkedHashMap.empty
+    val findable = Symbols.requiredClassRef("beneficence.Findable").classSymbol
 
-    val sources: mutable.LinkedHashSet[String] = mutable.LinkedHashSet.empty
+    // If `beneficence.Findable` isn't on this compilation's classpath there's
+    // nothing the plugin can usefully record — every given would be filtered.
+    if !findable.exists then units
+    else
+      val collected: mutable.LinkedHashMap[String, mutable.Buffer[Entry]] =
+        mutable.LinkedHashMap.empty
 
-    units.foreach: unit =>
-      sources += unit.source.file.path
-      collectGivens(unit, collected)
+      val sources: mutable.LinkedHashSet[String] = mutable.LinkedHashSet.empty
 
-    GivensWriter.merge(collected, sources.toSet)
-    units
+      units.foreach: unit =>
+        sources += unit.source.file.path
+        collectGivens(unit, collected, findable)
+
+      GivensWriter.merge(collected, sources.toSet)
+      units
 
   private def collectGivens
                 ( unit:      CompilationUnit,
-                  collected: mutable.LinkedHashMap[String, mutable.Buffer[Entry]] )
+                  collected: mutable.LinkedHashMap[String, mutable.Buffer[Entry]],
+                  findable:  Symbols.Symbol )
                 (using Context)
   :     Unit =
 
@@ -65,13 +72,15 @@ class GivensPhase() extends PluginPhase:
     val traverser = new tpd.TreeTraverser:
       def traverse(tree: tpd.Tree)(using Context): Unit =
         tree match
-          case d: tpd.ValDef if eligible(d.symbol) => record(d.symbol, d.tpt.tpe)
-          case d: tpd.DefDef if eligible(d.symbol) => record(d.symbol, d.tpt.tpe)
-          case _                                   => ()
+          case d: tpd.ValDef if eligible(d.symbol, d.tpt.tpe) => record(d.symbol, d.tpt.tpe)
+          case d: tpd.DefDef if eligible(d.symbol, d.tpt.tpe) => record(d.symbol, d.tpt.tpe)
+          case _                                              => ()
         traverseChildren(tree)
 
-      private def eligible(symbol: Symbols.Symbol)(using Context): Boolean =
-        symbol.flags.is(Given) && isStablyAccessible(symbol)
+      private def eligible(symbol: Symbols.Symbol, tpe: Types.Type)(using Context): Boolean =
+        symbol.flags.is(Given)
+        && isStablyAccessible(symbol)
+        && tpe.baseClasses.contains(findable)
 
       // A given is stably accessible if every enclosing scope on the path from
       // the root is a package or a module (object). Givens nested inside a

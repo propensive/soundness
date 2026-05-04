@@ -123,7 +123,7 @@ extends BaseScalaModule, SonatypeCentralPublishModule:
   def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def sources = Task.Sources(moduleDir)
-  override def moduleDeps = dependencies
+  override def moduleDeps = beneficence.core +: dependencies
 
   override def scalacOptions = Task:
     settings.scalaOptions
@@ -409,7 +409,7 @@ object baroque extends Library:
   object test extends Tests(core, abacist.core, quantitative.units, mosquito.core)
 
 object beneficence extends Library:
-  object core extends Component()
+  object core extends BareComponent()
   object plugin extends BareComponent():
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
   object test extends Tests(core, plugin)

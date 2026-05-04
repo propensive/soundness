@@ -32,5 +32,7 @@
                                                                                                   */
 package prepositional
 
-trait Typeclass:
+import beneficence.Findable
+
+trait Typeclass extends Findable:
   type Self
