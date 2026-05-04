@@ -35,4 +35,4 @@ package soundness
 export
   contextual
   . { Embeddable, Extrapolable, Extrapolation, Insertion, Interpolable, Interpolation,
-      interpolation, InterpolationError, Interpolator, Substitution, Verifier }
+      interpolation, Substitution }

@@ -37,7 +37,6 @@ import language.dynamics
 import scala.io.*
 
 import anticipation.*
-import contextual.*
 import contingency.*
 import denominative.*
 import fulminate.*
@@ -99,16 +98,12 @@ object Media:
       case other   => other.toString.tt.uncamel.kebab
 
   lazy val systemMediaTypes: Set[Text] =
-    try
-      val stream = Optional(getClass.getResourceAsStream("/gesticulate/media.types")).or:
-        throw InterpolationError(m"could not find 'gesticulate/media.types' on the classpath")
-
-      val lines: Iterator[Text] =
-        scala.io.Source.fromInputStream(stream).getLines.map(Text(_)).map(_.cut(t"\t").head.lower)
-
-      lines.to(Set)
-
-    catch case error: InterpolationError => Set()
+    Optional(getClass.getResourceAsStream("/gesticulate/media.types")).lay(Set()): stream =>
+      scala.io.Source.fromInputStream(stream)
+      . getLines
+      . map(Text(_))
+      . map(_.cut(t"\t").head.lower)
+      . to(Set)
 
   def validateLiteral(text: Text): Optional[Message] =
     val parsed = try throwErrors(Media.parse(text)) catch
