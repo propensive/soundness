@@ -50,6 +50,17 @@ import vacuous.*
 
 object InlineParser:
 
+  // ASCII fast-test: bytes that need special handling in the main scan loop.
+  // Anything not in this set is plain text we can batch into the pending
+  // builder via `append(CharSequence, start, end)`.
+  private val Specials: Array[Boolean] =
+    val arr = new Array[Boolean](128)
+    "\\&`<\n*_[!]".foreach(c => arr(c.toInt) = true)
+    arr
+
+  private inline def isSpecial(inline c: Char): Boolean =
+    c < 128 && Specials(c.toInt)
+
   // Bracket stack entry. `node` is the BracketData node in the inline list
   // marking the `[` or `![`. `sourceStart` is the source position
   // immediately AFTER the opening bracket (used to extract the literal
@@ -69,140 +80,150 @@ object InlineParser:
     while end > 0 && (s.charAt(end - 1) == ' ' || s.charAt(end - 1) == '\t') do end -= 1
 
     val list = InlineList()
-    val pending = new StringBuilder
+    val pending = new java.lang.StringBuilder
     val brackets = mutable.Stack[BracketEntry]()
+    var delimCount = 0
 
     def flushPending(): Unit =
       if pending.length > 0 then
         list.append(TextData(Text(pending.toString)))
-        pending.clear()
+        pending.setLength(0)
 
     var i = 0
     while i < end do
-      val c = s.charAt(i)
-      c match
-        case '\\' =>
-          if i + 1 < end then
-            val nextCh = s.charAt(i + 1)
-            if nextCh == '\n' then
-              flushPending()
-              list.append(LinebreakData)
-              i += 2
-              while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
-            else if InlineSupport.isAsciiPunctuation(nextCh) then
-              pending.append(nextCh)
-              i += 2
+      // Batch plain text up to the next special char (or end).
+      val plainStart = i
+      while i < end && !isSpecial(s.charAt(i)) do i += 1
+      if i > plainStart then pending.append(s, plainStart, i)
+
+      if i < end then
+        val c = s.charAt(i)
+        c match
+          case '\\' =>
+            if i + 1 < end then
+              val nextCh = s.charAt(i + 1)
+              if nextCh == '\n' then
+                flushPending()
+                list.append(LinebreakData)
+                i += 2
+                while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
+              else if InlineSupport.isAsciiPunctuation(nextCh) then
+                pending.append(nextCh)
+                i += 2
+              else
+                pending.append('\\')
+                i += 1
             else
               pending.append('\\')
               i += 1
-          else
-            pending.append('\\')
-            i += 1
 
-        case '&' =>
-          InlineSupport.parseEntity(s, i, end) match
-            case e: EntityMatch =>
-              pending.append(e.decoded)
-              i = e.end
+          case '&' =>
+            InlineSupport.parseEntity(s, i, end) match
+              case e: EntityMatch =>
+                pending.append(e.decoded)
+                i = e.end
 
-            case Unset =>
-              pending.append('&')
-              i += 1
-
-        case '`' =>
-          InlineSupport.parseCodeSpan(s, i, end) match
-            case cs: CodeSpanMatch =>
-              flushPending()
-              list.append(CodeData(cs.content))
-              i = cs.end
-
-            case Unset =>
-              // No matching closer: emit the entire opening backtick run as
-              // literal text (per CommonMark §6.1) so the next iteration
-              // doesn't retry parsing inside the run.
-              while i < end && s.charAt(i) == '`' do
-                pending.append('`')
+              case Unset =>
+                pending.append('&')
                 i += 1
 
-        case '<' =>
-          InlineSupport.parseAutolink(s, i, end) match
-            case al: AutolinkMatch =>
-              flushPending()
-              al.link match
-                case link: Prose.Link =>
-                  val child = InlineNode(TextData(link.prose.head match
-                    case Prose.Textual(t) => t
-                    case _                => link.destination))
-                  list.append(LinkData(link.destination, link.title, List(child)))
+          case '`' =>
+            InlineSupport.parseCodeSpan(s, i, end) match
+              case cs: CodeSpanMatch =>
+                flushPending()
+                list.append(CodeData(cs.content))
+                i = cs.end
 
-                case _ =>
-                  list.append(TextData(Text(al.link.toString)))
-
-              i = al.end
-
-            case Unset =>
-              InlineSupport.parseRawHtml(s, i, end) match
-                case h: InlineSupport.HtmlInlineMatch =>
-                  flushPending()
-                  list.append(HtmlInlineData(h.html))
-                  i = h.end
-
-                case Unset =>
-                  pending.append('<')
+              case Unset =>
+                // No matching closer: emit the entire opening backtick run as
+                // literal text (per CommonMark §6.1) so the next iteration
+                // doesn't retry parsing inside the run.
+                while i < end && s.charAt(i) == '`' do
+                  pending.append('`')
                   i += 1
 
-        case '\n' =>
-          var j = pending.length
-          var spaces = 0
-          while j > 0 && pending.charAt(j - 1) == ' ' do
-            j -= 1
-            spaces += 1
-          pending.setLength(j)
-          flushPending()
-          if spaces >= 2 then list.append(LinebreakData)
-          else list.append(SoftbreakData)
-          i += 1
-          while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
+          case '<' =>
+            InlineSupport.parseAutolink(s, i, end) match
+              case al: AutolinkMatch =>
+                flushPending()
+                al.link match
+                  case link: Prose.Link =>
+                    val child = InlineNode(TextData(link.prose.head match
+                      case Prose.Textual(t) => t
+                      case _                => link.destination))
+                    list.append(LinkData(link.destination, link.title, List(child)))
 
-        case '*' | '_' =>
-          var j = i
-          while j < end && s.charAt(j) == c do j += 1
-          val length = j - i
+                  case _ =>
+                    list.append(TextData(Text(al.link.toString)))
 
-          val prevChar = if i == 0 then ' ' else s.charAt(i - 1)
-          val nextChar = if j >= end then ' ' else s.charAt(j)
+                i = al.end
 
-          val (canOpen, canClose) =
-            EmphasisProcessor.classifyDelim(c, prevChar, nextChar)
+              case Unset =>
+                InlineSupport.parseRawHtml(s, i, end) match
+                  case h: InlineSupport.HtmlInlineMatch =>
+                    flushPending()
+                    list.append(HtmlInlineData(h.html))
+                    i = h.end
 
-          flushPending()
-          list.append(DelimData(c, length, canOpen, canClose))
-          i = j
+                  case Unset =>
+                    pending.append('<')
+                    i += 1
 
-        case '[' =>
-          flushPending()
-          val node = list.append(BracketData(isImage = false))
-          brackets.push(BracketEntry(node, isImage = false, sourceStart = i + 1))
-          i += 1
+          case '\n' =>
+            var j = pending.length
+            var spaces = 0
+            while j > 0 && pending.charAt(j - 1) == ' ' do
+              j -= 1
+              spaces += 1
+            pending.setLength(j)
+            flushPending()
+            if spaces >= 2 then list.append(LinebreakData)
+            else list.append(SoftbreakData)
+            i += 1
+            while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
 
-        case '!' if i + 1 < end && s.charAt(i + 1) == '[' =>
-          flushPending()
-          val node = list.append(BracketData(isImage = true))
-          brackets.push(BracketEntry(node, isImage = true, sourceStart = i + 2))
-          i += 2
+          case '*' | '_' =>
+            var j = i
+            while j < end && s.charAt(j) == c do j += 1
+            val length = j - i
 
-        case ']' =>
-          flushPending()
-          val newPos = handleCloseBracket(list, brackets, s, i, end, refs)
-          i = newPos
+            val prevChar = if i == 0 then ' ' else s.charAt(i - 1)
+            val nextChar = if j >= end then ' ' else s.charAt(j)
+            val flags = EmphasisProcessor.classifyDelim(c, prevChar, nextChar)
+            val canOpen = EmphasisProcessor.hasOpen(flags)
+            val canClose = EmphasisProcessor.hasClose(flags)
 
-        case _ =>
-          pending.append(c)
-          i += 1
+            flushPending()
+            list.append(DelimData(c, length, canOpen, canClose))
+            delimCount += 1
+            i = j
+
+          case '[' =>
+            flushPending()
+            val node = list.append(BracketData(isImage = false))
+            brackets.push(BracketEntry(node, isImage = false, sourceStart = i + 1))
+            i += 1
+
+          case '!' if i + 1 < end && s.charAt(i + 1) == '[' =>
+            flushPending()
+            val node = list.append(BracketData(isImage = true))
+            brackets.push(BracketEntry(node, isImage = true, sourceStart = i + 2))
+            i += 2
+
+          case ']' =>
+            flushPending()
+            val newPos = handleCloseBracket(list, brackets, s, i, end, refs)
+            i = newPos
+
+          case _ =>
+            // Special-set member with no matching specific case (e.g. `!` not
+            // followed by `[`). Treat as literal text.
+            pending.append(c)
+            i += 1
 
     flushPending()
 
-    EmphasisProcessor.process(list, null)
+    if delimCount > 0 then EmphasisProcessor.process(list, null)
     EmphasisProcessor.toProse(list)
 
   // Handle a closing `]` at source position `closePos`. Returns the new
