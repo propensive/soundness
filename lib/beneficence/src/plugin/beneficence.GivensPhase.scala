@@ -43,27 +43,33 @@ class GivensPhase() extends PluginPhase:
 
   override def runOn(units: List[CompilationUnit])(using Context): List[CompilationUnit] =
     val findable = Symbols.requiredClassRef("beneficence.Findable").classSymbol
+    val suite    = Symbols.getClassIfDefined("probably.Suite")
 
     // If `beneficence.Findable` isn't on this compilation's classpath there's
     // nothing the plugin can usefully record — every given would be filtered.
     if !findable.exists then units
     else
-      val collected: mutable.LinkedHashMap[String, mutable.Buffer[Entry]] =
+      val collectedGivens: mutable.LinkedHashMap[String, mutable.Buffer[Entry]] =
         mutable.LinkedHashMap.empty
+
+      val collectedSuites: mutable.Buffer[Entry] = mutable.Buffer.empty
 
       val sources: mutable.LinkedHashSet[String] = mutable.LinkedHashSet.empty
 
       units.foreach: unit =>
         sources += unit.source.file.path
-        collectGivens(unit, collected, findable)
+        collect(unit, collectedGivens, collectedSuites, findable, suite)
 
-      GivensWriter.merge(collected, sources.toSet)
+      GivensWriter.merge(collectedGivens, sources.toSet)
+      if suite.exists then GivensWriter.mergeSuites(collectedSuites, sources.toSet)
       units
 
-  private def collectGivens
-                ( unit:      CompilationUnit,
-                  collected: mutable.LinkedHashMap[String, mutable.Buffer[Entry]],
-                  findable:  Symbols.Symbol )
+  private def collect
+                ( unit:            CompilationUnit,
+                  collectedGivens: mutable.LinkedHashMap[String, mutable.Buffer[Entry]],
+                  collectedSuites: mutable.Buffer[Entry],
+                  findable:        Symbols.Symbol,
+                  suite:           Symbols.Symbol )
                 (using Context)
   :     Unit =
 
@@ -72,15 +78,27 @@ class GivensPhase() extends PluginPhase:
     val traverser = new tpd.TreeTraverser:
       def traverse(tree: tpd.Tree)(using Context): Unit =
         tree match
-          case d: tpd.ValDef if eligible(d.symbol, d.tpt.tpe) => record(d.symbol, d.tpt.tpe)
-          case d: tpd.DefDef if eligible(d.symbol, d.tpt.tpe) => record(d.symbol, d.tpt.tpe)
-          case _                                              => ()
+          case d: tpd.ValDef if eligibleGiven(d.symbol, d.tpt.tpe) =>
+            recordGiven(d.symbol, d.tpt.tpe)
+          case d: tpd.DefDef if eligibleGiven(d.symbol, d.tpt.tpe) =>
+            recordGiven(d.symbol, d.tpt.tpe)
+          case d: tpd.TypeDef if eligibleSuite(d.symbol) =>
+            recordSuite(d.symbol)
+          case _ =>
+            ()
         traverseChildren(tree)
 
-      private def eligible(symbol: Symbols.Symbol, tpe: Types.Type)(using Context): Boolean =
+      private def eligibleGiven(symbol: Symbols.Symbol, tpe: Types.Type)(using Context): Boolean =
         symbol.flags.is(Given)
         && isStablyAccessible(symbol)
         && tpe.baseClasses.contains(findable)
+
+      private def eligibleSuite(symbol: Symbols.Symbol)(using Context): Boolean =
+        suite.exists
+        && symbol.isClass
+        && symbol.is(Module)
+        && isStablyAccessible(symbol)
+        && symbol.asClass.baseClasses.contains(suite)
 
       // A given is stably accessible if every enclosing scope on the path from
       // the root is a package or a module (object). Givens nested inside a
@@ -95,13 +113,16 @@ class GivensPhase() extends PluginPhase:
           else owner = owner.owner
         stable
 
-      private def record(symbol: Symbols.Symbol, tpe: Types.Type)(using Context): Unit =
+      private def recordGiven(symbol: Symbols.Symbol, tpe: Types.Type)(using Context): Unit =
         val typeclassSymbol = typeclassOf(tpe, symbol)
         if typeclassSymbol.exists then
           val typeclassFqn = sourcePath(typeclassSymbol)
           val givenFqn     = sourcePath(symbol)
-          val buffer       = collected.getOrElseUpdate(typeclassFqn, mutable.Buffer())
+          val buffer       = collectedGivens.getOrElseUpdate(typeclassFqn, mutable.Buffer())
           buffer += Entry(givenFqn, sourceFile)
+
+      private def recordSuite(symbol: Symbols.Symbol)(using Context): Unit =
+        collectedSuites += Entry(sourcePath(symbol), sourceFile)
 
       private def typeclassOf(tpe: Types.Type, valSymbol: Symbols.Symbol)(using Context)
       :     Symbols.Symbol =
