@@ -42,60 +42,115 @@ import fulminate.*
 import gigantism.*
 import gossamer.*
 import proscenium.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
 
 import errorDiagnostics.empty
 
-object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[Label]]:
-  def refined(context: Expr[StringContext], parts: Expr[Seq[Any]]): Macro[Url[Label]] =
+object UrlInterpolator:
+  private given realm: Realm = realm"urticose"
+
+  case class UrlInterpolatorError(detail: Message)
+  extends Exception(s"urticose: ${detail.text.s}")
+
+  object Runtime:
+    import unsafeExceptions.canThrowAny
+
+    def initial: Text = t""
+
+    def parse(state: Text, next: Text): Text = state+next
+
+    def skip(state: Text): Text = state+t"1"
+
+    def substitute(state: Text, sub: Text): Text = state+sub
+
+    def insert(state: Text, value: UrlFragment): Text = value match
+      case UrlFragment.Integral(port) =>
+        if !state.ends(t":")
+        then throw UrlInterpolatorError(m"a port number must be specified after a colon")
+
+        try throwErrors((state+port.show).decode[HttpUrl]) catch
+          case error: UrlError => throw UrlInterpolatorError(Message(error.message.text))
+
+        state+port.show
+
+      case UrlFragment.Textual(text) =>
+        try throwErrors((state+text.urlEncode).decode[HttpUrl]) catch
+          case error: UrlError => throw UrlInterpolatorError(Message(error.message.text))
+
+        state+text.urlEncode
+
+      case UrlFragment.RawTextual(text) =>
+        try throwErrors((state+text.urlEncode).decode[HttpUrl]) catch
+          case error: UrlError => throw UrlInterpolatorError(Message(error.message.text))
+
+        state+text
+
+    def complete(value: Text): Url[Label] =
+      try throwErrors(value.decode[Url[Label]]) catch
+        case error: UrlError => throw UrlInterpolatorError(error.message)
+
+
+  def refined(context: Expr[StringContext], insertions: Expr[Seq[Any]])(using Quotes)
+  :   Expr[Url[Label]] =
+
     import quotes.reflect.*
 
-    val constant = context.value.get.parts.head.split(":").nn.head.nn
+    val parts: List[String] =
+      context.value.getOrElse:
+        halt(m"the StringContext extension method parameter does not appear to be inline")
 
-    ConstantType(StringConstant(constant)).asType.absolve match
-      case '[type label <: Label; label] => '{${expand(context, parts)}.asInstanceOf[Url[label]]}
+      . parts.toList
 
-  def complete(value: Text): Url[Label] =
-    try throwErrors(value.decode[Url[Label]]) catch
-      case error: UrlError      => throw InterpolationError(error.message)
+    val insertionExprs: List[Expr[Any]] = insertions.absolve match
+      case Varargs(exprs) => exprs.toList
 
-  def initial: Text = t""
+    def rethrow[result](block: => result): result =
+      try block catch case error: UrlInterpolatorError => halt(error.detail)
 
-  def insert(state: Text, value: UrlFragment): Text = value match
-    case UrlFragment.Integral(port) =>
-      if !state.ends(t":")
-      then throw InterpolationError(m"a port number must be specified after a colon")
+    var checkState: Text = rethrow(Runtime.parse(Runtime.initial, parts.head.tt))
 
-      try throwErrors((state+port.show).decode[HttpUrl]) catch
-        case error: UrlError      => throw InterpolationError(Message(error.message.text))
+    var runtimeExpr: Expr[Text] =
+      '{Runtime.parse(Runtime.initial, ${Expr(parts.head)}.tt)}
 
-      state+port.show
+    var i = 0
+    while i < insertionExprs.length do
+      val head = insertionExprs(i)
+      val nextPart = parts(i + 1)
 
-    case UrlFragment.Textual(text) =>
-      // if !state.ends(t"/")
-      // then throw InterpolationError(m"a substitution may only be made after a slash")
+      head.absolve match
+        case '{$value: tpe} =>
+          val typeclassExpr: Expr[Insertion[UrlFragment, tpe]] =
+            Expr.summon[Insertion[UrlFragment, tpe]].getOrElse:
+              halt(m"can't substitute ${TypeRepr.of[tpe].show} into a url-interpolator")
 
-      try throwErrors((state+text.urlEncode).decode[HttpUrl]) catch
-        case error: UrlError      => throw InterpolationError(Message(error.message.text))
+          typeclassExpr.absolve match
+            case '{$_ : Substitution[UrlFragment, tpe, sub]} =>
+              val label: String = TypeRepr.of[sub] match
+                case ConstantType(StringConstant(s)) => s
+                case _ => halt(m"expected a literal string label for the substitution")
+              checkState = rethrow(Runtime.substitute(checkState, label.tt))
 
-      state+text.urlEncode
+            case _ =>
+              checkState = rethrow(Runtime.skip(checkState))
 
-    case UrlFragment.RawTextual(text) =>
-      // if !state.ends(t"/")
-      // then throw InterpolationError(m"a substitution may only be made after a slash")
+          checkState = rethrow(Runtime.parse(checkState, nextPart.tt))
 
-      try throwErrors((state+text.urlEncode).decode[HttpUrl]) catch
-        case error: UrlError      => throw InterpolationError(Message(error.message.text))
+          val current = runtimeExpr
+          runtimeExpr =
+            '{
+              Runtime.parse
+                ( Runtime.insert($current, $typeclassExpr.embed($value)),
+                  ${Expr(nextPart)}.tt )
+            }
 
-      state+text
+      i += 1
 
-  override def substitute(state: Text, sub: Text): Text = state+sub
+    rethrow(Runtime.complete(checkState))
 
-  def parse(state: Text, next: Text): Text =
-    //if !state.empty && !(next.starts(t"/") || next.empty)
-    //then throw InterpolationError(m"a substitution must be followed by a slash")
+    val schemeConstant = parts.head.split(":").nn.head.nn
 
-    state+next
-
-  def skip(state: Text): Text = state+t"1"
+    ConstantType(StringConstant(schemeConstant)).asType.absolve match
+      case '[type label <: Label; label] =>
+        '{Runtime.complete($runtimeExpr).asInstanceOf[Url[label]]}
