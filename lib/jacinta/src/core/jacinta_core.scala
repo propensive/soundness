@@ -52,11 +52,17 @@ import JsonError.Reason
 given showable: (printer: JsonPrinter) => JsonAst is Showable = printer.print(_)
 
 extension (json: JsonAst)
-  inline def isNumber: Boolean = isDouble || isLong || isBigDecimal
+  inline def isNumber: Boolean = isDouble || isLong || isBcd
   inline def isAbsent: Boolean = json == Unset
   inline def isLong: Boolean = json.isInstanceOf[Long]
   inline def isDouble: Boolean = json.isInstanceOf[Double]
-  inline def isBigDecimal: Boolean = json.isInstanceOf[BigDecimal]
+
+  // High-precision number node (parser fallback path or downstream
+  // construction via `JsonAst(Bcd(...))`). Backed by `Array[Long]`, which
+  // is `[J` at runtime — distinct from the `[Ljava/lang/Object;` array
+  // class used for objects and arrays, so `isInstanceOf[Array[Long]]`
+  // does not collide.
+  inline def isBcd: Boolean = json.isInstanceOf[Array[Long]]
   inline def isString: Boolean = json.isInstanceOf[String]
   inline def isBoolean: Boolean = json.isInstanceOf[Boolean]
   inline def isNull: Boolean = json.asInstanceOf[AnyRef | Null] == null
@@ -65,12 +71,16 @@ extension (json: JsonAst)
   // are distinguished by length parity. Even-length is an object (alternating
   // key, value, …); odd-length is an array (with sentinel padding when the
   // logical element count is even).
+  //
+  // The narrower `Array[AnyRef]` test (rather than `Array[?]`) avoids
+  // matching `Array[Long]` BCD nodes, which are also arrays at runtime
+  // but in a different (primitive) array class.
   inline def isObject: Boolean =
-    json.isInstanceOf[Array[?]]
+    json.isInstanceOf[Array[AnyRef]]
     && (json.asInstanceOf[Array[?]].length & 1) == 0
 
   inline def isArray: Boolean =
-    json.isInstanceOf[Array[?]]
+    json.isInstanceOf[Array[AnyRef]]
     && (json.asInstanceOf[Array[?]].length & 1) == 1
 
   private def expected(jsonPrimitive: JsonPrimitive): Unit raises JsonError =
@@ -111,22 +121,22 @@ extension (json: JsonAst)
     else expected(JsonPrimitive.Array) yet IArray[JsonAst]()
 
   def double: Double raises JsonError = json.asMatchable match
-    case value: Double     => value
-    case value: Long       => value.toDouble
-    case value: BigDecimal => value.toDouble
-    case _                 => expected(JsonPrimitive.Number) yet 0.0
+    case value: Double            => value
+    case value: Long              => value.toDouble
+    case value: Array[Long] @unchecked => value.asInstanceOf[Bcd].toDouble
+    case _                        => expected(JsonPrimitive.Number) yet 0.0
 
-  def bigDecimal: BigDecimal raises JsonError = json.asMatchable match
-    case value: BigDecimal => value
-    case value: Long       => BigDecimal(value)
-    case value: Double     => BigDecimal(value)
-    case _                 => expected(JsonPrimitive.Number) yet BigDecimal(0L)
+  def bcd: Bcd raises JsonError = json.asMatchable match
+    case value: Array[Long] @unchecked => value.asInstanceOf[Bcd]
+    case value: Long                   => Bcd(BigDecimal(value))
+    case value: Double                 => Bcd(BigDecimal(value))
+    case _                             => expected(JsonPrimitive.Number) yet Bcd(BigDecimal(0L))
 
   def long: Long raises JsonError = json.asMatchable match
-    case value: Long       => value
-    case value: Double     => value.toLong
-    case value: BigDecimal => value.toLong
-    case _                 => expected(JsonPrimitive.Number) yet 0L
+    case value: Long              => value
+    case value: Double            => value.toLong
+    case value: Array[Long] @unchecked => value.asInstanceOf[Bcd].toLong.or(0L)
+    case _                        => expected(JsonPrimitive.Number) yet 0L
 
   def primitive: JsonPrimitive =
     if isNumber then JsonPrimitive.Number
@@ -161,8 +171,8 @@ extension (json: JsonAst)
         i += 1
       (keys.asInstanceOf[IArray[String]], values.asInstanceOf[IArray[JsonAst]])
 
-  def number: Long | Double | BigDecimal raises JsonError =
-    if isLong then long else if isDouble then double else if isBigDecimal then bigDecimal
+  def number: Long | Double | Bcd raises JsonError =
+    if isLong then long else if isDouble then double else if isBcd then bcd
     else expected(JsonPrimitive.Number) yet 0L
 
 extension [entity: Encodable in Json](value: entity) def json: Json = value.encode

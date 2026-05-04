@@ -56,7 +56,7 @@ object JsonPrinter:
       append('"')
 
     def recur(json: JsonAst, indent: Int): Unit = json.asMatchable match
-      case arr: Array[?] @unchecked =>
+      case arr: Array[AnyRef] @unchecked =>
         if json.isObject then
           val n = json.objectSize
           append('{')
@@ -111,6 +111,12 @@ object JsonPrinter:
 
       case boolean: Boolean =>
         append(boolean.toString)
+
+      case bcd: Array[Long] @unchecked =>
+        // High-precision number — emit the canonical JSON-number text from
+        // the BCD nibble stream directly; this preserves all digits the
+        // parser saw, in contrast to a `Double.toString` round-trip.
+        append(bcd.asInstanceOf[Bcd].text.tt)
 
       case _ =>
         append("null")

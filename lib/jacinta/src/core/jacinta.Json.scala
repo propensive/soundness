@@ -454,25 +454,31 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     def recur(value: JsonAst): Int = value.asMatchable match
       case value: Long       => value.hashCode
       case value: Double     => value.hashCode
-      case value: BigDecimal => value.hashCode
       case value: String     => value.hashCode
       case value: Boolean    => value.hashCode
 
-      case value: IArray[Any] @unchecked =>
-        if value.isObject then
-          val n = value.objectSize
+      case value: Array[Long] @unchecked =>
+        // Hash via the BigDecimal projection so a `Bcd` whose value equals a
+        // `BigDecimal` literal has a consistent hash.
+        value.asInstanceOf[Bcd].toBigDecimal.hashCode
+
+      case value: Array[AnyRef] @unchecked =>
+        if value.asInstanceOf[JsonAst].isObject then
+          val n = value.asInstanceOf[JsonAst].objectSize
           var acc = Map.empty[String, Int]
           var i = 0
           while i < n do
-            acc = acc.updated(value.objectKey(i), recur(value.objectValue(i)))
+            acc = acc.updated
+                  ( value.asInstanceOf[JsonAst].objectKey(i),
+                    recur(value.asInstanceOf[JsonAst].objectValue(i)) )
             i += 1
           acc.hashCode
         else
-          val n = value.arrayLength
+          val n = value.asInstanceOf[JsonAst].arrayLength
           var acc = n.hashCode
           var i = 0
           while i < n do
-            acc = acc*31 ^ recur(value.arrayElement(i))
+            acc = acc*31 ^ recur(value.asInstanceOf[JsonAst].arrayElement(i))
             i += 1
           acc
 
@@ -485,22 +491,27 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     case right: Json =>
       def recur(left: JsonAst, right: JsonAst): Boolean = right.asMatchable match
         case right: Long     => left.asMatchable match
-          case left: Long       => left == right
-          case left: Double     => left == right
-          case left: BigDecimal => left == BigDecimal(right)
-          case _                => false
+          case left: Long              => left == right
+          case left: Double            => left == right
+          case left: Array[Long] @unchecked =>
+            left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(right)
+          case _                       => false
 
         case right: Double => left.asMatchable match
-          case left: Long       => left == right
-          case left: Double     => left == right
-          case left: BigDecimal => left == BigDecimal(right)
-          case _                => false
+          case left: Long              => left == right
+          case left: Double            => left == right
+          case left: Array[Long] @unchecked =>
+            left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(right)
+          case _                       => false
 
-        case right: BigDecimal => left.asMatchable match
-          case left: Long       => BigDecimal(left) == right
-          case left: Double     => BigDecimal(left) == right
-          case left: BigDecimal => left == right
-          case _                => false
+        case right: Array[Long] @unchecked => left.asMatchable match
+          case left: Long              =>
+            BigDecimal(left) == right.asInstanceOf[Bcd].toBigDecimal
+          case left: Double            =>
+            BigDecimal(left) == right.asInstanceOf[Bcd].toBigDecimal
+          case left: Array[Long] @unchecked =>
+            left.asInstanceOf[Bcd].toBigDecimal == right.asInstanceOf[Bcd].toBigDecimal
+          case _                       => false
 
         case right: String => left.asMatchable match
           case left: String => left == right
@@ -510,29 +521,31 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           case left: Boolean => left == right
           case _             => false
 
-        case right: IArray[Any] @unchecked => left.asMatchable match
-          case left: IArray[Any] @unchecked =>
-            (right.isObject, left.isObject) match
+        case right: Array[AnyRef] @unchecked => left.asMatchable match
+          case left: Array[AnyRef] @unchecked =>
+            val rightAst = right.asInstanceOf[JsonAst]
+            val leftAst = left.asInstanceOf[JsonAst]
+            (rightAst.isObject, leftAst.isObject) match
               case (false, false) =>
-                val rn = right.arrayLength
-                val ln = left.arrayLength
+                val rn = rightAst.arrayLength
+                val ln = leftAst.arrayLength
                 rn == ln && (0 until rn).forall: index =>
-                  recur(left.arrayElement(index), right.arrayElement(index))
+                  recur(leftAst.arrayElement(index), rightAst.arrayElement(index))
 
               case (true, true) =>
-                val rn = right.objectSize
-                val ln = left.objectSize
+                val rn = rightAst.objectSize
+                val ln = leftAst.objectSize
                 if rn != ln then false
                 else
                   var leftMap = Map.empty[String, JsonAst]
                   var i = 0
                   while i < ln do
-                    leftMap = leftMap.updated(left.objectKey(i), left.objectValue(i))
+                    leftMap = leftMap.updated(leftAst.objectKey(i), leftAst.objectValue(i))
                     i += 1
                   var rightMap = Map.empty[String, JsonAst]
                   i = 0
                   while i < rn do
-                    rightMap = rightMap.updated(right.objectKey(i), right.objectValue(i))
+                    rightMap = rightMap.updated(rightAst.objectKey(i), rightAst.objectValue(i))
                     i += 1
                   leftMap.keySet == rightMap.keySet && leftMap.keySet.forall: key =>
                     recur(leftMap(key), rightMap(key))
