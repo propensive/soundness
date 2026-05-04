@@ -59,5 +59,6 @@ extends Question[item]:
     ( lambda: Interactivity[TerminalEvent] ?=> item => result )
   :   result raises DismissError =
 
-    interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())):
-      (result, stream) => lambda(using Interactivity(stream))(result)
+    val events = interactivity.eventIterator()
+    interaction(events, this)(_(_)).lay(abort(DismissError())):
+      result => lambda(using Interactivity(events))(result)

@@ -80,23 +80,23 @@ trait Interaction[result, question]:
 
   @tailrec
   final def recur
-    ( stream: Stream[TerminalEvent], state: question, oldState: Optional[question] )
+    ( events: Iterator[TerminalEvent], state: question, oldState: Optional[question] )
     ( key: (question, TerminalEvent) => question )
-  :   Optional[(result, Stream[TerminalEvent])] =
+  :   Optional[result] =
 
     render(oldState, state)
 
-    stream match
-      case Keypress.Enter #:: tail           => (result(state), tail)
-      case Keypress.Ctrl('C' | 'D') #:: tail => Unset
-      case Keypress.Escape #:: tail          => Unset
-      case other #:: tail                    => recur(tail, key(state, other), state)(key)
-      case _                                 => Unset
+    if !events.hasNext then Unset
+    else events.next() match
+      case Keypress.Enter           => result(state)
+      case Keypress.Ctrl('C' | 'D') => Unset
+      case Keypress.Escape          => Unset
+      case other                    => recur(events, key(state, other), state)(key)
 
 
-  def apply(stream: Stream[TerminalEvent], state: question)
+  def apply(events: Iterator[TerminalEvent], state: question)
     ( key: (question, TerminalEvent) => question )
-  :   Optional[(result, Stream[TerminalEvent])] =
+  :   Optional[result] =
 
     before()
-    recur(stream, state, Unset)(key).also(after())
+    recur(events, state, Unset)(key).also(after())
