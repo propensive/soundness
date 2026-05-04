@@ -845,7 +845,7 @@ object probably extends Library:
 
 object profanity extends Library:
   object core extends Component(eucalyptus.core, diuretic.core, iridescence.core)
-  object test extends Tests(core)
+  object test extends Tests(core, exoskeleton.rig)
 
 object punctuation extends Library:
   object core extends Component(honeycomb.core, frontier.core)
