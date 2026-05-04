@@ -34,6 +34,7 @@ package punctuation
 
 import anticipation.*
 import denominative.*
+import frontier.*
 import gossamer.*
 import honeycomb.*
 import prepositional.*
@@ -106,13 +107,10 @@ object Markdown:
     def render(markdown: Markdown of Prose): Html of Phrasing =
       Fragment(markdown.children.map(phrasing(_))*)
 
-  given layout: (Markdown of Layout) is Renderable in doms.html.whatwg.Flow = markdown =>
-    layout2[EmptyTuple].render(markdown.asInstanceOf[Markdown of Layout across EmptyTuple])
-
-  given layout2: [domains: Formattable] => (Markdown of Layout across domains) is Renderable:
+  given layout: Every[Formattable] => (Markdown of Layout) is Renderable:
     type Form = doms.html.whatwg.Flow
 
-    def render(markdown: Markdown of Layout across domains): Html of whatwg.Flow =
+    def render(markdown: Markdown of Layout): Html of whatwg.Flow =
       import doms.html.whatwg.*
 
       def tightItem(node: Layout): Html of Flow = node match
@@ -183,7 +181,10 @@ object Markdown:
             case 6 => H6(content.map(phrasing(_))*)
 
         case Layout.CodeBlock(line, info, code) =>
-          domains.format(info, code).or:
+          val formatted = summon[Every[Formattable]].values.foldLeft(Unset: Optional[Html of Flow]):
+            (acc, formattable) => acc.or(formattable.format(info, code))
+
+          formatted.or:
             Pre(info.prim.lay(Code(code)) { info => Code(`class` = t"language-$info")(code) })
 
       Fragment(markdown.children.map { node => Fragment(layout(node), "\n") }*)
