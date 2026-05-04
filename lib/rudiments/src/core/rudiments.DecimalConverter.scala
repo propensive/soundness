@@ -33,6 +33,7 @@
 package rudiments
 
 import anticipation.*
+import beneficence.*
 
-trait DecimalConverter:
+trait DecimalConverter extends Findable:
   def decimalize(value: Double): Text
