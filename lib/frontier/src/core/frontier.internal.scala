@@ -174,6 +174,14 @@ object internal:
         val candidates = if exports.nonEmpty then exports else group
         candidates.minBy(m => renderSymbol(m.symbol).s.length)
 
+    // Same export-preferring dedupe applied to method-level candidates
+    // surfaced by the implicit-search-failure trace.
+    def dedupeCandidates(candidates: List[Candidate]): List[Candidate] =
+      candidates.groupBy(_.symbol.name.toString.stripSuffix("$")).values.toList.flatMap: group =>
+        val exports = group.filter(_.symbol.flags.is(Flags.Exported))
+        val pool = if exports.nonEmpty then exports else group
+        List(pool.minBy(c => renderSymbol(c.symbol).s.length))
+
     // Render a proposal: the symbol's stenography path, suffixed by an
     // explicit type-parameter substitution `[T = X, U = Y]` whenever the
     // proposal's type parameters were bound from unification against the
@@ -435,16 +443,17 @@ object internal:
                   resolve(function.tpe.simplified)
 
                 case MethodType(_, types, more) =>
-                  val name = stenography.internal.name(function.symbol.termRef).show.skip(5, Rtl)
-
                   val candidate =
-                    Candidate(name, function.symbol, types.map(seek(_, Nil, depth + 1)))
+                    Candidate
+                      ( renderSymbol(function.symbol),
+                        function.symbol,
+                        types.map(seek(_, Nil, depth + 1)) )
 
                   val candidates = seek(repr, function.symbol :: exclusions, depth) match
                     case Missing(_, _, candidates) => candidate :: candidates
                     case _                         => Nil
 
-                  missing(repr, candidates)
+                  missing(repr, dedupeCandidates(candidates))
 
                 case _ =>
                   missing(repr, Nil)
