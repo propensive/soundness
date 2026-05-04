@@ -436,6 +436,13 @@ object caduceus extends Library:
 object caesura extends Library:
   object core extends Component(turbulence.core, escritoire.core)
   object test extends Tests(core)
+  object bench extends Benchmarks(core, quantitative.units):
+    def mvnDeps = Seq(
+      mvn"com.univocity:univocity-parsers:2.9.1",
+      mvn"com.opencsv:opencsv:5.9",
+      mvn"org.apache.commons:commons-csv:1.11.0",
+      mvn"de.siegmar:fastcsv:3.4.0"
+    )
 
 object camouflage extends Library:
   object core extends Component(parasite.core)
