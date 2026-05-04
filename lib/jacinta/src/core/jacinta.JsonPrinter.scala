@@ -36,7 +36,6 @@ import scala.compiletime.*
 
 import anticipation.*
 import gossamer.*
-import merino.*
 import proscenium.*
 import rudiments.*
 
