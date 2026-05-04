@@ -742,7 +742,8 @@ object merino extends Library:
       mvn"org.typelevel::jawn-ast:1.6.0",
       mvn"io.circe::circe-parser:0.14.13",
       mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.30.7",
-      mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-circe:2.30.7"
+      mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-circe:2.30.7",
+      mvn"com.fasterxml.jackson.core:jackson-databind:2.18.2"
     )
 
 object metamorphose extends Library:

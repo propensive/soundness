@@ -47,8 +47,7 @@ import JsonAst.{Issue, Position}
 
 private object JsonParser:
   private[merino] type Raw =
-    Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean
-    | Null | Unset.type
+    Long | Double | Bcd | String | IArray[Any] | Boolean | Null | Unset.type
 
   private inline val NumZero       = 0
   private inline val NumInt        = 1
@@ -95,13 +94,29 @@ private final class JsonParser:
   import JsonParser.*
   import Lineation.untrackedData
 
-  // Single Cursor-backed substrate. The same parser body runs whether the
-  // input was supplied as an in-memory `Data` (pre-fills the cursor's buffer)
-  // or as an `Iterator[Data]` (pulls chunks via the loader). Slicing is
-  // uniform: `cursor.slice` exposes the buffer/offset/length triple, so
-  // there's no longer a same-block fast path versus cross-block grab path.
+  // The cursor remains the source of truth at refill, mark, slice and error
+  // points, but for the per-byte hot loops (`peek`, `advance`, `more`) the
+  // parser maintains its own snapshot of the current buffer reference and
+  // read position. Keeping `pos` and `bytes` as parser fields (rather than
+  // accessing them through the cursor on every byte) gives the JIT the
+  // freedom to keep both in registers across long inner loops, recovering
+  // most of the per-byte cost of the Direct/Streaming split removed during
+  // the substrate unification.
+  //
+  // Invariant: between `syncTo()` and `syncFrom()` calls, `pos` is the
+  // authoritative read position; `cursor.unsafePos` is allowed to lag.
+  // Whenever a cursor operation that depends on `pos` is performed (refill
+  // via `more`'s slow path, mark, slice, error reporting, BOM probing) the
+  // parser pushes `pos` to the cursor first, then refreshes its snapshot
+  // from the cursor afterwards — refill may compact the buffer, reallocate
+  // it, or reset `pos`.
   private var cursor:    Cursor[Data]      = null.asInstanceOf[Cursor[Data]]
   private var heldToken: Cursor.Held | Null = null
+
+  // Parser-local snapshot (see comment above).
+  private var bytes:  Array[Byte] = null.asInstanceOf[Array[Byte]]
+  private var pos:    Int = 0
+  private var bufEnd: Int = 0
 
   protected[merino] var holes: Boolean = false
 
@@ -110,35 +125,52 @@ private final class JsonParser:
   protected var stringCursor:        Int = 0
   protected var arrayBufferId:       Int = -1
   protected val arrayBuffers:        ArrayBuffer[ArrayBuffer[Any]] = ArrayBuffer.empty
-  protected var stringArrayBufferId: Int = -1
-  protected val stringArrayBuffers:  ArrayBuffer[ArrayBuffer[String]] = ArrayBuffer.empty
-  protected val numberBuilder:       java.lang.StringBuilder = java.lang.StringBuilder(32)
 
   def resetData(input: Data): Unit =
     cursor = Cursor[Data](input)
+    syncFrom()
     stringCursor = 0
     arrayBufferId = -1
-    stringArrayBufferId = -1
     heldToken = null
 
   def resetIterator(input: Iterator[Data]): Unit =
     cursor = Cursor[Data](input)
+    syncFrom()
     stringCursor = 0
     arrayBufferId = -1
-    stringArrayBufferId = -1
     heldToken = null
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Substrate (now inlined directly into the parser, since there is only one).
+  // Substrate.
 
-  protected inline def more: Boolean = cursor.more
+  // Push the parser's local `pos` back to the cursor. Required before any
+  // cursor operation that consults `pos` (mark, slice, refill, position).
+  private inline def syncTo(): Unit =
+    cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
-  protected inline def peek: Byte =
-    cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]](cursor.unsafePos(using Unsafe))
+  // Refresh the parser's snapshot from the cursor. Required after any
+  // cursor operation that may have changed the buffer reference, the read
+  // position, or the write end (refill, cue).
+  private inline def syncFrom(): Unit =
+    bytes  = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
+    pos    = cursor.unsafePos(using Unsafe)
+    bufEnd = cursor.unsafeWriteEnd(using Unsafe)
 
-  protected inline def advance(): Unit = cursor.next()
+  protected inline def more: Boolean = pos < bufEnd || moreSlow()
+
+  // Out-of-line slow path so the inline budget for `more` stays small enough
+  // for the JIT to keep `pos < bufEnd` as a single register comparison in
+  // hot loops.
+  private def moreSlow(): Boolean =
+    syncTo()
+    if cursor.more then { syncFrom(); true } else false
+
+  protected inline def peek: Byte = bytes(pos)
+
+  protected inline def advance(): Unit = pos += 1
 
   protected def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing =
+    syncTo()
     abort(ParseError(JsonAst, Position(0, cursor.position.n0), issue))
 
   // A `Region` is just a `Cursor.Mark` (an absolute `Long` position). With
@@ -146,15 +178,19 @@ private final class JsonParser:
   // for boundary detection.
   type Region = Cursor.Mark
 
-  protected inline def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
+  protected inline def begin(): Cursor.Mark =
+    syncTo()
+    cursor.mark(using heldToken.nn)
 
   protected inline def slice(start: Cursor.Mark): String =
+    syncTo()
     val end = cursor.mark(using heldToken.nn)
     cursor.slice(start, end): (storage, off, len) =>
       val arr = storage.asInstanceOf[Array[Byte]]
       new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
 
   protected inline def appendRegionToBuffer(start: Cursor.Mark): Unit =
+    syncTo()
     val end = cursor.mark(using heldToken.nn)
     cursor.slice(start, end): (storage, off, len) =>
       if len > 0 then
@@ -166,7 +202,11 @@ private final class JsonParser:
           i += 1
         stringCursor += len
 
+  // BOM probing runs once per parse. It uses the cursor directly (via
+  // `cursor.next` and `cursor.cue`, both of which mutate `pos`), so the
+  // parser snapshot is synchronised before and refreshed after.
   protected def bom(): Unit =
+    syncTo()
     cursor.hold:
       val mk = cursor.mark
       val bom =
@@ -175,8 +215,10 @@ private final class JsonParser:
         && { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -65.toByte }
 
       if bom then cursor.next() else cursor.cue(mk)
+    syncFrom()
 
   protected inline def holding[result](inline action: => result): result =
+    syncTo()
     cursor.hold:
       heldToken = summon[Cursor.Held]
       try action finally heldToken = null
@@ -216,19 +258,6 @@ private final class JsonParser:
       buffer
 
   protected inline def relinquishArrayBuffer(): Unit = arrayBufferId -= 1
-
-  protected inline def getStringArrayBuffer(): ArrayBuffer[String] =
-    stringArrayBufferId += 1
-    if stringArrayBuffers.length <= stringArrayBufferId then
-      val newBuffer = ArrayBuffer.empty[String]
-      stringArrayBuffers += newBuffer
-      newBuffer
-    else
-      val buffer = stringArrayBuffers(stringArrayBufferId)
-      buffer.clear()
-      buffer
-
-  protected inline def relinquishStringArrayBuffer(): Unit = stringArrayBufferId -= 1
 
   // ──────────────────────────────────────────────────────────────────────────
   // Parser body (unchanged from the previous abstract base).
@@ -360,7 +389,7 @@ private final class JsonParser:
     null
 
   private def parseNumber(first: Int, negative: Boolean)
-  :   Double | Long | BigDecimal raises ParseError =
+  :   Double | Long | Bcd raises ParseError =
 
     var content: Long = first.toLong
     var nibbles: Int = 1
@@ -368,25 +397,18 @@ private final class JsonParser:
     var floating: Boolean = false
     var continue: Boolean = true
     var state: Int = if first == 0 then NumZero else NumInt
+    var bcdBuilder: Bcd.Builder | Null = null
 
-    inline def appendChar0(n: Int): Unit =
-      if n <= 9 then numberBuilder.append(('0' + n).toChar)
-      else if n == 0xA then numberBuilder.append('.')
-      else if n == 0xB then numberBuilder.append('e')
-      else if n == 0xC then numberBuilder.append("e-")
-
+    // When the in-Long fast path overflows (the 16th nibble is about to be
+    // appended), seed a `Bcd.Builder` with the existing 15 nibbles plus the
+    // overflowing one and continue accumulation there instead of degrading
+    // to a `StringBuilder` + `Double.parseDouble` pipeline.
     inline def fallback(extraNibble: Int): Unit =
-      numberBuilder.setLength(0)
-      var i = nibbles - 1
-      while i >= 0 do
-        val n = ((content >>> (i * 4)) & 0xFL).toInt
-        if n <= 9 then numberBuilder.append(('0' + n).toChar)
-        else if n == 0xA then numberBuilder.append('.')
-        else if n == 0xB then numberBuilder.append('e')
-        else if n == 0xC then numberBuilder.append("e-")
-        i -= 1
+      val b = new Bcd.Builder
+      b.seedFromLong(content, nibbles)
+      b.add(extraNibble)
+      bcdBuilder = b
       bcdValid = false
-      appendChar0(extraNibble)
 
     inline def appendNibble(n: Int): Unit =
       if bcdValid then
@@ -395,11 +417,11 @@ private final class JsonParser:
           content = (content << 4) | n.toLong
           nibbles += 1
       else
-        appendChar0(n)
+        bcdBuilder.nn.add(n)
 
     inline def rewriteEAsNeg(): Unit =
       if bcdValid then content = (content & ~0xFL) | 0xCL
-      else numberBuilder.append('-')
+      else bcdBuilder.nn.overwriteLast(0xC)
 
     while continue && more do
       val ch = peek
@@ -526,16 +548,13 @@ private final class JsonParser:
 
         if negative then -mag else mag
     else
-      if floating then
-        val d = java.lang.Double.parseDouble(numberBuilder.toString)
-        if negative then -d else d
-      else
-        try
-          val v = java.lang.Long.parseLong(numberBuilder, 0, numberBuilder.length, 10)
-          if negative then -v else v
-        catch case _: NumberFormatException =>
-          val d = java.lang.Double.parseDouble(numberBuilder.toString)
-          if negative then -d else d
+      // High-precision path: hand back the `Bcd` directly. Consumers can
+      // narrow to `Long`, `Double`, or `BigDecimal` via `Bcd`'s extension
+      // methods if they want — but the parser preserves full precision
+      // either way, in contrast to the previous string-then-parseDouble
+      // round-trip which silently truncated.
+      val result: Bcd = bcdBuilder.nn.finish(negative)
+      result
 
   private def parseValue(minus: Boolean = false)(using Tactic[ParseError]): Raw =
     if !more then errorAt(Issue.PrematureEnd)
@@ -587,13 +606,29 @@ private final class JsonParser:
 
       advance()
 
-    val result: IArray[Any] = items.toArray.asInstanceOf[IArray[Any]]
-    relinquishArrayBuffer()
-    result
+    // Pad arrays of even length (including the empty array) with the sentinel
+    // so that all array nodes have odd `IArray[Any]` length, distinguishing
+    // them from objects (always even).
+    val n = items.length
+    val out =
+      if (n & 1) == 1 then
+        val arr = new Array[Any](n)
+        items.copyToArray(arr)
+        arr
+      else
+        val arr = new Array[Any](n + 1)
+        items.copyToArray(arr)
+        arr(n) = JsonAst.arrayPad
+        arr
 
-  private def parseObject()(using Tactic[ParseError]): (IArray[String], IArray[Any]) =
-    val keys: ArrayBuffer[String] = getStringArrayBuffer()
-    val values: ArrayBuffer[Any] = getArrayBuffer()
+    relinquishArrayBuffer()
+    out.asInstanceOf[IArray[Any]]
+
+  // Parse an object directly into the flat alternating-key/value layout. The
+  // buffer always grows in pairs, so its length stays even, which is the
+  // object/array parity invariant.
+  private def parseObject()(using Tactic[ParseError]): IArray[Any] =
+    val items: ArrayBuffer[Any] = getArrayBuffer()
     var continue = true
     while continue do
       skip()
@@ -611,14 +646,14 @@ private final class JsonParser:
               must() match
                 case Comma =>
                   advance()
-                  keys += string
-                  values += value
+                  items += string
+                  items += value
                   skip()
 
                 case CloseBrace =>
                   advance()
-                  keys += string
-                  values += value
+                  items += string
+                  items += value
                   continue = false
 
                 case ch  => errorAt(Issue.UnexpectedChar(ch.toChar))
@@ -636,45 +671,44 @@ private final class JsonParser:
               must() match
                 case Comma =>
                   advance()
-                  keys += " "
-                  values += value
+                  items += " "
+                  items += value
                   skip()
 
                 case CloseBrace =>
                   advance()
-                  keys += " "
-                  values += value
+                  items += " "
+                  items += value
                   continue = false
 
                 case ch => errorAt(Issue.UnexpectedChar(ch.toChar))
 
             case Comma =>
               advance()
-              keys += " "
-              values += Unset
+              items += " "
+              items += Unset
               skip()
 
             case CloseBrace =>
               advance()
-              keys += " "
-              values += Unset
+              items += " "
+              items += Unset
               continue = false
 
             case ch => errorAt(Issue.UnexpectedChar(ch.toChar))
 
         case CloseBrace =>
-          if !keys.nil then errorAt(Issue.ExpectedSomeValue('}'))
+          if !items.nil then errorAt(Issue.ExpectedSomeValue('}'))
           advance()
           continue = false
 
         case ch =>
           errorAt(Issue.ExpectedString(ch.toChar))
 
-    val result = (keys.toArray, values.toArray).asInstanceOf[(IArray[String], IArray[Any])]
-
-    relinquishStringArrayBuffer()
+    val out = new Array[Any](items.length)
+    items.copyToArray(out)
     relinquishArrayBuffer()
-    result
+    out.asInstanceOf[IArray[Any]]
 
   def parse()(using Tactic[ParseError]): Raw =
     bom()

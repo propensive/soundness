@@ -73,5 +73,34 @@ object Benchmarks extends Suite(m"Jacinta benchmarks"):
     bench(m"Parse array of numbers")(target = 3*Second):
       '{ parse(t"""[12345.6789, 98765.4321, 142536.475869]""") }
 
+    suite(m"Print high-precision-number AST"):
+      bench(m"Print blockchain example (50 transactions)")(target = 1*Second):
+        '{ jacinta.Benchmarks.printBlockchain() }
+
   def parse(text: Text): Json = unsafely:
     Json(JsonAst.parse(text.s.getBytes("UTF-8").nn.immutable(using Unsafe)))
+
+  // Parsed AST of the same blockchain example used by `merino.Benchmarks` —
+  // contains many numbers that overflow the parser's 15-nibble BCD fast path
+  // and currently materialise as `Double` (precision-lossy). After the
+  // Array[Long] BCD work in `RawJson`, the AST's number slots will hold BCD
+  // values instead, exercising the new printer path with the same input.
+  lazy val blockchainAst: JsonAst = unsafely:
+    val sb = new _root_.java.lang.StringBuilder
+    sb.append("{\"transactions\":[")
+    var i = 0
+    while i < 50 do
+      if i > 0 then sb.append(',')
+      val nonce = i
+      val blockNumber = 18500000 + i
+      val gasUsed = 21000 + i*100
+      val valueWei = s"12345678901234567890${1000 + i}"
+      val valueEth = s"1234567890.12345678901${i % 10}"
+      val gasPriceWei = s"30000000000.0123456789${i % 10}"
+      val temperature = s"2.7345678901234567890${i % 10}e-3"
+      sb.append(s"""{"from":"0xabcdef${i}","to":"0x123456${i}","value":$valueWei,"valueEth":$valueEth,"gasPriceWei":$gasPriceWei,"gasUsed":$gasUsed,"blockNumber":$blockNumber,"nonce":$nonce,"temperatureDelta":$temperature}""")
+      i += 1
+    sb.append("]}")
+    JsonAst.parse(sb.toString.nn.getBytes("UTF-8").nn.immutable(using Unsafe))
+
+  def printBlockchain(): Text = JsonPrinter.print(blockchainAst, false)

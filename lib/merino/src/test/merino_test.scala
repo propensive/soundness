@@ -117,8 +117,15 @@ object Tests extends Suite(m"Merino tests"):
       . assert(_ == JsonAst(4L))
 
       test(m"Parse small negative number"):
-        t"-0.000000000000000000000000000000000000000000000000000000000000000000000000000001".read[JsonAst]
-      . assert(_ == JsonAst(-1.0e-78))
+        // Number exceeds 15 nibbles, so the parser hands back a `Bcd`
+        // (high-precision representation) rather than a `Double`. The Bcd
+        // round-trips back to the same `Double` the old fallback path used
+        // to return.
+        val raw =
+          t"-0.000000000000000000000000000000000000000000000000000000000000000000000000000001"
+          . read[JsonAst]
+        raw.asInstanceOf[Array[Long]].asInstanceOf[Bcd].toDouble
+      . assert(_ == -1.0e-78)
 
       test(m"Parse 20e1"):
         t"20e1".read[JsonAst]
@@ -232,11 +239,19 @@ object Tests extends Suite(m"Merino tests"):
       def bytes(text: Text): Data = IArray.from(text.s.getBytes("UTF-8").nn)
 
       def shape(node: Any): Any = node.asMatchable match
-        case t: Tuple2[?, ?] @unchecked =>
-          val keys = t._1.asInstanceOf[IArray[String]].toList
-          val values = t._2.asInstanceOf[IArray[Any]].toList.map(shape)
-          (keys, values)
-        case arr: IArray[?] @unchecked => arr.toList.map(shape)
+        case arr: IArray[?] @unchecked =>
+          val raw = arr.toList
+          if (raw.length & 1) == 0 then
+            // Object: alternating key/value
+            val keys = (0 until raw.length/2).toList.map(i => raw(i*2).asInstanceOf[String])
+            val values = (0 until raw.length/2).toList.map(i => shape(raw(i*2 + 1)))
+            (keys, values)
+          else
+            // Array: strip sentinel pad if present
+            val elems =
+              if raw.nonEmpty && raw.last.asInstanceOf[AnyRef] == JsonAst.arrayPad
+              then raw.init else raw
+            elems.map(shape)
         case other                     => other
 
       test(m"Hole as a top-level value"):
