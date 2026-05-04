@@ -54,12 +54,9 @@ object Timezone:
     catch case _: jt.zone.ZoneRulesException =>
       raise(TimezoneError(name)) yet new Timezone(ids.head)
 
-  object Tz extends Verifier[Timezone]:
-    def verify(name: Text): Timezone =
-      try throwErrors(name.decode[Timezone])
-      catch case error: TimezoneError =>
-        import errorDiagnostics.empty
-        throw InterpolationError(error.message)
+  given interpolable: Timezone is Interpolable:
+    inline def interpolate[parts <: Tuple](inline insertions: Any*): Timezone =
+      ${aviation.internal.tzInterpolator[parts]('insertions)}
 
 case class Timezone private(name: Text) extends Findable:
   def stdlib: jt.ZoneId = jt.ZoneId.of(name.s).nn
