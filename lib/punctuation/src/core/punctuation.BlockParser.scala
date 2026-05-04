@@ -78,7 +78,29 @@ final class BlockParser:
       processLine(line, ln)
 
     closeAll()
-    Markdown(refs.all, docBuilder.children.toSeq*)
+
+    // Post-pass: with the link-reference table now fully populated, run the
+    // inline parser over each Paragraph/Heading's deferred raw text.
+    val resolved = docBuilder.children.iterator.map(resolveInlines).toSeq
+    Markdown(refs.all, resolved*)
+
+  private def resolveInlines(layout: Layout): Layout = layout match
+    case Layout.Paragraph(ln, Prose.Textual(raw)) =>
+      Layout.Paragraph(ln, InlineParser.parse(raw, refs)*)
+
+    case Layout.Heading(ln, level, Prose.Textual(raw)) =>
+      Layout.Heading(ln, level, InlineParser.parse(raw, refs)*)
+
+    case Layout.BlockQuote(ln, children*) =>
+      Layout.BlockQuote(ln, children.map(resolveInlines)*)
+
+    case Layout.BulletList(ln, tight, items*) =>
+      Layout.BulletList(ln, tight, items.map(_.map(resolveInlines))*)
+
+    case Layout.OrderedList(ln, start, tight, delim, items*) =>
+      Layout.OrderedList(ln, start, tight, delim, items.map(_.map(resolveInlines))*)
+
+    case other => other
 
   // ─── stack management ───────────────────────────────────────────────────
 
@@ -90,9 +112,15 @@ final class BlockParser:
     builder match
       case item: ListItemBuilder =>
         parent match
-          case bl: BulletListBuilder  => bl.items += item.children.toList
-          case ol: OrderedListBuilder => ol.items += item.children.toList
-          case _                      => panic(m"ListItem parent must be a List")
+          case bl: BulletListBuilder =>
+            bl.items += item.children.toList
+            if item.hadBlank then bl.pendingBlank = true
+
+          case ol: OrderedListBuilder =>
+            ol.items += item.children.toList
+            if item.hadBlank then ol.pendingBlank = true
+
+          case _ => panic(m"ListItem parent must be a List")
 
       case container: ContainerBuilder =>
         container.finish(refs).let: layout =>
@@ -103,7 +131,22 @@ final class BlockParser:
           addToParent(parent, layout)
 
   private def addToParent(parent: BlockBuilder, layout: Layout): Unit = parent match
-    case item: ListItemBuilder       => item.children += layout
+    case item: ListItemBuilder =>
+      // If a blank line came between this child and a previous block in the
+      // same item, the enclosing list is loose. Don't reset hadBlank when
+      // children was empty: the blank may still be relevant to a future
+      // child added later.
+      if item.hadBlank && item.children.nonEmpty then
+        val itemIdx = openStack.indexOf(item)
+        if itemIdx > 0 then openStack(itemIdx - 1) match
+          case bl: BulletListBuilder  => bl.loose = true
+          case ol: OrderedListBuilder => ol.loose = true
+          case _                      => ()
+
+        item.hadBlank = false
+
+      item.children += layout
+
     case container: ContainerBuilder => container.children += layout
     case _                           => panic(m"cannot add child to a leaf builder")
 
@@ -116,14 +159,22 @@ final class BlockParser:
     case _: LeafBuilder => closeOne()
     case _              => ()
 
-  private def closeListChainAtTop(): Unit =
-    var done = false
-    while !done do
-      deepest match
-        case _: ListItemBuilder    => closeOne()
-        case _: BulletListBuilder  => closeOne()
-        case _: OrderedListBuilder => closeOne()
-        case _                     => done = true
+  // True if `residual` is a list-item marker AND we're inside any list (of
+  // either kind). Inside an existing list, list markers always start new
+  // items or terminate the list — they never continue an open paragraph.
+  private def insideAnyListWithListMarker(residual: Text): Boolean =
+    val bm = ParserSupport.bulletMarker(residual)
+    val om = ParserSupport.orderedMarker(residual)
+    if bm.absent && om.absent then return false
+    var idx = openStack.length - 1
+    while idx >= 0 do
+      openStack(idx) match
+        case _: BulletListBuilder | _: OrderedListBuilder | _: ListItemBuilder =>
+          return true
+
+        case _ => ()
+      idx -= 1
+    false
 
   // ─── phase 1: walk containers ───────────────────────────────────────────
 
@@ -171,6 +222,10 @@ final class BlockParser:
       openStack += bq
       val rest = if i >= n then t"" else Text(s.substring(i, n).nn)
       return (rest, true)
+
+    // Thematic break has higher priority than bullet/ordered list markers
+    // (a line of `- - -` is a thematic break, not a list with content `- -`).
+    if ParserSupport.isThematicBreak(line) then return (line, false)
 
     // Bullet list marker
     ParserSupport.bulletMarker(line) match
@@ -227,7 +282,11 @@ final class BlockParser:
 
     if !reuseList then
       closeOpenLeafForNewBlock()
-      closeListChainAtTop()
+      // Close any wrong-kind List on top of the stack. If the deepest is a
+      // ListItem (we're opening a sublist inside it), keep the LI open.
+      deepest match
+        case _: BulletListBuilder | _: OrderedListBuilder => closeOne()
+        case _                                            => ()
 
       val newList: ContainerBuilder = bullet match
         case Some(bm) => BulletListBuilder(ln, bm.char)
@@ -245,6 +304,17 @@ final class BlockParser:
       deepest match
         case _: ListItemBuilder => closeOne()
         case _                  => ()
+
+      // The previous item closed with a trailing blank line — sibling-item
+      // separation means the list is loose.
+      deepest match
+        case bl: BulletListBuilder if bl.pendingBlank =>
+          bl.loose = true; bl.pendingBlank = false
+
+        case ol: OrderedListBuilder if ol.pendingBlank =>
+          ol.loose = true; ol.pendingBlank = false
+
+        case _ => ()
 
     val contentIndent = bullet.map(_.contentIndent).getOrElse(ordered.get.contentIndent)
     val item = ListItemBuilder(ln, contentIndent)
@@ -280,35 +350,76 @@ final class BlockParser:
 
         case _ => ()
 
+    // Setext heading promotion. If walkContainers fully matched (the deepest
+    // open block is reachable from the current container context) and the
+    // residual is a setext underline, promote the open paragraph to a heading.
+    // Must run before lazy continuation, otherwise the underline gets absorbed
+    // as paragraph content.
+    val paraReachable = matchedDepth >= openStack.length - 1
+    if paraReachable then
+      deepest match
+        case para: ParagraphBuilder if !para.isEmpty =>
+          ParserSupport.setextUnderline(residual0) match
+            case 1 =>
+              openStack.remove(openStack.length - 1)
+              addToParent(deepest, para.toHeading(1, refs))
+              return
+
+            case 2 =>
+              openStack.remove(openStack.length - 1)
+              addToParent(deepest, para.toHeading(2, refs))
+              return
+
+            case Unset => ()
+
+        case _ => ()
+
     // Lazy paragraph continuation
     val deepestIsParagraph = deepest.isInstanceOf[ParagraphBuilder]
 
     val canLazyContinue =
       deepestIsParagraph
-      && !ParserSupport.startsNonParagraphBlock(residual0)
+      && !ParserSupport.startsNonParagraphBlock(residual0, paragraphOpen = true)
       && !ParserSupport.isBlank(residual0)
+      && !insideAnyListWithListMarker(residual0)
 
     if canLazyContinue then
       val para = deepest.asInstanceOf[ParagraphBuilder]
       para.addLine(residual0)
       return
 
-    // Mark blank-line-induced loose flag on enclosing list items before
-    // closing failed containers
-    if matchedDepth < openStack.length && ParserSupport.isBlank(residual0) then
-      var idx = 1
-      while idx < openStack.length do
-        openStack(idx) match
-          case item: ListItemBuilder => item.hadBlank = true
-          case _                     => ()
-        idx += 1
-
     if matchedDepth < openStack.length then closeFromIndex(matchedDepth)
+
+    // After failed containers close (Para closes → its content joins parent
+    // LI's children), check what the blank means. Find the deepest open
+    // ListItem (skipping a trailing leaf if any). If it's empty, the blank
+    // terminates the item and the enclosing list (CommonMark §5.2). If it
+    // has children, mark hadBlank for loose-list detection.
+    if ParserSupport.isBlank(residual0) then
+      var idx = openStack.length - 1
+      while idx >= 0 && openStack(idx).isInstanceOf[LeafBuilder] do idx -= 1
+      if idx >= 0 then openStack(idx) match
+        case item: ListItemBuilder =>
+          if item.children.isEmpty then
+            closeFromIndex(idx)
+            deepest match
+              case _: BulletListBuilder | _: OrderedListBuilder => closeOne()
+              case _                                            => ()
+          else
+            item.hadBlank = true
+
+        case _ => ()
 
     val residual = tryOpenContainers(residual0, ln)
     placeLeaf(residual, ln)
 
   private def placeLeaf(residual: Text, ln: Ordinal): Unit =
+    // If a List (not ListItem) is on top of the stack, no new same-kind item
+    // opened in Phase 2, so the list closes here before placing the leaf.
+    deepest match
+      case _: BulletListBuilder | _: OrderedListBuilder => closeOne()
+      case _                                            => ()
+
     if ParserSupport.isBlank(residual) then
       deepest match
         case _: ParagraphBuilder => closeOne()
@@ -318,7 +429,7 @@ final class BlockParser:
     ParserSupport.fenceOpener(residual) match
       case (ch: Char, count: Int, indent: Int, info: Text) =>
         closeOpenLeafForNewBlock()
-        val tokens = ParserSupport.cutInfo(info)
+        val tokens = ParserSupport.cutInfo(info).map(InlineSupport.decodeEscapesAndEntities)
         val fenced = FencedCodeBlockBuilder(ln, ch, count, indent, tokens)
         openStack += fenced
         return
@@ -350,7 +461,7 @@ final class BlockParser:
     ParserSupport.atxHeading(residual) match
       case (level: (1 | 2 | 3 | 4 | 5 | 6), content: Text) =>
         closeOpenLeafForNewBlock()
-        addToParent(deepest, Layout.Heading(ln, level, InlineParser.parse(content, refs)*))
+        addToParent(deepest, Layout.Heading(ln, level, Prose.Textual(content)))
         return
 
       case Unset => ()

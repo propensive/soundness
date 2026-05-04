@@ -263,6 +263,8 @@ object InlineSupport:
 
   // Link destination: either `<...>` (allows escapes; no unescaped < or >),
   // or a sequence of non-whitespace characters with balanced parentheses.
+  // Backslash escapes and HTML entity references are decoded inline per
+  // CommonMark §6.6 (entity references are recognised in URLs).
   def parseLinkDestination(s: String, start: Int, end: Int): Optional[DestMatch] =
     if start >= end then return Unset
     if s.charAt(start) == '<' then
@@ -275,6 +277,13 @@ object InlineSupport:
         else if c == '\\' && i + 1 < end && isAsciiPunctuation(s.charAt(i + 1)) then
           buf.append(s.charAt(i + 1))
           i += 2
+        else if c == '&' then
+          parseEntity(s, i, end) match
+            case e: EntityMatch =>
+              buf.append(e.decoded); i = e.end
+
+            case Unset =>
+              buf.append(c); i += 1
         else
           buf.append(c)
           i += 1
@@ -291,6 +300,13 @@ object InlineSupport:
         else if c == '\\' && i + 1 < end && isAsciiPunctuation(s.charAt(i + 1)) then
           buf.append(s.charAt(i + 1))
           i += 2
+        else if c == '&' then
+          parseEntity(s, i, end) match
+            case e: EntityMatch =>
+              buf.append(e.decoded); i = e.end
+
+            case Unset =>
+              buf.append(c); i += 1
         else if c == '(' then
           depth += 1; buf.append(c); i += 1
         else if c == ')' then
@@ -303,7 +319,8 @@ object InlineSupport:
       if depth != 0 then return Unset
       if i == start then Unset else DestMatch(Text(buf.toString), i)
 
-  // Link title: `"..."`, `'...'`, or `(...)` with backslash-escapes.
+  // Link title: `"..."`, `'...'`, or `(...)` with backslash-escapes and
+  // HTML entity references decoded inline.
   def parseLinkTitle(s: String, start: Int, end: Int): Optional[TitleMatch] =
     if start >= end then return Unset
     val opener = s.charAt(start)
@@ -322,10 +339,38 @@ object InlineSupport:
       else if c == '\\' && i + 1 < end && isAsciiPunctuation(s.charAt(i + 1)) then
         buf.append(s.charAt(i + 1))
         i += 2
+      else if c == '&' then
+        parseEntity(s, i, end) match
+          case e: EntityMatch => buf.append(e.decoded); i = e.end
+          case Unset          => buf.append(c); i += 1
       else
         buf.append(c)
         i += 1
     Unset
+
+  // Decode backslash-escapes (ASCII punctuation) and HTML entity references
+  // in a text fragment such as a fenced code block info string.
+  def decodeEscapesAndEntities(text: Text): Text =
+    val s = text.s
+    val n = s.length
+    val out = new StringBuilder
+    var i = 0
+    while i < n do
+      val c = s.charAt(i)
+      if c == '\\' && i + 1 < n && isAsciiPunctuation(s.charAt(i + 1)) then
+        out.append(s.charAt(i + 1))
+        i += 2
+      else if c == '&' then
+        parseEntity(s, i, n) match
+          case e: EntityMatch =>
+            out.append(e.decoded); i = e.end
+
+          case Unset =>
+            out.append(c); i += 1
+      else
+        out.append(c)
+        i += 1
+    Text(out.toString)
 
   case class HtmlInlineMatch(html: Text, end: Int)
 
@@ -501,6 +546,82 @@ object InlineSupport:
     InlineLinkBody(dest, title, i + 1)
 
   case class RefLabelMatch(label: Text, end: Int)
+
+  case class LinkRefDefMatch(ref: Markdown.LinkRef, end: Int)
+
+  // Parse a single CommonMark link reference definition, possibly spanning
+  // multiple lines, starting at `start` of the (joined) source. Returns the
+  // definition and the index past the LRD's last consumed character (which
+  // is either a newline, `\0`, or `end`).
+  def parseLinkRefDefMulti(s: String, start: Int, end: Int): Optional[LinkRefDefMatch] =
+    var i = start
+    // Skip up to 3 leading spaces (no tabs).
+    var indent = 0
+    while i < end && s.charAt(i) == ' ' && indent < 4 do { i += 1; indent += 1 }
+    if indent >= 4 then return Unset
+    if i >= end || s.charAt(i) != '[' then return Unset
+    i += 1
+
+    // Label: chars until `]`, allowing `\` escapes. Newlines allowed, but
+    // not a blank line. Reject `[` inside.
+    val labelStart = i
+    var labelDone = false
+    var sawContent = false
+    while i < end && !labelDone do
+      val c = s.charAt(i)
+      if c == ']' then labelDone = true
+      else if c == '[' then return Unset
+      else if c == '\\' && i + 1 < end then
+        sawContent = true; i += 2
+      else if c == '\n' then
+        // Reject blank lines inside the label
+        if i + 1 < end && s.charAt(i + 1) == '\n' then return Unset
+        i += 1
+      else
+        if c != ' ' && c != '\t' then sawContent = true
+        i += 1
+
+    if !labelDone then return Unset
+    if !sawContent then return Unset
+    val label = Text(s.substring(labelStart, i).nn)
+    i += 1  // skip ]
+
+    if i >= end || s.charAt(i) != ':' then return Unset
+    i += 1
+
+    // Skip whitespace incl. up to one newline before destination.
+    i = skipLinkWhitespace(s, i, end)
+    if i >= end then return Unset
+
+    val destResult = parseLinkDestination(s, i, end)
+    if destResult.absent then return Unset
+    val (destination, afterDest) = (destResult.vouch.dest, destResult.vouch.end)
+    i = afterDest
+
+    // Try to find a title. The title may sit on the same line or the next
+    // line (one newline allowed in between). If the title attempt fails or
+    // there's no title opener, roll back to right after the destination.
+    val tentativeWsEnd = skipLinkWhitespace(s, i, end)
+    var title: Optional[Text] = Unset
+
+    val titleOpener =
+      tentativeWsEnd < end
+      && { val c = s.charAt(tentativeWsEnd); c == '"' || c == '\'' || c == '(' }
+
+    if titleOpener then
+      parseLinkTitle(s, tentativeWsEnd, end) match
+        case t: TitleMatch =>
+          title = Text(t.title)
+          i = t.end
+
+        case Unset => ()  // i stays at afterDest
+
+    // Trailing content after the dest (or title, if matched) must be only
+    // spaces/tabs ending in either end-of-line or end-of-input.
+    while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
+    if i < end && s.charAt(i) != '\n' then return Unset
+
+    LinkRefDefMatch(Markdown.LinkRef(label, title, destination), i)
 
   // Parse a reference link label `[label]` starting at the `[`. Returns the
   // raw label text (or empty for `[]`) and the index past the closing `]`,

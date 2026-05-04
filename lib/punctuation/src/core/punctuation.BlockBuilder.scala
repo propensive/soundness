@@ -36,6 +36,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import anticipation.*
 import denominative.*
+import gossamer.*
 import vacuous.*
 
 // Mutable builder hierarchy for the block-parse pass. Containers hold a
@@ -89,8 +90,9 @@ final class ListItemBuilder(val line: Ordinal, val indent: Int) extends Containe
 
   def tryContinue(line: Text): Optional[Text] =
     if ParserSupport.isBlank(line) then
-      hadBlank = true
-      // a blank line continues the item; pass through empty
+      // a blank line continues the item; pass through empty. The dispatcher
+      // sets `hadBlank` after determining the blank wasn't absorbed by a
+      // nested code block.
       return Text("")
     if ParserSupport.indentColumn(line) >= indent then
       ParserSupport.stripIndent(line, indent)
@@ -105,8 +107,12 @@ final class ListItemBuilder(val line: Ordinal, val indent: Int) extends Containe
 final class BulletListBuilder(val line: Ordinal, val marker: Char) extends ContainerBuilder:
   // Each entry is the children of one list item, in document order.
   val items: ArrayBuffer[List[Layout]] = ArrayBuffer()
-  // True if any blank line has been observed between items (=> loose list).
+  // True if any blank line is observed between blocks of the list (between
+  // items or between blocks within an item) — makes the list loose.
   var loose: Boolean = false
+  // Set when an item closes with hadBlank=true; the next sibling-item open
+  // will promote this to `loose`.
+  var pendingBlank: Boolean = false
 
   def tryContinue(line: Text): Optional[Text] = line
 
@@ -122,6 +128,7 @@ final class OrderedListBuilder
 extends ContainerBuilder:
   val items: ArrayBuffer[List[Layout]] = ArrayBuffer()
   var loose: Boolean = false
+  var pendingBlank: Boolean = false
 
   def tryContinue(line: Text): Optional[Text] = line
 
@@ -146,44 +153,52 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
 
   def isEmpty: Boolean = lines.isEmpty
 
-  // Joined raw content of the (post-link-ref) paragraph. The first
-  // `linkRefCount` lines are dropped — they were consumed as link reference
-  // definitions during `extractLinkRefs`.
-  private var linkRefCount: Int = 0
+  // Stored after `extractLinkRefs` — the byte-position in the joined-lines
+  // text where link-reference definitions end and paragraph content begins.
+  private var linkRefEnd: Int = 0
+  private var joinedText: String = ""
 
   private def joined: Text =
+    if linkRefEnd >= joinedText.length then t""
+    else Text(joinedText.substring(linkRefEnd).nn)
+
+  // Try to consume leading link reference definitions from the joined
+  // paragraph text. CommonMark allows LRDs to span multiple lines, so the
+  // parser works on the joined text rather than line-by-line.
+  private def extractLinkRefs(refs: LinkRefs): Unit =
     val builder = new StringBuilder
     var first = true
-    var idx = linkRefCount
-    while idx < lines.length do
+    for line <- lines do
       if first then first = false else builder.append('\n')
-      builder.append(lines(idx).s)
-      idx += 1
-    Text(builder.toString)
+      builder.append(line.s)
+    joinedText = builder.toString
 
-  // Try to consume leading lines as link reference definitions. Returns the
-  // count consumed; updates `linkRefCount`.
-  private def extractLinkRefs(refs: LinkRefs): Int =
-    var count = 0
-    var done = false
-    while !done && count < lines.length do
-      val parsed = InlineSupport.parseLinkRefDef(lines(count))
-      if parsed.absent then done = true
-      else
-        refs.add(parsed.vouch)
-        count += 1
-    linkRefCount = count
-    count
+    val n = joinedText.length
+    var pos = 0
+    var keepGoing = true
+    while keepGoing && pos < n do
+      InlineSupport.parseLinkRefDefMulti(joinedText, pos, n) match
+        case Unset =>
+          keepGoing = false
 
+        case lr: InlineSupport.LinkRefDefMatch =>
+          refs.add(lr.ref)
+          pos = lr.end
+          if pos < n && joinedText.charAt(pos) == '\n' then pos += 1
+
+    linkRefEnd = pos
+
+  // Stores the joined raw paragraph text as a single `Prose.Textual`
+  // placeholder. Inline parsing is deferred to a post-pass so link-reference
+  // definitions discovered later in the document are visible.
   def finish(refs: LinkRefs): Optional[Layout] =
     extractLinkRefs(refs)
-    if linkRefCount >= lines.length then Unset
-    else Layout.Paragraph(line, InlineParser.parse(joined, refs)*)
+    if linkRefEnd >= joinedText.length then Unset
+    else Layout.Paragraph(line, Prose.Textual(joined))
 
   // Setext headings rewrite an open paragraph as a heading; the underline
-  // line itself is consumed by the dispatcher, not added here. No link-ref
-  // extraction here — setext underlines stop link-ref accumulation by
-  // turning the paragraph into a heading.
+  // line itself is consumed by the dispatcher, not added here. The raw text
+  // is stored as a single Prose.Textual placeholder for the post-pass.
   def toHeading(level: 1 | 2 | 3 | 4 | 5 | 6, refs: LinkRefs): Layout =
     val text =
       val builder = new StringBuilder
@@ -193,7 +208,7 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
         builder.append(line.s)
       Text(builder.toString)
 
-    Layout.Heading(line, level, InlineParser.parse(text, refs)*)
+    Layout.Heading(line, level, Prose.Textual(text))
 
 final class FencedCodeBlockBuilder
   ( val line:      Ordinal,

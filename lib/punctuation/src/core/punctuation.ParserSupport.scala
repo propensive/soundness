@@ -226,7 +226,7 @@ object ParserSupport:
             val builder = new StringBuilder
             var k = 0
             while k < leftover do { builder.append(' '); k += 1 }
-            builder.append(s, i + 1, len)
+            builder.append(s.substring(i + 1, len))
             return Text(builder.toString)
 
         case _ =>
@@ -332,12 +332,35 @@ object ParserSupport:
   // Whether the line, ignoring leading 0..3 spaces, starts a new block
   // (other than a paragraph). Used for lazy-paragraph-continuation: if a line
   // doesn't start a new block, it can continue an open paragraph regardless
-  // of failed container continuation.
-  def startsNonParagraphBlock(line: Text): Boolean =
+  // of failed container continuation. If `paragraphOpen` is true, the
+  // CommonMark "cannot interrupt a paragraph" restrictions apply (empty
+  // bullet list, ordered list not starting at 1).
+  def startsNonParagraphBlock(line: Text, paragraphOpen: Boolean): Boolean =
     if isBlank(line) then return true
     if isThematicBreak(line) then return true
     if atxHeading(line).present then return true
     if fenceOpener(line).present then return true
-    if bulletMarker(line).present then return true
-    if orderedMarker(line).present then return true
+    if startsBlockQuote(line) then return true
+
+    bulletMarker(line) match
+      case bm: BulletMarker =>
+        if !paragraphOpen || !isBlank(bm.rest) then return true
+
+      case Unset => ()
+
+    orderedMarker(line) match
+      case om: OrderedMarker =>
+        if !paragraphOpen || (om.start == 1 && !isBlank(om.rest)) then return true
+
+      case Unset => ()
+
     false
+
+  // True if the line starts a blockquote (`>` after 0–3 leading spaces).
+  def startsBlockQuote(line: Text): Boolean =
+    val s = line.s
+    val n = s.length
+    var i = 0
+    var indent = 0
+    while i < n && s.charAt(i) == ' ' && indent < 4 do { i += 1; indent += 1 }
+    indent < 4 && i < n && s.charAt(i) == '>'

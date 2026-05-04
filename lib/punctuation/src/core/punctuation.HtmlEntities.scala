@@ -37,14 +37,23 @@ import hellenism.*, classloaders.threadContext
 import hieroglyph.*, charDecoders.utf8, textSanitizers.skip
 import turbulence.*
 
-// HTML5 named character references, loaded once from the `entities-extra.tsv`
-// resource shipped by Honeycomb. Only entries with a trailing semicolon are
-// kept, since CommonMark requires the `;` terminator for named entities to
-// be valid.
+// HTML5 named character references, loaded once from the entity TSV resources
+// shipped by Honeycomb (`entities-html4.tsv` for the legacy HTML4 set and
+// `entities-extra.tsv` for the HTML5 additions). Only entries with a
+// trailing semicolon are kept, since CommonMark requires the `;` terminator
+// for named entities to be valid.
 object HtmlEntities:
   private lazy val table: Map[String, String] =
-    val tsv = cp"/honeycomb/entities-extra.tsv".read[Text].s
     val builder = Map.newBuilder[String, String]
+    loadInto(cp"/honeycomb/entities-html4.tsv".read[Text].s, builder)
+    loadInto(cp"/honeycomb/entities-extra.tsv".read[Text].s, builder)
+    builder.result()
+
+  private def loadInto
+    ( tsv:     String,
+      builder: scala.collection.mutable.Builder[(String, String), Map[String, String]] )
+  :   Unit =
+
     val lines = tsv.split("\n").nn
     var i = 0
     while i < lines.length do
@@ -55,7 +64,6 @@ object HtmlEntities:
         val value = line.substring(tab + 1).nn
         builder += (name -> value)
       i += 1
-    builder.result()
 
   // Returns the decoded text for a named entity (without `&` or `;`), or
   // `null` if no such entity exists.

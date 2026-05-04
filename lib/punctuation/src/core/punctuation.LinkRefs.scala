@@ -45,8 +45,9 @@ final class LinkRefs:
     mutable.LinkedHashMap()
 
   // CommonMark normalisation: trim, collapse internal whitespace runs, then
-  // Unicode case-fold (approximated here by `toLowerCase` since the JDK's
-  // `String.toLowerCase` does Unicode case-folding for the BMP).
+  // case-fold. We use `toUpperCase` rather than `toLowerCase` because Java's
+  // upper-casing handles a broader set of Unicode case-equivalences (e.g.
+  // ẞ ↔ SS) that the spec's case-fold semantics require.
   def normalize(label: Text): Text =
     val s = label.s
     val n = s.length
@@ -64,7 +65,7 @@ final class LinkRefs:
         inSpace = false
         trimmingLeft = false
       i += 1
-    Text(builder.toString.toLowerCase.nn)
+    Text(builder.toString.toUpperCase.nn)
 
   // First definition wins (per CommonMark).
   def add(ref: Markdown.LinkRef): Unit =

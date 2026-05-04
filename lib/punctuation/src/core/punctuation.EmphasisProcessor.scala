@@ -136,6 +136,8 @@ object EmphasisProcessor:
 
   def isUnicodePunctuation(c: Char): Boolean =
     val t = Character.getType(c)
+    // CommonMark §6.2: Unicode punctuation means a character in categories
+    // Pc, Pd, Pe, Pf, Pi, Po, Ps, OR in any Symbol category Sc/Sk/Sm/So.
     t == Character.CONNECTOR_PUNCTUATION
     || t == Character.DASH_PUNCTUATION
     || t == Character.START_PUNCTUATION
@@ -143,9 +145,10 @@ object EmphasisProcessor:
     || t == Character.INITIAL_QUOTE_PUNCTUATION
     || t == Character.FINAL_QUOTE_PUNCTUATION
     || t == Character.OTHER_PUNCTUATION
-    // CommonMark also classifies a few math/currency/etc. as punctuation; this
-    // keeps the common ASCII punctuation set right (which covers all spec
-    // tests). A broader set can be added later.
+    || t == Character.CURRENCY_SYMBOL
+    || t == Character.MODIFIER_SYMBOL
+    || t == Character.MATH_SYMBOL
+    || t == Character.OTHER_SYMBOL
 
   // Compute (canOpen, canClose) for a delimiter run.
   def classifyDelim
@@ -234,9 +237,11 @@ object EmphasisProcessor:
           if !matched then
             openersBottom((closer.char, closer.length % 3, closer.canOpen)) = curNode.prev
             if !closer.canOpen then
-              val nxt = curNode.next
-              list.remove(curNode)
-              current = nxt
+              // Remove from the delimiter "stack" but keep its characters as
+              // literal text in the inline list.
+              val asText = TextData(Text(closer.char.toString * closer.length))
+              curNode.data = asText
+              current = curNode.next
             else
               current = curNode.next
 
