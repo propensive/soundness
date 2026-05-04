@@ -38,6 +38,7 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
+import beneficence.*
 
 object ContextRequirement:
   given required: ContextRequirement:
@@ -52,7 +53,7 @@ object ContextRequirement:
 
     def wrap[value](optional: Optional[value]): Optional[value] = optional
 
-trait ContextRequirement:
+trait ContextRequirement extends Findable:
   type Optionality[Type] <: Optional[Type]
   type Required <: Boolean
 

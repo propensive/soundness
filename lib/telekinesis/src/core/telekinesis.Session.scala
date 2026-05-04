@@ -35,9 +35,10 @@ package telekinesis
 import anticipation.*
 import distillate.*
 import prepositional.*
+import beneficence.*
 
 object Session:
   given encodable: Session is Encodable in Text = _.key
   given decodable: Session is Decodable in Text = Session(_)
 
-case class Session(key: Text)
+case class Session(key: Text) extends Findable

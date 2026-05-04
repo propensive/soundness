@@ -38,6 +38,7 @@ import prepositional.*
 import proscenium.*
 import symbolism.*
 import typonym.*
+import beneficence.*
 
 object Stylesheet:
   given generic: Stylesheet is GenericCssSelection = _.classes.join(t".", t".", t"")
@@ -54,4 +55,4 @@ object Stylesheet:
   given empty: Stylesheet(Set()):
     type Topic = "apply"
 
-case class Stylesheet(classes: Set[Text]) extends Topical
+case class Stylesheet(classes: Set[Text]) extends Topical, Findable

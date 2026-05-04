@@ -37,6 +37,7 @@ import proscenium.*
 import symbolism.*
 
 import abstractables.instantIsAbstractable
+import beneficence.*
 
 object Clock:
   given current: Clock:
@@ -48,5 +49,5 @@ object Clock:
   def offset(diff: into[Duration]): Clock = new Clock():
     def apply(): Instant = Instant(System.currentTimeMillis) + diff
 
-abstract class Clock():
+abstract class Clock() extends Findable:
   def apply(): Instant

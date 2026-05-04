@@ -39,12 +39,13 @@ import anticipation.*
 import contingency.*
 import rudiments.*
 import vacuous.*
+import beneficence.*
 
 object Classloader:
   def threadContext: Classloader = new Classloader(Thread.currentThread.nn.getContextClassLoader.nn)
   inline def apply[template <: AnyKind]: Classloader = ClassRef[template].classloader
 
-class Classloader(val java: ClassLoader):
+class Classloader(val java: ClassLoader) extends Findable:
   type Plane = Classpath
 
   def parent: Optional[Classloader] = Optional(java.getParent).let(new Classloader(_))

@@ -33,8 +33,9 @@
 package aviation
 
 import denominative.*
+import beneficence.*
 
-trait Hebdomad:
+trait Hebdomad extends Findable:
   def start: Weekday
   def weekend(day: Weekday): Boolean
   def weekday(ordinal: Ordinal): Weekday = Weekday.fromOrdinal((start.ordinal + ordinal.n0)%7)

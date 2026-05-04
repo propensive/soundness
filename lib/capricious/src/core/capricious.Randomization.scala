@@ -35,6 +35,7 @@ package capricious
 import language.experimental.genericNumberLiterals
 
 import scala.util as su
+import beneficence.*
 
-trait Randomization:
+trait Randomization extends Findable:
   def initialize(): su.Random

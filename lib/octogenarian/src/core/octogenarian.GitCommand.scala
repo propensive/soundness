@@ -34,8 +34,9 @@ package octogenarian
 
 import anticipation.*
 import guillotine.*
+import beneficence.*
 
 object GitCommand:
   given parameterizable: GitCommand is Parameterizable = _.path
 
-case class GitCommand(path: Text)
+case class GitCommand(path: Text) extends Findable

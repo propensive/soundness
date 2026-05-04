@@ -38,6 +38,7 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
+import beneficence.*
 
 object CharEncoder:
   def system: CharEncoder = unapply(jnc.Charset.defaultCharset.nn.displayName.nn.tt).get
@@ -46,7 +47,7 @@ object CharEncoder:
     Encoding.codecs.get(name.s.toLowerCase.nn.tt).map(CharEncoder(_))
 
 class CharEncoder(val encoding: Encoding { type CanEncode = true })
-extends Encodable:
+extends Encodable, Findable:
   type Self = Text
   type Form = Data
 

@@ -37,6 +37,7 @@ import gossamer.*
 import prepositional.*
 import telekinesis.*
 import vacuous.*
+import beneficence.*
 
 
 object Authorization:
@@ -48,6 +49,6 @@ case class Authorization
     scopes:  List[Text],
     expiry:  Optional[Long],
     refresh: Optional[Text] )
-extends Topical:
+extends Topical, Findable:
   private[orthodoxy] def of[scope <: Scope]: Authorization of scope =
     this.asInstanceOf[Authorization of scope]

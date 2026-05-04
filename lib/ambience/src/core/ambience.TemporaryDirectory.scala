@@ -34,7 +34,8 @@ package ambience
 
 import anticipation.*
 import prepositional.*
+import beneficence.*
 
-trait TemporaryDirectory:
+trait TemporaryDirectory extends Findable:
   def directory(): Text
   def path[path: Instantiable across Paths from Text]: path = path(directory())

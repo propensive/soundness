@@ -33,8 +33,9 @@
 package kaleidoscope
 
 import vacuous.*
+import beneficence.*
 
 object Scanner:
   given default: (erased DummyImplicit) => Scanner = Scanner(Unset)
 
-class Scanner(var nextStart: Optional[Int] = Unset)
+class Scanner(var nextStart: Optional[Int] = Unset) extends Findable

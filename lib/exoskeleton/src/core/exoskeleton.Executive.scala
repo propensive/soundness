@@ -36,8 +36,9 @@ import ambience.*
 import anticipation.*
 import rudiments.*
 import turbulence.*
+import beneficence.*
 
-trait Executive:
+trait Executive extends Findable:
   type Return
   type Interface <: Cli
 

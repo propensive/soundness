@@ -37,6 +37,7 @@ import language.experimental.pureFunctions
 import java.util.concurrent as juc
 
 import anticipation.*
+import beneficence.*
 
 object Codepoint:
   inline given default: Codepoint = ${digression.internal.location}
@@ -44,5 +45,5 @@ object Codepoint:
   private[digression] val idempotentActions: juc.ConcurrentHashMap[Codepoint, Unit] =
     juc.ConcurrentHashMap()
 
-case class Codepoint(source: Text, line: Int):
+case class Codepoint(source: Text, line: Int) extends Findable:
   def text: Text = Text(s"${source.s.split("/").nn.last}:$line")

@@ -45,8 +45,9 @@ import urticose.*
 
 import logging.silent
 import workingDirectories.java
+import beneficence.*
 
-trait BenchmarkDevice:
+trait BenchmarkDevice extends Findable:
   def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError
   def invoke(path: Path on Linux, input: Text): Text raises BenchError
   def undeploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError

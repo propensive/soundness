@@ -42,6 +42,7 @@ import serpentine.*
 import telekinesis.*
 import urticose.*
 import vacuous.*
+import beneficence.*
 
 object OAuth:
   case class State
@@ -54,7 +55,7 @@ object OAuth:
     def expired: Boolean = expiry.let(System.currentTimeMillis > _).or(false)
 
 
-class OAuth():
+class OAuth() extends Findable:
   private val data: scm.HashMap[Session, OAuth.State] = scm.HashMap()
 
   def update(session: Session, state: OAuth.State): Unit = data(session) = state

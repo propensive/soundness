@@ -40,9 +40,10 @@ import gossamer.*
 import prepositional.*
 import proscenium.*
 import vacuous.*
+import beneficence.*
 
 object BaseLayout:
-  case class Dir(home: Boolean, path: List[Text]):
+  case class Dir(home: Boolean, path: List[Text]) extends Findable:
     @targetName("child")
     infix def / (name: Text): Dir = Dir(home, name :: path)
 

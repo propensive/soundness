@@ -36,6 +36,7 @@ import anticipation.*
 import gossamer.*
 import prepositional.*
 import spectacular.*
+import beneficence.*
 
 object escapes:
   object foreground:
@@ -93,7 +94,7 @@ object escapes:
   def link[url: Abstractable across Urls to Text](url: url, text: Text): Text =
     t"\e]8;;${url.generic}\e\\$text\e]8;;\e\\"
 
-trait TerminalEscapes:
+trait TerminalEscapes extends Findable:
   def bold(state: Boolean): Text
   def italic(state: Boolean): Text
   def underline(state: Boolean): Text

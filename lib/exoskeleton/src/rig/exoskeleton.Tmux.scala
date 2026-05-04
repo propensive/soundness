@@ -136,6 +136,7 @@ object Tmux:
 
 case class TmuxError()(using Diagnostics) extends Error(realm"ek", 2, 0)(m"can't execute tmux")
 case class Tmux(id: Text, workingDirectory: WorkingDirectory, width: Int, height: Int, shell: Shell)
+extends Findable
 
 case class Screenshot(screen: IArray[Text], size: (Int, Int), cursor: (Ordinal, Ordinal)):
   def apply(): Text = screen.join("\n")

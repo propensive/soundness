@@ -33,6 +33,7 @@
 package hieroglyph
 
 import vacuous.*
+import beneficence.*
 
-trait TextSanitizer:
+trait TextSanitizer extends Findable:
   def sanitize(position: Int, encoding: Encoding): Optional[Char]

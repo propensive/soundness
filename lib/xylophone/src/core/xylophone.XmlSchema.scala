@@ -40,6 +40,7 @@ import anticipation.*
 import gossamer.*
 import proscenium.*
 import vacuous.*
+import beneficence.*
 
 object XmlSchema:
   private[xylophone] val elements: scm.HashMap[XmlSchema, Dictionary[Tag]] = scm.HashMap()
@@ -68,7 +69,7 @@ object XmlSchema:
     def infer(parent: Tag, child: Tag) = Unset
 
 
-trait XmlSchema:
+trait XmlSchema extends Findable:
   def freeform: Boolean = false
 
   val elements: Dictionary[Tag]

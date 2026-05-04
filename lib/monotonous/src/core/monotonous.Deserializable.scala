@@ -43,6 +43,7 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
+import beneficence.*
 
 object Deserializable:
   def base[base <: Serialization](base: Int)(using alphabet: Alphabet[base])
@@ -94,7 +95,7 @@ object Deserializable:
 
   given binary: (Alphabet[Binary], Tactic[SerializationError]) => Deserializable in Binary = base(1)
 
-trait Deserializable:
+trait Deserializable extends Findable:
   type Form <: Serialization
 
   protected val atomicity: Int = 1

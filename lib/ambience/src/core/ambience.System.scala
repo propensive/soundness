@@ -37,6 +37,7 @@ import language.dynamics
 import anticipation.*
 import prepositional.*
 import vacuous.*
+import beneficence.*
 
 object System:
   object properties extends Dynamic:
@@ -49,5 +50,5 @@ object System:
 
     def selectDynamic(key: String): Property.Access[key.type] = Property.Access[key.type](key)
 
-trait System:
+trait System extends Findable:
   def apply(name: Text): Optional[Text]

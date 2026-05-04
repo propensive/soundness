@@ -35,8 +35,9 @@ package contingency
 import language.experimental.pureFunctions
 
 import fulminate.*
+import beneficence.*
 
-trait Tactic[-error <: Exception]:
+trait Tactic[-error <: Exception] extends Findable:
   private inline def tactic: this.type = this
   def diagnostics: Diagnostics
   def record(error: Diagnostics ?=> error): Unit

@@ -39,6 +39,7 @@ import contingency.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
+import beneficence.*
 
 object Environment extends Dynamic:
   def apply[variable]
@@ -59,5 +60,5 @@ object Environment extends Dynamic:
     environment.variable(reader.defaultName).let(reader.read(_)).or:
       raise(EnvironmentError(reader.defaultName)) yet reader.read(Text(""))
 
-trait Environment:
+trait Environment extends Findable:
   def variable(name: Text): Optional[Text]

@@ -48,6 +48,7 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
+import beneficence.*
 
 object HttpConnection:
   def apply(exchange: csnh.HttpExchange): HttpConnection logs HttpServerEvent =
@@ -146,4 +147,5 @@ extends Http.Request
     request.host,
     request.target,
     request.textHeaders,
-    request.body )
+    request.body ),
+  Findable

@@ -37,6 +37,7 @@ import scala.collection.mutable as scm
 import proscenium.*
 import rudiments.*
 import vacuous.*
+import beneficence.*
 
 object Foci:
   given default: [focus] => Foci[focus]:
@@ -53,7 +54,7 @@ object Foci:
 
     def supplement(count: Int, transform: Optional[focus] => focus): Unit = ()
 
-trait Foci[focus]:
+trait Foci[focus] extends Findable:
   def length: Int
   def success: Boolean
   def register(error: Exception): Unit

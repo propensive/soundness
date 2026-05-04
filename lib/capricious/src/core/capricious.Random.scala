@@ -35,6 +35,7 @@ package capricious
 import language.experimental.genericNumberLiterals
 
 import scala.util as su
+import beneficence.*
 
 object Random:
   lazy val global: Random = new Random(randomization.unseeded.initialize())
@@ -42,7 +43,7 @@ object Random:
   def apply(seed: Seed)(using randomization: Randomization): Random =
     new Random(randomization.initialize())
 
-class Random(private val generator: su.Random):
+class Random(private val generator: su.Random) extends Findable:
   def long(): Long = generator.nextLong()
   def gaussian(): Double = generator.nextGaussian()
   def unitInterval(): Double = generator.nextDouble()

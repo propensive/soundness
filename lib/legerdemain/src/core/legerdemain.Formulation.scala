@@ -39,8 +39,9 @@ import prepositional.*
 import vacuous.*
 
 import doms.html.whatwg, whatwg.*
+import beneficence.*
 
-trait Formulation:
+trait Formulation extends Findable:
   def form(content: Seq[Html of Flow], submit: Optional[Text]): Html of Flow
   def element
     ( widget:     Html of Phrasing,

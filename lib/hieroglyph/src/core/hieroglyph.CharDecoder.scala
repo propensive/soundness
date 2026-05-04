@@ -41,6 +41,7 @@ import denominative.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
+import beneficence.*
 
 object CharDecoder:
   def system(using TextSanitizer): CharDecoder =
@@ -49,7 +50,7 @@ object CharDecoder:
   def unapply(name: Text)(using TextSanitizer): Option[CharDecoder] =
     Encoding.unapply(name).map(CharDecoder(_))
 
-class CharDecoder(val encoding: Encoding)(using sanitizer: TextSanitizer):
+class CharDecoder(val encoding: Encoding)(using sanitizer: TextSanitizer) extends Findable:
   type Self = Text
   type Form = Data
 
