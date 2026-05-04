@@ -319,6 +319,7 @@ object test extends ScalaModule:
     //wisteria.test,
     xylophone.test,
     yossarian.test,
+    ypsiloid.test,
     zephyrine.test,
     //zeppelin.test
   )
@@ -991,6 +992,10 @@ object yossarian extends Library:
   object core extends Component(iridescence.core, gossamer.core, turbulence.core)
   object test extends Tests(core)
 
+object ypsiloid extends Library:
+  object core extends Component(gossamer.core)
+  object test extends Tests(core)
+
 object zephyrine extends Library:
   object core extends Component(hieroglyph.core, hypotenuse.core)
   object test extends Tests(core)
@@ -1154,6 +1159,7 @@ object publishing extends Module:
     wisteria.core.publishLocal()()
     xylophone.core.publishLocal()()
     yossarian.core.publishLocal()()
+    ypsiloid.core.publishLocal()()
     zephyrine.core.publishLocal()()
     zeppelin.core.publishLocal()()
     ziggurat.core.publishLocal()()
