@@ -103,6 +103,7 @@ object internal:
     def resultOf(t: TypeRepr): TypeRepr = t match
       case PolyType(_, _, body)   => resultOf(body)
       case MethodType(_, _, body) => resultOf(body)
+      case ByNameType(body)       => resultOf(body)
       case _                      => t
 
     case class Matched
@@ -158,12 +159,20 @@ object internal:
       case _                 => tree.symbol
 
     // Several classpath givens can be exports/re-exports of the same canonical
-    // definition. Group by canonical symbol and keep only the one whose
-    // stenography rendering is shortest (i.e. the most readable in the current
-    // import scope).
+    // definition. We can't always trace the export forwarder via `canonical`
+    // (binary classes loaded via TASTY expose the symbol's `tree` without its
+    // `rhs`), and the forwarder's `info` resolves to the typeclass type while
+    // the original's `info` is its synthesised module-class type — so neither
+    // canonical-symbol nor result-class matching merges them reliably. Group
+    // by simple name instead: within a single typeclass's META-INF file, two
+    // givens sharing a name are almost always exports of each other. Within
+    // each group, prefer an exported symbol over the original (tie-breaking
+    // by shortest stenography rendering).
     def dedupeExportsByCanonical(matched: List[Matched]): List[Matched] =
-      matched.groupBy(m => canonical(m.symbol)).values.toList.map: group =>
-        group.minBy(m => renderSymbol(m.symbol).s.length)
+      matched.groupBy(_.symbol.name.toString.stripSuffix("$")).values.toList.map: group =>
+        val exports = group.filter(_.symbol.flags.is(Flags.Exported))
+        val candidates = if exports.nonEmpty then exports else group
+        candidates.minBy(m => renderSymbol(m.symbol).s.length)
 
     // Render a proposal: the symbol's stenography path, suffixed by an
     // explicit type-parameter substitution `[T = X, U = Y]` whenever the
