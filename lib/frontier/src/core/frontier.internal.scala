@@ -91,16 +91,69 @@ object internal:
       case quotes: runtime.impl.QuotesImpl => quotes.ctx
 
     case class Candidate(name: Text, missing: List[Result]) extends Result
-    case class Available(name: Text) extends Result
+    case class Available(name: Text, requirements: List[Missing]) extends Result
 
     case class Missing(name: Text, available: List[Available], candidates: List[Candidate])
     extends Result
 
     case class Found(name: Text, expr: Expr[Any]) extends Result
 
-    def availableFor(repr: TypeRepr): List[Available] =
-      beneficence.givens(repr).map: symbol =>
-        Available(displayName(symbol.fullName).tt)
+    val initialGas = 3
+
+    def availableFor(repr: TypeRepr, exclusions: List[Symbol], gas: Int): List[Available] =
+      beneficence.givens(repr)
+      . filterNot(exclusions.contains)
+      . filter(conforms(_, repr))
+      . map: symbol =>
+          val requirements =
+            if gas <= 0 then Nil
+            else usingTypes(symbol).map: paramType =>
+              val nextAvailable = availableFor(paramType, symbol :: exclusions, gas - 1)
+              Missing(stenography.internal.name(paramType), nextAvailable, Nil)
+          Available(displayName(symbol.fullName).tt, requirements)
+
+    def conforms(symbol: Symbol, target: TypeRepr): Boolean =
+      // Strip PolyType / MethodType wrappers to get the value type a successful
+      // application would produce.
+      def resultOf(t: TypeRepr): TypeRepr = t match
+        case PolyType(_, _, body)   => resultOf(body)
+        case MethodType(_, _, body) => resultOf(body)
+        case _                      => t
+
+      val resultType = resultOf(symbol.info)
+
+      // For non-polymorphic givens, a direct subtype check is precise.
+      if resultType <:< target then true
+      else
+        // For polymorphic givens, the result type contains type variables that
+        // would be instantiated at the call site; we accept if the result type
+        // and the target share the same type constructor and arity. Stricter
+        // unification is left for later refinement.
+        symbol.info match
+          case _: PolyType =>
+            (resultType.dealias, target.dealias) match
+              case (AppliedType(rTycon, rArgs), AppliedType(tTycon, tArgs)) =>
+                rTycon.dealias.classSymbol == tTycon.dealias.classSymbol
+                && rArgs.length == tArgs.length
+              case _ =>
+                resultType.dealias.classSymbol == target.dealias.classSymbol
+          case _ =>
+            false
+
+    def usingTypes(symbol: Symbol): List[TypeRepr] =
+      symbol.tree.absolve match
+        case d: DefDef =>
+          d.paramss.flatMap:
+            case TermParamClause(params) =>
+              if params.headOption.exists(_.symbol.flags.is(Flags.Given))
+              then params.map(_.tpt.tpe)
+              else Nil
+
+            case _ =>
+              Nil
+
+        case _ =>
+          Nil
 
     def displayName(fqn: String): String =
       fqn.split('.').iterator.filterNot: segment =>
@@ -109,7 +162,7 @@ object internal:
       .mkString(".")
 
     def missing(repr: TypeRepr, candidates: List[Candidate]): Missing =
-      Missing(stenography.internal.name(repr), availableFor(repr), candidates)
+      Missing(stenography.internal.name(repr), availableFor(repr, Nil, initialGas), candidates)
 
     def seek(repr: TypeRepr, exclusions: List[Symbol], depth: Int): Result =
       Implicits.searchIgnoring(repr)(self :: exclusions*).absolve match
@@ -169,8 +222,8 @@ object internal:
           given Result is Expandable =
             case Candidate(_, missing)             => missing
             case Missing(_, available, candidates) => available ::: candidates
+            case Available(_, requirements)        => requirements
             case Found(_, _)                       => Nil
-            case Available(_)                      => Nil
 
           TreeDiagram[Result]((available ::: candidates)*).render:
             case Found(name, _) =>
@@ -182,7 +235,7 @@ object internal:
             case Candidate(name, _) =>
               e" \e[38;5;208m$Bold(▪)\e[0m candidate \e[38;5;227m$Italic($name)\e[0m"
 
-            case Available(name) =>
+            case Available(name, _) =>
               e" \e[38;5;75m$Bold(▸)\e[0m propose \e[38;5;117m$Italic($name)\e[0m"
 
           . join
