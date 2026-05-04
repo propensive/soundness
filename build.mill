@@ -140,7 +140,9 @@ trait Tests(dependencies: PublishModule*) extends BaseScalaModule:
   def consoleScalacOptions = scalacOptions()
 
   def scalacOptions = Task:
-    settings.scalaOptions :+ s"-Xplugin:${larceny.plugin.assembly().path}"
+    settings.scalaOptions
+      :+ s"-Xplugin:${larceny.plugin.assembly().path}"
+      :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
 
 trait Benchmarks(dependencies: PublishModule*) extends BaseScalaModule:
   def moduleId: String = moduleDir.last
