@@ -33,8 +33,9 @@
 package gossamer
 
 import anticipation.*
+import beneficence.*
 
-trait Proximity:
+trait Proximity extends Findable:
   type Operand
   type Triangulable <: Boolean
 

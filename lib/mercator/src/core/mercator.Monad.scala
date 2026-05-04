@@ -32,10 +32,12 @@
                                                                                                   */
 package mercator
 
+import beneficence.Findable
+
 object Monad:
   inline given monad: [monad[_]] => Monad[monad] = ${internal.monad[monad]}
 
-trait Monad[monad[_]] extends Functor[monad]:
+trait Monad[monad[_]] extends Functor[monad], Findable:
   def bind[value, value2](value: monad[value])(lambda: value => monad[value2]): monad[value2]
 
 

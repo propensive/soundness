@@ -43,11 +43,12 @@ import vacuous.*
 
 import stdios.virtualMachine
 import termcaps.environment
+import beneficence.*
 
 object Runner:
   private[probably] val harnessThreadLocal: ThreadLocal[Option[Harness]] = ThreadLocal()
 
-class Runner[report]()(using reporter: Reporter[report]):
+class Runner[report]()(using reporter: Reporter[report]) extends Findable:
   private var active: List[TestId] = Nil
   private val silent: Boolean = Ci.claudeCode || Ci()
 

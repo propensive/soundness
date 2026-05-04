@@ -34,4 +34,6 @@ package anticipation
 
 import language.experimental.into
 
-case class Realm(code: Text)
+import beneficence.*
+
+case class Realm(code: Text) extends Findable

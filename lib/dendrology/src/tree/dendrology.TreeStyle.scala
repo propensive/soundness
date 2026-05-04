@@ -32,5 +32,7 @@
                                                                                                   */
 package dendrology
 
-trait TreeStyle[line]:
+import beneficence.*
+
+trait TreeStyle[line] extends Findable:
   def serialize(tiles: List[TreeTile], node: line): line

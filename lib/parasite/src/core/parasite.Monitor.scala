@@ -53,8 +53,9 @@ import vacuous.*
 import unsafeExceptions.canThrowAny
 import AsyncError.Reason
 import Fulfillment.*
+import beneficence.*
 
-sealed trait Monitor extends Resultant:
+sealed trait Monitor extends Resultant, Findable:
   val promise: Promise[Result]
 
   protected[parasite] val workersRef: juca.AtomicReference[Set[Worker]] =

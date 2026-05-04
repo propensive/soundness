@@ -34,6 +34,7 @@ package ulysses
 
 import anticipation.*
 import proscenium.*
+import beneficence.*
 
 object Bibliography:
   def apply(data: Iterable[Data]): Bibliography =
@@ -41,5 +42,5 @@ object Bibliography:
       ( data.foldLeft(Map[Byte, Set[Data]]()): (map, data) =>
           map.updated(data(0), map.getOrElse(data(0), Set()) + data) )
 
-case class Bibliography(hashes: Map[Byte, Set[Data]]):
+case class Bibliography(hashes: Map[Byte, Set[Data]]) extends Findable:
   def apply(byte: Byte): Set[Data] = hashes.getOrElse(byte, Set.empty)

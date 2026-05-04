@@ -34,6 +34,7 @@ package probably
 
 import ambience.*
 import turbulence.*
+import beneficence.*
 
 object Reporter:
   given report: (Stdio, Environment, TestPalette) => Reporter[Report]:
@@ -45,7 +46,7 @@ object Reporter:
 
     def complete(report: Report): Unit = report.complete(Coverage())
 
-trait Reporter[report]:
+trait Reporter[report] extends Findable:
   def report(): report
   def fail(report: report, error: Throwable, active: Set[TestId]): Unit
   def declare(report: report, suite: Testable): Unit

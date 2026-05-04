@@ -33,9 +33,10 @@
 package profanity
 
 import proscenium.*
+import beneficence.*
 
 object Interactivity:
   def apply[event](stream: Stream[event]): Interactivity[event] = () => stream
 
-trait Interactivity[event]:
+trait Interactivity[event] extends Findable:
   def eventStream(): Stream[event]

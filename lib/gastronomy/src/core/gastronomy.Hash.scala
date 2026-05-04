@@ -37,6 +37,7 @@ import javax.crypto as jc
 
 import anticipation.*
 import prepositional.*
+import beneficence.*
 
 object Hash:
   def apply[algorithm <: Algorithm](name0: Text, hmacName0: Text): Hash in algorithm = new Hash:
@@ -48,7 +49,7 @@ object Hash:
     def initialize(): Digestion = new Digestion.Java(js.MessageDigest.getInstance(name0.s).nn)
     def hmac0: jc.Mac = jc.Mac.getInstance(hmacName0.s).nn
 
-trait Hash:
+trait Hash extends Findable:
   type Form <: Algorithm
 
   def name: Text

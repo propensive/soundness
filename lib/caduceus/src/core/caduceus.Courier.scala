@@ -34,6 +34,7 @@ package caduceus
 
 import prepositional.*
 import turbulence.*
+import beneficence.*
 
-trait Courier extends Resultant:
+trait Courier extends Resultant, Findable:
   def send(message: Document[Email]): Result

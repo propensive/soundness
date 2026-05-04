@@ -36,6 +36,7 @@ import language.dynamics
 
 import proscenium.*
 import vacuous.*
+import beneficence.*
 
 object Catalog:
   extension [key, value: ClassTag](catalog: Catalog[key, value])
@@ -50,7 +51,7 @@ object Catalog:
           ( Proxy[key, value, index.type](), _ => catalog.values(index) ))
 
 //case class Catalog[key, value](values: Map[Text, value]):
-case class Catalog[key, value: ClassTag](values: IArray[value]):
+case class Catalog[key, value: ClassTag](values: IArray[value]) extends Findable:
   def size: Int = values.length
 
   inline def apply(accessor: (`*`: Proxy[key, value, 0]) ?=> Proxy[key, value, ?]): value =

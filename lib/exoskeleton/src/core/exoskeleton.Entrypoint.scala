@@ -35,7 +35,8 @@ package exoskeleton
 import anticipation.*
 import prepositional.*
 import serpentine.*
+import beneficence.*
 
-trait Entrypoint:
+trait Entrypoint extends Findable:
   def script: Text
   def executable: Path on Local

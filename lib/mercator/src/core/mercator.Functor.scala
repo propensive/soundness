@@ -32,10 +32,12 @@
                                                                                                   */
 package mercator
 
+import beneficence.Findable
+
 object Functor:
   inline given general: [functor[_]] => Functor[functor] = ${internal.functor[functor]}
 
-trait Functor[functor[_]]:
+trait Functor[functor[_]] extends Findable:
   def point[value](value: value): functor[value]
 
 

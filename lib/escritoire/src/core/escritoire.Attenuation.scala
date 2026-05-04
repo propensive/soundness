@@ -32,5 +32,7 @@
                                                                                                   */
 package escritoire
 
-trait Attenuation:
+import beneficence.*
+
+trait Attenuation extends Findable:
   def apply(minimumWidth: Int, availableWidth: Int): Unit

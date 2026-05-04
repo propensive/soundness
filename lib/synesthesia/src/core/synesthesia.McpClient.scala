@@ -41,8 +41,9 @@ import obligatory.*
 import prepositional.*
 import proscenium.*
 import vacuous.*
+import beneficence.*
 
-trait McpClient:
+trait McpClient extends Findable:
   import Mcp.*
 
   @rpc

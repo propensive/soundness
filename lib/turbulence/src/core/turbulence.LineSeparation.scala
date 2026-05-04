@@ -33,6 +33,7 @@
 package turbulence
 
 import anticipation.*
+import beneficence.*
 
 object LineSeparation:
   inline def readByte
@@ -91,7 +92,8 @@ case class LineSeparation
     cr:      LineSeparation.Action,
     lf:      LineSeparation.Action,
     crlf:    LineSeparation.Action,
-    lfcr:    LineSeparation.Action ):
+    lfcr:    LineSeparation.Action )
+extends Findable:
 
   def newlineData = newline match
     case LineSeparation.NewlineSeq.Cr   => Data(13)

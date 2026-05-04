@@ -33,6 +33,7 @@
 package aviation
 
 import symbolism.*
+import beneficence.*
 
 object Chronology:
   enum AmbiguousTimes:
@@ -60,7 +61,7 @@ object Chronology:
 
       result
 
-open class Chronology[denomination]():
+open class Chronology[denomination]() extends Findable:
   def ambiguousTimes: Chronology.AmbiguousTimes = Chronology.AmbiguousTimes.Dilate
   def monthArithmetic: Chronology.MonthArithmetic = Chronology.MonthArithmetic.Scale
   def leapDayArithmetic: Chronology.LeapDayArithmetic = Chronology.LeapDayArithmetic.PreferFeb28

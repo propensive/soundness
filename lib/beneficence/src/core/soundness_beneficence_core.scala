@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export beneficence.givens
+export beneficence.{Findable, givens}

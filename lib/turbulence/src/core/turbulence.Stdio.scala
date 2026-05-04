@@ -37,6 +37,7 @@ import java.io as ji
 import anticipation.*
 import rudiments.*
 import vacuous.*
+import beneficence.*
 
 object Stdio:
   def apply
@@ -74,7 +75,7 @@ object Stdio:
     override def close(): Unit = ()
     override def available(): Int = 0
 
-trait Stdio extends Io:
+trait Stdio extends Io, Findable:
   val termcap: Termcap
   val out: ji.PrintStream
   val err: ji.PrintStream

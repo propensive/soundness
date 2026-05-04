@@ -40,13 +40,14 @@ import anticipation.*
 import gossamer.*
 import proscenium.*
 import vacuous.*
+import beneficence.*
 
 object Dom:
   private[honeycomb] val elements: scm.HashMap[Dom, Dictionary[Tag]] = scm.HashMap()
   private[honeycomb] val attributes: scm.HashMap[Dom, Dictionary[Attribute]] = scm.HashMap()
   private[honeycomb] val entities: scm.HashMap[Dom, Dictionary[Text]] = scm.HashMap()
 
-trait Dom:
+trait Dom extends Findable:
   val elements: Dictionary[Tag]
   val attributes: Dictionary[Attribute]
   val entities: Dictionary[Text]

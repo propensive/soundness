@@ -32,9 +32,10 @@
                                                                                                   */
 package exoskeleton
 
+import beneficence.*
 import vacuous.*
 
-trait Interpreter:
+trait Interpreter extends Findable:
   type Topic
 
   def interpret(arguments: List[Argument]): Topic

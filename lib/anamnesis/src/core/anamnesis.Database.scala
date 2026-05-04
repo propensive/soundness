@@ -36,6 +36,7 @@ import contingency.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import beneficence.*
 
 object Database:
   sealed trait Relation[left, right]
@@ -44,7 +45,7 @@ object Database:
     val size = valueOf[Tuple.Size[relations]]
     new Database(size).asInstanceOf[Database of relations]
 
-class Database(size: Int):
+class Database(size: Int) extends Findable:
   import Database.Relation
 
   private var nextId: Int = 1

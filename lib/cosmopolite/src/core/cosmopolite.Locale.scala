@@ -36,6 +36,7 @@ import anticipation.*
 import distillate.*
 import gossamer.*
 import prepositional.*
+import beneficence.*
 
 object Locale:
   given encodable: [language] => Locale[language] is Encodable in Text = _.language.code
@@ -44,4 +45,4 @@ object Locale:
     case t"pl" => Locale(pl)
     case _     => Locale(en)
 
-case class Locale[-language](language: Language)
+case class Locale[-language](language: Language) extends Findable

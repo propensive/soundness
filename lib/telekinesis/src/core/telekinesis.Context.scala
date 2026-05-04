@@ -36,6 +36,7 @@ import scala.collection.mutable as scm
 
 import rudiments.*
 import vacuous.*
+import beneficence.*
 
 object Context:
   def apply[value](): Context[value] = new Context[value]:
@@ -44,6 +45,6 @@ object Context:
     def apply()(using session: Session): Optional[value] = store.at(session)
     def update(value: value)(using session: Session): Unit = store(session) = value
 
-trait Context[value]:
+trait Context[value] extends Findable:
   def apply()(using session: Session): Optional[value]
   def update(value: value)(using session: Session): Unit

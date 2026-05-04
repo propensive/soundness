@@ -34,10 +34,11 @@ package ambience
 
 import anticipation.*
 import prepositional.*
+import beneficence.*
 
 object WorkingDirectory:
   def apply[path: Abstractable across Paths to Text](path: path): WorkingDirectory =
     () => path.generic
 
-trait WorkingDirectory:
+trait WorkingDirectory extends Findable:
   def directory(): Text

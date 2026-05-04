@@ -33,8 +33,9 @@
 package polaris
 
 import anticipation.*
+import beneficence.*
 
-class Buffer(private[polaris] val bytes: Data, initialPosition: Int = 0):
+class Buffer(private[polaris] val bytes: Data, initialPosition: Int = 0) extends Findable:
   private[polaris] var position: Int = initialPosition
 
   def offset: Int = position

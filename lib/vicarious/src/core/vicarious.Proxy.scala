@@ -33,12 +33,13 @@
 package vicarious
 
 import proscenium.*
+import beneficence.Findable
 
 object Proxy:
   transparent inline given derived: [key, value] => Proxy[key, value, 0] =
     ${internal.proxy[key, value]}
 
-class Proxy[key, value, +id <: Nat]() extends Selectable:
+class Proxy[key, value, +id <: Nat]() extends Selectable, Findable:
   transparent inline def selectDynamic(key: String)(using catalog: Catalog[key, value])
   :   value | Proxy[key, value, Nat] =
 

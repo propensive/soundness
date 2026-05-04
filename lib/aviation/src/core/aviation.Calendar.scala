@@ -34,8 +34,9 @@ package aviation
 
 import anticipation.*
 import contingency.*
+import beneficence.*
 
-trait Calendar:
+trait Calendar extends Findable:
   type Diurnal
   type Mensual
   type Annual

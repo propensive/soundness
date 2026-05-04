@@ -37,6 +37,7 @@ import hypotenuse.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import beneficence.*
 
 object Serializable:
   def base[base <: Serialization](bits: Int)(using alphabet: Alphabet[base]): Serializable in base =
@@ -75,7 +76,7 @@ object Serializable:
   given base64: Alphabet[Base64] => Serializable in Base64 = base(6)
   given base256: Alphabet[Base256] => Serializable in Base256 = base(8)
 
-trait Serializable:
+trait Serializable extends Findable:
   type Form <: Serialization
 
   def encode(bytes: Data): Text

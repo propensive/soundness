@@ -45,11 +45,12 @@ import serpentine.*
 import symbolism.*
 import urticose.*
 import vacuous.*
+import beneficence.*
 
 object JsonPointer extends Root(""):
   type Plane = JsonPointer
 
-  trait Registry:
+  trait Registry extends Findable:
     private val documents: scm.HashMap[HttpUrl, Json] = scm.HashMap()
 
     def update(url: HttpUrl, document: Json): Unit = documents(url) = document

@@ -33,6 +33,7 @@
 package profanity
 
 import turbulence.*
+import beneficence.*
 
 object Console:
   def apply(stdio: Stdio): Console =
@@ -40,7 +41,7 @@ object Console:
     new Console:
       val stdio: Stdio = stdio0
 
-trait Console:
+trait Console extends Findable:
   val stdio: Stdio
 
   def trap(handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse]): Unit = ()
