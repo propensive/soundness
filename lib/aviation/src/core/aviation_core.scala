@@ -33,6 +33,7 @@
 package aviation
 
 import anticipation.*
+import contextual.*
 import contingency.*
 import distillate.*
 import fulminate.*
@@ -332,7 +333,7 @@ extension (int: Int)
   def seconds: Timespan = Timespan.fixed(StandardTime.Second, int)
 
 extension (inline context: StringContext)
-  inline def tz(): Timezone = ${Timezone.Tz.expand('context)}
+  transparent inline def tz: Interpolation = interpolation[Timezone](context)
 
 export Weekday.{Mon, Tue, Wed, Thu, Fri, Sat, Sun}
 

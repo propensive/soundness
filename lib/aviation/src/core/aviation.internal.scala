@@ -32,10 +32,13 @@
                                                                                                   */
 package aviation
 
+import java.time as jt
+
 import scala.quoted.*
 
 import abacist.*
 import anticipation.*
+import contextual.*
 import contingency.*
 import denominative.*
 import distillate.*
@@ -133,6 +136,26 @@ object internal:
       Day(day.decode[Int])
 
     given showable: Day is Showable = _.toString.tt
+
+  def tzInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[Timezone] =
+    import quotes.reflect.*
+
+    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case _               => strings
+
+    val parts = recur[parts](Nil)
+
+    if parts.length != 1 then halt(m"a timezone literal cannot have substitutions")
+
+    val name: String = parts.head
+
+    try jt.ZoneId.of(name).nn
+    catch case _: jt.zone.ZoneRulesException =>
+      halt(m"${name.tt} is not a valid timezone identifier")
+
+    '{unsafely(Timezone(${Expr(name)}.tt))}
+
 
   def validTime(time: Expr[Double], pm: Boolean): Macro[Clockface] =
     import quotes.reflect.*
