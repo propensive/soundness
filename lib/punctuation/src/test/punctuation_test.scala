@@ -49,29 +49,16 @@ object Tests extends Suite(m"Punctuation tests"):
         end_line:   Int,
         section:    Text )
 
-    val testCases =
-      cp"/punctuation/mdspec.json"
-      . read[Json]
-      . as[List[Testcase]]
-      . groupBy(_.section)
-      . filter(_(0) != "HTML blocks")
-
-    suite(m"Java parser (commonmark-java)"):
-      testCases.each: (section, cases) =>
+    cp"/punctuation/mdspec.json"
+    . read[Json]
+    . as[List[Testcase]]
+    . groupBy(_.section)
+    . filter(_(0) != "HTML blocks")
+    . each: (section, cases) =>
         suite(section.communicate):
           cases.each: testcase =>
             safely(testcase.html.read[Html of whatwg.Flow]).let: html =>
               if !Set(308, 309, 475, 598, 605)(testcase.example) then
                 test(m"Commonmark test case ${testcase.example}"):
-                  Commonmark.parse(testcase.markdown).html.show
-                . assert(_ == html.show)
-
-    suite(m"Native parser (in-development)"):
-      testCases.each: (section, cases) =>
-        suite(section.communicate):
-          cases.each: testcase =>
-            safely(testcase.html.read[Html of whatwg.Flow]).let: html =>
-              if !Set(308, 309, 475, 598, 605)(testcase.example) then
-                test(m"Native test case ${testcase.example}"):
                   Parser.parse(testcase.markdown).html.show
                 . assert(_ == html.show)
