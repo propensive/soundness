@@ -37,7 +37,7 @@ import prepositional.*
 
 extension (inline context: StringContext)
   transparent inline def rgb(inline parts: Any*): Chroma =
-    ${iridescence.internal.RgbHex.expand('context, 'parts)}
+    ${iridescence.internal.rgbMacro('context, 'parts)}
 
 private[iridescence] inline def unitary(d: Double): Double = d - d.toInt + (if d < 0 then 1 else 0)
 

@@ -33,11 +33,11 @@
 package gesticulate
 
 import anticipation.*
+import contextual.*
 import turbulence.*
 
 extension (inline context: StringContext)
-  transparent inline def media(inline parts: String*): MediaType =
-    ${Media.Prefix.expand('context, 'parts)}
+  transparent inline def media: Interpolation = interpolation[MediaType](context)
 
 extension [media](value: media)
   inline def ascribe(media: MediaType): Content = Content(media, value.stream[Data])

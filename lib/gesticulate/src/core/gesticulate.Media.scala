@@ -37,7 +37,6 @@ import language.dynamics
 import scala.io.*
 
 import anticipation.*
-import contextual.*
 import contingency.*
 import denominative.*
 import fulminate.*
@@ -99,48 +98,34 @@ object Media:
       case other   => other.toString.tt.uncamel.kebab
 
   lazy val systemMediaTypes: Set[Text] =
-    try
-      val stream = Optional(getClass.getResourceAsStream("/gesticulate/media.types")).or:
-        throw InterpolationError(m"could not find 'gesticulate/media.types' on the classpath")
+    Optional(getClass.getResourceAsStream("/gesticulate/media.types")).lay(Set()): stream =>
+      scala.io.Source.fromInputStream(stream)
+      . getLines
+      . map(Text(_))
+      . map(_.cut(t"\t").head.lower)
+      . to(Set)
 
-      val lines: Iterator[Text] =
-        scala.io.Source.fromInputStream(stream).getLines.map(Text(_)).map(_.cut(t"\t").head.lower)
+  def validateLiteral(text: Text): Optional[Message] =
+    val parsed = try throwErrors(Media.parse(text)) catch
+      case error: MediaTypeError =>
+        return m"${error.value} is not a valid media type; ${error.reason.message}"
 
-      lines.to(Set)
+    parsed.subtype match
+      case Subtype.Standard(_) =>
+        if !systemMediaTypes.nil then
+          if !systemMediaTypes.contains(parsed.basic) then
+            val suggestion = systemMediaTypes.minBy(_.proximity(parsed.basic))
 
-    catch case error: InterpolationError => Set()
+            return
+              m"""
+                ${parsed.basic} is not a registered media type; did you mean $suggestion or
+                ${parsed.basic.sub(t"/", t"/x-")}?
+              """
 
-  object Prefix extends Interpolator[Unit, Text, MediaType]:
-    def parse(state: Text, next: Text): Text = next
+      case _ =>
+        ()
 
-    def insert(state: Text, value: Unit): Text =
-      throw InterpolationError(m"a media type literal cannot have substitutions")
-
-    def skip(value: Text): Text = value
-    def initial: Text = t""
-
-    def complete(value: Text): MediaType =
-      val parsed = try throwErrors(Media.parse(value)) catch
-        case error: MediaTypeError =>
-          throw
-            InterpolationError(m"${error.value} is not a valid media type; ${error.reason.message}")
-
-      parsed.subtype match
-        case Subtype.Standard(_) =>
-          if !systemMediaTypes.nil then
-            if !systemMediaTypes.contains(parsed.basic) then
-              val suggestion = systemMediaTypes.minBy(_.proximity(parsed.basic))
-
-              throw InterpolationError
-                ( m"""
-                    ${parsed.basic} is not a registered media type; did you mean $suggestion or
-                    ${parsed.basic.sub(t"/", t"/x-")}?
-                  """ )
-
-        case _ =>
-          ()
-
-      parsed
+    Unset
 
   def parse(string: Text)(using Tactic[MediaTypeError]): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =

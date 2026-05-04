@@ -690,19 +690,3 @@ object internal extends protointernal:
       (first.column, stream(first, padding = false).drop(1))
 
 
-    case class State(parts: List[Text], subs: List[Atom]):
-      def content: Text = parts.reverse.join(t"\u0000")
-
-    object Prefix extends Interpolator[List[Atom], State, CodlDoc]:
-      protected def complete(state: State): CodlDoc = ???
-        // try Codl.parse(state.content, CodlSchema.Free, state.subs.reverse, fromStart = true)
-        // catch case error: AggregateError[ParseError] => ???
-
-      def initial: State = State(Nil, Nil)
-      def skip(state: State): State = insert(state, List(Atom(t"_")))
-
-      def insert(state: State, data: List[Atom]): State =
-        state.copy(subs = data.reverse ::: state.subs)
-
-      def parse(state: State, next: Text): State =
-        state.copy(parts = next :: state.parts).tap(complete(_))

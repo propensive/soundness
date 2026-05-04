@@ -30,25 +30,32 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package contextual
+package gesticulate
 
 import scala.quoted.*
 
 import anticipation.*
+import contingency.*
+import fulminate.*
 import gigantism.*
+import rudiments.*
 import vacuous.*
 
-trait Verifier[result]
-extends Interpolator[Nothing, Optional[result], result]:
-  def verify(text: Text): result
-  protected def initial: Optional[result] = Unset
-  protected def parse(state: Optional[result], next: Text): Optional[result] = verify(next)
-  protected def skip(state: Optional[result]): Optional[result] = state
-  protected def insert(state: Optional[result], value: Nothing): Optional[result] = state
-  protected def complete(value: Optional[result]): result = value.option.get
+object internal:
+  private given realm: Realm = realm"gesticulate"
 
+  def mediaInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[MediaType] =
+    import quotes.reflect.*
 
-  def expand(context: Expr[StringContext])(using Type[result])(using thisType: Type[this.type])
-  :   Macro[result] =
+    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case _               => strings
 
-    expand(context, '{Nil})(using thisType)
+    val parts = recur[parts](Nil)
+    if parts.length != 1 then halt(m"a media type literal cannot have substitutions")
+
+    val raw: String = parts.head
+
+    Media.validateLiteral(raw.tt).let(halt(_))
+
+    '{unsafely(Media.parse(${Expr(raw)}.tt))}
