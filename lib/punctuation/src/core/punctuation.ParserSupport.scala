@@ -233,6 +233,32 @@ object ParserSupport:
           return Text(s.substring(i, len).nn)
     if i == 0 then line else if i >= len then t"" else Text(s.substring(i, len).nn)
 
+  // After stripping a container's marker and follow-space (which may have
+  // partially consumed a tab character), build the residual by prepending
+  // the requested number of leftover spaces and pre-expanding any further
+  // leading tabs in `rest` to spaces using absolute column positions
+  // starting at `startCol`. This makes the residual self-contained: it
+  // starts at logical column 0 with all leading whitespace already
+  // expanded, so subsequent indent-aware operations can treat it as if it
+  // started at the line's actual visual column position.
+  def buildResidual(rest: String, startCol: Int, leftoverSpaces: Int): String =
+    val sb = new StringBuilder
+    var k = 0
+    while k < leftoverSpaces do { sb.append(' '); k += 1 }
+    var col = startCol
+    var i = 0
+    val n = rest.length
+    while i < n && (rest.charAt(i) == ' ' || rest.charAt(i) == '\t') do
+      if rest.charAt(i) == ' ' then
+        sb.append(' '); col += 1
+      else
+        val adv = 4 - (col & 3)
+        var k2 = 0
+        while k2 < adv do { sb.append(' '); col += 1; k2 += 1 }
+      i += 1
+    if i < n then sb.append(rest.substring(i, n))
+    sb.toString
+
   // Cut info string into whitespace-separated tokens (CommonMark spec).
   def cutInfo(info: Text): List[Text] =
     val s = info.s
@@ -273,17 +299,30 @@ object ParserSupport:
       else postCol += 4 - ((indent + 1 + postCol) & 3)
       j += 1
 
-    val followSpace =
-      if markerEnd >= n then 1
-      else if isBlank(Text(s.substring(markerEnd, n).nn)) then 1
-      else if postCol >= 5 then 1
-      else postCol
+    val markerWidth = 1
+    val markerColEnd = indent + markerWidth  // visual col after marker
 
-    val contentStart =
-      markerEnd + (if markerEnd >= n then 0 else followSpace.min(n - markerEnd))
+    val (contentIndent, rest): (Int, Text) =
+      if markerEnd >= n then
+        (markerColEnd + 1, t"")
+      else if isBlank(Text(s.substring(markerEnd, n).nn)) then
+        (markerColEnd + 1, t"")
+      else if postCol >= 5 then
+        // 5+ rule: consume only the first post-marker char as follow-space,
+        // remaining post-marker whitespace becomes leading content.
+        val firstCh = s.charAt(markerEnd)
+        val firstAdvance = if firstCh == ' ' then 1 else 4 - (markerColEnd & 3)
+        val leftover = firstAdvance - 1
+        val nextCol = markerColEnd + firstAdvance
+        val tail = if markerEnd + 1 >= n then "" else s.substring(markerEnd + 1, n).nn
+        val residual = buildResidual(tail, nextCol, leftover)
+        (markerColEnd + 1, Text(residual))
+      else
+        // 1-4 cols of follow consume all post-marker whitespace.
+        val tail = if j >= n then "" else s.substring(j, n).nn
+        val residual = buildResidual(tail, markerColEnd + postCol, 0)
+        (markerColEnd + postCol, Text(residual))
 
-    val contentIndent = indent + 1 + followSpace
-    val rest = if contentStart >= n then t"" else Text(s.substring(contentStart, n).nn)
     BulletMarker(ch, indent, contentIndent, rest)
 
   // Ordered list marker: ^ {0,3}(\d{1,9})([.)])( +|\t|$)(.*)$
@@ -315,17 +354,27 @@ object ParserSupport:
       else postCol += 4 - ((indent + digitCount + 1 + postCol) & 3)
       j += 1
 
-    val followSpace =
-      if markerEnd >= n then 1
-      else if isBlank(Text(s.substring(markerEnd, n).nn)) then 1
-      else if postCol >= 5 then 1
-      else postCol
+    val markerWidth = digitCount + 1
+    val markerColEnd = indent + markerWidth
 
-    val contentStart =
-      markerEnd + (if markerEnd >= n then 0 else followSpace.min(n - markerEnd))
+    val (contentIndent, rest): (Int, Text) =
+      if markerEnd >= n then
+        (markerColEnd + 1, t"")
+      else if isBlank(Text(s.substring(markerEnd, n).nn)) then
+        (markerColEnd + 1, t"")
+      else if postCol >= 5 then
+        val firstCh = s.charAt(markerEnd)
+        val firstAdvance = if firstCh == ' ' then 1 else 4 - (markerColEnd & 3)
+        val leftover = firstAdvance - 1
+        val nextCol = markerColEnd + firstAdvance
+        val tail = if markerEnd + 1 >= n then "" else s.substring(markerEnd + 1, n).nn
+        val residual = buildResidual(tail, nextCol, leftover)
+        (markerColEnd + 1, Text(residual))
+      else
+        val tail = if j >= n then "" else s.substring(j, n).nn
+        val residual = buildResidual(tail, markerColEnd + postCol, 0)
+        (markerColEnd + postCol, Text(residual))
 
-    val contentIndent = indent + digitCount + 1 + followSpace
-    val rest = if contentStart >= n then t"" else Text(s.substring(contentStart, n).nn)
     val delim: '.' | ')' = if delimChar == '.' then '.' else ')'
     OrderedMarker(start, delim, indent, contentIndent, rest)
 

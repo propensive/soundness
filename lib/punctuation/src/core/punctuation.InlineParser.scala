@@ -117,8 +117,12 @@ object InlineParser:
               i = cs.end
 
             case Unset =>
-              pending.append('`')
-              i += 1
+              // No matching closer: emit the entire opening backtick run as
+              // literal text (per CommonMark §6.1) so the next iteration
+              // doesn't retry parsing inside the run.
+              while i < end && s.charAt(i) == '`' do
+                pending.append('`')
+                i += 1
 
         case '<' =>
           InlineSupport.parseAutolink(s, i, end) match
