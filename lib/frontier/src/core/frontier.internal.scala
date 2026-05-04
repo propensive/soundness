@@ -105,19 +105,24 @@ object internal:
       case MethodType(_, _, body) => resultOf(body)
       case _                      => t
 
+    case class Matched
+                ( symbol:     Symbol,
+                  typeParams: List[Symbol],
+                  bindings:   Map[Symbol, TypeRepr] )
+
     def availableFor(repr: TypeRepr, exclusions: List[Symbol], gas: Int): List[Available] =
-      val candidates =
+      val matched =
         beneficence.givens(repr)
         . filterNot(exclusions.contains)
-        . filter(conforms(_, repr))
+        . flatMap(matchAgainst(_, repr))
 
-      dedupeExports(candidates).map: symbol =>
+      dedupeExportsByCanonical(matched).map: m =>
         val requirements =
           if gas <= 0 then Nil
-          else usingTypesInstantiated(symbol, repr).map: paramType =>
-            val nextAvailable = availableFor(paramType, symbol :: exclusions, gas - 1)
+          else usingTypesInstantiated(m).map: paramType =>
+            val nextAvailable = availableFor(paramType, m.symbol :: exclusions, gas - 1)
             Missing(stenography.internal.name(paramType), nextAvailable, Nil)
-        Available(renderSymbol(symbol), requirements)
+        Available(formatProposal(m), requirements)
 
     // A symbol introduced via `export X.y` carries the `Exported` flag and its
     // tree's body forwards to the original. Walk through forwarders to find
@@ -143,9 +148,22 @@ object internal:
     // definition. Group by canonical symbol and keep only the one whose
     // stenography rendering is shortest (i.e. the most readable in the current
     // import scope).
-    def dedupeExports(symbols: List[Symbol]): List[Symbol] =
-      symbols.groupBy(canonical).values.toList.map: group =>
-        group.minBy(s => renderSymbol(s).s.length)
+    def dedupeExportsByCanonical(matched: List[Matched]): List[Matched] =
+      matched.groupBy(m => canonical(m.symbol)).values.toList.map: group =>
+        group.minBy(m => renderSymbol(m.symbol).s.length)
+
+    // Render a proposal: the symbol's stenography path, suffixed by an
+    // explicit type-parameter substitution `[T = X, U = Y]` whenever the
+    // proposal's type parameters were bound from unification against the
+    // required type. Lets the user see exactly which choices the search has
+    // committed to before recursing.
+    def formatProposal(matched: Matched): Text =
+      val baseName = renderSymbol(matched.symbol).s
+      val pairs = matched.typeParams.collect:
+        case tp if matched.bindings.contains(tp) =>
+          s"${tp.name.toString} = ${stenography.internal.name(matched.bindings(tp)).s}"
+      if pairs.isEmpty then baseName.tt
+      else s"$baseName [${pairs.mkString(", ")}]".tt
 
     // Render a symbol's path via Stenography (so import-scope abbreviations
     // apply). Strip the trailing `.type` that comes from rendering a singleton
@@ -159,40 +177,105 @@ object internal:
         stripped.endsWith("$package")
       .mkString(".").tt
 
-    def conforms(symbol: Symbol, target: TypeRepr): Boolean =
-      val resultType = resultOf(symbol.info)
+    // Determine whether a given symbol can produce a value conforming to
+    // `target`, and if so, what bindings its type parameters must take.
+    // Returns None for any candidate that fails to fully match: missing
+    // bindings, bounds violations, or a substituted result type that doesn't
+    // satisfy `<:< target` after substitution.
+    def matchAgainst(symbol: Symbol, target: TypeRepr): Option[Matched] =
+      val typeParams =
+        symbol.paramSymss.headOption.filter(_.forall(_.isType)).getOrElse(Nil)
 
-      // For non-polymorphic givens, a direct subtype check is precise.
-      if resultType <:< target then true
+      if typeParams.isEmpty then
+        val resultRaw = resultOf(symbol.info)
+        if resultRaw <:< target then Some(Matched(symbol, Nil, Map.empty)) else None
       else
-        // For polymorphic givens, the result type contains type variables that
-        // would be instantiated at the call site; we accept if the result type
-        // and the target share the same type constructor and arity. Stricter
-        // unification is left for later refinement.
-        symbol.info match
-          case _: PolyType =>
-            (resultType.dealias, target.dealias) match
-              case (AppliedType(rTycon, rArgs), AppliedType(tTycon, tArgs)) =>
-                rTycon.dealias.classSymbol == tTycon.dealias.classSymbol
-                && rArgs.length == tArgs.length
-              case _ =>
-                resultType.dealias.classSymbol == target.dealias.classSymbol
+        candidateArgLists(symbol, target, typeParams)
+        . iterator
+        . flatMap: args =>
+            val pairs = typeParams.zip(args).toMap
+            if !boundsRespected(typeParams, pairs) then None
+            else
+              val substituted = resultOf(symbol.info.appliedTo(args))
+              if substituted <:< target then Some(Matched(symbol, typeParams, pairs))
+              else None
+        . nextOption()
+
+    // Generate candidate type-argument lists to try when matching a polymorphic
+    // given against a concrete target. We combine:
+    //  1. Bindings recovered by structural unification of the raw result type
+    //     (handles plain `F[T]` shapes).
+    //  2. The target's `AppliedType` arguments, in order.
+    //  3. Type-alias values pulled out of the target's `Refinement` chain
+    //     (e.g. the `Char` in `Concatenable { type Self = Char }`, produced by
+    //     the modular `T is U` syntax — for which the synth-class result type
+    //     doesn't share top-level structure with the target).
+    def candidateArgLists
+                ( symbol:     Symbol,
+                  target:     TypeRepr,
+                  typeParams: List[Symbol] )
+    :     List[List[TypeRepr]] =
+
+      val raw = resultOf(symbol.info)
+      val bindings = unify(raw, target, typeParams.toSet)
+
+      val unified: List[List[TypeRepr]] =
+        if typeParams.forall(bindings.contains)
+        then List(typeParams.map(bindings))
+        else Nil
+
+      val applied: List[List[TypeRepr]] = target.dealias match
+        case AppliedType(_, args) if args.length == typeParams.length => List(args)
+        case _                                                        => Nil
+
+      val refinementValues = collectRefinementValues(target.dealias)
+      val refinement: List[List[TypeRepr]] =
+        if refinementValues.length == typeParams.length then List(refinementValues) else Nil
+
+      (unified ++ applied ++ refinement).distinct
+
+    def collectRefinementValues(t: TypeRepr): List[TypeRepr] =
+      t.dealias match
+        case Refinement(parent, _, info) =>
+          val parentValues = collectRefinementValues(parent)
+          val infoValue = info match
+            case TypeBounds(lo, hi) if lo =:= hi => List(hi)
+            case _                               => Nil
+          parentValues ++ infoValue
+
+        case _ =>
+          Nil
+
+    def boundsRespected(typeParams: List[Symbol], bindings: Map[Symbol, TypeRepr])
+    :     Boolean =
+
+      typeParams.forall: tp =>
+        bindings.get(tp).fold(true): boundType =>
+          tp.info match
+            case TypeBounds(lo, hi) => lo <:< boundType && boundType <:< hi
+            case _                  => true
+
+    // Compute the using-clause types for a matched candidate, with type
+    // variables instantiated according to the bindings recovered during
+    // matching. We obtain them from the symbol's type (`info.appliedTo(args)`)
+    // rather than from the source AST, so the substitution applies to the
+    // bound `TypeParamRef`s that `Symbol.tree` would expose unsubstituted.
+    def usingTypesInstantiated(matched: Matched): List[TypeRepr] =
+      if matched.typeParams.isEmpty then usingTypes(matched.symbol)
+      else
+        val args = matched.typeParams.map(matched.bindings)
+        matched.symbol.info.appliedTo(args) match
+          case mt: MethodType =>
+            collectUsingClause(mt)
           case _ =>
-            false
+            usingTypes(matched.symbol)
 
-    def usingTypesInstantiated(symbol: Symbol, target: TypeRepr): List[TypeRepr] =
-      val raw = usingTypes(symbol)
-      if raw.isEmpty then raw
-      else
-        val typeParams =
-          symbol.paramSymss.headOption.filter(_.forall(_.isType)).getOrElse(Nil)
-
-        if typeParams.isEmpty then raw
-        else
-          val bindings = unify(resultOf(symbol.info), target, typeParams.toSet)
-          val from = typeParams.filter(bindings.contains)
-          if from.isEmpty then raw
-          else raw.map(_.substituteTypes(from, from.map(bindings)))
+    def collectUsingClause(mt: MethodType): List[TypeRepr] =
+      val MethodType(paramNames, paramTypes, _) = mt
+      // Tell whether this is a using clause by checking if it's a contextual
+      // method type. In dotty's quotes.reflect, `MethodType.isImplicit` is
+      // exposed for contextual/implicit clauses.
+      if mt.isImplicit then paramTypes else Nil
 
     // Walk a `template` type (which may reference type parameters from `params`)
     // alongside a concrete `target` and collect the implied parameter bindings.
@@ -211,8 +294,24 @@ object internal:
           tArgs.zip(rArgs).foldLeft(tyconBindings): (acc, pair) =>
             acc ++ unify(pair(0), pair(1), params)
 
+        case (tRef: Refinement, rRef: Refinement) =>
+          val Refinement(tParent, tName, tInfo) = tRef
+          val Refinement(rParent, rName, rInfo) = rRef
+          if tName != rName then Map.empty
+          else unify(tParent, rParent, params) ++ unifyInfo(tInfo, rInfo, params)
+
         case _ =>
           Map.empty
+
+    def unifyInfo(template: TypeRepr, target: TypeRepr, params: Set[Symbol])
+    :     Map[Symbol, TypeRepr] =
+
+      (template, target) match
+        case (TypeBounds(tLo, tHi), TypeBounds(rLo, rHi)) =>
+          unify(tHi, rHi, params) ++ unify(tLo, rLo, params)
+
+        case _ =>
+          unify(template, target, params)
 
     def usingTypes(symbol: Symbol): List[TypeRepr] =
       symbol.tree.absolve match
