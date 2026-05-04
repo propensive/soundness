@@ -110,37 +110,27 @@ object Media:
 
     catch case error: InterpolationError => Set()
 
-  object Prefix extends Interpolator[Unit, Text, MediaType]:
-    def parse(state: Text, next: Text): Text = next
+  def validateLiteral(text: Text): Optional[Message] =
+    val parsed = try throwErrors(Media.parse(text)) catch
+      case error: MediaTypeError =>
+        return m"${error.value} is not a valid media type; ${error.reason.message}"
 
-    def insert(state: Text, value: Unit): Text =
-      throw InterpolationError(m"a media type literal cannot have substitutions")
+    parsed.subtype match
+      case Subtype.Standard(_) =>
+        if !systemMediaTypes.nil then
+          if !systemMediaTypes.contains(parsed.basic) then
+            val suggestion = systemMediaTypes.minBy(_.proximity(parsed.basic))
 
-    def skip(value: Text): Text = value
-    def initial: Text = t""
+            return
+              m"""
+                ${parsed.basic} is not a registered media type; did you mean $suggestion or
+                ${parsed.basic.sub(t"/", t"/x-")}?
+              """
 
-    def complete(value: Text): MediaType =
-      val parsed = try throwErrors(Media.parse(value)) catch
-        case error: MediaTypeError =>
-          throw
-            InterpolationError(m"${error.value} is not a valid media type; ${error.reason.message}")
+      case _ =>
+        ()
 
-      parsed.subtype match
-        case Subtype.Standard(_) =>
-          if !systemMediaTypes.nil then
-            if !systemMediaTypes.contains(parsed.basic) then
-              val suggestion = systemMediaTypes.minBy(_.proximity(parsed.basic))
-
-              throw InterpolationError
-                ( m"""
-                    ${parsed.basic} is not a registered media type; did you mean $suggestion or
-                    ${parsed.basic.sub(t"/", t"/x-")}?
-                  """ )
-
-        case _ =>
-          ()
-
-      parsed
+    Unset
 
   def parse(string: Text)(using Tactic[MediaTypeError]): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =
