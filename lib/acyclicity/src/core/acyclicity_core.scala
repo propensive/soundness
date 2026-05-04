@@ -32,14 +32,14 @@
                                                                                                   */
 package acyclicity
 
+import contextual.*
 import denominative.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
 
 extension (inline stringContext: StringContext)
-  transparent inline def ref(inline parts: Any*): Dot.Ref =
-    ${NodeParser.expand('stringContext, 'parts)}
+  transparent inline def ref: Interpolation = interpolation[Dot.Ref](stringContext)
 
 extension (stringContext: StringContext)
   def id(): Dot.Id = Dot.Id(stringContext.parts.head.show)

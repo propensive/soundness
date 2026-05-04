@@ -32,30 +32,37 @@
                                                                                                   */
 package acyclicity
 
+import scala.quoted.*
+
 import anticipation.*
-import contextual.*
 import fulminate.*
-import gossamer.*
-import spectacular.*
+import gigantism.*
+import rudiments.*
+import vacuous.*
 
-object NodeParser extends Interpolator[Unit, Option[Dot.Ref], Dot.Ref]:
-  private val compassPoints: Set[Text] = Set(t"n", t"e", t"s", t"w", t"ne", t"nw", t"se", t"sw")
+object internal:
+  private given realm: Realm = realm"acyclicity"
 
-  def parse(state: Option[Dot.Ref], next: Text): Some[Dot.Ref] =
-    Some { next.show.cut(t":").to(List) match
-      case List(id)       => Dot.Ref(Dot.Id(id))
-      case List(id, port) => Dot.Ref(Dot.Id(id), Some(Dot.Attachment(Dot.Id(port.show))))
+  def refInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[Dot.Ref] =
+    import quotes.reflect.*
 
-      case List(id, port, point) if compassPoints.contains(point) =>
-        Dot.Ref(Dot.Id(id), Some(Dot.Attachment(Dot.Id(port),
-            Some(Dot.CompassPoint.valueOf(point.capitalize.s)))))
+    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case _               => strings
+
+    val parts = recur[parts](Nil)
+    if parts.length != 1 then halt(m"a node literal cannot have substitutions")
+
+    val pieces: List[String] = parts.head.split(":", -1).nn.toList.map(_.nn)
+
+    pieces match
+      case List(id) =>
+        '{Dot.Ref(Dot.Id(${Expr(id)}.tt))}
+
+      case List(id, port) =>
+        '{Dot.Ref(
+            Dot.Id(${Expr(id)}.tt),
+            Some(Dot.Attachment(Dot.Id(${Expr(port)}.tt))))}
 
       case _ =>
-        import errorDiagnostics.empty
-        throw InterpolationError(m"not a valid node ID")
-    }
-
-  def initial: Option[Dot.Ref] = None
-  def complete(value: Option[Dot.Ref]): Dot.Ref = value.get
-  def skip(state: Option[Dot.Ref]): Option[Dot.Ref] = state
-  def insert(state: Option[Dot.Ref], value: Unit): Option[Dot.Ref] = state
+        halt(m"not a valid node ID")
