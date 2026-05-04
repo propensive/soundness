@@ -76,7 +76,6 @@ object Benchmarks extends Suite(m"Punctuation benchmarks"):
   // cannot dead-code the call. `children.length` is cheap and structurally
   // exercises the entire parse — anything elided would zero this out.
 
-  def parseJava(text: Text):   Int = Commonmark.parse(text).children.length
   def parseNative(text: Text): Int = Parser.parse(text).children.length
 
   // ─── benchmarks ───────────────────────────────────────────────────────────
@@ -89,38 +88,19 @@ object Benchmarks extends Suite(m"Punctuation benchmarks"):
     val stressMixSize:      Quantity[Bytes[1]] = stressMix.s.getBytes("UTF-8").nn.length*Byte
     val emphasisStressSize: Quantity[Bytes[1]] = emphasisStress.s.getBytes("UTF-8").nn.length*Byte
 
-    suite(m"Small input (~2 KB, mixed prose)"):
-      bench(m"Java parser (commonmark-java 0.27.0)")
-       (target = 1*Second, operationSize = smallSize, baseline = Baseline(compare = Min)):
-        '{ punctuation.Benchmarks.parseJava(punctuation.Benchmarks.small) }
-
-      bench(m"Native parser")
+    suite(m"Markdown parsing throughput"):
+      bench(m"parse small (~2 KB, mixed prose)")
        (target = 1*Second, operationSize = smallSize):
         '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.small) }
 
-    suite(m"Medium input (~19 KB, real README)"):
-      bench(m"Java parser (commonmark-java 0.27.0)")
-       (target = 1*Second, operationSize = mediumSize, baseline = Baseline(compare = Min)):
-        '{ punctuation.Benchmarks.parseJava(punctuation.Benchmarks.medium) }
-
-      bench(m"Native parser")
+      bench(m"parse medium (~19 KB, real README)")
        (target = 1*Second, operationSize = mediumSize):
         '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.medium) }
 
-    suite(m"Stress-mix (~38 KB, every feature)"):
-      bench(m"Java parser (commonmark-java 0.27.0)")
-       (target = 1*Second, operationSize = stressMixSize, baseline = Baseline(compare = Min)):
-        '{ punctuation.Benchmarks.parseJava(punctuation.Benchmarks.stressMix) }
-
-      bench(m"Native parser")
+      bench(m"parse stress-mix (~38 KB, every feature)")
        (target = 1*Second, operationSize = stressMixSize):
         '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.stressMix) }
 
-    suite(m"Emphasis-stress (~4 KB, inline-dense)"):
-      bench(m"Java parser (commonmark-java 0.27.0)")
-       (target = 1*Second, operationSize = emphasisStressSize, baseline = Baseline(compare = Min)):
-        '{ punctuation.Benchmarks.parseJava(punctuation.Benchmarks.emphasisStress) }
-
-      bench(m"Native parser")
+      bench(m"parse emphasis-stress (~4 KB, inline-dense)")
        (target = 1*Second, operationSize = emphasisStressSize):
         '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.emphasisStress) }

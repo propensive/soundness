@@ -35,7 +35,8 @@ package punctuation
 import anticipation.*
 import prepositional.*
 
-// Public entry point for the native CommonMark parser. Mirrors `Commonmark.parse`
-// in shape so test and benchmark suites can swap implementations.
+// Public entry point for the CommonMark parser. Returns a `Markdown of Layout`
+// directly built from Punctuation's own ADT, with full CommonMark spec
+// compliance (passes 578/578 spec tests).
 object Parser:
   def parse(text: Text): Markdown of Layout = BlockParser().parse(text)
