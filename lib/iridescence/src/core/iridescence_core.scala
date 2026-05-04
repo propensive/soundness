@@ -33,11 +33,15 @@
 package iridescence
 
 import anticipation.*
+import contextual.*
 import prepositional.*
 
+given chromaInterpolable: Chroma is Interpolable:
+  inline def interpolate[parts <: Tuple](inline insertions: Any*): Chroma =
+    ${iridescence.internal.rgbInterpolator[parts]('insertions)}
+
 extension (inline context: StringContext)
-  transparent inline def rgb(inline parts: Any*): Chroma =
-    ${iridescence.internal.RgbHex.expand('context, 'parts)}
+  transparent inline def rgb: Interpolation = interpolation[Chroma](context)
 
 private[iridescence] inline def unitary(d: Double): Double = d - d.toInt + (if d < 0 then 1 else 0)
 
