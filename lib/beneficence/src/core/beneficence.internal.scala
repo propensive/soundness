@@ -63,8 +63,8 @@ object internal:
     val lastDot = fqn.lastIndexOf('.')
     if lastDot < 0 then None
     else
-      val ownerFqn   = fqn.substring(0, lastDot).nn
-      val memberName = fqn.substring(lastDot + 1).nn
+      val ownerFqn   = fqn.take(lastDot)
+      val memberName = fqn.drop(lastDot + 1)
 
       val owner: Option[Symbol] =
         attempt(Symbol.requiredModule(ownerFqn))

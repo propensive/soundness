@@ -110,14 +110,21 @@ object internal:
                   typeParams: List[Symbol],
                   bindings:   Map[Symbol, TypeRepr] )
 
+    val givensCache = scala.collection.mutable.Map.empty[TypeRepr, List[Symbol]]
+    def cachedGivens(repr: TypeRepr): List[Symbol] =
+      givensCache.getOrElseUpdate(repr, beneficence.givens(repr))
+
+    val canonicalCache = scala.collection.mutable.Map.empty[Symbol, Symbol]
+    def canonical(symbol: Symbol): Symbol =
+      canonicalCache.getOrElseUpdate(symbol, computeCanonical(symbol))
+
     def availableFor(repr: TypeRepr, exclusions: List[Symbol], gas: Int): List[Available] =
-      // Compare exclusions by canonical (de-exported) symbol so that a
-      // candidate `gossamer.foo` filters out both `gossamer.foo` itself and
-      // any re-export like `soundness.foo` from the proposal list.
+      // Compare exclusions by canonical (de-exported) symbol so that excluding
+      // `gossamer.foo` also filters out any re-export like `soundness.foo`.
       val excludedCanonicals = exclusions.map(canonical).filterNot(_.isNoSymbol).toSet
 
       val matched =
-        beneficence.givens(repr)
+        cachedGivens(repr)
         . filterNot(s => excludedCanonicals.contains(canonical(s)))
         . filter(respectsOpaqueScope(_, repr))
         . flatMap(matchAgainst(_, repr))
@@ -133,7 +140,7 @@ object internal:
     // A symbol introduced via `export X.y` carries the `Exported` flag and its
     // tree's body forwards to the original. Walk through forwarders to find
     // the canonical (non-exported) symbol that ultimately backs it.
-    def canonical(symbol: Symbol): Symbol =
+    def computeCanonical(symbol: Symbol): Symbol =
       if !symbol.flags.is(Flags.Exported) then symbol
       else
         val target = symbol.tree.absolve match
@@ -177,11 +184,9 @@ object internal:
     // for top-level definitions.
     def renderSymbol(symbol: Symbol): Text =
       val raw = stenography.internal.name(symbol.termRef).s
-      val noType = if raw.endsWith(".type") then raw.substring(0, raw.length - 5).nn else raw
-      noType.split('.').iterator.filterNot: segment =>
-        val stripped = if segment.endsWith("$") then segment.dropRight(1).nn else segment
-        stripped.endsWith("$package")
-      .mkString(".").tt
+      raw.stripSuffix(".type").split('.').iterator
+      . filterNot(_.stripSuffix("$").endsWith("$package"))
+      . mkString(".").tt
 
     // Determine whether a given symbol can produce a value conforming to
     // `target`, and if so, what bindings its type parameters must take.
@@ -293,10 +298,7 @@ object internal:
       def loop(current: Symbol): Option[Symbol] =
         if current.isNoSymbol || current == defn.RootClass then None
         else if current.flags.is(Flags.Module) then
-          val moduleName = current.name.toString match
-            case n if n.endsWith("$") => n.substring(0, n.length - 1).nn
-            case n                    => n
-
+          val moduleName = current.name.toString.stripSuffix("$")
           val sibling = current.owner.declaredTypes.find: t =>
             t.name.toString == moduleName && t.flags.is(Flags.Opaque)
 

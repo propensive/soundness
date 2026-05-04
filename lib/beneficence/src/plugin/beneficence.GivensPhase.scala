@@ -114,10 +114,9 @@ class GivensPhase() extends PluginPhase:
         .nextOption().getOrElse(tpe.dealias.classSymbol)
 
       private def stripDollar(name: String): String =
-        if name.endsWith("$") then name.substring(0, name.length - 1).nn else name
+        if name.endsWith("$") then name.dropRight(1) else name
 
       private def sourcePath(symbol: Symbols.Symbol)(using Context): String =
-        val raw: String = symbol.fullName.toString.replace("$.", ".").nn
-        if raw.endsWith("$") then raw.substring(0, raw.length - 1).nn else raw
+        stripDollar(symbol.fullName.toString.replace("$.", ".").nn)
 
     traverser.traverse(unit.tpdTree)
