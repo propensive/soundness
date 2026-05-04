@@ -49,3 +49,7 @@ class Spool[item]():
   def stream: Stream[item] =
     Stream.continually(queue.take().nn).takeWhile(_ != Spool.Termination)
     . asInstanceOf[Stream[item]]
+
+  def iterator: Iterator[item] =
+    Iterator.continually(queue.take().nn).takeWhile(_ != Spool.Termination)
+    . asInstanceOf[Iterator[item]]
