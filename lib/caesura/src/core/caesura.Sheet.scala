@@ -148,42 +148,85 @@ object Sheet:
       cellsBuf.clear()
       Dsv(IArray.unsafeFromArray(arr), headings)
 
+    // Scan ahead in Fresh state for the next delimiter, quote, or line-ending,
+    // bulk-appending the run of regular characters in one operation, then
+    // dispatch on the trigger char. Returns Unset to continue parsing or a
+    // Dsv when a row has just been closed.
+    private def scanFresh(): Optional[Dsv] =
+      val str = current
+      val len = currentLen
+      val d = delim
+      val q = quoteChar
+      val s = pos
+      var p = s
+      while p < len do
+        val ch = str.charAt(p)
+        if ch == d || ch == q || ch == '\n' || ch == '\r' then
+          if p > s then builder.append(str, s, p)
+          pos = p + 1
+          if ch == d then
+            closeCell()
+            return Unset
+          else if ch == q then
+            if builder.length > 0 then
+              raise(DsvError(format, DsvError.Reason.MisplacedQuote))
+            state = State.Quoted
+            return Unset
+          else
+            if cellsBuf.isEmpty && builder.length == 0 then return Unset
+            else
+              closeCell()
+              return emitRow()
+        p += 1
+      if p > s then builder.append(str, s, p)
+      pos = p
+      Unset
+
+    // Scan ahead in Quoted state for the next quote, bulk-appending all other
+    // characters (including delimiters and newlines) verbatim.
+    private def scanQuoted(): Unit =
+      val str = current
+      val len = currentLen
+      val q = quoteChar
+      val s = pos
+      var p = s
+      while p < len && str.charAt(p) != q do p += 1
+      if p > s then builder.append(str, s, p)
+      if p < len then
+        pos = p + 1
+        state = State.DoubleQuoted
+      else
+        pos = p
+
+    private def handleDoubleQuoted(): Optional[Dsv] =
+      val ch = current.charAt(pos)
+      pos += 1
+      if ch == quoteChar then
+        builder.append(quoteChar)
+        state = State.Quoted
+        Unset
+      else if ch == delim then
+        closeCell()
+        state = State.Fresh
+        Unset
+      else if ch == '\n' || ch == '\r' then
+        closeCell()
+        state = State.Fresh
+        emitRow()
+      else
+        builder.append(ch)
+        Unset
+
     private def parseRow(): Optional[Dsv] =
       while loadChunk() do
-        val ch = current.charAt(pos)
-        pos += 1
-        state match
-          case State.Fresh =>
-            if ch == delim then closeCell()
-            else if ch == quoteChar then
-              if builder.length > 0 then
-                raise(DsvError(format, DsvError.Reason.MisplacedQuote))
-              state = State.Quoted
-            else if ch == '\n' || ch == '\r' then
-              if cellsBuf.isEmpty && builder.length == 0 then ()
-              else
-                closeCell()
-                return emitRow()
-            else
-              builder.append(ch)
+        val emitted: Optional[Dsv] = state match
+          case State.Fresh        => scanFresh()
+          case State.Quoted       => scanQuoted(); Unset
+          case State.DoubleQuoted => handleDoubleQuoted()
 
-          case State.Quoted =>
-            if ch == quoteChar then state = State.DoubleQuoted
-            else builder.append(ch)
-
-          case State.DoubleQuoted =>
-            if ch == quoteChar then
-              builder.append(quoteChar)
-              state = State.Quoted
-            else if ch == delim then
-              closeCell()
-              state = State.Fresh
-            else if ch == '\n' || ch == '\r' then
-              closeCell()
-              state = State.Fresh
-              return emitRow()
-            else
-              builder.append(ch)
+        emitted match
+          case row: Dsv => return row
+          case _        => ()
 
       if cellsBuf.nonEmpty || builder.length > 0 then
         closeCell()
