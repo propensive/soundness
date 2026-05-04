@@ -49,34 +49,38 @@ object internal:
   def name[typename <: AnyKind: Type](using Quotes): Text =
     import quotes.reflect.*
 
-    val (outer, direct): (List[Typename], Set[Typename]) = quotes.absolve match
+    val outer: List[Typename] = quotes.absolve match
       case quotes: runtime.impl.QuotesImpl =>
         given context: core.Contexts.Context = quotes.ctx
 
         context.compilationUnit.tpdTree.absolve match
           case ast.tpd.PackageDef(root, statements) =>
-            val outerNames = Typename(root.show) :: statements.collect:
+            Typename(root.show) :: statements.collect:
               case ast.tpd.Import(name, _) => Typename(name.show)
 
-            // For each wildcard import, find type aliases declared in that
-            // scope that were introduced by `export X.foo` clauses (carrying
-            // the `Exported` flag). Their *target* typenames are accessible
-            // via just the leaf, so add those to `direct`.
-            val directNames =
-              statements.collect:
-                case ast.tpd.Import(qualifier, selectors)
-                if selectors.exists(_.isWildcard) =>
-                  val rootSym = qualifier.symbol
-                  if !rootSym.exists then Nil
-                  else exportedTargets(rootSym)
-              .flatten.toSet
-
-            (outerNames, directNames)
-
           case _ =>
-            (Nil, Set.empty[Typename])
+            Nil
+
+      case _ => Nil
 
     val imports: Set[Typename] = metaprogramming.imports.map(_.term).map(Syntax.term(_)).to(Set)
+
+    // Build the `direct` set by drilling into every wildcard import that's in
+    // scope (including REPL-accumulated imports across earlier lines, captured
+    // by `metaprogramming.imports`) and collecting type aliases carrying the
+    // `Exported` flag. Those aliases' *target* types are reachable via just
+    // their leaf in the current scope, so we render them that way.
+    val direct: Set[Typename] = quotes.absolve match
+      case quotes: runtime.impl.QuotesImpl =>
+        given context: core.Contexts.Context = quotes.ctx
+
+        metaprogramming.imports.filter(_.wildcard).flatMap: imp =>
+          val rootSym = imp.term.asInstanceOf[core.Types.Type].termSymbol(using context)
+          if !rootSym.exists then Nil
+          else exportedTargets(rootSym)
+        .toSet
+
+      case _ => Set.empty[Typename]
 
     given Imports =
       Imports(Set(Typename("scala"), Typename("scala.Predef")) ++ imports ++ outer, direct)
