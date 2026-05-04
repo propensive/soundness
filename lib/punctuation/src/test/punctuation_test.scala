@@ -60,5 +60,5 @@ object Tests extends Suite(m"Punctuation tests"):
             safely(testcase.html.read[Html of whatwg.Flow]).let: html =>
               if !Set(308, 309, 475, 598, 605)(testcase.example) then
                 test(m"Commonmark test case ${testcase.example}"):
-                  Commonmark.parse(testcase.markdown).html.show
+                  Parser.parse(testcase.markdown).html.show
                 . assert(_ == html.show)

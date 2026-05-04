@@ -32,75 +32,51 @@
                                                                                                   */
 package punctuation
 
-import scala.quoted.*
+import scala.collection.mutable
 
-import ambience.*, environments.java, systems.java
 import anticipation.*
-import contingency.*, strategies.throwUnsafely
-import fulminate.*
-import gossamer.*
-import hellenism.*, classloaders.threadContext
-import hieroglyph.*, charDecoders.utf8, textSanitizers.strict
-import probably.*
-import proscenium.*
-import quantitative.*
-import sedentary.*
-import symbolism.*
-import temporaryDirectories.system
-import turbulence.*
-import vacuous.*
 
-object Benchmarks extends Suite(m"Punctuation benchmarks"):
-  sealed trait Information extends Dimension
-  sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
-  val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
+// Accumulates link reference definitions discovered during the block-parse
+// pass; consulted by the inline-parse pass for shortcut/collapsed/full
+// reference links. Stage 4 will populate this from `[label]: dest "title"`
+// definitions in paragraphs; for now it stays empty.
+final class LinkRefs:
+  private val table: mutable.LinkedHashMap[Text, Markdown.LinkRef] =
+    mutable.LinkedHashMap()
 
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
-  given decimalizer:     Decimalizer            = Decimalizer(2)
-  given device:          BenchmarkDevice        = LocalhostDevice
-  given prefixes:        Prefixes               = Prefixes(List(Kilo, Mega, Giga, Tera))
+  // CommonMark normalisation: trim, collapse internal whitespace runs, then
+  // case-fold. We use `toUpperCase` rather than `toLowerCase` because Java's
+  // upper-casing handles a broader set of Unicode case-equivalences (e.g.
+  // ẞ ↔ SS) that the spec's case-fold semantics require.
+  def normalize(label: Text): Text =
+    val s = label.s
+    val n = s.length
+    val builder = new StringBuilder
+    var i = 0
+    var inSpace = false
+    var trimmingLeft = true
+    while i < n do
+      val c = s.charAt(i)
+      if c == ' ' || c == '\t' || c == '\n' || c == '\r' then
+        if !trimmingLeft then inSpace = true
+      else
+        if inSpace then builder.append(' ')
+        builder.append(c)
+        inSpace = false
+        trimmingLeft = false
+      i += 1
+    // Approximation of Unicode case-fold: lower-then-upper handles cases like
+    // ẞ → ß → SS that a single direction misses.
+    Text(builder.toString.toLowerCase.nn.toUpperCase.nn)
 
-  // ─── inputs ───────────────────────────────────────────────────────────────
-  // Loaded once from the bench module's classpath. `lazy val` means the cost
-  // of the read isn't paid until the first benchmark touches the input, and
-  // the same `Text` instance is reused across iterations so neither GC nor
-  // I/O contaminates the timing.
+  // First definition wins (per CommonMark).
+  def add(ref: Markdown.LinkRef): Unit =
+    val key = normalize(ref.label)
+    if !table.contains(key) then table(key) = ref
 
-  lazy val small:           Text = cp"/punctuation/small.md".read[Text]
-  lazy val medium:          Text = cp"/punctuation/medium.md".read[Text]
-  lazy val stressMix:       Text = cp"/punctuation/stress-mix.md".read[Text]
-  lazy val emphasisStress:  Text = cp"/punctuation/emphasis-stress.md".read[Text]
+  def lookup(label: Text): vacuous.Optional[Markdown.LinkRef] =
+    table.get(normalize(label)) match
+      case Some(ref) => ref
+      case None      => vacuous.Unset
 
-  // ─── helpers ──────────────────────────────────────────────────────────────
-  // Each helper returns an `Int` derived from the parse result so the JIT
-  // cannot dead-code the call. `children.length` is cheap and structurally
-  // exercises the entire parse — anything elided would zero this out.
-
-  def parseNative(text: Text): Int = Parser.parse(text).children.length
-
-  // ─── benchmarks ───────────────────────────────────────────────────────────
-
-  def run(): Unit =
-    val bench = Bench()
-
-    val smallSize:          Quantity[Bytes[1]] = small.s.getBytes("UTF-8").nn.length*Byte
-    val mediumSize:         Quantity[Bytes[1]] = medium.s.getBytes("UTF-8").nn.length*Byte
-    val stressMixSize:      Quantity[Bytes[1]] = stressMix.s.getBytes("UTF-8").nn.length*Byte
-    val emphasisStressSize: Quantity[Bytes[1]] = emphasisStress.s.getBytes("UTF-8").nn.length*Byte
-
-    suite(m"Markdown parsing throughput"):
-      bench(m"parse small (~2 KB, mixed prose)")
-       (target = 1*Second, operationSize = smallSize):
-        '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.small) }
-
-      bench(m"parse medium (~19 KB, real README)")
-       (target = 1*Second, operationSize = mediumSize):
-        '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.medium) }
-
-      bench(m"parse stress-mix (~38 KB, every feature)")
-       (target = 1*Second, operationSize = stressMixSize):
-        '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.stressMix) }
-
-      bench(m"parse emphasis-stress (~4 KB, inline-dense)")
-       (target = 1*Second, operationSize = emphasisStressSize):
-        '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.emphasisStress) }
+  def all: List[Markdown.LinkRef] = table.values.to(List)
