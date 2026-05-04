@@ -60,9 +60,8 @@ final class BlockParser:
   private val openStack: ArrayBuffer[BlockBuilder] = ArrayBuffer(docBuilder)
 
   def parse(text: Text): Markdown of Layout =
-    // Iterate lines directly via `String.indexOf('\n')` rather than going
-    // through a char-by-char Cursor — `indexOf(char)` is a JIT intrinsic
-    // (uses SWAR/SIMD on most JVMs) and much faster than the per-char loop.
+    // `String.indexOf(char)` is JIT-intrinsified to a vectorised scan; this
+    // beats a char-by-char Cursor traversal for line iteration.
     val s = text.s
     val len = s.length
     var pos = 0
