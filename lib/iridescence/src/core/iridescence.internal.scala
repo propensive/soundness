@@ -32,35 +32,43 @@
                                                                                                   */
 package iridescence
 
-import anticipation.*
-import contextual.*
-import fulminate.*
-import rudiments.*
+import scala.quoted.*
 
-import errorDiagnostics.empty
+import anticipation.*
+import fulminate.*
+import gigantism.*
+import rudiments.*
+import vacuous.*
 
 object internal:
-  object RgbHex extends Interpolator[Nothing, Option[Chroma], Chroma]:
-    def initial: Option[Chroma] = None
+  private given realm: Realm = realm"iridescence"
 
-    def parse(state: Option[Chroma], next: Text): Option[Chroma] =
-      if next.s.length == 7 && next.s.startsWith("#")
-      then parse(state, Text(next.s.substring(1).nn))
-      else if next.s.length == 6 && next.s.all: char =>
-        char.isDigit || ((char | 32) >= 'a' && (char | 32) <= 'f')
-      then
-        val red = Integer.parseInt(next.s.substring(0, 2), 16)
-        val green = Integer.parseInt(next.s.substring(2, 4), 16)
-        val blue = Integer.parseInt(next.s.substring(4, 6), 16)
+  def rgbInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[Chroma] =
+    import quotes.reflect.*
 
-        Some(Chroma(red, green, blue))
+    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case _               => strings
 
-      else throw InterpolationError(m"""the color must be in the form ${Text("rgb\"#rrggbb\"")} or
-          rgb"rrggbb" where rr, gg and bb are 2-digit hex values""", 0)
+    val parts = recur[parts](Nil)
 
-    def insert(state: Option[Chroma], value: Nothing): Option[Chroma] =
-      throw InterpolationError:
-        m"substitutions into an ${Text("rgb\"\"")} interpolator are not supported"
+    if parts.length != 1 then halt(m"an rgb literal cannot have substitutions")
 
-    def skip(state: Option[Chroma]): Option[Chroma] = state
-    def complete(color: Option[Chroma]): Chroma = color.get
+    val raw: String = parts.head
+
+    val hex: String =
+      if raw.length == 7 && raw.startsWith("#") then raw.substring(1).nn
+      else raw
+
+    def isHex(ch: Char): Boolean =
+      ch.isDigit || ((ch | 32) >= 'a' && (ch | 32) <= 'f')
+
+    if hex.length != 6 || !hex.forall(isHex) then halt:
+      m"""the color must be in the form ${"rgb\"#rrggbb\"".tt} or ${"rgb\"rrggbb\"".tt} where
+         rr, gg and bb are 2-digit hex values"""
+
+    val red = Integer.parseInt(hex.substring(0, 2), 16)
+    val green = Integer.parseInt(hex.substring(2, 4), 16)
+    val blue = Integer.parseInt(hex.substring(4, 6), 16)
+
+    '{Chroma(${Expr(red)}, ${Expr(green)}, ${Expr(blue)})}

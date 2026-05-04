@@ -34,9 +34,9 @@ package soundness
 
 export
   iridescence
-  . { Brightness, Cielab, Cmy, Cmyk, Color, Colorimetry, dark, Hsl, Hsv, light, Palette, Perceptual,
-      rgb, Rgb12, Rgb12Opaque, Rgb32, Rgb32Opaque, Solarized, Spectrum, Srgb, Theme, WebColors,
-      Xyz }
+  . { Brightness, chromaInterpolable, Cielab, Cmy, Cmyk, Color, Colorimetry, dark, Hsl, Hsv, light,
+      Palette, Perceptual, rgb, Rgb12, Rgb12Opaque, Rgb32, Rgb32Opaque, Solarized, Spectrum, Srgb,
+      Theme, WebColors, Xyz }
 
 package colorimetry:
   export
