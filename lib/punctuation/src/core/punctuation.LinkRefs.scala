@@ -65,7 +65,9 @@ final class LinkRefs:
         inSpace = false
         trimmingLeft = false
       i += 1
-    Text(builder.toString.toUpperCase.nn)
+    // Approximation of Unicode case-fold: lower-then-upper handles cases like
+    // ẞ → ß → SS that a single direction misses.
+    Text(builder.toString.toLowerCase.nn.toUpperCase.nn)
 
   // First definition wins (per CommonMark).
   def add(ref: Markdown.LinkRef): Unit =

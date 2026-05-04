@@ -75,9 +75,28 @@ final class BlockQuoteBuilder(val line: Ordinal) extends ContainerBuilder:
     while i < n && s.charAt(i) == ' ' && indent < 4 do { i += 1; indent += 1 }
     if indent >= 4 || i >= n || s.charAt(i) != '>' then return Unset
     i += 1
-    if i < n && s.charAt(i) == ' ' then i += 1
-    else if i < n && s.charAt(i) == '\t' then i += 1
-    if i == 0 then line else Text(s.substring(i, n).nn)
+    val colAfterMarker = indent + 1
+    var leftover = 0
+    var startCol = colAfterMarker
+
+    if i < n then
+      s.charAt(i) match
+        case ' ' =>
+          i += 1
+          startCol = colAfterMarker + 1
+
+        case '\t' =>
+          // Tab follow: consume 1 visual col, leftover expansion becomes
+          // residual spaces.
+          val advance = 4 - (colAfterMarker & 3)
+          leftover = advance - 1
+          i += 1
+          startCol = colAfterMarker + advance
+
+        case _ => ()
+
+    val rest = if i >= n then "" else s.substring(i, n).nn
+    Text(ParserSupport.buildResidual(rest, startCol, leftover))
 
   def finish(refs: LinkRefs): Optional[Layout] =
     Layout.BlockQuote(line, children.toSeq*)
@@ -94,10 +113,27 @@ final class ListItemBuilder(val line: Ordinal, val indent: Int) extends Containe
       // sets `hadBlank` after determining the blank wasn't absorbed by a
       // nested code block.
       return Text("")
-    if ParserSupport.indentColumn(line) >= indent then
-      ParserSupport.stripIndent(line, indent)
-    else
-      Unset
+    // CommonMark §5.2: an empty list item that has seen a blank line cannot
+    // accept further content. Returning Unset causes the dispatcher to close
+    // the item; the residual then becomes content outside the list.
+    if hadBlank && children.isEmpty then return Unset
+    // Strip `indent` visual cols of leading whitespace, allowing partial
+    // consumption of a tab. Use buildResidual so the returned text starts
+    // with leftover-tab expansion + further leading-tab expansion (with
+    // absolute column positions preserved).
+    val s = line.s
+    val n = s.length
+    var i = 0
+    var col = 0
+    while i < n && col < indent && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do
+      if s.charAt(i) == ' ' then col += 1
+      else col += 4 - (col & 3)
+      i += 1
+
+    if col < indent then return Unset
+    val leftover = col - indent
+    val tail = if i >= n then "" else s.substring(i, n).nn
+    Text(ParserSupport.buildResidual(tail, col, leftover))
 
   def finish(refs: LinkRefs): Optional[Layout] =
     Layout.Paragraph(line)  // placeholder; lists assemble items, not Paragraph
@@ -197,18 +233,14 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
     else Layout.Paragraph(line, Prose.Textual(joined))
 
   // Setext headings rewrite an open paragraph as a heading; the underline
-  // line itself is consumed by the dispatcher, not added here. The raw text
-  // is stored as a single Prose.Textual placeholder for the post-pass.
-  def toHeading(level: 1 | 2 | 3 | 4 | 5 | 6, refs: LinkRefs): Layout =
-    val text =
-      val builder = new StringBuilder
-      var first = true
-      for line <- lines do
-        if first then first = false else builder.append('\n')
-        builder.append(line.s)
-      Text(builder.toString)
-
-    Layout.Heading(line, level, Prose.Textual(text))
+  // line itself is consumed by the dispatcher. Link reference definitions
+  // at the start of the paragraph are extracted before promotion. Returns
+  // Unset if the entire paragraph turned out to be link reference
+  // definitions (the setext underline has nothing to promote).
+  def toHeading(level: 1 | 2 | 3 | 4 | 5 | 6, refs: LinkRefs): Optional[Layout] =
+    extractLinkRefs(refs)
+    if linkRefEnd >= joinedText.length then Unset
+    else Layout.Heading(line, level, Prose.Textual(joined))
 
 final class FencedCodeBlockBuilder
   ( val line:      Ordinal,

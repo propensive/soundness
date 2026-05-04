@@ -596,32 +596,45 @@ object InlineSupport:
     val destResult = parseLinkDestination(s, i, end)
     if destResult.absent then return Unset
     val (destination, afterDest) = (destResult.vouch.dest, destResult.vouch.end)
-    i = afterDest
 
-    // Try to find a title. The title may sit on the same line or the next
-    // line (one newline allowed in between). If the title attempt fails or
-    // there's no title opener, roll back to right after the destination.
-    val tentativeWsEnd = skipLinkWhitespace(s, i, end)
-    var title: Optional[Text] = Unset
+    // Compute both options up front: dest-only (no title) and dest+title.
+    // Prefer dest+title if its trailing content is valid; otherwise fall
+    // back to dest-only. (Per CommonMark: a malformed title attempt doesn't
+    // invalidate the LRD itself.)
+    val noTitleEnd = checkLrdTrailing(s, afterDest, end)
+
+    val tentativeWsEnd = skipLinkWhitespace(s, afterDest, end)
 
     val titleOpener =
       tentativeWsEnd < end
       && { val c = s.charAt(tentativeWsEnd); c == '"' || c == '\'' || c == '(' }
 
+    var resultTitle: Optional[Text] = Unset
+    var resultEnd: Int = -1
+
     if titleOpener then
       parseLinkTitle(s, tentativeWsEnd, end) match
         case t: TitleMatch =>
-          title = Text(t.title)
-          i = t.end
+          val titleTrailEnd = checkLrdTrailing(s, t.end, end)
+          if titleTrailEnd >= 0 then
+            resultTitle = Text(t.title)
+            resultEnd = titleTrailEnd
 
-        case Unset => ()  // i stays at afterDest
+        case Unset => ()
 
-    // Trailing content after the dest (or title, if matched) must be only
-    // spaces/tabs ending in either end-of-line or end-of-input.
+    if resultEnd < 0 then
+      if noTitleEnd < 0 then return Unset
+      resultEnd = noTitleEnd
+
+    LinkRefDefMatch(Markdown.LinkRef(label, resultTitle, destination), resultEnd)
+
+  // Returns the index past trailing spaces/tabs if `start` is followed only
+  // by whitespace and a newline (or end-of-input), or -1 if there's other
+  // content on the line.
+  private def checkLrdTrailing(s: String, start: Int, end: Int): Int =
+    var i = start
     while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
-    if i < end && s.charAt(i) != '\n' then return Unset
-
-    LinkRefDefMatch(Markdown.LinkRef(label, title, destination), i)
+    if i >= end || s.charAt(i) == '\n' then i else -1
 
   // Parse a reference link label `[label]` starting at the `[`. Returns the
   // raw label text (or empty for `[]`) and the index past the closing `]`,

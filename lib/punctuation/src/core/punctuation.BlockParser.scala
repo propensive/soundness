@@ -37,7 +37,6 @@ import scala.collection.mutable.ArrayBuffer
 import anticipation.*
 import denominative.*
 import fulminate.*
-import gossamer.*
 import prepositional.*
 import vacuous.*
 import zephyrine.*
@@ -125,6 +124,20 @@ final class BlockParser:
       case container: ContainerBuilder =>
         container.finish(refs).let: layout =>
           addToParent(parent, layout)
+        // Propagate trailing-blank from a closing inner list to the
+        // enclosing ListItem so the outer list can detect looseness.
+        container match
+          case bl: BulletListBuilder if bl.pendingBlank =>
+            parent match
+              case item: ListItemBuilder => item.hadBlank = true
+              case _                     => ()
+
+          case ol: OrderedListBuilder if ol.pendingBlank =>
+            parent match
+              case item: ListItemBuilder => item.hadBlank = true
+              case _                     => ()
+
+          case _ => ()
 
       case leaf: LeafBuilder =>
         leaf.finish(refs).let: layout =>
@@ -215,12 +228,27 @@ final class BlockParser:
     while i < n && s.charAt(i) == ' ' && indent < 4 do { i += 1; indent += 1 }
     if indent < 4 && i < n && s.charAt(i) == '>' then
       i += 1
-      if i < n && s.charAt(i) == ' ' then i += 1
-      else if i < n && s.charAt(i) == '\t' then i += 1
+      val colAfterMarker = indent + 1
+      var leftover = 0
+      var startCol = colAfterMarker
+
+      if i < n then s.charAt(i) match
+        case ' ' =>
+          i += 1; startCol = colAfterMarker + 1
+
+        case '\t' =>
+          val advance = 4 - (colAfterMarker & 3)
+          leftover = advance - 1
+          i += 1
+          startCol = colAfterMarker + advance
+
+        case _ => ()
+
       closeOpenLeafForNewBlock()
       val bq = BlockQuoteBuilder(ln)
       openStack += bq
-      val rest = if i >= n then t"" else Text(s.substring(i, n).nn)
+      val tail = if i >= n then "" else s.substring(i, n).nn
+      val rest = Text(ParserSupport.buildResidual(tail, startCol, leftover))
       return (rest, true)
 
     // Thematic break has higher priority than bullet/ordered list markers
@@ -360,15 +388,15 @@ final class BlockParser:
       deepest match
         case para: ParagraphBuilder if !para.isEmpty =>
           ParserSupport.setextUnderline(residual0) match
-            case 1 =>
+            case lvl @ (1 | 2) =>
+              val maybeHeading = para.toHeading(lvl, refs)
               openStack.remove(openStack.length - 1)
-              addToParent(deepest, para.toHeading(1, refs))
-              return
-
-            case 2 =>
-              openStack.remove(openStack.length - 1)
-              addToParent(deepest, para.toHeading(2, refs))
-              return
+              maybeHeading.let: heading =>
+                addToParent(deepest, heading)
+              if maybeHeading.present then return
+              // else: paragraph turned out to be all link reference defs;
+              // the setext underline has nothing to promote, so it falls
+              // through and becomes a regular line.
 
             case Unset => ()
 
@@ -392,23 +420,18 @@ final class BlockParser:
 
     // After failed containers close (Para closes → its content joins parent
     // LI's children), check what the blank means. Find the deepest open
-    // ListItem (skipping a trailing leaf if any). If it's empty, the blank
-    // terminates the item and the enclosing list (CommonMark §5.2). If it
-    // has children, mark hadBlank for loose-list detection.
+    // ListItem (skipping a trailing leaf if any) and mark hadBlank for
+    // loose-list and empty-item handling. Don't close the item here:
+    // CommonMark §5.2 only terminates an empty item when the next non-blank
+    // content arrives that isn't a sibling marker — that's handled in
+    // `ListItemBuilder.tryContinue` when it returns Unset for a non-blank
+    // line on an empty item with hadBlank=true.
     if ParserSupport.isBlank(residual0) then
       var idx = openStack.length - 1
       while idx >= 0 && openStack(idx).isInstanceOf[LeafBuilder] do idx -= 1
       if idx >= 0 then openStack(idx) match
-        case item: ListItemBuilder =>
-          if item.children.isEmpty then
-            closeFromIndex(idx)
-            deepest match
-              case _: BulletListBuilder | _: OrderedListBuilder => closeOne()
-              case _                                            => ()
-          else
-            item.hadBlank = true
-
-        case _ => ()
+        case item: ListItemBuilder => item.hadBlank = true
+        case _                     => ()
 
     val residual = tryOpenContainers(residual0, ln)
     placeLeaf(residual, ln)
@@ -439,15 +462,13 @@ final class BlockParser:
     deepest match
       case para: ParagraphBuilder if !para.isEmpty =>
         ParserSupport.setextUnderline(residual) match
-          case 1 =>
+          case lvl @ (1 | 2) =>
+            val maybeHeading = para.toHeading(lvl, refs)
             openStack.remove(openStack.length - 1)
-            addToParent(deepest, para.toHeading(1, refs))
-            return
-
-          case 2 =>
-            openStack.remove(openStack.length - 1)
-            addToParent(deepest, para.toHeading(2, refs))
-            return
+            maybeHeading.let: heading =>
+              addToParent(deepest, heading)
+            if maybeHeading.present then return
+            // else: paragraph was all link-ref-defs; fall through.
 
           case Unset => ()
 
