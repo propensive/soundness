@@ -51,19 +51,22 @@ object Sh:
   case class State(current: Context, escape: Boolean, arguments: List[Text])
   case class Parameters(params: Text*)
 
-  object Prefix extends Interpolator[Parameters, State, Command]:
+  case class ShError(detail: Message) extends Exception(s"guillotine: ${detail.text.s}")
+
+  object Runtime:
+    import unsafeExceptions.canThrowAny
     import Context.*
 
     def complete(state: State): Command =
       val arguments = state.current match
         case Quotes2 =>
-          throw InterpolationError(m"the double quotes have not been closed")
+          throw ShError(m"the double quotes have not been closed")
 
         case Quotes1 =>
-          throw InterpolationError(m"the single quotes have not been closed")
+          throw ShError(m"the single quotes have not been closed")
 
         case _ if state.escape =>
-          throw InterpolationError(m"cannot terminate with an escape character")
+          throw ShError(m"cannot terminate with an escape character")
 
         case _ =>
           state.arguments
@@ -76,7 +79,7 @@ object Sh:
     def insert(state: State, value: Parameters): State = value.params.to(List) match
       case head :: tail =>
         if state.escape
-        then throw InterpolationError
+        then throw ShError
           (  m"escaping with '\\' is not allowed immediately before a substitution" )
 
         state.absolve match
