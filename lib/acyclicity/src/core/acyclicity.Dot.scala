@@ -35,6 +35,7 @@ package acyclicity
 import language.dynamics
 
 import anticipation.*
+import contextual.*
 import denominative.*
 import gossamer.*
 import proscenium.*
@@ -54,6 +55,10 @@ object Dot:
 
   object Ref:
     def apply(key: Text): Ref = Ref(Id(key))
+
+    given interpolable: Ref is Interpolable:
+      inline def interpolate[parts <: Tuple](inline insertions: Any*): Ref =
+        ${acyclicity.internal.refInterpolator[parts]('insertions)}
 
   case class Ref(id: Id, port: Option[Attachment] = None):
     @targetName("joinTo")
