@@ -90,7 +90,7 @@ object internal:
     given context: core.Contexts.Context = quotes.absolve match
       case quotes: runtime.impl.QuotesImpl => quotes.ctx
 
-    case class Candidate(name: Text, missing: List[Result]) extends Result
+    case class Candidate(name: Text, symbol: Symbol, missing: List[Result]) extends Result
     case class Available(name: Text, requirements: List[Missing]) extends Result
 
     case class Missing(name: Text, available: List[Available], candidates: List[Candidate])
@@ -111,9 +111,14 @@ object internal:
                   bindings:   Map[Symbol, TypeRepr] )
 
     def availableFor(repr: TypeRepr, exclusions: List[Symbol], gas: Int): List[Available] =
+      // Compare exclusions by canonical (de-exported) symbol so that a
+      // candidate `gossamer.foo` filters out both `gossamer.foo` itself and
+      // any re-export like `soundness.foo` from the proposal list.
+      val excludedCanonicals = exclusions.map(canonical).filterNot(_.isNoSymbol).toSet
+
       val matched =
         beneficence.givens(repr)
-        . filterNot(exclusions.contains)
+        . filterNot(s => excludedCanonicals.contains(canonical(s)))
         . filter(respectsOpaqueScope(_, repr))
         . flatMap(matchAgainst(_, repr))
 
@@ -376,7 +381,14 @@ object internal:
           Nil
 
     def missing(repr: TypeRepr, candidates: List[Candidate]): Missing =
-      Missing(stenography.internal.name(repr), availableFor(repr, Nil, initialGas), candidates)
+      // Don't propose any classpath given that the implicit search has already
+      // tried as a candidate for this position; doing so would just repeat
+      // information already shown under the `▪ candidate` lines.
+      val candidateSymbols = candidates.map(_.symbol).filterNot(_.isNoSymbol)
+      Missing
+        ( stenography.internal.name(repr),
+          availableFor(repr, candidateSymbols, initialGas),
+          candidates )
 
     def seek(repr: TypeRepr, exclusions: List[Symbol], depth: Int): Result =
       Implicits.searchIgnoring(repr)(self :: exclusions*).absolve match
@@ -398,7 +410,9 @@ object internal:
                   then missing(repr, Nil)
                   else
                     Candidate
-                      ( "???", List(seek(right.head.tpe, term.symbol :: exclusions, depth + 1)) )
+                      ( "???",
+                        term.symbol,
+                        List(seek(right.head.tpe, term.symbol :: exclusions, depth + 1)) )
 
                 case _ =>
                   missing(repr, Nil)
@@ -411,7 +425,9 @@ object internal:
 
                 case MethodType(_, types, more) =>
                   val name = stenography.internal.name(function.symbol.termRef).show.skip(5, Rtl)
-                  val candidate = Candidate(name, types.map(seek(_, Nil, depth + 1)))
+
+                  val candidate =
+                    Candidate(name, function.symbol, types.map(seek(_, Nil, depth + 1)))
 
                   val candidates = seek(repr, function.symbol :: exclusions, depth) match
                     case Missing(_, _, candidates) => candidate :: candidates
@@ -434,7 +450,7 @@ object internal:
       case Missing(_, available, candidates) =>
         report.errorAndAbort:
           given Result is Expandable =
-            case Candidate(_, missing)             => missing
+            case Candidate(_, _, missing)          => missing
             case Missing(_, available, candidates) => available ::: candidates
             case Available(_, requirements)        => requirements
             case Found(_, _)                       => Nil
@@ -446,7 +462,7 @@ object internal:
             case Missing(name, _, _) =>
               e" \e[38;5;88m$Bold(✗)\e[0m requires \e[38;5;114m$Italic($name)\e[0m"
 
-            case Candidate(name, _) =>
+            case Candidate(name, _, _) =>
               e" \e[38;5;208m$Bold(▪)\e[0m candidate \e[38;5;227m$Italic($name)\e[0m"
 
             case Available(name, _) =>
