@@ -41,7 +41,7 @@ import scala.collection.mutable
 
 import dotty.tools.dotc.core.Contexts.*
 
-case class Entry(givenFqn: String, sourceFile: String)
+case class Entry(fqn: String, sourceFile: String)
 
 object GivensWriter:
   private val SourcePrefix = "# source: "
@@ -52,29 +52,56 @@ object GivensWriter:
         (using Context)
   :     Unit =
 
-    val outputDir = ctx.settings.outputDir.value
-    val outputRoot: File | Null = outputDir.file
+    val outputRoot = outputRootOrNull
     if outputRoot == null then return  // JAR output: skip; future work to support
 
     val givensDir = new File(new File(outputRoot, "META-INF"), "givens")
     if !givensDir.exists then givensDir.mkdirs(): @annotation.nowarn
 
     collected.foreach: (typeclassFqn, entries) =>
-      val target  = new File(givensDir, typeclassFqn)
-      val current = if target.exists then read(target) else Map.empty[String, List[String]]
-      val pruned  = current.filterNot((source, _) => recompiledSources.contains(source))
+      mergeOne(new File(givensDir, typeclassFqn), entries, recompiledSources)
 
-      val merged: List[(String, List[String])] =
-        val byNew: Map[String, List[String]] =
-          entries.groupBy(_.sourceFile).view.mapValues(_.map(_.givenFqn).distinct.toList).toMap
+  def mergeSuites
+        ( collected:         mutable.Buffer[Entry],
+          recompiledSources: Set[String] )
+        (using Context)
+  :     Unit =
 
-        val keptOrder: List[String] = pruned.keys.toList
-        val newOrder: List[String]  = byNew.keys.toList.filterNot(pruned.contains)
+    // Mirrors the givens path: when a compilation registers no entries we
+    // skip rewriting altogether, leaving any prior file untouched.
+    if collected.isEmpty then return
 
-        (keptOrder ++ newOrder).map: source =>
-          source -> pruned.getOrElse(source, byNew.getOrElse(source, Nil))
+    val outputRoot = outputRootOrNull
+    if outputRoot == null then return
 
-      write(target, merged)
+    val servicesDir = new File(new File(outputRoot, "META-INF"), "services")
+    if !servicesDir.exists then servicesDir.mkdirs(): @annotation.nowarn
+
+    mergeOne(new File(servicesDir, "probably.Suite"), collected, recompiledSources)
+
+  private def outputRootOrNull(using Context): File | Null =
+    ctx.settings.outputDir.value.file
+
+  private def mergeOne
+                ( target:            File,
+                  entries:           collection.Seq[Entry],
+                  recompiledSources: Set[String] )
+  :     Unit =
+
+    val current = if target.exists then read(target) else Map.empty[String, List[String]]
+    val pruned  = current.filterNot((source, _) => recompiledSources.contains(source))
+
+    val merged: List[(String, List[String])] =
+      val byNew: Map[String, List[String]] =
+        entries.groupBy(_.sourceFile).view.mapValues(_.map(_.fqn).distinct.toList).toMap
+
+      val keptOrder: List[String] = pruned.keys.toList
+      val newOrder: List[String]  = byNew.keys.toList.filterNot(pruned.contains)
+
+      (keptOrder ++ newOrder).map: source =>
+        source -> pruned.getOrElse(source, byNew.getOrElse(source, Nil))
+
+    write(target, merged)
 
   private def read(file: File): Map[String, List[String]] =
     val builder = mutable.LinkedHashMap.empty[String, mutable.ListBuffer[String]]
