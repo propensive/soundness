@@ -100,6 +100,11 @@ object internal:
 
     val initialGas = 3
 
+    def resultOf(t: TypeRepr): TypeRepr = t match
+      case PolyType(_, _, body)   => resultOf(body)
+      case MethodType(_, _, body) => resultOf(body)
+      case _                      => t
+
     def availableFor(repr: TypeRepr, exclusions: List[Symbol], gas: Int): List[Available] =
       beneficence.givens(repr)
       . filterNot(exclusions.contains)
@@ -107,19 +112,12 @@ object internal:
       . map: symbol =>
           val requirements =
             if gas <= 0 then Nil
-            else usingTypes(symbol).map: paramType =>
+            else usingTypesInstantiated(symbol, repr).map: paramType =>
               val nextAvailable = availableFor(paramType, symbol :: exclusions, gas - 1)
               Missing(stenography.internal.name(paramType), nextAvailable, Nil)
           Available(displayName(symbol.fullName).tt, requirements)
 
     def conforms(symbol: Symbol, target: TypeRepr): Boolean =
-      // Strip PolyType / MethodType wrappers to get the value type a successful
-      // application would produce.
-      def resultOf(t: TypeRepr): TypeRepr = t match
-        case PolyType(_, _, body)   => resultOf(body)
-        case MethodType(_, _, body) => resultOf(body)
-        case _                      => t
-
       val resultType = resultOf(symbol.info)
 
       // For non-polymorphic givens, a direct subtype check is precise.
@@ -139,6 +137,40 @@ object internal:
                 resultType.dealias.classSymbol == target.dealias.classSymbol
           case _ =>
             false
+
+    def usingTypesInstantiated(symbol: Symbol, target: TypeRepr): List[TypeRepr] =
+      val raw = usingTypes(symbol)
+      if raw.isEmpty then raw
+      else
+        val typeParams =
+          symbol.paramSymss.headOption.filter(_.forall(_.isType)).getOrElse(Nil)
+
+        if typeParams.isEmpty then raw
+        else
+          val bindings = unify(resultOf(symbol.info), target, typeParams.toSet)
+          val from = typeParams.filter(bindings.contains)
+          if from.isEmpty then raw
+          else raw.map(_.substituteTypes(from, from.map(bindings)))
+
+    // Walk a `template` type (which may reference type parameters from `params`)
+    // alongside a concrete `target` and collect the implied parameter bindings.
+    // Used to instantiate type variables in `using` clauses according to the
+    // type that the proposed given is being asked to provide.
+    def unify(template: TypeRepr, target: TypeRepr, params: Set[Symbol])
+    :     Map[Symbol, TypeRepr] =
+
+      val templateSymbol = template.typeSymbol
+
+      if params.contains(templateSymbol) then Map(templateSymbol -> target)
+      else (template.dealias, target.dealias) match
+        case (AppliedType(tTycon, tArgs), AppliedType(rTycon, rArgs))
+        if tArgs.length == rArgs.length =>
+          val tyconBindings = unify(tTycon, rTycon, params)
+          tArgs.zip(rArgs).foldLeft(tyconBindings): (acc, pair) =>
+            acc ++ unify(pair(0), pair(1), params)
+
+        case _ =>
+          Map.empty
 
     def usingTypes(symbol: Symbol): List[TypeRepr] =
       symbol.tree.absolve match
