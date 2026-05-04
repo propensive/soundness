@@ -176,9 +176,10 @@ object soundness extends ScalaModule:
     surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core)
 
   object data extends Bundle(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
-    gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core, panopticon.core,
-    camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core, xylophone.core,
-    anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, villainy.core, vexillology.core)
+    gastronomy.core, chiaroscuro.core, jacinta.ast, jacinta.parser, jacinta.core, monotonous.core,
+    panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
+    xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
+    vexillology.core)
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
     charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
@@ -272,7 +273,6 @@ object test extends ScalaModule:
     //legerdemain.test,
     mandible.test,
     mercator.test,
-    merino.test,
     metamorphose.test,
     monotonous.test,
     mosquito.test,
@@ -316,7 +316,6 @@ object test extends ScalaModule:
     vacuous.test,
     vexillology.test,
     vicarious.test,
-    villainy.test,
     //wisteria.test,
     xylophone.test,
     yossarian.test,
@@ -716,12 +715,23 @@ object iridescence extends Library:
   object test extends Tests(core)
 
 object jacinta extends Library:
-  object core extends Component(merino.core, urticose.url, panopticon.core)
+  object ast extends Component(zephyrine.core)
+  object parser extends Component(ast, turbulence.core)
+  object core extends Component(parser, urticose.url, panopticon.core)
   object time extends Component(core, aviation.core)
   object http extends Component(core, telekinesis.core)
   object schema extends Component(core, telekinesis.core)
-  object test extends Tests(time, http, schema)
-  object bench extends Benchmarks(core, quantitative.units)
+  object records extends Component(core, polyvinyl.core)
+  object test extends Tests(time, http, schema, records, parser, sedentary.core, diuretic.core,
+    galilei.core, octogenarian.core, eucalyptus.core)
+  object bench extends Benchmarks(core, parser, quantitative.units):
+    def mvnDeps = Seq(
+      mvn"org.typelevel::jawn-ast:1.6.0",
+      mvn"io.circe::circe-parser:0.14.13",
+      mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.30.7",
+      mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-circe:2.30.7",
+      mvn"com.fasterxml.jackson.core:jackson-databind:2.18.2"
+    )
 
 object kaleidoscope extends Library:
   object core extends Component(contingency.core)
@@ -747,18 +757,6 @@ object mandible extends Library:
 object mercator extends Library:
   object core extends Component(fulminate.core)
   object test extends Tests(core)
-
-object merino extends Library:
-  object core extends Component(turbulence.core, zephyrine.core)
-  object test extends Tests(core, sedentary.core, diuretic.core, galilei.core, octogenarian.core, eucalyptus.core)
-  object bench extends Benchmarks(core, quantitative.units):
-    def mvnDeps = Seq(
-      mvn"org.typelevel::jawn-ast:1.6.0",
-      mvn"io.circe::circe-parser:0.14.13",
-      mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.30.7",
-      mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-circe:2.30.7",
-      mvn"com.fasterxml.jackson.core:jackson-databind:2.18.2"
-    )
 
 object metamorphose extends Library:
   object core extends Component(contingency.core)
@@ -971,10 +969,6 @@ object vicarious extends Library:
   object core extends Component(rudiments.core)
   object test extends Tests(core)
 
-object villainy extends Library:
-  object core extends Component(polyvinyl.core, jacinta.core)
-  object test extends Tests(core)
-
 object wisteria extends Library:
   object core extends Component(contingency.core)
   object test extends Tests(core)
@@ -1087,16 +1081,18 @@ object publishing extends Module:
     imperial.core.publishLocal()()
     inimitable.core.publishLocal()()
     iridescence.core.publishLocal()()
+    jacinta.ast.publishLocal()()
+    jacinta.parser.publishLocal()()
     jacinta.core.publishLocal()()
     jacinta.http.publishLocal()()
     jacinta.time.publishLocal()()
     jacinta.schema.publishLocal()()
+    jacinta.records.publishLocal()()
     kaleidoscope.core.publishLocal()()
     larceny.plugin.publishLocal()()
     legerdemain.core.publishLocal()()
     mandible.core.publishLocal()()
     mercator.core.publishLocal()()
-    merino.core.publishLocal()()
     metamorphose.core.publishLocal()()
     monotonous.core.publishLocal()()
     mosquito.core.publishLocal()()
@@ -1147,7 +1143,6 @@ object publishing extends Module:
     vacuous.core.publishLocal()()
     vexillology.core.publishLocal()()
     vicarious.core.publishLocal()()
-    villainy.core.publishLocal()()
     wisteria.core.publishLocal()()
     xylophone.core.publishLocal()()
     yossarian.core.publishLocal()()

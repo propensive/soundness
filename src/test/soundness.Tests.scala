@@ -141,7 +141,7 @@ object Tests extends Suite(m"Soundness tests"):
     vexillology.Tests()
     vacuous.Tests()
     vicarious.Tests()
-    villainy.Tests()
+    jacinta.RecordsTests()
     // wisteria.Tests() - temporarily disabled
     xylophone.Tests()
     yossarian.Tests()
@@ -151,7 +151,7 @@ object Tests extends Suite(m"Soundness tests"):
 
 object FailingTests extends Suite(m"Failing tests"):
   def run(): Unit =
-    merino.Tests()
+    jacinta.ParserTests()
     satirical.Tests()
     telekinesis.Tests()
     // turbulence.Tests() - deadlock

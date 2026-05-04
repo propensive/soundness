@@ -1,4 +1,0 @@
-- reads a JSON Schema at compiletime and generates corresponding Scala structural record types
-- record types are usable and fully typesafe in downstream compilations
-- JSON Schema may originate from a file, URL, classpath or any source
-- modifications to the schema can change types in subsequent compilations
