@@ -35,7 +35,6 @@ package gossamer
 import scala.quoted.*
 
 import anticipation.*
-import contextual.*
 import denominative.*
 import fulminate.*
 import gigantism.*
@@ -51,37 +50,64 @@ import errorDiagnostics.empty
 object internal:
   private given realm: Realm = realm"go"
 
-  case class Input(txt: Text)
+  // Both `t""` and `txt""` build a Text by escape-processing each static part
+  // at compile time and converting each substitution via Showable at runtime.
+  // Only the final treatment differs: txt collapses runs of whitespace and
+  // double-newlines into single newlines for multi-line literals.
+  private def textInterpolator
+              (context:    Expr[StringContext],
+               insertions: Expr[Seq[Any]],
+               normalize:  Boolean)
+              (using Quotes)
+  :   Expr[Text] =
 
-  given showable: [value: Showable] => Insertion[Input, value] = value => Input(value.show)
-  given input: Insertion[Input, Nothing] = value => Input("".tt)
+    import quotes.reflect.*
 
-  object T extends Interpolator[Input, Text, Text]:
-    def initial: Text = anticipation.Text("")
+    val rawParts: List[String] =
+      context.value.getOrElse:
+        halt(m"the StringContext extension method parameter does not appear to be inline")
 
-    def parse(state: Text, next: Text): Text =
-      try anticipation.Text(state.s+TextEscapes.escape(next).s)
-      catch case error: EscapeError => error match
-        case EscapeError(message) => throw InterpolationError(message)
+      . parts.toList
 
-    def skip(state: Text): Text = state
-    def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
-    def complete(state: Text): Text = state
+    val escapedParts: List[String] = rawParts.map: part =>
+      try TextEscapes.escape(part.tt).s catch case error: EscapeError => error match
+        case EscapeError(msg) => halt(msg)
 
-  object Text extends Interpolator[Input, Text, Text]:
-    def initial: Text = anticipation.Text("")
+    val insertionExprs: List[Expr[Any]] = insertions.absolve match
+      case Varargs(exprs) => exprs.toList
 
-    def parse(state: Text, next: Text): Text =
-      try anticipation.Text(state.s+TextEscapes.escape(next).s)
-      catch case error: EscapeError => error match
-        case EscapeError(message) => throw InterpolationError(message)
+    val showedInsertions: List[Expr[String]] = insertionExprs.map: expr =>
+      expr.absolve match
+        case '{$value: tpe} =>
+          Expr.summon[(? >: tpe) is Showable] match
+            case Some('{$showable: Showable}) =>
+              '{$showable.text($value).s}
 
-    def skip(state: Text): Text = state
-    def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
+            case _ =>
+              halt(m"a value of ${TypeRepr.of[tpe].show} is not Showable")
 
-    def complete(state: Text): Text =
-      val array = state.s.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
+    var concatExpr: Expr[String] = Expr(escapedParts.head)
+    var i = 0
+    while i < showedInsertions.length do
+      val insertion = showedInsertions(i)
+      val nextPart = Expr(escapedParts(i + 1))
+      concatExpr = '{$concatExpr + $insertion + $nextPart}
+      i += 1
+
+    if normalize then '{
+      val array =
+        $concatExpr.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
+
       anticipation.Text(String.join("\n", array*).nn)
+    } else '{anticipation.Text($concatExpr)}
+
+
+  def t(context: Expr[StringContext], insertions: Expr[Seq[Any]]): Macro[Text] =
+    textInterpolator(context, insertions, normalize = false)
+
+
+  def txt(context: Expr[StringContext], insertions: Expr[Seq[Any]]): Macro[Text] =
+    textInterpolator(context, insertions, normalize = true)
 
   object opaques:
     opaque type Ascii = anticipation.Data
