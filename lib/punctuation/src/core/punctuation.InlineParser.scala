@@ -50,9 +50,9 @@ import vacuous.*
 
 object InlineParser:
 
-  // ASCII fast-test: bytes that need special handling in the main scan loop.
-  // Anything not in this set is plain text we can batch into the pending
-  // builder via `append(CharSequence, start, end)`.
+  // Must stay in sync with the `c match` cases in `parse` below: any character
+  // handled there must also be flagged here, otherwise it'll be silently
+  // batched as plain text.
   private val Specials: Array[Boolean] =
     val arr = new Array[Boolean](128)
     "\\&`<\n*_[!]".foreach(c => arr(c.toInt) = true)
@@ -82,7 +82,7 @@ object InlineParser:
     val list = InlineList()
     val pending = new java.lang.StringBuilder
     val brackets = mutable.Stack[BracketEntry]()
-    var delimCount = 0
+    var hasDelim = false
 
     def flushPending(): Unit =
       if pending.length > 0 then
@@ -91,7 +91,6 @@ object InlineParser:
 
     var i = 0
     while i < end do
-      // Batch plain text up to the next special char (or end).
       val plainStart = i
       while i < end && !isSpecial(s.charAt(i)) do i += 1
       if i > plainStart then pending.append(s, plainStart, i)
@@ -195,7 +194,7 @@ object InlineParser:
 
             flushPending()
             list.append(DelimData(c, length, canOpen, canClose))
-            delimCount += 1
+            hasDelim = true
             i = j
 
           case '[' =>
@@ -216,14 +215,12 @@ object InlineParser:
             i = newPos
 
           case _ =>
-            // Special-set member with no matching specific case (e.g. `!` not
-            // followed by `[`). Treat as literal text.
             pending.append(c)
             i += 1
 
     flushPending()
 
-    if delimCount > 0 then EmphasisProcessor.process(list, null)
+    if hasDelim then EmphasisProcessor.process(list, null)
     EmphasisProcessor.toProse(list)
 
   // Handle a closing `]` at source position `closePos`. Returns the new

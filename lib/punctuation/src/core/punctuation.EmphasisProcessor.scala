@@ -150,10 +150,8 @@ object EmphasisProcessor:
     || t == Character.MATH_SYMBOL
     || t == Character.OTHER_SYMBOL
 
-  // Compute can-open/can-close for a delimiter run, packed into the low two
-  // bits of an Int (bit 0 = canOpen, bit 1 = canClose). Returning a packed
-  // Int avoids a per-call `Tuple2` allocation in the inline parser's hot
-  // path, which is significant for emphasis-dense input.
+  // Result is bit-packed (bit 0 = canOpen, bit 1 = canClose) so the hot path
+  // doesn't allocate a Tuple2 per delimiter run.
   def classifyDelim(char: Char, prevChar: Char, nextChar: Char): Int =
     val left = isLeftFlanking(prevChar, nextChar)
     val right = isRightFlanking(prevChar, nextChar)
@@ -171,9 +169,9 @@ object EmphasisProcessor:
   inline def hasOpen(flags: Int): Boolean = (flags & 1) != 0
   inline def hasClose(flags: Int): Boolean = (flags & 2) != 0
 
-  // openers_bottom is conceptually a map keyed by `(char, length%3, canOpen)`
-  // → InlineNode. There are exactly 12 keys (2 chars × 3 mods × 2 booleans);
-  // a fixed Array beats a HashMap allocation per emphasis pass.
+  // openers_bottom in the spec is keyed by `(char, length%3, canOpen)`. There
+  // are exactly 12 keys (2 × 3 × 2), so a fixed Array beats a Map. Layout:
+  // [* : 0..5][_ : 6..11], stride 2 over lenMod3, +1 for canOpen.
   private inline def floorIdx
     ( inline char: Char, inline lenMod3: Int, inline canOpen: Boolean )
   :   Int =
@@ -274,9 +272,6 @@ object EmphasisProcessor:
       cur = cur.next
     builder.toSeq
 
-  // Appends the Prose representation of a single inline node to `builder`,
-  // recursing into `LinkData`/`ImageData`/`EmphasisData`/`StrongData`. Avoids
-  // the per-node `Option[Prose]` allocation that the previous `proseOf` had.
   private def appendProse(node: InlineNode, builder: mutable.ListBuffer[Prose]): Unit =
     node.data match
       case TextData(t)         => builder += Prose.Textual(t)
@@ -292,11 +287,7 @@ object EmphasisProcessor:
       case d: DelimData        => appendUnmatchedDelim(d, builder)
 
   private def appendUnmatchedDelim(d: DelimData, builder: mutable.ListBuffer[Prose]): Unit =
-    if d.length > 0 then
-      val sb = new java.lang.StringBuilder(d.length)
-      var k = 0
-      while k < d.length do { sb.append(d.char); k += 1 }
-      builder += Prose.Textual(Text(sb.toString))
+    if d.length > 0 then builder += Prose.Textual(Text(d.char.toString.repeat(d.length).nn))
 
   private def childProse(children: List[InlineNode]): Seq[Prose] =
     val builder = mutable.ListBuffer[Prose]()
