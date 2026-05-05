@@ -30,13 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package octogenarian
 
-export
-  octogenarian
-  . { Commit, Git, GitBranch, GitCommand, GitError, GitEvent, GitHash, GitPathStatus, GitProcess,
-      GitRefError, GitRepo, GitStatus, GitTag, Progress, ReflogEntry, Refspec, ResetMode, SshUrl,
-      Worktree }
+import anticipation.*
 
-package gitCommands:
-  export octogenarian.gitCommands.environmentDefault
+case class ReflogEntry
+  ( hash:      GitHash,
+    selector:  Text,
+    timestamp: Long,
+    message:   Text )

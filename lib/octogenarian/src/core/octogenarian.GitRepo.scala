@@ -185,7 +185,16 @@ case class GitRepo(gitDir: Path on Linux):
     recur(sh"$git $repoOptions log --format=raw --color=never".exec[Stream[Text]]())
 
 
-  def reflog(): Unit = ()
+  def reflog(ref: Optional[Refspec] = Unset)
+    ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
+  :   Stream[ReflogEntry] logs GitEvent =
+
+    val refArg = ref.lay(sh"") { ref => sh"$ref" }
+    val format = t"--format=%H %gd %ct %gs"
+
+    sh"$git $repoOptions reflog show $format $refArg".exec[Stream[Text]]().collect:
+      case r"$hash([a-f0-9]{40}) $selector(\S+) $time([0-9]+) $message(.*)" =>
+        ReflogEntry(GitHash.unsafe(hash), selector, time.s.toLong, message)
 
 
   def revParse(refspec: Refspec)(using GitCommand, WorkingDirectory, Tactic[ExecError])
