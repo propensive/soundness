@@ -452,7 +452,12 @@ object Xml extends Tag.Container
       case OnlyWhitespace(char) =>
         m"the character $char was found where only whitespace is permitted"
 
-  case class Position(line: Ordinal, column: Ordinal) extends Format.Position:
+  case class Position
+    ( line:                Ordinal,
+      column:              Ordinal,
+      override val offset: Optional[Int] = Unset,
+      override val length: Optional[Int] = Unset )
+  extends Format.Position:
     def describe: Text = t"line ${line.n1}, column ${column.n1}"
 
   enum Hole:

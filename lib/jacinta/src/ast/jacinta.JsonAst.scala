@@ -42,7 +42,12 @@ import zephyrine.*
 object JsonAst extends Format:
   def name: Text = "JSON"
 
-  case class Position(line: Int, column: Int) extends Format.Position:
+  case class Position
+    ( line:                Int,
+      column:              Int,
+      override val offset: Optional[Int] = Unset,
+      override val length: Optional[Int] = Unset )
+  extends Format.Position:
     def describe: Text = ("line "+line+", column "+column).tt
 
   enum Issue extends Format.Issue:
