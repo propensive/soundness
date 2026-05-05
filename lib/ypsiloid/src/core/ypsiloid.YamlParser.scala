@@ -1712,6 +1712,10 @@ private[ypsiloid] final class YamlParser:
         if next == Space || next == Tab then
           advance() // single space after `-`
           while more && (peek == Space || peek == Tab) do advance()
+          // Trailing comment after `- ` — treat as an empty same-line
+          // value, so the item is on the next more-indented line.
+          if more && peek == Hash then
+            while more && peek != Newline do advance()
           if more && peek == Newline then
             advance()
             skipBlankAndCommentLines()
@@ -1828,6 +1832,10 @@ private[ypsiloid] final class YamlParser:
   :   (YamlAst, YamlAst) =
     advance() // ?
     while more && (peek == Space || peek == Tab) do advance()
+    // Trailing comment on the `?` marker line — consume so the parse
+    // continues on the next line as if the marker stood alone.
+    if more && peek == Hash then
+      while more && peek != Newline do advance()
     val key: YamlAst =
       if !more || peek == Newline then
         // Key on a more-indented next line, or — per spec 8.2.2 — a
