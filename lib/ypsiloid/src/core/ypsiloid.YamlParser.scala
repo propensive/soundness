@@ -254,9 +254,12 @@ private[ypsiloid] final class YamlParser:
     skipBom()
 
     var continue = true
+    var firstDoc = true
     while continue do
       skipBlankAndCommentLines()
       val explicitStart = consumeOptionalDocumentStart()
+      if !firstDoc && more && !explicitStart && !atDocumentBoundary then
+        fail(t"missing '---' between documents")
       // After a `---` marker we may be on the same line as the body;
       // otherwise the body is on a fresh line whose leading whitespace
       // determines the indent.
@@ -282,6 +285,7 @@ private[ypsiloid] final class YamlParser:
           docs.append(node)
           skipBlankAndCommentLines()
           consumeOptionalDocumentEnd()
+          firstDoc = false
 
     docs.toList
 
