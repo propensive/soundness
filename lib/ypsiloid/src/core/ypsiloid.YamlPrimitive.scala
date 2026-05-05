@@ -32,5 +32,11 @@
                                                                                                   */
 package ypsiloid
 
+import fulminate.*
+import spectacular.*
+
+object YamlPrimitive:
+  given communicable: YamlPrimitive is Communicable = primitive => Message(primitive.show)
+
 enum YamlPrimitive:
   case Null, Bool, Integer, Decimal, Str, Sequence, Mapping
