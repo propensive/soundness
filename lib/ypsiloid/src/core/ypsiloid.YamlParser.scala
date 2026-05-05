@@ -353,7 +353,10 @@ private[ypsiloid] final class YamlParser:
       while more && (peek == Space || peek == Tab) do advance()
       val argStart = pos
       while more && peek != Newline do advance()
-      val argText = new String(bytes, argStart, pos - argStart).trim.nn
+      val rawArgs = new String(bytes, argStart, pos - argStart)
+      val hashIdx = rawArgs.indexOf(" #")
+      val argText =
+        (if hashIdx >= 0 then rawArgs.substring(0, hashIdx).nn else rawArgs).trim.nn
       if more then advance() // newline
       sawAny = true
       name match
@@ -549,15 +552,21 @@ private[ypsiloid] final class YamlParser:
           if !tagText.nil then fail(t"duplicate tag on a single node")
           val mk = begin()
           advance()
-          if more && peek == Bang then advance()
-          // Tag chars exclude flow-indicator bytes (the spec's URI
-          // production explicitly forbids them inside tag handles
-          // and shorthand tags).
-          while more && !isWhitespaceOrEnd(peek)
-                    && peek != Comma && peek != OpenBracket
-                    && peek != CloseBracket && peek != OpenBrace
-                    && peek != CloseBrace do
+          if more && peek == OpenAngle then
+            // Verbatim URI tag: !<...>. The URI may legally contain
+            // commas and other bytes that we exclude from short-form
+            // tag handles, so read everything up to the closing `>`.
             advance()
+            while more && peek != CloseAngle && peek != Newline do advance()
+            if more && peek == CloseAngle then advance()
+            else fail(t"unterminated verbatim tag")
+          else
+            if more && peek == Bang then advance()
+            while more && !isWhitespaceOrEnd(peek)
+                      && peek != Comma && peek != OpenBracket
+                      && peek != CloseBracket && peek != OpenBrace
+                      && peek != CloseBrace do
+              advance()
           tagText = slice(mk).tt
           skipSpaces()
 
@@ -1506,18 +1515,96 @@ private[ypsiloid] final class YamlParser:
     else
       parsePlainOrBlockMapping(indent)
 
-  // Caller has seen a `?` at node-head: we treat this as a `complex key`
-  // request only when the byte after `?` is whitespace or end-of-input.
-  // `?foo` (no separator) is a plain scalar starting with `?`.
+  // Caller has seen a `?` at node-head. When followed by whitespace or
+  // end-of-input, this is an explicit-key indicator: set up a block
+  // mapping at `indent`, read the first pair, then iterate. `?foo` (no
+  // separator) is just a plain scalar starting with `?`.
   private def parseQuestion(indent: Int)(using Tactic[YamlError]): YamlAst =
-    val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
-    if nextByte == Space || nextByte == Tab || nextByte == Newline
-            || nextByte == Return || nextByte == -1 then
-      advance()
-      skipSpaces()
-      parseNodeHere(indent)
-    else
-      parsePlainOrBlockMapping(indent)
+    if isExplicitKeyIndicator then
+      val buf = acquireBuffer()
+      val savedParentIndent = blockParentIndent
+      blockParentIndent = indent
+      val (firstKey, firstValue) = readExplicitPair(indent)
+      buf += firstKey
+      buf += firstValue
+      iterateBlockMapping(buf, indent)
+      val result = sealMapping(buf)
+      releaseBuffer()
+      blockParentIndent = savedParentIndent
+      result
+    else parsePlainOrBlockMapping(indent)
+
+  // Iteration body shared by parseBlockMappingFromFirstKey (after its
+  // first pair has been added) and parseBlockMappingFromExplicitKey.
+  // Walks subsequent block-mapping pairs at `indent`, supporting both
+  // explicit (`? key`) and implicit (`key:`) keys.
+  private def iterateBlockMapping
+                ( buf: scala.collection.mutable.ArrayBuffer[Any], indent: Int )
+                ( using Tactic[YamlError] )
+  :   Unit =
+    var done = false
+    while !done do
+      skipBlankAndCommentLines()
+      val lineStart = pos
+      val nextIndent = consumeLeadingSpaces()
+      if more && peek == Tab then fail(t"tab character used in indentation")
+      if nextIndent != indent then
+        pos = lineStart
+        done = true
+      else if !more then done = true
+      else if atDocumentBoundary then
+        pos = lineStart
+        done = true
+      else if isExplicitKeyIndicator then
+        val (key, value) = readExplicitPair(indent)
+        buf += key
+        buf += value
+      else
+        consumeNodePrefixes()
+        val keyAnchor = prefixAnchor
+        val keyTag    = prefixTag
+        val rawKey: YamlAst = prefixHeadByte match
+          case Quote =>
+            advance()
+            val s = parseDoubleQuoted()
+            if lastScalarSpannedLines then
+              fail(t"implicit mapping key cannot span multiple lines")
+            s
+          case Apostrophe =>
+            advance()
+            val s = parseSingleQuoted()
+            if lastScalarSpannedLines then
+              fail(t"implicit mapping key cannot span multiple lines")
+            s
+          case Star =>
+            if !keyAnchor.nil then fail(t"anchor on alias node")
+            advance()
+            parseAlias()
+          case OpenBracket =>
+            advance()
+            parseFlowSequence()
+          case OpenBrace =>
+            advance()
+            parseFlowMapping()
+          case _ =>
+            val keyText = readPlainScalarText(indent)
+            if !sawMappingColon then
+              fail(t"plain scalar at mapping indent without ':'")
+            if lastScalarSpannedLines then
+              fail(t"implicit mapping key cannot span multiple lines")
+            resolvePlainScalar(keyText)
+        val tagged = if keyTag.nil then rawKey else applyTag(keyTag, rawKey)
+        val keyAst =
+          if keyAnchor.nil then tagged
+          else
+            anchors.update(keyAnchor.s, tagged)
+            tagged
+        skipSpaces()
+        if !more || peek != Colon then fail(t"expected ':' after mapping key")
+        advance()
+        val value = parseMappingValue(indent)
+        buf += keyAst
+        buf += value
 
   private def parseBlockSequence(indent: Int)(using Tactic[YamlError]): YamlAst =
     val buf = acquireBuffer()
@@ -1628,77 +1715,54 @@ private[ypsiloid] final class YamlParser:
     val firstValue = parseMappingValue(indent)
     buf += firstKey
     buf += firstValue
-
-    var done = false
-    while !done do
-      skipBlankAndCommentLines()
-      val lineStart = pos
-      val nextIndent = consumeLeadingSpaces()
-      if more && peek == Tab then fail(t"tab character used in indentation")
-      if nextIndent != indent then
-        pos = lineStart
-        done = true
-      else if !more then done = true
-      else if atDocumentBoundary then
-        pos = lineStart
-        done = true
-      else
-        // The next key may carry its own anchor/tag prefix and may be
-        // plain, double-quoted, or single-quoted.
-        consumeNodePrefixes()
-        val keyAnchor = prefixAnchor
-        val keyTag    = prefixTag
-        val rawKey: YamlAst = prefixHeadByte match
-          case Quote =>
-            advance()
-            val s = parseDoubleQuoted()
-            if lastScalarSpannedLines then
-              fail(t"implicit mapping key cannot span multiple lines")
-            s
-          case Apostrophe =>
-            advance()
-            val s = parseSingleQuoted()
-            if lastScalarSpannedLines then
-              fail(t"implicit mapping key cannot span multiple lines")
-            s
-          case Star =>
-            if !keyAnchor.nil then fail(t"anchor on alias node")
-            advance()
-            parseAlias()
-          case OpenBracket =>
-            advance()
-            parseFlowSequence()
-          case OpenBrace =>
-            advance()
-            parseFlowMapping()
-          case _ =>
-            val keyText = readPlainScalarText(indent)
-            if !sawMappingColon then
-              fail(t"plain scalar at mapping indent without ':'")
-            if lastScalarSpannedLines then
-              fail(t"implicit mapping key cannot span multiple lines")
-            resolvePlainScalar(keyText)
-        val tagged = if keyTag.nil then rawKey else applyTag(keyTag, rawKey)
-        val keyAst =
-          if keyAnchor.nil then tagged
-          else
-            anchors.update(keyAnchor.s, tagged)
-            tagged
-        // For quoted keys, sawMappingColon wasn't set during reading —
-        // skip whitespace and require an explicit `:` here. For plain
-        // keys, sawMappingColon was true so the parser is already at
-        // the colon.
-        skipSpaces()
-        if !more || peek != Colon then fail(t"expected ':' after mapping key")
-        advance()
-        val value = parseMappingValue(indent)
-        buf += keyAst
-        buf += value
-
+    iterateBlockMapping(buf, indent)
     val result = sealMapping(buf)
     releaseBuffer()
     blockParentIndent = savedParentIndent
     result
+
+  // True when the cursor is at a `?` indicator that introduces an
+  // explicit mapping key (followed by space/tab/newline/EOF).
+  private inline def isExplicitKeyIndicator: Boolean =
+    more && peek == Question && {
+      val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+      nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
+    }
+
+  // Read an explicit `? key\n[: value]` pair. The cursor is positioned
+  // at `?`. The key may be on the same line as `?` or on a subsequent
+  // indented line; the matching `:` value indicator must appear at the
+  // mapping's indent and may be absent (yielding a Null value).
+  private def readExplicitPair(indent: Int)(using Tactic[YamlError])
+  :   (YamlAst, YamlAst) =
+    advance() // ?
+    while more && (peek == Space || peek == Tab) do advance()
+    val key: YamlAst =
+      if !more || peek == Newline then
+        // Key on a more-indented next line.
+        if more then advance()
+        skipBlankAndCommentLines()
+        val keyLineStart = pos
+        val keyIndent = consumeLeadingSpaces()
+        if keyIndent <= indent then
+          pos = keyLineStart
+          YamlAst.Null
+        else parseNodeHere(keyIndent)
+      else parseNodeHere(indent + 2)
+    skipBlankAndCommentLines()
+    val markerLineStart = pos
+    val markerIndent = consumeLeadingSpaces()
+    val value: YamlAst =
+      if markerIndent == indent && more && peek == Colon && {
+        val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+        nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
+      } then
+        advance()
+        parseMappingValue(indent)
+      else
+        pos = markerLineStart
+        YamlAst.Null
+    (key, value)
 
   // Parse the value side of a `key: VALUE` entry. Either inline (after
   // the colon, on the same line) or a block on the next indented lines.
