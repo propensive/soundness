@@ -55,7 +55,10 @@ object Timezone:
       raise(TimezoneError(name)) yet new Timezone(ids.head)
 
   given interpolable: Timezone is Interpolable:
-    inline def interpolate[parts <: Tuple](inline insertions: Any*): Timezone =
+    inline def interpolate[parts <: Tuple, origins <: Tuple]
+      (inline insertions: Any*)
+    :   Timezone =
+
       ${aviation.internal.tzInterpolator[parts]('insertions)}
 
 case class Timezone private(name: Text) extends Findable:

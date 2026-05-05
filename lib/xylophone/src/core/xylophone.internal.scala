@@ -51,7 +51,10 @@ import stenography.*
 import vacuous.*
 
 object internal:
-  def extractor[parts <: Tuple: Type](scrutinee: Expr[Xml]): Macro[Extrapolation[Xml]] =
+  def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
+    (scrutinee: Expr[Xml])
+  :   Macro[Extrapolation[Xml]] =
+
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
@@ -312,7 +315,9 @@ object internal:
             case '[type result <: Tuple; result] =>
               '{$result.asInstanceOf[Option[result]]}
 
-  def interpolator[parts <: Tuple: Type](insertions0: Expr[Seq[Any]]): Macro[Xml] =
+  def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
+    (insertions0: Expr[Seq[Any]])
+  :   Macro[Xml] =
     import quotes.reflect.*
     import Xml.Hole
 

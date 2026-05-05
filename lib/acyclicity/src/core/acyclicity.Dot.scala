@@ -57,7 +57,10 @@ object Dot:
     def apply(key: Text): Ref = Ref(Id(key))
 
     given interpolable: Ref is Interpolable:
-      inline def interpolate[parts <: Tuple](inline insertions: Any*): Ref =
+      inline def interpolate[parts <: Tuple, origins <: Tuple]
+        (inline insertions: Any*)
+      :   Ref =
+
         ${acyclicity.internal.refInterpolator[parts]('insertions)}
 
   case class Ref(id: Id, port: Option[Attachment] = None):
