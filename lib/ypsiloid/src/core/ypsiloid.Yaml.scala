@@ -37,11 +37,9 @@ import scala.compiletime.*
 
 import anticipation.*
 import contingency.*
-import denominative.*
 import distillate.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
@@ -77,65 +75,51 @@ object Yaml extends Yaml2:
 
   given yaml: Yaml is Decodable in Yaml = identity(_)
 
+  private inline def expect[result]
+    ( yaml: Yaml, expected: YamlPrimitive )
+    ( default: => result )
+    ( handler: PartialFunction[YamlAst, result] )
+    ( using Tactic[YamlError] )
+  :   result =
+
+    handler.applyOrElse(yaml.root, other =>
+      raise(YamlError(Reason.NotType(primitive(other), expected))) yet default)
+
   given int: Tactic[YamlError] => Int is Decodable in Yaml = yaml =>
-    yaml.root match
+    expect(yaml, YamlPrimitive.Integer)(0):
       case YamlAst.Integer(value) => value.toInt
       case YamlAst.Decimal(value) => value.toInt
 
-      case other =>
-        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Integer))) yet 0
-
   given long: Tactic[YamlError] => Long is Decodable in Yaml = yaml =>
-    yaml.root match
+    expect(yaml, YamlPrimitive.Integer)(0L):
       case YamlAst.Integer(value) => value
       case YamlAst.Decimal(value) => value.toLong
 
-      case other =>
-        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Integer))) yet 0L
-
   given double: Tactic[YamlError] => Double is Decodable in Yaml = yaml =>
-    yaml.root match
+    expect(yaml, YamlPrimitive.Decimal)(0.0):
       case YamlAst.Decimal(value) => value
       case YamlAst.Integer(value) => value.toDouble
 
-      case other =>
-        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Decimal))) yet 0.0
-
   given float: Tactic[YamlError] => Float is Decodable in Yaml = yaml =>
-    yaml.root match
+    expect(yaml, YamlPrimitive.Decimal)(0.0f):
       case YamlAst.Decimal(value) => value.toFloat
       case YamlAst.Integer(value) => value.toFloat
 
-      case other =>
-        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Decimal))) yet 0.0f
-
   given boolean: Tactic[YamlError] => Boolean is Decodable in Yaml = yaml =>
-    yaml.root match
+    expect(yaml, YamlPrimitive.Bool)(false):
       case YamlAst.Bool(value) => value
 
-      case other =>
-        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Bool))) yet false
-
   given text: Tactic[YamlError] => Text is Decodable in Yaml = yaml =>
-    yaml.root match
+    expect(yaml, YamlPrimitive.Str)(t""):
       case YamlAst.Str(value) => value
 
-      case other =>
-        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Str))) yet t""
-
   given string: Tactic[YamlError] => String is Decodable in Yaml = yaml =>
-    yaml.root match
+    expect(yaml, YamlPrimitive.Str)(""):
       case YamlAst.Str(value) => value.s
 
-      case other =>
-        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Str))) yet ""
-
   given unit: Tactic[YamlError] => Unit is Decodable in Yaml = yaml =>
-    yaml.root match
+    expect(yaml, YamlPrimitive.Null)(()):
       case YamlAst.Null => ()
-
-      case other =>
-        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Null)))
 
   given iterable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
@@ -178,35 +162,10 @@ object Yaml extends Yaml2:
     text => Yaml(YamlParser.parse(text))
 
   def parseAll(input: Text)(using Tactic[YamlError]): List[Yaml] =
-    val documents = scala.collection.mutable.ArrayBuffer[Yaml]()
-    val current = scala.collection.mutable.ArrayBuffer[String]()
+    YamlParser.parseAll(input).map(Yaml(_))
 
-    def flush(): Unit =
-      if current.exists(line => line.nn.trim.nn.nonEmpty) then
-        documents.append(Yaml(YamlParser.parse(Text(current.mkString("\n")))))
-      current.clear()
-
-    val lines = input.s.split("\n", -1).nn
-    var index = 0
-    while index < lines.length do
-      val line = lines(index).nn
-      val trimmed = line.trim.nn
-      if trimmed == "---" || trimmed == "..." then flush()
-      else current.append(line)
-      index += 1
-
-    flush()
-    documents.toList
-
-  given aggregable: Tactic[YamlError] => Yaml is Aggregable by Text = source0 =>
-    var source = source0
-    val builder = new StringBuilder()
-
-    while !source.nil do
-      builder.append(source.head.s)
-      source = source.tail
-
-    Yaml(YamlParser.parse(builder.toString.tt))
+  given aggregable: Tactic[YamlError] => Yaml is Aggregable by Text =
+    summon[Text is Aggregable by Text].map(text => Yaml(YamlParser.parse(text)))
 
   def primitive(ast: YamlAst): YamlPrimitive = ast match
     case YamlAst.Null        => YamlPrimitive.Null

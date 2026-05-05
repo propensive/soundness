@@ -43,6 +43,24 @@ object YamlParser:
 
   def parse(input: Text)(using Tactic[YamlError]): YamlAst = new YamlParser().parse(input)
 
+  def parseAll(input: Text)(using Tactic[YamlError]): List[YamlAst] =
+    splitDocuments(input.s).map(doc => new YamlParser().parse(Text(doc)))
+
+  private def splitDocuments(input: String): List[String] =
+    val docs = scala.collection.mutable.ArrayBuffer[String]()
+    val current = scala.collection.mutable.ArrayBuffer[String]()
+
+    def flush(): Unit =
+      if current.exists(_.trim.nn.nonEmpty) then docs.append(current.mkString("\n"))
+      current.clear()
+
+    for raw <- input.split("\n", -1).nn do
+      val line = raw.nn
+      if line.trim.nn == "---" || line.trim.nn == "..." then flush() else current.append(line)
+
+    flush()
+    docs.toList
+
 class YamlParser(using Tactic[YamlError]):
   import YamlParser.Line
 
@@ -82,9 +100,9 @@ class YamlParser(using Tactic[YamlError]):
         anchors.update(name, value)
         value
       else if isBlockSequenceItem(head.content) then
-        parseBlockSequence(lines, head.indent)
+        parseBlockSequence(lines)
       else if isBlockMappingHead(head.content) then
-        parseBlockMapping(lines, head.indent)
+        parseBlockMapping(lines)
       else if isBlockScalarIndicator(head.content) && lines.tail.nonEmpty then
         parseBlockScalar(head.content, lines.tail)
       else if lines.lengthCompare(1) == 0 then
@@ -133,37 +151,48 @@ class YamlParser(using Tactic[YamlError]):
 
       YamlAst.Str(Text(builder.toString))
 
-  private def parseBlockSequence(lines: List[Line], baseIndent: Int): YamlAst =
+  private def parseBlockSequence(lines: List[Line]): YamlAst =
+    val baseIndent = lines.head.indent
     val items = scala.collection.mutable.ArrayBuffer[YamlAst]()
-    val rest = scala.collection.mutable.ArrayBuffer[Line]().addAll(lines)
+    var rest: List[Line] = lines
 
     def headIsItem: Boolean =
       rest.nonEmpty && rest.head.indent == baseIndent && isBlockSequenceItem(rest.head.content)
 
     while headIsItem do
-      val first = rest.remove(0)
-      val itemLines = scala.collection.mutable.ArrayBuffer[Line]()
+      val first = rest.head
+      rest = rest.tail
       val firstContent = if first.content == "-" then "" else first.content.substring(2).nn
+      val itemLines = scala.collection.mutable.ArrayBuffer[Line]()
 
       if firstContent.nonEmpty then itemLines.append(Line(0, firstContent))
 
       while rest.nonEmpty && rest.head.indent > baseIndent do
-        val continuation = rest.remove(0)
-        itemLines.append(Line(continuation.indent - baseIndent - 2, continuation.content))
+        itemLines.append(Line(rest.head.indent - baseIndent - 2, rest.head.content))
+        rest = rest.tail
 
       items.append(parseBlock(itemLines.toList))
 
     YamlAst.Sequence(IArray.from(items))
 
-  private def parseBlockMapping(lines: List[Line], baseIndent: Int): YamlAst =
+  private def parseBlockMapping(lines: List[Line]): YamlAst =
+    val baseIndent = lines.head.indent
     val entries = scala.collection.mutable.ArrayBuffer[(YamlAst, YamlAst)]()
-    val rest = scala.collection.mutable.ArrayBuffer[Line]().addAll(lines)
+    var rest: List[Line] = lines
+
+    def gatherContinuation(): List[Line] =
+      val buffer = scala.collection.mutable.ArrayBuffer[Line]()
+      while rest.nonEmpty && rest.head.indent > baseIndent do
+        buffer.append(rest.head)
+        rest = rest.tail
+      buffer.toList
 
     def headIsEntry: Boolean =
       rest.nonEmpty && rest.head.indent == baseIndent && isBlockMappingHead(rest.head.content)
 
     while headIsEntry do
-      val line = rest.remove(0)
+      val line = rest.head
+      rest = rest.tail
       val colon = findTopLevelColon(line.content)
       val keyText = line.content.substring(0, colon).nn.trim.nn
 
@@ -177,23 +206,17 @@ class YamlParser(using Tactic[YamlError]):
         isBareAnchor(inline) && rest.nonEmpty && rest.head.indent > baseIndent
 
       if bareAnchorWithBlock then
-        val name = inline.substring(1).nn
-        val valueLines = scala.collection.mutable.ArrayBuffer[Line]()
-        while rest.nonEmpty && rest.head.indent > baseIndent do
-          valueLines.append(rest.remove(0))
-        val value = parseBlock(valueLines.toList)
-        anchors.update(name, value)
+        val value = parseBlock(gatherContinuation())
+        anchors.update(inline.substring(1).nn, value)
         entries.append((key, value))
       else if inline.nonEmpty && !isBlockScalarIndicator(inline) then
         entries.append((key, parseTrimmed(inline)))
       else
-        val valueLines = scala.collection.mutable.ArrayBuffer[Line]()
-        while rest.nonEmpty && rest.head.indent > baseIndent do
-          valueLines.append(rest.remove(0))
+        val valueLines = gatherContinuation()
 
         val value =
-          if inline.isEmpty then parseBlock(valueLines.toList)
-          else parseBlockScalar(inline, valueLines.toList)
+          if inline.isEmpty then parseBlock(valueLines)
+          else parseBlockScalar(inline, valueLines)
 
         entries.append((key, value))
 
