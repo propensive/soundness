@@ -138,6 +138,7 @@ private[ypsiloid] final class YamlParser:
     lastScalarSpannedLines = false
     lastNodeHadAnchor = false
     inInlineMappingValue = false
+    onDocStartLine = false
     anchors.clear()
 
   // ── Substrate ────────────────────────────────────────────────────────────
@@ -261,6 +262,7 @@ private[ypsiloid] final class YamlParser:
       // After a `---` marker we may be on the same line as the body;
       // otherwise the body is on a fresh line whose leading whitespace
       // determines the indent.
+      val sameLineAsMarker = explicitStart && more && peek != Newline
       if !explicitStart || (more && peek == Newline) then
         if more && peek == Newline then advance()
         skipBlankAndCommentLines()
@@ -279,7 +281,13 @@ private[ypsiloid] final class YamlParser:
           if explicitStart then docs.append(YamlAst.Null)
           consumeOptionalDocumentEnd()
         else
+          // If `---` was consumed and content is on the same line, the
+          // node may not be a block mapping — only a single inline node
+          // (scalar / flow / quoted).
+          val savedOnDocStart = onDocStartLine
+          onDocStartLine = sameLineAsMarker
           val node = parseNode(indent)
+          onDocStartLine = savedOnDocStart
           docs.append(node)
           skipBlankAndCommentLines()
           consumeOptionalDocumentEnd()
@@ -580,6 +588,8 @@ private[ypsiloid] final class YamlParser:
         val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
         if nextByte == Space || nextByte == Tab || nextByte == Newline
                 || nextByte == Return || nextByte == -1 then
+          if onDocStartLine then
+            fail(t"block mapping cannot start on the document-start line")
           if inInlineMappingValue then
             fail(t"chained mapping value not allowed on a single line")
           if lastScalarSpannedLines then
@@ -627,12 +637,20 @@ private[ypsiloid] final class YamlParser:
   // inside a flow collection.
   private var flowParentIndent: Int = -1
 
+  // True while the current node is being parsed on the same line as
+  // a document-start `---` marker. Inline scalars are valid there but
+  // a block mapping (i.e. the marker line ending up as the first key
+  // of an implicit mapping) is not.
+  private var onDocStartLine: Boolean = false
+
   private def parsePlainOrBlockMapping
                 ( indent: Int, headTag: Text = t"", headAnchor: Text = t"" )
                 ( using Tactic[YamlError] )
   :   YamlAst =
     val textValue = readPlainScalarText(indent)
     if sawMappingColon then
+      if onDocStartLine then
+        fail(t"block mapping cannot start on the document-start line")
       if inInlineMappingValue then
         fail(t"chained mapping value not allowed on a single line")
       if lastScalarSpannedLines then
@@ -1413,6 +1431,15 @@ private[ypsiloid] final class YamlParser:
     val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
     if nextByte == Space || nextByte == Tab || nextByte == Newline
             || nextByte == Return || nextByte == -1 then
+      // The `-` is a block-sequence indicator only at line-start, or
+      // preceded by another `-` indicator + space (compact nested seq
+      // pattern `- - x`). Walking back over space/tab and landing on
+      // a newline or another `-` is the allowed shape.
+      var j = pos - 1
+      while j >= 0 && (bytes(j) == Space || bytes(j) == Tab) do j -= 1
+      val ok = j < 0 || bytes(j) == Newline || bytes(j) == Return
+                     || bytes(j) == Minus
+      if !ok then fail(t"block-sequence indicator must start its line")
       parseBlockSequence(indent)
     else
       parsePlainOrBlockMapping(indent)
@@ -1792,8 +1819,12 @@ private[ypsiloid] final class YamlParser:
             pos = lineStart
             done = true
           else
+            // A line whose first content byte is a tab is "more
+            // indented" in folded mode (the tab counts as additional
+            // leading whitespace beyond baseIndent), so its line break
+            // is preserved verbatim instead of being folded.
             val curType =
-              if spaces > baseIndent then BlockLineType.MoreIndented
+              if spaces > baseIndent || peek == Tab then BlockLineType.MoreIndented
               else BlockLineType.Regular
             if literal then
               // Trailing-terminator scheme.
