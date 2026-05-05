@@ -37,7 +37,6 @@ import scala.compiletime.*
 import ambience.*
 import anticipation.*
 import contingency.*
-import denominative.*
 import distillate.*
 import fulminate.*
 import galilei.*
@@ -76,7 +75,29 @@ object Git:
 
   def init
     [ path: Abstractable across Paths to Text ]
-    ( targetPath: path, bare: Boolean = false )
+    ( targetPath: path )
+    ( using WorkingDirectory,
+            Tactic[GitError],
+            (Path on Linux) is Decodable in Text,
+            Tactic[ExecError] )
+    ( using command: GitCommand )
+  :   Worktree logs GitEvent raises NameError =
+
+    try
+      throwErrors[PathError | IoError]:
+        val target: Path on Linux = targetPath.generic.decode[Path on Linux]
+        sh"$command init $target".exec[Exit]()
+
+        Worktree(GitRepo(target/".git"), target)
+
+    catch
+      case error: PathError => abort(GitError(InvalidRepoPath))
+      case error: IoError   => abort(GitError(InvalidRepoPath))
+
+
+  def initBare
+    [ path: Abstractable across Paths to Text ]
+    ( targetPath: path )
     ( using WorkingDirectory,
             Tactic[GitError],
             (Path on Linux) is Decodable in Text,
@@ -86,11 +107,10 @@ object Git:
 
     try
       throwErrors[PathError | IoError]:
-        val bareOpt = if bare then sh"--bare" else sh""
         val target: Path on Linux = targetPath.generic.decode[Path on Linux]
-        sh"$command init $bareOpt $target".exec[Exit]()
+        sh"$command init --bare $target".exec[Exit]()
 
-        if bare then GitRepo(target, Unset) else GitRepo(target/".git", target)
+        GitRepo(target)
 
     catch
       case error: PathError => abort(GitError(InvalidRepoPath))
@@ -105,7 +125,7 @@ object Git:
             Tactic[GitError],
             Tactic[ExecError],
             WorkingDirectory )
-  :   GitProcess[GitRepo] logs GitEvent raises NameError =
+  :   GitProcess[Worktree] logs GitEvent raises NameError =
 
     val sourceText = inline source match
       case source: SshUrl => source.text
@@ -121,9 +141,30 @@ object Git:
   inline def clone[source <: Matchable, path: Abstractable across Paths to Text]
     ( source:     source,
       targetPath: path,
-      bare:       Boolean             = false,
       branch:     Optional[GitBranch] = Unset,
       recursive:  Boolean             = false )
+    ( using Internet,
+            WorkingDirectory,
+            (Path on Linux) is Decodable in Text,
+            Tactic[ExecError],
+            GitCommand )
+  :   GitProcess[Worktree] logs GitEvent raises PathError raises NameError raises GitError =
+
+    val sourceText = inline source match
+      case source: SshUrl => source.text
+
+      case other =>
+        summonFrom:
+          case given (`source` is Abstractable across Urls to Text)  => source.generic
+          case given (`source` is Abstractable across Paths to Text) => source.generic
+
+    uncheckedClone(sourceText, targetPath, branch, recursive)
+
+
+  inline def cloneBare[source <: Matchable, path: Abstractable across Paths to Text]
+    ( source:     source,
+      targetPath: path,
+      branch:     Optional[GitBranch] = Unset )
     ( using Internet,
             WorkingDirectory,
             (Path on Linux) is Decodable in Text,
@@ -139,7 +180,7 @@ object Git:
           case given (`source` is Abstractable across Urls to Text)  => source.generic
           case given (`source` is Abstractable across Paths to Text) => source.generic
 
-    uncheckedClone(sourceText, targetPath, bare, branch, recursive)
+    uncheckedCloneBare(sourceText, targetPath, branch)
 
 
   private def uncheckedCloneCommit[path: Abstractable across Paths to Text]
@@ -148,23 +189,55 @@ object Git:
     ( using gitError:         Tactic[GitError],
             exec:             Tactic[ExecError],
             workingDirectory: WorkingDirectory )
-  :   GitProcess[GitRepo] logs GitEvent raises NameError =
+  :   GitProcess[Worktree] logs GitEvent raises NameError =
 
-    val gitRepo = init(targetPath)
-    val fetch = gitRepo.fetch(1, source, commit)
+    val worktree = init(targetPath)
+    val fetch = worktree.repo.fetch(1, source, commit)
 
     GitProcess(fetch.progress):
       fetch.complete()
-      gitRepo.checkout(commit)
-      gitRepo
+      worktree.checkout(commit)
+      worktree
 
 
   private def uncheckedClone[path: Abstractable across Paths to Text]
     ( source:     Text,
       targetPath: path,
-      bare:       Boolean,
       branch:     Optional[GitBranch],
       recursive:  Boolean )
+    ( using Internet,
+            WorkingDirectory,
+            (Path on Linux) is Decodable in Text,
+            Tactic[ExecError],
+            GitCommand )
+    ( using gitError: Tactic[GitError] )
+  :   GitProcess[Worktree] logs GitEvent raises PathError raises NameError =
+
+    val target: Path on Linux =
+      try targetPath.generic.decode[Path on Linux]
+      catch case error: PathError => abort(GitError(InvalidRepoPath))
+
+    val branchOption = branch.lay(sh"") { branch => sh"--branch=$branch" }
+    val recursiveOption = if recursive then sh"--recursive" else sh""
+
+    val process =
+      sh"$git clone --progress $branchOption $recursiveOption $source $target"
+      . fork[Exit]()
+
+    GitProcess[Worktree](progress(process)):
+      process.await() match
+        case Exit.Ok =>
+          try throwErrors[IoError](Worktree(GitRepo((target/".git")), target))
+          catch case error: IoError => abort(GitError(CloneFailed))
+
+        case _ =>
+          abort(GitError(CloneFailed))
+
+
+  private def uncheckedCloneBare[path: Abstractable across Paths to Text]
+    ( source:     Text,
+      targetPath: path,
+      branch:     Optional[GitBranch] )
     ( using Internet,
             WorkingDirectory,
             (Path on Linux) is Decodable in Text,
@@ -177,18 +250,16 @@ object Git:
       try targetPath.generic.decode[Path on Linux]
       catch case error: PathError => abort(GitError(InvalidRepoPath))
 
-    val bareOption = if bare then sh"--bare" else sh""
     val branchOption = branch.lay(sh"") { branch => sh"--branch=$branch" }
-    val recursiveOption = if recursive then sh"--recursive" else sh""
 
     val process =
-      sh"$git clone --progress $bareOption $branchOption $recursiveOption $source $target"
+      sh"$git clone --bare --progress $branchOption $source $target"
       . fork[Exit]()
 
     GitProcess[GitRepo](progress(process)):
       process.await() match
         case Exit.Ok =>
-          try throwErrors[IoError](GitRepo((target/".git"), target))
+          try throwErrors[IoError](GitRepo(target))
           catch case error: IoError => abort(GitError(CloneFailed))
 
         case _ =>
