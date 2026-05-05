@@ -1183,14 +1183,20 @@ private[ypsiloid] final class YamlParser:
     arr.asInstanceOf[IArray[Any]].asInstanceOf[YamlAst]
 
   // Within a flow context, whitespace and newlines are insignificant
-  // separators; comments still apply.
-  private def skipFlowWhitespace(): Unit =
+  // separators; comments still apply but require leading whitespace
+  // (`a #c` is a comment after `a`; `a#c` is part of the scalar `a#c`,
+  // and `]#c` after a flow close is an error).
+  private def skipFlowWhitespace()(using Tactic[YamlError]): Unit =
     var continue = true
     while continue && more do
       val c = peek
       if c == Space || c == Tab || c == Newline || c == Return then advance()
       else if c == Hash then
-        while more && peek != Newline do advance()
+        val prev = if pos > 0 then bytes(pos - 1) else -1
+        if prev == Space || prev == Tab || prev == Newline || prev == Return then
+          while more && peek != Newline do advance()
+        else
+          fail(t"comment must be preceded by whitespace")
       else continue = false
 
   // A node within a flow context — same dispatch as parseNodeHere but
@@ -1229,6 +1235,18 @@ private[ypsiloid] final class YamlParser:
   // Plain scalar within a flow context: terminates on `,`, `]`, `}`,
   // `:`+space, newline, or hash-comment.
   private def parseFlowPlainScalar()(using Tactic[YamlError]): YamlAst =
+    // Plain scalars in flow context cannot start with `-`, `?` or
+    // `:` followed by a flow-context indicator (space, tab, comma,
+    // `]`, `}`, newline, EOF). Per spec these combinations are
+    // ambiguous with sequence/mapping shorthand.
+    if more then
+      val first = peek
+      if first == Minus || first == Question || first == Colon then
+        val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+        if next == Space || next == Tab || next == Comma
+                || next == CloseBracket || next == CloseBrace
+                || next == Newline || next == Return || next == -1 then
+          fail(t"reserved indicator at start of flow plain scalar")
     resetString()
     var done = false
     while !done && more do
