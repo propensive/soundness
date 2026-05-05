@@ -516,6 +516,15 @@ private[ypsiloid] final class YamlParser:
       i += 1
     false
 
+  // True if walking backwards from `at - 1` over space/tab bytes
+  // arrives at a newline (or start-of-input). Used to detect cases
+  // like `key\n  : value` in flow context, where `:` is on its own
+  // line — disallowed for an implicit-key construct.
+  private def newlineImmediatelyPrecedes(at: Int): Boolean =
+    var j = at - 1
+    while j >= 0 && (bytes(j) == Space || bytes(j) == Tab) do j -= 1
+    j >= 0 && bytes(j) == Newline
+
   // Read an identifier-like word (anchor or alias name).
   private def readWord(): Text =
     val mk = begin()
@@ -1119,6 +1128,7 @@ private[ypsiloid] final class YamlParser:
     while stringCursor > 0
             && (chars(stringCursor - 1) == ' ' || chars(stringCursor - 1) == '\t') do
       stringCursor -= 1
+    lastScalarSpannedLines = true
     var newlineCount = 0
     var spaces = 0
     var done = false
@@ -1164,6 +1174,8 @@ private[ypsiloid] final class YamlParser:
         // spec 7.5: `[foo: bar]` is shorthand for `[{foo: bar}]`.
         val entry =
           if more && peek == Colon then
+            if newlineImmediatelyPrecedes(pos) then
+              fail(t"implicit mapping key and `:` must be on the same line")
             advance()
             skipFlowWhitespace()
             val value =
@@ -1204,6 +1216,8 @@ private[ypsiloid] final class YamlParser:
         skipFlowWhitespace()
         val value =
           if more && peek == Colon then
+            if newlineImmediatelyPrecedes(pos) then
+              fail(t"implicit mapping key and `:` must be on the same line")
             advance()
             skipFlowWhitespace()
             if !more || peek == Comma || peek == CloseBrace then YamlAst.Null
@@ -1325,6 +1339,7 @@ private[ypsiloid] final class YamlParser:
                 || next == Newline || next == Return || next == -1 then
           fail(t"reserved indicator at start of flow plain scalar")
     resetString()
+    lastScalarSpannedLines = false
     var done = false
     while !done && more do
       // Fast-prefix ASCII run: bulk-copy bytes that are neither flow
