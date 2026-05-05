@@ -459,11 +459,6 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
       case value: String     => value.hashCode
       case value: Boolean    => value.hashCode
 
-      case value: JsonBcd =>
-        // Hash via the BigDecimal projection so a `Bcd` whose value equals a
-        // `BigDecimal` literal has a consistent hash.
-        value.value.toBigDecimal.hashCode
-
       case value: JsonArray =>
         val n = value.elements.length
         var acc = n.hashCode
@@ -473,7 +468,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           i += 1
         acc
 
-      case value: Array[Long] @unchecked =>
+      case value: Array[Double] @unchecked =>
         // Number-only array — hash each element through the same recursion
         // path so cross-form equality with `JsonArray(Long(_), …)` keeps a
         // consistent hash.
@@ -485,6 +480,12 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           acc = acc*31 ^ recur(ast.arrayElement(i))
           i += 1
         acc
+
+      case value: Array[Long] @unchecked =>
+        // High-precision number (`Bcd`) — hash via the BigDecimal
+        // projection so a Bcd whose value equals a BigDecimal literal has
+        // a consistent hash.
+        value.asInstanceOf[Bcd].toBigDecimal.hashCode
 
       case value: IArray[Any] @unchecked =>
         // Object — alternating key/value layout.
@@ -536,22 +537,16 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
       def recur(left: JsonAst, right: JsonAst): Boolean = right.asMatchable match
         case right: Long => left.asMatchable match
-          case left: Long    => left == right
-          case left: Double  => left == right
-          case left: JsonBcd => left.value.toBigDecimal == BigDecimal(right)
-          case _             => false
+          case left: Long                   => left == right
+          case left: Double                 => left == right
+          case left: Array[Long] @unchecked => left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(right)
+          case _                            => false
 
         case right: Double => left.asMatchable match
-          case left: Long    => left == right
-          case left: Double  => left == right
-          case left: JsonBcd => left.value.toBigDecimal == BigDecimal(right)
-          case _             => false
-
-        case right: JsonBcd => left.asMatchable match
-          case left: Long    => BigDecimal(left) == right.value.toBigDecimal
-          case left: Double  => BigDecimal(left) == right.value.toBigDecimal
-          case left: JsonBcd => left.value.toBigDecimal == right.value.toBigDecimal
-          case _             => false
+          case left: Long                   => left == right
+          case left: Double                 => left == right
+          case left: Array[Long] @unchecked => left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(right)
+          case _                            => false
 
         case right: String => left.asMatchable match
           case left: String => left == right
@@ -562,16 +557,27 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           case _             => false
 
         case right: JsonArray => left.asMatchable match
-          case _: JsonArray              => arrayEq(left, right.asInstanceOf[JsonAst])
-          case _: Array[Long] @unchecked => arrayEq(left, right.asInstanceOf[JsonAst])
-          case _                         => false
+          case _: JsonArray                =>
+            arrayEq(left, right.asInstanceOf[JsonAst])
+          case _: Array[Double] @unchecked =>
+            arrayEq(left, right.asInstanceOf[JsonAst])
+          case _                           => false
 
-        case right: Array[Long] @unchecked => left.asMatchable match
-          case _: JsonArray              =>
+        case right: Array[Double] @unchecked => left.asMatchable match
+          case _: JsonArray                =>
             arrayEq(left, right.asInstanceOf[JsonAst])
-          case _: Array[Long] @unchecked =>
+          case _: Array[Double] @unchecked =>
             arrayEq(left, right.asInstanceOf[JsonAst])
-          case _ => false
+          case _                           => false
+
+        case right: Array[Long] @unchecked =>
+          // High-precision number (`Bcd`).
+          val rb = right.asInstanceOf[Bcd]
+          left.asMatchable match
+            case left: Long                   => BigDecimal(left) == rb.toBigDecimal
+            case left: Double                 => BigDecimal(left) == rb.toBigDecimal
+            case left: Array[Long] @unchecked => left.asInstanceOf[Bcd].toBigDecimal == rb.toBigDecimal
+            case _                            => false
 
         case right: IArray[Any] @unchecked => left.asMatchable match
           case _: IArray[Any] @unchecked =>

@@ -117,14 +117,14 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(_ == JsonAst(4L))
 
       test(m"Parse small negative number"):
-        // Number exceeds 15 nibbles, so the parser hands back a `JsonBcd`
+        // Number exceeds 15 nibbles, so the parser hands back a `Bcd`
         // (high-precision representation) rather than a `Double`. The Bcd
         // round-trips back to the same `Double` the old fallback path used
         // to return.
         val raw =
           t"-0.000000000000000000000000000000000000000000000000000000000000000000000000000001"
           . read[JsonAst]
-        raw.asInstanceOf[JsonBcd].value.toDouble
+        raw.asInstanceOf[Bcd].toDouble
       . assert(_ == -1.0e-78)
 
       test(m"Parse 20e1"):
@@ -241,11 +241,12 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       def shape(node: Any): Any = node.asMatchable match
         case array: JsonArray =>
           array.elements.toList.map(shape)
-        case nums: Array[Long] @unchecked =>
-          // Number-only array: decode each packed element back to a JSON number.
-          nums.toList.map: packed =>
-            if CompactBcd.isFloating(packed) then CompactBcd.toDouble(packed)
-            else CompactBcd.toLong(packed).or(0L)
+        case nums: Array[Double] @unchecked =>
+          // Number-only array: recover Long for whole values, Double for the rest.
+          nums.toList.map: d =>
+            if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
+            then d.toLong
+            else d
         case obj: IArray[?] @unchecked =>
           // Object — alternating key/value.
           val raw = obj.toList
@@ -308,9 +309,9 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
     suite(m"Number-only arrays"):
       def parseRaw(text: Text): Any = JsonAst.parse(IArray.from(text.s.getBytes("UTF-8").nn))
 
-      test(m"Pure integer array uses the unboxed Array[Long] form"):
+      test(m"Pure integer array uses the unboxed Array[Double] form"):
         parseRaw(t"[1, 2, 3]").getClass.getName
-      . assert(_ == "[J")
+      . assert(_ == "[D")
 
       test(m"Pure integer array decodes back to the original numbers"):
         t"[1, 2, 3]".read[Json].as[List[Int]]
@@ -318,14 +319,14 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
 
       test(m"Decimal-only array uses the unboxed form and round-trips"):
         val raw = parseRaw(t"[1.5, 2.25, 3.125]")
-        raw.getClass.getName == "[J"
+        raw.getClass.getName == "[D"
         && JsonPrinter.print(raw.asInstanceOf[JsonAst], false) == t"[1.5,2.25,3.125]"
       . assert(identity)
 
       test(m"Exponent-bearing numbers stay in the unboxed form"):
         val raw = parseRaw(t"[1e2, 2.5e-3]")
         raw.getClass.getName
-      . assert(_ == "[J")
+      . assert(_ == "[D")
 
       test(m"Negative numbers stay in the unboxed form and round-trip"):
         t"[-1, -2, -3]".read[Json].as[List[Int]]
@@ -337,7 +338,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
 
       test(m"Single-element number array uses the unboxed form"):
         parseRaw(t"[42]").getClass.getName
-      . assert(_ == "[J")
+      . assert(_ == "[D")
 
       test(m"Non-number after numbers triggers fallback to JsonArray"):
         val raw = parseRaw(t"""[1, 2, "three"]""")
@@ -350,22 +351,24 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
           case l: Long => l == 1L
           case _       => false
 
-      test(m"Number wider than 14 nibbles triggers fallback"):
-        // 20-digit value overflows the 14-nibble compact-BCD payload.
-        val raw = parseRaw(t"[1, 12345678901234567890]")
+      test(m"Bcd-overflow number triggers fallback to JsonArray"):
+        // 16-digit value overflows the 15-nibble in-Long fast path and
+        // forces a Bcd fallback, which doesn't fit in Array[Double].
+        val raw = parseRaw(t"[1, 1234567890123456]")
         raw.isInstanceOf[JsonArray]
       . assert(identity)
 
-      test(m"Fallback retains the oversized number as JsonBcd"):
-        val raw = parseRaw(t"[1, 12345678901234567890]")
-        raw.asInstanceOf[JsonAst].arrayElement(1).isInstanceOf[JsonBcd]
+      test(m"Fallback retains the Bcd-overflow number as Bcd"):
+        val raw = parseRaw(t"[1, 1234567890123456]")
+        raw.asInstanceOf[JsonAst].arrayElement(1).isBcd
       . assert(identity)
 
-      test(m"15-nibble integer (parser fast path) still triggers fallback from compact"):
-        // 15 digits = 15 nibbles, beyond the compact-BCD's 14-nibble limit.
+      test(m"15-nibble integer (parser fast path) stays in the unboxed form"):
+        // 15 digits = 15 nibbles, fits in the in-Long fast path and in
+        // Double exactly (< 2^50).
         val raw = parseRaw(t"[1, 123456789012345]")
-        raw.isInstanceOf[JsonArray]
-      . assert(identity)
+        raw.getClass.getName
+      . assert(_ == "[D")
 
       test(m"Non-number first element keeps the boxed buffer"):
         val raw = parseRaw(t"""["a", 1, 2]""")
