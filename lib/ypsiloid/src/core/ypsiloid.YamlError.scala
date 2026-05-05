@@ -41,12 +41,13 @@ object YamlError:
       case NotType(found, expected) => m"the YAML value had type $found instead of $expected"
       case Absent                   => m"the YAML value was not present"
       case Unparseable(input)       => m"the input could not be parsed as YAML: $input"
+      case UnknownAlias(name)       => m"the alias *$name does not refer to a known anchor"
 
   enum Reason(val number: Int) extends Clarification:
     case NotType(found: YamlPrimitive, expected: YamlPrimitive) extends Reason(1)
     case Absent extends Reason(2)
     case Unparseable(input: Text) extends Reason(3)
+    case UnknownAlias(name: Text) extends Reason(4)
 
 case class YamlError(reason: YamlError.Reason)(using Diagnostics)
-extends Error(realm"yp", 1, reason.number)
-              (m"could not access the YAML value because $reason")
+extends Error(realm"yp", 1, reason.number)(m"could not access the YAML value because $reason")

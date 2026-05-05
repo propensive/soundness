@@ -33,9 +33,20 @@
 package ypsiloid
 
 import anticipation.*
+import contingency.*
+import rudiments.*
+
+import YamlError.Reason
 
 object YamlParser:
   private case class Line(indent: Int, content: String)
+
+  def parse(input: Text)(using Tactic[YamlError]): YamlAst = new YamlParser().parse(input)
+
+class YamlParser(using Tactic[YamlError]):
+  import YamlParser.Line
+
+  private val anchors = scala.collection.mutable.Map.empty[String, YamlAst]
 
   def parse(input: Text): YamlAst =
     val lines = preprocess(input.s)
@@ -64,12 +75,24 @@ object YamlParser:
     else
       val head = lines.head
 
-      if isBlockSequenceItem(head.content) then parseBlockSequence(lines, head.indent)
-      else if isBlockMappingHead(head.content) then parseBlockMapping(lines, head.indent)
-      else if isBlockScalarIndicator(head.content) && lines.tail.nonEmpty
-      then parseBlockScalar(head.content, lines.tail)
-      else if lines.lengthCompare(1) == 0 then parseTrimmed(head.content)
-      else parseTrimmed(lines.map(_.content).mkString(" ").trim.nn)
+      if isBareAnchor(head.content) then
+        val name = head.content.substring(1).nn
+        val value = if lines.tail.isEmpty then YamlAst.Null else parseBlock(lines.tail)
+        anchors.update(name, value)
+        value
+      else if isBlockSequenceItem(head.content) then
+        parseBlockSequence(lines, head.indent)
+      else if isBlockMappingHead(head.content) then
+        parseBlockMapping(lines, head.indent)
+      else if isBlockScalarIndicator(head.content) && lines.tail.nonEmpty then
+        parseBlockScalar(head.content, lines.tail)
+      else if lines.lengthCompare(1) == 0 then
+        parseTrimmed(head.content)
+      else
+        parseTrimmed(lines.map(_.content).mkString(" ").trim.nn)
+
+  private def isBareAnchor(content: String): Boolean =
+    content.length >= 2 && content.charAt(0) == '&' && !content.contains(" ")
 
   private def isBlockSequenceItem(content: String): Boolean =
     content == "-" || content.startsWith("- ")
@@ -149,8 +172,19 @@ object YamlParser:
 
       val key = parseTrimmed(keyText)
 
-      if inline.nonEmpty && !isBlockScalarIndicator(inline)
-      then entries.append((key, parseTrimmed(inline)))
+      val bareAnchorWithBlock =
+        isBareAnchor(inline) && rest.nonEmpty && rest.head.indent > baseIndent
+
+      if bareAnchorWithBlock then
+        val name = inline.substring(1).nn
+        val valueLines = scala.collection.mutable.ArrayBuffer[Line]()
+        while rest.nonEmpty && rest.head.indent > baseIndent do
+          valueLines.append(rest.remove(0))
+        val value = parseBlock(valueLines.toList)
+        anchors.update(name, value)
+        entries.append((key, value))
+      else if inline.nonEmpty && !isBlockScalarIndicator(inline) then
+        entries.append((key, parseTrimmed(inline)))
       else
         val valueLines = scala.collection.mutable.ArrayBuffer[Line]()
         while rest.nonEmpty && rest.head.indent > baseIndent do
@@ -165,6 +199,31 @@ object YamlParser:
     YamlAst.Mapping(IArray.from(entries))
 
   private def parseTrimmed(input: String): YamlAst =
+    if input.isEmpty then YamlAst.Null
+    else if input.charAt(0) == '*' then resolveAlias(input.substring(1).nn.trim.nn)
+    else if input.charAt(0) == '&' then
+      val spaceIndex = input.indexOf(' ')
+
+      if spaceIndex < 0 then
+        val name = input.substring(1).nn
+        anchors.update(name, YamlAst.Null)
+        YamlAst.Null
+      else
+        val name = input.substring(1, spaceIndex).nn
+        val value = parseTrimmedCore(input.substring(spaceIndex + 1).nn.trim.nn)
+        anchors.update(name, value)
+        value
+    else
+      parseTrimmedCore(input)
+
+  private def resolveAlias(name: String): YamlAst =
+    anchors.get(name) match
+      case Some(value) => value
+
+      case None =>
+        raise(YamlError(Reason.UnknownAlias(Text(name)))) yet YamlAst.Null
+
+  private def parseTrimmedCore(input: String): YamlAst =
     val length = input.length
 
     if length == 0 then YamlAst.Null
