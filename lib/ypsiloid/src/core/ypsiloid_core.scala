@@ -31,3 +31,9 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package ypsiloid
+
+import anticipation.*
+import contingency.*
+
+extension (text: Text)
+  def readAll[value >: Yaml <: Yaml](using Tactic[YamlError]): List[Yaml] = Yaml.parseAll(text)

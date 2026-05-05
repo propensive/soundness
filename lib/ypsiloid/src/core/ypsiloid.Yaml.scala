@@ -177,6 +177,27 @@ object Yaml extends Yaml2:
   given decodable: Tactic[YamlError] => Yaml is Decodable in Text =
     text => Yaml(YamlParser.parse(text))
 
+  def parseAll(input: Text)(using Tactic[YamlError]): List[Yaml] =
+    val documents = scala.collection.mutable.ArrayBuffer[Yaml]()
+    val current = scala.collection.mutable.ArrayBuffer[String]()
+
+    def flush(): Unit =
+      if current.exists(line => line.nn.trim.nn.nonEmpty) then
+        documents.append(Yaml(YamlParser.parse(Text(current.mkString("\n")))))
+      current.clear()
+
+    val lines = input.s.split("\n", -1).nn
+    var index = 0
+    while index < lines.length do
+      val line = lines(index).nn
+      val trimmed = line.trim.nn
+      if trimmed == "---" || trimmed == "..." then flush()
+      else current.append(line)
+      index += 1
+
+    flush()
+    documents.toList
+
   given aggregable: Tactic[YamlError] => Yaml is Aggregable by Text = source0 =>
     var source = source0
     val builder = new StringBuilder()

@@ -427,6 +427,35 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         capture[YamlError](t"a: *missing".read[Yaml].as[Map[Text, Int]])
       . assert(_ => true)
 
+    suite(m"Multi-document streams"):
+      test(m"Parse a single document with explicit start marker"):
+        t"---\n42".read[Yaml].as[Int]
+      . assert(_ == 42)
+
+      test(m"Parse a single document with start and end markers"):
+        t"---\n42\n...".read[Yaml].as[Int]
+      . assert(_ == 42)
+
+      test(m"Stream of three documents"):
+        t"---\n1\n---\n2\n---\n3".readAll[Yaml].map(_.as[Int])
+      . assert(_ == List(1, 2, 3))
+
+      test(m"Empty stream yields no documents"):
+        t"".readAll[Yaml].length
+      . assert(_ == 0)
+
+      test(m"Stream of mixed-type documents"):
+        t"---\nname: Alice\n---\n[1, 2, 3]".readAll[Yaml].length
+      . assert(_ == 2)
+
+      test(m"Single-document stream without leading separator"):
+        t"42".readAll[Yaml].map(_.as[Int])
+      . assert(_ == List(42))
+
+      test(m"Stream with trailing end marker"):
+        t"1\n---\n2\n...".readAll[Yaml].map(_.as[Int])
+      . assert(_ == List(1, 2))
+
     suite(m"Comment handling"):
       test(m"Comment after a scalar is ignored"):
         t"42 # the answer".read[Yaml].as[Int]

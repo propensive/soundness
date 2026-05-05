@@ -65,8 +65,9 @@ class YamlParser(using Tactic[YamlError]):
       var indent = 0
       while indent < rightTrimmed.length && rightTrimmed.charAt(indent) == ' ' do indent += 1
 
-      if indent < rightTrimmed.length
-      then results.append(Line(indent, rightTrimmed.substring(indent).nn))
+      if indent < rightTrimmed.length then
+        val content = rightTrimmed.substring(indent).nn
+        if content != "---" && content != "..." then results.append(Line(indent, content))
 
     results.toList
 
