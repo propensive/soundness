@@ -209,6 +209,10 @@ object ParserBenchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       bench(m"Parse file with Jackson")(target = 1*Second, operationSize = size6):
         '{ jacinta.ParserBenchmarks.parseWithJackson(jacinta.ParserBenchmarks.jsonText6) }
 
+    suite(m"Print high-precision-number AST"):
+      bench(m"Print blockchain example (50 transactions)")(target = 1*Second):
+        '{ jacinta.ParserBenchmarks.printBlockchain() }
+
   lazy val jsonText1: String = jsonExample1.s
   lazy val jsonText2: String = jsonExample2.s
   lazy val jsonText3: String = jsonExample3.s
@@ -283,6 +287,14 @@ object ParserBenchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     sb.toString.nn
 
   lazy val jsonBytes6: Data = jsonText6.getBytes("UTF-8").nn.immutable(using Unsafe)
+
+  // Pre-parsed AST of the blockchain corpus. Many of its number literals
+  // overflow the parser's 14-nibble compact-BCD path and materialise as
+  // `JsonBcd` values, so this exercises the printer's high-precision
+  // number path on a realistic input rather than a microcase.
+  lazy val blockchainAst: JsonAst = unsafely(JsonAst.parse(jsonBytes6))
+
+  def printBlockchain(): Text = JsonPrinter.print(blockchainAst, false)
 
   val jsonExample1: Text = t"""
 
