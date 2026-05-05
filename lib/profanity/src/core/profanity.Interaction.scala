@@ -37,36 +37,55 @@ import gossamer.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
-import symbolism.*
 import turbulence.*
 import vacuous.*
 
 object Interaction:
-  given selectMenu: [item: Showable] => Stdio => Interaction[item, SelectMenu[item]]:
+  given selectMenu: [item: Showable] => (terminal: Terminal) => Interaction[item, SelectMenu[item]]:
+    given Stdio = terminal.stdio
     override def before(): Unit = Out.print(t"\e[?25l")
     override def after(): Unit = Out.print(t"\e[J\e[?25h")
 
     def render(old: Optional[SelectMenu[item]], menu: SelectMenu[item]) =
-      menu.options.each: option =>
-        Out.print((if option == menu.current then t" > $option" else t"   $option")+t"\e[K\n")
-      Out.print(t"\e[${menu.options.length}A")
+      val cols = terminal.knownColumns.max(1)
+      Out.print:
+        Text.build:
+          append(t"\e[J")
+          var totalRows = 0
+          menu.options.each: option =>
+            val full = (if option == menu.current then t" > $option" else t"   $option")
+            append(full)
+            append(t"\e[E")
+            totalRows += (full.length - 1)/cols + 1
+          if totalRows > 0 then append(t"\e[${totalRows}F")
 
     def result(state: SelectMenu[item]): item = state.current
 
-  given lineEditor: Stdio => Interaction[Text, LineEditor]:
+  given lineEditor: (terminal: Terminal) => Interaction[Text, LineEditor]:
+    given Stdio = terminal.stdio
     override def after(): Unit = Out.println()
 
-    def render(editor: Optional[LineEditor], editor2: LineEditor): Unit = Out.print:
-      Text.build:
-        editor.let { editor => if editor.position > 0 then append(t"\e[${editor.position}D") }
-        append(t"\e[K")
+    def render(old: Optional[LineEditor], editor: LineEditor): Unit =
+      val cols = terminal.knownColumns.max(1)
+      val len = editor.value.length
+      val curRow = editor.position/cols
+      val curCol = editor.position%cols
 
-        val line =
-          t"${editor2.value}${t" "*(editor.or(editor2).value.length - editor2.value.length)}"
+      Out.print:
+        Text.build:
+          old.let: o =>
+            val oldRow = o.position/cols
+            if oldRow > 0 then append(t"\e[${oldRow}F") else append(t"\r")
 
-        append(line)
-        if line.length > 0 then append(t"\e[${line.length}D")
-        if editor2.position > 0 then append(t"\e[${editor2.position}C")
+          append(t"\e[J")
+          append(editor.value)
+
+          if len > 0 then
+            val printedRows = (len - 1)/cols
+            if printedRows > 0 then append(t"\e[${printedRows}F") else append(t"\r")
+
+          if curRow > 0 then append(t"\e[${curRow}B")
+          if curCol > 0 then append(t"\e[${curCol + 1}G")
 
     def result(editor: LineEditor): Text = editor.value
 
