@@ -332,7 +332,12 @@ object Conformance:
     case null              => "null"
     case b: Boolean        => b.toString
     case n: Long           => n.toString
-    case d: Double         => d.toString
+    case d: Double         =>
+      // Doubles whose value is a whole integer (e.g. 450.0 from a YAML
+      // float literal `450.00`) render in integer form to match the
+      // canonical JSON the test fixtures produce.
+      if !d.isNaN && !d.isInfinity && d == d.toLong.toDouble then d.toLong.toString
+      else d.toString
     case s: String         => "\"" + s + "\""
 
     case items: IArray[?] =>
