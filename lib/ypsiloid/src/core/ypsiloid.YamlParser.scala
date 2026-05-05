@@ -81,13 +81,39 @@ class YamlParser(using Tactic[YamlError]):
     if lines.isEmpty then YamlAst.Null else parseBlock(lines)
 
   private def preprocess(input: Text): List[Line] =
-    input.cut(t"\n", -1).flatMap: rawLine =>
+    quoteAwareLines(input).flatMap: rawLine =>
       val rightTrimmed = stripLineComment(rawLine).trim(Rtl)
       val indent = rightTrimmed.keep(_ == ' ', Ltr).length
       val content = rightTrimmed.skip(_ == ' ', Ltr)
 
       if content.nil || content == t"---" || content == t"..." then None
       else Some(Line(indent, content))
+
+  private def quoteAwareLines(input: Text): List[Text] =
+    val source = input.s
+    val lines = scala.collection.mutable.ArrayBuffer[Text]()
+    val current = new StringBuilder
+    var inSingleQuote = false
+    var inDoubleQuote = false
+    var index = 0
+
+    while index < source.length do
+      val char = source.charAt(index)
+      val escaped = index > 0 && source.charAt(index - 1) == '\\'
+
+      if char == '\'' && !inDoubleQuote then inSingleQuote = !inSingleQuote
+      else if char == '"' && !inSingleQuote && !escaped then inDoubleQuote = !inDoubleQuote
+
+      if char == '\n' && !inSingleQuote && !inDoubleQuote then
+        lines.append(current.toString.tt)
+        current.clear()
+      else
+        current.append(char)
+
+      index += 1
+
+    lines.append(current.toString.tt)
+    lines.toList
 
   private def parseBlock(lines: List[Line]): YamlAst =
     if lines.isEmpty then YamlAst.Null
@@ -405,6 +431,8 @@ class YamlParser(using Tactic[YamlError]):
       if current == '\'' && nextIsQuote then
         builder.append('\'')
         index += 2
+      else if current == '\n' then
+        index = foldLineBreaks(builder, source, index)
       else
         builder.append(current)
         index += 1
@@ -418,13 +446,39 @@ class YamlParser(using Tactic[YamlError]):
 
     while index < source.length do
       val char = source.charAt(index)
-      if char != '\\' || index + 1 >= source.length then
+      if char == '\\' && index + 1 < source.length then
+        index += appendEscape(builder, source, index)
+      else if char == '\n' then
+        index = foldLineBreaks(builder, source, index)
+      else
         builder.append(char)
         index += 1
-      else
-        index += appendEscape(builder, source, index)
 
     builder.toString.tt
+
+  private def foldLineBreaks(builder: StringBuilder, source: String, start: Int): Int =
+    var index = start
+    var newlineCount = 0
+
+    var done = false
+    while !done && index < source.length do
+      val char = source.charAt(index)
+      if char == '\n' then
+        newlineCount += 1
+        index += 1
+      else if char == ' ' || char == '\t' then
+        index += 1
+      else
+        done = true
+
+    if newlineCount == 1 then builder.append(' ')
+    else
+      var k = 1
+      while k < newlineCount do
+        builder.append('\n')
+        k += 1
+
+    index
 
   private def appendEscape(builder: StringBuilder, source: String, index: Int): Int =
     source.charAt(index + 1) match

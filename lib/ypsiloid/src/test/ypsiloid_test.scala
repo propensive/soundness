@@ -175,6 +175,34 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"\"\"".read[Yaml].as[Text]
       . assert(_ == t"")
 
+      test(m"Multi-line double-quoted string folds newline to space"):
+        t"\"first\n  second\"".read[Yaml].as[Text]
+      . assert(_ == t"first second")
+
+      test(m"Multi-line single-quoted string folds newline to space"):
+        t"'first\n  second'".read[Yaml].as[Text]
+      . assert(_ == t"first second")
+
+      test(m"Multi-line double-quoted string with three lines"):
+        t"\"a\n  b\n  c\"".read[Yaml].as[Text]
+      . assert(_ == t"a b c")
+
+      test(m"Multi-line double-quoted with empty line preserves a single newline"):
+        t"\"first\n\n  second\"".read[Yaml].as[Text]
+      . assert(_ == t"first\nsecond")
+
+      test(m"Multi-line double-quoted string with three blank lines yields two newlines"):
+        t"\"a\n\n\n  b\"".read[Yaml].as[Text]
+      . assert(_ == t"a\n\nb")
+
+      test(m"Multi-line double-quoted string as block-mapping value"):
+        t"key: \"first\n  second\"".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"key" -> t"first second"))
+
+      test(m"Multi-line single-quoted string as flow-sequence element"):
+        t"['first\n  second', other]".read[Yaml].as[List[Text]]
+      . assert(_ == List(t"first second", t"other"))
+
     suite(m"Flow sequences"):
       test(m"Parse an empty flow sequence"):
         t"[]".read[Yaml].as[List[Int]]
