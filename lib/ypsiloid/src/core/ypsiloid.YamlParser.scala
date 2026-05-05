@@ -121,6 +121,12 @@ private[ypsiloid] final class YamlParser:
     stringCursor = 0
     bufferId = -1
     heldToken = null
+    blockParentIndent = -1
+    sawMappingColon = false
+    prefixAnchor = t""
+    prefixTag = t""
+    prefixHeadByte = -1
+    anchors.clear()
     anchors.clear()
 
   def resetData(input: Data): Unit =
@@ -129,6 +135,11 @@ private[ypsiloid] final class YamlParser:
     stringCursor = 0
     bufferId = -1
     heldToken = null
+    blockParentIndent = -1
+    sawMappingColon = false
+    prefixAnchor = t""
+    prefixTag = t""
+    prefixHeadByte = -1
     anchors.clear()
 
   // ── Substrate ────────────────────────────────────────────────────────────
@@ -560,12 +571,15 @@ private[ypsiloid] final class YamlParser:
     PlainOutcome.Stop
 
   // Attempt to fold a continuation line into a multi-line plain scalar.
-  // Returns true if a continuation was consumed. Continuation requires the
-  // next content line's indent to be strictly greater than `parentIndent`.
-  private def attemptPlainContinuation(parentIndent: Int): Boolean =
+  // Returns true if a continuation was consumed. Per spec the next
+  // content line must be indented strictly more than the *parent
+  // collection*; for top-level plain scalars the parent is the document
+  // (indent -1), so any indent (including 0) is accepted.
+  private def attemptPlainContinuation(scalarIndent: Int): Boolean =
     if !more || peek != Newline then return false
     val savedPos = pos
     val savedString = stringCursor
+    val parent = blockParentIndent
 
     advance()
     var newlineCount = 1
@@ -576,6 +590,10 @@ private[ypsiloid] final class YamlParser:
       while more && peek == Space do
         spaces += 1
         advance()
+      // Tabs after the leading spaces are part of the line's leading
+      // whitespace but don't count toward indent (spec forbids tabs in
+      // indentation). They're stripped from the folded content.
+      while more && peek == Tab do advance()
 
       if !more then
         pos = savedPos; stringCursor = savedString; false
@@ -588,7 +606,15 @@ private[ypsiloid] final class YamlParser:
         if more then advance()
         newlineCount += 1
         findContent()
-      else if spaces > parentIndent then
+      else if spaces > parent && !atDocumentBoundary then
+        // Trim trailing whitespace from the previous line we emitted
+        // before adding the fold separator: in plain scalars, both
+        // leading and trailing per-line whitespace is stripped before
+        // folding.
+        while stringCursor > 0
+                && (chars(stringCursor - 1) == ' '
+                    || chars(stringCursor - 1) == '\t') do
+          stringCursor -= 1
         if newlineCount == 1 then appendChar(' ')
         else
           var k = 1
@@ -1103,12 +1129,17 @@ private[ypsiloid] final class YamlParser:
       parsePlainOrBlockMapping(indent)
 
   // Caller has seen a `?` at node-head: we treat this as a `complex key`
-  // request. We don't fully support complex keys, but we can read the key
-  // plain-style and treat the entry as a scalar-keyed mapping.
+  // request only when the byte after `?` is whitespace or end-of-input.
+  // `?foo` (no separator) is a plain scalar starting with `?`.
   private def parseQuestion(indent: Int)(using Tactic[YamlError]): YamlAst =
-    advance()
-    skipSpaces()
-    parseNodeHere(indent)
+    val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+    if nextByte == Space || nextByte == Tab || nextByte == Newline
+            || nextByte == Return || nextByte == -1 then
+      advance()
+      skipSpaces()
+      parseNodeHere(indent)
+    else
+      parsePlainOrBlockMapping(indent)
 
   private def parseBlockSequence(indent: Int)(using Tactic[YamlError]): YamlAst =
     val buf = acquireBuffer()
