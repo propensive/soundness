@@ -388,13 +388,14 @@ private[ypsiloid] final class YamlParser:
       if hasPrefix && (headByte == Newline || headByte == -1) then
         if more && peek == Newline then advance()
         skipBlankAndCommentLines()
+        val lineStart = pos
         val childIndent = consumeLeadingSpaces()
         // The value of a bare anchor/tag is the next node whose indent
-        // is strictly greater than the *parent collection*. Same indent
-        // as the prefix itself is fine when the parent is the document
-        // (top-level `&a\n- x` makes the sequence the anchor's value).
-        if !more || childIndent <= blockParentIndent then YamlAst.Null
-        else parseNodeHere(childIndent)
+        // exceeds the parent collection's. Same-indent is allowed in
+        // two cases: block sequences directly under a mapping key
+        // (compact form, spec 8.2.2), and the document parent (top
+        // level), where any indent >= 0 works.
+        pickValueOrNull(blockParentIndent, childIndent, lineStart)
       else if headByte == -1 then YamlAst.Null
       else if headByte == Star then
         // An anchor on an alias node is illegal per spec — aliases
@@ -402,7 +403,8 @@ private[ypsiloid] final class YamlParser:
         // themselves.
         if !anchorName.nil then fail(t"anchor on alias node")
         advance()
-        parseAlias()
+        val a = parseAlias()
+        maybeBlockMappingFromQuotedKey(a, indent)
       else
         (headByte: @switch) match
           case Quote        =>
@@ -413,8 +415,14 @@ private[ypsiloid] final class YamlParser:
             advance()
             val s = parseSingleQuoted()
             maybeBlockMappingFromQuotedKey(s, indent)
-          case OpenBracket  => advance(); parseFlowSequence()
-          case OpenBrace    => advance(); parseFlowMapping()
+          case OpenBracket  =>
+            advance()
+            val s = parseFlowSequence()
+            maybeBlockMappingFromQuotedKey(s, indent)
+          case OpenBrace    =>
+            advance()
+            val m = parseFlowMapping()
+            maybeBlockMappingFromQuotedKey(m, indent)
           case Pipe         => parseBlockScalar(literal = true, indent)
           case Greater      => parseBlockScalar(literal = false, indent)
           case Minus        => parseMinus(indent)
