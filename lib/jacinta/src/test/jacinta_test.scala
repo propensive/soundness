@@ -1063,3 +1063,11 @@ object Tests extends Suite(m"Jacinta Tests"):
           case j"""{"a": 42}""" => true
           case _                => false
       . assert(identity)
+
+    suite(m"Compile-time hole-position errors"):
+      test(m"non-Iterable spread is highlighted at the splice"):
+        val bad: Int = 42
+        demilitarize:
+          j"""[$bad*]"""
+        . map(_.focus)
+      . assert(_ == List("bad"))
