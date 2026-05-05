@@ -30,13 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package octogenarian
 
-export
-  octogenarian
-  . { ChangeKind, Commit, FastForward, FileDiff, Git, GitBranch, GitCommand, GitError, GitEvent,
-      GitHash, GitPathStatus, GitProcess, GitRefError, GitRepo, GitStatus, GitTag, Hunk, Patch,
-      Progress, ReflogEntry, Refspec, ResetMode, SshUrl, Worktree }
-
-package gitCommands:
-  export octogenarian.gitCommands.environmentDefault
+enum FastForward:
+  case Auto, Only, Never

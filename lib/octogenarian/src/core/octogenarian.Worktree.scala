@@ -210,6 +210,42 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
     Patch.parse(sh"$git $repoOptions diff --no-color $ref".exec[Stream[Text]]())
 
 
+  def merge
+    ( ref: Refspec, ff: FastForward = FastForward.Auto, message: Optional[Text] = Unset )
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+  :   Unit logs GitEvent =
+
+    val ffOpt = ff match
+      case FastForward.Auto  => sh""
+      case FastForward.Only  => sh"--ff-only"
+      case FastForward.Never => sh"--no-ff"
+
+    val msgOpt = message.lay(sh"") { m => sh"-m $m" }
+
+    sh"$git $repoOptions merge $ffOpt $msgOpt $ref".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(MergeFailed))
+
+
+  def cherryPick(commit: GitHash)
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+  :   Unit logs GitEvent =
+
+    sh"$git $repoOptions cherry-pick $commit".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(CherryPickFailed))
+
+
+  def revert(commit: GitHash, noCommit: Boolean = false)
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+  :   Unit logs GitEvent =
+
+    val noCommitOpt = if noCommit then sh"-n" else sh""
+    sh"$git $repoOptions revert --no-edit $noCommitOpt $commit".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(RevertFailed))
+
+
   def lock(reason: Optional[Text] = Unset)
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
   :   Unit logs GitEvent =

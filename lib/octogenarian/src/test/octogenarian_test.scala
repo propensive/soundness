@@ -340,3 +340,78 @@ object Tests extends Suite(m"Octogenarian Tests"):
 
         primary.repo.worktrees().length
       .assert(_ == 1)
+
+    suite(m"merge / cherry-pick / revert"):
+
+      def freshDir(): Path on Linux =
+        val dir = temporaryDirectory[Path on Linux] / Uuid().show
+        dir.create[Directory]()
+        dir
+
+      def freshWorktree(): Worktree =
+        val dir = freshDir()
+        val worktree = Git.init(dir)
+        sh"git -C $dir config user.email octogenarian@test.local".exec[Exit]()
+        sh"git -C $dir config user.name Octogenarian".exec[Exit]()
+        sh"git -C $dir config commit.gpgsign false".exec[Exit]()
+        sh"git -C $dir config tag.gpgsign false".exec[Exit]()
+        sh"git -C $dir config init.defaultBranch main".exec[Exit]()
+        worktree
+
+      def writeFile(path: Path on Linux, content: Text): Unit =
+        if !path.exists() then path.create[File]()
+        path.open: handle =>
+          Stream(content.data).writeTo(handle)
+
+      test(m"merge fast-forwards onto a branch ahead of HEAD"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"a.txt", t"a\n")
+        worktree.add(worktree.path / t"a.txt")
+        worktree.commit(t"base")
+
+        worktree.makeBranch(GitBranch(t"feature"))
+        writeFile(worktree.path / t"b.txt", t"b\n")
+        worktree.add(worktree.path / t"b.txt")
+        worktree.commit(t"feature")
+
+        worktree.checkout(GitBranch(t"main"))
+        worktree.merge(GitBranch(t"feature"), ff = FastForward.Only)
+
+        worktree.repo.log().to(List).length
+      .assert(_ == 2)
+
+      test(m"cherryPick replays a commit on the current branch"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"a.txt", t"a\n")
+        worktree.add(worktree.path / t"a.txt")
+        worktree.commit(t"base")
+
+        worktree.makeBranch(GitBranch(t"feature"))
+        writeFile(worktree.path / t"b.txt", t"b\n")
+        worktree.add(worktree.path / t"b.txt")
+        worktree.commit(t"feature")
+        val featureHash = worktree.repo.revParse(Refspec.head())
+
+        worktree.checkout(GitBranch(t"main"))
+        worktree.cherryPick(featureHash)
+
+        // After cherry-pick the file from the feature branch is present.
+        (worktree.path / t"b.txt").exists()
+      .assert(_ == true)
+
+      test(m"revert produces a new commit that undoes the original"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"a.txt", t"a\n")
+        worktree.add(worktree.path / t"a.txt")
+        worktree.commit(t"base")
+
+        writeFile(worktree.path / t"b.txt", t"b\n")
+        worktree.add(worktree.path / t"b.txt")
+        worktree.commit(t"add b")
+
+        val toRevert = worktree.repo.revParse(Refspec.head())
+        worktree.revert(toRevert)
+
+        // After revert: history has 3 commits, b.txt is no longer present.
+        worktree.repo.log().to(List).length == 3 && !(worktree.path / t"b.txt").exists()
+      .assert(_ == true)
