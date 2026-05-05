@@ -33,6 +33,7 @@
 package ypsiloid
 
 import scala.collection.Factory
+import scala.compiletime.*
 
 import anticipation.*
 import contingency.*
@@ -43,10 +44,35 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import turbulence.*
+import vacuous.*
+import wisteria.*
 
 import YamlError.Reason
 
-object Yaml:
+trait Yaml2:
+  inline given derived: [value] => value is Decodable in Yaml = summonFrom:
+    case given Reflection[`value`] => DecodableDerivation.derived
+
+  object DecodableDerivation extends ProductDerivation[[value] =>> value is Decodable in Yaml]:
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   derivation is Decodable in Yaml = yaml =>
+      val values: Map[String, YamlAst] = yaml.root match
+        case YamlAst.Mapping(entries) =>
+          entries.foldLeft(Map.empty[String, YamlAst]): (acc, pair) =>
+            pair(0) match
+              case YamlAst.Str(text) => acc.updated(text.s, pair(1))
+              case _                 => acc
+
+        case _ =>
+          Map.empty[String, YamlAst]
+
+      build: [field] =>
+        context =>
+          values.get(label.s) match
+            case Some(item) => context.decoded(new Yaml(item))
+            case None       => default.or(context.decoded(new Yaml(YamlAst.Null)))
+
+object Yaml extends Yaml2:
   def ast(value: YamlAst): Yaml = new Yaml(value)
 
   given yaml: Yaml is Decodable in Yaml = identity(_)

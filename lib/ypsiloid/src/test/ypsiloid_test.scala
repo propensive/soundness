@@ -37,6 +37,12 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
 
+case class Person(name: Text, age: Int) derives CanEqual
+case class Inner(n: Int) derives CanEqual
+case class Outer(inner: Inner) derives CanEqual
+case class NamedOuter(name: Text, inner: Inner) derives CanEqual
+case class WithDefault(name: Text, age: Int = 18) derives CanEqual
+
 object Tests extends Suite(m"Ypsiloid Tests"):
   def run(): Unit =
     suite(m"Plain scalar parsing"):
@@ -258,6 +264,35 @@ object Tests extends Suite(m"Ypsiloid Tests"):
           case YamlAst.Mapping(entries) => entries.length
           case _                        => -1
       . assert(_ == 2)
+
+    suite(m"Case-class derivation"):
+      test(m"Decode a flat case class from a flow mapping"):
+        t"{name: Alice, age: 30}".read[Yaml].as[Person]
+      . assert(_ == Person(t"Alice", 30))
+
+      test(m"Decode a flat case class with quoted strings"):
+        t"{name: \"Bob Smith\", age: 25}".read[Yaml].as[Person]
+      . assert(_ == Person(t"Bob Smith", 25))
+
+      test(m"Decode a nested case class"):
+        t"{inner: {n: 42}}".read[Yaml].as[Outer]
+      . assert(_ == Outer(Inner(42)))
+
+      test(m"Decode a deeper nested case class"):
+        t"{name: hello, inner: {n: 7}}".read[Yaml].as[NamedOuter]
+      . assert(_ == NamedOuter(t"hello", Inner(7)))
+
+      test(m"Decode a sequence of case classes"):
+        t"[{name: Alice, age: 30}, {name: Bob, age: 25}]".read[Yaml].as[List[Person]]
+      . assert(_ == List(Person(t"Alice", 30), Person(t"Bob", 25)))
+
+      test(m"Decode a case class with a default field omitted"):
+        t"{name: Eve}".read[Yaml].as[WithDefault]
+      . assert(_ == WithDefault(t"Eve", 18))
+
+      test(m"Decode a case class with all fields supplied"):
+        t"{name: Eve, age: 99}".read[Yaml].as[WithDefault]
+      . assert(_ == WithDefault(t"Eve", 99))
 
     suite(m"Comment handling"):
       test(m"Comment after a scalar is ignored"):
