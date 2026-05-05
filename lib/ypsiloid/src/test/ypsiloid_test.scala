@@ -294,6 +294,76 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"{name: Eve, age: 99}".read[Yaml].as[WithDefault]
       . assert(_ == WithDefault(t"Eve", 99))
 
+    suite(m"Block sequences"):
+      test(m"Parse a block sequence of integers"):
+        t"- 1\n- 2\n- 3".read[Yaml].as[List[Int]]
+      . assert(_ == List(1, 2, 3))
+
+      test(m"Parse a block sequence of strings"):
+        t"- alice\n- bob".read[Yaml].as[List[Text]]
+      . assert(_ == List(t"alice", t"bob"))
+
+      test(m"Parse a block sequence with quoted strings"):
+        t"- \"hello world\"\n- 'goodbye'".read[Yaml].as[List[Text]]
+      . assert(_ == List(t"hello world", t"goodbye"))
+
+      test(m"Block sequence parses to YamlAst.Sequence"):
+        t"- 1\n- 2".read[Yaml].root match
+          case YamlAst.Sequence(items) => items.length
+          case _                       => -1
+      . assert(_ == 2)
+
+      test(m"Parse a block sequence with leading and trailing blank lines"):
+        t"\n- 1\n- 2\n".read[Yaml].as[List[Int]]
+      . assert(_ == List(1, 2))
+
+      test(m"Parse a block sequence with comments interleaved"):
+        t"# comment\n- 1\n# more\n- 2".read[Yaml].as[List[Int]]
+      . assert(_ == List(1, 2))
+
+    suite(m"Block mappings"):
+      test(m"Parse a single-pair block mapping"):
+        t"name: Alice".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"name" -> t"Alice"))
+
+      test(m"Parse a multi-pair block mapping"):
+        t"a: 1\nb: 2\nc: 3".read[Yaml].as[Map[Text, Int]]
+      . assert(_ == Map(t"a" -> 1, t"b" -> 2, t"c" -> 3))
+
+      test(m"Parse a block mapping into a case class"):
+        t"name: Alice\nage: 30".read[Yaml].as[Person]
+      . assert(_ == Person(t"Alice", 30))
+
+      test(m"Parse a nested block mapping"):
+        t"inner:\n  n: 42".read[Yaml].as[Outer]
+      . assert(_ == Outer(Inner(42)))
+
+      test(m"Parse a deeper nested block mapping"):
+        t"name: hello\ninner:\n  n: 7".read[Yaml].as[NamedOuter]
+      . assert(_ == NamedOuter(t"hello", Inner(7)))
+
+      test(m"Parse a block mapping containing a block sequence"):
+        t"items:\n  - 1\n  - 2\n  - 3".read[Yaml].as[Map[Text, List[Int]]]
+      . assert(_ == Map(t"items" -> List(1, 2, 3)))
+
+      test(m"Parse a block mapping containing a flow sequence"):
+        t"xs: [1, 2, 3]".read[Yaml].as[Map[Text, List[Int]]]
+      . assert(_ == Map(t"xs" -> List(1, 2, 3)))
+
+      test(m"Parse a block sequence of case classes"):
+        t"- name: Alice\n  age: 30\n- name: Bob\n  age: 25".read[Yaml].as[List[Person]]
+      . assert(_ == List(Person(t"Alice", 30), Person(t"Bob", 25)))
+
+      test(m"Block mapping parses to YamlAst.Mapping"):
+        t"a: 1\nb: 2".read[Yaml].root match
+          case YamlAst.Mapping(entries) => entries.length
+          case _                        => -1
+      . assert(_ == 2)
+
+      test(m"Block mapping with comments interleaved"):
+        t"a: 1\n# comment\nb: 2".read[Yaml].as[Map[Text, Int]]
+      . assert(_ == Map(t"a" -> 1, t"b" -> 2))
+
     suite(m"Comment handling"):
       test(m"Comment after a scalar is ignored"):
         t"42 # the answer".read[Yaml].as[Int]
