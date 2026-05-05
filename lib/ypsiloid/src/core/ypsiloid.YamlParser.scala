@@ -130,6 +130,7 @@ private[ypsiloid] final class YamlParser:
     lastScalarSpannedLines = false
     inInlineMappingValue = false
     lastNodeHadAnchor = false
+    flowParentIndent = -1
     anchors.clear()
     anchors.clear()
 
@@ -148,6 +149,7 @@ private[ypsiloid] final class YamlParser:
     lastScalarSpannedLines = false
     inInlineMappingValue = false
     lastNodeHadAnchor = false
+    flowParentIndent = -1
     anchors.clear()
 
   // ── Substrate ────────────────────────────────────────────────────────────
@@ -442,14 +444,20 @@ private[ypsiloid] final class YamlParser:
             maybeBlockMappingFromQuotedKey(s, indent, tagText, anchorName)
           case OpenBracket  =>
             val startPos = pos
+            val savedFlowParent = flowParentIndent
+            flowParentIndent = blockParentIndent
             advance()
             val s = parseFlowSequence()
+            flowParentIndent = savedFlowParent
             if hasNewlineInRange(startPos, pos) then lastScalarSpannedLines = true
             maybeBlockMappingFromQuotedKey(s, indent, tagText, anchorName)
           case OpenBrace    =>
             val startPos = pos
+            val savedFlowParent = flowParentIndent
+            flowParentIndent = blockParentIndent
             advance()
             val m = parseFlowMapping()
+            flowParentIndent = savedFlowParent
             if hasNewlineInRange(startPos, pos) then lastScalarSpannedLines = true
             maybeBlockMappingFromQuotedKey(m, indent, tagText, anchorName)
           case Pipe         => parseBlockScalar(literal = true, indent)
@@ -636,6 +644,12 @@ private[ypsiloid] final class YamlParser:
   // where an outer prefix-on-newline branch parses an inner node that
   // also carries its own anchor.
   private var lastNodeHadAnchor: Boolean = false
+
+  // Indent of the line that opened the innermost flow collection.
+  // Content lines inside the flow that are not the closing bracket
+  // must be more indented than this. -1 means we're not currently
+  // inside a flow collection.
+  private var flowParentIndent: Int = -1
 
   private def parsePlainOrBlockMapping
                 ( indent: Int, headTag: Text = t"", headAnchor: Text = t"" )
@@ -1280,7 +1294,23 @@ private[ypsiloid] final class YamlParser:
     var continue = true
     while continue && more do
       val c = peek
-      if c == Space || c == Tab || c == Newline || c == Return then advance()
+      if c == Newline then
+        advance()
+        var spaces = 0
+        while more && peek == Space do
+          spaces += 1
+          advance()
+        // Content lines inside a flow collection (other than the
+        // closing bracket / brace) must be more indented than the
+        // flow's parent. Per spec 7.4 a flow collection may be
+        // multi-line, but each line's content has to be at indent
+        // strictly greater than the indent of the line that opened
+        // the collection.
+        if more && flowParentIndent >= 0 && peek != Newline
+                && peek != CloseBracket && peek != CloseBrace
+                && peek != Hash && spaces <= flowParentIndent then
+          fail(t"flow content insufficiently indented")
+      else if c == Space || c == Tab || c == Return then advance()
       else if c == Hash then
         val prev = if pos > 0 then bytes(pos - 1) else -1
         if prev == Space || prev == Tab || prev == Newline || prev == Return then
