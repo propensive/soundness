@@ -153,8 +153,46 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
       case failure => abort(GitError(AddFailed))
 
 
-  def reset(): Unit = ()
-  def mv(): Unit = ()
+  def reset(mode: ResetMode = ResetMode.Mixed, ref: Refspec = Refspec.head())
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+  :   Unit logs GitEvent =
+
+    sh"$git $repoOptions reset $mode $ref".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(ResetFailed))
+
+
+  def unstage[path: Abstractable across Paths to Text](file: path)
+    ( using GitCommand, WorkingDirectory )
+  :   Unit logs GitEvent raises PathError raises NameError raises ExecError raises GitError =
+
+    val relativePath =
+      safely(this.path.toward(file.generic.decode[Path on Linux])).or:
+        abort(GitError(ResetFailed))
+
+    sh"$git $repoOptions reset HEAD -- $relativePath".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(ResetFailed))
+
+
+  def mv
+    [ fromPath: Abstractable across Paths to Text,
+      toPath:   Abstractable across Paths to Text ]
+    ( from: fromPath, to: toPath )
+    ( using GitCommand, WorkingDirectory )
+  :   Unit logs GitEvent raises PathError raises NameError raises ExecError raises GitError =
+
+    val fromRel = safely(this.path.toward(from.generic.decode[Path on Linux])).or:
+      abort(GitError(MvFailed))
+
+    val toRel = safely(this.path.toward(to.generic.decode[Path on Linux])).or:
+      abort(GitError(MvFailed))
+
+    sh"$git $repoOptions mv $fromRel $toRel".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(MvFailed))
+
+
   def diff(): Unit = ()
 
 
