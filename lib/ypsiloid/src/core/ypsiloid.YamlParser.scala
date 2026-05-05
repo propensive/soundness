@@ -404,25 +404,25 @@ private[ypsiloid] final class YamlParser:
         if !anchorName.nil then fail(t"anchor on alias node")
         advance()
         val a = parseAlias()
-        maybeBlockMappingFromQuotedKey(a, indent)
+        maybeBlockMappingFromQuotedKey(a, indent, tagText, anchorName)
       else
         (headByte: @switch) match
           case Quote        =>
             advance()
             val s = parseDoubleQuoted()
-            maybeBlockMappingFromQuotedKey(s, indent)
+            maybeBlockMappingFromQuotedKey(s, indent, tagText, anchorName)
           case Apostrophe   =>
             advance()
             val s = parseSingleQuoted()
-            maybeBlockMappingFromQuotedKey(s, indent)
+            maybeBlockMappingFromQuotedKey(s, indent, tagText, anchorName)
           case OpenBracket  =>
             advance()
             val s = parseFlowSequence()
-            maybeBlockMappingFromQuotedKey(s, indent)
+            maybeBlockMappingFromQuotedKey(s, indent, tagText, anchorName)
           case OpenBrace    =>
             advance()
             val m = parseFlowMapping()
-            maybeBlockMappingFromQuotedKey(m, indent)
+            maybeBlockMappingFromQuotedKey(m, indent, tagText, anchorName)
           case Pipe         => parseBlockScalar(literal = true, indent)
           case Greater      => parseBlockScalar(literal = false, indent)
           case Minus        => parseMinus(indent)
@@ -523,17 +523,19 @@ private[ypsiloid] final class YamlParser:
   // Parse from the current position. Either a plain scalar (yielding a
   // primitive) or, if a top-level `:` follows, a block mapping where this
   // scalar is the first key.
-  // After parsing a quoted scalar at node head, decide what follows:
+  // After parsing a non-plain scalar at node head (quoted, alias,
+  // or flow collection), decide what follows:
   //  - `:` with a whitespace/EOL terminator → first key of a block
-  //    mapping;
+  //    mapping; the head's anchor/tag prefix applies to the key, not
+  //    the mapping (mirrors parsePlainOrBlockMapping);
   //  - newline or EOF → the scalar is the value;
   //  - `# comment` after at least one space → trailing comment, OK;
   //  - flow-collection terminator (`,`, `]`, `}`) → caller is a flow
   //    context that will consume the terminator;
-  // anything else is an error per spec (plain text after a quoted
-  // scalar is not a valid construct in block context).
+  // anything else is an error per spec.
   private def maybeBlockMappingFromQuotedKey
-                ( scalar: YamlAst, indent: Int )
+                ( scalar: YamlAst, indent: Int,
+                  headTag: Text = t"", headAnchor: Text = t"" )
                 ( using Tactic[YamlError] )
   :   YamlAst =
     val hadSpaceOrTab = more && (peek == Space || peek == Tab)
@@ -548,7 +550,14 @@ private[ypsiloid] final class YamlParser:
         val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
         if nextByte == Space || nextByte == Tab || nextByte == Newline
                 || nextByte == Return || nextByte == -1 then
-          parseBlockMappingFromFirstKey(scalar, indent)
+          val tagged = if headTag.nil then scalar else applyTag(headTag, scalar)
+          val keyAst =
+            if headAnchor.nil then tagged
+            else
+              anchors.update(headAnchor.s, tagged)
+              tagged
+          if !headTag.nil || !headAnchor.nil then prefixesConsumed = true
+          parseBlockMappingFromFirstKey(keyAst, indent)
         else fail(t"trailing content after quoted scalar")
       case Comma | CloseBracket | CloseBrace => scalar
       case _ => fail(t"trailing content after quoted scalar")
@@ -1182,7 +1191,11 @@ private[ypsiloid] final class YamlParser:
       consumeNodePrefixes()
       val anchorName = prefixAnchor
       val tagText    = prefixTag
-      val headByte   = prefixHeadByte
+      // In flow context, newlines between the prefix and the actual
+      // node body are insignificant whitespace, so re-skip and re-read
+      // the head byte after the prefix.
+      skipFlowWhitespace()
+      val headByte = if !more then -1 else peek & 0xFF
       val value =
         if headByte == -1 then YamlAst.Null
         else if headByte == Star then
@@ -1413,6 +1426,16 @@ private[ypsiloid] final class YamlParser:
           case Apostrophe =>
             advance()
             parseSingleQuoted()
+          case Star =>
+            if !keyAnchor.nil then fail(t"anchor on alias node")
+            advance()
+            parseAlias()
+          case OpenBracket =>
+            advance()
+            parseFlowSequence()
+          case OpenBrace =>
+            advance()
+            parseFlowMapping()
           case _ =>
             val keyText = readPlainScalarText(indent)
             if !sawMappingColon then
