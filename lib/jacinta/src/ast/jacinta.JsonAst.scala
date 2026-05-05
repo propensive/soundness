@@ -141,12 +141,12 @@ object JsonAst extends Format:
     inline final val CloseBrace:   125 = 125 // '}'
 
   opaque type RawJson =
-    Long | Double | JsonBcd | String | IArray[Any] | JsonArray | Array[Long] | Boolean
+    Long | Double | Bcd | String | IArray[Any] | JsonArray | Array[Double] | Boolean
     | Null | Unset.type
 
   def apply
     ( value
-      : Long | Double | JsonBcd | String | IArray[Any] | JsonArray | Array[Long] | Boolean
+      : Long | Double | Bcd | String | IArray[Any] | JsonArray | Array[Double] | Boolean
       | Null | Unset.type )
   :   JsonAst =
 
@@ -170,16 +170,18 @@ object JsonAst extends Format:
   // tricks or a sentinel pad.
   def arr(elements: IArray[Any]): JsonAst = JsonArray(elements)
 
-  // Build a number-only array node. Each `Long` element packs a small JSON
-  // number in compact-BCD form (see `Bcd.scala`). Used by the parser when
-  // every element of a JSON array is a number that fits the compact
-  // representation.
-  def numArr(values: Array[Long]): JsonAst = values
+  // Build a number-only array node. Each element is the parsed `Double`
+  // value. Used by the parser when every element of a JSON array fits the
+  // in-Long fast path (≤ 15 nibbles); a number that overflows to `Bcd`
+  // forces a fallback to the boxed `JsonArray`. `Array[Double]` is `[D` at
+  // runtime — distinct from `[J` (`Bcd`) and `[Ljava/lang/Object;`
+  // (`IArray[Any]`/`JsonArray.elements`), so no wrapping is needed.
+  def numArr(values: Array[Double]): JsonAst = values
 
   // The number of user-visible elements in an array node.
   def arrayLength(json: JsonAst): Int = (json: @unchecked) match
-    case array: JsonArray              => array.elements.length
-    case nums:  Array[Long] @unchecked => nums.length
+    case array: JsonArray                => array.elements.length
+    case nums:  Array[Double] @unchecked => nums.length
 
   // The number of key/value pairs in an object node.
   def objectSize(json: JsonAst): Int = json.asInstanceOf[IArray[Any]].length/2
@@ -188,10 +190,4 @@ object JsonAst extends Format:
 // the wrapper exists purely to give arrays a runtime type distinct from
 // objects (which are bare `IArray[Any]` of alternating key/value).
 final case class JsonArray(elements: IArray[Any])
-
-// A high-precision JSON number node. The underlying `Bcd` is `Array[Long]`
-// at runtime, which would collide with the `Array[Long]` number-array AST
-// node — wrapping it gives the AST union an unambiguous runtime
-// discrimination.
-final case class JsonBcd(value: Bcd)
 

@@ -98,13 +98,18 @@ object JsonPrinter:
 
       append(']')
 
-    def printNumberArray(nums: Array[Long]): Unit =
+    def printNumberArray(nums: Array[Double]): Unit =
       val n = nums.length
       append('[')
       val last = n - 1
       var index = 0
       while index < n do
-        append(CompactBcd.text(nums(index)).tt)
+        val d = nums(index)
+        // Render whole-valued numbers without a trailing `.0` so that
+        // `[1, 2, 3]` round-trips through parse + print unchanged.
+        if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
+        then append(d.toLong.toString)
+        else append(d.toString)
         if index < last then append(',')
         index += 1
       append(']')
@@ -113,8 +118,14 @@ object JsonPrinter:
       case array: JsonArray =>
         printArray(array.elements, indent)
 
-      case nums: Array[Long] @unchecked =>
+      case nums: Array[Double] @unchecked =>
         printNumberArray(nums)
+
+      case bcd: Array[Long] @unchecked =>
+        // High-precision number — emit the canonical JSON-number text from
+        // the BCD nibble stream directly; this preserves all digits the
+        // parser saw, in contrast to a `Double.toString` round-trip.
+        append(bcd.asInstanceOf[Bcd].text.tt)
 
       case obj: IArray[Any] @unchecked =>
         printObject(obj, indent)
@@ -130,12 +141,6 @@ object JsonPrinter:
 
       case boolean: Boolean =>
         append(boolean.toString)
-
-      case bcd: JsonBcd =>
-        // High-precision number — emit the canonical JSON-number text from
-        // the BCD nibble stream directly; this preserves all digits the
-        // parser saw, in contrast to a `Double.toString` round-trip.
-        append(bcd.value.text.tt)
 
       case _ =>
         append("null")
