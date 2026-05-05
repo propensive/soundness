@@ -42,3 +42,31 @@ enum YamlAst:
   case Str(value: Text)
   case Sequence(items: IArray[YamlAst])
   case Mapping(entries: IArray[(YamlAst, YamlAst)])
+
+  override def equals(other: Any): Boolean =
+    (this.asInstanceOf[AnyRef] eq other.asInstanceOf[AnyRef])
+    || ((this: YamlAst, other) match
+      case (Bool(a), Bool(b))       => a == b
+      case (Integer(a), Integer(b)) => a == b
+      case (Decimal(a), Decimal(b)) => a == b
+      case (Str(a), Str(b))         => a == b
+
+      case (Sequence(a), Sequence(b)) =>
+        a.length == b.length && a.indices.forall(index => a(index) == b(index))
+
+      case (Mapping(a), Mapping(b)) =>
+        a.length == b.length && a.indices.forall: index =>
+          a(index)(0) == b(index)(0) && a(index)(1) == b(index)(1)
+
+      case _ => false)
+
+  override def hashCode: Int = this match
+    case Null         => 0
+    case Bool(v)      => v.hashCode
+    case Integer(v)   => v.hashCode
+    case Decimal(v)   => v.hashCode
+    case Str(v)       => v.hashCode
+    case Sequence(xs) => xs.foldLeft(xs.length)(_ * 31 + _.hashCode)
+
+    case Mapping(es) =>
+      es.foldLeft(es.length)((acc, e) => acc*31 + e._1.hashCode*31 + e._2.hashCode)

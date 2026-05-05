@@ -437,23 +437,23 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == 42)
 
       test(m"Stream of three documents"):
-        t"---\n1\n---\n2\n---\n3".readAll[Yaml].map(_.as[Int])
+        t"---\n1\n---\n2\n---\n3".readAll.map(_.as[Int])
       . assert(_ == List(1, 2, 3))
 
       test(m"Empty stream yields no documents"):
-        t"".readAll[Yaml].length
+        t"".readAll.length
       . assert(_ == 0)
 
       test(m"Stream of mixed-type documents"):
-        t"---\nname: Alice\n---\n[1, 2, 3]".readAll[Yaml].length
+        t"---\nname: Alice\n---\n[1, 2, 3]".readAll.length
       . assert(_ == 2)
 
       test(m"Single-document stream without leading separator"):
-        t"42".readAll[Yaml].map(_.as[Int])
+        t"42".readAll.map(_.as[Int])
       . assert(_ == List(42))
 
       test(m"Stream with trailing end marker"):
-        t"1\n---\n2\n...".readAll[Yaml].map(_.as[Int])
+        t"1\n---\n2\n...".readAll.map(_.as[Int])
       . assert(_ == List(1, 2))
 
     suite(m"Comment handling"):
@@ -498,6 +498,27 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       test(m"Plain string parses to YamlAst.Str"):
         t"hello".read[Yaml].root
       . assert(_ == YamlAst.Str(t"hello"))
+
+    suite(m"AST equality"):
+      test(m"Two equal sequence YamlAsts compare equal"):
+        t"[1, 2, 3]".read[Yaml].root == t"[1, 2, 3]".read[Yaml].root
+      . assert(identity)
+
+      test(m"Two equal mapping YamlAsts compare equal"):
+        t"{a: 1, b: 2}".read[Yaml].root == t"{a: 1, b: 2}".read[Yaml].root
+      . assert(identity)
+
+      test(m"Two equal Yaml documents compare equal"):
+        t"{a: [1, 2], b: 3}".read[Yaml] == t"{a: [1, 2], b: 3}".read[Yaml]
+      . assert(identity)
+
+      test(m"Different sequences compare unequal"):
+        t"[1, 2, 3]".read[Yaml] == t"[1, 2, 4]".read[Yaml]
+      . assert(!_)
+
+      test(m"Equal sequences hash to the same value"):
+        t"[1, 2, 3]".read[Yaml].hashCode == t"[1, 2, 3]".read[Yaml].hashCode
+      . assert(identity)
 
     suite(m"Type errors"):
       test(m"Decoding a string as Int raises a YamlError"):
