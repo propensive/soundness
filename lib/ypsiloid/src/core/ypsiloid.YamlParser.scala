@@ -86,6 +86,12 @@ private[ypsiloid] final class YamlParser:
   // Anchor table — names map to fully-parsed YamlAst values.
   private val anchors = scala.collection.mutable.Map.empty[String, YamlAst]
 
+  // Tag handles declared by `%TAG` directives in the *current* document.
+  // Per spec, directives apply only to the document immediately
+  // following them and must be re-declared for each subsequent document.
+  // Cleared by `parseAll` after each document boundary.
+  private val tagHandles = scala.collection.mutable.Map.empty[String, String]
+
   // Resizable char buffer shared across string-building calls (for
   // quoted-string unescape and UTF-8 decoded plain scalars). Mirrors
   // Jacinta's `chars`/`stringCursor` to avoid per-string allocation.
@@ -140,6 +146,7 @@ private[ypsiloid] final class YamlParser:
     inInlineMappingValue = false
     docStartLineEnd = -1
     anchors.clear()
+    tagHandles.clear()
 
   // ── Substrate ────────────────────────────────────────────────────────────
 
@@ -262,6 +269,9 @@ private[ypsiloid] final class YamlParser:
     var lastDocEndedWithFooter = true  // start of stream is OK for directives
     while continue do
       skipBlankAndCommentLines()
+      // %TAG/%YAML directives apply only to the document immediately
+      // following them — clear before reading the next directives block.
+      tagHandles.clear()
       val sawDirectives = parseDirectivesIfAny()
       if sawDirectives && !firstDoc && !lastDocEndedWithFooter then
         fail(t"directives can only appear at the start of a stream or after `...`")
@@ -383,6 +393,7 @@ private[ypsiloid] final class YamlParser:
         case "TAG" =>
           val parts = argText.split("\\s+").nn.asInstanceOf[Array[String]]
           if parts.length != 2 then fail(t"%TAG directive requires `handle prefix`")
+          tagHandles(parts(0)) = parts(1)
         case _ => () // reserved/unknown directive — silently accept
       skipBlankAndCommentLines()
     sawAny
@@ -595,6 +606,7 @@ private[ypsiloid] final class YamlParser:
                       && peek != CloseBrace do
               advance()
           tagText = slice(mk).tt
+          validateTagHandle(tagText)
           skipSpaces()
 
         case _ => done = true
@@ -2124,6 +2136,19 @@ private[ypsiloid] final class YamlParser:
         advance()
 
   // ── Tags ────────────────────────────────────────────────────────────────
+
+  // For shorthand tags of the form `!handle!suffix`, the handle must be
+  // declared via a `%TAG` directive in the current document. The primary
+  // (`!`) and secondary (`!!`) handles are built-in. Verbatim tags
+  // (`!<URI>`) skip resolution entirely.
+  private def validateTagHandle(tagText: Text)(using Tactic[YamlError]): Unit =
+    val s = tagText.s
+    if s.length >= 2 && s.charAt(0) == '!' && s.charAt(1) != '<' then
+      val secondBang = s.indexOf('!', 1)
+      if secondBang > 1 then
+        val handle = s.substring(0, secondBang + 1).nn
+        if handle != "!!" && !tagHandles.contains(handle) then
+          fail(t"undefined tag handle: ${handle.tt}")
 
   private def applyTag(tag: Text, value: YamlAst)(using Tactic[YamlError])
   :   YamlAst = tag.s match
