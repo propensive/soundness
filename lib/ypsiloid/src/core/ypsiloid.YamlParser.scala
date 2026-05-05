@@ -1484,10 +1484,16 @@ private[ypsiloid] final class YamlParser:
         val rawKey: YamlAst = prefixHeadByte match
           case Quote =>
             advance()
-            parseDoubleQuoted()
+            val s = parseDoubleQuoted()
+            if lastScalarSpannedLines then
+              fail(t"implicit mapping key cannot span multiple lines")
+            s
           case Apostrophe =>
             advance()
-            parseSingleQuoted()
+            val s = parseSingleQuoted()
+            if lastScalarSpannedLines then
+              fail(t"implicit mapping key cannot span multiple lines")
+            s
           case Star =>
             if !keyAnchor.nil then fail(t"anchor on alias node")
             advance()
@@ -1502,6 +1508,8 @@ private[ypsiloid] final class YamlParser:
             val keyText = readPlainScalarText(indent)
             if !sawMappingColon then
               fail(t"plain scalar at mapping indent without ':'")
+            if lastScalarSpannedLines then
+              fail(t"implicit mapping key cannot span multiple lines")
             resolvePlainScalar(keyText)
         val tagged = if keyTag.nil then rawKey else applyTag(keyTag, rawKey)
         val keyAst =
