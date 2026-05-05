@@ -37,7 +37,6 @@ import contingency.*
 import gossamer.*
 import iridescence.*
 import parasite.*
-import proscenium.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
@@ -81,7 +80,7 @@ extends Interactivity[TerminalEvent]:
 
   val events: Spool[TerminalEvent] = Spool()
 
-  def eventStream(): Stream[TerminalEvent] = events.stream
+  def eventIterator(): Iterator[TerminalEvent] = events.iterator
 
   console.trap:
     case Signal.Winch =>

@@ -32,11 +32,10 @@
                                                                                                   */
 package profanity
 
-import proscenium.*
 import beneficence.*
 
 object Interactivity:
-  def apply[event](stream: Stream[event]): Interactivity[event] = () => stream
+  def apply[event](iterator: Iterator[event]): Interactivity[event] = () => iterator
 
 trait Interactivity[event] extends Findable:
-  def eventStream(): Stream[event]
+  def eventIterator(): Iterator[event]
