@@ -34,5 +34,78 @@ package octogenarian
 
 import soundness.*
 
+import systems.java
+import temporaryDirectories.system
+import workingDirectories.default
+import logging.silent
+
+import strategies.throwUnsafely
+import charEncoders.utf8
+
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.enabled
+import filesystemOptions.overwritePreexisting.enabled
+import filesystemOptions.createNonexistent.enabled
+import filesystemOptions.createNonexistentParents.enabled
+import filesystemOptions.deleteRecursively.enabled
+
+import gitCommands.environmentDefault
+
 object Tests extends Suite(m"Octogenarian Tests"):
-  def run(): Unit = ()
+  def run(): Unit =
+    suite(m"Repo + worktree split"):
+
+      def freshDir(): Path on Linux =
+        val dir = temporaryDirectory[Path on Linux] / Uuid().show
+        dir.create[Directory]()
+        dir
+
+      // Initialize a fresh worktree with isolated config: a stable identity and
+      // signing disabled so the tests don't depend on the developer's global
+      // git settings.
+      def freshWorktree(): Worktree =
+        val dir = freshDir()
+        val worktree = Git.init(dir)
+        sh"git -C $dir config user.email octogenarian@test.local".exec[Exit]()
+        sh"git -C $dir config user.name Octogenarian".exec[Exit]()
+        sh"git -C $dir config commit.gpgsign false".exec[Exit]()
+        sh"git -C $dir config tag.gpgsign false".exec[Exit]()
+        worktree
+
+      def writeFile(path: Path on Linux, content: Text): Unit =
+        path.create[File]()
+        path.open: handle =>
+          Stream(content.data).writeTo(handle)
+
+      test(m"Git.init returns a Worktree at the requested path"):
+        val dir = freshDir()
+        Git.init(dir).path == dir
+      .assert(_ == true)
+
+      test(m"Git.init creates a .git directory"):
+        val dir = freshDir()
+        Git.init(dir).repo.gitDir.exists()
+      .assert(_ == true)
+
+      test(m"Git.initBare returns a GitRepo at the requested path"):
+        val dir = freshDir()
+        Git.initBare(dir).gitDir == dir
+      .assert(_ == true)
+
+      test(m"Init + add + commit + log round-trip yields one commit"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"hello.txt", t"hello\n")
+        worktree.add(worktree.path / t"hello.txt")
+        worktree.commit(t"initial")
+        worktree.repo.log().to(List).length
+      .assert(_ == 1)
+
+      test(m"Tags created via the repo API are visible in tags()"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"a.txt", t"a\n")
+        worktree.add(worktree.path / t"a.txt")
+        worktree.commit(t"a")
+        worktree.repo.tag(GitTag(t"v1"))
+        worktree.repo.tags().map(_.show)
+      .assert(_ == List(t"v1"))
