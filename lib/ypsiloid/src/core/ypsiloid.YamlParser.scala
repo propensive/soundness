@@ -989,8 +989,26 @@ private[ypsiloid] final class YamlParser:
         advance()
         done = true
       else
-        val node = parseFlowNode()
-        buf += node
+        val first = parseFlowNode()
+        skipFlowWhitespace()
+        // A `:` here promotes the entry to a single-pair mapping per
+        // spec 7.5: `[foo: bar]` is shorthand for `[{foo: bar}]`.
+        val entry =
+          if more && peek == Colon then
+            advance()
+            skipFlowWhitespace()
+            val value =
+              if !more || peek == Comma || peek == CloseBracket
+              then YamlAst.Null
+              else parseFlowNode()
+            val pairBuf = acquireBuffer()
+            pairBuf += first
+            pairBuf += value
+            val pair = sealMapping(pairBuf)
+            releaseBuffer()
+            pair
+          else first
+        buf += entry
         skipFlowWhitespace()
         if !more then fail(t"unterminated flow sequence")
         peek match
@@ -1204,16 +1222,24 @@ private[ypsiloid] final class YamlParser:
       buf += item
       // After parsing the item, skip blank lines and detect next item
       skipBlankAndCommentLines()
+      val lineStart = pos
       val nextIndent = consumeLeadingSpaces()
-      if nextIndent != indent then done = true
-      else if !more || peek != Minus then done = true
-      else if atDocumentBoundary then done = true
+      if nextIndent != indent then
+        pos = lineStart
+        done = true
+      else if !more || peek != Minus then
+        pos = lineStart
+        done = true
+      else if atDocumentBoundary then
+        pos = lineStart
+        done = true
       else
         // Need to verify it's `-` followed by whitespace (sequence
         // marker), not a plain scalar starting with `-`.
         val byteAfterDash = if pos + 1 < bufEnd then bytes(pos + 1) else -1
         if byteAfterDash != Space && byteAfterDash != Tab
                 && byteAfterDash != Newline && byteAfterDash != -1 then
+          pos = lineStart
           done = true
 
     val result = sealSequence(buf)
@@ -1275,10 +1301,15 @@ private[ypsiloid] final class YamlParser:
     var done = false
     while !done do
       skipBlankAndCommentLines()
+      val lineStart = pos
       val nextIndent = consumeLeadingSpaces()
-      if nextIndent != indent then done = true
+      if nextIndent != indent then
+        pos = lineStart
+        done = true
       else if !more then done = true
-      else if atDocumentBoundary then done = true
+      else if atDocumentBoundary then
+        pos = lineStart
+        done = true
       else
         // Read the next key as a plain scalar
         val keyText = readPlainScalarText(indent)
@@ -1304,21 +1335,44 @@ private[ypsiloid] final class YamlParser:
     else if peek == Newline then
       advance()
       skipBlankAndCommentLines()
+      val lineStart = pos
       val childIndent = consumeLeadingSpaces()
-      if childIndent <= parentIndent then YamlAst.Null
-      else parseNodeHere(childIndent)
+      pickValueOrNull(parentIndent, childIndent, lineStart)
     else if peek == Hash then
       while more && peek != Newline do advance()
       if more then advance()
       skipBlankAndCommentLines()
+      val lineStart = pos
       val childIndent = consumeLeadingSpaces()
-      if childIndent <= parentIndent then YamlAst.Null
-      else parseNodeHere(childIndent)
+      pickValueOrNull(parentIndent, childIndent, lineStart)
     else
       // Inline value on same line as `key:`. Pass `parentIndent` directly
       // so block scalars require content indent strictly greater than the
       // surrounding block's indent.
       parseNodeHere(parentIndent)
+
+  // Decide whether a next-line node belongs to the current mapping
+  // value. Less-indented => Null (no value, the line is a sibling key
+  // or out-of-scope). Same-indent block sequence => the sequence is
+  // the value (spec 8.2.2). More-indented => a regular nested node.
+  // Rewinds to lineStart on Null so the outer scope re-reads the line.
+  private inline def pickValueOrNull
+                       ( parentIndent: Int, childIndent: Int, lineStart: Int )
+                       ( using Tactic[YamlError] )
+  :   YamlAst =
+    if !more then YamlAst.Null
+    else if childIndent < parentIndent then
+      pos = lineStart
+      YamlAst.Null
+    else if childIndent == parentIndent then
+      if peek == Minus && {
+        val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+        nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
+      } then parseNodeHere(childIndent)
+      else
+        pos = lineStart
+        YamlAst.Null
+    else parseNodeHere(childIndent)
 
   // ── Block scalars (|/>) ─────────────────────────────────────────────────
 
