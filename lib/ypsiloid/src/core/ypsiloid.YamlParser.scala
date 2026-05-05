@@ -1837,7 +1837,7 @@ private[ypsiloid] final class YamlParser:
         nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
       } then
         advance()
-        parseMappingValue(indent, allowInlineSeq = true)
+        parseMappingValue(indent, isExplicitValue = true)
       else
         pos = markerLineStart
         YamlAst.Null
@@ -1846,7 +1846,7 @@ private[ypsiloid] final class YamlParser:
   // Parse the value side of a `key: VALUE` entry. Either inline (after
   // the colon, on the same line) or a block on the next indented lines.
   private def parseMappingValue
-                ( parentIndent: Int, allowInlineSeq: Boolean = false )
+                ( parentIndent: Int, isExplicitValue: Boolean = false )
                 ( using Tactic[YamlError] )
   :   YamlAst =
     skipSpaces()
@@ -1866,15 +1866,18 @@ private[ypsiloid] final class YamlParser:
       pickValueOrNull(parentIndent, childIndent, lineStart)
     else
       // Inline value on same line as `key:`. For implicit keys, a
-      // block-sequence indicator here is invalid per spec. For
-      // explicit keys (`? key\n: - val`) the inline `- ` is allowed.
-      if !allowInlineSeq && peek == Minus then
+      // block-sequence indicator here is invalid per spec, and
+      // chained `'k': v`-style nested mapping is illegal too. For
+      // explicit-key values (`? key\n: - val`, `? k\n: m: n`) both
+      // patterns are allowed because the explicit-key construct
+      // already disambiguates the layout.
+      if !isExplicitValue && peek == Minus then
         val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
         if next == Space || next == Tab || next == Newline
                 || next == Return || next == -1 then
           fail(t"sequence cannot start on the same line as a mapping key")
       val saved = inInlineMappingValue
-      inInlineMappingValue = true
+      inInlineMappingValue = !isExplicitValue
       val result = parseNodeHere(parentIndent)
       inInlineMappingValue = saved
       result
