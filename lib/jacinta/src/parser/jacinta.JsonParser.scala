@@ -221,10 +221,15 @@ private[jacinta] final class JsonParser:
           i += 1
         stringCursor += len
 
-  // BOM probing runs once per parse. It uses the cursor directly (via
-  // `cursor.next` and `cursor.cue`, both of which mutate `pos`), so the
-  // parser snapshot is synchronised before and refreshed after.
+  // BOM probing runs once per parse, and almost no JSON inputs actually
+  // start with one. The fast path peeks the first byte directly from the
+  // parser-local snapshot — if it isn't `0xEF` (the BOM lead byte), no
+  // valid BOM is possible and we return immediately, skipping the
+  // `cursor.hold` token allocation, the mark/cue, and the
+  // `syncTo`/`syncFrom` round-trip. The slow path retains full BOM
+  // semantics (including rolling back if only the first byte matches).
   protected def bom(): Unit =
+    if !more || peek != -17.toByte then return
     syncTo()
     cursor.hold:
       val mk = cursor.mark
