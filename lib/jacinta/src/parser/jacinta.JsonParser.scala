@@ -681,6 +681,11 @@ private[jacinta] final class JsonParser:
 
       advance()
 
+    // The parseNumber side channel may have been left set by a number
+    // parsed inside the array; the array itself is never a packable
+    // number, so clear before returning.
+    hasPackedNumber = false
+
     if first then
       // Empty array — no buffer was ever allocated.
       JsonArray(IArray.empty[Any])
@@ -789,6 +794,9 @@ private[jacinta] final class JsonParser:
     val out = new Array[Any](items.length)
     items.copyToArray(out)
     relinquishArrayBuffer()
+    // The parseNumber side channel may have been left set by a value
+    // inside the object; the object itself is never a packable number.
+    hasPackedNumber = false
     out.asInstanceOf[IArray[Any]]
 
   def parse()(using Tactic[ParseError]): Raw =
