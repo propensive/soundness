@@ -108,11 +108,11 @@ object Tests extends Suite(m"Profanity Tests"):
         found = matches
       found
 
-    def runFixture(arg: Text, width: Int = 80, height: Int = 24)(input: Tmux ?=> Unit)
+    def runFixture(arg: Text)(input: Tmux ?=> Unit)
       ( using Enclave.Tool, Monitor, WorkingDirectory, TemporaryDirectory )
     :   Text =
 
-      Bash.tmux(width = width, height = height):
+      Bash.tmux():
         val tool = summon[Enclave.Tool].command
         Tmux.enter(tool, ' ', arg)
         Tmux.enter('\r')
@@ -162,10 +162,16 @@ object Tests extends Suite(m"Profanity Tests"):
         // right), but the screen retains the original wrapped characters.
 
         test(m"submits correct text after wrap and backspace"):
-          runFixture(t"line-editor", width = 20, height = 10):
+          Bash.tmux(width = 20, height = 10):
+            val tool = summon[Enclave.Tool].command
+            Tmux.enter(tool, ' ', t"line-editor")
+            Tmux.enter('\r')
+            if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
             Tmux.enter(t"a"*25)
             Tmux.enter('', '', '', '', '')
             Tmux.enter('\r')
+            waitFor(t"RESULT:")
+            Tmux.screenshot().screen.toList.join
         . assert(_.contains(t"RESULT:${t"a"*20}"))
 
         test(m"backspace clears characters wrapped onto the next visual line"):
