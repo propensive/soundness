@@ -531,6 +531,21 @@ object Tests extends Suite(m"Xylophone tests"):
         . map(_.focus)
       . assert(_ == List("whatever"))
 
+    suite(m"Compile-time parse-error sub-positioning"):
+      test(m"mismatched close tag in literal lands inside the literal"):
+        val errors = demilitarize:
+          x"<foo></bar>"
+        // Focus should be inside the literal text, NOT cover the whole `x"..."`.
+        // The whole literal is 14 chars; a precise focus is shorter.
+        errors.map(_.focus.length < 14)
+      . assert(_ == List(true))
+
+      test(m"mismatched close tag focus contains close-tag name"):
+        demilitarize:
+          x"<foo></bar>"
+        . map(_.focus)
+      . assert(_.headOption.exists(_.contains("bar")))
+
 
     suite(m"Namespaces"):
       test(m"Element with default namespace declaration"):

@@ -1071,3 +1071,10 @@ object Tests extends Suite(m"Jacinta Tests"):
           j"""[$bad*]"""
         . map(_.focus)
       . assert(_ == List("bad"))
+
+      test(m"parse error focus is inside the literal, not the whole thing"):
+        val errors = demilitarize:
+          j""" {"a": 1, } """
+        // The literal is 19 chars; a precise focus on the trailing `,` is shorter.
+        errors.map(_.focus.length < 19)
+      . assert(_ == List(true))

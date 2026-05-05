@@ -59,10 +59,14 @@ object Interpolation:
         case Repeated(lits, _) =>
           lits.map: lit =>
             stripWrappers(lit) match
-              case lit2 @ Literal(StringConstant(_)) => (lit2.pos.start, lit2.pos.end)
-              case _                                 => (0, 0)
+              case lit2 @ Literal(StringConstant(s)) =>
+                (lit2.pos.start, lit2.pos.end)
+
+              case _ => (0, 0)
+
         case _ =>
           List.fill(parts.length)((0, 0))
+
       case _ =>
         List.fill(parts.length)((0, 0))
 

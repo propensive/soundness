@@ -503,6 +503,13 @@ object Tests extends Suite(m"Honeycombd Tests"):
           . map(_.focus)
         . assert(_ == List("bad"))
 
+        test(m"parse error focus is inside the literal, not the whole thing"):
+          val errors = demilitarize:
+            h"<scrip></scrip>"
+          // h"<scrip></scrip>" is 17 chars; a precise focus is shorter.
+          errors.map(_.focus.length < 17)
+        . assert(_ == List(true))
+
       suite(m"Element coverage: void elements"):
         test(m"area"):
           t"""<area alt="a">""".read[Html of "area"]
