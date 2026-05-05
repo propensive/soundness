@@ -33,8 +33,8 @@
 package larceny
 
 object CompileError:
-  def apply(ordinal: Int, message: String, code: String, start: Int, offset: Int): CompileError =
-    new CompileError(CompileError.Reason.fromOrdinal(ordinal), message, code, start, offset)
+  def apply(ordinal: Int, message: String, focus: String, start: Int, offset: Int): CompileError =
+    new CompileError(CompileError.Reason.fromOrdinal(ordinal), message, focus, start, offset)
 
   enum Reason:
     case NoExplanation
@@ -252,6 +252,6 @@ object CompileError:
     case MatchIsNotPartialFunction
 
 case class CompileError
-  ( reason: CompileError.Reason, message: String, code: String, start: Int, offset: Int ):
+  ( reason: CompileError.Reason, message: String, focus: String, start: Int, offset: Int ):
 
   def point: Int = start + offset
