@@ -266,7 +266,11 @@ private[ypsiloid] final class YamlParser:
       val explicitStart = consumeOptionalDocumentStart()
       if sawDirectives && !explicitStart then
         fail(t"directive must be followed by document-start marker")
-      if !firstDoc && more && !explicitStart && !atDocumentBoundary then
+      // After a `...` footer, a bare document (no `---`) is allowed;
+      // otherwise every doc beyond the first needs a directives-end
+      // marker.
+      if !firstDoc && more && !explicitStart && !atDocumentBoundary
+              && !lastDocEndedWithFooter then
         fail(t"missing '---' between documents")
       // After a `---` marker we may be on the same line as the body;
       // otherwise the body is on a fresh line whose leading whitespace
