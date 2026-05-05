@@ -860,7 +860,12 @@ private[ypsiloid] final class YamlParser:
       case LowerR     => appendChar('\r')
       case LowerT     => appendChar('\t')
       case LowerV     => appendChar(0x0b.toChar)
-      case Newline    => () // \<newline> = explicit line continuation; no fold
+      case Newline    =>
+        // \<newline> = explicit line-break suppression. The newline
+        // itself is consumed (advance was done above) and any leading
+        // whitespace on the continuation line is stripped, so a literal
+        // space on the next line must be reintroduced via `\<space>`.
+        while more && (peek == Space || peek == Tab) do advance()
 
       case LowerX =>
         val n = readHex(2)
@@ -937,8 +942,13 @@ private[ypsiloid] final class YamlParser:
 
   // Inside a quoted string: `\n` followed by zero or more whitespace.
   // Apply YAML line folding: 1 newline → space, N newlines → (N-1)
-  // literal newlines.
+  // literal newlines. Trailing whitespace on the current line and
+  // leading whitespace on the continuation line are both stripped
+  // (per spec 6.5).
   private def consumeMultilineFold(): Unit =
+    while stringCursor > 0
+            && (chars(stringCursor - 1) == ' ' || chars(stringCursor - 1) == '\t') do
+      stringCursor -= 1
     var newlineCount = 0
     while more && (peek == Newline || peek == Space || peek == Tab || peek == Return) do
       if peek == Newline then newlineCount += 1
