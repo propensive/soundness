@@ -32,285 +32,1057 @@
                                                                                                   */
 package ypsiloid
 
+import scala.annotation.*
+import scala.collection.mutable.ArrayBuffer
+
 import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import zephyrine.*
 
+import YamlAst.Byte.*
 import YamlError.Reason
 
 object YamlParser:
-  private case class Line(indent: Int, content: Text)
+  private val pool: ThreadLocal[YamlParser] =
+    ThreadLocal.withInitial(() => new YamlParser).nn
 
-  private val positiveInfinityLiterals =
-    Set(t".inf", t".Inf", t".INF", t"+.inf", t"+.Inf", t"+.INF")
+  def parse(input: Text)(using Tactic[YamlError]): YamlAst =
+    val parser = pool.get.nn
+    parser.resetText(input)
+    parser.parse()
 
-  private val negativeInfinityLiterals = Set(t"-.inf", t"-.Inf", t"-.INF")
-  private val nanLiterals = Set(t".nan", t".NaN", t".NAN")
-  private val nullLiterals = Set(t"null", t"Null", t"NULL", t"~")
-  private val trueLiterals = Set(t"true", t"True", t"TRUE")
-  private val falseLiterals = Set(t"false", t"False", t"FALSE")
-
-  def parse(input: Text)(using Tactic[YamlError]): YamlAst = new YamlParser().parse(input)
+  def parse(input: Data)(using Tactic[YamlError]): YamlAst =
+    val parser = pool.get.nn
+    parser.resetData(input)
+    parser.parse()
 
   def parseAll(input: Text)(using Tactic[YamlError]): List[YamlAst] =
-    splitDocuments(input).map(new YamlParser().parse(_))
+    val parser = pool.get.nn
+    parser.resetText(input)
+    parser.parseAll()
 
-  private def splitDocuments(input: Text): List[Text] =
-    val docs = scala.collection.mutable.ArrayBuffer[Text]()
-    val current = scala.collection.mutable.ArrayBuffer[Text]()
+  def parseAll(input: Data)(using Tactic[YamlError]): List[YamlAst] =
+    val parser = pool.get.nn
+    parser.resetData(input)
+    parser.parseAll()
 
-    def flush(): Unit =
-      if current.exists(!_.trim.nil) then docs.append(current.join(t"\n"))
-      current.clear()
+private[ypsiloid] final class YamlParser:
+  import Lineation.untrackedData
 
-    for line <- input.cut(t"\n", -1) do
-      if line.trim == t"---" || line.trim == t"..." then flush() else current.append(line)
+  // Parser-local snapshot of the cursor's buffer, mirroring Jacinta's
+  // pattern: keep `bytes`/`pos`/`bufEnd` as plain fields so the JIT can
+  // hold them in registers across hot byte loops. Sync to the cursor
+  // before mark/slice/refill operations and refresh after.
+  private var cursor:    Cursor[Data]      = null.asInstanceOf[Cursor[Data]]
+  private var heldToken: Cursor.Held | Null = null
+  private var bytes:     Array[Byte]       = null.asInstanceOf[Array[Byte]]
+  private var pos:       Int               = 0
+  private var bufEnd:    Int               = 0
 
-    flush()
+  // Anchor table — names map to fully-parsed YamlAst values.
+  private val anchors = scala.collection.mutable.Map.empty[String, YamlAst]
+
+  // Resizable char buffer shared across string-building calls (for
+  // quoted-string unescape and UTF-8 decoded plain scalars). Mirrors
+  // Jacinta's `chars`/`stringCursor` to avoid per-string allocation.
+  private var arraySize: Int        = 64
+  private var chars:     Array[Char] = new Array(arraySize)
+  private var stringCursor: Int     = 0
+
+  // Pool of buffer instances for nested sequences/mappings so we can
+  // collect items without allocating an `ArrayBuffer` per recursion.
+  private var bufferId: Int = -1
+  private val bufferPool: ArrayBuffer[ArrayBuffer[Any]] = ArrayBuffer.empty
+
+  def resetText(input: Text): Unit =
+    val data: Data = input.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+    cursor = Cursor[Data](data)
+    syncFrom()
+    stringCursor = 0
+    bufferId = -1
+    heldToken = null
+    anchors.clear()
+
+  def resetData(input: Data): Unit =
+    cursor = Cursor[Data](input)
+    syncFrom()
+    stringCursor = 0
+    bufferId = -1
+    heldToken = null
+    anchors.clear()
+
+  // ── Substrate ────────────────────────────────────────────────────────────
+
+  private inline def syncTo(): Unit =
+    cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
+
+  private inline def syncFrom(): Unit =
+    bytes  = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
+    pos    = cursor.unsafePos(using Unsafe)
+    bufEnd = cursor.unsafeWriteEnd(using Unsafe)
+
+  private inline def more: Boolean = pos < bufEnd || moreSlow()
+
+  private def moreSlow(): Boolean =
+    syncTo()
+    if cursor.more then { syncFrom(); true } else false
+
+  private inline def peek: Byte = bytes(pos)
+
+  private inline def advance(): Unit = pos += 1
+
+  // ── Errors ──────────────────────────────────────────────────────────────
+
+  private def fail(message: Text)(using Tactic[YamlError]): Nothing =
+    syncTo()
+    val line = cursor.line.n0
+    val column = cursor.column.n0
+    abort(YamlError(Reason.ParseFailure(message, line, column)))
+
+  // ── Position / mark plumbing ────────────────────────────────────────────
+
+  private inline def begin(): Cursor.Mark =
+    syncTo()
+    cursor.mark(using heldToken.nn)
+
+  private inline def slice(start: Cursor.Mark): String =
+    syncTo()
+    val end = cursor.mark(using heldToken.nn)
+    cursor.slice(start, end): (storage, off, len) =>
+      val arr = storage.asInstanceOf[Array[Byte]]
+      new String(arr, off, len, java.nio.charset.StandardCharsets.UTF_8)
+
+  private inline def holding[result](inline action: => result): result =
+    syncTo()
+    cursor.hold:
+      heldToken = summon[Cursor.Held]
+      try action finally heldToken = null
+
+  // ── String buffer (per-instance, reused) ────────────────────────────────
+
+  private inline def resetString(): Unit = stringCursor = 0
+
+  private inline def ensureSpace(n: Int): Unit =
+    while stringCursor + n > arraySize do arraySize *= 2
+    if chars.length < arraySize then
+      val newArr = new Array[Char](arraySize)
+      System.arraycopy(chars, 0, newArr, 0, stringCursor)
+      chars = newArr
+
+  private inline def appendChar(char: Char): Unit =
+    ensureSpace(1)
+    chars(stringCursor) = char
+    stringCursor += 1
+
+  private inline def getStringText(): Text = String(chars, 0, stringCursor).tt
+
+  // ── Buffer pool for sequences/mappings ──────────────────────────────────
+
+  private inline def acquireBuffer(): ArrayBuffer[Any] =
+    bufferId += 1
+    if bufferPool.length <= bufferId then
+      val b = ArrayBuffer.empty[Any]
+      bufferPool += b
+      b
+    else
+      val b = bufferPool(bufferId)
+      b.clear()
+      b
+
+  private inline def releaseBuffer(): Unit = bufferId -= 1
+
+  // ── Top-level parse ─────────────────────────────────────────────────────
+
+  def parse()(using Tactic[YamlError]): YamlAst = holding:
+    skipBom()
+    skipWhitespaceAndCommentsAndDirectives()
+    consumeOptionalDocumentStart()
+    skipWhitespaceAndCommentsAndDirectives()
+    if !more then YamlAst.Null
+    else
+      val node = parseNode(0)
+      skipWhitespaceAndCommentsAndDirectives()
+      consumeOptionalDocumentEnd()
+      node
+
+  def parseAll()(using Tactic[YamlError]): List[YamlAst] = holding:
+    val docs = scala.collection.mutable.ArrayBuffer[YamlAst]()
+    skipBom()
+
+    var continue = true
+    while continue do
+      skipWhitespaceAndCommentsAndDirectives()
+      consumeOptionalDocumentStart()
+      skipWhitespaceAndCommentsAndDirectives()
+      if !more then continue = false
+      else
+        val node = parseNode(0)
+        docs.append(node)
+        skipWhitespaceAndCommentsAndDirectives()
+        consumeOptionalDocumentEnd()
+
     docs.toList
 
-class YamlParser(using Tactic[YamlError]):
-  import YamlParser.*
+  // Consume `---\n` if at the current position; no-op otherwise.
+  private def consumeOptionalDocumentStart(): Unit =
+    if more && peek == Minus && tryConsume3(Minus) then
+      skipUntilNewline()
+      if more then advance()
 
-  private val anchors = scala.collection.mutable.Map.empty[Text, YamlAst]
+  // Consume `...\n` if at the current position; no-op otherwise.
+  private def consumeOptionalDocumentEnd(): Unit =
+    if more && peek == Period && tryConsume3(Period) then
+      skipUntilNewline()
+      if more then advance()
 
-  def parse(input: Text): YamlAst =
-    val lines = preprocess(input)
-    if lines.isEmpty then YamlAst.Null else parseBlock(lines)
+  // Skip an optional UTF-8 BOM (EF BB BF) at the start of input.
+  private def skipBom(): Unit =
+    syncTo()
+    cursor.hold:
+      val mk = cursor.mark
+      val isBom =
+        cursor.more && cursor.datum(using Unsafe) == -17.toByte
+        && { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -69.toByte }
+        && { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -65.toByte }
 
-  private def preprocess(input: Text): List[Line] =
-    quoteAwareLines(input).flatMap: rawLine =>
-      val rightTrimmed = stripLineComment(rawLine).trim(Rtl)
-      val indent = rightTrimmed.keep(_ == ' ', Ltr).length
-      val content = rightTrimmed.skip(_ == ' ', Ltr)
+      if isBom then cursor.next() else cursor.cue(mk)
+    syncFrom()
 
-      if content.nil || content == t"---" || content == t"..." then None
-      else Some(Line(indent, content))
+  // ── Whitespace / comment / directive skipping ───────────────────────────
 
-  private def quoteAwareLines(input: Text): List[Text] =
-    val source = input.s
-    val lines = scala.collection.mutable.ArrayBuffer[Text]()
-    val current = new StringBuilder
-    var inSingleQuote = false
-    var inDoubleQuote = false
-    var index = 0
+  // Skip horizontal whitespace (spaces, tabs) but not newlines.
+  private inline def skipSpaces(): Unit =
+    while more && (peek == Space || peek == Tab) do advance()
 
-    while index < source.length do
-      val char = source.charAt(index)
-      val escaped = index > 0 && source.charAt(index - 1) == '\\'
+  // Skip horizontal whitespace, newlines, and `# comment` lines. Also
+  // consumes any `%YAML`/`%TAG` directive lines (we don't honour them
+  // semantically yet, just step over them).
+  private def skipWhitespaceAndCommentsAndDirectives(): Unit =
+    var continue = true
+    while continue && more do
+      val c = peek
+      if c == Space || c == Tab || c == Newline || c == Return then advance()
+      else if c == Hash then
+        while more && peek != Newline do advance()
+      else if c == '%'.toByte then
+        while more && peek != Newline do advance()
+      else continue = false
 
-      if char == '\'' && !inDoubleQuote then inSingleQuote = !inSingleQuote
-      else if char == '"' && !inSingleQuote && !escaped then inDoubleQuote = !inDoubleQuote
+  // Try to consume three of `b` in a row. Returns true on success.
+  private def tryConsume3(b: Byte): Boolean =
+    if pos + 2 < bufEnd && bytes(pos) == b && bytes(pos + 1) == b && bytes(pos + 2) == b then
+      pos += 3
+      true
+    else false
 
-      if char == '\n' && !inSingleQuote && !inDoubleQuote then
-        lines.append(current.toString.tt)
-        current.clear()
+  private inline def skipUntilNewline(): Unit =
+    while more && peek != Newline do advance()
+
+  // ── Node parsing ────────────────────────────────────────────────────────
+
+  // Parse a single YAML node at the given context indent. Caller has
+  // ensured we're positioned at the first byte of the node (after any
+  // leading whitespace).
+  private def parseNode(indent: Int)(using Tactic[YamlError]): YamlAst =
+    skipSpaces()
+    if !more then YamlAst.Null
+    else parseNodeHere(indent)
+
+  private def parseNodeHere(indent: Int)(using Tactic[YamlError]): YamlAst =
+    val (anchorName, tagText, headByte) = consumeNodePrefixes()
+
+    // Bare anchor/tag followed by newline → value is on the next indented
+    // line(s). consumeNodePrefixes stops at the newline so we can detect
+    // and descend into it here.
+    val hasPrefix = !anchorName.nil || !tagText.nil
+    val value: YamlAst =
+      if hasPrefix && (headByte == Newline || headByte == -1) then
+        if more && peek == Newline then advance()
+        skipBlankAndCommentLines()
+        val childIndent = consumeLeadingSpaces()
+        if childIndent <= indent then YamlAst.Null
+        else parseNodeHere(childIndent)
+      else if headByte == -1 then YamlAst.Null
+      else if headByte == Star then
+        advance()
+        parseAlias()
       else
-        current.append(char)
+        (headByte: @switch) match
+          case Quote        => advance(); parseDoubleQuoted()
+          case Apostrophe   => advance(); parseSingleQuoted()
+          case OpenBracket  => advance(); parseFlowSequence()
+          case OpenBrace    => advance(); parseFlowMapping()
+          case Pipe         => parseBlockScalar(literal = true, indent)
+          case Greater      => parseBlockScalar(literal = false, indent)
+          case Minus        => parseMinus(indent)
+          case Question     => parseQuestion(indent)
+          case _            => parsePlainOrBlockMapping(indent)
 
-      index += 1
-
-    lines.append(current.toString.tt)
-    lines.toList
-
-  private def parseBlock(lines: List[Line]): YamlAst =
-    if lines.isEmpty then YamlAst.Null
+    val tagged = if tagText.nil then value else applyTag(tagText, value)
+    if anchorName.nil then tagged
     else
-      val head = lines.head
+      anchors.update(anchorName.s, tagged)
+      tagged
 
-      if isBareAnchor(head.content) then
-        val name = head.content.skip(1)
-        val value = if lines.tail.isEmpty then YamlAst.Null else parseBlock(lines.tail)
-        anchors.update(name, value)
-        value
-      else if isBlockSequenceItem(head.content) then
-        parseBlockSequence(lines)
-      else if isBlockMappingHead(head.content) then
-        parseBlockMapping(lines)
-      else if isBlockScalarIndicator(head.content) && lines.tail.nonEmpty then
-        parseBlockScalar(head.content, lines.tail, head.indent)
-      else if lines.lengthCompare(1) == 0 then
-        parseTrimmed(head.content)
-      else
-        parseTrimmed(lines.map(_.content).join(t" ").trim)
+  // Consume any `&anchor`, `!tag`, or both at the current position. Stops
+  // at the first non-prefix byte (without crossing newlines, so the caller
+  // can detect a bare-prefix-with-block).
+  private def consumeNodePrefixes()(using Tactic[YamlError])
+  :   (Text, Text, Int) =
 
-  private def isBareAnchor(content: Text): Boolean =
-    content.length >= 2 && content.s.charAt(0) == '&' && !content.contains(' ')
+    var anchorName = t""
+    var tagText = t""
+    var done = false
+    while !done do
+      skipSpaces()
+      if !more then done = true
+      else peek match
+        case Amp =>
+          advance()
+          anchorName = readWord()
+          skipSpaces()
 
-  private def isBareTag(content: Text): Boolean =
-    content.length >= 1 && content.s.charAt(0) == '!' && !content.contains(' ')
+        case Bang =>
+          val mk = begin()
+          advance()
+          if more && peek == Bang then advance()
+          while more && !isWhitespaceOrEnd(peek) do advance()
+          tagText = slice(mk).tt
+          skipSpaces()
 
-  private def isBlockSequenceItem(content: Text): Boolean =
-    content == t"-" || content.starts(t"- ")
+        case _ => done = true
 
-  private def isBlockMappingHead(content: Text): Boolean =
-    val colon = findTopLevelColon(content)
-    colon >= 0 && (colon == content.length - 1 || content.s.charAt(colon + 1) == ' ')
+    if !more then (anchorName, tagText, -1)
+    else (anchorName, tagText, peek & 0xFF)
 
-  private def isBlockScalarIndicator(content: Text): Boolean =
-    if content.nil then false
+  private inline def isWhitespaceOrEnd(b: Byte): Boolean =
+    b == Space || b == Tab || b == Newline || b == Return
+
+  // Read an identifier-like word (anchor or alias name).
+  private def readWord(): Text =
+    val mk = begin()
+    while more && !isWhitespaceOrEnd(peek)
+              && peek != OpenBracket && peek != CloseBracket
+              && peek != OpenBrace && peek != CloseBrace
+              && peek != Comma do
+      advance()
+    slice(mk).tt
+
+  private def parseAlias()(using Tactic[YamlError]): YamlAst =
+    val name = readWord()
+    anchors.get(name.s) match
+      case Some(value) => value
+      case None        =>
+        raise(YamlError(Reason.UnknownAlias(name))) yet YamlAst.Null
+
+  // After a newline within a block context, advance past blank/comment
+  // lines and through the leading indent of the next content line.
+  private def skipBlanksAndIndent(): Unit =
+    var done = false
+    while !done && more do
+      // skip leading spaces
+      while more && peek == Space do advance()
+      if !more then done = true
+      else peek match
+        case Newline => advance()
+        case Hash    =>
+          while more && peek != Newline do advance()
+          if more then advance()
+        case _ => done = true
+
+  // ── Plain scalars / block mappings detection ────────────────────────────
+
+  // Parse from the current position. Either a plain scalar (yielding a
+  // primitive) or, if a top-level `:` follows, a block mapping where this
+  // scalar is the first key.
+  private def parsePlainOrBlockMapping(indent: Int)(using Tactic[YamlError])
+  :   YamlAst =
+    val (textValue, mappingDetected) = readPlainScalarText(indent)
+    if mappingDetected then
+      // We saw `key:` — caller's indent is the mapping's indent.
+      parseBlockMappingFromFirstKey(textValue, indent)
     else
-      val source = content.s
-      val first = source.charAt(0)
+      val raw = textValue
+      resolvePlainScalar(raw)
 
-      if first != '|' && first != '>' then false
+  // Read a plain scalar at the current position. Returns `(text,
+  // foundMappingColon)`. If a `: ` (or `:` at line-end) at the same line
+  // level was seen, returns true so the caller knows this is the key of
+  // a block mapping.
+  private def readPlainScalarText(indent: Int)
+                              (using Tactic[YamlError])
+  :   (Text, Boolean) =
+
+    resetString()
+
+    var sawColon = false
+    var done = false
+    var firstLine = true
+
+    while !done do
+      val lineStart = stringCursor
+      readPlainScalarLine() match
+        case PlainOutcome.Mapping =>
+          sawColon = true
+          done = true
+
+        case PlainOutcome.EndOfLine =>
+          // Try to fold continuation
+          if !attemptPlainContinuation(indent) then done = true
+          else firstLine = false
+
+        case PlainOutcome.Stop =>
+          done = true
+
+    val text = trimEndWhitespace(getStringText())
+    (text, sawColon)
+
+  private enum PlainOutcome:
+    case Mapping
+    case EndOfLine
+    case Stop
+
+  // Read one line of a plain scalar (until newline or terminator), pushing
+  // characters into `chars`. Returns Mapping if a `:` (followed by space
+  // or newline) was found at the top level on this line.
+  private def readPlainScalarLine()(using Tactic[YamlError]): PlainOutcome =
+    var lineStart = stringCursor
+
+    while more do
+      val b = peek
+      if b == Newline then return PlainOutcome.EndOfLine
+      if b == Hash && stringCursor > lineStart && chars(stringCursor - 1) == ' ' then
+        // ` # comment` — strip and treat as end of significant content
+        // for this line.
+        while more && peek != Newline do advance()
+        // Trim any trailing space we accumulated before the `#`
+        var i = stringCursor - 1
+        while i >= lineStart && chars(i) == ' ' do
+          stringCursor -= 1
+          i -= 1
+        return PlainOutcome.EndOfLine
+
+      if b == Colon then
+        // Mapping-key colon if next byte is a whitespace or end-of-line
+        if pos + 1 >= bufEnd then
+          // Need more bytes to disambiguate — refill
+          syncTo()
+          syncFrom()
+
+        val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+        if nextByte == Space || nextByte == Tab || nextByte == Newline
+                || nextByte == Return || nextByte == -1 then
+          // Don't consume the colon; caller handles it
+          return PlainOutcome.Mapping
+        // else: `:foo` is part of the scalar, fall through
+
+      // Plain-scalar terminators in flow context (we don't currently
+      // distinguish; caller can post-trim if needed).
+      // For block context, only newline and `: ` end the scalar.
+      appendByteAsChar(b)
+      advance()
+
+    PlainOutcome.Stop
+
+  // Attempt to fold a continuation line into a multi-line plain scalar.
+  // Returns true if a continuation was consumed. Continuation requires the
+  // next content line's indent to be strictly greater than `parentIndent`.
+  private def attemptPlainContinuation(parentIndent: Int): Boolean =
+    if !more || peek != Newline then return false
+    val savedPos = pos
+    val savedString = stringCursor
+
+    advance()
+    var newlineCount = 1
+
+    @tailrec def findContent(): Boolean =
+      val lineStart = pos
+      var spaces = 0
+      while more && peek == Space do
+        spaces += 1
+        advance()
+
+      if !more then
+        pos = savedPos; stringCursor = savedString; false
+      else if peek == Newline then
+        newlineCount += 1
+        advance()
+        findContent()
+      else if peek == Hash then
+        while more && peek != Newline do advance()
+        if more then advance()
+        newlineCount += 1
+        findContent()
+      else if spaces > parentIndent then
+        if newlineCount == 1 then appendChar(' ')
+        else
+          var k = 1
+          while k < newlineCount do
+            appendChar('\n')
+            k += 1
+        true
       else
-        var index = 1
-        var valid = true
-        while index < source.length && valid do
-          val char = source.charAt(index)
-          if !char.isDigit && char != '+' && char != '-' then valid = false
-          index += 1
-        valid
+        pos = lineStart
+        stringCursor = savedString
+        // Restore newline (we consumed it but didn't fold)
+        pos = savedPos
+        false
 
-  private def parseBlockScalarIndicator(content: Text): (Boolean, Optional[Int], Char) =
-    val source = content.s
-    val literal = source.charAt(0) == '|'
-    var explicitIndent: Optional[Int] = Unset
-    var chomp: Char = 'c'
-    var index = 1
+    findContent()
 
-    while index < source.length do
-      val char = source.charAt(index)
-      if char.isDigit then explicitIndent = char - '0'
-      else if char == '+' then chomp = '+'
-      else if char == '-' then chomp = '-'
-      index += 1
-
-    (literal, explicitIndent, chomp)
-
-  private def parseBlockScalar(indicator: Text, lines: List[Line], parentIndent: Int): YamlAst =
-    if lines.isEmpty then YamlAst.Str(t"")
+  private inline def appendByteAsChar(b: Byte): Unit =
+    if (b & 0x80) == 0 then appendChar((b & 0xFF).toChar)
     else
-      val (literal, explicitIndent, chomp) = parseBlockScalarIndicator(indicator)
-      val baseIndent = explicitIndent.lay(lines.head.indent)(parentIndent + _)
-      val builder = new StringBuilder
+      // Multi-byte UTF-8: decode in place.
+      decodeUtf8AndAppend(b)
 
-      lines.zipWithIndex.foreach: (line, position) =>
-        val padding = (line.indent - baseIndent).max(0)
-        if position > 0 then builder.append(if literal then '\n' else ' ')
-        var space = 0
-        while space < padding do
-          builder.append(' ')
-          space += 1
-        builder.append(line.content.s)
-
-      chomp match
-        case '-' => ()
-        case _   => builder.append('\n')
-
-      YamlAst.Str(builder.toString.tt)
-
-  private def parseBlockSequence(lines: List[Line]): YamlAst =
-    val baseIndent = lines.head.indent
-    val items = scala.collection.mutable.ArrayBuffer[YamlAst]()
-    var rest: List[Line] = lines
-
-    def headIsItem: Boolean =
-      rest.nonEmpty && rest.head.indent == baseIndent && isBlockSequenceItem(rest.head.content)
-
-    while headIsItem do
-      val first = rest.head
-      rest = rest.tail
-      val firstContent = if first.content == t"-" then t"" else first.content.skip(2)
-      val itemLines = scala.collection.mutable.ArrayBuffer[Line]()
-
-      if !firstContent.nil then itemLines.append(Line(0, firstContent))
-
-      while rest.nonEmpty && rest.head.indent > baseIndent do
-        itemLines.append(Line(rest.head.indent - baseIndent - 2, rest.head.content))
-        rest = rest.tail
-
-      items.append(parseBlock(itemLines.toList))
-
-    YamlAst.Sequence(IArray.from(items))
-
-  private def parseBlockMapping(lines: List[Line]): YamlAst =
-    val baseIndent = lines.head.indent
-    val entries = scala.collection.mutable.ArrayBuffer[(YamlAst, YamlAst)]()
-    var rest: List[Line] = lines
-
-    def gatherContinuation(): List[Line] =
-      val buffer = scala.collection.mutable.ArrayBuffer[Line]()
-      while rest.nonEmpty && rest.head.indent > baseIndent do
-        buffer.append(rest.head)
-        rest = rest.tail
-      buffer.toList
-
-    def headIsEntry: Boolean =
-      rest.nonEmpty && rest.head.indent == baseIndent && isBlockMappingHead(rest.head.content)
-
-    while headIsEntry do
-      val line = rest.head
-      rest = rest.tail
-      val colon = findTopLevelColon(line.content)
-      val keyText = line.content.before(colon.z).trim
-
-      val inline =
-        if colon + 1 < line.content.length then line.content.skip(colon + 1).trim else t""
-
-      val key = parseTrimmed(keyText)
-
-      val bareAnchorWithBlock =
-        isBareAnchor(inline) && rest.nonEmpty && rest.head.indent > baseIndent
-
-      val bareTagWithBlock =
-        isBareTag(inline) && rest.nonEmpty && rest.head.indent > baseIndent
-
-      if bareAnchorWithBlock then
-        val value = parseBlock(gatherContinuation())
-        anchors.update(inline.skip(1), value)
-        entries.append((key, value))
-      else if bareTagWithBlock then
-        val value = parseBlock(gatherContinuation())
-        entries.append((key, applyTag(inline, value)))
-      else if !inline.nil && !isBlockScalarIndicator(inline) then
-        entries.append((key, parseTrimmed(inline)))
+  // Decode a UTF-8 sequence whose lead byte is at the current cursor
+  // position and append the resulting char(s).
+  private def decodeUtf8AndAppend(lead: Byte): Unit =
+    val u = lead & 0xFF
+    if (u & 0xE0) == 0xC0 then
+      val b2 = if pos + 1 < bufEnd then bytes(pos + 1) & 0x3F else 0
+      val cp = ((u & 0x1F) << 6) | b2
+      // advance lead handled by caller
+      pos += 1
+      appendChar(cp.toChar)
+    else if (u & 0xF0) == 0xE0 then
+      val b2 = if pos + 1 < bufEnd then bytes(pos + 1) & 0x3F else 0
+      val b3 = if pos + 2 < bufEnd then bytes(pos + 2) & 0x3F else 0
+      val cp = ((u & 0x0F) << 12) | (b2 << 6) | b3
+      pos += 2
+      appendChar(cp.toChar)
+    else if (u & 0xF8) == 0xF0 then
+      val b2 = if pos + 1 < bufEnd then bytes(pos + 1) & 0x3F else 0
+      val b3 = if pos + 2 < bufEnd then bytes(pos + 2) & 0x3F else 0
+      val b4 = if pos + 3 < bufEnd then bytes(pos + 3) & 0x3F else 0
+      val cp = ((u & 0x07) << 18) | (b2 << 12) | (b3 << 6) | b4
+      pos += 3
+      // Encode as surrogate pair if non-BMP
+      if cp >= 0x10000 then
+        val adjusted = cp - 0x10000
+        appendChar((0xD800 | (adjusted >>> 10)).toChar)
+        appendChar((0xDC00 | (adjusted & 0x3FF)).toChar)
       else
-        val valueLines = gatherContinuation()
+        appendChar(cp.toChar)
+    else
+      // Stray continuation byte or invalid — replace with placeholder.
+      appendChar('?')
 
+  // Trim trailing space/tab from the produced text.
+  private def trimEndWhitespace(text: Text): Text =
+    val s = text.s
+    var n = s.length
+    while n > 0 && (s.charAt(n - 1) == ' ' || s.charAt(n - 1) == '\t') do n -= 1
+    if n == s.length then text else s.substring(0, n).nn.tt
+
+  // Resolve a plain-scalar string into a YamlAst primitive.
+  private def resolvePlainScalar(text: Text): YamlAst =
+    val s = text.s
+    if s.isEmpty then YamlAst.Null
+    else s match
+      case "null" | "Null" | "NULL" | "~"   => YamlAst.Null
+      case "true" | "True" | "TRUE"         => YamlAst.Bool(true)
+      case "false" | "False" | "FALSE"      => YamlAst.Bool(false)
+      case ".inf" | ".Inf" | ".INF"
+        | "+.inf" | "+.Inf" | "+.INF"       => YamlAst.Decimal(Double.PositiveInfinity)
+      case "-.inf" | "-.Inf" | "-.INF"      => YamlAst.Decimal(Double.NegativeInfinity)
+      case ".nan" | ".NaN" | ".NAN"         => YamlAst.Decimal(Double.NaN)
+
+      case _ =>
+        parsePlainInteger(s).orElse(parsePlainDecimal(s)).getOrElse(YamlAst.Str(text))
+
+  private def parsePlainInteger(s: String): Option[YamlAst.Integer] =
+    if s.startsWith("0x") || s.startsWith("0X") then
+      try Some(YamlAst.Integer(java.lang.Long.parseLong(s.substring(2), 16)))
+      catch case _: NumberFormatException => None
+    else if s.startsWith("0o") || s.startsWith("0O") then
+      try Some(YamlAst.Integer(java.lang.Long.parseLong(s.substring(2), 8)))
+      catch case _: NumberFormatException => None
+    else
+      try Some(YamlAst.Integer(java.lang.Long.parseLong(s)))
+      catch case _: NumberFormatException => None
+
+  private def parsePlainDecimal(s: String): Option[YamlAst.Decimal] =
+    try Some(YamlAst.Decimal(java.lang.Double.parseDouble(s)))
+    catch case _: NumberFormatException => None
+
+  // ── Quoted strings ──────────────────────────────────────────────────────
+
+  private def parseDoubleQuoted()(using Tactic[YamlError]): YamlAst =
+    resetString()
+    var done = false
+    while !done do
+      if !more then fail(t"unterminated double-quoted string")
+      val b = peek
+      if b == Quote then
+        advance()
+        done = true
+      else if b == Backslash then
+        advance()
+        if !more then fail(t"unterminated escape")
+        consumeDoubleQuotedEscape()
+      else if b == Newline then
+        // Multi-line line folding
+        consumeMultilineFold()
+      else
+        appendByteAsChar(b)
+        advance()
+    YamlAst.Str(getStringText())
+
+  private def consumeDoubleQuotedEscape()(using Tactic[YamlError]): Unit =
+    val b = peek
+    advance()
+    (b: @switch) match
+      case Backslash  => appendChar('\\')
+      case Quote      => appendChar('"')
+      case Apostrophe => appendChar('\'')
+      case Slash      => appendChar('/')
+      case Space      => appendChar(' ')
+      case Num0       => appendChar(0x00.toChar)
+      case LowerA     => appendChar(0x07.toChar)
+      case LowerB     => appendChar('\b')
+      case LowerE     => appendChar(0x1b.toChar)
+      case LowerF     => appendChar('\f')
+      case LowerN     => appendChar('\n')
+      case LowerR     => appendChar('\r')
+      case LowerT     => appendChar('\t')
+      case LowerV     => appendChar(0x0b.toChar)
+      case Newline    => () // \<newline> = explicit line continuation; no fold
+
+      case LowerX =>
+        val n = readHex(2)
+        appendChar(n.toChar)
+
+      case LowerU =>
+        val n = readHex(4)
+        appendChar(n.toChar)
+
+      case 0x55 /* 'U' */ =>
+        val n = readHex(8)
+        if n >= 0x10000 then
+          val a = n - 0x10000
+          appendChar((0xD800 | (a >>> 10)).toChar)
+          appendChar((0xDC00 | (a & 0x3FF)).toChar)
+        else appendChar(n.toChar)
+
+      case _ =>
+        // Unknown escape — keep both bytes
+        appendChar('\\')
+        appendChar((b & 0xFF).toChar)
+
+  private def readHex(count: Int)(using Tactic[YamlError]): Int =
+    var acc = 0
+    var i = 0
+    while i < count do
+      if !more then fail(t"truncated hex escape")
+      val b = peek
+      val digit =
+        if b >= Num0 && b <= Num9 then b - Num0
+        else if b >= LowerA && b <= LowerF then b - LowerA + 10
+        else if b >= 0x41 && b <= UpperF then b - 0x41 + 10
+        else fail(t"invalid hex digit")
+      acc = (acc << 4) | digit
+      advance()
+      i += 1
+    acc
+
+  private def parseSingleQuoted()(using Tactic[YamlError]): YamlAst =
+    resetString()
+    var done = false
+    while !done do
+      if !more then fail(t"unterminated single-quoted string")
+      val b = peek
+      if b == Apostrophe then
+        advance()
+        if more && peek == Apostrophe then
+          appendChar('\'')
+          advance()
+        else
+          done = true
+      else if b == Newline then
+        consumeMultilineFold()
+      else
+        appendByteAsChar(b)
+        advance()
+    YamlAst.Str(getStringText())
+
+  // Inside a quoted string: `\n` followed by zero or more whitespace.
+  // Apply YAML line folding: 1 newline → space, N newlines → (N-1)
+  // literal newlines.
+  private def consumeMultilineFold(): Unit =
+    var newlineCount = 0
+    while more && (peek == Newline || peek == Space || peek == Tab || peek == Return) do
+      if peek == Newline then newlineCount += 1
+      advance()
+    if newlineCount == 1 then appendChar(' ')
+    else
+      var k = 1
+      while k < newlineCount do
+        appendChar('\n')
+        k += 1
+
+  // ── Flow types ──────────────────────────────────────────────────────────
+
+  private def parseFlowSequence()(using Tactic[YamlError]): YamlAst =
+    val buf = acquireBuffer()
+    var done = false
+    while !done do
+      skipFlowWhitespace()
+      if !more then fail(t"unterminated flow sequence")
+      if peek == CloseBracket then
+        advance()
+        done = true
+      else
+        val node = parseFlowNode()
+        buf += node
+        skipFlowWhitespace()
+        if !more then fail(t"unterminated flow sequence")
+        peek match
+          case Comma        => advance()
+          case CloseBracket => advance(); done = true
+          case _            => fail(t"expected ',' or ']' in flow sequence")
+    val items = IArray.from(buf.toArray.map(_.asInstanceOf[YamlAst]))
+    releaseBuffer()
+    YamlAst.Sequence(items)
+
+  private def parseFlowMapping()(using Tactic[YamlError]): YamlAst =
+    val buf = acquireBuffer()
+    var done = false
+    while !done do
+      skipFlowWhitespace()
+      if !more then fail(t"unterminated flow mapping")
+      if peek == CloseBrace then
+        advance()
+        done = true
+      else
+        val key = parseFlowNode()
+        skipFlowWhitespace()
         val value =
-          if inline.nil then parseBlock(valueLines)
-          else parseBlockScalar(inline, valueLines, baseIndent)
+          if more && peek == Colon then
+            advance()
+            skipFlowWhitespace()
+            if !more || peek == Comma || peek == CloseBrace then YamlAst.Null
+            else parseFlowNode()
+          else YamlAst.Null
+        buf += ((key, value))
+        skipFlowWhitespace()
+        if !more then fail(t"unterminated flow mapping")
+        peek match
+          case Comma     => advance()
+          case CloseBrace => advance(); done = true
+          case _         => fail(t"expected ',' or '}' in flow mapping")
+    val entries = IArray.from(buf.toArray.map(_.asInstanceOf[(YamlAst, YamlAst)]))
+    releaseBuffer()
+    YamlAst.Mapping(entries)
 
-        entries.append((key, value))
+  // Within a flow context, whitespace and newlines are insignificant
+  // separators; comments still apply.
+  private def skipFlowWhitespace(): Unit =
+    var continue = true
+    while continue && more do
+      val c = peek
+      if c == Space || c == Tab || c == Newline || c == Return then advance()
+      else if c == Hash then
+        while more && peek != Newline do advance()
+      else continue = false
 
-    YamlAst.Mapping(IArray.from(entries))
-
-  private def parseTrimmed(input: Text): YamlAst =
-    if input.nil then YamlAst.Null
-    else if input.s.charAt(0) == '*' then resolveAlias(input.skip(1).trim)
-    else if input.s.charAt(0) == '!' then parseTagged(input)
-    else if input.s.charAt(0) == '&' then parseAnchored(input)
-    else parseTrimmedCore(input)
-
-  private def parseTagged(input: Text): YamlAst =
-    val spaceIndex = input.s.indexOf(' ')
-
-    val (tag, rest) =
-      if spaceIndex < 0 then (input, t"")
-      else (input.before(spaceIndex.z), input.skip(spaceIndex + 1).trim)
-
-    applyTag(tag, parseTrimmed(rest))
-
-  private def parseAnchored(input: Text): YamlAst =
-    val spaceIndex = input.s.indexOf(' ')
-
-    if spaceIndex < 0 then
-      val name = input.skip(1)
-      anchors.update(name, YamlAst.Null)
-      YamlAst.Null
+  // A node within a flow context — same dispatch as parseNodeHere but
+  // with flow-specific scalar termination.
+  private def parseFlowNode()(using Tactic[YamlError]): YamlAst =
+    skipFlowWhitespace()
+    if !more then YamlAst.Null
     else
-      val name = input.segment(Sec till spaceIndex.z)
-      val value = parseTrimmed(input.skip(spaceIndex + 1).trim)
-      anchors.update(name, value)
-      value
+      val (anchorName, tagText, headByte) = consumeNodePrefixes()
+      val value =
+        if headByte == -1 then YamlAst.Null
+        else if headByte == Star then
+          advance()
+          parseAlias()
+        else
+          (headByte: @switch) match
+            case Quote        => advance(); parseDoubleQuoted()
+            case Apostrophe   => advance(); parseSingleQuoted()
+            case OpenBracket  => advance(); parseFlowSequence()
+            case OpenBrace    => advance(); parseFlowMapping()
+            case _            => parseFlowPlainScalar()
 
-  private def applyTag(tag: Text, value: YamlAst): YamlAst = tag match
-    case t"!!str" =>
+      val tagged = if tagText.nil then value else applyTag(tagText, value)
+      if anchorName.nil then tagged
+      else
+        anchors.update(anchorName.s, tagged)
+        tagged
+
+  // Plain scalar within a flow context: terminates on `,`, `]`, `}`,
+  // `:`+space, newline, or hash-comment.
+  private def parseFlowPlainScalar()(using Tactic[YamlError]): YamlAst =
+    resetString()
+    var done = false
+    while !done && more do
+      val b = peek
+      if b == Comma || b == CloseBracket || b == CloseBrace then done = true
+      else if b == Newline then
+        // fold or stop — treat as space for simplicity in flow
+        consumeMultilineFold()
+      else if b == Colon then
+        val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+        if nextByte == Space || nextByte == Tab || nextByte == Newline
+                || nextByte == Comma || nextByte == CloseBracket
+                || nextByte == CloseBrace || nextByte == -1 then done = true
+        else
+          appendChar(':')
+          advance()
+      else if b == Hash && stringCursor > 0 && chars(stringCursor - 1) == ' ' then
+        while more && peek != Newline do advance()
+        done = true
+      else
+        appendByteAsChar(b)
+        advance()
+    val text = trimEndWhitespace(getStringText())
+    resolvePlainScalar(text)
+
+  // ── Block sequences / mappings ─────────────────────────────────────────
+
+  // Called when a `-` is at the head of the current node. Either a plain
+  // scalar starting with `-` (e.g. negative number) or a block sequence
+  // marker. The disambiguation is the byte after `-`: if space/tab/
+  // newline/EOF, it's a sequence marker.
+  private def parseMinus(indent: Int)(using Tactic[YamlError]): YamlAst =
+    val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+    if nextByte == Space || nextByte == Tab || nextByte == Newline
+            || nextByte == Return || nextByte == -1 then
+      parseBlockSequence(indent)
+    else
+      parsePlainOrBlockMapping(indent)
+
+  // Caller has seen a `?` at node-head: we treat this as a `complex key`
+  // request. We don't fully support complex keys, but we can read the key
+  // plain-style and treat the entry as a scalar-keyed mapping.
+  private def parseQuestion(indent: Int)(using Tactic[YamlError]): YamlAst =
+    advance()
+    skipSpaces()
+    parseNodeHere(indent)
+
+  private def parseBlockSequence(indent: Int)(using Tactic[YamlError]): YamlAst =
+    val buf = acquireBuffer()
+    var done = false
+    while !done do
+      // We're at a `-` at column == indent.
+      advance()  // consume `-`
+      // Either space-separated content or newline (item value on next
+      // indented line)
+      val next = if more then peek else -1
+      val item: YamlAst =
+        if next == Space || next == Tab then
+          advance() // single space after `-`
+          while more && (peek == Space || peek == Tab) do advance()
+          if more && peek == Newline then
+            advance()
+            skipBlankAndCommentLines()
+            val childIndent = consumeLeadingSpaces()
+            if childIndent <= indent then YamlAst.Null
+            else parseNodeHere(childIndent)
+          else parseNodeHere(indent + 2)
+        else if next == Newline || next == -1 then
+          // Just `-` with newline → child on next line
+          if more then advance() // consume newline
+          skipBlankAndCommentLines()
+          val childIndent = consumeLeadingSpaces()
+          if childIndent <= indent then YamlAst.Null
+          else parseNodeHere(childIndent)
+        else
+          // shouldn't happen
+          parseNodeHere(indent + 2)
+
+      buf += item
+      // After parsing the item, skip blank lines and detect next item
+      skipBlankAndCommentLines()
+      val nextIndent = consumeLeadingSpaces()
+      if nextIndent != indent then done = true
+      else if !more || peek != Minus then done = true
+      else
+        // Need to verify it's `-` followed by whitespace (sequence
+        // marker), not a plain scalar starting with `-`.
+        val byteAfterDash = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+        if byteAfterDash != Space && byteAfterDash != Tab
+                && byteAfterDash != Newline && byteAfterDash != -1 then
+          done = true
+
+    val items = IArray.from(buf.toArray.map(_.asInstanceOf[YamlAst]))
+    releaseBuffer()
+    YamlAst.Sequence(items)
+
+  // From the start of the current line, count leading spaces. Returns the
+  // count and leaves the cursor positioned at the first non-space byte.
+  private def consumeLeadingSpaces(): Int =
+    var n = 0
+    while more && peek == Space do
+      n += 1
+      advance()
+    n
+
+  // Skip blank lines (only whitespace) and comment-only lines.
+  private def skipBlankAndCommentLines(): Unit =
+    var continue = true
+    while continue && more do
+      val savedPos = pos
+      // Scan to end of line
+      while more && (peek == Space || peek == Tab) do advance()
+      if !more then continue = false
+      else peek match
+        case Newline =>
+          advance()
+        case Hash    =>
+          while more && peek != Newline do advance()
+          if more then advance()
+        case _ =>
+          pos = savedPos
+          continue = false
+
+  // Called when we've already read a plain-scalar key and seen a `:`
+  // following it. Parse the rest of the block mapping at `indent`.
+  private def parseBlockMappingFromFirstKey
+                ( firstKey: Text, indent: Int )
+                ( using Tactic[YamlError] )
+  :   YamlAst =
+    val buf = acquireBuffer()
+
+    // We're positioned at the `:` of `key:`
+    if !more || peek != Colon then fail(t"expected ':' after mapping key")
+    advance()
+    val firstValue = parseMappingValue(indent)
+    buf += ((resolvePlainScalar(firstKey), firstValue))
+
+    var done = false
+    while !done do
+      skipBlankAndCommentLines()
+      val nextIndent = consumeLeadingSpaces()
+      if nextIndent != indent then done = true
+      else if !more then done = true
+      else
+        // Read the next key as a plain scalar
+        val (keyText, mappingDetected) = readPlainScalarText(indent)
+        if !mappingDetected then done = true
+        else
+          if !more || peek != Colon then fail(t"expected ':' after mapping key")
+          advance()
+          val value = parseMappingValue(indent)
+          buf += ((resolvePlainScalar(keyText), value))
+
+    val entries = IArray.from(buf.toArray.map(_.asInstanceOf[(YamlAst, YamlAst)]))
+    releaseBuffer()
+    YamlAst.Mapping(entries)
+
+  // Parse the value side of a `key: VALUE` entry. Either inline (after
+  // the colon, on the same line) or a block on the next indented lines.
+  private def parseMappingValue(parentIndent: Int)(using Tactic[YamlError])
+  :   YamlAst =
+    skipSpaces()
+    if !more then YamlAst.Null
+    else if peek == Newline then
+      advance()
+      skipBlankAndCommentLines()
+      val childIndent = consumeLeadingSpaces()
+      if childIndent <= parentIndent then YamlAst.Null
+      else parseNodeHere(childIndent)
+    else if peek == Hash then
+      while more && peek != Newline do advance()
+      if more then advance()
+      skipBlankAndCommentLines()
+      val childIndent = consumeLeadingSpaces()
+      if childIndent <= parentIndent then YamlAst.Null
+      else parseNodeHere(childIndent)
+    else
+      // Inline value on same line as `key:`. Pass `parentIndent` directly
+      // so block scalars require content indent strictly greater than the
+      // surrounding block's indent.
+      parseNodeHere(parentIndent)
+
+  // ── Block scalars (|/>) ─────────────────────────────────────────────────
+
+  private def parseBlockScalar(literal: Boolean, parentIndent: Int)
+                            ( using Tactic[YamlError] )
+  :   YamlAst =
+    advance() // consume `|` or `>`
+    var explicitIndent: Int = -1
+    var chomp: Char = 'c' // clip
+    while more && (peek != Newline) do
+      val b = peek
+      if b >= Num0 && b <= Num9 then explicitIndent = b - Num0
+      else if b == Plus then chomp = '+'
+      else if b == Minus then chomp = '-'
+      else if b == Space || b == Tab then ()
+      else if b == Hash then
+        while more && peek != Newline do advance()
+      else fail(t"invalid block-scalar header")
+      advance()
+    if more then advance() // consume newline
+
+    val builder = new StringBuilder
+    var baseIndent = -1
+    var first = true
+    var done = false
+    while !done && more do
+      // Read leading spaces
+      val lineStart = pos
+      var spaces = 0
+      while more && peek == Space do
+        spaces += 1
+        advance()
+
+      // If the line is blank or unindented, decide
+      if !more then
+        done = true
+      else if peek == Newline then
+        // blank line within block scalar
+        if !first then builder.append('\n')
+        advance()
+      else
+        // Determine base indent on first content line
+        if baseIndent < 0 then
+          baseIndent =
+            if explicitIndent >= 0 then parentIndent + explicitIndent
+            else spaces
+        if spaces < baseIndent then
+          // Outside block — rewind to start of line so the caller sees
+          // the unindented content again.
+          pos = lineStart
+          done = true
+        else
+          if !first then builder.append(if literal then '\n' else ' ')
+          // Padding above baseIndent is preserved (relative indent)
+          var k = 0
+          while k < spaces - baseIndent do
+            builder.append(' ')
+            k += 1
+          // Read line content
+          while more && peek != Newline do
+            val b = peek
+            if (b & 0x80) == 0 then builder.append((b & 0xFF).toChar)
+            else
+              decodeUtf8AndAppend(b)
+              builder.append(chars, stringCursor - 1, 1)  // hack — reuse decodeUtf8AndAppend?
+              stringCursor -= 1
+            advance()
+          if more then advance() // consume newline
+          first = false
+
+    chomp match
+      case '-' => () // strip
+      case '+' => builder.append('\n') // keep (simplified)
+      case _   => builder.append('\n') // clip
+
+    YamlAst.Str(builder.toString.tt)
+
+  // ── Tags ────────────────────────────────────────────────────────────────
+
+  private def applyTag(tag: Text, value: YamlAst)(using Tactic[YamlError])
+  :   YamlAst = tag.s match
+    case "!!str" =>
       value match
         case YamlAst.Str(_)         => value
         case YamlAst.Integer(n)     => YamlAst.Str(n.toString.tt)
@@ -319,285 +1091,33 @@ class YamlParser(using Tactic[YamlError]):
         case YamlAst.Null           => YamlAst.Str(t"null")
         case _                      => value
 
-    case t"!!int" =>
+    case "!!int" =>
       value match
         case YamlAst.Integer(_)     => value
         case YamlAst.Decimal(d)     => YamlAst.Integer(d.toLong)
-        case YamlAst.Str(text)      => parseInteger(text).getOrElse(value)
+        case YamlAst.Str(text)      => parsePlainInteger(text.s).getOrElse(value)
         case _                      => value
 
-    case t"!!float" =>
+    case "!!float" =>
       value match
         case YamlAst.Decimal(_)     => value
         case YamlAst.Integer(n)     => YamlAst.Decimal(n.toDouble)
-        case YamlAst.Str(text)      => parseDecimal(text).getOrElse(value)
+        case YamlAst.Str(text)      => parsePlainDecimal(text.s).getOrElse(value)
         case _                      => value
 
-    case t"!!bool" =>
+    case "!!bool" =>
       value match
-        case YamlAst.Bool(_)                                   => value
-        case YamlAst.Str(text) if trueLiterals.contains(text)  => YamlAst.Bool(true)
-        case YamlAst.Str(text) if falseLiterals.contains(text) => YamlAst.Bool(false)
-        case _                                                 => value
+        case YamlAst.Bool(_) => value
 
-    case t"!!null" => YamlAst.Null
-    case _         => value
+        case YamlAst.Str(text) if text == t"true" || text == t"True"
+                                  || text == t"TRUE" =>
+          YamlAst.Bool(true)
 
-  private def resolveAlias(name: Text): YamlAst =
-    anchors.get(name) match
-      case Some(value) => value
+        case YamlAst.Str(text) if text == t"false" || text == t"False"
+                                  || text == t"FALSE" =>
+          YamlAst.Bool(false)
 
-      case None =>
-        raise(YamlError(Reason.UnknownAlias(name))) yet YamlAst.Null
+        case _ => value
 
-  private def parseTrimmedCore(input: Text): YamlAst =
-    val length = input.length
-
-    if length == 0 then YamlAst.Null
-    else
-      val first = input.s.charAt(0)
-      val last = input.s.charAt(length - 1)
-
-      if length >= 2 && first == '"' && last == '"'
-      then YamlAst.Str(unescapeDoubleQuoted(input.segment(Sec till (length - 1).z)))
-      else if length >= 2 && first == '\'' && last == '\''
-      then YamlAst.Str(unescapeSingleQuoted(input.segment(Sec till (length - 1).z)))
-      else if length >= 2 && first == '[' && last == ']'
-      then parseFlowSequence(input.segment(Sec till (length - 1).z))
-      else if length >= 2 && first == '{' && last == '}'
-      then parseFlowMapping(input.segment(Sec till (length - 1).z))
-      else resolveScalar(input)
-
-  private def parseFlowSequence(body: Text): YamlAst =
-    if body.trim.nil then YamlAst.Sequence(IArray.empty)
-    else YamlAst.Sequence(IArray.from(splitFlowItems(body).map(item => parseTrimmed(item.trim))))
-
-  private def parseFlowMapping(body: Text): YamlAst =
-    if body.trim.nil then YamlAst.Mapping(IArray.empty)
-    else
-      val entries = splitFlowItems(body).map(item => parseFlowMappingEntry(item.trim))
-      YamlAst.Mapping(IArray.from(entries))
-
-  private def parseFlowMappingEntry(entry: Text): (YamlAst, YamlAst) =
-    val colonIndex = findTopLevelColon(entry)
-
-    if colonIndex < 0 then (parseTrimmed(entry), YamlAst.Null)
-    else
-      val key = parseTrimmed(entry.before(colonIndex.z).trim)
-      val value = parseTrimmed(entry.skip(colonIndex + 1).trim)
-      (key, value)
-
-  private def findTopLevelColon(input: Text): Int =
-    val source = input.s
-    var depth = 0
-    var inSingleQuote = false
-    var inDoubleQuote = false
-    var index = 0
-    var found = -1
-
-    while index < source.length && found < 0 do
-      val char = source.charAt(index)
-
-      if inSingleQuote then
-        if char == '\'' then inSingleQuote = false
-      else if inDoubleQuote then
-        val escaped = index > 0 && source.charAt(index - 1) == '\\'
-        if char == '"' && !escaped then inDoubleQuote = false
-      else
-        char match
-          case '['               => depth += 1
-          case '{'               => depth += 1
-          case ']'               => depth -= 1
-          case '}'               => depth -= 1
-          case '\''              => inSingleQuote = true
-          case '"'               => inDoubleQuote = true
-          case ':' if depth == 0 => found = index
-          case _                 =>
-
-      index += 1
-
-    found
-
-  private def splitFlowItems(input: Text): List[Text] =
-    val source = input.s
-    val items = scala.collection.mutable.ArrayBuffer[Text]()
-    var depth = 0
-    var inSingleQuote = false
-    var inDoubleQuote = false
-    var start = 0
-    var index = 0
-
-    while index < source.length do
-      val char = source.charAt(index)
-
-      if inSingleQuote then
-        if char == '\'' then inSingleQuote = false
-      else if inDoubleQuote then
-        val escaped = index > 0 && source.charAt(index - 1) == '\\'
-        if char == '"' && !escaped then inDoubleQuote = false
-      else
-        char match
-          case '['  => depth += 1
-          case '{'  => depth += 1
-          case ']'  => depth -= 1
-          case '}'  => depth -= 1
-          case '\'' => inSingleQuote = true
-          case '"'  => inDoubleQuote = true
-
-          case ',' if depth == 0 =>
-            items.append(input.segment(start.z till index.z))
-            start = index + 1
-
-          case _ =>
-
-      index += 1
-
-    items.append(input.skip(start))
-    items.toList
-
-  private def stripLineComment(line: Text): Text =
-    val source = line.s
-    var index = 0
-    var inSingleQuote = false
-    var inDoubleQuote = false
-    var hashIndex = -1
-
-    while index < source.length && hashIndex < 0 do
-      val char = source.charAt(index)
-      val precededByWhitespace = index == 0 || source.charAt(index - 1).isWhitespace
-
-      if char == '\'' && !inDoubleQuote then inSingleQuote = !inSingleQuote
-      else if char == '"' && !inSingleQuote then inDoubleQuote = !inDoubleQuote
-      else if char == '#' && !inSingleQuote && !inDoubleQuote && precededByWhitespace
-      then hashIndex = index
-
-      index += 1
-
-    if hashIndex < 0 then line else line.before(hashIndex.z)
-
-  private def resolveScalar(input: Text): YamlAst =
-    import YamlParser.*
-
-    if input.nil || nullLiterals.contains(input) then YamlAst.Null
-    else if trueLiterals.contains(input) then YamlAst.Bool(true)
-    else if falseLiterals.contains(input) then YamlAst.Bool(false)
-    else if positiveInfinityLiterals.contains(input) then YamlAst.Decimal(Double.PositiveInfinity)
-    else if negativeInfinityLiterals.contains(input) then YamlAst.Decimal(Double.NegativeInfinity)
-    else if nanLiterals.contains(input) then YamlAst.Decimal(Double.NaN)
-    else parseInteger(input).orElse(parseDecimal(input)).getOrElse(YamlAst.Str(input))
-
-  private def parseInteger(input: Text): Option[YamlAst.Integer] =
-    if input.starts(t"0x") || input.starts(t"0X") then
-      try Some(YamlAst.Integer(java.lang.Long.parseLong(input.skip(2).s, 16)))
-      catch case _: NumberFormatException => None
-    else if input.starts(t"0o") || input.starts(t"0O") then
-      try Some(YamlAst.Integer(java.lang.Long.parseLong(input.skip(2).s, 8)))
-      catch case _: NumberFormatException => None
-    else
-      try Some(YamlAst.Integer(java.lang.Long.parseLong(input.s)))
-      catch case _: NumberFormatException => None
-
-  private def parseDecimal(input: Text): Option[YamlAst.Decimal] =
-    try Some(YamlAst.Decimal(java.lang.Double.parseDouble(input.s)))
-    catch case _: NumberFormatException => None
-
-  private def unescapeSingleQuoted(input: Text): Text =
-    val source = input.s
-    val builder = new StringBuilder
-    var index = 0
-
-    while index < source.length do
-      val current = source.charAt(index)
-      val nextIsQuote = index + 1 < source.length && source.charAt(index + 1) == '\''
-
-      if current == '\'' && nextIsQuote then
-        builder.append('\'')
-        index += 2
-      else if current == '\n' then
-        index = foldLineBreaks(builder, source, index)
-      else
-        builder.append(current)
-        index += 1
-
-    builder.toString.tt
-
-  private def unescapeDoubleQuoted(input: Text): Text =
-    val source = input.s
-    val builder = new StringBuilder
-    var index = 0
-
-    while index < source.length do
-      val char = source.charAt(index)
-      if char == '\\' && index + 1 < source.length then
-        index += appendEscape(builder, source, index)
-      else if char == '\n' then
-        index = foldLineBreaks(builder, source, index)
-      else
-        builder.append(char)
-        index += 1
-
-    builder.toString.tt
-
-  private def foldLineBreaks(builder: StringBuilder, source: String, start: Int): Int =
-    var index = start
-    var newlineCount = 0
-
-    var done = false
-    while !done && index < source.length do
-      val char = source.charAt(index)
-      if char == '\n' then
-        newlineCount += 1
-        index += 1
-      else if char == ' ' || char == '\t' then
-        index += 1
-      else
-        done = true
-
-    if newlineCount == 1 then builder.append(' ')
-    else
-      var k = 1
-      while k < newlineCount do
-        builder.append('\n')
-        k += 1
-
-    index
-
-  private def appendEscape(builder: StringBuilder, source: String, index: Int): Int =
-    source.charAt(index + 1) match
-      case '\\' => builder.append('\\')        ; 2
-      case '"'  => builder.append('"')         ; 2
-      case '\'' => builder.append('\'')        ; 2
-      case '/'  => builder.append('/')         ; 2
-      case ' '  => builder.append(' ')         ; 2
-      case '0'  => builder.append(0x00.toChar) ; 2
-      case 'a'  => builder.append(0x07.toChar) ; 2
-      case 'b'  => builder.append('\b')        ; 2
-      case 'e'  => builder.append(0x1b.toChar) ; 2
-      case 'f'  => builder.append('\f')        ; 2
-      case 'n'  => builder.append('\n')        ; 2
-      case 'r'  => builder.append('\r')        ; 2
-      case 't'  => builder.append('\t')        ; 2
-      case 'v'  => builder.append(0x0b.toChar) ; 2
-      case 'N'  => builder.append(0x85.toChar) ; 2
-      case '_'  => builder.append(0xa0.toChar) ; 2
-      case 'L'  => builder.append(0x2028.toChar)   ; 2
-      case 'P'  => builder.append(0x2029.toChar)   ; 2
-
-      case 'x' if index + 4 <= source.length =>
-        val hex = source.substring(index + 2, index + 4).nn
-        builder.append(java.lang.Integer.parseInt(hex, 16).toChar)
-        4
-
-      case 'u' if index + 6 <= source.length =>
-        val hex = source.substring(index + 2, index + 6).nn
-        builder.append(java.lang.Integer.parseInt(hex, 16).toChar)
-        6
-
-      case 'U' if index + 10 <= source.length =>
-        val hex = source.substring(index + 2, index + 10).nn
-        builder.append(Character.toChars(java.lang.Integer.parseInt(hex, 16)).nn)
-        10
-
-      case other =>
-        builder.append('\\').append(other)
-        2
+    case "!!null" => YamlAst.Null
+    case _        => value
