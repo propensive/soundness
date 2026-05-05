@@ -467,6 +467,25 @@ private[ypsiloid] final class YamlParser:
     var lineStart = stringCursor
 
     while more do
+      // Fast-prefix ASCII run: bulk-copy printable bytes (>= 0x20) that
+      // are neither potential terminators (#, :) nor UTF-8 lead bytes
+      // (which are negative as signed Bytes, so excluded by >= 0x20).
+      val runStart = pos
+      while pos < bufEnd && {
+        val b = bytes(pos)
+        b >= 0x20 && b != Hash && b != Colon
+      } do pos += 1
+      val runLen = pos - runStart
+      if runLen > 0 then
+        ensureSpace(runLen)
+        var k = 0
+        while k < runLen do
+          chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+          k += 1
+        stringCursor += runLen
+
+      if !more then return PlainOutcome.Stop
+
       val b = peek
       if b == Newline then return PlainOutcome.EndOfLine
       if b == Hash && stringCursor > lineStart && chars(stringCursor - 1) == ' ' then
@@ -491,9 +510,8 @@ private[ypsiloid] final class YamlParser:
           return PlainOutcome.Mapping
         // else: `:foo` is part of the scalar; fall through.
 
-      // Plain-scalar terminators in flow context (we don't currently
-      // distinguish; caller can post-trim if needed).
-      // For block context, only newline and `: ` end the scalar.
+      // Slow-path single-byte handling (control chars, UTF-8 lead bytes,
+      // or `:` not followed by whitespace).
       appendByteAsChar(b)
       advance()
 
@@ -605,22 +623,118 @@ private[ypsiloid] final class YamlParser:
       case ".nan" | ".NaN" | ".NAN"         => YamlAst.Decimal(Double.NaN)
 
       case _ =>
-        parsePlainInteger(s).orElse(parsePlainDecimal(s)).getOrElse(YamlAst.Str(text))
+        val asInt = parsePlainIntegerOrNull(s)
+        if asInt != null then asInt
+        else
+          val asDec = parsePlainDecimalOrNull(s)
+          if asDec != null then asDec else YamlAst.Str(text)
 
-  private def parsePlainInteger(s: String): Option[YamlAst] =
-    if s.startsWith("0x") || s.startsWith("0X") then
-      try Some(YamlAst.Integer(java.lang.Long.parseLong(s.substring(2), 16)))
-      catch case _: NumberFormatException => None
-    else if s.startsWith("0o") || s.startsWith("0O") then
-      try Some(YamlAst.Integer(java.lang.Long.parseLong(s.substring(2), 8)))
-      catch case _: NumberFormatException => None
-    else
-      try Some(YamlAst.Integer(java.lang.Long.parseLong(s)))
-      catch case _: NumberFormatException => None
+  // Parse a plain string into a Long without throwing on rejection.
+  // Returns null when the string does not represent a YAML 1.2 integer
+  // we want to recognise (avoids `Option`/exception overhead on the
+  // common reject path during plain-scalar resolution).
+  private def parsePlainIntegerOrNull(s: String): YamlAst | Null =
+    val len = s.length
+    if len == 0 then return null
+    var i = 0
+    var negative = false
+    s.charAt(0) match
+      case '-' => negative = true; i = 1
+      case '+' => i = 1
+      case _   => ()
 
-  private def parsePlainDecimal(s: String): Option[YamlAst] =
-    try Some(YamlAst.Decimal(java.lang.Double.parseDouble(s)))
-    catch case _: NumberFormatException => None
+    if i >= len then return null
+
+    // Hex / octal prefixes (after optional sign).
+    if i + 1 < len && s.charAt(i) == '0' then
+      val p = s.charAt(i + 1)
+      if p == 'x' || p == 'X' then
+        return parseRadix(s, i + 2, 16, negative)
+      if p == 'o' || p == 'O' then
+        return parseRadix(s, i + 2, 8, negative)
+
+    // Decimal: pure digits only (no leading zeroes except "0").
+    val first = s.charAt(i)
+    if first < '0' || first > '9' then return null
+    if first == '0' && i + 1 < len then return null  // "01" is not a YAML int
+
+    // Up to 18 digits: cannot overflow Long; manual loop. 19 digits:
+    // boundary case, defer to JDK parser. >19 digits: definitely not
+    // a Long.
+    val digitCount = len - i
+    if digitCount > 19 then return null
+    if digitCount == 19 then
+      try
+        val v = java.lang.Long.parseLong(s)
+        return YamlAst.Integer(v)
+      catch case _: NumberFormatException => return null
+
+    var acc: Long = 0L
+    while i < len do
+      val c = s.charAt(i)
+      if c < '0' || c > '9' then return null
+      acc = acc*10L + (c - '0')
+      i += 1
+
+    YamlAst.Integer(if negative then -acc else acc)
+
+  private def parseRadix(s: String, start: Int, radix: Int, negative: Boolean)
+  :   YamlAst | Null =
+    val len = s.length
+    if start >= len then return null
+    var acc: Long = 0L
+    var i = start
+    while i < len do
+      val c = s.charAt(i)
+      val d =
+        if c >= '0' && c <= '9' then c - '0'
+        else if c >= 'a' && c <= 'f' then c - 'a' + 10
+        else if c >= 'A' && c <= 'F' then c - 'A' + 10
+        else -1
+      if d < 0 || d >= radix then return null
+      acc = acc*radix + d
+      i += 1
+    YamlAst.Integer(if negative then -acc else acc)
+
+  // Pre-filter to avoid `Double.parseDouble` throwing on non-numeric
+  // strings: must contain at least one digit, only `[-+0-9.eE]`, ≤1
+  // `.`, ≤1 `e`/`E`, and the `e`/`E` (if present) must be followed by
+  // an optional sign and at least one digit.
+  private def parsePlainDecimalOrNull(s: String): YamlAst | Null =
+    val len = s.length
+    if len == 0 then return null
+
+    var i = 0
+    s.charAt(0) match
+      case '-' | '+' => i = 1
+      case _         => ()
+
+    var hasDigit = false
+    var dotSeen = false
+    var expSeen = false
+    var expHasDigit = false
+
+    while i < len do
+      val c = s.charAt(i)
+      if c >= '0' && c <= '9' then
+        if expSeen then expHasDigit = true else hasDigit = true
+      else if c == '.' then
+        if dotSeen || expSeen then return null
+        dotSeen = true
+      else if c == 'e' || c == 'E' then
+        if expSeen || !hasDigit then return null
+        expSeen = true
+        if i + 1 < len then
+          val nx = s.charAt(i + 1)
+          if nx == '+' || nx == '-' then i += 1
+      else return null
+      i += 1
+
+    if !hasDigit then return null
+    if expSeen && !expHasDigit then return null
+
+    try YamlAst.Decimal(java.lang.Double.parseDouble(s))
+    catch case _: NumberFormatException => null
 
   // ── Quoted strings ──────────────────────────────────────────────────────
 
@@ -628,6 +742,22 @@ private[ypsiloid] final class YamlParser:
     resetString()
     var done = false
     while !done do
+      // Fast-prefix ASCII run: copy non-special printable bytes in
+      // bulk. Quote/Backslash/Newline/UTF-8-lead-bytes exit.
+      val runStart = pos
+      while pos < bufEnd && {
+        val b = bytes(pos)
+        b >= 0x20 && b != Quote && b != Backslash
+      } do pos += 1
+      val runLen = pos - runStart
+      if runLen > 0 then
+        ensureSpace(runLen)
+        var k = 0
+        while k < runLen do
+          chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+          k += 1
+        stringCursor += runLen
+
       if !more then fail(t"unterminated double-quoted string")
       val b = peek
       if b == Quote then
@@ -638,7 +768,6 @@ private[ypsiloid] final class YamlParser:
         if !more then fail(t"unterminated escape")
         consumeDoubleQuotedEscape()
       else if b == Newline then
-        // Multi-line line folding
         consumeMultilineFold()
       else
         appendByteAsChar(b)
@@ -706,6 +835,22 @@ private[ypsiloid] final class YamlParser:
     resetString()
     var done = false
     while !done do
+      // Fast-prefix ASCII run: copy non-special printable bytes in
+      // bulk. Apostrophe/Newline/UTF-8-lead-bytes exit.
+      val runStart = pos
+      while pos < bufEnd && {
+        val b = bytes(pos)
+        b >= 0x20 && b != Apostrophe
+      } do pos += 1
+      val runLen = pos - runStart
+      if runLen > 0 then
+        ensureSpace(runLen)
+        var k = 0
+        while k < runLen do
+          chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+          k += 1
+        stringCursor += runLen
+
       if !more then fail(t"unterminated single-quoted string")
       val b = peek
       if b == Apostrophe then
@@ -862,25 +1007,42 @@ private[ypsiloid] final class YamlParser:
     resetString()
     var done = false
     while !done && more do
-      val b = peek
-      if b == Comma || b == CloseBracket || b == CloseBrace then done = true
-      else if b == Newline then
-        // fold or stop — treat as space for simplicity in flow
-        consumeMultilineFold()
-      else if b == Colon then
-        val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
-        if nextByte == Space || nextByte == Tab || nextByte == Newline
-                || nextByte == Comma || nextByte == CloseBracket
-                || nextByte == CloseBrace || nextByte == -1 then done = true
-        else
-          appendChar(':')
-          advance()
-      else if b == Hash && stringCursor > 0 && chars(stringCursor - 1) == ' ' then
-        while more && peek != Newline do advance()
-        done = true
+      // Fast-prefix ASCII run: bulk-copy bytes that are neither flow
+      // terminators nor UTF-8 lead bytes.
+      val runStart = pos
+      while pos < bufEnd && {
+        val b = bytes(pos)
+        b >= 0x20 && b != Comma && b != CloseBracket && b != CloseBrace
+                  && b != Colon && b != Hash
+      } do pos += 1
+      val runLen = pos - runStart
+      if runLen > 0 then
+        ensureSpace(runLen)
+        var k = 0
+        while k < runLen do
+          chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+          k += 1
+        stringCursor += runLen
+
+      if !more then done = true
       else
-        appendByteAsChar(b)
-        advance()
+        val b = peek
+        if b == Comma || b == CloseBracket || b == CloseBrace then done = true
+        else if b == Newline then consumeMultilineFold()
+        else if b == Colon then
+          val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+          if nextByte == Space || nextByte == Tab || nextByte == Newline
+                  || nextByte == Comma || nextByte == CloseBracket
+                  || nextByte == CloseBrace || nextByte == -1 then done = true
+          else
+            appendChar(':')
+            advance()
+        else if b == Hash && stringCursor > 0 && chars(stringCursor - 1) == ' ' then
+          while more && peek != Newline do advance()
+          done = true
+        else
+          appendByteAsChar(b)
+          advance()
     val text = trimEndWhitespace(getStringText())
     resolvePlainScalar(text)
 
@@ -1100,10 +1262,26 @@ private[ypsiloid] final class YamlParser:
           while k < spaces - baseIndent do
             appendChar(' ')
             k += 1
-          // Read line content
-          while more && peek != Newline do
-            appendByteAsChar(peek)
-            advance()
+          // Read line content. Fast-prefix ASCII run: bulk-copy
+          // printable bytes (>= 0x20) — newline (0x0A) is < 0x20 so
+          // exits the loop, and UTF-8 lead bytes are negative as
+          // signed Bytes so also exit.
+          var done2 = false
+          while !done2 do
+            val runStart = pos
+            while pos < bufEnd && bytes(pos) >= 0x20 do pos += 1
+            val runLen = pos - runStart
+            if runLen > 0 then
+              ensureSpace(runLen)
+              var k = 0
+              while k < runLen do
+                chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+                k += 1
+              stringCursor += runLen
+            if !more || peek == Newline then done2 = true
+            else
+              appendByteAsChar(peek)
+              advance()
           if more then advance() // consume newline
           first = false
 
@@ -1130,14 +1308,18 @@ private[ypsiloid] final class YamlParser:
       value.asInstanceOf[Matchable] match
         case _: Long   => value
         case d: Double => YamlAst.Integer(d.toLong)
-        case s: String => parsePlainInteger(s).getOrElse(value)
+        case s: String =>
+          val r = parsePlainIntegerOrNull(s)
+          if r != null then r else value
         case _         => value
 
     case "!!float" =>
       value.asInstanceOf[Matchable] match
         case _: Double => value
         case n: Long   => YamlAst.Decimal(n.toDouble)
-        case s: String => parsePlainDecimal(s).getOrElse(value)
+        case s: String =>
+          val r = parsePlainDecimalOrNull(s)
+          if r != null then r else value
         case _         => value
 
     case "!!bool" =>
