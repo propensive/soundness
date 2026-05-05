@@ -234,15 +234,20 @@ private[ypsiloid] final class YamlParser:
 
   def parse()(using Tactic[YamlError]): YamlAst = holding:
     skipBom()
-    skipWhitespaceAndCommentsAndDirectives()
-    consumeOptionalDocumentStart()
-    skipWhitespaceAndCommentsAndDirectives()
+    skipBlankAndCommentLines()
+    val explicitStart = consumeOptionalDocumentStart()
+    if !explicitStart || (more && peek == Newline) then
+      if more && peek == Newline then advance()
+      skipBlankAndCommentLines()
     if !more || atDocumentBoundary then YamlAst.Null
     else
-      val node = parseNode(0)
-      skipWhitespaceAndCommentsAndDirectives()
-      consumeOptionalDocumentEnd()
-      node
+      val indent = consumeLeadingSpaces()
+      if !more || atDocumentBoundary then YamlAst.Null
+      else
+        val node = parseNode(indent)
+        skipBlankAndCommentLines()
+        consumeOptionalDocumentEnd()
+        node
 
   def parseAll()(using Tactic[YamlError]): List[YamlAst] = holding:
     val docs = scala.collection.mutable.ArrayBuffer[YamlAst]()
@@ -250,25 +255,33 @@ private[ypsiloid] final class YamlParser:
 
     var continue = true
     while continue do
-      skipWhitespaceAndCommentsAndDirectives()
+      skipBlankAndCommentLines()
       val explicitStart = consumeOptionalDocumentStart()
-      skipWhitespaceAndCommentsAndDirectives()
+      // After a `---` marker we may be on the same line as the body;
+      // otherwise the body is on a fresh line whose leading whitespace
+      // determines the indent.
+      if !explicitStart || (more && peek == Newline) then
+        if more && peek == Newline then advance()
+        skipBlankAndCommentLines()
 
       if !more then
         if explicitStart then docs.append(YamlAst.Null)
         continue = false
       else if atDocumentBoundary then
-        // Another marker follows — current document is empty (when
-        // explicitly started) or no document at all otherwise. We
-        // consume `...` end-markers here; `---` start-markers are
-        // left for the next iteration's consumeOptionalDocumentStart.
         if explicitStart then docs.append(YamlAst.Null)
         consumeOptionalDocumentEnd()
       else
-        val node = parseNode(0)
-        docs.append(node)
-        skipWhitespaceAndCommentsAndDirectives()
-        consumeOptionalDocumentEnd()
+        // The first content line of the document determines the indent
+        // passed to parseNode.
+        val indent = consumeLeadingSpaces()
+        if !more || atDocumentBoundary then
+          if explicitStart then docs.append(YamlAst.Null)
+          consumeOptionalDocumentEnd()
+        else
+          val node = parseNode(indent)
+          docs.append(node)
+          skipBlankAndCommentLines()
+          consumeOptionalDocumentEnd()
 
     docs.toList
 
@@ -376,7 +389,11 @@ private[ypsiloid] final class YamlParser:
         if more && peek == Newline then advance()
         skipBlankAndCommentLines()
         val childIndent = consumeLeadingSpaces()
-        if childIndent <= indent then YamlAst.Null
+        // The value of a bare anchor/tag is the next node whose indent
+        // is strictly greater than the *parent collection*. Same indent
+        // as the prefix itself is fine when the parent is the document
+        // (top-level `&a\n- x` makes the sequence the anchor's value).
+        if !more || childIndent <= blockParentIndent then YamlAst.Null
         else parseNodeHere(childIndent)
       else if headByte == -1 then YamlAst.Null
       else if headByte == Star then
@@ -1213,7 +1230,11 @@ private[ypsiloid] final class YamlParser:
       advance()
     n
 
-  // Skip blank lines (only whitespace) and comment-only lines.
+  // Skip blank lines (only whitespace), comment-only lines, and
+  // directive lines (those starting with `%`). Leaves the cursor at
+  // the start of the first non-skip line (before any leading
+  // whitespace), so the caller can measure that line's indent via
+  // consumeLeadingSpaces.
   private def skipBlankAndCommentLines(): Unit =
     var continue = true
     while continue && more do
@@ -1225,6 +1246,9 @@ private[ypsiloid] final class YamlParser:
         case Newline =>
           advance()
         case Hash    =>
+          while more && peek != Newline do advance()
+          if more then advance()
+        case 0x25 /* '%' */ =>
           while more && peek != Newline do advance()
           if more then advance()
         case _ =>
@@ -1458,8 +1482,21 @@ private[ypsiloid] final class YamlParser:
 
   private def applyTag(tag: Text, value: YamlAst)(using Tactic[YamlError])
   :   YamlAst = tag.s match
+    case "!" | "!!" =>
+      // Non-specific tags. `!` forces the string type for plain
+      // scalars (preventing implicit type resolution into int/bool/etc).
+      if value.asInstanceOf[AnyRef] == null then YamlAst.Str(t"")
+      else value.asInstanceOf[Matchable] match
+        case _: String  => value
+        case n: Long    => YamlAst.Str(n.toString.tt)
+        case d: Double  => YamlAst.Str(d.toString.tt)
+        case b: Boolean => YamlAst.Str(b.toString.tt)
+        case _          => value
+
     case "!!str" =>
-      if value.asInstanceOf[AnyRef] == null then YamlAst.Str(t"null")
+      // A bare `!!str` with no scalar content is the empty string,
+      // not the literal text "null".
+      if value.asInstanceOf[AnyRef] == null then YamlAst.Str(t"")
       else value.asInstanceOf[Matchable] match
         case _: String  => value
         case n: Long    => YamlAst.Str(n.toString.tt)
