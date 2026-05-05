@@ -54,21 +54,27 @@ trait Yaml2:
   object DecodableDerivation extends ProductDerivation[[value] =>> value is Decodable in Yaml]:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Yaml = yaml =>
-      val values: Map[Text, YamlAst] = yaml.root match
-        case YamlAst.Mapping(entries) =>
-          entries.foldLeft(Map.empty[Text, YamlAst]): (acc, pair) =>
-            pair(0) match
-              case YamlAst.Str(text) => acc.updated(text, pair(1))
-              case _                 => acc
-
-        case _ =>
-          Map.empty[Text, YamlAst]
+      val arr: IArray[Any] | Null = yaml.root.asMatchable match
+        case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
+          xs.asInstanceOf[IArray[Any]]
+        case _ => null
 
       build: [field] =>
         context =>
-          values.get(label) match
-            case Some(item) => context.decoded(new Yaml(item))
-            case None       => default.or(context.decoded(new Yaml(YamlAst.Null)))
+          val target = label.s
+          var found: YamlAst | Null = null
+          if arr != null then
+            val n = arr.length
+            var i = 0
+            while i < n && found == null do
+              val key = arr(i).asInstanceOf[YamlAst]
+              key.asMatchable match
+                case s: String if s == target => found = arr(i + 1).asInstanceOf[YamlAst]
+                case _                        => ()
+              i += 2
+          if found != null then context.decoded(new Yaml(found))
+          else
+            default.or(context.decoded(new Yaml(YamlAst.Null)))
 
 object Yaml extends Yaml2:
   def ast(value: YamlAst): Yaml = new Yaml(value)
@@ -133,12 +139,13 @@ object Yaml extends Yaml2:
       case xs: IArray[?] @unchecked if (xs.length & 1) == 1 =>
         // Sequence (odd length, possibly with a trailing pad sentinel).
         val n = xs.length
-        val effective = if n > 0 && (xs(n - 1).asInstanceOf[AnyRef] eq YamlAst.arrayPad)
-                        then n - 1 else n
+        val effective =
+          if n > 0 && (xs(n - 1).asInstanceOf[AnyRef] eq YamlAst.arrayPad) then n - 1
+          else n
         val builder = factory.newBuilder
         var i = 0
         while i < effective do
-          builder += decodable.decoded(Yaml(xs(i).asInstanceOf[YamlAst]))
+          builder += decodable.decoded(new Yaml(xs(i).asInstanceOf[YamlAst]))
           i += 1
         builder.result()
 
@@ -170,7 +177,7 @@ object Yaml extends Yaml2:
                 raise(YamlError(Reason.NotType(primitive(other.asInstanceOf[YamlAst]),
                                                YamlPrimitive.Str))) yet t""
 
-          result = result.updated(keyText, value.decoded(Yaml(rawValue)))
+          result = result.updated(keyText, value.decoded(new Yaml(rawValue)))
           i += 1
         result
 
@@ -213,3 +220,4 @@ class Yaml(val root: YamlAst) derives CanEqual:
   override def equals(right: Any): Boolean = right match
     case right: Yaml => YamlAst.deepEquals(root, right.root)
     case _           => false
+
