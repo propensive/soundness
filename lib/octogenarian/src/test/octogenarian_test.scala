@@ -174,3 +174,42 @@ object Tests extends Suite(m"Octogenarian Tests"):
 
         !(worktree.path / t"old.txt").exists() && (worktree.path / t"new.txt").exists()
       .assert(_ == true)
+
+    suite(m"reflog"):
+
+      def freshDir(): Path on Linux =
+        val dir = temporaryDirectory[Path on Linux] / Uuid().show
+        dir.create[Directory]()
+        dir
+
+      def freshWorktree(): Worktree =
+        val dir = freshDir()
+        val worktree = Git.init(dir)
+        sh"git -C $dir config user.email octogenarian@test.local".exec[Exit]()
+        sh"git -C $dir config user.name Octogenarian".exec[Exit]()
+        sh"git -C $dir config commit.gpgsign false".exec[Exit]()
+        sh"git -C $dir config tag.gpgsign false".exec[Exit]()
+        worktree
+
+      def writeFile(path: Path on Linux, content: Text): Unit =
+        path.create[File]()
+        path.open: handle =>
+          Stream(content.data).writeTo(handle)
+
+      test(m"reflog shows one entry per commit and reset"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"a.txt", t"a\n")
+        worktree.add(worktree.path / t"a.txt")
+        worktree.commit(t"first")
+
+        writeFile(worktree.path / t"b.txt", t"b\n")
+        worktree.add(worktree.path / t"b.txt")
+        worktree.commit(t"second")
+
+        worktree.reset(ResetMode.Soft, Refspec.head(1))
+
+        // After two commits and a reset to HEAD~1 we expect three reflog
+        // entries: commit, commit, reset (newest first).
+        val entries = worktree.repo.reflog().to(List)
+        entries.length == 3 && entries.head.message.starts(t"reset:")
+      .assert(_ == true)
