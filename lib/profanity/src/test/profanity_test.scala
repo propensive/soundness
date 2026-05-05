@@ -108,11 +108,11 @@ object Tests extends Suite(m"Profanity Tests"):
         found = matches
       found
 
-    def runFixture(arg: Text)(input: Tmux ?=> Unit)
+    def runFixture(arg: Text, width: Int = 80, height: Int = 24)(input: Tmux ?=> Unit)
       ( using Enclave.Tool, Monitor, WorkingDirectory, TemporaryDirectory )
     :   Text =
 
-      Bash.tmux():
+      Bash.tmux(width = width, height = height):
         val tool = summon[Enclave.Tool].command
         Tmux.enter(tool, ' ', arg)
         Tmux.enter('\r')
@@ -154,6 +154,36 @@ object Tests extends Suite(m"Profanity Tests"):
             Tmux.enter("l")
             Tmux.enter('\r')
         . assert(_.contains(t"RESULT:hello"))
+
+        // Bug reproducer: when input wraps onto a second visual row in the terminal and
+        // the user then deletes back across the wrap boundary, the renderer in
+        // profanity.Interaction.lineEditor uses single-line ANSI cursor moves and never
+        // erases the wrapped row. The logical state is still correct (so RESULT: is
+        // right), but the screen retains the original wrapped characters.
+
+        test(m"submits correct text after wrap and backspace"):
+          runFixture(t"line-editor", width = 20, height = 10):
+            Tmux.enter(t"a"*25)
+            Tmux.enter('', '', '', '', '')
+            Tmux.enter('\r')
+        . assert(_.contains(t"RESULT:${t"a"*20}"))
+
+        test(m"backspace clears characters wrapped onto the next visual line"):
+          Bash.tmux(width = 20, height = 10):
+            val tool = summon[Enclave.Tool].command
+            Tmux.enter(tool, ' ', t"line-editor")
+            Tmux.enter('\r')
+            if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+            Tmux.attend(Tmux.enter(t"a"*25))
+            delay(0.1*Second)
+            Tmux.attend:
+              Tmux.enter('', '', '', '', '')
+            delay(0.2*Second)
+            val mid = Tmux.screenshot()
+            Tmux.enter('\r')
+            waitFor(t"RESULT:")
+            mid.screen.toList.map(_.count(_ == 'a')).sum
+        . aspire(_ == 20)
 
     // Pure state-transition tests, bypassing terminal IO. These exercise the
     // Iterator[TerminalEvent] -> recur path with synthetic events and a no-op
