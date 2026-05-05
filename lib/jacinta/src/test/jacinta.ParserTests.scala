@@ -288,5 +288,22 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . matches:
           case ParseError(_, _, _) => true
 
+    suite(m"Position ranges"):
+      def asBytes(text: Text): Data = IArray.from(text.s.getBytes("UTF-8").nn)
+      def position(input: Text): JsonAst.Position =
+        capture[ParseError](JsonAst.parse(asBytes(input)))
+        . position.asInstanceOf[JsonAst.Position]
+
+      // Bad escape \q after the opening quote (raw to avoid Text-interpolator escaping).
+      val badEscape = t""" "abc${"\\"}q" """
+
+      test(m"Bad escape in string carries a non-empty range"):
+        position(badEscape).length
+      . assert(_ != Unset)
+
+      test(m"Bad escape range covers the string token start"):
+        position(badEscape).offset
+      . assert(_ == (1: Int))
+
 
 private given realm: Realm = Realm(t"tests")
