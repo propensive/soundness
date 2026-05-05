@@ -1145,6 +1145,8 @@ private[ypsiloid] final class YamlParser:
         advance()
       else done = true
     if newlineCount > 0 && more then
+      if atDocumentBoundary then
+        fail(t"document marker inside multi-line scalar")
       if spaces <= blockParentIndent then
         fail(t"multi-line scalar continuation insufficiently indented")
     if newlineCount == 1 then appendChar(' ')
