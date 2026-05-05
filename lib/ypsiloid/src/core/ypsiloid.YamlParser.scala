@@ -405,8 +405,14 @@ private[ypsiloid] final class YamlParser:
         parseAlias()
       else
         (headByte: @switch) match
-          case Quote        => advance(); parseDoubleQuoted()
-          case Apostrophe   => advance(); parseSingleQuoted()
+          case Quote        =>
+            advance()
+            val s = parseDoubleQuoted()
+            maybeBlockMappingFromQuotedKey(s, indent)
+          case Apostrophe   =>
+            advance()
+            val s = parseSingleQuoted()
+            maybeBlockMappingFromQuotedKey(s, indent)
           case OpenBracket  => advance(); parseFlowSequence()
           case OpenBrace    => advance(); parseFlowMapping()
           case Pipe         => parseBlockScalar(literal = true, indent)
@@ -446,7 +452,14 @@ private[ypsiloid] final class YamlParser:
           val mk = begin()
           advance()
           if more && peek == Bang then advance()
-          while more && !isWhitespaceOrEnd(peek) do advance()
+          // Tag chars exclude flow-indicator bytes (the spec's URI
+          // production explicitly forbids them inside tag handles
+          // and shorthand tags).
+          while more && !isWhitespaceOrEnd(peek)
+                    && peek != Comma && peek != OpenBracket
+                    && peek != CloseBracket && peek != OpenBrace
+                    && peek != CloseBrace do
+            advance()
           tagText = slice(mk).tt
           skipSpaces()
 
@@ -496,12 +509,42 @@ private[ypsiloid] final class YamlParser:
   // Parse from the current position. Either a plain scalar (yielding a
   // primitive) or, if a top-level `:` follows, a block mapping where this
   // scalar is the first key.
+  // After parsing a quoted scalar at node head, decide what follows:
+  //  - `:` with a whitespace/EOL terminator → first key of a block
+  //    mapping;
+  //  - newline or EOF → the scalar is the value;
+  //  - `# comment` after at least one space → trailing comment, OK;
+  //  - flow-collection terminator (`,`, `]`, `}`) → caller is a flow
+  //    context that will consume the terminator;
+  // anything else is an error per spec (plain text after a quoted
+  // scalar is not a valid construct in block context).
+  private def maybeBlockMappingFromQuotedKey
+                ( scalar: YamlAst, indent: Int )
+                ( using Tactic[YamlError] )
+  :   YamlAst =
+    val hadSpaceOrTab = more && (peek == Space || peek == Tab)
+    skipSpaces()
+    if !more then scalar
+    else peek match
+      case Newline => scalar
+      case Hash if hadSpaceOrTab =>
+        while more && peek != Newline do advance()
+        scalar
+      case Colon =>
+        val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+        if nextByte == Space || nextByte == Tab || nextByte == Newline
+                || nextByte == Return || nextByte == -1 then
+          parseBlockMappingFromFirstKey(scalar, indent)
+        else fail(t"trailing content after quoted scalar")
+      case Comma | CloseBracket | CloseBrace => scalar
+      case _ => fail(t"trailing content after quoted scalar")
+
   private def parsePlainOrBlockMapping(indent: Int)(using Tactic[YamlError])
   :   YamlAst =
     val textValue = readPlainScalarText(indent)
     if sawMappingColon then
       // We saw `key:` — caller's indent is the mapping's indent.
-      parseBlockMappingFromFirstKey(textValue, indent)
+      parseBlockMappingFromFirstKey(resolvePlainScalar(textValue), indent)
     else
       resolvePlainScalar(textValue)
 
@@ -567,15 +610,16 @@ private[ypsiloid] final class YamlParser:
       val b = peek
       if b == Newline then return PlainOutcome.EndOfLine
       if b == Hash && stringCursor > lineStart && chars(stringCursor - 1) == ' ' then
-        // ` # comment` — strip and treat as end of significant content
-        // for this line.
+        // ` # comment` ends the plain scalar. Per spec, a comment also
+        // terminates any multi-line continuation: subsequent lines do
+        // not fold into the scalar even if they would otherwise be
+        // indented enough.
         while more && peek != Newline do advance()
-        // Trim any trailing space we accumulated before the `#`
         var i = stringCursor - 1
         while i >= lineStart && chars(i) == ' ' do
           stringCursor -= 1
           i -= 1
-        return PlainOutcome.EndOfLine
+        return PlainOutcome.Stop
 
       if b == Colon then
         // Mapping-key colon iff the byte after the colon is whitespace
@@ -627,10 +671,11 @@ private[ypsiloid] final class YamlParser:
         advance()
         findContent()
       else if peek == Hash then
-        while more && peek != Newline do advance()
-        if more then advance()
-        newlineCount += 1
-        findContent()
+        // A comment line terminates plain-scalar continuation: the
+        // scalar cannot fold across the comment into a later line.
+        pos = savedPos
+        stringCursor = savedString
+        false
       else if spaces > parent && !atDocumentBoundary then
         // Trim trailing whitespace from the previous line we emitted
         // before adding the fold separator: in plain scalars, both
@@ -1234,6 +1279,7 @@ private[ypsiloid] final class YamlParser:
       skipBlankAndCommentLines()
       val lineStart = pos
       val nextIndent = consumeLeadingSpaces()
+      if more && peek == Tab then fail(t"tab character used in indentation")
       if nextIndent != indent then
         pos = lineStart
         done = true
@@ -1291,21 +1337,21 @@ private[ypsiloid] final class YamlParser:
           pos = savedPos
           continue = false
 
-  // Called when we've already read a plain-scalar key and seen a `:`
-  // following it. Parse the rest of the block mapping at `indent`.
+  // Called when we've already read the first key (plain or quoted) and
+  // are positioned at the `:` following it. Parse the rest of the
+  // block mapping at `indent`. Subsequent keys may also be quoted.
   private def parseBlockMappingFromFirstKey
-                ( firstKey: Text, indent: Int )
+                ( firstKey: YamlAst, indent: Int )
                 ( using Tactic[YamlError] )
   :   YamlAst =
     val buf = acquireBuffer()
     val savedParentIndent = blockParentIndent
     blockParentIndent = indent
 
-    // We're positioned at the `:` of `key:`
     if !more || peek != Colon then fail(t"expected ':' after mapping key")
     advance()
     val firstValue = parseMappingValue(indent)
-    buf += resolvePlainScalar(firstKey)
+    buf += firstKey
     buf += firstValue
 
     var done = false
@@ -1313,6 +1359,7 @@ private[ypsiloid] final class YamlParser:
       skipBlankAndCommentLines()
       val lineStart = pos
       val nextIndent = consumeLeadingSpaces()
+      if more && peek == Tab then fail(t"tab character used in indentation")
       if nextIndent != indent then
         pos = lineStart
         done = true
@@ -1321,15 +1368,29 @@ private[ypsiloid] final class YamlParser:
         pos = lineStart
         done = true
       else
-        // Read the next key as a plain scalar
-        val keyText = readPlainScalarText(indent)
-        if !sawMappingColon then done = true
-        else
-          if !more || peek != Colon then fail(t"expected ':' after mapping key")
-          advance()
-          val value = parseMappingValue(indent)
-          buf += resolvePlainScalar(keyText)
-          buf += value
+        // The next key may be plain, double-quoted, or single-quoted.
+        val keyAst: YamlAst = peek match
+          case Quote =>
+            advance()
+            parseDoubleQuoted()
+          case Apostrophe =>
+            advance()
+            parseSingleQuoted()
+          case _ =>
+            val keyText = readPlainScalarText(indent)
+            if !sawMappingColon then
+              fail(t"plain scalar at mapping indent without ':'")
+            resolvePlainScalar(keyText)
+        // For quoted keys, sawMappingColon wasn't set during reading —
+        // skip whitespace and require an explicit `:` here. For plain
+        // keys, sawMappingColon was true so the parser is already at
+        // the colon.
+        skipSpaces()
+        if !more || peek != Colon then fail(t"expected ':' after mapping key")
+        advance()
+        val value = parseMappingValue(indent)
+        buf += keyAst
+        buf += value
 
     val result = sealMapping(buf)
     releaseBuffer()
@@ -1370,6 +1431,7 @@ private[ypsiloid] final class YamlParser:
                        ( parentIndent: Int, childIndent: Int, lineStart: Int )
                        ( using Tactic[YamlError] )
   :   YamlAst =
+    if more && peek == Tab then fail(t"tab character used in indentation")
     if !more then YamlAst.Null
     else if childIndent < parentIndent then
       pos = lineStart
