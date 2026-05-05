@@ -787,7 +787,8 @@ object nomenclature extends Library:
   object test extends Tests(core)
 
 object octogenarian extends Library:
-  object core extends Component(galilei.core, urticose.core, enigmatic.core, anticipation.url)
+  object core extends Component(galilei.core, urticose.core, enigmatic.core, anticipation.url,
+    dissonance.core)
   object test extends Tests(core)
 
 object orthodoxy extends Library:

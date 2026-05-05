@@ -74,7 +74,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         worktree
 
       def writeFile(path: Path on Linux, content: Text): Unit =
-        path.create[File]()
+        if !path.exists() then path.create[File]()
         path.open: handle =>
           Stream(content.data).writeTo(handle)
 
@@ -127,7 +127,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         worktree
 
       def writeFile(path: Path on Linux, content: Text): Unit =
-        path.create[File]()
+        if !path.exists() then path.create[File]()
         path.open: handle =>
           Stream(content.data).writeTo(handle)
 
@@ -192,7 +192,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         worktree
 
       def writeFile(path: Path on Linux, content: Text): Unit =
-        path.create[File]()
+        if !path.exists() then path.create[File]()
         path.open: handle =>
           Stream(content.data).writeTo(handle)
 
@@ -212,4 +212,72 @@ object Tests extends Suite(m"Octogenarian Tests"):
         // entries: commit, commit, reset (newest first).
         val entries = worktree.repo.reflog().to(List)
         entries.length == 3 && entries.head.message.starts(t"reset:")
+      .assert(_ == true)
+
+    suite(m"diff / patch parser"):
+
+      def freshDir(): Path on Linux =
+        val dir = temporaryDirectory[Path on Linux] / Uuid().show
+        dir.create[Directory]()
+        dir
+
+      def freshWorktree(): Worktree =
+        val dir = freshDir()
+        val worktree = Git.init(dir)
+        sh"git -C $dir config user.email octogenarian@test.local".exec[Exit]()
+        sh"git -C $dir config user.name Octogenarian".exec[Exit]()
+        sh"git -C $dir config commit.gpgsign false".exec[Exit]()
+        sh"git -C $dir config tag.gpgsign false".exec[Exit]()
+        worktree
+
+      def writeFile(path: Path on Linux, content: Text): Unit =
+        if !path.exists() then path.create[File]()
+        path.open: handle =>
+          Stream(content.data).writeTo(handle)
+
+      test(m"diff() shows working-tree changes against the index"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"a.txt", t"first\n")
+        worktree.add(worktree.path / t"a.txt")
+        worktree.commit(t"initial")
+
+        writeFile(worktree.path / t"a.txt", t"first\nsecond\n")
+
+        val files = worktree.diff().to(List)
+        files.length == 1
+          && files.head.changeKind == ChangeKind.Modified
+          && files.head.newPath == t"a.txt"
+          && files.head.hunks.flatMap(_.edits).exists:
+              case Ins(_, t"second") => true
+              case _                 => false
+      .assert(_ == true)
+
+      test(m"diff() detects an added file"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"a.txt", t"a\n")
+        worktree.add(worktree.path / t"a.txt")
+        worktree.commit(t"initial")
+
+        writeFile(worktree.path / t"b.txt", t"b\n")
+        worktree.add(worktree.path / t"b.txt")
+
+        val staged = worktree.diff(staged = true).to(List)
+        staged.length == 1
+          && staged.head.changeKind == ChangeKind.Added
+          && staged.head.newPath == t"b.txt"
+      .assert(_ == true)
+
+      test(m"diff(ref) compares working tree to a ref"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"a.txt", t"v1\n")
+        worktree.add(worktree.path / t"a.txt")
+        worktree.commit(t"v1")
+        val firstHash = worktree.repo.revParse(Refspec.head())
+
+        writeFile(worktree.path / t"a.txt", t"v2\n")
+        worktree.add(worktree.path / t"a.txt")
+        worktree.commit(t"v2")
+
+        val files = worktree.diff(firstHash).to(List)
+        files.length == 1 && files.head.hunks.nonEmpty
       .assert(_ == true)

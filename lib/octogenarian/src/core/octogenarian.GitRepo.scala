@@ -185,6 +185,13 @@ case class GitRepo(gitDir: Path on Linux):
     recur(sh"$git $repoOptions log --format=raw --color=never".exec[Stream[Text]]())
 
 
+  def diff(refA: Refspec, refB: Refspec)
+    ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
+  :   Stream[FileDiff] logs GitEvent =
+
+    Patch.parse(sh"$git $repoOptions diff --no-color $refA $refB".exec[Stream[Text]]())
+
+
   def reflog(ref: Optional[Refspec] = Unset)
     ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
   :   Stream[ReflogEntry] logs GitEvent =
@@ -200,4 +207,4 @@ case class GitRepo(gitDir: Path on Linux):
   def revParse(refspec: Refspec)(using GitCommand, WorkingDirectory, Tactic[ExecError])
   :   GitHash logs GitEvent =
 
-    GitHash.unsafe(sh"$git $repoOptions rev-parse $refspec".exec[Text]())
+    GitHash.unsafe(sh"$git $repoOptions rev-parse $refspec".exec[Text]().trim)
