@@ -1276,7 +1276,25 @@ private[ypsiloid] final class YamlParser:
       else if peek == Comma then
         fail(t"empty flow-sequence entry")
       else
-        val first = parseFlowNode()
+        // Recognise explicit-key indicator `?` and empty implicit-key
+        // `:` at the start of an entry, mirroring parseFlowMapping.
+        val first: YamlAst =
+          if peek == Question && {
+            val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+            nb == Space || nb == Tab || nb == Newline || nb == Return
+              || nb == Comma || nb == CloseBracket || nb == Colon
+          } then
+            advance()
+            skipFlowWhitespace()
+            if !more || peek == Comma || peek == CloseBracket || peek == Colon
+            then YamlAst.Null
+            else parseFlowNode()
+          else if peek == Colon && {
+            val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+            nb == Space || nb == Tab || nb == Newline || nb == Return
+              || nb == Comma || nb == CloseBracket
+          } then YamlAst.Null
+          else parseFlowNode()
         skipFlowWhitespace()
         // A `:` here promotes the entry to a single-pair mapping per
         // spec 7.5: `[foo: bar]` is shorthand for `[{foo: bar}]`.
@@ -1320,7 +1338,25 @@ private[ypsiloid] final class YamlParser:
       else if peek == Comma then
         fail(t"empty flow-mapping entry")
       else
-        val key = parseFlowNode()
+        // Recognise explicit-key indicator `?` and empty implicit-key
+        // `:` at the start of a flow-mapping entry.
+        val key: YamlAst =
+          if peek == Question && {
+            val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+            nb == Space || nb == Tab || nb == Newline || nb == Return
+              || nb == Comma || nb == CloseBrace || nb == Colon
+          } then
+            advance()
+            skipFlowWhitespace()
+            if !more || peek == Comma || peek == CloseBrace || peek == Colon
+            then YamlAst.Null
+            else parseFlowNode()
+          else if peek == Colon && {
+            val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+            nb == Space || nb == Tab || nb == Newline || nb == Return
+              || nb == Comma || nb == CloseBrace
+          } then YamlAst.Null
+          else parseFlowNode()
         skipFlowWhitespace()
         val value =
           if more && peek == Colon then
