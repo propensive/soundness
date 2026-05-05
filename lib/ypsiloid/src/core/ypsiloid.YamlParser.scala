@@ -117,39 +117,27 @@ private[ypsiloid] final class YamlParser:
   def resetText(input: Text): Unit =
     val data: Data = input.s.getBytes("UTF-8").nn.immutable(using Unsafe)
     cursor = Cursor[Data](data)
-    syncFrom()
-    stringCursor = 0
-    bufferId = -1
-    heldToken = null
-    blockParentIndent = -1
-    sawMappingColon = false
-    prefixAnchor = t""
-    prefixTag = t""
-    prefixHeadByte = -1
-    prefixesConsumed = false
-    lastScalarSpannedLines = false
-    inInlineMappingValue = false
-    lastNodeHadAnchor = false
-    flowParentIndent = -1
-    anchors.clear()
-    anchors.clear()
+    resetParserState()
 
   def resetData(input: Data): Unit =
     cursor = Cursor[Data](input)
+    resetParserState()
+
+  private def resetParserState(): Unit =
     syncFrom()
     stringCursor = 0
     bufferId = -1
     heldToken = null
     blockParentIndent = -1
+    flowParentIndent = -1
     sawMappingColon = false
     prefixAnchor = t""
     prefixTag = t""
     prefixHeadByte = -1
     prefixesConsumed = false
     lastScalarSpannedLines = false
-    inInlineMappingValue = false
     lastNodeHadAnchor = false
-    flowParentIndent = -1
+    inInlineMappingValue = false
     anchors.clear()
 
   // ── Substrate ────────────────────────────────────────────────────────────
@@ -443,25 +431,21 @@ private[ypsiloid] final class YamlParser:
             val s = parseSingleQuoted()
             maybeBlockMappingFromQuotedKey(s, indent, tagText, anchorName)
           case OpenBracket  =>
-            val startPos = pos
             val savedFlowParent = flowParentIndent
             flowParentIndent = blockParentIndent
             advance()
             val s = parseFlowSequence()
             flowParentIndent = savedFlowParent
-            if hasNewlineInRange(startPos, pos) then lastScalarSpannedLines = true
             maybeBlockMappingFromQuotedKey(s, indent, tagText, anchorName)
           case OpenBrace    =>
-            val startPos = pos
             val savedFlowParent = flowParentIndent
             flowParentIndent = blockParentIndent
             advance()
             val m = parseFlowMapping()
             flowParentIndent = savedFlowParent
-            if hasNewlineInRange(startPos, pos) then lastScalarSpannedLines = true
             maybeBlockMappingFromQuotedKey(m, indent, tagText, anchorName)
-          case Pipe         => parseBlockScalar(literal = true, indent)
-          case Greater      => parseBlockScalar(literal = false, indent)
+          case Pipe         => parseBlockScalar(literal = true)
+          case Greater      => parseBlockScalar(literal = false)
           case Minus        => parseMinus(indent)
           case Question     => parseQuestion(indent)
           case CloseBracket | CloseBrace | Comma | 0x40 | 0x60 =>
@@ -524,13 +508,6 @@ private[ypsiloid] final class YamlParser:
   private inline def isWhitespaceOrEnd(b: Byte): Boolean =
     b == Space || b == Tab || b == Newline || b == Return
 
-  private def hasNewlineInRange(start: Int, end: Int): Boolean =
-    var i = start
-    while i < end do
-      if bytes(i) == Newline then return true
-      i += 1
-    false
-
   // True if walking backwards from `at - 1` over space/tab bytes
   // arrives at a newline (or start-of-input). Used to detect cases
   // like `key\n  : value` in flow context, where `:` is on its own
@@ -588,8 +565,7 @@ private[ypsiloid] final class YamlParser:
   //    context that will consume the terminator;
   // anything else is an error per spec.
   private def maybeBlockMappingFromQuotedKey
-                ( scalar: YamlAst, indent: Int,
-                  headTag: Text = t"", headAnchor: Text = t"" )
+                ( scalar: YamlAst, indent: Int, headTag: Text, headAnchor: Text )
                 ( using Tactic[YamlError] )
   :   YamlAst =
     val hadSpaceOrTab = more && (peek == Space || peek == Tab)
@@ -1289,27 +1265,30 @@ private[ypsiloid] final class YamlParser:
   // Within a flow context, whitespace and newlines are insignificant
   // separators; comments still apply but require leading whitespace
   // (`a #c` is a comment after `a`; `a#c` is part of the scalar `a#c`,
-  // and `]#c` after a flow close is an error).
+  // and `]#c` after a flow close is an error). Newlines also flip
+  // `lastScalarSpannedLines` so multi-line flow collections used as
+  // implicit keys can be rejected without a separate scan.
   private def skipFlowWhitespace()(using Tactic[YamlError]): Unit =
     var continue = true
     while continue && more do
       val c = peek
       if c == Newline then
         advance()
-        var spaces = 0
-        while more && peek == Space do
-          spaces += 1
-          advance()
-        // Content lines inside a flow collection (other than the
-        // closing bracket / brace) must be more indented than the
-        // flow's parent. Per spec 7.4 a flow collection may be
-        // multi-line, but each line's content has to be at indent
-        // strictly greater than the indent of the line that opened
-        // the collection.
-        if more && flowParentIndent >= 0 && peek != Newline
-                && peek != CloseBracket && peek != CloseBrace
-                && peek != Hash && spaces <= flowParentIndent then
-          fail(t"flow content insufficiently indented")
+        lastScalarSpannedLines = true
+        if flowParentIndent < 0 then
+          while more && (peek == Space || peek == Tab || peek == Return) do advance()
+        else
+          var spaces = 0
+          while more && peek == Space do
+            spaces += 1
+            advance()
+          // Content lines inside a flow collection (other than the
+          // closing bracket / brace) must be more indented than the
+          // flow's parent (spec 7.4).
+          if more && peek != Newline
+                  && peek != CloseBracket && peek != CloseBrace
+                  && peek != Hash && spaces <= flowParentIndent then
+            fail(t"flow content insufficiently indented")
       else if c == Space || c == Tab || c == Return then advance()
       else if c == Hash then
         val prev = if pos > 0 then bytes(pos - 1) else -1
@@ -1710,7 +1689,13 @@ private[ypsiloid] final class YamlParser:
 
   // ── Block scalars (|/>) ─────────────────────────────────────────────────
 
-  private def parseBlockScalar(literal: Boolean, parentIndentParam: Int)
+  private enum BlockChomp:
+    case Clip, Strip, Keep
+
+  private enum BlockLineType:
+    case None, Blank, Regular, MoreIndented
+
+  private def parseBlockScalar(literal: Boolean)
                             ( using Tactic[YamlError] )
   :   YamlAst =
     advance() // consume `|` or `>`
@@ -1719,7 +1704,7 @@ private[ypsiloid] final class YamlParser:
     // indicator (+/-), in either order, followed by optional whitespace
     // and an optional comment.
     var explicitIndent: Int = -1
-    var chomp: Char = 'c' // 'c' = clip (default), '-' = strip, '+' = keep
+    var chomp: BlockChomp = BlockChomp.Clip
     while more && peek != Newline && peek != Hash do
       val b = peek
       if b >= Num0 && b <= Num9 then
@@ -1727,11 +1712,11 @@ private[ypsiloid] final class YamlParser:
         if explicitIndent >= 0 then fail(t"duplicate block-scalar indentation indicator")
         explicitIndent = b - Num0
       else if b == Plus then
-        if chomp != 'c' then fail(t"duplicate block-scalar chomping indicator")
-        chomp = '+'
+        if chomp != BlockChomp.Clip then fail(t"duplicate block-scalar chomping indicator")
+        chomp = BlockChomp.Keep
       else if b == Minus then
-        if chomp != 'c' then fail(t"duplicate block-scalar chomping indicator")
-        chomp = '-'
+        if chomp != BlockChomp.Clip then fail(t"duplicate block-scalar chomping indicator")
+        chomp = BlockChomp.Strip
       else if b == Space || b == Tab then ()
       else fail(t"invalid block-scalar header")
       advance()
@@ -1747,10 +1732,7 @@ private[ypsiloid] final class YamlParser:
     var baseIndent: Int =
       if explicitIndent >= 0 then parent + explicitIndent else -1
 
-    // For folded mode: track the previous emitted-line classification
-    // to choose the join string when starting the next content line.
-    //   0 = nothing yet, 1 = blank, 2 = regular, 3 = more-indented.
-    var lastLineType: Int = 0
+    var lastLineType: BlockLineType = BlockLineType.None
 
     // For auto-detect baseIndent: track the maximum number of leading
     // spaces seen on a whitespace-only line *before* the first content
@@ -1780,20 +1762,18 @@ private[ypsiloid] final class YamlParser:
             appendChar('\n')
           else
             // Folded: emit join from prior line, then the spaces.
-            val sep: Char =
-              if lastLineType == 0 || lastLineType == 1 then 0.toChar
-              else '\n'
-            if sep != 0.toChar then appendChar(sep)
+            if lastLineType == BlockLineType.Regular
+                  || lastLineType == BlockLineType.MoreIndented then
+              appendChar('\n')
             var k = 0
             while k < spaces - baseIndent do { appendChar(' '); k += 1 }
-            // No trailing terminator; the next line decides the join.
-          lastLineType = 3
+          lastLineType = BlockLineType.MoreIndented
         else
           // Plain blank line.
           if baseIndent < 0 && spaces > maxLeadingBlankSpaces then
             maxLeadingBlankSpaces = spaces
           appendChar('\n')
-          lastLineType = 1
+          lastLineType = BlockLineType.Blank
         advance()
       else
         // Non-whitespace content line.
@@ -1812,7 +1792,9 @@ private[ypsiloid] final class YamlParser:
             pos = lineStart
             done = true
           else
-            val moreIndented = spaces > baseIndent
+            val curType =
+              if spaces > baseIndent then BlockLineType.MoreIndented
+              else BlockLineType.Regular
             if literal then
               // Trailing-terminator scheme.
               var k = 0
@@ -1820,42 +1802,39 @@ private[ypsiloid] final class YamlParser:
               readBlockScalarLineContent()
               appendChar('\n')
               if more && peek == Newline then advance()
-              lastLineType = if moreIndented then 3 else 2
             else
               // Folded: prefix-separator scheme.
-              val curType = if moreIndented then 3 else 2
-              val sep: Char = lastLineType match
-                case 0                           => 0.toChar
-                case 1                           => 0.toChar
-                case 2 if curType == 2           => ' '
-                case _                           => '\n'
-              if sep != 0.toChar then appendChar(sep)
+              lastLineType match
+                case BlockLineType.None | BlockLineType.Blank =>
+                  () // first content, or blank already emitted its break
+                case BlockLineType.Regular if curType == BlockLineType.Regular =>
+                  appendChar(' ')
+                case _ =>
+                  appendChar('\n')
               var k = 0
               while k < spaces - baseIndent do { appendChar(' '); k += 1 }
               readBlockScalarLineContent()
               if more && peek == Newline then advance()
-              lastLineType = curType
+            lastLineType = curType
 
     // For folded mode the per-line scheme leaves no trailing newline;
     // add one so chomping rules see a uniform "final break".
     if !literal && stringCursor > 0 && chars(stringCursor - 1) != '\n' then
       appendChar('\n')
 
-    // Chomp.
     chomp match
-      case '-' =>
+      case BlockChomp.Strip =>
         while stringCursor > 0 && chars(stringCursor - 1) == '\n' do
           stringCursor -= 1
-      case 'c' =>
-        // Clip: keep at most one trailing newline. If the buffer is
-        // entirely newlines (no real content), reduce to empty.
+      case BlockChomp.Clip =>
+        // Keep at most one trailing newline. If the buffer is entirely
+        // newlines (no real content), reduce to empty.
         var lastContent = stringCursor
         while lastContent > 0 && chars(lastContent - 1) == '\n' do
           lastContent -= 1
         stringCursor = if lastContent == 0 then 0 else lastContent + 1
-      case '+' =>
-        () // keep all trailing newlines
-      case _  => ()
+      case BlockChomp.Keep =>
+        ()
 
     YamlAst.Str(getStringText())
 
