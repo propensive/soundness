@@ -72,7 +72,10 @@ object MediaType:
   def unapply(value: Text): Option[MediaType] = safely(Some(Media.parse(value))).or(None)
 
   inline given interpolable: MediaType is Interpolable:
-    transparent inline def interpolate[parts <: Tuple](inline insertions: Any*): MediaType =
+    transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+      (inline insertions: Any*)
+    :   MediaType =
+
       ${gesticulate.internal.mediaInterpolator[parts]('insertions)}
 
 case class MediaType

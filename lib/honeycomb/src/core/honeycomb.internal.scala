@@ -51,7 +51,9 @@ import stenography.*
 import vacuous.*
 
 object internal:
-  def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Extrapolation[Html]] =
+  def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
+    (scrutinee: Expr[Html])
+  :   Macro[Extrapolation[Html]] =
     import quotes.reflect.*
     import doms.html.whatwg
 
@@ -248,7 +250,9 @@ object internal:
             case '[type result <: Tuple; result] =>
               '{$result.asInstanceOf[Option[result]]}
 
-  def interpolator[parts <: Tuple: Type](insertions0: Expr[Seq[Any]]): Macro[Html] =
+  def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
+    (insertions0: Expr[Seq[Any]])
+  :   Macro[Html] =
     import quotes.reflect.*
     import doms.html.whatwg
     import Html.Hole

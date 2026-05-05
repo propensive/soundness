@@ -113,15 +113,18 @@ object Xml extends Tag.Container
   inline given interpolator: Xml is Interpolable:
     type Result = Xml
 
-    transparent inline def interpolate[parts <: Tuple](inline insertions: Any*): Xml =
-      ${xylophone.internal.interpolator[parts]('insertions)}
+    transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+      (inline insertions: Any*)
+    :   Xml =
+
+      ${xylophone.internal.interpolator[parts, origins]('insertions)}
 
   inline given extrapolator: Xml is Extrapolable:
 
-    transparent inline def extrapolate[parts <: Tuple](scrutinee: Xml)
+    transparent inline def extrapolate[parts <: Tuple, origins <: Tuple](scrutinee: Xml)
     :   Boolean | Option[Tuple | Xml] =
 
-      ${xylophone.internal.extractor[parts]('scrutinee)}
+      ${xylophone.internal.extractor[parts, origins]('scrutinee)}
 
 
   given aggregable: [content <: Label: Reifiable to List[String]] => (schema: XmlSchema)
