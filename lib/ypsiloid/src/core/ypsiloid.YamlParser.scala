@@ -435,12 +435,16 @@ private[ypsiloid] final class YamlParser:
             val s = parseSingleQuoted()
             maybeBlockMappingFromQuotedKey(s, indent, tagText, anchorName)
           case OpenBracket  =>
+            val startPos = pos
             advance()
             val s = parseFlowSequence()
+            if hasNewlineInRange(startPos, pos) then lastScalarSpannedLines = true
             maybeBlockMappingFromQuotedKey(s, indent, tagText, anchorName)
           case OpenBrace    =>
+            val startPos = pos
             advance()
             val m = parseFlowMapping()
+            if hasNewlineInRange(startPos, pos) then lastScalarSpannedLines = true
             maybeBlockMappingFromQuotedKey(m, indent, tagText, anchorName)
           case Pipe         => parseBlockScalar(literal = true, indent)
           case Greater      => parseBlockScalar(literal = false, indent)
@@ -504,6 +508,13 @@ private[ypsiloid] final class YamlParser:
 
   private inline def isWhitespaceOrEnd(b: Byte): Boolean =
     b == Space || b == Tab || b == Newline || b == Return
+
+  private def hasNewlineInRange(start: Int, end: Int): Boolean =
+    var i = start
+    while i < end do
+      if bytes(i) == Newline then return true
+      i += 1
+    false
 
   // Read an identifier-like word (anchor or alias name).
   private def readWord(): Text =
