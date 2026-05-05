@@ -169,9 +169,14 @@ private[jacinta] final class JsonParser:
 
   protected inline def advance(): Unit = pos += 1
 
-  protected def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing =
+  protected def errorAt(issue: Issue, start: Optional[Cursor.Mark] = Unset)
+    ( using Tactic[ParseError] )
+  :   Nothing =
+
     syncTo()
-    abort(ParseError(JsonAst, Position(0, cursor.position.n0), issue))
+    val end = cursor.position.n0
+    val length: Optional[Int] = start.let(mark => end - mark.absolute.toInt)
+    abort(ParseError(JsonAst, Position(0, end, offset = end, length = length), issue))
 
   // A `Region` is just a `Cursor.Mark` (an absolute `Long` position). With
   // the single-buffer model there's no need to remember the starting block
@@ -300,7 +305,7 @@ private[jacinta] final class JsonParser:
       b >= 32 && b != Quote && b != Backslash
     } do advance()
 
-    if !more then errorAt(Issue.PrematureEnd)
+    if !more then errorAt(Issue.PrematureEnd, region)
 
     if peek == Quote then slice(region).also(advance())
     else tail(region)
@@ -311,18 +316,18 @@ private[jacinta] final class JsonParser:
 
     var continue = true
     while continue do
-      if !more then errorAt(Issue.PrematureEnd)
+      if !more then errorAt(Issue.PrematureEnd, start)
       val ch = peek
       ch match
         case Quote =>
           continue = false
 
         case Tab | Newline | Return =>
-          errorAt(Issue.InvalidWhitespace)
+          errorAt(Issue.InvalidWhitespace, start)
 
         case Backslash =>
           advance()
-          if !more then errorAt(Issue.PrematureEnd)
+          if !more then errorAt(Issue.PrematureEnd, start)
           (peek: @switch) match
             case Quote     => appendChar('"')
             case Slash     => appendChar('/')
@@ -333,12 +338,12 @@ private[jacinta] final class JsonParser:
             case LowerR    => appendChar('\r')
             case LowerT    => appendChar('\t')
             case LowerU    => appendChar(parseUnicode())
-            case bad       => errorAt(Issue.IncorrectEscape(bad.toChar))
+            case bad       => errorAt(Issue.IncorrectEscape(bad.toChar), start)
 
         case _ =>
           if ch == 0 && holes then appendChar(' ')
           else ((ch >> 5): @switch) match
-            case 0                 => errorAt(Issue.NotEscaped(ch.toChar))
+            case 0                 => errorAt(Issue.NotEscaped(ch.toChar), start)
             case 1 | 2 | 3 | 4 | 5 => appendChar(ch.toChar)
 
             case _ =>
