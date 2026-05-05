@@ -98,6 +98,14 @@ private[ypsiloid] final class YamlParser:
   private var bufferId: Int = -1
   private val bufferPool: ArrayBuffer[ArrayBuffer[Any]] = ArrayBuffer.empty
 
+  // Out-parameters for `consumeNodePrefixes` and `readPlainScalarText` —
+  // overwritten on each call and consumed immediately by the caller, so
+  // no Tuple2/Tuple3 allocation per node.
+  private var prefixAnchor:   Text    = t""
+  private var prefixTag:      Text    = t""
+  private var prefixHeadByte: Int     = -1
+  private var sawMappingColon: Boolean = false
+
   def resetText(input: Text): Unit =
     val data: Data = input.s.getBytes("UTF-8").nn.immutable(using Unsafe)
     cursor = Cursor[Data](data)
@@ -166,17 +174,25 @@ private[ypsiloid] final class YamlParser:
 
   private inline def resetString(): Unit = stringCursor = 0
 
+  // Single-char fast path: one bounds check, doubling on growth. Matches
+  // Jacinta's `appendChar` shape so the JIT can keep `stringCursor` and
+  // the buffer reference in registers across a hot loop.
+  private inline def appendChar(char: Char): Unit =
+    if stringCursor == arraySize then
+      arraySize *= 2
+      val newArr = new Array[Char](arraySize)
+      System.arraycopy(chars, 0, newArr, 0, stringCursor)
+      chars = newArr
+    chars(stringCursor) = char
+    stringCursor += 1
+
+  // Multi-char append (used for variable-length escapes / surrogate pairs).
   private inline def ensureSpace(n: Int): Unit =
     while stringCursor + n > arraySize do arraySize *= 2
     if chars.length < arraySize then
       val newArr = new Array[Char](arraySize)
       System.arraycopy(chars, 0, newArr, 0, stringCursor)
       chars = newArr
-
-  private inline def appendChar(char: Char): Unit =
-    ensureSpace(1)
-    chars(stringCursor) = char
-    stringCursor += 1
 
   private inline def getStringText(): Text = String(chars, 0, stringCursor).tt
 
@@ -293,7 +309,10 @@ private[ypsiloid] final class YamlParser:
     else parseNodeHere(indent)
 
   private def parseNodeHere(indent: Int)(using Tactic[YamlError]): YamlAst =
-    val (anchorName, tagText, headByte) = consumeNodePrefixes()
+    consumeNodePrefixes()
+    val anchorName = prefixAnchor
+    val tagText    = prefixTag
+    val headByte   = prefixHeadByte
 
     // Bare anchor/tag followed by newline → value is on the next indented
     // line(s). consumeNodePrefixes stops at the newline so we can detect
@@ -330,10 +349,9 @@ private[ypsiloid] final class YamlParser:
 
   // Consume any `&anchor`, `!tag`, or both at the current position. Stops
   // at the first non-prefix byte (without crossing newlines, so the caller
-  // can detect a bare-prefix-with-block).
-  private def consumeNodePrefixes()(using Tactic[YamlError])
-  :   (Text, Text, Int) =
-
+  // can detect a bare-prefix-with-block). Writes results to `prefixAnchor`,
+  // `prefixTag`, `prefixHeadByte` to avoid per-call Tuple3 allocation.
+  private def consumeNodePrefixes()(using Tactic[YamlError]): Unit =
     var anchorName = t""
     var tagText = t""
     var done = false
@@ -356,8 +374,9 @@ private[ypsiloid] final class YamlParser:
 
         case _ => done = true
 
-    if !more then (anchorName, tagText, -1)
-    else (anchorName, tagText, peek & 0xFF)
+    prefixAnchor = anchorName
+    prefixTag = tagText
+    prefixHeadByte = if !more then -1 else peek & 0xFF
 
   private inline def isWhitespaceOrEnd(b: Byte): Boolean =
     b == Space || b == Tab || b == Newline || b == Return
@@ -401,45 +420,40 @@ private[ypsiloid] final class YamlParser:
   // scalar is the first key.
   private def parsePlainOrBlockMapping(indent: Int)(using Tactic[YamlError])
   :   YamlAst =
-    val (textValue, mappingDetected) = readPlainScalarText(indent)
-    if mappingDetected then
+    val textValue = readPlainScalarText(indent)
+    if sawMappingColon then
       // We saw `key:` — caller's indent is the mapping's indent.
       parseBlockMappingFromFirstKey(textValue, indent)
     else
-      val raw = textValue
-      resolvePlainScalar(raw)
+      resolvePlainScalar(textValue)
 
-  // Read a plain scalar at the current position. Returns `(text,
-  // foundMappingColon)`. If a `: ` (or `:` at line-end) at the same line
-  // level was seen, returns true so the caller knows this is the key of
-  // a block mapping.
+  // Read a plain scalar at the current position. Sets `sawMappingColon`
+  // to true if a `: ` (or `:` at line-end) at the same line level was
+  // seen so the caller knows this is the key of a block mapping.
   private def readPlainScalarText(indent: Int)
                               (using Tactic[YamlError])
-  :   (Text, Boolean) =
+  :   Text =
 
     resetString()
 
-    var sawColon = false
+    var colon = false
     var done = false
-    var firstLine = true
 
     while !done do
-      val lineStart = stringCursor
       readPlainScalarLine() match
         case PlainOutcome.Mapping =>
-          sawColon = true
+          colon = true
           done = true
 
         case PlainOutcome.EndOfLine =>
           // Try to fold continuation
           if !attemptPlainContinuation(indent) then done = true
-          else firstLine = false
 
         case PlainOutcome.Stop =>
           done = true
 
-    val text = trimEndWhitespace(getStringText())
-    (text, sawColon)
+    sawMappingColon = colon
+    trimEndWhitespace(getStringText())
 
   private enum PlainOutcome:
     case Mapping
@@ -467,18 +481,15 @@ private[ypsiloid] final class YamlParser:
         return PlainOutcome.EndOfLine
 
       if b == Colon then
-        // Mapping-key colon if next byte is a whitespace or end-of-line
-        if pos + 1 >= bufEnd then
-          // Need more bytes to disambiguate — refill
-          syncTo()
-          syncFrom()
-
+        // Mapping-key colon iff the byte after the colon is whitespace
+        // or end-of-input. The whole input is loaded at parser reset
+        // (`Cursor[Data]` over a single `Data` buffer), so a direct
+        // bounds check on the snapshot suffices — no refill needed.
         val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
         if nextByte == Space || nextByte == Tab || nextByte == Newline
                 || nextByte == Return || nextByte == -1 then
-          // Don't consume the colon; caller handles it
           return PlainOutcome.Mapping
-        // else: `:foo` is part of the scalar, fall through
+        // else: `:foo` is part of the scalar; fall through.
 
       // Plain-scalar terminators in flow context (we don't currently
       // distinguish; caller can post-trim if needed).
@@ -822,7 +833,10 @@ private[ypsiloid] final class YamlParser:
     skipFlowWhitespace()
     if !more then YamlAst.Null
     else
-      val (anchorName, tagText, headByte) = consumeNodePrefixes()
+      consumeNodePrefixes()
+      val anchorName = prefixAnchor
+      val tagText    = prefixTag
+      val headByte   = prefixHeadByte
       val value =
         if headByte == -1 then YamlAst.Null
         else if headByte == Star then
@@ -991,8 +1005,8 @@ private[ypsiloid] final class YamlParser:
       else if !more then done = true
       else
         // Read the next key as a plain scalar
-        val (keyText, mappingDetected) = readPlainScalarText(indent)
-        if !mappingDetected then done = true
+        val keyText = readPlainScalarText(indent)
+        if !sawMappingColon then done = true
         else
           if !more || peek != Colon then fail(t"expected ':' after mapping key")
           advance()
@@ -1049,7 +1063,7 @@ private[ypsiloid] final class YamlParser:
       advance()
     if more then advance() // consume newline
 
-    val builder = new StringBuilder
+    resetString()
     var baseIndent = -1
     var first = true
     var done = false
@@ -1066,7 +1080,7 @@ private[ypsiloid] final class YamlParser:
         done = true
       else if peek == Newline then
         // blank line within block scalar
-        if !first then builder.append('\n')
+        if !first then appendChar('\n')
         advance()
       else
         // Determine base indent on first content line
@@ -1080,30 +1094,24 @@ private[ypsiloid] final class YamlParser:
           pos = lineStart
           done = true
         else
-          if !first then builder.append(if literal then '\n' else ' ')
+          if !first then appendChar(if literal then '\n' else ' ')
           // Padding above baseIndent is preserved (relative indent)
           var k = 0
           while k < spaces - baseIndent do
-            builder.append(' ')
+            appendChar(' ')
             k += 1
           // Read line content
           while more && peek != Newline do
-            val b = peek
-            if (b & 0x80) == 0 then builder.append((b & 0xFF).toChar)
-            else
-              decodeUtf8AndAppend(b)
-              builder.append(chars, stringCursor - 1, 1)  // hack — reuse decodeUtf8AndAppend?
-              stringCursor -= 1
+            appendByteAsChar(peek)
             advance()
           if more then advance() // consume newline
           first = false
 
     chomp match
-      case '-' => () // strip
-      case '+' => builder.append('\n') // keep (simplified)
-      case _   => builder.append('\n') // clip
+      case '-' => ()              // strip
+      case _   => appendChar('\n') // clip / keep (simplified)
 
-    YamlAst.Str(builder.toString.tt)
+    YamlAst.Str(getStringText())
 
   // ── Tags ────────────────────────────────────────────────────────────────
 

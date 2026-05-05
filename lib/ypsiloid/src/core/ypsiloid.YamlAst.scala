@@ -181,6 +181,24 @@ object YamlAst:
   // The number of (key, value) pairs in a mapping.
   def mappingSize(arr: IArray[Any]): Int = arr.length / 2
 
+  // Apply `body(item)` to each user-visible item of a sequence, skipping
+  // the pad sentinel. Hot-path iterator used by collection decoders.
+  inline def foreachItem(arr: IArray[Any])(inline body: YamlAst => Unit): Unit =
+    val n = sequenceLength(arr)
+    var i = 0
+    while i < n do
+      body(arr(i).asInstanceOf[YamlAst])
+      i += 1
+
+  // Apply `body(key, value)` to each entry of a mapping. Used by Map/case-
+  // class decoders.
+  inline def foreachEntry(arr: IArray[Any])(inline body: (YamlAst, YamlAst) => Unit): Unit =
+    val n = arr.length
+    var i = 0
+    while i < n do
+      body(arr(i).asInstanceOf[YamlAst], arr(i + 1).asInstanceOf[YamlAst])
+      i += 2
+
   // ── Pattern-match extractors ────────────────────────────────────────────
   // These let existing `case YamlAst.Bool(b) => ...` patterns keep working
   // after the case-class hierarchy is removed. Each unapply allocates an
@@ -226,15 +244,6 @@ object YamlAst:
         Some(IArray.tabulate(n): i =>
           (xs(i*2).asInstanceOf[YamlAst], xs(i*2 + 1).asInstanceOf[YamlAst]))
       case _ => None
-
-  // Singleton extractor for the YAML null value.
-  val NullObj: YamlAst = null
-  // Allow `case YamlAst.Null => ...` by exposing Null as a value comparable
-  // with `eq`. The opaque type erases to `Any`, so a literal-equality test
-  // works after a check that the value is null. We provide a custom unapply
-  // returning `Boolean` so the case binds nothing.
-  object NullExtractor:
-    def unapply(ast: YamlAst): Boolean = ast.asInstanceOf[AnyRef] == null
 
   // ── Deep equality ───────────────────────────────────────────────────────
   // Used by `Yaml.equals`/`hashCode` and by tests that compare two parsed
