@@ -281,32 +281,38 @@ object internal:
 
     // Map a parser char-offset (within the joined input) back to a source-file
     // Position. Uses Interpolation.buildMapping so escape sequences in the
-    // source (\n, \t, \uHHHH, etc.) correctly resolve to the longer source
-    // span.
+    // source (\n, \t, \uHHHH, $$, etc.) correctly resolve to the longer
+    // source span. The Scala compiler's lit.pos.end is unreliable for parts
+    // containing $$, so we walk forward from lit.pos.start instead.
     val sourceFile = Position.ofMacroExpansion.sourceFile
     val macroPos = Position.ofMacroExpansion
     val sourceContent: Optional[String] = sourceFile.content match
       case Some(s: String) => s
       case _               => Unset
 
+    val perPart: IndexedSeq[((String, Int), Int => Int)] =
+      parts.zip(partOrigins).map: (part, origin) =>
+        val (srcStart, _) = origin
+        val mapping: Int => Int = sourceContent.lay((i: Int) => i): content =>
+          if srcStart > 0 && srcStart < content.length then
+            val upper = (srcStart + part.length * 6 + 16).min(content.length)
+            val sourceText = content.substring(srcStart, upper).nn
+            Interpolation.buildMapping(sourceText, part)
+          else (i: Int) => i
+        ((part, srcStart), mapping)
+      . toIndexedSeq
+
     def translateOffset(parserOff: Int, len: Int): Position =
       var acc = 0
       var i = 0
-      val partsArr = parts.zip(partOrigins).toIndexedSeq
-      while i < partsArr.length do
-        val (part, (srcStart, srcEnd)) = partsArr(i)
+      while i < perPart.length do
+        val ((part, srcStart), mapping) = perPart(i)
         val partLen = part.length
-        if parserOff < acc + partLen && srcStart > 0 && srcEnd > srcStart then
+        if parserOff < acc + partLen && srcStart > 0 then
           val inPart = parserOff - acc
           val endIn = (inPart + len.max(1)).min(part.length)
-          val (offS, offE): (Int, Int) = sourceContent.lay((inPart, endIn)): content =>
-            if srcEnd <= content.length then
-              val sourceText = content.substring(srcStart, srcEnd).nn
-              val mapping = Interpolation.buildMapping(sourceText, part)
-              (mapping(inPart), mapping(endIn))
-            else (inPart, endIn)
-          val rawStart = (srcStart + offS).min(srcEnd).max(srcStart)
-          val rawEnd = (srcStart + offE).min(srcEnd).max(rawStart + 1)
+          val rawStart = (srcStart + mapping(inPart)).max(srcStart)
+          val rawEnd = (srcStart + mapping(endIn)).max(rawStart + 1)
           return Position(sourceFile, rawStart, rawEnd)
         acc += partLen + 1
         i += 1
