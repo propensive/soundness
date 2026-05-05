@@ -429,13 +429,19 @@ private[ypsiloid] final class YamlParser:
           case Question     => parseQuestion(indent)
           case CloseBracket | CloseBrace | Comma | 0x40 | 0x60 =>
             fail(t"reserved indicator at start of node")
-          case _            => parsePlainOrBlockMapping(indent)
+          case _            =>
+            prefixesConsumed = false
+            parsePlainOrBlockMapping(indent, tagText, anchorName)
 
-    val tagged = if tagText.nil then value else applyTag(tagText, value)
-    if anchorName.nil then tagged
+    if prefixesConsumed then
+      prefixesConsumed = false
+      value
     else
-      anchors.update(anchorName.s, tagged)
-      tagged
+      val tagged = if tagText.nil then value else applyTag(tagText, value)
+      if anchorName.nil then tagged
+      else
+        anchors.update(anchorName.s, tagged)
+        tagged
 
   // Consume any `&anchor`, `!tag`, or both at the current position. Stops
   // at the first non-prefix byte (without crossing newlines, so the caller
@@ -547,12 +553,31 @@ private[ypsiloid] final class YamlParser:
       case Comma | CloseBracket | CloseBrace => scalar
       case _ => fail(t"trailing content after quoted scalar")
 
-  private def parsePlainOrBlockMapping(indent: Int)(using Tactic[YamlError])
+  // Tracks whether the most recent dispatch from parseNodeHere consumed
+  // the head node's anchor/tag (because it transitioned into a block
+  // mapping where the prefix actually belongs to the first key, not
+  // the whole mapping). parseNodeHere skips re-applying anchor/tag in
+  // that case.
+  private var prefixesConsumed: Boolean = false
+
+  private def parsePlainOrBlockMapping
+                ( indent: Int, headTag: Text = t"", headAnchor: Text = t"" )
+                ( using Tactic[YamlError] )
   :   YamlAst =
     val textValue = readPlainScalarText(indent)
     if sawMappingColon then
-      // We saw `key:` — caller's indent is the mapping's indent.
-      parseBlockMappingFromFirstKey(resolvePlainScalar(textValue), indent)
+      // The plain text is the first key of a block mapping. Any tag
+      // or anchor read by consumeNodePrefixes belongs to the key, not
+      // the mapping.
+      val rawKey = resolvePlainScalar(textValue)
+      val tagged = if headTag.nil then rawKey else applyTag(headTag, rawKey)
+      val keyAst =
+        if headAnchor.nil then tagged
+        else
+          anchors.update(headAnchor.s, tagged)
+          tagged
+      if !headTag.nil || !headAnchor.nil then prefixesConsumed = true
+      parseBlockMappingFromFirstKey(keyAst, indent)
     else
       resolvePlainScalar(textValue)
 
@@ -1376,8 +1401,12 @@ private[ypsiloid] final class YamlParser:
         pos = lineStart
         done = true
       else
-        // The next key may be plain, double-quoted, or single-quoted.
-        val keyAst: YamlAst = peek match
+        // The next key may carry its own anchor/tag prefix and may be
+        // plain, double-quoted, or single-quoted.
+        consumeNodePrefixes()
+        val keyAnchor = prefixAnchor
+        val keyTag    = prefixTag
+        val rawKey: YamlAst = prefixHeadByte match
           case Quote =>
             advance()
             parseDoubleQuoted()
@@ -1389,6 +1418,12 @@ private[ypsiloid] final class YamlParser:
             if !sawMappingColon then
               fail(t"plain scalar at mapping indent without ':'")
             resolvePlainScalar(keyText)
+        val tagged = if keyTag.nil then rawKey else applyTag(keyTag, rawKey)
+        val keyAst =
+          if keyAnchor.nil then tagged
+          else
+            anchors.update(keyAnchor.s, tagged)
+            tagged
         // For quoted keys, sawMappingColon wasn't set during reading —
         // skip whitespace and require an explicit `:` here. For plain
         // keys, sawMappingColon was true so the parser is already at
