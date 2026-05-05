@@ -1587,6 +1587,9 @@ private[ypsiloid] final class YamlParser:
       else fail(t"invalid block-scalar header")
       advance()
     if more && peek == Hash then
+      val prev = if pos > 0 then bytes(pos - 1) else -1
+      if prev != Space && prev != Tab then
+        fail(t"comment in block-scalar header requires preceding whitespace")
       while more && peek != Newline do advance()
     if more then advance() // consume newline
 
@@ -1599,6 +1602,12 @@ private[ypsiloid] final class YamlParser:
     // to choose the join string when starting the next content line.
     //   0 = nothing yet, 1 = blank, 2 = regular, 3 = more-indented.
     var lastLineType: Int = 0
+
+    // For auto-detect baseIndent: track the maximum number of leading
+    // spaces seen on a whitespace-only line *before* the first content
+    // line. Per spec 8.1.2 this must not exceed the indent the first
+    // content line establishes; otherwise the body is rejected.
+    var maxLeadingBlankSpaces: Int = -1
 
     var done = false
     while !done && more do
@@ -1632,6 +1641,8 @@ private[ypsiloid] final class YamlParser:
           lastLineType = 3
         else
           // Plain blank line.
+          if baseIndent < 0 && spaces > maxLeadingBlankSpaces then
+            maxLeadingBlankSpaces = spaces
           appendChar('\n')
           lastLineType = 1
         advance()
@@ -1640,7 +1651,10 @@ private[ypsiloid] final class YamlParser:
         if baseIndent < 0 then
           // First content line establishes baseIndent; the block has
           // a body only if its indent strictly exceeds the parent's.
-          if spaces > parent then baseIndent = spaces
+          if spaces > parent then
+            baseIndent = spaces
+            if maxLeadingBlankSpaces > baseIndent then
+              fail(t"leading empty lines have more indentation than the body")
           else
             pos = lineStart
             done = true
