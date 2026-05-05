@@ -37,7 +37,18 @@ import anticipation.*
 object YamlParser:
   def parse(input: Text): YamlAst =
     val cleaned = stripCommentsAndTrim(input.s)
-    resolveScalar(cleaned)
+    val length = cleaned.length
+
+    if length == 0 then YamlAst.Null
+    else
+      val first = cleaned.charAt(0)
+      val last = cleaned.charAt(length - 1)
+
+      if length >= 2 && first == '"' && last == '"'
+      then YamlAst.Str(unescapeDoubleQuoted(cleaned.substring(1, length - 1).nn))
+      else if length >= 2 && first == '\'' && last == '\''
+      then YamlAst.Str(unescapeSingleQuoted(cleaned.substring(1, length - 1).nn))
+      else resolveScalar(cleaned)
 
   private def stripCommentsAndTrim(input: String): String =
     val lines = input.split("\n", -1).nn
@@ -87,3 +98,72 @@ object YamlParser:
   private def parseDecimal(input: String): Option[YamlAst.Decimal] =
     try Some(YamlAst.Decimal(java.lang.Double.parseDouble(input)))
     catch case _: NumberFormatException => None
+
+  private def unescapeSingleQuoted(input: String): Text =
+    val builder = new StringBuilder
+    var index = 0
+
+    while index < input.length do
+      val current = input.charAt(index)
+      val nextIsQuote = index + 1 < input.length && input.charAt(index + 1) == '\''
+
+      if current == '\'' && nextIsQuote then
+        builder.append('\'')
+        index += 2
+      else
+        builder.append(current)
+        index += 1
+
+    Text(builder.toString)
+
+  private def unescapeDoubleQuoted(input: String): Text =
+    val builder = new StringBuilder
+    var index = 0
+    while index < input.length do
+      val char = input.charAt(index)
+      if char != '\\' || index + 1 >= input.length then
+        builder.append(char)
+        index += 1
+      else
+        index += appendEscape(builder, input, index)
+    Text(builder.toString)
+
+  private def appendEscape(builder: StringBuilder, input: String, index: Int): Int =
+    input.charAt(index + 1) match
+      case '\\' => builder.append('\\')        ; 2
+      case '"'  => builder.append('"')         ; 2
+      case '\'' => builder.append('\'')        ; 2
+      case '/'  => builder.append('/')         ; 2
+      case ' '  => builder.append(' ')         ; 2
+      case '0'  => builder.append(0x00.toChar) ; 2
+      case 'a'  => builder.append(0x07.toChar) ; 2
+      case 'b'  => builder.append('\b')        ; 2
+      case 'e'  => builder.append(0x1b.toChar) ; 2
+      case 'f'  => builder.append('\f')        ; 2
+      case 'n'  => builder.append('\n')        ; 2
+      case 'r'  => builder.append('\r')        ; 2
+      case 't'  => builder.append('\t')        ; 2
+      case 'v'  => builder.append(0x0b.toChar) ; 2
+      case 'N'  => builder.append(0x85.toChar) ; 2
+      case '_'  => builder.append(0xa0.toChar) ; 2
+      case 'L'  => builder.append(0x2028.toChar)   ; 2
+      case 'P'  => builder.append(0x2029.toChar)   ; 2
+
+      case 'x' if index + 4 <= input.length =>
+        val hex = input.substring(index + 2, index + 4)
+        builder.append(java.lang.Integer.parseInt(hex, 16).toChar)
+        4
+
+      case 'u' if index + 6 <= input.length =>
+        val hex = input.substring(index + 2, index + 6)
+        builder.append(java.lang.Integer.parseInt(hex, 16).toChar)
+        6
+
+      case 'U' if index + 10 <= input.length =>
+        val hex = input.substring(index + 2, index + 10)
+        builder.append(Character.toChars(java.lang.Integer.parseInt(hex, 16)).nn)
+        10
+
+      case other =>
+        builder.append('\\').append(other)
+        2
