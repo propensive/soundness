@@ -47,16 +47,49 @@ object Subcompiler:
 
     def doReport(diagnostic: Diagnostic)(using context: Context): Unit =
       try
-        // Use the innermost source position rather than walking up to the
-        // outermost: macro-emitted diagnostics carry a precise inner position
-        // (e.g. a $-splice or a sub-range of a literal) plus an outer chain
-        // that points back to the macro call site. The inner position is what
-        // an editor would underline, so that's what `focus` should report.
-        // Fall back to the outer chain only when the inner position is empty
-        // (no source span at all).
+        // Find the position to report. Inline / macro position chains have a
+        // delicate structure:
+        //   - the innermost link is in the macro's *definition* source; the
+        //     outermost is the user's call site. We want a position in the
+        //     user's source.
+        //   - macros that synthesise a Position(sourceFile, start, end)
+        //     (e.g. hypotenuse's bin/hex macros) emit numbers computed in
+        //     their *own* source's coordinate space; dotty may relabel that
+        //     position's source as the compilation unit's, which makes the
+        //     numbers look user-source-shaped while pointing at unrelated
+        //     content.
+        //
+        // Strategy: first walk to the outermost cuSource position — that's
+        // the user's call-site span and therefore a trustworthy outer bound.
+        // Then walk the chain again from the innermost end, preferring the
+        // narrowest cuSource position that fits *inside* that bound. That
+        // gives us the precise span when one exists (e.g. the splice in
+        // x"<a>$bad</a>") while rejecting bogus inner positions whose
+        // numbers don't fall inside the call site's span.
+        val cuSource = context.compilationUnit.source
+
+        var outermostInCu: SourcePosition | Null = null
+        var cur = diagnostic.pos
+        while cur.exists do
+          if cur.source == cuSource then outermostInCu = cur
+          if cur.outer == NoSourcePosition then cur = NoSourcePosition else cur = cur.outer
+
         var position = diagnostic.pos
-        while position.exists && position.start == position.end && position.outer != NoSourcePosition
-        do position = position.outer
+        outermostInCu match
+          case bound: SourcePosition =>
+            var found: SourcePosition = bound
+            var c = diagnostic.pos
+            while c.exists do
+              if
+                c.source == cuSource
+                && c.start >= bound.start
+                && c.end <= bound.end
+                && (c.end - c.start) < (found.end - found.start)
+              then found = c
+              if c.outer == NoSourcePosition then c = NoSourcePosition else c = c.outer
+            position = found
+          case _ =>
+            while position.outer != NoSourcePosition do position = position.outer
 
         val content = context.compilationUnit.source.content
         val focus = String(content.slice(position.start, position.end))
