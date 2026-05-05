@@ -452,6 +452,12 @@ private[ypsiloid] final class YamlParser:
     else parseNodeHere(indent)
 
   private def parseNodeHere(indent: Int)(using Tactic[YamlError]): YamlAst =
+    // `prefixesConsumed` is a parser-wide field but the "did this call
+    // apply its own prefixes?" question is per-call. Recursive parses
+    // (e.g. parseMappingValue inside parseBlockMappingFromFirstKey)
+    // would otherwise clobber the flag before we can read it back.
+    val savedPrefixesConsumed = prefixesConsumed
+    prefixesConsumed = false
     consumeNodePrefixes()
     val anchorName = prefixAnchor
     val tagText    = prefixTag
@@ -529,9 +535,9 @@ private[ypsiloid] final class YamlParser:
             prefixesConsumed = false
             parsePlainOrBlockMapping(indent, tagText, anchorName)
 
-    if prefixesConsumed then
-      prefixesConsumed = false
-      value
+    val consumed = prefixesConsumed
+    prefixesConsumed = savedPrefixesConsumed
+    if consumed then value
     else
       val tagged = if tagText.nil then value else applyTag(tagText, value)
       if anchorName.nil then tagged
@@ -1892,7 +1898,17 @@ private[ypsiloid] final class YamlParser:
     var baseIndent: Int =
       if explicitIndent >= 0 then parent + explicitIndent else -1
 
-    var lastLineType: BlockLineType = BlockLineType.None
+    // Folded-mode state machine: track the LAST non-blank content line
+    // (None / Regular / MoreIndented) and how many blank lines have
+    // intervened since it. The separator emitted before the next
+    // content line is computed from these:
+    //   - None       → no separator (start of body)
+    //   - Regular → Regular, no blanks  → " " (fold)
+    //   - Regular → Regular, with blanks → "" (the blanks' \n's suffice)
+    //   - any other transition (involving more-indented or with blanks
+    //     and a non-Regular endpoint) → "\n"
+    var lastNonBlankType: BlockLineType = BlockLineType.None
+    var blanksPending: Int = 0
 
     // For auto-detect baseIndent: track the maximum number of leading
     // spaces seen on a whitespace-only line *before* the first content
@@ -1915,25 +1931,25 @@ private[ypsiloid] final class YamlParser:
         // already established baseIndent.
         if baseIndent >= 0 && spaces > baseIndent then
           // More-indented all-spaces line — its "content" is the
-          // (spaces - baseIndent) extra spaces.
+          // (spaces - baseIndent) extra spaces. Treated as a content
+          // line of MoreIndented type.
           if literal then
             var k = 0
             while k < spaces - baseIndent do { appendChar(' '); k += 1 }
             appendChar('\n')
           else
-            // Folded: emit join from prior line, then the spaces.
-            if lastLineType == BlockLineType.Regular
-                  || lastLineType == BlockLineType.MoreIndented then
-              appendChar('\n')
+            if lastNonBlankType != BlockLineType.None then appendChar('\n')
             var k = 0
             while k < spaces - baseIndent do { appendChar(' '); k += 1 }
-          lastLineType = BlockLineType.MoreIndented
+          lastNonBlankType = BlockLineType.MoreIndented
+          blanksPending = 0
         else
           // Plain blank line.
           if baseIndent < 0 && spaces > maxLeadingBlankSpaces then
             maxLeadingBlankSpaces = spaces
           appendChar('\n')
-          lastLineType = BlockLineType.Blank
+          if literal || lastNonBlankType != BlockLineType.None then
+            blanksPending += 1
         advance()
       else
         // Non-whitespace content line.
@@ -1967,19 +1983,22 @@ private[ypsiloid] final class YamlParser:
               appendChar('\n')
               if more && peek == Newline then advance()
             else
-              // Folded: prefix-separator scheme.
-              lastLineType match
-                case BlockLineType.None | BlockLineType.Blank =>
-                  () // first content, or blank already emitted its break
-                case BlockLineType.Regular if curType == BlockLineType.Regular =>
-                  appendChar(' ')
-                case _ =>
-                  appendChar('\n')
+              // Folded: state-machine separator (see comments above).
+              val needBreak =
+                lastNonBlankType == BlockLineType.MoreIndented
+                || curType == BlockLineType.MoreIndented
+              if lastNonBlankType == BlockLineType.None then ()
+              else if blanksPending > 0 then
+                if needBreak then appendChar('\n')
+                // R + blanks + R → blanks' \n's are the separator
+              else if needBreak then appendChar('\n')
+              else appendChar(' ')
               var k = 0
               while k < spaces - baseIndent do { appendChar(' '); k += 1 }
               readBlockScalarLineContent()
               if more && peek == Newline then advance()
-            lastLineType = curType
+            lastNonBlankType = curType
+            blanksPending = 0
 
     // For folded mode the per-line scheme leaves no trailing newline;
     // add one so chomping rules see a uniform "final break".
