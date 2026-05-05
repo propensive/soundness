@@ -116,6 +116,59 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"3things".read[Yaml].as[Text]
       . assert(_ == t"3things")
 
+    suite(m"Quoted strings"):
+      test(m"Parse a single-quoted string"):
+        t"'hello'".read[Yaml].as[Text]
+      . assert(_ == t"hello")
+
+      test(m"Parse a double-quoted string"):
+        t"\"hello\"".read[Yaml].as[Text]
+      . assert(_ == t"hello")
+
+      test(m"Single-quoted string preserves backslashes"):
+        t"'a\\b'".read[Yaml].as[Text]
+      . assert(_ == t"a\\b")
+
+      test(m"Double-quoted string with newline escape"):
+        t"\"line1\\nline2\"".read[Yaml].as[Text]
+      . assert(_ == t"line1\nline2")
+
+      test(m"Double-quoted string with tab escape"):
+        t"\"a\\tb\"".read[Yaml].as[Text]
+      . assert(_ == t"a\tb")
+
+      test(m"Double-quoted string with escaped backslash"):
+        t"\"a\\\\b\"".read[Yaml].as[Text]
+      . assert(_ == t"a\\b")
+
+      test(m"Double-quoted string with escaped quote"):
+        t"\"a\\\"b\"".read[Yaml].as[Text]
+      . assert(_ == t"a\"b")
+
+      test(m"Double-quoted string with unicode escape"):
+        t"\"\\u00e9\"".read[Yaml].as[Text]
+      . assert(_ == t"é")
+
+      test(m"Double-quoted string with hex escape"):
+        t"\"\\x41\"".read[Yaml].as[Text]
+      . assert(_ == t"A")
+
+      test(m"Single-quoted string with embedded apostrophe"):
+        t"'don''t'".read[Yaml].as[Text]
+      . assert(_ == t"don't")
+
+      test(m"Hash inside a quoted string is not a comment"):
+        t"\"a # b\"".read[Yaml].as[Text]
+      . assert(_ == t"a # b")
+
+      test(m"Empty single-quoted string"):
+        t"''".read[Yaml].as[Text]
+      . assert(_ == t"")
+
+      test(m"Empty double-quoted string"):
+        t"\"\"".read[Yaml].as[Text]
+      . assert(_ == t"")
+
     suite(m"Comment handling"):
       test(m"Comment after a scalar is ignored"):
         t"42 # the answer".read[Yaml].as[Int]
