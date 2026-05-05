@@ -35,8 +35,94 @@ package ypsiloid
 import anticipation.*
 
 object YamlParser:
+  private case class Line(indent: Int, content: String)
+
   def parse(input: Text): YamlAst =
-    parseTrimmed(stripCommentsAndTrim(input.s))
+    val lines = preprocess(input.s)
+    if lines.isEmpty then YamlAst.Null else parseBlock(lines)
+
+  private def preprocess(input: String): List[Line] =
+    val results = scala.collection.mutable.ArrayBuffer[Line]()
+
+    for rawLine <- input.split("\n", -1).nn do
+      val line = stripLineComment(rawLine.nn)
+      var end = line.length
+      while end > 0 && (line.charAt(end - 1) == ' ' || line.charAt(end - 1) == '\t') do
+        end -= 1
+      val rightTrimmed = line.substring(0, end).nn
+
+      var indent = 0
+      while indent < rightTrimmed.length && rightTrimmed.charAt(indent) == ' ' do indent += 1
+
+      if indent < rightTrimmed.length
+      then results.append(Line(indent, rightTrimmed.substring(indent).nn))
+
+    results.toList
+
+  private def parseBlock(lines: List[Line]): YamlAst =
+    if lines.isEmpty then YamlAst.Null
+    else
+      val head = lines.head
+      if isBlockSequenceItem(head.content) then parseBlockSequence(lines, head.indent)
+      else if isBlockMappingHead(head.content) then parseBlockMapping(lines, head.indent)
+      else if lines.lengthCompare(1) == 0 then parseTrimmed(head.content)
+      else parseTrimmed(lines.map(_.content).mkString(" ").trim.nn)
+
+  private def isBlockSequenceItem(content: String): Boolean =
+    content == "-" || content.startsWith("- ")
+
+  private def isBlockMappingHead(content: String): Boolean =
+    val colon = findTopLevelColon(content)
+    colon >= 0 && (colon == content.length - 1 || content.charAt(colon + 1) == ' ')
+
+  private def parseBlockSequence(lines: List[Line], baseIndent: Int): YamlAst =
+    val items = scala.collection.mutable.ArrayBuffer[YamlAst]()
+    val rest = scala.collection.mutable.ArrayBuffer[Line]().addAll(lines)
+
+    def headIsItem: Boolean =
+      rest.nonEmpty && rest.head.indent == baseIndent && isBlockSequenceItem(rest.head.content)
+
+    while headIsItem do
+      val first = rest.remove(0)
+      val itemLines = scala.collection.mutable.ArrayBuffer[Line]()
+      val firstContent = if first.content == "-" then "" else first.content.substring(2).nn
+
+      if firstContent.nonEmpty then itemLines.append(Line(0, firstContent))
+
+      while rest.nonEmpty && rest.head.indent > baseIndent do
+        val continuation = rest.remove(0)
+        itemLines.append(Line(continuation.indent - baseIndent - 2, continuation.content))
+
+      items.append(parseBlock(itemLines.toList))
+
+    YamlAst.Sequence(IArray.from(items))
+
+  private def parseBlockMapping(lines: List[Line], baseIndent: Int): YamlAst =
+    val entries = scala.collection.mutable.ArrayBuffer[(YamlAst, YamlAst)]()
+    val rest = scala.collection.mutable.ArrayBuffer[Line]().addAll(lines)
+
+    def headIsEntry: Boolean =
+      rest.nonEmpty && rest.head.indent == baseIndent && isBlockMappingHead(rest.head.content)
+
+    while headIsEntry do
+      val line = rest.remove(0)
+      val colon = findTopLevelColon(line.content)
+      val keyText = line.content.substring(0, colon).nn.trim.nn
+
+      val inline =
+        if colon + 1 < line.content.length then line.content.substring(colon + 1).nn.trim.nn
+        else ""
+
+      val key = parseTrimmed(keyText)
+
+      if inline.nonEmpty then entries.append((key, parseTrimmed(inline)))
+      else
+        val valueLines = scala.collection.mutable.ArrayBuffer[Line]()
+        while rest.nonEmpty && rest.head.indent > baseIndent do
+          valueLines.append(rest.remove(0))
+        entries.append((key, parseBlock(valueLines.toList)))
+
+    YamlAst.Mapping(IArray.from(entries))
 
   private def parseTrimmed(input: String): YamlAst =
     val length = input.length
@@ -140,11 +226,6 @@ object YamlParser:
 
     items.append(input.substring(start).nn)
     items.toList
-
-  private def stripCommentsAndTrim(input: String): String =
-    val lines = input.split("\n", -1).nn
-    val stripped = lines.iterator.map(line => stripLineComment(line.nn))
-    stripped.filter(_.trim.nn.nonEmpty).mkString("\n").trim.nn
 
   private def stripLineComment(line: String): String =
     var index = 0
