@@ -30,13 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package octogenarian
 
-export
-  octogenarian
-  . { ChangeKind, Commit, FileDiff, Git, GitBranch, GitCommand, GitError, GitEvent, GitHash,
-      GitPathStatus, GitProcess, GitRefError, GitRepo, GitStatus, GitTag, Hunk, Patch, Progress,
-      ReflogEntry, Refspec, ResetMode, SshUrl, Worktree }
+import anticipation.*
+import dissonance.*
 
-package gitCommands:
-  export octogenarian.gitCommands.environmentDefault
+case class Hunk
+  ( oldStart: Int,
+    oldLines: Int,
+    newStart: Int,
+    newLines: Int,
+    section:  Text,
+    edits:    List[Edit[Text]] )

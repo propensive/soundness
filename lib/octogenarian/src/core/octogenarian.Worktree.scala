@@ -193,7 +193,21 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
       case failure => abort(GitError(MvFailed))
 
 
-  def diff(): Unit = ()
+  // diff(): worktree vs index. diff(staged = true): index vs HEAD.
+  // diff(ref): full tree-vs-ref diff (working tree relative to ref).
+  def diff(staged: Boolean = false)
+    ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
+  :   Stream[FileDiff] logs GitEvent =
+
+    val stagedOpt = if staged then sh"--staged" else sh""
+    Patch.parse(sh"$git $repoOptions diff --no-color $stagedOpt".exec[Stream[Text]]())
+
+
+  def diff(ref: Refspec)
+    ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
+  :   Stream[FileDiff] logs GitEvent =
+
+    Patch.parse(sh"$git $repoOptions diff --no-color $ref".exec[Stream[Text]]())
 
 
   def status(ignored: Boolean = false)(using GitCommand, WorkingDirectory, Tactic[ExecError])
