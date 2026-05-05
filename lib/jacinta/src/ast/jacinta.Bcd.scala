@@ -200,3 +200,88 @@ object Bcd:
     def toLong: Optional[Long] =
       val s = bcd.text
       try java.lang.Long.parseLong(s) catch case _: NumberFormatException => Unset
+
+// `CompactBcd` packs a small JSON number into a single `Long` for use as an
+// element of a number-only array AST node. The nibble alphabet is the same
+// as `Bcd` (digits `0x0–0x9`, decimal point `0xA`, exponent `0xB`, negative-
+// exponent `0xC`).
+//
+// Long layout:
+//   bit 63        : sign (0 = non-negative, 1 = negative)
+//   bits 56–59    : nibble count (1..14)
+//   bits 0–55     : up to 14 nibbles, right-justified — oldest at the top
+//                   of the payload (matching the parser's
+//                   `(content << 4) | n` accumulator)
+//
+// Numbers requiring more than 14 nibbles cannot be packed. The parser
+// detects this and migrates the in-progress array to the boxed form.
+object CompactBcd:
+  inline val MaxNibbles = 14
+
+  private inline val SignBit     = 0x8000000000000000L
+  private inline val CountShift  = 56
+  private inline val CountMask   = 0xF00000000000000L
+  private inline val PayloadMask = 0xFFFFFFFFFFFFFFL
+
+  // Build a packed Long from the parser's in-Long accumulator.
+  inline def pack(content: Long, nibbles: Int, negative: Boolean): Long =
+    (if negative then SignBit else 0L)
+    | (nibbles.toLong << CountShift)
+    | (content & PayloadMask)
+
+  inline def negative(packed: Long):    Boolean = (packed & SignBit) != 0L
+  inline def nibbleCount(packed: Long): Int     = ((packed & CountMask) >>> CountShift).toInt
+  inline def payload(packed: Long):     Long    = packed & PayloadMask
+
+  // Iterate nibbles in left-to-right (oldest-first) order.
+  inline def each(packed: Long)(inline action: Int => Unit): Unit =
+    val total = nibbleCount(packed)
+    val pay = payload(packed)
+    var i = total - 1
+    while i >= 0 do
+      action(((pay >>> (i * 4)) & 0xFL).toInt)
+      i -= 1
+
+  // True if any nibble is `0xA` (decimal), `0xB` (exponent) or `0xC` (negative exponent).
+  def isFloating(packed: Long): Boolean =
+    val total = nibbleCount(packed)
+    val pay = payload(packed)
+    var i = total - 1
+    var floating = false
+    while i >= 0 && !floating do
+      val n = ((pay >>> (i * 4)) & 0xFL).toInt
+      if n >= 0xA then floating = true
+      i -= 1
+    floating
+
+  // Render a packed number as a JSON-number string.
+  def text(packed: Long): String =
+    val sb = new java.lang.StringBuilder(nibbleCount(packed) + 2)
+    if negative(packed) then sb.append('-')
+    each(packed): nibble =>
+      if nibble <= 9 then sb.append(('0' + nibble).toChar)
+      else if nibble == 0xA then sb.append('.')
+      else if nibble == 0xB then sb.append('e')
+      else if nibble == 0xC then sb.append("e-")
+    sb.toString.nn
+
+  // Convert to a `Long` if the packed value is an exact integer that fits.
+  def toLong(packed: Long): Optional[Long] =
+    if isFloating(packed) then Unset
+    else
+      try java.lang.Long.parseLong(text(packed))
+      catch case _: NumberFormatException => Unset
+
+  def toDouble(packed: Long): Double = java.lang.Double.parseDouble(text(packed))
+
+  def toBigDecimal(packed: Long): BigDecimal = BigDecimal(text(packed))
+
+  // Pack a full `Bcd` into a single Long if it fits, else `Unset`.
+  def fromBcd(bcd: Bcd): Optional[Long] =
+    val n = bcd.nibbleCount
+    if n <= 0 || n > MaxNibbles then Unset
+    else
+      var pay: Long = 0L
+      bcd.each: nibble =>
+        pay = (pay << 4) | (nibble.toLong & 0xFL)
+      pack(pay, n, bcd.negative)

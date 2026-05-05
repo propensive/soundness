@@ -54,50 +54,70 @@ object JsonPrinter:
         case ch   => append(ch)
       append('"')
 
+    def printObject(node: IArray[Any], indent: Int): Unit =
+      val n = node.length/2
+      append('{')
+      val last = n - 1
+
+      var index = 0
+      while index < n do
+        if indentation then
+          append('\n')
+          for i <- 0 until indent*2 do append(' ')
+        appendString(node(index*2).asInstanceOf[String])
+        append(':')
+        if indentation then append(' ')
+        recur(node(index*2 + 1).asInstanceOf[JsonAst], indent + 1)
+
+        if index < last then append(',')
+        index += 1
+
+      if indentation then
+        append('\n')
+        for i <- 0 until indent*2 - 2 do append(' ')
+      append('}')
+
+    def printArray(elements: IArray[Any], indent: Int): Unit =
+      val n = elements.length
+      append('[')
+      val last = n - 1
+
+      var index = 0
+      while index < n do
+        if indentation then
+          append('\n')
+          for i <- 0 until indent*2 do append(' ')
+
+        recur(elements(index).asInstanceOf[JsonAst], indent + 1)
+        if index < last then append(',')
+        index += 1
+
+      if indentation then
+        append('\n')
+        for i <- 0 until indent*2 - 2 do append(' ')
+
+      append(']')
+
+    def printNumberArray(nums: Array[Long]): Unit =
+      val n = nums.length
+      append('[')
+      val last = n - 1
+      var index = 0
+      while index < n do
+        append(CompactBcd.text(nums(index)).tt)
+        if index < last then append(',')
+        index += 1
+      append(']')
+
     def recur(json: JsonAst, indent: Int): Unit = json.asMatchable match
-      case arr: Array[AnyRef] @unchecked =>
-        if json.isObject then
-          val n = json.objectSize
-          append('{')
-          val last = n - 1
+      case array: JsonArray =>
+        printArray(array.elements, indent)
 
-          var index = 0
-          while index < n do
-            if indentation then
-              append('\n')
-              for i <- 0 until indent*2 do append(' ')
-            appendString(json.objectKey(index))
-            append(':')
-            if indentation then append(' ')
-            recur(json.objectValue(index), indent + 1)
+      case nums: Array[Long] @unchecked =>
+        printNumberArray(nums)
 
-            if index < last then append(',')
-            index += 1
-
-          if indentation then
-            append('\n')
-            for i <- 0 until indent*2 - 2 do append(' ')
-          append('}')
-        else
-          val n = json.arrayLength
-          append('[')
-          val last = n - 1
-
-          var index = 0
-          while index < n do
-            if indentation then
-              append('\n')
-              for i <- 0 until indent*2 do append(' ')
-
-            recur(json.arrayElement(index), indent + 1)
-            if index < last then append(',')
-            index += 1
-
-          if indentation then
-            append('\n')
-            for i <- 0 until indent*2 - 2 do append(' ')
-
-          append(']')
+      case obj: IArray[Any] @unchecked =>
+        printObject(obj, indent)
 
       case long: Long =>
         append(long.toString)
@@ -111,11 +131,11 @@ object JsonPrinter:
       case boolean: Boolean =>
         append(boolean.toString)
 
-      case bcd: Array[Long] @unchecked =>
+      case bcd: JsonBcd =>
         // High-precision number — emit the canonical JSON-number text from
         // the BCD nibble stream directly; this preserves all digits the
         // parser saw, in contrast to a `Double.toString` round-trip.
-        append(bcd.asInstanceOf[Bcd].text.tt)
+        append(bcd.value.text.tt)
 
       case _ =>
         append("null")

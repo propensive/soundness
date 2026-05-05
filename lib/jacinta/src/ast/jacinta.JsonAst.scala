@@ -141,18 +141,13 @@ object JsonAst extends Format:
     inline final val CloseBrace:   125 = 125 // '}'
 
   opaque type RawJson =
-    Long | Double | Bcd | String | IArray[Any] | Boolean | Null | Unset.type
-
-  // Sentinel used to pad an array whose original length is even, so that all
-  // arrays have odd `IArray[Any]` length and can be distinguished from objects
-  // (which are encoded as alternating `key, value, …` and therefore always
-  // have even length). The sentinel only ever appears as the last element of a
-  // padded array and is never part of the user-visible array contents.
-  val arrayPad: AnyRef = new Object
+    Long | Double | JsonBcd | String | IArray[Any] | JsonArray | Array[Long] | Boolean
+    | Null | Unset.type
 
   def apply
     ( value
-      : Long | Double | Bcd | String | IArray[Any] | Boolean | Null | Unset.type )
+      : Long | Double | JsonBcd | String | IArray[Any] | JsonArray | Array[Long] | Boolean
+      | Null | Unset.type )
   :   JsonAst =
 
     value
@@ -170,25 +165,33 @@ object JsonAst extends Format:
       i += 1
     arr.asInstanceOf[IArray[Any]]
 
-  // Build an array node from `elements`. If the element count is even, a
-  // single sentinel `arrayPad` is appended so the stored `IArray[Any]` has
-  // odd length.
-  def arr(elements: IArray[Any]): JsonAst =
-    val n = elements.length
-    if (n & 1) == 1 then elements
-    else
-      val padded = new Array[Any](n + 1)
-      System.arraycopy(elements.asInstanceOf[Array[Any]], 0, padded, 0, n)
-      padded(n) = arrayPad
-      padded.asInstanceOf[IArray[Any]]
+  // Build a heterogeneous array node. The wrapper distinguishes arrays from
+  // objects (objects are bare `IArray[Any]`) without needing length-parity
+  // tricks or a sentinel pad.
+  def arr(elements: IArray[Any]): JsonAst = JsonArray(elements)
 
-  // The number of user-visible elements in an array node (excludes the
-  // sentinel padding, if present).
-  def arrayLength(json: JsonAst): Int =
-    val arr = json.asInstanceOf[Array[?]]
-    val n = arr.length
-    if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq arrayPad) then n - 1 else n
+  // Build a number-only array node. Each `Long` element packs a small JSON
+  // number in compact-BCD form (see `Bcd.scala`). Used by the parser when
+  // every element of a JSON array is a number that fits the compact
+  // representation.
+  def numArr(values: Array[Long]): JsonAst = values
+
+  // The number of user-visible elements in an array node.
+  def arrayLength(json: JsonAst): Int = (json: @unchecked) match
+    case array: JsonArray              => array.elements.length
+    case nums:  Array[Long] @unchecked => nums.length
 
   // The number of key/value pairs in an object node.
-  def objectSize(json: JsonAst): Int = json.asInstanceOf[Array[?]].length/2
+  def objectSize(json: JsonAst): Int = json.asInstanceOf[IArray[Any]].length/2
+
+// A heterogeneous JSON array node. Wraps an `IArray[Any]` of element nodes;
+// the wrapper exists purely to give arrays a runtime type distinct from
+// objects (which are bare `IArray[Any]` of alternating key/value).
+final case class JsonArray(elements: IArray[Any])
+
+// A high-precision JSON number node. The underlying `Bcd` is `Array[Long]`
+// at runtime, which would collide with the `Array[Long]` number-array AST
+// node — wrapping it gives the AST union an unambiguous runtime
+// discrimination.
+final case class JsonBcd(value: Bcd)
 
