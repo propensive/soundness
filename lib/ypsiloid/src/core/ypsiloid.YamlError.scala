@@ -43,11 +43,15 @@ object YamlError:
       case Unparseable(input)       => m"the input could not be parsed as YAML: $input"
       case UnknownAlias(name)       => m"the alias *$name does not refer to a known anchor"
 
+      case ParseFailure(message, line, column) =>
+        m"YAML parse error at line $line, column $column: $message"
+
   enum Reason(val number: Int) extends Clarification:
     case NotType(found: YamlPrimitive, expected: YamlPrimitive) extends Reason(1)
     case Absent extends Reason(2)
     case Unparseable(input: Text) extends Reason(3)
     case UnknownAlias(name: Text) extends Reason(4)
+    case ParseFailure(message: Text, line: Int, column: Int) extends Reason(5)
 
 case class YamlError(reason: YamlError.Reason)(using Diagnostics)
 extends Error(realm"yp", 1, reason.number)(m"could not access the YAML value because $reason")
