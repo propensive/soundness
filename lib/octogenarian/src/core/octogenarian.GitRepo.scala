@@ -70,13 +70,17 @@ case class GitRepo(gitDir: Path on Linux):
   def pushTags()(using Internet, GitCommand, WorkingDirectory)
   :   Unit logs GitEvent raises GitError raises ExecError =
 
-    sh"$git $repoOptions push --tags".exec[Exit]()
+    sh"$git $repoOptions push --tags".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(PushFailed))
 
 
   def push()(using Internet, Tactic[GitError], GitCommand, WorkingDirectory, Tactic[ExecError])
   :   Unit logs GitEvent =
 
-    sh"$git $repoOptions push".exec[Exit]()
+    sh"$git $repoOptions push".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(PushFailed))
 
 
   def fetch(depth: Optional[Int] = Unset, repo: Text, refspec: Refspec)

@@ -64,17 +64,18 @@ object Tests extends Suite(m"Octogenarian Tests"):
       dir.create[Directory]()
       dir
 
-    // Initialize a fresh worktree with isolated config: a stable identity and
-    // signing disabled so the tests don't depend on the developer's global
-    // git settings.
+    // Initialize a fresh worktree with isolated config: a stable identity, a
+    // forced `main` initial branch, and signing disabled so the tests don't
+    // depend on the developer's or the CI runner's global git settings (in
+    // particular `init.defaultBranch`, which on some runners is still
+    // `master`).
     def freshWorktree(): Worktree =
       val dir = freshDir()
-      val worktree = Git.init(dir)
+      val worktree = Git.init(dir, initialBranch = GitBranch(t"main"))
       sh"git -C $dir config user.email octogenarian@test.local".exec[Exit]()
       sh"git -C $dir config user.name Octogenarian".exec[Exit]()
       sh"git -C $dir config commit.gpgsign false".exec[Exit]()
       sh"git -C $dir config tag.gpgsign false".exec[Exit]()
-      sh"git -C $dir config init.defaultBranch main".exec[Exit]()
       worktree
 
     def writeFile(path: Path on Linux, content: Text): Unit =
@@ -978,9 +979,10 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val source = freshWorktree()
         commitFile(source, t"a", t"a\n", t"first")
 
-        // Create a bare mirror by initBare + push.
+        // Create a bare mirror with main as its initial branch so its HEAD
+        // resolves correctly after the source pushes.
         val bareDir = freshDir()
-        val bare = Git.initBare(bareDir)
+        Git.initBare(bareDir, initialBranch = GitBranch(t"main"))
         source.repo.addRemote(t"mirror", bareDir.encode)
         sh"git -C ${source.path} push mirror main".exec[Exit]()
 

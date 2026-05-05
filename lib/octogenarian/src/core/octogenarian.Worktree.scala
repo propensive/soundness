@@ -67,24 +67,33 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
 
   @targetName("checkoutTag")
-  def checkout(tag: GitTag)(using GitCommand, WorkingDirectory, Tactic[ExecError])
+  def checkout(tag: GitTag)
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
   :   Unit logs GitEvent =
 
-    sh"$git $repoOptions checkout $tag".exec[Exit]()
+    sh"$git $repoOptions checkout $tag".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(CheckoutFailed))
 
 
   @targetName("checkoutBranch")
-  def checkout(branch: GitBranch)(using GitCommand, WorkingDirectory, Tactic[ExecError])
+  def checkout(branch: GitBranch)
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
   :   Unit logs GitEvent =
 
-    sh"$git $repoOptions checkout $branch".exec[Exit]()
+    sh"$git $repoOptions checkout $branch".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(CheckoutFailed))
 
 
   @targetName("checkoutGitHash")
-  def checkout(commit: GitHash)(using GitCommand, WorkingDirectory, Tactic[ExecError])
+  def checkout(commit: GitHash)
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
   :   Unit logs GitEvent =
 
-    sh"$git $repoOptions checkout $commit".exec[Exit]()
+    sh"$git $repoOptions checkout $commit".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(CheckoutFailed))
 
 
   def switch(branch: GitBranch)

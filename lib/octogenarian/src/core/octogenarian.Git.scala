@@ -75,7 +75,7 @@ object Git:
 
   def init
     [ path: Abstractable across Paths to Text ]
-    ( targetPath: path )
+    ( targetPath: path, initialBranch: Optional[GitBranch] = Unset )
     ( using WorkingDirectory,
             Tactic[GitError],
             (Path on Linux) is Decodable in Text,
@@ -86,7 +86,8 @@ object Git:
     try
       throwErrors[PathError | IoError]:
         val target: Path on Linux = targetPath.generic.decode[Path on Linux]
-        sh"$command init $target".exec[Exit]()
+        val branchOpt = initialBranch.lay(sh"") { branch => sh"--initial-branch=$branch" }
+        sh"$command init $branchOpt $target".exec[Exit]()
 
         Worktree(GitRepo(target/".git"), target)
 
@@ -97,7 +98,7 @@ object Git:
 
   def initBare
     [ path: Abstractable across Paths to Text ]
-    ( targetPath: path )
+    ( targetPath: path, initialBranch: Optional[GitBranch] = Unset )
     ( using WorkingDirectory,
             Tactic[GitError],
             (Path on Linux) is Decodable in Text,
@@ -108,7 +109,8 @@ object Git:
     try
       throwErrors[PathError | IoError]:
         val target: Path on Linux = targetPath.generic.decode[Path on Linux]
-        sh"$command init --bare $target".exec[Exit]()
+        val branchOpt = initialBranch.lay(sh"") { branch => sh"--initial-branch=$branch" }
+        sh"$command init --bare $branchOpt $target".exec[Exit]()
 
         GitRepo(target)
 
