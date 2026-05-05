@@ -42,6 +42,7 @@ case class Inner(n: Int) derives CanEqual
 case class Outer(inner: Inner) derives CanEqual
 case class NamedOuter(name: Text, inner: Inner) derives CanEqual
 case class WithDefault(name: Text, age: Int = 18) derives CanEqual
+case class WithOption(name: Text, age: Option[Int]) derives CanEqual
 
 object Tests extends Suite(m"Ypsiloid Tests"):
   def run(): Unit =
@@ -321,6 +322,26 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       test(m"Decode a case class with all fields supplied"):
         t"{name: Eve, age: 99}".read[Yaml].as[WithDefault]
       . assert(_ == WithDefault(t"Eve", 99))
+
+      test(m"Decode a present Option field"):
+        t"{name: Frank, age: 40}".read[Yaml].as[WithOption]
+      . assert(_ == WithOption(t"Frank", Some(40)))
+
+      test(m"Decode a missing Option field as None"):
+        t"{name: Grace}".read[Yaml].as[WithOption]
+      . assert(_ == WithOption(t"Grace", None))
+
+      test(m"Decode an explicitly null Option field as None"):
+        t"{name: Hank, age: null}".read[Yaml].as[WithOption]
+      . assert(_ == WithOption(t"Hank", None))
+
+      test(m"Decode Option[Int] from a top-level integer"):
+        t"42".read[Yaml].as[Option[Int]]
+      . assert(_ == Some(42))
+
+      test(m"Decode Option[Int] from null"):
+        t"null".read[Yaml].as[Option[Int]]
+      . assert(_ == None)
 
     suite(m"Block sequences"):
       test(m"Parse a block sequence of integers"):

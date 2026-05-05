@@ -158,6 +158,11 @@ object Yaml extends Yaml2:
         raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Mapping)))
         Map.empty
 
+  given option: [value: Decodable in Yaml] => Option[value] is Decodable in Yaml = yaml =>
+    yaml.root match
+      case YamlAst.Null => None
+      case _            => Some(value.decoded(yaml))
+
   given decodable: Tactic[YamlError] => Yaml is Decodable in Text =
     text => Yaml(YamlParser.parse(text))
 
