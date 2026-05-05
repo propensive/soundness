@@ -343,9 +343,16 @@ object internal:
 
     val partOrigins: List[(Int, Int)] = recurOrigins[origins](Nil)
 
-    // Map a parser char-offset (within the joined input) back to a source-file Position.
+    // Map a parser char-offset (within the joined input) back to a source-file
+    // Position. Uses Interpolation.buildMapping to translate value-offset to
+    // source-offset within each part, so escape sequences in the source
+    // (\n, \t, \uHHHH, etc.) correctly resolve to the longer source span.
     val sourceFile = Position.ofMacroExpansion.sourceFile
     val macroPos = Position.ofMacroExpansion
+    val sourceContent: Optional[String] = sourceFile.content match
+      case Some(s: String) => s
+      case _               => Unset
+
     def translateOffset(parserOff: Int, len: Int): Position =
       var acc = 0
       var i = 0
@@ -355,8 +362,15 @@ object internal:
         val partLen = part.length
         if parserOff < acc + partLen && srcStart > 0 && srcEnd > srcStart then
           val inPart = parserOff - acc
-          val rawStart = (srcStart + inPart).min(srcEnd).max(srcStart)
-          val rawEnd = (rawStart + len.max(1)).min(srcEnd).max(rawStart + 1)
+          val endIn = (inPart + len.max(1)).min(part.length)
+          val (offS, offE): (Int, Int) = sourceContent.lay((inPart, endIn)): content =>
+            if srcEnd <= content.length then
+              val sourceText = content.substring(srcStart, srcEnd).nn
+              val mapping = Interpolation.buildMapping(sourceText, part)
+              (mapping(inPart), mapping(endIn))
+            else (inPart, endIn)
+          val rawStart = (srcStart + offS).min(srcEnd).max(srcStart)
+          val rawEnd = (srcStart + offE).min(srcEnd).max(rawStart + 1)
           return Position(sourceFile, rawStart, rawEnd)
         acc += partLen + 1
         i += 1

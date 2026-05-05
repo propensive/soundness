@@ -546,6 +546,37 @@ object Tests extends Suite(m"Xylophone tests"):
         . map(_.focus)
       . assert(_.headOption.exists(_.contains("bar")))
 
+      test(m"focus respects \\n escape in single-quoted literal"):
+        // The literal contains a `\n` escape, which is 2 source chars but 1
+        // value char. The bad close tag `</bar>` should still focus correctly.
+        demilitarize:
+          x"<foo>\n</bar>"
+        . map(_.focus)
+      . assert(_.headOption.exists(_.contains("bar")))
+
+      test(m"focus respects \\u escape in literal"):
+        // é is 6 source chars, 1 value char.
+        demilitarize:
+          x"<foo>é</bar>"
+        . map(_.focus)
+      . assert(_.headOption.exists(_.contains("bar")))
+
+      test(m"focus is exact in triple-quoted literal"):
+        // Triple-quoted strings don't process escapes, so source ≡ value.
+        demilitarize:
+          x"""<foo></bar>"""
+        . map(_.focus)
+      . assert(_.headOption.exists(_.contains("bar")))
+
+      test(m"focus on bad name is exactly the offending span (with escape)"):
+        // After `\n` (1 value char, 2 source chars), the `</bar>` close span
+        // should still resolve precisely. Parser reports closeStart at the
+        // `b` and length 4 (consumes `>`); we expect the substring `bar>`.
+        demilitarize:
+          x"<foo>\n</bar>"
+        . map(_.focus)
+      . assert(_ == List("bar>"))
+
 
     suite(m"Namespaces"):
       test(m"Element with default namespace declaration"):

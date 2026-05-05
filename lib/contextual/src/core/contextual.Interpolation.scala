@@ -41,34 +41,57 @@ import prepositional.*
 import proscenium.*
 
 object Interpolation:
+  /** Build a value-offset → source-offset mapping for a Scala string literal,
+    * accounting for backslash escape sequences. `sourceText` is the source
+    * text covering the literal's content (no surrounding quotes — the literal
+    * Term's `pos` excludes them); `value` is the Scala-decoded string the
+    * macro receives. Triple-quoted literals (or any literal whose value
+    * matches its source byte-for-byte) collapse to the identity. Otherwise
+    * the walker treats `\\u####` as 6 source chars per value char and any
+    * other `\\X` as 2 source chars per value char, matching Scala's literal
+    * decoding.
+    */
+  def buildMapping(sourceText: String, value: String): Int => Int =
+    if value.length == sourceText.length then i => i.min(value.length)
+    else
+      val arr = new Array[Int](value.length + 1)
+      var srcIdx = 0
+      var valIdx = 0
+      while valIdx < value.length do
+        arr(valIdx) = srcIdx
+        if srcIdx + 1 < sourceText.length && sourceText.charAt(srcIdx) == '\\' then
+          if sourceText.charAt(srcIdx + 1) == 'u' then srcIdx += 6 else srcIdx += 2
+        else srcIdx += 1
+        valIdx += 1
+      arr(value.length) = srcIdx
+      i => if i < 0 then 0 else if i < arr.length then arr(i) else arr(arr.length - 1)
+
   def apply[topic: Type](context: Expr[StringContext]): Macro[Interpolation of topic] =
     import quotes.reflect.*
 
     val parts: List[String] = context.valueOrAbort.parts.to(List)
 
     // Walk the StringContext.apply(...) Term to recover each part's source-file
-    // (start, end) range. Falls back to (0, 0) for parts whose Term we can't
-    // locate — the typeclass macros treat (0, 0) as "no source position".
-    def stripWrappers(term: Term): Term = term match
-      case Inlined(_, _, body) => stripWrappers(body)
-      case Typed(body, _)      => stripWrappers(body)
-      case other               => other
+    // (start, end) range. We're permissive about the surrounding tree shape
+    // (Inlined / Typed / Block wrappers, Apply nestings) and just collect every
+    // Literal(StringConstant) we encounter. If the count doesn't match the
+    // resolved parts we fall back to (0, 0) so the typeclass macros land at the
+    // macro call site instead of at random positions.
+    def collectLiterals(term: Term, acc: List[(Int, Int)]): List[(Int, Int)] = term match
+      case Literal(StringConstant(_))  => (term.pos.start, term.pos.end) :: acc
+      case Inlined(_, _, body)         => collectLiterals(body, acc)
+      case Typed(body, _)              => collectLiterals(body, acc)
+      case Block(_, expr)              => collectLiterals(expr, acc)
+      case Apply(fn, args)             =>
+        val withFn = collectLiterals(fn, acc)
+        args.foldLeft(withFn)((a, arg) => collectLiterals(arg, a))
+      case Repeated(elems, _)          => elems.foldLeft(acc)((a, e) => collectLiterals(e, a))
+      case _                           => acc
 
-    val partOrigins: List[(Int, Int)] = stripWrappers(context.asTerm) match
-      case Apply(_, List(arg)) => stripWrappers(arg) match
-        case Repeated(lits, _) =>
-          lits.map: lit =>
-            stripWrappers(lit) match
-              case lit2 @ Literal(StringConstant(s)) =>
-                (lit2.pos.start, lit2.pos.end)
-
-              case _ => (0, 0)
-
-        case _ =>
-          List.fill(parts.length)((0, 0))
-
-      case _ =>
-        List.fill(parts.length)((0, 0))
+    val collected = collectLiterals(context.asTerm, Nil).reverse
+    val partOrigins: List[(Int, Int)] =
+      if collected.length == parts.length then collected
+      else List.fill(parts.length)((0, 0))
 
     def transportType
       (parts: List[String], repr: TypeRepr = TypeRepr.of[EmptyTuple.type])
