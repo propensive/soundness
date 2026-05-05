@@ -35,17 +35,18 @@ package ypsiloid
 // Conformance runner against the YAML 1.2 test suite
 // (https://github.com/yaml/yaml-test-suite).
 //
-// Usage:
-//   git clone --depth 1 --branch data \
-//       https://github.com/yaml/yaml-test-suite.git /tmp/yaml-test-suite
-//   ./mill ypsiloid.test.runMain ypsiloid.Conformance /tmp/yaml-test-suite
+// The Mill `yamlTestSuite` task on `ypsiloid.test` clones the suite at a
+// pinned commit and exposes its path via the `ypsiloid.yaml-test-suite.path`
+// system property (set on `forkArgs`). When invoked outside Mill, the suite
+// path can be passed as the first program argument; falls back to
+// `/tmp/yaml-test-suite` if neither is set.
 //
 // Each subdirectory of the test suite contains `in.yaml`, an optional
-// `error` marker (the input must be rejected), and an optional `in.json`
-// (the canonical equivalent for value-comparison via Jacinta).
+// `error` marker, optional `in.json`, and the suite's `tags/<category>/<id>`
+// symlink forest classifies each test by feature.
 
 import java.io.IOException
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, Path, Paths}
 import scala.jdk.CollectionConverters.*
 
 import anticipation.Text
@@ -58,97 +59,171 @@ import strategies.throwUnsafely
 import charEncoders.utf8
 
 object Conformance:
+  // Tags whose test cases exercise YAML features outside the Ypsiloid
+  // subset. Any test carrying one of these tags is reported as
+  // out-of-scope: a known limitation rather than a bug.
+  val excludedTags: Set[String] = Set(
+    "directive",      // %TAG / %YAML directives
+    "complex-key",    // ? complex keys
+    "explicit-key",   // ? explicit keys (depends on complex-key support)
+    "empty-key",      // empty keys (depends on ? syntax)
+    "1.3-err",        // YAML 1.3-only error cases
+    "1.3-mod",        // YAML 1.3-only modifications
+    "local-tag",      // local !tag handling
+    "unknown-tag",    // strict unknown-tag rejection
+    "duplicate-key",  // duplicate-key detection
+    "footer"          // ... document-end footer rules
+  )
+
   enum Outcome:
-    case ParsedAndMatched
-    case ParsedButMismatch(actual: String, expected: String)
-    case ParsedButNoExpected
+    case Passed
     case ShouldHaveErrored
-    case ErroredAsExpected
+    case Mismatch(actual: String, expected: String)
     case UnexpectedError(message: String)
 
-  def main(args: Array[String]): Unit =
-    val suiteRoot = args.headOption.getOrElse("/tmp/yaml-test-suite")
-    val verbose = args.contains("--verbose")
-    val maxFailuresShown = if verbose then Int.MaxValue else 30
-    val root = Paths.get(suiteRoot).nn
+  case class TestCase
+                ( id:           String,
+                  description:  String,
+                  yamlText:     String,
+                  isError:      Boolean,
+                  expectedJson: Option[String],
+                  tags:         Set[String] )
+  :
+    def inScope: Boolean = !tags.exists(excludedTags.contains)
+
+  case class Result(testCase: TestCase, outcome: Outcome):
+    def passed: Boolean = outcome match
+      case Outcome.Passed => true
+      case _              => false
+
+  def suitePath: String =
+    val sysProp = System.getProperty("ypsiloid.yaml-test-suite.path")
+    if sysProp != null && sysProp.nonEmpty then sysProp
+    else "/tmp/yaml-test-suite"
+
+  def loadTestCases(rootStr: String = suitePath): List[TestCase] =
+    val root = Paths.get(rootStr).nn
 
     if !Files.isDirectory(root) then
-      System.err.nn.println(s"Test suite not found at: $suiteRoot")
-      System.exit(2)
-      return
+      throw new RuntimeException(s"Test suite not found at: $rootStr")
 
-    val testDirs = Files.list(root).nn.iterator.nn.asScala
-                        .filter(p => Files.isDirectory(p))
-                        .toList.sortBy(_.getFileName.nn.toString.nn)
+    val tagsByTest = loadTagsByTest(root.resolve("tags").nn)
 
-    var passed = 0
-    val failures = scala.collection.mutable.ArrayBuffer[(String, String, Outcome)]()
+    Files.list(root).nn.iterator.nn.asScala
+      .filter(p => Files.isDirectory(p) && p.getFileName.nn.toString != "tags")
+      .toList
+      .sortBy(_.getFileName.nn.toString)
+      .flatMap: dir =>
+        val id = dir.getFileName.nn.toString
+        val inYaml = dir.resolve("in.yaml")
+        if !Files.isReadable(inYaml) then None
+        else
+          val description =
+            try new String(Files.readAllBytes(dir.resolve("===")).nn).trim.nn
+            catch case _: IOException => "?"
 
-    testDirs.foreach: dir =>
-      val name = dir.getFileName.nn.toString
-      val inYaml = dir.resolve("in.yaml").nn
-      if !Files.isReadable(inYaml) then ()
+          val isError = Files.isReadable(dir.resolve("error"))
+          val yamlText = new String(Files.readAllBytes(inYaml).nn, "UTF-8")
+
+          val expectedJson =
+            val inJson = dir.resolve("in.json")
+            if Files.isReadable(inJson)
+            then Some(new String(Files.readAllBytes(inJson).nn, "UTF-8"))
+            else None
+
+          Some(TestCase(id, description, yamlText, isError, expectedJson,
+                        tagsByTest.getOrElse(id, Set.empty)))
+
+  private def loadTagsByTest(tagsDir: Path): Map[String, Set[String]] =
+    if !Files.isDirectory(tagsDir) then Map.empty
+    else
+      val accumulator = scala.collection.mutable.Map.empty[String, Set[String]]
+      Files.list(tagsDir).nn.iterator.nn.asScala.foreach: tagDir =>
+        if Files.isDirectory(tagDir) then
+          val tagName = tagDir.getFileName.nn.toString
+          Files.list(tagDir).nn.iterator.nn.asScala.foreach: testLink =>
+            val testId = testLink.getFileName.nn.toString
+            accumulator.update(testId, accumulator.getOrElse(testId, Set.empty) + tagName)
+      accumulator.toMap
+
+  def runTestCase(testCase: TestCase): Result =
+    val outcome: Outcome =
+      if testCase.isError then
+        try
+          YamlParser.parse(Text(testCase.yamlText))
+          Outcome.ShouldHaveErrored
+        catch case _: Throwable => Outcome.Passed
       else
-        val description =
-          try new String(Files.readAllBytes(dir.resolve("===").nn).nn).trim.nn
-          catch case _: IOException => "?"
+        try
+          val ast = YamlParser.parse(Text(testCase.yamlText))
+          testCase.expectedJson match
+            case None => Outcome.Passed
+            case Some(expectedText) =>
+              val expected = Text(expectedText).read[Json]
+              val actual = yamlAstToJson(ast)
+              if actual == expected then Outcome.Passed
+              else Outcome.Mismatch(jsonString(actual), jsonString(expected))
+        catch case e: Throwable =>
+          Outcome.UnexpectedError(e.toString.takeWhile(_ != '\n'))
 
-        val isError = Files.isReadable(dir.resolve("error").nn)
-        val yamlText = new String(Files.readAllBytes(inYaml).nn, "UTF-8")
+    Result(testCase, outcome)
 
-        val outcome: Outcome =
-          if isError then
-            try
-              YamlParser.parse(Text(yamlText))
-              Outcome.ShouldHaveErrored
-            catch case _: Throwable => Outcome.ErroredAsExpected
-          else
-            val inJson = dir.resolve("in.json").nn
-            try
-              val ast = YamlParser.parse(Text(yamlText))
-              if !Files.isReadable(inJson) then Outcome.ParsedButNoExpected
-              else
-                val expectedText = new String(Files.readAllBytes(inJson).nn, "UTF-8")
-                val expectedJson = parseExpected(expectedText)
-                val actualJson = yamlAstToJson(ast)
-                if actualJson == expectedJson then Outcome.ParsedAndMatched
-                else
-                  Outcome.ParsedButMismatch(jsonString(actualJson), jsonString(expectedJson))
-            catch case e: Throwable => Outcome.UnexpectedError(e.toString.takeWhile(_ != '\n'))
+  def main(args: Array[String]): Unit =
+    val suiteRoot = args.headOption.filterNot(_.startsWith("--")).getOrElse(suitePath)
+    val verbose = args.contains("--verbose")
+    val maxFailuresShown = if verbose then Int.MaxValue else 30
 
-        outcome match
-          case Outcome.ParsedAndMatched | Outcome.ErroredAsExpected | Outcome.ParsedButNoExpected =>
-            passed += 1
-          case other => failures.append((name, description, other))
+    val cases = loadTestCases(suiteRoot)
+    val results = cases.map(runTestCase)
+    val (inScopeResults, outOfScopeResults) = results.partition(_.testCase.inScope)
+    val inScopePassed = inScopeResults.count(_.passed)
+    val outOfScopePassed = outOfScopeResults.count(_.passed)
+    val overallPassed = inScopePassed + outOfScopePassed
+    val overallTotal = results.length
 
-    val total = testDirs.count(d => Files.isReadable(d.resolve("in.yaml").nn))
-    val percent = if total == 0 then 0.0 else passed.toDouble / total * 100
     val divider = "=".repeat(80)
     println()
     println(divider)
     println("YAML Test Suite Conformance")
     println(divider)
-    println(f"PASSED:    $passed / $total ($percent%.1f%%)")
-    println(f"FAILED:    ${failures.size}")
+    println(f"In-scope:     $inScopePassed%4d / ${inScopeResults.length}%-4d  "
+          + f"(${pct(inScopePassed, inScopeResults.length)}%.1f%%)")
+    println(f"Out-of-scope: $outOfScopePassed%4d / ${outOfScopeResults.length}%-4d "
+          + f"  (${pct(outOfScopePassed, outOfScopeResults.length)}%.1f%%, informational)")
+    println(f"Overall:      $overallPassed%4d / $overallTotal%-4d  "
+          + f"(${pct(overallPassed, overallTotal)}%.1f%%)")
     println()
 
-    if failures.nonEmpty then
-      println(s"Failures (${failures.size.min(maxFailuresShown)} of ${failures.size} shown):")
-      failures.take(maxFailuresShown).foreach: (name, desc, outcome) =>
-        val descShort = desc.linesIterator.next.nn.take(60)
-        outcome match
-          case Outcome.ParsedButMismatch(actual, expected) =>
-            println(s"  $name [$descShort]")
-            println(s"    expected: ${expected.take(120)}")
-            println(s"    actual:   ${actual.take(120)}")
-          case Outcome.ShouldHaveErrored =>
-            println(s"  $name [$descShort]: should have errored, but parsed")
-          case Outcome.UnexpectedError(msg) =>
-            println(s"  $name [$descShort]: unexpected error: ${msg.take(120)}")
-          case _ => ()
+    val inScopeFailures = inScopeResults.filterNot(_.passed)
+    if inScopeFailures.nonEmpty then
+      println(s"In-scope failures (${inScopeFailures.length.min(maxFailuresShown)}"
+            + s" of ${inScopeFailures.length} shown):")
+      inScopeFailures.take(maxFailuresShown).foreach: result =>
+        printFailure(result)
 
-  private def parseExpected(text: String): Json =
-    Text(text).read[Json]
+    if inScopeFailures.nonEmpty then System.exit(1)
+
+  private def pct(n: Int, total: Int): Double =
+    if total == 0 then 0.0 else n.toDouble / total * 100
+
+  private def printFailure(result: Result): Unit =
+    val descShort = result.testCase.description.linesIterator.next().take(60)
+    val tagsShort = if result.testCase.tags.isEmpty then ""
+                    else result.testCase.tags.toList.sorted.mkString(" {", ",", "}")
+    result.outcome match
+      case Outcome.Mismatch(actual, expected) =>
+        println(s"  ${result.testCase.id} [$descShort]$tagsShort")
+        println(s"    expected: ${expected.take(120)}")
+        println(s"    actual:   ${actual.take(120)}")
+
+      case Outcome.ShouldHaveErrored =>
+        println(s"  ${result.testCase.id} [$descShort]$tagsShort: should have errored")
+
+      case Outcome.UnexpectedError(msg) =>
+        println(s"  ${result.testCase.id} [$descShort]$tagsShort: unexpected error: "
+              + msg.take(120))
+
+      case Outcome.Passed => ()
 
   private def yamlAstToJson(yaml: YamlAst): Json = yaml match
     case YamlAst.Null         => Json.ast(JsonAst(null))
@@ -170,8 +245,7 @@ object Conformance:
       Json.ast(JsonAst.obj(keys, values))
 
   private def jsonString(json: Json): String =
-    val ast = json.root.asInstanceOf[Any]
-    renderAny(ast)
+    renderAny(json.root.asInstanceOf[Any])
 
   private def renderAny(value: Any): String = value match
     case null              => "null"
@@ -183,9 +257,7 @@ object Conformance:
     case (keys, values) =>
       val ks = keys.asInstanceOf[IArray[String]]
       val vs = values.asInstanceOf[IArray[Any]]
-      val pairs = ks.zip(vs).map: (k, v) =>
-        "\"" + k + "\":" + renderAny(v)
-      pairs.mkString("{", ",", "}")
+      ks.zip(vs).map((k, v) => "\"" + k + "\":" + renderAny(v)).mkString("{", ",", "}")
 
     case items: IArray[?] =>
       items.asInstanceOf[IArray[Any]].map(renderAny).mkString("[", ",", "]")

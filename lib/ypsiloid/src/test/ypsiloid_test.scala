@@ -634,3 +634,5 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       test(m"Decoding a number as Boolean raises a YamlError"):
         capture[YamlError](t"42".read[Yaml].as[Boolean])
       . assert(_ => true)
+
+    ConformanceTests.all()
