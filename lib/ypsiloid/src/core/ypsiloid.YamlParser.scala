@@ -1818,14 +1818,23 @@ private[ypsiloid] final class YamlParser:
     while more && (peek == Space || peek == Tab) do advance()
     val key: YamlAst =
       if !more || peek == Newline then
-        // Key on a more-indented next line.
+        // Key on a more-indented next line, or — per spec 8.2.2 — a
+        // zero-indent block sequence at the same column as the `?` marker.
         if more then advance()
         skipBlankAndCommentLines()
         val keyLineStart = pos
         val keyIndent = consumeLeadingSpaces()
-        if keyIndent <= indent then
+        if keyIndent < indent then
           pos = keyLineStart
           YamlAst.Null
+        else if keyIndent == indent then
+          if more && peek == Minus && {
+            val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+            nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
+          } then parseNodeHere(keyIndent)
+          else
+            pos = keyLineStart
+            YamlAst.Null
         else parseNodeHere(keyIndent)
       else parseNodeHere(indent + 2)
     skipBlankAndCommentLines()
