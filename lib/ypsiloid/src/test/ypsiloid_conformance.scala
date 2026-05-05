@@ -335,12 +335,26 @@ object Conformance:
     case d: Double         => d.toString
     case s: String         => "\"" + s + "\""
 
-    case (keys, values) =>
-      val ks = keys.asInstanceOf[IArray[String]]
-      val vs = values.asInstanceOf[IArray[Any]]
-      ks.zip(vs).map((k, v) => "\"" + k + "\":" + renderAny(v)).mkString("{", ",", "}")
-
     case items: IArray[?] =>
-      items.asInstanceOf[IArray[Any]].map(renderAny).mkString("[", ",", "]")
+      // JSON objects and arrays share the same `IArray[Any]` runtime
+      // representation in jacinta: even length is an object (alternating
+      // key, value, …), odd length is an array (the last slot may be a
+      // sentinel pad when the logical element count is even). Objects
+      // are rendered with sorted keys so the comparison is independent
+      // of source order, which JSON treats as insignificant.
+      val arr = items.asInstanceOf[IArray[Any]]
+      val n = arr.length
+      if (n & 1) == 0 then
+        val pairs = (0 until n/2).map: i =>
+          (arr(i*2).asInstanceOf[String], arr(i*2 + 1))
+        pairs.sortBy(_._1)
+            .map((k, v) => "\"" + k + "\":" + renderAny(v))
+            .mkString("{", ",", "}")
+      else
+        val last = arr(n - 1)
+        val effective =
+          if last.asInstanceOf[AnyRef] eq jacinta.JsonAst.arrayPad then n - 1
+          else n
+        (0 until effective).map(i => renderAny(arr(i))).mkString("[", ",", "]")
 
     case other => other.toString
