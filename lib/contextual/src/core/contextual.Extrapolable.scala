@@ -39,4 +39,4 @@ import prepositional.*
 trait Extrapolable extends Typeclass:
   type Self
 
-  inline def extrapolate[parts <: Tuple](scrutinee: Self): Extrapolation[Self]
+  inline def extrapolate[parts <: Tuple, origins <: Tuple](scrutinee: Self): Extrapolation[Self]

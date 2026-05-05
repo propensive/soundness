@@ -49,9 +49,12 @@ import rudiments.*
 import spectacular.*
 import stenography.*
 import vacuous.*
+import zephyrine.*
 
 object internal:
-  def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Extrapolation[Html]] =
+  def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
+    (scrutinee: Expr[Html])
+  :   Macro[Extrapolation[Html]] =
     import quotes.reflect.*
     import doms.html.whatwg
 
@@ -248,7 +251,9 @@ object internal:
             case '[type result <: Tuple; result] =>
               '{$result.asInstanceOf[Option[result]]}
 
-  def interpolator[parts <: Tuple: Type](insertions0: Expr[Seq[Any]]): Macro[Html] =
+  def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
+    (insertions0: Expr[Seq[Any]])
+  :   Macro[Html] =
     import quotes.reflect.*
     import doms.html.whatwg
     import Html.Hole
@@ -259,15 +264,79 @@ object internal:
 
     val parts = recur[parts](Nil)
 
+    // Decode Origins into a List[(Int, Int)] of (start, end) source offsets per part.
+    def recurOrigins[tuple: Type](acc: List[(Int, Int)]): List[(Int, Int)] =
+      Type.of[tuple] match
+        case '[head *: tail] =>
+          val pair = TypeRepr.of[head].dealias match
+            case AppliedType(_, List(ConstantType(IntConstant(s)), ConstantType(IntConstant(e)))) =>
+              (s, e)
+            case _ =>
+              (0, 0)
+          recurOrigins[tail](pair :: acc)
+        case _ =>
+          acc.reverse
+
+    val partOrigins: List[(Int, Int)] = recurOrigins[origins](Nil)
+
+    // Map a parser char-offset (within the joined input) back to a source-file
+    // Position. Uses Interpolation.buildMapping so escape sequences in the
+    // source (\n, \t, \uHHHH, $$, etc.) correctly resolve to the longer
+    // source span. The Scala compiler's lit.pos.end is unreliable for parts
+    // containing $$, so we walk forward from lit.pos.start instead.
+    val sourceFile = Position.ofMacroExpansion.sourceFile
+    val macroPos = Position.ofMacroExpansion
+    val sourceContent: Optional[String] = sourceFile.content match
+      case Some(s: String) => s
+      case _               => Unset
+
+    val perPart: IndexedSeq[((String, Int), Int => Int)] =
+      parts.zip(partOrigins).map: (part, origin) =>
+        val (srcStart, _) = origin
+        val mapping: Int => Int = sourceContent.lay((i: Int) => i): content =>
+          if srcStart > 0 && srcStart < content.length then
+            val upper = (srcStart + part.length * 6 + 16).min(content.length)
+            val sourceText = content.substring(srcStart, upper).nn
+            Interpolation.buildMapping(sourceText, part)
+          else (i: Int) => i
+        ((part, srcStart), mapping)
+      . toIndexedSeq
+
+    def translateOffset(parserOff: Int, len: Int): Position =
+      var acc = 0
+      var i = 0
+      while i < perPart.length do
+        val ((part, srcStart), mapping) = perPart(i)
+        val partLen = part.length
+        if parserOff < acc + partLen && srcStart > 0 then
+          val inPart = parserOff - acc
+          val endIn = (inPart + len.max(1)).min(part.length)
+          val rawStart = (srcStart + mapping(inPart)).max(srcStart)
+          val rawEnd = (srcStart + mapping(endIn)).max(rawStart + 1)
+          return Position(sourceFile, rawStart, rawEnd)
+        acc += partLen + 1
+        i += 1
+      macroPos
+
     val insertions: Seq[Expr[Any]] = insertions0.absolve match
       case Varargs(insertions) => insertions
 
-    abortive:
-      var holes: Map[Ordinal, Html.Hole] = Map()
-      def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
+    var holes: Map[Ordinal, Html.Hole] = Map()
+    def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
 
-      val html: Html =
-        Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
+    // Custom HaltTactic: translate parser ParseError positions to source-file ranges.
+    val html: Html =
+      given diagnostics: Diagnostics = Diagnostics.omit
+      given parseTactic: HaltTactic[ParseError, Html] = new HaltTactic[ParseError, Html]:
+        override def abort(error: Diagnostics ?=> ParseError): Nothing =
+          val pe = error
+          val off = pe.position.offset.or(0)
+          val length = pe.position.length.or(0)
+          halt(pe.labelled, translateOffset(off, length))
+
+      Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
+
+    abortive:
 
       val iterator: Iterator[Expr[Any]] =
         holes.to(List).sortBy(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
@@ -291,14 +360,17 @@ object internal:
                               '{$attributive.attribute(${Expr(attribute)}, $expr).let(_(1))}
 
                             case _ =>
-                              halt:
-                                m"""
-                                  ${TypeRepr.of[value].show} cannot be attributed to an attribute of
-                                  ${Syntax(TypeRepr.of[result]).show}
-                                """
+                              halt
+                                ( m"""
+                                    ${TypeRepr.of[value].show} cannot be attributed to an attribute
+                                    of ${Syntax(TypeRepr.of[result]).show}
+                                  """,
+                                  expr.asTerm.underlyingArgument.pos )
 
                         case _ =>
-                          halt(m"the attribute $attribute cannot be used on the element <$tag>")
+                          halt
+                            ( m"the attribute $attribute cannot be used on the element <$tag>",
+                              expr.asTerm.underlyingArgument.pos )
 
               case Hole.Element(tag) =>
                 ConstantType(StringConstant(tag.s)).asType.absolve match
@@ -306,11 +378,13 @@ object internal:
                     case Some('{$renderable: Renderable}) =>
                       '{$renderable.render($expr)}
 
-                    case _ => halt:
-                      m"""
-                        a value of ${TypeRepr.of[value].show} is not renderable inside a <$tag>
-                        element
-                      """
+                    case _ =>
+                      halt
+                        ( m"""
+                            a value of ${TypeRepr.of[value].show} is not renderable inside a <$tag>
+                            element
+                          """,
+                          expr.asTerm.underlyingArgument.pos )
 
               case Hole.Node(tag) =>
                 ConstantType(StringConstant(tag.s)).asType.absolve match
@@ -323,36 +397,39 @@ object internal:
                         case Some('{$showable: Showable}) =>
                           '{TextNode($showable.text($expr))}
 
-                        case _ => halt:
-                          m"""
-                            a value of ${TypeRepr.of[value].show} is not renderable or showable
-                            inside a <$tag> element
-                          """
+                        case _ =>
+                          halt
+                            ( m"""
+                                a value of ${TypeRepr.of[value].show} is not renderable or
+                                showable inside a <$tag> element
+                              """,
+                              expr.asTerm.underlyingArgument.pos )
 
               case Hole.Comment => Expr.summon[(? >: value) is Showable] match
                 case Some(showable) =>
                   '{$showable.text($expr)}
 
                 case None =>
-                  halt(m"a ${TypeRepr.of[value is Showable].show} is required")
+                  halt(m"a ${TypeRepr.of[value is Showable].show} is required", expr.asTerm.underlyingArgument.pos)
 
               case Hole.Text => Expr.summon[(? >: value) is Showable] match
                 case Some(showable) =>
                   '{$showable.text($expr)}
 
                 case None =>
-                  halt(m"a ${TypeRepr.of[value is Showable].show} is required")
+                  halt(m"a ${TypeRepr.of[value is Showable].show} is required", expr.asTerm.underlyingArgument.pos)
 
               case Hole.Tagbody => Type.of[value] match
                 case '[Map[Text, Optional[Text]]] =>
                   expr
 
                 case _ =>
-                  halt:
-                    m"""
-                      only a ${TypeRepr.of[Map[Text, Optional[Text]]].show} can be applied in a tag
-                      body
-                    """
+                  halt
+                    ( m"""
+                        only a ${TypeRepr.of[Map[Text, Optional[Text]]].show} can be applied in a
+                        tag body
+                      """,
+                      expr.asTerm.underlyingArgument.pos )
 
         . iterator
 

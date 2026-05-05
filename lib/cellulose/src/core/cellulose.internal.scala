@@ -75,7 +75,8 @@ object internal extends protointernal:
     def field[encodable: Encodable in Text]: encodable is Encodable in Codl =
       value => Codl(List(Codllike(IArray(CodlNode(Atom(encodable.encoded(value)))))))
 
-    case class Position(line: Int, column: Int, length: Int) extends Format.Position:
+    case class Position(line: Int, column: Int, override val length: Optional[Int])
+    extends Format.Position:
       def describe: Text = t"line $line, column $column"
 
     inline given derivedEncodable: [value] => value is Encodable in Codl = compiletime.summonFrom:

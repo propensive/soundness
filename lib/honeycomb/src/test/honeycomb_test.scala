@@ -128,7 +128,10 @@ object Tests extends Suite(m"Honeycombd Tests"):
       test(m"unknown tag"):
         try t"""<scrip>""".read[Html of Phrasing]
         catch case exception: Exception => exception
-      . assert(_ == ParseError(Html, Html.Position(1.u, 2.u), Html.Issue.InvalidTag("scrip")))
+      . assert:
+          case ParseError(Html, Html.Position(line, col, _, _), Html.Issue.InvalidTag("scrip")) =>
+            line == 1.u && col == 2.u
+          case _ => false
 
       test(m"raw text"):
         t"<head><script>some content</script></head>".read[Html of "head"]
@@ -260,7 +263,11 @@ object Tests extends Suite(m"Honeycombd Tests"):
       test(m"transparent tag only allows the right children"):
         try t"""<div><a href="#"><li>list item</li></a></div>""".read[Html of Flow]
         catch case exception: Exception => exception
-      . assert(_ == ParseError(Html, Html.Position(1.u, 18.u), Html.Issue.InadmissibleTag("li", "a")))
+      . assert:
+          case ParseError
+                ( Html, Html.Position(line, col, _, _), Html.Issue.InadmissibleTag("li", "a") ) =>
+            line == 1.u && col == 18.u
+          case _ => false
 
       test(m"transparent tag with element"):
         t"""<p>Go <a href="https://example.com"><em>home</em></a>.</p>""".read[Html of "p"]
@@ -406,7 +413,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
           catch case exception: Exception => exception
 
         . assert:
-            case ParseError(_, Html.Position(line, _), _) => line == 2.u
+            case ParseError(_, Html.Position(line, _, _, _), _) => line == 2.u
 
       suite(m"Attribute parsing depth"):
         test(m"multiple attributes preserved"):
@@ -440,7 +447,13 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"forbidden character in unquoted value"):
           try t"""<img alt=a"b>""".read[Html of "img"]
           catch case exception: Exception => exception
-        . assert(_ == ParseError(Html, Html.Position(1.u, 11.u), Html.Issue.ForbiddenUnquoted('"')))
+        . assert:
+            case ParseError
+                  ( Html,
+                    Html.Position(line, col, _, _),
+                    Html.Issue.ForbiddenUnquoted('"') ) =>
+              line == 1.u && col == 11.u
+            case _ => false
 
         test(m"whitespace around equals"):
           t"""<img alt = "a">""".read[Html of "img"]
@@ -459,6 +472,43 @@ object Tests extends Suite(m"Honeycombd Tests"):
         . assert:
             case ParseError(_, _, Html.Issue.UnknownAttributeStart(_)) => true
             case ParseError(_, _, Html.Issue.UnknownAttribute(_))      => true
+
+      suite(m"Position ranges"):
+        def position(input: Text): Html.Position =
+          try
+            input.read[Html of Phrasing]
+            Html.Position(0.u, 0.u)
+          catch case e: ParseError => e.position.asInstanceOf[Html.Position]
+
+        def focus(input: Text): Text =
+          val pos = position(input)
+          val start = pos.offset.or(0)
+          val length = pos.length.or(0)
+          input.s.substring(start, (start + length).min(input.s.length)).nn.tt
+
+        test(m"Unknown tag focus contains the bad tag name"):
+          focus(t"<scrip>")
+        . assert(_ == t"scrip")
+
+        test(m"Position ranges are non-empty for tag errors"):
+          position(t"<scrip>").length
+        . assert(_ != Unset)
+
+      suite(m"Compile-time hole-position errors"):
+        test(m"unrenderable splice in element body is highlighted at the splice"):
+          case class NotShowable()
+          val bad: NotShowable = NotShowable()
+          demilitarize:
+            h"<div>$bad</div>"
+          . map(_.focus)
+        . assert(_ == List("bad"))
+
+        test(m"parse error focus is inside the literal, not the whole thing"):
+          val errors = demilitarize:
+            h"<scrip></scrip>"
+          // h"<scrip></scrip>" is 17 chars; a precise focus is shorter.
+          errors.map(_.focus.length < 17)
+        . assert(_ == List(true))
 
       suite(m"Element coverage: void elements"):
         test(m"area"):
@@ -964,7 +1014,10 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
       test(m"unknown tag"):
         try t"""<scrip>""".read[Html of Inline]
         catch case exception: Exception => exception
-      . assert(_ == ParseError(Html, Html.Position(1.u, 2.u), Html.Issue.InvalidTag("scrip")))
+      . assert:
+          case ParseError(Html, Html.Position(line, col, _, _), Html.Issue.InvalidTag("scrip")) =>
+            line == 1.u && col == 2.u
+          case _ => false
 
       test(m"raw text"):
         t"<head><script>some content</script></head>".read[Html of "head"]
@@ -1162,7 +1215,13 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
         test(m"forbidden character in unquoted value"):
           try t"""<img alt=a"b>""".read[Html of "img"]
           catch case exception: Exception => exception
-        . assert(_ == ParseError(Html, Html.Position(1.u, 11.u), Html.Issue.ForbiddenUnquoted('"')))
+        . assert:
+            case ParseError
+                  ( Html,
+                    Html.Position(line, col, _, _),
+                    Html.Issue.ForbiddenUnquoted('"') ) =>
+              line == 1.u && col == 11.u
+            case _ => false
 
         test(m"whitespace around equals"):
           t"""<img alt = "a">""".read[Html of "img"]

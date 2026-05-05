@@ -113,15 +113,18 @@ object Xml extends Tag.Container
   inline given interpolator: Xml is Interpolable:
     type Result = Xml
 
-    transparent inline def interpolate[parts <: Tuple](inline insertions: Any*): Xml =
-      ${xylophone.internal.interpolator[parts]('insertions)}
+    transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+      (inline insertions: Any*)
+    :   Xml =
+
+      ${xylophone.internal.interpolator[parts, origins]('insertions)}
 
   inline given extrapolator: Xml is Extrapolable:
 
-    transparent inline def extrapolate[parts <: Tuple](scrutinee: Xml)
+    transparent inline def extrapolate[parts <: Tuple, origins <: Tuple](scrutinee: Xml)
     :   Boolean | Option[Tuple | Xml] =
 
-      ${xylophone.internal.extractor[parts]('scrutinee)}
+      ${xylophone.internal.extractor[parts, origins]('scrutinee)}
 
 
   given aggregable: [content <: Label: Reifiable to List[String]] => (schema: XmlSchema)
@@ -452,7 +455,12 @@ object Xml extends Tag.Container
       case OnlyWhitespace(char) =>
         m"the character $char was found where only whitespace is permitted"
 
-  case class Position(line: Ordinal, column: Ordinal) extends Format.Position:
+  case class Position
+    ( line:                Ordinal,
+      column:              Ordinal,
+      override val offset: Optional[Int] = Unset,
+      override val length: Optional[Int] = Unset )
+  extends Format.Position:
     def describe: Text = t"line ${line.n1}, column ${column.n1}"
 
   enum Hole:
@@ -520,12 +528,15 @@ object Xml extends Tag.Container
       val end = cursor.mark(using heldToken.nn)
       cursor.clone(start, end)(buf.asInstanceOf[cursor.addressable.Target])
 
-    protected def computePosition(): Position =
+    protected def computePosition(start: Optional[Cursor.Mark] = Unset): Position =
       // Lineation increments column AFTER each `advance`, so it tracks the
       // column of the next char to read. At end-of-input we want the column
       // of the LAST char read, matching the Direct/Streaming convention.
       val col = cursor.column.n1 - (if cursor.more then 0 else 1)
-      Position(cursor.line.n1.u, col.max(1).u)
+      val end = cursor.position.n0
+      val offset: Optional[Int] = start.let(_.absolute.toInt)
+      val length: Optional[Int] = start.let(mark => end - mark.absolute.toInt)
+      Position(cursor.line.n1.u, col.max(1).u, offset = offset, length = length)
 
     // Optional callback invoked when a `\u0000` placeholder is encountered.
     // Used by the macro interpolators to record hole positions; the
@@ -534,7 +545,10 @@ object Xml extends Tag.Container
     var callback: Optional[(Ordinal, Hole) => Unit] = Unset
 
     protected inline def fail(issue: Issue)(using Tactic[ParseError]): Nothing =
-      abort(ParseError(Xml, computePosition(), issue))
+      abort(ParseError(Xml, computePosition(Unset), issue))
+
+    protected def fail(issue: Issue, start: Cursor.Mark)(using Tactic[ParseError]): Nothing =
+      abort(ParseError(Xml, computePosition(start), issue))
 
     protected inline def isAsciiLetter(c: Char): Boolean =
       ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
@@ -560,9 +574,9 @@ object Xml extends Tag.Container
 
     protected def readName()(using Tactic[ParseError]): Text =
       val start = begin()
-      if !more then fail(Issue.ExpectedMore)
+      if !more then fail(Issue.ExpectedMore, start)
       val first = peek
-      if !isNameStart(first) then fail(Issue.Unexpected(first))
+      if !isNameStart(first) then fail(Issue.Unexpected(first), start)
       advance()
       while more && isNameChar(peek) do advance()
       slice(start)
@@ -599,12 +613,12 @@ object Xml extends Tag.Container
         val nameStart = begin()
         while more && peek != ';' do
           val c = peek
-          if !isNameChar(c) then fail(Issue.Unexpected(c))
+          if !isNameChar(c) then fail(Issue.Unexpected(c), nameStart)
           advance()
-        if !more then fail(Issue.ExpectedMore)
+        if !more then fail(Issue.ExpectedMore, nameStart)
         val name = slice(nameStart)
         advance()
-        schema.entities(name).or(fail(Issue.UnknownEntity(name)))
+        schema.entities(name).or(fail(Issue.UnknownEntity(name), nameStart))
 
     // Read attribute value enclosed in `quote`. Returns the unescaped
     // value as Text. Position starts just after the opening quote and
@@ -615,11 +629,11 @@ object Xml extends Tag.Container
       var hasHole = false
       while more && peek != quote do
         val c = peek
-        if c == '<' then fail(Issue.Unexpected('<'))
+        if c == '<' then fail(Issue.Unexpected('<'), start)
         if c == '&' then hasEntity = true
         if c == '\u0000' then hasHole = true
         advance()
-      if !more then fail(Issue.ExpectedMore)
+      if !more then fail(Issue.ExpectedMore, start)
       val end = begin()
       advance() // consume closing quote
       if !hasEntity && !hasHole then slice(start, end)
@@ -647,7 +661,7 @@ object Xml extends Tag.Container
             segStart = begin()
           else
             advance()
-        if !more then fail(Issue.ExpectedMore)
+        if !more then fail(Issue.ExpectedMore, start)
         appendSlice(segStart, buf)
         advance() // consume closing quote
         buf.toString.nn.tt
@@ -666,12 +680,13 @@ object Xml extends Tag.Container
           skipWs()
           entries = entries.updated(t"\u0000", t"")
         else
+          val keyStart = begin()
           val key = readName()
-          if entries.contains(key) then fail(Issue.DuplicateAttribute(key))
+          if entries.contains(key) then fail(Issue.DuplicateAttribute(key), keyStart)
           skipWs()
           expectChar('=')
           skipWs()
-          if !more then fail(Issue.ExpectedMore)
+          if !more then fail(Issue.ExpectedMore, keyStart)
           val q = peek
           val value =
             if q == '\u0000' then
@@ -681,7 +696,7 @@ object Xml extends Tag.Container
             else if q == '"' || q == '\'' then
               advance()
               readAttrValue(tag, q)
-            else fail(Issue.UnquotedAttribute)
+            else fail(Issue.UnquotedAttribute, keyStart)
           entries = entries.updated(key, value)
       entries
 
@@ -699,7 +714,7 @@ object Xml extends Tag.Container
         if c == '\u0000' then hasHole = true
         if c == ']' then bracketCount += 1
         else
-          if bracketCount >= 2 && c == '>' then fail(Issue.Unexpected('>'))
+          if bracketCount >= 2 && c == '>' then fail(Issue.Unexpected('>'), start)
           bracketCount = 0
         advance()
       if !hasEntity && !hasHole then slice(start)
@@ -728,35 +743,35 @@ object Xml extends Tag.Container
     protected def readComment()(using Tactic[ParseError]): Text =
       val start = begin()
       while
-        if !more then fail(Issue.ExpectedMore)
+        if !more then fail(Issue.ExpectedMore, start)
         !(peek == '-')
       do advance()
       // Try to match `-->`
       val end = begin()
       advance()
-      if !more then fail(Issue.ExpectedMore)
+      if !more then fail(Issue.ExpectedMore, start)
       if peek != '-' then
         // Not the end; continue from here
         readComment_continue(start)
       else
         advance()
-        if !more then fail(Issue.ExpectedMore)
-        if peek != '>' then fail(Issue.Unexpected(peek))
+        if !more then fail(Issue.ExpectedMore, start)
+        if peek != '>' then fail(Issue.Unexpected(peek), start)
         advance()
         slice(start, end)
 
     private def readComment_continue(start: Region)(using Tactic[ParseError]): Text =
       // We saw '-' but the next wasn't '-' or '>'. Continue scanning.
       while more && peek != '-' do advance()
-      if !more then fail(Issue.ExpectedMore)
+      if !more then fail(Issue.ExpectedMore, start)
       val end = begin()
       advance()
-      if !more then fail(Issue.ExpectedMore)
+      if !more then fail(Issue.ExpectedMore, start)
       if peek != '-' then readComment_continue(start)
       else
         advance()
-        if !more then fail(Issue.ExpectedMore)
-        if peek != '>' then fail(Issue.Unexpected(peek))
+        if !more then fail(Issue.ExpectedMore, start)
+        if peek != '>' then fail(Issue.Unexpected(peek), start)
         advance()
         slice(start, end)
 
@@ -765,7 +780,7 @@ object Xml extends Tag.Container
       var done = false
       var endRegion: Region = start
       while !done do
-        if !more then fail(Issue.ExpectedMore)
+        if !more then fail(Issue.ExpectedMore, start)
         if peek == ']' then
           val maybeEnd = begin()
           advance()
@@ -782,9 +797,9 @@ object Xml extends Tag.Container
     // the appropriate Node.
     protected def readProcessingInstruction()(using Tactic[ParseError]): Node =
       val nameStart = begin()
-      if !more then fail(Issue.ExpectedMore)
+      if !more then fail(Issue.ExpectedMore, nameStart)
       val first = peek
-      if !isNameStart(first) then fail(Issue.Unexpected(first))
+      if !isNameStart(first) then fail(Issue.Unexpected(first), nameStart)
       advance()
       while more && isNameChar(peek) do advance()
       val target = slice(nameStart)
@@ -796,17 +811,17 @@ object Xml extends Tag.Container
         && (target.s.charAt(2) == 'l' || target.s.charAt(2) == 'L')
 
       if isXmlName then
-        if !headers then fail(Issue.InvalidTag(target))
+        if !headers then fail(Issue.InvalidTag(target), nameStart)
         headers = false
         skipWs()
         val versionKey = readName()
-        if versionKey != t"version" then fail(Issue.Unexpected(versionKey.s.charAt(0)))
+        if versionKey != t"version" then fail(Issue.Unexpected(versionKey.s.charAt(0)), nameStart)
         skipWs()
         expectChar('=')
         skipWs()
-        if !more then fail(Issue.ExpectedMore)
+        if !more then fail(Issue.ExpectedMore, nameStart)
         val q = peek
-        if q != '"' && q != '\'' then fail(Issue.UnquotedAttribute)
+        if q != '"' && q != '\'' then fail(Issue.UnquotedAttribute, nameStart)
         advance()
         val version = readAttrValue(target, q)
         skipWs()
@@ -814,50 +829,50 @@ object Xml extends Tag.Container
         var standalone: Optional[Boolean] = Unset
         if more && peek == 'e' then
           val key = readName()
-          if key != t"encoding" then fail(Issue.Unexpected(key.s.charAt(0)))
+          if key != t"encoding" then fail(Issue.Unexpected(key.s.charAt(0)), nameStart)
           skipWs()
           expectChar('=')
           skipWs()
-          if !more then fail(Issue.ExpectedMore)
+          if !more then fail(Issue.ExpectedMore, nameStart)
           val q2 = peek
-          if q2 != '"' && q2 != '\'' then fail(Issue.UnquotedAttribute)
+          if q2 != '"' && q2 != '\'' then fail(Issue.UnquotedAttribute, nameStart)
           advance()
           encoding = readAttrValue(target, q2)
           skipWs()
         if more && peek == 's' then
           val key = readName()
-          if key != t"standalone" then fail(Issue.Unexpected(key.s.charAt(0)))
+          if key != t"standalone" then fail(Issue.Unexpected(key.s.charAt(0)), nameStart)
           skipWs()
           expectChar('=')
           skipWs()
-          if !more then fail(Issue.ExpectedMore)
+          if !more then fail(Issue.ExpectedMore, nameStart)
           val q2 = peek
-          if q2 != '"' && q2 != '\'' then fail(Issue.UnquotedAttribute)
+          if q2 != '"' && q2 != '\'' then fail(Issue.UnquotedAttribute, nameStart)
           advance()
           val v = readAttrValue(target, q2)
           standalone = v.s match
             case "yes" => true
             case "no"  => false
-            case _     => fail(Issue.Unexpected(v.s.charAt(0)))
+            case _     => fail(Issue.Unexpected(v.s.charAt(0)), nameStart)
           skipWs()
-        if !more then fail(Issue.ExpectedMore)
-        if peek != '?' then fail(Issue.Unexpected(peek))
+        if !more then fail(Issue.ExpectedMore, nameStart)
+        if peek != '?' then fail(Issue.Unexpected(peek), nameStart)
         advance()
-        if !more then fail(Issue.ExpectedMore)
-        if peek != '>' then fail(Issue.Unexpected(peek))
+        if !more then fail(Issue.ExpectedMore, nameStart)
+        if peek != '>' then fail(Issue.Unexpected(peek), nameStart)
         advance()
         Header(version, encoding, standalone)
       else
         skipWs()
         val dataStart = begin()
         while
-          if !more then fail(Issue.ExpectedMore)
+          if !more then fail(Issue.ExpectedMore, dataStart)
           !(peek == '?')
         do advance()
         // Now at '?'. Need '?>'.
         val dataEnd = begin()
         advance()
-        if !more then fail(Issue.ExpectedMore)
+        if !more then fail(Issue.ExpectedMore, dataStart)
         if peek != '>' then
           // Not the terminator, continue
           readPiData(dataStart, target)
@@ -871,10 +886,10 @@ object Xml extends Tag.Container
     :   ProcessingInstruction =
 
       while more && peek != '?' do advance()
-      if !more then fail(Issue.ExpectedMore)
+      if !more then fail(Issue.ExpectedMore, dataStart)
       val dataEnd = begin()
       advance()
-      if !more then fail(Issue.ExpectedMore)
+      if !more then fail(Issue.ExpectedMore, dataStart)
       if peek != '>' then readPiData(dataStart, target)
       else
         advance()
@@ -884,7 +899,7 @@ object Xml extends Tag.Container
       skipWs()
       val start = begin()
       while more && peek != '>' do advance()
-      if !more then fail(Issue.ExpectedMore)
+      if !more then fail(Issue.ExpectedMore, start)
       val end = begin()
       advance()
       slice(start, end)
@@ -927,12 +942,13 @@ object Xml extends Tag.Container
           val c2 = peek
           if c2 == '/' then
             advance()
+            val closeStart = begin()
             val close = readName()
             skipWs()
-            if !more then fail(Issue.ExpectedMore)
-            if peek != '>' then fail(Issue.Unexpected(peek))
+            if !more then fail(Issue.ExpectedMore, closeStart)
+            if peek != '>' then fail(Issue.Unexpected(peek), closeStart)
             advance()
-            if close != parentName then fail(Issue.MismatchedTag(parentName, close))
+            if close != parentName then fail(Issue.MismatchedTag(parentName, close), closeStart)
             done = true
           else if c2 == '!' then
             advance()
@@ -1009,8 +1025,9 @@ object Xml extends Tag.Container
             nodes += readProcessingInstruction()
           else if c2 == '/' then
             advance()
+            val closeStart = begin()
             val close = readName()
-            fail(Issue.UnopenedTag(close))
+            fail(Issue.UnopenedTag(close), closeStart)
           else
             nodes += readElement()
         skipWs()

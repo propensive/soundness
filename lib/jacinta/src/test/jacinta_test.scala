@@ -1063,3 +1063,28 @@ object Tests extends Suite(m"Jacinta Tests"):
           case j"""{"a": 42}""" => true
           case _                => false
       . assert(identity)
+
+    suite(m"Compile-time hole-position errors"):
+      test(m"non-Iterable spread is highlighted at the splice"):
+        val bad: Int = 42
+        demilitarize:
+          j"""[$bad*]"""
+        . map(_.focus)
+      . assert(_ == List("bad"))
+
+      test(m"parse error focus is inside the literal, not the whole thing"):
+        val errors = demilitarize:
+          j""" {"a": 1, } """
+        // The literal is 19 chars; a precise focus on the trailing `,` is shorter.
+        errors.map(_.focus.length < 19)
+      . assert(_ == List(true))
+
+      test(m"non-Iterable spread honours the `*` source skip"):
+        // The spread literal has a `*` prefix in the second part that the
+        // parser doesn't see. The error should still focus on `bad`, not
+        // the splice plus the `*`.
+        val bad: Int = 42
+        demilitarize:
+          j"""[$bad*]"""
+        . map(_.focus)
+      . assert(_ == List("bad"))

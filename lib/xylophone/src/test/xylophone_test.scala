@@ -484,6 +484,118 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert(_.issue.isInstanceOf[Xml.Issue.Unexpected])
 
 
+    suite(m"Position ranges"):
+      def focus(input: Text): Text =
+        val error = capture[ParseError](input.read[Xml])
+        val pos = error.position.asInstanceOf[Xml.Position]
+        val start = pos.offset.or(0)
+        val length = pos.length.or(0)
+        input.s.substring(start, (start + length).min(input.s.length)).nn.tt
+
+      test(m"Mismatched closing tag focus contains close-tag name"):
+        focus(t"<a></b>")
+      . assert(_.s.contains("b"))
+
+      test(m"Unopened closing tag focus contains close-tag name"):
+        focus(t"</a>")
+      . assert(_.s.contains("a"))
+
+      test(m"Unknown entity focus contains entity name"):
+        focus(t"<a>&unknown;</a>")
+      . assert(_.s.contains("unknown"))
+
+      test(m"Duplicate attribute focus contains second attribute name"):
+        focus(t"""<a x="1" x="2"/>""")
+      . assert(_.s.contains("x"))
+
+      test(m"Position ranges are non-empty for parse errors"):
+        capture[ParseError](t"<a></b>".read[Xml])
+        . position.asInstanceOf[Xml.Position].length
+      . assert(_ != Unset)
+
+
+    suite(m"Compile-time hole-position errors"):
+      test(m"unencodable splice in element body is highlighted at the splice"):
+        case class NotEncodable()
+        val bad: NotEncodable = NotEncodable()
+        demilitarize:
+          x"<foo>$bad</foo>"
+        . map(_.focus)
+      . assert(_ == List("bad"))
+
+      test(m"unrenderable splice in node hole is highlighted at the splice"):
+        case class NotShowable()
+        val whatever: NotShowable = NotShowable()
+        demilitarize:
+          x"<foo>$whatever</foo>"
+        . map(_.focus)
+      . assert(_ == List("whatever"))
+
+    suite(m"Compile-time parse-error sub-positioning"):
+      test(m"mismatched close tag in literal lands inside the literal"):
+        val errors = demilitarize:
+          x"<foo></bar>"
+        // Focus should be inside the literal text, NOT cover the whole `x"..."`.
+        // The whole literal is 14 chars; a precise focus is shorter.
+        errors.map(_.focus.length < 14)
+      . assert(_ == List(true))
+
+      test(m"mismatched close tag focus contains close-tag name"):
+        demilitarize:
+          x"<foo></bar>"
+        . map(_.focus)
+      . assert(_.headOption.exists(_.contains("bar")))
+
+      test(m"focus is identity-mapped through literal \\n (interpolators don't decode it)"):
+        // In an interpolator, `\n` is passed through verbatim — both source
+        // and value have 2 chars for `\n` — so the mapping is the identity.
+        demilitarize:
+          x"<foo>\n</bar>"
+        . map(_.focus)
+      . assert(_.headOption.exists(_.contains("bar")))
+
+      test(m"focus respects literal é in source (single value char)"):
+        // A non-ASCII char in source is one char in value too; identity.
+        demilitarize:
+          x"<foo>é</bar>"
+        . map(_.focus)
+      . assert(_.headOption.exists(_.contains("bar")))
+
+      test(m"focus respects \\u#### lexer escape"):
+        // The fixture has the literal 6 chars \\u00e9 in source. Whether the
+        // subcompiler decodes \\u#### or preserves it raw, the byte-by-byte
+        // walker in buildMapping picks the right step.
+        demilitarize:
+          x"<foo>\u00e9</bar>"
+        . map(_.focus)
+      . assert(_ == List("bar>"))
+
+      test(m"focus is exact in triple-quoted literal"):
+        // Triple-quoted strings don't process escapes, so source ≡ value.
+        demilitarize:
+          x"""<foo></bar>"""
+        . map(_.focus)
+      . assert(_.headOption.exists(_.contains("bar")))
+
+      test(m"focus on bad name is exactly the offending span (with escape)"):
+        // After `\n` (1 value char, 2 source chars), the `</bar>` close span
+        // should still resolve precisely. Parser reports closeStart at the
+        // `b` and length 4 (consumes `>`); we expect the substring `bar>`.
+        demilitarize:
+          x"<foo>\n</bar>"
+        . map(_.focus)
+      . assert(_ == List("bar>"))
+
+      test(m"focus respects $$$$ escape in literal"):
+        // $$ in source decodes to a single $ in the value (2 source chars,
+        // 1 value char). The bad close tag after it should still focus
+        // precisely on `bar>`.
+        demilitarize:
+          x"<foo>$$</bar>"
+        . map(_.focus)
+      . assert(_ == List("bar>"))
+
+
     suite(m"Namespaces"):
       test(m"Element with default namespace declaration"):
         t"""<a xmlns="http://example.com"/>""".read[Xml]

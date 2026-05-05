@@ -34,10 +34,13 @@ package zephyrine
 
 import anticipation.*
 import fulminate.*
+import vacuous.*
 
 object Format:
   trait Position:
     def describe: Text
+    def offset: Optional[Int] = Unset
+    def length: Optional[Int] = Unset
 
   trait Issue:
     def describe: Message

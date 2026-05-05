@@ -105,13 +105,19 @@ object Html extends Tag.Container
   inline given interpolator: Html is Interpolable:
     type Result = Html
 
-    transparent inline def interpolate[parts <: Tuple](inline insertions: Any*): Html =
-      ${honeycomb.internal.interpolator[parts]('insertions)}
+    transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+      (inline insertions: Any*)
+    :   Html =
+
+      ${honeycomb.internal.interpolator[parts, origins]('insertions)}
 
   inline given extrapolator: Html is Extrapolable:
 
-    transparent inline def extrapolate[parts <: Tuple](scrutinee: Html): Extrapolation[Html] =
-      ${honeycomb.internal.extractor[parts]('scrutinee)}
+    transparent inline def extrapolate[parts <: Tuple, origins <: Tuple]
+      (scrutinee: Html)
+    :   Extrapolation[Html] =
+
+      ${honeycomb.internal.extractor[parts, origins]('scrutinee)}
 
 
   given addable: [dom        <: Dom,
@@ -381,7 +387,12 @@ object Html extends Tag.Container
       case MismatchedTag(open, close) =>
         m"the tag </$close> did not match the opening tag <$open>"
 
-  case class Position(line: Ordinal, column: Ordinal) extends Format.Position:
+  case class Position
+    ( line:                Ordinal,
+      column:              Ordinal,
+      override val offset: Optional[Int] = Unset,
+      override val length: Optional[Int] = Unset )
+  extends Format.Position:
     def describe: Text = t"line ${line.n1}, column ${column.n1}"
 
 
@@ -445,13 +456,20 @@ object Html extends Tag.Container
                   (target: jl.StringBuilder)
     :   Unit = cursor.clone(start, end)(target.asInstanceOf[cursor.addressable.Target])
 
-    protected def computePosition(): Position =
+    protected def computePosition
+      ( start: Optional[Cursor.Mark] = Unset,
+        end:   Optional[Cursor.Mark] = Unset )
+    :   Position =
+
       // Lineation increments column AFTER each `advance`, so it tracks the
       // column of the next char to read. At end-of-input we want the column
       // of the LAST char read, matching the existing Direct/Streaming
       // off-by-one convention.
       val col = cursor.column.n1 - (if cursor.more then 0 else 1)
-      Position(cursor.line.n1.u, col.max(1).u)
+      val endPos = end.lay(cursor.position.n0)(_.absolute.toInt)
+      val offset: Optional[Int] = start.let(_.absolute.toInt)
+      val length: Optional[Int] = start.let(mark => endPos - mark.absolute.toInt)
+      Position(cursor.line.n1.u, col.max(1).u, offset = offset, length = length)
 
     // Optional callback invoked for null-placeholder holes during macro
     // interpolation. Default no-op.
@@ -469,6 +487,8 @@ object Html extends Tag.Container
 
     // Render line/column on demand for error messages.
     protected inline def currentPosition(): Position = computePosition()
+
+    protected inline def currentPosition(start: Cursor.Mark): Position = computePosition(start)
 
     import Issue.*
 
@@ -547,7 +567,13 @@ object Html extends Tag.Container
         lay(fail(ExpectedMore)): datum =>
           if datum.minuscule != char.minuscule then fail(Unexpected(datum))
 
-      def fail(issue: Issue): Nothing = abort(ParseError(Html, currentPosition(), issue))
+      def fail
+        ( issue: Issue,
+          start: Optional[Cursor.Mark] = Unset,
+          end:   Optional[Cursor.Mark] = Unset )
+      :   Nothing =
+        abort(ParseError(Html, computePosition(start, end), issue))
+
       def warn(issue: Issue): Unit = raise(ParseError(Html, currentPosition(), issue))
 
       @tailrec
@@ -563,12 +589,13 @@ object Html extends Tag.Container
 
       @tailrec
       def tagname(mark: Mark, dictionary: Dictionary[Tag]): Tag =
-        lay(fail(ExpectedMore)):
+        lay(fail(ExpectedMore, mark)):
           case char if char.isLetter || char.isDigit => dictionary(char.minuscule) match
             case Dictionary.Empty =>
               advance()
-              val name = slice(mark, begin())
-              reset(mark) yet fail(InvalidTagStart(name.lower))
+              val end = begin()
+              val name = slice(mark, end)
+              reset(mark) yet fail(InvalidTagStart(name.lower), mark, end)
 
             case other =>
               next() yet tagname(mark, other)
@@ -578,44 +605,46 @@ object Html extends Tag.Container
             case Dictionary.Branch(tag: Tag, _) => tag
 
             case other =>
-              val name = slice(mark, begin())
-              reset(mark) yet fail(InvalidTag(name))
+              val end = begin()
+              val name = slice(mark, end)
+              reset(mark) yet fail(InvalidTag(name), mark, end)
 
           case '\u0000' =>
-            fail(BadInsertion)
+            fail(BadInsertion, mark)
 
           case char =>
-            fail(Unexpected(char))
+            fail(Unexpected(char), mark)
 
       @tailrec
-      def foreignTag(mark: Mark): Text = lay(fail(ExpectedMore)):
+      def foreignTag(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
         case char if char.isLetter                       => next() yet foreignTag(mark)
         case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => slice(mark, begin()).lower
-        case '\u0000'                                    => fail(BadInsertion)
-        case char                                        => fail(Unexpected(char))
+        case '\u0000'                                    => fail(BadInsertion, mark)
+        case char                                        => fail(Unexpected(char), mark)
 
       @tailrec
       def key(mark: Mark, dictionary: Dictionary[Attribute]): Attribute =
-        lay(fail(ExpectedMore)):
+        lay(fail(ExpectedMore, mark)):
           case char if char.isLetter || char == '-' => dictionary(char.minuscule) match
-            case Dictionary.Empty => fail(UnknownAttributeStart(slice(mark, begin())))
+            case Dictionary.Empty => fail(UnknownAttributeStart(slice(mark, begin())), mark)
             case dictionary       => next() yet key(mark, dictionary)
 
           case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>
             dictionary.element.or:
-              val name = slice(mark, begin())
+              val end = begin()
+              val name = slice(mark, end)
               reset(mark)
-              fail(UnknownAttribute(name))
+              fail(UnknownAttribute(name), mark, end)
 
           case char =>
-            fail(Unexpected(char))
+            fail(Unexpected(char), mark)
 
       @tailrec
-      def foreignKey(mark: Mark): Text = lay(fail(ExpectedMore)):
+      def foreignKey(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
         case char if char.isLetter || char == '-'        => next() yet foreignKey(mark)
         case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' => slice(mark, begin())
-        case '\u0000'                                    => fail(BadInsertion)
-        case char                                        => fail(Unexpected(char))
+        case '\u0000'                                    => fail(BadInsertion, mark)
+        case char                                        => fail(Unexpected(char), mark)
 
 
       @tailrec
@@ -639,15 +668,15 @@ object Html extends Tag.Container
           next() yet value(mark)
 
       @tailrec
-      def singleQuoted(mark: Mark): Text = lay(fail(ExpectedMore)):
+      def singleQuoted(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
         case '\'' => slice(mark, begin()).also(next())
         case char => next() yet singleQuoted(mark)
 
       @tailrec
-      def unquoted(mark: Mark): Text = lay(fail(ExpectedMore)):
+      def unquoted(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
         case '>' | ' ' | '\f' | '\n' | '\r' | '\t' => slice(mark, begin())
-        case char@('"' | '\'' | '<' | '=' | '`')   => fail(ForbiddenUnquoted(char))
-        case '\u0000'                              => fail(BadInsertion)
+        case char@('"' | '\'' | '<' | '=' | '`')   => fail(ForbiddenUnquoted(char), mark)
+        case '\u0000'                              => fail(BadInsertion, mark)
         case char                                  => next() yet unquoted(mark)
 
       def equality(): Boolean = skip() yet lay(fail(ExpectedMore)):
@@ -729,18 +758,18 @@ object Html extends Tag.Container
           Attributes.fromArrays(ks.immutable(using Unsafe), vs.immutable(using Unsafe))
 
 
-      def entity(mark: Mark): Optional[Text] = lay(fail(ExpectedMore)):
+      def entity(mark: Mark): Optional[Text] = lay(fail(ExpectedMore, mark)):
         case '#'   => next() yet numericEntity(mark)
         case other => textEntity(mark, dom.entities)
 
       def numericEntity(mark: Mark): Optional[Text] =
-        lay(fail(ExpectedMore)):
+        lay(fail(ExpectedMore, mark)):
           case 'x' => next() yet hexEntity(mark, 0)
           case _   => decimalEntity(mark, 0)
 
       @tailrec
       def hexEntity(mark: Mark, value: Int): Optional[Text] =
-        lay(fail(ExpectedMore)):
+        lay(fail(ExpectedMore, mark)):
           case digit if digit.isDigit =>
             advance() yet hexEntity(mark, 16*value + (digit - '0'))
 
@@ -757,14 +786,14 @@ object Html extends Tag.Container
             Unset
 
       @tailrec
-      def decimalEntity(mark: Mark, value: Int): Optional[Text] = lay(fail(ExpectedMore)):
+      def decimalEntity(mark: Mark, value: Int): Optional[Text] = lay(fail(ExpectedMore, mark)):
         case digit if digit.isDigit => next() yet decimalEntity(mark, 10*value + (digit - '0'))
         case ';'                    => next() yet value.unicode
         case char                   => Unset
 
       @tailrec
       def textEntity(mark: Mark, dictionary: Dictionary[Text]): Optional[Text] =
-        lay(fail(ExpectedMore)):
+        lay(fail(ExpectedMore, mark)):
           case char if char.isLetter | char.isDigit =>
             dictionary(char) match
               case Dictionary.Empty => Unset
@@ -777,7 +806,7 @@ object Html extends Tag.Container
             Unset
 
           case '\u0000' =>
-            fail(BadInsertion)
+            fail(BadInsertion, mark)
 
           case char =>
             dictionary.element
@@ -849,18 +878,18 @@ object Html extends Tag.Container
         case char =>
           next() yet comment(mark)
 
-      def cdata(mark: Mark): Text = lay(fail(ExpectedMore)):
+      def cdata(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
         case ']' =>
           val end = begin()
           next()
-          lay(fail(ExpectedMore)):
+          lay(fail(ExpectedMore, mark)):
             case ']' => expect('>') yet slice(mark, end)
             case _   => cdata(mark)
 
         case char =>
           next() yet cdata(mark)
 
-      def doctype(mark: Mark): Text = lay(fail(ExpectedMore)):
+      def doctype(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
         case '>'   => slice(mark, begin()).also(next())
         case other => next() yet doctype(mark)
 
@@ -988,7 +1017,7 @@ object Html extends Tag.Container
 
                 . or:
                     if parent.autoclose then close()
-                    else fail(InadmissibleTag(content, parent.label))
+                    else fail(InadmissibleTag(content, parent.label), mark)
 
               next()
               if lay(false)(_ == '\u0000') then
@@ -1002,20 +1031,20 @@ object Html extends Tag.Container
                 case Token.Doctype => current = Doctype(content)
                 case Token.Cdata   => current =
                   if parent.foreign then TextNode(content) else
-                    fail(InvalidCdata)
+                    fail(InvalidCdata, mark)
                     Comment(t"[CDATA[${content}]]")
 
                 case Token.Empty =>
                   if admit(content) then empty() else infer:
                     if parent.foreign then Tag.foreign(content, extra)
-                    else dom.elements(content).or(reset(mark) yet fail(InvalidTag(content)))
+                    else dom.elements(content).or(reset(mark) yet fail(InvalidTag(content), mark))
 
                 case Token.Open =>
                   focus =
                     if parent.foreign then Tag.foreign(content, extra)
                     else dom.elements(content).or:
                       reset(mark)
-                      fail(InvalidTag(content))
+                      fail(InvalidTag(content), mark)
 
                   if !admit(content) then
                     val inferred = dom.infer(parent, focus)
@@ -1028,7 +1057,7 @@ object Html extends Tag.Container
                         level = Level.Descend
                       else
                         reset(mark)
-                        fail(InadmissibleTag(content, parent.label))
+                        fail(InadmissibleTag(content, parent.label), mark)
                     else
                       reset(mark)
                       focus = inferred.vouch
@@ -1056,8 +1085,8 @@ object Html extends Tag.Container
                       level = Level.Skip
                     else
                       reset(mark)
-                      if parent == root then fail(UnopenedTag(content))
-                      else fail(MismatchedTag(parent.label, content))
+                      if parent == root then fail(UnopenedTag(content), mark)
+                      else fail(MismatchedTag(parent.label, content), mark)
                   else
                     advance()
                     level = Level.Ascend

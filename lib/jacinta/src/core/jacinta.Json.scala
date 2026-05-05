@@ -158,15 +158,18 @@ object Json extends Json2, Dynamic:
   inline given interpolator: Json is Interpolable:
     type Result = Json
 
-    transparent inline def interpolate[parts <: Tuple](inline insertions: Any*): Json =
-      ${jacinta.internal.interpolator[parts]('insertions)}
+    transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+      (inline insertions: Any*)
+    :   Json =
+
+      ${jacinta.internal.interpolator[parts, origins]('insertions)}
 
 
   inline given extrapolator: Json is Extrapolable:
-    transparent inline def extrapolate[parts <: Tuple](scrutinee: Json)
+    transparent inline def extrapolate[parts <: Tuple, origins <: Tuple](scrutinee: Json)
     :   Boolean | Option[Tuple | Json] =
 
-      ${jacinta.internal.extractor[parts]('scrutinee)}
+      ${jacinta.internal.extractor[parts, origins]('scrutinee)}
 
 
   given lens: [name <: Label: ValueOf] => (erased DynamicJsonEnabler) => Tactic[JsonError]
