@@ -32,6 +32,8 @@
                                                                                                   */
 package ypsiloid
 
+import scala.collection.Factory
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -108,6 +110,21 @@ object Yaml:
 
       case other =>
         raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Null)))
+
+  given iterable: [collection <: Iterable, element]
+  =>  ( factory:   Factory[element, collection[element]],
+        tactic:    Tactic[YamlError] )
+  =>  ( decodable: => element is Decodable in Yaml )
+  =>  collection[element] is Decodable in Yaml = yaml =>
+    yaml.root match
+      case YamlAst.Sequence(items) =>
+        val builder = factory.newBuilder
+        items.foreach(item => builder += decodable.decoded(Yaml(item)))
+        builder.result()
+
+      case other =>
+        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Sequence)))
+        factory.newBuilder.result()
 
   given decodable: Yaml is Decodable in Text = text => Yaml(YamlParser.parse(text))
 

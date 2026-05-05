@@ -169,6 +169,51 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"\"\"".read[Yaml].as[Text]
       . assert(_ == t"")
 
+    suite(m"Flow sequences"):
+      test(m"Parse an empty flow sequence"):
+        t"[]".read[Yaml].as[List[Int]]
+      . assert(_ == Nil)
+
+      test(m"Parse a flow sequence of integers"):
+        t"[1, 2, 3]".read[Yaml].as[List[Int]]
+      . assert(_ == List(1, 2, 3))
+
+      test(m"Parse a flow sequence of strings"):
+        t"[alice, bob, carol]".read[Yaml].as[List[Text]]
+      . assert(_ == List(t"alice", t"bob", t"carol"))
+
+      test(m"Parse a flow sequence with mixed whitespace"):
+        t"[ 1 ,  2  , 3 ]".read[Yaml].as[List[Int]]
+      . assert(_ == List(1, 2, 3))
+
+      test(m"Parse a nested flow sequence"):
+        t"[[1, 2], [3, 4]]".read[Yaml].as[List[List[Int]]]
+      . assert(_ == List(List(1, 2), List(3, 4)))
+
+      test(m"Parse a flow sequence of quoted strings with commas"):
+        t"[\"a,b\", \"c,d\"]".read[Yaml].as[List[Text]]
+      . assert(_ == List(t"a,b", t"c,d"))
+
+      test(m"Parse a flow sequence into a Vector"):
+        t"[10, 20, 30]".read[Yaml].as[Vector[Int]]
+      . assert(_ == Vector(10, 20, 30))
+
+      test(m"Parse a flow sequence into a Set"):
+        t"[1, 2, 3]".read[Yaml].as[Set[Int]]
+      . assert(_ == Set(1, 2, 3))
+
+      test(m"Empty flow sequence parses to YamlAst.Sequence with no items"):
+        t"[]".read[Yaml].root match
+          case YamlAst.Sequence(items) => items.length
+          case _                       => -1
+      . assert(_ == 0)
+
+      test(m"Flow sequence parses to YamlAst.Sequence"):
+        t"[1, 2, 3]".read[Yaml].root match
+          case YamlAst.Sequence(items) => items.length
+          case _                       => -1
+      . assert(_ == 3)
+
     suite(m"Comment handling"):
       test(m"Comment after a scalar is ignored"):
         t"42 # the answer".read[Yaml].as[Int]

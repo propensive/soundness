@@ -36,19 +36,63 @@ import anticipation.*
 
 object YamlParser:
   def parse(input: Text): YamlAst =
-    val cleaned = stripCommentsAndTrim(input.s)
-    val length = cleaned.length
+    parseTrimmed(stripCommentsAndTrim(input.s))
+
+  private def parseTrimmed(input: String): YamlAst =
+    val length = input.length
 
     if length == 0 then YamlAst.Null
     else
-      val first = cleaned.charAt(0)
-      val last = cleaned.charAt(length - 1)
+      val first = input.charAt(0)
+      val last = input.charAt(length - 1)
 
       if length >= 2 && first == '"' && last == '"'
-      then YamlAst.Str(unescapeDoubleQuoted(cleaned.substring(1, length - 1).nn))
+      then YamlAst.Str(unescapeDoubleQuoted(input.substring(1, length - 1).nn))
       else if length >= 2 && first == '\'' && last == '\''
-      then YamlAst.Str(unescapeSingleQuoted(cleaned.substring(1, length - 1).nn))
-      else resolveScalar(cleaned)
+      then YamlAst.Str(unescapeSingleQuoted(input.substring(1, length - 1).nn))
+      else if length >= 2 && first == '[' && last == ']'
+      then parseFlowSequence(input.substring(1, length - 1).nn)
+      else resolveScalar(input)
+
+  private def parseFlowSequence(body: String): YamlAst =
+    if body.trim.nn.isEmpty then YamlAst.Sequence(IArray.empty)
+    else YamlAst.Sequence(IArray.from(splitFlowItems(body).map(item => parseTrimmed(item.trim.nn))))
+
+  private def splitFlowItems(input: String): List[String] =
+    val items = scala.collection.mutable.ArrayBuffer[String]()
+    var depth = 0
+    var inSingleQuote = false
+    var inDoubleQuote = false
+    var start = 0
+    var index = 0
+
+    while index < input.length do
+      val char = input.charAt(index)
+
+      if inSingleQuote then
+        if char == '\'' then inSingleQuote = false
+      else if inDoubleQuote then
+        val escaped = index > 0 && input.charAt(index - 1) == '\\'
+        if char == '"' && !escaped then inDoubleQuote = false
+      else
+        char match
+          case '['  => depth += 1
+          case '{'  => depth += 1
+          case ']'  => depth -= 1
+          case '}'  => depth -= 1
+          case '\'' => inSingleQuote = true
+          case '"'  => inDoubleQuote = true
+
+          case ',' if depth == 0 =>
+            items.append(input.substring(start, index).nn)
+            start = index + 1
+
+          case _ =>
+
+      index += 1
+
+    items.append(input.substring(start).nn)
+    items.toList
 
   private def stripCommentsAndTrim(input: String): String =
     val lines = input.split("\n", -1).nn
