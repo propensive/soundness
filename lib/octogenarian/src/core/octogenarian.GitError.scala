@@ -53,6 +53,7 @@ object GitError:
     case MvFailed           extends Reason(15)
     case ReflogFailed       extends Reason(16)
     case DiffFailed         extends Reason(17)
+    case WorktreeFailed     extends Reason(18)
 
   import Reason.*
 
@@ -74,6 +75,7 @@ object GitError:
     case MvFailed           => m"the move operation failed"
     case ReflogFailed       => m"the reflog could not be read"
     case DiffFailed         => m"the diff could not be computed"
+    case WorktreeFailed     => m"the worktree operation failed"
 
 case class GitError(reason: GitError.Reason)(using Diagnostics)
 extends Error(realm"oc", 1, reason.number)

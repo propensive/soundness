@@ -210,6 +210,48 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
     Patch.parse(sh"$git $repoOptions diff --no-color $ref".exec[Stream[Text]]())
 
 
+  def lock(reason: Optional[Text] = Unset)
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+  :   Unit logs GitEvent =
+
+    val reasonOpt = reason.lay(sh"") { r => sh"--reason=$r" }
+    sh"$git $repoOptions worktree lock $reasonOpt $path".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(WorktreeFailed))
+
+
+  def unlock()(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
+  :   Unit logs GitEvent =
+
+    sh"$git $repoOptions worktree unlock $path".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(WorktreeFailed))
+
+
+  def move[path: Abstractable across Paths to Text](newPath: path)
+    ( using GitCommand,
+            WorkingDirectory,
+            Tactic[GitError],
+            Tactic[ExecError],
+            (Path on Linux) is Decodable in Text )
+  :   Worktree logs GitEvent raises NameError raises PathError =
+
+    val target: Path on Linux =
+      try newPath.generic.decode[Path on Linux]
+      catch case error: PathError => abort(GitError(WorktreeFailed))
+
+    sh"$git $repoOptions worktree move ${this.path} $target".exec[Exit]() match
+      case Exit.Ok => Worktree(repo, target)
+      case failure => abort(GitError(WorktreeFailed))
+
+
+  def remove(force: Boolean = false)
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+  :   Unit logs GitEvent =
+
+    repo.removeWorktree(this, force)
+
+
   def status(ignored: Boolean = false)(using GitCommand, WorkingDirectory, Tactic[ExecError])
   :   List[GitPathStatus] logs GitEvent =
 

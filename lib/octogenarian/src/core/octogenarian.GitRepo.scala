@@ -208,3 +208,66 @@ case class GitRepo(gitDir: Path on Linux):
   :   GitHash logs GitEvent =
 
     GitHash.unsafe(sh"$git $repoOptions rev-parse $refspec".exec[Text]().trim)
+
+
+  // Lists every non-bare worktree attached to this object database.
+  def worktrees()(using GitCommand, WorkingDirectory, Tactic[ExecError])
+  :   List[Worktree] logs GitEvent raises GitError =
+
+    val lines = sh"$git $repoOptions worktree list --porcelain".exec[List[Text]]()
+
+    // Each worktree block is separated by an empty line. Split, then keep
+    // only the non-bare entries (a `bare` line indicates a bare worktree
+    // entry, which has no working tree).
+    def blocks(remaining: List[Text]): List[List[Text]] = remaining match
+      case Nil => Nil
+
+      case _ =>
+        val (block, rest) = remaining.span(_ != t"")
+        block :: blocks(rest.dropWhile(_ == t""))
+
+    blocks(lines).flatMap: block =>
+      val isBare = block.contains(t"bare")
+      block.collect:
+        case r"worktree $path(.*)" if !isBare =>
+          val pathOnLinux = unsafely(path.decode[Path on Linux])
+          Worktree(this, pathOnLinux)
+
+
+  def addWorktree
+    [ path: Abstractable across Paths to Text ]
+    ( target: path, ref: Refspec, detach: Boolean = false )
+    ( using WorkingDirectory,
+            Tactic[GitError],
+            (Path on Linux) is Decodable in Text,
+            Tactic[ExecError],
+            GitCommand )
+  :   Worktree logs GitEvent raises NameError raises PathError =
+
+    val targetPath: Path on Linux =
+      try target.generic.decode[Path on Linux]
+      catch case error: PathError => abort(GitError(WorktreeFailed))
+
+    val detachOpt = if detach then sh"--detach" else sh""
+    sh"$git $repoOptions worktree add $detachOpt $targetPath $ref".exec[Exit]() match
+      case Exit.Ok => Worktree(this, targetPath)
+      case failure => abort(GitError(WorktreeFailed))
+
+
+  def removeWorktree(worktree: Worktree, force: Boolean = false)
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+  :   Unit logs GitEvent =
+
+    val forceOpt = if force then sh"--force" else sh""
+    sh"$git $repoOptions worktree remove $forceOpt ${worktree.path}".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(WorktreeFailed))
+
+
+  def pruneWorktrees()
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+  :   Unit logs GitEvent =
+
+    sh"$git $repoOptions worktree prune".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(WorktreeFailed))

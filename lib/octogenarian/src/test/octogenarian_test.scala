@@ -281,3 +281,62 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val files = worktree.diff(firstHash).to(List)
         files.length == 1 && files.head.hunks.nonEmpty
       .assert(_ == true)
+
+    suite(m"worktree management"):
+
+      def freshDir(): Path on Linux =
+        val dir = temporaryDirectory[Path on Linux] / Uuid().show
+        dir.create[Directory]()
+        dir
+
+      def freshWorktree(): Worktree =
+        val dir = freshDir()
+        val worktree = Git.init(dir)
+        sh"git -C $dir config user.email octogenarian@test.local".exec[Exit]()
+        sh"git -C $dir config user.name Octogenarian".exec[Exit]()
+        sh"git -C $dir config commit.gpgsign false".exec[Exit]()
+        sh"git -C $dir config tag.gpgsign false".exec[Exit]()
+        worktree
+
+      def writeFile(path: Path on Linux, content: Text): Unit =
+        if !path.exists() then path.create[File]()
+        path.open: handle =>
+          Stream(content.data).writeTo(handle)
+
+      test(m"worktrees() lists the primary worktree of a fresh repo"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"a.txt", t"a\n")
+        worktree.add(worktree.path / t"a.txt")
+        worktree.commit(t"first")
+
+        worktree.repo.worktrees().length
+      .assert(_ == 1)
+
+      test(m"addWorktree creates a second worktree sharing the object DB"):
+        val primary = freshWorktree()
+        writeFile(primary.path / t"a.txt", t"a\n")
+        primary.add(primary.path / t"a.txt")
+        primary.commit(t"first")
+
+        val secondaryPath = temporaryDirectory[Path on Linux] / Uuid().show
+        val secondary = primary.repo.addWorktree(secondaryPath, GitBranch(t"main"), detach = true)
+
+        // Both worktrees see the same single commit because they share the
+        // primary's object database.
+        primary.repo.log().to(List).length == 1
+          && secondary.repo.log().to(List).length == 1
+          && primary.repo.worktrees().length == 2
+      .assert(_ == true)
+
+      test(m"removeWorktree deletes a secondary and shrinks the listing"):
+        val primary = freshWorktree()
+        writeFile(primary.path / t"a.txt", t"a\n")
+        primary.add(primary.path / t"a.txt")
+        primary.commit(t"first")
+
+        val secondaryPath = temporaryDirectory[Path on Linux] / Uuid().show
+        val secondary = primary.repo.addWorktree(secondaryPath, GitBranch(t"main"), detach = true)
+        secondary.remove()
+
+        primary.repo.worktrees().length
+      .assert(_ == 1)
