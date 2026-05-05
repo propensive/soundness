@@ -563,6 +563,8 @@ private[ypsiloid] final class YamlParser:
         val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
         if nextByte == Space || nextByte == Tab || nextByte == Newline
                 || nextByte == Return || nextByte == -1 then
+          if lastScalarSpannedLines then
+            fail(t"implicit mapping key cannot span multiple lines")
           val tagged = if headTag.nil then scalar else applyTag(headTag, scalar)
           val keyAst =
             if headAnchor.nil then tagged
@@ -582,12 +584,19 @@ private[ypsiloid] final class YamlParser:
   // that case.
   private var prefixesConsumed: Boolean = false
 
+  // Set true when the most recently parsed scalar (plain or quoted)
+  // spanned more than one source line — used to reject multi-line
+  // implicit keys, which the spec disallows.
+  private var lastScalarSpannedLines: Boolean = false
+
   private def parsePlainOrBlockMapping
                 ( indent: Int, headTag: Text = t"", headAnchor: Text = t"" )
                 ( using Tactic[YamlError] )
   :   YamlAst =
     val textValue = readPlainScalarText(indent)
     if sawMappingColon then
+      if lastScalarSpannedLines then
+        fail(t"implicit mapping key cannot span multiple lines")
       // The plain text is the first key of a block mapping. Any tag
       // or anchor read by consumeNodePrefixes belongs to the key, not
       // the mapping.
@@ -611,6 +620,7 @@ private[ypsiloid] final class YamlParser:
   :   Text =
 
     resetString()
+    lastScalarSpannedLines = false
 
     var colon = false
     var done = false
@@ -748,6 +758,7 @@ private[ypsiloid] final class YamlParser:
           while k < newlineCount do
             appendChar('\n')
             k += 1
+        lastScalarSpannedLines = true
         true
       else
         pos = lineStart
@@ -935,6 +946,7 @@ private[ypsiloid] final class YamlParser:
 
   private def parseDoubleQuoted()(using Tactic[YamlError]): YamlAst =
     resetString()
+    lastScalarSpannedLines = false
     var done = false
     while !done do
       // Fast-prefix ASCII run: copy non-special printable bytes in
@@ -963,6 +975,7 @@ private[ypsiloid] final class YamlParser:
         if !more then fail(t"unterminated escape")
         consumeDoubleQuotedEscape()
       else if b == Newline then
+        lastScalarSpannedLines = true
         consumeMultilineFold()
       else
         appendByteAsChar(b)
@@ -1031,6 +1044,7 @@ private[ypsiloid] final class YamlParser:
 
   private def parseSingleQuoted()(using Tactic[YamlError]): YamlAst =
     resetString()
+    lastScalarSpannedLines = false
     var done = false
     while !done do
       // Fast-prefix ASCII run: copy non-special printable bytes in
@@ -1059,6 +1073,7 @@ private[ypsiloid] final class YamlParser:
         else
           done = true
       else if b == Newline then
+        lastScalarSpannedLines = true
         consumeMultilineFold()
       else
         appendByteAsChar(b)
