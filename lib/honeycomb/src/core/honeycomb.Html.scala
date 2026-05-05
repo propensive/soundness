@@ -450,15 +450,20 @@ object Html extends Tag.Container
                   (target: jl.StringBuilder)
     :   Unit = cursor.clone(start, end)(target.asInstanceOf[cursor.addressable.Target])
 
-    protected def computePosition(start: Optional[Cursor.Mark] = Unset): Position =
+    protected def computePosition
+      ( start: Optional[Cursor.Mark] = Unset,
+        end:   Optional[Cursor.Mark] = Unset )
+    :   Position =
+
       // Lineation increments column AFTER each `advance`, so it tracks the
       // column of the next char to read. At end-of-input we want the column
       // of the LAST char read, matching the existing Direct/Streaming
       // off-by-one convention.
       val col = cursor.column.n1 - (if cursor.more then 0 else 1)
-      val end = cursor.position.n0
-      val length: Optional[Int] = start.let(mark => end - mark.absolute.toInt)
-      Position(cursor.line.n1.u, col.max(1).u, offset = end, length = length)
+      val endPos = end.lay(cursor.position.n0)(_.absolute.toInt)
+      val offset: Optional[Int] = start.let(_.absolute.toInt)
+      val length: Optional[Int] = start.let(mark => endPos - mark.absolute.toInt)
+      Position(cursor.line.n1.u, col.max(1).u, offset = offset, length = length)
 
     // Optional callback invoked for null-placeholder holes during macro
     // interpolation. Default no-op.
@@ -556,8 +561,12 @@ object Html extends Tag.Container
         lay(fail(ExpectedMore)): datum =>
           if datum.minuscule != char.minuscule then fail(Unexpected(datum))
 
-      def fail(issue: Issue, start: Optional[Cursor.Mark] = Unset): Nothing =
-        abort(ParseError(Html, computePosition(start), issue))
+      def fail
+        ( issue: Issue,
+          start: Optional[Cursor.Mark] = Unset,
+          end:   Optional[Cursor.Mark] = Unset )
+      :   Nothing =
+        abort(ParseError(Html, computePosition(start, end), issue))
 
       def warn(issue: Issue): Unit = raise(ParseError(Html, currentPosition(), issue))
 
@@ -578,8 +587,9 @@ object Html extends Tag.Container
           case char if char.isLetter || char.isDigit => dictionary(char.minuscule) match
             case Dictionary.Empty =>
               advance()
-              val name = slice(mark, begin())
-              reset(mark) yet fail(InvalidTagStart(name.lower), mark)
+              val end = begin()
+              val name = slice(mark, end)
+              reset(mark) yet fail(InvalidTagStart(name.lower), mark, end)
 
             case other =>
               next() yet tagname(mark, other)
@@ -589,8 +599,9 @@ object Html extends Tag.Container
             case Dictionary.Branch(tag: Tag, _) => tag
 
             case other =>
-              val name = slice(mark, begin())
-              reset(mark) yet fail(InvalidTag(name), mark)
+              val end = begin()
+              val name = slice(mark, end)
+              reset(mark) yet fail(InvalidTag(name), mark, end)
 
           case '\u0000' =>
             fail(BadInsertion, mark)
@@ -614,9 +625,10 @@ object Html extends Tag.Container
 
           case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>
             dictionary.element.or:
-              val name = slice(mark, begin())
+              val end = begin()
+              val name = slice(mark, end)
               reset(mark)
-              fail(UnknownAttribute(name), mark)
+              fail(UnknownAttribute(name), mark, end)
 
           case char =>
             fail(Unexpected(char), mark)

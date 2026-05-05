@@ -175,8 +175,9 @@ private[jacinta] final class JsonParser:
 
     syncTo()
     val end = cursor.position.n0
+    val offset: Optional[Int] = start.let(_.absolute.toInt)
     val length: Optional[Int] = start.let(mark => end - mark.absolute.toInt)
-    abort(ParseError(JsonAst, Position(0, end, offset = end, length = length), issue))
+    abort(ParseError(JsonAst, Position(0, end, offset = offset, length = length), issue))
 
   // A `Region` is just a `Cursor.Mark` (an absolute `Long` position). With
   // the single-buffer model there's no need to remember the starting block

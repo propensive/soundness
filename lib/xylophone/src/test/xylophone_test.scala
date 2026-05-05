@@ -484,6 +484,36 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert(_.issue.isInstanceOf[Xml.Issue.Unexpected])
 
 
+    suite(m"Position ranges"):
+      def focus(input: Text): Text =
+        val error = capture[ParseError](input.read[Xml])
+        val pos = error.position.asInstanceOf[Xml.Position]
+        val start = pos.offset.or(0)
+        val length = pos.length.or(0)
+        input.s.substring(start, (start + length).min(input.s.length)).nn.tt
+
+      test(m"Mismatched closing tag focus contains close-tag name"):
+        focus(t"<a></b>")
+      . assert(_.s.contains("b"))
+
+      test(m"Unopened closing tag focus contains close-tag name"):
+        focus(t"</a>")
+      . assert(_.s.contains("a"))
+
+      test(m"Unknown entity focus contains entity name"):
+        focus(t"<a>&unknown;</a>")
+      . assert(_.s.contains("unknown"))
+
+      test(m"Duplicate attribute focus contains second attribute name"):
+        focus(t"""<a x="1" x="2"/>""")
+      . assert(_.s.contains("x"))
+
+      test(m"Position ranges are non-empty for parse errors"):
+        capture[ParseError](t"<a></b>".read[Xml])
+        . position.asInstanceOf[Xml.Position].length
+      . assert(_ != Unset)
+
+
     suite(m"Namespaces"):
       test(m"Element with default namespace declaration"):
         t"""<a xmlns="http://example.com"/>""".read[Xml]
