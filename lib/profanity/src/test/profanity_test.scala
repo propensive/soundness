@@ -84,11 +84,32 @@ object Tests extends Suite(m"Profanity Tests"):
                       Out.println(t"RESULT:$result")
                     Exit.Ok
 
+              case Argument("line-editor-sized") :: Argument(w) :: Argument(h) :: Nil =>
+                execute:
+                  interactive: terminal ?=>
+                    terminal.columns = w.decode[Int]
+                    terminal.rows = h.decode[Int]
+                    Out.println(t"READY")
+                    LineEditor().ask: result =>
+                      Out.println(t"RESULT:$result")
+                    Exit.Ok
+
               case Argument("select-menu") :: Nil =>
                 execute:
                   interactive: terminal ?=>
                     Out.println(t"READY")
                     SelectMenu(List(t"alpha", t"beta", t"gamma"), t"alpha").ask: result =>
+                      Out.println(t"RESULT:$result")
+                    Exit.Ok
+
+              case Argument("select-menu-long-sized") :: Argument(w) :: Argument(h) :: Nil =>
+                execute:
+                  interactive: terminal ?=>
+                    terminal.columns = w.decode[Int]
+                    terminal.rows = h.decode[Int]
+                    Out.println(t"READY")
+                    val opts = List(t"first", t"averyverylongoptionnamethatwraps", t"third")
+                    SelectMenu(opts, t"first").ask: result =>
                       Out.println(t"RESULT:$result")
                     Exit.Ok
 
@@ -159,32 +180,29 @@ object Tests extends Suite(m"Profanity Tests"):
             Tmux.enter('\r')
         . aspire(_.contains(t"RESULT:hello"))
 
-        // Bug reproducer: when input wraps onto a second visual row in the terminal and
-        // the user then deletes back across the wrap boundary, the renderer in
-        // profanity.Interaction.lineEditor uses single-line ANSI cursor moves and never
-        // erases the wrapped row. The logical state is still correct (so RESULT: is
-        // right), but the screen retains the original wrapped characters.
+        // Wrap-aware redraw: typing past the terminal width and then backspacing back
+        // across the wrap boundary must clear the wrapped row and reposition the cursor.
 
         test(m"submits correct text after wrap and backspace"):
           Bash.tmux(width = 20, height = 10):
             val tool = summon[Enclave.Tool].command
-            Tmux.enter(tool, ' ', t"line-editor")
+            Tmux.enter(tool, ' ', t"line-editor-sized 20 10")
             Tmux.enter('\r')
             if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-            Tmux.enter(t"a"*25)
+            Tmux.enter(t"X"*25)
             Tmux.enter('', '', '', '', '')
             Tmux.enter('\r')
             waitFor(t"RESULT:")
             Tmux.screenshot().screen.toList.join
-        . assert(_.contains(t"RESULT:${t"a"*20}"))
+        . assert(_.contains(t"RESULT:${t"X"*20}"))
 
         test(m"backspace clears characters wrapped onto the next visual line"):
           Bash.tmux(width = 20, height = 10):
             val tool = summon[Enclave.Tool].command
-            Tmux.enter(tool, ' ', t"line-editor")
+            Tmux.enter(tool, ' ', t"line-editor-sized 20 10")
             Tmux.enter('\r')
             if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-            Tmux.attend(Tmux.enter(t"a"*25))
+            Tmux.attend(Tmux.enter(t"X"*25))
             delay(0.1*Second)
             Tmux.attend:
               Tmux.enter('', '', '', '', '')
@@ -192,8 +210,29 @@ object Tests extends Suite(m"Profanity Tests"):
             val mid = Tmux.screenshot()
             Tmux.enter('\r')
             waitFor(t"RESULT:")
-            mid.screen.toList.map(_.count(_ == 'a')).sum
-        . aspire(_ == 20)
+            mid.screen.toList.map(_.count(_ == 'X')).sum
+        . assert(_ == 20)
+
+        // SelectMenu wrap-aware redraw: an option longer than the terminal width must
+        // occupy the right number of visual rows when computing the move-back-to-anchor.
+        // Capture the menu immediately after it appears (before any arrow-key navigation,
+        // which is flaky under daemon-mode ESC timing) and confirm the wrapped option's
+        // tail appears exactly once on screen.
+        test(m"select-menu draws a wrapping option without ghost rows"):
+          Bash.tmux(width = 20, height = 12):
+            val tool = summon[Enclave.Tool].command
+            Tmux.enter(tool, ' ', t"select-menu-long-sized 20 12")
+            Tmux.enter('\r')
+            if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+            delay(0.3*Second)
+            val mid = Tmux.screenshot()
+            Tmux.enter('\r')
+            waitFor(t"RESULT:")
+            // The third option ("third") must appear exactly once. If the renderer
+            // miscounts visual rows for the wrapped second option, the menu drifts
+            // on subsequent re-renders and stale copies of "third" pile up.
+            mid.screen.toList.count(_.contains(t"third"))
+        . assert(_ == 1)
 
     // Pure state-transition tests, bypassing terminal IO. These exercise the
     // Iterator[TerminalEvent] -> recur path with synthetic events and a no-op
