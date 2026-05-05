@@ -611,12 +611,12 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == YamlAst.Str(t"hello"))
 
     suite(m"AST equality"):
-      test(m"Two equal sequence YamlAsts compare equal"):
-        t"[1, 2, 3]".read[Yaml].root == t"[1, 2, 3]".read[Yaml].root
+      test(m"Two equal sequence YamlAsts compare equal via Yaml"):
+        YamlAst.deepEquals(t"[1, 2, 3]".read[Yaml].root, t"[1, 2, 3]".read[Yaml].root)
       . assert(identity)
 
-      test(m"Two equal mapping YamlAsts compare equal"):
-        t"{a: 1, b: 2}".read[Yaml].root == t"{a: 1, b: 2}".read[Yaml].root
+      test(m"Two equal mapping YamlAsts compare equal via Yaml"):
+        YamlAst.deepEquals(t"{a: 1, b: 2}".read[Yaml].root, t"{a: 1, b: 2}".read[Yaml].root)
       . assert(identity)
 
       test(m"Two equal Yaml documents compare equal"):

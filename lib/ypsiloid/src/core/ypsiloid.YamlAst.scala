@@ -33,11 +33,27 @@
 package ypsiloid
 
 import anticipation.*
+import vacuous.*
+
+// The parser representation of a YAML value. Modelled on Jacinta's
+// `JsonAst`: an opaque union over the primitive JVM types so that
+// primitive values are stored without case-class wrapping. Sequences
+// and mappings are both stored as `IArray[Any]`, distinguished by
+// length parity:
+//
+//   - mapping: even length (alternating key/value);
+//   - sequence: odd length (with a trailing `arrayPad` sentinel when
+//     the user-visible item count is even, so all sequences are
+//     length-odd at the array level).
+//
+// `null` represents a YAML null. `Unset.type` marks an absent value
+// (e.g. a missing field in a case-class derivation).
+opaque type YamlAst =
+  Long | Double | Boolean | String | IArray[Any] | Null | Unset.type
 
 object YamlAst:
-  // Byte constants used by the parser. Values match Java/JVM byte
-  // representation (signed, but only ASCII so positive). Inline `final val`
-  // turns these into compile-time constants suitable for `@switch` matches.
+  // Byte constants used by the parser (mirrors `JsonAst.AsciiByte` from
+  // Jacinta).
   object Byte:
     inline final val Tab:           9   = 9
     inline final val Newline:       10  = 10
@@ -93,39 +109,175 @@ object YamlAst:
     inline final val Tilde:         126 = 126
     inline final val Greater:       62  = 62
 
-enum YamlAst:
-  case Null
-  case Bool(value: Boolean)
-  case Integer(value: Long)
-  case Decimal(value: Double)
-  case Str(value: Text)
-  case Sequence(items: IArray[YamlAst])
-  case Mapping(entries: IArray[(YamlAst, YamlAst)])
+  // Sentinel object used to pad an array whose user-visible length is
+  // even so the underlying `IArray[Any]` is always odd-length and can be
+  // distinguished from a mapping (always even-length).
+  private[ypsiloid] val arrayPad: AnyRef = new Object
 
-  override def equals(other: Any): Boolean =
-    (this.asInstanceOf[AnyRef] eq other.asInstanceOf[AnyRef])
-    || ((this: YamlAst, other) match
-      case (Bool(a), Bool(b))       => a == b
-      case (Integer(a), Integer(b)) => a == b
-      case (Decimal(a), Decimal(b)) => a == b
-      case (Str(a), Str(b))         => a == b
+  // ── Constructors ────────────────────────────────────────────────────────
 
-      case (Sequence(a), Sequence(b)) =>
-        a.length == b.length && a.indices.forall(index => a(index) == b(index))
+  inline def apply
+              (value:
+                Long | Double | Boolean | String | IArray[Any] | Null | Unset.type )
+  :   YamlAst =
+    value
 
-      case (Mapping(a), Mapping(b)) =>
-        a.length == b.length && a.indices.forall: index =>
-          a(index)(0) == b(index)(0) && a(index)(1) == b(index)(1)
+  val Null: YamlAst = null
 
-      case _ => false)
+  inline def Bool(value: Boolean): YamlAst = value
+  inline def Integer(value: Long): YamlAst = value
+  inline def Decimal(value: Double): YamlAst = value
+  inline def Str(value: Text): YamlAst = value.s
 
-  override def hashCode: Int = this match
-    case Null         => 0
-    case Bool(v)      => v.hashCode
-    case Integer(v)   => v.hashCode
-    case Decimal(v)   => v.hashCode
-    case Str(v)       => v.hashCode
-    case Sequence(xs) => xs.foldLeft(xs.length)(_ * 31 + _.hashCode)
+  // Wrap an `IArray[YamlAst]` of items as a sequence node. If the count
+  // is even, append the `arrayPad` sentinel so the final node has odd
+  // length.
+  def Sequence(items: IArray[YamlAst]): YamlAst =
+    val n = items.length
+    if (n & 1) == 1 then items.asInstanceOf[IArray[Any]]
+    else
+      val padded = new Array[Any](n + 1)
+      System.arraycopy(items.asInstanceOf[Array[Any]], 0, padded, 0, n)
+      padded(n) = arrayPad
+      padded.asInstanceOf[IArray[Any]]
 
-    case Mapping(es) =>
-      es.foldLeft(es.length)((acc, e) => acc*31 + e._1.hashCode*31 + e._2.hashCode)
+  // Wrap parallel keys/values as a mapping node, flattened to alternating
+  // `[k0, v0, k1, v1, ...]`. The result has even length.
+  def Mapping(entries: IArray[(YamlAst, YamlAst)]): YamlAst =
+    val n = entries.length
+    val arr = new Array[Any](n*2)
+    var i = 0
+    while i < n do
+      val (k, v) = entries(i)
+      arr(i*2) = k.asInstanceOf[Any]
+      arr(i*2 + 1) = v.asInstanceOf[Any]
+      i += 1
+    arr.asInstanceOf[IArray[Any]]
+
+  // Build a sequence directly from a raw `Array[Any]` of items (no
+  // copy if the length is already odd; pad once otherwise). The parser
+  // uses this to avoid the `Array.map` step.
+  private[ypsiloid] def seqFromAnyArray(items: Array[Any]): YamlAst =
+    val n = items.length
+    if (n & 1) == 1 then items.asInstanceOf[IArray[Any]]
+    else
+      val padded = new Array[Any](n + 1)
+      System.arraycopy(items, 0, padded, 0, n)
+      padded(n) = arrayPad
+      padded.asInstanceOf[IArray[Any]]
+
+  // Build a mapping directly from a flat `Array[Any]` of alternating
+  // key/value entries. Length must be even.
+  private[ypsiloid] def mapFromAnyArray(entries: Array[Any]): YamlAst =
+    entries.asInstanceOf[IArray[Any]]
+
+  // ── Inspection ──────────────────────────────────────────────────────────
+
+  // The user-visible length of a sequence (excludes the pad sentinel).
+  def sequenceLength(arr: IArray[Any]): Int =
+    val n = arr.length
+    if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq arrayPad) then n - 1 else n
+
+  // The number of (key, value) pairs in a mapping.
+  def mappingSize(arr: IArray[Any]): Int = arr.length / 2
+
+  // ── Pattern-match extractors ────────────────────────────────────────────
+  // These let existing `case YamlAst.Bool(b) => ...` patterns keep working
+  // after the case-class hierarchy is removed. Each unapply allocates an
+  // `Option`, which is fine for non-hot-path code (tests, decoders).
+
+  object Bool:
+    def unapply(ast: YamlAst): Option[Boolean] = ast match
+      case b: Boolean => Some(b)
+      case _          => None
+
+  object Integer:
+    def unapply(ast: YamlAst): Option[Long] = ast match
+      case n: Long => Some(n)
+      case _       => None
+
+  object Decimal:
+    def unapply(ast: YamlAst): Option[Double] = ast match
+      case d: Double => Some(d)
+      case _         => None
+
+  object Str:
+    def unapply(ast: YamlAst): Option[Text] = ast match
+      case s: String => Some(s.tt)
+      case _         => None
+
+  object Sequence:
+    def unapply(ast: YamlAst): Option[IArray[YamlAst]] = ast match
+      case xs: IArray[?] @unchecked if (xs.length & 1) == 1 || xs.length == 1 =>
+        // Strip the sentinel if present.
+        val n = xs.length
+        if n > 0 && (xs(n - 1).asInstanceOf[AnyRef] eq arrayPad) then
+          val out = new Array[Any](n - 1)
+          System.arraycopy(xs.asInstanceOf[Array[Any]], 0, out, 0, n - 1)
+          Some(out.asInstanceOf[IArray[YamlAst]])
+        else
+          Some(xs.asInstanceOf[IArray[YamlAst]])
+      case _ => None
+
+  object Mapping:
+    def unapply(ast: YamlAst): Option[IArray[(YamlAst, YamlAst)]] = ast match
+      case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
+        val n = xs.length / 2
+        Some(IArray.tabulate(n): i =>
+          (xs(i*2).asInstanceOf[YamlAst], xs(i*2 + 1).asInstanceOf[YamlAst]))
+      case _ => None
+
+  // Singleton extractor for the YAML null value.
+  val NullObj: YamlAst = null
+  // Allow `case YamlAst.Null => ...` by exposing Null as a value comparable
+  // with `eq`. The opaque type erases to `Any`, so a literal-equality test
+  // works after a check that the value is null. We provide a custom unapply
+  // returning `Boolean` so the case binds nothing.
+  object NullExtractor:
+    def unapply(ast: YamlAst): Boolean = ast.asInstanceOf[AnyRef] == null
+
+  // ── Deep equality ───────────────────────────────────────────────────────
+  // Used by `Yaml.equals`/`hashCode` and by tests that compare two parsed
+  // ASTs structurally. Walks `IArray[Any]` recursively so different array
+  // instances with the same content compare equal.
+
+  def deepEquals(left: YamlAst, right: YamlAst): Boolean =
+    if left.asInstanceOf[AnyRef] eq right.asInstanceOf[AnyRef] then true
+    else (left, right) match
+      case (a: Long, b: Long)         => a == b
+      case (a: Double, b: Double)     => a == b
+      case (a: Boolean, b: Boolean)   => a == b
+      case (a: String, b: String)     => a == b
+
+      case (a: IArray[?], b: IArray[?]) =>
+        a.length == b.length && {
+          var i = 0
+          var equal = true
+          while i < a.length && equal do
+            val ax = a(i).asInstanceOf[AnyRef]
+            val bx = b(i).asInstanceOf[AnyRef]
+            if (ax eq bx) || (ax eq arrayPad) && (bx eq arrayPad) then ()
+            else
+              equal = deepEquals(a(i).asInstanceOf[YamlAst], b(i).asInstanceOf[YamlAst])
+            i += 1
+          equal
+        }
+
+      case _ => false
+
+  def deepHash(ast: YamlAst): Int = ast match
+    case null         => 0
+    case b: Boolean   => b.hashCode
+    case n: Long      => n.hashCode
+    case d: Double    => d.hashCode
+    case s: String    => s.hashCode
+    case xs: IArray[?] =>
+      var h = xs.length
+      var i = 0
+      while i < xs.length do
+        val item = xs(i).asInstanceOf[AnyRef]
+        if !(item eq arrayPad) then
+          h = h*31 + deepHash(xs(i).asInstanceOf[YamlAst])
+        i += 1
+      h
+    case _: Unset.type => 1
