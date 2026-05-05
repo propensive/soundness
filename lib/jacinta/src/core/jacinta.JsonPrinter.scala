@@ -78,7 +78,12 @@ object JsonPrinter:
       append('}')
 
     def printArray(elements: IArray[Any], indent: Int): Unit =
-      val n = elements.length
+      // Strip the sentinel pad if present (parity-padded heterogeneous
+      // arrays carry one for empty/even-length cases).
+      val raw = elements.length
+      val n =
+        if raw > 0 && (elements(raw - 1).asInstanceOf[AnyRef] eq JsonAst.arrayPad)
+        then raw - 1 else raw
       append('[')
       val last = n - 1
 
@@ -115,9 +120,6 @@ object JsonPrinter:
       append(']')
 
     def recur(json: JsonAst, indent: Int): Unit = json.asMatchable match
-      case array: JsonArray =>
-        printArray(array.elements, indent)
-
       case nums: Array[Double] @unchecked =>
         printNumberArray(nums)
 
@@ -127,8 +129,12 @@ object JsonPrinter:
         // parser saw, in contrast to a `Double.toString` round-trip.
         append(bcd.asInstanceOf[Bcd].text.tt)
 
-      case obj: IArray[Any] @unchecked =>
-        printObject(obj, indent)
+      case arr: IArray[Any] @unchecked =>
+        // Heterogeneous array or object, distinguished by length parity:
+        // even = object (alternating key/value); odd = array (with
+        // optional sentinel pad on the end).
+        if (arr.length & 1) == 0 then printObject(arr, indent)
+        else printArray(arr, indent)
 
       case long: Long =>
         append(long.toString)

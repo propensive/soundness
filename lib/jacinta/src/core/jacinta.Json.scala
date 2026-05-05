@@ -459,19 +459,10 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
       case value: String     => value.hashCode
       case value: Boolean    => value.hashCode
 
-      case value: JsonArray =>
-        val n = value.elements.length
-        var acc = n.hashCode
-        var i = 0
-        while i < n do
-          acc = acc*31 ^ recur(value.elements(i).asInstanceOf[JsonAst])
-          i += 1
-        acc
-
       case value: Array[Double] @unchecked =>
         // Number-only array — hash each element through the same recursion
-        // path so cross-form equality with `JsonArray(Long(_), …)` keeps a
-        // consistent hash.
+        // path so cross-form equality with the boxed array stays
+        // consistent.
         val ast = value.asInstanceOf[JsonAst]
         val n = value.length
         var acc = n.hashCode
@@ -488,16 +479,24 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
         value.asInstanceOf[Bcd].toBigDecimal.hashCode
 
       case value: IArray[Any] @unchecked =>
-        // Object — alternating key/value layout.
-        val n = value.length/2
-        var acc = Map.empty[String, Int]
-        var i = 0
-        while i < n do
-          acc = acc.updated
-                ( value(i*2).asInstanceOf[String],
-                  recur(value(i*2 + 1).asInstanceOf[JsonAst]) )
-          i += 1
-        acc.hashCode
+        // Heterogeneous array or object, distinguished by parity.
+        val ast = value.asInstanceOf[JsonAst]
+        if ast.isObject then
+          val n = ast.objectSize
+          var acc = Map.empty[String, Int]
+          var i = 0
+          while i < n do
+            acc = acc.updated(ast.objectKey(i), recur(ast.objectValue(i)))
+            i += 1
+          acc.hashCode
+        else
+          val n = ast.arrayLength
+          var acc = n.hashCode
+          var i = 0
+          while i < n do
+            acc = acc*31 ^ recur(ast.arrayElement(i))
+            i += 1
+          acc
 
       case _ =>
         0
@@ -556,19 +555,15 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           case left: Boolean => left == right
           case _             => false
 
-        case right: JsonArray => left.asMatchable match
-          case _: JsonArray                =>
-            arrayEq(left, right.asInstanceOf[JsonAst])
-          case _: Array[Double] @unchecked =>
-            arrayEq(left, right.asInstanceOf[JsonAst])
-          case _                           => false
-
-        case right: Array[Double] @unchecked => left.asMatchable match
-          case _: JsonArray                =>
-            arrayEq(left, right.asInstanceOf[JsonAst])
-          case _: Array[Double] @unchecked =>
-            arrayEq(left, right.asInstanceOf[JsonAst])
-          case _                           => false
+        case right: Array[Double] @unchecked =>
+          // Unboxed number array.
+          val rightAst = right.asInstanceOf[JsonAst]
+          left.asMatchable match
+            case _: Array[Double] @unchecked =>
+              arrayEq(left, rightAst)
+            case _: Array[AnyRef] @unchecked if left.asInstanceOf[JsonAst].isArray =>
+              arrayEq(left, rightAst)
+            case _ => false
 
         case right: Array[Long] @unchecked =>
           // High-precision number (`Bcd`).
@@ -579,10 +574,19 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
             case left: Array[Long] @unchecked => left.asInstanceOf[Bcd].toBigDecimal == rb.toBigDecimal
             case _                            => false
 
-        case right: IArray[Any] @unchecked => left.asMatchable match
-          case _: IArray[Any] @unchecked =>
-            objectEq(left, right.asInstanceOf[JsonAst])
-          case _ => false
+        case right: IArray[Any] @unchecked =>
+          // Heterogeneous array or object, distinguished by parity.
+          val rightAst = right.asInstanceOf[JsonAst]
+          val rightIsObject = rightAst.isObject
+          left.asMatchable match
+            case _: Array[AnyRef] @unchecked =>
+              val leftAst = left.asInstanceOf[JsonAst]
+              if rightIsObject then
+                if leftAst.isObject then objectEq(leftAst, rightAst) else false
+              else if leftAst.isArray then arrayEq(leftAst, rightAst) else false
+            case _: Array[Double] @unchecked if !rightIsObject =>
+              arrayEq(left, rightAst)
+            case _ => false
 
         case _ =>
           false

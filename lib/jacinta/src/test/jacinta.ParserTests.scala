@@ -239,20 +239,25 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       def bytes(text: Text): Data = IArray.from(text.s.getBytes("UTF-8").nn)
 
       def shape(node: Any): Any = node.asMatchable match
-        case array: JsonArray =>
-          array.elements.toList.map(shape)
         case nums: Array[Double] @unchecked =>
           // Number-only array: recover Long for whole values, Double for the rest.
           nums.toList.map: d =>
             if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
             then d.toLong
             else d
-        case obj: IArray[?] @unchecked =>
-          // Object — alternating key/value.
-          val raw = obj.toList
-          val keys = (0 until raw.length/2).toList.map(i => raw(i*2).asInstanceOf[String])
-          val values = (0 until raw.length/2).toList.map(i => shape(raw(i*2 + 1)))
-          (keys, values)
+        case arr: IArray[?] @unchecked =>
+          val raw = arr.toList
+          if (raw.length & 1) == 0 then
+            // Object: alternating key/value
+            val keys = (0 until raw.length/2).toList.map(i => raw(i*2).asInstanceOf[String])
+            val values = (0 until raw.length/2).toList.map(i => shape(raw(i*2 + 1)))
+            (keys, values)
+          else
+            // Array: strip sentinel pad if present
+            val elems =
+              if raw.nonEmpty && raw.last.asInstanceOf[AnyRef] == JsonAst.arrayPad
+              then raw.init else raw
+            elems.map(shape)
         case other => other
 
       test(m"Hole as a top-level value"):
@@ -332,17 +337,18 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         t"[-1, -2, -3]".read[Json].as[List[Int]]
       . assert(_ == List(-1, -2, -3))
 
-      test(m"Empty array becomes a JsonArray, not a number array"):
-        parseRaw(t"[]")
-      . assert(_.isInstanceOf[JsonArray])
+      test(m"Empty array uses the parity-padded boxed form, not Array[Double]"):
+        val raw = parseRaw(t"[]")
+        raw.asInstanceOf[JsonAst].isArray && !raw.asInstanceOf[JsonAst].isNumberArray
+      . assert(identity)
 
       test(m"Single-element number array uses the unboxed form"):
         parseRaw(t"[42]").getClass.getName
       . assert(_ == "[D")
 
-      test(m"Non-number after numbers triggers fallback to JsonArray"):
+      test(m"Non-number after numbers triggers fallback to the boxed form"):
         val raw = parseRaw(t"""[1, 2, "three"]""")
-        raw.isInstanceOf[JsonArray]
+        raw.asInstanceOf[JsonAst].isArray && !raw.asInstanceOf[JsonAst].isNumberArray
       . assert(identity)
 
       test(m"Fallback array preserves the leading numbers as Long values"):
@@ -351,11 +357,11 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
           case l: Long => l == 1L
           case _       => false
 
-      test(m"Bcd-overflow number triggers fallback to JsonArray"):
+      test(m"Bcd-overflow number triggers fallback to the boxed form"):
         // 16-digit value overflows the 15-nibble in-Long fast path and
         // forces a Bcd fallback, which doesn't fit in Array[Double].
         val raw = parseRaw(t"[1, 1234567890123456]")
-        raw.isInstanceOf[JsonArray]
+        raw.asInstanceOf[JsonAst].isArray && !raw.asInstanceOf[JsonAst].isNumberArray
       . assert(identity)
 
       test(m"Fallback retains the Bcd-overflow number as Bcd"):
@@ -372,31 +378,31 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
 
       test(m"Non-number first element keeps the boxed buffer"):
         val raw = parseRaw(t"""["a", 1, 2]""")
-        raw.isInstanceOf[JsonArray]
+        raw.asInstanceOf[JsonAst].isArray && !raw.asInstanceOf[JsonAst].isNumberArray
       . assert(identity)
 
-      test(m"Hand-built JsonArray of Longs equals a parsed number array"):
+      test(m"Hand-built boxed array of Longs equals a parsed number array"):
         val elements: IArray[Any] = IArray(JsonAst(1L), JsonAst(2L), JsonAst(3L))
         val handBuilt = Json.ast(JsonAst.arr(elements))
         handBuilt == t"[1, 2, 3]".read[Json]
       . assert(identity)
 
-    suite(m"Array case-class wrapper"):
+    suite(m"Boxed-array storage"):
       def parseRaw(text: Text): Any = JsonAst.parse(IArray.from(text.s.getBytes("UTF-8").nn))
 
       test(m"Empty array round-trips via the printer"):
         JsonPrinter.print(parseRaw(t"[]").asInstanceOf[JsonAst], false)
       . assert(_ == t"[]")
 
-      test(m"Even-length mixed array carries no sentinel padding"):
+      test(m"Even-length mixed array reports its user-visible length"):
         // [1, "x"] mixes a number and a string, so it must use the boxed
-        // JsonArray form. Its underlying IArray has length exactly 2 — no
-        // trailing sentinel.
-        val raw = parseRaw(t"""[1, "x"]""").asInstanceOf[JsonArray]
-        raw.elements.length
+        // (parity-padded) form. The user-visible length is 2 even though
+        // the underlying IArray carries a sentinel pad to keep the length
+        // odd (and so distinguishable from an object).
+        parseRaw(t"""[1, "x"]""").asInstanceOf[JsonAst].arrayLength
       . assert(_ == 2)
 
-      test(m"Object equality is preserved across the wrapper refactor"):
+      test(m"Object equality is preserved"):
         t"""{"a": 1, "b": 2}""".read[Json] == t"""{"b": 2, "a": 1}""".read[Json]
       . assert(identity)
 
