@@ -397,6 +397,10 @@ private[ypsiloid] final class YamlParser:
         else parseNodeHere(childIndent)
       else if headByte == -1 then YamlAst.Null
       else if headByte == Star then
+        // An anchor on an alias node is illegal per spec — aliases
+        // refer to existing anchored nodes, they don't anchor anything
+        // themselves.
+        if !anchorName.nil then fail(t"anchor on alias node")
         advance()
         parseAlias()
       else
@@ -409,6 +413,8 @@ private[ypsiloid] final class YamlParser:
           case Greater      => parseBlockScalar(literal = false, indent)
           case Minus        => parseMinus(indent)
           case Question     => parseQuestion(indent)
+          case CloseBracket | CloseBrace | Comma | 0x40 | 0x60 =>
+            fail(t"reserved indicator at start of node")
           case _            => parsePlainOrBlockMapping(indent)
 
     val tagged = if tagText.nil then value else applyTag(tagText, value)
@@ -430,11 +436,13 @@ private[ypsiloid] final class YamlParser:
       if !more then done = true
       else peek match
         case Amp =>
+          if !anchorName.nil then fail(t"duplicate anchor on a single node")
           advance()
           anchorName = readWord()
           skipSpaces()
 
         case Bang =>
+          if !tagText.nil then fail(t"duplicate tag on a single node")
           val mk = begin()
           advance()
           if more && peek == Bang then advance()
@@ -865,7 +873,6 @@ private[ypsiloid] final class YamlParser:
     (b: @switch) match
       case Backslash  => appendChar('\\')
       case Quote      => appendChar('"')
-      case Apostrophe => appendChar('\'')
       case Slash      => appendChar('/')
       case Space      => appendChar(' ')
       case Num0       => appendChar(0x00.toChar)
@@ -877,6 +884,7 @@ private[ypsiloid] final class YamlParser:
       case LowerR     => appendChar('\r')
       case LowerT     => appendChar('\t')
       case LowerV     => appendChar(0x0b.toChar)
+      case Tab        => appendChar('\t')
       case Newline    =>
         // \<newline> = explicit line-break suppression. The newline
         // itself is consumed (advance was done above) and any leading
@@ -901,9 +909,7 @@ private[ypsiloid] final class YamlParser:
         else appendChar(n.toChar)
 
       case _ =>
-        // Unknown escape — keep both bytes
-        appendChar('\\')
-        appendChar((b & 0xFF).toChar)
+        fail(t"invalid escape sequence")
 
   private def readHex(count: Int)(using Tactic[YamlError]): Int =
     var acc = 0
@@ -988,6 +994,8 @@ private[ypsiloid] final class YamlParser:
       if peek == CloseBracket then
         advance()
         done = true
+      else if peek == Comma then
+        fail(t"empty flow-sequence entry")
       else
         val first = parseFlowNode()
         skipFlowWhitespace()
@@ -1028,6 +1036,8 @@ private[ypsiloid] final class YamlParser:
       if peek == CloseBrace then
         advance()
         done = true
+      else if peek == Comma then
+        fail(t"empty flow-mapping entry")
       else
         val key = parseFlowNode()
         skipFlowWhitespace()
