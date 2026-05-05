@@ -35,7 +35,7 @@ package soundness
 export
   octogenarian
   . { Commit, Git, GitBranch, GitCommand, GitError, GitEvent, GitHash, GitPathStatus, GitProcess,
-      GitRefError, GitRepo, GitStatus, GitTag, Progress, Refspec, SshUrl }
+      GitRefError, GitRepo, GitStatus, GitTag, Progress, Refspec, SshUrl, Worktree }
 
 package gitCommands:
   export octogenarian.gitCommands.environmentDefault
