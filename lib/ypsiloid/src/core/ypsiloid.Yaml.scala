@@ -174,9 +174,10 @@ object Yaml extends Yaml2:
         raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Mapping)))
         Map.empty
 
-  given decodable: Yaml is Decodable in Text = text => Yaml(YamlParser.parse(text))
+  given decodable: Tactic[YamlError] => Yaml is Decodable in Text =
+    text => Yaml(YamlParser.parse(text))
 
-  given aggregable: Yaml is Aggregable by Text = source0 =>
+  given aggregable: Tactic[YamlError] => Yaml is Aggregable by Text = source0 =>
     var source = source0
     val builder = new StringBuilder()
 

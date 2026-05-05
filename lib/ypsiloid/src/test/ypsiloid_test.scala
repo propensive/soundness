@@ -398,6 +398,35 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"text: |-\n  only".read[Yaml].as[Map[Text, Text]]
       . assert(_ == Map(t"text" -> t"only"))
 
+    suite(m"Anchors and aliases"):
+      test(m"Alias resolves to anchored scalar"):
+        t"a: &x 1\nb: *x".read[Yaml].as[Map[Text, Int]]
+      . assert(_ == Map(t"a" -> 1, t"b" -> 1))
+
+      test(m"Alias resolves to anchored flow sequence"):
+        t"a: &xs [1, 2, 3]\nb: *xs".read[Yaml].as[Map[Text, List[Int]]]
+      . assert(_ == Map(t"a" -> List(1, 2, 3), t"b" -> List(1, 2, 3)))
+
+      test(m"Alias resolves to anchored flow mapping"):
+        t"a: &m {n: 1}\nb: *m".read[Yaml].as[Map[Text, Inner]]
+      . assert(_ == Map(t"a" -> Inner(1), t"b" -> Inner(1)))
+
+      test(m"Alias resolves to anchored block mapping"):
+        t"defaults: &d\n  n: 7\nuse: *d".read[Yaml].as[Map[Text, Inner]]
+      . assert(_ == Map(t"defaults" -> Inner(7), t"use" -> Inner(7)))
+
+      test(m"Alias resolves to anchored block sequence"):
+        t"a: &xs\n  - 1\n  - 2\nb: *xs".read[Yaml].as[Map[Text, List[Int]]]
+      . assert(_ == Map(t"a" -> List(1, 2), t"b" -> List(1, 2)))
+
+      test(m"Alias resolves to anchored string"):
+        t"a: &name Alice\nb: *name".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"a" -> t"Alice", t"b" -> t"Alice"))
+
+      test(m"Unknown alias raises a YamlError"):
+        capture[YamlError](t"a: *missing".read[Yaml].as[Map[Text, Int]])
+      . assert(_ => true)
+
     suite(m"Comment handling"):
       test(m"Comment after a scalar is ignored"):
         t"42 # the answer".read[Yaml].as[Int]
