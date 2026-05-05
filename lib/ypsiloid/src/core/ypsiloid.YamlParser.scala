@@ -52,11 +52,58 @@ object YamlParser:
       then YamlAst.Str(unescapeSingleQuoted(input.substring(1, length - 1).nn))
       else if length >= 2 && first == '[' && last == ']'
       then parseFlowSequence(input.substring(1, length - 1).nn)
+      else if length >= 2 && first == '{' && last == '}'
+      then parseFlowMapping(input.substring(1, length - 1).nn)
       else resolveScalar(input)
 
   private def parseFlowSequence(body: String): YamlAst =
     if body.trim.nn.isEmpty then YamlAst.Sequence(IArray.empty)
     else YamlAst.Sequence(IArray.from(splitFlowItems(body).map(item => parseTrimmed(item.trim.nn))))
+
+  private def parseFlowMapping(body: String): YamlAst =
+    if body.trim.nn.isEmpty then YamlAst.Mapping(IArray.empty)
+    else
+      val entries = splitFlowItems(body).map(item => parseFlowMappingEntry(item.trim.nn))
+      YamlAst.Mapping(IArray.from(entries))
+
+  private def parseFlowMappingEntry(entry: String): (YamlAst, YamlAst) =
+    val colonIndex = findTopLevelColon(entry)
+
+    if colonIndex < 0 then (parseTrimmed(entry), YamlAst.Null)
+    else
+      val key = parseTrimmed(entry.substring(0, colonIndex).nn.trim.nn)
+      val value = parseTrimmed(entry.substring(colonIndex + 1).nn.trim.nn)
+      (key, value)
+
+  private def findTopLevelColon(input: String): Int =
+    var depth = 0
+    var inSingleQuote = false
+    var inDoubleQuote = false
+    var index = 0
+    var found = -1
+
+    while index < input.length && found < 0 do
+      val char = input.charAt(index)
+
+      if inSingleQuote then
+        if char == '\'' then inSingleQuote = false
+      else if inDoubleQuote then
+        val escaped = index > 0 && input.charAt(index - 1) == '\\'
+        if char == '"' && !escaped then inDoubleQuote = false
+      else
+        char match
+          case '['               => depth += 1
+          case '{'               => depth += 1
+          case ']'               => depth -= 1
+          case '}'               => depth -= 1
+          case '\''              => inSingleQuote = true
+          case '"'               => inDoubleQuote = true
+          case ':' if depth == 0 => found = index
+          case _                 =>
+
+      index += 1
+
+    found
 
   private def splitFlowItems(input: String): List[String] =
     val items = scala.collection.mutable.ArrayBuffer[String]()

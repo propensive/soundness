@@ -126,6 +126,28 @@ object Yaml:
         raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Sequence)))
         factory.newBuilder.result()
 
+  given map: [value: Decodable in Yaml] => Tactic[YamlError]
+  =>  Map[Text, value] is Decodable in Yaml = yaml =>
+    yaml.root match
+      case YamlAst.Mapping(entries) =>
+        entries.foldLeft(Map.empty[Text, value]): (acc, pair) =>
+          val (rawKey, rawValue) = pair
+          val keyText = rawKey match
+            case YamlAst.Str(text)      => text
+            case YamlAst.Integer(value) => value.toString.tt
+            case YamlAst.Decimal(value) => value.toString.tt
+            case YamlAst.Bool(value)    => value.toString.tt
+            case YamlAst.Null           => t"null"
+
+            case other =>
+              raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Str))) yet t""
+
+          acc.updated(keyText, value.decoded(Yaml(rawValue)))
+
+      case other =>
+        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Mapping)))
+        Map.empty
+
   given decodable: Yaml is Decodable in Text = text => Yaml(YamlParser.parse(text))
 
   given aggregable: Yaml is Aggregable by Text = source0 =>

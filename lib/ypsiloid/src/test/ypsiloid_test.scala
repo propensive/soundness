@@ -214,6 +214,51 @@ object Tests extends Suite(m"Ypsiloid Tests"):
           case _                       => -1
       . assert(_ == 3)
 
+    suite(m"Flow mappings"):
+      test(m"Parse an empty flow mapping"):
+        t"{}".read[Yaml].as[Map[Text, Int]]
+      . assert(_.isEmpty)
+
+      test(m"Parse a single-pair flow mapping"):
+        t"{a: 1}".read[Yaml].as[Map[Text, Int]]
+      . assert(_ == Map(t"a" -> 1))
+
+      test(m"Parse a multi-pair flow mapping"):
+        t"{a: 1, b: 2, c: 3}".read[Yaml].as[Map[Text, Int]]
+      . assert(_ == Map(t"a" -> 1, t"b" -> 2, t"c" -> 3))
+
+      test(m"Parse a flow mapping with text values"):
+        t"{name: Alice, role: admin}".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"name" -> t"Alice", t"role" -> t"admin"))
+
+      test(m"Parse a nested flow mapping"):
+        t"{outer: {inner: 7}}".read[Yaml].as[Map[Text, Map[Text, Int]]]
+      . assert(_ == Map(t"outer" -> Map(t"inner" -> 7)))
+
+      test(m"Parse a flow mapping with sequence value"):
+        t"{xs: [1, 2, 3]}".read[Yaml].as[Map[Text, List[Int]]]
+      . assert(_ == Map(t"xs" -> List(1, 2, 3)))
+
+      test(m"Parse a flow mapping with quoted string values"):
+        t"{a: \"hello\", b: \"world\"}".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"a" -> t"hello", t"b" -> t"world"))
+
+      test(m"Parse a flow mapping with quoted-string keys containing commas"):
+        t"{\"a,b\": 1, \"c,d\": 2}".read[Yaml].as[Map[Text, Int]]
+      . assert(_ == Map(t"a,b" -> 1, t"c,d" -> 2))
+
+      test(m"Empty flow mapping parses to YamlAst.Mapping with no entries"):
+        t"{}".read[Yaml].root match
+          case YamlAst.Mapping(entries) => entries.length
+          case _                        => -1
+      . assert(_ == 0)
+
+      test(m"Flow mapping parses to YamlAst.Mapping"):
+        t"{a: 1, b: 2}".read[Yaml].root match
+          case YamlAst.Mapping(entries) => entries.length
+          case _                        => -1
+      . assert(_ == 2)
+
     suite(m"Comment handling"):
       test(m"Comment after a scalar is ignored"):
         t"42 # the answer".read[Yaml].as[Int]
