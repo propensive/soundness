@@ -58,8 +58,9 @@ object Subcompiler:
         while position.exists && position.start == position.end && position.outer != NoSourcePosition
         do position = position.outer
 
-        val focus =
-          String(context.compilationUnit.source.content.slice(position.start, position.end))
+        val content = context.compilationUnit.source.content
+        val focus = String(content.slice(position.start, position.end))
+
 
         val offset = position.point - position.start
         val ordinal = diagnostic.msg.errorId.ordinal

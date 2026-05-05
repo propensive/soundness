@@ -546,20 +546,29 @@ object Tests extends Suite(m"Xylophone tests"):
         . map(_.focus)
       . assert(_.headOption.exists(_.contains("bar")))
 
-      test(m"focus respects \\n escape in single-quoted literal"):
-        // The literal contains a `\n` escape, which is 2 source chars but 1
-        // value char. The bad close tag `</bar>` should still focus correctly.
+      test(m"focus is identity-mapped through literal \\n (interpolators don't decode it)"):
+        // In an interpolator, `\n` is passed through verbatim — both source
+        // and value have 2 chars for `\n` — so the mapping is the identity.
         demilitarize:
           x"<foo>\n</bar>"
         . map(_.focus)
       . assert(_.headOption.exists(_.contains("bar")))
 
-      test(m"focus respects \\u escape in literal"):
-        // é is 6 source chars, 1 value char.
+      test(m"focus respects literal é in source (single value char)"):
+        // A non-ASCII char in source is one char in value too; identity.
         demilitarize:
           x"<foo>é</bar>"
         . map(_.focus)
       . assert(_.headOption.exists(_.contains("bar")))
+
+      test(m"focus respects \\u#### lexer escape"):
+        // The fixture has the literal 6 chars \\u00e9 in source. Whether the
+        // subcompiler decodes \\u#### or preserves it raw, the byte-by-byte
+        // walker in buildMapping picks the right step.
+        demilitarize:
+          x"<foo>\u00e9</bar>"
+        . map(_.focus)
+      . assert(_ == List("bar>"))
 
       test(m"focus is exact in triple-quoted literal"):
         // Triple-quoted strings don't process escapes, so source ≡ value.
