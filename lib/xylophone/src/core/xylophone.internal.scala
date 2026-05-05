@@ -49,6 +49,7 @@ import rudiments.*
 import spectacular.*
 import stenography.*
 import vacuous.*
+import zephyrine.*
 
 object internal:
   def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
@@ -327,17 +328,63 @@ object internal:
 
     val parts = recur[parts](Nil)
 
+    // Decode Origins into a List[(Int, Int)] of (start, end) source offsets per part.
+    def recurOrigins[tuple: Type](acc: List[(Int, Int)]): List[(Int, Int)] =
+      Type.of[tuple] match
+        case '[head *: tail] =>
+          val pair = TypeRepr.of[head].dealias match
+            case AppliedType(_, List(ConstantType(IntConstant(s)), ConstantType(IntConstant(e)))) =>
+              (s, e)
+            case _ =>
+              (0, 0)
+          recurOrigins[tail](pair :: acc)
+        case _ =>
+          acc.reverse
+
+    val partOrigins: List[(Int, Int)] = recurOrigins[origins](Nil)
+
+    // Map a parser char-offset (within the joined input) back to a source-file Position.
+    val sourceFile = Position.ofMacroExpansion.sourceFile
+    val macroPos = Position.ofMacroExpansion
+    def translateOffset(parserOff: Int, len: Int): Position =
+      var acc = 0
+      var i = 0
+      val partsArr = parts.zip(partOrigins).toIndexedSeq
+      while i < partsArr.length do
+        val (part, (srcStart, srcEnd)) = partsArr(i)
+        val partLen = part.length
+        if parserOff < acc + partLen && srcStart > 0 && srcEnd > srcStart then
+          val inPart = parserOff - acc
+          val rawStart = (srcStart + inPart).min(srcEnd).max(srcStart)
+          val rawEnd = (rawStart + len.max(1)).min(srcEnd).max(rawStart + 1)
+          return Position(sourceFile, rawStart, rawEnd)
+        acc += partLen + 1
+        i += 1
+      macroPos
+
     val insertions: Seq[Expr[Any]] = insertions0.absolve match
       case Varargs(insertions) => insertions
 
+    var holes: Map[Ordinal, Xml.Hole] = Map()
+    def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
+
+    given XmlSchema = XmlSchema.Freeform
+
+    // Custom HaltTactic: when Xml.parse raises ParseError, translate the parser
+    // offset/length to a source-file Position and pass it to halt, so editors
+    // underline the precise span inside the literal.
+    val xml: Xml =
+      given diagnostics: Diagnostics = Diagnostics.omit
+      given parseTactic: HaltTactic[ParseError, Xml] = new HaltTactic[ParseError, Xml]:
+        override def abort(error: Diagnostics ?=> ParseError): Nothing =
+          val pe = error
+          val off = pe.position.offset.or(0)
+          val length = pe.position.length.or(0)
+          halt(pe.labelled, translateOffset(off, length))
+
+      Xml.parse(Iterator(parts.mkString("\u0000").tt), XmlSchema.generic, capture(_, _))
+
     abortive:
-      var holes: Map[Ordinal, Xml.Hole] = Map()
-      def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
-
-      given XmlSchema = XmlSchema.Freeform
-
-      val xml: Xml =
-        Xml.parse(Iterator(parts.mkString("\u0000").tt), XmlSchema.generic, capture(_, _))
 
       val iterator: Iterator[Expr[Any]] =
         holes.to(List).sortBy(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
