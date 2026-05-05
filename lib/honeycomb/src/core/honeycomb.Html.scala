@@ -381,7 +381,12 @@ object Html extends Tag.Container
       case MismatchedTag(open, close) =>
         m"the tag </$close> did not match the opening tag <$open>"
 
-  case class Position(line: Ordinal, column: Ordinal) extends Format.Position:
+  case class Position
+    ( line:                Ordinal,
+      column:              Ordinal,
+      override val offset: Optional[Int] = Unset,
+      override val length: Optional[Int] = Unset )
+  extends Format.Position:
     def describe: Text = t"line ${line.n1}, column ${column.n1}"
 
 
