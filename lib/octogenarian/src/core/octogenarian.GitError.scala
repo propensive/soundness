@@ -54,6 +54,9 @@ object GitError:
     case ReflogFailed       extends Reason(16)
     case DiffFailed         extends Reason(17)
     case WorktreeFailed     extends Reason(18)
+    case MergeFailed        extends Reason(19)
+    case CherryPickFailed   extends Reason(20)
+    case RevertFailed       extends Reason(21)
 
   import Reason.*
 
@@ -76,6 +79,9 @@ object GitError:
     case ReflogFailed       => m"the reflog could not be read"
     case DiffFailed         => m"the diff could not be computed"
     case WorktreeFailed     => m"the worktree operation failed"
+    case MergeFailed        => m"the merge could not be completed"
+    case CherryPickFailed   => m"the cherry-pick could not be completed"
+    case RevertFailed       => m"the revert could not be completed"
 
 case class GitError(reason: GitError.Reason)(using Diagnostics)
 extends Error(realm"oc", 1, reason.number)
