@@ -63,8 +63,11 @@ object YamlParser:
     if lines.isEmpty then YamlAst.Null
     else
       val head = lines.head
+
       if isBlockSequenceItem(head.content) then parseBlockSequence(lines, head.indent)
       else if isBlockMappingHead(head.content) then parseBlockMapping(lines, head.indent)
+      else if isBlockScalarIndicator(head.content) && lines.tail.nonEmpty
+      then parseBlockScalar(head.content, lines.tail)
       else if lines.lengthCompare(1) == 0 then parseTrimmed(head.content)
       else parseTrimmed(lines.map(_.content).mkString(" ").trim.nn)
 
@@ -74,6 +77,37 @@ object YamlParser:
   private def isBlockMappingHead(content: String): Boolean =
     val colon = findTopLevelColon(content)
     colon >= 0 && (colon == content.length - 1 || content.charAt(colon + 1) == ' ')
+
+  private def isBlockScalarIndicator(content: String): Boolean = content match
+    case "|" | ">" | "|-" | "|+" | ">-" | ">+" => true
+    case _                                     => false
+
+  private def parseBlockScalar(indicator: String, lines: List[Line]): YamlAst =
+    if lines.isEmpty then YamlAst.Str(Text(""))
+    else
+      val style = indicator.charAt(0)
+
+      val chomp =
+        if indicator.length > 1 then indicator.charAt(1) else 'c'
+
+      val baseIndent = lines.head.indent
+      val builder = new StringBuilder
+
+      lines.zipWithIndex.foreach: (line, position) =>
+        val padding = (line.indent - baseIndent).max(0)
+        if position > 0 then builder.append(if style == '|' then '\n' else ' ')
+        var space = 0
+        while space < padding do
+          builder.append(' ')
+          space += 1
+        builder.append(line.content)
+
+      chomp match
+        case '-' => ()
+        case '+' => builder.append('\n')
+        case _   => builder.append('\n')
+
+      YamlAst.Str(Text(builder.toString))
 
   private def parseBlockSequence(lines: List[Line], baseIndent: Int): YamlAst =
     val items = scala.collection.mutable.ArrayBuffer[YamlAst]()
@@ -115,12 +149,18 @@ object YamlParser:
 
       val key = parseTrimmed(keyText)
 
-      if inline.nonEmpty then entries.append((key, parseTrimmed(inline)))
+      if inline.nonEmpty && !isBlockScalarIndicator(inline)
+      then entries.append((key, parseTrimmed(inline)))
       else
         val valueLines = scala.collection.mutable.ArrayBuffer[Line]()
         while rest.nonEmpty && rest.head.indent > baseIndent do
           valueLines.append(rest.remove(0))
-        entries.append((key, parseBlock(valueLines.toList)))
+
+        val value =
+          if inline.isEmpty then parseBlock(valueLines.toList)
+          else parseBlockScalar(inline, valueLines.toList)
+
+        entries.append((key, value))
 
     YamlAst.Mapping(IArray.from(entries))
 

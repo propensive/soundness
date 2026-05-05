@@ -364,6 +364,40 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"a: 1\n# comment\nb: 2".read[Yaml].as[Map[Text, Int]]
       . assert(_ == Map(t"a" -> 1, t"b" -> 2))
 
+    suite(m"Block scalars"):
+      test(m"Literal block scalar preserves newlines"):
+        t"text: |\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"text" -> t"line1\nline2\n"))
+
+      test(m"Folded block scalar joins lines with spaces"):
+        t"text: >\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"text" -> t"line1 line2\n"))
+
+      test(m"Literal scalar with strip indicator drops trailing newline"):
+        t"text: |-\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"text" -> t"line1\nline2"))
+
+      test(m"Folded scalar with strip indicator drops trailing newline"):
+        t"text: >-\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"text" -> t"line1 line2"))
+
+      test(m"Literal block scalar in a sequence item"):
+        t"- |\n  line1\n  line2".read[Yaml].as[List[Text]]
+      . assert(_ == List(t"line1\nline2\n"))
+
+      test(m"Block mapping with literal scalar then another field"):
+        val yaml = t"a: |\n  hello\n  world\nb: tail"
+        yaml.read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"a" -> t"hello\nworld\n", t"b" -> t"tail"))
+
+      test(m"Single-line literal block scalar"):
+        t"text: |\n  only".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"text" -> t"only\n"))
+
+      test(m"Single-line literal scalar with strip"):
+        t"text: |-\n  only".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"text" -> t"only"))
+
     suite(m"Comment handling"):
       test(m"Comment after a scalar is ignored"):
         t"42 # the answer".read[Yaml].as[Int]
