@@ -82,6 +82,7 @@ object YamlAst:
     inline final val Num9:          57  = 57
     inline final val Colon:         58  = 58
     inline final val Question:      63  = 63   // '?'
+    inline final val Percent:       37  = 37   // '%'
     inline final val UpperE:        69  = 69
     inline final val UpperF:        70  = 70
     inline final val UpperX:        88  = 88
