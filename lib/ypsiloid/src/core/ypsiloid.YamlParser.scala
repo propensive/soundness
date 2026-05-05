@@ -385,7 +385,11 @@ private[ypsiloid] final class YamlParser:
     // and descend into it here.
     val hasPrefix = !anchorName.nil || !tagText.nil
     val value: YamlAst =
-      if hasPrefix && (headByte == Newline || headByte == -1) then
+      if hasPrefix && (headByte == Newline || headByte == -1 || headByte == Hash) then
+        // A trailing comment after the prefix is line metadata; the
+        // value is on the next line.
+        if headByte == Hash then
+          while more && peek != Newline do advance()
         if more && peek == Newline then advance()
         skipBlankAndCommentLines()
         val lineStart = pos
@@ -397,6 +401,11 @@ private[ypsiloid] final class YamlParser:
         // level), where any indent >= 0 works.
         pickValueOrNull(blockParentIndent, childIndent, lineStart)
       else if headByte == -1 then YamlAst.Null
+      else if headByte == Hash then
+        // No preceding content and a comment on the head line means
+        // the value is empty (Null); the comment is metadata.
+        while more && peek != Newline do advance()
+        YamlAst.Null
       else if headByte == Star then
         // An anchor on an alias node is illegal per spec — aliases
         // refer to existing anchored nodes, they don't anchor anything
@@ -651,14 +660,16 @@ private[ypsiloid] final class YamlParser:
 
       val b = peek
       if b == Newline then return PlainOutcome.EndOfLine
-      if b == Hash && stringCursor > lineStart && chars(stringCursor - 1) == ' ' then
-        // ` # comment` ends the plain scalar. Per spec, a comment also
-        // terminates any multi-line continuation: subsequent lines do
-        // not fold into the scalar even if they would otherwise be
-        // indented enough.
+      if b == Hash && stringCursor > lineStart && {
+        val prev = chars(stringCursor - 1); prev == ' ' || prev == '\t'
+      } then
+        // ` # comment` (or tab-prefixed comment) ends the plain scalar.
+        // Per spec, a comment also terminates any multi-line
+        // continuation: subsequent lines do not fold into the scalar
+        // even if they would otherwise be indented enough.
         while more && peek != Newline do advance()
         var i = stringCursor - 1
-        while i >= lineStart && chars(i) == ' ' do
+        while i >= lineStart && (chars(i) == ' ' || chars(i) == '\t') do
           stringCursor -= 1
           i -= 1
         return PlainOutcome.Stop
