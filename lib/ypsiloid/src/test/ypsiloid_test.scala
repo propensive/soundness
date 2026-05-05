@@ -453,7 +453,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
 
       test(m"Folded scalar with explicit indent indicator"):
         t"text: >2\n   indented\n   more".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"text" -> t" indented  more\n"))
+      . assert(_ == Map(t"text" -> t" indented\n more\n"))
 
       test(m"Literal scalar with explicit indent then strip"):
         t"text: |2-\n   indented".read[Yaml].as[Map[Text, Text]]
