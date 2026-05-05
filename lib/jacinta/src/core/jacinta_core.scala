@@ -57,40 +57,43 @@ extension (json: JsonAst)
   inline def isDouble: Boolean = json.isInstanceOf[Double]
 
   // High-precision number node (parser fallback path or downstream
-  // construction via `JsonAst(Bcd(...))`). Backed by `Array[Long]`, which
-  // is `[J` at runtime — distinct from the `[Ljava/lang/Object;` array
-  // class used for objects and arrays, so `isInstanceOf[Array[Long]]`
-  // does not collide.
-  inline def isBcd: Boolean = json.isInstanceOf[Array[Long]]
+  // construction via `JsonAst(Bcd(...))`). Wrapped in `JsonBcd` so it
+  // doesn't collide at runtime with the unboxed `Array[Long]`
+  // number-only-array node.
+  inline def isBcd: Boolean = json.isInstanceOf[JsonBcd]
   inline def isString: Boolean = json.isInstanceOf[String]
   inline def isBoolean: Boolean = json.isInstanceOf[Boolean]
   inline def isNull: Boolean = json.asInstanceOf[AnyRef | Null] == null
 
-  // Objects and arrays share a runtime representation (`IArray[Any]`); they
-  // are distinguished by length parity. Even-length is an object (alternating
-  // key, value, …); odd-length is an array (with sentinel padding when the
-  // logical element count is even).
-  //
-  // The narrower `Array[AnyRef]` test (rather than `Array[?]`) avoids
-  // matching `Array[Long]` BCD nodes, which are also arrays at runtime
-  // but in a different (primitive) array class.
-  inline def isObject: Boolean =
-    json.isInstanceOf[Array[AnyRef]]
-    && (json.asInstanceOf[Array[?]].length & 1) == 0
+  // Objects are bare `IArray[Any]` (which erases to `Array[AnyRef]` at
+  // runtime). Arrays come in two forms — a `JsonArray` wrapper around a
+  // heterogeneous `IArray[Any]`, or a primitive `Array[Long]` of
+  // compact-BCD numbers. The wrappers give objects and arrays distinct
+  // runtime types, so no length-parity dance is needed any more.
+  inline def isObject: Boolean = json.isInstanceOf[Array[AnyRef]]
 
   inline def isArray: Boolean =
-    json.isInstanceOf[Array[AnyRef]]
-    && (json.asInstanceOf[Array[?]].length & 1) == 1
+    json.isInstanceOf[JsonArray] || json.isInstanceOf[Array[Long]]
+
+  // True when the array is in the unboxed number-only form.
+  inline def isNumberArray: Boolean = json.isInstanceOf[Array[Long]]
 
   private def expected(jsonPrimitive: JsonPrimitive): Unit raises JsonError =
     raise(JsonError(if isAbsent then Reason.Absent else Reason.NotType(primitive, jsonPrimitive)))
 
-  // Returns the user-visible element count of an array node, ignoring the
-  // sentinel padding (if present).
+  // Returns the user-visible element count of an array node.
   inline def arrayLength: Int = JsonAst.arrayLength(json)
 
-  inline def arrayElement(index: Int): JsonAst =
-    json.asInstanceOf[IArray[JsonAst]](index)
+  // Materialise an array element as a `JsonAst` node. For `JsonArray` this
+  // is a direct indexed lookup; for the unboxed `Array[Long]` form, the
+  // packed compact-BCD is decoded back to a `Long` (non-floating) or
+  // `Double` (floating).
+  def arrayElement(index: Int): JsonAst = (json: @unchecked) match
+    case array: JsonArray              => array.elements(index).asInstanceOf[JsonAst]
+    case nums:  Array[Long] @unchecked =>
+      val packed = nums(index)
+      if CompactBcd.isFloating(packed) then JsonAst(CompactBcd.toDouble(packed))
+      else JsonAst(CompactBcd.toLong(packed).or(0L))
 
   // Returns the number of key/value pairs in an object node.
   inline def objectSize: Int = JsonAst.objectSize(json)
@@ -103,7 +106,7 @@ extension (json: JsonAst)
 
   // Linear scan for a key. Returns the value index (in pair units) or -1.
   def objectIndexOf(key: String): Int =
-    val arr = json.asInstanceOf[Array[?]]
+    val arr = json.asInstanceOf[IArray[Any]]
     val len = arr.length
     var i = 0
     while i < len do
@@ -111,31 +114,28 @@ extension (json: JsonAst)
       i += 2
     -1
 
-  def array: IArray[JsonAst] raises JsonError =
-    if isArray then
-      val full = json.asInstanceOf[IArray[JsonAst]]
-      val n = JsonAst.arrayLength(json)
-      if n == full.length then full
-      else IArray.tabulate(n)(full(_))
-    else expected(JsonPrimitive.Array) yet IArray[JsonAst]()
+  def array: IArray[JsonAst] raises JsonError = (json: @unchecked) match
+    case array: JsonArray              => array.elements.asInstanceOf[IArray[JsonAst]]
+    case nums:  Array[Long] @unchecked => IArray.tabulate(nums.length)(json.arrayElement(_))
+    case _                             => expected(JsonPrimitive.Array) yet IArray[JsonAst]()
 
   def double: Double raises JsonError = json.asMatchable match
-    case value: Double            => value
-    case value: Long              => value.toDouble
-    case value: Array[Long] @unchecked => value.asInstanceOf[Bcd].toDouble
-    case _                        => expected(JsonPrimitive.Number) yet 0.0
+    case value: Double => value
+    case value: Long   => value.toDouble
+    case value: JsonBcd => value.value.toDouble
+    case _             => expected(JsonPrimitive.Number) yet 0.0
 
   def bcd: Bcd raises JsonError = json.asMatchable match
-    case value: Array[Long] @unchecked => value.asInstanceOf[Bcd]
-    case value: Long                   => Bcd(BigDecimal(value))
-    case value: Double                 => Bcd(BigDecimal(value))
-    case _                             => expected(JsonPrimitive.Number) yet Bcd(BigDecimal(0L))
+    case value: JsonBcd => value.value
+    case value: Long    => Bcd(BigDecimal(value))
+    case value: Double  => Bcd(BigDecimal(value))
+    case _              => expected(JsonPrimitive.Number) yet Bcd(BigDecimal(0L))
 
   def long: Long raises JsonError = json.asMatchable match
-    case value: Long              => value
-    case value: Double            => value.toLong
-    case value: Array[Long] @unchecked => value.asInstanceOf[Bcd].toLong.or(0L)
-    case _                        => expected(JsonPrimitive.Number) yet 0L
+    case value: Long    => value
+    case value: Double  => value.toLong
+    case value: JsonBcd => value.value.toLong.or(0L)
+    case _              => expected(JsonPrimitive.Number) yet 0L
 
   def primitive: JsonPrimitive =
     if isNumber then JsonPrimitive.Number

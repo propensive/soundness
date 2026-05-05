@@ -239,20 +239,20 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       def bytes(text: Text): Data = IArray.from(text.s.getBytes("UTF-8").nn)
 
       def shape(node: Any): Any = node.asMatchable match
-        case arr: IArray[?] @unchecked =>
-          val raw = arr.toList
-          if (raw.length & 1) == 0 then
-            // Object: alternating key/value
-            val keys = (0 until raw.length/2).toList.map(i => raw(i*2).asInstanceOf[String])
-            val values = (0 until raw.length/2).toList.map(i => shape(raw(i*2 + 1)))
-            (keys, values)
-          else
-            // Array: strip sentinel pad if present
-            val elems =
-              if raw.nonEmpty && raw.last.asInstanceOf[AnyRef] == JsonAst.arrayPad
-              then raw.init else raw
-            elems.map(shape)
-        case other                     => other
+        case array: JsonArray =>
+          array.elements.toList.map(shape)
+        case nums: Array[Long] @unchecked =>
+          // Number-only array: decode each packed element back to a JSON number.
+          nums.toList.map: packed =>
+            if CompactBcd.isFloating(packed) then CompactBcd.toDouble(packed)
+            else CompactBcd.toLong(packed).or(0L)
+        case obj: IArray[?] @unchecked =>
+          // Object — alternating key/value.
+          val raw = obj.toList
+          val keys = (0 until raw.length/2).toList.map(i => raw(i*2).asInstanceOf[String])
+          val values = (0 until raw.length/2).toList.map(i => shape(raw(i*2 + 1)))
+          (keys, values)
+        case other => other
 
       test(m"Hole as a top-level value"):
         shape(JsonAst.parse(bytes(t" "), holes = true))

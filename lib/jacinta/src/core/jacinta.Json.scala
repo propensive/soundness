@@ -459,30 +459,44 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
       case value: String     => value.hashCode
       case value: Boolean    => value.hashCode
 
-      case value: Array[Long] @unchecked =>
+      case value: JsonBcd =>
         // Hash via the BigDecimal projection so a `Bcd` whose value equals a
         // `BigDecimal` literal has a consistent hash.
-        value.asInstanceOf[Bcd].toBigDecimal.hashCode
+        value.value.toBigDecimal.hashCode
 
-      case value: Array[AnyRef] @unchecked =>
-        if value.asInstanceOf[JsonAst].isObject then
-          val n = value.asInstanceOf[JsonAst].objectSize
-          var acc = Map.empty[String, Int]
-          var i = 0
-          while i < n do
-            acc = acc.updated
-                  ( value.asInstanceOf[JsonAst].objectKey(i),
-                    recur(value.asInstanceOf[JsonAst].objectValue(i)) )
-            i += 1
-          acc.hashCode
-        else
-          val n = value.asInstanceOf[JsonAst].arrayLength
-          var acc = n.hashCode
-          var i = 0
-          while i < n do
-            acc = acc*31 ^ recur(value.asInstanceOf[JsonAst].arrayElement(i))
-            i += 1
-          acc
+      case value: JsonArray =>
+        val n = value.elements.length
+        var acc = n.hashCode
+        var i = 0
+        while i < n do
+          acc = acc*31 ^ recur(value.elements(i).asInstanceOf[JsonAst])
+          i += 1
+        acc
+
+      case value: Array[Long] @unchecked =>
+        // Number-only array — hash each element through the same recursion
+        // path so cross-form equality with `JsonArray(Long(_), …)` keeps a
+        // consistent hash.
+        val ast = value.asInstanceOf[JsonAst]
+        val n = value.length
+        var acc = n.hashCode
+        var i = 0
+        while i < n do
+          acc = acc*31 ^ recur(ast.arrayElement(i))
+          i += 1
+        acc
+
+      case value: IArray[Any] @unchecked =>
+        // Object — alternating key/value layout.
+        val n = value.length/2
+        var acc = Map.empty[String, Int]
+        var i = 0
+        while i < n do
+          acc = acc.updated
+                ( value(i*2).asInstanceOf[String],
+                  recur(value(i*2 + 1).asInstanceOf[JsonAst]) )
+          i += 1
+        acc.hashCode
 
       case _ =>
         0
@@ -491,29 +505,53 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
   override def equals(right: Any): Boolean = right.asMatchable match
     case right: Json =>
+      def arrayEq(leftAst: JsonAst, rightAst: JsonAst): Boolean =
+        val rn = rightAst.arrayLength
+        val ln = leftAst.arrayLength
+        rn == ln &&
+          { var i = 0
+            var eq = true
+            while i < rn && eq do
+              if !recur(leftAst.arrayElement(i), rightAst.arrayElement(i)) then eq = false
+              i += 1
+            eq }
+
+      def objectEq(leftAst: JsonAst, rightAst: JsonAst): Boolean =
+        val rn = rightAst.objectSize
+        val ln = leftAst.objectSize
+        if rn != ln then false
+        else
+          var leftMap = Map.empty[String, JsonAst]
+          var i = 0
+          while i < ln do
+            leftMap = leftMap.updated(leftAst.objectKey(i), leftAst.objectValue(i))
+            i += 1
+          var rightMap = Map.empty[String, JsonAst]
+          i = 0
+          while i < rn do
+            rightMap = rightMap.updated(rightAst.objectKey(i), rightAst.objectValue(i))
+            i += 1
+          leftMap.keySet == rightMap.keySet && leftMap.keySet.forall: key =>
+            recur(leftMap(key), rightMap(key))
+
       def recur(left: JsonAst, right: JsonAst): Boolean = right.asMatchable match
-        case right: Long     => left.asMatchable match
-          case left: Long              => left == right
-          case left: Double            => left == right
-          case left: Array[Long] @unchecked =>
-            left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(right)
-          case _                       => false
+        case right: Long => left.asMatchable match
+          case left: Long    => left == right
+          case left: Double  => left == right
+          case left: JsonBcd => left.value.toBigDecimal == BigDecimal(right)
+          case _             => false
 
         case right: Double => left.asMatchable match
-          case left: Long              => left == right
-          case left: Double            => left == right
-          case left: Array[Long] @unchecked =>
-            left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(right)
-          case _                       => false
+          case left: Long    => left == right
+          case left: Double  => left == right
+          case left: JsonBcd => left.value.toBigDecimal == BigDecimal(right)
+          case _             => false
 
-        case right: Array[Long] @unchecked => left.asMatchable match
-          case left: Long              =>
-            BigDecimal(left) == right.asInstanceOf[Bcd].toBigDecimal
-          case left: Double            =>
-            BigDecimal(left) == right.asInstanceOf[Bcd].toBigDecimal
-          case left: Array[Long] @unchecked =>
-            left.asInstanceOf[Bcd].toBigDecimal == right.asInstanceOf[Bcd].toBigDecimal
-          case _                       => false
+        case right: JsonBcd => left.asMatchable match
+          case left: Long    => BigDecimal(left) == right.value.toBigDecimal
+          case left: Double  => BigDecimal(left) == right.value.toBigDecimal
+          case left: JsonBcd => left.value.toBigDecimal == right.value.toBigDecimal
+          case _             => false
 
         case right: String => left.asMatchable match
           case left: String => left == right
@@ -523,37 +561,21 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           case left: Boolean => left == right
           case _             => false
 
-        case right: Array[AnyRef] @unchecked => left.asMatchable match
-          case left: Array[AnyRef] @unchecked =>
-            val rightAst = right.asInstanceOf[JsonAst]
-            val leftAst = left.asInstanceOf[JsonAst]
-            (rightAst.isObject, leftAst.isObject) match
-              case (false, false) =>
-                val rn = rightAst.arrayLength
-                val ln = leftAst.arrayLength
-                rn == ln && (0 until rn).forall: index =>
-                  recur(leftAst.arrayElement(index), rightAst.arrayElement(index))
+        case right: JsonArray => left.asMatchable match
+          case _: JsonArray              => arrayEq(left, right.asInstanceOf[JsonAst])
+          case _: Array[Long] @unchecked => arrayEq(left, right.asInstanceOf[JsonAst])
+          case _                         => false
 
-              case (true, true) =>
-                val rn = rightAst.objectSize
-                val ln = leftAst.objectSize
-                if rn != ln then false
-                else
-                  var leftMap = Map.empty[String, JsonAst]
-                  var i = 0
-                  while i < ln do
-                    leftMap = leftMap.updated(leftAst.objectKey(i), leftAst.objectValue(i))
-                    i += 1
-                  var rightMap = Map.empty[String, JsonAst]
-                  i = 0
-                  while i < rn do
-                    rightMap = rightMap.updated(rightAst.objectKey(i), rightAst.objectValue(i))
-                    i += 1
-                  leftMap.keySet == rightMap.keySet && leftMap.keySet.forall: key =>
-                    recur(leftMap(key), rightMap(key))
+        case right: Array[Long] @unchecked => left.asMatchable match
+          case _: JsonArray              =>
+            arrayEq(left, right.asInstanceOf[JsonAst])
+          case _: Array[Long] @unchecked =>
+            arrayEq(left, right.asInstanceOf[JsonAst])
+          case _ => false
 
-              case _ => false
-
+        case right: IArray[Any] @unchecked => left.asMatchable match
+          case _: IArray[Any] @unchecked =>
+            objectEq(left, right.asInstanceOf[JsonAst])
           case _ => false
 
         case _ =>
