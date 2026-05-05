@@ -291,14 +291,16 @@ private[ypsiloid] final class YamlParser:
         continue = false
       else if atDocumentBoundary then
         if explicitStart then docs.append(YamlAst.Null)
-        consumeOptionalDocumentEnd()
+        lastDocEndedWithFooter = consumeOptionalDocumentEnd()
+        if explicitStart then firstDoc = false
       else
         // The first content line of the document determines the indent
         // passed to parseNode.
         val indent = consumeLeadingSpaces()
         if !more || atDocumentBoundary then
           if explicitStart then docs.append(YamlAst.Null)
-          consumeOptionalDocumentEnd()
+          lastDocEndedWithFooter = consumeOptionalDocumentEnd()
+          if explicitStart then firstDoc = false
         else
           // If `---` was consumed and content is on the same line, the
           // node may not be a block mapping — only a single inline node
@@ -2025,6 +2027,11 @@ private[ypsiloid] final class YamlParser:
             done = true
         if !done then
           if spaces < baseIndent then
+            pos = lineStart
+            done = true
+          else if spaces == 0 && atDocumentBoundary then
+            // A `---` or `...` at column 0 ends the block scalar even
+            // if its content would otherwise be at indent >= baseIndent.
             pos = lineStart
             done = true
           else
