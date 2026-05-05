@@ -213,6 +213,50 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       bench(m"Print blockchain example (50 transactions)")(target = 1*Second):
         '{ jacinta.Benchmarks.printBlockchain() }
 
+    suite(m"Parse example 7 (1000 small integers)"):
+      val size7 = jsonBytes7.length*Byte
+
+      bench(m"Parse file with Merino")
+        (target = 1*Second, operationSize = size7, baseline = Baseline(compare = Min)):
+        '{ JsonAst.parse(jacinta.Benchmarks.jsonBytes7) }
+
+      bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size7):
+        '{
+            import org.typelevel.jawn.ast.JParser
+            JParser.parseFromString(jacinta.Benchmarks.jsonText7)
+          }
+
+      bench(m"Parse file with Circe")(target = 1*Second, operationSize = size7):
+        '{ io.circe.parser.parse(jacinta.Benchmarks.jsonText7) }
+
+      bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size7):
+        '{ jacinta.Benchmarks.parseWithJsoniter(jacinta.Benchmarks.jsonText7) }
+
+      bench(m"Parse file with Jackson")(target = 1*Second, operationSize = size7):
+        '{ jacinta.Benchmarks.parseWithJackson(jacinta.Benchmarks.jsonText7) }
+
+    suite(m"Parse example 8 (1000 small decimals)"):
+      val size8 = jsonBytes8.length*Byte
+
+      bench(m"Parse file with Merino")
+        (target = 1*Second, operationSize = size8, baseline = Baseline(compare = Min)):
+        '{ JsonAst.parse(jacinta.Benchmarks.jsonBytes8) }
+
+      bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size8):
+        '{
+            import org.typelevel.jawn.ast.JParser
+            JParser.parseFromString(jacinta.Benchmarks.jsonText8)
+          }
+
+      bench(m"Parse file with Circe")(target = 1*Second, operationSize = size8):
+        '{ io.circe.parser.parse(jacinta.Benchmarks.jsonText8) }
+
+      bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size8):
+        '{ jacinta.Benchmarks.parseWithJsoniter(jacinta.Benchmarks.jsonText8) }
+
+      bench(m"Parse file with Jackson")(target = 1*Second, operationSize = size8):
+        '{ jacinta.Benchmarks.parseWithJackson(jacinta.Benchmarks.jsonText8) }
+
   lazy val jsonText1: String = jsonExample1.s
   lazy val jsonText2: String = jsonExample2.s
   lazy val jsonText3: String = jsonExample3.s
@@ -295,6 +339,37 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   lazy val blockchainAst: JsonAst = unsafely(JsonAst.parse(jsonBytes6))
 
   def printBlockchain(): Text = JsonPrinter.print(blockchainAst, false)
+
+  // Example 7: a 1000-element array of small integers — the workload the
+  // unboxed `Array[Long]` AST node was designed to accelerate (no per-
+  // element boxing, no parity-padding sentinel).
+  lazy val jsonText7: String =
+    val sb = new _root_.java.lang.StringBuilder
+    sb.append('[')
+    var i = 0
+    while i < 1000 do
+      if i > 0 then sb.append(',')
+      sb.append((i*37 + 1).toString)
+      i += 1
+    sb.append(']')
+    sb.toString.nn
+
+  lazy val jsonBytes7: Data = jsonText7.getBytes("UTF-8").nn.immutable(using Unsafe)
+
+  // Example 8: 1000 small decimals — fractional values still fit the
+  // compact-BCD payload, so the array stays in the unboxed form.
+  lazy val jsonText8: String =
+    val sb = new _root_.java.lang.StringBuilder
+    sb.append('[')
+    var i = 0
+    while i < 1000 do
+      if i > 0 then sb.append(',')
+      sb.append(s"${i*7 + 1}.${(i*13 + 1) % 1000}")
+      i += 1
+    sb.append(']')
+    sb.toString.nn
+
+  lazy val jsonBytes8: Data = jsonText8.getBytes("UTF-8").nn.immutable(using Unsafe)
 
   val jsonExample1: Text = t"""
 
