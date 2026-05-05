@@ -426,6 +426,22 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"text: |-\n  only".read[Yaml].as[Map[Text, Text]]
       . assert(_ == Map(t"text" -> t"only"))
 
+      test(m"Literal scalar with explicit indent indicator"):
+        t"text: |2\n   indented".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"text" -> t" indented\n"))
+
+      test(m"Folded scalar with explicit indent indicator"):
+        t"text: >2\n   indented\n   more".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"text" -> t" indented  more\n"))
+
+      test(m"Literal scalar with explicit indent then strip"):
+        t"text: |2-\n   indented".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"text" -> t" indented"))
+
+      test(m"Literal scalar with strip then explicit indent (chomp first)"):
+        t"text: |-2\n   indented".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"text" -> t" indented"))
+
     suite(m"Anchors and aliases"):
       test(m"Alias resolves to anchored scalar"):
         t"a: &x 1\nb: *x".read[Yaml].as[Map[Text, Int]]

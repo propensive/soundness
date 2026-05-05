@@ -37,6 +37,7 @@ import contingency.*
 import denominative.*
 import gossamer.*
 import rudiments.*
+import vacuous.*
 
 import YamlError.Reason
 
@@ -130,7 +131,7 @@ class YamlParser(using Tactic[YamlError]):
       else if isBlockMappingHead(head.content) then
         parseBlockMapping(lines)
       else if isBlockScalarIndicator(head.content) && lines.tail.nonEmpty then
-        parseBlockScalar(head.content, lines.tail)
+        parseBlockScalar(head.content, lines.tail, head.indent)
       else if lines.lengthCompare(1) == 0 then
         parseTrimmed(head.content)
       else
@@ -147,15 +148,42 @@ class YamlParser(using Tactic[YamlError]):
     colon >= 0 && (colon == content.length - 1 || content.s.charAt(colon + 1) == ' ')
 
   private def isBlockScalarIndicator(content: Text): Boolean =
-    content == t"|" || content == t">" || content == t"|-" || content == t"|+"
-    || content == t">-" || content == t">+"
+    if content.nil then false
+    else
+      val source = content.s
+      val first = source.charAt(0)
 
-  private def parseBlockScalar(indicator: Text, lines: List[Line]): YamlAst =
+      if first != '|' && first != '>' then false
+      else
+        var index = 1
+        var valid = true
+        while index < source.length && valid do
+          val char = source.charAt(index)
+          if !char.isDigit && char != '+' && char != '-' then valid = false
+          index += 1
+        valid
+
+  private def parseBlockScalarIndicator(content: Text): (Boolean, Optional[Int], Char) =
+    val source = content.s
+    val literal = source.charAt(0) == '|'
+    var explicitIndent: Optional[Int] = Unset
+    var chomp: Char = 'c'
+    var index = 1
+
+    while index < source.length do
+      val char = source.charAt(index)
+      if char.isDigit then explicitIndent = char - '0'
+      else if char == '+' then chomp = '+'
+      else if char == '-' then chomp = '-'
+      index += 1
+
+    (literal, explicitIndent, chomp)
+
+  private def parseBlockScalar(indicator: Text, lines: List[Line], parentIndent: Int): YamlAst =
     if lines.isEmpty then YamlAst.Str(t"")
     else
-      val literal = indicator.s.charAt(0) == '|'
-      val chomp = if indicator.length > 1 then indicator.s.charAt(1) else 'c'
-      val baseIndent = lines.head.indent
+      val (literal, explicitIndent, chomp) = parseBlockScalarIndicator(indicator)
+      val baseIndent = explicitIndent.lay(lines.head.indent)(parentIndent + _)
       val builder = new StringBuilder
 
       lines.zipWithIndex.foreach: (line, position) =>
@@ -237,7 +265,7 @@ class YamlParser(using Tactic[YamlError]):
 
         val value =
           if inline.nil then parseBlock(valueLines)
-          else parseBlockScalar(inline, valueLines)
+          else parseBlockScalar(inline, valueLines, baseIndent)
 
         entries.append((key, value))
 
