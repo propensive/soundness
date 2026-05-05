@@ -994,7 +994,7 @@ object yossarian extends Library:
 
 object ypsiloid extends Library:
   object core extends Component(distillate.core, turbulence.core, gossamer.core, contingency.core, vacuous.core, wisteria.core)
-  object test extends Tests(core)
+  object test extends Tests(core, jacinta.core)
 
 object zephyrine extends Library:
   object core extends Component(hieroglyph.core, hypotenuse.core)
