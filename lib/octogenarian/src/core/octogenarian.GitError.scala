@@ -57,6 +57,7 @@ object GitError:
     case MergeFailed        extends Reason(19)
     case CherryPickFailed   extends Reason(20)
     case RevertFailed       extends Reason(21)
+    case RemoteFailed       extends Reason(22)
 
   import Reason.*
 
@@ -82,6 +83,7 @@ object GitError:
     case MergeFailed        => m"the merge could not be completed"
     case CherryPickFailed   => m"the cherry-pick could not be completed"
     case RevertFailed       => m"the revert could not be completed"
+    case RemoteFailed       => m"the remote operation failed"
 
 case class GitError(reason: GitError.Reason)(using Diagnostics)
 extends Error(realm"oc", 1, reason.number)

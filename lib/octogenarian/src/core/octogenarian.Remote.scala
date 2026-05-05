@@ -30,13 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package octogenarian
 
-export
-  octogenarian
-  . { ChangeKind, Commit, FastForward, FileDiff, Git, GitBranch, GitCommand, GitError, GitEvent,
-      GitHash, GitPathStatus, GitProcess, GitRefError, GitRepo, GitStatus, GitTag, Hunk, Patch,
-      Progress, ReflogEntry, Refspec, Remote, ResetMode, SshUrl, Worktree }
+import anticipation.*
+import vacuous.*
 
-package gitCommands:
-  export octogenarian.gitCommands.environmentDefault
+case class Remote
+  ( name:     Text,
+    fetchUrl: Text,
+    pushUrl:  Optional[Text] = Unset )
