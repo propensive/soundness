@@ -577,6 +577,15 @@ object Tests extends Suite(m"Xylophone tests"):
         . map(_.focus)
       . assert(_ == List("bar>"))
 
+      test(m"focus respects $$$$ escape in literal"):
+        // $$ in source decodes to a single $ in the value (2 source chars,
+        // 1 value char). The bad close tag after it should still focus
+        // precisely on `bar>`.
+        demilitarize:
+          x"<foo>$$</bar>"
+        . map(_.focus)
+      . assert(_ == List("bar>"))
+
 
     suite(m"Namespaces"):
       test(m"Element with default namespace declaration"):

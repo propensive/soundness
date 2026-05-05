@@ -353,24 +353,35 @@ object internal:
       case Some(s: String) => s
       case _               => Unset
 
+    // Pre-compute, per part, the value→source mapping and the *actual* source
+    // end. The Scala compiler's lit.pos.end is unreliable for parts containing
+    // `$$` (it reports the value length, not the source length); walking the
+    // source forward with escape rules gives us the truth.
+    val perPart: IndexedSeq[((String, Int), Int => Int)] =
+      parts.zip(partOrigins).map: (part, origin) =>
+        val (srcStart, _) = origin
+        val mapping: Int => Int = sourceContent.lay((i: Int) => i): content =>
+          if srcStart > 0 && srcStart < content.length then
+            // Generous upper bound: each value char is at most 6 source chars
+            // (\u####), plus a small buffer.
+            val upper = (srcStart + part.length * 6 + 16).min(content.length)
+            val sourceText = content.substring(srcStart, upper).nn
+            Interpolation.buildMapping(sourceText, part)
+          else (i: Int) => i
+        ((part, srcStart), mapping)
+      . toIndexedSeq
+
     def translateOffset(parserOff: Int, len: Int): Position =
       var acc = 0
       var i = 0
-      val partsArr = parts.zip(partOrigins).toIndexedSeq
-      while i < partsArr.length do
-        val (part, (srcStart, srcEnd)) = partsArr(i)
+      while i < perPart.length do
+        val ((part, srcStart), mapping) = perPart(i)
         val partLen = part.length
-        if parserOff < acc + partLen && srcStart > 0 && srcEnd > srcStart then
+        if parserOff < acc + partLen && srcStart > 0 then
           val inPart = parserOff - acc
           val endIn = (inPart + len.max(1)).min(part.length)
-          val (offS, offE): (Int, Int) = sourceContent.lay((inPart, endIn)): content =>
-            if srcEnd <= content.length then
-              val sourceText = content.substring(srcStart, srcEnd).nn
-              val mapping = Interpolation.buildMapping(sourceText, part)
-              (mapping(inPart), mapping(endIn))
-            else (inPart, endIn)
-          val rawStart = (srcStart + offS).min(srcEnd).max(srcStart)
-          val rawEnd = (srcStart + offE).min(srcEnd).max(rawStart + 1)
+          val rawStart = (srcStart + mapping(inPart)).max(srcStart)
+          val rawEnd = (srcStart + mapping(endIn)).max(rawStart + 1)
           return Position(sourceFile, rawStart, rawEnd)
         acc += partLen + 1
         i += 1

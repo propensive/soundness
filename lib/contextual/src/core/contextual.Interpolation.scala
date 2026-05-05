@@ -41,18 +41,32 @@ import prepositional.*
 import proscenium.*
 
 object Interpolation:
-  /** Build a value-offset → source-offset mapping for a Scala string literal,
-    * accounting for backslash escape sequences. `sourceText` is the source
-    * text covering the literal's content (no surrounding quotes — the literal
-    * Term's `pos` excludes them); `value` is the Scala-decoded string the
-    * macro receives. Triple-quoted literals (or any literal whose value
-    * matches its source byte-for-byte) collapse to the identity. Otherwise
-    * the walker treats `\\u####` as 6 source chars per value char and any
-    * other `\\X` as 2 source chars per value char, matching Scala's literal
-    * decoding.
+  /** Build a value-offset → source-offset mapping for a Scala interpolator
+    * part, accounting for the source-level escapes that may make the source
+    * longer than the value:
+    *
+    *   - `\\u####` decodes to 1 value char (6 source chars).
+    *   - `\\X` decodes to 1 value char (2 source chars), for any other X.
+    *   - `$$` collapses to a single `$` value char (2 source chars). A
+    *     literal `$` in a static part must have been written as either `$$`
+    *     or `\\u0024` in source — the `\\u` form is already covered above.
+    *
+    * `sourceText` is the source text covering the literal's content (the
+    * literal Term's `pos` excludes the surrounding quote delimiters);
+    * `value` is the Scala-decoded string the macro receives. Triple-quoted
+    * literals (or any literal whose value matches its source byte-for-byte)
+    * collapse to the identity.
     */
   def buildMapping(sourceText: String, value: String): Int => Int =
-    if value.length == sourceText.length then i => i.min(value.length)
+    // If the source matches the value byte-for-byte at the start, it's a
+    // triple-quoted literal (or a single-quoted one with no escapes); the
+    // mapping is the identity. The byte-for-byte check is what distinguishes
+    // a literal `\n` (no escape) from a source `\n` that decodes to newline.
+    val matchesPrefix =
+      sourceText.length >= value.length
+      && sourceText.regionMatches(0, value, 0, value.length)
+
+    if matchesPrefix then i => i.max(0).min(value.length)
     else
       val arr = new Array[Int](value.length + 1)
       var srcIdx = 0
@@ -61,6 +75,10 @@ object Interpolation:
         arr(valIdx) = srcIdx
         if srcIdx + 1 < sourceText.length && sourceText.charAt(srcIdx) == '\\' then
           if sourceText.charAt(srcIdx + 1) == 'u' then srcIdx += 6 else srcIdx += 2
+        else if srcIdx + 1 < sourceText.length
+                && sourceText.charAt(srcIdx) == '$'
+                && sourceText.charAt(srcIdx + 1) == '$'
+        then srcIdx += 2
         else srcIdx += 1
         valIdx += 1
       arr(value.length) = srcIdx
