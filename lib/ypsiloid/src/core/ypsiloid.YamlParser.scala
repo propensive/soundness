@@ -1566,14 +1566,16 @@ private[ypsiloid] final class YamlParser:
     if nextByte == Space || nextByte == Tab || nextByte == Newline
             || nextByte == Return || nextByte == -1 then
       // The `-` is a block-sequence indicator at line-start, or
-      // preceded by another `-` (compact nested seq, `- - x`), or
-      // preceded by a `:` (the value side of an explicit-key entry,
-      // `? k\n: - v`). Walking back over space/tab and landing on
-      // any of these is the allowed shape.
+      // preceded by another `-` (compact nested seq, `- - x`), a `:`
+      // (explicit-key value, `? k\n: - v`), or a `?` (explicit-key
+      // key that is itself a sequence, `? - x\n  - y`). Walking back
+      // over space/tab and landing on any of these is the allowed
+      // shape.
       var j = pos - 1
       while j >= 0 && (bytes(j) == Space || bytes(j) == Tab) do j -= 1
       val ok = j < 0 || bytes(j) == Newline || bytes(j) == Return
                      || bytes(j) == Minus || bytes(j) == Colon
+                     || bytes(j) == Question
       if !ok then fail(t"block-sequence indicator must start its line")
       // Use the dash's actual column, not the caller's indent param —
       // an inline-value sequence (`: - v`, `? k\n: - v`) starts where
