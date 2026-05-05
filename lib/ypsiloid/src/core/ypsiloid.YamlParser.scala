@@ -610,6 +610,8 @@ private[ypsiloid] final class YamlParser:
   :   YamlAst =
     val textValue = readPlainScalarText(indent)
     if sawMappingColon then
+      if inInlineMappingValue then
+        fail(t"chained mapping value not allowed on a single line")
       if lastScalarSpannedLines then
         fail(t"implicit mapping key cannot span multiple lines")
       // The plain text is the first key of a block mapping. Any tag
