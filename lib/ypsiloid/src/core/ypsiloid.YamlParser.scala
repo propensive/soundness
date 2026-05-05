@@ -452,12 +452,15 @@ private[ypsiloid] final class YamlParser:
     else parseNodeHere(indent)
 
   private def parseNodeHere(indent: Int)(using Tactic[YamlError]): YamlAst =
-    // `prefixesConsumed` is a parser-wide field but the "did this call
-    // apply its own prefixes?" question is per-call. Recursive parses
-    // (e.g. parseMappingValue inside parseBlockMappingFromFirstKey)
-    // would otherwise clobber the flag before we can read it back.
+    // `prefixesConsumed` and `lastNodeHadAnchor` are parser-wide fields
+    // but "did THIS call apply its own prefixes / anchor?" is per-call.
+    // Recursive parses (e.g. parseMappingValue inside parseBlock-
+    // MappingFromFirstKey) would otherwise clobber the flags before
+    // we can read them back.
     val savedPrefixesConsumed = prefixesConsumed
+    val savedLastNodeHadAnchor = lastNodeHadAnchor
     prefixesConsumed = false
+    lastNodeHadAnchor = false
     consumeNodePrefixes()
     val anchorName = prefixAnchor
     val tagText    = prefixTag
@@ -537,12 +540,18 @@ private[ypsiloid] final class YamlParser:
 
     val consumed = prefixesConsumed
     prefixesConsumed = savedPrefixesConsumed
-    if consumed then value
+    if consumed then
+      lastNodeHadAnchor = savedLastNodeHadAnchor
+      value
     else
       val tagged = if tagText.nil then value else applyTag(tagText, value)
-      if anchorName.nil then tagged
+      if anchorName.nil then
+        lastNodeHadAnchor = savedLastNodeHadAnchor
+        tagged
       else
         anchors.update(anchorName.s, tagged)
+        // Outer call sees lastNodeHadAnchor=true so the "two anchors"
+        // check on its prefix-with-newline branch can fire.
         lastNodeHadAnchor = true
         tagged
 
