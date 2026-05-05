@@ -1084,15 +1084,31 @@ private[ypsiloid] final class YamlParser:
   // Apply YAML line folding: 1 newline → space, N newlines → (N-1)
   // literal newlines. Trailing whitespace on the current line and
   // leading whitespace on the continuation line are both stripped
-  // (per spec 6.5).
-  private def consumeMultilineFold(): Unit =
+  // (per spec 6.5). When the continuation reaches a non-whitespace
+  // byte, its leading-space count must exceed the parent collection's
+  // indent — otherwise the quoted scalar is mis-indented.
+  private def consumeMultilineFold()(using Tactic[YamlError]): Unit =
     while stringCursor > 0
             && (chars(stringCursor - 1) == ' ' || chars(stringCursor - 1) == '\t') do
       stringCursor -= 1
     var newlineCount = 0
-    while more && (peek == Newline || peek == Space || peek == Tab || peek == Return) do
-      if peek == Newline then newlineCount += 1
-      advance()
+    var spaces = 0
+    var done = false
+    while !done && more do
+      val c = peek
+      if c == Newline then
+        newlineCount += 1
+        spaces = 0
+        advance()
+      else if c == Space then
+        spaces += 1
+        advance()
+      else if c == Tab || c == Return then
+        advance()
+      else done = true
+    if newlineCount > 0 && more then
+      if spaces <= blockParentIndent then
+        fail(t"multi-line scalar continuation insufficiently indented")
     if newlineCount == 1 then appendChar(' ')
     else
       var k = 1
@@ -1553,9 +1569,15 @@ private[ypsiloid] final class YamlParser:
       val childIndent = consumeLeadingSpaces()
       pickValueOrNull(parentIndent, childIndent, lineStart)
     else
-      // Inline value on same line as `key:`. Pass `parentIndent` directly
-      // so block scalars require content indent strictly greater than the
-      // surrounding block's indent.
+      // Inline value on same line as `key:`. Per spec, a block
+      // sequence cannot start on the same line as a mapping key —
+      // `- ` here would be a sequence indicator, but no construct
+      // allows that placement. Reject.
+      if peek == Minus then
+        val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+        if next == Space || next == Tab || next == Newline
+                || next == Return || next == -1 then
+          fail(t"sequence cannot start on the same line as a mapping key")
       parseNodeHere(parentIndent)
 
   // Decide whether a next-line node belongs to the current mapping
