@@ -596,7 +596,7 @@ private[ypsiloid] final class YamlParser:
       case _ =>
         parsePlainInteger(s).orElse(parsePlainDecimal(s)).getOrElse(YamlAst.Str(text))
 
-  private def parsePlainInteger(s: String): Option[YamlAst.Integer] =
+  private def parsePlainInteger(s: String): Option[YamlAst] =
     if s.startsWith("0x") || s.startsWith("0X") then
       try Some(YamlAst.Integer(java.lang.Long.parseLong(s.substring(2), 16)))
       catch case _: NumberFormatException => None
@@ -607,7 +607,7 @@ private[ypsiloid] final class YamlParser:
       try Some(YamlAst.Integer(java.lang.Long.parseLong(s)))
       catch case _: NumberFormatException => None
 
-  private def parsePlainDecimal(s: String): Option[YamlAst.Decimal] =
+  private def parsePlainDecimal(s: String): Option[YamlAst] =
     try Some(YamlAst.Decimal(java.lang.Double.parseDouble(s)))
     catch case _: NumberFormatException => None
 
@@ -746,9 +746,9 @@ private[ypsiloid] final class YamlParser:
           case Comma        => advance()
           case CloseBracket => advance(); done = true
           case _            => fail(t"expected ',' or ']' in flow sequence")
-    val items = IArray.from(buf.toArray.map(_.asInstanceOf[YamlAst]))
+    val result = sealSequence(buf)
     releaseBuffer()
-    YamlAst.Sequence(items)
+    result
 
   private def parseFlowMapping()(using Tactic[YamlError]): YamlAst =
     val buf = acquireBuffer()
@@ -769,16 +769,41 @@ private[ypsiloid] final class YamlParser:
             if !more || peek == Comma || peek == CloseBrace then YamlAst.Null
             else parseFlowNode()
           else YamlAst.Null
-        buf += ((key, value))
+        buf += key
+        buf += value
         skipFlowWhitespace()
         if !more then fail(t"unterminated flow mapping")
         peek match
           case Comma     => advance()
           case CloseBrace => advance(); done = true
           case _         => fail(t"expected ',' or '}' in flow mapping")
-    val entries = IArray.from(buf.toArray.map(_.asInstanceOf[(YamlAst, YamlAst)]))
+    val result = sealMapping(buf)
     releaseBuffer()
-    YamlAst.Mapping(entries)
+    result
+
+  // Materialise the buffer as a sequence node: copy directly into a single
+  // `Array[Any]`, padding with `arrayPad` if the count is even so the
+  // result has odd length (the parity that distinguishes sequences from
+  // mappings).
+  private def sealSequence(buf: ArrayBuffer[Any]): YamlAst =
+    val n = buf.length
+    if (n & 1) == 1 then
+      val arr = new Array[Any](n)
+      buf.copyToArray(arr)
+      arr.asInstanceOf[IArray[Any]].asInstanceOf[YamlAst]
+    else
+      val arr = new Array[Any](n + 1)
+      buf.copyToArray(arr)
+      arr(n) = YamlAst.arrayPad
+      arr.asInstanceOf[IArray[Any]].asInstanceOf[YamlAst]
+
+  // The buffer was filled with alternating key/value items, so the count
+  // is already even; copy directly into a flat `Array[Any]`.
+  private def sealMapping(buf: ArrayBuffer[Any]): YamlAst =
+    val n = buf.length
+    val arr = new Array[Any](n)
+    buf.copyToArray(arr)
+    arr.asInstanceOf[IArray[Any]].asInstanceOf[YamlAst]
 
   // Within a flow context, whitespace and newlines are insignificant
   // separators; comments still apply.
@@ -912,9 +937,9 @@ private[ypsiloid] final class YamlParser:
                 && byteAfterDash != Newline && byteAfterDash != -1 then
           done = true
 
-    val items = IArray.from(buf.toArray.map(_.asInstanceOf[YamlAst]))
+    val result = sealSequence(buf)
     releaseBuffer()
-    YamlAst.Sequence(items)
+    result
 
   // From the start of the current line, count leading spaces. Returns the
   // count and leaves the cursor positioned at the first non-space byte.
@@ -955,7 +980,8 @@ private[ypsiloid] final class YamlParser:
     if !more || peek != Colon then fail(t"expected ':' after mapping key")
     advance()
     val firstValue = parseMappingValue(indent)
-    buf += ((resolvePlainScalar(firstKey), firstValue))
+    buf += resolvePlainScalar(firstKey)
+    buf += firstValue
 
     var done = false
     while !done do
@@ -971,11 +997,12 @@ private[ypsiloid] final class YamlParser:
           if !more || peek != Colon then fail(t"expected ':' after mapping key")
           advance()
           val value = parseMappingValue(indent)
-          buf += ((resolvePlainScalar(keyText), value))
+          buf += resolvePlainScalar(keyText)
+          buf += value
 
-    val entries = IArray.from(buf.toArray.map(_.asInstanceOf[(YamlAst, YamlAst)]))
+    val result = sealMapping(buf)
     releaseBuffer()
-    YamlAst.Mapping(entries)
+    result
 
   // Parse the value side of a `key: VALUE` entry. Either inline (after
   // the colon, on the same line) or a block on the next indented lines.
@@ -1083,41 +1110,34 @@ private[ypsiloid] final class YamlParser:
   private def applyTag(tag: Text, value: YamlAst)(using Tactic[YamlError])
   :   YamlAst = tag.s match
     case "!!str" =>
-      value match
-        case YamlAst.Str(_)         => value
-        case YamlAst.Integer(n)     => YamlAst.Str(n.toString.tt)
-        case YamlAst.Decimal(d)     => YamlAst.Str(d.toString.tt)
-        case YamlAst.Bool(b)        => YamlAst.Str(b.toString.tt)
-        case YamlAst.Null           => YamlAst.Str(t"null")
-        case _                      => value
+      if value.asInstanceOf[AnyRef] == null then YamlAst.Str(t"null")
+      else value.asInstanceOf[Matchable] match
+        case _: String  => value
+        case n: Long    => YamlAst.Str(n.toString.tt)
+        case d: Double  => YamlAst.Str(d.toString.tt)
+        case b: Boolean => YamlAst.Str(b.toString.tt)
+        case _          => value
 
     case "!!int" =>
-      value match
-        case YamlAst.Integer(_)     => value
-        case YamlAst.Decimal(d)     => YamlAst.Integer(d.toLong)
-        case YamlAst.Str(text)      => parsePlainInteger(text.s).getOrElse(value)
-        case _                      => value
+      value.asInstanceOf[Matchable] match
+        case _: Long   => value
+        case d: Double => YamlAst.Integer(d.toLong)
+        case s: String => parsePlainInteger(s).getOrElse(value)
+        case _         => value
 
     case "!!float" =>
-      value match
-        case YamlAst.Decimal(_)     => value
-        case YamlAst.Integer(n)     => YamlAst.Decimal(n.toDouble)
-        case YamlAst.Str(text)      => parsePlainDecimal(text.s).getOrElse(value)
-        case _                      => value
+      value.asInstanceOf[Matchable] match
+        case _: Double => value
+        case n: Long   => YamlAst.Decimal(n.toDouble)
+        case s: String => parsePlainDecimal(s).getOrElse(value)
+        case _         => value
 
     case "!!bool" =>
-      value match
-        case YamlAst.Bool(_) => value
-
-        case YamlAst.Str(text) if text == t"true" || text == t"True"
-                                  || text == t"TRUE" =>
-          YamlAst.Bool(true)
-
-        case YamlAst.Str(text) if text == t"false" || text == t"False"
-                                  || text == t"FALSE" =>
-          YamlAst.Bool(false)
-
-        case _ => value
+      value.asInstanceOf[Matchable] match
+        case _: Boolean                  => value
+        case "true" | "True" | "TRUE"    => YamlAst.Bool(true)
+        case "false" | "False" | "FALSE" => YamlAst.Bool(false)
+        case _                           => value
 
     case "!!null" => YamlAst.Null
     case _        => value

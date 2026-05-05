@@ -75,93 +75,113 @@ object Yaml extends Yaml2:
 
   given yaml: Yaml is Decodable in Yaml = identity(_)
 
-  private inline def expect[result]
-    ( yaml: Yaml, expected: YamlPrimitive )
-    ( default: => result )
-    ( handler: PartialFunction[YamlAst, result] )
-    ( using Tactic[YamlError] )
-  :   result =
-
-    handler.applyOrElse(yaml.root, other =>
-      raise(YamlError(Reason.NotType(primitive(other), expected))) yet default)
+  private inline def typeMismatch[T]
+      (yaml: Yaml, expected: YamlPrimitive, default: T)
+      (using Tactic[YamlError])
+  :   T =
+    raise(YamlError(Reason.NotType(primitive(yaml.root), expected))) yet default
 
   given int: Tactic[YamlError] => Int is Decodable in Yaml = yaml =>
-    expect(yaml, YamlPrimitive.Integer)(0):
-      case YamlAst.Integer(value) => value.toInt
-      case YamlAst.Decimal(value) => value.toInt
+    yaml.root.asMatchable match
+      case n: Long   => n.toInt
+      case d: Double => d.toInt
+      case _         => typeMismatch(yaml, YamlPrimitive.Integer, 0)
 
   given long: Tactic[YamlError] => Long is Decodable in Yaml = yaml =>
-    expect(yaml, YamlPrimitive.Integer)(0L):
-      case YamlAst.Integer(value) => value
-      case YamlAst.Decimal(value) => value.toLong
+    yaml.root.asMatchable match
+      case n: Long   => n
+      case d: Double => d.toLong
+      case _         => typeMismatch(yaml, YamlPrimitive.Integer, 0L)
 
   given double: Tactic[YamlError] => Double is Decodable in Yaml = yaml =>
-    expect(yaml, YamlPrimitive.Decimal)(0.0):
-      case YamlAst.Decimal(value) => value
-      case YamlAst.Integer(value) => value.toDouble
+    yaml.root.asMatchable match
+      case d: Double => d
+      case n: Long   => n.toDouble
+      case _         => typeMismatch(yaml, YamlPrimitive.Decimal, 0.0)
 
   given float: Tactic[YamlError] => Float is Decodable in Yaml = yaml =>
-    expect(yaml, YamlPrimitive.Decimal)(0.0f):
-      case YamlAst.Decimal(value) => value.toFloat
-      case YamlAst.Integer(value) => value.toFloat
+    yaml.root.asMatchable match
+      case d: Double => d.toFloat
+      case n: Long   => n.toFloat
+      case _         => typeMismatch(yaml, YamlPrimitive.Decimal, 0.0f)
 
   given boolean: Tactic[YamlError] => Boolean is Decodable in Yaml = yaml =>
-    expect(yaml, YamlPrimitive.Bool)(false):
-      case YamlAst.Bool(value) => value
+    yaml.root.asMatchable match
+      case b: Boolean => b
+      case _          => typeMismatch(yaml, YamlPrimitive.Bool, false)
 
   given text: Tactic[YamlError] => Text is Decodable in Yaml = yaml =>
-    expect(yaml, YamlPrimitive.Str)(t""):
-      case YamlAst.Str(value) => value
+    yaml.root.asMatchable match
+      case s: String => s.tt
+      case _         => typeMismatch(yaml, YamlPrimitive.Str, t"")
 
   given string: Tactic[YamlError] => String is Decodable in Yaml = yaml =>
-    expect(yaml, YamlPrimitive.Str)(""):
-      case YamlAst.Str(value) => value.s
+    yaml.root.asMatchable match
+      case s: String => s
+      case _         => typeMismatch(yaml, YamlPrimitive.Str, "")
 
   given unit: Tactic[YamlError] => Unit is Decodable in Yaml = yaml =>
-    expect(yaml, YamlPrimitive.Null)(()):
-      case YamlAst.Null => ()
+    if yaml.root.asInstanceOf[AnyRef] == null then ()
+    else typeMismatch(yaml, YamlPrimitive.Null, ())
 
   given iterable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
         tactic:    Tactic[YamlError] )
   =>  ( decodable: => element is Decodable in Yaml )
   =>  collection[element] is Decodable in Yaml = yaml =>
-    yaml.root match
-      case YamlAst.Sequence(items) =>
+    yaml.root.asMatchable match
+      case xs: IArray[?] @unchecked if (xs.length & 1) == 1 =>
+        // Sequence (odd length, possibly with a trailing pad sentinel).
+        val n = xs.length
+        val effective = if n > 0 && (xs(n - 1).asInstanceOf[AnyRef] eq YamlAst.arrayPad)
+                        then n - 1 else n
         val builder = factory.newBuilder
-        items.foreach(item => builder += decodable.decoded(Yaml(item)))
+        var i = 0
+        while i < effective do
+          builder += decodable.decoded(Yaml(xs(i).asInstanceOf[YamlAst]))
+          i += 1
         builder.result()
 
       case other =>
-        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Sequence)))
+        raise(YamlError(Reason.NotType(primitive(other.asInstanceOf[YamlAst]),
+                                       YamlPrimitive.Sequence)))
         factory.newBuilder.result()
 
   given map: [value: Decodable in Yaml] => Tactic[YamlError]
   =>  Map[Text, value] is Decodable in Yaml = yaml =>
-    yaml.root match
-      case YamlAst.Mapping(entries) =>
-        entries.foldLeft(Map.empty[Text, value]): (acc, pair) =>
-          val (rawKey, rawValue) = pair
-          val keyText = rawKey match
-            case YamlAst.Str(text)      => text
-            case YamlAst.Integer(value) => value.toString.tt
-            case YamlAst.Decimal(value) => value.toString.tt
-            case YamlAst.Bool(value)    => value.toString.tt
-            case YamlAst.Null           => t"null"
+    yaml.root.asMatchable match
+      case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
+        // Mapping (even length, alternating keys and values flat).
+        val n = xs.length / 2
+        var result = Map.empty[Text, value]
+        var i = 0
+        while i < n do
+          val rawKey = xs(i*2).asInstanceOf[YamlAst]
+          val rawValue = xs(i*2 + 1).asInstanceOf[YamlAst]
+          val keyText: Text =
+            if rawKey.asInstanceOf[AnyRef] == null then t"null"
+            else rawKey.asMatchable match
+              case s: String  => s.tt
+              case k: Long    => k.toString.tt
+              case k: Double  => k.toString.tt
+              case k: Boolean => k.toString.tt
 
-            case other =>
-              raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Str))) yet t""
+              case other =>
+                raise(YamlError(Reason.NotType(primitive(other.asInstanceOf[YamlAst]),
+                                               YamlPrimitive.Str))) yet t""
 
-          acc.updated(keyText, value.decoded(Yaml(rawValue)))
+          result = result.updated(keyText, value.decoded(Yaml(rawValue)))
+          i += 1
+        result
 
       case other =>
-        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Mapping)))
+        raise(YamlError(Reason.NotType(primitive(other.asInstanceOf[YamlAst]),
+                                       YamlPrimitive.Mapping)))
         Map.empty
 
   given option: [value: Decodable in Yaml] => Option[value] is Decodable in Yaml = yaml =>
-    yaml.root match
-      case YamlAst.Null => None
-      case _            => Some(value.decoded(yaml))
+    if yaml.root.asInstanceOf[AnyRef] == null then None
+    else Some(value.decoded(yaml))
 
   given decodable: Tactic[YamlError] => Yaml is Decodable in Text =
     text => Yaml(YamlParser.parse(text))
@@ -172,20 +192,24 @@ object Yaml extends Yaml2:
   given aggregable: Tactic[YamlError] => Yaml is Aggregable by Text =
     summon[Text is Aggregable by Text].map(text => Yaml(YamlParser.parse(text)))
 
-  def primitive(ast: YamlAst): YamlPrimitive = ast match
-    case YamlAst.Null        => YamlPrimitive.Null
-    case YamlAst.Bool(_)     => YamlPrimitive.Bool
-    case YamlAst.Integer(_)  => YamlPrimitive.Integer
-    case YamlAst.Decimal(_)  => YamlPrimitive.Decimal
-    case YamlAst.Str(_)      => YamlPrimitive.Str
-    case YamlAst.Sequence(_) => YamlPrimitive.Sequence
-    case YamlAst.Mapping(_)  => YamlPrimitive.Mapping
+  def primitive(ast: YamlAst): YamlPrimitive =
+    if ast.asInstanceOf[AnyRef] == null then YamlPrimitive.Null
+    else ast.asMatchable match
+      case _: Boolean    => YamlPrimitive.Bool
+      case _: Long       => YamlPrimitive.Integer
+      case _: Double     => YamlPrimitive.Decimal
+      case _: String     => YamlPrimitive.Str
+
+      case xs: IArray[?] @unchecked =>
+        if (xs.length & 1) == 0 then YamlPrimitive.Mapping else YamlPrimitive.Sequence
+
+      case _ => YamlPrimitive.Null
 
 class Yaml(val root: YamlAst) derives CanEqual:
   def as[value: Decodable in Yaml]: value raises YamlError = value.decoded(this)
 
-  override def hashCode: Int = root.hashCode
+  override def hashCode: Int = YamlAst.deepHash(root)
 
   override def equals(right: Any): Boolean = right match
-    case right: Yaml => root == right.root
+    case right: Yaml => YamlAst.deepEquals(root, right.root)
     case _           => false
