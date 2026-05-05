@@ -1563,18 +1563,32 @@ private[ypsiloid] final class YamlParser:
     val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
     if nextByte == Space || nextByte == Tab || nextByte == Newline
             || nextByte == Return || nextByte == -1 then
-      // The `-` is a block-sequence indicator only at line-start, or
-      // preceded by another `-` indicator + space (compact nested seq
-      // pattern `- - x`). Walking back over space/tab and landing on
-      // a newline or another `-` is the allowed shape.
+      // The `-` is a block-sequence indicator at line-start, or
+      // preceded by another `-` (compact nested seq, `- - x`), or
+      // preceded by a `:` (the value side of an explicit-key entry,
+      // `? k\n: - v`). Walking back over space/tab and landing on
+      // any of these is the allowed shape.
       var j = pos - 1
       while j >= 0 && (bytes(j) == Space || bytes(j) == Tab) do j -= 1
       val ok = j < 0 || bytes(j) == Newline || bytes(j) == Return
-                     || bytes(j) == Minus
+                     || bytes(j) == Minus || bytes(j) == Colon
       if !ok then fail(t"block-sequence indicator must start its line")
-      parseBlockSequence(indent)
+      // Use the dash's actual column, not the caller's indent param —
+      // an inline-value sequence (`: - v`, `? k\n: - v`) starts where
+      // its dashes actually appear, not at the surrounding mapping's
+      // indent. Falling back to `indent` when the line could not be
+      // located keeps existing line-start cases identical.
+      parseBlockSequence(currentColumn())
     else
       parsePlainOrBlockMapping(indent)
+
+  // Column (0-indexed) of the current cursor position within its
+  // source line. Used to anchor a block-sequence iteration when the
+  // first dash isn't at the caller's `indent`.
+  private def currentColumn(): Int =
+    var j = pos - 1
+    while j >= 0 && bytes(j) != Newline do j -= 1
+    pos - j - 1
 
   // Caller has seen a `?` at node-head. When followed by whitespace or
   // end-of-input, this is an explicit-key indicator: set up a block
@@ -1819,7 +1833,7 @@ private[ypsiloid] final class YamlParser:
         nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
       } then
         advance()
-        parseMappingValue(indent)
+        parseMappingValue(indent, allowInlineSeq = true)
       else
         pos = markerLineStart
         YamlAst.Null
@@ -1827,7 +1841,9 @@ private[ypsiloid] final class YamlParser:
 
   // Parse the value side of a `key: VALUE` entry. Either inline (after
   // the colon, on the same line) or a block on the next indented lines.
-  private def parseMappingValue(parentIndent: Int)(using Tactic[YamlError])
+  private def parseMappingValue
+                ( parentIndent: Int, allowInlineSeq: Boolean = false )
+                ( using Tactic[YamlError] )
   :   YamlAst =
     skipSpaces()
     if !more then YamlAst.Null
@@ -1845,11 +1861,10 @@ private[ypsiloid] final class YamlParser:
       val childIndent = consumeLeadingSpaces()
       pickValueOrNull(parentIndent, childIndent, lineStart)
     else
-      // Inline value on same line as `key:`. Per spec, a block
-      // sequence cannot start on the same line as a mapping key —
-      // `- ` here would be a sequence indicator, but no construct
-      // allows that placement. Reject.
-      if peek == Minus then
+      // Inline value on same line as `key:`. For implicit keys, a
+      // block-sequence indicator here is invalid per spec. For
+      // explicit keys (`? key\n: - val`) the inline `- ` is allowed.
+      if !allowInlineSeq && peek == Minus then
         val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
         if next == Space || next == Tab || next == Newline
                 || next == Return || next == -1 then
