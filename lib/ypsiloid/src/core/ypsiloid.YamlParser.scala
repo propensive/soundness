@@ -73,7 +73,7 @@ object YamlParser:
     docs.toList
 
 class YamlParser(using Tactic[YamlError]):
-  import YamlParser.Line
+  import YamlParser.*
 
   private val anchors = scala.collection.mutable.Map.empty[Text, YamlAst]
 
@@ -139,6 +139,9 @@ class YamlParser(using Tactic[YamlError]):
 
   private def isBareAnchor(content: Text): Boolean =
     content.length >= 2 && content.s.charAt(0) == '&' && !content.contains(' ')
+
+  private def isBareTag(content: Text): Boolean =
+    content.length >= 1 && content.s.charAt(0) == '!' && !content.contains(' ')
 
   private def isBlockSequenceItem(content: Text): Boolean =
     content == t"-" || content.starts(t"- ")
@@ -254,10 +257,16 @@ class YamlParser(using Tactic[YamlError]):
       val bareAnchorWithBlock =
         isBareAnchor(inline) && rest.nonEmpty && rest.head.indent > baseIndent
 
+      val bareTagWithBlock =
+        isBareTag(inline) && rest.nonEmpty && rest.head.indent > baseIndent
+
       if bareAnchorWithBlock then
         val value = parseBlock(gatherContinuation())
         anchors.update(inline.skip(1), value)
         entries.append((key, value))
+      else if bareTagWithBlock then
+        val value = parseBlock(gatherContinuation())
+        entries.append((key, applyTag(inline, value)))
       else if !inline.nil && !isBlockScalarIndicator(inline) then
         entries.append((key, parseTrimmed(inline)))
       else
@@ -274,20 +283,65 @@ class YamlParser(using Tactic[YamlError]):
   private def parseTrimmed(input: Text): YamlAst =
     if input.nil then YamlAst.Null
     else if input.s.charAt(0) == '*' then resolveAlias(input.skip(1).trim)
-    else if input.s.charAt(0) == '&' then
-      val spaceIndex = input.s.indexOf(' ')
+    else if input.s.charAt(0) == '!' then parseTagged(input)
+    else if input.s.charAt(0) == '&' then parseAnchored(input)
+    else parseTrimmedCore(input)
 
-      if spaceIndex < 0 then
-        val name = input.skip(1)
-        anchors.update(name, YamlAst.Null)
-        YamlAst.Null
-      else
-        val name = input.segment(Sec till spaceIndex.z)
-        val value = parseTrimmedCore(input.skip(spaceIndex + 1).trim)
-        anchors.update(name, value)
-        value
+  private def parseTagged(input: Text): YamlAst =
+    val spaceIndex = input.s.indexOf(' ')
+
+    val (tag, rest) =
+      if spaceIndex < 0 then (input, t"")
+      else (input.before(spaceIndex.z), input.skip(spaceIndex + 1).trim)
+
+    applyTag(tag, parseTrimmed(rest))
+
+  private def parseAnchored(input: Text): YamlAst =
+    val spaceIndex = input.s.indexOf(' ')
+
+    if spaceIndex < 0 then
+      val name = input.skip(1)
+      anchors.update(name, YamlAst.Null)
+      YamlAst.Null
     else
-      parseTrimmedCore(input)
+      val name = input.segment(Sec till spaceIndex.z)
+      val value = parseTrimmed(input.skip(spaceIndex + 1).trim)
+      anchors.update(name, value)
+      value
+
+  private def applyTag(tag: Text, value: YamlAst): YamlAst = tag match
+    case t"!!str" =>
+      value match
+        case YamlAst.Str(_)         => value
+        case YamlAst.Integer(n)     => YamlAst.Str(n.toString.tt)
+        case YamlAst.Decimal(d)     => YamlAst.Str(d.toString.tt)
+        case YamlAst.Bool(b)        => YamlAst.Str(b.toString.tt)
+        case YamlAst.Null           => YamlAst.Str(t"null")
+        case _                      => value
+
+    case t"!!int" =>
+      value match
+        case YamlAst.Integer(_)     => value
+        case YamlAst.Decimal(d)     => YamlAst.Integer(d.toLong)
+        case YamlAst.Str(text)      => parseInteger(text).getOrElse(value)
+        case _                      => value
+
+    case t"!!float" =>
+      value match
+        case YamlAst.Decimal(_)     => value
+        case YamlAst.Integer(n)     => YamlAst.Decimal(n.toDouble)
+        case YamlAst.Str(text)      => parseDecimal(text).getOrElse(value)
+        case _                      => value
+
+    case t"!!bool" =>
+      value match
+        case YamlAst.Bool(_)                                   => value
+        case YamlAst.Str(text) if trueLiterals.contains(text)  => YamlAst.Bool(true)
+        case YamlAst.Str(text) if falseLiterals.contains(text) => YamlAst.Bool(false)
+        case _                                                 => value
+
+    case t"!!null" => YamlAst.Null
+    case _         => value
 
   private def resolveAlias(name: Text): YamlAst =
     anchors.get(name) match

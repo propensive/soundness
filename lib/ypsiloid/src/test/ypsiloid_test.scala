@@ -442,6 +442,47 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"text: |-2\n   indented".read[Yaml].as[Map[Text, Text]]
       . assert(_ == Map(t"text" -> t" indented"))
 
+    suite(m"Tags"):
+      test(m"!!str forces a number-looking value to a string"):
+        t"!!str 42".read[Yaml].as[Text]
+      . assert(_ == t"42")
+
+      test(m"!!str on an already-quoted string is a no-op"):
+        t"!!str \"hello\"".read[Yaml].as[Text]
+      . assert(_ == t"hello")
+
+      test(m"!!int forces a quoted-string value to an integer"):
+        t"!!int \"42\"".read[Yaml].as[Int]
+      . assert(_ == 42)
+
+      test(m"!!float forces an integer value to a decimal"):
+        t"!!float 7".read[Yaml].as[Double]
+      . assert(_ == 7.0)
+
+      test(m"!!float forces a quoted-string value to a decimal"):
+        t"!!float \"3.14\"".read[Yaml].as[Double]
+      . assert(_ == 3.14)
+
+      test(m"!!bool forces a quoted-string value to a boolean"):
+        t"!!bool \"true\"".read[Yaml].as[Boolean]
+      . assert(identity)
+
+      test(m"!!null tags any value as null"):
+        t"!!null whatever".read[Yaml].root
+      . assert(_ == YamlAst.Null)
+
+      test(m"Unknown tag passes the value through unchanged"):
+        t"!myTag 42".read[Yaml].as[Int]
+      . assert(_ == 42)
+
+      test(m"!!str on a tagged block-mapping value with continuation"):
+        t"key: !!str\n  hello world".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"key" -> t"hello world"))
+
+      test(m"!!str on a tagged block-mapping value with multi-line content"):
+        t"key: !!str\n  first\n  second".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map(t"key" -> t"first second"))
+
     suite(m"Anchors and aliases"):
       test(m"Alias resolves to anchored scalar"):
         t"a: &x 1\nb: *x".read[Yaml].as[Map[Text, Int]]
