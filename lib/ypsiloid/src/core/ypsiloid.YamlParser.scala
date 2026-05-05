@@ -1219,6 +1219,20 @@ private[ypsiloid] final class YamlParser:
       val headByte = if !more then -1 else peek & 0xFF
       val value =
         if headByte == -1 then YamlAst.Null
+        else if headByte == Comma || headByte == CloseBracket
+                || headByte == CloseBrace then
+          // The flow node is empty — caller will consume the terminator.
+          YamlAst.Null
+        else if headByte == Colon && {
+          val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+          next == Space || next == Tab || next == Newline || next == Return
+              || next == Comma || next == CloseBracket
+              || next == CloseBrace || next == -1
+        } then
+          // `:` followed by a flow terminator marks an empty key that
+          // the caller will pair with the upcoming value. `::x` and
+          // similar are plain scalars and don't take this path.
+          YamlAst.Null
         else if headByte == Star then
           advance()
           parseAlias()
