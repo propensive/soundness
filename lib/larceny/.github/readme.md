@@ -74,8 +74,8 @@ like so:
     "Hello world".substring("5")
 
   errors.foreach:
-    case CompileError(ordinal, message, code, position, offset) =>
-      println(s"[$id] Found error '$message' in the code '$code' with offset $offset")
+    case CompileError(ordinal, message, focus, position, offset) =>
+      println(s"[$id] Found error '$message' on '$focus' with offset $offset")
 ```
 
 The parameters of `CompileError` need some explanation:
@@ -84,10 +84,10 @@ The parameters of `CompileError` need some explanation:
   frequently than others)
 - `message` is the human-readable error message text that would be output by
   the compiler
-- `code` is the fragment of code which would be marked as problematic (in an
+- `focus` is the fragment of source which would be marked as problematic (in an
   IDE, this would usually be done with a wavy red underline)
 - `position` is the location of the code from the start of the source file
-- `offset` is the number of characters from the start of `code` that is
+- `offset` is the number of characters from the start of `focus` that is
   marked as the exact point of the error
 
 Taking the second example above,

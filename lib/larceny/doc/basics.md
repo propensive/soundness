@@ -38,8 +38,8 @@ like so:
     "Hello world".substring("5")
 
   errors.foreach:
-    case CompileError(ordinal, message, code, position, offset) =>
-      println(s"[$id] Found error '$message' in the code '$code' with offset $offset")
+    case CompileError(ordinal, message, focus, position, offset) =>
+      println(s"[$id] Found error '$message' on '$focus' with offset $offset")
 ```
 
 The parameters of `CompileError` need some explanation:

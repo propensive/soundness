@@ -50,13 +50,13 @@ object Subcompiler:
         var position = diagnostic.pos
         while position.outer != NoSourcePosition do position = position.outer
 
-        val code =
+        val focus =
           String(context.compilationUnit.source.content.slice(position.start, position.end))
 
         val offset = position.point - position.start
         val ordinal = diagnostic.msg.errorId.ordinal
 
-        errors += CompileError(ordinal, diagnostic.msg.message, code, position.start, offset)
+        errors += CompileError(ordinal, diagnostic.msg.message, focus, position.start, offset)
 
       catch case error: Throwable => ()
 
