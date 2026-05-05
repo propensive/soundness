@@ -150,23 +150,83 @@ object Conformance:
     val outcome: Outcome =
       if testCase.isError then
         try
-          YamlParser.parse(Text(testCase.yamlText))
+          YamlParser.parseAll(Text(testCase.yamlText))
           Outcome.ShouldHaveErrored
         catch case _: Throwable => Outcome.Passed
       else
         try
-          val ast = YamlParser.parse(Text(testCase.yamlText))
+          val docs = YamlParser.parseAll(Text(testCase.yamlText))
           testCase.expectedJson match
             case None => Outcome.Passed
+            case Some(expectedText) if expectedText.trim.nn.isEmpty =>
+              // Empty in.json: no comparison, pass if YAML parsed without error.
+              Outcome.Passed
             case Some(expectedText) =>
-              val expected = Text(expectedText).read[Json]
-              val actual = yamlAstToJson(ast)
-              if actual == expected then Outcome.Passed
-              else Outcome.Mismatch(jsonString(actual), jsonString(expected))
+              val expectedDocs = parseJsonStream(expectedText)
+              val actualDocs = docs.map(yamlAstToJson)
+              val actualStr = actualDocs.map(jsonString).mkString(", ")
+              val expectedStr = expectedDocs.map(jsonString).mkString(", ")
+              // Compare via canonical jsonString rendering rather than
+              // Json equality — jacinta's Json.equals has no `null` case
+              // and reports `null == null` as false. Rendering produces
+              // a stable canonical form for both sides.
+              if actualDocs.length == expectedDocs.length && actualStr == expectedStr
+              then Outcome.Passed
+              else Outcome.Mismatch(actualStr, expectedStr)
         catch case e: Throwable =>
           Outcome.UnexpectedError(e.toString.takeWhile(_ != '\n'))
 
     Result(testCase, outcome)
+
+  // Parse a sequence of top-level JSON values from a single string.
+  // The yaml-test-suite's `in.json` files for multi-document YAML
+  // inputs concatenate one JSON value per output document, separated
+  // by whitespace.
+  private def parseJsonStream(text: String): List[Json] =
+    val results = scala.collection.mutable.ArrayBuffer[Json]()
+    var i = 0
+    val n = text.length
+
+    while i < n do
+      while i < n && isJsonWhitespace(text.charAt(i)) do i += 1
+      if i >= n then return results.toList
+
+      val start = i
+      val c = text.charAt(i)
+      if c == '{' || c == '[' then
+        val close: Char = if c == '{' then '}' else ']'
+        var depth = 1
+        var inString = false
+        var escaped = false
+        i += 1
+        while i < n && depth > 0 do
+          val ch = text.charAt(i)
+          if escaped then escaped = false
+          else if inString then
+            if ch == '\\' then escaped = true
+            else if ch == '"' then inString = false
+          else if ch == '"' then inString = true
+          else if ch == '{' || ch == '[' then depth += 1
+          else if ch == '}' || ch == ']' then depth -= 1
+          i += 1
+      else if c == '"' then
+        i += 1
+        var escaped = false
+        while i < n && (escaped || text.charAt(i) != '"') do
+          if escaped then escaped = false
+          else if text.charAt(i) == '\\' then escaped = true
+          i += 1
+        if i < n then i += 1
+      else
+        while i < n && !isJsonWhitespace(text.charAt(i)) do i += 1
+
+      val valueText = text.substring(start, i).nn
+      results += Text(valueText).read[Json]
+
+    results.toList
+
+  private inline def isJsonWhitespace(c: Char): Boolean =
+    c == ' ' || c == '\n' || c == '\t' || c == '\r'
 
   def main(args: Array[String]): Unit =
     val suiteRoot = args.headOption.filterNot(_.startsWith("--")).getOrElse(suitePath)

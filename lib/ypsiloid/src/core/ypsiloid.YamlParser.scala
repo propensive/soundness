@@ -218,7 +218,7 @@ private[ypsiloid] final class YamlParser:
     skipWhitespaceAndCommentsAndDirectives()
     consumeOptionalDocumentStart()
     skipWhitespaceAndCommentsAndDirectives()
-    if !more then YamlAst.Null
+    if !more || atDocumentBoundary then YamlAst.Null
     else
       val node = parseNode(0)
       skipWhitespaceAndCommentsAndDirectives()
@@ -232,9 +232,19 @@ private[ypsiloid] final class YamlParser:
     var continue = true
     while continue do
       skipWhitespaceAndCommentsAndDirectives()
-      consumeOptionalDocumentStart()
+      val explicitStart = consumeOptionalDocumentStart()
       skipWhitespaceAndCommentsAndDirectives()
-      if !more then continue = false
+
+      if !more then
+        if explicitStart then docs.append(YamlAst.Null)
+        continue = false
+      else if atDocumentBoundary then
+        // Another marker follows — current document is empty (when
+        // explicitly started) or no document at all otherwise. We
+        // consume `...` end-markers here; `---` start-markers are
+        // left for the next iteration's consumeOptionalDocumentStart.
+        if explicitStart then docs.append(YamlAst.Null)
+        consumeOptionalDocumentEnd()
       else
         val node = parseNode(0)
         docs.append(node)
@@ -243,17 +253,41 @@ private[ypsiloid] final class YamlParser:
 
     docs.toList
 
-  // Consume `---\n` if at the current position; no-op otherwise.
-  private def consumeOptionalDocumentStart(): Unit =
-    if more && peek == Minus && tryConsume3(Minus) then
-      skipUntilNewline()
-      if more then advance()
+  // Consume `---` if at the current position. Returns true if consumed.
+  // Per spec the marker requires either a following line-boundary
+  // character or end-of-input — `----` is a plain scalar starting with
+  // four dashes, not a marker. After consumption we eat any inline
+  // whitespace immediately following but leave the rest of the line
+  // (including any same-line node body) to the caller.
+  private def consumeOptionalDocumentStart(): Boolean =
+    if isDocumentMarker(Minus) then
+      pos += 3
+      while more && (peek == Space || peek == Tab) do advance()
+      true
+    else false
 
-  // Consume `...\n` if at the current position; no-op otherwise.
-  private def consumeOptionalDocumentEnd(): Unit =
-    if more && peek == Period && tryConsume3(Period) then
+  // Consume `...` if at the current position; eats trailing whitespace
+  // and any same-line comment.
+  private def consumeOptionalDocumentEnd(): Boolean =
+    if isDocumentMarker(Period) then
+      pos += 3
       skipUntilNewline()
       if more then advance()
+      true
+    else false
+
+  // True if the cursor is positioned at a document marker (three of
+  // the same byte followed by a line-boundary or end-of-input). Does
+  // not consume.
+  private inline def isDocumentMarker(b: Byte): Boolean =
+    pos + 2 < bufEnd && bytes(pos) == b && bytes(pos+1) == b && bytes(pos+2) == b
+    && (pos + 3 >= bufEnd || {
+          val nb = bytes(pos+3)
+          nb == Newline || nb == Space || nb == Tab || nb == Return
+        })
+
+  private inline def atDocumentBoundary: Boolean =
+    isDocumentMarker(Minus) || isDocumentMarker(Period)
 
   // Skip an optional UTF-8 BOM (EF BB BF) at the start of input.
   private def skipBom(): Unit =
@@ -1105,6 +1139,7 @@ private[ypsiloid] final class YamlParser:
       val nextIndent = consumeLeadingSpaces()
       if nextIndent != indent then done = true
       else if !more || peek != Minus then done = true
+      else if atDocumentBoundary then done = true
       else
         // Need to verify it's `-` followed by whitespace (sequence
         // marker), not a plain scalar starting with `-`.
@@ -1165,6 +1200,7 @@ private[ypsiloid] final class YamlParser:
       val nextIndent = consumeLeadingSpaces()
       if nextIndent != indent then done = true
       else if !more then done = true
+      else if atDocumentBoundary then done = true
       else
         // Read the next key as a plain scalar
         val keyText = readPlainScalarText(indent)
