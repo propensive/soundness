@@ -129,6 +129,7 @@ private[ypsiloid] final class YamlParser:
     prefixesConsumed = false
     lastScalarSpannedLines = false
     inInlineMappingValue = false
+    lastNodeHadAnchor = false
     anchors.clear()
     anchors.clear()
 
@@ -146,6 +147,7 @@ private[ypsiloid] final class YamlParser:
     prefixesConsumed = false
     lastScalarSpannedLines = false
     inInlineMappingValue = false
+    lastNodeHadAnchor = false
     anchors.clear()
 
   // ── Substrate ────────────────────────────────────────────────────────────
@@ -409,7 +411,11 @@ private[ypsiloid] final class YamlParser:
         // two cases: block sequences directly under a mapping key
         // (compact form, spec 8.2.2), and the document parent (top
         // level), where any indent >= 0 works.
-        pickValueOrNull(blockParentIndent, childIndent, lineStart)
+        lastNodeHadAnchor = false
+        val v = pickValueOrNull(blockParentIndent, childIndent, lineStart)
+        if !anchorName.nil && lastNodeHadAnchor then
+          fail(t"two anchors on the same node")
+        v
       else if headByte == -1 then YamlAst.Null
       else if headByte == Hash then
         // No preceding content and a comment on the head line means
@@ -464,6 +470,7 @@ private[ypsiloid] final class YamlParser:
       if anchorName.nil then tagged
       else
         anchors.update(anchorName.s, tagged)
+        lastNodeHadAnchor = true
         tagged
 
   // Consume any `&anchor`, `!tag`, or both at the current position. Stops
@@ -623,6 +630,12 @@ private[ypsiloid] final class YamlParser:
   // requires block-style mapping keys to start at the beginning of
   // their line.
   private var inInlineMappingValue: Boolean = false
+
+  // Set true by parseNodeHere when it has applied an anchor to its
+  // result. Used to detect the "two anchors on a single node" error,
+  // where an outer prefix-on-newline branch parses an inner node that
+  // also carries its own anchor.
+  private var lastNodeHadAnchor: Boolean = false
 
   private def parsePlainOrBlockMapping
                 ( indent: Int, headTag: Text = t"", headAnchor: Text = t"" )
