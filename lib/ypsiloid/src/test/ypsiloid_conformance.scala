@@ -261,6 +261,27 @@ object Conformance:
       inScopeFailures.take(maxFailuresShown).foreach: result =>
         printFailure(result)
 
+    if args.contains("--out-of-scope") then
+      val outFailures = outOfScopeResults.filterNot(_.passed)
+      excludedTags.toList.sorted.foreach: tag =>
+        val matching = outFailures.filter(_.testCase.tags.contains(tag))
+        if matching.nonEmpty then
+          println()
+          println(s"== Out-of-scope tag '$tag' (${matching.length} failing):")
+          matching.foreach: r =>
+            val descShort = r.testCase.description.linesIterator.next().take(60)
+            val tagsShort = r.testCase.tags.toList.sorted.mkString("{", ",", "}")
+            println(s"  ${r.testCase.id} $tagsShort  $descShort")
+            r.outcome match
+              case Outcome.Mismatch(actual, expected) =>
+                println(s"    expected: ${expected.take(120)}")
+                println(s"    actual:   ${actual.take(120)}")
+              case Outcome.ShouldHaveErrored =>
+                println(s"    (should have errored)")
+              case Outcome.UnexpectedError(msg) =>
+                println(s"    error: ${msg.take(120)}")
+              case Outcome.Passed => ()
+
     if inScopeFailures.nonEmpty then System.exit(1)
 
   private def pct(n: Int, total: Int): Double =

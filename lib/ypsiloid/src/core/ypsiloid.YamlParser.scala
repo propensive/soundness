@@ -138,7 +138,7 @@ private[ypsiloid] final class YamlParser:
     lastScalarSpannedLines = false
     lastNodeHadAnchor = false
     inInlineMappingValue = false
-    onDocStartLine = false
+    docStartLineEnd = -1
     anchors.clear()
 
   // ── Substrate ────────────────────────────────────────────────────────────
@@ -234,7 +234,10 @@ private[ypsiloid] final class YamlParser:
   def parse()(using Tactic[YamlError]): YamlAst = holding:
     skipBom()
     skipBlankAndCommentLines()
+    val sawDirectives = parseDirectivesIfAny()
     val explicitStart = consumeOptionalDocumentStart()
+    if sawDirectives && !explicitStart then
+      fail(t"directive must be followed by document-start marker")
     if !explicitStart || (more && peek == Newline) then
       if more && peek == Newline then advance()
       skipBlankAndCommentLines()
@@ -254,9 +257,15 @@ private[ypsiloid] final class YamlParser:
 
     var continue = true
     var firstDoc = true
+    var lastDocEndedWithFooter = true  // start of stream is OK for directives
     while continue do
       skipBlankAndCommentLines()
+      val sawDirectives = parseDirectivesIfAny()
+      if sawDirectives && !firstDoc && !lastDocEndedWithFooter then
+        fail(t"directives can only appear at the start of a stream or after `...`")
       val explicitStart = consumeOptionalDocumentStart()
+      if sawDirectives && !explicitStart then
+        fail(t"directive must be followed by document-start marker")
       if !firstDoc && more && !explicitStart && !atDocumentBoundary then
         fail(t"missing '---' between documents")
       // After a `---` marker we may be on the same line as the body;
@@ -283,14 +292,20 @@ private[ypsiloid] final class YamlParser:
         else
           // If `---` was consumed and content is on the same line, the
           // node may not be a block mapping — only a single inline node
-          // (scalar / flow / quoted).
-          val savedOnDocStart = onDocStartLine
-          onDocStartLine = sameLineAsMarker
+          // (scalar / flow / quoted). Snapshot the position of the
+          // marker-line newline so the check naturally lifts as soon
+          // as the parser advances past it.
+          val savedDocStart = docStartLineEnd
+          if sameLineAsMarker then
+            var end = pos
+            while end < bufEnd && bytes(end) != Newline do end += 1
+            docStartLineEnd = end
+          else docStartLineEnd = -1
           val node = parseNode(indent)
-          onDocStartLine = savedOnDocStart
+          docStartLineEnd = savedDocStart
           docs.append(node)
           skipBlankAndCommentLines()
-          consumeOptionalDocumentEnd()
+          lastDocEndedWithFooter = consumeOptionalDocumentEnd()
           firstDoc = false
 
     docs.toList
@@ -308,15 +323,54 @@ private[ypsiloid] final class YamlParser:
       true
     else false
 
-  // Consume `...` if at the current position; eats trailing whitespace
-  // and any same-line comment.
-  private def consumeOptionalDocumentEnd(): Boolean =
+  // Consume `...` if at the current position; only inline whitespace
+  // and an optional comment may follow on the same line — anything
+  // else is an error per spec.
+  private def consumeOptionalDocumentEnd()(using Tactic[YamlError]): Boolean =
     if isDocumentMarker(Period) then
       pos += 3
-      skipUntilNewline()
+      while more && (peek == Space || peek == Tab) do advance()
+      if more && peek == Hash then
+        while more && peek != Newline do advance()
+      else if more && peek != Newline then
+        fail(t"content after `...` document-end marker")
       if more then advance()
       true
     else false
+
+  // Parse any %-prefixed directive lines at the current position. Per
+  // spec only `%YAML <version>` and `%TAG <handle> <prefix>` are
+  // recognised; the YAML directive must appear at most once per
+  // document, with a single major.minor version argument.
+  private def parseDirectivesIfAny()(using Tactic[YamlError]): Boolean =
+    var sawAny = false
+    var sawYaml = false
+    while more && peek == Percent do
+      advance() // %
+      val nameStart = pos
+      while more && peek != Space && peek != Tab && peek != Newline do advance()
+      val name = new String(bytes, nameStart, pos - nameStart)
+      while more && (peek == Space || peek == Tab) do advance()
+      val argStart = pos
+      while more && peek != Newline do advance()
+      val argText = new String(bytes, argStart, pos - argStart).trim.nn
+      if more then advance() // newline
+      sawAny = true
+      name match
+        case "YAML" =>
+          if sawYaml then fail(t"duplicate %YAML directive")
+          sawYaml = true
+          if argText.isEmpty then fail(t"%YAML directive requires a version")
+          val parts = argText.split("\\s+").nn.asInstanceOf[Array[String]]
+          if parts.length != 1 then fail(t"%YAML directive takes a single version argument")
+          if !parts(0).matches("\\d+\\.\\d+") then
+            fail(t"%YAML directive version must be `major.minor`")
+        case "TAG" =>
+          val parts = argText.split("\\s+").nn.asInstanceOf[Array[String]]
+          if parts.length != 2 then fail(t"%TAG directive requires `handle prefix`")
+        case _ => () // reserved/unknown directive — silently accept
+      skipBlankAndCommentLines()
+    sawAny
 
   // True if the cursor is positioned at a document marker (three of
   // the same byte followed by a line-boundary or end-of-input). Does
@@ -637,11 +691,17 @@ private[ypsiloid] final class YamlParser:
   // inside a flow collection.
   private var flowParentIndent: Int = -1
 
-  // True while the current node is being parsed on the same line as
-  // a document-start `---` marker. Inline scalars are valid there but
-  // a block mapping (i.e. the marker line ending up as the first key
-  // of an implicit mapping) is not.
-  private var onDocStartLine: Boolean = false
+  // Position of the newline terminating a same-line `---` marker, or
+  // -1 if the current document didn't start on such a line. While
+  // `pos <= docStartLineEnd` the parser is still on the marker line;
+  // a block mapping cannot open there (per spec the marker line
+  // cannot also be the first key of an implicit mapping). Once the
+  // parser advances past the newline, `pos > docStartLineEnd` and the
+  // restriction lifts naturally.
+  private var docStartLineEnd: Int = -1
+
+  private inline def onDocStartLine: Boolean =
+    docStartLineEnd >= 0 && pos <= docStartLineEnd
 
   private def parsePlainOrBlockMapping
                 ( indent: Int, headTag: Text = t"", headAnchor: Text = t"" )
@@ -1322,6 +1382,8 @@ private[ypsiloid] final class YamlParser:
     skipFlowWhitespace()
     if !more then YamlAst.Null
     else
+      if atDocumentBoundary then
+        fail(t"document markers not allowed in flow style")
       consumeNodePrefixes()
       val anchorName = prefixAnchor
       val tagText    = prefixTag
@@ -1544,9 +1606,6 @@ private[ypsiloid] final class YamlParser:
         case Newline =>
           advance()
         case Hash    =>
-          while more && peek != Newline do advance()
-          if more then advance()
-        case 0x25 /* '%' */ =>
           while more && peek != Newline do advance()
           if more then advance()
         case _ =>
