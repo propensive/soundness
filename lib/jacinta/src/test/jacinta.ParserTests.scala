@@ -117,14 +117,14 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(_ == JsonAst(4L))
 
       test(m"Parse small negative number"):
-        // Number exceeds 15 nibbles, so the parser hands back a `Bcd`
+        // Number exceeds 15 nibbles, so the parser hands back a `JsonBcd`
         // (high-precision representation) rather than a `Double`. The Bcd
         // round-trips back to the same `Double` the old fallback path used
         // to return.
         val raw =
           t"-0.000000000000000000000000000000000000000000000000000000000000000000000000000001"
           . read[JsonAst]
-        raw.asInstanceOf[Array[Long]].asInstanceOf[Bcd].toDouble
+        raw.asInstanceOf[JsonBcd].value.toDouble
       . assert(_ == -1.0e-78)
 
       test(m"Parse 20e1"):
@@ -304,6 +304,98 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       test(m"Bad escape range covers the string token start"):
         position(badEscape).offset
       . assert(_ == (1: Int))
+
+    suite(m"Number-only arrays"):
+      def parseRaw(text: Text): Any = JsonAst.parse(IArray.from(text.s.getBytes("UTF-8").nn))
+
+      test(m"Pure integer array uses the unboxed Array[Long] form"):
+        parseRaw(t"[1, 2, 3]").getClass.getName
+      . assert(_ == "[J")
+
+      test(m"Pure integer array decodes back to the original numbers"):
+        t"[1, 2, 3]".read[Json].as[List[Int]]
+      . assert(_ == List(1, 2, 3))
+
+      test(m"Decimal-only array uses the unboxed form and round-trips"):
+        val raw = parseRaw(t"[1.5, 2.25, 3.125]")
+        raw.getClass.getName == "[J"
+        && JsonPrinter.print(raw.asInstanceOf[JsonAst], false) == t"[1.5,2.25,3.125]"
+      . assert(identity)
+
+      test(m"Exponent-bearing numbers stay in the unboxed form"):
+        val raw = parseRaw(t"[1e2, 2.5e-3]")
+        raw.getClass.getName
+      . assert(_ == "[J")
+
+      test(m"Negative numbers stay in the unboxed form and round-trip"):
+        t"[-1, -2, -3]".read[Json].as[List[Int]]
+      . assert(_ == List(-1, -2, -3))
+
+      test(m"Empty array becomes a JsonArray, not a number array"):
+        parseRaw(t"[]")
+      . assert(_.isInstanceOf[JsonArray])
+
+      test(m"Single-element number array uses the unboxed form"):
+        parseRaw(t"[42]").getClass.getName
+      . assert(_ == "[J")
+
+      test(m"Non-number after numbers triggers fallback to JsonArray"):
+        val raw = parseRaw(t"""[1, 2, "three"]""")
+        raw.isInstanceOf[JsonArray]
+      . assert(identity)
+
+      test(m"Fallback array preserves the leading numbers as Long values"):
+        t"""[1, 2, "three"]""".read[Json].root.arrayElement(0).asMatchable
+      . assert:
+          case l: Long => l == 1L
+          case _       => false
+
+      test(m"Number wider than 14 nibbles triggers fallback"):
+        // 20-digit value overflows the 14-nibble compact-BCD payload.
+        val raw = parseRaw(t"[1, 12345678901234567890]")
+        raw.isInstanceOf[JsonArray]
+      . assert(identity)
+
+      test(m"Fallback retains the oversized number as JsonBcd"):
+        val raw = parseRaw(t"[1, 12345678901234567890]")
+        raw.asInstanceOf[JsonAst].arrayElement(1).isInstanceOf[JsonBcd]
+      . assert(identity)
+
+      test(m"15-nibble integer (parser fast path) still triggers fallback from compact"):
+        // 15 digits = 15 nibbles, beyond the compact-BCD's 14-nibble limit.
+        val raw = parseRaw(t"[1, 123456789012345]")
+        raw.isInstanceOf[JsonArray]
+      . assert(identity)
+
+      test(m"Non-number first element keeps the boxed buffer"):
+        val raw = parseRaw(t"""["a", 1, 2]""")
+        raw.isInstanceOf[JsonArray]
+      . assert(identity)
+
+      test(m"Hand-built JsonArray of Longs equals a parsed number array"):
+        val elements: IArray[Any] = IArray(JsonAst(1L), JsonAst(2L), JsonAst(3L))
+        val handBuilt = Json.ast(JsonAst.arr(elements))
+        handBuilt == t"[1, 2, 3]".read[Json]
+      . assert(identity)
+
+    suite(m"Array case-class wrapper"):
+      def parseRaw(text: Text): Any = JsonAst.parse(IArray.from(text.s.getBytes("UTF-8").nn))
+
+      test(m"Empty array round-trips via the printer"):
+        JsonPrinter.print(parseRaw(t"[]").asInstanceOf[JsonAst], false)
+      . assert(_ == t"[]")
+
+      test(m"Even-length mixed array carries no sentinel padding"):
+        // [1, "x"] mixes a number and a string, so it must use the boxed
+        // JsonArray form. Its underlying IArray has length exactly 2 — no
+        // trailing sentinel.
+        val raw = parseRaw(t"""[1, "x"]""").asInstanceOf[JsonArray]
+        raw.elements.length
+      . assert(_ == 2)
+
+      test(m"Object equality is preserved across the wrapper refactor"):
+        t"""{"a": 1, "b": 2}""".read[Json] == t"""{"b": 2, "a": 1}""".read[Json]
+      . assert(identity)
 
 
 
