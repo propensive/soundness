@@ -415,3 +415,75 @@ object Tests extends Suite(m"Octogenarian Tests"):
         // After revert: history has 3 commits, b.txt is no longer present.
         worktree.repo.log().to(List).length == 3 && !(worktree.path / t"b.txt").exists()
       .assert(_ == true)
+
+    suite(m"branch / tag / remote management"):
+
+      def freshDir(): Path on Linux =
+        val dir = temporaryDirectory[Path on Linux] / Uuid().show
+        dir.create[Directory]()
+        dir
+
+      def freshWorktree(): Worktree =
+        val dir = freshDir()
+        val worktree = Git.init(dir)
+        sh"git -C $dir config user.email octogenarian@test.local".exec[Exit]()
+        sh"git -C $dir config user.name Octogenarian".exec[Exit]()
+        sh"git -C $dir config commit.gpgsign false".exec[Exit]()
+        sh"git -C $dir config tag.gpgsign false".exec[Exit]()
+        worktree
+
+      def writeFile(path: Path on Linux, content: Text): Unit =
+        if !path.exists() then path.create[File]()
+        path.open: handle =>
+          Stream(content.data).writeTo(handle)
+
+      test(m"deleteBranch removes a branch from the listing"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"a.txt", t"a\n")
+        worktree.add(worktree.path / t"a.txt")
+        worktree.commit(t"base")
+
+        worktree.makeBranch(GitBranch(t"feature"))
+        worktree.checkout(GitBranch(t"main"))
+        worktree.repo.deleteBranch(GitBranch(t"feature"))
+
+        worktree.branches().map(_.show)
+      .assert(_ == List(t"main"))
+
+      test(m"renameBranch updates the branch name"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"a.txt", t"a\n")
+        worktree.add(worktree.path / t"a.txt")
+        worktree.commit(t"base")
+
+        worktree.makeBranch(GitBranch(t"oldname"))
+        worktree.repo.renameBranch(GitBranch(t"oldname"), GitBranch(t"newname"))
+
+        worktree.branches().map(_.show).contains(t"newname")
+          && !worktree.branches().map(_.show).contains(t"oldname")
+      .assert(_ == true)
+
+      test(m"deleteTag removes a tag"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"a.txt", t"a\n")
+        worktree.add(worktree.path / t"a.txt")
+        worktree.commit(t"base")
+
+        worktree.repo.tag(GitTag(t"v1"))
+        worktree.repo.deleteTag(GitTag(t"v1"))
+
+        worktree.repo.tags()
+      .assert(_.isEmpty)
+
+      test(m"addRemote and removeRemote round-trip via the listing"):
+        val worktree = freshWorktree()
+        worktree.repo.addRemote(t"origin", t"git@example.com:foo/bar.git")
+
+        val withRemote = worktree.repo.remotes().exists: r =>
+          r.name == t"origin" && r.fetchUrl == t"git@example.com:foo/bar.git"
+
+        worktree.repo.removeRemote(t"origin")
+        val withoutRemote = worktree.repo.remotes().isEmpty
+
+        withRemote && withoutRemote
+      .assert(_ == true)

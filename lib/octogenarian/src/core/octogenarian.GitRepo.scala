@@ -113,6 +113,67 @@ case class GitRepo(gitDir: Path on Linux):
       case failure => abort(GitError(TagFailed))
 
 
+  def deleteTag(name: GitTag)
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+  :   Unit logs GitEvent =
+
+    sh"$git $repoOptions tag -d $name".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(TagFailed))
+
+
+  def deleteBranch(branch: GitBranch, force: Boolean = false)
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+  :   Unit logs GitEvent =
+
+    val flag = if force then sh"-D" else sh"-d"
+    sh"$git $repoOptions branch $flag $branch".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(BranchFailed))
+
+
+  def renameBranch(from: GitBranch, to: GitBranch, force: Boolean = false)
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+  :   Unit logs GitEvent =
+
+    val flag = if force then sh"-M" else sh"-m"
+    sh"$git $repoOptions branch $flag $from $to".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(BranchFailed))
+
+
+  def remotes()(using GitCommand, WorkingDirectory, Tactic[ExecError])
+  :   List[Remote] logs GitEvent =
+
+    val lines = sh"$git $repoOptions remote -v".exec[Stream[Text]]()
+
+    val grouped = lines.collect:
+      case r"$name(\S+)\t$url(\S+) \($kind(fetch|push)\)" => (name, url, kind)
+
+    grouped.to(List).groupBy(_._1).to(List).map: (name, rows) =>
+      val fetch = rows.collectFirst { case (_, url, t"fetch") => url }.getOrElse(t"")
+      val push  = rows.collectFirst { case (_, url, t"push")  => url }
+      Remote(name, fetch, push.getOrElse(Unset))
+
+
+  def addRemote(name: Text, url: Text)
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+  :   Remote logs GitEvent =
+
+    sh"$git $repoOptions remote add $name $url".exec[Exit]() match
+      case Exit.Ok => Remote(name, url)
+      case failure => abort(GitError(RemoteFailed))
+
+
+  def removeRemote(name: Text)
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+  :   Unit logs GitEvent =
+
+    sh"$git $repoOptions remote remove $name".exec[Exit]() match
+      case Exit.Ok => ()
+      case failure => abort(GitError(RemoteFailed))
+
+
   private def parsePem(text: Text): Optional[Pem] = safely(Pem.parse(text))
 
   def log()(using GitCommand, WorkingDirectory, Tactic[ExecError]): Stream[Commit] logs GitEvent =
