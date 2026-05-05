@@ -47,8 +47,7 @@ import JsonAst.{Issue, Position}
 
 private[jacinta] object JsonParser:
   private[jacinta] type Raw =
-    Long | Double | Bcd | String | IArray[Any] | JsonArray | Array[Double] | Boolean
-    | Null | Unset.type
+    Long | Double | Bcd | String | IArray[Any] | Array[Double] | Boolean | Null | Unset.type
 
   private inline val NumZero       = 0
   private inline val NumInt        = 1
@@ -693,8 +692,12 @@ private[jacinta] final class JsonParser:
     numberFitsDouble = false
 
     if first then
-      // Empty array — no buffer was ever allocated.
-      JsonArray(IArray.empty[Any])
+      // Empty array — no buffer was ever allocated. The empty case has
+      // even (zero) length so the sentinel pad is required to keep arrays
+      // distinguishable from objects.
+      val out = new Array[Any](1)
+      out(0) = JsonAst.arrayPad
+      out.asInstanceOf[IArray[Any]]
     else if numbersMode then
       val src = numItems.nn
       val out = new Array[Double](src.length)
@@ -702,11 +705,23 @@ private[jacinta] final class JsonParser:
       relinquishNumberBuffer()
       out
     else
+      // Mixed/boxed array — stored as `IArray[Any]` and parity-padded
+      // when the element count is even, so arrays always have odd length
+      // and can be distinguished from objects (always even).
       val src = anyItems.nn
-      val out = new Array[Any](src.length)
-      src.copyToArray(out)
+      val n = src.length
+      val out =
+        if (n & 1) == 1 then
+          val arr = new Array[Any](n)
+          src.copyToArray(arr)
+          arr
+        else
+          val arr = new Array[Any](n + 1)
+          src.copyToArray(arr)
+          arr(n) = JsonAst.arrayPad
+          arr
       relinquishArrayBuffer()
-      JsonArray(out.asInstanceOf[IArray[Any]])
+      out.asInstanceOf[IArray[Any]]
 
   // Decode a single Double back into the boxed AST node form. Used during
   // migration when a number-only array sees a non-fitting element. We
