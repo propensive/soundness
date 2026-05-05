@@ -238,6 +238,8 @@ private[ypsiloid] final class YamlParser:
     val explicitStart = consumeOptionalDocumentStart()
     if sawDirectives && !explicitStart then
       fail(t"directive must be followed by document-start marker")
+    if explicitStart && more && peek == Hash then
+      while more && peek != Newline do advance()
     if !explicitStart || (more && peek == Newline) then
       if more && peek == Newline then advance()
       skipBlankAndCommentLines()
@@ -274,7 +276,11 @@ private[ypsiloid] final class YamlParser:
         fail(t"missing '---' between documents")
       // After a `---` marker we may be on the same line as the body;
       // otherwise the body is on a fresh line whose leading whitespace
-      // determines the indent.
+      // determines the indent. A trailing `# comment` on the marker
+      // line is metadata: consume it so the body parses from the next
+      // line.
+      if explicitStart && more && peek == Hash then
+        while more && peek != Newline do advance()
       val sameLineAsMarker = explicitStart && more && peek != Newline
       if !explicitStart || (more && peek == Newline) then
         if more && peek == Newline then advance()
