@@ -54,19 +54,19 @@ trait Yaml2:
   object DecodableDerivation extends ProductDerivation[[value] =>> value is Decodable in Yaml]:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Yaml = yaml =>
-      val values: Map[String, YamlAst] = yaml.root match
+      val values: Map[Text, YamlAst] = yaml.root match
         case YamlAst.Mapping(entries) =>
-          entries.foldLeft(Map.empty[String, YamlAst]): (acc, pair) =>
+          entries.foldLeft(Map.empty[Text, YamlAst]): (acc, pair) =>
             pair(0) match
-              case YamlAst.Str(text) => acc.updated(text.s, pair(1))
+              case YamlAst.Str(text) => acc.updated(text, pair(1))
               case _                 => acc
 
         case _ =>
-          Map.empty[String, YamlAst]
+          Map.empty[Text, YamlAst]
 
       build: [field] =>
         context =>
-          values.get(label.s) match
+          values.get(label) match
             case Some(item) => context.decoded(new Yaml(item))
             case None       => default.or(context.decoded(new Yaml(YamlAst.Null)))
 
