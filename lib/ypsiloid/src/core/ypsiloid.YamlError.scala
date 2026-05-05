@@ -30,6 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ypsiloid
 
-export ypsiloid.{Yaml, YamlAst, YamlError, YamlParser, YamlPrimitive}
+import anticipation.*
+import fulminate.*
+
+object YamlError:
+  object Reason:
+    given communicable: Reason is Communicable =
+      case NotType(found, expected) => m"the YAML value had type $found instead of $expected"
+      case Absent                   => m"the YAML value was not present"
+      case Unparseable(input)       => m"the input could not be parsed as YAML: $input"
+
+  enum Reason(val number: Int) extends Clarification:
+    case NotType(found: YamlPrimitive, expected: YamlPrimitive) extends Reason(1)
+    case Absent extends Reason(2)
+    case Unparseable(input: Text) extends Reason(3)
+
+case class YamlError(reason: YamlError.Reason)(using Diagnostics)
+extends Error(realm"yp", 1, reason.number)
+              (m"could not access the YAML value because $reason")

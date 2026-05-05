@@ -30,6 +30,111 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ypsiloid
 
-export ypsiloid.{Yaml, YamlAst, YamlError, YamlParser, YamlPrimitive}
+import anticipation.*
+import contingency.*
+import denominative.*
+import distillate.*
+import gossamer.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
+import turbulence.*
+
+import YamlError.Reason
+
+object Yaml:
+  def ast(value: YamlAst): Yaml = new Yaml(value)
+
+  given yaml: Yaml is Decodable in Yaml = identity(_)
+
+  given int: Tactic[YamlError] => Int is Decodable in Yaml = yaml =>
+    yaml.root match
+      case YamlAst.Integer(value) => value.toInt
+      case YamlAst.Decimal(value) => value.toInt
+
+      case other =>
+        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Integer))) yet 0
+
+  given long: Tactic[YamlError] => Long is Decodable in Yaml = yaml =>
+    yaml.root match
+      case YamlAst.Integer(value) => value
+      case YamlAst.Decimal(value) => value.toLong
+
+      case other =>
+        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Integer))) yet 0L
+
+  given double: Tactic[YamlError] => Double is Decodable in Yaml = yaml =>
+    yaml.root match
+      case YamlAst.Decimal(value) => value
+      case YamlAst.Integer(value) => value.toDouble
+
+      case other =>
+        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Decimal))) yet 0.0
+
+  given float: Tactic[YamlError] => Float is Decodable in Yaml = yaml =>
+    yaml.root match
+      case YamlAst.Decimal(value) => value.toFloat
+      case YamlAst.Integer(value) => value.toFloat
+
+      case other =>
+        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Decimal))) yet 0.0f
+
+  given boolean: Tactic[YamlError] => Boolean is Decodable in Yaml = yaml =>
+    yaml.root match
+      case YamlAst.Bool(value) => value
+
+      case other =>
+        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Bool))) yet false
+
+  given text: Tactic[YamlError] => Text is Decodable in Yaml = yaml =>
+    yaml.root match
+      case YamlAst.Str(value) => value
+
+      case other =>
+        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Str))) yet t""
+
+  given string: Tactic[YamlError] => String is Decodable in Yaml = yaml =>
+    yaml.root match
+      case YamlAst.Str(value) => value.s
+
+      case other =>
+        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Str))) yet ""
+
+  given unit: Tactic[YamlError] => Unit is Decodable in Yaml = yaml =>
+    yaml.root match
+      case YamlAst.Null => ()
+
+      case other =>
+        raise(YamlError(Reason.NotType(primitive(other), YamlPrimitive.Null)))
+
+  given decodable: Yaml is Decodable in Text = text => Yaml(YamlParser.parse(text))
+
+  given aggregable: Yaml is Aggregable by Text = source0 =>
+    var source = source0
+    val builder = new StringBuilder()
+
+    while !source.nil do
+      builder.append(source.head.s)
+      source = source.tail
+
+    Yaml(YamlParser.parse(builder.toString.tt))
+
+  def primitive(ast: YamlAst): YamlPrimitive = ast match
+    case YamlAst.Null        => YamlPrimitive.Null
+    case YamlAst.Bool(_)     => YamlPrimitive.Bool
+    case YamlAst.Integer(_)  => YamlPrimitive.Integer
+    case YamlAst.Decimal(_)  => YamlPrimitive.Decimal
+    case YamlAst.Str(_)      => YamlPrimitive.Str
+    case YamlAst.Sequence(_) => YamlPrimitive.Sequence
+    case YamlAst.Mapping(_)  => YamlPrimitive.Mapping
+
+class Yaml(val root: YamlAst) derives CanEqual:
+  def as[value: Decodable in Yaml]: value raises YamlError = value.decoded(this)
+
+  override def hashCode: Int = root.hashCode
+
+  override def equals(right: Any): Boolean = right match
+    case right: Yaml => root == right.root
+    case _           => false
