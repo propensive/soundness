@@ -106,6 +106,14 @@ private[ypsiloid] final class YamlParser:
   private var prefixHeadByte: Int     = -1
   private var sawMappingColon: Boolean = false
 
+  // Indent of the innermost enclosing block collection (block sequence
+  // or block mapping). Used by parseBlockScalar to compute the absolute
+  // content indent for an explicit indentation indicator: per spec
+  // 8.1.1.1, the indicator is added to the parent node's indent. Set
+  // and restored on entry/exit of parseBlockSequence and
+  // parseBlockMappingFromFirstKey. -1 means the parent is the document.
+  private var blockParentIndent: Int = -1
+
   def resetText(input: Text): Unit =
     val data: Data = input.s.getBytes("UTF-8").nn.immutable(using Unsafe)
     cursor = Cursor[Data](data)
@@ -1104,6 +1112,8 @@ private[ypsiloid] final class YamlParser:
 
   private def parseBlockSequence(indent: Int)(using Tactic[YamlError]): YamlAst =
     val buf = acquireBuffer()
+    val savedParentIndent = blockParentIndent
+    blockParentIndent = indent
     var done = false
     while !done do
       // We're at a `-` at column == indent.
@@ -1150,6 +1160,7 @@ private[ypsiloid] final class YamlParser:
 
     val result = sealSequence(buf)
     releaseBuffer()
+    blockParentIndent = savedParentIndent
     result
 
   // From the start of the current line, count leading spaces. Returns the
@@ -1186,6 +1197,8 @@ private[ypsiloid] final class YamlParser:
                 ( using Tactic[YamlError] )
   :   YamlAst =
     val buf = acquireBuffer()
+    val savedParentIndent = blockParentIndent
+    blockParentIndent = indent
 
     // We're positioned at the `:` of `key:`
     if !more || peek != Colon then fail(t"expected ':' after mapping key")
@@ -1214,6 +1227,7 @@ private[ypsiloid] final class YamlParser:
 
     val result = sealMapping(buf)
     releaseBuffer()
+    blockParentIndent = savedParentIndent
     result
 
   // Parse the value side of a `key: VALUE` entry. Either inline (after
@@ -1243,89 +1257,161 @@ private[ypsiloid] final class YamlParser:
 
   // ── Block scalars (|/>) ─────────────────────────────────────────────────
 
-  private def parseBlockScalar(literal: Boolean, parentIndent: Int)
+  private def parseBlockScalar(literal: Boolean, parentIndentParam: Int)
                             ( using Tactic[YamlError] )
   :   YamlAst =
     advance() // consume `|` or `>`
+
+    // Header: optional indentation indicator (1-9) and chomping
+    // indicator (+/-), in either order, followed by optional whitespace
+    // and an optional comment.
     var explicitIndent: Int = -1
-    var chomp: Char = 'c' // clip
-    while more && (peek != Newline) do
+    var chomp: Char = 'c' // 'c' = clip (default), '-' = strip, '+' = keep
+    while more && peek != Newline && peek != Hash do
       val b = peek
-      if b >= Num0 && b <= Num9 then explicitIndent = b - Num0
-      else if b == Plus then chomp = '+'
-      else if b == Minus then chomp = '-'
+      if b >= Num0 && b <= Num9 then
+        if b == Num0 then fail(t"block-scalar indentation indicator must be 1-9")
+        if explicitIndent >= 0 then fail(t"duplicate block-scalar indentation indicator")
+        explicitIndent = b - Num0
+      else if b == Plus then
+        if chomp != 'c' then fail(t"duplicate block-scalar chomping indicator")
+        chomp = '+'
+      else if b == Minus then
+        if chomp != 'c' then fail(t"duplicate block-scalar chomping indicator")
+        chomp = '-'
       else if b == Space || b == Tab then ()
-      else if b == Hash then
-        while more && peek != Newline do advance()
       else fail(t"invalid block-scalar header")
       advance()
+    if more && peek == Hash then
+      while more && peek != Newline do advance()
     if more then advance() // consume newline
 
     resetString()
-    var baseIndent = -1
-    var first = true
+    val parent = blockParentIndent
+    var baseIndent: Int =
+      if explicitIndent >= 0 then parent + explicitIndent else -1
+
+    // For folded mode: track the previous emitted-line classification
+    // to choose the join string when starting the next content line.
+    //   0 = nothing yet, 1 = blank, 2 = regular, 3 = more-indented.
+    var lastLineType: Int = 0
+
     var done = false
     while !done && more do
-      // Read leading spaces
       val lineStart = pos
       var spaces = 0
       while more && peek == Space do
         spaces += 1
         advance()
 
-      // If the line is blank or unindented, decide
       if !more then
         done = true
       else if peek == Newline then
-        // blank line within block scalar
-        if !first then appendChar('\n')
+        // Whitespace-only line. Classification depends on whether we've
+        // already established baseIndent.
+        if baseIndent >= 0 && spaces > baseIndent then
+          // More-indented all-spaces line — its "content" is the
+          // (spaces - baseIndent) extra spaces.
+          if literal then
+            var k = 0
+            while k < spaces - baseIndent do { appendChar(' '); k += 1 }
+            appendChar('\n')
+          else
+            // Folded: emit join from prior line, then the spaces.
+            val sep: Char =
+              if lastLineType == 0 || lastLineType == 1 then 0.toChar
+              else '\n'
+            if sep != 0.toChar then appendChar(sep)
+            var k = 0
+            while k < spaces - baseIndent do { appendChar(' '); k += 1 }
+            // No trailing terminator; the next line decides the join.
+          lastLineType = 3
+        else
+          // Plain blank line.
+          appendChar('\n')
+          lastLineType = 1
         advance()
       else
-        // Determine base indent on first content line
+        // Non-whitespace content line.
         if baseIndent < 0 then
-          baseIndent =
-            if explicitIndent >= 0 then parentIndent + explicitIndent
-            else spaces
-        if spaces < baseIndent then
-          // Outside block — rewind to start of line so the caller sees
-          // the unindented content again.
-          pos = lineStart
-          done = true
-        else
-          if !first then appendChar(if literal then '\n' else ' ')
-          // Padding above baseIndent is preserved (relative indent)
-          var k = 0
-          while k < spaces - baseIndent do
-            appendChar(' ')
-            k += 1
-          // Read line content. Fast-prefix ASCII run: bulk-copy
-          // printable bytes (>= 0x20) — newline (0x0A) is < 0x20 so
-          // exits the loop, and UTF-8 lead bytes are negative as
-          // signed Bytes so also exit.
-          var done2 = false
-          while !done2 do
-            val runStart = pos
-            while pos < bufEnd && bytes(pos) >= 0x20 do pos += 1
-            val runLen = pos - runStart
-            if runLen > 0 then
-              ensureSpace(runLen)
+          // First content line establishes baseIndent; the block has
+          // a body only if its indent strictly exceeds the parent's.
+          if spaces > parent then baseIndent = spaces
+          else
+            pos = lineStart
+            done = true
+        if !done then
+          if spaces < baseIndent then
+            pos = lineStart
+            done = true
+          else
+            val moreIndented = spaces > baseIndent
+            if literal then
+              // Trailing-terminator scheme.
               var k = 0
-              while k < runLen do
-                chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
-                k += 1
-              stringCursor += runLen
-            if !more || peek == Newline then done2 = true
+              while k < spaces - baseIndent do { appendChar(' '); k += 1 }
+              readBlockScalarLineContent()
+              appendChar('\n')
+              if more && peek == Newline then advance()
+              lastLineType = if moreIndented then 3 else 2
             else
-              appendByteAsChar(peek)
-              advance()
-          if more then advance() // consume newline
-          first = false
+              // Folded: prefix-separator scheme.
+              val curType = if moreIndented then 3 else 2
+              val sep: Char = lastLineType match
+                case 0                           => 0.toChar
+                case 1                           => 0.toChar
+                case 2 if curType == 2           => ' '
+                case _                           => '\n'
+              if sep != 0.toChar then appendChar(sep)
+              var k = 0
+              while k < spaces - baseIndent do { appendChar(' '); k += 1 }
+              readBlockScalarLineContent()
+              if more && peek == Newline then advance()
+              lastLineType = curType
 
+    // For folded mode the per-line scheme leaves no trailing newline;
+    // add one so chomping rules see a uniform "final break".
+    if !literal && stringCursor > 0 && chars(stringCursor - 1) != '\n' then
+      appendChar('\n')
+
+    // Chomp.
     chomp match
-      case '-' => ()              // strip
-      case _   => appendChar('\n') // clip / keep (simplified)
+      case '-' =>
+        while stringCursor > 0 && chars(stringCursor - 1) == '\n' do
+          stringCursor -= 1
+      case 'c' =>
+        // Clip: keep at most one trailing newline. If the buffer is
+        // entirely newlines (no real content), reduce to empty.
+        var lastContent = stringCursor
+        while lastContent > 0 && chars(lastContent - 1) == '\n' do
+          lastContent -= 1
+        stringCursor = if lastContent == 0 then 0 else lastContent + 1
+      case '+' =>
+        () // keep all trailing newlines
+      case _  => ()
 
     YamlAst.Str(getStringText())
+
+  // Read the non-newline content of the current line into the chars
+  // buffer. Bulk-copies printable ASCII via the fast prefix loop and
+  // falls back to per-byte handling for tabs and UTF-8 lead bytes.
+  private def readBlockScalarLineContent(): Unit =
+    var done = false
+    while !done do
+      val runStart = pos
+      while pos < bufEnd && bytes(pos) >= 0x20 do pos += 1
+      val runLen = pos - runStart
+      if runLen > 0 then
+        ensureSpace(runLen)
+        var k = 0
+        while k < runLen do
+          chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+          k += 1
+        stringCursor += runLen
+      if !more || peek == Newline then done = true
+      else
+        appendByteAsChar(peek)
+        advance()
 
   // ── Tags ────────────────────────────────────────────────────────────────
 
