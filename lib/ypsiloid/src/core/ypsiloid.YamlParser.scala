@@ -1216,8 +1216,6 @@ private[ypsiloid] final class YamlParser:
         skipFlowWhitespace()
         val value =
           if more && peek == Colon then
-            if newlineImmediatelyPrecedes(pos) then
-              fail(t"implicit mapping key and `:` must be on the same line")
             advance()
             skipFlowWhitespace()
             if !more || peek == Comma || peek == CloseBrace then YamlAst.Null
