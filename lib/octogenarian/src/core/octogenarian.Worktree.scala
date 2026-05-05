@@ -128,7 +128,7 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   // FIXME: this uses an `Executor[String]` instead of an `Executor[Text]` because, for some
   // reason, the latter captures the `WorkingDirectory` parameter
   def branch()(using GitCommand, WorkingDirectory, Tactic[ExecError]): GitBranch logs GitEvent =
-    GitBranch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt)
+    GitBranch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt.trim)
 
 
   def makeBranch(branch: GitBranch)(using GitCommand, WorkingDirectory)
