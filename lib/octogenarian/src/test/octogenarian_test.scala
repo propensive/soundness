@@ -109,3 +109,68 @@ object Tests extends Suite(m"Octogenarian Tests"):
         worktree.repo.tag(GitTag(t"v1"))
         worktree.repo.tags().map(_.show)
       .assert(_ == List(t"v1"))
+
+    suite(m"reset / unstage / mv"):
+
+      def freshDir(): Path on Linux =
+        val dir = temporaryDirectory[Path on Linux] / Uuid().show
+        dir.create[Directory]()
+        dir
+
+      def freshWorktree(): Worktree =
+        val dir = freshDir()
+        val worktree = Git.init(dir)
+        sh"git -C $dir config user.email octogenarian@test.local".exec[Exit]()
+        sh"git -C $dir config user.name Octogenarian".exec[Exit]()
+        sh"git -C $dir config commit.gpgsign false".exec[Exit]()
+        sh"git -C $dir config tag.gpgsign false".exec[Exit]()
+        worktree
+
+      def writeFile(path: Path on Linux, content: Text): Unit =
+        path.create[File]()
+        path.open: handle =>
+          Stream(content.data).writeTo(handle)
+
+      test(m"reset --soft moves HEAD but keeps the working tree"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"a.txt", t"a\n")
+        worktree.add(worktree.path / t"a.txt")
+        worktree.commit(t"first")
+
+        writeFile(worktree.path / t"b.txt", t"b\n")
+        worktree.add(worktree.path / t"b.txt")
+        worktree.commit(t"second")
+
+        worktree.reset(ResetMode.Soft, Refspec.head(1))
+
+        val log = worktree.repo.log().to(List)
+        // log shrunk to 1 commit, but b.txt still on disk
+        log.length == 1 && (worktree.path / t"b.txt").exists()
+      .assert(_ == true)
+
+      test(m"unstage removes a file from the index but leaves it on disk"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"a.txt", t"a\n")
+        worktree.add(worktree.path / t"a.txt")
+        worktree.commit(t"first")
+
+        writeFile(worktree.path / t"new.txt", t"new\n")
+        worktree.add(worktree.path / t"new.txt")
+        worktree.unstage(worktree.path / t"new.txt")
+
+        // After unstage the file should still exist, but git status shows it
+        // as untracked (`??`) rather than added (`A`).
+        worktree.status().exists: entry =>
+          entry.path1 == t"new.txt" && entry.status1 == GitStatus.Untracked
+      .assert(_ == true)
+
+      test(m"mv renames a tracked file"):
+        val worktree = freshWorktree()
+        writeFile(worktree.path / t"old.txt", t"hello\n")
+        worktree.add(worktree.path / t"old.txt")
+        worktree.commit(t"first")
+
+        worktree.mv(worktree.path / t"old.txt", worktree.path / t"new.txt")
+
+        !(worktree.path / t"old.txt").exists() && (worktree.path / t"new.txt").exists()
+      .assert(_ == true)
