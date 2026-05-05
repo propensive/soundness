@@ -47,8 +47,16 @@ object Subcompiler:
 
     def doReport(diagnostic: Diagnostic)(using context: Context): Unit =
       try
+        // Use the innermost source position rather than walking up to the
+        // outermost: macro-emitted diagnostics carry a precise inner position
+        // (e.g. a $-splice or a sub-range of a literal) plus an outer chain
+        // that points back to the macro call site. The inner position is what
+        // an editor would underline, so that's what `focus` should report.
+        // Fall back to the outer chain only when the inner position is empty
+        // (no source span at all).
         var position = diagnostic.pos
-        while position.outer != NoSourcePosition do position = position.outer
+        while position.exists && position.start == position.end && position.outer != NoSourcePosition
+        do position = position.outer
 
         val focus =
           String(context.compilationUnit.source.content.slice(position.start, position.end))

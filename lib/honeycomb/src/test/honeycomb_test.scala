@@ -494,6 +494,15 @@ object Tests extends Suite(m"Honeycombd Tests"):
           position(t"<scrip>").length
         . assert(_ != Unset)
 
+      suite(m"Compile-time hole-position errors"):
+        test(m"unrenderable splice in element body is highlighted at the splice"):
+          case class NotShowable()
+          val bad: NotShowable = NotShowable()
+          demilitarize:
+            h"<div>$bad</div>"
+          . map(_.focus)
+        . assert(_ == List("bad"))
+
       suite(m"Element coverage: void elements"):
         test(m"area"):
           t"""<area alt="a">""".read[Html of "area"]

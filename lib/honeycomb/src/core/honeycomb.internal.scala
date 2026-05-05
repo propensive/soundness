@@ -296,12 +296,12 @@ object internal:
                                     ${TypeRepr.of[value].show} cannot be attributed to an attribute
                                     of ${Syntax(TypeRepr.of[result]).show}
                                   """,
-                                  expr.asTerm.pos )
+                                  expr.asTerm.underlyingArgument.pos )
 
                         case _ =>
                           halt
                             ( m"the attribute $attribute cannot be used on the element <$tag>",
-                              expr.asTerm.pos )
+                              expr.asTerm.underlyingArgument.pos )
 
               case Hole.Element(tag) =>
                 ConstantType(StringConstant(tag.s)).asType.absolve match
@@ -315,7 +315,7 @@ object internal:
                             a value of ${TypeRepr.of[value].show} is not renderable inside a <$tag>
                             element
                           """,
-                          expr.asTerm.pos )
+                          expr.asTerm.underlyingArgument.pos )
 
               case Hole.Node(tag) =>
                 ConstantType(StringConstant(tag.s)).asType.absolve match
@@ -334,21 +334,21 @@ object internal:
                                 a value of ${TypeRepr.of[value].show} is not renderable or
                                 showable inside a <$tag> element
                               """,
-                              expr.asTerm.pos )
+                              expr.asTerm.underlyingArgument.pos )
 
               case Hole.Comment => Expr.summon[(? >: value) is Showable] match
                 case Some(showable) =>
                   '{$showable.text($expr)}
 
                 case None =>
-                  halt(m"a ${TypeRepr.of[value is Showable].show} is required", expr.asTerm.pos)
+                  halt(m"a ${TypeRepr.of[value is Showable].show} is required", expr.asTerm.underlyingArgument.pos)
 
               case Hole.Text => Expr.summon[(? >: value) is Showable] match
                 case Some(showable) =>
                   '{$showable.text($expr)}
 
                 case None =>
-                  halt(m"a ${TypeRepr.of[value is Showable].show} is required", expr.asTerm.pos)
+                  halt(m"a ${TypeRepr.of[value is Showable].show} is required", expr.asTerm.underlyingArgument.pos)
 
               case Hole.Tagbody => Type.of[value] match
                 case '[Map[Text, Optional[Text]]] =>
@@ -360,7 +360,7 @@ object internal:
                         only a ${TypeRepr.of[Map[Text, Optional[Text]]].show} can be applied in a
                         tag body
                       """,
-                      expr.asTerm.pos )
+                      expr.asTerm.underlyingArgument.pos )
 
         . iterator
 

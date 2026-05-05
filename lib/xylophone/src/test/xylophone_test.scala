@@ -514,6 +514,24 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert(_ != Unset)
 
 
+    suite(m"Compile-time hole-position errors"):
+      test(m"unencodable splice in element body is highlighted at the splice"):
+        case class NotEncodable()
+        val bad: NotEncodable = NotEncodable()
+        demilitarize:
+          x"<foo>$bad</foo>"
+        . map(_.focus)
+      . assert(_ == List("bad"))
+
+      test(m"unrenderable splice in node hole is highlighted at the splice"):
+        case class NotShowable()
+        val whatever: NotShowable = NotShowable()
+        demilitarize:
+          x"<foo>$whatever</foo>"
+        . map(_.focus)
+      . assert(_ == List("whatever"))
+
+
     suite(m"Namespaces"):
       test(m"Element with default namespace declaration"):
         t"""<a xmlns="http://example.com"/>""".read[Xml]
