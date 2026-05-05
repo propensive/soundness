@@ -126,6 +126,9 @@ private[ypsiloid] final class YamlParser:
     prefixAnchor = t""
     prefixTag = t""
     prefixHeadByte = -1
+    prefixesConsumed = false
+    lastScalarSpannedLines = false
+    inInlineMappingValue = false
     anchors.clear()
     anchors.clear()
 
@@ -140,6 +143,9 @@ private[ypsiloid] final class YamlParser:
     prefixAnchor = t""
     prefixTag = t""
     prefixHeadByte = -1
+    prefixesConsumed = false
+    lastScalarSpannedLines = false
+    inInlineMappingValue = false
     anchors.clear()
 
   // ── Substrate ────────────────────────────────────────────────────────────
@@ -563,6 +569,8 @@ private[ypsiloid] final class YamlParser:
         val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
         if nextByte == Space || nextByte == Tab || nextByte == Newline
                 || nextByte == Return || nextByte == -1 then
+          if inInlineMappingValue then
+            fail(t"chained mapping value not allowed on a single line")
           if lastScalarSpannedLines then
             fail(t"implicit mapping key cannot span multiple lines")
           val tagged = if headTag.nil then scalar else applyTag(headTag, scalar)
@@ -588,6 +596,13 @@ private[ypsiloid] final class YamlParser:
   // spanned more than one source line — used to reject multi-line
   // implicit keys, which the spec disallows.
   private var lastScalarSpannedLines: Boolean = false
+
+  // Set when parseMappingValue is invoking parseNodeHere inline
+  // (mapping value on the same line as `key:`). Inline values cannot
+  // recurse into a second mapping via `'k': v` chaining — the spec
+  // requires block-style mapping keys to start at the beginning of
+  // their line.
+  private var inInlineMappingValue: Boolean = false
 
   private def parsePlainOrBlockMapping
                 ( indent: Int, headTag: Text = t"", headAnchor: Text = t"" )
@@ -1578,7 +1593,11 @@ private[ypsiloid] final class YamlParser:
         if next == Space || next == Tab || next == Newline
                 || next == Return || next == -1 then
           fail(t"sequence cannot start on the same line as a mapping key")
-      parseNodeHere(parentIndent)
+      val saved = inInlineMappingValue
+      inInlineMappingValue = true
+      val result = parseNodeHere(parentIndent)
+      inInlineMappingValue = saved
+      result
 
   // Decide whether a next-line node belongs to the current mapping
   // value. Less-indented => Null (no value, the line is a sibling key
@@ -1590,6 +1609,20 @@ private[ypsiloid] final class YamlParser:
                        ( using Tactic[YamlError] )
   :   YamlAst =
     if more && peek == Tab then fail(t"tab character used in indentation")
+    // The next-line node starts a fresh line; an enclosing inline
+    // mapping-value context shouldn't propagate into it.
+    val savedInline = inInlineMappingValue
+    inInlineMappingValue = false
+    val result =
+      if !more then YamlAst.Null
+      else pickValueOrNullBody(parentIndent, childIndent, lineStart)
+    inInlineMappingValue = savedInline
+    result
+
+  private inline def pickValueOrNullBody
+                       ( parentIndent: Int, childIndent: Int, lineStart: Int )
+                       ( using Tactic[YamlError] )
+  :   YamlAst =
     if !more then YamlAst.Null
     else if childIndent < parentIndent then
       pos = lineStart
