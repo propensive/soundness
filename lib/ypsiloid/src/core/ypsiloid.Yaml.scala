@@ -146,11 +146,25 @@ trait Yaml2:
       variant(value): [variant <: derivation] =>
         value => discriminable.rewrite(label, contextual.encode(value))
 
-object Yaml extends Yaml2:
+object Yaml extends Yaml2, Dynamic:
   def ast(value: YamlAst): Yaml = new Yaml(value)
+
+  // Named-parameter construction: `Yaml.make(name = …, age = …)`
+  // desugars to `applyDynamicNamed("make")(("name", …), ("age", …))`.
+  // Mirrors `Json.applyDynamicNamed`.
+  def applyDynamicNamed(methodName: "make")(elements: (String, Yaml)*): Yaml =
+    val arr = new Array[Any](elements.length*2)
+    var i = 0
+    while i < elements.length do
+      arr(i*2)     = YamlAst.Str(elements(i)(0).tt).asInstanceOf[Any]
+      arr(i*2 + 1) = elements(i)(1).root.asInstanceOf[Any]
+      i += 1
+    Yaml.ast(YamlAst.mapFromAnyArray(arr))
 
   given yaml: Yaml is Decodable in Yaml = identity(_)
   given yamlEncodable: Yaml is Encodable in Yaml = identity(_)
+
+  given bytes: Tactic[YamlError] => Bytes is Decodable in Yaml = _.root.long.b
 
   given lens: [name <: Label: ValueOf] => (erased DynamicYamlEnabler) => Tactic[YamlError]
   =>  name is Lens from Yaml onto Yaml =

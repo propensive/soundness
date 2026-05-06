@@ -816,6 +816,24 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         updated.as[List[Int]]
       . assert(_ == List(1, 5, 3))
 
+    suite(m"Yaml.make construction"):
+      test(m"Yaml.make with one field"):
+        Yaml.make(name = t"Anna".yaml).as[Map[Text, Text]]
+      . assert(_ == Map(t"name" -> t"Anna"))
+
+      test(m"Yaml.make with multiple fields"):
+        Yaml.make(name = t"Anna".yaml, age = 30.yaml).as[Person]
+      . assert(_ == Person(t"Anna", 30))
+
+      test(m"Nested Yaml.make"):
+        Yaml.make(inner = Yaml.make(n = 7.yaml)).as[Outer]
+      . assert(_ == Outer(Inner(7)))
+
+    suite(m"Bytes decoder"):
+      test(m"Decode a numeric value as Bytes"):
+        t"255".read[Yaml].as[Bytes]
+      . assert(_ == 255L.b)
+
     suite(m"Lens"):
       import dynamicYamlAccess.enabled
 
