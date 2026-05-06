@@ -149,6 +149,14 @@ final class Cursor[data]
   private var holdStart: Int = -1
   private var ended:     Boolean = false
 
+  // Cache `lineation.active` once at construction so the per-`advance()`
+  // dispatch is a final-field load instead of an interface call. The JIT
+  // can no longer prove that `lineation`'s concrete `Lineation` instance has
+  // a constant `active`, since `lineation: Lineation` erases the given's
+  // concrete type at the field boundary, and the parser-side hot loops
+  // would otherwise pay an `invokeinterface` on every character advance.
+  private val lineationActive: Boolean = lineation.active
+
   // Parallel arrays (not deques) of unboxed `Long`-typed `Mark` and `Offset`
   // values for the currently-held region. Using `Array[Long]` rather than
   // `ArrayDeque[Mark]`/`ArrayDeque[Offset]` avoids two `java.lang.Long` boxes
@@ -228,7 +236,7 @@ final class Cursor[data]
   // tighter — important for raw byte-scan parsers like Merino where the
   // hot loop is `while more && {peek-test} do advance()`.
   inline def advance(): Unit =
-    if lineation.active then
+    if lineationActive then
       val operand = addressable.storageAddress(buffer, pos)
       pos += 1
       columnNo =
@@ -241,7 +249,7 @@ final class Cursor[data]
   // `operand` instead of re-loading it from the buffer for lineation tracking.
   inline def unsafeAdvanceWith(operand: addressable.Operand)(using erased Unsafe): Unit =
     pos += 1
-    if lineation.active then
+    if lineationActive then
       columnNo =
         if !lineation.track(operand) then columnNo.next
         else { lineNo = lineNo.next; Prim }
@@ -287,6 +295,11 @@ final class Cursor[data]
   inline def available: Int = writeEnd - pos
   inline def line: Ordinal = lineNo
   inline def column: Ordinal = columnNo
+
+  // Cached active-flag for the configured lineation. Hot-loop callers should
+  // use this in preference to `lineation.active` to avoid the per-call
+  // interface dispatch that the abstract `Lineation` member would imply.
+  inline def lineActive: Boolean = lineationActive
 
   // Stream of all unconsumed data from the current position onwards. Yields
   // the buffered tail first (one chunk materialised from `pos` to `writeEnd`),
@@ -363,7 +376,7 @@ final class Cursor[data]
   // hold block, where compaction cannot drop the marked region.
   inline def mark(using held: Cursor.Held): Cursor.Mark =
     Cursor.Mark(basePos + pos).tap: mark =>
-      if lineation.active then
+      if lineationActive then
         recordMark(mark.absolute, Cursor.Offset(lineNo, columnNo).toLong)
 
   // Append `(mark, offset)` to the parallel `Long` buffers, growing geometrically
@@ -395,7 +408,7 @@ final class Cursor[data]
 
   inline def cue(mark: Cursor.Mark): Unit =
     pos = (mark.absolute - basePos).toInt
-    if lineation.active then
+    if lineationActive then
       val o = offset(mark)
       lineNo = o.line
       columnNo = o.column
