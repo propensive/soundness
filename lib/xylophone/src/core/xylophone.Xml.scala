@@ -521,16 +521,22 @@ object Xml extends Tag.Container
     protected inline def advance(): Unit = cursor.next()
     protected inline def position: Int = cursor.position.n0
 
-    protected inline def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
+    // Non-`inline` so that `cursor.mark`'s lineation-tracking expansion
+    // (recordMark allocation + `lineationActive` branch) is emitted once in
+    // its own method rather than re-expanded into every call site, keeping
+    // `XmlParser`'s hot methods small enough for HotSpot's free-inline
+    // budgets. The JIT can still inline at hot call sites via its own
+    // heuristics.
+    protected def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
 
-    protected inline def slice(start: Cursor.Mark): Text =
+    protected def slice(start: Cursor.Mark): Text =
       val end = cursor.mark(using heldToken.nn)
       cursor.grab(start, end).asInstanceOf[Text]
 
-    protected inline def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
+    protected def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
       cursor.grab(start, end).asInstanceOf[Text]
 
-    protected inline def reset(start: Cursor.Mark): Unit = cursor.cue(start)
+    protected def reset(start: Cursor.Mark): Unit = cursor.cue(start)
 
     protected def appendSlice(start: Cursor.Mark, buf: jl.StringBuilder): Unit =
       val end = cursor.mark(using heldToken.nn)
