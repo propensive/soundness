@@ -61,6 +61,8 @@ extension (yaml: YamlAst)
   inline def isNull:    Boolean = yaml.asInstanceOf[AnyRef | Null] == null
   inline def isLong:    Boolean = yaml.isInstanceOf[Long]
   inline def isDouble:  Boolean = yaml.isInstanceOf[Double]
+  inline def isBcd:     Boolean = yaml.isInstanceOf[Array[Long]]
+  inline def isNumber:  Boolean = isLong || isDouble || isBcd
   inline def isString:  Boolean = yaml.isInstanceOf[String]
   inline def isBoolean: Boolean = yaml.isInstanceOf[Boolean]
 
@@ -114,14 +116,23 @@ extension (yaml: YamlAst)
     else expected(YamlPrimitive.Sequence) yet IArray[YamlAst]()
 
   def double(using Tactic[YamlError]): Double = yaml.asInstanceOf[Matchable] match
-    case value: Double => value
-    case value: Long   => value.toDouble
-    case _             => expected(YamlPrimitive.Decimal) yet 0.0
+    case value: Double                 => value
+    case value: Long                   => value.toDouble
+    case value: Array[Long] @unchecked => value.asInstanceOf[jacinta.Bcd].toDouble
+    case _                             => expected(YamlPrimitive.Decimal) yet 0.0
 
   def long(using Tactic[YamlError]): Long = yaml.asInstanceOf[Matchable] match
-    case value: Long   => value
-    case value: Double => value.toLong
-    case _             => expected(YamlPrimitive.Integer) yet 0L
+    case value: Long                   => value
+    case value: Double                 => value.toLong
+    case value: Array[Long] @unchecked => value.asInstanceOf[jacinta.Bcd].toLong.or(0L)
+    case _                             => expected(YamlPrimitive.Integer) yet 0L
+
+  def bcd(using Tactic[YamlError]): jacinta.Bcd = yaml.asInstanceOf[Matchable] match
+    case value: Array[Long] @unchecked => value.asInstanceOf[jacinta.Bcd]
+    case value: Long                   => jacinta.Bcd(BigDecimal(value))
+    case value: Double                 => jacinta.Bcd(BigDecimal(value))
+    case _                             =>
+      expected(YamlPrimitive.Decimal) yet jacinta.Bcd(BigDecimal(0))
 
   def string(using Tactic[YamlError]): Text =
     if isString then yaml.asInstanceOf[String].tt

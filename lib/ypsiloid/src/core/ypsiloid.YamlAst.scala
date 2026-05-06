@@ -34,6 +34,7 @@ package ypsiloid
 
 import anticipation.*
 import fulminate.*
+import jacinta.Bcd
 import vacuous.*
 import zephyrine.*
 
@@ -51,7 +52,7 @@ import zephyrine.*
 // `null` represents a YAML null. `Unset.type` marks an absent value
 // (e.g. a missing field in a case-class derivation).
 opaque type YamlAst =
-  Long | Double | Boolean | String | IArray[Any] | Null | Unset.type
+  Long | Double | Bcd | Boolean | String | IArray[Any] | Null | Unset.type
 
 object YamlAst extends Format:
   def name: Text = "YAML"
@@ -290,7 +291,7 @@ object YamlAst extends Format:
 
   inline def apply
               (value:
-                Long | Double | Boolean | String | IArray[Any] | Null | Unset.type )
+                Long | Double | Bcd | Boolean | String | IArray[Any] | Null | Unset.type )
   :   YamlAst =
     value
 
@@ -299,6 +300,7 @@ object YamlAst extends Format:
   inline def Bool(value: Boolean): YamlAst = value
   inline def Integer(value: Long): YamlAst = value
   inline def Decimal(value: Double): YamlAst = value
+  inline def BcdValue(value: Bcd): YamlAst = value
   inline def Str(value: Text): YamlAst = value.s
 
   // Wrap an `IArray[YamlAst]` of items as a sequence node. If the count
@@ -391,6 +393,13 @@ object YamlAst extends Format:
       case d: Double => Some(d)
       case _         => None
 
+  // Pattern extractor for high-precision BCD numbers. Matches a number
+  // value that overflowed `Long`/`Double` precision during parsing.
+  object BcdValue:
+    def unapply(ast: YamlAst): Option[Bcd] = ast match
+      case b: Array[Long] @unchecked => Some(b.asInstanceOf[Bcd])
+      case _                         => None
+
   object Str:
     def unapply(ast: YamlAst): Option[Text] = ast match
       case s: String => Some(s.tt)
@@ -398,7 +407,8 @@ object YamlAst extends Format:
 
   object Sequence:
     def unapply(ast: YamlAst): Option[IArray[YamlAst]] = ast match
-      case xs: IArray[?] @unchecked if (xs.length & 1) == 1 || xs.length == 1 =>
+      case xs: IArray[?] @unchecked
+        if xs.isInstanceOf[Array[AnyRef]] && ((xs.length & 1) == 1 || xs.length == 1) =>
         // Strip the sentinel if present.
         val n = xs.length
         if n > 0 && (xs(n - 1).asInstanceOf[AnyRef] eq arrayPad) then
@@ -411,7 +421,8 @@ object YamlAst extends Format:
 
   object Mapping:
     def unapply(ast: YamlAst): Option[IArray[(YamlAst, YamlAst)]] = ast match
-      case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
+      case xs: IArray[?] @unchecked
+        if xs.isInstanceOf[Array[AnyRef]] && (xs.length & 1) == 0 =>
         val n = xs.length / 2
         Some(IArray.tabulate(n): i =>
           (xs(i*2).asInstanceOf[YamlAst], xs(i*2 + 1).asInstanceOf[YamlAst]))
@@ -430,7 +441,21 @@ object YamlAst extends Format:
       case (a: Boolean, b: Boolean)   => a == b
       case (a: String, b: String)     => a == b
 
-      case (a: IArray[?], b: IArray[?]) =>
+      // Cross-shape numeric comparisons: a `Bcd` may be equal in value
+      // to a `Long`, `Double`, or another `Bcd`, when their canonical
+      // BigDecimal projections compare equal.
+      case (a: Array[Long] @unchecked, b: Array[Long] @unchecked) =>
+        a.asInstanceOf[Bcd].toBigDecimal == b.asInstanceOf[Bcd].toBigDecimal
+      case (a: Array[Long] @unchecked, b: Long) =>
+        a.asInstanceOf[Bcd].toBigDecimal == BigDecimal(b)
+      case (a: Array[Long] @unchecked, b: Double) =>
+        a.asInstanceOf[Bcd].toBigDecimal == BigDecimal(b)
+      case (a: Long, b: Array[Long] @unchecked) =>
+        BigDecimal(a) == b.asInstanceOf[Bcd].toBigDecimal
+      case (a: Double, b: Array[Long] @unchecked) =>
+        BigDecimal(a) == b.asInstanceOf[Bcd].toBigDecimal
+
+      case (a: Array[AnyRef] @unchecked, b: Array[AnyRef] @unchecked) =>
         a.length == b.length && {
           var i = 0
           var equal = true
@@ -452,7 +477,13 @@ object YamlAst extends Format:
     case n: Long      => n.hashCode
     case d: Double    => d.hashCode
     case s: String    => s.hashCode
-    case xs: IArray[?] =>
+
+    case b: Array[Long] @unchecked =>
+      // Hash via the BigDecimal projection so a `Bcd` whose value equals
+      // a numeric `Long`/`Double` literal has a consistent hash.
+      b.asInstanceOf[Bcd].toBigDecimal.hashCode
+
+    case xs: Array[AnyRef] @unchecked =>
       var h = xs.length
       var i = 0
       while i < xs.length do

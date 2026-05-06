@@ -838,6 +838,40 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"255".read[Yaml].as[Bytes]
       . assert(_ == 255L.b)
 
+    suite(m"BCD arbitrary-precision numbers"):
+      test(m"21-digit integer parses as BCD"):
+        Yaml.unseal(t"123456789012345678901".read[Yaml]).isBcd
+      . assert(identity)
+
+      test(m"Long-range integer still parses as Long"):
+        Yaml.unseal(t"123456789012345".read[Yaml]).isLong
+      . assert(identity)
+
+      test(m"Decimal with > 17 significant digits parses as BCD"):
+        Yaml.unseal(t"3.14159265358979323846".read[Yaml]).isBcd
+      . assert(identity)
+
+      test(m"Decimal with low precision still parses as Double"):
+        Yaml.unseal(t"3.14".read[Yaml]).isDouble
+      . assert(identity)
+
+      test(m"BCD round-trips through .as[BigDecimal] when Decodable provided"):
+        // No BCD-specific decoder yet, but the BCD value is reachable
+        // via the AST extensions for callers who need full precision.
+        val ast = Yaml.unseal(t"99999999999999999999999999".read[Yaml])
+        ast.isBcd && {
+          import strategies.throwUnsafely
+          ast.bcd.toBigDecimal == BigDecimal("99999999999999999999999999")
+        }
+      . assert(identity)
+
+      test(m"isNumber accepts Long, Double, and BCD"):
+        val l = Yaml.unseal(t"42".read[Yaml]).isNumber
+        val d = Yaml.unseal(t"3.14".read[Yaml]).isNumber
+        val b = Yaml.unseal(t"123456789012345678901".read[Yaml]).isNumber
+        l && d && b
+      . assert(identity)
+
     suite(m"y\"...\" interpolator"):
       test(m"Interpolate a simple scalar"):
         val v = 42

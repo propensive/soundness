@@ -470,12 +470,15 @@ object Yaml extends Yaml2, Dynamic:
   def primitive(ast: YamlAst): YamlPrimitive =
     if ast.asInstanceOf[AnyRef] == null then YamlPrimitive.Null
     else ast.asMatchable match
-      case _: Boolean    => YamlPrimitive.Bool
-      case _: Long       => YamlPrimitive.Integer
-      case _: Double     => YamlPrimitive.Decimal
-      case _: String     => YamlPrimitive.Str
+      case _: Boolean                 => YamlPrimitive.Bool
+      case _: Long                    => YamlPrimitive.Integer
+      case _: Double                  => YamlPrimitive.Decimal
+      // High-precision BCD numbers report as `Decimal`. The AST-level
+      // distinction (`isBcd`) remains available for callers that care.
+      case _: Array[Long] @unchecked  => YamlPrimitive.Decimal
+      case _: String                  => YamlPrimitive.Str
 
-      case xs: IArray[?] @unchecked =>
+      case xs: Array[AnyRef] @unchecked =>
         if (xs.length & 1) == 0 then YamlPrimitive.Mapping else YamlPrimitive.Sequence
 
       case _ => YamlPrimitive.Null

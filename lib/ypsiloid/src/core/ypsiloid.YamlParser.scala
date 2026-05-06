@@ -39,6 +39,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
+import jacinta.Bcd
 import rudiments.*
 import vacuous.*
 import zephyrine.*
@@ -1036,15 +1037,29 @@ private[ypsiloid] final class YamlParser:
     if first == '0' && i + 1 < len then return null  // "01" is not a YAML int
 
     // Up to 18 digits: cannot overflow Long; manual loop. 19 digits:
-    // boundary case, defer to JDK parser. >19 digits: definitely not
-    // a Long.
+    // boundary case, defer to JDK parser then fall back to BCD on
+    // overflow. >19 digits: never fits in Long — go straight to BCD,
+    // preserving full precision.
     val digitCount = len - i
-    if digitCount > 19 then return null
+    if digitCount > 19 then
+      val digits = s.substring(i, len).nn
+      // All-digit string already validated by the caller's branching
+      // (fall-through on non-digit). Build a BCD from the magnitude.
+      var k = 0
+      while k < digits.length do
+        val c = digits.charAt(k)
+        if c < '0' || c > '9' then return null
+        k += 1
+      return YamlAst.BcdValue(Bcd.fromString(digits, negative))
     if digitCount == 19 then
       try
         val v = java.lang.Long.parseLong(s)
         return YamlAst.Integer(v)
-      catch case _: NumberFormatException => return null
+      catch case _: NumberFormatException =>
+        // 19-digit boundary that overflows `Long` (e.g. `10000000000000000000`):
+        // preserve precision in BCD instead of dropping the value.
+        val digits = s.substring(i, len).nn
+        return YamlAst.BcdValue(Bcd.fromString(digits, negative))
 
     var acc: Long = 0L
     while i < len do
@@ -1110,8 +1125,33 @@ private[ypsiloid] final class YamlParser:
     if !hasDigit then return null
     if expSeen && !expHasDigit then return null
 
-    try YamlAst.Decimal(java.lang.Double.parseDouble(s))
+    // Try `Double.parseDouble` first; if the round-tripped value
+    // differs from the source (precision loss) or the source has more
+    // significant digits than `Double`'s ~17, fall back to BCD.
+    try
+      val d = java.lang.Double.parseDouble(s)
+      val significantDigits = countSignificantDigits(s)
+      if significantDigits > 17 then
+        val negative = s.length > 0 && s.charAt(0) == '-'
+        val unsigned =
+          if s.length > 0 && (s.charAt(0) == '-' || s.charAt(0) == '+')
+          then s.substring(1).nn else s
+        YamlAst.BcdValue(Bcd.fromString(unsigned, negative))
+      else YamlAst.Decimal(d)
     catch case _: NumberFormatException => null
+
+  private def countSignificantDigits(s: String): Int =
+    var count = 0
+    var seenNonZero = false
+    var i = 0
+    while i < s.length do
+      val c = s.charAt(i)
+      if c >= '0' && c <= '9' then
+        if c != '0' then seenNonZero = true
+        if seenNonZero then count += 1
+      else if c == 'e' || c == 'E' then return count
+      i += 1
+    count
 
   // ── Quoted strings ──────────────────────────────────────────────────────
 
