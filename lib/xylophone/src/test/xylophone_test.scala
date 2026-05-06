@@ -54,10 +54,10 @@ case class Pixel(x: Int, y: Int, color: ColorVal)
 object Tests extends Suite(m"Xylophone tests"):
 
   def elem(label: Text, children: Node*): Element =
-    Element(label, scala.collection.immutable.ListMap(), IArray.from(children))
+    Element(label, Attributes.empty, IArray.from(children))
 
   def elem(label: Text, attrs: Map[Text, Text], children: Node*): Element =
-    Element(label, attrs, IArray.from(children))
+    Element(label, Attributes.from(attrs), IArray.from(children))
 
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
@@ -767,7 +767,7 @@ object Tests extends Suite(m"Xylophone tests"):
     suite(m"Additional element tests"):
       test(m"Element with multiple attributes preserves order"):
         t"""<a x="1" y="2" z="3"/>""".read[Xml].absolve match
-          case Element(_, attributes, _) => attributes.to(List).map(_(0))
+          case Element(_, attributes, _) => attributes.toList.map(_(0))
       . assert(_ == List(t"x", t"y", t"z"))
 
       test(m"Tab and newline allowed in attribute value (normalized)"):

@@ -142,7 +142,7 @@ object internal:
             types ::= TypeRepr.of[Map[Text, Text]]
             iterator.next()
             val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
-            '{$expr && { $array(${Expr(index)}) = ${scrutinee}.attributes -- $others; true }}
+            '{$expr && { $array(${Expr(index)}) = (${scrutinee}.attributes -- $others).toMap; true }}
 
           case head :: tail =>
             attributes(tail):
@@ -158,7 +158,7 @@ object internal:
 
               '{$expr && $boolean}
 
-        val attributesChecked = attributes(pattern.attributes.to(List).map(_(0)))('{true})
+        val attributesChecked = attributes(pattern.attributes.toList.map(_(0)))('{true})
 
         val children = '{$scrutinee.children}
 
@@ -520,7 +520,7 @@ object internal:
           List('{Header(${Expr(version)}, $encoding2, $standalone2)})
 
         case Element(label, attributes, children) =>
-          val exprs = attributes.to(List).map: (key, value) =>
+          val exprs = attributes.toList.map: (key, value) =>
             ' {
                 ( ${Expr(key)},
                   $ {
@@ -534,7 +534,7 @@ object internal:
           val map = '{Map(${Expr.ofList(exprs)}*)}
           val elements = '{IArray(${Expr.ofList(children.flatMap(serialize(_)))}*)}
 
-          List('{Element(${Expr(label)}, $map, $elements)})
+          List('{Element(${Expr(label)}, Attributes.from($map), $elements)})
 
         case Comment(text) =>
           val parts = text.cut(t"\u0000").map(_.s)
@@ -674,4 +674,4 @@ object internal:
 
                 . or(halt(m"unexpected type"))
 
-    '{$tag.node(${Expr.ofList(attributes)}.compact.to(Map))}.asExprOf[result]
+    '{$tag.node(Attributes.from(${Expr.ofList(attributes)}.compact.to(Map)))}.asExprOf[result]
