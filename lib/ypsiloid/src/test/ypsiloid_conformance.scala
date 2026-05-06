@@ -101,6 +101,9 @@ object Conformance:
     if sysProp != null && sysProp.nonEmpty then sysProp
     else "/tmp/yaml-test-suite"
 
+  def available(rootStr: String = suitePath): Boolean =
+    Files.isDirectory(Paths.get(rootStr).nn)
+
   def loadTestCases(rootStr: String = suitePath): List[TestCase] =
     val root = Paths.get(rootStr).nn
 

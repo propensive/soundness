@@ -46,14 +46,16 @@ object ConformanceTests:
   // working.
   def all()(using Testable, Runner[Report]): Unit =
     suite(m"YAML test suite conformance"):
-      val cases = Conformance.loadTestCases()
-      val results = cases.map(Conformance.runTestCase)
+      if !Conformance.available() then ()
+      else
+        val cases = Conformance.loadTestCases()
+        val results = cases.map(Conformance.runTestCase)
 
-      results.foreach: result =>
-        val classifier = if result.testCase.inScope then t"in-scope" else t"out-of-scope"
-        val firstLine = result.testCase.description.linesIterator.next.tt
-        val id = result.testCase.id.tt
-        val name = m"`$id` $firstLine"
+        results.foreach: result =>
+          val classifier = if result.testCase.inScope then t"in-scope" else t"out-of-scope"
+          val firstLine = result.testCase.description.linesIterator.next.tt
+          val id = result.testCase.id.tt
+          val name = m"`$id` $firstLine"
 
-        if result.passed then test(name)(result.passed).assert(identity)
-        else test(name)(result.passed).aspire(identity)
+          if result.passed then test(name)(result.passed).assert(identity)
+          else test(name)(result.passed).aspire(identity)
