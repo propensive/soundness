@@ -441,7 +441,12 @@ object Html extends Tag.Container
     protected inline def peek: Char =
       cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]](cursor.unsafePos(using Unsafe))
 
-    protected inline def advance(): Unit = cursor.next()
+    // Use `cursor.advance()` rather than `cursor.next()`: the latter performs
+    // an additional `cursor.more` check to return its boolean result, which
+    // every caller here discards. Refill on streaming input still happens via
+    // the parser's later `lay`/`let`/`peek` calls (each of which goes through
+    // `cursor.more`), so skipping the redundant check is safe.
+    protected inline def advance(): Unit = cursor.advance()
     protected inline def position: Int = cursor.position.n0
 
     protected inline def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
