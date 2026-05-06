@@ -538,7 +538,15 @@ object Html extends Tag.Container
       var stack: Array[Tag] = new Array(4)
       var depth: Int = 0
       var fragment: IArray[Node] = IArray()
-      var pendingFormatting: List[(Text, Attributes)] = Nil
+      // Pending formatting tags awaiting reconstruction (see WHATWG "active
+      // formatting elements"). Stored as parallel arrays of label/Attributes
+      // pairs rather than a `List[(Text, Attributes)]`: `:+` on a `List` is
+      // O(N) (and allocates a `Tuple2` per append), and even though valid
+      // HTML rarely populates this list, malformed-input handling can append
+      // multiple entries at once. Capacity grows geometrically when filled.
+      var pendingFormattingLabels: Array[Text] = new Array[Text](4)
+      var pendingFormattingAttrs:  Array[Attributes] = new Array[Attributes](4)
+      var pendingFormattingSize: Int = 0
       var pendingAtDepth: Int = -1
       var fosteredBefore: List[Node] = Nil
       var fosteredAfter: List[Node] = Nil
@@ -1066,14 +1074,18 @@ object Html extends Tag.Container
 
               inline def infer(inline tag: Tag): Unit =
                 reset(mark)
-
-                dom.infer(parent, tag).let: tag =>
-                  focus = tag
+                // Use a direct `if inferred.absent` check rather than
+                // `dom.infer(...).let { ... }.or { ... }`: `Optional.let` is
+                // not inline, so the lambda body would capture the surrounding
+                // `focus` and `level` `var`s as `ObjectRef`s on every `<`
+                // entry, allocating two refs per element open.
+                val inferred: Optional[Tag] = dom.infer(parent, tag)
+                if inferred.absent then
+                  if parent.autoclose then close()
+                  else fail(InadmissibleTag(content, parent.label), mark)
+                else
+                  focus = inferred.vouch
                   level = Level.Descend
-
-                . or:
-                    if parent.autoclose then close()
-                    else fail(InadmissibleTag(content, parent.label), mark)
 
               next()
               if lay(false)(_ == '\u0000') then
@@ -1128,7 +1140,17 @@ object Html extends Tag.Container
                     else if stackContainsAncestor(content) then
                       if formattingTags.contains(parent.label) then
                         pendingAtDepth = findAncestorIndex(content)
-                        pendingFormatting = pendingFormatting :+ ((parent.label, map))
+                        if pendingFormattingSize >= pendingFormattingLabels.length then
+                          val newCap = pendingFormattingLabels.length*2
+                          val nl = new Array[Text](newCap)
+                          val na = new Array[Attributes](newCap)
+                          jl.System.arraycopy(pendingFormattingLabels, 0, nl, 0, pendingFormattingSize)
+                          jl.System.arraycopy(pendingFormattingAttrs,  0, na, 0, pendingFormattingSize)
+                          pendingFormattingLabels = nl
+                          pendingFormattingAttrs  = na
+                        pendingFormattingLabels(pendingFormattingSize) = parent.label
+                        pendingFormattingAttrs (pendingFormattingSize) = map
+                        pendingFormattingSize += 1
                       reset(mark)
                       close()
                     else if formattingTags.contains(content) then
@@ -1144,27 +1166,32 @@ object Html extends Tag.Container
                     current = Element(content, map, array(count), parent.foreign)
 
             def reconstructPending(): Int =
-              if pendingFormatting.isEmpty || depth != pendingAtDepth then 0
+              if pendingFormattingSize == 0 || depth != pendingAtDepth then 0
               else if !more || lay(false)(_ == '<') then
-                pendingFormatting = Nil
+                pendingFormattingSize = 0
                 pendingAtDepth = -1
                 0
               else
-                val pending = pendingFormatting
-                pendingFormatting = Nil
+                val pendingCount = pendingFormattingSize
+                pendingFormattingSize = 0
                 pendingAtDepth = -1
                 var added = 0
-                pending.foreach: (label, attrs) =>
-                  dom.elements(label).let: cloneTag =>
-                    push(cloneTag)
-                    val cloneChild = descend(cloneTag, admissible, attrs)
+                var i = 0
+                while i < pendingCount do
+                  val label = pendingFormattingLabels(i)
+                  val attrs = pendingFormattingAttrs(i)
+                  val cloneTag: Optional[Tag] = dom.elements(label)
+                  if cloneTag.present then
+                    val tag = cloneTag.vouch
+                    push(tag)
+                    val cloneChild = descend(tag, admissible, attrs)
                     pop()
                     cloneChild match
                       case Element(_, _, children, _) if children.length == 0 => ()
-
                       case _ =>
                         append(cloneChild)
                         added += 1
+                  i += 1
                 added
 
             level match
