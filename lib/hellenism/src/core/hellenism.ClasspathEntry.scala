@@ -32,6 +32,7 @@
                                                                                                   */
 package hellenism
 
+import java.io as ji
 import java.net as jn
 
 import anticipation.*
@@ -64,7 +65,7 @@ object ClasspathEntry:
 
 sealed trait ClasspathEntry:
   def javaUrl: jn.URL = this match
-    case ClasspathEntry.Directory(path) => jn.URI("file", null, path.s, null).toURL.nn
-    case ClasspathEntry.Jar(path)       => jn.URI("file", null, path.s, null).toURL.nn
+    case ClasspathEntry.Directory(path) => ji.File(path.s).toURI.nn.toURL.nn
+    case ClasspathEntry.Jar(path)       => ji.File(path.s).toURI.nn.toURL.nn
     case ClasspathEntry.Url(url)        => jn.URI(url.s).toURL().nn
     case ClasspathEntry.JavaRuntime     => jn.URI("jrt:/").toURL().nn
