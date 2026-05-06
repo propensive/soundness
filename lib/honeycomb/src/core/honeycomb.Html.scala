@@ -601,8 +601,8 @@ object Html extends Tag.Container
               next() yet tagname(mark, other)
 
           case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => dictionary match
-            case Dictionary.Just("", tag)       => tag
-            case Dictionary.Branch(tag: Tag, _) => tag
+            case just: Dictionary.Just[Tag] if just.tailEmpty => just.value
+            case Dictionary.Branch(tag: Tag, _)               => tag
 
             case other =>
               val end = begin()
