@@ -42,7 +42,7 @@ class Shader(options: List[String]) extends PluginPhase:
   override def transformUnit(tree: tpd.Tree)(using context: Context): tpd.Tree =
     import untpd.*
 
-    val untpdTree = context.compilationUnit.untpdTree
+    val unit = context.compilationUnit
 
     val prefixes: List[(String, String)] =
       options.flatMap: opt =>
@@ -54,41 +54,75 @@ class Shader(options: List[String]) extends PluginPhase:
                 "please specify a mapping of the form, '<package>:<new-prefix>'"); Nil
 
     object transformer extends UntypedTreeMap:
-      private def rewritePackage
-        ( tree: Ident | Select, fqn: String, defs: List[Tree], select: Select => Select )
-      :   PackageDef =
+      def nameToSegments(tree: Tree): List[String] = tree match
+        case Ident(name)        => List(name.decode.toString)
+        case Select(qual, name) => nameToSegments(qual) :+ name.decode.toString
+        case _                  => Nil
 
-        tree match
-          case Ident(name) =>
-            val pkg = name.decode.toString+"."+fqn
-
-            val prefixes2 =
-              prefixes.filter { (k, v) => pkg == k || pkg.startsWith(k+".") }
-              . sortBy(_(0).length)
-
-            val ident = prefixes2.lastOption.fold(tree): (k, v) =>
-              select(Select(Ident(v.toTermName), name))
-
-            val imports =
-              prefixes2.lastOption.fold(prefixes) { (k, v) => prefixes.filter(_(0) != k) }.map:
-                case (_, prefix) =>
-                  Import
-                    ( Ident(prefix.toTermName),
-                      List(ImportSelector(Ident(StdNames.nme.WILDCARD))) )
-
-            PackageDef(ident, imports ::: defs)
-
-          case Select(pkg: (Ident | Select), name) =>
-            rewritePackage(pkg, s"${name.decode}.$fqn", defs, Select(_, name))
+      def peelPackageDefs(name: Tree, stats: List[Tree]): (List[String], List[Tree]) =
+        stats match
+          case List(inner: PackageDef) =>
+            val (rest, innermostStats) = peelPackageDefs(inner.pid, inner.stats)
+            (nameToSegments(name) ++ rest, innermostStats)
 
           case _ =>
-            ???
+            (nameToSegments(name), stats)
 
+      def splitDots(prefix: String): List[String] =
+        prefix.split("\\.").nn.map(_.nn).toList
 
-      override def transform(tree: Tree)(using Context): Tree =
-        tree match
-          case PackageDef(name: (Ident | Select), defs) => rewritePackage(name, "", defs, identity)
-          case _                                        => super.transform(tree)
+      def segmentsToTree(segments: List[String]): RefTree = segments match
+        case Nil          => Ident(StdNames.nme.EMPTY_PACKAGE)
 
-    context.compilationUnit.untpdTree = transformer.transform(untpdTree)
+        case head :: tail =>
+          tail.foldLeft(Ident(head.toTermName): RefTree): (acc, segment) =>
+            Select(acc, segment.toTermName)
+
+      def matchPrefix(segments: List[String]): Option[(String, String)] =
+        val fqn = segments.mkString(".")
+
+        prefixes
+        . filter { (k, _) => fqn == k || fqn.startsWith(k+".") }
+        . sortBy(_(0).length)
+        . lastOption
+
+      def rewriteRootRef(tree: Tree): Option[Tree] =
+        def collect(t: Tree, acc: List[String]): Option[List[String]] = t match
+          case Ident(name) if name == StdNames.nme.ROOTPKG =>
+            Some(acc)
+
+          case Select(qual, name) =>
+            collect(qual, name.decode.toString :: acc)
+
+          case _ =>
+            None
+
+        collect(tree, Nil).flatMap: segments =>
+          if segments.isEmpty then None else matchPrefix(segments).map: (_, shadePrefix) =>
+            (splitDots(shadePrefix) ++ segments).foldLeft(Ident(StdNames.nme.ROOTPKG): Tree):
+              (acc, segment) => Select(acc, segment.toTermName)
+
+      override def transform(tree: Tree)(using Context): Tree = tree match
+        case PackageDef(name: (Ident | Select), defs) =>
+          val (segments, innerStats) = peelPackageDefs(name, defs)
+          val matched = matchPrefix(segments)
+
+          val nameTree =
+            matched.fold(segmentsToTree(segments)): (_, v) =>
+              segmentsToTree(splitDots(v) ++ segments)
+
+          val imports =
+            matched.fold(prefixes) { (k, _) => prefixes.filter(_(0) != k) }.map: (_, prefix) =>
+              Import
+                ( segmentsToTree(splitDots(prefix)),
+                  List(ImportSelector(Ident(StdNames.nme.WILDCARD))) )
+
+          PackageDef(nameTree, imports ::: innerStats.map(transform))
+
+        case _ =>
+          rewriteRootRef(tree) match
+            case Some(rewritten) => rewritten
+            case None            => super.transform(tree)
+
+    unit.untpdTree = transformer.transform(unit.untpdTree)
     super.transformUnit(tree)
