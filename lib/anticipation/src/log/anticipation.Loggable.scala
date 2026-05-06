@@ -38,16 +38,16 @@ import prepositional.*
 
 object Loggable:
   given transcribable: [input: Loggable, output: Transcribable to input] => output is Loggable =
-    (level, realm, timestamp, event) =>
+    (level, timestamp, event) =>
       if !output.skip(event)
-      then input.log(level, realm, timestamp, output.record(event))
+      then input.log(level, timestamp, output.record(event))
 
 trait Loggable extends Typeclass:
   loggable =>
-    def log(level: Level, realm: Realm, timestamp: Long, event: Self): Unit
+    def log(level: Level, timestamp: Long, event: Self): Unit
 
     def contramap[self2](lambda: self2 => Self): self2 is Loggable = new Loggable:
       type Self = self2
 
-      def log(level: Level, realm: Realm, timestamp: Long, event: Self): Unit =
-        loggable.log(level, realm, timestamp, lambda(event))
+      def log(level: Level, timestamp: Long, event: Self): Unit =
+        loggable.log(level, timestamp, lambda(event))

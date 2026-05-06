@@ -60,9 +60,6 @@ object internal:
     Max[Max[Value1Type, Value2Type], Max[Value3Type, Value4Type]]
 
 
-  private given realm: Realm = realm"cr"
-
-
   def apply[left <: Double: Type, right <: Double: Type](digits: Expr[String])
   :   Macro[left ~ right] =
 

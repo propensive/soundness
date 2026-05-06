@@ -42,8 +42,6 @@ import fulminate.*
 import proscenium.*
 
 object internal:
-  private given realm: Realm = realm"guillotine"
-
   def sh(context: Expr[StringContext], insertions: Expr[Seq[Any]])(using Quotes)
   :   Expr[Any] =
 

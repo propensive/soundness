@@ -42,8 +42,6 @@ import rudiments.*
 import vacuous.*
 
 object internal:
-  private given realm: Realm = realm"pa"
-
   /** Shared, non-inlined fallback for `value.lens(...)` when the macro can't statically
     * fuse the updates (e.g. one of the lambdas contains a traversal). Centralising the
     * foldLeft in a single method keeps the JIT's job easy at non-fused call sites.

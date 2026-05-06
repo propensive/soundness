@@ -39,8 +39,6 @@ import proscenium.*
 import rudiments.*
 import spectacular.*
 
-private given realm: Realm = realm"ct"
-
 private[cataclysm] type Label = String & Singleton
 
 given decimalizer: Decimalizer = Decimalizer(6)

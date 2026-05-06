@@ -52,8 +52,6 @@ import vacuous.*
 
 
 object internal:
-  given Realm = realm"ob"
-
   def dispatcher[interface: Type](target: Expr[interface]): Macro[Json => Optional[Json]] =
     import quotes.reflect.*
 

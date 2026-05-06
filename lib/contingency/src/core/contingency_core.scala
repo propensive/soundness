@@ -72,8 +72,6 @@ package strategies:
     def abort(error: Diagnostics ?=> error): Nothing = throw error
     def certify(): Unit = ()
 
-private given realm: Realm = realm"cg"
-
 def certify[error <: Exception: Tactic](): Unit = error.certify()
 
 
@@ -151,7 +149,7 @@ def amalgamate[error <: Exception](using erased Void)[success]
     block(using AmalgamateTactic(label))
 
 
-def abortive[error <: Error](using Quotes, Realm)[success]
+def abortive[error <: Error](using Quotes)[success]
   ( block: Diagnostics ?=> HaltTactic[error, success] ?=> success )
 :   success =
 

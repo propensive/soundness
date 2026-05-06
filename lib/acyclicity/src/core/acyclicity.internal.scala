@@ -41,8 +41,6 @@ import rudiments.*
 import vacuous.*
 
 object internal:
-  private given realm: Realm = realm"acyclicity"
-
   def refInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[Dot.Ref] =
     import quotes.reflect.*
 

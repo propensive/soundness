@@ -40,8 +40,6 @@ import gigantism.*
 import proscenium.*
 
 object internal:
-  private given realm: Realm = realm"hi"
-
   opaque type CharRange = Long
 
   object CharRange:

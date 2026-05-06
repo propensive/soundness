@@ -47,4 +47,3 @@ extension [units <: Measure](inline quantity: Quantity[units])
   inline def quanta[count <: Tuple]: Quanta[count] =
     ${abacist.internal.fromQuantity[units, count]('quantity)}
 
-private given realm: Realm = realm"ab"

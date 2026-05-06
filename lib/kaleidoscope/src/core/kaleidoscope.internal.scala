@@ -46,8 +46,6 @@ import proscenium.*
 import vacuous.*
 
 object internal:
-  private given realm: Realm = realm"kd"
-
   def glob(context: Expr[StringContext]): Macro[Any] =
     val parts = context.value.get.parts.map(Text(_)).map(Glob.parse(_).regex.s).to(List)
 

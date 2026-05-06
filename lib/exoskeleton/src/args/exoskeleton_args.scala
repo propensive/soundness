@@ -38,8 +38,6 @@ import fulminate.*
 import gossamer.*
 import vacuous.*
 
-private given realm: Realm = realm"ek"
-
 package interpreters:
   given simple: Interpreter:
     type Topic = List[Argument]

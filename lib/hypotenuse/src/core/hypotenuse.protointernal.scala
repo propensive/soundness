@@ -45,8 +45,6 @@ import proscenium.*
 import rudiments.*
 
 object protointernal:
-  private given realm: Realm = realm"hp"
-
   def bin(expr: Expr[StringContext]): Macro[AnyVal] =
     import quotes.reflect.*
 

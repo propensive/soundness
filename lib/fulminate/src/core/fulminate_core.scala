@@ -164,8 +164,5 @@ extension (inline context: StringContext)
   transparent inline def m[param](inline subs: param = Zero): Message =
     ${ fulminate.internal.mMacro[param]('context, 'subs) }
 
-extension (inline context: StringContext)
-  inline def realm(): Realm = ${fulminate.internal.realm('context)}
-
 extension [communicable: Communicable](value: communicable)
   def communicate: Message = communicable.message(value)

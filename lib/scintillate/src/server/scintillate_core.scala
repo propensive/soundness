@@ -99,8 +99,6 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.
 
 inline def request: Http.Request = infer[Http.Request]
 
-private given realm: Realm = realm"sc"
-
 extension (request: Http.Request)
   def as[body: Acceptable]: body = body.accept(request)
 

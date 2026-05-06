@@ -32,7 +32,3 @@
                                                                                                   */
 package bitumen
 
-import anticipation.*
-
-private[bitumen] given Realm = Realm("bitumen")
-

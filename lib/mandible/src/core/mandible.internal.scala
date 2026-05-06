@@ -49,8 +49,6 @@ object internal:
 
     import quotes.reflect.*
 
-    given Realm = realm"ma"
-
     val name = block.asTerm match
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, name)))), _)) => name
 

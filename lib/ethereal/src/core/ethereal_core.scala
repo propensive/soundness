@@ -89,8 +89,6 @@ def cli[bus <: Matchable](using executive: Executive)
           handler:     Backstop )
 :   Unit =
 
-  given realm: Realm = realm"et"
-
   import strategies.throwUnsafely
   import workingDirectories.system
   import environments.java

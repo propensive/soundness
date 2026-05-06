@@ -40,8 +40,6 @@ import gigantism.*
 import rudiments.*
 
 object internal:
-  private given realm: Realm = realm"iridescence"
-
   def rgbMacro(context: Expr[StringContext], insertions: Expr[Seq[Any]])(using Quotes)
   :   Expr[Chroma] =
 

@@ -44,7 +44,7 @@ import jsonPrinters.minimal
 object EucalyptusGcp
 
 package logFormats:
-  given googleCloudPlatform: Message is Inscribable in Text = (event, level, realm, timestamp) =>
+  given googleCloudPlatform: Message is Inscribable in Text = (event, level, timestamp) =>
     case class GcpLog(severity: Text, message: Text)
 
     val severity = level match

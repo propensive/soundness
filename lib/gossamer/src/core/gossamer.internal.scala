@@ -48,8 +48,6 @@ import vacuous.*
 import errorDiagnostics.empty
 
 object internal:
-  private given realm: Realm = realm"go"
-
   // Both `t""` and `txt""` build a Text by escape-processing each static part
   // at compile time and converting each substitution via Showable at runtime.
   // Only the final treatment differs: txt collapses runs of whitespace and

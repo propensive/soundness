@@ -39,7 +39,7 @@ import scala.quoted.*
 import anticipation.*
 import fulminate.*
 
-open class HaltTactic[error <: Error, success]()(using Quotes, Realm)
+open class HaltTactic[error <: Error, success]()(using Quotes)
 extends Tactic[error]:
   given diagnostics: Diagnostics = Diagnostics.omit
 

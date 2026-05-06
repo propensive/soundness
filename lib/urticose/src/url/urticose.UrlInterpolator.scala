@@ -49,8 +49,6 @@ import symbolism.*
 import errorDiagnostics.empty
 
 object UrlInterpolator:
-  private given realm: Realm = realm"urticose"
-
   case class UrlInterpolatorError(detail: Message)
   extends Exception(s"urticose: ${detail.text.s}")
 

@@ -42,8 +42,6 @@ import rudiments.*
 import vacuous.*
 
 object internal:
-  private given realm: Realm = realm"gesticulate"
-
   def mediaInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[MediaType] =
     import quotes.reflect.*
 

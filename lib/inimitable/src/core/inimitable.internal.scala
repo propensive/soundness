@@ -40,8 +40,6 @@ import fulminate.*
 import gigantism.*
 
 object internal:
-  private given realm: Realm = realm"in"
-
   def uuid(expr: Expr[StringContext]): Macro[Uuid] =
     val uuid = abortive(Uuid.parse(expr.valueOrAbort.parts.head.tt))
     '{Uuid(${Expr(uuid.msb)}, ${Expr(uuid.lsb)})}

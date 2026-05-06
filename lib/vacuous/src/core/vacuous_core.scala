@@ -81,8 +81,6 @@ extension [value](value: value)
 extension [value](java: ju.Optional[value])
   def optional: Optional[value] = if java.isEmpty then Unset else java.get.nn
 
-private given realm: Realm = realm"va"
-
 extension [value](optional: Optional[value])(using Optionality[optional.type])
   inline def absent: Boolean = optional == Unset
   inline def present: Boolean = optional != Unset

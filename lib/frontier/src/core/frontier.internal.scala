@@ -77,8 +77,6 @@ object internal:
     counter = counter + 1
     counter
 
-  given realm: Realm = realm"fr"
-
   def explain[target: Type]: Macro[target] =
     import quotes.reflect.*
 
