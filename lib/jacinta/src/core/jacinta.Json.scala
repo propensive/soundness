@@ -154,6 +154,11 @@ trait Json2:
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
 
+  // Canonical external accessor for the underlying AST. The `root`
+  // method on `class Json` is package-private so that breaking through
+  // the `Json` abstraction is a deliberate, named action.
+  def unseal(json: Json): JsonAst = json.root
+
 
   inline given interpolator: Json is Interpolable:
     type Result = Json
@@ -363,7 +368,7 @@ object Json extends Json2, Dynamic:
     def variant(json: Json): Json = unsafely(json.updateDynamic(key)(Unset))
 
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
-  def root: JsonAst = rootValue.asInstanceOf[JsonAst]
+  private[jacinta] def root: JsonAst = rootValue.asInstanceOf[JsonAst]
   def apply(index: Int): Json raises JsonError = Json(root.array(index))
 
   def selectDynamic(field: String)(using erased DynamicJsonEnabler): Json raises JsonError =

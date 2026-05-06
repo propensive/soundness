@@ -117,7 +117,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == ())
 
       test(m"Parse empty document as YamlAst.Null"):
-        t"".read[Yaml].root
+        Yaml.unseal(t"".read[Yaml])
       . assert(_ == YamlAst.Null)
 
       test(m"Parse a plain (unquoted) string"):
@@ -243,13 +243,13 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == Set(1, 2, 3))
 
       test(m"Empty flow sequence parses to YamlAst.Sequence with no items"):
-        t"[]".read[Yaml].root match
+        Yaml.unseal(t"[]".read[Yaml]) match
           case YamlAst.Sequence(items) => items.length
           case _                       => -1
       . assert(_ == 0)
 
       test(m"Flow sequence parses to YamlAst.Sequence"):
-        t"[1, 2, 3]".read[Yaml].root match
+        Yaml.unseal(t"[1, 2, 3]".read[Yaml]) match
           case YamlAst.Sequence(items) => items.length
           case _                       => -1
       . assert(_ == 3)
@@ -288,13 +288,13 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == Map(t"a,b" -> 1, t"c,d" -> 2))
 
       test(m"Empty flow mapping parses to YamlAst.Mapping with no entries"):
-        t"{}".read[Yaml].root match
+        Yaml.unseal(t"{}".read[Yaml]) match
           case YamlAst.Mapping(entries) => entries.length
           case _                        => -1
       . assert(_ == 0)
 
       test(m"Flow mapping parses to YamlAst.Mapping"):
-        t"{a: 1, b: 2}".read[Yaml].root match
+        Yaml.unseal(t"{a: 1, b: 2}".read[Yaml]) match
           case YamlAst.Mapping(entries) => entries.length
           case _                        => -1
       . assert(_ == 2)
@@ -362,7 +362,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == List(t"hello world", t"goodbye"))
 
       test(m"Block sequence parses to YamlAst.Sequence"):
-        t"- 1\n- 2".read[Yaml].root match
+        Yaml.unseal(t"- 1\n- 2".read[Yaml]) match
           case YamlAst.Sequence(items) => items.length
           case _                       => -1
       . assert(_ == 2)
@@ -409,7 +409,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == List(Person(t"Alice", 30), Person(t"Bob", 25)))
 
       test(m"Block mapping parses to YamlAst.Mapping"):
-        t"a: 1\nb: 2".read[Yaml].root match
+        Yaml.unseal(t"a: 1\nb: 2".read[Yaml]) match
           case YamlAst.Mapping(entries) => entries.length
           case _                        => -1
       . assert(_ == 2)
@@ -494,7 +494,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(identity)
 
       test(m"!!null tags any value as null"):
-        t"!!null whatever".read[Yaml].root
+        Yaml.unseal(t"!!null whatever".read[Yaml])
       . assert(_ == YamlAst.Null)
 
       test(m"Unknown tag passes the value through unchanged"):
@@ -592,36 +592,40 @@ object Tests extends Suite(m"Ypsiloid Tests"):
 
     suite(m"Direct AST inspection"):
       test(m"Plain integer parses to YamlAst.Integer"):
-        t"42".read[Yaml].root
+        Yaml.unseal(t"42".read[Yaml])
       . assert(_ == YamlAst.Integer(42L))
 
       test(m"Float parses to YamlAst.Decimal"):
-        t"3.14".read[Yaml].root
+        Yaml.unseal(t"3.14".read[Yaml])
       . assert(_ == YamlAst.Decimal(3.14))
 
       test(m"Boolean parses to YamlAst.Bool"):
-        t"true".read[Yaml].root
+        Yaml.unseal(t"true".read[Yaml])
       . assert(_ == YamlAst.Bool(true))
 
       test(m"Null parses to YamlAst.Null"):
-        t"null".read[Yaml].root
+        Yaml.unseal(t"null".read[Yaml])
       . assert(_ == YamlAst.Null)
 
       test(m"Tilde parses to YamlAst.Null"):
-        t"~".read[Yaml].root
+        Yaml.unseal(t"~".read[Yaml])
       . assert(_ == YamlAst.Null)
 
       test(m"Plain string parses to YamlAst.Str"):
-        t"hello".read[Yaml].root
+        Yaml.unseal(t"hello".read[Yaml])
       . assert(_ == YamlAst.Str(t"hello"))
 
     suite(m"AST equality"):
       test(m"Two equal sequence YamlAsts compare equal via Yaml"):
-        YamlAst.deepEquals(t"[1, 2, 3]".read[Yaml].root, t"[1, 2, 3]".read[Yaml].root)
+        YamlAst.deepEquals
+                ( Yaml.unseal(t"[1, 2, 3]".read[Yaml]),
+                  Yaml.unseal(t"[1, 2, 3]".read[Yaml]) )
       . assert(identity)
 
       test(m"Two equal mapping YamlAsts compare equal via Yaml"):
-        YamlAst.deepEquals(t"{a: 1, b: 2}".read[Yaml].root, t"{a: 1, b: 2}".read[Yaml].root)
+        YamlAst.deepEquals
+                ( Yaml.unseal(t"{a: 1, b: 2}".read[Yaml]),
+                  Yaml.unseal(t"{a: 1, b: 2}".read[Yaml]) )
       . assert(identity)
 
       test(m"Two equal Yaml documents compare equal"):
