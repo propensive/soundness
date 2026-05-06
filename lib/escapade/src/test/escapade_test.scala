@@ -883,7 +883,7 @@ object Tests extends Suite(m"Escapade tests"):
       test(m"escape pair restores after span"):
         val esc = Escape(t"[1m", t"[22m")
         emulate(e"a${esc}(b)c").buffer.style(2.z, 0.z).bold
-      . aspire(_ == false)
+      . assert(_ == false)
 
     // ─── Round-trip via Pty: comprehensive ────────────────────────────────
 

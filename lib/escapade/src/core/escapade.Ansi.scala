@@ -99,10 +99,12 @@ object Ansi extends Ansi2:
   enum Pending:
     case Style(transform: Transform)
     case Link(url: Text)
+    case Escape(on: Text, off: Text)
 
   enum Frame(val bracket: Char):
-    case Style(override val bracket: Char) extends Frame(bracket)
-    case Link(override val bracket: Char)  extends Frame(bracket)
+    case Style(override val bracket: Char)              extends Frame(bracket)
+    case Link(override val bracket: Char)               extends Frame(bracket)
+    case Escape(override val bracket: Char, off: Text)  extends Frame(bracket)
 
   class State:
     val plain: StringBuilder = StringBuilder()
@@ -164,6 +166,10 @@ object Ansi extends Ansi2:
       hyperlinks(plain.length) = url
       linkArmed = true
 
+    def pushEscapeFrame(bracket: Char, on: Text, off: Text): Unit =
+      stack = Frame.Escape(bracket, off) :: stack
+      addInsertion(plain.length, t"\e"+on)
+
     def popFrame(): Unit =
       stack.head match
         case _: Frame.Style =>
@@ -174,6 +180,10 @@ object Ansi extends Ansi2:
         case _: Frame.Link =>
           stack = stack.tail
           linkArmed = true
+
+        case escape: Frame.Escape =>
+          stack = stack.tail
+          addInsertion(plain.length, t"\e"+escape.off)
 
     def applyOnce(transform: Transform): Unit =
       currentStyle = transform(currentStyle)
@@ -221,6 +231,22 @@ object Ansi extends Ansi2:
               state.last = Unset
               closures(state, text)
 
+        case Pending.Escape(on, off) =>
+          text.at(Prim) match
+            case Bsl =>
+              state.last = Unset
+              closures(state, text.skip(1))
+
+            case '[' | '(' | '<' | '«' | '{' =>
+              state.pushEscapeFrame(complement(text.at(Prim).vouch), on, off)
+              state.last = Unset
+              closures(state, text.skip(1))
+
+            case _ =>
+              state.addInsertion(state.plain.length, t"\e"+on)
+              state.last = Unset
+              closures(state, text)
+
     private def closures(state: State, text: Text): State =
       try state.stack match
         case Nil =>
@@ -252,9 +278,8 @@ object Ansi extends Ansi2:
         state.last = Pending.Style(transform)
         state
 
-      case Input.Escape(on, _) =>
-        state.last = Unset
-        state.addInsertion(state.plain.length, t"\e"+on)
+      case Input.Escape(on, off) =>
+        state.last = Pending.Escape(on, off)
         state
 
       case Input.Hyperlink(url) =>
