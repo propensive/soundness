@@ -411,12 +411,12 @@ object Tests extends Suite(m"Jacinta Tests"):
         arr(0).as[Int]
       . assert(_ == 10)
 
-      test(m"unsafeApply on existing field"):
-        obj.unsafeApply(t"name").as[Text]
+      test(m"apply on existing field"):
+        obj(t"name").as[Text]
       . assert(_ == t"Alice")
 
-      test(m"unsafeApply on absent field returns absent Json"):
-        obj.unsafeApply(t"missing").as[Optional[Int]]
+      test(m"apply on absent field returns absent Json"):
+        obj(t"missing").as[Optional[Int]]
       . assert(_ == Unset)
 
       test(m"Access nested fields via apply"):
