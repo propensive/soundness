@@ -710,13 +710,13 @@ object Tests extends Suite(m"Escapade tests"):
       . assert(_ == List(t"hello", t"world", t"test"))
 
     suite(m"Textual: predicates"):
-      test(m"keep predicate"):
+      test(m"keep predicate takes while predicate is true"):
         e"hello world".keep(_.isLetter).plain
-      . aspire(_ == t"helloworld")
+      . assert(_ == t"hello")
 
-      test(m"skip predicate"):
+      test(m"skip predicate drops while predicate is true"):
         e"hello world".skip(_.isLetter).plain
-      . aspire(_ == t" ")
+      . assert(_ == t" world")
 
       test(m"erase removes characters"):
         e"hello".erase('l').plain
