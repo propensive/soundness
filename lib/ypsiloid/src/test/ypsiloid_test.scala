@@ -838,6 +838,40 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"255".read[Yaml].as[Bytes]
       . assert(_ == 255L.b)
 
+    suite(m"YamlPath"):
+      test(m"Empty path encodes with #"):
+        YamlPath().encode.contains(t"#")
+      . assert(identity)
+
+      test(m"Path with one segment includes the segment"):
+        YamlPath()(t"foo").encode.contains(t"foo")
+      . assert(identity)
+
+      test(m"Path with multiple segments includes all"):
+        val p = YamlPath()(t"a")(t"b")(t"c").encode
+        p.contains(t"a") && p.contains(t"b") && p.contains(t"c")
+      . assert(identity)
+
+      test(m"Path escapes ~ as ~0 in segment"):
+        val p = YamlPath()(t"a~b").encode
+        p.contains(t"~0")
+      . assert(identity)
+
+      test(m"Path escapes / as ~1 in segment"):
+        val p = YamlPath()(t"a/b").encode
+        p.contains(t"~1")
+      . assert(identity)
+
+      test(m"Path with ordinal segment encodes the index"):
+        val p = YamlPath()(Prim).encode
+        p.contains(t"0")
+      . assert(identity)
+
+      test(m"YamlPathError reason describes itself"):
+        val err = YamlPathError(YamlPathError.Reason.UnknownDocument)
+        err.message.text.s.contains("registry")
+      . assert(identity)
+
     suite(m"Lens"):
       import dynamicYamlAccess.enabled
 
