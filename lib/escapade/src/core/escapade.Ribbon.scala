@@ -42,13 +42,14 @@ case class Ribbon(colors: Bg*):
   def fill(parts: Teletype*): Teletype =
     import escapes.*
 
-    val array = IArray.from(colors.zip(parts))
-    array.indices.map: index =>
-      val (background, text) = array(index)
+    if colors.isEmpty then parts.join(e" ") else
+      val array = IArray.from(colors.zip(parts))
+      array.indices.map: index =>
+        val (background, text) = array(index)
 
-      val arrow = if index >= (array.length - 1) then e"$Reset${background.fg}()" else
-        e"${background.fg}(${array(index + 1)(0)}())"
+        val arrow = if index >= (array.length - 1) then e"$Reset${background.fg}()" else
+          e"${background.fg}(${array(index + 1)(0)}())"
 
-      e"$background( ${background.highContrast}($text) )$arrow"
+        e"$background( ${background.highContrast}($text) )$arrow"
 
-    . join
+      . join
