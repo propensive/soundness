@@ -172,11 +172,15 @@ private[ypsiloid] final class YamlParser:
 
   // Mirror of `JsonParser.errorAt`: builds a `ParseError` with the
   // YAML-format-local `Issue` and the current line/column, then aborts.
+  // `offset` carries the absolute byte position (from the cursor) so
+  // compile-time consumers (e.g. the `y"…"` interpolator macro) can
+  // map errors to source-file positions without re-scanning.
   private def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing =
     syncTo()
     val line = cursor.line.n0
     val column = cursor.column.n0
-    abort(ParseError(YamlAst, YamlAst.Position(line, column), issue))
+    val offset = cursor.position.n0
+    abort(ParseError(YamlAst, YamlAst.Position(line, column, offset = offset), issue))
 
   // ── Position / mark plumbing ────────────────────────────────────────────
 

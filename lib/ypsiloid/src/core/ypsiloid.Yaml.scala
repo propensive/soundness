@@ -39,6 +39,7 @@ import scala.collection.mutable as scm
 import scala.compiletime.*
 
 import anticipation.*
+import contextual.*
 import contingency.*
 import denominative.*
 import distillate.*
@@ -157,6 +158,22 @@ object Yaml extends Yaml2, Dynamic:
   // field on `class Yaml` is package-private so that breaking through
   // the `Yaml` abstraction is a deliberate, named action.
   def unseal(yaml: Yaml): YamlAst = yaml.root
+
+  inline given interpolator: Yaml is Interpolable:
+    type Result = Yaml
+
+    transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+      (inline insertions: Any*)
+    :   Yaml =
+
+      ${ypsiloid.internal.interpolator[parts, origins]('insertions)}
+
+
+  inline given extrapolator: Yaml is Extrapolable:
+    transparent inline def extrapolate[parts <: Tuple, origins <: Tuple](scrutinee: Yaml)
+    :   Boolean | Option[Tuple | Yaml] =
+
+      ${ypsiloid.internal.extractor[parts, origins]('scrutinee)}
 
   // Named-parameter construction: `Yaml.make(name = …, age = …)`
   // desugars to `applyDynamicNamed("make")(("name", …), ("age", …))`.

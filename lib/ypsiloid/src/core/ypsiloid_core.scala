@@ -33,6 +33,7 @@
 package ypsiloid
 
 import anticipation.*
+import contextual.*
 import contingency.*
 import gossamer.*
 import prepositional.*
@@ -47,6 +48,9 @@ extension (text: Text)
   def readAll(using Tactic[ParseError]): List[Yaml] = Yaml.parseAll(text)
 
 extension [entity: Encodable in Yaml](value: entity) def yaml: Yaml = value.encode
+
+extension (inline context: StringContext)
+  transparent inline def y: Interpolation = interpolation[Yaml](context)
 
 // AST predicates and accessors mirroring Jacinta's `JsonAst` extensions.
 // `isObject` / `isArray` distinguish mappings (even-length flat array of

@@ -993,7 +993,7 @@ object yossarian extends Library:
   object test extends Tests(core)
 
 object ypsiloid extends Library:
-  object core extends Component(distillate.core, turbulence.core, gossamer.core, contingency.core, vacuous.core, wisteria.core, zephyrine.core, panopticon.core, urticose.url, serpentine.core, beneficence.core)
+  object core extends Component(distillate.core, turbulence.core, gossamer.core, contingency.core, vacuous.core, wisteria.core, zephyrine.core, panopticon.core, urticose.url, serpentine.core, beneficence.core, gigantism.core, contextual.core)
 
   object test extends Tests(core, jacinta.core):
     def yamlTestSuiteCommit = "6ad3d2c62885d82fc349026c136ef560838fdf3d"
