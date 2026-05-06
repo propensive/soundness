@@ -185,7 +185,7 @@ object Tests extends Suite(m"Escapade tests"):
         // transform's bracket parsing, so the bracket stays as text.
         val out = emulate(e"x\\${Bold}(text)").buffer
         out.style(0.z, 0.z).bold
-      . aspire(_ == false)
+      . assert(_ == false)
 
 
 
@@ -473,12 +473,12 @@ object Tests extends Suite(m"Escapade tests"):
       test(m"dropChars preserves styling on remaining range"):
         val tt = e"$Bold(abcdef)".dropChars(2)
         emulate(tt).buffer.find(t"cdef").vouch.styles
-      . aspire(_.all(_.bold))
+      . assert(_.all(_.bold))
 
       test(m"takeChars preserves styling on remaining range"):
         val tt = e"$Bold(abcdef)".takeChars(3)
         emulate(tt).buffer.find(t"abc").vouch.styles
-      . aspire(_.all(_.bold))
+      . assert(_.all(_.bold))
 
     // ─── Textual extension methods (from gossamer) ────────────────────────
 
