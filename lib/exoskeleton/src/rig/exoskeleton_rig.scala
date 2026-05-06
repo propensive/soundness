@@ -51,6 +51,8 @@ extension (shell: Shell)
 
         val path = summon[Enclave.Tool].path.parent.vouch.encode
 
+        var psFile: Optional[Path on Linux] = Unset
+
         val shellInvocation = shell match
           case Shell.Zsh        => t"zsh -l"
           case Shell.Fish       => t"fish -l"
@@ -110,9 +112,10 @@ extension (shell: Shell)
             import filesystemOptions.dereferenceSymlinks.enabled
             import charEncoders.utf8
 
-            val psFile: Path on Linux = unsafely(temporaryDirectory/t"exoskeleton-${Uuid()}.ps1")
-            unsafely(psFile.open(psScript.tt.writeTo(_)))
-            t"POWERSHELL_UPDATECHECK=Off pwsh -NoLogo -NoExit -File ${psFile.encode}"
+            val file: Path on Linux = unsafely(temporaryDirectory/t"exoskeleton-${Uuid()}.ps1")
+            unsafely(file.open(psScript.tt.writeTo(_)))
+            psFile = file
+            t"POWERSHELL_UPDATECHECK=Off pwsh -NoLogo -NoExit -File ${file.encode}"
 
         sh"tmux new-session -d -s ${tmux.id} -x $width -y $height '$shellInvocation'".exec[Unit]()
         Tmux.attend:
@@ -164,5 +167,9 @@ extension (shell: Shell)
         val result = action
 
         sh"tmux kill-session -t ${tmux.id}".exec[Exit]()
+
+        psFile.let: file =>
+          import filesystemOptions.deleteRecursively.disabled
+          safely(file.delete())
 
         result
