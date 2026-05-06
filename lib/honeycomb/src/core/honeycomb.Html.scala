@@ -741,21 +741,20 @@ object Html extends Tag.Container
         // array.
         //
         // Duplicate detection uses a Bloom-filter-style cheap test before
-        // falling back to a linear scan: we keep a running OR / AND of the
+        // falling back to a linear scan: maintain a running OR of the
         // hashCodes of all already-stored keys, and for each new key check
-        // whether `(hashOr | h) == hashOr && (hashAnd & h) == hashAnd`. If
-        // *either* condition fails the new hash has bits outside the
-        // accumulated envelope and cannot match any prior key, so the scan
-        // is skipped. Only when both conditions hold (rare for typical
-        // 0–5-attribute elements with disjoint label hashes) do we walk
-        // the existing keys to confirm. The check loses precision as the
-        // attribute count grows, but for the HTML common case this turns
-        // O(n^2) string comparisons into O(n) bit ops + a handful of false
-        // positives.
+        // whether `(hashOr | h) == hashOr`. If the new hash has any bit
+        // outside the accumulated envelope it cannot match any prior key
+        // and the scan is skipped. Only when its bits are all already in
+        // the envelope (rare for typical 0–7-attribute elements with
+        // disjoint label hashes) do we walk the existing keys to confirm.
+        // The check loses precision as the attribute count grows (the OR
+        // eventually saturates), but for the HTML common case this turns
+        // O(n^2) string comparisons into O(n) bit ops plus a handful of
+        // false positives.
         var n = 0
         var done = false
         var hashOr = 0
-        var hashAnd = -1
 
         inline def ensureCapacity(): Unit =
           if 2*n >= attrInterleaved.length then
@@ -790,14 +789,13 @@ object Html extends Tag.Container
               // Bloom-style fast-skip; only fall back to a linear scan when
               // the new hashcode's bits are entirely within the accumulated
               // envelope (i.e. it might match a prior key).
-              if (hashOr | h) == hashOr && (hashAnd & h) == hashAnd then
+              if (hashOr | h) == hashOr then
                 var dup = 0
                 while dup < 2*n do
                   if attrInterleaved(dup) == key2Str then fail(DuplicateAttribute(key2))
                   dup += 2
 
               hashOr |= h
-              hashAnd &= h
 
               val assignment: Optional[Text] =
                 if !equality() then Unset else lay(fail(ExpectedMore)):
