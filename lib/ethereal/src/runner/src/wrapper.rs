@@ -58,6 +58,15 @@ pub fn run(args: &[String]) -> ! {
     const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
     if args.is_empty() { std::process::exit(1); }
+
+    // Tie the JVM's lifetime to the wrapper's via a Job Object with
+    // KILL_ON_JOB_CLOSE: when the wrapper dies — including via
+    // `Stop-Process -Force` / `TerminateProcess`, which bypasses any
+    // handler — the kernel closes the wrapper's handles, the job's last
+    // reference goes with them, and Windows terminates every process in
+    // the job. The JVM joins the job by inheritance from the wrapper.
+    bind_to_kill_on_close_job();
+
     let java = &args[0];
     let java_args = &args[1..];
     let mut child = match Command::new(java)
@@ -70,4 +79,35 @@ pub fn run(args: &[String]) -> ! {
     };
     let status = child.wait().ok();
     std::process::exit(status.and_then(|status| status.code()).unwrap_or(1));
+}
+
+#[cfg(windows)]
+fn bind_to_kill_on_close_job() {
+    use windows_sys::Win32::Foundation::HANDLE;
+    use windows_sys::Win32::System::JobObjects::{
+        AssignProcessToJobObject, CreateJobObjectW,
+        JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+        JobObjectExtendedLimitInformation, SetInformationJobObject,
+    };
+    use windows_sys::Win32::System::Threading::GetCurrentProcess;
+
+    unsafe {
+        let job: HANDLE = CreateJobObjectW(std::ptr::null(), std::ptr::null());
+        if job.is_null() { return; }
+
+        let mut info: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = std::mem::zeroed();
+        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        let info_size = std::mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32;
+        SetInformationJobObject(
+            job,
+            JobObjectExtendedLimitInformation,
+            &info as *const _ as *const _,
+            info_size,
+        );
+
+        AssignProcessToJobObject(job, GetCurrentProcess());
+        // Deliberately leak the handle: closing it now would trigger
+        // KILL_ON_JOB_CLOSE immediately. The kernel reclaims it when the
+        // wrapper exits, which is exactly the moment we want it to fire.
+    }
 }
