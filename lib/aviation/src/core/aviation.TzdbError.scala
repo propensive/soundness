@@ -58,5 +58,5 @@ object TzdbError:
     case NoTzdbFile(name: Text) extends Reason(8)
 
 case class TzdbError(reason: TzdbError.Reason, line: Int)(using Diagnostics)
-extends Error(realm"av", 4, reason.number)
+extends Error(385, reason.number)
   ( m"the timezone could not be parsed at line $line: $reason" )

@@ -48,4 +48,4 @@ object RemoteError:
     case Reason.Unknown         => t"of an unknown reason"
 
 case class RemoteError(reason: RemoteError.Reason)(using Diagnostics)
-extends Error(realm"sl", 1, reason.number)(m"failed to perform a remote operation because $reason")
+extends Error(306, reason.number)(m"failed to perform a remote operation because $reason")

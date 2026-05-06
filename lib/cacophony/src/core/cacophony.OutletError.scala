@@ -47,4 +47,4 @@ object OutletError:
     case Reason.Closed                   => m"the playback has already been stopped"
 
 case class OutletError(outlet: Text, reason: OutletError.Reason)(using Diagnostics)
-extends Error(realm"ca", 2, reason.number)(m"could not play to outlet $outlet because $reason")
+extends Error(374, reason.number)(m"could not play to outlet $outlet because $reason")

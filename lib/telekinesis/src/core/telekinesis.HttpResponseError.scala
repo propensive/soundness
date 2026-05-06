@@ -46,4 +46,4 @@ object HttpResponseError:
       case Reason.Status(value)                => m"the HTTP status code $value was invalid"
 
 case class HttpResponseError(reason: HttpResponseError.Reason)(using Diagnostics)
-extends Error(realm"te", 4, reason.number)(m"could not parse HTTP response because $reason")
+extends Error(366, reason.number)(m"could not parse HTTP response because $reason")

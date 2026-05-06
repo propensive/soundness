@@ -69,4 +69,4 @@ object ConnectError:
     case Unknown               extends Reason(5)
 
 case class ConnectError(reason: ConnectError.Reason)(using Diagnostics)
-extends Error(realm"te", 2, reason.number)(m"the TCP connection failed because $reason")
+extends Error(999, reason.number)(m"the TCP connection failed because $reason")

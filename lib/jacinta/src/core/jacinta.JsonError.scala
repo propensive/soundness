@@ -51,4 +51,4 @@ object JsonError:
     case Absent     extends Reason(3)
 
 case class JsonError(reason: JsonError.Reason)(using Diagnostics)
-extends Error(realm"ja", 1, reason.number)(m"could not access the value because $reason")
+extends Error(337, reason.number)(m"could not access the value because $reason")

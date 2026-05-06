@@ -46,4 +46,4 @@ object BindError:
     case Reason.AddressUnavailable => m"the requested address is not available on this host"
 
 case class BindError(reason: BindError.Reason)(using Diagnostics)
-extends Error(realm"cx", 1, reason.number)(m"the socket could not be bound because $reason")
+extends Error(265, reason.number)(m"the socket could not be bound because $reason")

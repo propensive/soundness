@@ -59,5 +59,5 @@ object UrlError:
     case Colon, More, LowerCaseLetter, PortRange, Number
 
 case class UrlError(text: Text, offset: Ordinal, reason: UrlError.Reason)(using Diagnostics)
-extends Error(realm"ur", 7, reason.number)
+extends Error(714, reason.number)
   ( m"the URL $text is not valid: $reason at ${offset.n0}" )

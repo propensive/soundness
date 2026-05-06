@@ -49,4 +49,4 @@ object FqcnError:
     case Reason.JavaKeyword(keyword) => m"a package name cannot be the Java keyword, $keyword"
 
 case class FqcnError(name: Text, reason: FqcnError.Reason)(using Diagnostics)
-extends Error(realm"dg", 1, reason.number)(m"the class name $name is not valid because $reason")
+extends Error(17, reason.number)(m"the class name $name is not valid because $reason")

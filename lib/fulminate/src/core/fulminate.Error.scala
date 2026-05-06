@@ -39,17 +39,17 @@ object Error:
     case error: Error         => error
     case throwable: Throwable => UncheckedError(throwable)
 
-transparent abstract class Error(val realm: Realm, val d: Int, val e: Int)
+transparent abstract class Error(val d: Int, val e: Int)
   ( val message: Message, private val cause: Throwable | Null )
   ( using val diagnostics: Diagnostics )
 extends Exception(message.text.s, cause, false, diagnostics.captureStack):
   this: Error =>
 
-  def this(realm: Realm, d: Int, e: Int)(message: Message)(using Diagnostics) =
-    this(realm, d, e)(message, null)
+  def this(d: Int, e: Int)(message: Message)(using Diagnostics) =
+    this(d, e)(message, null)
 
   def this(message: Message, cause: Throwable | Null = null)(using Diagnostics) =
-    this(Realm("zz"), 0, 0)(message, cause)
+    this(0, 0)(message, cause)
 
   def fullClass: List[Text] = List(getClass.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
   def className: Text = fullClass.last
@@ -59,7 +59,7 @@ extends Exception(message.text.s, cause, false, diagnostics.captureStack):
     if d == 0 then "".tt
     else
       val ePart = if e == 0 then "" else s".$e"
-      s"SN-${realm.code}/$d$ePart".tt
+      f"SN-$d%03d$ePart".tt
 
   def colourCode: Text =
     if d == 0 then "".tt
@@ -73,9 +73,10 @@ extends Exception(message.text.s, cause, false, diagnostics.captureStack):
       val cyan   = s"$esc[38;2;0;200;255m"
       val reset  = s"$esc[0m"
       val ePart  = if e == 0 then "" else s"$gray.$cyan$e"
-      val link   = if hyperlink then s"$esc]8;;https://soundness.dev/SN-${realm.code}/$d$bel" else ""
+      val padded = f"$d%03d"
+      val link   = if hyperlink then s"$esc]8;;https://soundness.dev/SN-$padded$bel" else ""
       val unlink = if hyperlink then s"$esc]8;;$bel" else ""
-      s"$link$gray[$orange↯SN$gray-$yellow${realm.code}$gray/$cyan$d$ePart$gray]$reset$unlink"
+      s"$link$gray[$orange↯SN$gray-$cyan$padded$ePart$gray]$reset$unlink"
       .tt
 
   def labelled: Message =

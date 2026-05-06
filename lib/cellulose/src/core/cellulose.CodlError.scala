@@ -56,4 +56,4 @@ object CodlError:
 
 
 case class CodlError(reason: CodlError.Reason)(using Diagnostics)
-extends Error(realm"cl", 2, reason.number)(m"the CoDL was not valid because $reason")
+extends Error(949, reason.number)(m"the CoDL was not valid because $reason")

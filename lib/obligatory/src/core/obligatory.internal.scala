@@ -139,7 +139,7 @@ object internal:
                       CaseDef(Wildcard(), None, rhs.asTerm)
 
                     case None =>
-                      halt(5, m"could not find a contextual `Tactic[JsonRpcError]` instance")
+                      halt(728, m"could not find a contextual `Tactic[JsonRpcError]` instance")
 
                   Match('method.asTerm, cases :+ wildcard).asExprOf[Optional[Json]]
                 }
@@ -249,12 +249,12 @@ object internal:
                             found
                           """
 
-                case _ => halt(6, m"a contextual `Online` instance is required")
-              case _ => halt(7, m"a contextual `Codicil` instance is required")
-            case _ => halt(8, m"a contextual `Monitor` instance is required")
+                case _ => halt(593, m"a contextual `Online` instance is required")
+              case _ => halt(169, m"a contextual `Codicil` instance is required")
+            case _ => halt(323, m"a contextual `Monitor` instance is required")
 
         case _ =>
-          halt(9, m"the method ${method.name} must have exactly one parameter list")
+          halt(69, m"the method ${method.name} must have exactly one parameter list")
       })
 
     val modDef = ClassDef.module(module, parents, body = defDefs)
@@ -353,7 +353,7 @@ object internal:
                   """
 
         case _ =>
-          halt(9, m"the method ${method.name} must have exactly one parameter list")
+          halt(69, m"the method ${method.name} must have exactly one parameter list")
       })
 
     val modDef = ClassDef.module(module, parents, body = defDefs)

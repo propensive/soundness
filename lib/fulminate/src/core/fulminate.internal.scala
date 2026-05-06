@@ -54,7 +54,7 @@ object internal:
     val name: String = context.valueOrAbort.parts.head
     if !name.matches("[a-z]+") then
       val msg = Message(List("the realm code should contain only lowercase letters".tt))
-      halt(3, msg)(using summon, Realm("fu"))
+      halt(769, msg)
     else '{Realm(${Expr(name)}.tt)}
 
   transparent inline def mSubMessages[param](inline subs: param): List[Message] =

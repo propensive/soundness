@@ -35,4 +35,4 @@ package urticose
 import fulminate.*
 
 case class OfflineError()(using Diagnostics)
-extends Error(realm"ur", 5, 0)(m"an Internet connection is not available")
+extends Error(770, 0)(m"an Internet connection is not available")

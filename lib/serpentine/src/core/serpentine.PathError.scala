@@ -60,5 +60,5 @@ object PathError:
     case InvalidName    extends Reason(4)
 
 case class PathError(reason: PathError.Reason, path: Optional[Text])(using Diagnostics)
-extends Error(realm"se", 1, reason.number)
+extends Error(831, reason.number)
   ( m"the path ${path.lay(t"")(_+t" ")}was invalid because $reason" )

@@ -78,7 +78,7 @@ object internal:
 
                 if value < lowerBound
                 then halt
-                  ( 1,
+                  ( 838,
                     m"""
                       the value $string is less than the lower bound for this value,
                       ${lowerBound.toString}
@@ -86,7 +86,7 @@ object internal:
 
                 if value > upperBound
                 then halt
-                  ( 2,
+                  ( 683,
                     m"""
                       the value $string is greater than the upper bound for this value,
                       ${upperBound.toString}
@@ -95,10 +95,10 @@ object internal:
                 '{${Expr(value)}.asInstanceOf[left ~ right]}
 
               case _ =>
-                halt(3, m"the upper bound must be a Double singleton literal types")
+                halt(224, m"the upper bound must be a Double singleton literal types")
 
           case _ =>
-            halt(4, m"the lower bound must be a Double singleton literal types")
+            halt(51, m"the lower bound must be a Double singleton literal types")
 
       case None =>
         '{NumericRange($digits.toDouble)}

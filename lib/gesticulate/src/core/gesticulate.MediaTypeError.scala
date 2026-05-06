@@ -60,5 +60,5 @@ object MediaTypeError:
         txt"the type must be one of: ${list.join(t", ", t" or ")}"
 
 case class MediaTypeError(value: Text, reason: MediaTypeError.Reason)(using Diagnostics)
-extends Error(realm"ge", 1, reason.number)
+extends Error(353, reason.number)
   ( m"the value $value is not a valid media type; ${reason.message}" )

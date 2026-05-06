@@ -55,4 +55,4 @@ object MultipartError:
 import MultipartError.Reason
 
 case class MultipartError(reason: MultipartError.Reason)(using Diagnostics)
-extends Error(realm"ge", 2, reason.number)(m"multipart data could not be read because $reason")
+extends Error(937, reason.number)(m"multipart data could not be read because $reason")

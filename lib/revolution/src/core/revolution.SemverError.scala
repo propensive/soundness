@@ -49,5 +49,5 @@ object SemverError:
     case Reason.InvalidCharacter => m"an identifier contained a character outside `[0-9A-Za-z-]`"
 
 case class SemverError(version: Text, reason: SemverError.Reason)(using Diagnostics)
-extends Error(realm"re", 1, reason.number)
+extends Error(250, reason.number)
   ( m"$version is not a valid semantic version because $reason" )

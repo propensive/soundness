@@ -52,4 +52,4 @@ object HostnameError:
     case InitialDash(label: Text)  extends Reason(5)
 
 case class HostnameError(text: Text, reason: HostnameError.Reason)(using Diagnostics)
-extends Error(realm"ur", 2, reason.number)(m"the hostname is not valid because $reason")
+extends Error(892, reason.number)(m"the hostname is not valid because $reason")

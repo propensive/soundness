@@ -49,4 +49,4 @@ object InstallError:
     case Io          extends Reason(2)
 
 case class InstallError(reason: InstallError.Reason)(using Diagnostics)
-extends Error(realm"ek", 1, reason.number)(m"the installation failed because $reason")
+extends Error(822, reason.number)(m"the installation failed because $reason")

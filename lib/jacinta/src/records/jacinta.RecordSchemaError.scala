@@ -58,5 +58,5 @@ object RecordSchemaError:
     case PatternMismatch(value: Text, pattern: Regex)                             extends Reason(4)
 
 case class RecordSchemaError(reason: RecordSchemaError.Reason)(using Diagnostics)
-extends Error(realm"ja", 3, reason.number)
+extends Error(624, reason.number)
          (m"the JSON was not valid according to the schema because $reason")

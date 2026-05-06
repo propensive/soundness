@@ -50,4 +50,4 @@ object WatchError:
     case Reason.PermissionDenied => m"the user does not have permission to watch the path"
 
 case class WatchError(reason: WatchError.Reason)(using Diagnostics)
-extends Error(realm"su", 1, reason.number)(m"the path could not be watched because $reason")
+extends Error(545, reason.number)(m"the path could not be watched because $reason")

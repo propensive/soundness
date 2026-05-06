@@ -49,4 +49,4 @@ object NumberError:
 case class NumberError
   ( text: Text, specializable: Specializable, reason: NumberError.Reason )
   ( using Diagnostics )
-extends Error(realm"dl", 1, reason.number)(m"$text is not a valid $specializable because $reason")
+extends Error(405, reason.number)(m"$text is not a valid $specializable because $reason")

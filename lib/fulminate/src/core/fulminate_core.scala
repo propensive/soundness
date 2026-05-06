@@ -46,23 +46,23 @@ package errorDiagnostics:
 
 def panic(message: Message): Nothing = throw Panic(message)
 
-private def errorPrefix(realm: Realm, d: Int, e: Int, useColor: Boolean): String =
+private def errorPrefix(d: Int, e: Int, useColor: Boolean): String =
   val esc = 27.toChar
+  val padded = f"$d%03d"
   if useColor then
     val hyperlink = false
     val bel = 7.toChar
     val gray   = s"$esc[38;2;128;128;128m"
     val orange = s"$esc[38;2;255;165;0m"
-    val yellow = s"$esc[38;2;255;215;0m"
     val cyan   = s"$esc[38;2;0;200;255m"
     val reset  = s"$esc[0m"
     val ePart  = if e == 0 then "" else s"$gray.$cyan$e"
-    val link   = if hyperlink then s"$esc]8;;https://soundness.dev/SN-${realm.code}/$d$bel" else ""
+    val link   = if hyperlink then s"$esc]8;;https://soundness.dev/SN-$padded$bel" else ""
     val unlink = if hyperlink then s"$esc]8;;$bel" else ""
-    s"$link$gray[$orange↯SN$gray-$yellow${realm.code}$gray/$cyan$d$ePart$gray]$reset$unlink "
+    s"$link$gray[$orange↯SN$gray-$cyan$padded$ePart$gray]$reset$unlink "
   else
     val ePart = if e == 0 then "" else s".$e"
-    s"[↯SN-${realm.code}/$d$ePart] "
+    s"[↯SN-$padded$ePart] "
 
 private def detectColor(using quotes: Quotes): Boolean =
   import dotty.tools.dotc.config.Settings.Setting.value
@@ -74,7 +74,6 @@ private def detectColor(using quotes: Quotes): Boolean =
       false
 
 def halt(using Quotes)(message: Message, position: quotes.reflect.Position | Null = null)
-  ( using Realm )
 :   Nothing =
 
   import quotes.reflect.*
@@ -82,39 +81,35 @@ def halt(using Quotes)(message: Message, position: quotes.reflect.Position | Nul
   if position == null then report.errorAndAbort(text) else report.errorAndAbort(text, position)
 
 
-def halt(d: Int, message: Message)(using quotes: Quotes, realm: Realm): Nothing =
+def halt(d: Int, message: Message)(using quotes: Quotes): Nothing =
   import quotes.reflect.*
   val body = if detectColor then message.colorText.s else message.text.s
-  report.errorAndAbort(errorPrefix(realm, d, 0, detectColor)+body)
+  report.errorAndAbort(errorPrefix(d, 0, detectColor)+body)
 
 
-def halt(d: Int, message: Message, position: Matchable)(using quotes: Quotes, realm: Realm)
-:   Nothing =
-
+def halt(d: Int, message: Message, position: Matchable)(using quotes: Quotes): Nothing =
   import quotes.reflect.*
   val body = if detectColor then message.colorText.s else message.text.s
-  val text = errorPrefix(realm, d, 0, detectColor)+body
+  val text = errorPrefix(d, 0, detectColor)+body
   position match
     case null                     => report.errorAndAbort(text)
     case pos: Position @unchecked => report.errorAndAbort(text, pos)
     case _                        => report.errorAndAbort(text)
 
 
-def halt(d: Int, reason: Clarification, message: Message)(using quotes: Quotes, realm: Realm)
-:   Nothing =
-
+def halt(d: Int, reason: Clarification, message: Message)(using quotes: Quotes): Nothing =
   import quotes.reflect.*
   val body = if detectColor then message.colorText.s else message.text.s
-  report.errorAndAbort(errorPrefix(realm, d, reason.number, detectColor)+body)
+  report.errorAndAbort(errorPrefix(d, reason.number, detectColor)+body)
 
 
 def halt(d: Int, reason: Clarification, message: Message, position: Matchable)
-  ( using quotes: Quotes, realm: Realm )
+  ( using quotes: Quotes )
 :   Nothing =
 
   import quotes.reflect.*
   val body = if detectColor then message.colorText.s else message.text.s
-  val text = errorPrefix(realm, d, reason.number, detectColor)+body
+  val text = errorPrefix(d, reason.number, detectColor)+body
   position match
     case null                     => report.errorAndAbort(text)
     case pos: Position @unchecked => report.errorAndAbort(text, pos)
@@ -122,7 +117,6 @@ def halt(d: Int, reason: Clarification, message: Message, position: Matchable)
 
 
 def warn(using Quotes)(message: Message, position: quotes.reflect.Position | Null = null)
-  ( using Realm )
 :   Unit =
 
   import quotes.reflect.*
@@ -130,18 +124,16 @@ def warn(using Quotes)(message: Message, position: quotes.reflect.Position | Nul
   if position == null then report.warning(text) else report.warning(text, position)
 
 
-def warn(d: Int, message: Message)(using quotes: Quotes, realm: Realm): Unit =
+def warn(d: Int, message: Message)(using quotes: Quotes): Unit =
   import quotes.reflect.*
   val body = if detectColor then message.colorText.s else message.text.s
-  report.warning(errorPrefix(realm, d, 0, detectColor)+body)
+  report.warning(errorPrefix(d, 0, detectColor)+body)
 
 
-def warn(d: Int, message: Message, position: Matchable)(using quotes: Quotes, realm: Realm)
-:   Unit =
-
+def warn(d: Int, message: Message, position: Matchable)(using quotes: Quotes): Unit =
   import quotes.reflect.*
   val body = if detectColor then message.colorText.s else message.text.s
-  val text = errorPrefix(realm, d, 0, detectColor)+body
+  val text = errorPrefix(d, 0, detectColor)+body
 
   position match
     case null                     => report.warning(text)
@@ -149,21 +141,19 @@ def warn(d: Int, message: Message, position: Matchable)(using quotes: Quotes, re
     case _                        => report.warning(text)
 
 
-def warn(d: Int, reason: Clarification, message: Message)(using quotes: Quotes, realm: Realm)
-:   Unit =
-
+def warn(d: Int, reason: Clarification, message: Message)(using quotes: Quotes): Unit =
   import quotes.reflect.*
   val body = if detectColor then message.colorText.s else message.text.s
-  report.warning(errorPrefix(realm, d, reason.number, detectColor)+body)
+  report.warning(errorPrefix(d, reason.number, detectColor)+body)
 
 
 def warn(d: Int, reason: Clarification, message: Message, position: Matchable)
-  ( using quotes: Quotes, realm: Realm )
+  ( using quotes: Quotes )
 :   Unit =
 
   import quotes.reflect.*
   val body = if detectColor then message.colorText.s else message.text.s
-  val text = errorPrefix(realm, d, reason.number, detectColor)+body
+  val text = errorPrefix(d, reason.number, detectColor)+body
   position match
     case null                     => report.warning(text)
     case pos: Position @unchecked => report.warning(text, pos)

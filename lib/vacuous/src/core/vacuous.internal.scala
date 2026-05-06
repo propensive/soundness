@@ -44,13 +44,13 @@ object internal:
     import quotes.reflect.*
     if TypeRepr.of[Unset.type] <:< TypeRepr.of[value].widen
     then '{null.asInstanceOf[Optionality[value]]}
-    else halt(2, m"the type ${TypeRepr.of[value].widen.show} is not an `Optional`")
+    else halt(465, m"the type ${TypeRepr.of[value].widen.show} is not an `Optional`")
 
   def concrete[typeRef: Type]: Macro[typeRef is Concrete] =
     import quotes.reflect.*
 
     if TypeRepr.of[typeRef].typeSymbol.isAbstractType
-    then halt(3, m"type ${TypeRepr.of[typeRef].show} is abstract")
+    then halt(991, m"type ${TypeRepr.of[typeRef].show} is abstract")
     else '{Concrete[typeRef]()}
 
   def distinct[typeRef: Type, union: Type]: Macro[typeRef is Distinct from union] =
@@ -60,7 +60,7 @@ object internal:
 
     if TypeRepr.of[typeRef] <:< TypeRepr.of[union] then
       halt
-        ( 4,
+        ( 401,
           m"""
             type ${TypeRepr.of[typeRef].show} cannot be proven distinct from
             ${TypeRepr.of[union].show}
@@ -87,7 +87,7 @@ object internal:
 
     recur(TypeRepr.of[typeRef]).asType.absolve match case '[type result <: typeRef; result] =>
       if seen then '{Mandatable[typeRef, result]()}
-      else halt(5, m"the value is not an `Optional`")
+      else halt(259, m"the value is not an `Optional`")
 
   def optimizeOr[value: Type](optional: Expr[Optional[value]], default: Expr[value]): Macro[value] =
     import quotes.reflect.*

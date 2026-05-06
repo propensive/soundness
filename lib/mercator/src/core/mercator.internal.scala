@@ -82,9 +82,9 @@ object internal:
         }
 
     else if applyMethods.length == 0
-    then halt(1, m"the companion object ${identityType.name} has no candidate apply methods")
+    then halt(569, m"the companion object ${identityType.name} has no candidate apply methods")
     else
-      halt(2, m"the companion object ${identityType.name} has more than one candidate apply method")
+      halt(659, m"the companion object ${identityType.name} has more than one candidate apply method")
 
   def functor[functor[_]](using Type[functor], Quotes): Expr[Functor[functor]] =
     import quotes.reflect.*
@@ -97,7 +97,7 @@ object internal:
         case _                      => false
 
     val pointExpr: Expr[Identity[functor]] = Expr.summon[Identity[functor]].getOrElse:
-      halt(3, m"could not find Identity value for ${functorType.name}")
+      halt(970, m"could not find Identity value for ${functorType.name}")
 
     lazy val makeFunctor =
       ' {
@@ -114,8 +114,8 @@ object internal:
         }
 
     if mapMethods.length == 1 then makeFunctor
-    else if mapMethods.length == 0 then halt(4, m"the type ${functorType.name} has no map methods")
-    else halt(5, m"the type ${functorType.name} has more than one possible map method")
+    else if mapMethods.length == 0 then halt(899, m"the type ${functorType.name} has no map methods")
+    else halt(380, m"the type ${functorType.name} has more than one possible map method")
 
   def monad[monad[_]](using Type[monad], Quotes): Expr[Monad[monad]] =
     import quotes.reflect.*
@@ -128,7 +128,7 @@ object internal:
         case _                          => false
 
     val functorExpr: Expr[Functor[monad]] = Expr.summon[Functor[monad]].getOrElse:
-      halt(6, m"could not find Functor value for ${monadType.name}")
+      halt(585, m"could not find Functor value for ${monadType.name}")
 
     lazy val makeMonad =
       ' {
@@ -154,5 +154,5 @@ object internal:
 
     if flatMapMethods.length == 1 then makeMonad
     else if flatMapMethods.length == 0
-    then halt(7, m"the type ${monadType.name} has no flatMap methods")
-    else halt(8, m"the type ${monadType.name} has more than one possible flatMap method")
+    then halt(356, m"the type ${monadType.name} has no flatMap methods")
+    else halt(538, m"the type ${monadType.name} has more than one possible flatMap method")

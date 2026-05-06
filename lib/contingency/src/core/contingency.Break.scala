@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class Break[result](value: result)
-extends Error(realm"cg", 1, 0)(m"escaping")(using Diagnostics.omit)
+extends Error(891, 0)(m"escaping")(using Diagnostics.omit)

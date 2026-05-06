@@ -60,4 +60,4 @@ object WebDriverError:
 case class WebDriverError
   ( reason: WebDriverError.Reason, detail: Text, browserStacktrace: List[Text] )
   ( using Diagnostics )
-extends Error(realm"ta", 1, reason.number)(m"the WebDriver action failed because $reason: $detail")
+extends Error(589, reason.number)(m"the WebDriver action failed because $reason: $detail")

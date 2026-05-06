@@ -83,5 +83,5 @@ object RegexError:
     case ZeroMaximum         extends Reason(11)
 
 case class RegexError(index: Int, reason: RegexError.Reason)(using Diagnostics)
-extends Error(realm"kd", 1, reason.number)
+extends Error(397, reason.number)
               (m"the regular expression could not be parsed because $reason at $index")

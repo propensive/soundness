@@ -192,7 +192,7 @@ object internal:
 
     val staticParts: List[Expr[Ascii]] = context.value.get.parts.to(List).map: part =>
       val bytes: IArray[Expr[Byte]] = part.tt.chars.map: char =>
-        if char >= 128 then halt(3, m"$char is not a valid ASCII character")
+        if char >= 128 then halt(824, m"$char is not a valid ASCII character")
         Expr[Byte](char.toByte)
 
       '{Ascii(Data(${Varargs(bytes)}*))}

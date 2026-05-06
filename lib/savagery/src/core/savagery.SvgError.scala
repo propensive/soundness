@@ -47,4 +47,4 @@ object SvgError:
     case Reason.MalformedColor(color)   => m"the color $color could not be parsed"
 
 case class SvgError(reason: SvgError.Reason)(using Diagnostics)
-extends Error(realm"sv", 1, reason.number)(m"the SVG could not be parsed because $reason")
+extends Error(122, reason.number)(m"the SVG could not be parsed because $reason")

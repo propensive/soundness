@@ -53,4 +53,4 @@ object MacAddressError:
     case NotHex(group: Int, content: Text)         extends Reason(3)
 
 case class MacAddressError(reason: MacAddressError.Reason)(using Diagnostics)
-extends Error(realm"ur", 4, reason.number)(m"the MAC address is not valid because $reason")
+extends Error(532, reason.number)(m"the MAC address is not valid because $reason")

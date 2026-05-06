@@ -90,5 +90,5 @@ object GitError:
     case PushFailed         => m"the push operation failed"
 
 case class GitError(reason: GitError.Reason)(using Diagnostics)
-extends Error(realm"oc", 1, reason.number)
+extends Error(685, reason.number)
   ( m"the Git operation could not be completed because $reason" )

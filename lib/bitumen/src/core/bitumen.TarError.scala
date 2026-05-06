@@ -44,4 +44,4 @@ object TarError:
       m"the $field field is $length bytes, exceeding the USTAR limit of $maximum bytes"
 
 case class TarError(reason: TarError.Reason)(using Diagnostics)
-extends Error(realm"bi", 1, reason.number)(m"the TAR archive could not be written because $reason")
+extends Error(284, reason.number)(m"the TAR archive could not be written because $reason")

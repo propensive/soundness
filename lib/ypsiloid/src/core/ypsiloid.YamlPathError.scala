@@ -42,5 +42,5 @@ object YamlPathError:
     case Reason.UnknownDocument => m"the registry contains no document at the path's URL"
 
 case class YamlPathError(reason: YamlPathError.Reason)(using Diagnostics)
-extends Error(realm"yp", 2, reason.number)
+extends Error(546, reason.number)
   ( m"the YAML path could not be resolved because $reason" )

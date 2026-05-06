@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class TerminalError()(using Diagnostics)
-extends Error(realm"pf", 2, 0)(m"STDIN is not attached to a TTY")
+extends Error(493, 0)(m"STDIN is not attached to a TTY")

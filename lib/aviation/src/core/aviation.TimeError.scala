@@ -59,4 +59,4 @@ object TimeError:
     case Unknown(text: Text, kind: Text) extends Reason(3)
 
 case class TimeError(reason: TimeError.Reason)(using Diagnostics)
-extends Error(realm"av", 1, reason.number)(m"the date was not valid because $reason")
+extends Error(333, reason.number)(m"the date was not valid because $reason")

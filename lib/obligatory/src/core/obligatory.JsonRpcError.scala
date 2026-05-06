@@ -42,4 +42,4 @@ object JsonRpcError:
     case Reason.UnknownMethod => m"the method name was not recognised by the dispatcher"
 
 case class JsonRpcError(reason: JsonRpcError.Reason)(using Diagnostics)
-extends Error(realm"ob", 4, reason.number)(m"the JSON-RPC operation failed because $reason")
+extends Error(721, reason.number)(m"the JSON-RPC operation failed because $reason")

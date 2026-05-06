@@ -35,4 +35,4 @@ package hypotenuse
 import fulminate.*
 
 case class OverflowError()(using Diagnostics)
-extends Error(realm"hp", 1, 0)(m"an overflow error occurred")
+extends Error(331, 0)(m"an overflow error occurred")

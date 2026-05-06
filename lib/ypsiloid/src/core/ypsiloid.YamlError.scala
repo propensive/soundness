@@ -45,4 +45,4 @@ object YamlError:
     case Absent extends Reason(2)
 
 case class YamlError(reason: YamlError.Reason)(using Diagnostics)
-extends Error(realm"yp", 1, reason.number)(m"could not access the YAML value because $reason")
+extends Error(31, reason.number)(m"could not access the YAML value because $reason")

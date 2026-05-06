@@ -46,4 +46,4 @@ object McpError:
     case Reason.MissingParameter => m"a required parameter was not present in the input"
 
 case class McpError(reason: McpError.Reason)(using Diagnostics)
-extends Error(realm"sn", 1, reason.number)(m"the MCP operation failed because $reason")
+extends Error(630, reason.number)(m"the MCP operation failed because $reason")

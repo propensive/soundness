@@ -42,4 +42,4 @@ object DataError:
     case Reason.UnknownReference => m"the value has not been stored in the database"
 
 case class DataError(reason: DataError.Reason)(using Diagnostics)
-extends Error(realm"an", 1, reason.number)(m"the database operation failed because $reason")
+extends Error(229, reason.number)(m"the database operation failed because $reason")
