@@ -178,7 +178,7 @@ object Tests extends Suite(m"Escapade tests"):
     suite(m"Interpolator: escapes"):
       test(m"escaped backslash before stylize is preserved"):
         emit(e"\\${Bold}(text)").contains(t"\\")
-      . aspire(_ == false)
+      . assert(_ == false)
 
       test(m"escape before stylize cancels the markup"):
         // Per Ansi.parse: a backslash after a markup transform skips the
