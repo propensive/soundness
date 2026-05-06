@@ -59,6 +59,18 @@ object Tests extends Suite(m"Ziggurat tests"):
     else runTests()
 
   def runTests(): Unit =
+    val tempDirs = scala.collection.mutable.ListBuffer.empty[Path on Linux]
+
+    def tempDir(): Path on Linux =
+      val dir: Path on Linux = temporaryDirectory[Path on Linux] / Uuid().show
+      dir.create[Directory]()
+      tempDirs += dir
+      dir
+
+    try runTestsBody(tempDir) finally tempDirs.foreach: dir =>
+      safely(dir.delete())
+
+  private def runTestsBody(tempDir: () => Path on Linux): Unit =
     val labels = List(t"linux-x64", t"linux-arm64", t"macos-x64", t"macos-arm64")
 
     val payloads = labels.map: label =>
@@ -68,8 +80,7 @@ object Tests extends Suite(m"Ziggurat tests"):
     val bundleBytes: Data = PolyglotInstaller.bundle(payloads)
 
     def stage(): (Path on Linux, Path on Linux) =
-      val dir: Path on Linux = temporaryDirectory[Path on Linux] / Uuid().show
-      dir.create[Directory]()
+      val dir = tempDir()
       val script = dir / t"hello"
       script.create[File]()
       script.open: handle =>
@@ -129,8 +140,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       if !winSshOk
       then Out.println(t"Windows host $host unreachable via SSH; skipping Windows tests")
       else
-        val workDir: Path on Linux = temporaryDirectory[Path on Linux] / Uuid().show
-        workDir.create[Directory]()
+        val workDir: Path on Linux = tempDir()
 
         val compilePs = workDir / t"compile.ps1"
         compilePs.create[File]()
