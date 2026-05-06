@@ -593,12 +593,16 @@ object Html extends Tag.Container
         advance()
         if !more then raise(ParseError(Html, currentPosition(), ExpectedMore))
 
-      inline def expect(char: Char): Unit =
+      // Non-inline: each `expect`/`expectInsensitive` call site otherwise
+      // re-expands `advance` + `lay` + `fail` + `Issue.Unexpected.apply`,
+      // which over the doctype/cdata parsers contributes a large chunk of
+      // `tag\$8`'s bytecode.
+      def expect(char: Char): Unit =
         advance()
         lay(fail(ExpectedMore)): datum =>
           if datum != char then fail(Unexpected(datum))
 
-      inline def expectInsensitive(char: Char): Unit =
+      def expectInsensitive(char: Char): Unit =
         advance()
         lay(fail(ExpectedMore)): datum =>
           if asciiLower(datum) != asciiLower(char) then fail(Unexpected(datum))
