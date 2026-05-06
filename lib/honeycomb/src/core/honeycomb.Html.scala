@@ -449,9 +449,15 @@ object Html extends Tag.Container
     protected inline def advance(): Unit = cursor.advance()
     protected inline def position: Int = cursor.position.n0
 
-    protected inline def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
+    // Non-`inline` so that `cursor.mark`'s lineation-tracking expansion
+    // (recordMark allocation + `lineationActive` branch) is emitted once in
+    // its own method rather than re-expanded into every call site, keeping
+    // `read`/`tag`/`tagname` small enough for the JIT to pick up. The body
+    // is still simple enough for the JIT to inline at hot call sites via
+    // its own inlining heuristics.
+    protected def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
 
-    protected inline def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
+    protected def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
       cursor.grab(start, end).asInstanceOf[Text]
 
     // ASCII-range character predicates and case fold. Lower the per-character
@@ -468,7 +474,7 @@ object Html extends Tag.Container
     protected inline def asciiLower(char: Char): Char =
       if char >= 'A' && char <= 'Z' then (char + 32).toChar else char
 
-    protected inline def reset(start: Cursor.Mark): Unit = cursor.cue(start)
+    protected def reset(start: Cursor.Mark): Unit = cursor.cue(start)
 
     protected def cloneTo
                   (start: Cursor.Mark, end: Cursor.Mark)
