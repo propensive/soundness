@@ -54,4 +54,4 @@ object Tests extends Suite(m"Cardinality tests"):
         demilitarize:
           val x: -1.0 ~ 1.0 = 0.0
           val y: -2.0 ~ 2.0 = x*2.0
-      . aspire(_ == Nil)
+      . assert(_ == Nil)
