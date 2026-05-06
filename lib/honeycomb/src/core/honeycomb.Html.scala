@@ -853,15 +853,27 @@ object Html extends Tag.Container
       // (no RCDATA close-tag check needed), build the result via
       // `String.substring` (a JVM intrinsic) without round-tripping through
       // `buffer`. Falls back to `textualSlow` for the harder cases.
+      //
+      // The inner loop binds the cursor's char buffer to a local `Array[Char]`
+      // reference and reuses the just-loaded `c` to drive lineation tracking
+      // via `unsafeAdvanceWith` — saving a redundant buffer read on every
+      // non-delimiter character of text content.
       def textual(mark: Mark, close: Optional[Text], entities: Boolean): Text =
         if close.present then textualSlow(mark, close, entities) else
           @tailrec
-          def fast(): Text = lay(slice(mark, begin())):
-            case '<' | '\u0000' => slice(mark, begin())
-            case '&' if entities => textualSlow(mark, close, entities)
-            case char => advance() yet fast()
+          def fast(): Text =
+            if !cursor.more then slice(mark, begin())
+            else
+              val buf = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
+              val c = buf(cursor.unsafePos(using Unsafe))
+              if c == '<' || c == 0.toChar then slice(mark, begin())
+              else if c == '&' && entities then textualSlow(mark, close, entities)
+              else
+                cursor.unsafeAdvanceWith(c.asInstanceOf[cursor.addressable.Operand])(using Unsafe)
+                fast()
 
           fast()
+
 
       def comment(mark: Mark): Text = lay(fail(ExpectedMore)):
         case '-' =>
