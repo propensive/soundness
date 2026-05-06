@@ -449,6 +449,20 @@ object Html extends Tag.Container
     protected inline def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
       cursor.grab(start, end).asInstanceOf[Text]
 
+    // ASCII-range character predicates and case fold. Lower the per-character
+    // overhead from `Character.isLetter`/`Character.isDigit`/`Character.toLowerCase`
+    // (Unicode-property table walks) to a couple of integer comparisons. HTML
+    // tag and attribute names, decimal/hex digits, and the trie's keys are all
+    // strictly ASCII, so this is a sound substitution on every parser hot path
+    // that previously called the JDK helpers.
+    protected inline def asciiLetter(char: Char): Boolean =
+      (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
+
+    protected inline def asciiDigit(char: Char): Boolean = char >= '0' && char <= '9'
+
+    protected inline def asciiLower(char: Char): Char =
+      if char >= 'A' && char <= 'Z' then (char + 32).toChar else char
+
     protected inline def reset(start: Cursor.Mark): Unit = cursor.cue(start)
 
     protected def cloneTo
@@ -565,7 +579,7 @@ object Html extends Tag.Container
       inline def expectInsensitive(char: Char): Unit =
         advance()
         lay(fail(ExpectedMore)): datum =>
-          if datum.minuscule != char.minuscule then fail(Unexpected(datum))
+          if asciiLower(datum) != asciiLower(char) then fail(Unexpected(datum))
 
       def fail
         ( issue: Issue,
@@ -590,7 +604,7 @@ object Html extends Tag.Container
       @tailrec
       def tagname(mark: Mark, dictionary: Dictionary[Tag]): Tag =
         lay(fail(ExpectedMore, mark)):
-          case char if char.isLetter || char.isDigit => dictionary(char.minuscule) match
+          case char if asciiLetter(char) || asciiDigit(char) => dictionary(asciiLower(char)) match
             case Dictionary.Empty =>
               advance()
               val end = begin()
@@ -617,7 +631,7 @@ object Html extends Tag.Container
 
       @tailrec
       def foreignTag(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
-        case char if char.isLetter                       => next() yet foreignTag(mark)
+        case char if asciiLetter(char)                   => next() yet foreignTag(mark)
         case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => slice(mark, begin()).lower
         case '\u0000'                                    => fail(BadInsertion, mark)
         case char                                        => fail(Unexpected(char), mark)
@@ -625,7 +639,7 @@ object Html extends Tag.Container
       @tailrec
       def key(mark: Mark, dictionary: Dictionary[Attribute]): Attribute =
         lay(fail(ExpectedMore, mark)):
-          case char if char.isLetter || char == '-' => dictionary(char.minuscule) match
+          case char if asciiLetter(char) || char == '-' => dictionary(asciiLower(char)) match
             case Dictionary.Empty => fail(UnknownAttributeStart(slice(mark, begin())), mark)
             case dictionary       => next() yet key(mark, dictionary)
 
@@ -641,7 +655,7 @@ object Html extends Tag.Container
 
       @tailrec
       def foreignKey(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
-        case char if char.isLetter || char == '-'        => next() yet foreignKey(mark)
+        case char if asciiLetter(char) || char == '-'    => next() yet foreignKey(mark)
         case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' => slice(mark, begin())
         case '\u0000'                                    => fail(BadInsertion, mark)
         case char                                        => fail(Unexpected(char), mark)
@@ -770,7 +784,7 @@ object Html extends Tag.Container
       @tailrec
       def hexEntity(mark: Mark, value: Int): Optional[Text] =
         lay(fail(ExpectedMore, mark)):
-          case digit if digit.isDigit =>
+          case digit if asciiDigit(digit) =>
             advance() yet hexEntity(mark, 16*value + (digit - '0'))
 
           case letter if 'a' <= letter <= 'f' =>
@@ -787,14 +801,14 @@ object Html extends Tag.Container
 
       @tailrec
       def decimalEntity(mark: Mark, value: Int): Optional[Text] = lay(fail(ExpectedMore, mark)):
-        case digit if digit.isDigit => next() yet decimalEntity(mark, 10*value + (digit - '0'))
+        case digit if asciiDigit(digit) => next() yet decimalEntity(mark, 10*value + (digit - '0'))
         case ';'                    => next() yet value.unicode
         case char                   => Unset
 
       @tailrec
       def textEntity(mark: Mark, dictionary: Dictionary[Text]): Optional[Text] =
         lay(fail(ExpectedMore, mark)):
-          case char if char.isLetter | char.isDigit =>
+          case char if asciiLetter(char) || asciiDigit(char) =>
             dictionary(char) match
               case Dictionary.Empty => Unset
               case dictionary       => advance() yet textEntity(mark, dictionary)
