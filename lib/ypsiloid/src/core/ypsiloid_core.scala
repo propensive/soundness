@@ -34,6 +34,7 @@ package ypsiloid
 
 import anticipation.*
 import contingency.*
+import zephyrine.*
 
 extension (text: Text)
-  def readAll(using Tactic[YamlError]): List[Yaml] = Yaml.parseAll(text)
+  def readAll(using Tactic[ParseError]): List[Yaml] = Yaml.parseAll(text)
