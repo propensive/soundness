@@ -104,7 +104,7 @@ extends Documentary:
 
     val defsElement: Seq[Xml] =
       if defs.isEmpty then Nil
-      else Seq(Element(t"defs", SeqMap[Text, Text](), defs.map(_.xml).toSeq.nodes))
+      else Seq(Element(t"defs", Attributes.empty, defs.map(_.xml).toSeq.nodes))
 
     val children: IArray[Node] = (defsElement ++ figures.map(_.xml)).nodes
-    Element(t"svg", attrs, children)
+    Element(t"svg", Attributes.from(attrs), children)

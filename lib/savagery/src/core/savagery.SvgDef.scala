@@ -43,4 +43,4 @@ sealed trait SvgDef:
 
 case class LinearGradient[color](id: SvgId, stops: Stop[color]*) extends SvgDef:
   def xml: Xml =
-    Element(t"linearGradient", SeqMap(t"id" -> id.text), stops.map(_.xml).toSeq.nodes)
+    Element(t"linearGradient", Attributes(t"id" -> id.text), stops.map(_.xml).toSeq.nodes)

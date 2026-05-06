@@ -58,5 +58,5 @@ case class Stop[color](offset: 0.0 ~ 1.0, color: color)(using val chromatic: col
 
     Element
       ( t"stop",
-        SeqMap(t"offset" -> offset.double.show, t"stop-color" -> hex),
+        Attributes(t"offset" -> offset.double.show, t"stop-color" -> hex),
         IArray() )
