@@ -527,10 +527,12 @@ object Html extends Tag.Container
       // lookup against `dom.elements(content)`.
       var openTag: Tag = root
       // Shared scratch buffer for attribute accumulation (parser-lifetime).
-      // `attributes()` writes here, then snapshots the populated prefix into
-      // freshly-sized IArrays for an `Attributes`. Doubles in size if filled.
-      var attrKeys: Array[Text] = new Array(8)
-      var attrValues: Array[Optional[Text]] = new Array(8)
+      // Stores key/value pairs interleaved as `[k0, v0, k1, v1, ...]`. Keys are
+      // never null; a null in a value slot encodes `Unset`. `attributes()`
+      // writes here, then snapshots the populated prefix into a freshly-sized
+      // `IArray[String | Null]` and wraps it as an opaque `Attributes`. Grows
+      // geometrically when filled.
+      var attrInterleaved: Array[String | Null] = new Array[String | Null](16)
       var nodes: Array[Node] = new Array(4)
       var index: Int = 0
       var stack: Array[Tag] = new Array(4)
@@ -707,13 +709,21 @@ object Html extends Tag.Container
 
 
       def attributes(tag: Text, foreign: Boolean): Attributes =
-        // Append into the parser-shared scratch buffer; on close, snapshot the
-        // populated prefix into freshly-sized IArrays and wrap in `Attributes`.
-        // Linear duplicate-scan suits the typical 0–5 attribute count and
-        // skips both the LinkedHashMap accumulator and the ListMap finalisation
-        // that the previous form went through.
+        // Append into the parser-shared interleaved scratch buffer (laid out
+        // as `[k0, v0, k1, v1, ...]`); on close, snapshot the populated prefix
+        // into a freshly-sized `IArray[String | Null]` and wrap it as the
+        // opaque `Attributes`. Linear duplicate-scan suits the typical 0–5
+        // attribute count and skips both the LinkedHashMap accumulator and
+        // the ListMap finalisation that the previous form went through.
+        // `Unset` values are encoded as `null` in the array.
         var n = 0
         var done = false
+
+        inline def ensureCapacity(): Unit =
+          if 2*n >= attrInterleaved.length then
+            val nu = new Array[String | Null](attrInterleaved.length*2)
+            jl.System.arraycopy(attrInterleaved, 0, nu, 0, 2*n)
+            attrInterleaved = nu
 
         while !done do
           skip()
@@ -724,15 +734,9 @@ object Html extends Tag.Container
               callback.let(_(position.z, Hole.Tagbody))
               next()
               skip()
-              if n == attrKeys.length then
-                val nk = new Array[Text](n*2)
-                val nv = new Array[Optional[Text]](n*2)
-                jl.System.arraycopy(attrKeys, 0, nk, 0, n)
-                jl.System.arraycopy(attrValues, 0, nv, 0, n)
-                attrKeys = nk
-                attrValues = nv
-              attrKeys(n) = t"\u0000"
-              attrValues(n) = Unset
+              ensureCapacity()
+              attrInterleaved(2*n) = "\u0000"
+              attrInterleaved(2*n + 1) = null
               n += 1
 
             case _ =>
@@ -742,40 +746,35 @@ object Html extends Tag.Container
 
                 . label
 
+              val key2Str: String = key2.s
+
               var dup = 0
-              while dup < n do
-                if attrKeys(dup) == key2 then fail(DuplicateAttribute(key2))
-                dup += 1
+              while dup < 2*n do
+                if attrInterleaved(dup) == key2Str then fail(DuplicateAttribute(key2))
+                dup += 2
 
-              val assignment = if !equality() then Unset else lay(fail(ExpectedMore)):
-                case '"'  => next() yet value(begin())
-                case '\'' => next() yet singleQuoted(begin())
+              val assignment: Optional[Text] =
+                if !equality() then Unset else lay(fail(ExpectedMore)):
+                  case '"'  => next() yet value(begin())
+                  case '\'' => next() yet singleQuoted(begin())
 
-                case '\u0000' =>
-                  callback.let(_(position.z, Hole.Attribute(tag, key2)))
-                  next() yet t"\u0000"
+                  case '\u0000' =>
+                    callback.let(_(position.z, Hole.Attribute(tag, key2)))
+                    next() yet t"\u0000"
 
-                case _ =>
-                  unquoted(begin()) // FIXME: Only alphanumeric characters
+                  case _ =>
+                    unquoted(begin()) // FIXME: Only alphanumeric characters
 
-              if n == attrKeys.length then
-                val nk = new Array[Text](n*2)
-                val nv = new Array[Optional[Text]](n*2)
-                jl.System.arraycopy(attrKeys, 0, nk, 0, n)
-                jl.System.arraycopy(attrValues, 0, nv, 0, n)
-                attrKeys = nk
-                attrValues = nv
-              attrKeys(n) = key2
-              attrValues(n) = assignment
+              ensureCapacity()
+              attrInterleaved(2*n) = key2Str
+              attrInterleaved(2*n + 1) = assignment.lay(null: String | Null)(_.s)
               n += 1
 
         if n == 0 then Attributes.empty
         else
-          val ks = new Array[Text](n)
-          val vs = new Array[Optional[Text]](n)
-          jl.System.arraycopy(attrKeys, 0, ks, 0, n)
-          jl.System.arraycopy(attrValues, 0, vs, 0, n)
-          Attributes.fromArrays(ks.immutable(using Unsafe), vs.immutable(using Unsafe))
+          val arr = new Array[String | Null](2*n)
+          jl.System.arraycopy(attrInterleaved, 0, arr, 0, 2*n)
+          Attributes.fromInterleaved(arr.immutable(using Unsafe))
 
 
       def entity(mark: Mark): Optional[Text] = lay(fail(ExpectedMore, mark)):
@@ -1355,14 +1354,14 @@ extends Node, Topical, Transportive, Dynamic:
     case Fragment(node: Element) => this == node
 
     case Element(label, attributes, children, foreign) =>
-      label == this.label && attributes == this.attributes && foreign == this.foreign
+      label == this.label && attributes.equalsAttributes(this.attributes) && foreign == this.foreign
       && ju.Arrays.equals(children.mutable(using Unsafe), this.children.mutable(using Unsafe))
 
     case _ =>
       false
 
   override def hashCode: Int =
-    ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
+    ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashAttributes ^ label.hashCode
 
   transparent inline def selectDynamic(name: Label): Any =
 
@@ -1386,7 +1385,7 @@ extends Node, Topical, Transportive, Dynamic:
         val attributive = infer[value is Attributive to attribute.Topic]
 
         attributive.attribute(name, value).match
-          case Unset        => Element(label, attributes - name, children, foreign)
+          case Unset        => Element(label, attributes.removed(name.tt), children, foreign)
           case (key, value) => Element(label, attributes.updated(key, value), children, foreign)
 
         . of[Topic]
@@ -1397,7 +1396,7 @@ extends Node, Topical, Transportive, Dynamic:
         val attributive = infer[value is Attributive to attribute.Topic]
 
         attributive.attribute(name, value).match
-          case Unset        => Element(label, attributes - name, children, foreign)
+          case Unset        => Element(label, attributes.removed(name.tt), children, foreign)
           case (key, value) => Element(label, attributes.updated(key, value), children, foreign)
 
         . of[Topic]
