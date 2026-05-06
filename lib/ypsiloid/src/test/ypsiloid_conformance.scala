@@ -301,8 +301,7 @@ object Conformance:
         println(s"  ${result.testCase.id} [$descShort]$tagsShort: should have errored")
 
       case Outcome.UnexpectedError(msg) =>
-        println(s"  ${result.testCase.id} [$descShort]$tagsShort: unexpected error: "
-              + msg.take(120))
+        println(s"  ${result.testCase.id} [$descShort]$tagsShort: unexpected error: " + msg)
 
       case Outcome.Passed => ()
 
@@ -341,13 +340,19 @@ object Conformance:
       else d.toString
     case s: String         => "\"" + s + "\""
 
+    case nums: Array[Double] @unchecked =>
+      // jacinta stores number-only JSON arrays unboxed as `Array[Double]`.
+      // Render as a flat JSON array.
+      nums.iterator.map(d => renderAny(d)).mkString("[", ",", "]")
+
     case items: IArray[?] =>
-      // JSON objects and arrays share the same `IArray[Any]` runtime
-      // representation in jacinta: even length is an object (alternating
-      // key, value, …), odd length is an array (the last slot may be a
-      // sentinel pad when the logical element count is even). Objects
-      // are rendered with sorted keys so the comparison is independent
-      // of source order, which JSON treats as insignificant.
+      // JSON objects and (mixed-type) arrays share the same
+      // `IArray[Any]` runtime representation in jacinta: even length is
+      // an object (alternating key, value, …), odd length is an array
+      // (the last slot may be a sentinel pad when the logical element
+      // count is even). Objects are rendered with sorted keys so the
+      // comparison is independent of source order, which JSON treats
+      // as insignificant.
       val arr = items.asInstanceOf[IArray[Any]]
       val n = arr.length
       if (n & 1) == 0 then

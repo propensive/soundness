@@ -893,9 +893,9 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         val name = t"Alice"
         val age = 30
         y"""
-name: $name
-age: $age
-""".as[Person]
+          name: $name
+          age: $age
+        """.as[Person]
       . assert(_ == Person(t"Alice", 30))
 
       test(m"Interpolate inside a string-valued field"):
