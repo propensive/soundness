@@ -149,6 +149,11 @@ trait Yaml2:
 object Yaml extends Yaml2, Dynamic:
   def ast(value: YamlAst): Yaml = new Yaml(value)
 
+  // Canonical external accessor for the underlying AST. The `root`
+  // field on `class Yaml` is package-private so that breaking through
+  // the `Yaml` abstraction is a deliberate, named action.
+  def unseal(yaml: Yaml): YamlAst = yaml.root
+
   // Named-parameter construction: `Yaml.make(name = …, age = …)`
   // desugars to `applyDynamicNamed("make")(("name", …), ("age", …))`.
   // Mirrors `Json.applyDynamicNamed`.
@@ -451,7 +456,7 @@ object Yaml extends Yaml2, Dynamic:
 
       case _ => YamlPrimitive.Null
 
-class Yaml(val root: YamlAst) extends Dynamic derives CanEqual:
+class Yaml(private[ypsiloid] val root: YamlAst) extends Dynamic derives CanEqual:
   def as[value: Decodable in Yaml]: value raises YamlError = value.decoded(this)
 
   // Sequence indexing: `yaml(0)` returns the first element of a sequence,

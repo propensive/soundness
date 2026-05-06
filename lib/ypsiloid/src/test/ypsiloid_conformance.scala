@@ -314,19 +314,20 @@ object Conformance:
     case YamlAst.Str(s)       => Json.ast(JsonAst(s.s))
 
     case YamlAst.Sequence(items) =>
-      val converted: IArray[Any] = IArray.from(items.map(yamlAstToJson(_).root.asInstanceOf[Any]))
+      val converted: IArray[Any] =
+        IArray.from(items.map(item => Json.unseal(yamlAstToJson(item)).asInstanceOf[Any]))
       Json.ast(JsonAst.arr(converted))
 
     case YamlAst.Mapping(entries) =>
       val pairs = entries.collect:
-        case (YamlAst.Str(s), v) => (s.s, yamlAstToJson(v).root)
+        case (YamlAst.Str(s), v) => (s.s, Json.unseal(yamlAstToJson(v)))
 
       val keys: IArray[String] = IArray.from(pairs.map(_._1))
       val values: IArray[Any] = IArray.from(pairs.map(_._2.asInstanceOf[Any]))
       Json.ast(JsonAst.obj(keys, values))
 
   private def jsonString(json: Json): String =
-    renderAny(json.root.asInstanceOf[Any])
+    renderAny(Json.unseal(json).asInstanceOf[Any])
 
   private def renderAny(value: Any): String = value match
     case null              => "null"
