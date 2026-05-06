@@ -70,7 +70,7 @@ extends Figure:
     then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
     style.let { css => attrs += t"style" -> css.properties.map(_.text).join(t";") }
-    Element(t"path", attrs.result(), IArray())
+    Element(t"path", Attributes.from(attrs.result()), IArray())
 
   def moveTo(point: Point): Outline = copy(ops = Move(point) :: ops)
   def lineTo(point: Point): Outline = copy(ops = Draw(point) :: ops)
