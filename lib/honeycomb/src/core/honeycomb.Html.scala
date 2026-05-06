@@ -905,7 +905,7 @@ object Html extends Tag.Container
               val consumed = p - startPos
               if consumed > 0 then
                 cursor.unsafeBumpPos(consumed)(using Unsafe)
-                if cursor.lineation.active then
+                if cursor.lineActive then
                   if newlines == 0 then cursor.unsafeBumpColumn(consumed)(using Unsafe)
                   else
                     cursor.unsafeBumpLine(newlines)(using Unsafe)
