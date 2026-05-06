@@ -135,7 +135,13 @@ object internal:
                 val label: String = TypeRepr.of[sub] match
                   case ConstantType(StringConstant(s)) => s
                   case _ => halt(m"expected a literal string label for the substitution")
-                rethrow(Ansi.Runtime.parse(checkState, label.tt))
+
+                // Mirror runtime's insert at compile time so the State machine
+                // tracks brackets opened by the substitution and `complete`
+                // can surface unclosed-bracket errors as a compile error.
+                if label == "esc" then
+                  rethrow(Ansi.Runtime.insert(checkState, Ansi.Input.Markup(identity)))
+                else rethrow(Ansi.Runtime.skip(checkState))
 
               case _ =>
                 rethrow(Ansi.Runtime.skip(checkState))
