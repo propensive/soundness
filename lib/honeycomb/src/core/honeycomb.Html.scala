@@ -874,10 +874,11 @@ object Html extends Tag.Container
       // `String.substring` (a JVM intrinsic) without round-tripping through
       // `buffer`. Falls back to `textualSlow` for the harder cases.
       //
-      // The inner loop binds the cursor's char buffer to a local `Array[Char]`
-      // reference and reuses the just-loaded `c` to drive lineation tracking
-      // via `unsafeAdvanceWith` — saving a redundant buffer read on every
-      // non-delimiter character of text content.
+      // The inner loop is a tight `while` over the cursor's `Array[Char]`
+      // buffer with a register-resident `var p`, accumulating any newlines
+      // along the way. After the scan, lineation is reconciled with the
+      // cursor in one shot, so the per-character path doesn't pay the
+      // `Cursor.unsafeAdvanceWith` lineation branch on every non-delimiter.
       def textual(mark: Mark, close: Optional[Text], entities: Boolean): Text =
         if close.present then textualSlow(mark, close, entities) else
           @tailrec
@@ -885,12 +886,35 @@ object Html extends Tag.Container
             if !cursor.more then slice(mark, begin())
             else
               val buf = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
-              val c = buf(cursor.unsafePos(using Unsafe))
-              if c == '<' || c == 0.toChar then slice(mark, begin())
-              else if c == '&' && entities then textualSlow(mark, close, entities)
-              else
-                cursor.unsafeAdvanceWith(c.asInstanceOf[cursor.addressable.Operand])(using Unsafe)
-                fast()
+              val limit = cursor.unsafeWriteEnd(using Unsafe)
+              val startPos = cursor.unsafePos(using Unsafe)
+              var p = startPos
+              var hit: Char = 1.toChar // sentinel: "no delimiter found"
+              var newlines = 0
+              var lastNewline = -1
+
+              while p < limit && hit == 1.toChar do
+                val c = buf(p)
+                if c == '<' || c == 0.toChar then hit = c
+                else if c == '&' && entities then hit = c
+                else
+                  if c == '\n' then
+                    newlines += 1
+                    lastNewline = p
+                  p += 1
+
+              val consumed = p - startPos
+              if consumed > 0 then
+                cursor.unsafeBumpPos(consumed)(using Unsafe)
+                if cursor.lineation.active then
+                  if newlines == 0 then cursor.unsafeBumpColumn(consumed)(using Unsafe)
+                  else
+                    cursor.unsafeBumpLine(newlines)(using Unsafe)
+                    cursor.unsafeSetColumn(p - lastNewline - 1)(using Unsafe)
+
+              if hit == '&' then textualSlow(mark, close, entities)
+              else if hit != 1.toChar then slice(mark, begin())
+              else fast() // buffer exhausted; outer @tailrec re-fetches buf via cursor.more
 
           fast()
 
