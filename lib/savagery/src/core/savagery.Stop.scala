@@ -55,8 +55,6 @@ case class Stop[color](offset: 0.0 ~ 1.0, color: color)(using val chromatic: col
     val green = chromatic.green(color)
     val blue = chromatic.blue(color)
     val hex = t"#${Stop.hex2(red)}${Stop.hex2(green)}${Stop.hex2(blue)}"
+    val off = offset.double.show
 
-    Element
-      ( t"stop",
-        Attributes(t"offset" -> offset.double.show, t"stop-color" -> hex),
-        IArray() )
+    x"""<stop offset=$off stop-color=$hex/>"""
