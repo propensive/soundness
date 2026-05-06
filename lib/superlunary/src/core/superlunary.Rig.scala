@@ -32,7 +32,10 @@
                                                                                                   */
 package superlunary
 
+import java.nio.file as jnf
+import java.util as ju
 import java.util.function as juf
+import java.lang as jl
 
 import scala.quoted.*
 
@@ -50,6 +53,20 @@ import serpentine.*
 
 import interfaces.paths.pathOnLinux
 import systems.java
+
+
+def deleteOnShutdown(directory: jnf.Path): Unit =
+  val runnable: Runnable = () =>
+    if jnf.Files.exists(directory) then
+      val stream = jnf.Files.walk(directory).nn
+      try
+        stream.sorted(ju.Comparator.reverseOrder).nn.forEach: path =>
+          try
+            val _ = jnf.Files.deleteIfExists(path.nn)
+          catch case _: Throwable => ()
+      finally stream.close()
+
+  jl.Runtime.getRuntime.nn.addShutdownHook(jl.Thread(runnable))
 
 
 trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transportive:
@@ -112,6 +129,8 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
         val out =
           import strategies.throwUnsafely
           (temporaryDirectory / uuid).on[Linux]
+
+        deleteOnShutdown(jnf.Paths.get(out.encode.s).nn)
 
         val settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make
