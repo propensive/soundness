@@ -1236,7 +1236,7 @@ object Html extends Tag.Container
                 push(focus)
                 val savedFosterFlag = pendingFosterDescend
                 pendingFosterDescend = false
-                if parent.label == t"table" && !savedFosterFlag then inTableContent = true
+                if parent.isTable && !savedFosterFlag then inTableContent = true
                 val child = descend(focus, admissible, extra)
                 pop()
                 if savedFosterFlag then
@@ -1244,7 +1244,7 @@ object Html extends Tag.Container
                   else fosteredBefore = fosteredBefore :+ child
                   val added = reconstructPending()
                   read(parent, admissible, map, count + added)
-                else if focus.label == t"table" then
+                else if focus.isTable then
                   val beforeAdded = fosteredBefore.size
                   fosteredBefore.foreach(append)
                   fosteredBefore = Nil
