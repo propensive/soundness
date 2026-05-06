@@ -32,14 +32,18 @@
                                                                                                   */
 package ypsiloid
 
+import language.dynamics
+
 import scala.collection.Factory
 import scala.collection.mutable as scm
 import scala.compiletime.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
+import panopticon.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -148,6 +152,26 @@ object Yaml extends Yaml2:
   given yaml: Yaml is Decodable in Yaml = identity(_)
   given yamlEncodable: Yaml is Encodable in Yaml = identity(_)
 
+  given lens: [name <: Label: ValueOf] => (erased DynamicYamlEnabler) => Tactic[YamlError]
+  =>  name is Lens from Yaml onto Yaml =
+    Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))
+
+  given ordinalOptical: [element] => Ordinal is Optical from Yaml onto Yaml = ordinal =>
+    Optic: (origin, lambda) =>
+      if origin.root.isArray then
+        val n = origin.root.arrayLength
+        if n <= ordinal.n0 then origin else Yaml.ast:
+          val updated = new Array[Any](n)
+          var i = 0
+          while i < n do
+            updated(i) =
+              if i == ordinal.n0
+              then lambda(Yaml.ast(origin.root.arrayElement(i))).root
+              else origin.root.arrayElement(i)
+            i += 1
+          YamlAst.seqFromAnyArray(updated)
+      else origin
+
   private inline def typeMismatch[T]
       (yaml: Yaml, expected: YamlPrimitive, default: T)
       (using Tactic[YamlError])
@@ -254,7 +278,7 @@ object Yaml extends Yaml2:
         Map.empty
 
   given option: [value: Decodable in Yaml] => Option[value] is Decodable in Yaml = yaml =>
-    if yaml.root.asInstanceOf[AnyRef] == null then None
+    if yaml.root.isAbsent || yaml.root.asInstanceOf[AnyRef] == null then None
     else Some(value.decoded(yaml))
 
   // ── Encodable givens ────────────────────────────────────────────────────
@@ -413,8 +437,104 @@ object Yaml extends Yaml2:
 
       case _ => YamlPrimitive.Null
 
-class Yaml(val root: YamlAst) derives CanEqual:
+class Yaml(val root: YamlAst) extends Dynamic derives CanEqual:
   def as[value: Decodable in Yaml]: value raises YamlError = value.decoded(this)
+
+  // Sequence indexing: `yaml(0)` returns the first element of a sequence,
+  // raising `YamlError` (with `Reason.NotType`) if the root is not a
+  // sequence.
+  def apply(index: Int): Yaml raises YamlError =
+    if root.isArray then new Yaml(root.arrayElement(index))
+    else
+      raise(YamlError(Reason.NotType(Yaml.primitive(root), YamlPrimitive.Sequence)))
+      new Yaml(YamlAst.Null)
+
+  // Mapping field access by name: `yaml(t"foo")` returns the value
+  // associated with key `foo`, or `Unset` (encoded as `YamlAst(Unset)`)
+  // when the field is absent. Mirrors Jacinta's `Json.apply(field)`.
+  def apply(field: Text): Yaml =
+    if root.isAbsent then new Yaml(YamlAst(Unset))
+    else root.objectIndexOf(field.s) match
+      case -1    => new Yaml(YamlAst(Unset))
+      case index => new Yaml(root.objectValue(index))
+
+  // Dynamic field access — `yaml.foo` desugars to `selectDynamic("foo")`.
+  // Gated on an erased `DynamicYamlEnabler` so the feature is opt-in via
+  // `import dynamicYamlAccess.enabled`.
+  def selectDynamic(field: String)(using erased DynamicYamlEnabler): Yaml = apply(field.tt)
+
+  def applyDynamic(field: String)(index: Int)(using erased DynamicYamlEnabler)
+  :   Yaml raises YamlError =
+    apply(field.tt)(index)
+
+  // Immutable update: `yaml(0) = newValue` desugars to `update(0, newValue)`.
+  def update[value: Encodable in Yaml](index: Int, value: value)
+                ( using erased DynamicYamlEnabler )
+  :   Yaml raises YamlError =
+    if !root.isArray then
+      raise(YamlError(Reason.NotType(Yaml.primitive(root), YamlPrimitive.Sequence)))
+    val n = root.arrayLength
+    val updated = new Array[Any](n)
+    var i = 0
+    while i < n do
+      updated(i) =
+        if i == index then value.encode.root.asInstanceOf[Any]
+        else root.arrayElement(i).asInstanceOf[Any]
+      i += 1
+    Yaml.ast(YamlAst.seqFromAnyArray(updated))
+
+  // `yaml.foo = newValue` — replaces `foo` if present, or appends a new
+  // entry. `yaml.foo = Unset` deletes the entry.
+  def updateDynamic(field: String)[value: Encodable in Yaml](value: value)
+                ( using erased DynamicYamlEnabler )
+  :   Yaml raises YamlError =
+    modify(field, value.encode)
+
+  def updateDynamic(field: String)[value](unset: Unset.type)(using erased DynamicYamlEnabler)
+  :   Yaml raises YamlError =
+    delete(field)
+
+  // ── Internal mapping update helpers ─────────────────────────────────────
+
+  private[ypsiloid] def modify(field: String, value: Yaml): Yaml raises YamlError =
+    if !root.isObject then
+      raise(YamlError(Reason.NotType(Yaml.primitive(root), YamlPrimitive.Mapping)))
+      this
+    else
+      val arr = root.asInstanceOf[IArray[Any]]
+      val len = arr.length
+      root.objectIndexOf(field) match
+        case -1 =>
+          val out = new Array[Any](len + 2)
+          System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, len)
+          out(len)     = field
+          out(len + 1) = value.root.asInstanceOf[Any]
+          Yaml.ast(YamlAst.mapFromAnyArray(out))
+        case index =>
+          val out = new Array[Any](len)
+          System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, len)
+          out(index*2 + 1) = value.root.asInstanceOf[Any]
+          Yaml.ast(YamlAst.mapFromAnyArray(out))
+
+  private[ypsiloid] def delete(field: String): Yaml raises YamlError =
+    if !root.isObject then
+      raise(YamlError(Reason.NotType(Yaml.primitive(root), YamlPrimitive.Mapping)))
+      this
+    else
+      val arr = root.asInstanceOf[IArray[Any]]
+      val len = arr.length
+      root.objectIndexOf(field) match
+        case -1 => this
+        case index =>
+          val out = new Array[Any](len - 2)
+          System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, index*2)
+          System.arraycopy
+                  ( arr.asInstanceOf[Array[Any]],
+                    index*2 + 2,
+                    out,
+                    index*2,
+                    len - index*2 - 2 )
+          Yaml.ast(YamlAst.mapFromAnyArray(out))
 
   override def hashCode: Int = YamlAst.deepHash(root)
 

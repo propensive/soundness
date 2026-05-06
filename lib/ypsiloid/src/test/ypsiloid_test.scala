@@ -753,4 +753,88 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         shapes.yaml.as[List[Shape]]
       . assert(_ == List(Shape.Circle(1.0), Shape.Square(2.0)))
 
+    suite(m"Direct accessors"):
+      test(m"Index a sequence by integer"):
+        val ys = t"[10, 20, 30]".read[Yaml]
+        ys(1).as[Int]
+      . assert(_ == 20)
+
+      test(m"Look up a mapping field by Text"):
+        val m = t"{name: Alice, age: 30}".read[Yaml]
+        m(t"age").as[Int]
+      . assert(_ == 30)
+
+      test(m"Missing mapping field decodes as None via Option"):
+        val m = t"{name: Alice}".read[Yaml]
+        m(t"age").as[Option[Int]]
+      . assert(_ == None)
+
+      test(m"Indexing a non-sequence raises a YamlError"):
+        val y = t"42".read[Yaml]
+        capture[YamlError](y(0))
+      . assert(_ => true)
+
+    suite(m"Dynamic access"):
+      import dynamicYamlAccess.enabled
+
+      test(m"Read a field via selectDynamic"):
+        val y = t"{name: Alice, age: 30}".read[Yaml]
+        y.name.as[Text]
+      . assert(_ == t"Alice")
+
+      test(m"Read a nested field by chaining"):
+        val y = t"outer: {inner: {n: 7}}".read[Yaml]
+        y.outer.inner.n.as[Int]
+      . assert(_ == 7)
+
+      test(m"Read a sequence-valued field by index"):
+        val y = t"items: [10, 20, 30]".read[Yaml]
+        y.items(1).as[Int]
+      . assert(_ == 20)
+
+      test(m"Update a mapping field dynamically"):
+        val y = t"{name: Alice, age: 30}".read[Yaml]
+        val updated = y.age = 31
+        updated.as[Person]
+      . assert(_ == Person(t"Alice", 31))
+
+      test(m"Add a new field via dynamic assignment"):
+        val y = t"{name: Alice}".read[Yaml]
+        val updated = y.age = 18
+        updated.as[Person]
+      . assert(_ == Person(t"Alice", 18))
+
+      test(m"Delete a field by assigning Unset"):
+        val y = t"{name: Alice, age: 30}".read[Yaml]
+        val updated = y.age = Unset
+        updated.as[WithDefault]
+      . assert(_ == WithDefault(t"Alice", 18))
+
+      test(m"Update a sequence element by index"):
+        val y = t"[1, 2, 3]".read[Yaml]
+        val updated = y(1) = 5
+        updated.as[List[Int]]
+      . assert(_ == List(1, 5, 3))
+
+    suite(m"Lens"):
+      import dynamicYamlAccess.enabled
+
+      val org = Yaml.ast(NamedOuter(t"a", Inner(7)).yaml.root)
+
+      test(m"Lens update on a nested mapping"):
+        val updated = org.lens(_.inner.n = 99.yaml)
+        updated.as[NamedOuter]
+      . assert(_ == NamedOuter(t"a", Inner(99)))
+
+      test(m"Lens update of top-level field"):
+        val updated = org.lens(_.name = t"b".yaml)
+        updated.as[NamedOuter]
+      . assert(_ == NamedOuter(t"b", Inner(7)))
+
+      test(m"Optical update on a sequence element"):
+        val y = t"items: [10, 20, 30]".read[Yaml]
+        val updated = y.lens(_.items(Prim) = 99.yaml)
+        updated.items.as[List[Int]]
+      . assert(_ == List(99, 20, 30))
+
     ConformanceTests.all()
