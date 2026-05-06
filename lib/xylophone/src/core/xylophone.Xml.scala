@@ -756,42 +756,46 @@ object Xml extends Tag.Container
     // Read text up to the next '<'; returns the (possibly entity-expanded)
     // Text. Detects literal `]]>` as an error. Reports `\u0000` holes via
     // the callback.
+    //
+    // Single-pass: walk the text region tracking the `]]>` window with a
+    // simple counter; if no entity/hole is encountered the result comes
+    // from a single `slice`. The first `&` or `\u0000` hit lazily allocates
+    // a `StringBuilder`, flushes the accumulated plain text into it, and
+    // the loop continues in the same iteration, re-using the running
+    // `bracketCount`. The previous form rescanned the whole region a
+    // second time once an entity was detected.
     protected def readText(parentLabel: Text)(using Tactic[ParseError]): Text =
       val start = begin()
-      var hasEntity = false
-      var hasHole = false
       var bracketCount = 0
+      var buf: jl.StringBuilder | Null = null
+      var segStart: Cursor.Mark = start
+
       while more && peek != '<' do
         val c = peek
-        if c == '&' then hasEntity = true
-        if c == '\u0000' then hasHole = true
         if c == ']' then bracketCount += 1
         else
           if bracketCount >= 2 && c == '>' then fail(Issue.Unexpected('>'), start)
           bracketCount = 0
-        advance()
-      if !hasEntity && !hasHole then slice(start)
+
+        if c == '&' then
+          if buf == null then buf = jl.StringBuilder()
+          appendSlice(segStart, buf.nn)
+          advance()
+          buf.nn.append(readEntity().s)
+          segStart = begin()
+        else if c == '\u0000' then
+          if buf == null then buf = jl.StringBuilder()
+          appendSlice(segStart, buf.nn)
+          callback.let(_(position.z, Hole.Node(parentLabel)))
+          buf.nn.append('\u0000')
+          advance()
+          segStart = begin()
+        else advance()
+
+      if buf == null then slice(start)
       else
-        val buf = jl.StringBuilder()
-        reset(start)
-        var segStart = begin()
-        while more && peek != '<' do
-          val c = peek
-          if c == '&' then
-            appendSlice(segStart, buf)
-            advance()
-            buf.append(readEntity().s)
-            segStart = begin()
-          else if c == '\u0000' then
-            appendSlice(segStart, buf)
-            callback.let(_(position.z, Hole.Node(parentLabel)))
-            buf.append('\u0000')
-            advance()
-            segStart = begin()
-          else
-            advance()
-        appendSlice(segStart, buf)
-        buf.toString.nn.tt
+        appendSlice(segStart, buf.nn)
+        buf.nn.toString.nn.tt
 
     protected def readComment()(using Tactic[ParseError]): Text =
       val start = begin()
