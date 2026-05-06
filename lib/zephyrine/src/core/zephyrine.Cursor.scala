@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import scala.collection.mutable as scm
-
 import denominative.*
 import prepositional.*
 import proscenium.*
@@ -72,6 +70,9 @@ object Cursor:
   extension (offset: Offset)
     inline def line: Ordinal = (offset >> 32 & 0xffffffff).toInt.z
     inline def column: Ordinal = offset.toInt.z
+    private[zephyrine] inline def toLong: Long = offset
+
+  private[zephyrine] inline def offsetFromLong(long: Long): Offset = long
 
 
   // Default initial buffer size for streaming use; pre-filled buffers use the
@@ -148,8 +149,14 @@ final class Cursor[data]
   private var holdStart: Int = -1
   private var ended:     Boolean = false
 
-  private val marks:   scm.ArrayDeque[Cursor.Mark] = scm.ArrayDeque()
-  private val offsets: scm.ArrayDeque[Cursor.Offset] = scm.ArrayDeque()
+  // Parallel arrays (not deques) of unboxed `Long`-typed `Mark` and `Offset`
+  // values for the currently-held region. Using `Array[Long]` rather than
+  // `ArrayDeque[Mark]`/`ArrayDeque[Offset]` avoids two `java.lang.Long` boxes
+  // per `mark()` call — a meaningful saving on parser hot paths that mark
+  // every token boundary.
+  private var marks:     Array[Long] = new Array[Long](16)
+  private var offsets:   Array[Long] = new Array[Long](16)
+  private var marksSize: Int = 0
 
   private var lineNo:   Ordinal = Prim
   private var columnNo: Ordinal = Prim
@@ -326,10 +333,34 @@ final class Cursor[data]
   inline def mark(using held: Cursor.Held): Cursor.Mark =
     Cursor.Mark(basePos + pos).tap: mark =>
       if lineation.active then
-        marks.append(mark)
-        offsets.append(Cursor.Offset(lineNo, columnNo))
+        recordMark(mark.absolute, Cursor.Offset(lineNo, columnNo).toLong)
 
-  inline def offset(mark: Cursor.Mark): Cursor.Offset = offsets(marks.lastIndexOf(mark))
+  // Append `(mark, offset)` to the parallel `Long` buffers, growing geometrically
+  // when full. Off the hot path's inline budget so `mark()` itself stays small.
+  private def recordMark(mark: Long, offset: Long): Unit =
+    val cap = marks.length
+    if marksSize >= cap then
+      val newCap = cap*2
+      val nm = new Array[Long](newCap)
+      val no = new Array[Long](newCap)
+      System.arraycopy(marks,   0, nm, 0, marksSize)
+      System.arraycopy(offsets, 0, no, 0, marksSize)
+      marks   = nm
+      offsets = no
+    marks(marksSize)   = mark
+    offsets(marksSize) = offset
+    marksSize += 1
+
+  // Linear scan from the most-recently appended mark backwards. `cue()` is the
+  // only caller and only fires on backtrack, so this stays cold relative to
+  // `mark()` itself.
+  private def offsetForMark(mark: Long): Long =
+    var i = marksSize - 1
+    while i >= 0 && marks(i) != mark do i -= 1
+    offsets(i)
+
+  inline def offset(mark: Cursor.Mark): Cursor.Offset =
+    Cursor.offsetFromLong(offsetForMark(mark.absolute))
 
   inline def cue(mark: Cursor.Mark): Unit =
     pos = (mark.absolute - basePos).toInt
@@ -344,8 +375,7 @@ final class Cursor[data]
     action(using new Cursor.Held()).also:
       if !wasHeld then
         holdStart = -1
-        marks.clear()
-        offsets.clear()
+        marksSize = 0
 
   inline def grab(start: Cursor.Mark, end: Cursor.Mark): data =
     val len = (end.absolute - start.absolute).toInt
