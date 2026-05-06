@@ -834,10 +834,8 @@ object Tests extends Suite(m"Escapade tests"):
       . assert(_ == t"")
 
       test(m"zero-color ribbon with parts still preserves part text"):
-        // A Ribbon with no colours but some parts silently drops the parts.
-        // Aspirationally, the part text should be preserved (unstyled), not lost.
         Ribbon().fill(e"hello", e"world").plain
-      . aspire(_ == t"hello world")
+      . assert(_ == t"hello world")
 
     // ─── csi helpers ──────────────────────────────────────────────────────
 
