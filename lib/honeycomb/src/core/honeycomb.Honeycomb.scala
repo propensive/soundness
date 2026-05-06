@@ -113,10 +113,10 @@ object Honeycomb:
 
           case "\u0000" :: tail =>
             index += 1
-            types ::= TypeRepr.of[Attributes]
+            types ::= TypeRepr.of[Map[Text, Optional[Text]]]
             iterator.next()
             val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
-            '{$expr && { $array(${Expr(index)}) = ${scrutinee}.attributes -- $others; true }}
+            '{$expr && { $array(${Expr(index)}) = (${scrutinee}.attributes -- $others).toMap; true }}
 
           case head :: tail =>
             attributes(tail):
