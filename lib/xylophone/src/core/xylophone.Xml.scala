@@ -505,6 +505,14 @@ object Xml extends Tag.Container
 
     private var heldToken: Cursor.Held | Null = null
 
+    // Parser-shared scratch buffer for attribute accumulation (lifetime of
+    // the `XmlParser` instance). Stores key/value pairs interleaved as
+    // `[k0, v0, k1, v1, ...]`. `readAttributes()` writes here and snapshots
+    // the populated prefix into a `ListMap` at the end. Replaces the previous
+    // `var entries: Map[Text, Text] = ListMap(); entries.updated(...)` loop,
+    // which allocated a fresh `ListMap` per attribute. Geometric growth.
+    private var attrBuf: Array[Text] = new Array[Text](16)
+
     protected inline def more: Boolean = cursor.more
 
     protected inline def peek: Char =
@@ -667,8 +675,30 @@ object Xml extends Tag.Container
         buf.toString.nn.tt
 
     protected def readAttributes(tag: Text)(using Tactic[ParseError]): Map[Text, Text] =
-      var entries: Map[Text, Text] = ListMap()
+      // Append into the parser-shared interleaved scratch buffer (laid out as
+      // `[k0, v0, k1, v1, ...]`); on close, snapshot the populated prefix
+      // into a single `ListMap`. Replaces the previous
+      // `entries.updated(...)`-per-attribute loop, which allocated a fresh
+      // `ListMap` for every attribute.
+      //
+      // Duplicate detection uses a Bloom-filter-style cheap test before
+      // falling back to a linear scan: maintain a running OR of the
+      // hashCodes of all already-stored keys, and for each new key check
+      // whether `(hashOr | h) == hashOr`. If the new hash has any bit
+      // outside the accumulated envelope it cannot match any prior key and
+      // the scan is skipped. Only when its bits are all already in the
+      // envelope (rare for typical low-attribute-count elements with
+      // disjoint label hashes) do we walk the existing keys to confirm.
+      var n = 0
       var done = false
+      var hashOr = 0
+
+      inline def ensureCapacity(): Unit =
+        if 2*n >= attrBuf.length then
+          val nu = new Array[Text](attrBuf.length*2)
+          jl.System.arraycopy(attrBuf, 0, nu, 0, 2*n)
+          attrBuf = nu
+
       while !done do
         skipWs()
         if !more then fail(Issue.ExpectedMore)
@@ -678,11 +708,23 @@ object Xml extends Tag.Container
           callback.let(_(position.z, Hole.Tagbody))
           advance()
           skipWs()
-          entries = entries.updated(t"\u0000", t"")
+          ensureCapacity()
+          attrBuf(2*n) = t"\u0000"
+          attrBuf(2*n + 1) = t""
+          n += 1
         else
           val keyStart = begin()
           val key = readName()
-          if entries.contains(key) then fail(Issue.DuplicateAttribute(key), keyStart)
+          val h: Int = key.s.hashCode
+
+          if (hashOr | h) == hashOr then
+            var dup = 0
+            while dup < 2*n do
+              if attrBuf(dup) == key then fail(Issue.DuplicateAttribute(key), keyStart)
+              dup += 2
+
+          hashOr |= h
+
           skipWs()
           expectChar('=')
           skipWs()
@@ -697,8 +739,19 @@ object Xml extends Tag.Container
               advance()
               readAttrValue(tag, q)
             else fail(Issue.UnquotedAttribute, keyStart)
-          entries = entries.updated(key, value)
-      entries
+          ensureCapacity()
+          attrBuf(2*n) = key
+          attrBuf(2*n + 1) = value
+          n += 1
+
+      if n == 0 then ListMap.empty
+      else
+        val b = ListMap.newBuilder[Text, Text]
+        var i = 0
+        while i < n do
+          b += ((attrBuf(2*i), attrBuf(2*i + 1)))
+          i += 1
+        b.result()
 
     // Read text up to the next '<'; returns the (possibly entity-expanded)
     // Text. Detects literal `]]>` as an error. Reports `\u0000` holes via
