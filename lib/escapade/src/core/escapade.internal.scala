@@ -70,20 +70,47 @@ object internal:
     val insertionExprs: List[Expr[Any]] = insertions.absolve match
       case Varargs(exprs) => exprs.toList
 
+    // Determine each insertion's substitution label (e.g. "esc" for stylize
+    // markup, "t" for text-input). Returns None for insertions that aren't
+    // labelled Substitutions.
+    def insertionLabel(head: Expr[Any]): Option[String] =
+      head.absolve match
+        case '{$value: tpe} =>
+          Expr.summon[Insertion[Ansi.Input, tpe]].flatMap: tcExpr =>
+            tcExpr.absolve match
+              case '{$_ : Substitution[Ansi.Input, tpe, sub]} =>
+                TypeRepr.of[sub] match
+                  case ConstantType(StringConstant(s)) => Some(s)
+                  case _ => None
+              case _ => None
+
+    // A part ending with `\\` (raw source form: two consecutive backslash
+    // chars) immediately before a Markup substitution escapes the markup —
+    // the trailing `\\` is consumed and the markup is treated as a no-op.
+    def escapesMarkup(partIdx: Int): Boolean =
+      partIdx < insertionExprs.length
+      && parts(partIdx).endsWith("\\\\")
+      && insertionLabel(insertionExprs(partIdx)) == Some("esc")
+
+    def adjustedPart(partIdx: Int): String =
+      if escapesMarkup(partIdx) then parts(partIdx).dropRight(2) else parts(partIdx)
+
     val checkState = Ansi.Runtime.initial
 
     def rethrow[result](block: => result): result =
       try block catch case error: Ansi.AnsiError => halt(error.detail)
 
-    rethrow(Ansi.Runtime.parse(checkState, parts.head.tt))
+    val firstPart = adjustedPart(0)
+    rethrow(Ansi.Runtime.parse(checkState, firstPart.tt))
 
     var runtimeExpr: Expr[Ansi.State] =
-      '{Ansi.Runtime.parse(Ansi.Runtime.initial, ${Expr(parts.head)}.tt)}
+      '{Ansi.Runtime.parse(Ansi.Runtime.initial, ${Expr(firstPart)}.tt)}
 
     var i = 0
     while i < insertionExprs.length do
       val head = insertionExprs(i)
-      val nextPart = parts(i + 1)
+      val nextPart = adjustedPart(i + 1)
+      val cancelled = escapesMarkup(i)
 
       head.absolve match
         case '{$value: tpe} =>
@@ -91,25 +118,37 @@ object internal:
             Expr.summon[Insertion[Ansi.Input, tpe]].getOrElse:
               halt(m"can't substitute ${TypeRepr.of[tpe].show} into an e-interpolator")
 
-          typeclassExpr.absolve match
-            case '{$_ : Substitution[Ansi.Input, tpe, sub]} =>
-              val label: String = TypeRepr.of[sub] match
-                case ConstantType(StringConstant(s)) => s
-                case _ => halt(m"expected a literal string label for the substitution")
-              rethrow(Ansi.Runtime.parse(checkState, label.tt))
+          if cancelled then
+            rethrow(Ansi.Runtime.skip(checkState))
+            rethrow(Ansi.Runtime.parse(checkState, nextPart.tt))
 
-            case _ =>
-              rethrow(Ansi.Runtime.skip(checkState))
+            val current = runtimeExpr
+            runtimeExpr =
+              '{
+                Ansi.Runtime.parse
+                  ( Ansi.Runtime.skip($current),
+                    ${Expr(nextPart)}.tt )
+              }
+          else
+            typeclassExpr.absolve match
+              case '{$_ : Substitution[Ansi.Input, tpe, sub]} =>
+                val label: String = TypeRepr.of[sub] match
+                  case ConstantType(StringConstant(s)) => s
+                  case _ => halt(m"expected a literal string label for the substitution")
+                rethrow(Ansi.Runtime.parse(checkState, label.tt))
 
-          rethrow(Ansi.Runtime.parse(checkState, nextPart.tt))
+              case _ =>
+                rethrow(Ansi.Runtime.skip(checkState))
 
-          val current = runtimeExpr
-          runtimeExpr =
-            '{
-              Ansi.Runtime.parse
-                ( Ansi.Runtime.insert($current, $typeclassExpr.embed($value)),
-                  ${Expr(nextPart)}.tt )
-            }
+            rethrow(Ansi.Runtime.parse(checkState, nextPart.tt))
+
+            val current = runtimeExpr
+            runtimeExpr =
+              '{
+                Ansi.Runtime.parse
+                  ( Ansi.Runtime.insert($current, $typeclassExpr.embed($value)),
+                    ${Expr(nextPart)}.tt )
+              }
 
       i += 1
 
