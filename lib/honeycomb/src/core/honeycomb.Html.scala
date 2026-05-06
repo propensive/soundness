@@ -516,6 +516,11 @@ object Html extends Tag.Container
       def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
       var content: Text = t""
       var extra: Attributes = Attributes.empty
+      // Resolved `Tag` for the current opening token. `tag()` already walks
+      // `dom.elements` to look up the tag definition; stash the result so that
+      // `read`'s `Token.Open` / `Token.Empty` arms don't have to repeat the
+      // lookup against `dom.elements(content)`.
+      var openTag: Tag = root
       // Shared scratch buffer for attribute accumulation (parser-lifetime).
       // `attributes()` writes here, then snapshots the populated prefix into
       // freshly-sized IArrays for an `Attributes`. Doubles in size if filled.
@@ -971,6 +976,7 @@ object Html extends Tag.Container
             else
               val tagDef = tagname(begin(), dom.elements)
               content = tagDef.label
+              openTag = tagDef
               tagDef.foreign
 
           extra = attributes(content, foreign || newForeign)
@@ -1058,15 +1064,10 @@ object Html extends Tag.Container
 
                 case Token.Empty =>
                   if admit(content) then empty() else infer:
-                    if parent.foreign then Tag.foreign(content, extra)
-                    else dom.elements(content).or(reset(mark) yet fail(InvalidTag(content), mark))
+                    if parent.foreign then Tag.foreign(content, extra) else openTag
 
                 case Token.Open =>
-                  focus =
-                    if parent.foreign then Tag.foreign(content, extra)
-                    else dom.elements(content).or:
-                      reset(mark)
-                      fail(InvalidTag(content), mark)
+                  focus = if parent.foreign then Tag.foreign(content, extra) else openTag
 
                   if !admit(content) then
                     val inferred = dom.infer(parent, focus)
