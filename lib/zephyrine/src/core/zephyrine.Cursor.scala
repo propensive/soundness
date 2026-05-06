@@ -236,6 +236,16 @@ final class Cursor[data]
         else { lineNo = lineNo.next; Prim }
     else pos += 1
 
+  // Variant of `advance` for callers that have just read the current operand
+  // (e.g. via `unsafeBuffer(pos)` in a tight scan loop). Reuses the supplied
+  // `operand` instead of re-loading it from the buffer for lineation tracking.
+  inline def unsafeAdvanceWith(operand: addressable.Operand)(using erased Unsafe): Unit =
+    pos += 1
+    if lineation.active then
+      columnNo =
+        if !lineation.track(operand) then columnNo.next
+        else { lineNo = lineNo.next; Prim }
+
   // `next()` is `advance(); more`, so it returns `true` while more data is
   // available and `false` when the stream is exhausted.
   inline def next(): Boolean =
