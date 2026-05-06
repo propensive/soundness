@@ -44,6 +44,11 @@ case class NamedOuter(name: Text, inner: Inner) derives CanEqual
 case class WithDefault(name: Text, age: Int = 18) derives CanEqual
 case class WithOption(name: Text, age: Option[Int]) derives CanEqual
 
+enum Shape derives CanEqual:
+  case Circle(radius: Double)
+  case Square(side: Double)
+  case Triangle(a: Double, b: Double, c: Double)
+
 object Tests extends Suite(m"Ypsiloid Tests"):
   def run(): Unit =
     suite(m"Plain scalar parsing"):
@@ -639,5 +644,113 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       test(m"Decoding a number as Boolean raises a YamlError"):
         capture[YamlError](t"42".read[Yaml].as[Boolean])
       . assert(_ => true)
+
+    suite(m"Encodable derivation"):
+      test(m"Encode an Int"):
+        42.yaml.as[Int]
+      . assert(_ == 42)
+
+      test(m"Encode a Long"):
+        42L.yaml.as[Long]
+      . assert(_ == 42L)
+
+      test(m"Encode a Double"):
+        3.14.yaml.as[Double]
+      . assert(_ == 3.14)
+
+      test(m"Encode a Boolean"):
+        true.yaml.as[Boolean]
+      . assert(identity)
+
+      test(m"Encode a Text"):
+        t"hello".yaml.as[Text]
+      . assert(_ == t"hello")
+
+      test(m"Encode a List"):
+        List(1, 2, 3).yaml.as[List[Int]]
+      . assert(_ == List(1, 2, 3))
+
+      test(m"Encode a Map"):
+        Map(t"a" -> 1, t"b" -> 2).yaml.as[Map[Text, Int]]
+      . assert(_ == Map(t"a" -> 1, t"b" -> 2))
+
+      test(m"Encode Some(value)"):
+        (Some(42): Option[Int]).yaml.as[Option[Int]]
+      . assert(_ == Some(42))
+
+      test(m"Encode None to absent and decode back"):
+        WithOption(t"x", None).yaml.as[WithOption]
+      . assert(_ == WithOption(t"x", None))
+
+      test(m"Round-trip a simple case class"):
+        Person(t"Alice", 30).yaml.as[Person]
+      . assert(_ == Person(t"Alice", 30))
+
+      test(m"Round-trip a nested case class"):
+        NamedOuter(t"x", Inner(7)).yaml.as[NamedOuter]
+      . assert(_ == NamedOuter(t"x", Inner(7)))
+
+      test(m"Round-trip a list of case classes"):
+        List(Person(t"A", 1), Person(t"B", 2)).yaml.as[List[Person]]
+      . assert(_ == List(Person(t"A", 1), Person(t"B", 2)))
+
+      test(m"Encoded case class produces a YamlAst.Mapping"):
+        Person(t"Alice", 30).yaml.root match
+          case YamlAst.Mapping(entries) => entries.length
+          case _                        => -1
+      . assert(_ == 2)
+
+      test(m"Encoded list produces a YamlAst.Sequence"):
+        List(1, 2, 3).yaml.root match
+          case YamlAst.Sequence(items) => items.length
+          case _                       => -1
+      . assert(_ == 3)
+
+      test(m"Encoding skips Optional fields that are Unset/None"):
+        WithOption(t"x", None).yaml.root match
+          case YamlAst.Mapping(entries) => entries.length
+          case _                        => -1
+      . assert(_ == 1)
+
+    suite(m"Sum-type derivation"):
+      import yamlDiscriminables.discriminatedUnionByType
+
+      test(m"Round-trip a sum-type variant (Circle)"):
+        val shape: Shape = Shape.Circle(2.0)
+        shape.yaml.as[Shape]
+      . assert(_ == Shape.Circle(2.0))
+
+      test(m"Round-trip a sum-type variant (Square)"):
+        val shape: Shape = Shape.Square(5.0)
+        shape.yaml.as[Shape]
+      . assert(_ == Shape.Square(5.0))
+
+      test(m"Round-trip a multi-field variant (Triangle)"):
+        val shape: Shape = Shape.Triangle(3.0, 4.0, 5.0)
+        shape.yaml.as[Shape]
+      . assert(_ == Shape.Triangle(3.0, 4.0, 5.0))
+
+      test(m"Encoded sum-type variant carries the `type` discriminator"):
+        val shape: Shape = Shape.Circle(2.0)
+        shape.yaml.root match
+          case YamlAst.Mapping(entries) =>
+            entries.collectFirst:
+              case (YamlAst.Str(k), YamlAst.Str(v)) if k == t"type" => v.s
+            . getOrElse("none")
+          case _ => "none"
+      . assert(_ == "Circle")
+
+      test(m"Decode a sum-type variant from a flow mapping"):
+        t"{type: Circle, radius: 2.5}".read[Yaml].as[Shape]
+      . assert(_ == Shape.Circle(2.5))
+
+      test(m"Decode a sum-type variant from a block mapping"):
+        t"type: Square\nside: 7.0".read[Yaml].as[Shape]
+      . assert(_ == Shape.Square(7.0))
+
+      test(m"Round-trip a list of sum-type variants"):
+        val shapes: List[Shape] = List(Shape.Circle(1.0), Shape.Square(2.0))
+        shapes.yaml.as[List[Shape]]
+      . assert(_ == List(Shape.Circle(1.0), Shape.Square(2.0)))
 
     ConformanceTests.all()

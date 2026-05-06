@@ -33,6 +33,7 @@
 package ypsiloid
 
 import scala.collection.Factory
+import scala.collection.mutable as scm
 import scala.compiletime.*
 
 import anticipation.*
@@ -40,7 +41,9 @@ import contingency.*
 import distillate.*
 import gossamer.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 import wisteria.*
@@ -49,38 +52,101 @@ import zephyrine.*
 import YamlError.Reason
 
 trait Yaml2:
-  inline given derived: [value] => value is Decodable in Yaml = summonFrom:
-    case given Reflection[`value`] => DecodableDerivation.derived
+  given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  ( encodable: inner is Encodable in Yaml )
+  =>  value is Encodable in Yaml =
 
-  object DecodableDerivation extends ProductDerivation[[value] =>> value is Decodable in Yaml]:
+    new Encodable:
+      type Self = Optional[value]
+      type Form = Yaml
+
+      def encoded(value: Optional[value]): Yaml =
+        value.let(_.asInstanceOf[inner]).let(encodable.encode(_))
+        . or(Yaml.ast(YamlAst(Unset)))
+
+
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[YamlError]
+  =>  ( decodable: => inner is Decodable in Yaml )
+  =>  value is Decodable in Yaml = yaml =>
+      if yaml.root.asInstanceOf[AnyRef] eq Unset then Unset else decodable.decoded(yaml)
+
+
+  inline given decodable: [value] => value is Decodable in Yaml = summonFrom:
+    case given (`value` is Decodable in Text) =>
+      yaml =>
+        provide[Tactic[YamlError]]:
+          yaml.root.asMatchable match
+            case s: String => s.tt.decode[value]
+            case _         =>
+              raise(YamlError(Reason.NotType(Yaml.primitive(yaml.root), YamlPrimitive.Str)))
+              .yet(t"".decode[value])
+
+    case given Reflection[`value`] =>
+      DecodableDerivation.derived
+
+  inline given encodable: [value] => value is Encodable in Yaml = summonFrom:
+    case given (`value` is Encodable in Text) => value => Yaml.ast(YamlAst(value.encode.s))
+    case given Reflection[`value`]            => EncodableDerivation.derived
+
+  object DecodableDerivation extends Derivable[Decodable in Yaml]:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Yaml = yaml =>
-      val arr: IArray[Any] | Null = yaml.root.asMatchable match
-        case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
-          xs.asInstanceOf[IArray[Any]]
-        case _ => null
+      provide[Tactic[YamlError]]:
+        val arr: IArray[Any] | Null = yaml.root.asMatchable match
+          case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
+            xs.asInstanceOf[IArray[Any]]
+          case _ => null
 
-      build: [field] =>
-        context =>
-          val target = label.s
-          var found: YamlAst | Null = null
-          if arr != null then
-            val n = arr.length
-            var i = 0
-            while i < n && found == null do
-              val key = arr(i).asInstanceOf[YamlAst]
-              key.asMatchable match
-                case s: String if s == target => found = arr(i + 1).asInstanceOf[YamlAst]
-                case _                        => ()
-              i += 2
-          if found != null then context.decoded(new Yaml(found))
-          else
-            default.or(context.decoded(new Yaml(YamlAst.Null)))
+        build: [field] =>
+          context =>
+            val target = label.s
+            var found: YamlAst | Null = null
+            if arr != null then
+              val n = arr.length
+              var i = 0
+              while i < n && found == null do
+                val key = arr(i).asInstanceOf[YamlAst]
+                key.asMatchable match
+                  case s: String if s == target => found = arr(i + 1).asInstanceOf[YamlAst]
+                  case _                        => ()
+                i += 2
+            if found != null then context.decoded(new Yaml(found))
+            else
+              default.or(context.decoded(new Yaml(YamlAst.Null)))
+
+    inline def disjunction[derivation: SumReflection]: derivation is Decodable in Yaml = yaml =>
+      provide[Tactic[YamlError]]:
+        provide[Tactic[VariantError]]:
+          val discriminable = infer[derivation is Discriminable in Yaml]
+
+          val discriminant: Text = discriminable.discriminate(yaml).or:
+            abort(YamlError(Reason.Absent))
+
+          delegate(discriminant): [variant <: derivation] =>
+            context => context.decoded(discriminable.variant(yaml))
+
+  object EncodableDerivation extends Derivable[Encodable in Yaml]:
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   derivation is Encodable in Yaml = value =>
+      val entries = scm.ArrayBuffer.empty[Any]
+      fields(value): [field] =>
+        field =>
+          val encoded = contextual.encode(field).root
+          if !(encoded.asInstanceOf[AnyRef] eq Unset) then
+            entries += YamlAst.Str(label).asInstanceOf[Any]
+            entries += encoded.asInstanceOf[Any]
+      Yaml.ast(YamlAst.mapFromAnyArray(entries.toArray))
+
+    inline def disjunction[derivation: SumReflection]: derivation is Encodable in Yaml = value =>
+      val discriminable = infer[derivation is Discriminable in Yaml]
+      variant(value): [variant <: derivation] =>
+        value => discriminable.rewrite(label, contextual.encode(value))
 
 object Yaml extends Yaml2:
   def ast(value: YamlAst): Yaml = new Yaml(value)
 
   given yaml: Yaml is Decodable in Yaml = identity(_)
+  given yamlEncodable: Yaml is Encodable in Yaml = identity(_)
 
   private inline def typeMismatch[T]
       (yaml: Yaml, expected: YamlPrimitive, default: T)
@@ -190,6 +256,140 @@ object Yaml extends Yaml2:
   given option: [value: Decodable in Yaml] => Option[value] is Decodable in Yaml = yaml =>
     if yaml.root.asInstanceOf[AnyRef] == null then None
     else Some(value.decoded(yaml))
+
+  // ── Encodable givens ────────────────────────────────────────────────────
+
+  given optionEncodable: [value] => (encodable: value is Encodable in Yaml)
+  =>  Option[value] is Encodable in Yaml =
+
+    new Encodable:
+      type Self = Option[value]
+      type Form = Yaml
+
+      def encoded(value: Option[value]): Yaml = value match
+        case None        => Yaml.ast(YamlAst(Unset))
+        case Some(value) => encodable.encode(value)
+
+
+  given integralEncodable: [integral: Integral] => integral is Encodable in Yaml =
+    int => Yaml.ast(YamlAst(integral.toLong(int)))
+
+  given textEncodable: Text is Encodable in Yaml = text => Yaml.ast(YamlAst(text.s))
+  given stringEncodable: String is Encodable in Yaml = string => Yaml.ast(YamlAst(string))
+  given doubleEncodable: Double is Encodable in Yaml = double => Yaml.ast(YamlAst(double))
+  given floatEncodable: Float is Encodable in Yaml = float => Yaml.ast(YamlAst(float.toDouble))
+  given intEncodable: Int is Encodable in Yaml = int => Yaml.ast(YamlAst(int.toLong))
+  given longEncodable: Long is Encodable in Yaml = long => Yaml.ast(YamlAst(long))
+  given booleanEncodable: Boolean is Encodable in Yaml = boolean => Yaml.ast(YamlAst(boolean))
+  given unitEncodable: Unit is Encodable in Yaml = _ => Yaml.ast(YamlAst.Null)
+
+
+  given iterableEncodable: [collection <: Iterable, element]
+  =>  ( encodable: => element is Encodable in Yaml )
+  =>  collection[element] is Encodable in Yaml = values =>
+    val items = IArray.from(values.map(encodable.encode(_).root))
+    Yaml.ast(YamlAst.Sequence(items))
+
+
+  given mapEncodable: [key: Encodable in Text, element]
+  =>  ( encodable: element is Encodable in Yaml )
+  =>  Map[key, element] is Encodable in Yaml = map =>
+    val keys: List[key] = map.keys.to(List)
+    val arr = new Array[Any](keys.size*2)
+    var i = 0
+    keys.foreach: k =>
+      arr(i*2) = YamlAst.Str(k.encode).asInstanceOf[Any]
+      arr(i*2 + 1) = encodable.encode(map(k)).root.asInstanceOf[Any]
+      i += 1
+    Yaml.ast(YamlAst.mapFromAnyArray(arr))
+
+
+  // ── Discriminator support for sum-type derivation ───────────────────────
+
+  // Build a `Discriminable` for `Yaml` keyed on a single mapping field
+  // named `label`. `discriminate` looks the field up in the YAML mapping;
+  // `rewrite` adds (or replaces) the field with the variant's name; and
+  // `variant` strips the field for variant decoding.
+  def discriminatedUnion[value](label: Text): value is Discriminable in Yaml =
+    new Discriminable:
+      type Form = Yaml
+      type Self = value
+
+      def discriminate(yaml: Yaml): Optional[Text] =
+        yaml.root.asMatchable match
+          case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
+            var i = 0
+            var result: Optional[Text] = Unset
+            while i < xs.length && result.absent do
+              xs(i).asMatchable match
+                case s: String if s == label.s =>
+                  xs(i + 1).asMatchable match
+                    case v: String => result = v.tt
+                    case _         => ()
+                case _ => ()
+              i += 2
+            result
+
+          case _ => Unset
+
+      def rewrite(kind: Text, yaml: Yaml): Yaml =
+        yaml.root.asMatchable match
+          case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
+            // Replace existing entry if present, else append.
+            var existing = -1
+            var i = 0
+            while i < xs.length && existing < 0 do
+              xs(i).asMatchable match
+                case s: String if s == label.s => existing = i
+                case _                         => ()
+              i += 2
+            val out =
+              if existing >= 0 then
+                val arr = new Array[Any](xs.length)
+                System.arraycopy(xs.asInstanceOf[Array[Any]], 0, arr, 0, xs.length)
+                arr(existing + 1) = YamlAst.Str(kind).asInstanceOf[Any]
+                arr
+              else
+                val arr = new Array[Any](xs.length + 2)
+                System.arraycopy(xs.asInstanceOf[Array[Any]], 0, arr, 0, xs.length)
+                arr(xs.length)     = YamlAst.Str(label).asInstanceOf[Any]
+                arr(xs.length + 1) = YamlAst.Str(kind).asInstanceOf[Any]
+                arr
+            Yaml.ast(YamlAst.mapFromAnyArray(out))
+
+          case _ =>
+            // Not a mapping — wrap in a one-entry mapping.
+            val arr = Array[Any]
+                       ( YamlAst.Str(label).asInstanceOf[Any],
+                         YamlAst.Str(kind).asInstanceOf[Any] )
+            Yaml.ast(YamlAst.mapFromAnyArray(arr))
+
+      def variant(yaml: Yaml): Yaml =
+        yaml.root.asMatchable match
+          case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
+            var existing = -1
+            var i = 0
+            while i < xs.length && existing < 0 do
+              xs(i).asMatchable match
+                case s: String if s == label.s => existing = i
+                case _                         => ()
+              i += 2
+            if existing < 0 then yaml
+            else
+              val arr = new Array[Any](xs.length - 2)
+              System.arraycopy(xs.asInstanceOf[Array[Any]], 0, arr, 0, existing)
+              System.arraycopy
+                ( xs.asInstanceOf[Array[Any]],
+                  existing + 2,
+                  arr,
+                  existing,
+                  xs.length - existing - 2 )
+              Yaml.ast(YamlAst.mapFromAnyArray(arr))
+
+          case _ => yaml
+
+
+  // ── Parser entry-points ─────────────────────────────────────────────────
 
   given decodable: Tactic[ParseError] => Yaml is Decodable in Text =
     text => Yaml(YamlParser.parse(text))
