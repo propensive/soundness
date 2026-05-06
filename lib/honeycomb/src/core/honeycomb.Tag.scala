@@ -223,6 +223,16 @@ abstract class Tag
 extends Element(label, Attributes.from(presets), IArray(), foreign), Formal, Dynamic:
   type Result <: Element
 
+  // Pre-computed "is this a table-context tag" flag, evaluated once per Tag
+  // instance at construction time. Replaces a five-way `Text` equality check
+  // that previously fired per child element during HTML parsing. The leading
+  // `t` short-circuit avoids paying the comparison chain for the overwhelming
+  // majority of (non-table) tags.
+  val tableLike: Boolean =
+    label.s.charAt(0) == 't'
+    && (label == t"tr" || label == t"table" || label == t"tbody"
+        || label == t"thead" || label == t"tfoot")
+
 
   inline def applyDynamicNamed[label <: Label: Precise](inline method: label)
     ( inline attributes: (String, Any)* )

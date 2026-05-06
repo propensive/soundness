@@ -543,10 +543,6 @@ object Html extends Tag.Container
 
       def stackContainsAncestor(label: Text): Boolean = findAncestorIndex(label) >= 0
 
-      def isTableLikeContext(tag: Tag): Boolean =
-        tag.label == t"table" || tag.label == t"tbody" || tag.label == t"thead"
-        || tag.label == t"tfoot" || tag.label == t"tr"
-
       def append(node: Node): Unit =
         if index >= nodes.length then
           val nodes2 = new Array[Node](nodes.length*2)
@@ -1078,7 +1074,7 @@ object Html extends Tag.Container
                       if parent.autoclose then
                         reset(mark)
                         close()
-                      else if isTableLikeContext(parent) && !focus.void then
+                      else if parent.tableLike && !focus.void then
                         pendingFosterDescend = true
                         level = Level.Descend
                       else
@@ -1184,7 +1180,7 @@ object Html extends Tag.Container
 
           case char => parent.mode match
             case Mode.Whitespace =>
-              if isTableLikeContext(parent) then
+              if parent.tableLike then
                 val text = textual(begin(), Unset, true)
                 val trimmed = text.trim
                 if trimmed.length > 0 then
