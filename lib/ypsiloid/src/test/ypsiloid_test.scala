@@ -838,6 +838,50 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"255".read[Yaml].as[Bytes]
       . assert(_ == 255L.b)
 
+    suite(m"y\"...\" interpolator"):
+      test(m"Interpolate a simple scalar"):
+        val v = 42
+        y"$v".as[Int]
+      . assert(_ == 42)
+
+      test(m"Interpolate a value into a mapping"):
+        val name = t"Alice"
+        y"name: $name".as[Map[Text, Text]]
+      . assert(_ == Map(t"name" -> t"Alice"))
+
+      test(m"Interpolate a value into a flow sequence"):
+        val a = 1
+        val b = 2
+        y"[$a, $b, 3]".as[List[Int]]
+      . assert(_ == List(1, 2, 3))
+
+      test(m"Interpolate two values into a mapping"):
+        val name = t"Alice"
+        val age = 30
+        y"""
+name: $name
+age: $age
+""".as[Person]
+      . assert(_ == Person(t"Alice", 30))
+
+      test(m"Interpolate inside a string-valued field"):
+        val name = t"Alice"
+        y"greeting: hello $name".as[Map[Text, Text]]
+      . assert(_ == Map(t"greeting" -> t"hello Alice"))
+
+    suite(m"y\"...\" extractor"):
+      test(m"Match a literal flow mapping"):
+        t"{a: 1, b: 2}".read[Yaml] match
+          case y"{a: 1, b: 2}" => true
+          case _               => false
+      . assert(identity)
+
+      test(m"Capture a single value"):
+        t"name: Alice".read[Yaml] match
+          case y"name: $n" => Yaml.unseal(n) == YamlAst.Str(t"Alice")
+          case _           => false
+      . assert(identity)
+
     suite(m"YamlPath"):
       test(m"Empty path encodes with #"):
         YamlPath().encode.contains(t"#")
