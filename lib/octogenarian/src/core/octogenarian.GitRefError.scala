@@ -55,5 +55,5 @@ object GitRefError:
     case Reason.BadHash              => m"the value is not a 40-character hexadecimal hash"
 
 case class GitRefError(value: Text, reason: GitRefError.Reason)(using Diagnostics)
-extends Error(realm"oc", 2, reason.number)
+extends Error(976, reason.number)
   ( m"$value is not a valid Git reference because $reason" )

@@ -55,7 +55,7 @@ object internal:
           Expr.summon[key is PropertyDef[value]].getOrElse:
             val typeName = Type.of[value].show
             halt
-              ( 1,
+              ( 413,
                 m"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists" )
 
         '{CssProperty(Text($key).uncamel.kebab, infer[ShowProperty[value]].show($value))}

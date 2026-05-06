@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class PortError()(using Diagnostics)
-extends Error(realm"ur", 6, 0)(m"the port is not in the valid range")
+extends Error(139, 0)(m"the port is not in the valid range")

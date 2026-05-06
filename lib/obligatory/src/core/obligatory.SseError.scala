@@ -52,4 +52,4 @@ object SseError:
       m"the requested replay range exceeded the source buffer capacity"
 
 case class SseError(reason: SseError.Reason)(using Diagnostics)
-extends Error(realm"ob", 1, reason.number)(m"the server-sent event was not valid because $reason")
+extends Error(350, reason.number)(m"the server-sent event was not valid because $reason")

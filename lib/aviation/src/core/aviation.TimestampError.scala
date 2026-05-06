@@ -47,4 +47,4 @@ object TimestampError:
     case Reason.BadTime   => m"a date or time component was outside the valid range"
 
 case class TimestampError(value: Text, reason: TimestampError.Reason)(using Diagnostics)
-extends Error(realm"av", 2, reason.number)(m"the time $value could not be parsed because $reason")
+extends Error(902, reason.number)(m"the time $value could not be parsed because $reason")

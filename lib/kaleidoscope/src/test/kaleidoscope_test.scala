@@ -549,7 +549,7 @@ object Tests extends Suite(m"Kaleidoscope tests"):
         . head
         . message
 
-      . assert(_.contains("[↯SN-kd/1.1] the regular expression could not be parsed because a capturing group was not closed at 11"))
+      . assert(_.contains("[↯SN-397.1] the regular expression could not be parsed because a capturing group was not closed at 11"))
 
       test(m"variable must be bound"):
         demilitarize:
@@ -559,4 +559,4 @@ object Tests extends Suite(m"Kaleidoscope tests"):
         . head
         . message
 
-      . assert(_.contains("[↯SN-kd/1.2] the regular expression could not be parsed because a capturing group was expected immediately following an extractor at 0"))
+      . assert(_.contains("[↯SN-397.2] the regular expression could not be parsed because a capturing group was expected immediately following an extractor at 0"))

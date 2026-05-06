@@ -47,4 +47,4 @@ object FontError:
     case Reason.MagicNumber       => m"the font did not contain expected check data"
 
 case class FontError(reason: FontError.Reason)(using Diagnostics)
-extends Error(realm"pn", 1, reason.number)(m"the font could not be read because $reason")
+extends Error(564, reason.number)(m"the font could not be read because $reason")

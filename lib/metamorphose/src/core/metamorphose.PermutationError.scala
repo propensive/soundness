@@ -57,4 +57,4 @@ object PermutationError:
       m"the input, of size $size, is too short for the permutation of size $min"
 
 case class PermutationError(reason: PermutationError.Reason)(using Diagnostics)
-extends Error(realm"mt", 1, reason.number)(m"could not construct permutation because $reason")
+extends Error(427, reason.number)(m"could not construct permutation because $reason")

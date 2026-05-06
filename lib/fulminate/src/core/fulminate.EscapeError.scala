@@ -33,4 +33,4 @@
 package fulminate
 
 case class EscapeError(initMessage: Message)(using Diagnostics)
-extends Error(realm"fu", 1, 0)(initMessage)
+extends Error(421, 0)(initMessage)

@@ -106,7 +106,7 @@ object protointernal:
 
           val encodable = Expr.summon[argument is Encodable in Pojo].getOrElse:
             halt
-              ( 2,
+              ( 30,
                 m"${TypeRepr.of[argument].show} is not encodable as a standard library parameter" )
 
           '{$encodable.encoded($argument)}

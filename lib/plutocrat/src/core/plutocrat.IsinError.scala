@@ -57,4 +57,4 @@ object IsinError:
       m"the character $char at position $index is not a digit or uppercase letter"
 
 case class IsinError(reason: IsinError.Reason)(using Diagnostics)
-extends Error(realm"pl", 1, reason.number)(m"the ISIN number is not valid because $reason")
+extends Error(515, reason.number)(m"the ISIN number is not valid because $reason")

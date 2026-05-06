@@ -92,7 +92,7 @@ object internal:
 
   def probe[target: Type]: Macro[Nothing] =
     import quotes.reflect.*
-    halt(1, m"the type is ${TypeRepr.of[target].dealias.widen.show}")
+    halt(957, m"the type is ${TypeRepr.of[target].dealias.widen.show}")
 
   def name[target: Type]: Macro[Text] =
     import quotes.reflect.*

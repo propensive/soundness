@@ -49,4 +49,4 @@ object PemError:
     case EmptyFile    extends Reason(4)
 
 case class PemError(reason: PemError.Reason)(using Diagnostics)
-extends Error(realm"en", 2, reason.number)(m"could not parse PEM content because $reason")
+extends Error(389, reason.number)(m"could not parse PEM content because $reason")

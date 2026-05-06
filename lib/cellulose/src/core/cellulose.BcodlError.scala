@@ -44,4 +44,4 @@ object BcodlError:
     case Reason.MissingKey => m"the schema entry has no key"
 
 case class BcodlError(reason: BcodlError.Reason, position: Int)(using Diagnostics)
-extends Error(realm"cl", 1, reason.number)(m"the BCoDL input was not valid at $position because $reason")
+extends Error(750, reason.number)(m"the BCoDL input was not valid at $position because $reason")

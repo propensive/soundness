@@ -39,4 +39,4 @@ import fulminate.*
 import proscenium.*
 
 case class XmlError()(using Diagnostics)
-extends Error(realm"xy", 1, 0)(m"there was an XML error")
+extends Error(149, 0)(m"there was an XML error")

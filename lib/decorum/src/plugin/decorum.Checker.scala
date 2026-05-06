@@ -82,7 +82,7 @@ object Checker:
 
     if state.prevWasAnnotation then
       out +=
-        Violation(file, state.prevLineNum, 1, "15.1", "annotation is not followed by a declaration")
+        Violation(file, state.prevLineNum, 1, "551.1", "annotation is not followed by a declaration")
 
     state.pendingR11.foreach(out += _)
     state.pendingR11 = Nil
@@ -206,7 +206,7 @@ object Checker:
     if isBlank then
       s.consecutiveBlanks += 1
       if s.consecutiveBlanks > 2 then
-        emit(1, "5", "more than two consecutive blank lines")
+        emit(1, "783", "more than two consecutive blank lines")
     else s.consecutiveBlanks = 0
 
     s.phase match
@@ -275,7 +275,7 @@ object Checker:
     if isBlank then
       if s.prevWasAnnotation then
         emit
-          ( 1, "15.2",
+          ( 1, "551.2",
             "blank line is not permitted between an annotation and the declaration it annotates" )
         s.prevWasAnnotation = false
     else
@@ -312,7 +312,7 @@ object Checker:
       if ch == '\t' then
         out +=
           Violation
-            ( file, line, col, "1", "tab character is not permitted; use spaces" )
+            ( file, line, col, "135", "tab character is not permitted; use spaces" )
       if ch == '\n' then
         line += 1
         col = 1
@@ -322,7 +322,7 @@ object Checker:
   private def checkR2LineLength(visibleLen: Int, emit: (Int, String, String) => Unit): Unit =
     if visibleLen > MaxColumns then
       emit
-        ( MaxColumns + 1, "2",
+        ( MaxColumns + 1, "230",
           s"line exceeds 100 columns (is $visibleLen columns)" )
 
   private def checkR3IndentWidth
@@ -330,7 +330,7 @@ object Checker:
   :   Unit =
 
     if !isBlank && leadingCols%2 != 0 then
-      emit(1, "3", s"indent width $leadingCols is not a multiple of 2")
+      emit(1, "926", s"indent width $leadingCols is not a multiple of 2")
 
   // R31: a non-blank code line cannot be indented more than two columns
   // deeper than the previous code line. This forbids "alignment" indents
@@ -373,7 +373,7 @@ object Checker:
         val maxAllowed = s.prevCodeLineIndent + step
         if leadingCols > maxAllowed then
           emit
-            ( leadingCols + 1, "31.1",
+            ( leadingCols + 1, "473.1",
               s"indent $leadingCols cannot exceed previous line's indent "
                 +s"${s.prevCodeLineIndent} by more than $step" )
 
@@ -441,7 +441,7 @@ object Checker:
             val openerCol = stack.pop()
             if openerCol >= 0 && cols(i) != openerCol then
               out += Violation
-                      ( s.file, lineNum, cols(i), "31.2",
+                      ( s.file, lineNum, cols(i), "473.2",
                         s"closing `}` of a quote/splice block at column ${cols(i)} "
                           +s"does not align with its opening `{` at column $openerCol" )
       i += 1
@@ -455,7 +455,7 @@ object Checker:
         val hasNonWs = line.exists(t => t.kind != Kind.Space && t.kind != Kind.Comment)
         if hasNonWs then
           val col = line.iterator.map(_.text.length).sum - token.text.length + 1
-          emit(col, "4", "line has trailing whitespace")
+          emit(col, "015", "line has trailing whitespace")
 
       case _ =>
         ()
@@ -477,7 +477,7 @@ object Checker:
       val sem = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
       if sem.headOption.exists(_.text == "=>") && leadingCols != s.givenSignatureIndent then
         emit
-          ( leadingCols + 1, "32",
+          ( leadingCols + 1, "140",
             s"`=>` continuation of a `given` signature should align at column "
               +s"${s.givenSignatureIndent + 1} (found ${leadingCols + 1})" )
 
@@ -488,11 +488,11 @@ object Checker:
     val text = line.iterator.map(_.text).mkString
 
     if lineNum == 1 && !text.contains("/*") then
-      emit(1, "6", "line 1 must open the license-header block comment with `/*`")
+      emit(1, "799", "line 1 must open the license-header block comment with `/*`")
 
     if lineNum == 32 then
       if !text.contains("*/") then
-        emit(1, "6", "line 32 must close the license-header block comment with `*/`")
+        emit(1, "799", "line 32 must close the license-header block comment with `*/`")
       s.phase = Phase.Package
 
   // Phase machine: when the line containing the package declaration is
@@ -509,7 +509,7 @@ object Checker:
   // from a real `PackageDef`. Multi-segment paths (`a.b`), wrong line,
   // names that don't match `expectedModule`, names with invalid
   // characters (e.g. backticked identifiers), and extra statements on
-  // the same line are each rejected with rule "7".
+  // the same line are each rejected with rule "131".
   private def checkPackageRules
     ( file:           String,
       expectedModule: Option[String],
@@ -519,11 +519,11 @@ object Checker:
 
     pkg match
       case None =>
-        out += Violation(file, PackageLine, 1, "7", "line 33 must be `package <module>`")
+        out += Violation(file, PackageLine, 1, "131", "line 33 must be `package <module>`")
 
       case Some(p) if p.line != PackageLine =>
         out += Violation
-                ( file, p.line, 1, "7",
+                ( file, p.line, 1, "131",
                   s"expected `package` declaration on line 33, "
                     +s"found content on line ${p.line}" )
 
@@ -531,18 +531,18 @@ object Checker:
         val name = p.segments.mkString(".")
         if p.segments.length > 1 || !p.segments.head.matches("[A-Za-z_][A-Za-z0-9_]*") then
           out += Violation
-                  ( file, p.line, 1, "7",
+                  ( file, p.line, 1, "131",
                     s"package declaration must be a single identifier segment, not `$name`" )
         else
           expectedModule.foreach: expected =>
             if name != expected then
               out += Violation
-                      ( file, p.line, 1, "7",
+                      ( file, p.line, 1, "131",
                         s"package `$name` does not match expected module `$expected`" )
 
         if p.extraStatementOnSameLine then
           out += Violation
-                  ( file, p.line, 1, "7",
+                  ( file, p.line, 1, "131",
                     "package declaration must contain only `package <ident>` on line 33" )
 
   private def checkAfterPackage
@@ -550,7 +550,7 @@ object Checker:
   :   Unit =
 
     if !isBlank then
-      emit(1, "8", "line 34 must be a single blank line after `package`")
+      emit(1, "658", "line 34 must be a single blank line after `package`")
 
     s.phase = Phase.Imports
 
@@ -569,7 +569,7 @@ object Checker:
     else if s.importLineSet.contains(lineNum) then ()
     else
       if !s.prevLineWasBlank && s.hasImports then
-        emit(1, "10", "missing blank line between imports and first declaration")
+        emit(1, "441", "missing blank line between imports and first declaration")
       s.phase = Phase.Body
 
   // R9.1/9.2/9.3: classify and order the parsed top-level imports. Multi-line
@@ -600,7 +600,7 @@ object Checker:
       // remain an established convention.
       if imp.hasTopLevelAlias && group >= 5 then
         out += Violation
-                ( file, imp.startLine, 1, "9.1",
+                ( file, imp.startLine, 1, "302.1",
                   "top-level imports must not use aliases (`as` or `=>`); "
                     +"write the full path" )
 
@@ -617,22 +617,22 @@ object Checker:
           val blankBetween = blankLinesBetween(prevEndLine, imp.startLine, lines) > 0
           if !areSiblings && group < pg then
             out += Violation
-                    ( file, imp.startLine, 1, "9.2",
+                    ( file, imp.startLine, 1, "302.2",
                       s"import group $group appears after group $pg" )
           else if !areSiblings && group > pg then
             if !blankBetween then
               out += Violation
-                      ( file, imp.startLine, 1, "9.3",
+                      ( file, imp.startLine, 1, "302.3",
                         "import groups must be separated by exactly one blank line" )
           else if group == pg then
             if blankBetween then
               out += Violation
-                      ( file, imp.startLine, 1, "9.3",
+                      ( file, imp.startLine, 1, "302.3",
                         "unexpected blank line within an import group" )
             prevName.foreach: pn =>
               if imp.path < pn then
                 out += Violation
-                        ( file, imp.startLine, 1, "9.2",
+                        ( file, imp.startLine, 1, "302.2",
                           s"import `${imp.path}` is out of alphabetical order "
                             +s"(after `$pn`)" )
         case None => ()
@@ -742,7 +742,7 @@ object Checker:
         if i > 0 && arr(i - 1).kind == Kind.Space && arr(i - 1).text.length > 0 then
           out +=
             Violation
-              ( s.file, lineNum, cols(i), "11.1",
+              ( s.file, lineNum, cols(i), "529.1",
                 "no space is permitted before a comma" )
 
         if i + 1 < arr.length then
@@ -750,7 +750,7 @@ object Checker:
           if next.kind != Kind.Space then
             out +=
               Violation
-                ( s.file, lineNum, cols(i + 1), "11.2",
+                ( s.file, lineNum, cols(i + 1), "529.2",
                   "exactly one space is required after a comma" )
           else if next.text != " " then
             // Extra spaces after comma — possibly an alignment-run column.
@@ -759,7 +759,7 @@ object Checker:
             if !next.text.startsWith("\n") then
               deferred +=
                 Violation
-                  ( s.file, lineNum, cols(i + 1), "11.2",
+                  ( s.file, lineNum, cols(i + 1), "529.2",
                     "exactly one space is required after a comma" )
       i += 1
 
@@ -931,12 +931,12 @@ object Checker:
                 val firstInside = arr(opener + 1)
                 if firstInside.kind != Kind.Space then
                   emit
-                    ( cols(opener + 1), "30",
+                    ( cols(opener + 1), "811",
                       s"a space is required after `${arr(opener).text}` in a multi-line block" )
                 val lastInside = arr(closer - 1)
                 if lastInside.kind != Kind.Space then
                   emit
-                    ( cols(closer), "30",
+                    ( cols(closer), "811",
                       s"a space is required before `$text` in a multi-line block" )
             else if closer > opener + 1 then
               // Suppress R12 for tuples appearing as a lambda/match-case
@@ -948,14 +948,14 @@ object Checker:
                 val firstInside = arr(opener + 1)
                 if firstInside.kind == Kind.Space && firstInside.text.length > 0 then
                   emit
-                    ( cols(opener + 1), "12",
+                    ( cols(opener + 1), "402",
                       s"no space is permitted directly after `${arr(opener).text}`" )
                 val lastInside = arr(closer - 1)
                 if lastInside.kind == Kind.Space && lastInside.text.length > 0
                   && (closer - 1) != (opener + 1)
                 then
                   emit
-                    ( cols(closer - 1), "12",
+                    ( cols(closer - 1), "402",
                       s"no space is permitted directly before `$text`" )
           else
             // Closer with no opener on this line: the opener was on an
@@ -970,12 +970,12 @@ object Checker:
               if nextAfterCloser < 0 then s.currentFormalOpenerIndent = openerIndent
               if i == firstSemantic then
                 emit
-                  ( cols(i), "30",
+                  ( cols(i), "811",
                     s"`$text` cannot appear alone on its line; the closing bracket of a "
                       +s"multi-line block goes on the same line as the last parameter" )
               else if i > 0 && arr(i - 1).kind != Kind.Space then
                 emit
-                  ( cols(i), "30",
+                  ( cols(i), "811",
                     s"a space is required before `$text` in a multi-line block" )
       i += 1
 
@@ -989,7 +989,7 @@ object Checker:
       if formalCandidate then
         if opener + 1 >= arr.length || arr(opener + 1).kind != Kind.Space then
           emit
-            ( cols(opener + 1), "30",
+            ( cols(opener + 1), "811",
               s"a space is required after `$openerText` in a multi-line block" )
       s.bracketFormality.push((formalCandidate, leadingCols))
 
@@ -1065,11 +1065,11 @@ object Checker:
         val text = arr(i).text
         if text.startsWith("/**") then
           emit
-            ( cols(i), "14.2",
+            ( cols(i), "162.2",
               "`/** ... */` block comments are not permitted; use `doc/` markdown instead" )
         else if text.startsWith("/*") && !inLicense then
           emit
-            ( cols(i), "14.1",
+            ( cols(i), "162.1",
               "`/* ... */` block comments are reserved for the license header (lines 1-32)" )
       i += 1
 
@@ -1201,7 +1201,7 @@ object Checker:
             // spaces should be matched. Skip at line edges.
             if !isAtStart && !isAtEnd && leftSpace != rightSpace then
               emit
-                ( cols(i), "16",
+                ( cols(i), "376",
                   s"`$text` has asymmetric spacing — use 0 or 1 space on both sides" )
             // Multi-char operators must have one space around (zero is reserved
             // for single-character operators).
@@ -1209,7 +1209,7 @@ object Checker:
               && (!leftSpace || !rightSpace)
             then
               emit
-                ( cols(i), "16",
+                ( cols(i), "376",
                   s"multi-character `$text` requires one space on each side" )
             frames.top += OpHit(text, i, cols(i), leftSpace, rightSpace)
             // `=>` and `?=>` separate a pattern/parameter list from the body
@@ -1237,7 +1237,7 @@ object Checker:
         if mixed then
           group.foreach: op =>
             emit
-              ( op.col, "16",
+              ( op.col, "376",
                 s"`${op.text}` has inconsistent spacing with same-precedence operators" )
 
       // Cross-precedence ordering: every spaced operator must have *strictly*
@@ -1258,7 +1258,7 @@ object Checker:
           val spaced = op.leftSpace || op.rightSpace
           if spaced && prec > minUnspacedPrec then
             emit
-              ( op.col, "16",
+              ( op.col, "376",
                 s"`${op.text}` cannot have more spacing than lower-precedence "
                   +"operators in the same expression" )
 
@@ -1288,7 +1288,7 @@ object Checker:
             && (arr(nextIdx).text == "(" || arr(nextIdx).text == "[")
           then
             emit
-              ( cols(nextIdx), "18",
+              ( cols(nextIdx), "013",
                 s"a single space is required between `${arr(opIdx).text}` and "
                   +s"`${arr(nextIdx).text}`" )
       i += 1
@@ -1303,7 +1303,7 @@ object Checker:
           val next = rest(1)
           if next.kind != Kind.Space || next.text != "  " then
             emit
-              ( leadingCols + 3, "25",
+              ( leadingCols + 3, "444",
                 "`=>` continuation line must be followed by exactly two spaces" )
 
       case Some(tok) if tok.text == ":" && lineEndsWithEqualsToken(rest) =>
@@ -1311,7 +1311,7 @@ object Checker:
           val next = rest(1)
           if next.kind != Kind.Space || next.text != "   " then
             emit
-              ( leadingCols + 2, "25",
+              ( leadingCols + 2, "444",
                 "heavy-signature return type `:` must be followed by exactly three spaces" )
       case _ => ()
 
@@ -1333,12 +1333,12 @@ object Checker:
       if tok.text == "." && s.prevCodeLineIndent >= 0 then
         if s.prevCodeLineIndent > leadingCols && !s.prevLineWasBlank then
           emit
-            ( leadingCols + 1, "26.1",
+            ( leadingCols + 1, "163.1",
               "blank line is required before `. method` continuation following a "
                 +"more-indented line" )
         else if s.prevCodeLineIndent == leadingCols && s.prevLineWasBlank then
           emit
-            ( leadingCols + 1, "26.2",
+            ( leadingCols + 1, "163.2",
               "no blank line is permitted before `. method` continuation at the same indent" )
 
   private def checkReturnTypeBlank
@@ -1352,7 +1352,7 @@ object Checker:
     if s.prevWasReturnType then
       if !isBlank then
         emit
-          ( 1, "21",
+          ( 1, "677",
             "a blank line is required between a heavy-signature return type and the body" )
       s.prevWasReturnType = false
     if !isBlank && isReturnTypeLine(rest) then s.prevWasReturnType = true
@@ -1386,7 +1386,7 @@ object Checker:
         if objLine > typeLine then
           out +=
             Violation
-              ( file, objLine, 1, "28",
+              ( file, objLine, 1, "398",
                 s"object `$name` must appear before class/trait/enum `$name`" )
 
   private def checkFileNaming
@@ -1410,7 +1410,7 @@ object Checker:
       if !ok then
         out +=
           Violation
-            ( file, 1, 1, "29",
+            ( file, 1, 1, "847",
               s"file name `$name` does not match a documented soundness convention" )
       else
         // Patterns of the form `<lowercase>.<Uppercase>.scala` name a single
@@ -1423,7 +1423,7 @@ object Checker:
           val typeName = m.group(1).nn
           if !declaresTopLevel(untpdTree, typeName) then
             out += Violation
-                    ( file, 1, 1, "29",
+                    ( file, 1, 1, "847",
                       s"file name `$name` declares no top-level `$typeName` "
                         +"(class/trait/enum/object/type)" )
 
@@ -1471,7 +1471,7 @@ object Checker:
         if !c.isSingleLine then
           if i > 0 && !blankBetween(group(i - 1).endLine, c.caseLine, lines) then
             out += Violation
-                    ( file, c.caseLine, c.caseCol, "20",
+                    ( file, c.caseLine, c.caseCol, "982",
                       "a blank line is required before a multi-line case "
                         +"(except for the first case)" )
           // Sub-check: exactly one space before `=>` in a multi-line case.
@@ -1505,7 +1505,7 @@ object Checker:
           run.foreach: c =>
             if c.arrowCol != expected then
               out += Violation
-                      ( file, c.arrowLine, c.arrowCol, "19",
+                      ( file, c.arrowLine, c.arrowCol, "326",
                         s"`=>` should be at column $expected to align with the case run" )
 
   private def blankBetween
@@ -1600,7 +1600,7 @@ object Checker:
             if actual < expected then
               out +=
                 Violation
-                  ( s.file, lineNum, 1, "27",
+                  ( s.file, lineNum, 1, "315",
                     s"expected $expected blank line(s) between sibling declarations (saw $actual)" )
 
           s.prevDeclByIndent(leadingCols) = cur
@@ -1645,7 +1645,7 @@ object Checker:
             k += 1
           if c != expected then
             emit
-              ( c, "22",
+              ( c, "946",
                 s"using-clause parameter should align at column $expected (found $c)" )
 
     // Then update state by walking tokens.
@@ -1897,13 +1897,13 @@ object Checker:
       if broke then
         if cur.col != k1.pos.col then
           out += Violation
-                  ( file, cur.line, cur.col, "33.3",
+                  ( file, cur.line, cur.col, "833.3",
                     s"keyword `${elem.label}` on a new line should align with `${k1.label}` "
                       +s"at column ${k1.pos.col} (found ${cur.col})" )
         splitMode = true
       else if splitMode then
         out += Violation
-                ( file, cur.line, cur.col, "33.1",
+                ( file, cur.line, cur.col, "833.1",
                   s"keyword `${elem.label}` must start a new line because an earlier "
                     +s"keyword in this sequence does" )
       // Body cascade applies to bodies after K_2 onward (i.e. body following
@@ -1915,7 +1915,7 @@ object Checker:
         // The cur keyword's body should be indented but isn't.
         val bodyCol = if anchor + 1 < toks.length then toks(anchor + 1).col else cur.col
         out += Violation
-                ( file, cur.line, bodyCol, "33.2",
+                ( file, cur.line, bodyCol, "833.2",
                   s"body after `${elem.label}` must be indented onto a new line because "
                     +s"an earlier body in this sequence is" )
       if curBodyIndented then indentedMode = true
@@ -2059,18 +2059,18 @@ object Checker:
             if gl.isFilter then
               if gl.startCol != refOp then
                 out += Violation
-                        ( file, gl.line, gl.startCol, "34.3",
+                        ( file, gl.line, gl.startCol, "924.3",
                           s"`if` filter should align with `<-`/`=` at column $refOp "
                             +s"(found ${gl.startCol})" )
             else
               if gl.startCol != refLhs then
                 out += Violation
-                        ( file, gl.line, gl.startCol, "34.2",
+                        ( file, gl.line, gl.startCol, "924.2",
                           s"generator should align with the first generator's LHS at column "
                             +s"$refLhs (found ${gl.startCol})" )
               if gl.opCol != refOp then
                 out += Violation
-                        ( file, gl.line, gl.opCol, "34.1",
+                        ( file, gl.line, gl.opCol, "924.1",
                           s"`<-`/`=` should be vertically aligned at column $refOp "
                             +s"(found ${gl.opCol})" )
 

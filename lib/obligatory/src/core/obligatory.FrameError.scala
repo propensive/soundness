@@ -48,4 +48,4 @@ object FrameError:
     case Reason.UnknownHeader   => m"an unrecognized header was encountered"
 
 case class FrameError(reason: FrameError.Reason)(using Diagnostics)
-extends Error(realm"ob", 2, reason.number)(m"could not deframe the message because $reason")
+extends Error(142, reason.number)(m"could not deframe the message because $reason")

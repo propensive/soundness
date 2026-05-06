@@ -49,4 +49,4 @@ object ZipError:
     case Reason.InvalidName(name)    => m"the name $name is not valid for a ZIP entry"
 
 case class ZipError(reason: ZipError.Reason)(using Diagnostics)
-extends Error(realm"zp", 1, reason.number)(m"the ZIP operation failed because $reason")
+extends Error(751, reason.number)(m"the ZIP operation failed because $reason")

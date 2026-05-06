@@ -35,4 +35,4 @@ package profanity
 import fulminate.*
 
 case class DismissError()(using Diagnostics)
-extends Error(realm"pf", 1, 0)(m"the user dismissed an interaction")
+extends Error(372, 0)(m"the user dismissed an interaction")

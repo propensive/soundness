@@ -47,4 +47,4 @@ object FeedError:
     case Reason.Closed                   => m"the recording has already been stopped"
 
 case class FeedError(feed: Text, reason: FeedError.Reason)(using Diagnostics)
-extends Error(realm"ca", 1, reason.number)(m"could not record from feed $feed because $reason")
+extends Error(440, reason.number)(m"could not record from feed $feed because $reason")

@@ -42,4 +42,4 @@ object QueryError:
     case Reason.Missing => m"the parameter was not present in the query string"
 
 case class QueryError(reason: QueryError.Reason)(using Diagnostics)
-extends Error(realm"le", 1, reason.number)(m"the query parameter could not be read because $reason")
+extends Error(205, reason.number)(m"the query parameter could not be read because $reason")

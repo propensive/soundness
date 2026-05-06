@@ -65,7 +65,7 @@ object internal:
           case _                                   => Nil
 
       case other =>
-        halt(5, m"unexpected AST: ${other.toString}")
+        halt(44, m"unexpected AST: ${other.toString}")
 
 
   private def mapping[error <: Exception: Type](using Quotes)(handler: quotes.reflect.Term)
@@ -106,16 +106,16 @@ object internal:
 
         if isExhaustive then true else
           if repetition
-          then halt(6, m"the pattern (which involves repeated parameters) is not exhaustive")
-          else halt(7, m"the pattern is not exhaustive")
+          then halt(304, m"the pattern (which involves repeated parameters) is not exhaustive")
+          else halt(470, m"the pattern is not exhaustive")
 
       case Unapply(Select(target, method), _, params) =>
         // TODO: Check that extractor is exhaustive
         val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
-        params.zip(types).all(exhaustive) || halt(8, m"this type of pattern is not recognized")
+        params.zip(types).all(exhaustive) || halt(423, m"this type of pattern is not recognized")
 
       case other =>
-        halt(9, m"bad pattern")
+        halt(454, m"bad pattern")
 
     def unpack(repr: TypeRepr): Set[TypeRepr] = repr.asMatchable match
       case OrType(left, right) => unpack(left) ++ unpack(right)
@@ -127,17 +127,17 @@ object internal:
       case Typed(_, matchType)   => List(matchType.tpe)
       case Bind(_, pattern)      => patternType(pattern)
       case Alternatives(patters) => patters.flatMap(patternType)
-      case Wildcard()            => halt(10, m"wildcard")
+      case Wildcard()            => halt(686, m"wildcard")
 
       case Unapply(select, _, _) =>
         if exhaustive(pattern, TypeRepr.of[error]) then List(TypeRepr.of[error])
-        else halt(11, m"Unapply ${select.symbol.declaredType.toString}")
+        else halt(716, m"Unapply ${select.symbol.declaredType.toString}")
 
       case TypedOrTest(Unapply(Select(target, method), _, _), typeTree) =>
         if exhaustive(pattern, typeTree.tpe) then List(typeTree.tpe) else Nil
 
       case other =>
-        halt(12, m"this pattern could not be recognized as a distinct `Error` type")
+        halt(514, m"this pattern could not be recognized as a distinct `Error` type")
 
     caseDefs(handler).flatMap:
       case CaseDef(pattern, _, rhs) => rhs.asExpr.absolve match
@@ -277,11 +277,11 @@ object internal:
 
                 case None =>
                   halt
-                    ( 13,
+                    ( 602,
                       m"There is no available handler for ${TypeRepr.of[errorType].show}" )
 
       case _ =>
-        halt(14, m"argument to `mitigate` should be a partial function implemented as match cases")
+        halt(648, m"argument to `mitigate` should be a partial function implemented as match cases")
 
     val method = TypeRepr.of[context[result]].typeSymbol.declaredMethod("apply").head
     lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
@@ -304,7 +304,7 @@ object internal:
 
                 case _ =>
                   halt
-                    ( 15,
+                    ( 29,
                       m"""
                         argument to `recover` should be a partial function implemented as match
                         cases
@@ -344,7 +344,7 @@ object internal:
 
                 case other =>
                   halt
-                    ( 16,
+                    ( 114,
                       m"""
                         argument to `accrue` should be a partial function implemented as match cases
                       """ )

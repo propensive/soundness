@@ -50,4 +50,4 @@ object CryptoError:
     case IoFailure        extends Reason(5)
 
 case class CryptoError(reason: CryptoError.Reason)(using Diagnostics)
-extends Error(realm"en", 1, reason.number)(m"could not decode the encrypted data because $reason")
+extends Error(521, reason.number)(m"could not decode the encrypted data because $reason")

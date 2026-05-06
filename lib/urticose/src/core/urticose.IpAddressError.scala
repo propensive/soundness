@@ -64,4 +64,4 @@ object IpAddressError:
     case Ipv6MultipleDoubleColons              extends Reason(8)
 
 case class IpAddressError(reason: IpAddressError.Reason)(using Diagnostics)
-extends Error(realm"ur", 3, reason.number)(m"the IP address is not valid because $reason")
+extends Error(77, reason.number)(m"the IP address is not valid because $reason")

@@ -102,4 +102,4 @@ object Tests extends Suite(m"Inimitable Tests"):
         demilitarize:
           uuid"not-a-uuid"
         .map(_.message)
-      . assert(_ == List(t"[↯SN-in/1] not-a-uuid is not a valid UUID"))
+      . assert(_ == List(t"[↯SN-349] not-a-uuid is not a valid UUID"))

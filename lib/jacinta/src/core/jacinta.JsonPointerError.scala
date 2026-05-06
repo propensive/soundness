@@ -42,5 +42,5 @@ object JsonPointerError:
     case Reason.UnknownDocument => m"the registry contains no document at the pointer's URL"
 
 case class JsonPointerError(reason: JsonPointerError.Reason)(using Diagnostics)
-extends Error(realm"ja", 2, reason.number)
+extends Error(415, reason.number)
   ( m"the JSON pointer could not be resolved because $reason" )

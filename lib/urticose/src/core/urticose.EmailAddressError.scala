@@ -70,4 +70,4 @@ object EmailAddressError:
     case InvalidChar(char: Char)                            extends Reason(12)
 
 case class EmailAddressError(reason: EmailAddressError.Reason)(using Diagnostics)
-extends Error(realm"ur", 1, reason.number)(m"the email address is not valid because $reason")
+extends Error(159, reason.number)(m"the email address is not valid because $reason")

@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class SerializationError(position: Int, char: Char)(using Diagnostics)
-extends Error(realm"mo", 1, 0)(m"the character $char at $position was not valid")
+extends Error(325, 0)(m"the character $char at $position was not valid")

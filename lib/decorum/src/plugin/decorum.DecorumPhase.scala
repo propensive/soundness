@@ -49,7 +49,6 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
   private val bel: Char = 7.toChar
   private val gray   = s"$esc[38;2;128;128;128m"
   private val orange = s"$esc[38;2;255;165;0m"
-  private val yellow = s"$esc[38;2;255;215;0m"
   private val cyan   = s"$esc[38;2;0;200;255m"
   private val reset  = s"$esc[0m"
 
@@ -58,11 +57,11 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
       val hyperlink = false
       val rendered  = rule.replace(".", s"$gray.$cyan")
       val d         = rule.takeWhile(_ != '.')
-      val link      = if hyperlink then s"$esc]8;;https://soundness.dev/SN-de/$d$bel" else ""
+      val link      = if hyperlink then s"$esc]8;;https://soundness.dev/SN-$d$bel" else ""
       val unlink    = if hyperlink then s"$esc]8;;$bel" else ""
-      s"$link$gray[$orange↯SN$gray-${yellow}de$gray/$cyan$rendered$gray]$reset$unlink "
+      s"$link$gray[$orange↯SN$gray-$cyan$rendered$gray]$reset$unlink "
     else
-      s"[↯SN-de/$rule] "
+      s"[↯SN-$rule] "
 
   override def transformUnit(tree: tpd.Tree)(using context: Context): tpd.Tree =
     val source: SourceFile = context.compilationUnit.source
