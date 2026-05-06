@@ -196,25 +196,25 @@ object Tests extends Suite(m"Escapade tests"):
         demilitarize:
           e"$Bold(text"
         .  nonEmpty
-      . aspire(_ == true)
+      . assert(_ == true)
 
       test(m"unclosed square bracket is a compile error"):
         demilitarize:
           e"$Bold[text"
         .  nonEmpty
-      . aspire(_ == true)
+      . assert(_ == true)
 
       test(m"unclosed brace is a compile error"):
         demilitarize:
           e"$Bold{text"
         .  nonEmpty
-      . aspire(_ == true)
+      . assert(_ == true)
 
       test(m"unclosed angle bracket is a compile error"):
         demilitarize:
           e"$Bold<text"
         .  nonEmpty
-      . aspire(_ == true)
+      . assert(_ == true)
 
       test(m"properly closed parens compile cleanly"):
         demilitarize:
