@@ -33,7 +33,9 @@
 package ypsiloid
 
 import anticipation.*
+import fulminate.*
 import vacuous.*
+import zephyrine.*
 
 // The parser representation of a YAML value. Modelled on Jacinta's
 // `JsonAst`: an opaque union over the primitive JVM types so that
@@ -51,7 +53,174 @@ import vacuous.*
 opaque type YamlAst =
   Long | Double | Boolean | String | IArray[Any] | Null | Unset.type
 
-object YamlAst:
+object YamlAst extends Format:
+  def name: Text = "YAML"
+
+  case class Position
+    ( line:                Int,
+      column:              Int,
+      override val offset: Optional[Int] = Unset,
+      override val length: Optional[Int] = Unset )
+  extends Format.Position:
+    def describe: Text = ("line "+line+", column "+column).tt
+
+  enum Issue extends Format.Issue:
+    case DirectiveWithoutDocumentStart
+    case DirectivesOutOfPlace
+    case MissingDocumentStart
+    case ContentAfterDocumentEnd
+    case DuplicateYamlDirective
+    case YamlDirectiveRequiresVersion
+    case YamlDirectiveTooManyArguments
+    case YamlDirectiveInvalidVersion
+    case TagDirectiveRequiresHandleAndPrefix
+    case TwoAnchorsOnSameNode
+    case AnchorOnAlias
+    case ReservedIndicatorAtNodeStart
+    case DuplicateAnchorOnNode
+    case DuplicateTagOnNode
+    case UnterminatedVerbatimTag
+    case BlockMappingOnDocumentStartLine
+    case ChainedMappingValueOnSingleLine
+    case MultilineImplicitKey
+    case TrailingContentAfterQuotedScalar
+    case UnterminatedDoubleQuotedString
+    case UnterminatedEscape
+    case InvalidEscapeSequence
+    case TruncatedHexEscape
+    case InvalidHexDigit
+    case UnterminatedSingleQuotedString
+    case DocumentMarkerInsideMultilineScalar
+    case ScalarContinuationUnderIndented
+    case UnterminatedFlowSequence
+    case EmptyFlowSequenceEntry
+    case FlowImplicitKeyAndColonOnDifferentLines
+    case FlowSequenceExpectedCommaOrClose
+    case UnterminatedFlowMapping
+    case EmptyFlowMappingEntry
+    case FlowMappingExpectedCommaOrClose
+    case FlowContentUnderIndented
+    case CommentMissingPrecedingWhitespace
+    case DocumentMarkerInFlowContext
+    case ReservedIndicatorAtFlowPlainScalarStart
+    case BlockSequenceIndicatorNotAtLineStart
+    case TabInIndentation
+    case PlainScalarAtMappingIndentWithoutColon
+    case ExpectedColonAfterMappingKey
+    case BlockSequenceOnMappingKeyLine
+    case InvalidBlockScalarIndentationIndicator
+    case DuplicateBlockScalarIndentationIndicator
+    case DuplicateBlockScalarChompingIndicator
+    case InvalidBlockScalarHeader
+    case BlockScalarHeaderCommentMissingWhitespace
+    case BlockScalarLeadingBlanksOverIndented
+    case UndefinedTagHandle(handle: Text)
+    case UnknownAlias(name: Text)
+
+    def describe: Message = this match
+      case DirectiveWithoutDocumentStart =>
+        m"a directive must be followed by a `---` document-start marker"
+      case DirectivesOutOfPlace =>
+        m"directives can only appear at the start of a stream or after `...`"
+      case MissingDocumentStart =>
+        m"a `---` document-start marker is missing between documents"
+      case ContentAfterDocumentEnd =>
+        m"unexpected content was found after the `...` document-end marker"
+      case DuplicateYamlDirective =>
+        m"the %YAML directive was given more than once"
+      case YamlDirectiveRequiresVersion =>
+        m"the %YAML directive requires a version argument"
+      case YamlDirectiveTooManyArguments =>
+        m"the %YAML directive takes a single version argument"
+      case YamlDirectiveInvalidVersion =>
+        m"the %YAML directive version must be `major.minor`"
+      case TagDirectiveRequiresHandleAndPrefix =>
+        m"the %TAG directive requires a `handle prefix` argument pair"
+      case TwoAnchorsOnSameNode =>
+        m"two anchors were given on the same node"
+      case AnchorOnAlias =>
+        m"an alias node cannot also have an anchor"
+      case ReservedIndicatorAtNodeStart =>
+        m"a reserved indicator was found at the start of a node"
+      case DuplicateAnchorOnNode =>
+        m"more than one anchor was given on a single node"
+      case DuplicateTagOnNode =>
+        m"more than one tag was given on a single node"
+      case UnterminatedVerbatimTag =>
+        m"the verbatim tag was not terminated"
+      case BlockMappingOnDocumentStartLine =>
+        m"a block mapping cannot start on the document-start line"
+      case ChainedMappingValueOnSingleLine =>
+        m"a chained mapping value is not allowed on a single line"
+      case MultilineImplicitKey =>
+        m"an implicit mapping key cannot span multiple lines"
+      case TrailingContentAfterQuotedScalar =>
+        m"unexpected trailing content was found after a quoted scalar"
+      case UnterminatedDoubleQuotedString =>
+        m"the double-quoted string was not terminated"
+      case UnterminatedEscape =>
+        m"the escape sequence was not terminated"
+      case InvalidEscapeSequence =>
+        m"the escape sequence was not valid"
+      case TruncatedHexEscape =>
+        m"the hex escape was truncated"
+      case InvalidHexDigit =>
+        m"a hex digit was expected"
+      case UnterminatedSingleQuotedString =>
+        m"the single-quoted string was not terminated"
+      case DocumentMarkerInsideMultilineScalar =>
+        m"a document marker was found inside a multi-line scalar"
+      case ScalarContinuationUnderIndented =>
+        m"a multi-line scalar continuation was insufficiently indented"
+      case UnterminatedFlowSequence =>
+        m"the flow sequence was not terminated"
+      case EmptyFlowSequenceEntry =>
+        m"a flow-sequence entry was empty"
+      case FlowImplicitKeyAndColonOnDifferentLines =>
+        m"the implicit mapping key and `:` must be on the same line"
+      case FlowSequenceExpectedCommaOrClose =>
+        m"`,` or `]` was expected in the flow sequence"
+      case UnterminatedFlowMapping =>
+        m"the flow mapping was not terminated"
+      case EmptyFlowMappingEntry =>
+        m"a flow-mapping entry was empty"
+      case FlowMappingExpectedCommaOrClose =>
+        m"`,` or `}` was expected in the flow mapping"
+      case FlowContentUnderIndented =>
+        m"the flow content was insufficiently indented"
+      case CommentMissingPrecedingWhitespace =>
+        m"a comment must be preceded by whitespace"
+      case DocumentMarkerInFlowContext =>
+        m"document markers are not allowed in flow style"
+      case ReservedIndicatorAtFlowPlainScalarStart =>
+        m"a reserved indicator was found at the start of a flow plain scalar"
+      case BlockSequenceIndicatorNotAtLineStart =>
+        m"a block-sequence indicator must start its line"
+      case TabInIndentation =>
+        m"a tab character was used in indentation"
+      case PlainScalarAtMappingIndentWithoutColon =>
+        m"a plain scalar at the mapping indent was missing its `:`"
+      case ExpectedColonAfterMappingKey =>
+        m"`:` was expected after the mapping key"
+      case BlockSequenceOnMappingKeyLine =>
+        m"a sequence cannot start on the same line as a mapping key"
+      case InvalidBlockScalarIndentationIndicator =>
+        m"the block-scalar indentation indicator must be 1-9"
+      case DuplicateBlockScalarIndentationIndicator =>
+        m"more than one block-scalar indentation indicator was given"
+      case DuplicateBlockScalarChompingIndicator =>
+        m"more than one block-scalar chomping indicator was given"
+      case InvalidBlockScalarHeader =>
+        m"the block-scalar header was not valid"
+      case BlockScalarHeaderCommentMissingWhitespace =>
+        m"a comment in the block-scalar header must be preceded by whitespace"
+      case BlockScalarLeadingBlanksOverIndented =>
+        m"the leading empty lines have more indentation than the body"
+      case UndefinedTagHandle(handle) =>
+        m"the tag handle $handle was not defined"
+      case UnknownAlias(name) =>
+        m"the alias *$name does not refer to a known anchor"
+
   // Byte constants used by the parser (mirrors `JsonAst.AsciiByte` from
   // Jacinta).
   object Byte:
