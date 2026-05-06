@@ -50,10 +50,21 @@ extern "C" fn forward(signal: libc::c_int) {
 
 #[cfg(windows)]
 pub fn run(args: &[String]) -> ! {
+    use std::os::windows::process::CommandExt;
+    // The wrapper itself was launched with DETACHED_PROCESS and so has no
+    // console; without CREATE_NO_WINDOW, Windows would allocate a fresh
+    // console for the JVM child and flash a "java" terminal window on screen
+    // for as long as the daemon runs.
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
     if args.is_empty() { std::process::exit(1); }
     let java = &args[0];
     let java_args = &args[1..];
-    let mut child = match Command::new(java).args(java_args).spawn() {
+    let mut child = match Command::new(java)
+        .args(java_args)
+        .creation_flags(CREATE_NO_WINDOW)
+        .spawn()
+    {
         Ok(child) => child,
         Err(_)    => std::process::exit(1),
     };
