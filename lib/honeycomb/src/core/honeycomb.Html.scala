@@ -1007,9 +1007,15 @@ object Html extends Tag.Container
 
         case '/' =>
           next()
-          content =
-            if foreign then foreignTag(begin()) else tagname(begin(), dom.elements).label
-
+          if foreign then content = foreignTag(begin())
+          else
+            val tagDef = tagname(begin(), dom.elements)
+            content = tagDef.label
+            // Stash the resolved closing tag so `read`'s `Token.Close` arm
+            // can compare `openTag eq parent` (reference equality on the
+            // interned `Tag` instance) instead of `content != parent.label`
+            // (`String.equals` on the labels).
+            openTag = tagDef
           Token.Close
 
         case '\u0000' => fail(BadInsertion)
@@ -1143,7 +1149,17 @@ object Html extends Tag.Container
                   else level = Level.Descend
 
                 case Token.Close =>
-                  if content != parent.label then
+                  // For non-foreign tags, `tagname` returns a `Tag` instance
+                  // from the interned `dom.elements` trie and `parent` is
+                  // itself one of those interned instances, so a mismatch is
+                  // detectable via reference inequality — cheaper than
+                  // `String.equals` on the labels. Foreign tags have to fall
+                  // back to text equality since `Tag.foreign` mints fresh
+                  // instances per element.
+                  val nameMismatch =
+                    if parent.foreign then content != parent.label
+                    else openTag ne parent
+                  if nameMismatch then
                     if parent.autoclose then
                       reset(mark)
                       close()
