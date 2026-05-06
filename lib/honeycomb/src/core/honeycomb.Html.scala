@@ -554,8 +554,15 @@ object Html extends Tag.Container
       var pendingFormattingAttrs:  Array[Attributes] = new Array[Attributes](4)
       var pendingFormattingSize: Int = 0
       var pendingAtDepth: Int = -1
-      var fosteredBefore: List[Node] = Nil
-      var fosteredAfter: List[Node] = Nil
+      // Foster-parented children awaiting placement around the next `<table>`
+      // close. Stored as a pair of `Array[Node]` buffers (with size counters)
+      // rather than `List[Node]`s appended via `:+`: list `:+` is `O(N)`
+      // and the per-append cons cell + traversal-on-flush is wasted on a
+      // structure we always drain in arrival order.
+      var fosteredBefore: Array[Node] = new Array[Node](4)
+      var fosteredBeforeSize: Int = 0
+      var fosteredAfter: Array[Node] = new Array[Node](4)
+      var fosteredAfterSize: Int = 0
       var inTableContent: Boolean = false
       var pendingFosterDescend: Boolean = false
 
@@ -1240,18 +1247,36 @@ object Html extends Tag.Container
                 val child = descend(focus, admissible, extra)
                 pop()
                 if savedFosterFlag then
-                  if inTableContent then fosteredAfter = fosteredAfter :+ child
-                  else fosteredBefore = fosteredBefore :+ child
+                  if inTableContent then
+                    if fosteredAfterSize >= fosteredAfter.length then
+                      val nu = new Array[Node](fosteredAfter.length*2)
+                      jl.System.arraycopy(fosteredAfter, 0, nu, 0, fosteredAfterSize)
+                      fosteredAfter = nu
+                    fosteredAfter(fosteredAfterSize) = child
+                    fosteredAfterSize += 1
+                  else
+                    if fosteredBeforeSize >= fosteredBefore.length then
+                      val nu = new Array[Node](fosteredBefore.length*2)
+                      jl.System.arraycopy(fosteredBefore, 0, nu, 0, fosteredBeforeSize)
+                      fosteredBefore = nu
+                    fosteredBefore(fosteredBeforeSize) = child
+                    fosteredBeforeSize += 1
                   val added = reconstructPending()
                   read(parent, admissible, map, count + added)
                 else if focus.isTable then
-                  val beforeAdded = fosteredBefore.size
-                  fosteredBefore.foreach(append)
-                  fosteredBefore = Nil
+                  val beforeAdded = fosteredBeforeSize
+                  var i = 0
+                  while i < fosteredBeforeSize do
+                    append(fosteredBefore(i))
+                    i += 1
+                  fosteredBeforeSize = 0
                   append(child)
-                  val afterAdded = fosteredAfter.size
-                  fosteredAfter.foreach(append)
-                  fosteredAfter = Nil
+                  val afterAdded = fosteredAfterSize
+                  i = 0
+                  while i < fosteredAfterSize do
+                    append(fosteredAfter(i))
+                    i += 1
+                  fosteredAfterSize = 0
                   inTableContent = false
                   val added = reconstructPending()
                   read(parent, admissible, map, count + 1 + beforeAdded + afterAdded + added)
@@ -1267,8 +1292,20 @@ object Html extends Tag.Container
                 val trimmed = text.trim
                 if trimmed.length > 0 then
                   val node = TextNode(trimmed)
-                  if inTableContent then fosteredAfter = fosteredAfter :+ node
-                  else fosteredBefore = fosteredBefore :+ node
+                  if inTableContent then
+                    if fosteredAfterSize >= fosteredAfter.length then
+                      val nu = new Array[Node](fosteredAfter.length*2)
+                      jl.System.arraycopy(fosteredAfter, 0, nu, 0, fosteredAfterSize)
+                      fosteredAfter = nu
+                    fosteredAfter(fosteredAfterSize) = node
+                    fosteredAfterSize += 1
+                  else
+                    if fosteredBeforeSize >= fosteredBefore.length then
+                      val nu = new Array[Node](fosteredBefore.length*2)
+                      jl.System.arraycopy(fosteredBefore, 0, nu, 0, fosteredBeforeSize)
+                      fosteredBefore = nu
+                    fosteredBefore(fosteredBeforeSize) = node
+                    fosteredBeforeSize += 1
                 read(parent, admissible, map, count)
               else
                 whitespace() yet read(parent, admissible, map, count)
