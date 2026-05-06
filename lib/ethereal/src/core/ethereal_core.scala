@@ -210,9 +210,12 @@ def cli[bus <: Matchable](using executive: Executive)
   val startTime: Long =
     safely(System.properties.ethereal.startTime[Long]()).or(jl.System.currentTimeMillis())
 
-  val runtimeDir: Optional[Path on Local] = Xdg.runtimeDir
-  val stateHome: Path on Local = Xdg.stateHome
-  val baseDir: Path on Local = runtimeDir.or(stateHome) //name
+  // Use `Directories.*` rather than `Xdg.*` so Windows resolves to a native
+  // location (`%LOCALAPPDATA%\Temp`) instead of `%USERPROFILE%\.local\state`,
+  // which the Rust launcher in `state.rs` does not look at.
+  val runtimeDir: Optional[Path on Local] = Directories.runtimeDir
+  val stateHome: Path on Local = Directories.stateHome
+  val baseDir: Path on Local = runtimeDir.or(stateHome)
   val buildFile: Path on Local = baseDir/name/"build"
   val pidFile: Path on Local = baseDir/name/"pid"
   val socketFile: Path on Local = baseDir/name/"socket"

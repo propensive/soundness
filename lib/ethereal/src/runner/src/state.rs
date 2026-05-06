@@ -7,18 +7,41 @@ use crate::uds::UnixStream;
 
 const POLL_INTERVAL: Duration = Duration::from_millis(100);
 
+// Must match the Scala daemon's view of the base directory (see
+// `ethereal_core.scala`, which uses `Directories.runtimeDir.or(Directories.stateHome)`),
+// otherwise the launcher polls one socket path while the JVM binds another and
+// startup silently times out.
 pub fn base_dir(name: &str) -> PathBuf {
-    let runtime = std::env::var_os("XDG_RUNTIME_DIR").map(PathBuf::from);
-    let state = std::env::var_os("XDG_STATE_HOME").map(PathBuf::from);
-    let home = std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local").join("state"));
-    let base = runtime.or(state).or(home).unwrap_or_else(|| PathBuf::from("."));
+    #[cfg(windows)]
+    let base = local_app_data().join("Temp");
+    #[cfg(unix)]
+    let base = {
+        let runtime = std::env::var_os("XDG_RUNTIME_DIR").map(PathBuf::from);
+        let state = std::env::var_os("XDG_STATE_HOME").map(PathBuf::from);
+        let home = std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local").join("state"));
+        runtime.or(state).or(home).unwrap_or_else(|| PathBuf::from("."))
+    };
     base.join(name)
 }
 
 pub fn data_home() -> PathBuf {
-    if let Some(dir) = std::env::var_os("XDG_DATA_HOME") { return PathBuf::from(dir); }
-    if let Some(home) = std::env::var_os("HOME") {
-        return PathBuf::from(home).join(".local").join("share");
+    #[cfg(windows)]
+    { local_app_data() }
+    #[cfg(unix)]
+    {
+        if let Some(dir) = std::env::var_os("XDG_DATA_HOME") { return PathBuf::from(dir); }
+        if let Some(home) = std::env::var_os("HOME") {
+            return PathBuf::from(home).join(".local").join("share");
+        }
+        PathBuf::from(".")
+    }
+}
+
+#[cfg(windows)]
+fn local_app_data() -> PathBuf {
+    if let Some(dir) = std::env::var_os("LOCALAPPDATA") { return PathBuf::from(dir); }
+    if let Some(profile) = std::env::var_os("USERPROFILE") {
+        return PathBuf::from(profile).join("AppData").join("Local");
     }
     PathBuf::from(".")
 }
