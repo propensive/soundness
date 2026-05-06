@@ -233,6 +233,11 @@ extends Element(label, Attributes.from(presets), IArray(), foreign), Formal, Dyn
     && (label == t"tr" || label == t"table" || label == t"tbody"
         || label == t"thead" || label == t"tfoot")
 
+  // True iff the tag's label is exactly `"table"`. Used by the parser's
+  // foster-parenting logic to detect "are we entering a table?" without
+  // re-running `label == t"table"` on every descend.
+  val isTable: Boolean = label == t"table"
+
 
   inline def applyDynamicNamed[label <: Label: Precise](inline method: label)
     ( inline attributes: (String, Any)* )
