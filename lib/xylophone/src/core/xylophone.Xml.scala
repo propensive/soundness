@@ -508,10 +508,9 @@ object Xml extends Tag.Container
     // Parser-shared scratch buffer for attribute accumulation (lifetime of
     // the `XmlParser` instance). Stores key/value pairs interleaved as
     // `[k0, v0, k1, v1, ...]`. `readAttributes()` writes here and snapshots
-    // the populated prefix into a `ListMap` at the end. Replaces the previous
-    // `var entries: Map[Text, Text] = ListMap(); entries.updated(...)` loop,
-    // which allocated a fresh `ListMap` per attribute. Geometric growth.
-    private var attrBuf: Array[Text] = new Array[Text](16)
+    // the populated prefix into a freshly-sized `IArray[String]` to wrap
+    // as the opaque `Attributes`. Geometric growth.
+    private var attrBuf: Array[String] = new Array[String](16)
 
     protected inline def more: Boolean = cursor.more
 
@@ -680,12 +679,11 @@ object Xml extends Tag.Container
         advance() // consume closing quote
         buf.toString.nn.tt
 
-    protected def readAttributes(tag: Text)(using Tactic[ParseError]): Map[Text, Text] =
+    protected def readAttributes(tag: Text)(using Tactic[ParseError]): Attributes =
       // Append into the parser-shared interleaved scratch buffer (laid out as
       // `[k0, v0, k1, v1, ...]`); on close, snapshot the populated prefix
-      // into a single `ListMap`. Replaces the previous
-      // `entries.updated(...)`-per-attribute loop, which allocated a fresh
-      // `ListMap` for every attribute.
+      // into a freshly-sized `IArray[String]` and wrap it as the opaque
+      // `Attributes`.
       //
       // Duplicate detection uses a Bloom-filter-style cheap test before
       // falling back to a linear scan: maintain a running OR of the
@@ -701,7 +699,7 @@ object Xml extends Tag.Container
 
       inline def ensureCapacity(): Unit =
         if 2*n >= attrBuf.length then
-          val nu = new Array[Text](attrBuf.length*2)
+          val nu = new Array[String](attrBuf.length*2)
           jl.System.arraycopy(attrBuf, 0, nu, 0, 2*n)
           attrBuf = nu
 
@@ -715,18 +713,19 @@ object Xml extends Tag.Container
           advance()
           skipWs()
           ensureCapacity()
-          attrBuf(2*n) = t"\u0000"
-          attrBuf(2*n + 1) = t""
+          attrBuf(2*n) = "\u0000"
+          attrBuf(2*n + 1) = ""
           n += 1
         else
           val keyStart = begin()
           val key = readName()
-          val h: Int = key.s.hashCode
+          val keyStr: String = key.s
+          val h: Int = keyStr.hashCode
 
           if (hashOr | h) == hashOr then
             var dup = 0
             while dup < 2*n do
-              if attrBuf(dup) == key then fail(Issue.DuplicateAttribute(key), keyStart)
+              if attrBuf(dup) == keyStr then fail(Issue.DuplicateAttribute(key), keyStart)
               dup += 2
 
           hashOr |= h
@@ -746,18 +745,15 @@ object Xml extends Tag.Container
               readAttrValue(tag, q)
             else fail(Issue.UnquotedAttribute, keyStart)
           ensureCapacity()
-          attrBuf(2*n) = key
-          attrBuf(2*n + 1) = value
+          attrBuf(2*n) = keyStr
+          attrBuf(2*n + 1) = value.s
           n += 1
 
-      if n == 0 then ListMap.empty
+      if n == 0 then Attributes.empty
       else
-        val b = ListMap.newBuilder[Text, Text]
-        var i = 0
-        while i < n do
-          b += ((attrBuf(2*i), attrBuf(2*i + 1)))
-          i += 1
-        b.result()
+        val arr = new Array[String](2*n)
+        jl.System.arraycopy(attrBuf, 0, arr, 0, 2*n)
+        Attributes.fromInterleaved(arr.immutable(using Unsafe))
 
     // Read text up to the next '<'; returns the (possibly entity-expanded)
     // Text. Detects literal `]]>` as an error. Reports `\u0000` holes via
@@ -976,7 +972,7 @@ object Xml extends Tag.Container
         if !more then fail(Issue.ExpectedMore)
         if peek != '>' then fail(Issue.Unexpected(peek))
         advance()
-        Element(t"\u0000", ListMap(), IArray.empty[Node])
+        Element(t"\u0000", Attributes.empty, IArray.empty[Node])
       else
         val name = readName()
         val attrs = readAttributes(name)
@@ -1192,7 +1188,7 @@ case class TextNode(text: Text) extends Node:
 
 case class Element
   ( label:      Text,
-    attributes: Map[Text, Text],
+    attributes: Attributes,
     children:   IArray[Node] )
 extends Node, Topical, Transportive:
   override def toString(): String =
@@ -1202,14 +1198,14 @@ extends Node, Topical, Transportive:
     case Fragment(node: Element) => this == node
 
     case Element(label, attributes, children) =>
-      label == this.label && attributes == this.attributes
+      label == this.label && attributes.equalsAttributes(this.attributes)
       && ju.Arrays.equals(children.mutable(using Unsafe), this.children.mutable(using Unsafe))
 
     case _ =>
       false
 
   override def hashCode: Int =
-    ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
+    ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashAttributes ^ label.hashCode
 
 
   def selectDynamic(name: Label)(using attribute: name.type is Xml.XmlAttribute on Topic in Form)
