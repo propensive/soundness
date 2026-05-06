@@ -246,6 +246,27 @@ final class Cursor[data]
         if !lineation.track(operand) then columnNo.next
         else { lineNo = lineNo.next; Prim }
 
+  // Bulk-advance primitives. Allow a caller (typically a parser running a
+  // register-resident scan loop) to consume `n` characters without paying the
+  // per-character lineation update inside `advance`/`unsafeAdvanceWith`, then
+  // reconcile lineation in one shot. The caller is responsible for tracking
+  // newlines while it scans.
+  inline def unsafeBumpPos(by: Int)(using erased Unsafe): Unit = pos += by
+
+  // Increase the line counter by `by`, leaving the column counter untouched.
+  inline def unsafeBumpLine(by: Int)(using erased Unsafe): Unit =
+    lineNo = denominative.Ordinal.zerary(lineNo.n0 + by)
+
+  // Increase the column counter by `by`. Must not be called across newlines.
+  inline def unsafeBumpColumn(by: Int)(using erased Unsafe): Unit =
+    columnNo = denominative.Ordinal.zerary(columnNo.n0 + by)
+
+  // Set the column counter directly. Used after a bulk advance over a range
+  // that contained at least one newline, to set the column to the offset
+  // since the most-recent newline.
+  inline def unsafeSetColumn(value: Int)(using erased Unsafe): Unit =
+    columnNo = denominative.Ordinal.zerary(value)
+
   // `next()` is `advance(); more`, so it returns `true` while more data is
   // available and `false` when the stream is exhausted.
   inline def next(): Boolean =
