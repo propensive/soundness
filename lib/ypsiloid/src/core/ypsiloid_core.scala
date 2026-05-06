@@ -34,7 +34,19 @@ package ypsiloid
 
 import anticipation.*
 import contingency.*
+import gossamer.*
+import prepositional.*
+import wisteria.*
 import zephyrine.*
 
 extension (text: Text)
   def readAll(using Tactic[ParseError]): List[Yaml] = Yaml.parseAll(text)
+
+extension [entity: Encodable in Yaml](value: entity) def yaml: Yaml = value.encode
+
+package yamlDiscriminables:
+  given discriminatedUnionByType: [value] => value is Discriminable in Yaml =
+    Yaml.discriminatedUnion[value](t"type")
+
+  given discriminatedUnionByKind: [value] => value is Discriminable in Yaml =
+    Yaml.discriminatedUnion[value](t"kind")
