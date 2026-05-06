@@ -34,6 +34,4 @@ package hellenism
 
 import anticipation.*
 
-private given Realm("hellenism")
-
 export hellenism.internal.ClassRef

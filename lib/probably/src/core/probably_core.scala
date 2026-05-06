@@ -43,8 +43,6 @@ import prepositional.*
 import proscenium.*
 import symbolism.*
 
-private given realm: Realm = realm"pb"
-
 given decimalizer: Decimalizer = Decimalizer(4)
 
 export Baseline.Compare.{Min, Mean, Max}

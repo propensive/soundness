@@ -99,12 +99,6 @@ If the compiler is running in a terminal with color capability, then color will
 be used to highlight embeddings in the failure message, by including ANSI
 escape codes in the output message.
 
-Calling `fail` requires a contextual `Realm` in scope. A `Realm` does nothing
-more than to give a name to the scope for communication, and can be created with:
-```scala
-given Realm = realm"myproject"
-```
-
 ### `Panic`
 
 Sometimes we need to raise exceptions which are not intended to be handled, and

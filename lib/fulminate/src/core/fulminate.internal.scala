@@ -50,13 +50,6 @@ object internal:
 
   extension (diagnostics: Diagnostics) def captureStack: Boolean = diagnostics
 
-  def realm(context: Expr[StringContext]): Macro[Realm] =
-    val name: String = context.valueOrAbort.parts.head
-    if !name.matches("[a-z]+") then
-      val msg = Message(List("the realm code should contain only lowercase letters".tt))
-      halt(769, msg)
-    else '{Realm(${Expr(name)}.tt)}
-
   transparent inline def mSubMessages[param](inline subs: param): List[Message] =
     inline subs.asMatchable match
       case tuple: Tuple =>

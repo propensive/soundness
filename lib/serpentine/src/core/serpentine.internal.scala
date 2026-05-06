@@ -45,8 +45,6 @@ import proscenium.*
 import vacuous.*
 
 object internal:
-  private given realm: Realm = realm"se"
-
   def path(context: Expr[StringContext]): Macro[Path] =
     val name: String = context.valueOrAbort.parts.head
     safely(name.tt.decode[Path on Posix]).let: path =>

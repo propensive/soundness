@@ -62,8 +62,6 @@ import zephyrine.*
 // part-origins map to source-file ranges, so diagnostics highlight
 // the exact bad span in the user's `y"…"` template.
 object internal:
-  private given realm: Realm = realm"yp"
-
   // A unique sentinel that is highly unlikely to appear in normal
   // YAML content. Any occurrence in the parsed AST is treated as a
   // hole produced by the macro's part-joining step.

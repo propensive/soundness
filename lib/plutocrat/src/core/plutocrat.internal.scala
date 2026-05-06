@@ -48,8 +48,6 @@ import spectacular.*
 import symbolism.*
 
 object internal:
-  private given realm: Realm = realm"pl"
-
   opaque type Money = Long
   opaque type Isin = Long
 

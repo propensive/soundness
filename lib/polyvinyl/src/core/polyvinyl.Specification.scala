@@ -55,8 +55,6 @@ trait Specification extends Original:
 
     import quotes.reflect.*
 
-    given realm: Realm = realm"pv"
-
     val target = thisType.absolve match
       case '[thisType] =>
         Ref(TypeRepr.of[thisType].typeSymbol.companionModule)

@@ -47,7 +47,6 @@ object Tests extends Suite(m"Eucalyptus tests"):
     //     case _      => Out//Syslog(t"tab")
 
     //   test(m"Log something"):
-    //     given realm: Realm = realm"test"
     //     Log.fine(t"Fine message")
     //     Log.info(t"Info message")
     //     Log.warn(t"Warn message")

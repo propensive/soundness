@@ -58,14 +58,14 @@ package logFormats:
   private val indent = e" "*46
 
   given ansiStandard: (palette: LogPalette) => Message is Inscribable in Teletype =
-    (event, level, realm, timestamp) =>
+    (event, level, timestamp) =>
       try event.teletype.cut(t"\n").flatMap(_.slices(76)) match
         case Nil => e""
 
         case head :: tail =>
           val date = dateFormat.format(timestamp).nn.tt
           val color = palette.subdued
-          val first = e"$color($date) $level ${palette.informative}(${realm.code.fit(10)}) > $head"
+          val first = e"$color($date) $level > $head"
 
           (first :: tail.map(indent+_)).join(e"\n").render(termcapDefinitions.xterm256)
           (first :: tail.map(indent+_)).join(e"\n")

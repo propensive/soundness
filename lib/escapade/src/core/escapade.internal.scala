@@ -51,8 +51,6 @@ import vacuous.*
 import errorDiagnostics.empty
 
 object internal:
-  private given realm: Realm = realm"escapade"
-
   // Mirrors what contextual.Interpolator.expand used to do for the e""
   // interpolator, without going through the trait. We summon Insertion
   // typeclasses at the macro level, run the State machine at compile time

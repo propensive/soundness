@@ -56,7 +56,7 @@ import errorDiagnostics.empty
 given silentExecEvent: ExecEvent is Loggable =
   new Loggable:
     type Self = ExecEvent
-    def log(level: Level, realm: Realm, timestamp: Long, event: ExecEvent): Unit = ()
+    def log(level: Level, timestamp: Long, event: ExecEvent): Unit = ()
 
 
 object Tests extends Suite(m"Guillotine tests"):

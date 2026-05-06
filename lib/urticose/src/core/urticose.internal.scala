@@ -53,8 +53,6 @@ import vacuous.*
 import IpAddressError.Reason, Reason.*
 
 object internal:
-  private given realm: Realm = realm"ur"
-
   private lazy val serviceNames: Map[(Boolean, Text), Int] =
     val stream =
       Optional(getClass.getResourceAsStream("/urticose/service-names-port-numbers.csv")).or:

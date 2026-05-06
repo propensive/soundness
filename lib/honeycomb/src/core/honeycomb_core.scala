@@ -42,8 +42,6 @@ import fulminate.*
 import prepositional.*
 import proscenium.*
 
-private given realm: Realm = realm"hc"
-
 extension [renderable: Renderable](value: renderable)
   def html: Html of renderable.Form = renderable.render(value)
 

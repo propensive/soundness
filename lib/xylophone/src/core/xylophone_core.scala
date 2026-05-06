@@ -51,4 +51,3 @@ extension [encodable: Encodable in Xml](value: encodable)
 extension (inline context: StringContext)
   transparent inline def x: Interpolation = interpolation[Xml](context)
 
-private given realm: Realm = realm"xy"

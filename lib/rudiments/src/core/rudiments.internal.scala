@@ -43,8 +43,6 @@ import symbolism.*
 import vacuous.*
 
 object internal:
-  private given realm: Realm = realm"ru"
-
   opaque type Bytes = Long
   opaque type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 

@@ -408,4 +408,3 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
 
 
 
-private given realm: Realm = Realm(t"tests")

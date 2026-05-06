@@ -56,15 +56,15 @@ package logFormats:
     case Level.Fail => t"FAIL"
 
   given standard: [event: Communicable] => event is Inscribable in Text =
-    (event, level, realm, timestamp) =>
-      t"${dateFormat.format(timestamp).nn} [$level] ${realm.code.fit(10)} > ${event.communicate}\n"
+    (event, level, timestamp) =>
+      t"${dateFormat.format(timestamp).nn} [$level] ${event.communicate}\n"
 
   given untimestamped: [event: Communicable] => event is Inscribable in Text =
-    (event, level, realm, timestamp) =>
-      t"[$level] ${realm.code.fit(10)} > ${event.communicate}\n"
+    (event, level, timestamp) =>
+      t"[$level] ${event.communicate}\n"
 
   given lightweight: [event: Communicable] => event is Inscribable in Text =
-    (event, level, realm, timestamp) =>
+    (event, level, timestamp) =>
       t"[$level] ${event.communicate}\n"
 
 val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
@@ -89,7 +89,7 @@ extension (logObject: Log.type)
 
   def silent[format]: format is Loggable = new Loggable:
     type Self = format
-    def log(level: Level, realm: Realm, timestamp: Long, event: format): Unit = ()
+    def log(level: Level, timestamp: Long, event: format): Unit = ()
 
 
   def route[format](using erased Void)[entry: Inscribable in format, writable: Writable by format]
@@ -107,8 +107,8 @@ extension (logObject: Log.type)
           spool.stop()
           safely(task.await())
 
-      def log(level: Level, realm: Realm, timestamp: Long, event: entry): Unit =
-        spool.put(event.format(level, realm, timestamp))
+      def log(level: Level, timestamp: Long, event: entry): Unit =
+        spool.put(event.format(level, timestamp))
 
 
 package logging:
@@ -118,12 +118,12 @@ package logging:
   given stdout: [format: Printable, inscribable: Inscribable in format] => Stdio
   =>  inscribable is Loggable =
 
-    (level, realm, timestamp, event) =>
-      Out.println(inscribable.formatter(event, level, realm, timestamp))
+    (level, timestamp, event) =>
+      Out.println(inscribable.formatter(event, level, timestamp))
 
 
   given stderr: [inscribable: Inscribable in format, format: Printable] => Stdio
   =>  inscribable is Loggable =
 
-    (level, realm, timestamp, event) =>
-      Err.println(inscribable.formatter(event, level, realm, timestamp))
+    (level, timestamp, event) =>
+      Err.println(inscribable.formatter(event, level, timestamp))

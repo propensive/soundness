@@ -61,8 +61,6 @@ import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
 object Installer:
-  private given realm: Realm = realm"et"
-
   object Result:
     given communicable: Result is Communicable =
       case AlreadyOnPath(script, path) => m"The $script command is already installed at $path."
