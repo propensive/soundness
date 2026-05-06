@@ -319,6 +319,7 @@ object test extends ScalaModule:
     //wisteria.test,
     xylophone.test,
     yossarian.test,
+    ypsiloid.test,
     zephyrine.test,
     //zeppelin.test
   )
@@ -991,6 +992,36 @@ object yossarian extends Library:
   object core extends Component(iridescence.core, gossamer.core, turbulence.core)
   object test extends Tests(core)
 
+object ypsiloid extends Library:
+  object core extends Component(distillate.core, turbulence.core, gossamer.core, contingency.core, vacuous.core, wisteria.core, zephyrine.core, panopticon.core, urticose.url, serpentine.core, beneficence.core, gigantism.core, contextual.core, jacinta.ast)
+
+  object test extends Tests(core, jacinta.core):
+    def yamlTestSuiteCommit = "6ad3d2c62885d82fc349026c136ef560838fdf3d"
+
+    def yamlTestSuite: T[PathRef] = Task:
+      val dest = Task.dest / "yaml-test-suite"
+      val target = yamlTestSuiteCommit
+
+      val needsClone = !os.exists(dest / ".git") || {
+        try os.proc("git", "rev-parse", "HEAD").call(cwd = dest).out.text().trim != target
+        catch case _: Throwable => true
+      }
+
+      if needsClone then
+        if os.exists(dest) then os.remove.all(dest)
+        os.proc("git", "clone", "--depth", "1", "--branch", "data",
+                "https://github.com/yaml/yaml-test-suite.git", dest.toString).call()
+        os.proc("git", "fetch", "--depth", "1", "origin", target).call(cwd = dest)
+        os.proc("git", "checkout", target).call(cwd = dest)
+
+      PathRef(dest)
+
+    override def forkArgs: T[Seq[String]] = Task:
+      super.forkArgs() ++ Seq(s"-Dypsiloid.yaml-test-suite.path=${yamlTestSuite().path}")
+
+  object bench extends Benchmarks(core, quantitative.units):
+    def mvnDeps = Seq(mvn"org.snakeyaml:snakeyaml-engine:2.7")
+
 object zephyrine extends Library:
   object core extends Component(hieroglyph.core, hypotenuse.core)
   object test extends Tests(core)
@@ -1154,6 +1185,7 @@ object publishing extends Module:
     wisteria.core.publishLocal()()
     xylophone.core.publishLocal()()
     yossarian.core.publishLocal()()
+    ypsiloid.core.publishLocal()()
     zephyrine.core.publishLocal()()
     zeppelin.core.publishLocal()()
     ziggurat.core.publishLocal()()

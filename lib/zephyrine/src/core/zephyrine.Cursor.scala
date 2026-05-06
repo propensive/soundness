@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import scala.collection.mutable as scm
-
 import denominative.*
 import prepositional.*
 import proscenium.*
@@ -72,6 +70,9 @@ object Cursor:
   extension (offset: Offset)
     inline def line: Ordinal = (offset >> 32 & 0xffffffff).toInt.z
     inline def column: Ordinal = offset.toInt.z
+    private[zephyrine] inline def toLong: Long = offset
+
+  private[zephyrine] inline def offsetFromLong(long: Long): Offset = long
 
 
   // Default initial buffer size for streaming use; pre-filled buffers use the
@@ -148,8 +149,22 @@ final class Cursor[data]
   private var holdStart: Int = -1
   private var ended:     Boolean = false
 
-  private val marks:   scm.ArrayDeque[Cursor.Mark] = scm.ArrayDeque()
-  private val offsets: scm.ArrayDeque[Cursor.Offset] = scm.ArrayDeque()
+  // Cache `lineation.active` once at construction so the per-`advance()`
+  // dispatch is a final-field load instead of an interface call. The JIT
+  // can no longer prove that `lineation`'s concrete `Lineation` instance has
+  // a constant `active`, since `lineation: Lineation` erases the given's
+  // concrete type at the field boundary, and the parser-side hot loops
+  // would otherwise pay an `invokeinterface` on every character advance.
+  private val lineationActive: Boolean = lineation.active
+
+  // Parallel arrays (not deques) of unboxed `Long`-typed `Mark` and `Offset`
+  // values for the currently-held region. Using `Array[Long]` rather than
+  // `ArrayDeque[Mark]`/`ArrayDeque[Offset]` avoids two `java.lang.Long` boxes
+  // per `mark()` call — a meaningful saving on parser hot paths that mark
+  // every token boundary.
+  private var marks:     Array[Long] = new Array[Long](16)
+  private var offsets:   Array[Long] = new Array[Long](16)
+  private var marksSize: Int = 0
 
   private var lineNo:   Ordinal = Prim
   private var columnNo: Ordinal = Prim
@@ -221,13 +236,44 @@ final class Cursor[data]
   // tighter — important for raw byte-scan parsers like Merino where the
   // hot loop is `while more && {peek-test} do advance()`.
   inline def advance(): Unit =
-    if lineation.active then
+    if lineationActive then
       val operand = addressable.storageAddress(buffer, pos)
       pos += 1
       columnNo =
         if !lineation.track(operand) then columnNo.next
         else { lineNo = lineNo.next; Prim }
     else pos += 1
+
+  // Variant of `advance` for callers that have just read the current operand
+  // (e.g. via `unsafeBuffer(pos)` in a tight scan loop). Reuses the supplied
+  // `operand` instead of re-loading it from the buffer for lineation tracking.
+  inline def unsafeAdvanceWith(operand: addressable.Operand)(using erased Unsafe): Unit =
+    pos += 1
+    if lineationActive then
+      columnNo =
+        if !lineation.track(operand) then columnNo.next
+        else { lineNo = lineNo.next; Prim }
+
+  // Bulk-advance primitives. Allow a caller (typically a parser running a
+  // register-resident scan loop) to consume `n` characters without paying the
+  // per-character lineation update inside `advance`/`unsafeAdvanceWith`, then
+  // reconcile lineation in one shot. The caller is responsible for tracking
+  // newlines while it scans.
+  inline def unsafeBumpPos(by: Int)(using erased Unsafe): Unit = pos += by
+
+  // Increase the line counter by `by`, leaving the column counter untouched.
+  inline def unsafeBumpLine(by: Int)(using erased Unsafe): Unit =
+    lineNo = denominative.Ordinal.zerary(lineNo.n0 + by)
+
+  // Increase the column counter by `by`. Must not be called across newlines.
+  inline def unsafeBumpColumn(by: Int)(using erased Unsafe): Unit =
+    columnNo = denominative.Ordinal.zerary(columnNo.n0 + by)
+
+  // Set the column counter directly. Used after a bulk advance over a range
+  // that contained at least one newline, to set the column to the offset
+  // since the most-recent newline.
+  inline def unsafeSetColumn(value: Int)(using erased Unsafe): Unit =
+    columnNo = denominative.Ordinal.zerary(value)
 
   // `next()` is `advance(); more`, so it returns `true` while more data is
   // available and `false` when the stream is exhausted.
@@ -249,6 +295,11 @@ final class Cursor[data]
   inline def available: Int = writeEnd - pos
   inline def line: Ordinal = lineNo
   inline def column: Ordinal = columnNo
+
+  // Cached active-flag for the configured lineation. Hot-loop callers should
+  // use this in preference to `lineation.active` to avoid the per-call
+  // interface dispatch that the abstract `Lineation` member would imply.
+  inline def lineActive: Boolean = lineationActive
 
   // Stream of all unconsumed data from the current position onwards. Yields
   // the buffered tail first (one chunk materialised from `pos` to `writeEnd`),
@@ -325,15 +376,39 @@ final class Cursor[data]
   // hold block, where compaction cannot drop the marked region.
   inline def mark(using held: Cursor.Held): Cursor.Mark =
     Cursor.Mark(basePos + pos).tap: mark =>
-      if lineation.active then
-        marks.append(mark)
-        offsets.append(Cursor.Offset(lineNo, columnNo))
+      if lineationActive then
+        recordMark(mark.absolute, Cursor.Offset(lineNo, columnNo).toLong)
 
-  inline def offset(mark: Cursor.Mark): Cursor.Offset = offsets(marks.lastIndexOf(mark))
+  // Append `(mark, offset)` to the parallel `Long` buffers, growing geometrically
+  // when full. Off the hot path's inline budget so `mark()` itself stays small.
+  private def recordMark(mark: Long, offset: Long): Unit =
+    val cap = marks.length
+    if marksSize >= cap then
+      val newCap = cap*2
+      val nm = new Array[Long](newCap)
+      val no = new Array[Long](newCap)
+      System.arraycopy(marks,   0, nm, 0, marksSize)
+      System.arraycopy(offsets, 0, no, 0, marksSize)
+      marks   = nm
+      offsets = no
+    marks(marksSize)   = mark
+    offsets(marksSize) = offset
+    marksSize += 1
+
+  // Linear scan from the most-recently appended mark backwards. `cue()` is the
+  // only caller and only fires on backtrack, so this stays cold relative to
+  // `mark()` itself.
+  private def offsetForMark(mark: Long): Long =
+    var i = marksSize - 1
+    while i >= 0 && marks(i) != mark do i -= 1
+    offsets(i)
+
+  inline def offset(mark: Cursor.Mark): Cursor.Offset =
+    Cursor.offsetFromLong(offsetForMark(mark.absolute))
 
   inline def cue(mark: Cursor.Mark): Unit =
     pos = (mark.absolute - basePos).toInt
-    if lineation.active then
+    if lineationActive then
       val o = offset(mark)
       lineNo = o.line
       columnNo = o.column
@@ -344,8 +419,7 @@ final class Cursor[data]
     action(using new Cursor.Held()).also:
       if !wasHeld then
         holdStart = -1
-        marks.clear()
-        offsets.clear()
+        marksSize = 0
 
   inline def grab(start: Cursor.Mark, end: Cursor.Mark): data =
     val len = (end.absolute - start.absolute).toInt

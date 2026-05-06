@@ -411,12 +411,12 @@ object Tests extends Suite(m"Jacinta Tests"):
         arr(0).as[Int]
       . assert(_ == 10)
 
-      test(m"unsafeApply on existing field"):
-        obj.unsafeApply(t"name").as[Text]
+      test(m"apply on existing field"):
+        obj(t"name").as[Text]
       . assert(_ == t"Alice")
 
-      test(m"unsafeApply on absent field returns absent Json"):
-        obj.unsafeApply(t"missing").as[Optional[Int]]
+      test(m"apply on absent field returns absent Json"):
+        obj(t"missing").as[Optional[Int]]
       . assert(_ == Unset)
 
       test(m"Access nested fields via apply"):
@@ -545,55 +545,55 @@ object Tests extends Suite(m"Jacinta Tests"):
 
     suite(m"JsonAst type predicates"):
       test(m"isLong on a long literal"):
-        t"42".read[Json].root.isLong
+        Json.unseal(t"42".read[Json]).isLong
       . assert(identity)
 
       test(m"isDouble on a decimal literal"):
-        t"3.14".read[Json].root.isDouble
+        Json.unseal(t"3.14".read[Json]).isDouble
       . assert(identity)
 
       test(m"isNumber on a long literal"):
-        t"42".read[Json].root.isNumber
+        Json.unseal(t"42".read[Json]).isNumber
       . assert(identity)
 
       test(m"isNumber on a double literal"):
-        t"3.14".read[Json].root.isNumber
+        Json.unseal(t"3.14".read[Json]).isNumber
       . assert(identity)
 
       test(m"isString on a string"):
-        t""""x"""".read[Json].root.isString
+        Json.unseal(t""""x"""".read[Json]).isString
       . assert(identity)
 
       test(m"isBoolean on true"):
-        t"true".read[Json].root.isBoolean
+        Json.unseal(t"true".read[Json]).isBoolean
       . assert(identity)
 
       test(m"isBoolean on false"):
-        t"false".read[Json].root.isBoolean
+        Json.unseal(t"false".read[Json]).isBoolean
       . assert(identity)
 
       test(m"isNull on null"):
-        t"null".read[Json].root.isNull
+        Json.unseal(t"null".read[Json]).isNull
       . assert(identity)
 
       test(m"isArray on an array"):
-        t"[]".read[Json].root.isArray
+        Json.unseal(t"[]".read[Json]).isArray
       . assert(identity)
 
       test(m"isObject on an object"):
-        t"{}".read[Json].root.isObject
+        Json.unseal(t"{}".read[Json]).isObject
       . assert(identity)
 
       test(m"isString is false for a number"):
-        t"1".read[Json].root.isString
+        Json.unseal(t"1".read[Json]).isString
       . assert(!_)
 
       test(m"isLong is false for a string"):
-        t""""x"""".read[Json].root.isLong
+        Json.unseal(t""""x"""".read[Json]).isLong
       . assert(!_)
 
       test(m"isAbsent on an absent value"):
-        Json.ast(JsonAst(Unset)).root.isAbsent
+        Json.unseal(Json.ast(JsonAst(Unset))).isAbsent
       . assert(identity)
 
     suite(m"JsonAst conversions"):
@@ -642,27 +642,27 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == Set(1, 2))
 
       test(m"primitive of a string is String"):
-        t""""x"""".read[Json].root.primitive
+        Json.unseal(t""""x"""".read[Json]).primitive
       . assert(_ == JsonPrimitive.String)
 
       test(m"primitive of a number is Number"):
-        t"7".read[Json].root.primitive
+        Json.unseal(t"7".read[Json]).primitive
       . assert(_ == JsonPrimitive.Number)
 
       test(m"primitive of a boolean is Boolean"):
-        t"false".read[Json].root.primitive
+        Json.unseal(t"false".read[Json]).primitive
       . assert(_ == JsonPrimitive.Boolean)
 
       test(m"primitive of an array is Array"):
-        t"[]".read[Json].root.primitive
+        Json.unseal(t"[]".read[Json]).primitive
       . assert(_ == JsonPrimitive.Array)
 
       test(m"primitive of an object is Object"):
-        t"{}".read[Json].root.primitive
+        Json.unseal(t"{}".read[Json]).primitive
       . assert(_ == JsonPrimitive.Object)
 
       test(m"primitive of null is Null"):
-        t"null".read[Json].root.primitive
+        Json.unseal(t"null".read[Json]).primitive
       . assert(_ == JsonPrimitive.Null)
 
     suite(m"Json error handling"):

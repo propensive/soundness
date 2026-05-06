@@ -441,15 +441,40 @@ object Html extends Tag.Container
     protected inline def peek: Char =
       cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]](cursor.unsafePos(using Unsafe))
 
-    protected inline def advance(): Unit = cursor.next()
+    // Use `cursor.advance()` rather than `cursor.next()`: the latter performs
+    // an additional `cursor.more` check to return its boolean result, which
+    // every caller here discards. Refill on streaming input still happens via
+    // the parser's later `lay`/`let`/`peek` calls (each of which goes through
+    // `cursor.more`), so skipping the redundant check is safe.
+    protected inline def advance(): Unit = cursor.advance()
     protected inline def position: Int = cursor.position.n0
 
-    protected inline def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
+    // Non-`inline` so that `cursor.mark`'s lineation-tracking expansion
+    // (recordMark allocation + `lineationActive` branch) is emitted once in
+    // its own method rather than re-expanded into every call site, keeping
+    // `read`/`tag`/`tagname` small enough for the JIT to pick up. The body
+    // is still simple enough for the JIT to inline at hot call sites via
+    // its own inlining heuristics.
+    protected def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
 
-    protected inline def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
+    protected def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
       cursor.grab(start, end).asInstanceOf[Text]
 
-    protected inline def reset(start: Cursor.Mark): Unit = cursor.cue(start)
+    // ASCII-range character predicates and case fold. Lower the per-character
+    // overhead from `Character.isLetter`/`Character.isDigit`/`Character.toLowerCase`
+    // (Unicode-property table walks) to a couple of integer comparisons. HTML
+    // tag and attribute names, decimal/hex digits, and the trie's keys are all
+    // strictly ASCII, so this is a sound substitution on every parser hot path
+    // that previously called the JDK helpers.
+    protected inline def asciiLetter(char: Char): Boolean =
+      (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
+
+    protected inline def asciiDigit(char: Char): Boolean = char >= '0' && char <= '9'
+
+    protected inline def asciiLower(char: Char): Char =
+      if char >= 'A' && char <= 'Z' then (char + 32).toChar else char
+
+    protected def reset(start: Cursor.Mark): Unit = cursor.cue(start)
 
     protected def cloneTo
                   (start: Cursor.Mark, end: Cursor.Mark)
@@ -502,20 +527,42 @@ object Html extends Tag.Container
       def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
       var content: Text = t""
       var extra: Attributes = Attributes.empty
+      // Resolved `Tag` for the current opening token. `tag()` already walks
+      // `dom.elements` to look up the tag definition; stash the result so that
+      // `read`'s `Token.Open` / `Token.Empty` arms don't have to repeat the
+      // lookup against `dom.elements(content)`.
+      var openTag: Tag = root
       // Shared scratch buffer for attribute accumulation (parser-lifetime).
-      // `attributes()` writes here, then snapshots the populated prefix into
-      // freshly-sized IArrays for an `Attributes`. Doubles in size if filled.
-      var attrKeys: Array[Text] = new Array(8)
-      var attrValues: Array[Optional[Text]] = new Array(8)
+      // Stores key/value pairs interleaved as `[k0, v0, k1, v1, ...]`. Keys are
+      // never null; a null in a value slot encodes `Unset`. `attributes()`
+      // writes here, then snapshots the populated prefix into a freshly-sized
+      // `IArray[String | Null]` and wraps it as an opaque `Attributes`. Grows
+      // geometrically when filled.
+      var attrInterleaved: Array[String | Null] = new Array[String | Null](16)
       var nodes: Array[Node] = new Array(4)
       var index: Int = 0
       var stack: Array[Tag] = new Array(4)
       var depth: Int = 0
       var fragment: IArray[Node] = IArray()
-      var pendingFormatting: List[(Text, Attributes)] = Nil
+      // Pending formatting tags awaiting reconstruction (see WHATWG "active
+      // formatting elements"). Stored as parallel arrays of label/Attributes
+      // pairs rather than a `List[(Text, Attributes)]`: `:+` on a `List` is
+      // O(N) (and allocates a `Tuple2` per append), and even though valid
+      // HTML rarely populates this list, malformed-input handling can append
+      // multiple entries at once. Capacity grows geometrically when filled.
+      var pendingFormattingLabels: Array[Text] = new Array[Text](4)
+      var pendingFormattingAttrs:  Array[Attributes] = new Array[Attributes](4)
+      var pendingFormattingSize: Int = 0
       var pendingAtDepth: Int = -1
-      var fosteredBefore: List[Node] = Nil
-      var fosteredAfter: List[Node] = Nil
+      // Foster-parented children awaiting placement around the next `<table>`
+      // close. Stored as a pair of `Array[Node]` buffers (with size counters)
+      // rather than `List[Node]`s appended via `:+`: list `:+` is `O(N)`
+      // and the per-append cons cell + traversal-on-flush is wasted on a
+      // structure we always drain in arrival order.
+      var fosteredBefore: Array[Node] = new Array[Node](4)
+      var fosteredBeforeSize: Int = 0
+      var fosteredAfter: Array[Node] = new Array[Node](4)
+      var fosteredAfterSize: Int = 0
       var inTableContent: Boolean = false
       var pendingFosterDescend: Boolean = false
 
@@ -528,10 +575,6 @@ object Html extends Tag.Container
         -1
 
       def stackContainsAncestor(label: Text): Boolean = findAncestorIndex(label) >= 0
-
-      def isTableLikeContext(tag: Tag): Boolean =
-        tag.label == t"table" || tag.label == t"tbody" || tag.label == t"thead"
-        || tag.label == t"tfoot" || tag.label == t"tr"
 
       def append(node: Node): Unit =
         if index >= nodes.length then
@@ -557,15 +600,19 @@ object Html extends Tag.Container
         advance()
         if !more then raise(ParseError(Html, currentPosition(), ExpectedMore))
 
-      inline def expect(char: Char): Unit =
+      // Non-inline: each `expect`/`expectInsensitive` call site otherwise
+      // re-expands `advance` + `lay` + `fail` + `Issue.Unexpected.apply`,
+      // which over the doctype/cdata parsers contributes a large chunk of
+      // `tag\$8`'s bytecode.
+      def expect(char: Char): Unit =
         advance()
         lay(fail(ExpectedMore)): datum =>
           if datum != char then fail(Unexpected(datum))
 
-      inline def expectInsensitive(char: Char): Unit =
+      def expectInsensitive(char: Char): Unit =
         advance()
         lay(fail(ExpectedMore)): datum =>
-          if datum.minuscule != char.minuscule then fail(Unexpected(datum))
+          if asciiLower(datum) != asciiLower(char) then fail(Unexpected(datum))
 
       def fail
         ( issue: Issue,
@@ -590,7 +637,7 @@ object Html extends Tag.Container
       @tailrec
       def tagname(mark: Mark, dictionary: Dictionary[Tag]): Tag =
         lay(fail(ExpectedMore, mark)):
-          case char if char.isLetter || char.isDigit => dictionary(char.minuscule) match
+          case char if asciiLetter(char) || asciiDigit(char) => dictionary(asciiLower(char)) match
             case Dictionary.Empty =>
               advance()
               val end = begin()
@@ -601,8 +648,8 @@ object Html extends Tag.Container
               next() yet tagname(mark, other)
 
           case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => dictionary match
-            case Dictionary.Just("", tag)       => tag
-            case Dictionary.Branch(tag: Tag, _) => tag
+            case just: Dictionary.Just[Tag] if just.tailEmpty => just.value
+            case Dictionary.Branch(tag: Tag, _)               => tag
 
             case other =>
               val end = begin()
@@ -617,7 +664,7 @@ object Html extends Tag.Container
 
       @tailrec
       def foreignTag(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
-        case char if char.isLetter                       => next() yet foreignTag(mark)
+        case char if asciiLetter(char)                   => next() yet foreignTag(mark)
         case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => slice(mark, begin()).lower
         case '\u0000'                                    => fail(BadInsertion, mark)
         case char                                        => fail(Unexpected(char), mark)
@@ -625,7 +672,7 @@ object Html extends Tag.Container
       @tailrec
       def key(mark: Mark, dictionary: Dictionary[Attribute]): Attribute =
         lay(fail(ExpectedMore, mark)):
-          case char if char.isLetter || char == '-' => dictionary(char.minuscule) match
+          case char if asciiLetter(char) || char == '-' => dictionary(asciiLower(char)) match
             case Dictionary.Empty => fail(UnknownAttributeStart(slice(mark, begin())), mark)
             case dictionary       => next() yet key(mark, dictionary)
 
@@ -641,7 +688,7 @@ object Html extends Tag.Container
 
       @tailrec
       def foreignKey(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
-        case char if char.isLetter || char == '-'        => next() yet foreignKey(mark)
+        case char if asciiLetter(char) || char == '-'    => next() yet foreignKey(mark)
         case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' => slice(mark, begin())
         case '\u0000'                                    => fail(BadInsertion, mark)
         case char                                        => fail(Unexpected(char), mark)
@@ -687,13 +734,33 @@ object Html extends Tag.Container
 
 
       def attributes(tag: Text, foreign: Boolean): Attributes =
-        // Append into the parser-shared scratch buffer; on close, snapshot the
-        // populated prefix into freshly-sized IArrays and wrap in `Attributes`.
-        // Linear duplicate-scan suits the typical 0–5 attribute count and
-        // skips both the LinkedHashMap accumulator and the ListMap finalisation
-        // that the previous form went through.
+        // Append into the parser-shared interleaved scratch buffer (laid out
+        // as `[k0, v0, k1, v1, ...]`); on close, snapshot the populated prefix
+        // into a freshly-sized `IArray[String | Null]` and wrap it as the
+        // opaque `Attributes`. `Unset` values are encoded as `null` in the
+        // array.
+        //
+        // Duplicate detection uses a Bloom-filter-style cheap test before
+        // falling back to a linear scan: maintain a running OR of the
+        // hashCodes of all already-stored keys, and for each new key check
+        // whether `(hashOr | h) == hashOr`. If the new hash has any bit
+        // outside the accumulated envelope it cannot match any prior key
+        // and the scan is skipped. Only when its bits are all already in
+        // the envelope (rare for typical 0–7-attribute elements with
+        // disjoint label hashes) do we walk the existing keys to confirm.
+        // The check loses precision as the attribute count grows (the OR
+        // eventually saturates), but for the HTML common case this turns
+        // O(n^2) string comparisons into O(n) bit ops plus a handful of
+        // false positives.
         var n = 0
         var done = false
+        var hashOr = 0
+
+        inline def ensureCapacity(): Unit =
+          if 2*n >= attrInterleaved.length then
+            val nu = new Array[String | Null](attrInterleaved.length*2)
+            jl.System.arraycopy(attrInterleaved, 0, nu, 0, 2*n)
+            attrInterleaved = nu
 
         while !done do
           skip()
@@ -704,15 +771,9 @@ object Html extends Tag.Container
               callback.let(_(position.z, Hole.Tagbody))
               next()
               skip()
-              if n == attrKeys.length then
-                val nk = new Array[Text](n*2)
-                val nv = new Array[Optional[Text]](n*2)
-                jl.System.arraycopy(attrKeys, 0, nk, 0, n)
-                jl.System.arraycopy(attrValues, 0, nv, 0, n)
-                attrKeys = nk
-                attrValues = nv
-              attrKeys(n) = t"\u0000"
-              attrValues(n) = Unset
+              ensureCapacity()
+              attrInterleaved(2*n) = "\u0000"
+              attrInterleaved(2*n + 1) = null
               n += 1
 
             case _ =>
@@ -722,40 +783,42 @@ object Html extends Tag.Container
 
                 . label
 
-              var dup = 0
-              while dup < n do
-                if attrKeys(dup) == key2 then fail(DuplicateAttribute(key2))
-                dup += 1
+              val key2Str: String = key2.s
+              val h: Int = key2Str.hashCode
 
-              val assignment = if !equality() then Unset else lay(fail(ExpectedMore)):
-                case '"'  => next() yet value(begin())
-                case '\'' => next() yet singleQuoted(begin())
+              // Bloom-style fast-skip; only fall back to a linear scan when
+              // the new hashcode's bits are entirely within the accumulated
+              // envelope (i.e. it might match a prior key).
+              if (hashOr | h) == hashOr then
+                var dup = 0
+                while dup < 2*n do
+                  if attrInterleaved(dup) == key2Str then fail(DuplicateAttribute(key2))
+                  dup += 2
 
-                case '\u0000' =>
-                  callback.let(_(position.z, Hole.Attribute(tag, key2)))
-                  next() yet t"\u0000"
+              hashOr |= h
 
-                case _ =>
-                  unquoted(begin()) // FIXME: Only alphanumeric characters
+              val assignment: Optional[Text] =
+                if !equality() then Unset else lay(fail(ExpectedMore)):
+                  case '"'  => next() yet value(begin())
+                  case '\'' => next() yet singleQuoted(begin())
 
-              if n == attrKeys.length then
-                val nk = new Array[Text](n*2)
-                val nv = new Array[Optional[Text]](n*2)
-                jl.System.arraycopy(attrKeys, 0, nk, 0, n)
-                jl.System.arraycopy(attrValues, 0, nv, 0, n)
-                attrKeys = nk
-                attrValues = nv
-              attrKeys(n) = key2
-              attrValues(n) = assignment
+                  case '\u0000' =>
+                    callback.let(_(position.z, Hole.Attribute(tag, key2)))
+                    next() yet t"\u0000"
+
+                  case _ =>
+                    unquoted(begin()) // FIXME: Only alphanumeric characters
+
+              ensureCapacity()
+              attrInterleaved(2*n) = key2Str
+              attrInterleaved(2*n + 1) = assignment.lay(null: String | Null)(_.s)
               n += 1
 
         if n == 0 then Attributes.empty
         else
-          val ks = new Array[Text](n)
-          val vs = new Array[Optional[Text]](n)
-          jl.System.arraycopy(attrKeys, 0, ks, 0, n)
-          jl.System.arraycopy(attrValues, 0, vs, 0, n)
-          Attributes.fromArrays(ks.immutable(using Unsafe), vs.immutable(using Unsafe))
+          val arr = new Array[String | Null](2*n)
+          jl.System.arraycopy(attrInterleaved, 0, arr, 0, 2*n)
+          Attributes.fromInterleaved(arr.immutable(using Unsafe))
 
 
       def entity(mark: Mark): Optional[Text] = lay(fail(ExpectedMore, mark)):
@@ -770,7 +833,7 @@ object Html extends Tag.Container
       @tailrec
       def hexEntity(mark: Mark, value: Int): Optional[Text] =
         lay(fail(ExpectedMore, mark)):
-          case digit if digit.isDigit =>
+          case digit if asciiDigit(digit) =>
             advance() yet hexEntity(mark, 16*value + (digit - '0'))
 
           case letter if 'a' <= letter <= 'f' =>
@@ -787,14 +850,14 @@ object Html extends Tag.Container
 
       @tailrec
       def decimalEntity(mark: Mark, value: Int): Optional[Text] = lay(fail(ExpectedMore, mark)):
-        case digit if digit.isDigit => next() yet decimalEntity(mark, 10*value + (digit - '0'))
+        case digit if asciiDigit(digit) => next() yet decimalEntity(mark, 10*value + (digit - '0'))
         case ';'                    => next() yet value.unicode
         case char                   => Unset
 
       @tailrec
       def textEntity(mark: Mark, dictionary: Dictionary[Text]): Optional[Text] =
         lay(fail(ExpectedMore, mark)):
-          case char if char.isLetter | char.isDigit =>
+          case char if asciiLetter(char) || asciiDigit(char) =>
             dictionary(char) match
               case Dictionary.Empty => Unset
               case dictionary       => advance() yet textEntity(mark, dictionary)
@@ -853,15 +916,51 @@ object Html extends Tag.Container
       // (no RCDATA close-tag check needed), build the result via
       // `String.substring` (a JVM intrinsic) without round-tripping through
       // `buffer`. Falls back to `textualSlow` for the harder cases.
+      //
+      // The inner loop is a tight `while` over the cursor's `Array[Char]`
+      // buffer with a register-resident `var p`, accumulating any newlines
+      // along the way. After the scan, lineation is reconciled with the
+      // cursor in one shot, so the per-character path doesn't pay the
+      // `Cursor.unsafeAdvanceWith` lineation branch on every non-delimiter.
       def textual(mark: Mark, close: Optional[Text], entities: Boolean): Text =
         if close.present then textualSlow(mark, close, entities) else
           @tailrec
-          def fast(): Text = lay(slice(mark, begin())):
-            case '<' | '\u0000' => slice(mark, begin())
-            case '&' if entities => textualSlow(mark, close, entities)
-            case char => advance() yet fast()
+          def fast(): Text =
+            if !cursor.more then slice(mark, begin())
+            else
+              val buf = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
+              val limit = cursor.unsafeWriteEnd(using Unsafe)
+              val startPos = cursor.unsafePos(using Unsafe)
+              var p = startPos
+              var hit: Char = 1.toChar // sentinel: "no delimiter found"
+              var newlines = 0
+              var lastNewline = -1
+
+              while p < limit && hit == 1.toChar do
+                val c = buf(p)
+                if c == '<' || c == 0.toChar then hit = c
+                else if c == '&' && entities then hit = c
+                else
+                  if c == '\n' then
+                    newlines += 1
+                    lastNewline = p
+                  p += 1
+
+              val consumed = p - startPos
+              if consumed > 0 then
+                cursor.unsafeBumpPos(consumed)(using Unsafe)
+                if cursor.lineActive then
+                  if newlines == 0 then cursor.unsafeBumpColumn(consumed)(using Unsafe)
+                  else
+                    cursor.unsafeBumpLine(newlines)(using Unsafe)
+                    cursor.unsafeSetColumn(p - lastNewline - 1)(using Unsafe)
+
+              if hit == '&' then textualSlow(mark, close, entities)
+              else if hit != 1.toChar then slice(mark, begin())
+              else fast() // buffer exhausted; outer @tailrec re-fetches buf via cursor.more
 
           fast()
+
 
       def comment(mark: Mark): Text = lay(fail(ExpectedMore)):
         case '-' =>
@@ -934,9 +1033,15 @@ object Html extends Tag.Container
 
         case '/' =>
           next()
-          content =
-            if foreign then foreignTag(begin()) else tagname(begin(), dom.elements).label
-
+          if foreign then content = foreignTag(begin())
+          else
+            val tagDef = tagname(begin(), dom.elements)
+            content = tagDef.label
+            // Stash the resolved closing tag so `read`'s `Token.Close` arm
+            // can compare `openTag eq parent` (reference equality on the
+            // interned `Tag` instance) instead of `content != parent.label`
+            // (`String.equals` on the labels).
+            openTag = tagDef
           Token.Close
 
         case '\u0000' => fail(BadInsertion)
@@ -949,6 +1054,7 @@ object Html extends Tag.Container
             else
               val tagDef = tagname(begin(), dom.elements)
               content = tagDef.label
+              openTag = tagDef
               tagDef.foreign
 
           extra = attributes(content, foreign || newForeign)
@@ -1010,14 +1116,18 @@ object Html extends Tag.Container
 
               inline def infer(inline tag: Tag): Unit =
                 reset(mark)
-
-                dom.infer(parent, tag).let: tag =>
-                  focus = tag
+                // Use a direct `if inferred.absent` check rather than
+                // `dom.infer(...).let { ... }.or { ... }`: `Optional.let` is
+                // not inline, so the lambda body would capture the surrounding
+                // `focus` and `level` `var`s as `ObjectRef`s on every `<`
+                // entry, allocating two refs per element open.
+                val inferred: Optional[Tag] = dom.infer(parent, tag)
+                if inferred.absent then
+                  if parent.autoclose then close()
+                  else fail(InadmissibleTag(content, parent.label), mark)
+                else
+                  focus = inferred.vouch
                   level = Level.Descend
-
-                . or:
-                    if parent.autoclose then close()
-                    else fail(InadmissibleTag(content, parent.label), mark)
 
               next()
               if lay(false)(_ == '\u0000') then
@@ -1036,15 +1146,10 @@ object Html extends Tag.Container
 
                 case Token.Empty =>
                   if admit(content) then empty() else infer:
-                    if parent.foreign then Tag.foreign(content, extra)
-                    else dom.elements(content).or(reset(mark) yet fail(InvalidTag(content), mark))
+                    if parent.foreign then Tag.foreign(content, extra) else openTag
 
                 case Token.Open =>
-                  focus =
-                    if parent.foreign then Tag.foreign(content, extra)
-                    else dom.elements(content).or:
-                      reset(mark)
-                      fail(InvalidTag(content), mark)
+                  focus = if parent.foreign then Tag.foreign(content, extra) else openTag
 
                   if !admit(content) then
                     val inferred = dom.infer(parent, focus)
@@ -1052,7 +1157,7 @@ object Html extends Tag.Container
                       if parent.autoclose then
                         reset(mark)
                         close()
-                      else if isTableLikeContext(parent) && !focus.void then
+                      else if parent.tableLike && !focus.void then
                         pendingFosterDescend = true
                         level = Level.Descend
                       else
@@ -1070,14 +1175,34 @@ object Html extends Tag.Container
                   else level = Level.Descend
 
                 case Token.Close =>
-                  if content != parent.label then
+                  // For non-foreign tags, `tagname` returns a `Tag` instance
+                  // from the interned `dom.elements` trie and `parent` is
+                  // itself one of those interned instances, so a mismatch is
+                  // detectable via reference inequality — cheaper than
+                  // `String.equals` on the labels. Foreign tags have to fall
+                  // back to text equality since `Tag.foreign` mints fresh
+                  // instances per element.
+                  val nameMismatch =
+                    if parent.foreign then content != parent.label
+                    else openTag ne parent
+                  if nameMismatch then
                     if parent.autoclose then
                       reset(mark)
                       close()
                     else if stackContainsAncestor(content) then
                       if formattingTags.contains(parent.label) then
                         pendingAtDepth = findAncestorIndex(content)
-                        pendingFormatting = pendingFormatting :+ ((parent.label, map))
+                        if pendingFormattingSize >= pendingFormattingLabels.length then
+                          val newCap = pendingFormattingLabels.length*2
+                          val nl = new Array[Text](newCap)
+                          val na = new Array[Attributes](newCap)
+                          jl.System.arraycopy(pendingFormattingLabels, 0, nl, 0, pendingFormattingSize)
+                          jl.System.arraycopy(pendingFormattingAttrs,  0, na, 0, pendingFormattingSize)
+                          pendingFormattingLabels = nl
+                          pendingFormattingAttrs  = na
+                        pendingFormattingLabels(pendingFormattingSize) = parent.label
+                        pendingFormattingAttrs (pendingFormattingSize) = map
+                        pendingFormattingSize += 1
                       reset(mark)
                       close()
                     else if formattingTags.contains(content) then
@@ -1093,27 +1218,32 @@ object Html extends Tag.Container
                     current = Element(content, map, array(count), parent.foreign)
 
             def reconstructPending(): Int =
-              if pendingFormatting.isEmpty || depth != pendingAtDepth then 0
+              if pendingFormattingSize == 0 || depth != pendingAtDepth then 0
               else if !more || lay(false)(_ == '<') then
-                pendingFormatting = Nil
+                pendingFormattingSize = 0
                 pendingAtDepth = -1
                 0
               else
-                val pending = pendingFormatting
-                pendingFormatting = Nil
+                val pendingCount = pendingFormattingSize
+                pendingFormattingSize = 0
                 pendingAtDepth = -1
                 var added = 0
-                pending.foreach: (label, attrs) =>
-                  dom.elements(label).let: cloneTag =>
-                    push(cloneTag)
-                    val cloneChild = descend(cloneTag, admissible, attrs)
+                var i = 0
+                while i < pendingCount do
+                  val label = pendingFormattingLabels(i)
+                  val attrs = pendingFormattingAttrs(i)
+                  val cloneTag: Optional[Tag] = dom.elements(label)
+                  if cloneTag.present then
+                    val tag = cloneTag.vouch
+                    push(tag)
+                    val cloneChild = descend(tag, admissible, attrs)
                     pop()
                     cloneChild match
                       case Element(_, _, children, _) if children.length == 0 => ()
-
                       case _ =>
                         append(cloneChild)
                         added += 1
+                  i += 1
                 added
 
             level match
@@ -1132,22 +1262,40 @@ object Html extends Tag.Container
                 push(focus)
                 val savedFosterFlag = pendingFosterDescend
                 pendingFosterDescend = false
-                if parent.label == t"table" && !savedFosterFlag then inTableContent = true
+                if parent.isTable && !savedFosterFlag then inTableContent = true
                 val child = descend(focus, admissible, extra)
                 pop()
                 if savedFosterFlag then
-                  if inTableContent then fosteredAfter = fosteredAfter :+ child
-                  else fosteredBefore = fosteredBefore :+ child
+                  if inTableContent then
+                    if fosteredAfterSize >= fosteredAfter.length then
+                      val nu = new Array[Node](fosteredAfter.length*2)
+                      jl.System.arraycopy(fosteredAfter, 0, nu, 0, fosteredAfterSize)
+                      fosteredAfter = nu
+                    fosteredAfter(fosteredAfterSize) = child
+                    fosteredAfterSize += 1
+                  else
+                    if fosteredBeforeSize >= fosteredBefore.length then
+                      val nu = new Array[Node](fosteredBefore.length*2)
+                      jl.System.arraycopy(fosteredBefore, 0, nu, 0, fosteredBeforeSize)
+                      fosteredBefore = nu
+                    fosteredBefore(fosteredBeforeSize) = child
+                    fosteredBeforeSize += 1
                   val added = reconstructPending()
                   read(parent, admissible, map, count + added)
-                else if focus.label == t"table" then
-                  val beforeAdded = fosteredBefore.size
-                  fosteredBefore.foreach(append)
-                  fosteredBefore = Nil
+                else if focus.isTable then
+                  val beforeAdded = fosteredBeforeSize
+                  var i = 0
+                  while i < fosteredBeforeSize do
+                    append(fosteredBefore(i))
+                    i += 1
+                  fosteredBeforeSize = 0
                   append(child)
-                  val afterAdded = fosteredAfter.size
-                  fosteredAfter.foreach(append)
-                  fosteredAfter = Nil
+                  val afterAdded = fosteredAfterSize
+                  i = 0
+                  while i < fosteredAfterSize do
+                    append(fosteredAfter(i))
+                    i += 1
+                  fosteredAfterSize = 0
                   inTableContent = false
                   val added = reconstructPending()
                   read(parent, admissible, map, count + 1 + beforeAdded + afterAdded + added)
@@ -1158,13 +1306,25 @@ object Html extends Tag.Container
 
           case char => parent.mode match
             case Mode.Whitespace =>
-              if isTableLikeContext(parent) then
+              if parent.tableLike then
                 val text = textual(begin(), Unset, true)
                 val trimmed = text.trim
                 if trimmed.length > 0 then
                   val node = TextNode(trimmed)
-                  if inTableContent then fosteredAfter = fosteredAfter :+ node
-                  else fosteredBefore = fosteredBefore :+ node
+                  if inTableContent then
+                    if fosteredAfterSize >= fosteredAfter.length then
+                      val nu = new Array[Node](fosteredAfter.length*2)
+                      jl.System.arraycopy(fosteredAfter, 0, nu, 0, fosteredAfterSize)
+                      fosteredAfter = nu
+                    fosteredAfter(fosteredAfterSize) = node
+                    fosteredAfterSize += 1
+                  else
+                    if fosteredBeforeSize >= fosteredBefore.length then
+                      val nu = new Array[Node](fosteredBefore.length*2)
+                      jl.System.arraycopy(fosteredBefore, 0, nu, 0, fosteredBeforeSize)
+                      fosteredBefore = nu
+                    fosteredBefore(fosteredBeforeSize) = node
+                    fosteredBeforeSize += 1
                 read(parent, admissible, map, count)
               else
                 whitespace() yet read(parent, admissible, map, count)
@@ -1303,14 +1463,14 @@ extends Node, Topical, Transportive, Dynamic:
     case Fragment(node: Element) => this == node
 
     case Element(label, attributes, children, foreign) =>
-      label == this.label && attributes == this.attributes && foreign == this.foreign
+      label == this.label && attributes.equalsAttributes(this.attributes) && foreign == this.foreign
       && ju.Arrays.equals(children.mutable(using Unsafe), this.children.mutable(using Unsafe))
 
     case _ =>
       false
 
   override def hashCode: Int =
-    ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
+    ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashAttributes ^ label.hashCode
 
   transparent inline def selectDynamic(name: Label): Any =
 
@@ -1334,7 +1494,7 @@ extends Node, Topical, Transportive, Dynamic:
         val attributive = infer[value is Attributive to attribute.Topic]
 
         attributive.attribute(name, value).match
-          case Unset        => Element(label, attributes - name, children, foreign)
+          case Unset        => Element(label, attributes.removed(name.tt), children, foreign)
           case (key, value) => Element(label, attributes.updated(key, value), children, foreign)
 
         . of[Topic]
@@ -1345,7 +1505,7 @@ extends Node, Topical, Transportive, Dynamic:
         val attributive = infer[value is Attributive to attribute.Topic]
 
         attributive.attribute(name, value).match
-          case Unset        => Element(label, attributes - name, children, foreign)
+          case Unset        => Element(label, attributes.removed(name.tt), children, foreign)
           case (key, value) => Element(label, attributes.updated(key, value), children, foreign)
 
         . of[Topic]
