@@ -44,6 +44,7 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 import wisteria.*
+import zephyrine.*
 
 import YamlError.Reason
 
@@ -190,13 +191,13 @@ object Yaml extends Yaml2:
     if yaml.root.asInstanceOf[AnyRef] == null then None
     else Some(value.decoded(yaml))
 
-  given decodable: Tactic[YamlError] => Yaml is Decodable in Text =
+  given decodable: Tactic[ParseError] => Yaml is Decodable in Text =
     text => Yaml(YamlParser.parse(text))
 
-  def parseAll(input: Text)(using Tactic[YamlError]): List[Yaml] =
+  def parseAll(input: Text)(using Tactic[ParseError]): List[Yaml] =
     YamlParser.parseAll(input).map(Yaml(_))
 
-  given aggregable: Tactic[YamlError] => Yaml is Aggregable by Text =
+  given aggregable: Tactic[ParseError] => Yaml is Aggregable by Text =
     summon[Text is Aggregable by Text].map(text => Yaml(YamlParser.parse(text)))
 
   def primitive(ast: YamlAst): YamlPrimitive =

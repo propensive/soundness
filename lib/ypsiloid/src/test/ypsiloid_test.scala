@@ -534,8 +534,8 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"a: &name Alice\nb: *name".read[Yaml].as[Map[Text, Text]]
       . assert(_ == Map(t"a" -> t"Alice", t"b" -> t"Alice"))
 
-      test(m"Unknown alias raises a YamlError"):
-        capture[YamlError](t"a: *missing".read[Yaml].as[Map[Text, Int]])
+      test(m"Unknown alias raises a ParseError"):
+        capture[ParseError](t"a: *missing".read[Yaml].as[Map[Text, Int]])
       . assert(_ => true)
 
     suite(m"Multi-document streams"):

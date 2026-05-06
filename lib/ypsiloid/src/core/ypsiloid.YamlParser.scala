@@ -44,28 +44,28 @@ import vacuous.*
 import zephyrine.*
 
 import YamlAst.Byte.*
-import YamlError.Reason
+import YamlAst.Issue
 
 object YamlParser:
   private val pool: ThreadLocal[YamlParser] =
     ThreadLocal.withInitial(() => new YamlParser).nn
 
-  def parse(input: Text)(using Tactic[YamlError]): YamlAst =
+  def parse(input: Text)(using Tactic[ParseError]): YamlAst =
     val parser = pool.get.nn
     parser.resetText(input)
     parser.parse()
 
-  def parse(input: Data)(using Tactic[YamlError]): YamlAst =
+  def parse(input: Data)(using Tactic[ParseError]): YamlAst =
     val parser = pool.get.nn
     parser.resetData(input)
     parser.parse()
 
-  def parseAll(input: Text)(using Tactic[YamlError]): List[YamlAst] =
+  def parseAll(input: Text)(using Tactic[ParseError]): List[YamlAst] =
     val parser = pool.get.nn
     parser.resetText(input)
     parser.parseAll()
 
-  def parseAll(input: Data)(using Tactic[YamlError]): List[YamlAst] =
+  def parseAll(input: Data)(using Tactic[ParseError]): List[YamlAst] =
     val parser = pool.get.nn
     parser.resetData(input)
     parser.parseAll()
@@ -170,14 +170,13 @@ private[ypsiloid] final class YamlParser:
 
   // ── Errors ──────────────────────────────────────────────────────────────
 
-  // Build a `Reason` from the current parser position and abort. The
-  // reason factory takes (line, column) so each call site names the
-  // specific error case without the parser plumbing knowing about it.
-  private def fail(reason: (Int, Int) => Reason)(using Tactic[YamlError]): Nothing =
+  // Mirror of `JsonParser.errorAt`: builds a `ParseError` with the
+  // YAML-format-local `Issue` and the current line/column, then aborts.
+  private def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing =
     syncTo()
     val line = cursor.line.n0
     val column = cursor.column.n0
-    abort(YamlError(reason(line, column)))
+    abort(ParseError(YamlAst, YamlAst.Position(line, column), issue))
 
   // ── Position / mark plumbing ────────────────────────────────────────────
 
@@ -241,13 +240,13 @@ private[ypsiloid] final class YamlParser:
 
   // ── Top-level parse ─────────────────────────────────────────────────────
 
-  def parse()(using Tactic[YamlError]): YamlAst = holding:
+  def parse()(using Tactic[ParseError]): YamlAst = holding:
     skipBom()
     skipBlankAndCommentLines()
     val sawDirectives = parseDirectivesIfAny()
     val explicitStart = consumeOptionalDocumentStart()
     if sawDirectives && !explicitStart then
-      fail(Reason.DirectiveWithoutDocumentStart.apply)
+      errorAt(Issue.DirectiveWithoutDocumentStart)
     if explicitStart && more && peek == Hash then
       while more && peek != Newline do advance()
     if !explicitStart || (more && peek == Newline) then
@@ -263,7 +262,7 @@ private[ypsiloid] final class YamlParser:
         consumeOptionalDocumentEnd()
         node
 
-  def parseAll()(using Tactic[YamlError]): List[YamlAst] = holding:
+  def parseAll()(using Tactic[ParseError]): List[YamlAst] = holding:
     val docs = scala.collection.mutable.ArrayBuffer[YamlAst]()
     skipBom()
 
@@ -277,16 +276,16 @@ private[ypsiloid] final class YamlParser:
       tagHandles.clear()
       val sawDirectives = parseDirectivesIfAny()
       if sawDirectives && !firstDoc && !lastDocEndedWithFooter then
-        fail(Reason.DirectivesOutOfPlace.apply)
+        errorAt(Issue.DirectivesOutOfPlace)
       val explicitStart = consumeOptionalDocumentStart()
       if sawDirectives && !explicitStart then
-        fail(Reason.DirectiveWithoutDocumentStart.apply)
+        errorAt(Issue.DirectiveWithoutDocumentStart)
       // After a `...` footer, a bare document (no `---`) is allowed;
       // otherwise every doc beyond the first needs a directives-end
       // marker.
       if !firstDoc && more && !explicitStart && !atDocumentBoundary
               && !lastDocEndedWithFooter then
-        fail(Reason.MissingDocumentStart.apply)
+        errorAt(Issue.MissingDocumentStart)
       // After a `---` marker we may be on the same line as the body;
       // otherwise the body is on a fresh line whose leading whitespace
       // determines the indent. A trailing `# comment` on the marker
@@ -351,14 +350,14 @@ private[ypsiloid] final class YamlParser:
   // Consume `...` if at the current position; only inline whitespace
   // and an optional comment may follow on the same line — anything
   // else is an error per spec.
-  private def consumeOptionalDocumentEnd()(using Tactic[YamlError]): Boolean =
+  private def consumeOptionalDocumentEnd()(using Tactic[ParseError]): Boolean =
     if isDocumentMarker(Period) then
       pos += 3
       while more && (peek == Space || peek == Tab) do advance()
       if more && peek == Hash then
         while more && peek != Newline do advance()
       else if more && peek != Newline then
-        fail(Reason.ContentAfterDocumentEnd.apply)
+        errorAt(Issue.ContentAfterDocumentEnd)
       if more then advance()
       true
     else false
@@ -367,7 +366,7 @@ private[ypsiloid] final class YamlParser:
   // spec only `%YAML <version>` and `%TAG <handle> <prefix>` are
   // recognised; the YAML directive must appear at most once per
   // document, with a single major.minor version argument.
-  private def parseDirectivesIfAny()(using Tactic[YamlError]): Boolean =
+  private def parseDirectivesIfAny()(using Tactic[ParseError]): Boolean =
     var sawAny = false
     var sawYaml = false
     while more && peek == Percent do
@@ -386,16 +385,16 @@ private[ypsiloid] final class YamlParser:
       sawAny = true
       name match
         case "YAML" =>
-          if sawYaml then fail(Reason.DuplicateYamlDirective.apply)
+          if sawYaml then errorAt(Issue.DuplicateYamlDirective)
           sawYaml = true
-          if argText.isEmpty then fail(Reason.YamlDirectiveRequiresVersion.apply)
+          if argText.isEmpty then errorAt(Issue.YamlDirectiveRequiresVersion)
           val parts = argText.split("\\s+").nn.asInstanceOf[Array[String]]
-          if parts.length != 1 then fail(Reason.YamlDirectiveTooManyArguments.apply)
+          if parts.length != 1 then errorAt(Issue.YamlDirectiveTooManyArguments)
           if !parts(0).matches("\\d+\\.\\d+") then
-            fail(Reason.YamlDirectiveInvalidVersion.apply)
+            errorAt(Issue.YamlDirectiveInvalidVersion)
         case "TAG" =>
           val parts = argText.split("\\s+").nn.asInstanceOf[Array[String]]
-          if parts.length != 2 then fail(Reason.TagDirectiveRequiresHandleAndPrefix.apply)
+          if parts.length != 2 then errorAt(Issue.TagDirectiveRequiresHandleAndPrefix)
           tagHandles(parts(0)) = parts(1)
         case _ => () // reserved/unknown directive — silently accept
       skipBlankAndCommentLines()
@@ -462,12 +461,12 @@ private[ypsiloid] final class YamlParser:
   // Parse a single YAML node at the given context indent. Caller has
   // ensured we're positioned at the first byte of the node (after any
   // leading whitespace).
-  private def parseNode(indent: Int)(using Tactic[YamlError]): YamlAst =
+  private def parseNode(indent: Int)(using Tactic[ParseError]): YamlAst =
     skipSpaces()
     if !more then YamlAst.Null
     else parseNodeHere(indent)
 
-  private def parseNodeHere(indent: Int)(using Tactic[YamlError]): YamlAst =
+  private def parseNodeHere(indent: Int)(using Tactic[ParseError]): YamlAst =
     // `prefixesConsumed` and `lastNodeHadAnchor` are parser-wide fields
     // but "did THIS call apply its own prefixes / anchor?" is per-call.
     // Recursive parses (e.g. parseMappingValue inside parseBlock-
@@ -504,7 +503,7 @@ private[ypsiloid] final class YamlParser:
         lastNodeHadAnchor = false
         val v = pickValueOrNull(blockParentIndent, childIndent, lineStart)
         if !anchorName.nil && lastNodeHadAnchor then
-          fail(Reason.TwoAnchorsOnSameNode.apply)
+          errorAt(Issue.TwoAnchorsOnSameNode)
         v
       else if headByte == -1 then YamlAst.Null
       else if headByte == Hash then
@@ -516,7 +515,7 @@ private[ypsiloid] final class YamlParser:
         // An anchor on an alias node is illegal per spec — aliases
         // refer to existing anchored nodes, they don't anchor anything
         // themselves.
-        if !anchorName.nil then fail(Reason.AnchorOnAlias.apply)
+        if !anchorName.nil then errorAt(Issue.AnchorOnAlias)
         advance()
         val a = parseAlias()
         maybeBlockMappingFromQuotedKey(a, indent, tagText, anchorName)
@@ -549,7 +548,7 @@ private[ypsiloid] final class YamlParser:
           case Minus        => parseMinus(indent)
           case Question     => parseQuestion(indent)
           case CloseBracket | CloseBrace | Comma | 0x40 | 0x60 =>
-            fail(Reason.ReservedIndicatorAtNodeStart.apply)
+            errorAt(Issue.ReservedIndicatorAtNodeStart)
           case _            =>
             prefixesConsumed = false
             parsePlainOrBlockMapping(indent, tagText, anchorName)
@@ -575,7 +574,7 @@ private[ypsiloid] final class YamlParser:
   // at the first non-prefix byte (without crossing newlines, so the caller
   // can detect a bare-prefix-with-block). Writes results to `prefixAnchor`,
   // `prefixTag`, `prefixHeadByte` to avoid per-call Tuple3 allocation.
-  private def consumeNodePrefixes()(using Tactic[YamlError]): Unit =
+  private def consumeNodePrefixes()(using Tactic[ParseError]): Unit =
     var anchorName = t""
     var tagText = t""
     var done = false
@@ -584,13 +583,13 @@ private[ypsiloid] final class YamlParser:
       if !more then done = true
       else peek match
         case Amp =>
-          if !anchorName.nil then fail(Reason.DuplicateAnchorOnNode.apply)
+          if !anchorName.nil then errorAt(Issue.DuplicateAnchorOnNode)
           advance()
           anchorName = readWord()
           skipSpaces()
 
         case Bang =>
-          if !tagText.nil then fail(Reason.DuplicateTagOnNode.apply)
+          if !tagText.nil then errorAt(Issue.DuplicateTagOnNode)
           val mk = begin()
           advance()
           if more && peek == OpenAngle then
@@ -600,7 +599,7 @@ private[ypsiloid] final class YamlParser:
             advance()
             while more && peek != CloseAngle && peek != Newline do advance()
             if more && peek == CloseAngle then advance()
-            else fail(Reason.UnterminatedVerbatimTag.apply)
+            else errorAt(Issue.UnterminatedVerbatimTag)
           else
             if more && peek == Bang then advance()
             while more && !isWhitespaceOrEnd(peek)
@@ -640,12 +639,11 @@ private[ypsiloid] final class YamlParser:
       advance()
     slice(mk).tt
 
-  private def parseAlias()(using Tactic[YamlError]): YamlAst =
+  private def parseAlias()(using Tactic[ParseError]): YamlAst =
     val name = readWord()
     anchors.get(name.s) match
       case Some(value) => value
-      case None        =>
-        raise(YamlError(Reason.UnknownAlias(name))) yet YamlAst.Null
+      case None        => errorAt(Issue.UnknownAlias(name))
 
   // After a newline within a block context, advance past blank/comment
   // lines and through the leading indent of the next content line.
@@ -679,7 +677,7 @@ private[ypsiloid] final class YamlParser:
   // anything else is an error per spec.
   private def maybeBlockMappingFromQuotedKey
                 ( scalar: YamlAst, indent: Int, headTag: Text, headAnchor: Text )
-                ( using Tactic[YamlError] )
+                ( using Tactic[ParseError] )
   :   YamlAst =
     val hadSpaceOrTab = more && (peek == Space || peek == Tab)
     skipSpaces()
@@ -694,11 +692,11 @@ private[ypsiloid] final class YamlParser:
         if nextByte == Space || nextByte == Tab || nextByte == Newline
                 || nextByte == Return || nextByte == -1 then
           if onDocStartLine then
-            fail(Reason.BlockMappingOnDocumentStartLine.apply)
+            errorAt(Issue.BlockMappingOnDocumentStartLine)
           if inInlineMappingValue then
-            fail(Reason.ChainedMappingValueOnSingleLine.apply)
+            errorAt(Issue.ChainedMappingValueOnSingleLine)
           if lastScalarSpannedLines then
-            fail(Reason.MultilineImplicitKey.apply)
+            errorAt(Issue.MultilineImplicitKey)
           val tagged = if headTag.nil then scalar else applyTag(headTag, scalar)
           val keyAst =
             if headAnchor.nil then tagged
@@ -707,9 +705,9 @@ private[ypsiloid] final class YamlParser:
               tagged
           if !headTag.nil || !headAnchor.nil then prefixesConsumed = true
           parseBlockMappingFromFirstKey(keyAst, indent)
-        else fail(Reason.TrailingContentAfterQuotedScalar.apply)
+        else errorAt(Issue.TrailingContentAfterQuotedScalar)
       case Comma | CloseBracket | CloseBrace => scalar
-      case _ => fail(Reason.TrailingContentAfterQuotedScalar.apply)
+      case _ => errorAt(Issue.TrailingContentAfterQuotedScalar)
 
   // Tracks whether the most recent dispatch from parseNodeHere consumed
   // the head node's anchor/tag (because it transitioned into a block
@@ -756,16 +754,16 @@ private[ypsiloid] final class YamlParser:
 
   private def parsePlainOrBlockMapping
                 ( indent: Int, headTag: Text = t"", headAnchor: Text = t"" )
-                ( using Tactic[YamlError] )
+                ( using Tactic[ParseError] )
   :   YamlAst =
     val textValue = readPlainScalarText(indent)
     if sawMappingColon then
       if onDocStartLine then
-        fail(Reason.BlockMappingOnDocumentStartLine.apply)
+        errorAt(Issue.BlockMappingOnDocumentStartLine)
       if inInlineMappingValue then
-        fail(Reason.ChainedMappingValueOnSingleLine.apply)
+        errorAt(Issue.ChainedMappingValueOnSingleLine)
       if lastScalarSpannedLines then
-        fail(Reason.MultilineImplicitKey.apply)
+        errorAt(Issue.MultilineImplicitKey)
       // The plain text is the first key of a block mapping. Any tag
       // or anchor read by consumeNodePrefixes belongs to the key, not
       // the mapping.
@@ -785,7 +783,7 @@ private[ypsiloid] final class YamlParser:
   // to true if a `: ` (or `:` at line-end) at the same line level was
   // seen so the caller knows this is the key of a block mapping.
   private def readPlainScalarText(indent: Int)
-                              (using Tactic[YamlError])
+                              (using Tactic[ParseError])
   :   Text =
 
     resetString()
@@ -818,7 +816,7 @@ private[ypsiloid] final class YamlParser:
   // Read one line of a plain scalar (until newline or terminator), pushing
   // characters into `chars`. Returns Mapping if a `:` (followed by space
   // or newline) was found at the top level on this line.
-  private def readPlainScalarLine()(using Tactic[YamlError]): PlainOutcome =
+  private def readPlainScalarLine()(using Tactic[ParseError]): PlainOutcome =
     var lineStart = stringCursor
 
     while more do
@@ -1113,7 +1111,7 @@ private[ypsiloid] final class YamlParser:
 
   // ── Quoted strings ──────────────────────────────────────────────────────
 
-  private def parseDoubleQuoted()(using Tactic[YamlError]): YamlAst =
+  private def parseDoubleQuoted()(using Tactic[ParseError]): YamlAst =
     resetString()
     lastScalarSpannedLines = false
     var done = false
@@ -1134,14 +1132,14 @@ private[ypsiloid] final class YamlParser:
           k += 1
         stringCursor += runLen
 
-      if !more then fail(Reason.UnterminatedDoubleQuotedString.apply)
+      if !more then errorAt(Issue.UnterminatedDoubleQuotedString)
       val b = peek
       if b == Quote then
         advance()
         done = true
       else if b == Backslash then
         advance()
-        if !more then fail(Reason.UnterminatedEscape.apply)
+        if !more then errorAt(Issue.UnterminatedEscape)
         consumeDoubleQuotedEscape()
       else if b == Newline then
         lastScalarSpannedLines = true
@@ -1151,7 +1149,7 @@ private[ypsiloid] final class YamlParser:
         advance()
     YamlAst.Str(getStringText())
 
-  private def consumeDoubleQuotedEscape()(using Tactic[YamlError]): Unit =
+  private def consumeDoubleQuotedEscape()(using Tactic[ParseError]): Unit =
     val b = peek
     advance()
     (b: @switch) match
@@ -1193,25 +1191,25 @@ private[ypsiloid] final class YamlParser:
         else appendChar(n.toChar)
 
       case _ =>
-        fail(Reason.InvalidEscapeSequence.apply)
+        errorAt(Issue.InvalidEscapeSequence)
 
-  private def readHex(count: Int)(using Tactic[YamlError]): Int =
+  private def readHex(count: Int)(using Tactic[ParseError]): Int =
     var acc = 0
     var i = 0
     while i < count do
-      if !more then fail(Reason.TruncatedHexEscape.apply)
+      if !more then errorAt(Issue.TruncatedHexEscape)
       val b = peek
       val digit =
         if b >= Num0 && b <= Num9 then b - Num0
         else if b >= LowerA && b <= LowerF then b - LowerA + 10
         else if b >= 0x41 && b <= UpperF then b - 0x41 + 10
-        else fail(Reason.InvalidHexDigit.apply)
+        else errorAt(Issue.InvalidHexDigit)
       acc = (acc << 4) | digit
       advance()
       i += 1
     acc
 
-  private def parseSingleQuoted()(using Tactic[YamlError]): YamlAst =
+  private def parseSingleQuoted()(using Tactic[ParseError]): YamlAst =
     resetString()
     lastScalarSpannedLines = false
     var done = false
@@ -1232,7 +1230,7 @@ private[ypsiloid] final class YamlParser:
           k += 1
         stringCursor += runLen
 
-      if !more then fail(Reason.UnterminatedSingleQuotedString.apply)
+      if !more then errorAt(Issue.UnterminatedSingleQuotedString)
       val b = peek
       if b == Apostrophe then
         advance()
@@ -1256,7 +1254,7 @@ private[ypsiloid] final class YamlParser:
   // (per spec 6.5). When the continuation reaches a non-whitespace
   // byte, its leading-space count must exceed the parent collection's
   // indent — otherwise the quoted scalar is mis-indented.
-  private def consumeMultilineFold()(using Tactic[YamlError]): Unit =
+  private def consumeMultilineFold()(using Tactic[ParseError]): Unit =
     while stringCursor > 0
             && (chars(stringCursor - 1) == ' ' || chars(stringCursor - 1) == '\t') do
       stringCursor -= 1
@@ -1278,9 +1276,9 @@ private[ypsiloid] final class YamlParser:
       else done = true
     if newlineCount > 0 && more then
       if atDocumentBoundary then
-        fail(Reason.DocumentMarkerInsideMultilineScalar.apply)
+        errorAt(Issue.DocumentMarkerInsideMultilineScalar)
       if spaces <= blockParentIndent then
-        fail(Reason.ScalarContinuationUnderIndented.apply)
+        errorAt(Issue.ScalarContinuationUnderIndented)
     if newlineCount == 1 then appendChar(' ')
     else
       var k = 1
@@ -1290,17 +1288,17 @@ private[ypsiloid] final class YamlParser:
 
   // ── Flow types ──────────────────────────────────────────────────────────
 
-  private def parseFlowSequence()(using Tactic[YamlError]): YamlAst =
+  private def parseFlowSequence()(using Tactic[ParseError]): YamlAst =
     val buf = acquireBuffer()
     var done = false
     while !done do
       skipFlowWhitespace()
-      if !more then fail(Reason.UnterminatedFlowSequence.apply)
+      if !more then errorAt(Issue.UnterminatedFlowSequence)
       if peek == CloseBracket then
         advance()
         done = true
       else if peek == Comma then
-        fail(Reason.EmptyFlowSequenceEntry.apply)
+        errorAt(Issue.EmptyFlowSequenceEntry)
       else
         // Recognise explicit-key indicator `?` and empty implicit-key
         // `:` at the start of an entry, mirroring parseFlowMapping.
@@ -1327,7 +1325,7 @@ private[ypsiloid] final class YamlParser:
         val entry =
           if more && peek == Colon then
             if newlineImmediatelyPrecedes(pos) then
-              fail(Reason.FlowImplicitKeyAndColonOnDifferentLines.apply)
+              errorAt(Issue.FlowImplicitKeyAndColonOnDifferentLines)
             advance()
             skipFlowWhitespace()
             val value =
@@ -1343,26 +1341,26 @@ private[ypsiloid] final class YamlParser:
           else first
         buf += entry
         skipFlowWhitespace()
-        if !more then fail(Reason.UnterminatedFlowSequence.apply)
+        if !more then errorAt(Issue.UnterminatedFlowSequence)
         peek match
           case Comma        => advance()
           case CloseBracket => advance(); done = true
-          case _            => fail(Reason.FlowSequenceExpectedCommaOrClose.apply)
+          case _            => errorAt(Issue.FlowSequenceExpectedCommaOrClose)
     val result = sealSequence(buf)
     releaseBuffer()
     result
 
-  private def parseFlowMapping()(using Tactic[YamlError]): YamlAst =
+  private def parseFlowMapping()(using Tactic[ParseError]): YamlAst =
     val buf = acquireBuffer()
     var done = false
     while !done do
       skipFlowWhitespace()
-      if !more then fail(Reason.UnterminatedFlowMapping.apply)
+      if !more then errorAt(Issue.UnterminatedFlowMapping)
       if peek == CloseBrace then
         advance()
         done = true
       else if peek == Comma then
-        fail(Reason.EmptyFlowMappingEntry.apply)
+        errorAt(Issue.EmptyFlowMappingEntry)
       else
         // Recognise explicit-key indicator `?` and empty implicit-key
         // `:` at the start of a flow-mapping entry.
@@ -1394,11 +1392,11 @@ private[ypsiloid] final class YamlParser:
         buf += key
         buf += value
         skipFlowWhitespace()
-        if !more then fail(Reason.UnterminatedFlowMapping.apply)
+        if !more then errorAt(Issue.UnterminatedFlowMapping)
         peek match
           case Comma     => advance()
           case CloseBrace => advance(); done = true
-          case _         => fail(Reason.FlowMappingExpectedCommaOrClose.apply)
+          case _         => errorAt(Issue.FlowMappingExpectedCommaOrClose)
     val result = sealMapping(buf)
     releaseBuffer()
     result
@@ -1433,7 +1431,7 @@ private[ypsiloid] final class YamlParser:
   // and `]#c` after a flow close is an error). Newlines also flip
   // `lastScalarSpannedLines` so multi-line flow collections used as
   // implicit keys can be rejected without a separate scan.
-  private def skipFlowWhitespace()(using Tactic[YamlError]): Unit =
+  private def skipFlowWhitespace()(using Tactic[ParseError]): Unit =
     var continue = true
     while continue && more do
       val c = peek
@@ -1453,24 +1451,24 @@ private[ypsiloid] final class YamlParser:
           if more && peek != Newline
                   && peek != CloseBracket && peek != CloseBrace
                   && peek != Hash && spaces <= flowParentIndent then
-            fail(Reason.FlowContentUnderIndented.apply)
+            errorAt(Issue.FlowContentUnderIndented)
       else if c == Space || c == Tab || c == Return then advance()
       else if c == Hash then
         val prev = if pos > 0 then bytes(pos - 1) else -1
         if prev == Space || prev == Tab || prev == Newline || prev == Return then
           while more && peek != Newline do advance()
         else
-          fail(Reason.CommentMissingPrecedingWhitespace.apply)
+          errorAt(Issue.CommentMissingPrecedingWhitespace)
       else continue = false
 
   // A node within a flow context — same dispatch as parseNodeHere but
   // with flow-specific scalar termination.
-  private def parseFlowNode()(using Tactic[YamlError]): YamlAst =
+  private def parseFlowNode()(using Tactic[ParseError]): YamlAst =
     skipFlowWhitespace()
     if !more then YamlAst.Null
     else
       if atDocumentBoundary then
-        fail(Reason.DocumentMarkerInFlowContext.apply)
+        errorAt(Issue.DocumentMarkerInFlowContext)
       consumeNodePrefixes()
       val anchorName = prefixAnchor
       val tagText    = prefixTag
@@ -1514,7 +1512,7 @@ private[ypsiloid] final class YamlParser:
 
   // Plain scalar within a flow context: terminates on `,`, `]`, `}`,
   // `:`+space, newline, or hash-comment.
-  private def parseFlowPlainScalar()(using Tactic[YamlError]): YamlAst =
+  private def parseFlowPlainScalar()(using Tactic[ParseError]): YamlAst =
     // Plain scalars in flow context cannot start with `-`, `?` or
     // `:` followed by a flow-context indicator (space, tab, comma,
     // `]`, `}`, newline, EOF). Per spec these combinations are
@@ -1526,7 +1524,7 @@ private[ypsiloid] final class YamlParser:
         if next == Space || next == Tab || next == Comma
                 || next == CloseBracket || next == CloseBrace
                 || next == Newline || next == Return || next == -1 then
-          fail(Reason.ReservedIndicatorAtFlowPlainScalarStart.apply)
+          errorAt(Issue.ReservedIndicatorAtFlowPlainScalarStart)
     resetString()
     lastScalarSpannedLines = false
     var done = false
@@ -1576,7 +1574,7 @@ private[ypsiloid] final class YamlParser:
   // scalar starting with `-` (e.g. negative number) or a block sequence
   // marker. The disambiguation is the byte after `-`: if space/tab/
   // newline/EOF, it's a sequence marker.
-  private def parseMinus(indent: Int)(using Tactic[YamlError]): YamlAst =
+  private def parseMinus(indent: Int)(using Tactic[ParseError]): YamlAst =
     val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
     if nextByte == Space || nextByte == Tab || nextByte == Newline
             || nextByte == Return || nextByte == -1 then
@@ -1591,7 +1589,7 @@ private[ypsiloid] final class YamlParser:
       val ok = j < 0 || bytes(j) == Newline || bytes(j) == Return
                      || bytes(j) == Minus || bytes(j) == Colon
                      || bytes(j) == Question
-      if !ok then fail(Reason.BlockSequenceIndicatorNotAtLineStart.apply)
+      if !ok then errorAt(Issue.BlockSequenceIndicatorNotAtLineStart)
       // Use the dash's actual column, not the caller's indent param —
       // an inline-value sequence (`: - v`, `? k\n: - v`) starts where
       // its dashes actually appear, not at the surrounding mapping's
@@ -1613,7 +1611,7 @@ private[ypsiloid] final class YamlParser:
   // end-of-input, this is an explicit-key indicator: set up a block
   // mapping at `indent`, read the first pair, then iterate. `?foo` (no
   // separator) is just a plain scalar starting with `?`.
-  private def parseQuestion(indent: Int)(using Tactic[YamlError]): YamlAst =
+  private def parseQuestion(indent: Int)(using Tactic[ParseError]): YamlAst =
     if isExplicitKeyIndicator then
       val buf = acquireBuffer()
       val savedParentIndent = blockParentIndent
@@ -1634,14 +1632,14 @@ private[ypsiloid] final class YamlParser:
   // explicit (`? key`) and implicit (`key:`) keys.
   private def iterateBlockMapping
                 ( buf: scala.collection.mutable.ArrayBuffer[Any], indent: Int )
-                ( using Tactic[YamlError] )
+                ( using Tactic[ParseError] )
   :   Unit =
     var done = false
     while !done do
       skipBlankAndCommentLines()
       val lineStart = pos
       val nextIndent = consumeLeadingSpaces()
-      if more && peek == Tab then fail(Reason.TabInIndentation.apply)
+      if more && peek == Tab then errorAt(Issue.TabInIndentation)
       if nextIndent != indent then
         pos = lineStart
         done = true
@@ -1662,16 +1660,16 @@ private[ypsiloid] final class YamlParser:
             advance()
             val s = parseDoubleQuoted()
             if lastScalarSpannedLines then
-              fail(Reason.MultilineImplicitKey.apply)
+              errorAt(Issue.MultilineImplicitKey)
             s
           case Apostrophe =>
             advance()
             val s = parseSingleQuoted()
             if lastScalarSpannedLines then
-              fail(Reason.MultilineImplicitKey.apply)
+              errorAt(Issue.MultilineImplicitKey)
             s
           case Star =>
-            if !keyAnchor.nil then fail(Reason.AnchorOnAlias.apply)
+            if !keyAnchor.nil then errorAt(Issue.AnchorOnAlias)
             advance()
             parseAlias()
           case OpenBracket =>
@@ -1683,9 +1681,9 @@ private[ypsiloid] final class YamlParser:
           case _ =>
             val keyText = readPlainScalarText(indent)
             if !sawMappingColon then
-              fail(Reason.PlainScalarAtMappingIndentWithoutColon.apply)
+              errorAt(Issue.PlainScalarAtMappingIndentWithoutColon)
             if lastScalarSpannedLines then
-              fail(Reason.MultilineImplicitKey.apply)
+              errorAt(Issue.MultilineImplicitKey)
             resolvePlainScalar(keyText)
         val tagged = if keyTag.nil then rawKey else applyTag(keyTag, rawKey)
         val keyAst =
@@ -1694,13 +1692,13 @@ private[ypsiloid] final class YamlParser:
             anchors.update(keyAnchor.s, tagged)
             tagged
         skipSpaces()
-        if !more || peek != Colon then fail(Reason.ExpectedColonAfterMappingKey.apply)
+        if !more || peek != Colon then errorAt(Issue.ExpectedColonAfterMappingKey)
         advance()
         val value = parseMappingValue(indent)
         buf += keyAst
         buf += value
 
-  private def parseBlockSequence(indent: Int)(using Tactic[YamlError]): YamlAst =
+  private def parseBlockSequence(indent: Int)(using Tactic[ParseError]): YamlAst =
     val buf = acquireBuffer()
     val savedParentIndent = blockParentIndent
     blockParentIndent = indent
@@ -1742,7 +1740,7 @@ private[ypsiloid] final class YamlParser:
       skipBlankAndCommentLines()
       val lineStart = pos
       val nextIndent = consumeLeadingSpaces()
-      if more && peek == Tab then fail(Reason.TabInIndentation.apply)
+      if more && peek == Tab then errorAt(Issue.TabInIndentation)
       if nextIndent != indent then
         pos = lineStart
         done = true
@@ -1802,13 +1800,13 @@ private[ypsiloid] final class YamlParser:
   // block mapping at `indent`. Subsequent keys may also be quoted.
   private def parseBlockMappingFromFirstKey
                 ( firstKey: YamlAst, indent: Int )
-                ( using Tactic[YamlError] )
+                ( using Tactic[ParseError] )
   :   YamlAst =
     val buf = acquireBuffer()
     val savedParentIndent = blockParentIndent
     blockParentIndent = indent
 
-    if !more || peek != Colon then fail(Reason.ExpectedColonAfterMappingKey.apply)
+    if !more || peek != Colon then errorAt(Issue.ExpectedColonAfterMappingKey)
     advance()
     val firstValue = parseMappingValue(indent)
     buf += firstKey
@@ -1831,7 +1829,7 @@ private[ypsiloid] final class YamlParser:
   // at `?`. The key may be on the same line as `?` or on a subsequent
   // indented line; the matching `:` value indicator must appear at the
   // mapping's indent and may be absent (yielding a Null value).
-  private def readExplicitPair(indent: Int)(using Tactic[YamlError])
+  private def readExplicitPair(indent: Int)(using Tactic[ParseError])
   :   (YamlAst, YamlAst) =
     advance() // ?
     while more && (peek == Space || peek == Tab) do advance()
@@ -1879,7 +1877,7 @@ private[ypsiloid] final class YamlParser:
   // the colon, on the same line) or a block on the next indented lines.
   private def parseMappingValue
                 ( parentIndent: Int, isExplicitValue: Boolean = false )
-                ( using Tactic[YamlError] )
+                ( using Tactic[ParseError] )
   :   YamlAst =
     skipSpaces()
     if !more then YamlAst.Null
@@ -1907,7 +1905,7 @@ private[ypsiloid] final class YamlParser:
         val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
         if next == Space || next == Tab || next == Newline
                 || next == Return || next == -1 then
-          fail(Reason.BlockSequenceOnMappingKeyLine.apply)
+          errorAt(Issue.BlockSequenceOnMappingKeyLine)
       val saved = inInlineMappingValue
       inInlineMappingValue = !isExplicitValue
       val result = parseNodeHere(parentIndent)
@@ -1921,9 +1919,9 @@ private[ypsiloid] final class YamlParser:
   // Rewinds to lineStart on Null so the outer scope re-reads the line.
   private inline def pickValueOrNull
                        ( parentIndent: Int, childIndent: Int, lineStart: Int )
-                       ( using Tactic[YamlError] )
+                       ( using Tactic[ParseError] )
   :   YamlAst =
-    if more && peek == Tab then fail(Reason.TabInIndentation.apply)
+    if more && peek == Tab then errorAt(Issue.TabInIndentation)
     // The next-line node starts a fresh line; an enclosing inline
     // mapping-value context shouldn't propagate into it.
     val savedInline = inInlineMappingValue
@@ -1936,7 +1934,7 @@ private[ypsiloid] final class YamlParser:
 
   private inline def pickValueOrNullBody
                        ( parentIndent: Int, childIndent: Int, lineStart: Int )
-                       ( using Tactic[YamlError] )
+                       ( using Tactic[ParseError] )
   :   YamlAst =
     if !more then YamlAst.Null
     else if childIndent < parentIndent then
@@ -1961,7 +1959,7 @@ private[ypsiloid] final class YamlParser:
     case None, Blank, Regular, MoreIndented
 
   private def parseBlockScalar(literal: Boolean)
-                            ( using Tactic[YamlError] )
+                            ( using Tactic[ParseError] )
   :   YamlAst =
     advance() // consume `|` or `>`
 
@@ -1973,22 +1971,22 @@ private[ypsiloid] final class YamlParser:
     while more && peek != Newline && peek != Hash do
       val b = peek
       if b >= Num0 && b <= Num9 then
-        if b == Num0 then fail(Reason.InvalidBlockScalarIndentationIndicator.apply)
-        if explicitIndent >= 0 then fail(Reason.DuplicateBlockScalarIndentationIndicator.apply)
+        if b == Num0 then errorAt(Issue.InvalidBlockScalarIndentationIndicator)
+        if explicitIndent >= 0 then errorAt(Issue.DuplicateBlockScalarIndentationIndicator)
         explicitIndent = b - Num0
       else if b == Plus then
-        if chomp != BlockChomp.Clip then fail(Reason.DuplicateBlockScalarChompingIndicator.apply)
+        if chomp != BlockChomp.Clip then errorAt(Issue.DuplicateBlockScalarChompingIndicator)
         chomp = BlockChomp.Keep
       else if b == Minus then
-        if chomp != BlockChomp.Clip then fail(Reason.DuplicateBlockScalarChompingIndicator.apply)
+        if chomp != BlockChomp.Clip then errorAt(Issue.DuplicateBlockScalarChompingIndicator)
         chomp = BlockChomp.Strip
       else if b == Space || b == Tab then ()
-      else fail(Reason.InvalidBlockScalarHeader.apply)
+      else errorAt(Issue.InvalidBlockScalarHeader)
       advance()
     if more && peek == Hash then
       val prev = if pos > 0 then bytes(pos - 1) else -1
       if prev != Space && prev != Tab then
-        fail(Reason.BlockScalarHeaderCommentMissingWhitespace.apply)
+        errorAt(Issue.BlockScalarHeaderCommentMissingWhitespace)
       while more && peek != Newline do advance()
     if more then advance() // consume newline
 
@@ -2058,7 +2056,7 @@ private[ypsiloid] final class YamlParser:
           if spaces > parent then
             baseIndent = spaces
             if maxLeadingBlankSpaces > baseIndent then
-              fail(Reason.BlockScalarLeadingBlanksOverIndented.apply)
+              errorAt(Issue.BlockScalarLeadingBlanksOverIndented)
           else
             pos = lineStart
             done = true
@@ -2152,16 +2150,16 @@ private[ypsiloid] final class YamlParser:
   // declared via a `%TAG` directive in the current document. The primary
   // (`!`) and secondary (`!!`) handles are built-in. Verbatim tags
   // (`!<URI>`) skip resolution entirely.
-  private def validateTagHandle(tagText: Text)(using Tactic[YamlError]): Unit =
+  private def validateTagHandle(tagText: Text)(using Tactic[ParseError]): Unit =
     val s = tagText.s
     if s.length >= 2 && s.charAt(0) == '!' && s.charAt(1) != '<' then
       val secondBang = s.indexOf('!', 1)
       if secondBang > 1 then
         val handle = s.substring(0, secondBang + 1).nn
         if handle != "!!" && !tagHandles.contains(handle) then
-          fail(Reason.UndefinedTagHandle(handle.tt, _, _))
+          errorAt(Issue.UndefinedTagHandle(handle.tt))
 
-  private def applyTag(tag: Text, value: YamlAst)(using Tactic[YamlError])
+  private def applyTag(tag: Text, value: YamlAst)(using Tactic[ParseError])
   :   YamlAst = tag.s match
     case "!" | "!!" =>
       // Non-specific tags. `!` forces the string type for plain
