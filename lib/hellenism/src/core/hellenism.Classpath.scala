@@ -33,6 +33,7 @@
 package hellenism
 
 import java.net as jn
+import java.util as ju
 
 import anticipation.*
 import contingency.*
@@ -108,6 +109,25 @@ object Classpath extends Root(t""):
       classloader.inputStream(path.encode)
 
 
+  def servicesFor[service](classpath: Classpath, cls: Class[service]): Set[service] =
+    val parent = Optional(cls.getClassLoader).or(ClassLoader.getSystemClassLoader.nn)
+
+    val urls: Array[jn.URL | Null] =
+      Array.from(classpath.entries.flatMap:
+        case ClasspathEntry.JavaRuntime => Nil
+        case other                      => List(other.javaUrl))
+
+    val loader = jn.URLClassLoader(urls, parent)
+    val seen = scala.collection.mutable.Set.empty[Class[?]]
+    val result = scala.collection.mutable.Set.empty[service]
+
+    ju.ServiceLoader.load(cls, loader).nn.stream.nn.forEach: provider =>
+      val provider0 = provider.nn
+      if seen.add(provider0.`type`.nn) then result += provider0.get.nn
+
+    result.toSet
+
+
 trait Classpath:
   def entries: List[ClasspathEntry]
   private def array: Array[jn.URL | Null] = Array.from(entries.map(_.javaUrl))
@@ -127,3 +147,6 @@ trait Classpath:
 
     new Classloader
       ( new jn.URLClassLoader(Array.from(urls), ClassLoader.getPlatformClassLoader().nn) )
+
+  inline def services[service]: Set[service] =
+    Classpath.servicesFor[service](this, reflectClass[service])
