@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export ziggurat.{Payload, PolyglotDownloader, PolyglotInstaller}
+export ziggurat.{Payload, Xeq}

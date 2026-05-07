@@ -77,7 +77,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       val src = t"#!/bin/sh\necho 'hello from $label'\n"
       Payload(label, src.data, gzip = true)
 
-    val bundleBytes: Data = PolyglotInstaller.bundle(payloads)
+    val bundleBytes: Data = Xeq.installer(payloads)
 
     def stage(): (Path on Linux, Path on Linux) =
       val dir = tempDir()
@@ -165,7 +165,7 @@ Add-Type -TypeDefinition $$src -OutputAssembly ziggurat-test-hello.exe -OutputTy
           safely(sh"ssh $host del /q ziggurat-test-*".exec[Exit]())
         else
           val winArm64Bytes: Data = localExe.open(_.read[Data])
-          val winBundle = PolyglotInstaller.bundle:
+          val winBundle = Xeq.installer:
             payloads :+ Payload(t"windows-arm64", winArm64Bytes, gzip = false)
 
           def stageAndCopy(extension: Text): Text =
