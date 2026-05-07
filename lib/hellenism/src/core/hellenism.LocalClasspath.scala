@@ -72,8 +72,6 @@ object LocalClasspath:
     ( path: path )
     ( using Tactic[PathError],
             Tactic[IoError],
-            Tactic[NameError],
-            Navigable,
             DereferenceSymlinks )
   :   LocalClasspath =
 
@@ -81,7 +79,7 @@ object LocalClasspath:
 
 
   given paths: [path: Abstractable across Paths to Text]
-  =>  ( Tactic[PathError], Tactic[IoError], Tactic[NameError], Navigable, DereferenceSymlinks )
+  =>  ( Tactic[PathError], Tactic[IoError], DereferenceSymlinks )
   =>  LocalClasspath is Addable by path to LocalClasspath =
 
     (classpath, path) =>
