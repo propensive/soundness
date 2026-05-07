@@ -56,10 +56,32 @@ case class TextualLaneDagStyle[line: Textual]
     crossing:   Text,
     node:       Text )
 extends LaneDagStyle[line]:
-  def serialize(tiles: List[DagTile], glyph: Optional[line], label: Optional[line]): line =
-    val parts: List[line] = tiles.map:
-      case Node => glyph.or(line(node))
-      case t    => line(text(t))
+  def width(glyph: line): Int = summon[line is Textual].length(glyph)
+
+  def serialize
+    ( tiles:  List[DagTile],
+      glyphs: Map[Int, line],
+      widths: List[Int],
+      label:  Optional[line] )
+  :   line =
+
+    val parts: List[line] = tiles.zip(widths).zipWithIndex.map:
+      case ((Node, w), i) =>
+        val g = glyphs.getOrElse(i, line(node))
+        val gw = width(g)
+        if gw >= w then g else g+line(Text(" ".repeat(w - gw).nn))
+
+      case ((t, w), _) =>
+        val base = text(t)
+
+        val cell =
+          if base.s.length >= 1 then base.s.charAt(0).toString else " "
+
+        val filler =
+          if base.s.length >= 2 then base.s.charAt(1).toString else " "
+
+        val padding = if w > 1 then filler.repeat(w - 1).nn else ""
+        line(Text(cell + padding))
 
     parts.fold(line(t""))(_+_)+label.or(line(t""))
 

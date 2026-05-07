@@ -36,4 +36,11 @@ import beneficence.*
 import vacuous.*
 
 trait LaneDagStyle[line] extends Findable:
-  def serialize(tiles: List[DagTile], glyph: Optional[line], label: Optional[line]): line
+  def serialize
+    ( tiles:  List[DagTile],
+      glyphs: Map[Int, line],
+      widths: List[Int],
+      label:  Optional[line] )
+  :   line
+
+  def width(glyph: line): Int

@@ -57,6 +57,11 @@ def laneDemo(): Unit =
     LaneDagDiagram(dag).render(glyph, node => t" $node").each(Out.println(_))
     Out.println(t"")
 
+  def showLayered(name: Text, dag: Dag[Text]): Unit =
+    Out.println(t"=== $name (layered) ===")
+    LayeredDagDiagram(dag).render(node => t"● $node  ").each(Out.println(_))
+    Out.println(t"")
+
   show
     ( t"linear chain",
       Dag(t"A" -> Set(), t"B" -> Set(t"A"), t"C" -> Set(t"B"), t"D" -> Set(t"C")) )
@@ -122,3 +127,12 @@ def laneDemo(): Unit =
   showCompact(t"Scala types", scalaTypes)
 
   showHighlighted(t"Scala types", scalaTypes, t"AnyVal")
+
+  showLayered(t"diamond",
+    Dag
+     ( t"A" -> Set(),
+       t"B" -> Set(t"A"),
+       t"C" -> Set(t"A"),
+       t"D" -> Set(t"B", t"C") ))
+
+  showLayered(t"Scala types", scalaTypes)
