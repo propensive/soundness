@@ -45,7 +45,7 @@ package dagStyles:
 package laneDagStyles:
   given default: [text: Textual] => TextualLaneDagStyle[text] =
     TextualLaneDagStyle
-      ( "  ".tt, "│ ".tt, "──".tt, "└─".tt, "┘ ".tt, "┌─".tt, "┐ ".tt,
+      ( "  ".tt, "│ ".tt, "──".tt, "╰─".tt, "╯ ".tt, "╭─".tt, "╮ ".tt,
         "┴─".tt, "┬─".tt, "├─".tt, "┤ ".tt, "┼─".tt, "──".tt, "● ".tt )
 
   given ascii: [text: Textual] => TextualLaneDagStyle[text] =
