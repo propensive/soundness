@@ -32,9 +32,13 @@
                                                                                                   */
 package breviloquence
 
+import anticipation.*
 import contingency.*
+import prepositional.*
 
 import CborError.{Primitive, Reason}
+
+extension [entity: Encodable in Cbor](value: entity) def cbor: Cbor = value.encode
 
 extension (cbor: CborAst)
   inline def isAbsent: Boolean = cbor == vacuous.Unset
