@@ -33,6 +33,7 @@
 package hellenism
 
 import java.net as jn
+import java.util as ju
 
 import anticipation.*
 import contingency.*
@@ -88,11 +89,15 @@ object Classpath extends Root(t""):
       case _: ClasspathEntry.Url => true
       case _                     => false
     then OnlineClasspath(entries)
-    else LocalClasspath:
-      entries.collect:
+    else
+      type Entry = ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type
+
+      val items: List[Entry] = entries.collect:
         case directory: ClasspathEntry.Directory      => directory
         case jar: ClasspathEntry.Jar                  => jar
         case runtime: ClasspathEntry.JavaRuntime.type => runtime
+
+      LocalClasspath(items*)
 
 
   given streamable: [path <: Path on Classpath] => Tactic[ClasspathError]
@@ -103,6 +108,25 @@ object Classpath extends Root(t""):
 
     Streamable.inputStream.contramap: path =>
       classloader.inputStream(path.encode)
+
+
+  def servicesFor[service](classpath: Classpath, cls: Class[service]): Set[service] =
+    val parent = Optional(cls.getClassLoader).or(ClassLoader.getSystemClassLoader.nn)
+
+    val urls: Array[jn.URL | Null] =
+      Array.from(classpath.entries.flatMap:
+        case ClasspathEntry.JavaRuntime => Nil
+        case other                      => List(other.javaUrl))
+
+    val loader = jn.URLClassLoader(urls, parent)
+    val seen = scala.collection.mutable.Set.empty[Class[?]]
+    val result = scala.collection.mutable.Set.empty[service]
+
+    ju.ServiceLoader.load(cls, loader).nn.stream.nn.forEach: provider =>
+      val provider0 = provider.nn
+      if seen.add(provider0.`type`.nn) then result += provider0.get.nn
+
+    result.toSet
 
 
 trait Classpath:
@@ -124,3 +148,6 @@ trait Classpath:
 
     new Classloader
       ( new jn.URLClassLoader(Array.from(urls), ClassLoader.getPlatformClassLoader().nn) )
+
+  inline def services[service]: Set[service] =
+    Classpath.servicesFor[service](this, reflectClass[service])
