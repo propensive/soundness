@@ -425,6 +425,11 @@ object breviloquence extends Library:
   object parser extends Component(ast, turbulence.core)
   object core extends Component(parser, urticose.url, panopticon.core)
   object test extends Tests(core, sedentary.core, eucalyptus.core)
+  object bench extends Benchmarks(core, parser, quantitative.units):
+    def mvnDeps = Seq(
+      mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.18.2",
+      mvn"io.bullet::borer-core:1.16.0"
+    )
 
 object burdock extends Library:
   object boot extends Component
