@@ -41,27 +41,28 @@ import DagTile.*
 
 case class TextualDagStyle[line: Textual]
   ( space:      Text,
-    corner:     Text,
+    cornerNe:   Text,
     vertical:   Text,
-    firstMid:   Text,
+    teeE:       Text,
     horizontal: Text,
-    midLast:    Text,
-    cross:      Text,
-    overlap:    Text )
+    teeN:       Text,
+    crossing:   Text,
+    junction:   Text )
 extends DagStyle[line]:
   def serialize(tiles: List[DagTile], node: line): line =
     line(tiles.map(text(_)).join)+node
 
-  def text(tile: DagTile) = tile match
+  def text(tile: DagTile): Text = tile match
     case Space      => space
-    case Corner     => corner
+    case CornerNe   => cornerNe
     case Vertical   => vertical
-    case FirstMid   => firstMid
+    case TeeE       => teeE
     case Horizontal => horizontal
-    case MidLast    => midLast
-    case Cross      => cross
-    case Overlap    => overlap
+    case TeeN       => teeN
+    case Crossing   => crossing
+    case Junction   => junction
+    case _          => space
 
   def followOnText(tile: DagTile): Text = tile match
-    case Space | Horizontal | Corner | MidLast | Overlap => space
+    case Space | Horizontal | CornerNe | TeeN | Junction => space
     case _                                               => vertical

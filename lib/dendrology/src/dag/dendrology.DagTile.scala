@@ -33,4 +33,5 @@
 package dendrology
 
 enum DagTile:
-  case Space, Corner, Vertical, FirstMid, Horizontal, MidLast, Cross, Overlap
+  case Space, CornerNe, Vertical, TeeE, Horizontal, TeeN, Crossing, Junction
+  case CornerNw, CornerSe, CornerSw, TeeW, TeeS, Node
