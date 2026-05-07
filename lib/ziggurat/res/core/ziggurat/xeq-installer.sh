@@ -46,6 +46,7 @@ then
   exit 1
 fi
 
+xeq_msg 33 ▅▅ 0 "Unpacking xeq…"
 extract "$offset" 1 > "$tmpout"
 data_offset=$(get_offset "data")
 
@@ -53,6 +54,8 @@ if [ -n "$data_offset" ]
 then extract "$data_offset" 0 >> "$tmpout"
 fi
 
+size=$(wc -c < "$tmpout" | tr -d ' ')
+xeq_msg 32 ██ 1 "Unpacked xeq ($size bytes)"
 chmod +x "$tmpout"
 mv "$tmpout" "$output"
 exec "$output" "$@"

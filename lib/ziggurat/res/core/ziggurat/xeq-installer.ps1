@@ -54,6 +54,7 @@ if (-not $offsets.ContainsKey($label)) {
 $tmpDir = if ($env:TEMP) { $env:TEMP } else { "/tmp" }
 $tmp = Join-Path $tmpDir "~ethereal_$PID"
 
+xeq_msg 33 '▅▅' 0 'Unpacking xeq…'
 if ($os -eq "windows") {
     $skip = $indexLineNum + $offsets[$label] - 1
     & cmd /c "more +$skip `"$scriptPath`" > `"${tmp}.pem`""
@@ -80,6 +81,8 @@ if ($os -eq "windows") {
     & chmod +x $outputPath
 }
 Remove-Item $scriptPath
+$outSize = (Get-Item $outputPath).Length
+xeq_msg 32 '██' 1 "Unpacked xeq ($outSize bytes)"
 
 $exeName = [IO.Path]::GetFileNameWithoutExtension($outputPath)
 $marker = "# $exeName tab-completions"
@@ -99,11 +102,11 @@ Register-ArgumentCompleter -Native -CommandName '$exeName' -ScriptBlock {
 }
 "@
 
+xeq_msg 33 '▅▅' 0 'Installing tab completions…'
 $profilePath = $PROFILE
 $profileDir = Split-Path $profilePath
 if (-not (Test-Path $profileDir)) {
     New-Item -ItemType Directory -Path $profileDir -Force | Out-Null
-    [Console]::Error.WriteLine("Created profile directory: $profileDir")
 }
 if (Test-Path $profilePath) {
     $existing = Get-Content $profilePath -Raw
@@ -114,10 +117,10 @@ if ($existing -match [regex]::Escape($marker)) {
     $pattern = "(?ms)$([regex]::Escape($marker)).*?(?=\r?\n# |\z)"
     $updated = $existing -replace $pattern, $completer
     Set-Content $profilePath $updated -NoNewline
-    [Console]::Error.WriteLine("Updated tab completions for '$exeName' in $profilePath")
+    xeq_msg 32 '██' 1 "Updated tab completions in $profilePath"
 } else {
     Add-Content $profilePath "`n$completer"
-    [Console]::Error.WriteLine("Added tab completions for '$exeName' to $profilePath")
+    xeq_msg 32 '██' 1 "Installed tab completions in $profilePath"
 }
 
 & $outputPath $args
