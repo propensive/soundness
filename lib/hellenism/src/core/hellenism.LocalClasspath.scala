@@ -69,6 +69,18 @@ object LocalClasspath:
     new LocalClasspath(entries, entries.to(Set))
 
 
+  def apply[path: Abstractable across Paths to Text]
+    ( path: path )
+    ( using Tactic[PathError],
+            Tactic[IoError],
+            Tactic[NameError],
+            Navigable,
+            DereferenceSymlinks )
+  :   LocalClasspath =
+
+    new LocalClasspath(Nil, Set.empty) + path
+
+
   given paths: [path: Abstractable across Paths to Text]
   =>  ( Tactic[PathError], Tactic[IoError], Tactic[NameError], Navigable, DereferenceSymlinks )
   =>  LocalClasspath is Addable by path to LocalClasspath =
