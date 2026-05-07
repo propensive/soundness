@@ -1,18 +1,47 @@
 #!/usr/bin/env bash
 
 echo \" <<'next' >/dev/null ">nul "\" \`" <#"
-@echo off & <nul set /p ="[6A[J"
+@echo off & <nul set /p ="[6A[J"
+chcp 65001 > nul 2>&1
+for /f "delims=" %%a in ('"prompt $E&for %%b in (1) do rem"') do set "ESC=%%a"
 @@BAT@@
 goto :eof & type con >nul
+:xeq_msg
+if defined NO_COLOR (
+<nul set /p="%ESC%[1G%~2	xeq	┃ %~4%ESC%[K" 1>&2
+) else (
+<nul set /p="%ESC%[1G%ESC%[%~1m%~2%ESC%[0m	xeq	┃ %~4%ESC%[K" 1>&2
+)
+if "%~3"=="1" echo. 1>&2
+goto :eof
 next
 #> | Out-Null
 echo \" <<'next' >/dev/null # " | Out-Null
+function xeq_msg($c, $b, $n, $m) {
+    if ([Console]::IsErrorRedirected) { return }
+    $e = [char]27
+    if ($env:NO_COLOR -or $env:TERM -eq 'dumb') {
+        $line = "`r${b}`txeq`t┃ ${m}$e[K"
+    } else {
+        $line = "`r$e[${c}m${b}$e[0m`txeq`t┃ ${m}$e[K"
+    }
+    if ($n) { $line += "`n" }
+    [Console]::Error.Write($line)
+}
 @@PS1@@
 while ( ! $MyInvocation.MyCommand.Source ) {
     $input_line = Read-Host
 }; exit; <#
 next
 set +o histexpand 2>/dev/null
+xeq_msg() {
+    [ -t 2 ] || return 0
+    if [ -z "${NO_COLOR-}" ] && [ "${TERM-}" != "dumb" ]
+    then printf '\r\033[%sm%s\033[0m\txeq\t┃ %s\033[K' "$1" "$2" "$4" >&2
+    else printf '\r%s\txeq\t┃ %s\033[K' "$2" "$4" >&2
+    fi
+    [ "$3" = "1" ] && printf '\n' >&2 || :
+}
 @@SH@@
 case $- in *"i"*) cat /dev/stdin >/dev/null ;; esac
 exit
