@@ -88,11 +88,14 @@ object Classpath extends Root(t""):
       case _: ClasspathEntry.Url => true
       case _                     => false
     then OnlineClasspath(entries)
-    else LocalClasspath:
-      entries.collect:
-        case directory: ClasspathEntry.Directory      => directory
-        case jar: ClasspathEntry.Jar                  => jar
-        case runtime: ClasspathEntry.JavaRuntime.type => runtime
+    else
+      type Entry = ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type
+
+      LocalClasspath:
+        entries.collect[Entry]:
+          case directory: ClasspathEntry.Directory      => directory
+          case jar: ClasspathEntry.Jar                  => jar
+          case runtime: ClasspathEntry.JavaRuntime.type => runtime
 
 
   given streamable: [path <: Path on Classpath] => Tactic[ClasspathError]
