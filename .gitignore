@@ -7,3 +7,4 @@ boot
 .bsp
 bin
 tests/JSONTestSuite
+lib/ethereal/target

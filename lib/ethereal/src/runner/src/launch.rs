@@ -76,10 +76,16 @@ pub fn launch(
     let _ = std::fs::write(pid_file, format!("{}\n", child.id()));
 
     let mut attempts = 0;
+    let start = std::time::Instant::now();
+    let mut shown = false;
     while !crate::state::socket_ready(socket_file)
         && !fail_file.exists()
         && attempts < STARTUP_MAX_ATTEMPTS
     {
+        if !shown && start.elapsed() >= Duration::from_secs(2) {
+            crate::xeq::step("▅▅", &format!("Starting {name}…"));
+            shown = true;
+        }
         std::thread::sleep(STARTUP_POLL);
         attempts += 1;
     }
@@ -91,6 +97,10 @@ pub fn launch(
         crate::state::abort(fail_file);
         crate::state::backout(fail_file, pid_file, name);
         std::process::exit(1);
+    }
+    if shown {
+        let secs = start.elapsed().as_secs_f64();
+        crate::xeq::done("██", &format!("Started {name} in {secs:.1}s"));
     }
 
     // The daemon writes the build-id file shortly after binding the socket.
