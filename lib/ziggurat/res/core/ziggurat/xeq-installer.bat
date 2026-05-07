@@ -29,7 +29,7 @@ if not defined offset (
     echo No payload for windows-!arch! >&2
     exit /b 1
 )
-call :xeq_msg 33 ▅▅ 0 "Unpacking xeq…"
+call :xeq_msg 33 ████████ 0 "Unpacking…"
 set "tmp_bin=%TEMP%\~ethereal_%RANDOM%_bin"
 set "tmp_pem=%TEMP%\~ethereal_%RANDOM%.pem"
 set /a "skip=indexnum + offset - 1"
@@ -56,5 +56,5 @@ if defined data_offset (
     move /y "!tmp_bin!" "!output!" > nul
 )
 for %%S in ("!output!") do set "outsize=%%~zS"
-call :xeq_msg 32 ██ 1 "Unpacked xeq (!outsize! bytes)"
+call :xeq_msg 32 ████████ 1 "Unpacked (!outsize! bytes)"
 endlocal & del "%~f0" & "%~dpn0.exe" %*

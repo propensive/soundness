@@ -20,7 +20,7 @@ pub fn launch(
     download: bool,
 ) {
     crate::debug!("launch: start name={} script={}", name, script.display());
-    let java = match crate::java::find_java(config.java_min, config.java_pref, config.bundle, download) {
+    let java = match crate::java::find_java(config.java_min, config.java_pref, config.bundle, download, name) {
         Some(path) => { crate::debug!("launch: java found at {}", path.display()); path },
         None => {
             crate::debug!("launch: java not found");
@@ -83,7 +83,7 @@ pub fn launch(
         && attempts < STARTUP_MAX_ATTEMPTS
     {
         if !shown && start.elapsed() >= Duration::from_secs(2) {
-            crate::xeq::step("▅▅", &format!("Starting {name}…"));
+            crate::xeq::step(name, "Starting…");
             shown = true;
         }
         std::thread::sleep(STARTUP_POLL);
@@ -100,7 +100,7 @@ pub fn launch(
     }
     if shown {
         let secs = start.elapsed().as_secs_f64();
-        crate::xeq::done("██", &format!("Started {name} in {secs:.1}s"));
+        crate::xeq::done(name, &format!("Started in {secs:.1}s"));
     }
 
     // The daemon writes the build-id file shortly after binding the socket.
