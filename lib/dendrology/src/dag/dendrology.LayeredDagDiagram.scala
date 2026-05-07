@@ -42,17 +42,21 @@ import vacuous.*
 
 import DagTile.*
 
-object LaneDagDiagram:
+object LayeredDagDiagram:
   private case class Lane[node](source: node, target: node, col: Int)
+
+  private case class Layout[node]
+    ( state:       Map[Int, Lane[node]],
+      terminating: Map[Int, Lane[node]],
+      continuing:  Map[Int, Lane[node]],
+      nodeCol:     Map[node, Int],
+      prevNodeCol: Map[node, Int] )
 
   private final class Cell:
     var top: Boolean = false
     var down: Boolean = false
     var left: Boolean = false
     var right: Boolean = false
-
-    // Distinguish pure crossings (where a horizontal lane passes over a continuing
-    // vertical lane without sharing a node) from real junctions where lanes meet.
     var verticalPassThrough: Boolean = false
     var horizontalPassThrough: Boolean = false
 
@@ -73,98 +77,96 @@ object LaneDagDiagram:
         case (true,  true,  true,  true)  => Junction
         case _                            => Space
 
-  def apply[node](dag: Dag[node]): LaneDagDiagram[node] =
+  def apply[node](dag: Dag[node]): LayeredDagDiagram[node] =
     val nodes: Vector[node] = dag.sorted.to(Vector)
-    val total: Int = nodes.length
-
-    if total == 0 then LaneDagDiagram(Nil) else
-      val rowOf: Map[node, Int] = nodes.zipWithIndex.to(Map)
+    if nodes.isEmpty then LayeredDagDiagram(Nil) else
+      val parents: Map[node, Set[node]] = dag.edgeMap
       val forward: Map[node, Set[node]] = dag.invert.edgeMap
 
-      val nodeCol: Array[Int] = new Array[Int](total)
-      val laneState: Array[Map[Int, Lane[node]]] = Array.fill(total + 1)(Map.empty[Int, Lane[node]])
-      val started: Array[Vector[Lane[node]]] = Array.fill(total)(Vector.empty[Lane[node]])
-      val directOut: Array[Boolean] = new Array[Boolean](total)
+      val level: scm.HashMap[node, Int] = scm.HashMap()
+      for n <- nodes do
+        val ps = parents.getOrElse(n, Set.empty)
+        level(n) = if ps.isEmpty then 0 else ps.iterator.map(level).max + 1
 
-      for r <- 0 until total do
-        val current = nodes(r)
-        val state = laneState(r)
-        val terminating = state.filter((_, lane) => lane.target == current)
-        val continuing = state -- terminating.keys
-        val terminatingCols = terminating.keys.to(Array).sortInPlace()
+      val maxLevel: Int = level.values.max
 
-        val chosenCol: Int =
-          if terminatingCols.length > 0 then terminatingCols(terminatingCols.length / 2)
-          else
-            var c = 0
-            while continuing.contains(c) do c += 1
-            c
+      val byLevel: Vector[Vector[node]] =
+        (0 to maxLevel).to(Vector).map: l =>
+          nodes.filter(level(_) == l)
 
-        nodeCol(r) = chosenCol
+      val state: scm.HashMap[Int, Lane[node]] = scm.HashMap()
+      val layouts = scm.ListBuffer[Layout[node]]()
+      var prevNodeCols: Map[node, Int] = Map.empty
 
-        val nextNode: Optional[node] = if r + 1 < total then nodes(r + 1) else Unset
-        val targets: Vector[node] = forward.getOrElse(current, Set.empty).to(Vector).sortBy(rowOf)
-        val (directs, indirects) = nextNode.lay((Vector.empty[node], targets)): nx =>
-          targets.partition(_ == nx)
+      for l <- 0 to maxLevel do
+        val levelNodes = byLevel(l)
 
-        directOut(r) = directs.nonEmpty
+        val terminating = state.toMap.filter((_, lane) => level(lane.target) == l)
+        val continuing = state.toMap -- terminating.keys
 
-        val occupied = scm.HashSet.from(continuing.keys)
+        val incomingByNode: Map[node, Vector[Int]] =
+          terminating
+            . groupBy(_._2.target)
+            . map: (n, m) =>
+                n -> m.keys.to(Vector).sorted
 
-        val newLanes = indirects.map: target =>
-          val col = nearestFree(chosenCol, occupied)
-          occupied.add(col)
-          Lane(current, target, col)
+        val desired: Map[node, Int] = levelNodes.map: n =>
+          val incoming = incomingByNode.getOrElse(n, Vector.empty)
 
-        started(r) = newLanes
-        laneState(r + 1) = continuing ++ newLanes.map(lane => lane.col -> lane)
+          val centre =
+            if incoming.nonEmpty then incoming(incoming.length/2)
+            else if continuing.nonEmpty then continuing.keys.max + 1
+            else 0
+
+          n -> centre
+
+        . to(Map)
+
+        val ordered = levelNodes.sortBy(desired)
+        val nodeOccupied = scm.HashSet[Int]() ++ continuing.keys
+        val nodeCol = scm.LinkedHashMap[node, Int]()
+
+        for n <- ordered do
+          var col = desired(n)
+          while nodeOccupied.contains(col) do col += 1
+          nodeCol(n) = col
+          nodeOccupied.add(col)
+
+        layouts += Layout(state.toMap, terminating, continuing, nodeCol.toMap, prevNodeCols)
+
+        terminating.keys.foreach(state.remove)
+
+        val laneOccupied = scm.HashSet[Int]() ++ continuing.keys
+
+        for n <- ordered do
+          val outgoing = forward.getOrElse(n, Set.empty).filter(level(_) > l)
+          val sortedOut = outgoing.to(Vector).sortBy(level)
+
+          for target <- sortedOut do
+            var col = nodeCol(n)
+            while laneOccupied.contains(col) do col += 1
+            laneOccupied.add(col)
+            state(col) = Lane(n, target, col)
+
+        prevNodeCols = nodeCol.toMap
 
       val width: Int =
-        val colsUsed = laneState.flatMap(_.keys) ++ nodeCol
-        if colsUsed.isEmpty then 1 else colsUsed.max + 1
+        val cols = layouts.iterator.flatMap: lay =>
+          lay.state.keys.iterator
+            ++ lay.nodeCol.values.iterator
+            ++ lay.prevNodeCol.values.iterator
+        cols.maxOption.fold(1)(_ + 1)
 
-      val rows = scm.ListBuffer[(List[DagTile], Optional[node])]()
+      val rows = scm.ListBuffer[(List[DagTile], Map[Int, node])]()
 
-      for r <- 0 until total do
-        if r > 0 then
-          rows += ((connectorRow(
-            laneState(r),
-            started(r - 1),
-            nodeCol(r - 1),
-            nodeCol(r),
-            directOut(r - 1),
-            nodes(r),
-            width), Unset))
+      layouts.iterator.zipWithIndex.foreach: (lay, l) =>
+        if l > 0 then rows += ((connectorRow(lay, width), Map.empty[Int, node]))
+        rows += ((nodeRow(lay, width), lay.nodeCol.iterator.map((n, c) => c -> n).to(Map)))
 
-        rows += ((nodeRow(laneState(r), nodeCol(r), nodes(r), width), nodes(r)))
+      LayeredDagDiagram(rows.to(List))
 
-      LaneDagDiagram(rows.to(List))
-
-  private def nearestFree(center: Int, taken: scm.HashSet[Int]): Int =
-    if !taken(center) then center else
-      var i = 1
-      var found = -1
-      while found < 0 do
-        val low = center - i
-        if low >= 0 && !taken(low) then found = low
-        else
-          val high = center + i
-          if !taken(high) then found = high
-        i += 1
-      found
-
-  private def connectorRow[node]
-    ( state:        Map[Int, Lane[node]],
-      justStarted:  Vector[Lane[node]],
-      prevNodeCol:  Int,
-      curNodeCol:   Int,
-      directEdge:   Boolean,
-      currentNode:  node,
-      width:        Int )
-  :   List[DagTile] =
-
-    val cells = Array.fill(width)(LaneDagDiagram.Cell())
-    val startedCols = justStarted.iterator.map(_.col).to(Set)
+  private def connectorRow[node](layout: Layout[node], width: Int): List[DagTile] =
+    val cells = Array.fill(width)(LayeredDagDiagram.Cell())
 
     def drawBend(topEntry: Int, bottomExit: Int, continuing: Boolean): Unit =
       if topEntry == bottomExit then
@@ -194,86 +196,51 @@ object LaneDagDiagram:
         cells(bottomExit).right = true
         cells(bottomExit).down = true
 
-    state.foreach: (col, lane) =>
-      if lane.target == currentNode then drawBend(col, curNodeCol, false)
-      else if startedCols(col) then drawBend(prevNodeCol, col, false)
-      else drawBend(col, col, true)
+    layout.state.foreach: (col, lane) =>
+      val justStarted = layout.prevNodeCol.contains(lane.source)
+      val terminatingNow = layout.terminating.contains(col)
 
-    if directEdge then drawBend(prevNodeCol, curNodeCol, false)
+      (justStarted, terminatingNow) match
+        case (true, true) =>
+          drawBend(layout.prevNodeCol(lane.source), layout.nodeCol(lane.target), false)
+
+        case (false, true)  => drawBend(col, layout.nodeCol(lane.target), false)
+        case (true, false)  => drawBend(layout.prevNodeCol(lane.source), col, false)
+        case (false, false) => drawBend(col, col, true)
 
     cells.iterator.map(_.tile).to(List)
 
-  private def nodeRow[node]
-    ( state:    Map[Int, Lane[node]],
-      col:      Int,
-      current:  node,
-      width:    Int )
-  :   List[DagTile] =
-
-    val continuing = state.filter((_, lane) => lane.target != current).keys.to(Set)
+  private def nodeRow[node](layout: Layout[node], width: Int): List[DagTile] =
+    val nodeColSet = layout.nodeCol.values.to(Set)
 
     (0 until width).map: c =>
-      if c == col then Node
-      else if continuing(c) then Vertical
+      if nodeColSet(c) then Node
+      else if layout.continuing.contains(c) then Vertical
       else Space
 
     . to(List)
 
   given printable: [node: Showable] => (style: LaneDagStyle[Text])
-  =>  LaneDagDiagram[node] is Printable =
-    (diagram, termcap) => diagram.render[Text](node => t" $node").join(t"\n")
+  =>  LayeredDagDiagram[node] is Printable =
+    (diagram, termcap) => diagram.render[Text](node => t"● $node  ").join(t"\n")
 
-  private def keepRow[node](row: (List[DagTile], Optional[node])): Boolean =
-    val (tiles, node) = row
-    if node.present then true else
-      val onlyPassThrough = tiles.forall { tile => tile == Vertical || tile == Space }
-      val verticalCount = tiles.count(_ == Vertical)
-      !(onlyPassThrough && verticalCount != 1)
+case class LayeredDagDiagram[node](rows: List[(List[DagTile], Map[Int, node])]):
+  val size: Int = rows.length
 
-  private def defaultWidths(rows: Iterator[List[DagTile]]): List[Int] =
-    val maxCol = rows.map(_.length).maxOption.getOrElse(0)
-    List.fill(maxCol)(2)
-
-  private def computeWidths[node, line]
-    ( rows:  List[(List[DagTile], Optional[node])],
-      glyph: node => line,
-      style: LaneDagStyle[line] )
-  :   List[Int] =
-
+  def render[line](glyph: node => line)(using style: LaneDagStyle[line]): List[line] =
     val maxCol = rows.iterator.map(_(0).length).maxOption.getOrElse(0)
     val widths = Array.fill(maxCol)(2)
 
-    rows.foreach: (tiles, optNode) =>
-      if optNode.present then
-        val nodeIdx = tiles.indexOf(Node)
-        if nodeIdx >= 0 then
-          val w = style.width(glyph(optNode.vouch))
-          if w > widths(nodeIdx) then widths(nodeIdx) = w
+    rows.foreach: (_, nodesAt) =>
+      nodesAt.foreach: (col, n) =>
+        val w = style.width(glyph(n))
+        if w > widths(col) then widths(col) = w
 
-    widths.to(List)
+    val widthsList = widths.to(List)
 
-case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
-  val size: Int = lines.length
+    rows.map: (tiles, nodesAt) =>
+      val glyphs: Map[Int, line] = nodesAt.map((col, n) => col -> glyph(n))
+      style.serialize(tiles, glyphs, widthsList, Unset)
 
-  def render[line](label: node => line)(using style: LaneDagStyle[line]): List[line] =
-    val widths = LaneDagDiagram.defaultWidths(lines.iterator.map(_(0)))
-    lines.map { (tiles, node) => style.serialize(tiles, Map.empty, widths, node.let(label)) }
-
-  def render[line](glyph: node => line, label: node => line)(using style: LaneDagStyle[line])
-  :   List[line] =
-
-    val widths = LaneDagDiagram.computeWidths(lines, glyph, style)
-
-    lines.map: (tiles, node) =>
-      val nodeIdx = tiles.indexOf(Node)
-
-      val glyphs: Map[Int, line] =
-        if nodeIdx < 0 then Map.empty
-        else node.let(n => Map(nodeIdx -> glyph(n))).or(Map.empty)
-
-      style.serialize(tiles, glyphs, widths, node.let(label))
-
-  def compact: LaneDagDiagram[node] = LaneDagDiagram(lines.filter(LaneDagDiagram.keepRow))
-
-  def nodes: List[node] = lines.flatMap(_(1).option)
-  def tiles: List[List[DagTile]] = lines.map(_(0))
+  def tiles: List[List[DagTile]] = rows.map(_(0))
+  def nodesAt: List[Map[Int, node]] = rows.map(_(1))

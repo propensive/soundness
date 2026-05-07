@@ -193,3 +193,57 @@ object Tests extends Suite(m"Dendrology tests"):
       compact < full
 
     . assert(_ == true)
+
+    test(m"Layered DAG: linear chain has one node per level"):
+      val dag = Dag(t"A" -> Set(), t"B" -> Set(t"A"), t"C" -> Set(t"B"))
+      LayeredDagDiagram(dag).rows.count((_, nodesAt) => nodesAt.nonEmpty)
+
+    . assert(_ == 3)
+
+    test(m"Layered DAG: diamond packs siblings into one row"):
+      val dag = Dag
+        ( t"A" -> Set(),
+          t"B" -> Set(t"A"),
+          t"C" -> Set(t"A"),
+          t"D" -> Set(t"B", t"C") )
+      val nodeRows = LayeredDagDiagram(dag).rows.collect:
+        case (_, nodesAt) if nodesAt.nonEmpty => nodesAt
+      // Three node rows: [A], [B,C], [D]
+      ( nodeRows.length,
+        nodeRows.head.size,
+        nodeRows(1).size,
+        nodeRows.last.size )
+
+    . assert(_ == (3, 1, 2, 1))
+
+    test(m"Layered DAG: per-vertex glyph"):
+      import laneDagStyles.default
+      val dag = Dag(t"A" -> Set(), t"B" -> Set(t"A"))
+      val glyph = (n: Text) => if n == t"A" then t"★ " else t"● "
+      LayeredDagDiagram(dag).render(glyph)
+
+    . assert(_ == List(t"★ ", t"│ ", t"● "))
+
+    test(m"Layered DAG: variable column widths"):
+      import laneDagStyles.default
+      // The B node has a wide glyph; column 0 should expand to fit it.
+      val dag = Dag(t"A" -> Set(), t"B" -> Set(t"A"))
+      val glyph = (n: Text) => if n == t"B" then t"[long]" else t"●     "
+      LayeredDagDiagram(dag).render(glyph)
+
+    . assert(_ == List(t"●     ", t"│     ", t"[long]"))
+
+    test(m"Lane DAG: variable column widths in connectors"):
+      import laneDagStyles.default
+      val dag = Dag
+        ( t"A" -> Set(),
+          t"B" -> Set(t"A"),
+          t"C" -> Set(t"A"),
+          t"D" -> Set(t"B", t"C") )
+      val glyph = (n: Text) => t"[$n]"
+      val rendered = LaneDagDiagram(dag).render(glyph, n => t"")
+      // Connector tiles widen: a row of `├─╮` becomes `├──╮` etc when col widths grow.
+      // We just check that all rows in the rendered output have equal width.
+      rendered.map(_.s.length).distinct.size
+
+    . assert(_ == 1)
