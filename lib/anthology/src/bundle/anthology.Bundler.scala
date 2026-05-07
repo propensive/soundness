@@ -59,13 +59,14 @@ import systems.java
 import workingDirectories.java
 
 object Bundler:
-  def classpath(out: Path on Linux): LocalClasspath = LocalClasspath:
-    Classpath.Directory(out)
-    :: (classloaders.threadContext.classpath.match
+  def classpath(out: Path on Linux): LocalClasspath =
+    val entries = Classpath.Directory(out) :: (classloaders.threadContext.classpath.match
       case classpath: LocalClasspath => classpath.entries
 
       case _ =>
         unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)
+
+    LocalClasspath(entries*)
 
 
   def bundle(directory: Path on Linux, jarfile0: Optional[Path on Linux], main: Optional[Fqcn])
