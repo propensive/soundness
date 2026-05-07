@@ -36,6 +36,15 @@ import soundness.*
 
 import classloaders.threadContext
 
+trait TestService:
+  def name: Text
+
+class TestServiceA extends TestService:
+  def name: Text = t"A"
+
+class TestServiceB extends TestService:
+  def name: Text = t"B"
+
 object Tests extends Suite(m"Proscenium Tests"):
   def run(): Unit =
     test(m"check that a classpath file is accessible"):
@@ -58,3 +67,9 @@ object Tests extends Suite(m"Proscenium Tests"):
     test(m"check that an invalid classpath path is an error"):
       demilitarize(cp"foobar").map(_.message)
     . assert(_ == List(t"hellenism: the path foobar is not a valid classpath path"))
+
+    test(m"load services from META-INF/services"):
+      import systems.java
+      val classpath = unsafely(System.properties.java.`class`.path().decode[LocalClasspath])
+      classpath.services[TestService].map(_.name)
+    . assert(_ == Set(t"A", t"B"))
