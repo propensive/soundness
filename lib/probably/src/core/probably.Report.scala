@@ -220,6 +220,7 @@ class Report(using Environment)(using palette: TestPalette):
   private def terseComplete()(using Stdio): Unit =
     import tableStyles.minimal
 
+    val columns: Int = safely(Environment.columns.decode[Int]).or(120)
     val summaryLines = lines.summaries
     val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
     val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
@@ -250,13 +251,41 @@ class Report(using Environment)(using palette: TestPalette):
       val ln = frame.line.let(_.toString.tt).or(t"?")
       t"  at ${frame.method.cls}.${frame.method.method} (${frame.file}:$ln)"
 
+    def benches(line: ReportLine): Iterable[ReportLine.Bench] = line match
+      case bench@ReportLine.Bench(_, _) => Iterable(bench)
+      case ReportLine.Suite(_, tests)   => tests.list.map(_(1)).flatMap(benches(_))
+      case _                            => Nil
+
+    val allBenches = benches(lines).to(List)
+
+    if allBenches.nonEmpty then
+      Out.println(t"")
+
+      Scaffold[ReportLine.Bench]
+        ( Column(e"Hash"): b =>
+            e"${b.test.id}",
+          Column(e"Test"): b =>
+            val depth = b.test.suite.let(_.id.depth).or(0)
+            e"${t"  "*depth}${b.test.name}",
+          Column(e"n", textAlign = TextAlignment.Right): b =>
+            e"${b.benchmark.iterations.toLong}",
+          Column(e"Mean", textAlign = TextAlignment.Right): b =>
+            showTime(b.benchmark.mean.toLong),
+          Column(e"SD", textAlign = TextAlignment.Right): b =>
+            showTime(b.benchmark.sd.toLong),
+          Column(e"Throughput", textAlign = TextAlignment.Right): b =>
+            if b.benchmark.throughput == 0 then e""
+            else e"${b.benchmark.throughput} op/s" )
+
+      . tabulate(allBenches.sortBy(-_.benchmark.throughput)).grid(columns).render
+      . each(Out.println(_))
+
     val failureStatuses: Set[Status] =
       Set(Status.Fail, Status.Throws, Status.CheckThrows, Status.Mixed)
 
     val failures = summaryLines.filter(s => failureStatuses.contains(s.status))
 
     if failures.nonEmpty then
-      val columns: Int = safely(Environment.columns.decode[Int]).or(120)
       Out.println(t"")
 
       Scaffold[Summary]
