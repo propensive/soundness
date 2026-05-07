@@ -62,11 +62,10 @@ object LocalClasspath:
 
 
   def apply
-    ( entries
-      : List [ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type] )
+    ( entries: (ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type)* )
   :   LocalClasspath =
 
-    new LocalClasspath(entries, entries.to(Set))
+    new LocalClasspath(entries.toList, entries.to(Set))
 
 
   def apply[path: Abstractable across Paths to Text]

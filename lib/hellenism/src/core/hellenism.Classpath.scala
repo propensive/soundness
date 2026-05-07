@@ -92,11 +92,12 @@ object Classpath extends Root(t""):
     else
       type Entry = ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type
 
-      LocalClasspath:
-        entries.collect[Entry]:
-          case directory: ClasspathEntry.Directory      => directory
-          case jar: ClasspathEntry.Jar                  => jar
-          case runtime: ClasspathEntry.JavaRuntime.type => runtime
+      val items: List[Entry] = entries.collect:
+        case directory: ClasspathEntry.Directory      => directory
+        case jar: ClasspathEntry.Jar                  => jar
+        case runtime: ClasspathEntry.JavaRuntime.type => runtime
+
+      LocalClasspath(items*)
 
 
   given streamable: [path <: Path on Classpath] => Tactic[ClasspathError]
