@@ -34,21 +34,47 @@ package dendrology
 
 import anticipation.*
 import gossamer.*
+import gossamer.Textual.concatenable
+import symbolism.*
+import vacuous.*
 
-package dagStyles:
-  given default: [text: Textual] => TextualDagStyle[text] =
-    TextualDagStyle("  ".tt, "└─".tt, "│ ".tt, "├─".tt, "──".tt, "┴─".tt, "│─".tt, "┼─".tt)
+import DagTile.*
 
-  given ascii: [text: Textual] => TextualDagStyle[text] =
-    TextualDagStyle("  ".tt, "+-".tt, "| ".tt, "+-".tt, "--".tt, "+-".tt, "|-".tt, "+-".tt)
+case class TextualLaneDagStyle[line: Textual]
+  ( space:      Text,
+    vertical:   Text,
+    horizontal: Text,
+    cornerNe:   Text,
+    cornerNw:   Text,
+    cornerSe:   Text,
+    cornerSw:   Text,
+    teeN:       Text,
+    teeS:       Text,
+    teeE:       Text,
+    teeW:       Text,
+    junction:   Text,
+    crossing:   Text,
+    node:       Text )
+extends LaneDagStyle[line]:
+  def serialize(tiles: List[DagTile], glyph: Optional[line], label: Optional[line]): line =
+    val parts: List[line] = tiles.map:
+      case Node => glyph.or(line(node))
+      case t    => line(text(t))
 
-package laneDagStyles:
-  given default: [text: Textual] => TextualLaneDagStyle[text] =
-    TextualLaneDagStyle
-      ( "  ".tt, "│ ".tt, "──".tt, "└─".tt, "┘ ".tt, "┌─".tt, "┐ ".tt,
-        "┴─".tt, "┬─".tt, "├─".tt, "┤ ".tt, "┼─".tt, "──".tt, "● ".tt )
+    parts.fold(line(t""))(_+_)+label.or(line(t""))
 
-  given ascii: [text: Textual] => TextualLaneDagStyle[text] =
-    TextualLaneDagStyle
-      ( "  ".tt, "| ".tt, "--".tt, "+-".tt, "+ ".tt, "+-".tt, "+ ".tt,
-        "+-".tt, "+-".tt, "+-".tt, "+ ".tt, "+-".tt, "--".tt, "* ".tt )
+  def text(tile: DagTile): Text = tile match
+    case Space      => space
+    case Vertical   => vertical
+    case Horizontal => horizontal
+    case CornerNe   => cornerNe
+    case CornerNw   => cornerNw
+    case CornerSe   => cornerSe
+    case CornerSw   => cornerSw
+    case TeeN       => teeN
+    case TeeS       => teeS
+    case TeeE       => teeE
+    case TeeW       => teeW
+    case Junction   => junction
+    case Crossing   => crossing
+    case Node       => this.node

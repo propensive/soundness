@@ -32,7 +32,11 @@
                                                                                                   */
 package soundness
 
-export dendrology.{DagDiagram, DagStyle, DagTile, TextualDagStyle}
+export dendrology.{DagDiagram, DagStyle, DagTile, LaneDagDiagram, LaneDagStyle, TextualDagStyle,
+        TextualLaneDagStyle}
 
 package dagStyles:
   export dendrology.dagStyles.{ascii, default}
+
+package laneDagStyles:
+  export dendrology.laneDagStyles.{ascii, default}

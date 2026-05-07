@@ -492,6 +492,7 @@ object cosmopolite extends Library:
 object dendrology extends Library:
   object tree extends Component(gossamer.core)
   object dag extends Component(acyclicity.core)
+  object demo extends Component(dag, turbulence.core, ambience.core)
   object test extends Tests(tree, dag)
 
 object decorum extends Library:
