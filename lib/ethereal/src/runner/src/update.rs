@@ -19,6 +19,7 @@ pub fn check_updates(script: &Path, args: &[String], name: &str) {
         let _ = std::fs::set_permissions(&pending, perm);
     }
 
+    crate::xeq::step("▅▅", &format!("Updating {name}…"));
     let old = data_home.join(format!("{}.old", name));
     crate::debug!("update: removing prior old={}", old.display());
     let _ = std::fs::remove_file(&old);
@@ -33,6 +34,7 @@ pub fn check_updates(script: &Path, args: &[String], name: &str) {
         let _ = std::fs::rename(&old, script);
         return;
     }
+    crate::xeq::done("██", &format!("Updated {name}"));
     crate::debug!("update: swap complete; re-execing");
 
     #[cfg(unix)]

@@ -136,36 +136,33 @@ pub fn download(preferred: u16, bundle: &str) -> Option<PathBuf> {
         return None;
     }
 
-    eprintln!("Downloading Java {} from {}", preferred, url);
-    // Pipe curl/wget directly into tar from Rust rather than via `sh -c`. The
-    // shell pipeline form fails on Windows, where there is no `sh` on PATH but
-    // `curl.exe` and `tar.exe` ship with the OS.
-    let mut downloader = if have_curl {
-        let mut command = Command::new("curl");
-        command.args(["-sL", &url]);
-        command
+    crate::xeq::step("▅▅", &format!("Downloading Java {preferred}…"));
+    let archive = temp_dir.join("jdk.tar.gz");
+    let download_status = if have_curl {
+        Command::new("curl").args(["-fsSL", "-o"]).arg(&archive).arg(&url).status()
     } else {
-        let mut command = Command::new("wget");
-        command.args(["-q", "-O", "-", &url]);
-        command
+        Command::new("wget").args(["-q", "-O"]).arg(&archive).arg(&url).status()
     };
-    let mut down_child = downloader.stdout(Stdio::piped()).spawn().ok()?;
-    let down_stdout = down_child.stdout.take()?;
-    let tar_status = Command::new("tar")
-        .arg("xz")
-        .arg("-C")
-        .arg(&temp_dir)
-        .stdin(Stdio::from(down_stdout))
-        .status();
-    let down_status = down_child.wait();
-    let success = matches!(&down_status, Ok(s) if s.success())
-        && matches!(&tar_status, Ok(s) if s.success());
-    if !success {
-        eprintln!("The download failed.");
+    if !matches!(&download_status, Ok(s) if s.success()) {
+        crate::xeq::done("██", "The download failed.");
         let _ = std::fs::remove_dir_all(&temp_dir);
         return None;
     }
-    eprintln!("Download complete");
+    let bytes = std::fs::metadata(&archive).map(|m| m.len()).unwrap_or(0);
+    crate::xeq::done("██", &format!("Downloaded Java {preferred} ({} MB)", bytes / 1_048_576));
+
+    crate::xeq::step("▅▅", "Unpacking Java…");
+    let tar_status = Command::new("tar")
+        .arg("xzf").arg(&archive).arg("-C").arg(&temp_dir)
+        .stdin(Stdio::null())
+        .status();
+    let _ = std::fs::remove_file(&archive);
+    if !matches!(&tar_status, Ok(s) if s.success()) {
+        crate::xeq::done("██", "Unpack failed.");
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        return None;
+    }
+    crate::xeq::done("██", "Unpacked Java");
 
     let release_file = find_release(&temp_dir)?;
     let release_dir = release_file.parent()?.to_path_buf();

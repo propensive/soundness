@@ -16,6 +16,7 @@ mod tty;
 mod uds;
 mod update;
 mod wrapper;
+mod xeq;
 
 // Debug-trace helper: when `ETHEREAL_DEBUG=1` is set, writes a timestamped
 // line to stderr from the launcher. Intentionally lazy — avoids any cost
