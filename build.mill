@@ -598,7 +598,7 @@ object ethereal extends Library:
       os.copy.over(jar, staging / "data")
 
       val classpath = ziggurat.core.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
-      os.proc("java", "-cp", classpath, "ziggurat.PolyglotInstaller", target.toString, staging.toString)
+      os.proc("java", "-cp", classpath, "ziggurat.Xeq", "installer", target.toString, staging.toString)
         .call(stdout = os.Inherit, stderr = os.Inherit)
 
       new java.io.File(target.toString).setExecutable(true)

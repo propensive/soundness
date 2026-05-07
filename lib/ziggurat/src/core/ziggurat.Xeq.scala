@@ -39,10 +39,12 @@ import galilei.*
 import gossamer.*
 import hellenism.*
 import hieroglyph.*
+import monotonous.*, alphabets.base64.standard
 import prepositional.*
 import proscenium.*
 import serpentine.*
 import turbulence.*
+import vacuous.*
 
 import charDecoders.utf8
 import charEncoders.utf8
@@ -56,18 +58,59 @@ import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 import textSanitizers.skip
 
-object PolyglotDownloader:
-  def bundle(url: Text, hash: Text): Data =
-    val template = cp"/ziggurat/polyglot.tmpl".read[Text]
-    val bat      = cp"/ziggurat/polyglot-download.bat".read[Text]
-    val ps1      = cp"/ziggurat/polyglot-download.ps1".read[Text]
-    val sh       = cp"/ziggurat/polyglot-download.sh".read[Text]
+object Xeq:
+  private val ChunkSize: Int = 8000
+  private val RunnerPrefix = t"runner-"
+  private val ExeSuffix = t".exe"
+  private val DataName = t"data"
+
+  def installer(payloads: List[Payload]): Data =
+    val template = cp"/ziggurat/xeq.tmpl".read[Text]
+    val bat      = cp"/ziggurat/xeq-installer.bat".read[Text]
+    val ps1      = cp"/ziggurat/xeq-installer.ps1".read[Text]
+    val sh       = cp"/ziggurat/xeq-installer.sh".read[Text]
 
     val prefix: Text =
-      template
-      . cut(t"@@BAT@@").join(bat)
-      . cut(t"@@PS1@@").join(ps1)
-      . cut(t"@@SH@@").join(sh)
+      template.cut(t"@@BAT@@").join(bat).cut(t"@@PS1@@").join(ps1).cut(t"@@SH@@").join(sh)
+
+    val encoded: List[(Text, Text)] = payloads.map: payload =>
+      val raw: Data =
+        if !payload.gzip then payload.bytes
+        else Stream(payload.bytes).compress[Gzip].read[Data]
+
+      payload.label -> raw.serialize[Base64].slices(ChunkSize).join(t"", t"\n", t"\n")
+
+    val builder = StringBuilder()
+    builder.add(prefix)
+    if !prefix.ends(t"\n") then builder.add('\n')
+
+    var offset = 1
+    val indexEntries = encoded.map: (label, content) =>
+      val entry = t"$label=$offset"
+      offset = offset + content.count(_ == '\n') + 2
+      entry
+
+    builder.add(t"index:")
+    builder.add(indexEntries.join(t","))
+    builder.add('\n')
+
+    encoded.foreach: (_, content) =>
+      builder.add(t"-----BEGIN CERTIFICATE-----\n")
+      builder.add(content)
+      builder.add(t"-----END CERTIFICATE-----\n")
+
+    builder.add(t"#>\n")
+    builder.text.data(using charEncoders.utf8)
+
+
+  def downloader(url: Text, hash: Text): Data =
+    val template = cp"/ziggurat/xeq.tmpl".read[Text]
+    val bat      = cp"/ziggurat/xeq-downloader.bat".read[Text]
+    val ps1      = cp"/ziggurat/xeq-downloader.ps1".read[Text]
+    val sh       = cp"/ziggurat/xeq-downloader.sh".read[Text]
+
+    val prefix: Text =
+      template.cut(t"@@BAT@@").join(bat).cut(t"@@PS1@@").join(ps1).cut(t"@@SH@@").join(sh)
 
     val builder = StringBuilder()
     builder.add(prefix)
@@ -82,19 +125,59 @@ object PolyglotDownloader:
     builder.text.data(using charEncoders.utf8)
 
 
-  def main(args: Array[String]): Unit = unsafely:
-    if args.length != 3 then
-      System.err.nn.println("usage: ziggurat.PolyglotDownloader <output-file> <url> <sha256>")
-      System.exit(1)
-
-    val output: Path on Linux = args(0).tt.decode[Path on Linux]
-    val url: Text = args(1).tt
-    val hash: Text = args(2).tt
-
-    val bundleBytes: Data = bundle(url, hash)
-
+  private def write(output: Path on Linux, data: Data): Unit = unsafely:
     output.create[File]()
     output.open: handle =>
-      Stream(bundleBytes).writeTo(handle)
-
+      Stream(data).writeTo(handle)
     output.executable() = true
+
+
+  private def installerMain(output: Text, stagingDir: Text): Unit = unsafely:
+    val outputPath: Path on Linux = output.decode[Path on Linux]
+    val staging: Path on Linux = stagingDir.decode[Path on Linux]
+
+    val children: List[Path on Linux] = staging.children.to(List)
+
+    val runnerPayloads: List[Payload] =
+      children
+      . filter(_.name.starts(RunnerPrefix))
+      . sortBy(_.name.s)
+      . map: path =>
+          val name = path.name
+          val withoutPrefix = name.skip(RunnerPrefix.length)
+
+          val label =
+            if withoutPrefix.ends(ExeSuffix) then withoutPrefix.skip(ExeSuffix.length, Rtl)
+            else withoutPrefix
+
+          val data: Data = path.open(_.read[Data])
+          val gzip = !label.starts(t"windows")
+          Payload(label, data, gzip)
+
+    val dataPath: Path on Linux = staging/DataName
+
+    val dataPayload: Optional[Payload] =
+      if dataPath.exists() then
+        val bytes: Data = dataPath.open(_.stream[Data].read[Data])
+        Payload(DataName, bytes, gzip = false)
+      else Unset
+
+    write(outputPath, installer(runnerPayloads ++ dataPayload.option))
+
+
+  private def downloaderMain(output: Text, url: Text, hash: Text): Unit = unsafely:
+    write(output.decode[Path on Linux], downloader(url, hash))
+
+
+  def main(args: Array[String]): Unit =
+    args.toList match
+      case "installer" :: output :: staging :: Nil =>
+        installerMain(output.tt, staging.tt)
+
+      case "downloader" :: output :: url :: hash :: Nil =>
+        downloaderMain(output.tt, url.tt, hash.tt)
+
+      case _ =>
+        System.err.nn.println("usage: ziggurat.Xeq installer <output-file> <staging-dir>")
+        System.err.nn.println("       ziggurat.Xeq downloader <output-file> <url> <sha256>")
+        System.exit(1)
