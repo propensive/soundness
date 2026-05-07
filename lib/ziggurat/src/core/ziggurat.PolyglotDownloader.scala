@@ -30,6 +30,71 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ziggurat
 
-export ziggurat.{Payload, PolyglotDownloader, PolyglotInstaller}
+import anticipation.*
+import contingency.*
+import distillate.*
+import galilei.*
+import gossamer.*
+import hellenism.*
+import hieroglyph.*
+import prepositional.*
+import proscenium.*
+import serpentine.*
+import turbulence.*
+
+import charDecoders.utf8
+import charEncoders.utf8
+import classloaders.threadContext
+import filesystemOptions.createNonexistent.enabled
+import filesystemOptions.createNonexistentParents.enabled
+import filesystemOptions.deleteRecursively.enabled
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.overwritePreexisting.enabled
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.enabled
+import textSanitizers.skip
+
+object PolyglotDownloader:
+  def bundle(url: Text, hash: Text): Data =
+    val template = cp"/ziggurat/polyglot.tmpl".read[Text]
+    val bat      = cp"/ziggurat/polyglot-download.bat".read[Text]
+    val ps1      = cp"/ziggurat/polyglot-download.ps1".read[Text]
+    val sh       = cp"/ziggurat/polyglot-download.sh".read[Text]
+
+    val prefix: Text =
+      template
+      . cut(t"@@BAT@@").join(bat)
+      . cut(t"@@PS1@@").join(ps1)
+      . cut(t"@@SH@@").join(sh)
+
+    val builder = StringBuilder()
+    builder.add(prefix)
+    if !prefix.ends(t"\n") then builder.add('\n')
+    builder.add(t"# URL=")
+    builder.add(url)
+    builder.add('\n')
+    builder.add(t"# HASH=")
+    builder.add(hash)
+    builder.add('\n')
+    builder.add(t"#>\n")
+    builder.text.data(using charEncoders.utf8)
+
+
+  def main(args: Array[String]): Unit = unsafely:
+    if args.length != 3 then
+      System.err.nn.println("usage: ziggurat.PolyglotDownloader <output-file> <url> <sha256>")
+      System.exit(1)
+
+    val output: Path on Linux = args(0).tt.decode[Path on Linux]
+    val url: Text = args(1).tt
+    val hash: Text = args(2).tt
+
+    val bundleBytes: Data = bundle(url, hash)
+
+    output.create[File]()
+    output.open: handle =>
+      Stream(bundleBytes).writeTo(handle)
+
+    output.executable() = true
