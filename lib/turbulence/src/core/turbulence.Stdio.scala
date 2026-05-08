@@ -32,6 +32,8 @@
                                                                                                   */
 package turbulence
 
+import language.experimental.captureChecking
+
 import java.io as ji
 
 import anticipation.*
@@ -76,7 +78,7 @@ object Stdio:
     override def available(): Int = 0
 
 trait Stdio extends Io, Findable:
-  val termcap: Termcap
+  val termcap: Termcap^
   val out: ji.PrintStream
   val err: ji.PrintStream
   val in: ji.InputStream

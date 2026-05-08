@@ -32,6 +32,8 @@
                                                                                                   */
 package profanity
 
+import language.experimental.captureChecking
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -43,6 +45,8 @@ import vacuous.*
 
 import abstractables.durationIsAbstractable
 
+import caps.*
+
 object Terminal:
   def reportBackground: Text = t"\e]11;?\e\\"
   def reportSize: Text = t"\e7\e[4095C\e[4095B\e[6n\e8"
@@ -52,7 +56,7 @@ object Terminal:
   def disablePaste: Text = t"\e[?2004l"
 
 case class Terminal()(using console: Console, monitor: Monitor, codicil: Codicil)
-extends Interactivity[TerminalEvent]:
+extends Interactivity[TerminalEvent], SharedCapability:
 
   export console.stdio.{in, out, err}
 
@@ -67,18 +71,18 @@ extends Interactivity[TerminalEvent]:
   def knownColumns: Int = columns.or(safely(columns0.await(50L))).or(80)
   def knownRows: Int = rows.or(safely(rows0.await(50L))).or(80)
 
-  val cap: Termcap = new Termcap:
+  val cap: Termcap^{this} = new Termcap:
     def ansi: Boolean = true
     def color: ColorDepth = ColorDepth.TrueColor
     override def width: Int = knownColumns
 
-  given stdio: Stdio = new Stdio:
+  given stdio: (Stdio^) = new Stdio:
     val termcap = cap
     val out = console.stdio.out
     val err = console.stdio.err
     val in = console.stdio.in
 
-  val events: Spool[TerminalEvent] = Spool()
+  val events: Spool[TerminalEvent]^{this} = Spool()
 
   def eventIterator(): Iterator[TerminalEvent] = events.iterator
 

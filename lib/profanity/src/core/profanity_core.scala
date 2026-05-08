@@ -32,16 +32,18 @@
                                                                                                   */
 package profanity
 
+import language.experimental.captureChecking
+
 import anticipation.*
 import contingency.*
 import parasite.*
 import proscenium.*
 import turbulence.*
 
-given stdio: (terminal: Terminal) => Stdio = terminal.stdio
+given stdio: (terminal: Terminal^) => (Stdio^) = terminal.stdio
 
 
-def interactive[result](block: (terminal: Terminal) ?=> result)
+def interactive[result](block: (terminal: Terminal^) ?=> result)
   ( using console: Console, monitor: Monitor, codicil: Codicil )
   ( using BracketedPasteMode,
           LuminosityDetection,

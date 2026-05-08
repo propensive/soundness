@@ -32,6 +32,8 @@
                                                                                                   */
 package galilei
 
+import language.experimental.captureChecking
+
 import java.nio.channels as jnc
 import java.nio.file as jnf
 
@@ -89,16 +91,16 @@ object Openable:
     def initialize(eof: Eof[file], options: List[Operand]): Transport =
       file.initialize(eof.file, jnf.StandardOpenOption.APPEND :: options)
 
-    def handle(transport: Transport): Result = file.handle(transport)
+    def handle(transport: Transport): Result^ = file.handle(transport)
     def close(transport: Transport): Unit = file.close(transport)
 
 trait Openable extends Typeclass, Operable, Resultant:
   protected type Transport
 
   def initialize(value: Self, options: List[Operand]): Transport
-  def handle(transport: Transport): Result
+  def handle(transport: Transport): Result^
 
-  def open[result](value: Self, lambda: Result => result, options: List[Operand]): result =
+  def open[result](value: Self, lambda: (Result^) => result, options: List[Operand]): result =
     val transport = initialize(value, options)
     try lambda(handle(transport)) finally close(transport)
 
