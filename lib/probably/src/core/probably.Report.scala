@@ -160,6 +160,11 @@ class Report(using Environment)(using palette: TestPalette):
   def addDetail(testId: TestId, info: Verdict.Detail): Report =
     this.also(details(testId) = details(testId).append(info))
 
+  private def benches(line: ReportLine): Iterable[ReportLine.Bench] = line match
+    case bench@ReportLine.Bench(_, _) => Iterable(bench)
+    case ReportLine.Suite(_, tests)   => tests.list.flatMap((_, line) => benches(line))
+    case _                            => Nil
+
   enum Status:
     case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench, AspirePass, AspireFail
 
@@ -251,22 +256,19 @@ class Report(using Environment)(using palette: TestPalette):
       val ln = frame.line.let(_.toString.tt).or(t"?")
       t"  at ${frame.method.cls}.${frame.method.method} (${frame.file}:$ln)"
 
-    def benches(line: ReportLine): Iterable[ReportLine.Bench] = line match
-      case bench@ReportLine.Bench(_, _) => Iterable(bench)
-      case ReportLine.Suite(_, tests)   => tests.list.map(_(1)).flatMap(benches(_))
-      case _                            => Nil
+    val bySuite = benches(lines).to(List).groupBy(_.test.suite).to(List)
+                                . sortBy(_(1).iterator.map(_.test.timestamp).min)
 
-    val allBenches = benches(lines).to(List)
-
-    if allBenches.nonEmpty then
+    bySuite.each: (suite, benchmarks) =>
+      val suiteName = suite.let(_.name.text).or(t"")
       Out.println(t"")
+      if suiteName.length > 0 then Out.println(suiteName)
 
       Scaffold[ReportLine.Bench]
         ( Column(e"Hash"): b =>
             e"${b.test.id}",
-          Column(e"Test"): b =>
-            val depth = b.test.suite.let(_.id.depth).or(0)
-            e"${t"  "*depth}${b.test.name}",
+          Column(e"Benchmark"): b =>
+            e"${b.test.name}",
           Column(e"n", textAlign = TextAlignment.Right): b =>
             e"${b.benchmark.iterations.toLong}",
           Column(e"Mean", textAlign = TextAlignment.Right): b =>
@@ -274,10 +276,10 @@ class Report(using Environment)(using palette: TestPalette):
           Column(e"SD", textAlign = TextAlignment.Right): b =>
             showTime(b.benchmark.sd.toLong),
           Column(e"Throughput", textAlign = TextAlignment.Right): b =>
-            if b.benchmark.throughput == 0 then e""
-            else e"${b.benchmark.throughput} op/s" )
+            val tp = b.benchmark.throughput
+            if tp == 0 then e"" else e"$tp op/s" )
 
-      . tabulate(allBenches.sortBy(-_.benchmark.throughput)).grid(columns).render
+      . tabulate(benchmarks.sortBy(_.test.timestamp)).grid(columns).render
       . each(Out.println(_))
 
     val failureStatuses: Set[Status] =
@@ -549,12 +551,6 @@ class Report(using Environment)(using palette: TestPalette):
         Out.println(e"$Italic(No tests were run.)")
 
     totals(true)
-
-    def benches(line: ReportLine): Iterable[ReportLine.Bench] =
-      line match
-        case bench@ReportLine.Bench(_, _) => Iterable(bench)
-        case ReportLine.Suite(_, tests)   => tests.list.map(_(1)).flatMap(benches(_))
-        case _                            => Nil
 
     benches(lines).groupBy(_.test.suite).each: (suite, benchmarks) =>
       val ribbon =
