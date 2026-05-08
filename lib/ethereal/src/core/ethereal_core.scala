@@ -82,7 +82,7 @@ given daemonLogEvent: Message transcribes DaemonLogEvent = _.communicate
 
 def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus] = service
 
-def cli[bus <: Matchable](using executive: Executive)
+private[ethereal] def cliImpl[bus <: Matchable](using executive: Executive)
   ( block: (DaemonService[bus], executive.Interface) ?=> executive.Return )
   ( using interpreter: Interpreter,
           threading:   Threading,

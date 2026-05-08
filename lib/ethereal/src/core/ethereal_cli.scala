@@ -33,32 +33,15 @@
 package ethereal
 
 import language.experimental.captureChecking
-import language.experimental.pureFunctions
 
-import java.lang as jl
-
-import anticipation.*
-import caps.*
 import exoskeleton.*
-import guillotine.*
-import prepositional.*
+import parasite.*
 import proscenium.*
-import serpentine.*
 
-case class DaemonService[bus <: Matchable]
-  ( pid:        Pid,
-    shutdown:   () => Unit,
-    cliInput:   Stdin,
-    executable: Path on Local,
-    deliver:    bus => Unit,
-    bus:        Stream[bus],
-    script:     Text,
-    startTime:  Long )
-extends Entrypoint, ExclusiveCapability:
-  def broadcast(message: bus): Unit = deliver(message)
-
-  def started[instant: Instantiable across Instants from Long]: instant =
-    instant(startTime)
-
-  def uptime[duration: Instantiable across Durations from Long]: duration =
-    duration((jl.System.currentTimeMillis() - startTime).max(0L)*1_000_000L)
+def cli[bus <: Matchable](using executive: Executive)
+  ( block: (DaemonService[bus]^, executive.Interface) ?=> executive.Return )
+  ( using interpreter: Interpreter,
+          threading:   Threading,
+          handler:     Backstop )
+:   Unit =
+  cliImpl[bus](using executive)(block)
