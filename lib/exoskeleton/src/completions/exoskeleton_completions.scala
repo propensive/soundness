@@ -47,7 +47,10 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 
-def execute(block: (erased Effectful) ?=> Invocation ?=> Exit)(using cli: Cli): Execution =
+private[exoskeleton] def executeImpl(block: (erased Effectful) ?=> Invocation ?=> Exit)
+  ( using cli: Cli )
+:   Execution =
+
   cli.absolve match
     case completion: Completion => Execution(Exit.Ok)
     case invocation: Invocation => Execution(block(using !!)(using invocation))

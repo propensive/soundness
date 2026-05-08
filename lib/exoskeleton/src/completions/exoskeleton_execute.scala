@@ -34,28 +34,7 @@ package exoskeleton
 
 import language.experimental.captureChecking
 
-import ambience.*
-import anticipation.*
-import caps.*
-import turbulence.*
-import vacuous.*
+import rudiments.*
 
-case class Invocation
-  ( arguments:        List[Argument],
-    environment:      Environment,
-    workingDirectory: WorkingDirectory,
-    stdio:            Stdio,
-    proceed:          Boolean,
-    login:            Login )
-  ( using interpreter: Interpreter )
-extends Cli, Stdio, ExclusiveCapability:
-
-  export stdio.{termcap, out, err, in}
-
-  private lazy val parameters: interpreter.Topic = interpreter.interpret(arguments)
-
-  def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
-  :   Optional[operand] =
-
-    given cli: (Cli^) = this
-    interpreter.read[operand](parameters, flag)
+def execute(block: (erased Effectful) ?=> (Invocation^) ?=> Exit)(using cli: Cli): Execution =
+  executeImpl(block)
