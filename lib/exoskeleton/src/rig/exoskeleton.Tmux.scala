@@ -43,7 +43,7 @@ object Tmux:
     import logging.silent
 
     mitigate:
-      case ExecError(_, _, _) => TmuxError()
+      case ExecError(_, _, _) => TmuxError(TmuxError.Reason.ExecFailed)
 
     . within:
         keypresses.each:
@@ -51,16 +51,22 @@ object Tmux:
           case char: Char => sh"tmux send-keys -t ${tmux.id} '$char'".exec[Unit]()
           case _          => panic(m"unreachable case")
 
-  def screenshot()(using tmux: Tmux)(using WorkingDirectory): Screenshot = unsafely:
+  def screenshot()(using tmux: Tmux)(using WorkingDirectory): Screenshot raises TmuxError =
     import logging.silent
 
-    val content = IArray.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]())
-    val x = sh"tmux display-message -pt ${tmux.id} '#{cursor_x}'".exec[Text]().trim.decode[Int].z
-    val y = sh"tmux display-message -pt ${tmux.id} '#{cursor_y}'".exec[Text]().trim.decode[Int].z
+    mitigate:
+      case ExecError(_, _, _)   => TmuxError(TmuxError.Reason.SessionDied)
+      case NumberError(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
 
-    Screenshot(content, (tmux.width, tmux.height), (x, y))
+    . within:
+        val content = IArray.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]())
+        val x = sh"tmux display-message -pt ${tmux.id} '#{cursor_x}'".exec[Text]().trim.decode[Int].z
+        val y = sh"tmux display-message -pt ${tmux.id} '#{cursor_y}'".exec[Text]().trim.decode[Int].z
 
-  def attend(using tmux: Tmux)[result](block: => result)(using Monitor, WorkingDirectory): result =
+        Screenshot(content, (tmux.width, tmux.height), (x, y))
+
+  def attend(using tmux: Tmux)[result](block: => result)(using Monitor, WorkingDirectory)
+  :   result raises TmuxError =
     val init = screenshot().screen
 
     var count = 0
@@ -134,7 +140,19 @@ object Tmux:
     screenshot().currentLine(decorate).sub(t"> ${tool.command} ", t"")
 
 
-case class TmuxError()(using Diagnostics) extends Error(271, 0)(m"can't execute tmux")
+object TmuxError:
+  enum Reason(val number: Int):
+    case ShellNotInstalled(shell: Text) extends Reason(1)
+    case SessionDied                    extends Reason(2)
+    case ExecFailed                     extends Reason(3)
+
+  given Reason is Communicable =
+    case Reason.ShellNotInstalled(shell) => m"the shell binary `$shell` is not installed"
+    case Reason.SessionDied              => m"the tmux session terminated unexpectedly"
+    case Reason.ExecFailed               => m"could not execute tmux"
+
+case class TmuxError(reason: TmuxError.Reason)(using Diagnostics)
+extends Error(271, reason.number)(m"can't drive tmux: $reason")
 case class Tmux(id: Text, workingDirectory: WorkingDirectory, width: Int, height: Int, shell: Shell)
 extends Findable
 

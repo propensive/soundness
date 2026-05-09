@@ -43,8 +43,8 @@ extension (shell: Shell)
   :   result raises TmuxError logs ExecEvent =
 
     mitigate:
-      case ExecError(_, _, _) => TmuxError()
-      case NumberError(_, _, _) => TmuxError()
+      case ExecError(_, _, _)   => TmuxError(TmuxError.Reason.ExecFailed)
+      case NumberError(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
 
     . within:
         given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)
@@ -52,6 +52,17 @@ extension (shell: Shell)
         val path = summon[Enclave.Tool].path.parent.vouch.encode
 
         var psFile: Optional[Path on Linux] = Unset
+
+        val shellBinary = shell match
+          case Shell.Zsh        => t"zsh"
+          case Shell.Fish       => t"fish"
+          case Shell.Bash       => t"bash"
+          case Shell.Powershell => t"pwsh"
+
+        locally:
+          import logging.silent
+          if sh"which $shellBinary".exec[Exit]() != Exit.Ok
+          then abort(TmuxError(TmuxError.Reason.ShellNotInstalled(shellBinary)))
 
         val shellInvocation = shell match
           case Shell.Zsh        => t"zsh -l"

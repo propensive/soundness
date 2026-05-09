@@ -108,11 +108,12 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         }
 
     . sandbox:
-        // Warmup runs to avoid timing issues in CI
-        Bash.tmux()(Tmux.completions(t""))
-        Zsh.tmux()(Tmux.completions(t""))
-        Fish.tmux(width = 120)(Tmux.completions(t""))
-        Powershell.tmux()(Tmux.completions(t""))
+        // Warmup runs to avoid timing issues in CI. A missing shell binary on the host
+        // should not abort the suite — individual tests will surface a `TmuxError`.
+        safely(Bash.tmux()(Tmux.completions(t"")))
+        safely(Zsh.tmux()(Tmux.completions(t"")))
+        safely(Fish.tmux(width = 120)(Tmux.completions(t"")))
+        safely(Powershell.tmux()(Tmux.completions(t"")))
 
         test(m"Test subcommands on bash"):
           Bash.tmux()(Tmux.completions(t""))
