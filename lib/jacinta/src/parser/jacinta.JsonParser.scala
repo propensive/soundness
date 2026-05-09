@@ -231,8 +231,10 @@ private[jacinta] final class JsonParser:
   protected def bom(): Unit =
     if !more || peek != -17.toByte then return
     syncTo()
+
     cursor.hold:
       val mk = cursor.mark
+
       val bom =
         cursor.more && cursor.datum(using Unsafe) == -17.toByte
         && { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -69.toByte }
@@ -734,9 +736,10 @@ private[jacinta] final class JsonParser:
   // `t"[1, 2, "x"]"` and `t"1"` both yield `Long(1)` for the first
   // element, preserving the type the parser would have assigned outside
   // the array context.
-  private def unpackToAst(d: Double): Long | Double =
-    if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
-    then d.toLong else d
+  private def unpackToAst(double: Double): Long | Double =
+    if double.isWhole && double >= Long.MinValue.toDouble && double <= Long.MaxValue.toDouble
+    then double.toLong
+    else double
 
   // Parse an object directly into the flat alternating-key/value layout. The
   // buffer always grows in pairs, so its length stays even, which is the
@@ -834,9 +837,8 @@ private[jacinta] final class JsonParser:
     val result = parseValue()
 
     while more do
-      val ch = peek
-      ch match
+      peek match
         case Tab | Return | Newline | Space => advance()
-        case other                          => errorAt(Issue.SpuriousContent(other.toChar))
+        case char                           => errorAt(Issue.SpuriousContent(char.toChar))
 
     result
