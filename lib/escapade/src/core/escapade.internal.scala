@@ -48,8 +48,6 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-import errorDiagnostics.empty
-
 object internal:
   // Mirrors what contextual.Interpolator.expand used to do for the e""
   // interpolator, without going through the trait. We summon Insertion

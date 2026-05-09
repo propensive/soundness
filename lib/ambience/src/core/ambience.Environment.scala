@@ -35,11 +35,11 @@ package ambience
 import language.dynamics
 
 import anticipation.*
+import beneficence.*
 import contingency.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-import beneficence.*
 
 object Environment extends Dynamic:
   def apply[variable]

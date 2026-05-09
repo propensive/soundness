@@ -36,8 +36,8 @@ import java.security as js
 import javax.crypto as jc
 
 import anticipation.*
-import prepositional.*
 import beneficence.*
+import prepositional.*
 
 object Hash:
   def apply[algorithm <: Algorithm](name0: Text, hmacName0: Text): Hash in algorithm = new Hash:

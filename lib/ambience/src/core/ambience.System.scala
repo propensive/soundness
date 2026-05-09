@@ -35,9 +35,9 @@ package ambience
 import language.dynamics
 
 import anticipation.*
+import beneficence.*
 import prepositional.*
 import vacuous.*
-import beneficence.*
 
 object System:
   object properties extends Dynamic:
