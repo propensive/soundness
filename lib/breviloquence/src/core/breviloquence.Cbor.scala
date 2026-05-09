@@ -35,18 +35,16 @@ package breviloquence
 import language.dynamics
 import language.experimental.pureFunctions
 
-import scala.collection.Factory
+import scala.collection as sc
+import scala.collection.mutable as scm
 import scala.compiletime.*
 
 import anticipation.*
-import contextual.*
 import contingency.*
 import distillate.*
-import gossamer.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import spectacular.*
 import vacuous.*
 import wisteria.*
 
@@ -69,7 +67,7 @@ trait Cbor2:
   =>  ( decodable: => inner is Decodable in Cbor )
   =>  value is Decodable in Cbor = cbor =>
 
-    if cbor.root.isAbsent then Unset else decodable.decoded(cbor)
+    if cbor.root.unset then Unset else decodable.decoded(cbor)
 
 
   inline given decodable: [value] => value is Decodable in Cbor = summonFrom:
@@ -83,19 +81,21 @@ trait Cbor2:
     case given (`value` is Encodable in Text) => value => Cbor.ast(CborAst(value.encode.s))
     case given Reflection[`value`]            => EncodableDerivation.derived
 
+
   object DecodableDerivation extends Derivable[Decodable in Cbor]:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Cbor =
+
       cbor =>
         provide[Tactic[CborError]]:
           val root = cbor.root
-          val n = if root.isMap then root.mapSize else 0
+          val count = if root.isMap then root.entries else 0
           val values = scala.collection.mutable.HashMap.empty[String, CborAst]
-          var i = 0
-          while i < n do
-            val key = root.mapKey(i)
-            if key.isTextString then values.update(key.string, root.mapValue(i))
-            i += 1
+          var index = 0
+          while index < count do
+            val key = root.key(index)
+            if key.isTextString then values.update(key.string, root.value(index))
+            index += 1
 
           build: [field] =>
             context =>
@@ -109,7 +109,8 @@ trait Cbor2:
           provide[Tactic[VariantError]]:
             val discriminable = infer[derivation is Discriminable in Cbor]
 
-            val discriminant: Text = discriminable.discriminate(cbor).or(abort(CborError(Reason.Absent)))
+            val discriminant: Text =
+              discriminable.discriminate(cbor).or(abort(CborError(Reason.Absent)))
 
             delegate(discriminant): [variant <: derivation] =>
               context => context.decoded(cbor)
@@ -119,13 +120,13 @@ trait Cbor2:
     :   derivation is Encodable in Cbor =
 
       value =>
-        val labels: scala.collection.mutable.ArrayBuffer[Any] = scala.collection.mutable.ArrayBuffer()
-        val values: scala.collection.mutable.ArrayBuffer[Any] = scala.collection.mutable.ArrayBuffer()
+        val labels: scm.ArrayBuffer[Any] = scm.ArrayBuffer()
+        val values: scm.ArrayBuffer[Any] = scm.ArrayBuffer()
 
         fields(value): [field] =>
           field =>
             val encoded = contextual.encode(field).root
-            if !encoded.isAbsent then
+            if !encoded.unset then
               labels += label.s
               values += encoded
 
@@ -139,8 +140,6 @@ trait Cbor2:
 
 object Cbor extends Cbor2, Dynamic:
   def ast(value: CborAst): Cbor = new Cbor(value)
-
-  // Canonical external accessor for the underlying AST.
   def unseal(cbor: Cbor): CborAst = cbor.root
 
   given boolean: Tactic[CborError] => Boolean is Decodable in Cbor = _.root.boolean
@@ -155,10 +154,9 @@ object Cbor extends Cbor2, Dynamic:
 
   given unit: Tactic[CborError] => Unit is Decodable in Cbor =
     value =>
-      if value.root.isNull then ()
-      else
+      if !value.root.nullary then
         val reason =
-          if value.root.isAbsent then Reason.Absent
+          if value.root.unset then Reason.Absent
           else Reason.NotType(value.root.primitive, Primitive.Null)
 
         abort(CborError(reason))
@@ -167,7 +165,7 @@ object Cbor extends Cbor2, Dynamic:
   given option: [value: Decodable in Cbor] => Tactic[CborError]
   =>  Option[value] is Decodable in Cbor =
 
-    cbor => if cbor.root.isAbsent then None else Some(value.decoded(cbor))
+    cbor => if cbor.root.unset then None else Some(value.decoded(cbor))
 
 
   given optionEncodable: [value] => (encodable: value is Encodable in Cbor)
@@ -200,54 +198,54 @@ object Cbor extends Cbor2, Dynamic:
   given listEncodable: [list <: List, element] => (encodable: => element is Encodable in Cbor)
   =>  list[element] is Encodable in Cbor =
 
-    values => Cbor.ast(CborAst.arr(IArray.from(values.map(encodable.encoded(_).root))))
+    values => Cbor.ast(CborAst.array(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given setEncodable: [set <: Set, element] => (encodable: => element is Encodable in Cbor)
   =>  set[element] is Encodable in Cbor =
 
-    values => Cbor.ast(CborAst.arr(IArray.from(values.map(encodable.encoded(_).root))))
+    values => Cbor.ast(CborAst.array(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given trieEncodable: [trie <: Trie, element] => (encodable: => element is Encodable in Cbor)
   =>  trie[element] is Encodable in Cbor =
 
-    values => Cbor.ast(CborAst.arr(IArray.from(values.map(encodable.encoded(_).root))))
+    values => Cbor.ast(CborAst.array(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given collectionDecodable: [collection <: Iterable, element]
-  =>  ( factory: Factory[element, collection[element]],
-        tactic:  Tactic[CborError] )
+  =>  ( factory: sc.Factory[element, collection[element]], tactic:  Tactic[CborError] )
   =>  ( decodable: => element is Decodable in Cbor )
   =>  collection[element] is Decodable in Cbor =
 
     value =>
       val builder = factory.newBuilder
-      value.root.array.each: cbor =>
-        builder += decodable.decoded(Cbor.ast(cbor))
+      value.root.array.each: cbor => builder += decodable.decoded(Cbor.ast(cbor))
 
       builder.result()
 
 
   given mapDecodable: [key: Decodable in Text, element]
-  =>  (decodable: => element is Decodable in Cbor)
+  =>  ( decodable: => element is Decodable in Cbor )
   =>  Tactic[CborError]
   =>  Map[key, element] is Decodable in Cbor =
 
     value =>
       val root = value.root
-      val n = if root.isMap then root.mapSize else 0
-      var i = 0
-      var acc = Map.empty[key, element]
-      while i < n do
-        val mapKey = root.mapKey(i)
-        if mapKey.isTextString then
-          acc = acc.updated
-                  ( mapKey.string.tt.decode,
-                    decodable.decoded(Cbor.ast(root.mapValue(i))) )
+      val count = if root.isMap then root.entries else 0
+      var index = 0
+      var map = Map.empty[key, element]
+
+      while index < count do
+        val key = root.key(index)
+
+        if key.isTextString
+        then map = map.updated(key.string.tt.decode, decodable.decoded(Cbor.ast(root.value(index))))
         else abort(CborError(Reason.NonStringKey))
-        i += 1
-      acc
+
+        index += 1
+
+      map
 
 
   given mapEncodable: [key: Encodable in Text, element]
@@ -277,9 +275,8 @@ object Cbor extends Cbor2, Dynamic:
     def discriminate(cbor: Cbor): Optional[Text] = safely(cbor.selectDynamic(key).as[Text])
     def variant(cbor: Cbor): Cbor = unsafely(cbor.updateDynamic(key)(Unset))
 
-class Cbor(rootValue: Any) extends Dynamic derives CanEqual:
-  private[breviloquence] def root: CborAst = rootValue.asInstanceOf[CborAst]
 
+class Cbor(private[breviloquence] val root: CborAst) extends Dynamic derives CanEqual:
   def apply(index: Int): Cbor raises CborError = Cbor(root.array(index))
 
   def selectDynamic(field: String)(using erased DynamicCborEnabler): Cbor raises CborError =
@@ -307,99 +304,106 @@ class Cbor(rootValue: Any) extends Dynamic derives CanEqual:
 
   private[breviloquence] def modify(field: String, value: Cbor): Cbor raises CborError =
     if !root.isMap then abort(CborError(Reason.NotType(root.primitive, Primitive.Map)))
-    val arr = root.asInstanceOf[IArray[Any]]
-    val len = arr.length
-    root.mapIndexOf(field) match
+    val array = root.asInstanceOf[IArray[Any]]
+    val length = array.length
+
+    root.index(field) match
       case -1 =>
-        val out = new Array[Any](len + 2)
-        System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, len)
-        out(len) = field
-        out(len + 1) = value.root
+        val out = new Array[Any](length + 2)
+        System.arraycopy(array.asInstanceOf[Array[Any]], 0, out, 0, length)
+        out(length) = field
+        out(length + 1) = value.root
         Cbor.ast(CborAst(out.asInstanceOf[IArray[Any]]))
 
       case index =>
-        val out = new Array[Any](len)
-        System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, len)
+        val out = new Array[Any](length)
+        System.arraycopy(array.asInstanceOf[Array[Any]], 0, out, 0, length)
         out(index*2 + 1) = value.root
         Cbor.ast(CborAst(out.asInstanceOf[IArray[Any]]))
 
   private[breviloquence] def delete(field: String): Cbor raises CborError =
     if !root.isMap then abort(CborError(Reason.NotType(root.primitive, Primitive.Map)))
-    val arr = root.asInstanceOf[IArray[Any]]
-    val len = arr.length
-    root.mapIndexOf(field) match
+    val array = root.asInstanceOf[Array[Any]]
+    val length = array.length
+
+    root.index(field) match
       case -1 => Cbor.ast(root)
 
       case index =>
-        val out = new Array[Any](len - 2)
-        System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, index*2)
-        System.arraycopy
-                ( arr.asInstanceOf[Array[Any]],
-                  index*2 + 2,
-                  out,
-                  index*2,
-                  len - index*2 - 2 )
+        val out = new Array[Any](length - 2)
+        System.arraycopy(array, 0, out, 0, index*2)
+
+        System.arraycopy(array, index*2 + 2, out, index*2, length - index*2 - 2)
         Cbor.ast(CborAst(out.asInstanceOf[IArray[Any]]))
 
   def apply(field: Text): Cbor raises CborError =
-    if root.isAbsent then Cbor.ast(CborAst(Unset))
+    if root.unset then Cbor.ast(CborAst(Unset))
     else if !root.isMap then abort(CborError(Reason.NotType(root.primitive, Primitive.Map)))
-    else root.mapIndexOf(field.s) match
+    else root.index(field.s) match
       case -1    => Cbor.ast(CborAst(Unset))
-      case index => Cbor(root.mapValue(index))
+      case index => Cbor(root.value(index))
 
   override def hashCode: Int = root.hashCode
 
   override def equals(right: Any): Boolean = right match
-    case right: Cbor => deepEquals(root, right.root)
+    case right: Cbor => recur(root, right.root)
     case _           => false
 
-  private def deepEquals(left: CborAst, right: CborAst): Boolean =
-    if left.isInteger && right.isInteger then
-      left.asInstanceOf[Long] == right.asInstanceOf[Long]
-    else if left.isFloat && right.isFloat then
-      left.asInstanceOf[Double] == right.asInstanceOf[Double]
-    else if left.isTextString && right.isTextString then
-      left.asInstanceOf[String] == right.asInstanceOf[String]
-    else if left.isBoolean && right.isBoolean then
-      left.asInstanceOf[Boolean] == right.asInstanceOf[Boolean]
-    else if left.isByteString && right.isByteString then
-      java.util.Arrays.equals(
-        left.asInstanceOf[Array[Byte]],
-        right.asInstanceOf[Array[Byte]])
-    else if left.isNull && right.isNull then true
-    else if left.isAbsent && right.isAbsent then true
-    else if left.isTag && right.isTag then
-      val lt = left.asInstanceOf[CborTag]
-      val rt = right.asInstanceOf[CborTag]
-      lt.tag == rt.tag && deepEquals(lt.value.asInstanceOf[CborAst], rt.value.asInstanceOf[CborAst])
+  private def recur(left: CborAst, right: CborAst): Boolean =
+    if left.isInteger && right.isInteger then left.asInstanceOf[Long] == right.asInstanceOf[Long]
+    else if left.isFloat && right.isFloat
+    then left.asInstanceOf[Double] == right.asInstanceOf[Double]
+    else if left.isTextString && right.isTextString
+    then left.asInstanceOf[String] == right.asInstanceOf[String]
+    else if left.isBoolean && right.isBoolean
+    then left.asInstanceOf[Boolean] == right.asInstanceOf[Boolean]
+    else if left.isByteString && right.isByteString
+    then java.util.Arrays.equals(left.asInstanceOf[Array[Byte]], right.asInstanceOf[Array[Byte]])
+    else if left.nullary && right.nullary then true
+    else if left.unset && right.unset then true
+    else if left.isTag && right.isTag
+    then
+      val leftTag = left.asInstanceOf[CborTag]
+      val rightTag = right.asInstanceOf[CborTag]
+
+      leftTag.tag == rightTag.tag
+      && recur(leftTag.value.asInstanceOf[CborAst], rightTag.value.asInstanceOf[CborAst])
+
     else if left.isArray && right.isArray then
-      val ln = left.arrayLength
-      val rn = right.arrayLength
-      if ln != rn then false
-      else
-        var i = 0
-        var eq = true
-        while i < ln && eq do
-          if !deepEquals(left.arrayElement(i), right.arrayElement(i)) then eq = false
-          i += 1
-        eq
+      val leftElements = left.elements
+      val rightElements = right.elements
+
+      if leftElements != rightElements then false else
+        var index = 0
+        var equal = true
+
+        while index < leftElements && equal do
+          if !recur(left.element(index), right.element(index)) then equal = false
+          index += 1
+
+        equal
+
     else if left.isMap && right.isMap then
-      val ln = left.mapSize
-      val rn = right.mapSize
-      if ln != rn then false
-      else
+      val ln = left.entries
+      val rn = right.entries
+
+      if ln != rn then false else
         // Maps with arbitrary keys: compare position-by-position. This is
         // strict — re-ordered maps compare as unequal. Canonical CBOR uses a
         // deterministic key order, so well-formed inputs round-trip cleanly.
-        var i = 0
-        var eq = true
-        while i < ln && eq do
-          if !deepEquals(left.mapKey(i), right.mapKey(i))
-          || !deepEquals(left.mapValue(i), right.mapValue(i))
-          then eq = false
-          i += 1
-        eq
-    else false
+        var index = 0
+        var equal = true
+
+        while index < ln && equal do
+          if
+            !recur(left.key(index), right.key(index))
+            || !recur(left.value(index), right.value(index))
+          then equal = false
+          index += 1
+
+        equal
+
+    else
+      false
 
   def as[value: Decodable in Cbor]: value raises CborError = value.decoded(this)

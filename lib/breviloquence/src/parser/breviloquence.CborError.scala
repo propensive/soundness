@@ -54,9 +54,6 @@ object CborError:
   object Reason:
     given communicable: Reason is Communicable =
       case Truncated(offset)        => m"the input was truncated at byte $offset"
-      case Reserved(offset, byte)   => m"a reserved CBOR head byte ${byte.toString} was found at byte $offset"
-      case BadSimpleValue(offset, value) =>
-        m"an invalid simple value ${value.toString} was found at byte $offset"
       case InvalidUtf8(offset)      => m"invalid UTF-8 was found at byte $offset"
       case Overflow(offset)         => m"an integer too large for Long was found at byte $offset"
       case UnexpectedBreak(offset)  => m"an unexpected break stop code was found at byte $offset"
@@ -65,6 +62,12 @@ object CborError:
       case NotType(found, expected) => m"the CBOR value had type $found instead of $expected"
       case NonStringKey             => m"the map key was not a string"
       case Absent                   => m"the CBOR value was not present"
+
+      case Reserved(offset, byte)   =>
+        m"a reserved CBOR head byte ${byte.toString} was found at byte $offset"
+
+      case BadSimpleValue(offset, value) =>
+        m"an invalid simple value ${value.toString} was found at byte $offset"
 
   enum Reason(val number: Int) extends Clarification:
     case Truncated(offset: Long) extends Reason(1)

@@ -32,13 +32,8 @@
                                                                                                   */
 package breviloquence
 
-// CBOR tagged value (RFC 8949 §3.4, major type 6). The `tag` is the unsigned
-// tag number; `value` is the underlying CBOR value. Tags survive parsing
-// round-trips so that semantic information is not lost. Bignum tags 2 and 3
-// are folded into `Bcd` by the parser since they are representational rather
-// than semantic.
 final class CborTag(val tag: Long, val value: Any):
-  override def hashCode: Int = (tag.hashCode*31) ^ value.hashCode
+  override def hashCode: Int = (tag.hashCode*31)^value.hashCode
 
   override def equals(that: Any): Boolean = that match
     case that: CborTag => tag == that.tag && value == that.value

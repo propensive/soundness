@@ -83,53 +83,54 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
   // Corpus 2: 100 user records — typical "array of records" pattern with five
   // repeated keys per element.
   lazy val cborBytes2: IArray[Byte] =
-    val records = (0 until 100).map: i =>
+    val records = (0 until 100).map: index =>
       val keys = IArray[Any]("id", "username", "email", "active", "role")
-      val active = (i & 1) == 0
-      val role = if i % 10 == 0 then "admin" else "user"
-      val values = IArray[Any](i.toLong, s"user$i", s"user$i@example.com", active, role)
+      val active = (index&1) == 0
+      val role = if index%10 == 0 then "admin" else "user"
+      val values = IArray[Any](index.toLong, s"user$index", s"user$index@example.com", active, role)
       CborAst.map(keys, values).asInstanceOf[Any]
-    encode(CborAst.map(IArray[Any]("users"), IArray[Any](CborAst.arr(IArray.from(records)))))
+    encode(CborAst.map(IArray[Any]("users"), IArray[Any](CborAst.array(IArray.from(records)))))
 
   // Corpus 3: 500 log entries with six keys each — larger throughput target,
   // dominated by short-string parsing and small-integer head bytes.
   lazy val cborBytes3: IArray[Byte] =
     val levels = Array("info", "debug", "warn", "error")
     val services = Array("auth", "api", "db", "cache", "worker")
-    val records = (0 until 500).map: i =>
+    val records = (0 until 500).map: index =>
       val keys = IArray[Any]("timestamp", "level", "service", "requestId", "userId", "message")
-      val ts = 1700000000L + i
-      val level = levels(i & 3)
-      val service = services(i % 5)
-      val userId = 1000L + (i % 50)
-      val values = IArray[Any](ts, level, service, s"req-$i", userId, s"event $i processed")
+      val ts = 1700000000L + index
+      val level = levels(index & 3)
+      val service = services(index % 5)
+      val userId = 1000L + (index % 50)
+      val values = IArray[Any](ts, level, service, s"req-$index", userId, s"event $index processed")
       CborAst.map(keys, values).asInstanceOf[Any]
-    encode(CborAst.map(IArray[Any]("logs"), IArray[Any](CborAst.arr(IArray.from(records)))))
+    encode(CborAst.map(IArray[Any]("logs"), IArray[Any](CborAst.array(IArray.from(records)))))
 
   // Corpus 4: 1000 small integers — exercises the integer head-byte hot path
   // without string or map overhead.
   lazy val cborBytes4: IArray[Byte] =
-    val items = IArray.from((0 until 1000).map(i => (i*37 + 1).toLong.asInstanceOf[Any]))
-    encode(CborAst.arr(items))
+    val items = IArray.from((0 until 1000).map(index => (index*37 + 1).toLong.asInstanceOf[Any]))
+    encode(CborAst.array(items))
 
   // Corpus 5: 100 byte-string records — exercises major-type-2 (byte strings),
   // which JSON has no analog for.
   lazy val cborBytes5: IArray[Byte] =
-    val records = (0 until 100).map: i =>
+    val records = (0 until 100).map: index =>
       val payload = new Array[Byte](32)
       var j = 0
-      while j < payload.length do { payload(j) = ((i + j) & 0xFF).toByte; j += 1 }
+      while j < payload.length do { payload(j) = ((index + j) & 0xFF).toByte; j += 1 }
       payload.asInstanceOf[IArray[Byte]].asInstanceOf[Any]
-    encode(CborAst.arr(IArray.from(records)))
+
+    encode(CborAst.array(IArray.from(records)))
 
   // Corpus 6: deeply nested structure (10-level wrapping) — stresses recursion
   // and the small-array head-byte path.
   lazy val cborBytes6: IArray[Byte] =
     var ast: Any = "deep"
-    var i = 0
-    while i < 10 do
-      ast = CborAst.map(IArray[Any](s"level$i"), IArray[Any](ast))
-      i += 1
+    var index = 0
+    while index < 10 do
+      ast = CborAst.map(IArray[Any](s"level$index"), IArray[Any](ast))
+      index += 1
     encode(ast.asInstanceOf[CborAst])
 
   // Pre-converted to plain Array[Byte] for the comparison parsers (Jackson and
