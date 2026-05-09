@@ -47,10 +47,10 @@ object TimingMain:
       w += 1
 
     val start = System.nanoTime
-    var i = 0
-    while i < iterations do
+    var index = 0
+    while index < iterations do
       parse(payload)
-      i += 1
+      index += 1
     val elapsed = System.nanoTime - start
 
     val nsPerOp = elapsed.toDouble/iterations

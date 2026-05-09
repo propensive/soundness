@@ -35,51 +35,50 @@ package breviloquence
 import scala.collection.mutable.ArrayBuffer
 
 object CborPrinter:
-
-  // Canonical CBOR encoding (RFC 8949 §4.2): smallest representation, definite
-  // lengths, deterministic head bytes. Map key ordering follows the AST's
-  // insertion order (callers requiring lexicographic key sort must arrange it
-  // before encoding).
   def encode(cbor: CborAst): IArray[Byte] =
     val buffer = ArrayBuffer.empty[Byte]
     write(buffer, cbor)
     val out = new Array[Byte](buffer.length)
-    var i = 0
-    while i < buffer.length do { out(i) = buffer(i); i += 1 }
+    var index = 0
+    while index < buffer.length do { out(index) = buffer(index); index += 1 }
     out.asInstanceOf[IArray[Byte]]
 
-  private def writeHead(out: ArrayBuffer[Byte], major: Int, value: Long): Unit =
+  private def head(out: ArrayBuffer[Byte], major: Int, value: Long): Unit =
     val majorBits = major << 5
     if value < 0 then
-      // Long-overflow case: emit as 8-byte payload using the raw bits, since
-      // CBOR major types 0/1 allow values up to 2^64 - 1.
       out += (majorBits | 27).toByte
-      writeUInt64(out, value)
-    else if value < 24 then out += (majorBits | value.toInt).toByte
+      u64(out, value)
+
+    else if value < 24 then
+      out += (majorBits | value.toInt).toByte
+
     else if value < (1 << 8) then
       out += (majorBits | 24).toByte
       out += value.toByte
+
     else if value < (1 << 16) then
       out += (majorBits | 25).toByte
-      writeUInt16(out, value.toInt)
+      u16(out, value.toInt)
+
     else if value < (1L << 32) then
       out += (majorBits | 26).toByte
-      writeUInt32(out, value)
+      u32(out, value)
+
     else
       out += (majorBits | 27).toByte
-      writeUInt64(out, value)
+      u64(out, value)
 
-  private def writeUInt16(out: ArrayBuffer[Byte], value: Int): Unit =
+  private def u16(out: ArrayBuffer[Byte], value: Int): Unit =
     out += ((value >>> 8) & 0xFF).toByte
     out += (value & 0xFF).toByte
 
-  private def writeUInt32(out: ArrayBuffer[Byte], value: Long): Unit =
+  private def u32(out: ArrayBuffer[Byte], value: Long): Unit =
     out += ((value >>> 24) & 0xFF).toByte
     out += ((value >>> 16) & 0xFF).toByte
     out += ((value >>> 8) & 0xFF).toByte
     out += (value & 0xFF).toByte
 
-  private def writeUInt64(out: ArrayBuffer[Byte], value: Long): Unit =
+  private def u64(out: ArrayBuffer[Byte], value: Long): Unit =
     out += ((value >>> 56) & 0xFF).toByte
     out += ((value >>> 48) & 0xFF).toByte
     out += ((value >>> 40) & 0xFF).toByte
@@ -91,115 +90,138 @@ object CborPrinter:
 
   private def write(out: ArrayBuffer[Byte], cbor: CborAst): Unit =
     if cbor.isInteger then
-      val v = cbor.asInstanceOf[Long]
-      if v >= 0 then writeHead(out, 0, v)
-      else writeHead(out, 1, -1L - v)
+      val long = cbor.asInstanceOf[Long]
+      if long >= 0 then head(out, 0, long)
+      else head(out, 1, -1L - long)
+
     else if cbor.isFloat then
-      out += (0xE0 | 27).toByte // major 7, info 27 (double)
-      writeUInt64(out, java.lang.Double.doubleToLongBits(cbor.asInstanceOf[Double]))
+      out += (0xE0 | 27).toByte
+      u64(out, java.lang.Double.doubleToLongBits(cbor.asInstanceOf[Double]))
+
     else if cbor.isTextString then
-      val s = cbor.asInstanceOf[String]
-      val bytes = s.getBytes("UTF-8").nn
-      writeHead(out, 3, bytes.length.toLong)
-      var i = 0
-      while i < bytes.length do { out += bytes(i); i += 1 }
+      val text = cbor.asInstanceOf[String]
+      val bytes = text.getBytes("UTF-8").nn
+      head(out, 3, bytes.length.toLong)
+      var index = 0
+
+      while index < bytes.length do
+        out += bytes(index)
+        index += 1
+
     else if cbor.isByteString then
       val bytes = cbor.asInstanceOf[Array[Byte]]
-      writeHead(out, 2, bytes.length.toLong)
-      var i = 0
-      while i < bytes.length do { out += bytes(i); i += 1 }
+      head(out, 2, bytes.length.toLong)
+      var index = 0
+      while index < bytes.length do { out += bytes(index); index += 1 }
+
     else if cbor.isBoolean then
       out += (if cbor.asInstanceOf[Boolean] then 0xF5.toByte else 0xF4.toByte)
-    else if cbor.isNull then out += 0xF6.toByte
-    else if cbor.isAbsent then out += 0xF7.toByte
+
+    else if cbor.nullary then out += 0xF6.toByte
+    else if cbor.unset then out += 0xF7.toByte
+
     else if cbor.isTag then
       val tag = cbor.asInstanceOf[CborTag]
-      writeHead(out, 6, tag.tag)
+      head(out, 6, tag.tag)
       write(out, tag.value.asInstanceOf[CborAst])
+
     else if cbor.isArray then
-      val n = cbor.arrayLength
-      writeHead(out, 4, n.toLong)
-      var i = 0
-      while i < n do { write(out, cbor.arrayElement(i)); i += 1 }
+      val count = cbor.elements
+      head(out, 4, count.toLong)
+      var index = 0
+
+      while index < count do
+        write(out, cbor.element(index))
+        index += 1
+
     else if cbor.isMap then
-      val n = cbor.mapSize
-      writeHead(out, 5, n.toLong)
-      var i = 0
-      while i < n do
-        write(out, cbor.mapKey(i))
-        write(out, cbor.mapValue(i))
-        i += 1
+      val count = cbor.entries
+      head(out, 5, count.toLong)
+      var index = 0
 
-  // RFC 8949 §8 diagnostic notation. Byte strings render as h'…' (lowercase
-  // hex), tags as `n(value)`, undefined as `undefined`. Maps and arrays use
-  // brace/bracket-comma notation with no whitespace.
+      while index < count do
+        write(out, cbor.key(index))
+        write(out, cbor.value(index))
+        index += 1
+
   def diagnostic(cbor: CborAst): String =
-    val sb = new java.lang.StringBuilder
-    appendDiagnostic(sb, cbor)
-    sb.toString.nn
+    val builder = new java.lang.StringBuilder
+    append(builder, cbor)
+    builder.toString
 
-  private def appendDiagnostic(sb: java.lang.StringBuilder, cbor: CborAst): Unit =
-    if cbor.isInteger then
-      sb.append(cbor.asInstanceOf[Long].toString)
+  private def append(builder: java.lang.StringBuilder, cbor: CborAst): Unit =
+    if cbor.isInteger then builder.append(cbor.asInstanceOf[Long].toString)
     else if cbor.isFloat then
-      val d = cbor.asInstanceOf[Double]
-      if d.isNaN then sb.append("NaN")
-      else if d == Double.PositiveInfinity then sb.append("Infinity")
-      else if d == Double.NegativeInfinity then sb.append("-Infinity")
-      else sb.append(d.toString)
+      val double = cbor.asInstanceOf[Double]
+
+      if double.isNaN then builder.append("NaN")
+      else if double == Double.PositiveInfinity then builder.append("Infinity")
+      else if double == Double.NegativeInfinity then builder.append("-Infinity")
+      else builder.append(double.toString)
+
     else if cbor.isTextString then
-      sb.append('"')
-      val s = cbor.asInstanceOf[String]
-      var i = 0
-      while i < s.length do
-        val c = s.charAt(i)
-        c match
-          case '"'  => sb.append("\\\"")
-          case '\\' => sb.append("\\\\")
-          case '\n' => sb.append("\\n")
-          case '\r' => sb.append("\\r")
-          case '\t' => sb.append("\\t")
-          case ch if ch < 0x20 => sb.append(f"\\u${ch.toInt}%04x")
-          case ch   => sb.append(ch)
-        i += 1
-      sb.append('"')
+      builder.append('"')
+      val text = cbor.asInstanceOf[String]
+      var index = 0
+
+      while index < text.length do builder.append:
+        text.charAt(index) match
+          case '"'                 => "\\\""
+          case '\\'                => "\\\\"
+          case '\n'                => "\\n"
+          case '\r'                => "\\r"
+          case '\t'                => "\\t"
+          case char if char < 0x20 => f"\\u${char.toInt}%04x"
+          case char                => char
+
+        index += 1
+
+      builder.append('"')
+
     else if cbor.isByteString then
       val bytes = cbor.asInstanceOf[Array[Byte]]
-      sb.append("h'")
-      var i = 0
-      while i < bytes.length do
-        sb.append(f"${bytes(i) & 0xFF}%02x")
-        i += 1
-      sb.append('\'')
-    else if cbor.isBoolean then
-      sb.append(cbor.asInstanceOf[Boolean].toString)
-    else if cbor.isNull then
-      sb.append("null")
-    else if cbor.isAbsent then
-      sb.append("undefined")
+      builder.append("h'")
+      var index = 0
+
+      while index < bytes.length do
+        builder.append(f"${bytes(index) & 0xFF}%02x")
+        index += 1
+
+      builder.append('\'')
+
+    else if cbor.isBoolean then builder.append(cbor.asInstanceOf[Boolean].toString)
+    else if cbor.nullary then builder.append("null")
+    else if cbor.unset then builder.append("undefined")
+
     else if cbor.isTag then
       val tag = cbor.asInstanceOf[CborTag]
-      sb.append(tag.tag.toString)
-      sb.append('(')
-      appendDiagnostic(sb, tag.value.asInstanceOf[CborAst])
-      sb.append(')')
+      builder.append(tag.tag.toString)
+      builder.append('(')
+      append(builder, tag.value.asInstanceOf[CborAst])
+      builder.append(')')
+
     else if cbor.isArray then
-      val n = cbor.arrayLength
-      sb.append('[')
-      var i = 0
-      while i < n do
-        if i > 0 then sb.append(", ")
-        appendDiagnostic(sb, cbor.arrayElement(i))
-        i += 1
-      sb.append(']')
+      val count = cbor.elements
+      builder.append('[')
+      var index = 0
+
+      while index < count do
+        if index > 0 then builder.append(", ")
+        append(builder, cbor.element(index))
+        index += 1
+
+      builder.append(']')
+
     else if cbor.isMap then
-      val n = cbor.mapSize
-      sb.append('{')
-      var i = 0
-      while i < n do
-        if i > 0 then sb.append(", ")
-        appendDiagnostic(sb, cbor.mapKey(i))
-        sb.append(": ")
-        appendDiagnostic(sb, cbor.mapValue(i))
-        i += 1
-      sb.append('}')
+      val count = cbor.entries
+      builder.append('{')
+      var index = 0
+
+      while index < count do
+        if index > 0 then builder.append(", ")
+        append(builder, cbor.key(index))
+        builder.append(": ")
+        append(builder, cbor.value(index))
+        index += 1
+
+      builder.append('}')

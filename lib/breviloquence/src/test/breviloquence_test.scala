@@ -47,18 +47,18 @@ enum Shape derives CanEqual:
 private def hex(s: String): IArray[Byte] =
   val clean = s.filter(c => !c.isWhitespace)
   val out = new Array[Byte](clean.length/2)
-  var i = 0
-  while i < out.length do
-    out(i) = Integer.parseInt(clean.substring(i*2, i*2 + 2), 16).toByte
-    i += 1
+  var index = 0
+  while index < out.length do
+    out(index) = Integer.parseInt(clean.substring(index*2, index*2 + 2), 16).toByte
+    index += 1
   out.asInstanceOf[IArray[Byte]]
 
 private def hexOf(bytes: IArray[Byte]): String =
   val sb = new StringBuilder
-  var i = 0
-  while i < bytes.length do
-    sb.append(f"${bytes(i) & 0xFF}%02x")
-    i += 1
+  var index = 0
+  while index < bytes.length do
+    sb.append(f"${bytes(index) & 0xFF}%02x")
+    index += 1
   sb.toString
 
 object Tests extends Suite(m"Breviloquence Tests"):
@@ -213,7 +213,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
       test(m"Encode Point(1, 2)"):
         val cbor = Point(1, 2).cbor
         val ast = Cbor.unseal(cbor)
-        ast.isMap && ast.mapSize == 2
+        ast.isMap && ast.entries == 2
       . assert(identity)
 
       test(m"Round-trip Point(3, 4)"):
