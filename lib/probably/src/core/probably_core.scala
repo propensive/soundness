@@ -67,6 +67,9 @@ type TestPalette = Palette:
   def aspirePass: Color in Srgb
   def aspireFail: Color in Srgb
   def subdued: Color in Srgb
+  def unaccented: Color in Srgb
+  def positive: Color in Srgb
+  def negative: Color in Srgb
 
 extension [left](left: left)
   infix def === [right](right: right)(using checkable: left is Checkable against right): Boolean =
