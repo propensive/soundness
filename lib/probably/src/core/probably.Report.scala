@@ -676,7 +676,7 @@ class Report(using Environment)(using palette: TestPalette):
         case _ => ()
 
     details.to(List).sortBy(_(0).timestamp).each: (id, info) =>
-      val ribbon = Ribbon(palette.pass, palette.subdue(palette.pass, 0.5), palette.subdue(palette.pass, 0.75))
+      val ribbon = Ribbon(palette.fail, palette.subdue(palette.fail, 0.5), palette.subdue(palette.fail, 0.75))
 
       if githubActions then GithubActions.group(t"Failure: ${id.name.text} (${id.id})")
 
