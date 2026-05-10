@@ -66,9 +66,8 @@ object Juxtaposition:
       val positive = Fg(palette.positive)
       val negative = Fg(palette.negative)
       val informative = Fg(palette.informative)
-      val dim = Bg(palette.subdued)
-      val positiveBg = Bg(palette.positive)
-      val negativeBg = Bg(palette.negative.chroma)
+      val positiveBg = Bg(palette.subdue(palette.positive, 0.5))
+      val negativeBg = Bg(palette.subdue(palette.negative, 0.5))
 
       value match
         case Juxtaposition.Collation(name, comparison, _, _) =>
@@ -93,14 +92,14 @@ object Juxtaposition:
               val last = index == comparison.length/columns
 
               val observed = comparison2.map:
-                case (_, Same(char))            => e"$dim($informative(${pad(char)}))"
+                case (_, Same(char))            => e"$informative(${pad(char)})"
                 case (_, Different(char, _, _)) => e"$positiveBg(${pad(char)})"
                 case _                          => e""
 
               . join
 
               val expected = comparison2.map:
-                case (_, Same(char))            => e"$dim($informative(${pad(char)}))"
+                case (_, Same(char))            => e"$informative(${pad(char)})"
                 case (_, Different(_, char, _)) => e"$negativeBg(${pad(char)})"
                 case _                          => e""
 
