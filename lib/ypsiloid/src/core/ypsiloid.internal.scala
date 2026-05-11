@@ -71,7 +71,7 @@ object internal:
 
   private def stripPad(arr: IArray[Any]): IArray[Any] =
     val n = arr.length
-    if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq YamlAst.arrayPad) then arr.take(n - 1)
+    if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then arr.take(n - 1)
     else arr
 
   private def preprocess(parts: List[String]): (List[String], Set[Int]) =
@@ -152,10 +152,10 @@ object internal:
         i += 1
       macroPos
 
-    val ast: YamlAst =
+    val ast: Yaml.Ast =
       given diagnostics: Diagnostics = Diagnostics.omit
-      given parseTactic: HaltTactic[ParseError, YamlAst] =
-        new HaltTactic[ParseError, YamlAst]:
+      given parseTactic: HaltTactic[ParseError, Yaml.Ast] =
+        new HaltTactic[ParseError, Yaml.Ast]:
           override def abort(error: Diagnostics ?=> ParseError): Nothing =
             val pe = error
             val off = pe.position.offset.or(0)
@@ -173,7 +173,7 @@ object internal:
         holeIndex += 1
         expr
 
-      def encodeValue(expr: Expr[Any]): Expr[YamlAst] = expr.absolve match
+      def encodeValue(expr: Expr[Any]): Expr[Yaml.Ast] = expr.absolve match
         case '{$value: tpe} =>
           Expr.summon[(? >: tpe) is Encodable in Yaml] match
             case Some('{$enc: Encodable}) =>
@@ -195,7 +195,7 @@ object internal:
                 ( m"a value of ${TypeRepr.of[tpe].show} is not Encodable in Text",
                   expr.asTerm.underlyingArgument.pos )
 
-      def encodeArraySpread(expr: Expr[Any]): Expr[Iterable[YamlAst]] = expr.absolve match
+      def encodeArraySpread(expr: Expr[Any]): Expr[Iterable[Yaml.Ast]] = expr.absolve match
         case '{$value: tpe} => Type.of[tpe] match
           case '[Iterable[t]] =>
             Expr.summon[(? >: t) is Encodable in Yaml] match
@@ -216,7 +216,7 @@ object internal:
               ( m"a `*`-spread requires an Iterable, but got ${TypeRepr.of[tpe].show}",
                 expr.asTerm.underlyingArgument.pos )
 
-      def encodeObjectRest(expr: Expr[Any]): Expr[Iterable[(String, YamlAst)]] =
+      def encodeObjectRest(expr: Expr[Any]): Expr[Iterable[(String, Yaml.Ast)]] =
         expr.absolve match
           case '{$value: tpe} => Type.of[tpe] match
             case '[Map[Text, Yaml]] =>
@@ -234,8 +234,8 @@ object internal:
                   """,
                   expr.asTerm.underlyingArgument.pos )
 
-      def serializeString(s: String): Expr[YamlAst] =
-        if !hasMarker(s) then '{YamlAst(${Expr(s)})}
+      def serializeString(s: String): Expr[Yaml.Ast] =
+        if !hasMarker(s) then '{Yaml.Ast(${Expr(s)})}
         else
           val parts: Array[String | Null] = s.split(MarkerString, -1).nn
           var resultExpr: Expr[String] = Expr(parts(0).nn)
@@ -245,11 +245,11 @@ object internal:
             val partExpr = Expr(parts(i).nn)
             resultExpr = '{$resultExpr + $fragment + $partExpr}
             i += 1
-          '{YamlAst(${resultExpr})}
+          '{Yaml.Ast(${resultExpr})}
 
-      def serializeArray(elements: IArray[Any]): Expr[YamlAst] =
+      def serializeArray(elements: IArray[Any]): Expr[Yaml.Ast] =
         val n = elements.length
-        val pieces: List[Expr[Iterable[YamlAst]]] = elements.zipWithIndex.toList.map:
+        val pieces: List[Expr[Iterable[Yaml.Ast]]] = elements.zipWithIndex.toList.map:
           (elem, idx) =>
             elem.asMatchable match
               case s: String if s == MarkerString =>
@@ -266,13 +266,13 @@ object internal:
                 '{Iterable($v)}
 
         '{
-          val all = ${Expr.ofList(pieces)}.foldLeft(List.empty[YamlAst])(_ ++ _)
-          YamlAst.Sequence(IArray.from(all))
+          val all = ${Expr.ofList(pieces)}.foldLeft(List.empty[Yaml.Ast])(_ ++ _)
+          Yaml.Ast.Sequence(IArray.from(all))
         }
 
-      def serializeObject(node: IArray[Any]): Expr[YamlAst] =
+      def serializeObject(node: IArray[Any]): Expr[Yaml.Ast] =
         val n = node.length/2
-        val pieces: List[Expr[Iterable[(String, YamlAst)]]] =
+        val pieces: List[Expr[Iterable[(String, Yaml.Ast)]]] =
           (0 until n).toList.map: i =>
             val k = node(i*2).asInstanceOf[String]
             val v = node(i*2 + 1)
@@ -294,17 +294,17 @@ object internal:
 
         '{
           val all =
-            ${Expr.ofList(pieces)}.foldLeft(List.empty[(String, YamlAst)])(_ ++ _)
+            ${Expr.ofList(pieces)}.foldLeft(List.empty[(String, Yaml.Ast)])(_ ++ _)
           val arr = new Array[Any](all.length*2)
           var k = 0
           all.foreach: pair =>
-            arr(k*2)     = YamlAst.Str(pair(0).tt).asInstanceOf[Any]
+            arr(k*2)     = Yaml.Ast.Str(pair(0).tt).asInstanceOf[Any]
             arr(k*2 + 1) = pair(1).asInstanceOf[Any]
             k += 1
-          YamlAst.mapFromAnyArray(arr)
+          Yaml.Ast.mapFromAnyArray(arr)
         }
 
-      def serialize(node: Any): Expr[YamlAst] = node.asMatchable match
+      def serialize(node: Any): Expr[Yaml.Ast] = node.asMatchable match
         case s: String if s == MarkerString =>
           if spreads.contains(holeIndex) then halt:
             m"a `*`-spread is only allowed as the last element of a sequence"
@@ -314,16 +314,16 @@ object internal:
           serializeString(s)
 
         case b: Boolean =>
-          '{YamlAst(${Expr(b)})}
+          '{Yaml.Ast(${Expr(b)})}
 
         case l: Long =>
-          '{YamlAst(${Expr(l)})}
+          '{Yaml.Ast(${Expr(l)})}
 
         case d: Double =>
-          '{YamlAst(${Expr(d)})}
+          '{Yaml.Ast(${Expr(d)})}
 
         case null =>
-          '{YamlAst.Null}
+          '{Yaml.Ast.Null}
 
         case arr: IArray[Any] @unchecked =>
           if (arr.length & 1) == 0 then serializeObject(arr)
@@ -332,7 +332,7 @@ object internal:
         case other =>
           halt(m"unexpected YAML AST node ${other.toString.tt}")
 
-      val ofAst: Expr[YamlAst] = serialize(ast)
+      val ofAst: Expr[Yaml.Ast] = serialize(ast)
 
       '{Yaml.ast($ofAst)}
 
@@ -352,7 +352,7 @@ object internal:
       val (parts2, spreads) = preprocess(parts)
       val source: String = parts2.mkString(MarkerString)
 
-      val ast: YamlAst =
+      val ast: Yaml.Ast =
         given diagnostics: Diagnostics = Diagnostics.omit
         YamlParser.parse(source.tt)
 
@@ -362,7 +362,7 @@ object internal:
       def descend
          (array: Expr[Array[Any]],
           pattern: Any,
-          scrutinee: Expr[YamlAst],
+          scrutinee: Expr[Yaml.Ast],
           accept: Expr[Boolean])
       :   Expr[Boolean] =
 
@@ -419,7 +419,7 @@ object internal:
       def descendArray
          (array: Expr[Array[Any]],
           elements: IArray[Any],
-          scrutinee: Expr[YamlAst],
+          scrutinee: Expr[Yaml.Ast],
           accept: Expr[Boolean])
       :   Expr[Boolean] =
 
@@ -460,7 +460,7 @@ object internal:
                 while k < tailLen do
                   tail(k) = $scrutinee.arrayElement(${Expr(prefixLen)} + k).asInstanceOf[Any]
                   k += 1
-                $array(${Expr(idx)}) = Yaml.ast(YamlAst.seqFromAnyArray(tail))
+                $array(${Expr(idx)}) = Yaml.ast(Yaml.Ast.seqFromAnyArray(tail))
                 true
               }
             }
@@ -510,7 +510,7 @@ object internal:
       def descendObject
          (array: Expr[Array[Any]],
           node: IArray[Any],
-          scrutinee: Expr[YamlAst],
+          scrutinee: Expr[Yaml.Ast],
           accept: Expr[Boolean])
       :   Expr[Boolean] =
 
@@ -580,10 +580,10 @@ object internal:
                   val arr = new Array[Any](keysBuf.length*2)
                   var m = 0
                   while m < keysBuf.length do
-                    arr(m*2)     = YamlAst.Str(keysBuf(m).tt).asInstanceOf[Any]
+                    arr(m*2)     = Yaml.Ast.Str(keysBuf(m).tt).asInstanceOf[Any]
                     arr(m*2 + 1) = valsBuf(m)
                     m += 1
-                  $array(${Expr(idx)}) = Yaml.ast(YamlAst.mapFromAnyArray(arr))
+                  $array(${Expr(idx)}) = Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
                   true
                 }
               }
@@ -592,7 +592,7 @@ object internal:
             val valueExpr =
               '{
                 val idx2 = $scrutinee.objectIndexOf($keyLiteral)
-                if idx2 < 0 then null.asInstanceOf[YamlAst] else $scrutinee.objectValue(idx2)
+                if idx2 < 0 then null.asInstanceOf[Yaml.Ast] else $scrutinee.objectValue(idx2)
               }
             combined = descend(array, v, valueExpr, combined)
           i += 1
