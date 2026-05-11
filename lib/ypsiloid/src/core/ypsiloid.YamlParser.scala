@@ -44,29 +44,29 @@ import rudiments.*
 import vacuous.*
 import zephyrine.*
 
-import YamlAst.Byte.*
-import YamlAst.Issue
+import Yaml.Ast.Byte.*
+import Yaml.Ast.Issue
 
 object YamlParser:
   private val pool: ThreadLocal[YamlParser] =
     ThreadLocal.withInitial(() => new YamlParser).nn
 
-  def parse(input: Text)(using Tactic[ParseError]): YamlAst =
+  def parse(input: Text)(using Tactic[ParseError]): Yaml.Ast =
     val parser = pool.get.nn
     parser.resetText(input)
     parser.parse()
 
-  def parse(input: Data)(using Tactic[ParseError]): YamlAst =
+  def parse(input: Data)(using Tactic[ParseError]): Yaml.Ast =
     val parser = pool.get.nn
     parser.resetData(input)
     parser.parse()
 
-  def parseAll(input: Text)(using Tactic[ParseError]): List[YamlAst] =
+  def parseAll(input: Text)(using Tactic[ParseError]): List[Yaml.Ast] =
     val parser = pool.get.nn
     parser.resetText(input)
     parser.parseAll()
 
-  def parseAll(input: Data)(using Tactic[ParseError]): List[YamlAst] =
+  def parseAll(input: Data)(using Tactic[ParseError]): List[Yaml.Ast] =
     val parser = pool.get.nn
     parser.resetData(input)
     parser.parseAll()
@@ -84,8 +84,8 @@ private[ypsiloid] final class YamlParser:
   private var pos:       Int               = 0
   private var bufEnd:    Int               = 0
 
-  // Anchor table — names map to fully-parsed YamlAst values.
-  private val anchors = scala.collection.mutable.Map.empty[String, YamlAst]
+  // Anchor table — names map to fully-parsed Yaml.Ast values.
+  private val anchors = scala.collection.mutable.Map.empty[String, Yaml.Ast]
 
   // Tag handles declared by `%TAG` directives in the *current* document.
   // Per spec, directives apply only to the document immediately
@@ -181,7 +181,7 @@ private[ypsiloid] final class YamlParser:
     val line = cursor.line.n0
     val column = cursor.column.n0
     val offset = cursor.position.n0
-    abort(ParseError(YamlAst, YamlAst.Position(line, column, offset = offset), issue))
+    abort(ParseError(Yaml.Ast, Yaml.Ast.Position(line, column, offset = offset), issue))
 
   // ── Position / mark plumbing ────────────────────────────────────────────
 
@@ -245,7 +245,7 @@ private[ypsiloid] final class YamlParser:
 
   // ── Top-level parse ─────────────────────────────────────────────────────
 
-  def parse()(using Tactic[ParseError]): YamlAst = holding:
+  def parse()(using Tactic[ParseError]): Yaml.Ast = holding:
     skipBom()
     skipBlankAndCommentLines()
     val sawDirectives = parseDirectivesIfAny()
@@ -257,18 +257,18 @@ private[ypsiloid] final class YamlParser:
     if !explicitStart || (more && peek == Newline) then
       if more && peek == Newline then advance()
       skipBlankAndCommentLines()
-    if !more || atDocumentBoundary then YamlAst.Null
+    if !more || atDocumentBoundary then Yaml.Ast.Null
     else
       val indent = consumeLeadingSpaces()
-      if !more || atDocumentBoundary then YamlAst.Null
+      if !more || atDocumentBoundary then Yaml.Ast.Null
       else
         val node = parseNode(indent)
         skipBlankAndCommentLines()
         consumeOptionalDocumentEnd()
         node
 
-  def parseAll()(using Tactic[ParseError]): List[YamlAst] = holding:
-    val docs = scala.collection.mutable.ArrayBuffer[YamlAst]()
+  def parseAll()(using Tactic[ParseError]): List[Yaml.Ast] = holding:
+    val docs = scala.collection.mutable.ArrayBuffer[Yaml.Ast]()
     skipBom()
 
     var continue = true
@@ -304,10 +304,10 @@ private[ypsiloid] final class YamlParser:
         skipBlankAndCommentLines()
 
       if !more then
-        if explicitStart then docs.append(YamlAst.Null)
+        if explicitStart then docs.append(Yaml.Ast.Null)
         continue = false
       else if atDocumentBoundary then
-        if explicitStart then docs.append(YamlAst.Null)
+        if explicitStart then docs.append(Yaml.Ast.Null)
         lastDocEndedWithFooter = consumeOptionalDocumentEnd()
         if explicitStart then firstDoc = false
       else
@@ -315,7 +315,7 @@ private[ypsiloid] final class YamlParser:
         // passed to parseNode.
         val indent = consumeLeadingSpaces()
         if !more || atDocumentBoundary then
-          if explicitStart then docs.append(YamlAst.Null)
+          if explicitStart then docs.append(Yaml.Ast.Null)
           lastDocEndedWithFooter = consumeOptionalDocumentEnd()
           if explicitStart then firstDoc = false
         else
@@ -466,12 +466,12 @@ private[ypsiloid] final class YamlParser:
   // Parse a single YAML node at the given context indent. Caller has
   // ensured we're positioned at the first byte of the node (after any
   // leading whitespace).
-  private def parseNode(indent: Int)(using Tactic[ParseError]): YamlAst =
+  private def parseNode(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
     skipSpaces()
-    if !more then YamlAst.Null
+    if !more then Yaml.Ast.Null
     else parseNodeHere(indent)
 
-  private def parseNodeHere(indent: Int)(using Tactic[ParseError]): YamlAst =
+  private def parseNodeHere(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
     // `prefixesConsumed` and `lastNodeHadAnchor` are parser-wide fields
     // but "did THIS call apply its own prefixes / anchor?" is per-call.
     // Recursive parses (e.g. parseMappingValue inside parseBlock-
@@ -490,7 +490,7 @@ private[ypsiloid] final class YamlParser:
     // line(s). consumeNodePrefixes stops at the newline so we can detect
     // and descend into it here.
     val hasPrefix = !anchorName.nil || !tagText.nil
-    val value: YamlAst =
+    val value: Yaml.Ast =
       if hasPrefix && (headByte == Newline || headByte == -1 || headByte == Hash) then
         // A trailing comment after the prefix is line metadata; the
         // value is on the next line.
@@ -510,12 +510,12 @@ private[ypsiloid] final class YamlParser:
         if !anchorName.nil && lastNodeHadAnchor then
           errorAt(Issue.TwoAnchorsOnSameNode)
         v
-      else if headByte == -1 then YamlAst.Null
+      else if headByte == -1 then Yaml.Ast.Null
       else if headByte == Hash then
         // No preceding content and a comment on the head line means
         // the value is empty (Null); the comment is metadata.
         while more && peek != Newline do advance()
-        YamlAst.Null
+        Yaml.Ast.Null
       else if headByte == Star then
         // An anchor on an alias node is illegal per spec — aliases
         // refer to existing anchored nodes, they don't anchor anything
@@ -644,7 +644,7 @@ private[ypsiloid] final class YamlParser:
       advance()
     slice(mk).tt
 
-  private def parseAlias()(using Tactic[ParseError]): YamlAst =
+  private def parseAlias()(using Tactic[ParseError]): Yaml.Ast =
     val name = readWord()
     anchors.get(name.s) match
       case Some(value) => value
@@ -681,9 +681,9 @@ private[ypsiloid] final class YamlParser:
   //    context that will consume the terminator;
   // anything else is an error per spec.
   private def maybeBlockMappingFromQuotedKey
-                ( scalar: YamlAst, indent: Int, headTag: Text, headAnchor: Text )
+                ( scalar: Yaml.Ast, indent: Int, headTag: Text, headAnchor: Text )
                 ( using Tactic[ParseError] )
-  :   YamlAst =
+  :   Yaml.Ast =
     val hadSpaceOrTab = more && (peek == Space || peek == Tab)
     skipSpaces()
     if !more then scalar
@@ -760,7 +760,7 @@ private[ypsiloid] final class YamlParser:
   private def parsePlainOrBlockMapping
                 ( indent: Int, headTag: Text = t"", headAnchor: Text = t"" )
                 ( using Tactic[ParseError] )
-  :   YamlAst =
+  :   Yaml.Ast =
     val textValue = readPlainScalarText(indent)
     if sawMappingColon then
       if onDocStartLine then
@@ -987,31 +987,31 @@ private[ypsiloid] final class YamlParser:
     while n > 0 && (s.charAt(n - 1) == ' ' || s.charAt(n - 1) == '\t') do n -= 1
     if n == s.length then text else s.substring(0, n).nn.tt
 
-  // Resolve a plain-scalar string into a YamlAst primitive.
-  private def resolvePlainScalar(text: Text): YamlAst =
+  // Resolve a plain-scalar string into a Yaml.Ast primitive.
+  private def resolvePlainScalar(text: Text): Yaml.Ast =
     val s = text.s
-    if s.isEmpty then YamlAst.Null
+    if s.isEmpty then Yaml.Ast.Null
     else s match
-      case "null" | "Null" | "NULL" | "~"   => YamlAst.Null
-      case "true" | "True" | "TRUE"         => YamlAst.Bool(true)
-      case "false" | "False" | "FALSE"      => YamlAst.Bool(false)
+      case "null" | "Null" | "NULL" | "~"   => Yaml.Ast.Null
+      case "true" | "True" | "TRUE"         => Yaml.Ast.Bool(true)
+      case "false" | "False" | "FALSE"      => Yaml.Ast.Bool(false)
       case ".inf" | ".Inf" | ".INF"
-        | "+.inf" | "+.Inf" | "+.INF"       => YamlAst.Decimal(Double.PositiveInfinity)
-      case "-.inf" | "-.Inf" | "-.INF"      => YamlAst.Decimal(Double.NegativeInfinity)
-      case ".nan" | ".NaN" | ".NAN"         => YamlAst.Decimal(Double.NaN)
+        | "+.inf" | "+.Inf" | "+.INF"       => Yaml.Ast.Decimal(Double.PositiveInfinity)
+      case "-.inf" | "-.Inf" | "-.INF"      => Yaml.Ast.Decimal(Double.NegativeInfinity)
+      case ".nan" | ".NaN" | ".NAN"         => Yaml.Ast.Decimal(Double.NaN)
 
       case _ =>
         val asInt = parsePlainIntegerOrNull(s)
         if asInt != null then asInt
         else
           val asDec = parsePlainDecimalOrNull(s)
-          if asDec != null then asDec else YamlAst.Str(text)
+          if asDec != null then asDec else Yaml.Ast.Str(text)
 
   // Parse a plain string into a Long without throwing on rejection.
   // Returns null when the string does not represent a YAML 1.2 integer
   // we want to recognise (avoids `Option`/exception overhead on the
   // common reject path during plain-scalar resolution).
-  private def parsePlainIntegerOrNull(s: String): YamlAst | Null =
+  private def parsePlainIntegerOrNull(s: String): Yaml.Ast | Null =
     val len = s.length
     if len == 0 then return null
     var i = 0
@@ -1050,16 +1050,16 @@ private[ypsiloid] final class YamlParser:
         val c = digits.charAt(k)
         if c < '0' || c > '9' then return null
         k += 1
-      return YamlAst.BcdValue(Bcd.fromString(digits, negative))
+      return Yaml.Ast.BcdValue(Bcd.fromString(digits, negative))
     if digitCount == 19 then
       try
         val v = java.lang.Long.parseLong(s)
-        return YamlAst.Integer(v)
+        return Yaml.Ast.Integer(v)
       catch case _: NumberFormatException =>
         // 19-digit boundary that overflows `Long` (e.g. `10000000000000000000`):
         // preserve precision in BCD instead of dropping the value.
         val digits = s.substring(i, len).nn
-        return YamlAst.BcdValue(Bcd.fromString(digits, negative))
+        return Yaml.Ast.BcdValue(Bcd.fromString(digits, negative))
 
     var acc: Long = 0L
     while i < len do
@@ -1068,10 +1068,10 @@ private[ypsiloid] final class YamlParser:
       acc = acc*10L + (c - '0')
       i += 1
 
-    YamlAst.Integer(if negative then -acc else acc)
+    Yaml.Ast.Integer(if negative then -acc else acc)
 
   private def parseRadix(s: String, start: Int, radix: Int, negative: Boolean)
-  :   YamlAst | Null =
+  :   Yaml.Ast | Null =
     val len = s.length
     if start >= len then return null
     var acc: Long = 0L
@@ -1086,13 +1086,13 @@ private[ypsiloid] final class YamlParser:
       if d < 0 || d >= radix then return null
       acc = acc*radix + d
       i += 1
-    YamlAst.Integer(if negative then -acc else acc)
+    Yaml.Ast.Integer(if negative then -acc else acc)
 
   // Pre-filter to avoid `Double.parseDouble` throwing on non-numeric
   // strings: must contain at least one digit, only `[-+0-9.eE]`, ≤1
   // `.`, ≤1 `e`/`E`, and the `e`/`E` (if present) must be followed by
   // an optional sign and at least one digit.
-  private def parsePlainDecimalOrNull(s: String): YamlAst | Null =
+  private def parsePlainDecimalOrNull(s: String): Yaml.Ast | Null =
     val len = s.length
     if len == 0 then return null
 
@@ -1136,8 +1136,8 @@ private[ypsiloid] final class YamlParser:
         val unsigned =
           if s.length > 0 && (s.charAt(0) == '-' || s.charAt(0) == '+')
           then s.substring(1).nn else s
-        YamlAst.BcdValue(Bcd.fromString(unsigned, negative))
-      else YamlAst.Decimal(d)
+        Yaml.Ast.BcdValue(Bcd.fromString(unsigned, negative))
+      else Yaml.Ast.Decimal(d)
     catch case _: NumberFormatException => null
 
   private def countSignificantDigits(s: String): Int =
@@ -1155,7 +1155,7 @@ private[ypsiloid] final class YamlParser:
 
   // ── Quoted strings ──────────────────────────────────────────────────────
 
-  private def parseDoubleQuoted()(using Tactic[ParseError]): YamlAst =
+  private def parseDoubleQuoted()(using Tactic[ParseError]): Yaml.Ast =
     resetString()
     lastScalarSpannedLines = false
     var done = false
@@ -1191,7 +1191,7 @@ private[ypsiloid] final class YamlParser:
       else
         appendByteAsChar(b)
         advance()
-    YamlAst.Str(getStringText())
+    Yaml.Ast.Str(getStringText())
 
   private def consumeDoubleQuotedEscape()(using Tactic[ParseError]): Unit =
     val b = peek
@@ -1253,7 +1253,7 @@ private[ypsiloid] final class YamlParser:
       i += 1
     acc
 
-  private def parseSingleQuoted()(using Tactic[ParseError]): YamlAst =
+  private def parseSingleQuoted()(using Tactic[ParseError]): Yaml.Ast =
     resetString()
     lastScalarSpannedLines = false
     var done = false
@@ -1289,7 +1289,7 @@ private[ypsiloid] final class YamlParser:
       else
         appendByteAsChar(b)
         advance()
-    YamlAst.Str(getStringText())
+    Yaml.Ast.Str(getStringText())
 
   // Inside a quoted string: `\n` followed by zero or more whitespace.
   // Apply YAML line folding: 1 newline → space, N newlines → (N-1)
@@ -1332,7 +1332,7 @@ private[ypsiloid] final class YamlParser:
 
   // ── Flow types ──────────────────────────────────────────────────────────
 
-  private def parseFlowSequence()(using Tactic[ParseError]): YamlAst =
+  private def parseFlowSequence()(using Tactic[ParseError]): Yaml.Ast =
     val buf = acquireBuffer()
     var done = false
     while !done do
@@ -1346,7 +1346,7 @@ private[ypsiloid] final class YamlParser:
       else
         // Recognise explicit-key indicator `?` and empty implicit-key
         // `:` at the start of an entry, mirroring parseFlowMapping.
-        val first: YamlAst =
+        val first: Yaml.Ast =
           if peek == Question && {
             val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
             nb == Space || nb == Tab || nb == Newline || nb == Return
@@ -1355,13 +1355,13 @@ private[ypsiloid] final class YamlParser:
             advance()
             skipFlowWhitespace()
             if !more || peek == Comma || peek == CloseBracket || peek == Colon
-            then YamlAst.Null
+            then Yaml.Ast.Null
             else parseFlowNode()
           else if peek == Colon && {
             val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
             nb == Space || nb == Tab || nb == Newline || nb == Return
               || nb == Comma || nb == CloseBracket
-          } then YamlAst.Null
+          } then Yaml.Ast.Null
           else parseFlowNode()
         skipFlowWhitespace()
         // A `:` here promotes the entry to a single-pair mapping per
@@ -1374,7 +1374,7 @@ private[ypsiloid] final class YamlParser:
             skipFlowWhitespace()
             val value =
               if !more || peek == Comma || peek == CloseBracket
-              then YamlAst.Null
+              then Yaml.Ast.Null
               else parseFlowNode()
             val pairBuf = acquireBuffer()
             pairBuf += first
@@ -1394,7 +1394,7 @@ private[ypsiloid] final class YamlParser:
     releaseBuffer()
     result
 
-  private def parseFlowMapping()(using Tactic[ParseError]): YamlAst =
+  private def parseFlowMapping()(using Tactic[ParseError]): Yaml.Ast =
     val buf = acquireBuffer()
     var done = false
     while !done do
@@ -1408,7 +1408,7 @@ private[ypsiloid] final class YamlParser:
       else
         // Recognise explicit-key indicator `?` and empty implicit-key
         // `:` at the start of a flow-mapping entry.
-        val key: YamlAst =
+        val key: Yaml.Ast =
           if peek == Question && {
             val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
             nb == Space || nb == Tab || nb == Newline || nb == Return
@@ -1417,22 +1417,22 @@ private[ypsiloid] final class YamlParser:
             advance()
             skipFlowWhitespace()
             if !more || peek == Comma || peek == CloseBrace || peek == Colon
-            then YamlAst.Null
+            then Yaml.Ast.Null
             else parseFlowNode()
           else if peek == Colon && {
             val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
             nb == Space || nb == Tab || nb == Newline || nb == Return
               || nb == Comma || nb == CloseBrace
-          } then YamlAst.Null
+          } then Yaml.Ast.Null
           else parseFlowNode()
         skipFlowWhitespace()
         val value =
           if more && peek == Colon then
             advance()
             skipFlowWhitespace()
-            if !more || peek == Comma || peek == CloseBrace then YamlAst.Null
+            if !more || peek == Comma || peek == CloseBrace then Yaml.Ast.Null
             else parseFlowNode()
-          else YamlAst.Null
+          else Yaml.Ast.Null
         buf += key
         buf += value
         skipFlowWhitespace()
@@ -1449,25 +1449,25 @@ private[ypsiloid] final class YamlParser:
   // `Array[Any]`, padding with `arrayPad` if the count is even so the
   // result has odd length (the parity that distinguishes sequences from
   // mappings).
-  private def sealSequence(buf: ArrayBuffer[Any]): YamlAst =
+  private def sealSequence(buf: ArrayBuffer[Any]): Yaml.Ast =
     val n = buf.length
     if (n & 1) == 1 then
       val arr = new Array[Any](n)
       buf.copyToArray(arr)
-      arr.asInstanceOf[IArray[Any]].asInstanceOf[YamlAst]
+      arr.asInstanceOf[IArray[Any]].asInstanceOf[Yaml.Ast]
     else
       val arr = new Array[Any](n + 1)
       buf.copyToArray(arr)
-      arr(n) = YamlAst.arrayPad
-      arr.asInstanceOf[IArray[Any]].asInstanceOf[YamlAst]
+      arr(n) = Yaml.Ast.arrayPad
+      arr.asInstanceOf[IArray[Any]].asInstanceOf[Yaml.Ast]
 
   // The buffer was filled with alternating key/value items, so the count
   // is already even; copy directly into a flat `Array[Any]`.
-  private def sealMapping(buf: ArrayBuffer[Any]): YamlAst =
+  private def sealMapping(buf: ArrayBuffer[Any]): Yaml.Ast =
     val n = buf.length
     val arr = new Array[Any](n)
     buf.copyToArray(arr)
-    arr.asInstanceOf[IArray[Any]].asInstanceOf[YamlAst]
+    arr.asInstanceOf[IArray[Any]].asInstanceOf[Yaml.Ast]
 
   // Within a flow context, whitespace and newlines are insignificant
   // separators; comments still apply but require leading whitespace
@@ -1507,9 +1507,9 @@ private[ypsiloid] final class YamlParser:
 
   // A node within a flow context — same dispatch as parseNodeHere but
   // with flow-specific scalar termination.
-  private def parseFlowNode()(using Tactic[ParseError]): YamlAst =
+  private def parseFlowNode()(using Tactic[ParseError]): Yaml.Ast =
     skipFlowWhitespace()
-    if !more then YamlAst.Null
+    if !more then Yaml.Ast.Null
     else
       if atDocumentBoundary then
         errorAt(Issue.DocumentMarkerInFlowContext)
@@ -1522,11 +1522,11 @@ private[ypsiloid] final class YamlParser:
       skipFlowWhitespace()
       val headByte = if !more then -1 else peek & 0xFF
       val value =
-        if headByte == -1 then YamlAst.Null
+        if headByte == -1 then Yaml.Ast.Null
         else if headByte == Comma || headByte == CloseBracket
                 || headByte == CloseBrace then
           // The flow node is empty — caller will consume the terminator.
-          YamlAst.Null
+          Yaml.Ast.Null
         else if headByte == Colon && {
           val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
           next == Space || next == Tab || next == Newline || next == Return
@@ -1536,7 +1536,7 @@ private[ypsiloid] final class YamlParser:
           // `:` followed by a flow terminator marks an empty key that
           // the caller will pair with the upcoming value. `::x` and
           // similar are plain scalars and don't take this path.
-          YamlAst.Null
+          Yaml.Ast.Null
         else if headByte == Star then
           advance()
           parseAlias()
@@ -1556,7 +1556,7 @@ private[ypsiloid] final class YamlParser:
 
   // Plain scalar within a flow context: terminates on `,`, `]`, `}`,
   // `:`+space, newline, or hash-comment.
-  private def parseFlowPlainScalar()(using Tactic[ParseError]): YamlAst =
+  private def parseFlowPlainScalar()(using Tactic[ParseError]): Yaml.Ast =
     // Plain scalars in flow context cannot start with `-`, `?` or
     // `:` followed by a flow-context indicator (space, tab, comma,
     // `]`, `}`, newline, EOF). Per spec these combinations are
@@ -1618,7 +1618,7 @@ private[ypsiloid] final class YamlParser:
   // scalar starting with `-` (e.g. negative number) or a block sequence
   // marker. The disambiguation is the byte after `-`: if space/tab/
   // newline/EOF, it's a sequence marker.
-  private def parseMinus(indent: Int)(using Tactic[ParseError]): YamlAst =
+  private def parseMinus(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
     val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
     if nextByte == Space || nextByte == Tab || nextByte == Newline
             || nextByte == Return || nextByte == -1 then
@@ -1655,7 +1655,7 @@ private[ypsiloid] final class YamlParser:
   // end-of-input, this is an explicit-key indicator: set up a block
   // mapping at `indent`, read the first pair, then iterate. `?foo` (no
   // separator) is just a plain scalar starting with `?`.
-  private def parseQuestion(indent: Int)(using Tactic[ParseError]): YamlAst =
+  private def parseQuestion(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
     if isExplicitKeyIndicator then
       val buf = acquireBuffer()
       val savedParentIndent = blockParentIndent
@@ -1699,7 +1699,7 @@ private[ypsiloid] final class YamlParser:
         consumeNodePrefixes()
         val keyAnchor = prefixAnchor
         val keyTag    = prefixTag
-        val rawKey: YamlAst = prefixHeadByte match
+        val rawKey: Yaml.Ast = prefixHeadByte match
           case Quote =>
             advance()
             val s = parseDoubleQuoted()
@@ -1742,7 +1742,7 @@ private[ypsiloid] final class YamlParser:
         buf += keyAst
         buf += value
 
-  private def parseBlockSequence(indent: Int)(using Tactic[ParseError]): YamlAst =
+  private def parseBlockSequence(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
     val buf = acquireBuffer()
     val savedParentIndent = blockParentIndent
     blockParentIndent = indent
@@ -1753,7 +1753,7 @@ private[ypsiloid] final class YamlParser:
       // Either space-separated content or newline (item value on next
       // indented line)
       val next = if more then peek else -1
-      val item: YamlAst =
+      val item: Yaml.Ast =
         if next == Space || next == Tab then
           advance() // single space after `-`
           while more && (peek == Space || peek == Tab) do advance()
@@ -1765,7 +1765,7 @@ private[ypsiloid] final class YamlParser:
             advance()
             skipBlankAndCommentLines()
             val childIndent = consumeLeadingSpaces()
-            if childIndent <= indent then YamlAst.Null
+            if childIndent <= indent then Yaml.Ast.Null
             else parseNodeHere(childIndent)
           else parseNodeHere(indent + 2)
         else if next == Newline || next == -1 then
@@ -1773,7 +1773,7 @@ private[ypsiloid] final class YamlParser:
           if more then advance() // consume newline
           skipBlankAndCommentLines()
           val childIndent = consumeLeadingSpaces()
-          if childIndent <= indent then YamlAst.Null
+          if childIndent <= indent then Yaml.Ast.Null
           else parseNodeHere(childIndent)
         else
           // shouldn't happen
@@ -1843,9 +1843,9 @@ private[ypsiloid] final class YamlParser:
   // are positioned at the `:` following it. Parse the rest of the
   // block mapping at `indent`. Subsequent keys may also be quoted.
   private def parseBlockMappingFromFirstKey
-                ( firstKey: YamlAst, indent: Int )
+                ( firstKey: Yaml.Ast, indent: Int )
                 ( using Tactic[ParseError] )
-  :   YamlAst =
+  :   Yaml.Ast =
     val buf = acquireBuffer()
     val savedParentIndent = blockParentIndent
     blockParentIndent = indent
@@ -1874,14 +1874,14 @@ private[ypsiloid] final class YamlParser:
   // indented line; the matching `:` value indicator must appear at the
   // mapping's indent and may be absent (yielding a Null value).
   private def readExplicitPair(indent: Int)(using Tactic[ParseError])
-  :   (YamlAst, YamlAst) =
+  :   (Yaml.Ast, Yaml.Ast) =
     advance() // ?
     while more && (peek == Space || peek == Tab) do advance()
     // Trailing comment on the `?` marker line — consume so the parse
     // continues on the next line as if the marker stood alone.
     if more && peek == Hash then
       while more && peek != Newline do advance()
-    val key: YamlAst =
+    val key: Yaml.Ast =
       if !more || peek == Newline then
         // Key on a more-indented next line, or — per spec 8.2.2 — a
         // zero-indent block sequence at the same column as the `?` marker.
@@ -1891,7 +1891,7 @@ private[ypsiloid] final class YamlParser:
         val keyIndent = consumeLeadingSpaces()
         if keyIndent < indent then
           pos = keyLineStart
-          YamlAst.Null
+          Yaml.Ast.Null
         else if keyIndent == indent then
           if more && peek == Minus && {
             val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
@@ -1899,13 +1899,13 @@ private[ypsiloid] final class YamlParser:
           } then parseNodeHere(keyIndent)
           else
             pos = keyLineStart
-            YamlAst.Null
+            Yaml.Ast.Null
         else parseNodeHere(keyIndent)
       else parseNodeHere(indent + 2)
     skipBlankAndCommentLines()
     val markerLineStart = pos
     val markerIndent = consumeLeadingSpaces()
-    val value: YamlAst =
+    val value: Yaml.Ast =
       if markerIndent == indent && more && peek == Colon && {
         val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
         nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
@@ -1914,7 +1914,7 @@ private[ypsiloid] final class YamlParser:
         parseMappingValue(indent, isExplicitValue = true)
       else
         pos = markerLineStart
-        YamlAst.Null
+        Yaml.Ast.Null
     (key, value)
 
   // Parse the value side of a `key: VALUE` entry. Either inline (after
@@ -1922,9 +1922,9 @@ private[ypsiloid] final class YamlParser:
   private def parseMappingValue
                 ( parentIndent: Int, isExplicitValue: Boolean = false )
                 ( using Tactic[ParseError] )
-  :   YamlAst =
+  :   Yaml.Ast =
     skipSpaces()
-    if !more then YamlAst.Null
+    if !more then Yaml.Ast.Null
     else if peek == Newline then
       advance()
       skipBlankAndCommentLines()
@@ -1964,14 +1964,14 @@ private[ypsiloid] final class YamlParser:
   private inline def pickValueOrNull
                        ( parentIndent: Int, childIndent: Int, lineStart: Int )
                        ( using Tactic[ParseError] )
-  :   YamlAst =
+  :   Yaml.Ast =
     if more && peek == Tab then errorAt(Issue.TabInIndentation)
     // The next-line node starts a fresh line; an enclosing inline
     // mapping-value context shouldn't propagate into it.
     val savedInline = inInlineMappingValue
     inInlineMappingValue = false
     val result =
-      if !more then YamlAst.Null
+      if !more then Yaml.Ast.Null
       else pickValueOrNullBody(parentIndent, childIndent, lineStart)
     inInlineMappingValue = savedInline
     result
@@ -1979,11 +1979,11 @@ private[ypsiloid] final class YamlParser:
   private inline def pickValueOrNullBody
                        ( parentIndent: Int, childIndent: Int, lineStart: Int )
                        ( using Tactic[ParseError] )
-  :   YamlAst =
-    if !more then YamlAst.Null
+  :   Yaml.Ast =
+    if !more then Yaml.Ast.Null
     else if childIndent < parentIndent then
       pos = lineStart
-      YamlAst.Null
+      Yaml.Ast.Null
     else if childIndent == parentIndent then
       if peek == Minus && {
         val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
@@ -1991,7 +1991,7 @@ private[ypsiloid] final class YamlParser:
       } then parseNodeHere(childIndent)
       else
         pos = lineStart
-        YamlAst.Null
+        Yaml.Ast.Null
     else parseNodeHere(childIndent)
 
   // ── Block scalars (|/>) ─────────────────────────────────────────────────
@@ -2004,7 +2004,7 @@ private[ypsiloid] final class YamlParser:
 
   private def parseBlockScalar(literal: Boolean)
                             ( using Tactic[ParseError] )
-  :   YamlAst =
+  :   Yaml.Ast =
     advance() // consume `|` or `>`
 
     // Header: optional indentation indicator (1-9) and chomping
@@ -2165,7 +2165,7 @@ private[ypsiloid] final class YamlParser:
       case BlockChomp.Keep =>
         ()
 
-    YamlAst.Str(getStringText())
+    Yaml.Ast.Str(getStringText())
 
   // Read the non-newline content of the current line into the chars
   // buffer. Bulk-copies printable ASCII via the fast prefix loop and
@@ -2203,34 +2203,34 @@ private[ypsiloid] final class YamlParser:
         if handle != "!!" && !tagHandles.contains(handle) then
           errorAt(Issue.UndefinedTagHandle(handle.tt))
 
-  private def applyTag(tag: Text, value: YamlAst)(using Tactic[ParseError])
-  :   YamlAst = tag.s match
+  private def applyTag(tag: Text, value: Yaml.Ast)(using Tactic[ParseError])
+  :   Yaml.Ast = tag.s match
     case "!" | "!!" =>
       // Non-specific tags. `!` forces the string type for plain
       // scalars (preventing implicit type resolution into int/bool/etc).
-      if value.asInstanceOf[AnyRef] == null then YamlAst.Str(t"")
+      if value.asInstanceOf[AnyRef] == null then Yaml.Ast.Str(t"")
       else value.asInstanceOf[Matchable] match
         case _: String  => value
-        case n: Long    => YamlAst.Str(n.toString.tt)
-        case d: Double  => YamlAst.Str(d.toString.tt)
-        case b: Boolean => YamlAst.Str(b.toString.tt)
+        case n: Long    => Yaml.Ast.Str(n.toString.tt)
+        case d: Double  => Yaml.Ast.Str(d.toString.tt)
+        case b: Boolean => Yaml.Ast.Str(b.toString.tt)
         case _          => value
 
     case "!!str" =>
       // A bare `!!str` with no scalar content is the empty string,
       // not the literal text "null".
-      if value.asInstanceOf[AnyRef] == null then YamlAst.Str(t"")
+      if value.asInstanceOf[AnyRef] == null then Yaml.Ast.Str(t"")
       else value.asInstanceOf[Matchable] match
         case _: String  => value
-        case n: Long    => YamlAst.Str(n.toString.tt)
-        case d: Double  => YamlAst.Str(d.toString.tt)
-        case b: Boolean => YamlAst.Str(b.toString.tt)
+        case n: Long    => Yaml.Ast.Str(n.toString.tt)
+        case d: Double  => Yaml.Ast.Str(d.toString.tt)
+        case b: Boolean => Yaml.Ast.Str(b.toString.tt)
         case _          => value
 
     case "!!int" =>
       value.asInstanceOf[Matchable] match
         case _: Long   => value
-        case d: Double => YamlAst.Integer(d.toLong)
+        case d: Double => Yaml.Ast.Integer(d.toLong)
         case s: String =>
           val r = parsePlainIntegerOrNull(s)
           if r != null then r else value
@@ -2239,7 +2239,7 @@ private[ypsiloid] final class YamlParser:
     case "!!float" =>
       value.asInstanceOf[Matchable] match
         case _: Double => value
-        case n: Long   => YamlAst.Decimal(n.toDouble)
+        case n: Long   => Yaml.Ast.Decimal(n.toDouble)
         case s: String =>
           val r = parsePlainDecimalOrNull(s)
           if r != null then r else value
@@ -2248,9 +2248,9 @@ private[ypsiloid] final class YamlParser:
     case "!!bool" =>
       value.asInstanceOf[Matchable] match
         case _: Boolean                  => value
-        case "true" | "True" | "TRUE"    => YamlAst.Bool(true)
-        case "false" | "False" | "FALSE" => YamlAst.Bool(false)
+        case "true" | "True" | "TRUE"    => Yaml.Ast.Bool(true)
+        case "false" | "False" | "FALSE" => Yaml.Ast.Bool(false)
         case _                           => value
 
-    case "!!null" => YamlAst.Null
+    case "!!null" => Yaml.Ast.Null
     case _        => value

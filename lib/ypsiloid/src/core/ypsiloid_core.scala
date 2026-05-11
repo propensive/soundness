@@ -56,7 +56,7 @@ extension (inline context: StringContext)
 // `isObject` / `isArray` distinguish mappings (even-length flat array of
 // alternating key/value) from sequences (odd-length, with a trailing
 // `arrayPad` sentinel when the user-visible item count is even).
-extension (yaml: YamlAst)
+extension (yaml: Yaml.Ast)
   inline def isAbsent:  Boolean = yaml.asInstanceOf[AnyRef] eq Unset
   inline def isNull:    Boolean = yaml.asInstanceOf[AnyRef | Null] == null
   inline def isLong:    Boolean = yaml.isInstanceOf[Long]
@@ -78,18 +78,18 @@ extension (yaml: YamlAst)
     raise:
       YamlError(if isAbsent then Reason.Absent else Reason.NotType(primitive, yamlPrimitive))
 
-  inline def arrayLength: Int = YamlAst.sequenceLength(yaml.asInstanceOf[IArray[Any]])
+  inline def arrayLength: Int = Yaml.Ast.sequenceLength(yaml.asInstanceOf[IArray[Any]])
 
-  inline def arrayElement(index: Int): YamlAst =
-    yaml.asInstanceOf[IArray[YamlAst]](index)
+  inline def arrayElement(index: Int): Yaml.Ast =
+    yaml.asInstanceOf[IArray[Yaml.Ast]](index)
 
   inline def objectSize: Int = yaml.asInstanceOf[IArray[Any]].length/2
 
   inline def objectKey(index: Int): String =
     yaml.asInstanceOf[IArray[Any]](index*2).asInstanceOf[String]
 
-  inline def objectValue(index: Int): YamlAst =
-    yaml.asInstanceOf[IArray[Any]](index*2 + 1).asInstanceOf[YamlAst]
+  inline def objectValue(index: Int): Yaml.Ast =
+    yaml.asInstanceOf[IArray[Any]](index*2 + 1).asInstanceOf[Yaml.Ast]
 
   // Linear scan for a key — returns the pair-indexed position (i.e.
   // `objectKey(result)` retrieves the key, `objectValue(result)` the
@@ -107,13 +107,13 @@ extension (yaml: YamlAst)
         i += 2
       hit
 
-  def array(using Tactic[YamlError]): IArray[YamlAst] =
+  def array(using Tactic[YamlError]): IArray[Yaml.Ast] =
     if isArray then
-      val full = yaml.asInstanceOf[IArray[YamlAst]]
+      val full = yaml.asInstanceOf[IArray[Yaml.Ast]]
       val n = arrayLength
       if n == full.length then full
       else IArray.tabulate(n)(full(_))
-    else expected(YamlPrimitive.Sequence) yet IArray[YamlAst]()
+    else expected(YamlPrimitive.Sequence) yet IArray[Yaml.Ast]()
 
   def double(using Tactic[YamlError]): Double = yaml.asInstanceOf[Matchable] match
     case value: Double                 => value
