@@ -127,11 +127,11 @@ object Tests extends Suite(m"Savagery tests"):
       .assert(_ == t"skewY(45.0)")
 
       test(m"Matrix identity"):
-        (Transform.Matrix(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f): Transform).encode
+        (Transform.Matrix(Affine(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f)): Transform).encode
       .assert(_ == t"matrix(1.0,0.0,0.0,1.0,0.0,0.0)")
 
       test(m"Matrix translation"):
-        (Transform.Matrix(1.0f, 0.0f, 0.0f, 1.0f, 5.0f, 10.0f): Transform).encode
+        (Transform.Matrix(Affine(1.0f, 0.0f, 0.0f, 1.0f, 5.0f, 10.0f)): Transform).encode
       .assert(_ == t"matrix(1.0,0.0,0.0,1.0,5.0,10.0)")
 
     suite(m"Outline with attributes"):
