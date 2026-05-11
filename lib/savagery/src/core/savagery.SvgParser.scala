@@ -352,7 +352,7 @@ object SvgParser:
             case ("rotate", List(angle))                => xs += Transform.Rotate(Angle.degrees(angle))
             case ("skewX", List(angle))                 => xs += Transform.SkewX(Angle.degrees(angle))
             case ("skewY", List(angle))                 => xs += Transform.SkewY(Angle.degrees(angle))
-            case ("matrix", List(a, b, c, d, e, f))     => xs += Transform.Matrix(a, b, c, d, e, f)
+            case ("matrix", List(a, b, c, d, e, f))     => xs += Transform.Matrix(Affine(a, b, c, d, e, f))
             case _                                      => () // ignore unknown
         else
           if pos == nameStart then pos += 1 // avoid infinite loop on stray punctuation
