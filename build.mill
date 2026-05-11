@@ -421,11 +421,9 @@ object bitumen extends Library:
   object test extends Tests(core)
 
 object breviloquence extends Library:
-  object ast extends Component(zephyrine.core)
-  object parser extends Component(ast, turbulence.core)
-  object core extends Component(parser, urticose.url, panopticon.core)
+  object core extends Component(urticose.url, panopticon.core)
   object test extends Tests(core, sedentary.core, eucalyptus.core)
-  object bench extends Benchmarks(core, parser, quantitative.units):
+  object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(
       mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.18.2",
       mvn"io.bullet::borer-core:1.16.0"
@@ -1075,8 +1073,6 @@ object publishing extends Module:
     austronesian.core.publishLocal()()
     aviation.core.publishLocal()()
     baroque.core.publishLocal()()
-    breviloquence.ast.publishLocal()()
-    breviloquence.parser.publishLocal()()
     breviloquence.core.publishLocal()()
     burdock.boot.publishLocal()()
     burdock.core.publishLocal()()

@@ -70,7 +70,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
 
   // Helper to build CBOR bytes by hand for the benchmark corpora. Uses the
   // canonical encoder so the inputs are well-formed and deterministic.
-  def encode(ast: CborAst): IArray[Byte] = CborPrinter.encode(ast)
+  def encode(ast: Cbor.Ast): IArray[Byte] = CborPrinter.encode(ast)
 
   // Corpus 1: a small object with three string-keyed entries (id, name, active).
   // Roughly 30 bytes — exercises the head-byte fast path for short strings and
@@ -78,7 +78,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
   lazy val cborBytes1: IArray[Byte] =
     val keys = IArray[Any]("id", "name", "active")
     val values = IArray[Any](42L, "Alice", true)
-    encode(CborAst.map(keys, values))
+    encode(Cbor.Ast.map(keys, values))
 
   // Corpus 2: 100 user records — typical "array of records" pattern with five
   // repeated keys per element.
@@ -88,8 +88,8 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
       val active = (index&1) == 0
       val role = if index%10 == 0 then "admin" else "user"
       val values = IArray[Any](index.toLong, s"user$index", s"user$index@example.com", active, role)
-      CborAst.map(keys, values).asInstanceOf[Any]
-    encode(CborAst.map(IArray[Any]("users"), IArray[Any](CborAst.array(IArray.from(records)))))
+      Cbor.Ast.map(keys, values).asInstanceOf[Any]
+    encode(Cbor.Ast.map(IArray[Any]("users"), IArray[Any](Cbor.Ast.array(IArray.from(records)))))
 
   // Corpus 3: 500 log entries with six keys each — larger throughput target,
   // dominated by short-string parsing and small-integer head bytes.
@@ -103,14 +103,14 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
       val service = services(index % 5)
       val userId = 1000L + (index % 50)
       val values = IArray[Any](ts, level, service, s"req-$index", userId, s"event $index processed")
-      CborAst.map(keys, values).asInstanceOf[Any]
-    encode(CborAst.map(IArray[Any]("logs"), IArray[Any](CborAst.array(IArray.from(records)))))
+      Cbor.Ast.map(keys, values).asInstanceOf[Any]
+    encode(Cbor.Ast.map(IArray[Any]("logs"), IArray[Any](Cbor.Ast.array(IArray.from(records)))))
 
   // Corpus 4: 1000 small integers — exercises the integer head-byte hot path
   // without string or map overhead.
   lazy val cborBytes4: IArray[Byte] =
     val items = IArray.from((0 until 1000).map(index => (index*37 + 1).toLong.asInstanceOf[Any]))
-    encode(CborAst.array(items))
+    encode(Cbor.Ast.array(items))
 
   // Corpus 5: 100 byte-string records — exercises major-type-2 (byte strings),
   // which JSON has no analog for.
@@ -121,7 +121,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
       while j < payload.length do { payload(j) = ((index + j) & 0xFF).toByte; j += 1 }
       payload.asInstanceOf[IArray[Byte]].asInstanceOf[Any]
 
-    encode(CborAst.array(IArray.from(records)))
+    encode(Cbor.Ast.array(IArray.from(records)))
 
   // Corpus 6: deeply nested structure (10-level wrapping) — stresses recursion
   // and the small-array head-byte path.
@@ -129,9 +129,9 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
     var ast: Any = "deep"
     var index = 0
     while index < 10 do
-      ast = CborAst.map(IArray[Any](s"level$index"), IArray[Any](ast))
+      ast = Cbor.Ast.map(IArray[Any](s"level$index"), IArray[Any](ast))
       index += 1
-    encode(ast.asInstanceOf[CborAst])
+    encode(ast.asInstanceOf[Cbor.Ast])
 
   // Pre-converted to plain Array[Byte] for the comparison parsers (Jackson and
   // borer take Array[Byte]; the IArray.unsafeMutable cast is safe for read-only
@@ -156,7 +156,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
     suite(m"Parse small object (3 fields)"):
       bench(m"Parse with Breviloquence")
         (target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min)):
-        '{ CborAst.parse(breviloquence.Benchmarks.cborBytes1) }
+        '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes1) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size1):
         '{ breviloquence.Benchmarks.parseWithJackson(breviloquence.Benchmarks.raw1) }
@@ -167,7 +167,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
     suite(m"Parse 100 user records"):
       bench(m"Parse with Breviloquence")
         (target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min)):
-        '{ CborAst.parse(breviloquence.Benchmarks.cborBytes2) }
+        '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes2) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size2):
         '{ breviloquence.Benchmarks.parseWithJackson(breviloquence.Benchmarks.raw2) }
@@ -178,7 +178,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
     suite(m"Parse 500 log entries"):
       bench(m"Parse with Breviloquence")
         (target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min)):
-        '{ CborAst.parse(breviloquence.Benchmarks.cborBytes3) }
+        '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes3) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size3):
         '{ breviloquence.Benchmarks.parseWithJackson(breviloquence.Benchmarks.raw3) }
@@ -189,7 +189,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
     suite(m"Parse 1000 small integers"):
       bench(m"Parse with Breviloquence")
         (target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min)):
-        '{ CborAst.parse(breviloquence.Benchmarks.cborBytes4) }
+        '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes4) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size4):
         '{ breviloquence.Benchmarks.parseWithJackson(breviloquence.Benchmarks.raw4) }
@@ -200,7 +200,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
     suite(m"Parse 100 byte strings"):
       bench(m"Parse with Breviloquence")
         (target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min)):
-        '{ CborAst.parse(breviloquence.Benchmarks.cborBytes5) }
+        '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes5) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size5):
         '{ breviloquence.Benchmarks.parseWithJackson(breviloquence.Benchmarks.raw5) }
@@ -211,7 +211,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
     suite(m"Parse 10-level nested map"):
       bench(m"Parse with Breviloquence")
         (target = 1*Second, operationSize = size6, baseline = Baseline(compare = Min)):
-        '{ CborAst.parse(breviloquence.Benchmarks.cborBytes6) }
+        '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes6) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size6):
         '{ breviloquence.Benchmarks.parseWithJackson(breviloquence.Benchmarks.raw6) }

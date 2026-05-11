@@ -35,7 +35,7 @@ package breviloquence
 import scala.collection.mutable.ArrayBuffer
 
 object CborPrinter:
-  def encode(cbor: CborAst): IArray[Byte] =
+  def encode(cbor: Cbor.Ast): IArray[Byte] =
     val buffer = ArrayBuffer.empty[Byte]
     write(buffer, cbor)
     val out = new Array[Byte](buffer.length)
@@ -88,7 +88,7 @@ object CborPrinter:
     out += ((value >>> 8) & 0xFF).toByte
     out += (value & 0xFF).toByte
 
-  private def write(out: ArrayBuffer[Byte], cbor: CborAst): Unit =
+  private def write(out: ArrayBuffer[Byte], cbor: Cbor.Ast): Unit =
     if cbor.isInteger then
       val long = cbor.asInstanceOf[Long]
       if long >= 0 then head(out, 0, long)
@@ -121,9 +121,9 @@ object CborPrinter:
     else if cbor.unset then out += 0xF7.toByte
 
     else if cbor.isTag then
-      val tag = cbor.asInstanceOf[CborTag]
+      val tag = cbor.asInstanceOf[Cbor.Tag]
       head(out, 6, tag.tag)
-      write(out, tag.value.asInstanceOf[CborAst])
+      write(out, tag.value.asInstanceOf[Cbor.Ast])
 
     else if cbor.isArray then
       val count = cbor.elements
@@ -144,12 +144,12 @@ object CborPrinter:
         write(out, cbor.value(index))
         index += 1
 
-  def diagnostic(cbor: CborAst): String =
+  def diagnostic(cbor: Cbor.Ast): String =
     val builder = new java.lang.StringBuilder
     append(builder, cbor)
     builder.toString
 
-  private def append(builder: java.lang.StringBuilder, cbor: CborAst): Unit =
+  private def append(builder: java.lang.StringBuilder, cbor: Cbor.Ast): Unit =
     if cbor.isInteger then builder.append(cbor.asInstanceOf[Long].toString)
     else if cbor.isFloat then
       val double = cbor.asInstanceOf[Double]
@@ -194,10 +194,10 @@ object CborPrinter:
     else if cbor.unset then builder.append("undefined")
 
     else if cbor.isTag then
-      val tag = cbor.asInstanceOf[CborTag]
+      val tag = cbor.asInstanceOf[Cbor.Tag]
       builder.append(tag.tag.toString)
       builder.append('(')
-      append(builder, tag.value.asInstanceOf[CborAst])
+      append(builder, tag.value.asInstanceOf[Cbor.Ast])
       builder.append(')')
 
     else if cbor.isArray then
