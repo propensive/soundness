@@ -93,28 +93,28 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
     suite(m"Positive tests"):
       positiveCases.each: (name, data) =>
         test(Message(name.skip(5, Rtl))):
-          JsonAst.parse(data)
+          Json.Ast.parse(data)
         .check()
 
     suite(m"Negative tests"):
       negativeCases.each: (name, data) =>
         test(Message(name.skip(5, Rtl))):
-          capture[ParseError](JsonAst.parse(data))
+          capture[ParseError](Json.Ast.parse(data))
         .matches:
           case ParseError(_, _, _) => true
 
     suite(m"Number tests"):
       test(m"Parse 0e+1"):
-        t"0e+1".read[JsonAst]
-      . assert(_ == JsonAst(0L))
+        t"0e+1".read[Json.Ast]
+      . assert(_ == Json.Ast(0L))
 
       test(m"Parse 0e1"):
-        t"0e1".read[JsonAst]
-      . assert(_ == JsonAst(0L))
+        t"0e1".read[Json.Ast]
+      . assert(_ == Json.Ast(0L))
 
       test(m"Parse ' 4'"):
-        t" 4".read[JsonAst]
-      . assert(_ == JsonAst(4L))
+        t" 4".read[Json.Ast]
+      . assert(_ == Json.Ast(4L))
 
       test(m"Parse small negative number"):
         // Number exceeds 15 nibbles, so the parser hands back a `Bcd`
@@ -123,73 +123,73 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         // to return.
         val raw =
           t"-0.000000000000000000000000000000000000000000000000000000000000000000000000000001"
-          . read[JsonAst]
+          . read[Json.Ast]
         raw.asInstanceOf[Bcd].toDouble
       . assert(_ == -1.0e-78)
 
       test(m"Parse 20e1"):
-        t"20e1".read[JsonAst]
-      . assert(_ == JsonAst(200L))
+        t"20e1".read[Json.Ast]
+      . assert(_ == Json.Ast(200L))
 
       test(m"Parse 123e65"):
-        t"123e65".read[JsonAst]
-      . assert(_ == JsonAst(1.23e67))
+        t"123e65".read[Json.Ast]
+      . assert(_ == Json.Ast(1.23e67))
 
       test(m"Parse -0"):
-        t"-0".read[JsonAst]
-      . assert(_ == JsonAst(-0.0))
+        t"-0".read[Json.Ast]
+      . assert(_ == Json.Ast(-0.0))
 
       test(m"Parse -123"):
-        t"-123".read[JsonAst]
-      . assert(_ == JsonAst(-123L))
+        t"-123".read[Json.Ast]
+      . assert(_ == Json.Ast(-123L))
 
       test(m"Parse -1"):
-        t"-1".read[JsonAst]
-      . assert(_ == JsonAst(-1L))
+        t"-1".read[Json.Ast]
+      . assert(_ == Json.Ast(-1L))
 
       test(m"Parse 1E22"):
-        t"1E22".read[JsonAst]
-      . assert(_ == JsonAst(1.0E22))
+        t"1E22".read[Json.Ast]
+      . assert(_ == Json.Ast(1.0E22))
 
       test(m"Parse 1E-2"):
-        t"1E-2".read[JsonAst]
-      . assert(_ == JsonAst(1.0E-2))
+        t"1E-2".read[Json.Ast]
+      . assert(_ == Json.Ast(1.0E-2))
 
       test(m"Parse 1E+2"):
-        t"1E+2".read[JsonAst]
-      . assert(_ == JsonAst(1.0E2))
+        t"1E+2".read[Json.Ast]
+      . assert(_ == Json.Ast(1.0E2))
 
       test(m"Parse 123e45"):
-        t"123e45".read[JsonAst]
-      . assert(_ == JsonAst(1.23E47))
+        t"123e45".read[Json.Ast]
+      . assert(_ == Json.Ast(1.23E47))
 
       test(m"Parse 123.456e78"):
-        t"123.456e78".read[JsonAst]
-      . assert(_ == JsonAst(1.23456E80))
+        t"123.456e78".read[Json.Ast]
+      . assert(_ == Json.Ast(1.23456E80))
 
       test(m"Parse 1e-2"):
-        t"1e-2".read[JsonAst]
-      . assert(_ == JsonAst(1.0E-2))
+        t"1e-2".read[Json.Ast]
+      . assert(_ == Json.Ast(1.0E-2))
 
       test(m"Parse 1e+2"):
-        t"1e+2".read[JsonAst]
-      . assert(_ == JsonAst(1.0E2))
+        t"1e+2".read[Json.Ast]
+      . assert(_ == Json.Ast(1.0E2))
 
       test(m"Parse 123"):
-        t"123".read[JsonAst]
-      . assert(_ == JsonAst(123L))
+        t"123".read[Json.Ast]
+      . assert(_ == Json.Ast(123L))
 
       test(m"Parse 123.456789"):
-        t"123.456789".read[JsonAst]
-      . assert(_ == JsonAst(123.456789))
+        t"123.456789".read[Json.Ast]
+      . assert(_ == Json.Ast(123.456789))
 
       test(m"Parse \"Hello World\""):
-        t"\"Hello World\"".read[JsonAst]
-      . assert(_ == JsonAst("Hello World"))
+        t"\"Hello World\"".read[Json.Ast]
+      . assert(_ == Json.Ast("Hello World"))
 
       test(m"Parse \"\""):
-        t"\"\"".read[JsonAst]
-      . assert(_ == JsonAst(""))
+        t"\"\"".read[Json.Ast]
+      . assert(_ == Json.Ast(""))
 
     suite(m"Streaming over multi-block input"):
       def chunks(text: Text, sizes: Int*): Iterator[Data] =
@@ -204,36 +204,36 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
             Some(slice)
 
       test(m"Number split across two blocks"):
-        JsonAst.parse(chunks(t"123456", 3, 3))
-      . assert(_ == JsonAst(123456L))
+        Json.Ast.parse(chunks(t"123456", 3, 3))
+      . assert(_ == Json.Ast(123456L))
 
       test(m"String split mid-content across two blocks"):
-        JsonAst.parse(chunks(t"\"hello world\"", 4, 9))
-      . assert(_ == JsonAst("hello world"))
+        Json.Ast.parse(chunks(t"\"hello world\"", 4, 9))
+      . assert(_ == Json.Ast("hello world"))
 
       test(m"String split mid-escape across two blocks"):
-        JsonAst.parse(chunks(t"\"a\\nb\"", 2, 4))
-      . assert(_ == JsonAst("a\nb"))
+        Json.Ast.parse(chunks(t"\"a\\nb\"", 2, 4))
+      . assert(_ == Json.Ast("a\nb"))
 
       test(m"Keyword true split across blocks"):
-        JsonAst.parse(chunks(t"true", 1, 1, 1, 1))
-      . assert(_ == JsonAst(true))
+        Json.Ast.parse(chunks(t"true", 1, 1, 1, 1))
+      . assert(_ == Json.Ast(true))
 
       test(m"Keyword false split across blocks"):
-        JsonAst.parse(chunks(t"false", 2, 3))
-      . assert(_ == JsonAst(false))
+        Json.Ast.parse(chunks(t"false", 2, 3))
+      . assert(_ == Json.Ast(false))
 
       test(m"Keyword null split across blocks"):
-        JsonAst.parse(chunks(t"null", 1, 1, 2))
-      . assert(_ == JsonAst(null))
+        Json.Ast.parse(chunks(t"null", 1, 1, 2))
+      . assert(_ == Json.Ast(null))
 
       test(m"Decimal number split at decimal point"):
-        JsonAst.parse(chunks(t"123.456", 3, 4))
-      . assert(_ == JsonAst(123.456))
+        Json.Ast.parse(chunks(t"123.456", 3, 4))
+      . assert(_ == Json.Ast(123.456))
 
       test(m"Whitespace then value across blocks"):
-        JsonAst.parse(chunks(t"   42", 2, 3))
-      . assert(_ == JsonAst(42L))
+        Json.Ast.parse(chunks(t"   42", 2, 3))
+      . assert(_ == Json.Ast(42L))
 
     suite(m"Hole-mode parsing"):
       def bytes(text: Text): Data = IArray.from(text.s.getBytes("UTF-8").nn)
@@ -255,50 +255,50 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
           else
             // Array: strip sentinel pad if present
             val elems =
-              if raw.nonEmpty && raw.last.asInstanceOf[AnyRef] == JsonAst.arrayPad
+              if raw.nonEmpty && raw.last.asInstanceOf[AnyRef] == Json.Ast.arrayPad
               then raw.init else raw
             elems.map(shape)
         case other => other
 
       test(m"Hole as a top-level value"):
-        shape(JsonAst.parse(bytes(t" "), holes = true))
+        shape(Json.Ast.parse(bytes(t" "), holes = true))
       . assert(_ == Unset)
 
       test(m"Hole as an array element"):
-        shape(JsonAst.parse(bytes(t"[ ]"), holes = true))
+        shape(Json.Ast.parse(bytes(t"[ ]"), holes = true))
       . assert(_ == List(Unset))
 
       test(m"Hole as an object value"):
-        shape(JsonAst.parse(bytes(t"""{"a":   }"""), holes = true))
+        shape(Json.Ast.parse(bytes(t"""{"a":   }"""), holes = true))
       . assert(_ == (List("a"), List(Unset)))
 
       test(m"Hole as an object rest, no other entries"):
-        shape(JsonAst.parse(bytes(t"{ }"), holes = true))
+        shape(Json.Ast.parse(bytes(t"{ }"), holes = true))
       . assert(_ == (List("\u0000"), List(Unset)))
 
       test(m"Hole as an object rest after literal entry"):
-        shape(JsonAst.parse(bytes(t"""{"a": 1,   }"""), holes = true))
+        shape(Json.Ast.parse(bytes(t"""{"a": 1,   }"""), holes = true))
       . assert(_ == (List("a", "\u0000"), List(1L, Unset)))
 
       test(m"Hole inside a string is preserved"):
-        shape(JsonAst.parse(bytes(t""" "x y" """), holes = true))
+        shape(Json.Ast.parse(bytes(t""" "x y" """), holes = true))
       . assert(_ == "x\u0000y")
 
       test(m"Plain mode rejects a value-position hole"):
-        capture[ParseError](JsonAst.parse(bytes(t" ")))
+        capture[ParseError](Json.Ast.parse(bytes(t" ")))
       . matches:
           case ParseError(_, _, _) => true
 
       test(m"Plain mode rejects a hole inside a string"):
-        capture[ParseError](JsonAst.parse(bytes(t""" "a b" """)))
+        capture[ParseError](Json.Ast.parse(bytes(t""" "a b" """)))
       . matches:
           case ParseError(_, _, _) => true
 
     suite(m"Position ranges"):
       def asBytes(text: Text): Data = IArray.from(text.s.getBytes("UTF-8").nn)
-      def position(input: Text): JsonAst.Position =
-        capture[ParseError](JsonAst.parse(asBytes(input)))
-        . position.asInstanceOf[JsonAst.Position]
+      def position(input: Text): Json.Ast.Position =
+        capture[ParseError](Json.Ast.parse(asBytes(input)))
+        . position.asInstanceOf[Json.Ast.Position]
 
       // Bad escape \q after the opening quote (raw to avoid Text-interpolator escaping).
       val badEscape = t""" "abc${"\\"}q" """
@@ -312,7 +312,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(_ == (1: Int))
 
     suite(m"Number-only arrays"):
-      def parseRaw(text: Text): Any = JsonAst.parse(IArray.from(text.s.getBytes("UTF-8").nn))
+      def parseRaw(text: Text): Any = Json.Ast.parse(IArray.from(text.s.getBytes("UTF-8").nn))
 
       test(m"Pure integer array uses the unboxed Array[Double] form"):
         parseRaw(t"[1, 2, 3]").getClass.getName
@@ -325,7 +325,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       test(m"Decimal-only array uses the unboxed form and round-trips"):
         val raw = parseRaw(t"[1.5, 2.25, 3.125]")
         raw.getClass.getName == "[D"
-        && JsonPrinter.print(raw.asInstanceOf[JsonAst], false) == t"[1.5,2.25,3.125]"
+        && JsonPrinter.print(raw.asInstanceOf[Json.Ast], false) == t"[1.5,2.25,3.125]"
       . assert(identity)
 
       test(m"Exponent-bearing numbers stay in the unboxed form"):
@@ -339,7 +339,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
 
       test(m"Empty array uses the parity-padded boxed form, not Array[Double]"):
         val raw = parseRaw(t"[]")
-        raw.asInstanceOf[JsonAst].isArray && !raw.asInstanceOf[JsonAst].isNumberArray
+        raw.asInstanceOf[Json.Ast].isArray && !raw.asInstanceOf[Json.Ast].isNumberArray
       . assert(identity)
 
       test(m"Single-element number array uses the unboxed form"):
@@ -348,7 +348,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
 
       test(m"Non-number after numbers triggers fallback to the boxed form"):
         val raw = parseRaw(t"""[1, 2, "three"]""")
-        raw.asInstanceOf[JsonAst].isArray && !raw.asInstanceOf[JsonAst].isNumberArray
+        raw.asInstanceOf[Json.Ast].isArray && !raw.asInstanceOf[Json.Ast].isNumberArray
       . assert(identity)
 
       test(m"Fallback array preserves the leading numbers as Long values"):
@@ -361,12 +361,12 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         // 16-digit value overflows the 15-nibble in-Long fast path and
         // forces a Bcd fallback, which doesn't fit in Array[Double].
         val raw = parseRaw(t"[1, 1234567890123456]")
-        raw.asInstanceOf[JsonAst].isArray && !raw.asInstanceOf[JsonAst].isNumberArray
+        raw.asInstanceOf[Json.Ast].isArray && !raw.asInstanceOf[Json.Ast].isNumberArray
       . assert(identity)
 
       test(m"Fallback retains the Bcd-overflow number as Bcd"):
         val raw = parseRaw(t"[1, 1234567890123456]")
-        raw.asInstanceOf[JsonAst].arrayElement(1).isBcd
+        raw.asInstanceOf[Json.Ast].arrayElement(1).isBcd
       . assert(identity)
 
       test(m"15-nibble integer (parser fast path) stays in the unboxed form"):
@@ -378,20 +378,20 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
 
       test(m"Non-number first element keeps the boxed buffer"):
         val raw = parseRaw(t"""["a", 1, 2]""")
-        raw.asInstanceOf[JsonAst].isArray && !raw.asInstanceOf[JsonAst].isNumberArray
+        raw.asInstanceOf[Json.Ast].isArray && !raw.asInstanceOf[Json.Ast].isNumberArray
       . assert(identity)
 
       test(m"Hand-built boxed array of Longs equals a parsed number array"):
-        val elements: IArray[Any] = IArray(JsonAst(1L), JsonAst(2L), JsonAst(3L))
-        val handBuilt = Json.ast(JsonAst.arr(elements))
+        val elements: IArray[Any] = IArray(Json.Ast(1L), Json.Ast(2L), Json.Ast(3L))
+        val handBuilt = Json.ast(Json.Ast.arr(elements))
         handBuilt == t"[1, 2, 3]".read[Json]
       . assert(identity)
 
     suite(m"Boxed-array storage"):
-      def parseRaw(text: Text): Any = JsonAst.parse(IArray.from(text.s.getBytes("UTF-8").nn))
+      def parseRaw(text: Text): Any = Json.Ast.parse(IArray.from(text.s.getBytes("UTF-8").nn))
 
       test(m"Empty array round-trips via the printer"):
-        JsonPrinter.print(parseRaw(t"[]").asInstanceOf[JsonAst], false)
+        JsonPrinter.print(parseRaw(t"[]").asInstanceOf[Json.Ast], false)
       . assert(_ == t"[]")
 
       test(m"Even-length mixed array reports its user-visible length"):
@@ -399,7 +399,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         // (parity-padded) form. The user-visible length is 2 even though
         // the underlying IArray carries a sentinel pad to keep the length
         // odd (and so distinguishable from an object).
-        parseRaw(t"""[1, "x"]""").asInstanceOf[JsonAst].arrayLength
+        parseRaw(t"""[1, "x"]""").asInstanceOf[Json.Ast].arrayLength
       . assert(_ == 2)
 
       test(m"Object equality is preserved"):

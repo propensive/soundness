@@ -39,7 +39,7 @@ import vacuous.*
 import zephyrine.*
 
 // The parser representation of a YAML value. Modelled on Jacinta's
-// `JsonAst`: an opaque union over the primitive JVM types so that
+// `Json.Ast`: an opaque union over the primitive JVM types so that
 // primitive values are stored without case-class wrapping. Sequences
 // and mappings are both stored as `IArray[Any]`, distinguished by
 // length parity:
@@ -222,7 +222,7 @@ object YamlAst extends Format:
       case UnknownAlias(name) =>
         m"the alias *$name does not refer to a known anchor"
 
-  // Byte constants used by the parser (mirrors `JsonAst.AsciiByte` from
+  // Byte constants used by the parser (mirrors `Json.Ast.AsciiByte` from
   // Jacinta).
   object Byte:
     inline final val Tab:           9   = 9

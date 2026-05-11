@@ -176,7 +176,7 @@ object soundness extends ScalaModule:
     surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core)
 
   object data extends Bundle(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
-    gastronomy.core, chiaroscuro.core, jacinta.ast, jacinta.parser, jacinta.core, monotonous.core,
+    gastronomy.core, chiaroscuro.core, jacinta.core, monotonous.core,
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
     vexillology.core)
@@ -733,16 +733,14 @@ object iridescence extends Library:
   object test extends Tests(core)
 
 object jacinta extends Library:
-  object ast extends Component(zephyrine.core)
-  object parser extends Component(ast, turbulence.core)
-  object core extends Component(parser, urticose.url, panopticon.core)
+  object core extends Component(zephyrine.core, turbulence.core, urticose.url, panopticon.core)
   object time extends Component(core, aviation.core)
   object http extends Component(core, telekinesis.core)
   object schema extends Component(core, telekinesis.core)
   object records extends Component(core, polyvinyl.core)
-  object test extends Tests(time, http, schema, records, parser, sedentary.core, diuretic.core,
+  object test extends Tests(time, http, schema, records, sedentary.core, diuretic.core,
     galilei.core, octogenarian.core, eucalyptus.core)
-  object bench extends Benchmarks(core, parser, quantitative.units):
+  object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(
       mvn"org.typelevel::jawn-ast:1.6.0",
       mvn"io.circe::circe-parser:0.14.13",
@@ -1003,7 +1001,7 @@ object yossarian extends Library:
   object test extends Tests(core)
 
 object ypsiloid extends Library:
-  object core extends Component(distillate.core, turbulence.core, gossamer.core, contingency.core, vacuous.core, wisteria.core, zephyrine.core, panopticon.core, urticose.url, serpentine.core, beneficence.core, gigantism.core, contextual.core, jacinta.ast)
+  object core extends Component(distillate.core, turbulence.core, gossamer.core, contingency.core, vacuous.core, wisteria.core, zephyrine.core, panopticon.core, urticose.url, serpentine.core, beneficence.core, gigantism.core, contextual.core, jacinta.core)
 
   object test extends Tests(core, jacinta.core):
     def yamlTestSuiteCommit = "6ad3d2c62885d82fc349026c136ef560838fdf3d"
@@ -1131,8 +1129,6 @@ object publishing extends Module:
     imperial.core.publishLocal()()
     inimitable.core.publishLocal()()
     iridescence.core.publishLocal()()
-    jacinta.ast.publishLocal()()
-    jacinta.parser.publishLocal()()
     jacinta.core.publishLocal()()
     jacinta.http.publishLocal()()
     jacinta.time.publishLocal()()

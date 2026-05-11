@@ -376,19 +376,19 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == t"""{"outer":{"inner":1}}""")
 
       test(m"Construct via Json.ast with a long"):
-        Json.ast(JsonAst(7L)).show
+        Json.ast(Json.Ast(7L)).show
       . assert(_ == t"7")
 
       test(m"Construct via Json.ast with a string"):
-        Json.ast(JsonAst("hello")).show
+        Json.ast(Json.Ast("hello")).show
       . assert(_ == t""""hello"""")
 
       test(m"Construct via Json.ast with a boolean"):
-        Json.ast(JsonAst(true)).show
+        Json.ast(Json.Ast(true)).show
       . assert(_ == t"true")
 
       test(m"Construct via Json.ast with null"):
-        Json.ast(JsonAst(null)).show
+        Json.ast(Json.Ast(null)).show
       . assert(_ == t"null")
 
     suite(m"Json field/index access"):
@@ -543,7 +543,7 @@ object Tests extends Suite(m"Jacinta Tests"):
         json.equals("string")
       . assert(!_)
 
-    suite(m"JsonAst type predicates"):
+    suite(m"Json.Ast type predicates"):
       test(m"isLong on a long literal"):
         Json.unseal(t"42".read[Json]).isLong
       . assert(identity)
@@ -593,10 +593,10 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(!_)
 
       test(m"isAbsent on an absent value"):
-        Json.unseal(Json.ast(JsonAst(Unset))).isAbsent
+        Json.unseal(Json.ast(Json.Ast(Unset))).isAbsent
       . assert(identity)
 
-    suite(m"JsonAst conversions"):
+    suite(m"Json.Ast conversions"):
       test(m"Decode a Long from a number"):
         t"123".read[Json].as[Long]
       . assert(_ == 123L)

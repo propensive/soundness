@@ -44,6 +44,7 @@ import contextual.*
 import contingency.*
 import denominative.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import panopticon.*
@@ -69,7 +70,7 @@ trait Json2:
       type Form = Json
 
       def encoded(value: Optional[value]): Json =
-        value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Json.ast(JsonAst(Unset)))
+        value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Json.ast(Json.Ast(Unset)))
 
 
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[JsonError]
@@ -89,7 +90,7 @@ trait Json2:
       DecodableDerivation.derived
 
   inline given encodable: [value] => value is Encodable in Json = summonFrom:
-    case given (`value` is Encodable in Text) => value => Json.ast(JsonAst(value.encode.s))
+    case given (`value` is Encodable in Text) => value => Json.ast(Json.Ast(value.encode.s))
     case given Reflection[`value`]            => EncodableDerivation.derived
 
   object DecodableDerivation extends Derivable[Decodable in Json]:
@@ -100,7 +101,7 @@ trait Json2:
           provide[Tactic[JsonError]]:
             val root = json.root
             val n = root.objectSize
-            val values = scm.HashMap.empty[String, JsonAst]
+            val values = scm.HashMap.empty[String, Json.Ast]
             var i = 0
             while i < n do
               values.update(root.objectKey(i), root.objectValue(i))
@@ -111,7 +112,7 @@ trait Json2:
                 focus(prior.or(JsonPointer()) / label):
                   values.get(label.s) match
                     case Some(value) => context.decoded(new Json(value))
-                    case None        => default.or(context.decoded(new Json(JsonAst(Unset))))
+                    case None        => default.or(context.decoded(new Json(Json.Ast(Unset))))
 
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Json =
       json =>
@@ -132,7 +133,7 @@ trait Json2:
       value =>
         provide[Foci[JsonPointer]]:
           val labels: scm.ArrayBuffer[String] = scm.ArrayBuffer()
-          val values: scm.ArrayBuffer[JsonAst] = scm.ArrayBuffer()
+          val values: scm.ArrayBuffer[Json.Ast] = scm.ArrayBuffer()
 
           fields(value): [field] =>
             field => focus(prior.or(JsonPointer()) / label):
@@ -142,7 +143,7 @@ trait Json2:
                   values += encoded
 
           Json.ast
-            ( JsonAst.obj
+            ( Json.Ast.obj
                 ( unsafely(labels.toArray.immutable), unsafely(values.toArray.immutable) ) )
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Json = value =>
@@ -152,12 +153,184 @@ trait Json2:
         value => discriminable.rewrite(label, contextual.encode(value))
 
 object Json extends Json2, Dynamic:
-  def ast(value: JsonAst): Json = new Json(value)
+  type JsonString  = String
+  type JsonNumber  = Long | Double | Bcd
+  type JsonBoolean = Boolean
+  type JsonNull    = Null
+  type JsonObject  = IArray[Any]
+  type JsonArray   = IArray[Any] | Array[Double]
+
+  opaque type Ast =
+    JsonString | JsonNumber | JsonBoolean | JsonNull | JsonObject | JsonArray | Unset.type
+
+  object Ast extends Format:
+    def name: Text = "JSON"
+
+    case class Position
+      ( line:                Int,
+        column:              Int,
+        override val offset: Optional[Int] = Unset,
+        override val length: Optional[Int] = Unset )
+    extends Format.Position:
+      def describe: Text = ("line "+line+", column "+column).tt
+
+    enum Issue extends Format.Issue:
+      case EmptyInput
+      case UnexpectedChar(found: Char)
+      case ExpectedTrue
+      case ExpectedFalse
+      case ExpectedNull
+      case ExpectedSomeValue(char: Char)
+      case ExpectedColon(found: Char)
+      case InvalidWhitespace
+      case ExpectedString(found: Char)
+      case ExpectedHexDigit(found: Char)
+      case PrematureEnd
+      case NumberHasLeadingZero
+      case SpuriousContent(found: Char)
+      case LeadingDecimalPoint
+      case NotEscaped(char: Char)
+      case IncorrectEscape(char: Char)
+      case MultipleDecimalPoints
+      case ExpectedDigit(found: Char)
+
+      def describe: Message = this match
+        case EmptyInput              => m"the input was empty"
+        case UnexpectedChar(found)   => m"the character $found was not expected here"
+        case ExpectedTrue            => m"true was expected"
+        case ExpectedFalse           => m"false was expected"
+        case ExpectedNull            => m"null was expected"
+        case ExpectedSomeValue(char) => m"a value was expected but $char was found instead"
+        case ExpectedColon(found)    => m"a colon was expected but $found was found instead"
+        case InvalidWhitespace       => m"invalid whitespace was found"
+        case ExpectedString(found)   => m"a string was expected but $found was found instead"
+        case ExpectedHexDigit(found) => m"a hexadecimal digit was expected"
+        case PrematureEnd            => m"the content ended prematurely"
+        case SpuriousContent(found)  => m"$found was found after the full JSON value was read"
+        case LeadingDecimalPoint     => m"a number cannot start with a decimal point"
+        case NotEscaped(char)        => m"the character $char must be escaped with a backslash"
+        case ExpectedDigit(found)    => m"a digit was expected but $found was found instead"
+        case MultipleDecimalPoints   => m"a number cannot contain more than one decimal point"
+
+        case NumberHasLeadingZero =>
+          m"a number cannot start with a zero except when followed by a decimal point"
+
+        case IncorrectEscape(char) =>
+          m"the character $char was escaped with a backslash unnecessarily"
+
+    object AsciiByte:
+      inline final val Tab:          9   = 9   // '\t'
+      inline final val Newline:      10  = 10  // '\n'
+      inline final val Return:       13  = 13  // '\r'
+      inline final val Space:        32  = 32  // ' '
+      inline final val Comma:        44  = 44  // ','
+      inline final val Quote:        34  = 34  // '"'
+      inline final val Minus:        45  = 45  // '-'
+      inline final val Plus:         43  = 43  // '+'
+      inline final val Slash:        47  = 47  // '/'
+      inline final val Period:       46  = 46  // '.'
+      inline final val Num0:         48  = 48  //'0'
+      inline final val Num1:         49  = 49  //'1'
+      inline final val Num2:         50  = 50  //'2'
+      inline final val Num3:         51  = 51  //'3'
+      inline final val Num4:         52  = 52  //'4'
+      inline final val Num5:         53  = 53  //'5'
+      inline final val Num6:         54  = 54  //'6'
+      inline final val Num7:         55  = 55  //'7'
+      inline final val Num8:         56  = 56  //'8'
+      inline final val Num9:         57  = 57  //'9'
+      inline final val Colon:        58  = 58  // ':'
+      inline final val UpperA:       65  = 65  // 'A'
+      inline final val UpperB:       66  = 66  // 'B'
+      inline final val UpperC:       67  = 67  // 'C'
+      inline final val UpperD:       68  = 68  // 'D'
+      inline final val UpperE:       69  = 69  // 'E'
+      inline final val UpperF:       70  = 70  // 'F'
+      inline final val OpenBracket:  91  = 91  // '['
+      inline final val CloseBracket: 93  = 93  // ']'
+      inline final val Backslash:    92  = 92  // '\\'
+      inline final val LowerA:       97  = 97  // 'a'
+      inline final val LowerB:       98  = 98  // 'b'
+      inline final val LowerC:       99  = 99  // 'c'
+      inline final val LowerD:       100 = 100 // 'd'
+      inline final val LowerE:       101 = 101 // 'e'
+      inline final val LowerF:       102 = 102 // 'f'
+      inline final val LowerL:       108 = 108 // 'l'
+      inline final val LowerN:       110 = 110 // 'n'
+      inline final val LowerR:       114 = 114 // 'r'
+      inline final val LowerS:       115 = 115 // 's'
+      inline final val LowerT:       116 = 116 // 't'
+      inline final val LowerU:       117 = 117 // 'u'
+      inline final val OpenBrace:    123 = 123 // '{'
+      inline final val CloseBrace:   125 = 125 // '}'
+
+    // Sentinel used to pad a heterogeneous array whose original length is
+    // even, so that all such arrays have odd `IArray[Any]` length and can be
+    // distinguished from objects (encoded as alternating `key, value, …` and
+    // therefore always even length). The sentinel only ever appears as the
+    // last element of a padded array and is never part of the user-visible
+    // contents. (Pure number arrays use `Array[Double]` and need no
+    // padding.)
+    val arrayPad: AnyRef = new Object
+
+    def apply
+      ( value
+        : JsonString | JsonNumber | JsonBoolean | JsonNull | JsonObject | JsonArray | Unset.type )
+    :   Ast =
+
+      value
+
+    // Build an object node from parallel `keys` and `values` arrays. The result
+    // is stored as a single `IArray[Any]` of length `2 * keys.length`, with keys
+    // at even indices and values at odd indices.
+    def obj(keys: IArray[String], values: IArray[Any]): Ast =
+      val n = keys.length
+      val arr = new Array[Any](n*2)
+      var i = 0
+      while i < n do
+        arr(i*2) = keys(i)
+        arr(i*2 + 1) = values(i)
+        i += 1
+      arr.asInstanceOf[IArray[Any]]
+
+    // Build a heterogeneous array node. If the element count is even, a
+    // single sentinel `arrayPad` is appended so the stored `IArray[Any]` has
+    // odd length, distinguishing it from objects (always even length).
+    def arr(elements: IArray[Any]): Ast =
+      val n = elements.length
+      if (n & 1) == 1 then elements
+      else
+        val padded = new Array[Any](n + 1)
+        System.arraycopy(elements.asInstanceOf[Array[Any]], 0, padded, 0, n)
+        padded(n) = arrayPad
+        padded.asInstanceOf[IArray[Any]]
+
+    // Build a number-only array node. Each element is the parsed `Double`
+    // value. Used by the parser when every element of a JSON array fits the
+    // in-Long fast path (≤ 15 nibbles); a number that overflows to `Bcd`
+    // forces a fallback to the boxed (parity-padded) form. `Array[Double]`
+    // is `[D` at runtime — distinct from `[J` (`Bcd`) and
+    // `[Ljava/lang/Object;` (`IArray[Any]`), so no wrapping is needed.
+    def numArr(values: Array[Double]): Ast = values
+
+    // The number of user-visible elements in an array node (excludes the
+    // sentinel pad of a parity-padded heterogeneous array, if present).
+    def arrayLength(json: Ast): Int = (json: @unchecked) match
+      case nums: Array[Double] @unchecked => nums.length
+      case _ =>
+        val arr = json.asInstanceOf[Array[?]]
+        val n = arr.length
+        if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq arrayPad) then n - 1 else n
+
+    // The number of key/value pairs in an object node.
+    def objectSize(json: Ast): Int = json.asInstanceOf[IArray[Any]].length/2
+
+  def ast(value: Json.Ast): Json = new Json(value)
 
   // Canonical external accessor for the underlying AST. The `root`
   // method on `class Json` is package-private so that breaking through
   // the `Json` abstraction is a deliberate, named action.
-  def unseal(json: Json): JsonAst = json.root
+  def unseal(json: Json): Json.Ast = json.root
 
 
   inline given interpolator: Json is Interpolable:
@@ -197,7 +370,7 @@ object Json extends Json2, Dynamic:
                 then lambda(Json.ast(origin.root.arrayElement(i))).root
                 else origin.root.arrayElement(i)
               i += 1
-            JsonAst.arr(updated.asInstanceOf[IArray[Any]])
+            Json.Ast.arr(updated.asInstanceOf[IArray[Any]])
         else origin
 
   given boolean: Json is Decodable in Json = identity(_)
@@ -235,43 +408,43 @@ object Json extends Json2, Dynamic:
       type Form = Json
 
       def encoded(value: Option[value]): Json = value match
-        case None        => Json.ast(JsonAst(Unset))
+        case None        => Json.ast(Json.Ast(Unset))
         case Some(value) => encodable.encode(value)
 
 
   given integralEncodable: [integral: Integral] => integral is Encodable in Json =
-    int => Json.ast(JsonAst(integral.toLong(int)))
+    int => Json.ast(Json.Ast(integral.toLong(int)))
 
-  given textEncodableInJson: Text is Encodable in Json = text => Json.ast(JsonAst(text.s))
-  given stringEncodable: String is Encodable in Json = string => Json.ast(JsonAst(string))
-  given doubleEncodable: Double is Encodable in Json = double => Json.ast(JsonAst(double))
-  given intEncodable: Int is Encodable in Json = int => Json.ast(JsonAst(int.toLong))
-  given unitEncodable: Unit is Encodable in Json = unit => Json.ast(JsonAst(null))
+  given textEncodableInJson: Text is Encodable in Json = text => Json.ast(Json.Ast(text.s))
+  given stringEncodable: String is Encodable in Json = string => Json.ast(Json.Ast(string))
+  given doubleEncodable: Double is Encodable in Json = double => Json.ast(Json.Ast(double))
+  given intEncodable: Int is Encodable in Json = int => Json.ast(Json.Ast(int.toLong))
+  given unitEncodable: Unit is Encodable in Json = unit => Json.ast(Json.Ast(null))
 
   given ordinalEncodable: Ordinal is Encodable in Json =
-    ordinal => Json.ast(JsonAst(ordinal.n0.toLong))
+    ordinal => Json.ast(Json.Ast(ordinal.n0.toLong))
 
-  given longEncodable: Long is Encodable in Json = long => Json.ast(JsonAst(long))
-  given booleanEncodable: Boolean is Encodable in Json = boolean => Json.ast(JsonAst(boolean))
+  given longEncodable: Long is Encodable in Json = long => Json.ast(Json.Ast(long))
+  given booleanEncodable: Boolean is Encodable in Json = boolean => Json.ast(Json.Ast(boolean))
   given jsonEncodable: Json is Encodable in Json = identity(_)
 
 
   given listEncodable: [list <: List, element] => (encodable: => element is Encodable in Json)
   =>  list[element] is Encodable in Json =
 
-    values => Json.ast(JsonAst.arr(IArray.from(values.map(encodable.encoded(_).root))))
+    values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given setEncodable: [set <: Set, element] => (encodable: => element is Encodable in Json)
   =>  set[element] is Encodable in Json =
 
-    values => Json.ast(JsonAst.arr(IArray.from(values.map(encodable.encoded(_).root))))
+    values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given trieEncodable: [trie <: Trie, element] => (encodable: => element is Encodable in Json)
   =>  trie[element] is Encodable in Json =
 
-    values => Json.ast(JsonAst.arr(IArray.from(values.map(encodable.encoded(_).root))))
+    values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given array: [collection <: Iterable, element]
@@ -314,19 +487,19 @@ object Json extends Json2, Dynamic:
     map =>
       val keys: List[key] = map.keys.to(List)
       val values = IArray.from(keys.map(map(_).encode.root))
-      Json.ast(JsonAst.obj(IArray.from(keys.map(_.encode.s)), values))
+      Json.ast(Json.Ast.obj(IArray.from(keys.map(_.encode.s)), values))
 
 
   given jsonEncodableInText: Json is Encodable in Text = json => JsonPrinter.print(json.root, false)
 
   given aggregable: Tactic[ParseError] => Json is Aggregable by Data =
-    bytes => Json(bytes.read[JsonAst])
+    bytes => Json(bytes.read[Json.Ast])
 
 
   given aggregableDirect: [value: Decodable in Json] => Tactic[ParseError] => Tactic[JsonError]
   =>  (value over Json) is Aggregable by Data =
 
-    bytes => Json(bytes.read[JsonAst]).as[value].asInstanceOf[value over Json]
+    bytes => Json(bytes.read[Json.Ast]).as[value].asInstanceOf[value over Json]
 
 
   given showable: JsonPrinter => Json is Showable = _.root.show
@@ -352,8 +525,8 @@ object Json extends Json2, Dynamic:
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0)))
-    val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
-    Json(JsonAst.obj(keys, values.asInstanceOf[IArray[Any]]))
+    val values: IArray[Json.Ast] = IArray.from(elements.map(_(1).root))
+    Json(Json.Ast.obj(keys, values.asInstanceOf[IArray[Any]]))
 
   def discriminatedUnion[value](label: Text): value is Discriminable in Json = new Discriminable:
     type Form = Json
@@ -368,7 +541,7 @@ object Json extends Json2, Dynamic:
     def variant(json: Json): Json = unsafely(json.updateDynamic(key)(Unset))
 
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
-  private[jacinta] def root: JsonAst = rootValue.asInstanceOf[JsonAst]
+  private[jacinta] def root: Json.Ast = rootValue.asInstanceOf[Json.Ast]
   def apply(index: Int): Json raises JsonError = Json(root.array(index))
 
   def selectDynamic(field: String)(using erased DynamicJsonEnabler): Json raises JsonError =
@@ -393,7 +566,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
         if i == index then value.encode.root
         else root.arrayElement(i)
       i += 1
-    Json.ast(JsonAst.arr(updated.asInstanceOf[IArray[Any]]))
+    Json.ast(Json.Ast.arr(updated.asInstanceOf[IArray[Any]]))
 
 
   def updateDynamic(field: String)[value: Encodable in Json](value: value)
@@ -419,13 +592,13 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
         System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, len)
         out(len) = field
         out(len + 1) = value.root
-        Json.ast(JsonAst(out.asInstanceOf[IArray[Any]]))
+        Json.ast(Json.Ast(out.asInstanceOf[IArray[Any]]))
 
       case index =>
         val out = new Array[Any](len)
         System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, len)
         out(index*2 + 1) = value.root
-        Json.ast(JsonAst(out.asInstanceOf[IArray[Any]]))
+        Json.ast(Json.Ast(out.asInstanceOf[IArray[Any]]))
 
   private[jacinta] def delete(field: String): Json raises JsonError =
     val arr = root.asInstanceOf[IArray[Any]]
@@ -443,16 +616,16 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
                   out,
                   index*2,
                   len - index*2 - 2 )
-        Json.ast(JsonAst(out.asInstanceOf[IArray[Any]]))
+        Json.ast(Json.Ast(out.asInstanceOf[IArray[Any]]))
 
   def apply(field: Text): Json raises JsonError =
-    if root.isAbsent then Json.ast(JsonAst(Unset))
+    if root.isAbsent then Json.ast(Json.Ast(Unset))
     else root.objectIndexOf(field.s) match
-      case -1    => Json.ast(JsonAst(Unset))
+      case -1    => Json.ast(Json.Ast(Unset))
       case index => Json(root.objectValue(index))
 
   override def hashCode: Int =
-    def recur(value: JsonAst): Int = value.asMatchable match
+    def recur(value: Json.Ast): Int = value.asMatchable match
       case value: Long       => value.hashCode
       case value: Double     => value.hashCode
       case value: String     => value.hashCode
@@ -462,7 +635,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
         // Number-only array — hash each element through the same recursion
         // path so cross-form equality with the boxed array stays
         // consistent.
-        val ast = value.asInstanceOf[JsonAst]
+        val ast = value.asInstanceOf[Json.Ast]
         val n = value.length
         var acc = n.hashCode
         var i = 0
@@ -479,7 +652,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
       case value: IArray[Any] @unchecked =>
         // Heterogeneous array or object, distinguished by parity.
-        val ast = value.asInstanceOf[JsonAst]
+        val ast = value.asInstanceOf[Json.Ast]
         if ast.isObject then
           val n = ast.objectSize
           var acc = Map.empty[String, Int]
@@ -504,7 +677,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
   override def equals(right: Any): Boolean = right.asMatchable match
     case right: Json =>
-      def arrayEq(leftAst: JsonAst, rightAst: JsonAst): Boolean =
+      def arrayEq(leftAst: Json.Ast, rightAst: Json.Ast): Boolean =
         val rn = rightAst.arrayLength
         val ln = leftAst.arrayLength
         rn == ln &&
@@ -515,17 +688,17 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
               i += 1
             eq }
 
-      def objectEq(leftAst: JsonAst, rightAst: JsonAst): Boolean =
+      def objectEq(leftAst: Json.Ast, rightAst: Json.Ast): Boolean =
         val rn = rightAst.objectSize
         val ln = leftAst.objectSize
         if rn != ln then false
         else
-          var leftMap = Map.empty[String, JsonAst]
+          var leftMap = Map.empty[String, Json.Ast]
           var i = 0
           while i < ln do
             leftMap = leftMap.updated(leftAst.objectKey(i), leftAst.objectValue(i))
             i += 1
-          var rightMap = Map.empty[String, JsonAst]
+          var rightMap = Map.empty[String, Json.Ast]
           i = 0
           while i < rn do
             rightMap = rightMap.updated(rightAst.objectKey(i), rightAst.objectValue(i))
@@ -533,7 +706,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           leftMap.keySet == rightMap.keySet && leftMap.keySet.forall: key =>
             recur(leftMap(key), rightMap(key))
 
-      def recur(left: JsonAst, right: JsonAst): Boolean = right.asMatchable match
+      def recur(left: Json.Ast, right: Json.Ast): Boolean = right.asMatchable match
         case right: Long => left.asMatchable match
           case left: Long                   => left == right
           case left: Double                 => left == right
@@ -556,11 +729,11 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
         case right: Array[Double] @unchecked =>
           // Unboxed number array.
-          val rightAst = right.asInstanceOf[JsonAst]
+          val rightAst = right.asInstanceOf[Json.Ast]
           left.asMatchable match
             case _: Array[Double] @unchecked =>
               arrayEq(left, rightAst)
-            case _: Array[AnyRef] @unchecked if left.asInstanceOf[JsonAst].isArray =>
+            case _: Array[AnyRef] @unchecked if left.asInstanceOf[Json.Ast].isArray =>
               arrayEq(left, rightAst)
             case _ => false
 
@@ -575,11 +748,11 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
         case right: IArray[Any] @unchecked =>
           // Heterogeneous array or object, distinguished by parity.
-          val rightAst = right.asInstanceOf[JsonAst]
+          val rightAst = right.asInstanceOf[Json.Ast]
           val rightIsObject = rightAst.isObject
           left.asMatchable match
             case _: Array[AnyRef] @unchecked =>
-              val leftAst = left.asInstanceOf[JsonAst]
+              val leftAst = left.asInstanceOf[Json.Ast]
               if rightIsObject then
                 if leftAst.isObject then objectEq(leftAst, rightAst) else false
               else if leftAst.isArray then arrayEq(leftAst, rightAst) else false

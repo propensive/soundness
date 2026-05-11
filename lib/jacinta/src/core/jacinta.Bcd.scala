@@ -34,7 +34,7 @@ package jacinta
 
 import vacuous.*
 
-// `Bcd` is the high-precision-number representation in `JsonAst`. It encodes a
+// `Bcd` is the high-precision-number representation in `Json.Ast`. It encodes a
 // JSON number as a sign bit plus a sequence of nibbles drawn from the same
 // alphabet used by `JsonParser`'s in-Long fast path:
 //

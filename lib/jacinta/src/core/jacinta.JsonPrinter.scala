@@ -40,7 +40,7 @@ import proscenium.*
 import rudiments.*
 
 object JsonPrinter:
-  def print(json: JsonAst, indentation: Boolean): Text = Text.build:
+  def print(json: Json.Ast, indentation: Boolean): Text = Text.build:
     def appendString(string: String): Unit =
       append('"')
 
@@ -67,7 +67,7 @@ object JsonPrinter:
         appendString(node(index*2).asInstanceOf[String])
         append(':')
         if indentation then append(' ')
-        recur(node(index*2 + 1).asInstanceOf[JsonAst], indent + 1)
+        recur(node(index*2 + 1).asInstanceOf[Json.Ast], indent + 1)
 
         if index < last then append(',')
         index += 1
@@ -82,7 +82,7 @@ object JsonPrinter:
       // arrays carry one for empty/even-length cases).
       val raw = elements.length
       val n =
-        if raw > 0 && (elements(raw - 1).asInstanceOf[AnyRef] eq JsonAst.arrayPad)
+        if raw > 0 && (elements(raw - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad)
         then raw - 1 else raw
       append('[')
       val last = n - 1
@@ -93,7 +93,7 @@ object JsonPrinter:
           append('\n')
           for i <- 0 until indent*2 do append(' ')
 
-        recur(elements(index).asInstanceOf[JsonAst], indent + 1)
+        recur(elements(index).asInstanceOf[Json.Ast], indent + 1)
         if index < last then append(',')
         index += 1
 
@@ -119,7 +119,7 @@ object JsonPrinter:
         index += 1
       append(']')
 
-    def recur(json: JsonAst, indent: Int): Unit = json.asMatchable match
+    def recur(json: Json.Ast, indent: Int): Unit = json.asMatchable match
       case nums: Array[Double] @unchecked =>
         printNumberArray(nums)
 
@@ -154,4 +154,4 @@ object JsonPrinter:
     recur(json, 1)
 
 trait JsonPrinter:
-  def print(json: JsonAst): Text
+  def print(json: Json.Ast): Text

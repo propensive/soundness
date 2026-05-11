@@ -178,7 +178,7 @@ object Data:
         accrual + m"Unexpected JSON response from TfL: $reason at $focus when accessing $sourceUrl"
 
       case ParseError(_, position, reason) => position.absolve match
-        case JsonAst.Position(line, _) =>
+        case Json.Ast.Position(line, _) =>
           accrual + m"Could not parse JSON response: ${reason.describe} at line $line"
 
     . within:
