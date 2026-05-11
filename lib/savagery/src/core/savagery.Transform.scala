@@ -47,7 +47,7 @@ object Transform:
 
   given encodable: Transform is Encodable in Text =
     _.absolve match
-      case Translate(Delta(dx, dy))            => t"translate($dx,$dy)"
+      case Translate(delta)                    => t"translate(${delta.dx},${delta.dy})"
       case Scale(x, Unset)                     => t"scale($x)"
       case Scale(x, y: Float)                  => t"scale($x,$y)"
       case Rotate(angle)                       => t"rotate(${angle.degrees})"

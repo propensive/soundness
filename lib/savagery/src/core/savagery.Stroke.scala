@@ -49,8 +49,8 @@ object Stroke:
     _.absolve match
       case Move(shift)                          => t"m $shift"
       case MoveTo(point)                        => t"M $point"
-      case Draw(Delta(0.0f, v))                 => t"v ${v.toDouble}"
-      case Draw(Delta(h, 0.0f))                 => t"h ${h.toDouble}"
+      case Draw(delta) if delta.dx == 0.0f      => t"v ${delta.dy.toDouble}"
+      case Draw(delta) if delta.dy == 0.0f      => t"h ${delta.dx.toDouble}"
       case Draw(shift)                          => t"l $shift"
       case DrawTo(point)                        => t"L $point"
       case Close                                => t"Z"
