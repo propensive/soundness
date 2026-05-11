@@ -197,18 +197,31 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
     catch case _: Throwable => abort(CborError(Reason.InvalidUtf8(errorOffset)))
 
   // IEEE 754 half precision (16-bit) → Double, per RFC 8949 §3.3.
+  // Assembles the 64-bit pattern directly rather than going through
+  // `math.pow` and a multiplication: half-floats have only 65 536 possible
+  // values and the conversion is a fixed sequence of bit moves.
   private def halfToDouble(half: Int): Double =
-    val sign = (half >>> 15) & 0x1
-    val exponent = (half >>> 10) & 0x1F
+    val sign = (half.toLong & 0x8000L) << 48 // sign bit → bit 63
+    val exp = (half >>> 10) & 0x1F
     val mant = half & 0x3FF
 
-    val value =
-      if exponent == 0 then if mant == 0 then 0.0 else math.pow(2, -14)*(mant.toDouble/1024.0)
-      else if exponent == 31 then
-        if mant == 0 then Double.PositiveInfinity else Double.NaN
+    val bits: Long =
+      if exp == 0 then
+        if mant == 0 then sign
+        else
+          // Subnormal half: re-normalise by shifting until bit 10 is set,
+          // adjusting the (double) exponent accordingly.
+          var m = mant
+          var e = -14 + 1023
+          while (m & 0x400) == 0 do { m <<= 1; e -= 1 }
+          sign | (e.toLong << 52) | ((m.toLong & 0x3FF) << 42)
+      else if exp == 31 then
+        // Infinity (mant == 0) or NaN. Sign is preserved for both.
+        sign | (2047L << 52) | (mant.toLong << 42)
       else
-        math.pow(2, exponent - 15)*(1 + mant.toDouble/1024.0)
-    if sign == 1 then -value else value
+        sign | ((exp + 1023 - 15).toLong << 52) | (mant.toLong << 42)
+
+    java.lang.Double.longBitsToDouble(bits)
 
   def value(): Cbor.Ast raises CborError =
     val pos = offset
