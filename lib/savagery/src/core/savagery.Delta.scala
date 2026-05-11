@@ -33,11 +33,14 @@
 package savagery
 
 import scala.annotation.targetName
+import scala.math.Numeric
 
 import anticipation.*
 import gossamer.*
 import mosquito.*
+import prepositional.*
 import spectacular.*
+import symbolism.*
 
 object Delta:
   def apply(dx: Float, dy: Float): Delta = Tensor((dx, dy))
@@ -68,3 +71,11 @@ val Up:    Delta = Delta(0.0f, -1.0f)
 val Down:  Delta = Delta(0.0f,  1.0f)
 val Left:  Delta = Delta(-1.0f, 0.0f)
 val Right: Delta = Delta( 1.0f, 0.0f)
+
+extension [numeric: Numeric, numeric2: Numeric](tuple: (numeric, numeric2))
+  def `unary_+`: Delta = Delta(numeric.toFloat(tuple(0)), numeric2.toFloat(tuple(1)))
+
+given negatableTuple: [numeric: Numeric, numeric2: Numeric]
+=>  (numeric, numeric2) is Negatable to Delta =
+  Negatable: tuple =>
+    Delta(-numeric.toFloat(tuple(0)), -numeric2.toFloat(tuple(1)))
