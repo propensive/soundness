@@ -51,6 +51,7 @@ import wisteria.*
 import CborError.{Primitive, Reason}
 
 trait Cbor2:
+  this: Cbor.type =>
   given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( encodable: inner is Encodable in Cbor )
   =>  value is Encodable in Cbor =
@@ -60,7 +61,7 @@ trait Cbor2:
       type Form = Cbor
 
       def encoded(value: Optional[value]): Cbor =
-        value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Cbor.ast(CborAst(Unset)))
+        value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(ast(Ast(Unset)))
 
 
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[CborError]
@@ -78,7 +79,7 @@ trait Cbor2:
       DecodableDerivation.derived
 
   inline given encodable: [value] => value is Encodable in Cbor = summonFrom:
-    case given (`value` is Encodable in Text) => value => Cbor.ast(CborAst(value.encode.s))
+    case given (`value` is Encodable in Text) => value => ast(Ast(value.encode.s))
     case given Reflection[`value`]            => EncodableDerivation.derived
 
 
@@ -90,7 +91,7 @@ trait Cbor2:
         provide[Tactic[CborError]]:
           val root = cbor.root
           val count = if root.isMap then root.entries else 0
-          val values = scala.collection.mutable.HashMap.empty[String, CborAst]
+          val values = scala.collection.mutable.HashMap.empty[String, Ast]
           var index = 0
           while index < count do
             val key = root.key(index)
@@ -101,7 +102,7 @@ trait Cbor2:
             context =>
               values.get(label.s) match
                 case Some(value) => context.decoded(new Cbor(value))
-                case None        => default.or(context.decoded(new Cbor(CborAst(Unset))))
+                case None        => default.or(context.decoded(new Cbor(Ast(Unset))))
 
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Cbor =
       cbor =>
@@ -130,7 +131,7 @@ trait Cbor2:
               labels += label.s
               values += encoded
 
-        Cbor.ast(CborAst.map(IArray.from(labels), IArray.from(values)))
+        ast(Ast.map(IArray.from(labels), IArray.from(values)))
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Cbor = value =>
       val discriminable = infer[derivation is Discriminable in Cbor]
@@ -139,8 +140,72 @@ trait Cbor2:
         value => discriminable.rewrite(label, contextual.encode(value))
 
 object Cbor extends Cbor2, Dynamic:
-  def ast(value: CborAst): Cbor = new Cbor(value)
-  def unseal(cbor: Cbor): CborAst = cbor.root
+  // CBOR major-type representation in storage. Arrays are stored as an
+  // odd-length `IArray[Any]` (sentinel-padded if the logical count is even),
+  // and maps as an even-length `IArray[Any]` with alternating key/value
+  // entries; the two share the same JVM type and are told apart by parity.
+  type CborInteger   = Long
+  type CborFloat     = Double
+  type CborText      = String
+  type CborBytes     = IArray[Byte]
+  type CborArray     = IArray[Any]
+  type CborMap       = IArray[Any]
+  type CborBoolean   = Boolean
+  type CborNull      = Null
+  type CborUndefined = vacuous.Unset.type
+
+  opaque type Ast =
+    CborInteger | CborFloat | CborText | CborBytes | CborArray | CborMap | CborBoolean | CborNull
+    | CborUndefined | Tag
+
+  object Ast:
+    val Sentinel: AnyRef = new Object
+
+    def apply
+      ( value
+        : CborInteger | CborFloat | CborText | CborBytes | CborArray | CborMap | CborBoolean
+        | CborNull | CborUndefined | Tag )
+    :   Ast =
+
+      value
+
+    def map(keys: IArray[Any], values: IArray[Any]): Ast =
+      val count = keys.length
+      val array = new Array[Any](count*2)
+      var index = 0
+
+      while index < count do
+        array(index*2) = keys(index)
+        array(index*2 + 1) = values(index)
+        index += 1
+
+      array.asInstanceOf[IArray[Any]]
+
+    def array(elements: IArray[Any]): Ast =
+      val count = elements.length
+
+      if (count&1) == 1 then elements else
+        val padded = new Array[Any](count + 1)
+        System.arraycopy(elements.asInstanceOf[Array[Any]], 0, padded, 0, count)
+        padded(count) = Sentinel
+        padded.asInstanceOf[IArray[Any]]
+
+    def length(cbor: Ast): Int =
+      val array = cbor.asInstanceOf[Array[AnyRef]]
+      val count = array.length
+      if count > 0 && (array(count - 1).asInstanceOf[AnyRef] eq Sentinel) then count - 1 else count
+
+    def size(cbor: Ast): Int = cbor.asInstanceOf[IArray[Any]].length/2
+
+  final class Tag(val tag: Long, val value: Any):
+    override def hashCode: Int = (tag.hashCode*31)^value.hashCode
+
+    override def equals(that: Any): Boolean = that match
+      case that: Tag => tag == that.tag && value == that.value
+      case _         => false
+
+  def ast(value: Ast): Cbor = new Cbor(value)
+  def unseal(cbor: Cbor): Ast = cbor.root
 
   given boolean: Tactic[CborError] => Boolean is Decodable in Cbor = _.root.boolean
   given double: Tactic[CborError] => Double is Decodable in Cbor = _.root.double
@@ -176,41 +241,41 @@ object Cbor extends Cbor2, Dynamic:
       type Form = Cbor
 
       def encoded(value: Option[value]): Cbor = value match
-        case None        => Cbor.ast(CborAst(Unset))
+        case None        => ast(Ast(Unset))
         case Some(value) => encodable.encode(value)
 
 
   given integralEncodable: [integral: Integral] => integral is Encodable in Cbor =
-    int => Cbor.ast(CborAst(integral.toLong(int)))
+    int => ast(Ast(integral.toLong(int)))
 
-  given textEncodable: Text is Encodable in Cbor = text => Cbor.ast(CborAst(text.s))
-  given stringEncodable: String is Encodable in Cbor = string => Cbor.ast(CborAst(string))
-  given doubleEncodable: Double is Encodable in Cbor = double => Cbor.ast(CborAst(double))
-  given floatEncodable: Float is Encodable in Cbor = float => Cbor.ast(CborAst(float.toDouble))
-  given intEncodable: Int is Encodable in Cbor = int => Cbor.ast(CborAst(int.toLong))
-  given longEncodable: Long is Encodable in Cbor = long => Cbor.ast(CborAst(long))
-  given booleanEncodable: Boolean is Encodable in Cbor = boolean => Cbor.ast(CborAst(boolean))
-  given unitEncodable: Unit is Encodable in Cbor = _ => Cbor.ast(CborAst(null))
-  given bytesEncodable: IArray[Byte] is Encodable in Cbor = bytes => Cbor.ast(CborAst(bytes))
+  given textEncodable: Text is Encodable in Cbor = text => ast(Ast(text.s))
+  given stringEncodable: String is Encodable in Cbor = string => ast(Ast(string))
+  given doubleEncodable: Double is Encodable in Cbor = double => ast(Ast(double))
+  given floatEncodable: Float is Encodable in Cbor = float => ast(Ast(float.toDouble))
+  given intEncodable: Int is Encodable in Cbor = int => ast(Ast(int.toLong))
+  given longEncodable: Long is Encodable in Cbor = long => ast(Ast(long))
+  given booleanEncodable: Boolean is Encodable in Cbor = boolean => ast(Ast(boolean))
+  given unitEncodable: Unit is Encodable in Cbor = _ => ast(Ast(null))
+  given bytesEncodable: IArray[Byte] is Encodable in Cbor = bytes => ast(Ast(bytes))
   given cborEncodable: Cbor is Encodable in Cbor = identity(_)
 
 
   given listEncodable: [list <: List, element] => (encodable: => element is Encodable in Cbor)
   =>  list[element] is Encodable in Cbor =
 
-    values => Cbor.ast(CborAst.array(IArray.from(values.map(encodable.encoded(_).root))))
+    values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given setEncodable: [set <: Set, element] => (encodable: => element is Encodable in Cbor)
   =>  set[element] is Encodable in Cbor =
 
-    values => Cbor.ast(CborAst.array(IArray.from(values.map(encodable.encoded(_).root))))
+    values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given trieEncodable: [trie <: Trie, element] => (encodable: => element is Encodable in Cbor)
   =>  trie[element] is Encodable in Cbor =
 
-    values => Cbor.ast(CborAst.array(IArray.from(values.map(encodable.encoded(_).root))))
+    values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given collectionDecodable: [collection <: Iterable, element]
@@ -220,7 +285,7 @@ object Cbor extends Cbor2, Dynamic:
 
     value =>
       val builder = factory.newBuilder
-      value.root.array.each: cbor => builder += decodable.decoded(Cbor.ast(cbor))
+      value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
 
       builder.result()
 
@@ -240,7 +305,7 @@ object Cbor extends Cbor2, Dynamic:
         val key = root.key(index)
 
         if key.isTextString
-        then map = map.updated(key.string.tt.decode, decodable.decoded(Cbor.ast(root.value(index))))
+        then map = map.updated(key.string.tt.decode, decodable.decoded(ast(root.value(index))))
         else abort(CborError(Reason.NonStringKey))
 
         index += 1
@@ -255,13 +320,13 @@ object Cbor extends Cbor2, Dynamic:
     map =>
       val keys: List[key] = map.keys.to(List)
       val values = IArray.from(keys.map(map(_).encode.root))
-      Cbor.ast(CborAst.map(IArray.from(keys.map(k => k.encode.s)), values))
+      ast(Ast.map(IArray.from(keys.map(k => k.encode.s)), values))
 
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Cbor)*): Cbor =
     val keys: IArray[Any] = IArray.from(elements.map(_(0): Any))
     val values: IArray[Any] = IArray.from(elements.map(_(1).root.asInstanceOf[Any]))
-    Cbor(CborAst.map(keys, values))
+    Cbor(Ast.map(keys, values))
 
   def discriminatedUnion[value](label: Text): value is Discriminable in Cbor = new Discriminable:
     type Form = Cbor
@@ -276,7 +341,7 @@ object Cbor extends Cbor2, Dynamic:
     def variant(cbor: Cbor): Cbor = unsafely(cbor.updateDynamic(key)(Unset))
 
 
-class Cbor(private[breviloquence] val root: CborAst) extends Dynamic derives CanEqual:
+class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives CanEqual:
   def apply(index: Int): Cbor raises CborError = Cbor(root.array(index))
 
   def selectDynamic(field: String)(using erased DynamicCborEnabler): Cbor raises CborError =
@@ -313,13 +378,13 @@ class Cbor(private[breviloquence] val root: CborAst) extends Dynamic derives Can
         System.arraycopy(array.asInstanceOf[Array[Any]], 0, out, 0, length)
         out(length) = field
         out(length + 1) = value.root
-        Cbor.ast(CborAst(out.asInstanceOf[IArray[Any]]))
+        Cbor.ast(Cbor.Ast(out.asInstanceOf[IArray[Any]]))
 
       case index =>
         val out = new Array[Any](length)
         System.arraycopy(array.asInstanceOf[Array[Any]], 0, out, 0, length)
         out(index*2 + 1) = value.root
-        Cbor.ast(CborAst(out.asInstanceOf[IArray[Any]]))
+        Cbor.ast(Cbor.Ast(out.asInstanceOf[IArray[Any]]))
 
   private[breviloquence] def delete(field: String): Cbor raises CborError =
     if !root.isMap then abort(CborError(Reason.NotType(root.primitive, Primitive.Map)))
@@ -334,13 +399,13 @@ class Cbor(private[breviloquence] val root: CborAst) extends Dynamic derives Can
         System.arraycopy(array, 0, out, 0, index*2)
 
         System.arraycopy(array, index*2 + 2, out, index*2, length - index*2 - 2)
-        Cbor.ast(CborAst(out.asInstanceOf[IArray[Any]]))
+        Cbor.ast(Cbor.Ast(out.asInstanceOf[IArray[Any]]))
 
   def apply(field: Text): Cbor raises CborError =
-    if root.unset then Cbor.ast(CborAst(Unset))
+    if root.unset then Cbor.ast(Cbor.Ast(Unset))
     else if !root.isMap then abort(CborError(Reason.NotType(root.primitive, Primitive.Map)))
     else root.index(field.s) match
-      case -1    => Cbor.ast(CborAst(Unset))
+      case -1    => Cbor.ast(Cbor.Ast(Unset))
       case index => Cbor(root.value(index))
 
   override def hashCode: Int = root.hashCode
@@ -349,7 +414,7 @@ class Cbor(private[breviloquence] val root: CborAst) extends Dynamic derives Can
     case right: Cbor => recur(root, right.root)
     case _           => false
 
-  private def recur(left: CborAst, right: CborAst): Boolean =
+  private def recur(left: Cbor.Ast, right: Cbor.Ast): Boolean =
     if left.isInteger && right.isInteger then left.asInstanceOf[Long] == right.asInstanceOf[Long]
     else if left.isFloat && right.isFloat
     then left.asInstanceOf[Double] == right.asInstanceOf[Double]
@@ -363,11 +428,11 @@ class Cbor(private[breviloquence] val root: CborAst) extends Dynamic derives Can
     else if left.unset && right.unset then true
     else if left.isTag && right.isTag
     then
-      val leftTag = left.asInstanceOf[CborTag]
-      val rightTag = right.asInstanceOf[CborTag]
+      val leftTag = left.asInstanceOf[Cbor.Tag]
+      val rightTag = right.asInstanceOf[Cbor.Tag]
 
       leftTag.tag == rightTag.tag
-      && recur(leftTag.value.asInstanceOf[CborAst], rightTag.value.asInstanceOf[CborAst])
+      && recur(leftTag.value.asInstanceOf[Cbor.Ast], rightTag.value.asInstanceOf[Cbor.Ast])
 
     else if left.isArray && right.isArray then
       val leftElements = left.elements

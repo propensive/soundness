@@ -41,14 +41,14 @@ import CborError.{Primitive, Reason}
 
 extension [entity: Encodable in Cbor](value: entity) def cbor: Cbor = value.encode
 
-extension (cbor: CborAst)
+extension (cbor: Cbor.Ast)
   inline def unset: Boolean = cbor == vacuous.Unset
   inline def isInteger: Boolean = cbor.isInstanceOf[Long]
   inline def isFloat: Boolean = cbor.isInstanceOf[Double]
   inline def isTextString: Boolean = cbor.isInstanceOf[String]
   inline def isBoolean: Boolean = cbor.isInstanceOf[Boolean]
   inline def nullary: Boolean = cbor.asInstanceOf[AnyRef | Null] == null
-  inline def isTag: Boolean = cbor.isInstanceOf[CborTag]
+  inline def isTag: Boolean = cbor.isInstanceOf[Cbor.Tag]
 
   // Byte strings have runtime class `[B`; arrays/maps have `[Ljava/lang/Object;`.
   inline def isByteString: Boolean = cbor.isInstanceOf[Array[Byte]]
@@ -78,13 +78,13 @@ extension (cbor: CborAst)
     if unset then abort(CborError(Reason.Absent))
     else abort(CborError(Reason.NotType(primitive, expected)))
 
-  inline def elements: Int = CborAst.length(cbor)
-  inline def entries: Int = CborAst.size(cbor)
+  inline def elements: Int = Cbor.Ast.length(cbor)
+  inline def entries: Int = Cbor.Ast.size(cbor)
 
-  def element(index: Int): CborAst = cbor.asInstanceOf[IArray[CborAst]](index)
+  def element(index: Int): Cbor.Ast = cbor.asInstanceOf[IArray[Cbor.Ast]](index)
 
-  inline def key(index: Int): CborAst = cbor.asInstanceOf[IArray[CborAst]](index*2)
-  inline def value(index: Int): CborAst = cbor.asInstanceOf[IArray[CborAst]](index*2 + 1)
+  inline def key(index: Int): Cbor.Ast = cbor.asInstanceOf[IArray[Cbor.Ast]](index*2)
+  inline def value(index: Int): Cbor.Ast = cbor.asInstanceOf[IArray[Cbor.Ast]](index*2 + 1)
 
   def index(key: String): Int =
     val array = cbor.asInstanceOf[IArray[Any]]
@@ -116,14 +116,14 @@ extension (cbor: CborAst)
   def boolean: Boolean raises CborError =
     if isBoolean then cbor.asInstanceOf[Boolean] else expected(Primitive.Boolean) yet false
 
-  def tag: CborTag raises CborError =
-    if isTag then cbor.asInstanceOf[CborTag]
-    else expected(Primitive.Tag) yet CborTag(0L, vacuous.Unset)
+  def tag: Cbor.Tag raises CborError =
+    if isTag then cbor.asInstanceOf[Cbor.Tag]
+    else expected(Primitive.Tag) yet Cbor.Tag(0L, vacuous.Unset)
 
-  def array: IArray[CborAst] raises CborError =
+  def array: IArray[Cbor.Ast] raises CborError =
     if isArray then
-      val full = cbor.asInstanceOf[IArray[CborAst]]
+      val full = cbor.asInstanceOf[IArray[Cbor.Ast]]
       val count = elements
 
       if count == full.length then full else IArray.tabulate(count)(full(_))
-    else { expected(Primitive.Array); IArray.empty[CborAst] }
+    else { expected(Primitive.Array); IArray.empty[Cbor.Ast] }

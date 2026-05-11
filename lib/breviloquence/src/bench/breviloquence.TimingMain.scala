@@ -66,7 +66,7 @@ object TimingMain:
     println()
 
     println(f"${"Corpus 1: small object (3 fields)"}%-40s   payload=${Benchmarks.cborBytes1.length} bytes")
-    time("  Breviloquence", Benchmarks.cborBytes1, iterations)(CborAst.parse)
+    time("  Breviloquence", Benchmarks.cborBytes1, iterations)(Cbor.Ast.parse)
     time("  Jackson", Benchmarks.cborBytes1, iterations): bytes =>
       Benchmarks.parseWithJackson(bytes.asInstanceOf[Array[Byte]])
     time("  borer", Benchmarks.cborBytes1, iterations): bytes =>
@@ -74,7 +74,7 @@ object TimingMain:
     println()
 
     println(f"${"Corpus 2: 100 user records"}%-40s   payload=${Benchmarks.cborBytes2.length} bytes")
-    time("  Breviloquence", Benchmarks.cborBytes2, iterations/10)(CborAst.parse)
+    time("  Breviloquence", Benchmarks.cborBytes2, iterations/10)(Cbor.Ast.parse)
     time("  Jackson", Benchmarks.cborBytes2, iterations/10): bytes =>
       Benchmarks.parseWithJackson(bytes.asInstanceOf[Array[Byte]])
     time("  borer", Benchmarks.cborBytes2, iterations/10): bytes =>
@@ -82,7 +82,7 @@ object TimingMain:
     println()
 
     println(f"${"Corpus 4: 1000 small integers"}%-40s   payload=${Benchmarks.cborBytes4.length} bytes")
-    time("  Breviloquence", Benchmarks.cborBytes4, iterations/10)(CborAst.parse)
+    time("  Breviloquence", Benchmarks.cborBytes4, iterations/10)(Cbor.Ast.parse)
     time("  Jackson", Benchmarks.cborBytes4, iterations/10): bytes =>
       Benchmarks.parseWithJackson(bytes.asInstanceOf[Array[Byte]])
     time("  borer", Benchmarks.cborBytes4, iterations/10): bytes =>

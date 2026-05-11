@@ -44,7 +44,7 @@ private[breviloquence] object CborParser:
   // The break stop code (0xFF) terminates an indefinite-length item.
   private inline val Break = 0xFF
 
-  def parse(source: IArray[Byte]): CborAst raises CborError =
+  def parse(source: IArray[Byte]): Cbor.Ast raises CborError =
     val parser = new CborParser(source)
     val result = parser.value()
     if parser.offset < parser.data.length
@@ -210,7 +210,7 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
         math.pow(2, exponent - 15)*(1 + mant.toDouble/1024.0)
     if sign == 1 then -value else value
 
-  def value(): CborAst raises CborError =
+  def value(): Cbor.Ast raises CborError =
     val pos = offset
     if pos >= data.length then abort(CborError(Reason.Truncated(pos.toLong)))
     val head = data(pos) & 0xFF
@@ -221,8 +221,8 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
     // split, the `readLength` dispatch and the `headOffset` capture.
     //   head 0x00–0x17 : major 0, info 0–23  → value is head itself
     //   head 0x20–0x37 : major 1, info 0–23  → value is -1 - (head & 0x1F)
-    if head < 0x18 then return CborAst(head.toLong)
-    if head >= 0x20 && head < 0x38 then return CborAst(-1L - (head & 0x1F).toLong)
+    if head < 0x18 then return Cbor.Ast(head.toLong)
+    if head >= 0x20 && head < 0x38 then return Cbor.Ast(-1L - (head & 0x1F).toLong)
 
     // Fast path for short text strings (major 3, info 0–23, head 0x60–0x77).
     // These dominate map keys and short literals; a length-prefixed UTF-8
@@ -233,7 +233,7 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
       if end > data.length then abort(CborError(Reason.Truncated(pos.toLong)))
       val str = new String(data, pos + 1, length, java.nio.charset.StandardCharsets.UTF_8)
       offset = end
-      return CborAst(str)
+      return Cbor.Ast(str)
 
     // Fast path for short byte strings (major 2, info 0–23, head 0x40–0x57).
     if head >= 0x40 && head < 0x58 then
@@ -243,7 +243,7 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
       val out = new Array[Byte](length)
       System.arraycopy(data, pos + 1, out, 0, length)
       offset = end
-      return CborAst(out.asInstanceOf[IArray[Byte]])
+      return Cbor.Ast(out.asInstanceOf[IArray[Byte]])
 
     val headOffset = pos.toLong
     val major = head >>> 5
@@ -253,27 +253,27 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
       case 0 =>
         val length = readLength(info, headOffset)
         if length < 0 then abort(CborError(Reason.Reserved(headOffset, head)))
-        CborAst(length)
+        Cbor.Ast(length)
 
       case 1 =>
         val length = readLength(info, headOffset)
         if length < 0 then abort(CborError(Reason.Reserved(headOffset, head)))
         if length == Long.MinValue then abort(CborError(Reason.Overflow(headOffset)))
-        CborAst(-1L - length)
+        Cbor.Ast(-1L - length)
 
       case 2 =>
-        if info == 31 then CborAst(readIndefiniteByteString())
+        if info == 31 then Cbor.Ast(readIndefiniteByteString())
         else
           val length = boundedLength(readLength(info, headOffset), headOffset)
-          CborAst(readBytes(length))
+          Cbor.Ast(readBytes(length))
 
       case 3 =>
-        if info == 31 then CborAst(readIndefiniteTextString())
+        if info == 31 then Cbor.Ast(readIndefiniteTextString())
         else
           val length = boundedLength(readLength(info, headOffset), headOffset)
           val str = decodeUtf8(data, offset, length, headOffset)
           offset += length
-          CborAst(str)
+          Cbor.Ast(str)
 
       case 4 =>
         if info == 31 then
@@ -283,13 +283,13 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
             expect(1)
             if (data(offset) & 0xFF) == Break then { offset += 1; done = true }
             else items += value()
-          CborAst.array(IArray.from(items))
+          Cbor.Ast.array(IArray.from(items))
         else
           val length = readLength(info, headOffset)
           if length < 0 || length > Int.MaxValue
           then abort(CborError(Reason.Overflow(headOffset)))
           val count = length.toInt
-          // Allocate directly in the parity-padded shape used by `CborAst.array`
+          // Allocate directly in the parity-padded shape used by `Cbor.Ast.array`
           // (odd length, with sentinel pad if logical count is even). One allocation
           // instead of two; no separate IArray.from copy.
           val padded = (count&1) == 0
@@ -300,8 +300,8 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
             items(index) = value()
             index += 1
 
-          if padded then items(count) = CborAst.Sentinel
-          CborAst(items.asInstanceOf[IArray[Any]])
+          if padded then items(count) = Cbor.Ast.Sentinel
+          Cbor.Ast(items.asInstanceOf[IArray[Any]])
 
       case 5 =>
         if info == 31 then
@@ -319,7 +319,7 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
               keys += value()
               values += value()
 
-          CborAst.map(IArray.from(keys), IArray.from(values))
+          Cbor.Ast.map(IArray.from(keys), IArray.from(values))
 
         else
           val length = readLength(info, headOffset)
@@ -334,23 +334,23 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
             items(index*2 + 1) = value()
             index += 1
 
-          CborAst(items.asInstanceOf[IArray[Any]])
+          Cbor.Ast(items.asInstanceOf[IArray[Any]])
 
       case 6 =>
         val tag = readLength(info, headOffset)
         if tag < 0 then abort(CborError(Reason.Reserved(headOffset, head)))
         val inner = value()
-        CborAst(CborTag(tag, inner))
+        Cbor.Ast(Cbor.Tag(tag, inner))
 
       case 7 =>
         info match
-          case 20 => CborAst(false)
-          case 21 => CborAst(true)
-          case 22 => CborAst(null)
-          case 23 => CborAst(vacuous.Unset)
-          case 25 => CborAst(halfToDouble(readUInt16()))
-          case 26 => CborAst(java.lang.Float.intBitsToFloat(readUInt32().toInt).toDouble)
-          case 27 => CborAst(java.lang.Double.longBitsToDouble(readUInt64()))
+          case 20 => Cbor.Ast(false)
+          case 21 => Cbor.Ast(true)
+          case 22 => Cbor.Ast(null)
+          case 23 => Cbor.Ast(vacuous.Unset)
+          case 25 => Cbor.Ast(halfToDouble(readUInt16()))
+          case 26 => Cbor.Ast(java.lang.Float.intBitsToFloat(readUInt32().toInt).toDouble)
+          case 27 => Cbor.Ast(java.lang.Double.longBitsToDouble(readUInt64()))
           case 24 => abort(CborError(Reason.BadSimpleValue(headOffset, readUInt8())))
           case 31 => abort(CborError(Reason.UnexpectedBreak(headOffset)))
           case _  => abort(CborError(Reason.BadSimpleValue(headOffset, info)))

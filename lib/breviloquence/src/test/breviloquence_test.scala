@@ -65,114 +65,114 @@ object Tests extends Suite(m"Breviloquence Tests"):
   def run(): Unit =
     suite(m"Parsing primitives"):
       test(m"Parse 0"):
-        Cbor.ast(CborAst.parse(hex("00"))).as[Int]
+        Cbor.ast(Cbor.Ast.parse(hex("00"))).as[Int]
       . assert(_ == 0)
 
       test(m"Parse 1"):
-        Cbor.ast(CborAst.parse(hex("01"))).as[Int]
+        Cbor.ast(Cbor.Ast.parse(hex("01"))).as[Int]
       . assert(_ == 1)
 
       test(m"Parse 23 (single-byte head)"):
-        Cbor.ast(CborAst.parse(hex("17"))).as[Int]
+        Cbor.ast(Cbor.Ast.parse(hex("17"))).as[Int]
       . assert(_ == 23)
 
       test(m"Parse 24 (1-byte payload)"):
-        Cbor.ast(CborAst.parse(hex("1818"))).as[Int]
+        Cbor.ast(Cbor.Ast.parse(hex("1818"))).as[Int]
       . assert(_ == 24)
 
       test(m"Parse 1000 (2-byte payload)"):
-        Cbor.ast(CborAst.parse(hex("1903e8"))).as[Int]
+        Cbor.ast(Cbor.Ast.parse(hex("1903e8"))).as[Int]
       . assert(_ == 1000)
 
       test(m"Parse 1000000 (4-byte payload)"):
-        Cbor.ast(CborAst.parse(hex("1a000f4240"))).as[Long]
+        Cbor.ast(Cbor.Ast.parse(hex("1a000f4240"))).as[Long]
       . assert(_ == 1000000L)
 
       test(m"Parse 1000000000000 (8-byte payload)"):
-        Cbor.ast(CborAst.parse(hex("1b000000e8d4a51000"))).as[Long]
+        Cbor.ast(Cbor.Ast.parse(hex("1b000000e8d4a51000"))).as[Long]
       . assert(_ == 1000000000000L)
 
       test(m"Parse -1"):
-        Cbor.ast(CborAst.parse(hex("20"))).as[Int]
+        Cbor.ast(Cbor.Ast.parse(hex("20"))).as[Int]
       . assert(_ == -1)
 
       test(m"Parse -100"):
-        Cbor.ast(CborAst.parse(hex("3863"))).as[Int]
+        Cbor.ast(Cbor.Ast.parse(hex("3863"))).as[Int]
       . assert(_ == -100)
 
       test(m"Parse false"):
-        Cbor.ast(CborAst.parse(hex("f4"))).as[Boolean]
+        Cbor.ast(Cbor.Ast.parse(hex("f4"))).as[Boolean]
       . assert(!_)
 
       test(m"Parse true"):
-        Cbor.ast(CborAst.parse(hex("f5"))).as[Boolean]
+        Cbor.ast(Cbor.Ast.parse(hex("f5"))).as[Boolean]
       . assert(identity)
 
       test(m"Parse null as Unit"):
-        Cbor.ast(CborAst.parse(hex("f6"))).as[Unit]
+        Cbor.ast(Cbor.Ast.parse(hex("f6"))).as[Unit]
       . assert(_ == ())
 
       test(m"Parse double-precision float"):
-        Cbor.ast(CborAst.parse(hex("fb3ff199999999999a"))).as[Double]
+        Cbor.ast(Cbor.Ast.parse(hex("fb3ff199999999999a"))).as[Double]
       . assert(_ == 1.1)
 
       test(m"Parse single-precision float (3.4028235e38)"):
         // 0xfa 7f7fffff = max positive float
-        val v = Cbor.ast(CborAst.parse(hex("fa7f7fffff"))).as[Double]
+        val v = Cbor.ast(Cbor.Ast.parse(hex("fa7f7fffff"))).as[Double]
         math.abs(v - 3.4028234663852886e38) < 1e30
       . assert(identity)
 
       test(m"Parse half-precision float 1.0"):
-        Cbor.ast(CborAst.parse(hex("f93c00"))).as[Double]
+        Cbor.ast(Cbor.Ast.parse(hex("f93c00"))).as[Double]
       . assert(_ == 1.0)
 
     suite(m"Parsing strings"):
       test(m"Parse empty text string"):
-        Cbor.ast(CborAst.parse(hex("60"))).as[Text]
+        Cbor.ast(Cbor.Ast.parse(hex("60"))).as[Text]
       . assert(_ == t"")
 
       test(m"Parse text 'a'"):
-        Cbor.ast(CborAst.parse(hex("6161"))).as[Text]
+        Cbor.ast(Cbor.Ast.parse(hex("6161"))).as[Text]
       . assert(_ == t"a")
 
       test(m"Parse text 'IETF'"):
-        Cbor.ast(CborAst.parse(hex("6449455446"))).as[Text]
+        Cbor.ast(Cbor.Ast.parse(hex("6449455446"))).as[Text]
       . assert(_ == t"IETF")
 
       test(m"Parse byte string [01 02 03 04]"):
-        val bytes = Cbor.ast(CborAst.parse(hex("4401020304"))).as[IArray[Byte]]
+        val bytes = Cbor.ast(Cbor.Ast.parse(hex("4401020304"))).as[IArray[Byte]]
         bytes.toList
       . assert(_ == List[Byte](1, 2, 3, 4))
 
     suite(m"Parsing arrays"):
       test(m"Parse empty array"):
-        Cbor.ast(CborAst.parse(hex("80"))).as[List[Int]]
+        Cbor.ast(Cbor.Ast.parse(hex("80"))).as[List[Int]]
       . assert(_ == Nil)
 
       test(m"Parse [1, 2, 3]"):
-        Cbor.ast(CborAst.parse(hex("83010203"))).as[List[Int]]
+        Cbor.ast(Cbor.Ast.parse(hex("83010203"))).as[List[Int]]
       . assert(_ == List(1, 2, 3))
 
       test(m"Parse indefinite-length array [1, 2, 3]"):
-        Cbor.ast(CborAst.parse(hex("9f010203ff"))).as[List[Int]]
+        Cbor.ast(Cbor.Ast.parse(hex("9f010203ff"))).as[List[Int]]
       . assert(_ == List(1, 2, 3))
 
     suite(m"Parsing maps"):
       test(m"Parse empty map"):
-        Cbor.ast(CborAst.parse(hex("a0"))).as[Map[Text, Int]]
+        Cbor.ast(Cbor.Ast.parse(hex("a0"))).as[Map[Text, Int]]
       . assert(_ == Map())
 
       test(m"Parse {a: 1}"):
-        Cbor.ast(CborAst.parse(hex("a1616101"))).as[Map[Text, Int]]
+        Cbor.ast(Cbor.Ast.parse(hex("a1616101"))).as[Map[Text, Int]]
       . assert(_ == Map(t"a" -> 1))
 
       test(m"Parse {a: 1, b: 2}"):
-        Cbor.ast(CborAst.parse(hex("a26161016162 02"))).as[Map[Text, Int]]
+        Cbor.ast(Cbor.Ast.parse(hex("a26161016162 02"))).as[Map[Text, Int]]
       . assert(_ == Map(t"a" -> 1, t"b" -> 2))
 
     suite(m"Tags"):
       test(m"Tag 1 (epoch time) preserves tag and inner value"):
-        val cbor = Cbor.ast(CborAst.parse(hex("c11a514b67b0")))
+        val cbor = Cbor.ast(Cbor.Ast.parse(hex("c11a514b67b0")))
         val ast = Cbor.unseal(cbor)
         ast.isTag && ast.tag.tag == 1L
       . assert(identity)
@@ -180,33 +180,33 @@ object Tests extends Suite(m"Breviloquence Tests"):
     suite(m"Encoder"):
       test(m"Round-trip integer 42"):
         val original = hex("182a")
-        val ast = CborAst.parse(original)
+        val ast = Cbor.Ast.parse(original)
         hexOf(CborPrinter.encode(ast))
       . assert(_ == "182a")
 
       test(m"Round-trip [1, 2, 3]"):
         val original = hex("83010203")
-        val ast = CborAst.parse(original)
+        val ast = Cbor.Ast.parse(original)
         hexOf(CborPrinter.encode(ast))
       . assert(_ == "83010203")
 
       test(m"Round-trip {a: 1, b: 2}"):
         val original = hex("a26161016162 02")
-        val ast = CborAst.parse(original)
+        val ast = Cbor.Ast.parse(original)
         hexOf(CborPrinter.encode(ast))
       . assert(_ == "a2616101616202")
 
     suite(m"Diagnostic notation"):
       test(m"Render 42 as '42'"):
-        CborPrinter.diagnostic(CborAst.parse(hex("182a")))
+        CborPrinter.diagnostic(Cbor.Ast.parse(hex("182a")))
       . assert(_ == "42")
 
       test(m"Render [1, 2, 3]"):
-        CborPrinter.diagnostic(CborAst.parse(hex("83010203")))
+        CborPrinter.diagnostic(Cbor.Ast.parse(hex("83010203")))
       . assert(_ == "[1, 2, 3]")
 
       test(m"Render byte string as hex"):
-        CborPrinter.diagnostic(CborAst.parse(hex("4401020304")))
+        CborPrinter.diagnostic(Cbor.Ast.parse(hex("4401020304")))
       . assert(_ == "h'01020304'")
 
     suite(m"Generic derivation"):
@@ -219,18 +219,18 @@ object Tests extends Suite(m"Breviloquence Tests"):
       test(m"Round-trip Point(3, 4)"):
         val cbor = Point(3, 4).cbor
         val bytes = CborPrinter.encode(Cbor.unseal(cbor))
-        Cbor.ast(CborAst.parse(bytes)).as[Point]
+        Cbor.ast(Cbor.Ast.parse(bytes)).as[Point]
       . assert(_ == Point(3, 4))
 
       test(m"Round-trip Person(\"Ada\", 36)"):
         val cbor = Person(t"Ada", 36).cbor
         val bytes = CborPrinter.encode(Cbor.unseal(cbor))
-        Cbor.ast(CborAst.parse(bytes)).as[Person]
+        Cbor.ast(Cbor.Ast.parse(bytes)).as[Person]
       . assert(_ == Person(t"Ada", 36))
 
       test(m"Round-trip Wrapper with list"):
         val original = Wrapper(List(1, 2, 3), t"hello")
         val cbor = original.cbor
         val bytes = CborPrinter.encode(Cbor.unseal(cbor))
-        Cbor.ast(CborAst.parse(bytes)).as[Wrapper] == original
+        Cbor.ast(Cbor.Ast.parse(bytes)).as[Wrapper] == original
       . assert(identity)
