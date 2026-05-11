@@ -723,7 +723,7 @@ object Tests extends Suite(m"Escapade tests"):
       . assert(_ == t"heo")
 
       test(m"translate"):
-        e"hello".translate(c => if c == 'l' then 'L' else c).plain
+        e"hello".tr(c => if c == 'l' then 'L' else c).plain
       . assert(_ == t"heLLo")
 
       test(m"tr"):

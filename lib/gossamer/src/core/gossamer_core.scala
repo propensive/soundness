@@ -310,7 +310,7 @@ extension [textual: Textual { type Operand = Char }](text: textual)
   def snip(predicate: Char => Boolean, index: Ordinal = Prim): Optional[(textual, textual)] =
     text.where(predicate, index).let(_.n0).let(text.snip(_))
 
-  def translate(lambda: Char => Char): textual = textual.map(text)(lambda)
+  def tr(lambda: Char => Char): textual = textual.map(text)(lambda)
 
   def erase(chars: Char*): textual =
     val set = chars.to(Set)
