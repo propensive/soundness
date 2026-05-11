@@ -42,8 +42,8 @@ import rudiments.*
 import vacuous.*
 import zephyrine.*
 
-import JsonAst.AsciiByte.*
-import JsonAst.{Issue, Position}
+import Json.Ast.AsciiByte.*
+import Json.Ast.{Issue, Position}
 
 private[jacinta] object JsonParser:
   private[jacinta] type Raw =
@@ -190,7 +190,7 @@ private[jacinta] final class JsonParser:
     val end = cursor.position.n0
     val offset: Optional[Int] = start.let(_.absolute.toInt)
     val length: Optional[Int] = start.let(mark => end - mark.absolute.toInt)
-    abort(ParseError(JsonAst, Position(0, end, offset = offset, length = length), issue))
+    abort(ParseError(Json.Ast, Position(0, end, offset = offset, length = length), issue))
 
   // A `Region` is just a `Cursor.Mark` (an absolute `Long` position). With
   // the single-buffer model there's no need to remember the starting block
@@ -600,7 +600,7 @@ private[jacinta] final class JsonParser:
       // methods if they want; the parser preserves full precision either
       // way. The number doesn't fit a Double exactly, so an enclosing
       // number-only array will migrate to the boxed `JsonArray` form.
-      bcdBuilder.nn.finish(negative)
+      bcdBuilder.nn.finish(negative): Bcd
 
   private def parseValue(minus: Boolean = false)(using Tactic[ParseError]): Raw =
     // Clear the parseNumber side channel so a non-number value doesn't leave
@@ -703,7 +703,7 @@ private[jacinta] final class JsonParser:
       // even (zero) length so the sentinel pad is required to keep arrays
       // distinguishable from objects.
       val out = new Array[Any](1)
-      out(0) = JsonAst.arrayPad
+      out(0) = Json.Ast.arrayPad
       out.asInstanceOf[IArray[Any]]
     else if numbersMode then
       val src = numItems.nn
@@ -725,7 +725,7 @@ private[jacinta] final class JsonParser:
         else
           val arr = new Array[Any](n + 1)
           src.copyToArray(arr)
-          arr(n) = JsonAst.arrayPad
+          arr(n) = Json.Ast.arrayPad
           arr
       relinquishArrayBuffer()
       out.asInstanceOf[IArray[Any]]
@@ -833,7 +833,7 @@ private[jacinta] final class JsonParser:
   def parse()(using Tactic[ParseError]): Raw =
     bom()
     skip()
-    if !more then abort(ParseError(JsonAst, Position(0, 0), Issue.EmptyInput))
+    if !more then abort(ParseError(Json.Ast, Position(0, 0), Issue.EmptyInput))
     val result = parseValue()
 
     while more do

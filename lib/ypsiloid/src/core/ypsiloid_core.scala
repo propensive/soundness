@@ -52,7 +52,7 @@ extension [entity: Encodable in Yaml](value: entity) def yaml: Yaml = value.enco
 extension (inline context: StringContext)
   transparent inline def y: Interpolation = interpolation[Yaml](context)
 
-// AST predicates and accessors mirroring Jacinta's `JsonAst` extensions.
+// AST predicates and accessors mirroring Jacinta's `Json.Ast` extensions.
 // `isObject` / `isArray` distinguish mappings (even-length flat array of
 // alternating key/value) from sequences (odd-length, with a trailing
 // `arrayPad` sentinel when the user-visible item count is even).

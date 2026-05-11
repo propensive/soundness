@@ -30,6 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package jacinta
 
-export jacinta.{JsonAst}
+import anticipation.*
+import contingency.*
+import prepositional.*
+import turbulence.*
+import zephyrine.*
+
+extension (json: Json.Ast.type)
+  def parse(source: Data): Json.Ast raises ParseError = Json.Ast(JsonParser.parse(source))
+
+  def parse(source: Data, holes: Boolean): Json.Ast raises ParseError =
+    Json.Ast(JsonParser.parse(source, holes))
+
+  def parse(input: Iterator[Data]): Json.Ast raises ParseError =
+    Json.Ast(JsonParser.parse(input))
+
+  def parse(input: Iterator[Data], holes: Boolean): Json.Ast raises ParseError =
+    Json.Ast(JsonParser.parse(input, holes))
+
+given parserAggregable: Tactic[ParseError] => Json.Ast is Aggregable by Data =
+  source => Json.Ast.parse(source.iterator)

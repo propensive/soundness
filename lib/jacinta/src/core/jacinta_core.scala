@@ -48,9 +48,9 @@ import wisteria.*
 
 import JsonError.Reason
 
-given showable: (printer: JsonPrinter) => JsonAst is Showable = printer.print(_)
+given showable: (printer: JsonPrinter) => Json.Ast is Showable = printer.print(_)
 
-extension (json: JsonAst)
+extension (json: Json.Ast)
   inline def isNumber: Boolean = isDouble || isLong || isBcd
   inline def isAbsent: Boolean = json == Unset
   inline def isLong: Boolean = json.isInstanceOf[Long]
@@ -88,29 +88,29 @@ extension (json: JsonAst)
 
   // Returns the user-visible element count of an array node (excludes the
   // sentinel pad if present).
-  inline def arrayLength: Int = JsonAst.arrayLength(json)
+  inline def arrayLength: Int = Json.Ast.arrayLength(json)
 
-  // Materialise an array element as a `JsonAst` node. For a parity-padded
+  // Materialise an array element as a `Json.Ast` node. For a parity-padded
   // heterogeneous array this is a direct indexed lookup; for the unboxed
   // `Array[Double]` form, the raw double is recovered as a `Long` for
   // whole values in Long range (preserving the type the parser would have
   // assigned outside the array context) and as a `Double` otherwise.
-  def arrayElement(index: Int): JsonAst = (json: @unchecked) match
+  def arrayElement(index: Int): Json.Ast = (json: @unchecked) match
     case nums: Array[Double] @unchecked =>
       val d = nums(index)
       if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
-      then JsonAst(d.toLong) else JsonAst(d)
+      then Json.Ast(d.toLong) else Json.Ast(d)
     case _ =>
-      json.asInstanceOf[IArray[JsonAst]](index)
+      json.asInstanceOf[IArray[Json.Ast]](index)
 
   // Returns the number of key/value pairs in an object node.
-  inline def objectSize: Int = JsonAst.objectSize(json)
+  inline def objectSize: Int = Json.Ast.objectSize(json)
 
   inline def objectKey(index: Int): String =
     json.asInstanceOf[IArray[Any]](index*2).asInstanceOf[String]
 
-  inline def objectValue(index: Int): JsonAst =
-    json.asInstanceOf[IArray[Any]](index*2 + 1).asInstanceOf[JsonAst]
+  inline def objectValue(index: Int): Json.Ast =
+    json.asInstanceOf[IArray[Any]](index*2 + 1).asInstanceOf[Json.Ast]
 
   // Linear scan for a key. Returns the value index (in pair units) or -1.
   def objectIndexOf(key: String): Int =
@@ -122,16 +122,16 @@ extension (json: JsonAst)
       i += 2
     -1
 
-  def array: IArray[JsonAst] raises JsonError = (json: @unchecked) match
+  def array: IArray[Json.Ast] raises JsonError = (json: @unchecked) match
     case nums: Array[Double] @unchecked =>
       IArray.tabulate(nums.length)(json.arrayElement(_))
     case _ =>
       if isArray then
-        val full = json.asInstanceOf[IArray[JsonAst]]
-        val n = JsonAst.arrayLength(json)
+        val full = json.asInstanceOf[IArray[Json.Ast]]
+        val n = Json.Ast.arrayLength(json)
         if n == full.length then full
         else IArray.tabulate(n)(full(_))
-      else expected(JsonPrimitive.Array) yet IArray[JsonAst]()
+      else expected(JsonPrimitive.Array) yet IArray[Json.Ast]()
 
   def double: Double raises JsonError = json.asMatchable match
     case value: Double                 => value
@@ -170,19 +170,19 @@ extension (json: JsonAst)
   // Returns a (keys, values) view over an object node. This *materialises*
   // two new IArrays from the flat alternating layout, so prefer
   // `objectKey`/`objectValue` when you only need a few entries.
-  def obj: (IArray[String], IArray[JsonAst]) raises JsonError =
-    if !isObject then expected(JsonPrimitive.Object) yet (IArray[String]() -> IArray[JsonAst]())
+  def obj: (IArray[String], IArray[Json.Ast]) raises JsonError =
+    if !isObject then expected(JsonPrimitive.Object) yet (IArray[String]() -> IArray[Json.Ast]())
     else
       val arr = json.asInstanceOf[IArray[Any]]
       val n = arr.length/2
       val keys = new Array[String](n)
-      val values = new Array[JsonAst](n)
+      val values = new Array[Json.Ast](n)
       var i = 0
       while i < n do
         keys(i) = arr(i*2).asInstanceOf[String]
-        values(i) = arr(i*2 + 1).asInstanceOf[JsonAst]
+        values(i) = arr(i*2 + 1).asInstanceOf[Json.Ast]
         i += 1
-      (keys.asInstanceOf[IArray[String]], values.asInstanceOf[IArray[JsonAst]])
+      (keys.asInstanceOf[IArray[String]], values.asInstanceOf[IArray[Json.Ast]])
 
   def number: Long | Double | Bcd raises JsonError =
     if isLong then long else if isDouble then double else if isBcd then bcd

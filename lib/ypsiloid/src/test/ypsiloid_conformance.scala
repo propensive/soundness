@@ -52,7 +52,7 @@ import scala.jdk.CollectionConverters.*
 import anticipation.Text
 import contingency.{Tactic, strategies}
 import hieroglyph.charEncoders
-import jacinta.{Json, JsonAst}
+import jacinta.Json
 import turbulence.read
 
 import strategies.throwUnsafely
@@ -309,16 +309,16 @@ object Conformance:
       case Outcome.Passed => ()
 
   private def yamlAstToJson(yaml: YamlAst): Json = yaml match
-    case YamlAst.Null         => Json.ast(JsonAst(null))
-    case YamlAst.Bool(b)      => Json.ast(JsonAst(b))
-    case YamlAst.Integer(n)   => Json.ast(JsonAst(n))
-    case YamlAst.Decimal(d)   => Json.ast(JsonAst(d))
-    case YamlAst.Str(s)       => Json.ast(JsonAst(s.s))
+    case YamlAst.Null         => Json.ast(Json.Ast(null))
+    case YamlAst.Bool(b)      => Json.ast(Json.Ast(b))
+    case YamlAst.Integer(n)   => Json.ast(Json.Ast(n))
+    case YamlAst.Decimal(d)   => Json.ast(Json.Ast(d))
+    case YamlAst.Str(s)       => Json.ast(Json.Ast(s.s))
 
     case YamlAst.Sequence(items) =>
       val converted: IArray[Any] =
         IArray.from(items.map(item => Json.unseal(yamlAstToJson(item)).asInstanceOf[Any]))
-      Json.ast(JsonAst.arr(converted))
+      Json.ast(Json.Ast.arr(converted))
 
     case YamlAst.Mapping(entries) =>
       val pairs = entries.collect:
@@ -326,7 +326,7 @@ object Conformance:
 
       val keys: IArray[String] = IArray.from(pairs.map(_._1))
       val values: IArray[Any] = IArray.from(pairs.map(_._2.asInstanceOf[Any]))
-      Json.ast(JsonAst.obj(keys, values))
+      Json.ast(Json.Ast.obj(keys, values))
 
   private def jsonString(json: Json): String =
     renderAny(Json.unseal(json).asInstanceOf[Any])
@@ -367,7 +367,7 @@ object Conformance:
       else
         val last = arr(n - 1)
         val effective =
-          if last.asInstanceOf[AnyRef] eq jacinta.JsonAst.arrayPad then n - 1
+          if last.asInstanceOf[AnyRef] eq jacinta.Json.Ast.arrayPad then n - 1
           else n
         (0 until effective).map(i => renderAny(arr(i))).mkString("[", ",", "]")
 

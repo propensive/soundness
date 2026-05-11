@@ -92,7 +92,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     suite(m"Parse example 1"):
       bench(m"Parse file with Merino")
         (target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min)):
-        '{ JsonAst.parse(jacinta.Benchmarks.jsonBytes1) }
+        '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes1) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size1):
         '{
@@ -112,7 +112,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     suite(m"Parse example 2"):
       bench(m"Parse file with Merino")
         (target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min)):
-        '{ JsonAst.parse(jacinta.Benchmarks.jsonBytes2) }
+        '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes2) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size2):
         '{
@@ -132,7 +132,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     suite(m"Parse example 3"):
       bench(m"Parse file with Merino")
         (target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min)):
-        '{ JsonAst.parse(jacinta.Benchmarks.jsonBytes3) }
+        '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes3) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size3):
         '{
@@ -152,7 +152,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     suite(m"Parse example 4 (100 user records)"):
       bench(m"Parse file with Merino")
         (target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min)):
-        '{ JsonAst.parse(jacinta.Benchmarks.jsonBytes4) }
+        '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes4) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size4):
         '{
@@ -172,7 +172,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     suite(m"Parse example 5 (500 log entries)"):
       bench(m"Parse file with Merino")
         (target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min)):
-        '{ JsonAst.parse(jacinta.Benchmarks.jsonBytes5) }
+        '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes5) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size5):
         '{
@@ -192,7 +192,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     suite(m"Parse example 6 (50 high-precision blockchain transactions)"):
       bench(m"Parse file with Merino")
         (target = 1*Second, operationSize = size6, baseline = Baseline(compare = Min)):
-        '{ JsonAst.parse(jacinta.Benchmarks.jsonBytes6) }
+        '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes6) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size6):
         '{
@@ -218,7 +218,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
       bench(m"Parse file with Merino")
         (target = 1*Second, operationSize = size7, baseline = Baseline(compare = Min)):
-        '{ JsonAst.parse(jacinta.Benchmarks.jsonBytes7) }
+        '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes7) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size7):
         '{
@@ -240,7 +240,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
       bench(m"Parse file with Merino")
         (target = 1*Second, operationSize = size8, baseline = Baseline(compare = Min)):
-        '{ JsonAst.parse(jacinta.Benchmarks.jsonBytes8) }
+        '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes8) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size8):
         '{
@@ -336,7 +336,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   // overflow the parser's 14-nibble compact-BCD path and materialise as
   // `JsonBcd` values, so this exercises the printer's high-precision
   // number path on a realistic input rather than a microcase.
-  lazy val blockchainAst: JsonAst = unsafely(JsonAst.parse(jsonBytes6))
+  lazy val blockchainAst: Json.Ast = unsafely(Json.Ast.parse(jsonBytes6))
 
   def printBlockchain(): Text = JsonPrinter.print(blockchainAst, false)
 
