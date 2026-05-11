@@ -34,5 +34,5 @@ package soundness
 
 export
   savagery
-  . { Circle, Delta, Ellipse, Figure, LinearGradient, Outline, Point, Rectangle, Segment, Stop,
-      Stroke, Svg, SvgDef, SvgError, SvgId, SvgParser, Sweep, Transform }
+  . { Circle, Delta, Down, Ellipse, Figure, Left, LinearGradient, Outline, Point, Rectangle,
+      Right, Segment, Stop, Stroke, Svg, SvgDef, SvgError, SvgId, SvgParser, Sweep, Transform, Up }

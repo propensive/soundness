@@ -32,6 +32,8 @@
                                                                                                   */
 package savagery
 
+import scala.annotation.targetName
+
 import anticipation.*
 import gossamer.*
 import mosquito.*
@@ -48,4 +50,21 @@ object Delta:
     def dx: Float = delta.element(0)
     def dy: Float = delta.element(1)
 
+  extension (scalar: Float)
+    @targetName("scaleDeltaFloat")
+    infix def * (delta: Delta): Delta = Delta(scalar*delta.dx, scalar*delta.dy)
+
+  extension (scalar: Double)
+    @targetName("scaleDeltaDouble")
+    infix def * (delta: Delta): Delta = scalar.toFloat*delta
+
+  extension (scalar: Int)
+    @targetName("scaleDeltaInt")
+    infix def * (delta: Delta): Delta = scalar.toFloat*delta
+
 opaque type Delta <: Tensor[Float, 2] = Tensor[Float, 2]
+
+val Up:    Delta = Delta(0.0f, -1.0f)
+val Down:  Delta = Delta(0.0f,  1.0f)
+val Left:  Delta = Delta(-1.0f, 0.0f)
+val Right: Delta = Delta( 1.0f, 0.0f)

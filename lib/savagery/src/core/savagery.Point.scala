@@ -48,4 +48,4 @@ object Point:
     def x: Float = point.element(0)
     def y: Float = point.element(1)
 
-opaque type Point <: Tensor[Float, 2] = Tensor[Float, 2]
+opaque type Point = Tensor[Float, 2]
