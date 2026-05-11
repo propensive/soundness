@@ -34,10 +34,18 @@ package savagery
 
 import anticipation.*
 import gossamer.*
+import mosquito.*
 import spectacular.*
 
-object Shift:
-  given showable: Shift is Showable =
-    value => t"${value.dx.toString} ${value.dy.toString}"
+object Delta:
+  def apply(dx: Float, dy: Float): Delta = Tensor((dx, dy))
+  def unapply(delta: Delta): (Float, Float) = (delta.dx, delta.dy)
 
-case class Shift(dx: Float, dy: Float)
+  given showable: Delta is Showable = delta =>
+    t"${delta.dx.toString} ${delta.dy.toString}"
+
+  extension (delta: Delta)
+    def dx: Float = delta.element(0)
+    def dy: Float = delta.element(1)
+
+opaque type Delta <: Tensor[Float, 2] = Tensor[Float, 2]

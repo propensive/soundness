@@ -74,29 +74,29 @@ extends Figure:
 
   def moveTo(point: Point): Outline = copy(ops = MoveTo(point) :: ops)
   def lineTo(point: Point): Outline = copy(ops = DrawTo(point) :: ops)
-  def move(vector: Shift): Outline = copy(ops = Move(vector) :: ops)
-  def line(vector: Shift): Outline = copy(ops = Draw(vector) :: ops)
+  def move(vector: Delta): Outline = copy(ops = Move(vector) :: ops)
+  def line(vector: Delta): Outline = copy(ops = Draw(vector) :: ops)
 
-  def curve(ctrl1: Shift, ctrl2: Shift, point: Shift): Outline =
+  def curve(ctrl1: Delta, ctrl2: Delta, point: Delta): Outline =
     copy(ops = Cubic(ctrl1, ctrl2, point) :: ops)
 
   def curveTo(ctrl1: Point, ctrl2: Point, point: Point): Outline =
     copy(ops = CubicTo(ctrl1, ctrl2, point) :: ops)
 
-  def curve(ctrl2: Shift, vector: Shift): Outline = copy(ops = Cubic(Unset, ctrl2, vector) :: ops)
+  def curve(ctrl2: Delta, vector: Delta): Outline = copy(ops = Cubic(Unset, ctrl2, vector) :: ops)
   def curveTo(ctrl2: Point, point: Point): Outline = copy(ops = CubicTo(Unset, ctrl2, point) :: ops)
-  def quadCurve(ctrl1: Shift, vector: Shift): Outline = copy(ops = Quadratic(ctrl1, vector) :: ops)
+  def quadCurve(ctrl1: Delta, vector: Delta): Outline = copy(ops = Quadratic(ctrl1, vector) :: ops)
   def quadCurveTo(ctrl1: Point, point: Point): Outline = copy(ops = QuadraticTo(ctrl1, point) :: ops)
-  def quadCurve(vector: Shift): Outline = copy(ops = Quadratic(Unset, vector) :: ops)
+  def quadCurve(vector: Delta): Outline = copy(ops = Quadratic(Unset, vector) :: ops)
   def quadCurveTo(point: Point): Outline = copy(ops = QuadraticTo(Unset, point) :: ops)
-  def moveUp(value: Float): Outline = copy(ops = Move(Shift(value, 0.0)) :: ops)
-  def moveDown(value: Float): Outline = copy(ops = Move(Shift(-value, 0.0)) :: ops)
-  def moveLeft(value: Float): Outline = copy(ops = Move(Shift(0.0, -value)) :: ops)
-  def moveRight(value: Float): Outline = copy(ops = Move(Shift(0.0, value)) :: ops)
-  def lineUp(value: Float): Outline = copy(ops = Draw(Shift(value, 0.0)) :: ops)
-  def lineDown(value: Float): Outline = copy(ops = Draw(Shift(-value, 0.0)) :: ops)
-  def lineLeft(value: Float): Outline = copy(ops = Draw(Shift(0.0, -value)) :: ops)
-  def lineRight(value: Float): Outline = copy(ops = Draw(Shift(0.0, value)) :: ops)
+  def moveUp(value: Float): Outline = copy(ops = Move(Delta(value, 0.0)) :: ops)
+  def moveDown(value: Float): Outline = copy(ops = Move(Delta(-value, 0.0)) :: ops)
+  def moveLeft(value: Float): Outline = copy(ops = Move(Delta(0.0, -value)) :: ops)
+  def moveRight(value: Float): Outline = copy(ops = Move(Delta(0.0, value)) :: ops)
+  def lineUp(value: Float): Outline = copy(ops = Draw(Delta(value, 0.0)) :: ops)
+  def lineDown(value: Float): Outline = copy(ops = Draw(Delta(-value, 0.0)) :: ops)
+  def lineLeft(value: Float): Outline = copy(ops = Draw(Delta(0.0, -value)) :: ops)
+  def lineRight(value: Float): Outline = copy(ops = Draw(Delta(0.0, value)) :: ops)
   def closed: Outline = copy(ops = Close :: ops)
 
 case class Ellipse(center: Point, xRadius: Float, yRadius: Float, angle: Angle) extends Figure:

@@ -46,12 +46,12 @@ object internal:
 
   extension (point: Point)
     @targetName("plus")
-    infix def + (vector: Shift): Point = Point(point.x + vector.dx, point.y + vector.dy)
+    infix def + (vector: Delta): Point = Point(point.x + vector.dx, point.y + vector.dy)
 
     @targetName("asVector")
-    def `unary_~`: Shift = Shift(point.x, point.y)
+    def `unary_~`: Delta = Delta(point.x, point.y)
 
 
-  extension (vector: Shift)
+  extension (vector: Delta)
     @targetName("plus2")
-    infix def + (right: Shift): Shift = Shift(vector.dx + right.dx, vector.dy + right.dy)
+    infix def + (right: Delta): Delta = Delta(vector.dx + right.dx, vector.dy + right.dy)
