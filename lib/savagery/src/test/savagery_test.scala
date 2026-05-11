@@ -95,11 +95,11 @@ object Tests extends Suite(m"Savagery tests"):
 
     suite(m"Transform encoding"):
       test(m"Translate"):
-        (Transform.Translate(Shift(10, 20)): Transform).encode
+        (Transform.Translate(Delta(10, 20)): Transform).encode
       .assert(_ == t"translate(10.0,20.0)")
 
       test(m"Translate with negative offset"):
-        (Transform.Translate(Shift(-5, -10)): Transform).encode
+        (Transform.Translate(Delta(-5, -10)): Transform).encode
       .assert(_ == t"translate(-5.0,-10.0)")
 
       test(m"Scale uniform"):
@@ -140,21 +140,21 @@ object Tests extends Suite(m"Savagery tests"):
       .assert(_ == t"""<path d="M 0.0 0.0 Z" id="plus"/>""")
 
       test(m"Outline with single transform"):
-        Outline(transforms = List(Transform.Translate(Shift(10, 20))))
+        Outline(transforms = List(Transform.Translate(Delta(10, 20))))
             .moveTo(0!0).closed.xml.show
       .assert(_ == t"""<path d="M 0.0 0.0 Z" transform="translate(10.0,20.0)"/>""")
 
       test(m"Outline with multiple transforms"):
         Outline
          (transforms =
-            List(Transform.Translate(Shift(1, 2)), Transform.Rotate(Angle.degrees(45))))
+            List(Transform.Translate(Delta(1, 2)), Transform.Rotate(Angle.degrees(45))))
         . moveTo(0!0).closed.xml.show
       .assert(_ == t"""<path d="M 0.0 0.0 Z" transform="translate(1.0,2.0) rotate(45.0)"/>""")
 
       test(m"Outline with id and transform"):
         Outline
          (id         = SvgId(t"shape1"),
-          transforms = List(Transform.Translate(Shift(5, 5))))
+          transforms = List(Transform.Translate(Delta(5, 5))))
         . moveTo(0!0).closed.xml.show
       .assert(_ == t"""<path d="M 0.0 0.0 Z" id="shape1" transform="translate(5.0,5.0)"/>""")
 
@@ -296,8 +296,8 @@ object Tests extends Suite(m"Savagery tests"):
           case Outline(ops, _, _, _) =>
             ops.reverse == List
              (Stroke.MoveTo(Point(0, 0)),
-              Stroke.Draw(Shift(2, 0)),
-              Stroke.Draw(Shift(0, -2)),
+              Stroke.Draw(Delta(2, 0)),
+              Stroke.Draw(Delta(0, -2)),
               Stroke.Close)
           case _ => false
 
@@ -315,7 +315,7 @@ object Tests extends Suite(m"Savagery tests"):
         svg.figures.head
       .assert:
           case Outline(_, _, _, transforms) =>
-            transforms == List(Transform.Translate(Shift(5, 10)))
+            transforms == List(Transform.Translate(Delta(5, 10)))
           case _ => false
 
       test(m"Parse path with multiple transforms"):
@@ -325,7 +325,7 @@ object Tests extends Suite(m"Savagery tests"):
         svg.figures.head
       .assert:
           case Outline(_, _, _, transforms) =>
-            transforms == List(Transform.Translate(Shift(1, 2)), Transform.Rotate(Angle.degrees(45)))
+            transforms == List(Transform.Translate(Delta(1, 2)), Transform.Rotate(Angle.degrees(45)))
           case _ => false
 
       test(m"Parse rgb hex color #ff0000"):
@@ -437,7 +437,7 @@ object Tests extends Suite(m"Savagery tests"):
           figures = List
            (Outline
              (id         = SvgId(t"shape1"),
-              transforms = List(Transform.Translate(Shift(5, 10))))
+              transforms = List(Transform.Translate(Delta(5, 10))))
             . moveTo(0!0).closed))
         . xml.show
 

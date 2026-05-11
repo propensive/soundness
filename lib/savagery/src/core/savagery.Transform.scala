@@ -47,7 +47,7 @@ object Transform:
 
   given encodable: Transform is Encodable in Text =
     _.absolve match
-      case Translate(Shift(dx, dy))   => t"translate($dx,$dy)"
+      case Translate(Delta(dx, dy))   => t"translate($dx,$dy)"
       case Scale(x, Unset)            => t"scale($x)"
       case Scale(x, y: Float)         => t"scale($x,$y)"
       case Rotate(angle)              => t"rotate(${angle.degrees})"
@@ -56,7 +56,7 @@ object Transform:
       case Matrix(a, b, c, d, e, f)   => t"matrix($a,$b,$c,$d,$e,$f)"
 
 enum Transform:
-  case Translate(vector: Shift)
+  case Translate(vector: Delta)
   case Scale(x: Float, y: Optional[Float])
   case Rotate(angle: Angle)
   case SkewX(angle: Angle)

@@ -49,19 +49,19 @@ object Stroke:
     _.absolve match
       case Move(shift)                          => t"m $shift"
       case MoveTo(point)                        => t"M $point"
-      case Draw(Shift(0.0f, v))                 => t"v ${v.toDouble}"
-      case Draw(Shift(h, 0.0f))                 => t"h ${h.toDouble}"
+      case Draw(Delta(0.0f, v))                 => t"v ${v.toDouble}"
+      case Draw(Delta(h, 0.0f))                 => t"h ${h.toDouble}"
       case Draw(shift)                          => t"l $shift"
       case DrawTo(point)                        => t"L $point"
       case Close                                => t"Z"
       case CubicTo(Unset, ctrl2, point)         => t"S $ctrl2, $point"
       case Cubic(Unset, ctrl2, shift)           => t"s $ctrl2, $shift"
       case CubicTo(ctrl1: Point, ctrl2, point)  => t"C $ctrl1, $ctrl2, $point"
-      case Cubic(ctrl1: Shift, ctrl2, shift)    => t"c $ctrl1, $ctrl2, $shift"
+      case Cubic(ctrl1: Delta, ctrl2, shift)    => t"c $ctrl1, $ctrl2, $shift"
       case QuadraticTo(Unset, point)            => t"T $point"
       case Quadratic(Unset, shift)              => t"t $shift"
       case QuadraticTo(ctrl1: Point, point)     => t"Q $ctrl1, $point"
-      case Quadratic(ctrl1: Shift, shift)       => t"q $ctrl1, $shift"
+      case Quadratic(ctrl1: Delta, shift)       => t"q $ctrl1, $shift"
 
       case ArcTo(rx, ry, angle, largeArc, sweep, point) =>
         val clockwise = sweep == Sweep.Clockwise
@@ -75,15 +75,15 @@ object Stroke:
 
 enum Stroke:
   case MoveTo(point: Point)
-  case Move(shift: Shift)
+  case Move(shift: Delta)
   case DrawTo(point: Point)
-  case Draw(shift: Shift)
+  case Draw(shift: Delta)
   case Close
   case CubicTo(ctrl1: Optional[Point], ctrl2: Point, point: Point)
-  case Cubic(ctrl1: Optional[Shift], ctrl2: Shift, shift: Shift)
+  case Cubic(ctrl1: Optional[Delta], ctrl2: Delta, shift: Delta)
   case QuadraticTo(ctrl1: Optional[Point], point: Point)
-  case Quadratic(ctrl1: Optional[Shift], shift: Shift)
+  case Quadratic(ctrl1: Optional[Delta], shift: Delta)
   case ArcTo
     ( rx: Float, ry: Float, angle: Angle, largeArc: Boolean, sweep: Sweep, point: Point )
   case Arc
-    ( rx: Float, ry: Float, angle: Angle, largeArc: Boolean, sweep: Sweep, shift: Shift )
+    ( rx: Float, ry: Float, angle: Angle, largeArc: Boolean, sweep: Sweep, shift: Delta )

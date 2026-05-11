@@ -234,7 +234,7 @@ object SvgParser:
         case 'm' =>
           val dx = parseNum()
           val dy = parseNum()
-          ops += Stroke.Move(Shift(dx, dy))
+          ops += Stroke.Move(Delta(dx, dy))
           lastCmd = 'l'
 
         case 'L' =>
@@ -245,15 +245,15 @@ object SvgParser:
         case 'l' =>
           val dx = parseNum()
           val dy = parseNum()
-          ops += Stroke.Draw(Shift(dx, dy))
+          ops += Stroke.Draw(Delta(dx, dy))
 
         case 'H' | 'h' =>
           val dx = parseNum()
-          ops += Stroke.Draw(Shift(dx, 0.0f))
+          ops += Stroke.Draw(Delta(dx, 0.0f))
 
         case 'V' | 'v' =>
           val dy = parseNum()
-          ops += Stroke.Draw(Shift(0.0f, dy))
+          ops += Stroke.Draw(Delta(0.0f, dy))
 
         case 'C' =>
           val ax = parseNum(); val ay = parseNum()
@@ -265,7 +265,7 @@ object SvgParser:
           val ax = parseNum(); val ay = parseNum()
           val bx = parseNum(); val by = parseNum()
           val px = parseNum(); val py = parseNum()
-          ops += Stroke.Cubic(Shift(ax, ay), Shift(bx, by), Shift(px, py))
+          ops += Stroke.Cubic(Delta(ax, ay), Delta(bx, by), Delta(px, py))
 
         case 'Q' =>
           val ax = parseNum(); val ay = parseNum()
@@ -275,7 +275,7 @@ object SvgParser:
         case 'q' =>
           val ax = parseNum(); val ay = parseNum()
           val px = parseNum(); val py = parseNum()
-          ops += Stroke.Quadratic(Shift(ax, ay), Shift(px, py))
+          ops += Stroke.Quadratic(Delta(ax, ay), Delta(px, py))
 
         case 'Z' | 'z' =>
           ops += Stroke.Close
@@ -345,8 +345,8 @@ object SvgParser:
           if pos < s.length then pos += 1 // skip )
 
           (name, args.toList) match
-            case ("translate", List(dx, dy))            => xs += Transform.Translate(Shift(dx, dy))
-            case ("translate", List(dx))                => xs += Transform.Translate(Shift(dx, 0.0f))
+            case ("translate", List(dx, dy))            => xs += Transform.Translate(Delta(dx, dy))
+            case ("translate", List(dx))                => xs += Transform.Translate(Delta(dx, 0.0f))
             case ("scale", List(x))                     => xs += Transform.Scale(x, Unset)
             case ("scale", List(x, y))                  => xs += Transform.Scale(x, y)
             case ("rotate", List(angle))                => xs += Transform.Rotate(Angle.degrees(angle))
