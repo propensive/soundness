@@ -47,18 +47,17 @@ object Transform:
 
   given encodable: Transform is Encodable in Text =
     _.absolve match
-      case Translate(Delta(dx, dy)) => t"translate($dx,$dy)"
-      case Scale(x, Unset)          => t"scale($x)"
-      case Scale(x, y: Float)       => t"scale($x,$y)"
-      case Rotate(angle)            => t"rotate(${angle.degrees})"
-      case SkewX(angle)             => t"skewX(${angle.degrees})"
-      case SkewY(angle)             => t"skewY(${angle.degrees})"
-      case Matrix(m)                => t"matrix(${m.a},${m.b},${m.c},${m.d},${m.e},${m.f})"
+      case Translate(Delta(dx, dy))            => t"translate($dx,$dy)"
+      case Scale(x, Unset)                     => t"scale($x)"
+      case Scale(x, y: Float)                  => t"scale($x,$y)"
+      case Rotate(angle)                       => t"rotate(${angle.degrees})"
+      case Skew(angle, Orientation.Horizontal) => t"skewX(${angle.degrees})"
+      case Skew(angle, Orientation.Vertical)   => t"skewY(${angle.degrees})"
+      case Matrix(m)                           => t"matrix(${m.a},${m.b},${m.c},${m.d},${m.e},${m.f})"
 
 enum Transform:
   case Translate(vector: Delta)
   case Scale(x: Float, y: Optional[Float])
   case Rotate(angle: Angle)
-  case SkewX(angle: Angle)
-  case SkewY(angle: Angle)
+  case Skew(angle: Angle, orientation: Orientation = Orientation.Horizontal)
   case Matrix(affine: Affine)

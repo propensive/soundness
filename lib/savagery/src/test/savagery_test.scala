@@ -119,11 +119,11 @@ object Tests extends Suite(m"Savagery tests"):
       .assert(_ == t"rotate(90.0)")
 
       test(m"SkewX"):
-        (Transform.SkewX(Angle.degrees(45)): Transform).encode
+        (Transform.Skew(Angle.degrees(45)): Transform).encode
       .assert(_ == t"skewX(45.0)")
 
       test(m"SkewY"):
-        (Transform.SkewY(Angle.degrees(45)): Transform).encode
+        (Transform.Skew(Angle.degrees(45), Orientation.Vertical): Transform).encode
       .assert(_ == t"skewY(45.0)")
 
       test(m"Matrix identity"):
@@ -157,6 +157,36 @@ object Tests extends Suite(m"Savagery tests"):
           transforms = List(Transform.Translate(Delta(5, 5))))
         . moveTo(0!0).closed.xml.show
       .assert(_ == t"""<path d="M 0.0 0.0 Z" id="shape1" transform="translate(5.0,5.0)"/>""")
+
+    suite(m"Transform methods"):
+      test(m"Outline rotate method"):
+        Outline().moveTo(0!0).closed.rotate(Angle.degrees(90)).xml.show
+      .assert(_ == t"""<path d="M 0.0 0.0 Z" transform="rotate(90.0)"/>""")
+
+      test(m"Rectangle translate method"):
+        Rectangle(0!0, 10, 5).translate(Delta(3, 4)).xml.show
+      .assert(_ == t"""<rect x="0.0" y="0.0" width="10.0" height="5.0" transform="translate(3.0,4.0)"/>""")
+
+      test(m"Ellipse skew method"):
+        Ellipse(0!0, 5, 5, Angle(0)).skew(Angle.degrees(45)).xml.show
+      .assert(_ == t"""<circle cx="0.0" cy="0.0" r="5.0" transform="skewX(45.0)"/>""")
+
+      test(m"Chained transforms compose left-to-right"):
+        Rectangle(0!0, 1, 1).translate(Delta(5, 0)).rotate(Angle.degrees(45)).xml.show
+      .assert(_ == t"""<rect x="0.0" y="0.0" width="1.0" height="1.0" transform="translate(5.0,0.0) rotate(45.0)"/>""")
+
+      test(m"Scale with single argument"):
+        Rectangle(0!0, 10, 10).scale(2.0f).xml.show
+      .assert(_ == t"""<rect x="0.0" y="0.0" width="10.0" height="10.0" transform="scale(2.0)"/>""")
+
+      test(m"Scale with two arguments"):
+        Rectangle(0!0, 10, 10).scale(2.0f, 3.0f).xml.show
+      .assert(_ == t"""<rect x="0.0" y="0.0" width="10.0" height="10.0" transform="scale(2.0,3.0)"/>""")
+
+      test(m"Svg wraps figures in group when transformed"):
+        Svg(100, 100, figures = List(Rectangle(0!0, 10, 10)))
+          . rotate(Angle.degrees(45)).xml.show
+      .assert(_ == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><g transform="rotate(45.0)"><rect x="0.0" y="0.0" width="10.0" height="10.0"/></g></svg>""")
 
     suite(m"Gradient stops"):
       test(m"Stop with red at offset 0"):
