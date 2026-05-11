@@ -32,6 +32,8 @@
                                                                                                   */
 package savagery
 
+import scala.math.Numeric
+
 import anticipation.*
 import gossamer.*
 import mosquito.*
@@ -43,6 +45,11 @@ object Point:
 
   given showable: Point is Showable = point =>
     t"${point.x.toString} ${point.y.toString}"
+
+  given fromTuple: [numeric: Numeric, numeric2: Numeric]
+  =>  Conversion[(numeric, numeric2), Point] =
+    tuple =>
+      Point(numeric.toFloat(tuple(0)), numeric2.toFloat(tuple(1)))
 
   extension (point: Point)
     def x: Float = point.element(0)

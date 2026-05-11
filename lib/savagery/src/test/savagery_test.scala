@@ -44,31 +44,31 @@ object Tests extends Suite(m"Savagery tests"):
   def run(): Unit =
     suite(m"Basic shapes"):
       test(m"Rectangle at origin"):
-        Rectangle(0!0, 10, 5).xml.show
+        Rectangle((0, 0), 10, 5).xml.show
       .assert(_ == t"""<rect x="0.0" y="0.0" width="10.0" height="5.0"/>""")
 
       test(m"Rectangle offset"):
-        Rectangle(2!3, 8, 4).xml.show
+        Rectangle((2, 3), 8, 4).xml.show
       .assert(_ == t"""<rect x="2.0" y="3.0" width="8.0" height="4.0"/>""")
 
       test(m"Rectangle with negative position"):
-        Rectangle((-1f)!(-2f), 5, 5).xml.show
+        Rectangle((-1, -2), 5, 5).xml.show
       .assert(_ == t"""<rect x="-1.0" y="-2.0" width="5.0" height="5.0"/>""")
 
       test(m"Circle at origin"):
-        Circle(0!0, 5).xml.show
+        Circle((0, 0), 5).xml.show
       .assert(_ == t"""<circle cx="0.0" cy="0.0" r="5.0"/>""")
 
       test(m"Circle at offset"):
-        Circle(10!20, 3).xml.show
+        Circle((10, 20), 3).xml.show
       .assert(_ == t"""<circle cx="10.0" cy="20.0" r="3.0"/>""")
 
       test(m"Ellipse with different radii"):
-        Ellipse(1!2, 3, 4, Angle(0)).xml.show
+        Ellipse((1, 2), 3, 4, Angle(0)).xml.show
       .assert(_ == t"""<ellipse cx="1.0" cy="2.0" rx="3.0" ry="4.0"/>""")
 
       test(m"Ellipse with equal radii renders as circle"):
-        Ellipse(0!0, 5, 5, Angle(0)).xml.show
+        Ellipse((0, 0), 5, 5, Angle(0)).xml.show
       .assert(_ == t"""<circle cx="0.0" cy="0.0" r="5.0"/>""")
 
     suite(m"Path output"):
@@ -77,19 +77,19 @@ object Tests extends Suite(m"Savagery tests"):
       .assert(_ == t"""<path d=""/>""")
 
       test(m"Move and close"):
-        Outline().moveTo(0!0).closed.xml.show
+        Outline().moveTo((0, 0)).closed.xml.show
       .assert(_ == t"""<path d="M 0.0 0.0 Z"/>""")
 
       test(m"Move and absolute line"):
-        Outline().moveTo(0!0).lineTo(3!4).xml.show
+        Outline().moveTo((0, 0)).lineTo((3, 4)).xml.show
       .assert(_ == t"""<path d="M 0.0 0.0 L 3.0 4.0"/>""")
 
       test(m"Move and cubic curve"):
-        Outline().moveTo(0!0).curveTo(1!1, 2!1, 3!0).xml.show
+        Outline().moveTo((0, 0)).curveTo((1, 1), (2, 1), (3, 0)).xml.show
       .assert(_ == t"""<path d="M 0.0 0.0 C 1.0 1.0, 2.0 1.0, 3.0 0.0"/>""")
 
       test(m"Plus sign path"):
-        Outline().moveTo(0!0).lineUp(2).lineLeft(2).lineUp(1).lineRight(2).lineUp(2).lineRight(1)
+        Outline().moveTo((0, 0)).lineUp(2).lineLeft(2).lineUp(1).lineRight(2).lineUp(2).lineRight(1)
             .lineDown(2).lineRight(2).lineDown(1).lineLeft(2).lineDown(2).closed.xml.show
       .assert(_ == t"""<path d="M 0.0 0.0 h 2.0 v -2.0 h 1.0 v 2.0 h 2.0 v 1.0 h -2.0 v 2.0 h -1.0 v -2.0 h -2.0 Z"/>""")
 
@@ -136,55 +136,63 @@ object Tests extends Suite(m"Savagery tests"):
 
     suite(m"Outline with attributes"):
       test(m"Outline with id"):
-        Outline(id = SvgId(t"plus")).moveTo(0!0).closed.xml.show
+        Outline(id = SvgId(t"plus")).moveTo((0, 0)).closed.xml.show
       .assert(_ == t"""<path d="M 0.0 0.0 Z" id="plus"/>""")
 
       test(m"Outline with single transform"):
         Outline(transforms = List(Transform.Translate(Delta(10, 20))))
-            .moveTo(0!0).closed.xml.show
+            .moveTo((0, 0)).closed.xml.show
       .assert(_ == t"""<path d="M 0.0 0.0 Z" transform="translate(10.0,20.0)"/>""")
 
       test(m"Outline with multiple transforms"):
         Outline
          (transforms =
             List(Transform.Translate(Delta(1, 2)), Transform.Rotate(Angle.degrees(45))))
-        . moveTo(0!0).closed.xml.show
+        . moveTo((0, 0)).closed.xml.show
       .assert(_ == t"""<path d="M 0.0 0.0 Z" transform="translate(1.0,2.0) rotate(45.0)"/>""")
 
       test(m"Outline with id and transform"):
         Outline
          (id         = SvgId(t"shape1"),
           transforms = List(Transform.Translate(Delta(5, 5))))
-        . moveTo(0!0).closed.xml.show
+        . moveTo((0, 0)).closed.xml.show
       .assert(_ == t"""<path d="M 0.0 0.0 Z" id="shape1" transform="translate(5.0,5.0)"/>""")
 
     suite(m"Transform methods"):
       test(m"Outline rotate method"):
-        Outline().moveTo(0!0).closed.rotate(Angle.degrees(90)).xml.show
+        Outline().moveTo((0, 0)).closed.rotate(Angle.degrees(90)).xml.show
       .assert(_ == t"""<path d="M 0.0 0.0 Z" transform="rotate(90.0)"/>""")
 
       test(m"Rectangle translate method"):
-        Rectangle(0!0, 10, 5).translate(Delta(3, 4)).xml.show
+        Rectangle((0, 0), 10, 5).translate(Delta(3, 4)).xml.show
       .assert(_ == t"""<rect x="0.0" y="0.0" width="10.0" height="5.0" transform="translate(3.0,4.0)"/>""")
 
+      test(m"Translate using unary + on tuple"):
+        Rectangle((0, 0), 10, 5).translate(+(3, 4)).xml.show
+      .assert(_ == t"""<rect x="0.0" y="0.0" width="10.0" height="5.0" transform="translate(3.0,4.0)"/>""")
+
+      test(m"Translate using unary - on tuple"):
+        Rectangle((0, 0), 10, 5).translate(-(3, 4)).xml.show
+      .assert(_ == t"""<rect x="0.0" y="0.0" width="10.0" height="5.0" transform="translate(-3.0,-4.0)"/>""")
+
       test(m"Ellipse skew method"):
-        Ellipse(0!0, 5, 5, Angle(0)).skew(Angle.degrees(45)).xml.show
+        Ellipse((0, 0), 5, 5, Angle(0)).skew(Angle.degrees(45)).xml.show
       .assert(_ == t"""<circle cx="0.0" cy="0.0" r="5.0" transform="skewX(45.0)"/>""")
 
       test(m"Chained transforms compose left-to-right"):
-        Rectangle(0!0, 1, 1).translate(Delta(5, 0)).rotate(Angle.degrees(45)).xml.show
+        Rectangle((0, 0), 1, 1).translate(Delta(5, 0)).rotate(Angle.degrees(45)).xml.show
       .assert(_ == t"""<rect x="0.0" y="0.0" width="1.0" height="1.0" transform="translate(5.0,0.0) rotate(45.0)"/>""")
 
       test(m"Scale with single argument"):
-        Rectangle(0!0, 10, 10).scale(2.0f).xml.show
+        Rectangle((0, 0), 10, 10).scale(2.0f).xml.show
       .assert(_ == t"""<rect x="0.0" y="0.0" width="10.0" height="10.0" transform="scale(2.0)"/>""")
 
       test(m"Scale with two arguments"):
-        Rectangle(0!0, 10, 10).scale(2.0f, 3.0f).xml.show
+        Rectangle((0, 0), 10, 10).scale(2.0f, 3.0f).xml.show
       .assert(_ == t"""<rect x="0.0" y="0.0" width="10.0" height="10.0" transform="scale(2.0,3.0)"/>""")
 
       test(m"Svg wraps figures in group when transformed"):
-        Svg(100, 100, figures = List(Rectangle(0!0, 10, 10)))
+        Svg(100, 100, figures = List(Rectangle((0, 0), 10, 10)))
           . rotate(Angle.degrees(45)).xml.show
       .assert(_ == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><g transform="rotate(45.0)"><rect x="0.0" y="0.0" width="10.0" height="10.0"/></g></svg>""")
 
@@ -232,7 +240,7 @@ object Tests extends Suite(m"Savagery tests"):
       .assert(_ == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"/>""")
 
       test(m"SVG with single rectangle"):
-        Svg(50, 50, figures = List(Rectangle(0!0, 10, 10))).xml.show
+        Svg(50, 50, figures = List(Rectangle((0, 0), 10, 10))).xml.show
       .assert: result =>
           result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50.0 50.0" width="50.0" height="50.0"><rect x="0.0" y="0.0" width="10.0" height="10.0"/></svg>"""
 
@@ -240,7 +248,7 @@ object Tests extends Suite(m"Savagery tests"):
         Svg
          (100,
           100,
-          figures = List(Rectangle(0!0, 10, 10), Circle(50!50, 5)))
+          figures = List(Rectangle((0, 0), 10, 10), Circle((50, 50), 5)))
         . xml.show
       .assert: result =>
           result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><rect x="0.0" y="0.0" width="10.0" height="10.0"/><circle cx="50.0" cy="50.0" r="5.0"/></svg>"""
@@ -259,7 +267,7 @@ object Tests extends Suite(m"Savagery tests"):
          (100,
           100,
           defs    = List(LinearGradient(SvgId(t"g1"), Stop(0.0, Red), Stop(1.0, Blue))),
-          figures = List(Rectangle(0!0, 50, 50)))
+          figures = List(Rectangle((0, 0), 50, 50)))
         . xml.show
       .assert: result =>
           result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><defs><linearGradient id="g1"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient></defs><rect x="0.0" y="0.0" width="50.0" height="50.0"/></svg>"""
@@ -271,7 +279,7 @@ object Tests extends Suite(m"Savagery tests"):
           result == t"""<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10.0 10.0" width="10.0" height="10.0"/>"""
 
       test(m"Document[Svg] with content"):
-        Document(Svg(50, 50, figures = List(Circle(25!25, 10))), enc"UTF-8").show
+        Document(Svg(50, 50, figures = List(Circle((25, 25), 10))), enc"UTF-8").show
       .assert: result =>
           result == t"""<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50.0 50.0" width="50.0" height="50.0"><circle cx="25.0" cy="25.0" r="10.0"/></svg>"""
 
@@ -439,23 +447,23 @@ object Tests extends Suite(m"Savagery tests"):
       .assert(_ == Rectangle(Point(0, 0), 5, 5))
 
       test(m"Round-trip: rectangle"):
-        val encoded = Svg(100, 100, figures = List(Rectangle(2!3, 8, 4))).xml.show
+        val encoded = Svg(100, 100, figures = List(Rectangle((2, 3), 8, 4))).xml.show
         encoded.read[Svg].xml.show == encoded
       .assert(_ == true)
 
       test(m"Round-trip: circle"):
-        val encoded = Svg(100, 100, figures = List(Circle(50!50, 10))).xml.show
+        val encoded = Svg(100, 100, figures = List(Circle((50, 50), 10))).xml.show
         encoded.read[Svg].xml.show == encoded
       .assert(_ == true)
 
       test(m"Round-trip: ellipse"):
-        val encoded = Svg(100, 100, figures = List(Ellipse(0!0, 5, 3, Angle(0)))).xml.show
+        val encoded = Svg(100, 100, figures = List(Ellipse((0, 0), 5, 3, Angle(0)))).xml.show
         encoded.read[Svg].xml.show == encoded
       .assert(_ == true)
 
       test(m"Round-trip: path"):
         val encoded =
-          Svg(100, 100, figures = List(Outline().moveTo(0!0).lineTo(1!1).closed)).xml.show
+          Svg(100, 100, figures = List(Outline().moveTo((0, 0)).lineTo((1, 1)).closed)).xml.show
 
         encoded.read[Svg].xml.show == encoded
       .assert(_ == true)
@@ -468,7 +476,7 @@ object Tests extends Suite(m"Savagery tests"):
            (Outline
              (id         = SvgId(t"shape1"),
               transforms = List(Transform.Translate(Delta(5, 10))))
-            . moveTo(0!0).closed))
+            . moveTo((0, 0)).closed))
         . xml.show
 
         encoded.read[Svg].xml.show == encoded
@@ -476,7 +484,7 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Round-trip: SVG with multiple figures"):
         val encoded = Svg
-         (100, 100, figures = List(Rectangle(0!0, 10, 10), Circle(50!50, 5)))
+         (100, 100, figures = List(Rectangle((0, 0), 10, 10), Circle((50, 50), 5)))
         . xml.show
 
         encoded.read[Svg].xml.show == encoded
@@ -484,7 +492,7 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Round-trip: Document[Svg]"):
         val encoded =
-          Document(Svg(50, 50, figures = List(Circle(25!25, 10))), enc"UTF-8").show
+          Document(Svg(50, 50, figures = List(Circle((25, 25), 10))), enc"UTF-8").show
 
         encoded.load[Svg].show == encoded
       .assert(_ == true)

@@ -34,8 +34,4 @@ package savagery
 
 import proscenium.*
 
-extension (left: Float)
-  @targetName("makeCoordinates")
-  infix def ! (right: Float) = Point(left, right)
-
 export internal.SvgId
