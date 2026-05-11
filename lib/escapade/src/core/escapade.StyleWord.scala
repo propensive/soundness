@@ -80,28 +80,65 @@ object StyleWord:
 
   def emitDiff(buffer: StringBuilder, prev: Long, next: Long, depth: ColorDepth): Unit =
     val diff = prev^next
+    var open = false
+
+    def sep(): Unit =
+      if !open then
+        buffer.add(t"\e[")
+        open = true
+      else buffer.append(';')
+
+    def emitColor(prefix: Int, rgb: Int): Unit =
+      val r = (rgb >> 16)&255
+      val g = (rgb >> 8)&255
+      val b = rgb&255
+      depth match
+        case ColorDepth.TrueColor =>
+          sep()
+          buffer.append(prefix); buffer.append(';'); buffer.append('2')
+          buffer.append(';'); buffer.append(r)
+          buffer.append(';'); buffer.append(g)
+          buffer.append(';'); buffer.append(b)
+
+        case _ =>
+          val n =
+            if r == 0 && g == 0 && b == 0 then 16
+            else if r == 255 && g == 255 && b == 255 then 231
+            else if b == r && r == g then 232 + r*23/255
+            else 16 + r*5/255*36 + g*5/255*6 + b*5/255
+
+          sep()
+          buffer.append(prefix); buffer.append(';'); buffer.append('5')
+          buffer.append(';'); buffer.append(n)
+
+    def toggle(bit: Long, flagDiff: Long, on: Int, off: Int): Unit =
+      if (flagDiff & bit) != 0 then
+        sep()
+        buffer.append(if (next & bit) != 0 then on else off)
 
     if (diff & (FgMask | FgSet)) != 0 then
-      if (next & FgSet) == 0 then buffer.add(t"\e[39m")
-      else buffer.add(Fg(Chroma((next & FgMask).toInt)).ansi(depth))
+      if (next & FgSet) == 0 then { sep(); buffer.append(39) }
+      else emitColor(38, (next & FgMask).toInt)
 
     if (diff & (BgMask | BgSet)) != 0 then
-      if (next & BgSet) == 0 then buffer.add(t"\e[49m")
-      else buffer.add(Bg(Chroma(((next & BgMask) >>> 24).toInt)).ansi(depth))
+      if (next & BgSet) == 0 then { sep(); buffer.append(49) }
+      else emitColor(48, ((next & BgMask) >>> 24).toInt)
 
     val flagDiff = diff & (FlagsMask & ~(FgSet | BgSet | HyperlinkChange))
     if flagDiff != 0 then
-      if (flagDiff & Italic)          != 0 then buffer.add(if (next & Italic)          != 0 then t"\e[3m"  else t"\e[23m")
-      if (flagDiff & Bold)            != 0 then buffer.add(if (next & Bold)            != 0 then t"\e[1m"  else t"\e[22m")
-      if (flagDiff & Reverse)         != 0 then buffer.add(if (next & Reverse)         != 0 then t"\e[7m"  else t"\e[27m")
-      if (flagDiff & Underline)       != 0 then buffer.add(if (next & Underline)       != 0 then t"\e[4m"  else t"\e[24m")
-      if (flagDiff & Conceal)         != 0 then buffer.add(if (next & Conceal)         != 0 then t"\e[8m"  else t"\e[28m")
-      if (flagDiff & Strike)          != 0 then buffer.add(if (next & Strike)          != 0 then t"\e[9m"  else t"\e[29m")
-      if (flagDiff & Faint)           != 0 then buffer.add(if (next & Faint)           != 0 then t"\e[2m"  else t"\e[22m")
-      if (flagDiff & DoubleUnderline) != 0 then buffer.add(if (next & DoubleUnderline) != 0 then t"\e[21m" else t"\e[24m")
-      if (flagDiff & BlinkSlow)       != 0 then buffer.add(if (next & BlinkSlow)       != 0 then t"\e[5m"  else t"\e[25m")
-      if (flagDiff & BlinkFast)       != 0 then buffer.add(if (next & BlinkFast)       != 0 then t"\e[6m"  else t"\e[25m")
-      if (flagDiff & Overline)        != 0 then buffer.add(if (next & Overline)        != 0 then t"\e[53m" else t"\e[55m")
+      toggle(Italic,          flagDiff, 3,  23)
+      toggle(Bold,            flagDiff, 1,  22)
+      toggle(Reverse,         flagDiff, 7,  27)
+      toggle(Underline,       flagDiff, 4,  24)
+      toggle(Conceal,         flagDiff, 8,  28)
+      toggle(Strike,          flagDiff, 9,  29)
+      toggle(Faint,           flagDiff, 2,  22)
+      toggle(DoubleUnderline, flagDiff, 21, 24)
+      toggle(BlinkSlow,       flagDiff, 5,  25)
+      toggle(BlinkFast,       flagDiff, 6,  25)
+      toggle(Overline,        flagDiff, 53, 55)
+
+    if open then buffer.append('m')
 
 extension (style: StyleWord)
   inline def raw: Long = style
