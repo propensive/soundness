@@ -196,6 +196,42 @@ object Tests extends Suite(m"Savagery tests"):
           . rotate(Angle.degrees(45)).xml.show
       .assert(_ == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><g transform="rotate(45.0)"><rect x="0.0" y="0.0" width="10.0" height="10.0"/></g></svg>""")
 
+    suite(m"Affine arithmetic"):
+      test(m"Delta + Delta yields Delta"):
+        val result: Delta = Delta(1, 2) + Delta(3, 4)
+        (result.dx, result.dy)
+      .assert(_ == (4.0f, 6.0f))
+
+      test(m"Delta - Delta yields Delta"):
+        val result: Delta = Delta(5, 7) - Delta(2, 3)
+        (result.dx, result.dy)
+      .assert(_ == (3.0f, 4.0f))
+
+      test(m"Point + Delta yields Point"):
+        val result: Point = Point(1, 2) + Delta(3, 4)
+        (result.x, result.y)
+      .assert(_ == (4.0f, 6.0f))
+
+      test(m"Point - Delta yields Point"):
+        val result: Point = Point(5, 7) - Delta(2, 3)
+        (result.x, result.y)
+      .assert(_ == (3.0f, 4.0f))
+
+      test(m"Point - Point yields Delta"):
+        val result: Delta = Point(5, 7) - Point(2, 3)
+        (result.dx, result.dy)
+      .assert(_ == (3.0f, 4.0f))
+
+      test(m"Scalar * Delta sum produces Delta"):
+        val result: Delta = 7*Up + 3*Right
+        (result.dx, result.dy)
+      .assert(_ == (3.0f, -7.0f))
+
+      test(m"Negate Delta yields Delta"):
+        val result: Delta = -Delta(3, 4)
+        (result.dx, result.dy)
+      .assert(_ == (-3.0f, -4.0f))
+
     suite(m"Gradient stops"):
       test(m"Stop with red at offset 0"):
         Stop(0.0, Red).xml.show

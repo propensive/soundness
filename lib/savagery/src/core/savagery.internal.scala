@@ -33,7 +33,6 @@
 package savagery
 
 import anticipation.*
-import proscenium.*
 
 object internal:
   opaque type SvgId = Text
@@ -42,16 +41,3 @@ object internal:
     def apply(id: Text): SvgId = id
 
     extension (id: SvgId) def text: Text = id
-
-
-  extension (point: Point)
-    @targetName("plus")
-    infix def + (vector: Delta): Point = Point(point.x + vector.dx, point.y + vector.dy)
-
-    @targetName("asVector")
-    def `unary_~`: Delta = Delta(point.x, point.y)
-
-
-  extension (vector: Delta)
-    @targetName("plus2")
-    infix def + (right: Delta): Delta = Delta(vector.dx + right.dx, vector.dy + right.dy)

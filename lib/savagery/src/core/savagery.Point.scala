@@ -37,11 +37,16 @@ import scala.math.Numeric
 import anticipation.*
 import gossamer.*
 import mosquito.*
+import prepositional.*
 import spectacular.*
+import symbolism.*
+
+final case class Point(tensor: Tensor[Float, 2]):
+  def x: Float = tensor.element(0)
+  def y: Float = tensor.element(1)
 
 object Point:
-  def apply(x: Float, y: Float): Point = Tensor((x, y))
-  def unapply(point: Point): (Float, Float) = (point.x, point.y)
+  def apply(x: Float, y: Float): Point = Point(Tensor((x, y)))
 
   given showable: Point is Showable = point =>
     t"${point.x.toString} ${point.y.toString}"
@@ -51,8 +56,13 @@ object Point:
     tuple =>
       Point(numeric.toFloat(tuple(0)), numeric2.toFloat(tuple(1)))
 
-  extension (point: Point)
-    def x: Float = point.element(0)
-    def y: Float = point.element(1)
+  given addable: Point is Addable by Delta to Point = Addable: (point, delta) =>
+    Point(point.x + delta.dx, point.y + delta.dy)
 
-opaque type Point = Tensor[Float, 2]
+  given subtractableByDelta: Point is Subtractable by Delta to Point =
+    Subtractable: (point, delta) =>
+      Point(point.x - delta.dx, point.y - delta.dy)
+
+  given subtractableByPoint: Point is Subtractable by Point to Delta =
+    Subtractable: (left, right) =>
+      Delta(left.x - right.x, left.y - right.y)

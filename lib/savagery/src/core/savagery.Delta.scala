@@ -32,7 +32,6 @@
                                                                                                   */
 package savagery
 
-import scala.annotation.targetName
 import scala.math.Numeric
 
 import anticipation.*
@@ -42,30 +41,42 @@ import prepositional.*
 import spectacular.*
 import symbolism.*
 
+final case class Delta(tensor: Tensor[Float, 2]):
+  def dx: Float = tensor.element(0)
+  def dy: Float = tensor.element(1)
+
 object Delta:
-  def apply(dx: Float, dy: Float): Delta = Tensor((dx, dy))
-  def unapply(delta: Delta): (Float, Float) = (delta.dx, delta.dy)
+  def apply(dx: Float, dy: Float): Delta = Delta(Tensor((dx, dy)))
 
   given showable: Delta is Showable = delta =>
     t"${delta.dx.toString} ${delta.dy.toString}"
 
-  extension (delta: Delta)
-    def dx: Float = delta.element(0)
-    def dy: Float = delta.element(1)
+  given addable: Delta is Addable by Delta to Delta = Addable: (left, right) =>
+    Delta(left.dx + right.dx, left.dy + right.dy)
 
-  extension (scalar: Float)
-    @targetName("scaleDeltaFloat")
-    infix def * (delta: Delta): Delta = Delta(scalar*delta.dx, scalar*delta.dy)
+  given subtractable: Delta is Subtractable by Delta to Delta = Subtractable: (left, right) =>
+    Delta(left.dx - right.dx, left.dy - right.dy)
 
-  extension (scalar: Double)
-    @targetName("scaleDeltaDouble")
-    infix def * (delta: Delta): Delta = scalar.toFloat*delta
+  given negatable: Delta is Negatable to Delta = Negatable: delta =>
+    Delta(-delta.dx, -delta.dy)
 
-  extension (scalar: Int)
-    @targetName("scaleDeltaInt")
-    infix def * (delta: Delta): Delta = scalar.toFloat*delta
+  given multiplicableFloat: Float is Multiplicable by Delta to Delta = Multiplicable:
+    (scalar, delta) => Delta(scalar*delta.dx, scalar*delta.dy)
 
-opaque type Delta <: Tensor[Float, 2] = Tensor[Float, 2]
+  given multiplicableDouble: Double is Multiplicable by Delta to Delta = Multiplicable:
+    (scalar, delta) => Delta((scalar*delta.dx).toFloat, (scalar*delta.dy).toFloat)
+
+  given multiplicableInt: Int is Multiplicable by Delta to Delta = Multiplicable:
+    (scalar, delta) => Delta(scalar*delta.dx, scalar*delta.dy)
+
+  given multiplicableByFloat: Delta is Multiplicable by Float to Delta = Multiplicable:
+    (delta, scalar) => Delta(delta.dx*scalar, delta.dy*scalar)
+
+  given multiplicableByDouble: Delta is Multiplicable by Double to Delta = Multiplicable:
+    (delta, scalar) => Delta((delta.dx*scalar).toFloat, (delta.dy*scalar).toFloat)
+
+  given multiplicableByInt: Delta is Multiplicable by Int to Delta = Multiplicable:
+    (delta, scalar) => Delta(delta.dx*scalar, delta.dy*scalar)
 
 val Up:    Delta = Delta(0.0f, -1.0f)
 val Down:  Delta = Delta(0.0f,  1.0f)
