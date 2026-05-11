@@ -350,8 +350,8 @@ object SvgParser:
             case ("scale", List(x))                     => xs += Transform.Scale(x, Unset)
             case ("scale", List(x, y))                  => xs += Transform.Scale(x, y)
             case ("rotate", List(angle))                => xs += Transform.Rotate(Angle.degrees(angle))
-            case ("skewX", List(angle))                 => xs += Transform.SkewX(Angle.degrees(angle))
-            case ("skewY", List(angle))                 => xs += Transform.SkewY(Angle.degrees(angle))
+            case ("skewX", List(angle))                 => xs += Transform.Skew(Angle.degrees(angle), Orientation.Horizontal)
+            case ("skewY", List(angle))                 => xs += Transform.Skew(Angle.degrees(angle), Orientation.Vertical)
             case ("matrix", List(a, b, c, d, e, f))     => xs += Transform.Matrix(Affine(a, b, c, d, e, f))
             case _                                      => () // ignore unknown
         else

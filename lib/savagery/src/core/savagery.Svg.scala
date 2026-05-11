@@ -87,8 +87,14 @@ object Svg:
       full.show
 
 
-case class Svg(width: Float, height: Float, defs: List[SvgDef] = Nil, figures: List[Figure] = Nil)
+case class Svg
+  ( width:      Float,
+    height:     Float,
+    defs:       List[SvgDef]    = Nil,
+    figures:    List[Figure]    = Nil,
+    transforms: List[Transform] = Nil )
 extends Documentary:
+
   type Self = Svg
   type Metadata = Encoding
 
@@ -106,5 +112,11 @@ extends Documentary:
       if defs.isEmpty then Nil
       else Seq(Element(t"defs", Attributes.empty, defs.map(_.xml).toSeq.nodes))
 
-    val children: IArray[Node] = (defsElement ++ figures.map(_.xml)).nodes
+    val figureNodes: Seq[Xml] =
+      if transforms.isEmpty then figures.map(_.xml)
+      else
+        val groupAttrs = SeqMap(t"transform" -> transforms.map(_.encode).join(t" "))
+        Seq(Element(t"g", Attributes.from(groupAttrs), figures.map(_.xml).toSeq.nodes))
+
+    val children: IArray[Node] = (defsElement ++ figureNodes).nodes
     Element(t"svg", Attributes.from(attrs), children)
