@@ -44,6 +44,25 @@ private[breviloquence] object CborParser:
   // The break stop code (0xFF) terminates an indefinite-length item.
   private inline val Break = 0xFF
 
+  // Boxed-Long cache covering CBOR's uint16 range. The JDK's `Long.valueOf`
+  // only caches -128..127; corpus payloads dominated by small unsigned
+  // integers (timestamps, ids, counts) routinely fall outside that window
+  // and pay a fresh `java.lang.Long` allocation per value. A flat array
+  // lookup is two-to-three times cheaper than allocation in steady state.
+  private inline val LongCacheSize = 65536
+
+  private val longCache: Array[AnyRef] =
+    val out = new Array[AnyRef](LongCacheSize)
+    var index = 0
+    while index < LongCacheSize do
+      out(index) = java.lang.Long.valueOf(index.toLong).nn
+      index += 1
+    out
+
+  private inline def boxLong(value: Long): AnyRef =
+    if value >= 0L && value < LongCacheSize then longCache(value.toInt)
+    else java.lang.Long.valueOf(value).nn
+
   def parse(source: IArray[Byte]): Cbor.Ast raises CborError =
     val parser = new CborParser(source)
     val result = parser.value()
@@ -52,7 +71,7 @@ private[breviloquence] object CborParser:
     result
 
 private[breviloquence] final class CborParser(input: IArray[Byte]):
-  import CborParser.Break
+  import CborParser.{Break, boxLong}
 
   // Cache the underlying primitive array so reads compile to BALOAD rather
   // than going through `IArray$.apply`. `data.length` is constant-folded by
@@ -226,11 +245,14 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
 
     // Fast paths for in-head small integers — by far the most common CBOR
     // head bytes in real workloads. Returning early skips the major/info
-    // split, the `readLength` dispatch and the `headOffset` capture.
+    // split, the `readLength` dispatch and the `headOffset` capture. Boxing
+    // routes through the shared `boxLong` cache so the resulting
+    // `java.lang.Long` is reused on the next parse.
     //   head 0x00–0x17 : major 0, info 0–23  → value is head itself
     //   head 0x20–0x37 : major 1, info 0–23  → value is -1 - (head & 0x1F)
-    if head < 0x18 then return Cbor.Ast(head.toLong)
-    if head >= 0x20 && head < 0x38 then return Cbor.Ast(-1L - (head & 0x1F).toLong)
+    if head < 0x18 then return Cbor.Ast.fromRef(boxLong(head.toLong))
+    if head >= 0x20 && head < 0x38 then
+      return Cbor.Ast.fromRef(boxLong(-1L - (head & 0x1F).toLong))
 
     // Fast path for short text strings (major 3, info 0–23, head 0x60–0x77).
     // These dominate map keys and short literals; a length-prefixed UTF-8
@@ -261,13 +283,13 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
       case 0 =>
         val length = readLength(info, headOffset)
         if length < 0 then abort(CborError(Reason.Reserved(headOffset, head)))
-        Cbor.Ast(length)
+        Cbor.Ast.fromRef(boxLong(length))
 
       case 1 =>
         val length = readLength(info, headOffset)
         if length < 0 then abort(CborError(Reason.Reserved(headOffset, head)))
         if length == Long.MinValue then abort(CborError(Reason.Overflow(headOffset)))
-        Cbor.Ast(-1L - length)
+        Cbor.Ast.fromRef(boxLong(-1L - length))
 
       case 2 =>
         if info == 31 then Cbor.Ast(readIndefiniteByteString())

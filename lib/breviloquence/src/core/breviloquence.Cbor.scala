@@ -161,6 +161,13 @@ object Cbor extends Cbor2, Dynamic:
   object Ast:
     val Sentinel: AnyRef = new Object
 
+    // Reinterpret a pre-boxed reference as `Ast` without unbox/rebox. Safe
+    // because `Ast` is an opaque union whose erasure is `Object`. Useful for
+    // callers that already hold a cached `java.lang.Long`, `String`, etc. and
+    // want to avoid an auto-boxing round-trip through `apply`.
+    private[breviloquence] inline def fromRef(value: AnyRef): Ast =
+      value.asInstanceOf[Ast]
+
     def apply
       ( value
         : CborInteger | CborFloat | CborText | CborBytes | CborArray | CborMap | CborBoolean
