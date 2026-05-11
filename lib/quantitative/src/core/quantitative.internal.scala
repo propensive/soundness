@@ -360,7 +360,7 @@ object internal extends protointernal:
       units.to(List).map: (unit, power) =>
         if power == 1 then unit else
           val exponent: Text =
-            power.show.translate:
+            power.show.tr:
               case '0' => '⁰'
               case '1' => '¹'
               case '2' => '²'
