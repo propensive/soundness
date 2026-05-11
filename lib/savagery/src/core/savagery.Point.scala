@@ -34,10 +34,18 @@ package savagery
 
 import anticipation.*
 import gossamer.*
+import mosquito.*
 import spectacular.*
 
 object Point:
-  given showable: Point is Showable =
-    value => t"${value.x.toString} ${value.y.toString}"
+  def apply(x: Float, y: Float): Point = Tensor((x, y))
+  def unapply(point: Point): (Float, Float) = (point.x, point.y)
 
-case class Point(x: Float, y: Float)
+  given showable: Point is Showable = point =>
+    t"${point.x.toString} ${point.y.toString}"
+
+  extension (point: Point)
+    def x: Float = point.element(0)
+    def y: Float = point.element(1)
+
+opaque type Point <: Tensor[Float, 2] = Tensor[Float, 2]

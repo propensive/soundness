@@ -228,7 +228,7 @@ object SvgParser:
         case 'M' =>
           val x = parseNum()
           val y = parseNum()
-          ops += Stroke.Move(Point(x, y))
+          ops += Stroke.MoveTo(Point(x, y))
           lastCmd = 'L' // implicit-line-after-move
 
         case 'm' =>
@@ -240,7 +240,7 @@ object SvgParser:
         case 'L' =>
           val x = parseNum()
           val y = parseNum()
-          ops += Stroke.Draw(Point(x, y))
+          ops += Stroke.DrawTo(Point(x, y))
 
         case 'l' =>
           val dx = parseNum()
@@ -259,7 +259,7 @@ object SvgParser:
           val ax = parseNum(); val ay = parseNum()
           val bx = parseNum(); val by = parseNum()
           val px = parseNum(); val py = parseNum()
-          ops += Stroke.Cubic(Point(ax, ay), Point(bx, by), Point(px, py))
+          ops += Stroke.CubicTo(Point(ax, ay), Point(bx, by), Point(px, py))
 
         case 'c' =>
           val ax = parseNum(); val ay = parseNum()
@@ -270,7 +270,7 @@ object SvgParser:
         case 'Q' =>
           val ax = parseNum(); val ay = parseNum()
           val px = parseNum(); val py = parseNum()
-          ops += Stroke.Quadratic(Point(ax, ay), Point(px, py))
+          ops += Stroke.QuadraticTo(Point(ax, ay), Point(px, py))
 
         case 'q' =>
           val ax = parseNum(); val ay = parseNum()

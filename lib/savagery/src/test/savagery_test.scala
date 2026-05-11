@@ -286,7 +286,7 @@ object Tests extends Suite(m"Savagery tests"):
         svg.figures.head
       .assert:
           case Outline(ops, Unset, Unset, Nil) =>
-            ops.reverse == List(Stroke.Move(Point(0, 0)), Stroke.Draw(Point(1, 1)), Stroke.Close)
+            ops.reverse == List(Stroke.MoveTo(Point(0, 0)), Stroke.DrawTo(Point(1, 1)), Stroke.Close)
           case _ => false
 
       test(m"Parse path with relative h and v"):
@@ -295,7 +295,7 @@ object Tests extends Suite(m"Savagery tests"):
       .assert:
           case Outline(ops, _, _, _) =>
             ops.reverse == List
-             (Stroke.Move(Point(0, 0)),
+             (Stroke.MoveTo(Point(0, 0)),
               Stroke.Draw(Shift(2, 0)),
               Stroke.Draw(Shift(0, -2)),
               Stroke.Close)

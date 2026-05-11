@@ -47,37 +47,43 @@ object Stroke:
 
   given encodable: Stroke is Encodable in Text =
     _.absolve match
-      case Move(shift: Shift)                              => t"m $shift"
-      case Move(point: Point)                              => t"M $point"
-      case Draw(Shift(0.0f, v))                            => t"v ${v.toDouble}"
-      case Draw(Shift(h, 0.0f))                            => t"h ${h.toDouble}"
-      case Draw(shift: Shift)                              => t"l $shift"
-      case Draw(point: Point)                              => t"L $point"
-      case Close                                           => t"Z"
-      case Cubic(Unset, ctrl2: Point, point: Point)        => t"S $ctrl2, $point"
-      case Cubic(Unset, ctrl2: Shift, shift: Shift)        => t"s $ctrl2, $shift"
-      case Cubic(ctrl1: Point, ctrl2: Point, point: Point) => t"C $ctrl1, $ctrl2, $point"
-      case Cubic(ctrl1: Shift, ctrl2: Shift, shift: Shift) => t"c $ctrl1, $ctrl2, $shift"
-      case Quadratic(Unset, point: Point)                  => t"T $point"
-      case Quadratic(Unset, shift: Shift)                  => t"t $shift"
-      case Quadratic(ctrl1: Point, point: Point)           => t"Q $ctrl1, $point"
-      case Quadratic(ctrl1: Point, shift: Shift)           => t"q $ctrl1, $shift"
+      case Move(shift)                          => t"m $shift"
+      case MoveTo(point)                        => t"M $point"
+      case Draw(Shift(0.0f, v))                 => t"v ${v.toDouble}"
+      case Draw(Shift(h, 0.0f))                 => t"h ${h.toDouble}"
+      case Draw(shift)                          => t"l $shift"
+      case DrawTo(point)                        => t"L $point"
+      case Close                                => t"Z"
+      case CubicTo(Unset, ctrl2, point)         => t"S $ctrl2, $point"
+      case Cubic(Unset, ctrl2, shift)           => t"s $ctrl2, $shift"
+      case CubicTo(ctrl1: Point, ctrl2, point)  => t"C $ctrl1, $ctrl2, $point"
+      case Cubic(ctrl1: Shift, ctrl2, shift)    => t"c $ctrl1, $ctrl2, $shift"
+      case QuadraticTo(Unset, point)            => t"T $point"
+      case Quadratic(Unset, shift)              => t"t $shift"
+      case QuadraticTo(ctrl1: Point, point)     => t"Q $ctrl1, $point"
+      case Quadratic(ctrl1: Shift, shift)       => t"q $ctrl1, $shift"
 
-      case Arc(rx, ry, angle, largeArc, sweep, point: Point) =>
+      case ArcTo(rx, ry, angle, largeArc, sweep, point) =>
         val clockwise = sweep == Sweep.Clockwise
         val degrees = angle.degrees.show
         t"A ${rx.toDouble} ${ry.toDouble} $degrees ${bit(largeArc)} ${bit(clockwise)} $point"
 
-      case Arc(rx, ry, angle, largeArc, sweep, shift: Shift) =>
+      case Arc(rx, ry, angle, largeArc, sweep, shift) =>
         val clockwise = sweep == Sweep.Clockwise
         val degrees = angle.degrees.show
         t"A ${rx.toDouble} ${ry.toDouble} $degrees ${bit(largeArc)} ${bit(clockwise)} $shift"
 
 enum Stroke:
-  case Move(coords: Shift | Point)
-  case Draw(coords: Shift | Point)
+  case MoveTo(point: Point)
+  case Move(shift: Shift)
+  case DrawTo(point: Point)
+  case Draw(shift: Shift)
   case Close
-  case Cubic[point <: (Shift | Point)](ctrl1: Optional[point], ctrl2: point, point: point)
-  case Quadratic[point <: (Shift | Point)](ctrl1: Optional[point], point: point)
+  case CubicTo(ctrl1: Optional[Point], ctrl2: Point, point: Point)
+  case Cubic(ctrl1: Optional[Shift], ctrl2: Shift, shift: Shift)
+  case QuadraticTo(ctrl1: Optional[Point], point: Point)
+  case Quadratic(ctrl1: Optional[Shift], shift: Shift)
+  case ArcTo
+    ( rx: Float, ry: Float, angle: Angle, largeArc: Boolean, sweep: Sweep, point: Point )
   case Arc
-    ( rx: Float, ry: Float, angle: Angle, largeArc: Boolean, sweep: Sweep, coords: Point | Shift )
+    ( rx: Float, ry: Float, angle: Angle, largeArc: Boolean, sweep: Sweep, shift: Shift )

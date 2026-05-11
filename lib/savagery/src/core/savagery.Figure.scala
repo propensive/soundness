@@ -72,8 +72,8 @@ extends Figure:
     style.let { css => attrs += t"style" -> css.properties.map(_.text).join(t";") }
     Element(t"path", Attributes.from(attrs.result()), IArray())
 
-  def moveTo(point: Point): Outline = copy(ops = Move(point) :: ops)
-  def lineTo(point: Point): Outline = copy(ops = Draw(point) :: ops)
+  def moveTo(point: Point): Outline = copy(ops = MoveTo(point) :: ops)
+  def lineTo(point: Point): Outline = copy(ops = DrawTo(point) :: ops)
   def move(vector: Shift): Outline = copy(ops = Move(vector) :: ops)
   def line(vector: Shift): Outline = copy(ops = Draw(vector) :: ops)
 
@@ -81,14 +81,14 @@ extends Figure:
     copy(ops = Cubic(ctrl1, ctrl2, point) :: ops)
 
   def curveTo(ctrl1: Point, ctrl2: Point, point: Point): Outline =
-    copy(ops = Cubic(ctrl1, ctrl2, point) :: ops)
+    copy(ops = CubicTo(ctrl1, ctrl2, point) :: ops)
 
   def curve(ctrl2: Shift, vector: Shift): Outline = copy(ops = Cubic(Unset, ctrl2, vector) :: ops)
-  def curveTo(ctrl2: Point, point: Point): Outline = copy(ops = Cubic(Unset, ctrl2, point) :: ops)
+  def curveTo(ctrl2: Point, point: Point): Outline = copy(ops = CubicTo(Unset, ctrl2, point) :: ops)
   def quadCurve(ctrl1: Shift, vector: Shift): Outline = copy(ops = Quadratic(ctrl1, vector) :: ops)
-  def quadCurveTo(ctrl1: Point, point: Point): Outline = copy(ops = Quadratic(ctrl1, point) :: ops)
+  def quadCurveTo(ctrl1: Point, point: Point): Outline = copy(ops = QuadraticTo(ctrl1, point) :: ops)
   def quadCurve(vector: Shift): Outline = copy(ops = Quadratic(Unset, vector) :: ops)
-  def quadCurveTo(point: Point): Outline = copy(ops = Quadratic(Unset, point) :: ops)
+  def quadCurveTo(point: Point): Outline = copy(ops = QuadraticTo(Unset, point) :: ops)
   def moveUp(value: Float): Outline = copy(ops = Move(Shift(value, 0.0)) :: ops)
   def moveDown(value: Float): Outline = copy(ops = Move(Shift(-value, 0.0)) :: ops)
   def moveLeft(value: Float): Outline = copy(ops = Move(Shift(0.0, -value)) :: ops)
