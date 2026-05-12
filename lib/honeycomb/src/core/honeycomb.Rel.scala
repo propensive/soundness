@@ -40,5 +40,5 @@ object Rel:
 
 enum Rel:
   case Alternate, Author, Bookmark, Canonical, DnsPrefetch, External, Help, Icon, License, Manifest,
-      Modulepreload, Next, Nofollow, Noopener, Noreferrer, Opener, Pingback, Preconnect, Prefetch,
-      Preload, Prerender, Prev, Search, Stylesheet, Tag
+    Modulepreload, Next, Nofollow, Noopener, Noreferrer, Opener, Pingback, Preconnect, Prefetch,
+    Preload, Prerender, Prev, Search, Stylesheet, Tag

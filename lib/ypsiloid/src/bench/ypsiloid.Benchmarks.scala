@@ -79,7 +79,7 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
 
     suite(m"Small flow document"):
       bench(m"Parse with Ypsiloid")
-        (target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min) ):
         '{ YamlParser.parse(ypsiloid.Benchmarks.yamlText1) }
 
       bench(m"Parse with snakeyaml-engine")(target = 1*Second, operationSize = size1):
@@ -87,7 +87,7 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
 
     suite(m"Block-mapping config (~30 keys)"):
       bench(m"Parse with Ypsiloid")
-        (target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min) ):
         '{ YamlParser.parse(ypsiloid.Benchmarks.yamlText2) }
 
       bench(m"Parse with snakeyaml-engine")(target = 1*Second, operationSize = size2):
@@ -95,7 +95,7 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
 
     suite(m"Block sequence of 100 records"):
       bench(m"Parse with Ypsiloid")
-        (target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min) ):
         '{ YamlParser.parse(ypsiloid.Benchmarks.yamlText3) }
 
       bench(m"Parse with snakeyaml-engine")(target = 1*Second, operationSize = size3):
@@ -103,7 +103,7 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
 
     suite(m"Deeply nested block structures"):
       bench(m"Parse with Ypsiloid")
-        (target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min) ):
         '{ YamlParser.parse(ypsiloid.Benchmarks.yamlText4) }
 
       bench(m"Parse with snakeyaml-engine")(target = 1*Second, operationSize = size4):
@@ -111,7 +111,7 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
 
     suite(m"Heavy quoted strings"):
       bench(m"Parse with Ypsiloid")
-        (target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min) ):
         '{ YamlParser.parse(ypsiloid.Benchmarks.yamlText5) }
 
       bench(m"Parse with snakeyaml-engine")(target = 1*Second, operationSize = size5):

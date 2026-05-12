@@ -77,7 +77,7 @@ trait Json2:
   =>  ( decodable: => inner is Decodable in Json )
   =>  value is Decodable in Json = json =>
 
-      if json.root.isAbsent then Unset else decodable.decoded(json)
+    if json.root.isAbsent then Unset else decodable.decoded(json)
 
 
   given bytes: Tactic[JsonError] => Bytes is Decodable in Json = json => json.root.long.b
@@ -339,7 +339,7 @@ object Json extends Json2, Dynamic:
     type Result = Json
 
     transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
-      (inline insertions: Any*)
+      ( inline insertions: Any* )
     :   Json =
 
       ${jacinta.internal.interpolator[parts, origins]('insertions)}
@@ -477,8 +477,8 @@ object Json extends Json2, Dynamic:
       var acc = Map.empty[key, element]
       while i < n do
         acc = acc.updated
-                  ( root.objectKey(i).tt.decode,
-                    decodable.decoded(Json.ast(root.objectValue(i))) )
+          ( root.objectKey(i).tt.decode,
+            decodable.decoded(Json.ast(root.objectValue(i))) )
         i += 1
       acc
 
@@ -614,11 +614,11 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
         val out = new Array[Any](len - 2)
         System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, index*2)
         System.arraycopy
-                ( arr.asInstanceOf[Array[Any]],
-                  index*2 + 2,
-                  out,
-                  index*2,
-                  len - index*2 - 2 )
+          ( arr.asInstanceOf[Array[Any]],
+            index*2 + 2,
+            out,
+            index*2,
+            len - index*2 - 2 )
         Json.ast(Json.Ast(out.asInstanceOf[IArray[Any]]))
 
   def apply(field: Text): Json raises JsonError =

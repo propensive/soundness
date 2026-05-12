@@ -84,4 +84,4 @@ object RegexError:
 
 case class RegexError(index: Int, reason: RegexError.Reason)(using Diagnostics)
 extends Error(397, reason.number)
-              (m"the regular expression could not be parsed because $reason at $index")
+  ( m"the regular expression could not be parsed because $reason at $index" )

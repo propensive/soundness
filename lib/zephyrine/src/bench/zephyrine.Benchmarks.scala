@@ -178,28 +178,28 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
 
     suite(m"Linear iteration"):
       bench(m"java.lang.String charAt loop (baseline)")
-       (target = 1*Second, operationSize = text10kSize, baseline = Baseline(compare = Min)):
+       ( target = 1*Second, operationSize = text10kSize, baseline = Baseline(compare = Min) ):
         '{ zephyrine.Benchmarks.stringCharAtSum(zephyrine.Benchmarks.text10k) }
 
       bench(m"Cursor.next, single 10 KB block")
-       (target = 1*Second, operationSize = text10kSize):
+       ( target = 1*Second, operationSize = text10kSize ):
         '{ zephyrine.Benchmarks.cursorNextSingleBlock(zephyrine.Benchmarks.text10k) }
 
       bench(m"Cursor.next + linefeed tracking, single 10 KB block")
-       (target = 1*Second, operationSize = text10kSize):
+       ( target = 1*Second, operationSize = text10kSize ):
         '{ zephyrine.Benchmarks.cursorNextWithLinefeeds(zephyrine.Benchmarks.text10k) }
 
       bench(m"Cursor.next, 100 × 100-char fragmented blocks")
-       (target = 1*Second, operationSize = text10kSize):
+       ( target = 1*Second, operationSize = text10kSize ):
         '{ zephyrine.Benchmarks.cursorNextFragmented(zephyrine.Benchmarks.text10kFragments) }
 
       bench(m"Cursor[Data].next, 10 KB single block")
-       (target = 1*Second, operationSize = text10kSize):
+       ( target = 1*Second, operationSize = text10kSize ):
         '{ zephyrine.Benchmarks.cursorNextData(zephyrine.Benchmarks.data10k) }
 
     suite(m"Hold and capture"):
       bench(m"empty hold {} × 1000 (Held alloc)")
-       (target = 1*Second, baseline = Baseline(compare = Min)):
+       ( target = 1*Second, baseline = Baseline(compare = Min) ):
         '{ zephyrine.Benchmarks.cursorEmptyHoldLoop(zephyrine.Benchmarks.text10k, 1000) }
 
       bench(m"hold + mark + grab 16 chars in-block × 100")
@@ -210,16 +210,16 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
        (target = 1*Second):
         '{
             zephyrine.Benchmarks.cursorHoldMarkGrabCrossBlock
-             (zephyrine.Benchmarks.text10kFragments, 350)
+             ( zephyrine.Benchmarks.text10kFragments, 350 )
           }
 
     suite(m"Primitives"):
       bench(m"consume(\"xml\") match")
-       (target = 1*Second, operationSize = xmlInputSize):
+       ( target = 1*Second, operationSize = xmlInputSize ):
         '{ zephyrine.Benchmarks.cursorConsumeXml(zephyrine.Benchmarks.xmlInput) }
 
       bench(m"seek to delimiter at offset 9000")
-       (target = 1*Second, operationSize = textWithSpaceSize):
+       ( target = 1*Second, operationSize = textWithSpaceSize ):
         '{ zephyrine.Benchmarks.cursorSeekSpace(zephyrine.Benchmarks.textWithSpace) }
 
       bench(m"take(64)")(target = 1*Second):

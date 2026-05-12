@@ -116,9 +116,9 @@ enum Dictionary[+element]:
             else if just.head.vouch == next
             then Branch(Unset, Map(next -> child(just).add(entry, value, offset + 1)))
             else Branch
-                  ( Unset,
-                    Map( next             -> Just(entry, offset + 1, value),
-                         just.head.vouch  -> child(just) ) )
+              ( Unset,
+                Map( next             -> Just(entry, offset + 1, value),
+                     just.head.vouch  -> child(just) ) )
 
       case Branch(value0, map) =>
         if entry.length == offset then Branch(value, map) else

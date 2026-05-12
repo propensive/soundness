@@ -107,7 +107,7 @@ package columnar:
       max
 
     def width[textual: Textual](lines: IArray[textual], maxWidth: Int, slack: Double)
-      (using Text is Measurable)
+      ( using Text is Measurable )
     :   Optional[Int] =
 
       // `Text is Measurable` (general derivation) is implied by `Char is Measurable`
@@ -118,7 +118,7 @@ package columnar:
 
 
     def fit[textual: Textual](lines: IArray[textual], width: Int, textAlign: TextAlignment)
-      (using Text is Measurable)
+      ( using Text is Measurable )
     :   IndexedSeq[textual] =
 
       given measurable: Char is Measurable = _.toString.tt.metrics
@@ -152,14 +152,14 @@ package columnar:
 
   object ProseOrBreak extends Columnar:
     def width[textual: Textual](lines: IArray[textual], maxWidth: Int, slack: Double)
-      (using Text is Measurable)
+      ( using Text is Measurable )
     :   Optional[Int] =
 
       (maxWidth*slack + 1).toInt.min(maxWidth)
 
 
     def fit[textual: Textual](lines: IArray[textual], width: Int, textAlign: TextAlignment)
-      (using Text is Measurable)
+      ( using Text is Measurable )
     :   IndexedSeq[textual] =
 
       given Char is Measurable = _.toString.tt.metrics
@@ -177,12 +177,12 @@ package columnar:
 
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)
-      (using Text is Measurable)
+      ( using Text is Measurable )
     :   Optional[Int] = fixedWidth
 
 
     def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
-      (using Text is Measurable)
+      ( using Text is Measurable )
     :   IndexedSeq[text] =
 
       lines.to(IndexedSeq).map: line =>
@@ -191,7 +191,7 @@ package columnar:
 
   case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)
-      (using Text is Measurable)
+      ( using Text is Measurable )
     :   Optional[Int] =
 
       val naturalWidth = lines.map(_.plain.metrics).max
@@ -199,7 +199,7 @@ package columnar:
 
 
     def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
-      (using Text is Measurable)
+      ( using Text is Measurable )
     :   IndexedSeq[text] =
 
       lines.to(IndexedSeq).map: line =>
@@ -208,14 +208,14 @@ package columnar:
 
   case class Collapsible(threshold: Double) extends Columnar:
     def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)
-      (using Text is Measurable)
+      ( using Text is Measurable )
     :   Optional[Int] =
 
       if slack > threshold then lines.map(_.plain.metrics).max else Unset
 
 
     def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
-      (using Text is Measurable)
+      ( using Text is Measurable )
     :   IndexedSeq[text] =
 
       lines.to(IndexedSeq)

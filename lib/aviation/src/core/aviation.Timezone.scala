@@ -56,7 +56,7 @@ object Timezone:
 
   given interpolable: Timezone is Interpolable:
     inline def interpolate[parts <: Tuple, origins <: Tuple]
-      (inline insertions: Any*)
+      ( inline insertions: Any* )
     :   Timezone =
 
       ${aviation.internal.tzInterpolator[parts]('insertions)}

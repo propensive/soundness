@@ -37,4 +37,4 @@ import fulminate.*
 
 case class NameError(name: Text, rule: Rule, parameter: Text)(using Diagnostics)
 extends Error(79, 0)
-              (m"the name $name is not valid because it ${rule.describe(parameter)}")
+  ( m"the name $name is not valid because it ${rule.describe(parameter)}" )

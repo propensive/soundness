@@ -69,28 +69,28 @@ object Addressable:
     inline def storageAddress(storage: Array[Byte], index: Int): Byte = storage(index)
 
     inline def copyChunk
-                (source:  Data,
-                 srcOff:  Int,
-                 dest:    Array[Byte],
-                 destOff: Int,
-                 len:     Int)
+      ( source:  Data,
+       srcOff:  Int,
+       dest:    Array[Byte],
+       destOff: Int,
+       len:     Int )
     :   Unit =
 
       System.arraycopy(source.mutable(using Unsafe), srcOff, dest, destOff, len)
 
     inline def transfer
-                (src:     Array[Byte],
-                 srcOff:  Int,
-                 dest:    Array[Byte],
-                 destOff: Int,
-                 len:     Int)
+      ( src:     Array[Byte],
+       srcOff:  Int,
+       dest:    Array[Byte],
+       destOff: Int,
+       len:     Int )
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
     inline def materialize(storage: Array[Byte], off: Int, len: Int): Data =
       java.util.Arrays.copyOfRange(storage, off, off + len).nn.immutable(using Unsafe)
 
     inline def cloneStorage
-                (storage: Array[Byte], off: Int, len: Int)(target: ji.ByteArrayOutputStream)
+      (storage: Array[Byte], off: Int, len: Int)(target: ji.ByteArrayOutputStream)
     :   Unit = target.write(storage, off, len)
 
 
@@ -120,26 +120,26 @@ object Addressable:
     inline def storageAddress(storage: Array[Char], index: Int): Char = storage(index)
 
     inline def copyChunk
-                (source:  Text,
-                 srcOff:  Int,
-                 dest:    Array[Char],
-                 destOff: Int,
-                 len:     Int)
+      ( source:  Text,
+       srcOff:  Int,
+       dest:    Array[Char],
+       destOff: Int,
+       len:     Int )
     :   Unit = source.s.getChars(srcOff, srcOff + len, dest, destOff)
 
     inline def transfer
-                (src:     Array[Char],
-                 srcOff:  Int,
-                 dest:    Array[Char],
-                 destOff: Int,
-                 len:     Int)
+      ( src:     Array[Char],
+       srcOff:  Int,
+       dest:    Array[Char],
+       destOff: Int,
+       len:     Int )
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
     inline def materialize(storage: Array[Char], off: Int, len: Int): Text =
       String(storage, off, len).tt
 
     inline def cloneStorage
-                (storage: Array[Char], off: Int, len: Int)(target: jl.StringBuilder)
+      (storage: Array[Char], off: Int, len: Int)(target: jl.StringBuilder)
     :   Unit = target.append(storage, off, len)
 
 
@@ -168,11 +168,11 @@ trait Addressable extends Typeclass, Operable, Targetable:
   def storageSize(storage: Storage): Int
   def storageAddress(storage: Storage, index: Int): Operand
   def copyChunk
-       (source: Self, srcOff: Int, dest: Storage, destOff: Int, len: Int)
+    ( source: Self, srcOff: Int, dest: Storage, destOff: Int, len: Int )
   :   Unit
 
   def transfer
-       (src: Storage, srcOff: Int, dest: Storage, destOff: Int, len: Int)
+    ( src: Storage, srcOff: Int, dest: Storage, destOff: Int, len: Int )
   :   Unit
 
   def materialize(storage: Storage, off: Int, len: Int): Self

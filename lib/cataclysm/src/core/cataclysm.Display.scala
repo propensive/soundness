@@ -34,5 +34,5 @@ package cataclysm
 
 enum Display extends PropertyValue:
   case Inline, Block, Contents, Flex, Grid, InlineBlock, InlineFlex, InlineGrid, InlineTable,
-      ListItem, RunIn, Table, TableCaption, TableColumnGroup, TableHeaderGroup, TableFooterGroup,
-      TableRowGroup, TableCell, TableColumn, TableRow, None
+    ListItem, RunIn, Table, TableCaption, TableColumnGroup, TableHeaderGroup, TableFooterGroup,
+    TableRowGroup, TableCell, TableColumn, TableRow, None

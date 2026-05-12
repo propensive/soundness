@@ -38,14 +38,14 @@ import dotty.tools.dotc.ast.untpd
 import dotty.tools.dotc.util.SourceFile
 
 case class CaseInfo
-   ( caseLine:     Int,
-     caseCol:      Int,
-     arrowLine:    Int,
-     arrowCol:     Int,
-     spacesBeforeArrow: Int,
-     bodyLine:     Int,
-     endLine:      Int,
-     isSingleLine: Boolean )
+  ( caseLine:     Int,
+    caseCol:      Int,
+    arrowLine:    Int,
+    arrowCol:     Int,
+    spacesBeforeArrow: Int,
+    bodyLine:     Int,
+    endLine:      Int,
+    isSingleLine: Boolean )
 
 object Cases:
   // Group every `case` arm by its enclosing `Match` or `Try.cases`. R19 and

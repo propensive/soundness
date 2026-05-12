@@ -54,7 +54,7 @@ object Signal:
 
 enum Signal extends TerminalEvent:
   case Hup, Int, Quit, Ill, Trap, Abrt, Bus, Fpe, Kill, Usr1, Segv, Usr2, Pipe, Alrm, Term, Chld,
-      Cont, Stop, Tstp, Ttin, Ttou, Urg, Xcpu, Xfsz, Vtalrm, Prof, Winch, Io, Pwr, Sys
+    Cont, Stop, Tstp, Ttin, Ttou, Urg, Xcpu, Xfsz, Vtalrm, Prof, Winch, Io, Pwr, Sys
 
   def shortName: Text = this.toString.show.upper
   def name: Text = t"SIG${this.toString.show.upper}"
@@ -99,12 +99,12 @@ object CtrlChar:
 
 object Keypress:
   type EditKey = Tab.type | Home.type | End.type | PageUp.type | PageDown.type | Insert.type |
-      Delete.type | Enter.type | Backspace.type | Escape.type | Left.type | Right.type | Up.type |
-      Down.type
+    Delete.type | Enter.type | Backspace.type | Escape.type | Left.type | Right.type | Up.type |
+    Down.type
 
 enum Keypress extends TerminalEvent:
   case Tab, Home, End, PageUp, PageDown, Insert, Delete, Enter, Backspace, Escape, Left, Right, Up,
-      Down
+    Down
 
   case CharKey(char: Char)
   case FunctionKey(number: Int)

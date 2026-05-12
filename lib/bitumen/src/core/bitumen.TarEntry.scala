@@ -55,7 +55,7 @@ object TarEntry:
       user:  UnixUser          = UnixUser(0),
       group: UnixGroup         = UnixGroup(0),
       mtime: Optional[instant] = Unset )
-          :   TarEntry =
+        :   TarEntry =
 
     val mtimeU32: U32 =
       (mtime.let(_.generic).or(System.currentTimeMillis)/1000).toInt.bits.u32

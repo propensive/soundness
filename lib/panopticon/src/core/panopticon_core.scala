@@ -42,7 +42,7 @@ extension [value](value: value)
     * output against the original `foldLeft` semantics. Not part of the public API.
     */
   private[panopticon] def lensFold
-                          (lambdas: (Optic from value onto value => value => value)*)
+    ( lambdas: (Optic from value onto value => value => value)* )
   :   value =
 
     lambdas.foldLeft(value): (value, lambda) =>

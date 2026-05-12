@@ -53,10 +53,10 @@ object internal:
   // Only the final treatment differs: txt collapses runs of whitespace and
   // double-newlines into single newlines for multi-line literals.
   private def textInterpolator
-              (context:    Expr[StringContext],
-               insertions: Expr[Seq[Any]],
-               normalize:  Boolean)
-              (using Quotes)
+    ( context:    Expr[StringContext],
+     insertions: Expr[Seq[Any]],
+     normalize:  Boolean )
+    ( using Quotes )
   :   Expr[Text] =
 
     import quotes.reflect.*

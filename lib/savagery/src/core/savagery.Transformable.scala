@@ -38,7 +38,7 @@ import vacuous.*
 
 object Transformable:
   def apply[value]
-    (get: value => List[Transform], put: (value, List[Transform]) => value)
+    ( get: value => List[Transform], put: (value, List[Transform]) => value )
   :   value is Transformable =
 
     new Transformable:

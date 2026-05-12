@@ -36,9 +36,9 @@ import dotty.tools.dotc.ast.untpd
 import dotty.tools.dotc.util.SourceFile
 
 case class PackageInfo
-   ( line:                     Int,
-     segments:                 List[String],
-     extraStatementOnSameLine: Boolean )
+  ( line:                     Int,
+    segments:                 List[String],
+    extraStatementOnSameLine: Boolean )
 
 object Packages:
   // The parser always wraps a file in a `PackageDef`; when the source has no

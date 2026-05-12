@@ -87,7 +87,7 @@ object internal:
 
 
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
-    (insertions0: Expr[Seq[Any]])
+    ( insertions0: Expr[Seq[Any]] )
   :   Macro[Yaml] =
 
     import quotes.reflect.*
@@ -348,7 +348,7 @@ object internal:
 
 
   def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
-    (scrutinee: Expr[Yaml])
+    ( scrutinee: Expr[Yaml] )
   :   Macro[Extrapolation[Yaml]] =
 
     import quotes.reflect.*
@@ -371,10 +371,10 @@ object internal:
       var types: List[TypeRepr] = Nil
 
       def descend
-         (array: Expr[Array[Any]],
-          pattern: Any,
-          scrutinee: Expr[Yaml.Ast],
-          accept: Expr[Boolean])
+        ( array: Expr[Array[Any]],
+         pattern: Any,
+         scrutinee: Expr[Yaml.Ast],
+         accept: Expr[Boolean] )
       :   Expr[Boolean] =
 
         pattern.asMatchable match
@@ -428,10 +428,10 @@ object internal:
             halt(m"unexpected YAML AST node ${other.toString.tt}")
 
       def descendArray
-         (array: Expr[Array[Any]],
-          elements: IArray[Any],
-          scrutinee: Expr[Yaml.Ast],
-          accept: Expr[Boolean])
+        ( array: Expr[Array[Any]],
+         elements: IArray[Any],
+         scrutinee: Expr[Yaml.Ast],
+         accept: Expr[Boolean] )
       :   Expr[Boolean] =
 
         val n = elements.length
@@ -523,10 +523,10 @@ object internal:
         case _ => 0
 
       def descendObject
-         (array: Expr[Array[Any]],
-          node: IArray[Any],
-          scrutinee: Expr[Yaml.Ast],
-          accept: Expr[Boolean])
+        ( array: Expr[Array[Any]],
+         node: IArray[Any],
+         scrutinee: Expr[Yaml.Ast],
+         accept: Expr[Boolean] )
       :   Expr[Boolean] =
 
         val pairs = node.length/2
@@ -652,5 +652,5 @@ object internal:
           AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse)
           . asType
           . absolve match
-              case '[type result <: Tuple; result] =>
-                '{$result.asInstanceOf[Option[result]]}
+            case '[type result <: Tuple; result] =>
+              '{$result.asInstanceOf[Option[result]]}

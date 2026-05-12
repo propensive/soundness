@@ -65,12 +65,12 @@ class GivensPhase() extends PluginPhase:
       units
 
   private def collect
-                ( unit:            CompilationUnit,
-                  collectedGivens: mutable.LinkedHashMap[String, mutable.Buffer[Entry]],
-                  collectedSuites: mutable.Buffer[Entry],
-                  findable:        Symbols.Symbol,
-                  suite:           Symbols.Symbol )
-                (using Context)
+    ( unit:            CompilationUnit,
+      collectedGivens: mutable.LinkedHashMap[String, mutable.Buffer[Entry]],
+      collectedSuites: mutable.Buffer[Entry],
+      findable:        Symbols.Symbol,
+      suite:           Symbols.Symbol )
+    ( using Context )
   :     Unit =
 
     val sourceFile = unit.source.file.path

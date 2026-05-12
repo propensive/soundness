@@ -112,22 +112,22 @@ object internal:
     =>  ( subtractable: value is Subtractable by value2 to result )
     =>  left is Subtractable:
 
-        type Self = left
-        type Operand = right
-        type Result = Tensor[result, size]
+      type Self = left
+      type Operand = right
+      type Result = Tensor[result, size]
 
-        def subtract(left: left, right: right): Tensor[result, size] =
-          val length = left.data.length
-          val arr = IArray.build[Any](length): array =>
-            var i = 0
-            while i < length do
-              array(i) =
-                subtractable.subtract
-                  ( left.data(i).asInstanceOf[value], right.data(i).asInstanceOf[value2] )
+      def subtract(left: left, right: right): Tensor[result, size] =
+        val length = left.data.length
+        val arr = IArray.build[Any](length): array =>
+          var i = 0
+          while i < length do
+            array(i) =
+              subtractable.subtract
+                ( left.data(i).asInstanceOf[value], right.data(i).asInstanceOf[value2] )
 
-              i += 1
+            i += 1
 
-          new Tensor[result, size](arr)
+        new Tensor[result, size](arr)
 
 
     given showable: [size <: Int: ValueOf, element: Showable] => Text is Measurable

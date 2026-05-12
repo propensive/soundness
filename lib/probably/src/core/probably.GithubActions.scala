@@ -46,7 +46,7 @@ object GithubActions:
   def workspaceRelative(path: Text): Text =
     safely(Environment.githubWorkspace[Text]).let: workspace =>
       if path.starts(workspace) && path.length > workspace.length
-         && path.at(workspace.length.z) == '/'
+        && path.at(workspace.length.z) == '/'
       then path.skip(workspace.length + 1)
       else path
 
@@ -54,31 +54,31 @@ object GithubActions:
 
 
   def error
-       ( message: Text,
-         file:    Optional[Text] = Unset,
-         line:    Optional[Int]  = Unset,
-         title:   Optional[Text] = Unset )
-       (using Stdio)
+    ( message: Text,
+      file:    Optional[Text] = Unset,
+      line:    Optional[Int]  = Unset,
+      title:   Optional[Text] = Unset )
+    ( using Stdio )
   :     Unit =
     emit(t"error", file, line, title, message)
 
 
   def warning
-       ( message: Text,
-         file:    Optional[Text] = Unset,
-         line:    Optional[Int]  = Unset,
-         title:   Optional[Text] = Unset )
-       (using Stdio)
+    ( message: Text,
+      file:    Optional[Text] = Unset,
+      line:    Optional[Int]  = Unset,
+      title:   Optional[Text] = Unset )
+    ( using Stdio )
   :     Unit =
     emit(t"warning", file, line, title, message)
 
 
   def notice
-       ( message: Text,
-         file:    Optional[Text] = Unset,
-         line:    Optional[Int]  = Unset,
-         title:   Optional[Text] = Unset )
-       (using Stdio)
+    ( message: Text,
+      file:    Optional[Text] = Unset,
+      line:    Optional[Int]  = Unset,
+      title:   Optional[Text] = Unset )
+    ( using Stdio )
   :     Unit =
     emit(t"notice", file, line, title, message)
 
@@ -108,19 +108,19 @@ object GithubActions:
 
 
   private def emit
-       ( kind:    Text,
-         file:    Optional[Text],
-         line:    Optional[Int],
-         title:   Optional[Text],
-         message: Text )
-       (using Stdio)
+    ( kind:    Text,
+      file:    Optional[Text],
+      line:    Optional[Int],
+      title:   Optional[Text],
+      message: Text )
+    ( using Stdio )
   :     Unit =
 
     val props = List
-                  ( file.let(workspaceRelative).let(path => t"file=${escapeProperty(path)}").option,
-                    line.let(value => t"line=${value.show}").option,
-                    title.let(text => t"title=${escapeProperty(text)}").option )
-                . flatten
+      ( file.let(workspaceRelative).let(path => t"file=${escapeProperty(path)}").option,
+        line.let(value => t"line=${value.show}").option,
+        title.let(text => t"title=${escapeProperty(text)}").option )
+      . flatten
 
     val propsText = if props.isEmpty then t"" else t" ${props.join(t",")}"
     Out.println(t"::$kind$propsText::${escape(message)}")

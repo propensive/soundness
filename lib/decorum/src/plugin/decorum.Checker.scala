@@ -50,11 +50,11 @@ object Checker:
     check(file, expectedModule, rawText, tree, source)
 
   def check
-     ( file:           String,
-       expectedModule: Option[String],
-       rawText:        String,
-       untpdTree:      untpd.Tree,
-       source:         SourceFile )
+    ( file:           String,
+      expectedModule: Option[String],
+      rawText:        String,
+      untpdTree:      untpd.Tree,
+      source:         SourceFile )
   :   LazyList[Violation] =
 
     val out   = mutable.ListBuffer[Violation]()
@@ -446,9 +446,9 @@ object Checker:
             val openerCol = stack.pop()
             if openerCol >= 0 && cols(i) != openerCol then
               out += Violation
-                      ( s.file, lineNum, cols(i), "473.2",
-                        s"closing `}` of a quote/splice block at column ${cols(i)} "
-                          +s"does not align with its opening `{` at column $openerCol" )
+                ( s.file, lineNum, cols(i), "473.2",
+                  s"closing `}` of a quote/splice block at column ${cols(i)} "
+                    +s"does not align with its opening `{` at column $openerCol" )
       i += 1
 
   private def checkR4TrailingWs
@@ -528,27 +528,27 @@ object Checker:
 
       case Some(p) if p.line != PackageLine =>
         out += Violation
-                ( file, p.line, 1, "131",
-                  s"expected `package` declaration on line 33, "
-                    +s"found content on line ${p.line}" )
+          ( file, p.line, 1, "131",
+            s"expected `package` declaration on line 33, "
+              +s"found content on line ${p.line}" )
 
       case Some(p) =>
         val name = p.segments.mkString(".")
         if p.segments.length > 1 || !p.segments.head.matches("[A-Za-z_][A-Za-z0-9_]*") then
           out += Violation
-                  ( file, p.line, 1, "131",
-                    s"package declaration must be a single identifier segment, not `$name`" )
+            ( file, p.line, 1, "131",
+              s"package declaration must be a single identifier segment, not `$name`" )
         else
           expectedModule.foreach: expected =>
             if name != expected then
               out += Violation
-                      ( file, p.line, 1, "131",
-                        s"package `$name` does not match expected module `$expected`" )
+                ( file, p.line, 1, "131",
+                  s"package `$name` does not match expected module `$expected`" )
 
         if p.extraStatementOnSameLine then
           out += Violation
-                  ( file, p.line, 1, "131",
-                    "package declaration must contain only `package <ident>` on line 33" )
+            ( file, p.line, 1, "131",
+              "package declaration must contain only `package <ident>` on line 33" )
 
   private def checkAfterPackage
     ( s: State, isBlank: Boolean, emit: (Int, String, String) => Unit )
@@ -605,9 +605,9 @@ object Checker:
       // remain an established convention.
       if imp.hasTopLevelAlias && group >= 5 then
         out += Violation
-                ( file, imp.startLine, 1, "302.1",
-                  "top-level imports must not use aliases (`as` or `=>`); "
-                    +"write the full path" )
+          ( file, imp.startLine, 1, "302.1",
+            "top-level imports must not use aliases (`as` or `=>`); "
+              +"write the full path" )
 
       prevGroup match
         case Some(pg) =>
@@ -622,24 +622,24 @@ object Checker:
           val blankBetween = blankLinesBetween(prevEndLine, imp.startLine, lines) > 0
           if !areSiblings && group < pg then
             out += Violation
-                    ( file, imp.startLine, 1, "302.2",
-                      s"import group $group appears after group $pg" )
+              ( file, imp.startLine, 1, "302.2",
+                s"import group $group appears after group $pg" )
           else if !areSiblings && group > pg then
             if !blankBetween then
               out += Violation
-                      ( file, imp.startLine, 1, "302.3",
-                        "import groups must be separated by exactly one blank line" )
+                ( file, imp.startLine, 1, "302.3",
+                  "import groups must be separated by exactly one blank line" )
           else if group == pg then
             if blankBetween then
               out += Violation
-                      ( file, imp.startLine, 1, "302.3",
-                        "unexpected blank line within an import group" )
+                ( file, imp.startLine, 1, "302.3",
+                  "unexpected blank line within an import group" )
             prevName.foreach: pn =>
               if imp.path < pn then
                 out += Violation
-                        ( file, imp.startLine, 1, "302.2",
-                          s"import `${imp.path}` is out of alphabetical order "
-                            +s"(after `$pn`)" )
+                  ( file, imp.startLine, 1, "302.2",
+                    s"import `${imp.path}` is out of alphabetical order "
+                      +s"(after `$pn`)" )
         case None => ()
 
       prevGroup   = Some(group)
@@ -1431,9 +1431,9 @@ object Checker:
           val typeName = m.group(1).nn
           if !declaresTopLevel(untpdTree, typeName) then
             out += Violation
-                    ( file, 1, 1, "847",
-                      s"file name `$name` declares no top-level `$typeName` "
-                        +"(class/trait/enum/object/type)" )
+              ( file, 1, 1, "847",
+                s"file name `$name` declares no top-level `$typeName` "
+                  +"(class/trait/enum/object/type)" )
 
   // True iff the package body (or any nested package body) holds a `TypeDef`
   // or `ModuleDef` whose name matches `target`. Used by R29 to verify that
@@ -1480,14 +1480,14 @@ object Checker:
         if !c.isSingleLine then
           if i > 0 && !blankBetween(group(i - 1).endLine, c.caseLine, lines) then
             out += Violation
-                    ( file, c.caseLine, c.caseCol, "982",
-                      "a blank line is required before a multi-line case "
-                        +"(except for the first case)" )
+              ( file, c.caseLine, c.caseCol, "982",
+                "a blank line is required before a multi-line case "
+                  +"(except for the first case)" )
           // Sub-check: exactly one space before `=>` in a multi-line case.
           if c.spacesBeforeArrow != 1 then
             out += Violation
-                    ( file, c.arrowLine, c.arrowCol, "R33-multiline-case-arrow-space",
-                      "exactly one space is required before `=>` in a multi-line case" )
+              ( file, c.arrowLine, c.arrowCol, "R33-multiline-case-arrow-space",
+                "exactly one space is required before `=>` in a multi-line case" )
 
       // R19: split into runs of consecutive single-line cases at the same
       // case-keyword column with no blank line between them; align `=>` in
@@ -1514,8 +1514,8 @@ object Checker:
           run.foreach: c =>
             if c.arrowCol != expected then
               out += Violation
-                      ( file, c.arrowLine, c.arrowCol, "326",
-                        s"`=>` should be at column $expected to align with the case run" )
+                ( file, c.arrowLine, c.arrowCol, "326",
+                  s"`=>` should be at column $expected to align with the case run" )
 
   private def blankBetween
     ( prevEnd:  Int,
@@ -1876,7 +1876,7 @@ object Checker:
     var k = idx
     var prev = idx - 1
     while prev >= 0 && toks(prev).line == toks(idx).line
-        && ModifierWords.contains(toks(prev).text)
+      && ModifierWords.contains(toks(prev).text)
     do
       k = prev
       prev -= 1
@@ -1924,10 +1924,10 @@ object Checker:
       val brokenAtCol  = startsNewLine(toks, elem.keywordIdx) && cur.col == anchorCol
       if !(onAnchorLine || brokenAtCol) then
         out += Violation
-                ( file, cur.line, cur.col, "833.1",
-                  s"keyword `${elem.label}` must start on the same line as "
-                    +s"`${k1.label}` (line $anchorLine) or on a new line in "
-                    +s"column $anchorCol (found line ${cur.line}, column ${cur.col})" )
+          ( file, cur.line, cur.col, "833.1",
+            s"keyword `${elem.label}` must start on the same line as "
+              +s"`${k1.label}` (line $anchorLine) or on a new line in "
+              +s"column $anchorCol (found line ${cur.line}, column ${cur.col})" )
       // Body cascade applies to bodies after K_2 onward (i.e. body following
       // each K_i for i ≥ 2). The body following K_1 (the condition or
       // generator block) does not trigger the cascade.
@@ -1936,9 +1936,9 @@ object Checker:
       if indentedMode && !curBodyIndented then
         val bodyCol = if anchor + 1 < toks.length then toks(anchor + 1).col else cur.col
         out += Violation
-                ( file, cur.line, bodyCol, "833.2",
-                  s"body after `${elem.label}` must be indented onto a new line because "
-                    +s"an earlier body in this sequence is" )
+          ( file, cur.line, bodyCol, "833.2",
+            s"body after `${elem.label}` must be indented onto a new line because "
+              +s"an earlier body in this sequence is" )
       if curBodyIndented then indentedMode = true
       i += 1
 
@@ -1976,7 +1976,7 @@ object Checker:
         // `else inline if cond then …` is recognised as a bridge.
         var ifIdx = elseIdx + 1
         while ifIdx < toks.length && toks(ifIdx).line == elsePos.line
-            && ModifierWords.contains(toks(ifIdx).text)
+          && ModifierWords.contains(toks(ifIdx).text)
         do ifIdx += 1
         val isBridge =
           ifIdx < toks.length
@@ -2040,7 +2040,7 @@ object Checker:
 
     val firstIdx =
       findKeyword
-        (toks, start + 1, Set("catch", "finally"), nestIfElse = false, minCol = tryCol)
+        ( toks, start + 1, Set("catch", "finally"), nestIfElse = false, minCol = tryCol )
     if firstIdx < 0 then return
     val first  = toks(firstIdx)
     if first.text == "catch" then
@@ -2083,20 +2083,20 @@ object Checker:
             if gl.isFilter then
               if gl.startCol != refOp then
                 out += Violation
-                        ( file, gl.line, gl.startCol, "924.3",
-                          s"`if` filter should align with `<-`/`=` at column $refOp "
-                            +s"(found ${gl.startCol})" )
+                  ( file, gl.line, gl.startCol, "924.3",
+                    s"`if` filter should align with `<-`/`=` at column $refOp "
+                      +s"(found ${gl.startCol})" )
             else
               if gl.startCol != refLhs then
                 out += Violation
-                        ( file, gl.line, gl.startCol, "924.2",
-                          s"generator should align with the first generator's LHS at column "
-                            +s"$refLhs (found ${gl.startCol})" )
+                  ( file, gl.line, gl.startCol, "924.2",
+                    s"generator should align with the first generator's LHS at column "
+                      +s"$refLhs (found ${gl.startCol})" )
               if gl.opCol != refOp then
                 out += Violation
-                        ( file, gl.line, gl.opCol, "924.1",
-                          s"`<-`/`=` should be vertically aligned at column $refOp "
-                            +s"(found ${gl.opCol})" )
+                  ( file, gl.line, gl.opCol, "924.1",
+                    s"`<-`/`=` should be vertically aligned at column $refOp "
+                      +s"(found ${gl.opCol})" )
 
   private def checkSequences
     ( file:  String,
@@ -2115,7 +2115,7 @@ object Checker:
           // modifiers (`inline`, …) between the `if` and `else`.
           var prev = i - 1
           while prev >= 0 && toks(prev).line == toks(i).line
-              && ModifierWords.contains(toks(prev).text)
+            && ModifierWords.contains(toks(prev).text)
           do prev -= 1
           val partOfBridge =
             prev >= 0 && toks(prev).text == "else" && toks(prev).line == toks(i).line

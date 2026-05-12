@@ -52,7 +52,7 @@ object internal:
   private object SafeInlined:
     def unapply(using Quotes)(scrutinee: quotes.reflect.ImplicitSearchFailure)
     :   Option
-          [ (Option[quotes.reflect.Tree], List[quotes.reflect.Definition], quotes.reflect.Term) ] =
+      [ (Option[quotes.reflect.Tree], List[quotes.reflect.Definition], quotes.reflect.Term) ] =
 
       import quotes.reflect.*
 
@@ -105,9 +105,9 @@ object internal:
       case _                      => t
 
     case class Matched
-                ( symbol:     Symbol,
-                  typeParams: List[Symbol],
-                  bindings:   Map[Symbol, TypeRepr] )
+      ( symbol:     Symbol,
+        typeParams: List[Symbol],
+        bindings:   Map[Symbol, TypeRepr] )
 
     val givensCache = scala.collection.mutable.Map.empty[TypeRepr, List[Symbol]]
 
@@ -240,9 +240,9 @@ object internal:
     //     the modular `T is U` syntax — for which the synth-class result type
     //     doesn't share top-level structure with the target).
     def candidateArgLists
-                ( symbol:     Symbol,
-                  target:     TypeRepr,
-                  typeParams: List[Symbol] )
+      ( symbol:     Symbol,
+        target:     TypeRepr,
+        typeParams: List[Symbol] )
     :     List[List[TypeRepr]] =
 
       val raw = resultOf(symbol.info)
@@ -493,10 +493,10 @@ object internal:
               e" \e[38;5;75m$Bold(▸)\e[0m propose \e[38;5;117m$Italic($name)\e[0m"
 
           . join
-              ( e"contextual value not found\n\n \e[38;5;88m$Bold(■)\e[0m resolving "
-                +e"\e[38;5;208m$Italic(${stenography.internal.name[target]})\e[0m\n",
-                e"\n",
-                e"\n" )
+            ( e"contextual value not found\n\n \e[38;5;88m$Bold(■)\e[0m resolving "
+              +e"\e[38;5;208m$Italic(${stenography.internal.name[target]})\e[0m\n",
+              e"\n",
+              e"\n" )
 
           . render(termcapDefinitions.xterm256)
           . s

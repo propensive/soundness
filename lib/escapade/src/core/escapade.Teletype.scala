@@ -313,7 +313,7 @@ case class Teletype
         val arr = new Array[Long](newLength)
         System.arraycopy(styles.asInstanceOf[Array[Long]], 0, arr, 0, aN)
         System.arraycopy
-          (that.styles.asInstanceOf[Array[Long]], 0, arr, aN, that.styles.length)
+          ( that.styles.asInstanceOf[Array[Long]], 0, arr, aN, that.styles.length )
         Teletype
           ( combinedPlain,
             IArray.unsafeFromArray(arr),

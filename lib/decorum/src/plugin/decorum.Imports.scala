@@ -38,10 +38,10 @@ import dotty.tools.dotc.ast.untpd
 import dotty.tools.dotc.util.SourceFile
 
 case class ImportInfo
-   ( startLine:        Int,
-     endLine:          Int,
-     path:             String,
-     hasTopLevelAlias: Boolean )
+  ( startLine:        Int,
+    endLine:          Int,
+    path:             String,
+    hasTopLevelAlias: Boolean )
 
 object Imports:
   // Extract every top-level `import` (or `export`) statement from the
@@ -79,10 +79,10 @@ object Imports:
       val text  = content.substring(start, end).nn
       val (path, hasAlias) = analyse(text)
       out += ImportInfo
-              ( startLine        = source.offsetToLine(start) + 1,
-                endLine          = source.offsetToLine((end - 1).max(start)) + 1,
-                path             = path,
-                hasTopLevelAlias = hasAlias )
+        ( startLine        = source.offsetToLine(start) + 1,
+          endLine          = source.offsetToLine((end - 1).max(start)) + 1,
+          path             = path,
+          hasTopLevelAlias = hasAlias )
 
   // Reduce an import statement's source text to:
   //   - the path string (concatenation of the path tokens and any selector

@@ -114,7 +114,7 @@ object Xml extends Tag.Container
     type Result = Xml
 
     transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
-      (inline insertions: Any*)
+      ( inline insertions: Any* )
     :   Xml =
 
       ${xylophone.internal.interpolator[parts, origins]('insertions)}
@@ -945,7 +945,7 @@ object Xml extends Tag.Container
           ProcessingInstruction(target, data)
 
     private def readPiData(dataStart: Region, target: Text)
-      (using Tactic[ParseError])
+      ( using Tactic[ParseError] )
     :   ProcessingInstruction =
 
       while more && peek != '?' do advance()

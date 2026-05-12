@@ -78,7 +78,7 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
 
     suite(m"Parse example 1 (RSS feed)"):
       bench(m"Parse file with Xylophone")
-        (target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min) ):
         '{ xylophone.Benchmarks.parseXylophone(xylophone.Benchmarks.xml1) }
 
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size1):
@@ -86,7 +86,7 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
 
     suite(m"Parse example 2 (SOAP envelope)"):
       bench(m"Parse file with Xylophone")
-        (target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min) ):
         '{ xylophone.Benchmarks.parseXylophone(xylophone.Benchmarks.xml2) }
 
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size2):
@@ -94,7 +94,7 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
 
     suite(m"Parse example 3 (Atom feed)"):
       bench(m"Parse file with Xylophone")
-        (target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min) ):
         '{ xylophone.Benchmarks.parseXylophone(xylophone.Benchmarks.xml3) }
 
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size3):
@@ -102,7 +102,7 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
 
     suite(m"Parse example 4 (100 book records)"):
       bench(m"Parse file with Xylophone")
-        (target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min) ):
         '{ xylophone.Benchmarks.parseXylophone(xylophone.Benchmarks.xml4) }
 
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size4):
@@ -110,7 +110,7 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
 
     suite(m"Parse example 5 (500 log entries)"):
       bench(m"Parse file with Xylophone")
-        (target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min) ):
         '{ xylophone.Benchmarks.parseXylophone(xylophone.Benchmarks.xml5) }
 
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size5):
