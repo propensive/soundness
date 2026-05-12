@@ -83,7 +83,8 @@ object TextEscapes:
         if char >= 0 then buffer.append(char.toChar)
         recur(index, escape)
       else if esc
-      then throw EscapeError(Message("the final character cannot be an escape".tt))
+      then
+        throw EscapeError(Message("the final character cannot be an escape".tt))
 
     recur(0, false)
 

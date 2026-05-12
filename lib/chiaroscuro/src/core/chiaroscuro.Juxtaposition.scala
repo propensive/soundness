@@ -169,11 +169,12 @@ object Juxtaposition:
                         e"${Fg(palette.negative)}($right)",
                         e"lev = $distance" )
 
-                  else Row
-                    ( line(t"■"),
-                      e"${Fg(palette.informative)}($left)",
-                      e"${Fg(palette.informative)}($right)",
-                      e"" )
+                  else
+                    Row
+                     ( line(t"■"),
+                       e"${Fg(palette.informative)}($left)",
+                       e"${Fg(palette.informative)}($right)",
+                       e"" )
 
             val table = Scaffold[Row]
               ( Column(e"$name")(_.treeLine),

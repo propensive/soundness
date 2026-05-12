@@ -105,7 +105,8 @@ object Comprehensions:
     if i >= 1 && content.charAt(i) == 'f' && content.charAt(i - 1) == 'i' then
       val before = i - 2
       if before < 0 || !isWordChar(content.charAt(before)) then i - 1 else -1
-    else -1
+    else
+      -1
 
   private def isWordChar(c: Char): Boolean = c.isLetterOrDigit || c == '_'
 

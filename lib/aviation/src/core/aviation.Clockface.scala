@@ -45,7 +45,8 @@ object Clockface:
         if summon[TimeFormat].halfDay then
           val raw = clockface.hour%12
           if raw == 0 then 12 else raw
-        else clockface.hour
+        else
+          clockface.hour
 
       val hour2 = summon[TimeNumerics] match
         case TimeNumerics.VariableWidth => hour.show

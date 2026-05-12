@@ -75,7 +75,8 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
                 cell.textAlign.pad
                   ( cell(lineNumber), widths(index), lineNumber == cell.minHeight - 1 )
 
-              else Textual((t" "*widths(index)))
+              else
+                Textual((t" "*widths(index)))
 
             . join(leftEdge, midEdge, rightEdge)
 

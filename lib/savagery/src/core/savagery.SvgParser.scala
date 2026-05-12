@@ -392,7 +392,8 @@ object SvgParser:
         try Srgb(parseChannel(parts(0)), parseChannel(parts(1)), parseChannel(parts(2)))
         catch case _: NumberFormatException =>
           abort(SvgError(SvgError.Reason.MalformedColor(c)))
-      else abort(SvgError(SvgError.Reason.MalformedColor(c)))
+      else
+        abort(SvgError(SvgError.Reason.MalformedColor(c)))
     else
       s.toLowerCase.nn match
         case "red"     => Srgb(1.0, 0.0, 0.0)

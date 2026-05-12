@@ -263,7 +263,8 @@ extension (stream: Stream[Data])
   def discard(bytes: Bytes): Stream[Data] =
     def recur(stream: Stream[Data], count: Bytes): Stream[Data] = stream.flow(Stream()):
       if next.bytes < count
-      then recur(more, count - next.bytes) else next.drop(count.long.toInt) #:: more
+      then recur(more, count - next.bytes)
+      else next.drop(count.long.toInt) #:: more
 
     recur(stream, bytes)
 

@@ -90,7 +90,8 @@ object Url:
                   val hostname = value.segment((colon + 3) till authEnd)
                   (authEnd, hostname.decode[Authority])
 
-            else (colon + 1, Unset)
+            else
+              (colon + 1, Unset)
 
           safely(value.where(_ == '?', pathStart)).asMatchable match
             case Zerary(qmark) =>

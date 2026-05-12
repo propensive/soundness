@@ -676,7 +676,8 @@ object Yaml extends Yaml2, Dynamic:
               else origin.root.arrayElement(i)
             i += 1
           Yaml.Ast.seqFromAnyArray(updated)
-      else origin
+      else
+        origin
 
   private inline def typeMismatch[T]
       (yaml: Yaml, expected: YamlPrimitive, default: T)

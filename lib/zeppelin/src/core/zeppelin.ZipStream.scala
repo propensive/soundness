@@ -83,7 +83,8 @@ class ZipStream(stream: () => Stream[Data], filter: (Path on Zip) => Boolean):
           if matched then
             found = true
             done = true
-          else cursor.next()
+          else
+            cursor.next()
       found
 
     if !findMagic() then Stream() else

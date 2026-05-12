@@ -113,7 +113,8 @@ extension (yaml: Yaml.Ast)
       val n = arrayLength
       if n == full.length then full
       else IArray.tabulate(n)(full(_))
-    else expected(YamlPrimitive.Sequence) yet IArray[Yaml.Ast]()
+    else
+      expected(YamlPrimitive.Sequence) yet IArray[Yaml.Ast]()
 
   def double(using Tactic[YamlError]): Double = yaml.asInstanceOf[Matchable] match
     case value: Double                 => value

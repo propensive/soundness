@@ -109,12 +109,15 @@ object Imports:
           if i + 1 < n then i += 2
         case c if c.isWhitespace =>
           // Look ahead for top-level `as` keyword.
-          if depth == 0 && i + 3 <= n && keyword.regionMatches(i + 1, "as", 0, 2)
-            && (i + 3 == n || !isWordChar(keyword.charAt(i + 3))) then
+          if
+            depth == 0 && i + 3 <= n && keyword.regionMatches(i + 1, "as", 0, 2)
+            && (i + 3 == n || !isWordChar(keyword.charAt(i + 3)))
+          then
             hasAlias = true
             done = true
             i += 3
-          else i += 1
+          else
+            i += 1
         case '=' if depth == 0 && i + 1 < n && keyword.charAt(i + 1) == '>' =>
           hasAlias = true
           done = true

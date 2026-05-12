@@ -73,7 +73,8 @@ object Deserializable:
               if bits + base >= 8 then
                 array(count) = ((next >>> (bits + base - 8)) & 0xff).toByte
                 recur(next, bits + base - 8, count + 1, index0 + 1)
-              else recur(next, bits + base, count, index0 + 1)
+              else
+                recur(next, bits + base, count, index0 + 1)
 
           recur(index0 = index0)
 

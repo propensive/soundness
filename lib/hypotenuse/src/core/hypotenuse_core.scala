@@ -575,7 +575,8 @@ package arithmeticOptions:
         val result: B64 = (Long(left.bits) + Long(right.bits)).bits
 
         if U64((left.bits^result) & (right.bits^result)) < U64(0.bits)
-        then raise(OverflowError()) yet U64(result) else U64(result)
+        then raise(OverflowError()) yet U64(result)
+        else U64(result)
 
       inline def addS64(left: S64, right: S64): S64 raises OverflowError =
         val sum: Long = left.long + right.long
@@ -586,7 +587,8 @@ package arithmeticOptions:
         val result: B32 = (Int(left.bits) + Int(right.bits)).bits
 
         if U32((left.bits^result) & (right.bits^result)) < U32(0.bits)
-        then raise(OverflowError()) yet U32(result) else U32(result)
+        then raise(OverflowError()) yet U32(result)
+        else U32(result)
 
       inline def addS32(left: S32, right: S32): S32 raises OverflowError =
         val sum: Int = left.int + right.int
@@ -597,7 +599,8 @@ package arithmeticOptions:
         val result: B16 = (Short(left.bits) + Short(right.bits)).toShort.bits
 
         if U16((left.bits^result) & (right.bits^result)) < U16(0.toShort.bits)
-        then U16(raise(OverflowError()) yet result) else U16(result)
+        then U16(raise(OverflowError()) yet result)
+        else U16(result)
 
       inline def addS16(left: S16, right: S16): S16 raises OverflowError =
         val sum: Short = (left.short + right.short).toShort
@@ -608,7 +611,8 @@ package arithmeticOptions:
         val result: B8 = (left.short + right.short).toByte.bits
 
         if U8((left.bits^result) & (right.bits^result)) < U8(0.toByte.bits)
-        then U8(raise(OverflowError()) yet result) else U8(result)
+        then U8(raise(OverflowError()) yet result)
+        else U8(result)
 
       inline def addS8(left: S8, right: S8): S8 raises OverflowError =
         val sum: Byte = (left.short + right.short).toByte

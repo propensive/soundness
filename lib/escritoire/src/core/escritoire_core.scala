@@ -143,7 +143,8 @@ package columnar:
               if widthSoFar > width && lastSpace > lineStart then
                 val segment = text.segment(lineStart.z thru lastSpace.u)
                 recur(lastSpace + 1, lastSpace + 1, lastSpace + 1, segment :: acc)
-              else recur(position + 1, lineStart, lastSpace, acc)
+              else
+                recur(position + 1, lineStart, lastSpace, acc)
 
         recur(0, 0, 0, Nil)
 

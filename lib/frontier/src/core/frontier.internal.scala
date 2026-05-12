@@ -318,7 +318,8 @@ object internal:
             t.name.toString == moduleName && t.flags.is(Flags.Opaque)
 
           sibling.orElse(loop(current.owner))
-        else loop(current.owner)
+        else
+          loop(current.owner)
 
       loop(symbol.owner)
 

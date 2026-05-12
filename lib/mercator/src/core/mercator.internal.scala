@@ -82,7 +82,8 @@ object internal:
         }
 
     else if applyMethods.length == 0
-    then halt(569, m"the companion object ${identityType.name} has no candidate apply methods")
+    then
+      halt(569, m"the companion object ${identityType.name} has no candidate apply methods")
     else
       halt(659, m"the companion object ${identityType.name} has more than one candidate apply method")
 
