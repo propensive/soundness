@@ -67,12 +67,15 @@ object Companions:
               line(td).foreach: l =>
                 val name = td.name.toString
                 if !types.contains(name) then types(name) = l
+
             case _ =>
               ()
+
         case md: untpd.ModuleDef =>
           line(md).foreach: l =>
             val name = md.name.toString
             if !objects.contains(name) then objects(name) = l
+
         case _ =>
           ()
 
@@ -83,6 +86,6 @@ object Companions:
     t.productIterator.foreach(descend(_, visit))
 
   private def descend(x: Any, visit: untpd.Tree => Unit): Unit = x match
-    case sub: untpd.Tree => walk(sub)(visit)
+    case sub: untpd.Tree  => walk(sub)(visit)
     case it:  Iterable[?] => it.foreach(descend(_, visit))
     case _                => ()

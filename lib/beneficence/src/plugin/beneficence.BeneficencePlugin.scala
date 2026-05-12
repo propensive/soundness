@@ -36,6 +36,7 @@ import dotty.tools.dotc.*, core.*, Contexts.*, plugins.*
 
 class BeneficencePlugin() extends StandardPlugin:
   val name: String = "beneficence"
+
   override val description: String =
     "records givens into META-INF/givens/<typeclass> and Probably suites into "+
     "META-INF/services/probably.Suite"

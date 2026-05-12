@@ -244,6 +244,7 @@ object internal:
 
                       result.asType.absolve match
                         case '[List[Discourse]] =>
+
                         case '[result] => halt:
                           m"""
                             the MCP prompt method returns ${TypeRepr.of[result].show}, but it must
@@ -299,6 +300,7 @@ object internal:
                                         mimeType = t"text/html;profile=mcp-app", // FIXME
                                         text = $value.read[Text] )
                                 }
+
                             case None => Expr.summon[result is Streamable by Data] match
                               case Some(streamable) =>
                                 ' {
@@ -308,6 +310,7 @@ object internal:
                                       Mcp.BlobResourceContents
                                         ( $uri, Unset, blob = $value.read[Data].serialize[Base64] )
                                   }
+
                               case None => halt:
                                 m"""
                                   there was no contextual ${TypeRepr.of[result is Streamable].show}
@@ -402,6 +405,7 @@ object internal:
                     outputSchema = outputSchema,
                     _meta        = uiJson )
               }
+
           case None => halt:
             m"""
               there was no contextual ${TypeRepr.of[result is Schematic in JsonSchema].show}

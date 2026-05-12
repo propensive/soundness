@@ -193,6 +193,7 @@ package columnar:
     def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)
       (using Text is Measurable)
     :   Optional[Int] =
+
       val naturalWidth = lines.map(_.plain.metrics).max
       (maxWidth*slack).toInt.min(naturalWidth)
 
@@ -209,6 +210,7 @@ package columnar:
     def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)
       (using Text is Measurable)
     :   Optional[Int] =
+
       if slack > threshold then lines.map(_.plain.metrics).max else Unset
 
 

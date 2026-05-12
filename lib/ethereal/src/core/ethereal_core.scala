@@ -207,6 +207,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
   val userId: Optional[Int] = safely(System.properties.ethereal.user.id[Int]())
   val userName: Optional[Text] = safely(System.properties.ethereal.user.name[Text]())
+
   val startTime: Long =
     safely(System.properties.ethereal.startTime[Long]()).or(jl.System.currentTimeMillis())
 

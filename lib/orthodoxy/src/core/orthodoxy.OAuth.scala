@@ -35,6 +35,7 @@ package orthodoxy
 import scala.collection.mutable as scm
 
 import anticipation.*
+import beneficence.*
 import inimitable.*
 import prepositional.*
 import rudiments.*
@@ -42,7 +43,6 @@ import serpentine.*
 import telekinesis.*
 import urticose.*
 import vacuous.*
-import beneficence.*
 
 object OAuth:
   case class State

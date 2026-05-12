@@ -33,9 +33,9 @@
 package telekinesis
 
 import anticipation.*
+import beneficence.*
 import distillate.*
 import prepositional.*
-import beneficence.*
 
 object Session:
   given encodable: Session is Encodable in Text = _.key

@@ -35,6 +35,7 @@ package monotonous
 import scala.collection.*
 
 import anticipation.*
+import beneficence.*
 import contingency.*
 import denominative.*
 import gossamer.*
@@ -43,7 +44,6 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-import beneficence.*
 
 object Deserializable:
   def base[base <: Serialization](base: Int)(using alphabet: Alphabet[base])

@@ -32,9 +32,9 @@
                                                                                                   */
 package galilei
 
+import beneficence.*
 import prepositional.*
 import serpentine.*
-import beneficence.*
 
 trait DeleteRecursively extends Planar, Findable:
   def conditionally[ResultType](path: Path on Plane)(operation: => ResultType): ResultType

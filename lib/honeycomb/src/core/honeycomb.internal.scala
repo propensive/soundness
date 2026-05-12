@@ -55,6 +55,7 @@ object internal:
   def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
     (scrutinee: Expr[Html])
   :   Macro[Extrapolation[Html]] =
+
     import quotes.reflect.*
     import doms.html.whatwg
 
@@ -254,6 +255,7 @@ object internal:
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
     (insertions0: Expr[Seq[Any]])
   :   Macro[Html] =
+
     import quotes.reflect.*
     import doms.html.whatwg
     import Html.Hole
@@ -271,9 +273,11 @@ object internal:
           val pair = TypeRepr.of[head].dealias match
             case AppliedType(_, List(ConstantType(IntConstant(s)), ConstantType(IntConstant(e)))) =>
               (s, e)
+
             case _ =>
               (0, 0)
           recurOrigins[tail](pair :: acc)
+
         case _ =>
           acc.reverse
 
@@ -328,6 +332,7 @@ object internal:
     // Custom HaltTactic: translate parser ParseError positions to source-file ranges.
     val html: Html =
       given diagnostics: Diagnostics = Diagnostics.omit
+
       given parseTactic: HaltTactic[ParseError, Html] = new HaltTactic[ParseError, Html]:
         override def abort(error: Diagnostics ?=> ParseError): Nothing =
           val pe = error

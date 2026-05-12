@@ -33,9 +33,9 @@
 package exoskeleton
 
 import anticipation.*
+import beneficence.*
 import prepositional.*
 import serpentine.*
-import beneficence.*
 
 trait Entrypoint extends Findable:
   def script: Text

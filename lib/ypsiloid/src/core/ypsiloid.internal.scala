@@ -89,6 +89,7 @@ object internal:
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
     (insertions0: Expr[Seq[Any]])
   :   Macro[Yaml] =
+
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
@@ -103,9 +104,11 @@ object internal:
           val pair = TypeRepr.of[head].dealias match
             case AppliedType(_, List(ConstantType(IntConstant(s)), ConstantType(IntConstant(e)))) =>
               (s, e)
+
             case _ =>
               (0, 0)
           recurOrigins[tail](pair :: acc)
+
         case _ =>
           acc.reverse
 
@@ -156,6 +159,7 @@ object internal:
 
     val ast: Yaml.Ast =
       given diagnostics: Diagnostics = Diagnostics.omit
+
       given parseTactic: HaltTactic[ParseError, Yaml.Ast] =
         new HaltTactic[ParseError, Yaml.Ast]:
           override def abort(error: Diagnostics ?=> ParseError): Nothing =
@@ -251,6 +255,7 @@ object internal:
 
       def serializeArray(elements: IArray[Any]): Expr[Yaml.Ast] =
         val n = elements.length
+
         val pieces: List[Expr[Iterable[Yaml.Ast]]] = elements.zipWithIndex.toList.map:
           (elem, idx) =>
             elem.asMatchable match
@@ -274,6 +279,7 @@ object internal:
 
       def serializeObject(node: IArray[Any]): Expr[Yaml.Ast] =
         val n = node.length/2
+
         val pieces: List[Expr[Iterable[(String, Yaml.Ast)]]] =
           (0 until n).toList.map: i =>
             val k = node(i*2).asInstanceOf[String]
@@ -282,6 +288,7 @@ object internal:
               v.asMatchable match
                 case s: String if s == MarkerString =>
                   encodeObjectRest(consumeHole())
+
                 case _ => halt:
                   m"unexpected non-rest hole in mapping key position"
             else
@@ -297,6 +304,7 @@ object internal:
         '{
           val all =
             ${Expr.ofList(pieces)}.foldLeft(List.empty[(String, Yaml.Ast)])(_ ++ _)
+
           val arr = new Array[Any](all.length*2)
           var k = 0
           all.foreach: pair =>
@@ -342,6 +350,7 @@ object internal:
   def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
     (scrutinee: Expr[Yaml])
   :   Macro[Extrapolation[Yaml]] =
+
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
@@ -426,6 +435,7 @@ object internal:
       :   Expr[Boolean] =
 
         val n = elements.length
+
         val tailSpread: Boolean =
           n > 0 && (elements(n - 1).asMatchable match
             case s: String if s == MarkerString =>
@@ -479,6 +489,7 @@ object internal:
 
       def countHolesIn(node: Any): Int = node.asMatchable match
         case s: String if s == MarkerString => 1
+
         case s: String =>
           var c = 0
           var idx = 0
@@ -490,6 +501,7 @@ object internal:
             else
               idx += 1
           c
+
         case arr: IArray[Any] @unchecked =>
           if (arr.length & 1) == 0 then
             val pairs = arr.length/2
@@ -518,6 +530,7 @@ object internal:
       :   Expr[Boolean] =
 
         val pairs = node.length/2
+
         val literalKeys: List[String] =
           (0 until pairs).toList.collect:
             case i if node(i*2).asInstanceOf[String] != MarkerString =>
@@ -592,6 +605,7 @@ object internal:
               }
           else
             val keyLiteral = Expr(k)
+
             val valueExpr =
               '{
                 val idx2 = $scrutinee.objectIndexOf($keyLiteral)
@@ -613,6 +627,7 @@ object internal:
       val result: Expr[Extrapolation[Yaml]] =
         '{
           val extracts = new Array[Any](${Expr(numberOfHoles)})
+
           val matches: Boolean =
             ${descend('extracts, ast, '{Yaml.unseal($scrutinee)}, '{true})}
           ${

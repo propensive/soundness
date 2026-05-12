@@ -32,8 +32,8 @@
                                                                                                   */
 package profanity
 
-import turbulence.*
 import beneficence.*
+import turbulence.*
 
 object Console:
   def apply(stdio: Stdio): Console =

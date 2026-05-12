@@ -67,6 +67,7 @@ object Tmux:
 
   def attend(using tmux: Tmux)[result](block: => result)(using Monitor, WorkingDirectory)
   :   result raises TmuxError =
+
     val init = screenshot().screen
 
     var count = 0

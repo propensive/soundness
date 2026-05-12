@@ -132,6 +132,7 @@ extension (yaml: Yaml.Ast)
     case value: Array[Long] @unchecked => value.asInstanceOf[jacinta.Bcd]
     case value: Long                   => jacinta.Bcd(BigDecimal(value))
     case value: Double                 => jacinta.Bcd(BigDecimal(value))
+
     case _                             =>
       expected(YamlPrimitive.Decimal) yet jacinta.Bcd(BigDecimal(0))
 

@@ -110,10 +110,12 @@ object internal:
                   bindings:   Map[Symbol, TypeRepr] )
 
     val givensCache = scala.collection.mutable.Map.empty[TypeRepr, List[Symbol]]
+
     def cachedGivens(repr: TypeRepr): List[Symbol] =
       givensCache.getOrElseUpdate(repr, beneficence.givens(repr))
 
     val canonicalCache = scala.collection.mutable.Map.empty[Symbol, Symbol]
+
     def canonical(symbol: Symbol): Symbol =
       canonicalCache.getOrElseUpdate(symbol, computeCanonical(symbol))
 
@@ -187,6 +189,7 @@ object internal:
     // committed to before recursing.
     def formatProposal(matched: Matched): Text =
       val baseName = renderSymbol(matched.symbol).s
+
       val pairs = matched.typeParams.collect:
         case tp if matched.bindings.contains(tp) =>
           s"${tp.name.toString} = ${stenography.internal.name(matched.bindings(tp)).s}"
@@ -255,6 +258,7 @@ object internal:
         case _                                                        => Nil
 
       val refinementValues = collectRefinementValues(target.dealias)
+
       val refinement: List[List[TypeRepr]] =
         if refinementValues.length == typeParams.length then List(refinementValues) else Nil
 
@@ -293,6 +297,7 @@ object internal:
         matched.symbol.info.appliedTo(args) match
           case mt: MethodType =>
             collectUsingClause(mt)
+
           case _ =>
             usingTypes(matched.symbol)
 

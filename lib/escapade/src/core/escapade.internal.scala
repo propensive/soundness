@@ -79,7 +79,7 @@ object internal:
               case '{$_ : Substitution[Ansi.Input, tpe, sub]} =>
                 TypeRepr.of[sub] match
                   case ConstantType(StringConstant(s)) => Some(s)
-                  case _ => None
+                  case _                               => None
               case _ => None
 
     // A part ending with `\\` (raw source form: two consecutive backslash
@@ -132,7 +132,7 @@ object internal:
               case '{$_ : Substitution[Ansi.Input, tpe, sub]} =>
                 val label: String = TypeRepr.of[sub] match
                   case ConstantType(StringConstant(s)) => s
-                  case _ => halt(m"expected a literal string label for the substitution")
+                  case _                               => halt(m"expected a literal string label for the substitution")
 
                 // Mirror runtime's insert at compile time so the State machine
                 // tracks brackets opened by the substitution and `complete`

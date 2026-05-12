@@ -54,8 +54,10 @@ object Imports:
     def visitTopLevel(t: untpd.Tree): Unit = t match
       case pkg: untpd.PackageDef =>
         pkg.stats.foreach(visitTopLevel)
+
       case imp: untpd.Import =>
         recordImport(imp, content, source, out)
+
       case _ =>
         ()
 
@@ -68,6 +70,7 @@ object Imports:
       source:  SourceFile,
       out:     mutable.ListBuffer[ImportInfo] )
   :   Unit =
+
     val span = imp.span
     if !span.exists then ()
     else
@@ -101,12 +104,15 @@ object Imports:
       ch match
         case '{' => depth += 1; if !done then sb.append(ch); i += 1
         case '}' => depth -= 1; if !done then sb.append(ch); i += 1
+
         case '/' if i + 1 < n && keyword.charAt(i + 1) == '/' =>
           while i < n && keyword.charAt(i) != '\n' do i += 1
+
         case '/' if i + 1 < n && keyword.charAt(i + 1) == '*' =>
           i += 2
           while i + 1 < n && !(keyword.charAt(i) == '*' && keyword.charAt(i + 1) == '/') do i += 1
           if i + 1 < n then i += 2
+
         case c if c.isWhitespace =>
           // Look ahead for top-level `as` keyword.
           if
@@ -118,10 +124,12 @@ object Imports:
             i += 3
           else
             i += 1
+
         case '=' if depth == 0 && i + 1 < n && keyword.charAt(i + 1) == '>' =>
           hasAlias = true
           done = true
           i += 2
+
         case _ =>
           if !done then sb.append(ch)
           i += 1

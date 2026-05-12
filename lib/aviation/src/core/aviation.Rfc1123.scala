@@ -118,6 +118,7 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
       case 'J' =>
         next() match
           case 'a' => if next() != 'n' then fail(MonthName(Jan)) yet Jan else Jan
+
           case 'u' => next() match
             case 'l' => Jul
             case 'n' => Jun

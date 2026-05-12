@@ -36,10 +36,10 @@ import java.io as ji
 import java.net as jn
 
 import anticipation.*
+import beneficence.*
 import contingency.*
 import rudiments.*
 import vacuous.*
-import beneficence.*
 
 object Classloader:
   def threadContext: Classloader = new Classloader(Thread.currentThread.nn.getContextClassLoader.nn)

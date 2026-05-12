@@ -32,8 +32,8 @@
                                                                                                   */
 package aviation
 
-import symbolism.*
 import beneficence.*
+import symbolism.*
 
 object Chronology:
   enum AmbiguousTimes:

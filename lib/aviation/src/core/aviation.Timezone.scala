@@ -36,13 +36,13 @@ import java.time as jt
 import java.util as ju
 
 import anticipation.*
+import beneficence.*
 import contextual.*
 import contingency.*
 import distillate.*
 import fulminate.*
 import prepositional.*
 import rudiments.*
-import beneficence.*
 
 object Timezone:
   private val ids: Set[Text] = ju.TimeZone.getAvailableIDs.nn.map(_.nn).map(Text(_)).to(Set)

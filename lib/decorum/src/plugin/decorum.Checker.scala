@@ -56,6 +56,7 @@ object Checker:
        untpdTree:      untpd.Tree,
        source:         SourceFile )
   :   LazyList[Violation] =
+
     val out   = mutable.ListBuffer[Violation]()
     val state = State(file, expectedModule)
     val lines = Tokenizer.tokenize(rawText)
@@ -264,6 +265,7 @@ object Checker:
       // continuation. The anchor clears when the body opener (`=`) appears
       // at top level or when an unrelated declaration begins.
       val (_, kwIdx) = skipModifiers(sem, 0)
+
       val startsGiven =
         kwIdx < sem.length && sem(kwIdx).kind == Kind.Code && sem(kwIdx).text == "given"
       if startsGiven then s.givenSignatureIndent = leadingCols
@@ -294,6 +296,7 @@ object Checker:
       // state used by chain-continuation / bracket / sibling / R31 checks.
       // A normal code line that *starts* with a string interpolation (e.g.
       // `sh"…".exec()`) does have a leading Space token and is not affected.
+
       val isStringContinuation =
         firstReal.exists(_.kind == Kind.Strs) && leadingWs.isEmpty
       if !isCommentOnly && !isAnnotationOnly && !isStringContinuation then
@@ -648,6 +651,7 @@ object Checker:
       curStart: Int,
       lines: IndexedSeq[IndexedSeq[Token]] )
   :   Int =
+
     var count = 0
     var l     = prevEnd + 1
     while l < curStart do
@@ -682,9 +686,9 @@ object Checker:
     val wildcardImport =
       firstImport.endsWith(".*") || firstImport.endsWith("*}") || firstImport.endsWith("*, *}")
     firstSegment match
-      case "language"        => 1
-      case "java" | "javax"  => 2
-      case "scala"           => 3
+      case "language"                          => 1
+      case "java" | "javax"                    => 2
+      case "scala"                             => 3
       // Compiler / JVM-internals and JEE: dotty (compiler API), `com.sun.*`
       // (Oracle JVM internals), `sun.*` (raw JVM internals), and `jakarta.*`
       // (JEE). These are alias-friendly like the JDK but conceptually
@@ -1437,12 +1441,13 @@ object Checker:
   private def declaresTopLevel(tree: untpd.Tree, target: String): Boolean =
     tree match
       case untpd.EmptyTree       => true  // parse failure: don't false-positive
+
       case pkg: untpd.PackageDef =>
         pkg.stats.exists:
-          case td: untpd.TypeDef    => td.name.toString == target
-          case md: untpd.ModuleDef  => md.name.toString == target
+          case td: untpd.TypeDef        => td.name.toString == target
+          case md: untpd.ModuleDef      => md.name.toString == target
           case nested: untpd.PackageDef => declaresTopLevel(nested, target)
-          case _                    => false
+          case _                        => false
       case _                     => false
 
   private def isCrossModuleExport(base: String): Boolean =
@@ -1517,6 +1522,7 @@ object Checker:
       curStart: Int,
       lines:    IndexedSeq[IndexedSeq[Token]] )
   :   Boolean =
+
     var l = prevEnd + 1
     while l < curStart do
       val idx = l - 1
@@ -2005,6 +2011,7 @@ object Checker:
 
     val k1     = k1ChainElem(toks, start)
     val forCol = k1.pos.col
+
     val k2Idx  =
       findKeyword(toks, start + 1, Set("yield", "do"), nestIfElse = false, minCol = forCol)
     if k2Idx < 0 then return
@@ -2017,6 +2024,7 @@ object Checker:
 
     val k1       = k1ChainElem(toks, start)
     val whileCol = k1.pos.col
+
     val k2Idx    =
       findKeyword(toks, start + 1, Set("do"), nestIfElse = false, minCol = whileCol)
     if k2Idx < 0 then return
@@ -2029,6 +2037,7 @@ object Checker:
 
     val k1       = k1ChainElem(toks, start)
     val tryCol   = k1.pos.col
+
     val firstIdx =
       findKeyword
         (toks, start + 1, Set("catch", "finally"), nestIfElse = false, minCol = tryCol)

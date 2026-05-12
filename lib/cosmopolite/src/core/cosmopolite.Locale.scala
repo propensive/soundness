@@ -33,10 +33,10 @@
 package cosmopolite
 
 import anticipation.*
+import beneficence.*
 import distillate.*
 import gossamer.*
 import prepositional.*
-import beneficence.*
 
 object Locale:
   given encodable: [language] => Locale[language] is Encodable in Text = _.language.code

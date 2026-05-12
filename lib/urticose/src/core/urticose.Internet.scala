@@ -32,9 +32,9 @@
                                                                                                   */
 package urticose
 
+import beneficence.*
 import contingency.*
 import vacuous.*
-import beneficence.*
 
 class Internet(val online: Boolean) extends Findable:
   def require[result](block: Online ?=> result)(using Tactic[OfflineError]): result =

@@ -58,9 +58,11 @@ object Comprehensions:
         case fy: untpd.ForYield =>
           val gens = fy.enums.flatMap(genLine(_, source))
           if gens.nonEmpty then out += gens
+
         case fd: untpd.ForDo =>
           val gens = fd.enums.flatMap(genLine(_, source))
           if gens.nonEmpty then out += gens
+
         case _ =>
           ()
       t.productIterator.foreach(descend(_, visit))
@@ -69,7 +71,7 @@ object Comprehensions:
     out.toList
 
   private def descend(x: Any, visit: untpd.Tree => Unit): Unit = x match
-    case sub: untpd.Tree => visit(sub)
+    case sub: untpd.Tree  => visit(sub)
     case it:  Iterable[?] => it.foreach(descend(_, visit))
     case _                => ()
 
@@ -80,6 +82,7 @@ object Comprehensions:
     t match
       case g: untpd.GenFrom  => binaryEnum(t, g.pat, g.expr, "<-", source)
       case g: untpd.GenAlias => binaryEnum(t, g.pat, g.expr, "=",  source)
+
       case other =>
         val sp = other.span
         if !sp.exists then None
@@ -121,6 +124,7 @@ object Comprehensions:
       opText: String,
       source: SourceFile )
   :   Option[GenLine] =
+
     val patSp  = pat.span
     val exprSp = expr.span
     val sp     = t.span
@@ -132,6 +136,7 @@ object Comprehensions:
       val to       = if exprSp.exists then exprSp.start else sp.end
       val content  = String(source.content)
       val opOffset = content.indexOf(opText, from)
+
       val opCol =
         if opOffset < 0 || opOffset >= to then -1
         else source.column(opOffset) + 1

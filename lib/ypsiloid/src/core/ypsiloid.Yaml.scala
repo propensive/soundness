@@ -84,6 +84,7 @@ trait Yaml2:
         provide[Tactic[YamlError]]:
           yaml.root.asMatchable match
             case s: String => s.tt.decode[value]
+
             case _         =>
               raise(YamlError(Reason.NotType(Yaml.primitive(yaml.root), YamlPrimitive.Str)))
               .yet(t"".decode[value])
@@ -245,104 +246,154 @@ object Yaml extends Yaml2, Dynamic:
       def describe: Message = this match
         case DirectiveWithoutDocumentStart =>
           m"a directive must be followed by a `---` document-start marker"
+
         case DirectivesOutOfPlace =>
           m"directives can only appear at the start of a stream or after `...`"
+
         case MissingDocumentStart =>
           m"a `---` document-start marker is missing between documents"
+
         case ContentAfterDocumentEnd =>
           m"unexpected content was found after the `...` document-end marker"
+
         case DuplicateYamlDirective =>
           m"the %YAML directive was given more than once"
+
         case YamlDirectiveRequiresVersion =>
           m"the %YAML directive requires a version argument"
+
         case YamlDirectiveTooManyArguments =>
           m"the %YAML directive takes a single version argument"
+
         case YamlDirectiveInvalidVersion =>
           m"the %YAML directive version must be `major.minor`"
+
         case TagDirectiveRequiresHandleAndPrefix =>
           m"the %TAG directive requires a `handle prefix` argument pair"
+
         case TwoAnchorsOnSameNode =>
           m"two anchors were given on the same node"
+
         case AnchorOnAlias =>
           m"an alias node cannot also have an anchor"
+
         case ReservedIndicatorAtNodeStart =>
           m"a reserved indicator was found at the start of a node"
+
         case DuplicateAnchorOnNode =>
           m"more than one anchor was given on a single node"
+
         case DuplicateTagOnNode =>
           m"more than one tag was given on a single node"
+
         case UnterminatedVerbatimTag =>
           m"the verbatim tag was not terminated"
+
         case BlockMappingOnDocumentStartLine =>
           m"a block mapping cannot start on the document-start line"
+
         case ChainedMappingValueOnSingleLine =>
           m"a chained mapping value is not allowed on a single line"
+
         case MultilineImplicitKey =>
           m"an implicit mapping key cannot span multiple lines"
+
         case TrailingContentAfterQuotedScalar =>
           m"unexpected trailing content was found after a quoted scalar"
+
         case UnterminatedDoubleQuotedString =>
           m"the double-quoted string was not terminated"
+
         case UnterminatedEscape =>
           m"the escape sequence was not terminated"
+
         case InvalidEscapeSequence =>
           m"the escape sequence was not valid"
+
         case TruncatedHexEscape =>
           m"the hex escape was truncated"
+
         case InvalidHexDigit =>
           m"a hex digit was expected"
+
         case UnterminatedSingleQuotedString =>
           m"the single-quoted string was not terminated"
+
         case DocumentMarkerInsideMultilineScalar =>
           m"a document marker was found inside a multi-line scalar"
+
         case ScalarContinuationUnderIndented =>
           m"a multi-line scalar continuation was insufficiently indented"
+
         case UnterminatedFlowSequence =>
           m"the flow sequence was not terminated"
+
         case EmptyFlowSequenceEntry =>
           m"a flow-sequence entry was empty"
+
         case FlowImplicitKeyAndColonOnDifferentLines =>
           m"the implicit mapping key and `:` must be on the same line"
+
         case FlowSequenceExpectedCommaOrClose =>
           m"`,` or `]` was expected in the flow sequence"
+
         case UnterminatedFlowMapping =>
           m"the flow mapping was not terminated"
+
         case EmptyFlowMappingEntry =>
           m"a flow-mapping entry was empty"
+
         case FlowMappingExpectedCommaOrClose =>
           m"`,` or `}` was expected in the flow mapping"
+
         case FlowContentUnderIndented =>
           m"the flow content was insufficiently indented"
+
         case CommentMissingPrecedingWhitespace =>
           m"a comment must be preceded by whitespace"
+
         case DocumentMarkerInFlowContext =>
           m"document markers are not allowed in flow style"
+
         case ReservedIndicatorAtFlowPlainScalarStart =>
           m"a reserved indicator was found at the start of a flow plain scalar"
+
         case BlockSequenceIndicatorNotAtLineStart =>
           m"a block-sequence indicator must start its line"
+
         case TabInIndentation =>
           m"a tab character was used in indentation"
+
         case PlainScalarAtMappingIndentWithoutColon =>
           m"a plain scalar at the mapping indent was missing its `:`"
+
         case ExpectedColonAfterMappingKey =>
           m"`:` was expected after the mapping key"
+
         case BlockSequenceOnMappingKeyLine =>
           m"a sequence cannot start on the same line as a mapping key"
+
         case InvalidBlockScalarIndentationIndicator =>
           m"the block-scalar indentation indicator must be 1-9"
+
         case DuplicateBlockScalarIndentationIndicator =>
           m"more than one block-scalar indentation indicator was given"
+
         case DuplicateBlockScalarChompingIndicator =>
           m"more than one block-scalar chomping indicator was given"
+
         case InvalidBlockScalarHeader =>
           m"the block-scalar header was not valid"
+
         case BlockScalarHeaderCommentMissingWhitespace =>
           m"a comment in the block-scalar header must be preceded by whitespace"
+
         case BlockScalarLeadingBlanksOverIndented =>
           m"the leading empty lines have more indentation than the body"
+
         case UndefinedTagHandle(handle) =>
           m"the tag handle $handle was not defined"
+
         case UnknownAlias(name) =>
           m"the alias *$name does not refer to a known anchor"
   
@@ -417,6 +468,7 @@ object Yaml extends Yaml2, Dynamic:
                 (value:
                   Long | Double | Bcd | Boolean | String | IArray[Any] | Null | Unset.type )
     :   Yaml.Ast =
+
       value
   
     val Null: Yaml.Ast = null
@@ -570,12 +622,16 @@ object Yaml extends Yaml2, Dynamic:
         // BigDecimal projections compare equal.
         case (a: Array[Long] @unchecked, b: Array[Long] @unchecked) =>
           a.asInstanceOf[Bcd].toBigDecimal == b.asInstanceOf[Bcd].toBigDecimal
+
         case (a: Array[Long] @unchecked, b: Long) =>
           a.asInstanceOf[Bcd].toBigDecimal == BigDecimal(b)
+
         case (a: Array[Long] @unchecked, b: Double) =>
           a.asInstanceOf[Bcd].toBigDecimal == BigDecimal(b)
+
         case (a: Long, b: Array[Long] @unchecked) =>
           BigDecimal(a) == b.asInstanceOf[Bcd].toBigDecimal
+
         case (a: Double, b: Array[Long] @unchecked) =>
           BigDecimal(a) == b.asInstanceOf[Bcd].toBigDecimal
   
@@ -683,6 +739,7 @@ object Yaml extends Yaml2, Dynamic:
       (yaml: Yaml, expected: YamlPrimitive, default: T)
       (using Tactic[YamlError])
   :   T =
+
     raise(YamlError(Reason.NotType(primitive(yaml.root), expected))) yet default
 
   given int: Tactic[YamlError] => Int is Decodable in Yaml = yaml =>
@@ -738,9 +795,11 @@ object Yaml extends Yaml2, Dynamic:
       case xs: IArray[?] @unchecked if (xs.length & 1) == 1 =>
         // Sequence (odd length, possibly with a trailing pad sentinel).
         val n = xs.length
+
         val effective =
           if n > 0 && (xs(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then n - 1
           else n
+
         val builder = factory.newBuilder
         var i = 0
         while i < effective do
@@ -766,6 +825,7 @@ object Yaml extends Yaml2, Dynamic:
         while i < n do
           val rawKey = xs(i*2).asInstanceOf[Yaml.Ast]
           val rawValue = xs(i*2 + 1).asInstanceOf[Yaml.Ast]
+
           val keyText: Text =
             if rawKey.asInstanceOf[AnyRef] == null then t"null"
             else rawKey.asMatchable match
@@ -979,12 +1039,14 @@ class Yaml(private[ypsiloid] val root: Yaml.Ast) extends Dynamic derives CanEqua
 
   def applyDynamic(field: String)(index: Int)(using erased DynamicYamlEnabler)
   :   Yaml raises YamlError =
+
     apply(field.tt)(index)
 
   // Immutable update: `yaml(0) = newValue` desugars to `update(0, newValue)`.
   def update[value: Encodable in Yaml](index: Int, value: value)
                 ( using erased DynamicYamlEnabler )
   :   Yaml raises YamlError =
+
     if !root.isArray then
       raise(YamlError(Reason.NotType(Yaml.primitive(root), YamlPrimitive.Sequence)))
     val n = root.arrayLength
@@ -1002,10 +1064,12 @@ class Yaml(private[ypsiloid] val root: Yaml.Ast) extends Dynamic derives CanEqua
   def updateDynamic(field: String)[value: Encodable in Yaml](value: value)
                 ( using erased DynamicYamlEnabler )
   :   Yaml raises YamlError =
+
     modify(field, value.encode)
 
   def updateDynamic(field: String)[value](unset: Unset.type)(using erased DynamicYamlEnabler)
   :   Yaml raises YamlError =
+
     delete(field)
 
   // ── Internal mapping update helpers ─────────────────────────────────────
@@ -1024,6 +1088,7 @@ class Yaml(private[ypsiloid] val root: Yaml.Ast) extends Dynamic derives CanEqua
           out(len)     = field
           out(len + 1) = value.root.asInstanceOf[Any]
           Yaml.ast(Yaml.Ast.mapFromAnyArray(out))
+
         case index =>
           val out = new Array[Any](len)
           System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, len)
@@ -1039,6 +1104,7 @@ class Yaml(private[ypsiloid] val root: Yaml.Ast) extends Dynamic derives CanEqua
       val len = arr.length
       root.objectIndexOf(field) match
         case -1 => this
+
         case index =>
           val out = new Array[Any](len - 2)
           System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, index*2)

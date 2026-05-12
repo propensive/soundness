@@ -54,6 +54,7 @@ extension [augend](left: augend)
     scala.compiletime.summonFrom:
       case op: (`augend` is AddOp by `addend`) =>
         op.op(left.asInstanceOf, right.asInstanceOf).asInstanceOf[addable.Result]
+
       case _ =>
         addable.add(left, right)
 
@@ -66,6 +67,7 @@ extension [minuend](left: minuend)
     scala.compiletime.summonFrom:
       case op: (`minuend` is SubOp by `subtrahend`) =>
         op.op(left.asInstanceOf, right.asInstanceOf).asInstanceOf[subtractable.Result]
+
       case _ =>
         subtractable.subtract(left, right)
 
@@ -78,6 +80,7 @@ extension [dividend](left: dividend)
     scala.compiletime.summonFrom:
       case op: (`dividend` is DivOp by `divisor`) =>
         op.op(left.asInstanceOf, right.asInstanceOf).asInstanceOf[divisible.Result]
+
       case _ =>
         divisible.divide(left, right)
 
@@ -91,6 +94,7 @@ extension [multiplicand](left: multiplicand)
     scala.compiletime.summonFrom:
       case op: (`multiplicand` is MulOp by `multiplier`) =>
         op.op(left.asInstanceOf, right.asInstanceOf).asInstanceOf[multiplicable.Result]
+
       case _ =>
         multiplicable.multiply(left, right)
 

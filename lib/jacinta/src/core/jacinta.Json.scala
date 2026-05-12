@@ -96,6 +96,7 @@ trait Json2:
   object DecodableDerivation extends Derivable[Decodable in Json]:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Json =
+
       json =>
         provide[Foci[JsonPointer]]:
           provide[Tactic[JsonError]]:
@@ -317,6 +318,7 @@ object Json extends Json2, Dynamic:
     // sentinel pad of a parity-padded heterogeneous array, if present).
     def arrayLength(json: Ast): Int = (json: @unchecked) match
       case nums: Array[Double] @unchecked => nums.length
+
       case _ =>
         val arr = json.asInstanceOf[Array[?]]
         val n = arr.length
@@ -734,6 +736,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           left.asMatchable match
             case _: Array[Double] @unchecked =>
               arrayEq(left, rightAst)
+
             case _: Array[AnyRef] @unchecked if left.asInstanceOf[Json.Ast].isArray =>
               arrayEq(left, rightAst)
             case _ => false
@@ -760,6 +763,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
                 arrayEq(leftAst, rightAst)
               else
                 false
+
             case _: Array[Double] @unchecked if !rightIsObject =>
               arrayEq(left, rightAst)
             case _ => false

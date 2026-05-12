@@ -68,10 +68,12 @@ object StyleWord:
   def combine(outer: Long, inner: Long): Long =
     val flagsOnly = ~(FgMask | BgMask | FgSet | BgSet)
     val combinedFlags = (outer | inner) & flagsOnly
+
     val fgBits =
       if (inner & FgSet) != 0 then inner & (FgMask | FgSet)
       else if (outer & FgSet) != 0 then outer & (FgMask | FgSet)
       else 0L
+
     val bgBits =
       if (inner & BgSet) != 0 then inner & (BgMask | BgSet)
       else if (outer & BgSet) != 0 then outer & (BgMask | BgSet)

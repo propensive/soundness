@@ -84,8 +84,10 @@ object Keyboard:
       case '\u001b' #:: rest =>
         safely(async(rest.head).await(30L)) match
           case Unset => Keypress.Escape #:: process(rest)
+
           case _     => rest match
             case 'O' #:: key #:: rest => Keypress.FunctionKey(key.toInt - 79) #:: process(rest)
+
             case '[' #:: rest         => rest match
               case (code@('A' | 'B' | 'C' | 'D' | 'F' | 'H')) #:: rest =>
                 Keyboard.navigation(code) #:: process(rest)

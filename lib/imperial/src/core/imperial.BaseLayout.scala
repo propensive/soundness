@@ -34,13 +34,13 @@ package imperial
 
 import ambience.*
 import anticipation.*
+import beneficence.*
 import contingency.*
 import denominative.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
 import vacuous.*
-import beneficence.*
 
 object BaseLayout:
   case class Dir(home: Boolean, path: List[Text]) extends Findable:

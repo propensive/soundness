@@ -35,10 +35,10 @@ package hieroglyph
 import java.nio as jn, jn.charset as jnc
 
 import anticipation.*
+import beneficence.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-import beneficence.*
 
 object CharEncoder:
   def system: CharEncoder = unapply(jnc.Charset.defaultCharset.nn.displayName.nn.tt).get

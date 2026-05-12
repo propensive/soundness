@@ -129,6 +129,7 @@ object internal:
         var i = 0
         while i < s.length do
           val cp = Character.codePointAt(s, i)
+
           val w =
             if Character.charCount(cp) == 2
             then charM.width(s.charAt(i)) + charM.width(s.charAt(i + 1))

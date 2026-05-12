@@ -80,10 +80,13 @@ class GivensPhase() extends PluginPhase:
         tree match
           case d: tpd.ValDef if eligibleGiven(d.symbol, d.tpt.tpe) =>
             recordGiven(d.symbol, d.tpt.tpe)
+
           case d: tpd.DefDef if eligibleGiven(d.symbol, d.tpt.tpe) =>
             recordGiven(d.symbol, d.tpt.tpe)
+
           case d: tpd.TypeDef if eligibleSuite(d.symbol) =>
             recordSuite(d.symbol)
+
           case _ =>
             ()
         traverseChildren(tree)

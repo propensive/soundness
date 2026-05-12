@@ -32,11 +32,11 @@
                                                                                                   */
 package probably
 
+import beneficence.*
 import digression.*
 import fulminate.*
 import rudiments.*
 import vacuous.*
-import beneficence.*
 
 class Testable(val name: Message, val parent: Optional[Testable] = Unset)
   ( using codepoint: Codepoint )

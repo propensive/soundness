@@ -32,8 +32,8 @@
                                                                                                   */
 package kaleidoscope
 
-import vacuous.*
 import beneficence.*
+import vacuous.*
 
 object Scanner:
   given default: (erased DummyImplicit) => Scanner = Scanner(Unset)

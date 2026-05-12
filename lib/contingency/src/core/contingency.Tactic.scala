@@ -34,8 +34,8 @@ package contingency
 
 import language.experimental.pureFunctions
 
-import fulminate.*
 import beneficence.*
+import fulminate.*
 
 trait Tactic[-error <: Exception] extends Findable:
   private inline def tactic: this.type = this

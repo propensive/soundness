@@ -35,10 +35,10 @@ package wisteria
 import scala.compiletime.*
 
 import anticipation.*
+import beneficence.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-import beneficence.*
 
 object ContextRequirement:
   given required: ContextRequirement:
