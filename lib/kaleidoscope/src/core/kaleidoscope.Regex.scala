@@ -332,7 +332,8 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
       then
         Interval.zerary(matcher.start, matcher.end)
         #:: recur((if overlap then matcher.start else matcher.end) + 1)
-      else Stream()
+      else
+        Stream()
 
     recur(start.n0)
 
@@ -384,7 +385,8 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
                   then submatches.prim :: matches
                   else submatches.reverse :: matches
 
-            else matches
+            else
+              matches
 
           recur(tail, matches2, index + 1)
 

@@ -117,8 +117,10 @@ object CborPrinter:
     else if cbor.isBoolean then
       out += (if cbor.asInstanceOf[Boolean] then 0xF5.toByte else 0xF4.toByte)
 
-    else if cbor.nullary then out += 0xF6.toByte
-    else if cbor.unset then out += 0xF7.toByte
+    else if cbor.nullary then
+      out += 0xF6.toByte
+    else if cbor.unset then
+      out += 0xF7.toByte
 
     else if cbor.isTag then
       val tag = cbor.asInstanceOf[Cbor.Tag]
@@ -189,9 +191,12 @@ object CborPrinter:
 
       builder.append('\'')
 
-    else if cbor.isBoolean then builder.append(cbor.asInstanceOf[Boolean].toString)
-    else if cbor.nullary then builder.append("null")
-    else if cbor.unset then builder.append("undefined")
+    else if cbor.isBoolean then
+      builder.append(cbor.asInstanceOf[Boolean].toString)
+    else if cbor.nullary then
+      builder.append("null")
+    else if cbor.unset then
+      builder.append("undefined")
 
     else if cbor.isTag then
       val tag = cbor.asInstanceOf[Cbor.Tag]

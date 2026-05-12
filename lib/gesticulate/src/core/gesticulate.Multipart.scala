@@ -122,7 +122,8 @@ object Multipart:
           if matched then
             bodyEnd = cursor.mark
             continue = false
-          else if !cursor.next() then continue = false
+          else if !cursor.next() then
+            continue = false
 
       bodyEnd.let: end =>
         val out = cursor.grab(bodyStart, end)
@@ -171,7 +172,8 @@ object Multipart:
       if cursor.finished then
         raise(MultipartError(Reason.Expected('-')))
         Stream()
-      else datum match
+      else
+        datum match
         case '\r' =>
           if !cursor.next() || datum != '\n'.toByte
           then raise(MultipartError(Reason.Expected('\n')))

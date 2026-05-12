@@ -367,7 +367,8 @@ object internal:
                          Symbol.noSymbol )
             defs += ValDef(sym, Some(nextExpr.asTerm.changeOwner(sym)))
             acc = Ref(sym)
-          else acc = nextExpr.asTerm
+          else
+            acc = nextExpr.asTerm
 
         if defs.isEmpty then acc.asExprOf[T]
         else Block(defs.toList, acc).asExprOf[T]
@@ -509,7 +510,8 @@ object internal:
               val singleLambda =
                 exprs.head.asExprOf[(Optic from value onto value) => value => value]
               '{ $singleLambda(Optic.identity[value])($valueExpr) }
-            else fallback
+            else
+              fallback
           else
             val merged = mergeAdjacent(parsed.flatten.map(toBranches))
             resolveAll(merged, TypeRepr.of[value]) match

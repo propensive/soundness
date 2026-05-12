@@ -371,7 +371,8 @@ object Json extends Json2, Dynamic:
                 else origin.root.arrayElement(i)
               i += 1
             Json.Ast.arr(updated.asInstanceOf[IArray[Any]])
-        else origin
+        else
+          origin
 
   given boolean: Json is Decodable in Json = identity(_)
   given boolean: Tactic[JsonError] => Boolean is Decodable in Json = _.root.boolean
@@ -755,7 +756,10 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
               val leftAst = left.asInstanceOf[Json.Ast]
               if rightIsObject then
                 if leftAst.isObject then objectEq(leftAst, rightAst) else false
-              else if leftAst.isArray then arrayEq(leftAst, rightAst) else false
+              else if leftAst.isArray then
+                arrayEq(leftAst, rightAst)
+              else
+                false
             case _: Array[Double] @unchecked if !rightIsObject =>
               arrayEq(left, rightAst)
             case _ => false
