@@ -177,27 +177,28 @@ object internal:
           else Verdict.Throws(exception, duration)
 
         case Trial.Returns(value, duration, map) =>
-          try if predicate(value) then
-            if aspirational then Verdict.AspirePass(duration) else Verdict.Pass(duration)
-          else
-            exp match
-              case Some(exp) =>
-                inc2.include
-                  ( runner.report,
-                    test.id,
-                    Verdict.Detail.Compare
-                      ( decomposable.decomposition(exp).text,
-                        decomposable.decomposition(value).text,
-                        contrast.juxtaposition(exp, value) ) )
+          try
+            if predicate(value) then
+              if aspirational then Verdict.AspirePass(duration) else Verdict.Pass(duration)
+            else
+              exp match
+                case Some(exp) =>
+                  inc2.include
+                    ( runner.report,
+                      test.id,
+                      Verdict.Detail.Compare
+                        ( decomposable.decomposition(exp).text,
+                          decomposable.decomposition(value).text,
+                          contrast.juxtaposition(exp, value) ) )
 
-              case None =>
-                // inc2.include(runner.report, test.id, Verdict.Detail.Compare
-                //  (summon[Any is Contrastable].compare(value, 1)))
+                case None =>
+                  // inc2.include(runner.report, test.id, Verdict.Detail.Compare
+                  //  (summon[Any is Contrastable].compare(value, 1)))
 
-            if !map.nil
-            then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
+              if !map.nil
+              then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
 
-            if aspirational then Verdict.AspireFail(duration) else Verdict.Fail(duration)
+              if aspirational then Verdict.AspireFail(duration) else Verdict.Fail(duration)
           catch case error: Exception =>
             if aspirational then Verdict.AspireFail(duration)
             else Verdict.CheckThrows(error, duration)

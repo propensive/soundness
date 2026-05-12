@@ -104,9 +104,10 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
     catch case error: Throwable =>
       runner.terminate(error)
       jl.System.exit(2)
-    finally try
-      runner.complete()
-      if runner.report.passed then jl.System.exit(0) else jl.System.exit(1)
-    catch case error: EnvironmentError =>
-      jl.System.out.nn.println(StackTrace(error).teletype)
-      jl.System.exit(3)
+    finally
+      try
+        runner.complete()
+        if runner.report.passed then jl.System.exit(0) else jl.System.exit(1)
+      catch case error: EnvironmentError =>
+        jl.System.out.nn.println(StackTrace(error).teletype)
+        jl.System.exit(3)

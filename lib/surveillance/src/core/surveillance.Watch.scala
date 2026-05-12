@@ -105,22 +105,24 @@ class Watch():
       event.context.nn.absolve match
         case path: jnf.Path =>
           val name = path.toString.tt
-          if filter(name) then try event.kind match
-            case ENTRY_CREATE =>
-              if base.resolve(path).nn.toFile.nn.isDirectory
-              then spool.put(WatchEvent.NewDirectory(base.toString.show, name))
-              else spool.put(WatchEvent.NewFile(base.toString.show, name))
+          if filter(name) then
+            try
+              event.kind match
+                case ENTRY_CREATE =>
+                  if base.resolve(path).nn.toFile.nn.isDirectory
+                  then spool.put(WatchEvent.NewDirectory(base.toString.show, name))
+                  else spool.put(WatchEvent.NewFile(base.toString.show, name))
 
-            case ENTRY_MODIFY =>
-              spool.put(WatchEvent.Modify(base.toString.show, name))
+                case ENTRY_MODIFY =>
+                  spool.put(WatchEvent.Modify(base.toString.show, name))
 
-            case ENTRY_DELETE =>
-              spool.put(WatchEvent.Delete(base.toString.show, name))
+                case ENTRY_DELETE =>
+                  spool.put(WatchEvent.Delete(base.toString.show, name))
 
-            case _ =>
-              ()
+                case _ =>
+                  ()
 
-          catch case error: Exception => ()
+            catch case error: Exception => ()
 
 
   def stream: Stream[WatchEvent] = spool.stream

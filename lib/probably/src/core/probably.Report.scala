@@ -744,7 +744,8 @@ class Report(using Environment)(using palette: TestPalette):
         val activeNames = active.to(List).map(_.name.text).join(t", ")
         val cause = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
         val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
-        val message = if active.isEmpty
+        val message =
+          if active.isEmpty
           then truncate(t"Fatal error: $errorClass: $cause")
           else truncate(t"Fatal error in $activeNames: $errorClass: $cause")
 
