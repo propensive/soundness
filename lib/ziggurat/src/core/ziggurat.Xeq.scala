@@ -160,7 +160,8 @@ object Xeq:
       if dataPath.exists() then
         val bytes: Data = dataPath.open(_.stream[Data].read[Data])
         Payload(DataName, bytes, gzip = false)
-      else Unset
+      else
+        Unset
 
     write(outputPath, installer(runnerPayloads ++ dataPayload.option))
 

@@ -309,10 +309,12 @@ private[jacinta] final class JsonParser:
     if more then peek else errorAt(Issue.PrematureEnd)
 
   private def skip(): Unit =
-    while more && {
-      val ch = peek
-      ch == Space || ch == Tab || ch == Newline || ch == Return
-    } do advance()
+    while
+      more && {
+        val ch = peek
+        ch == Space || ch == Tab || ch == Newline || ch == Return
+      }
+    do advance()
 
   private def fromHex(ch: Byte)(using Tactic[ParseError]): Int =
     if ch <= Num9 && ch >= Num0 then ch - Num0
@@ -334,10 +336,12 @@ private[jacinta] final class JsonParser:
     // signed Byte is >= 32 only when it's printable ASCII (32..127); negative
     // bytes (0x80..0xFF) come out as -128..-1 < 32, so this single comparison
     // rejects both control characters and UTF-8 lead bytes.
-    while more && {
-      val b = peek
-      b >= 32 && b != Quote && b != Backslash
-    } do advance()
+    while
+      more && {
+        val b = peek
+        b >= 32 && b != Quote && b != Backslash
+      }
+    do advance()
 
     if !more then errorAt(Issue.PrematureEnd, region)
 

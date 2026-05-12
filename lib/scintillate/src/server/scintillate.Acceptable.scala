@@ -60,7 +60,8 @@ object Acceptable:
             abort(MultipartError(MultipartError.Reason.MediaType))
 
           Multipart.parse(request.body(), boundary)
-        else abort(MultipartError(MultipartError.Reason.MediaType))
+        else
+          abort(MultipartError(MultipartError.Reason.MediaType))
 
 trait Acceptable extends Typeclass:
   def accept(request: Http.Request): Self

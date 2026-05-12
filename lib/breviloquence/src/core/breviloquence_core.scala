@@ -126,4 +126,6 @@ extension (cbor: Cbor.Ast)
       val count = elements
 
       if count == full.length then full else IArray.tabulate(count)(full(_))
-    else { expected(Primitive.Array); IArray.empty[Cbor.Ast] }
+    else
+      expected(Primitive.Array)
+      IArray.empty[Cbor.Ast]

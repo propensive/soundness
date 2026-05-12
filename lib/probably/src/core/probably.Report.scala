@@ -488,7 +488,8 @@ class Report(using Environment)(using palette: TestPalette):
 
           table.tabulate(summaryLines).grid(columns).render.each(Out.println(_))
 
-        else Out.println(t"─"*72)
+        else
+          Out.println(t"─"*72)
 
         val color = if pass then palette.pass else palette.fail
 

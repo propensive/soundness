@@ -86,7 +86,8 @@ object StyleWord:
       if !open then
         buffer.add(t"\e[")
         open = true
-      else buffer.append(';')
+      else
+        buffer.append(';')
 
     def emitColor(prefix: Int, rgb: Int): Unit =
       val r = (rgb >> 16)&255

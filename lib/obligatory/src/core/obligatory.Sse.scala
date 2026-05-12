@@ -63,7 +63,9 @@ object Sse:
         cursor.next()
         cursor.lay(cursor.grab(start, end)): char =>
           if char == Lf then cursor.next() yet cursor.grab(start, end) else frame(start)
-      else if cursor.mark == start then Unset else
+      else if cursor.mark == start then
+        Unset
+      else
         cursor.grab(start, cursor.mark)
 
     new Iterator[Text]:

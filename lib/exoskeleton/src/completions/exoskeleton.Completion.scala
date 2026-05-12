@@ -138,8 +138,9 @@ extends Cli:
           case Nil =>
             Nil
 
-      else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases =
-        flag.aliases.map(Flag.serialize(_))))
+      else
+        List(Suggestion(Flag.serialize(flag.name), flag.description, aliases =
+          flag.aliases.map(Flag.serialize(_))))
 
   def focusText: Text = arguments.find(_.position == currentArgument).get.value
 

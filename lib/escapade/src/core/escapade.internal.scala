@@ -139,7 +139,8 @@ object internal:
                 // can surface unclosed-bracket errors as a compile error.
                 if label == "esc" then
                   rethrow(Ansi.Runtime.insert(checkState, Ansi.Input.Markup(identity)))
-                else rethrow(Ansi.Runtime.skip(checkState))
+                else
+                  rethrow(Ansi.Runtime.skip(checkState))
 
               case _ =>
                 rethrow(Ansi.Runtime.skip(checkState))

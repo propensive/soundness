@@ -101,7 +101,8 @@ object Dot:
         append(t"\n")
         append(t"  "*level)
         end = false
-      else append(t" ")
+      else
+        append(t" ")
 
     tokens.each:
       case t""  => ()

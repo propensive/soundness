@@ -97,7 +97,8 @@ object internal:
         $concatExpr.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
 
       anticipation.Text(String.join("\n", array*).nn)
-    } else '{anticipation.Text($concatExpr)}
+    }
+    else '{anticipation.Text($concatExpr)}
 
 
   def t(context: Expr[StringContext], insertions: Expr[Seq[Any]]): Macro[Text] =

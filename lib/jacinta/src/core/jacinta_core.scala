@@ -99,7 +99,8 @@ extension (json: Json.Ast)
     case nums: Array[Double] @unchecked =>
       val d = nums(index)
       if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
-      then Json.Ast(d.toLong) else Json.Ast(d)
+      then Json.Ast(d.toLong)
+      else Json.Ast(d)
     case _ =>
       json.asInstanceOf[IArray[Json.Ast]](index)
 
@@ -131,7 +132,8 @@ extension (json: Json.Ast)
         val n = Json.Ast.arrayLength(json)
         if n == full.length then full
         else IArray.tabulate(n)(full(_))
-      else expected(JsonPrimitive.Array) yet IArray[Json.Ast]()
+      else
+        expected(JsonPrimitive.Array) yet IArray[Json.Ast]()
 
   def double: Double raises JsonError = json.asMatchable match
     case value: Double                 => value

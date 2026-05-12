@@ -83,7 +83,8 @@ object JsonPrinter:
       val raw = elements.length
       val n =
         if raw > 0 && (elements(raw - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad)
-        then raw - 1 else raw
+        then raw - 1
+        else raw
       append('[')
       val last = n - 1
 

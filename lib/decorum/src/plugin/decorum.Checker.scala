@@ -207,7 +207,8 @@ object Checker:
       s.consecutiveBlanks += 1
       if s.consecutiveBlanks > 2 then
         emit(1, "783", "more than two consecutive blank lines")
-    else s.consecutiveBlanks = 0
+    else
+      s.consecutiveBlanks = 0
 
     s.phase match
       case Phase.License      => checkLicense(s, lineNum, line, emit)
@@ -316,7 +317,8 @@ object Checker:
       if ch == '\n' then
         line += 1
         col = 1
-      else col += 1
+      else
+        col += 1
       i += 1
 
   private def checkR2LineLength(visibleLen: Int, emit: (Int, String, String) => Unit): Unit =
@@ -1136,7 +1138,8 @@ object Checker:
         else
           val c = t.head
           (c.isLetterOrDigit || c == '_' || c == '`') && !NonOperandWords.contains(t)
-      else false
+      else
+        false
 
     val right =
       var j = i + 1
@@ -1153,7 +1156,8 @@ object Checker:
           val c = t.head
           (c.isLetterOrDigit || c == '_' || c == '`' || c == '"' || c == '\'')
             && !NonOperandWords.contains(t)
-      else false
+      else
+        false
 
     left && right
 

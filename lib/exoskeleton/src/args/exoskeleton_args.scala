@@ -115,7 +115,8 @@ package interpreters:
                   key.copy(format = Argument.Format.CharFlag(Prim))
                   -> (key.copy(format = Argument.Format.FlagSuffix) :: values)
 
-            else List(key -> values)
+            else
+              List(key -> values)
 
           . to(Map)
 

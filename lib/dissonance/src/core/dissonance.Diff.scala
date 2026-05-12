@@ -64,7 +64,8 @@ object Diff:
             rightPosition + 1,
             target )
 
-      else todo match
+      else
+        todo match
         case head #:: tail =>
           if head == Text("---") then recur(tail, line + 1, edits, position, rightPosition, 0)
           else if head.s.startsWith("< ")

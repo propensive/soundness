@@ -400,7 +400,8 @@ package proximities:
           transform(i + 1,
                 j2 + 1,
                 if sensitivity.compare(left.s.charAt(i), right.s.charAt(j2))
-                then count else count + 1)
+                then count
+                else count + 1)
 
         else transform(i + 1, j, count)
 
@@ -416,7 +417,8 @@ package proximities:
 
     def recur(index: Int = 0): Int = if index >= limit then index else
       if sensitivity.compare(left.s.charAt(index), right.s.charAt(index))
-      then recur(index + 1) else index
+      then recur(index + 1)
+      else index
 
     recur()
 

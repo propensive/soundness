@@ -298,7 +298,8 @@ object internal:
             val upper = (srcStart + part.length * 6 + 16).min(content.length)
             val sourceText = content.substring(srcStart, upper).nn
             Interpolation.buildMapping(sourceText, part)
-          else (i: Int) => i
+          else
+            (i: Int) => i
         ((part, srcStart), mapping)
       . toIndexedSeq
 

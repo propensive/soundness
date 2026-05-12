@@ -289,7 +289,8 @@ extension [value](iterable: Iterable[value])
           if length >= bestLength
           then recur(index + 1, iterable.tail, index - length, length + 1, length + 1)
           else recur(index + 1, iterable.tail, bestStart, bestLength, length + 1)
-        else recur(index + 1, iterable.tail, bestStart, bestLength, 0)
+        else
+          recur(index + 1, iterable.tail, bestStart, bestLength, 0)
 
     recur(0, iterable, 0, 0, 0)
 

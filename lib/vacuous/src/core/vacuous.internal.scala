@@ -65,7 +65,8 @@ object internal:
             type ${TypeRepr.of[typeRef].show} cannot be proven distinct from
             ${TypeRepr.of[union].show}
           """ )
-    else '{Distinct[typeRef, union]()}
+    else
+      '{Distinct[typeRef, union]()}
 
   def mandatable[typeRef: Type]: Macro[typeRef is Mandatable] =
     import quotes.reflect.*
@@ -80,7 +81,8 @@ object internal:
         else if right <:< TypeRepr.of[Unset.type] then
           seen = true
           recur(left)
-        else OrType(recur(left), recur(right))
+        else
+          OrType(recur(left), recur(right))
 
       case other =>
         other

@@ -64,7 +64,8 @@ object Tokenizer:
             i += 3
             done = true
             inTripleString = false
-          else i += 1
+          else
+            i += 1
         emit(Token(text.substring(start, i).nn, Kind.Strs))
       else if inBlock then
         val start = i
@@ -74,7 +75,8 @@ object Tokenizer:
             i += 2
             inBlock = false
             done = true
-          else i += 1
+          else
+            i += 1
         emit(Token(text.substring(start, i).nn, Kind.Comment))
       else if c == '/' && i + 1 < text.length && text.charAt(i + 1) == '/' then
         val start = i
@@ -90,7 +92,8 @@ object Tokenizer:
             i += 2
             inBlock = false
             done = true
-          else i += 1
+          else
+            i += 1
         emit(Token(text.substring(start, i).nn, Kind.Comment))
       else if c == '"' then
         val (newPos, content, closed) = scanQuotedString(text, i, '"')
@@ -136,7 +139,8 @@ object Tokenizer:
           emit(Token(ident + content, Kind.Strs))
           i = newPos
           if !closed && content.startsWith("\"\"\"") then inTripleString = true
-        else emit(Token(ident, Kind.Code))
+        else
+          emit(Token(ident, Kind.Code))
       else if c.isDigit then
         val start = i
         while i < text.length && (text.charAt(i).isLetterOrDigit || text.charAt(i) == '.') do i += 1
@@ -181,7 +185,8 @@ object Tokenizer:
         if qcount >= 3 then
           i += qcount
           done = true
-        else i += qcount
+        else
+          i += qcount
       else if !triple && text.charAt(i) == quote then
         i += 1
         done = true
@@ -200,8 +205,10 @@ object Tokenizer:
             i = newPos
           else if c == '\\' && i + 1 < text.length && text.charAt(i + 1) != '\n' then
             i += 2
-          else i += 1
+          else
+            i += 1
       else if text.charAt(i) == '\\' && i + 1 < text.length && text.charAt(i + 1) != '\n' then
         i += 2
-      else i += 1
+      else
+        i += 1
     (i, text.substring(start, i).nn, done)

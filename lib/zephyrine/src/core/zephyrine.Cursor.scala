@@ -242,7 +242,8 @@ final class Cursor[data]
       columnNo =
         if !lineation.track(operand) then columnNo.next
         else { lineNo = lineNo.next; Prim }
-    else pos += 1
+    else
+      pos += 1
 
   // Variant of `advance` for callers that have just read the current operand
   // (e.g. via `unsafeBuffer(pos)` in a tight scan loop). Reuses the supplied
