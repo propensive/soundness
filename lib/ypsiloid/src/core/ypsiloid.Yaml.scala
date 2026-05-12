@@ -75,7 +75,7 @@ trait Yaml2:
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[YamlError]
   =>  ( decodable: => inner is Decodable in Yaml )
   =>  value is Decodable in Yaml = yaml =>
-      if yaml.root.asInstanceOf[AnyRef] eq Unset then Unset else decodable.decoded(yaml)
+    if yaml.root.asInstanceOf[AnyRef] eq Unset then Unset else decodable.decoded(yaml)
 
 
   inline given decodable: [value] => value is Decodable in Yaml = summonFrom:
@@ -465,8 +465,8 @@ object Yaml extends Yaml2, Dynamic:
     // ── Constructors ────────────────────────────────────────────────────────
   
     inline def apply
-                (value:
-                  Long | Double | Bcd | Boolean | String | IArray[Any] | Null | Unset.type )
+      ( value:
+        Long | Double | Bcd | Boolean | String | IArray[Any] | Null | Unset.type )
     :   Yaml.Ast =
 
       value
@@ -685,7 +685,7 @@ object Yaml extends Yaml2, Dynamic:
     type Result = Yaml
 
     transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
-      (inline insertions: Any*)
+      ( inline insertions: Any* )
     :   Yaml =
 
       ${ypsiloid.internal.interpolator[parts, origins]('insertions)}
@@ -736,8 +736,8 @@ object Yaml extends Yaml2, Dynamic:
         origin
 
   private inline def typeMismatch[T]
-      (yaml: Yaml, expected: YamlPrimitive, default: T)
-      (using Tactic[YamlError])
+    ( yaml: Yaml, expected: YamlPrimitive, default: T )
+    ( using Tactic[YamlError] )
   :   T =
 
     raise(YamlError(Reason.NotType(primitive(yaml.root), expected))) yet default
@@ -954,8 +954,8 @@ object Yaml extends Yaml2, Dynamic:
           case _ =>
             // Not a mapping — wrap in a one-entry mapping.
             val arr = Array[Any]
-                       ( Yaml.Ast.Str(label).asInstanceOf[Any],
-                         Yaml.Ast.Str(kind).asInstanceOf[Any] )
+              ( Yaml.Ast.Str(label).asInstanceOf[Any],
+                Yaml.Ast.Str(kind).asInstanceOf[Any] )
             Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
 
       def variant(yaml: Yaml): Yaml =
@@ -1044,7 +1044,7 @@ class Yaml(private[ypsiloid] val root: Yaml.Ast) extends Dynamic derives CanEqua
 
   // Immutable update: `yaml(0) = newValue` desugars to `update(0, newValue)`.
   def update[value: Encodable in Yaml](index: Int, value: value)
-                ( using erased DynamicYamlEnabler )
+    ( using erased DynamicYamlEnabler )
   :   Yaml raises YamlError =
 
     if !root.isArray then
@@ -1062,7 +1062,7 @@ class Yaml(private[ypsiloid] val root: Yaml.Ast) extends Dynamic derives CanEqua
   // `yaml.foo = newValue` — replaces `foo` if present, or appends a new
   // entry. `yaml.foo = Unset` deletes the entry.
   def updateDynamic(field: String)[value: Encodable in Yaml](value: value)
-                ( using erased DynamicYamlEnabler )
+    ( using erased DynamicYamlEnabler )
   :   Yaml raises YamlError =
 
     modify(field, value.encode)
@@ -1109,11 +1109,11 @@ class Yaml(private[ypsiloid] val root: Yaml.Ast) extends Dynamic derives CanEqua
           val out = new Array[Any](len - 2)
           System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, index*2)
           System.arraycopy
-                  ( arr.asInstanceOf[Array[Any]],
-                    index*2 + 2,
-                    out,
-                    index*2,
-                    len - index*2 - 2 )
+            ( arr.asInstanceOf[Array[Any]],
+              index*2 + 2,
+              out,
+              index*2,
+              len - index*2 - 2 )
           Yaml.ast(Yaml.Ast.mapFromAnyArray(out))
 
   override def hashCode: Int = Yaml.Ast.deepHash(root)

@@ -645,48 +645,48 @@ trait protointernal:
 
 
   def addQuantity[u <: Measure: Type, v <: Measure: Type, r <: Measure: Type]
-    (left: Expr[Quantity[u]], right: Expr[Quantity[v]])
-    (using Quotes)
+    ( left: Expr[Quantity[u]], right: Expr[Quantity[v]] )
+    ( using Quotes )
   :   Expr[Quantity[r]] =
 
     add[u, v](left, right).asExprOf[Quantity[r]]
 
 
   def subQuantity[u <: Measure: Type, v <: Measure: Type, r <: Measure: Type]
-    (left: Expr[Quantity[u]], right: Expr[Quantity[v]])
-    (using Quotes)
+    ( left: Expr[Quantity[u]], right: Expr[Quantity[v]] )
+    ( using Quotes )
   :   Expr[Quantity[r]] =
 
     sub[u, v](left, right).asExprOf[Quantity[r]]
 
 
   def mulQuantity[u <: Measure: Type, v <: Measure: Type, r <: Measure: Type]
-    (left: Expr[Quantity[u]], right: Expr[Quantity[v]])
-    (using Quotes)
+    ( left: Expr[Quantity[u]], right: Expr[Quantity[v]] )
+    ( using Quotes )
   :   Expr[Quantity[r]] =
 
     multiply[u, v](left, right).asExprOf[Quantity[r]]
 
 
   def mulQuantityDouble[u <: Measure: Type, v <: Measure: Type]
-    (left: Expr[Quantity[u]], right: Expr[Quantity[v]])
-    (using Quotes)
+    ( left: Expr[Quantity[u]], right: Expr[Quantity[v]] )
+    ( using Quotes )
   :   Expr[Double] =
 
     multiply[u, v](left, right).asExprOf[Double]
 
 
   def divQuantity[u <: Measure: Type, v <: Measure: Type, r <: Measure: Type]
-    (left: Expr[Quantity[u]], right: Expr[Quantity[v]])
-    (using Quotes)
+    ( left: Expr[Quantity[u]], right: Expr[Quantity[v]] )
+    ( using Quotes )
   :   Expr[Quantity[r]] =
 
     divide[u, v](left, right).asExprOf[Quantity[r]]
 
 
   def divQuantityDouble[u <: Measure: Type, v <: Measure: Type]
-    (left: Expr[Quantity[u]], right: Expr[Quantity[v]])
-    (using Quotes)
+    ( left: Expr[Quantity[u]], right: Expr[Quantity[v]] )
+    ( using Quotes )
   :   Expr[Double] =
 
     divide[u, v](left, right).asExprOf[Double]

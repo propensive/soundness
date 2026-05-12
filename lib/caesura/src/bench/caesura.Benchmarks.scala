@@ -206,7 +206,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
   def openCsvParseTsv(text: String): Int =
     val parser = new com.opencsv.CSVParserBuilder().withSeparator('\t').build()
     val reader = new com.opencsv.CSVReaderBuilder(new _root_.java.io.StringReader(text))
-                   .withCSVParser(parser).build()
+      .withCSVParser(parser).build()
     var n = 0
     var row: Array[String] = reader.readNext()
     while row != null do
@@ -219,7 +219,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
 
   def commonsParseCsv(text: String): Int =
     val records = org.apache.commons.csv.CSVFormat.DEFAULT
-                    .parse(new _root_.java.io.StringReader(text))
+      .parse(new _root_.java.io.StringReader(text))
     val it = records.iterator()
     var n = 0
     while it.hasNext do { it.next(); n += 1 }
@@ -228,7 +228,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
 
   def commonsParseTsv(text: String): Int =
     val records = org.apache.commons.csv.CSVFormat.TDF
-                    .parse(new _root_.java.io.StringReader(text))
+      .parse(new _root_.java.io.StringReader(text))
     val it = records.iterator()
     var n = 0
     while it.hasNext do { it.next(); n += 1 }
@@ -239,7 +239,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
 
   def fastCsvParseCsv(text: String): Int =
     val reader = de.siegmar.fastcsv.reader.CsvReader.builder()
-                   .ofCsvRecord(new _root_.java.io.StringReader(text))
+      .ofCsvRecord(new _root_.java.io.StringReader(text))
     val it = reader.iterator()
     var n = 0
     while it.hasNext do { it.next(); n += 1 }
@@ -248,8 +248,8 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
 
   def fastCsvParseTsv(text: String): Int =
     val reader = de.siegmar.fastcsv.reader.CsvReader.builder()
-                   .fieldSeparator('\t')
-                   .ofCsvRecord(new _root_.java.io.StringReader(text))
+      .fieldSeparator('\t')
+      .ofCsvRecord(new _root_.java.io.StringReader(text))
     val it = reader.iterator()
     var n = 0
     while it.hasNext do { it.next(); n += 1 }
@@ -269,7 +269,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
 
     suite(m"Tiny CSV (10 rows × 5 numeric cols, no quoting)"):
       bench(m"Caesura")
-       (target = 1*Second, operationSize = sizeSmall, baseline = Baseline(compare = Min)):
+       ( target = 1*Second, operationSize = sizeSmall, baseline = Baseline(compare = Min) ):
         '{ caesura.Benchmarks.caesuraParseCsv(caesura.Benchmarks.csvSmallText) }
 
       bench(m"Univocity")(target = 1*Second, operationSize = sizeSmall):
@@ -286,7 +286,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
 
     suite(m"Medium CSV (1 000 rows × 8 cols, no quoting)"):
       bench(m"Caesura")
-       (target = 1*Second, operationSize = sizeMedium, baseline = Baseline(compare = Min)):
+       ( target = 1*Second, operationSize = sizeMedium, baseline = Baseline(compare = Min) ):
         '{ caesura.Benchmarks.caesuraParseCsv(caesura.Benchmarks.csvMediumText) }
 
       bench(m"Univocity")(target = 1*Second, operationSize = sizeMedium):
@@ -303,7 +303,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
 
     suite(m"Medium CSV (1 000 rows × 8 cols, fully quoted with embedded commas/quotes)"):
       bench(m"Caesura")
-       (target = 1*Second, operationSize = sizeMediumQuoted, baseline = Baseline(compare = Min)):
+       ( target = 1*Second, operationSize = sizeMediumQuoted, baseline = Baseline(compare = Min) ):
         '{ caesura.Benchmarks.caesuraParseCsv(caesura.Benchmarks.csvMediumQuotedText) }
 
       bench(m"Univocity")(target = 1*Second, operationSize = sizeMediumQuoted):
@@ -320,7 +320,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
 
     suite(m"Large CSV (100 000 rows × 10 cols, no quoting)"):
       bench(m"Caesura")
-       (target = 1*Second, operationSize = sizeLarge, baseline = Baseline(compare = Min)):
+       ( target = 1*Second, operationSize = sizeLarge, baseline = Baseline(compare = Min) ):
         '{ caesura.Benchmarks.caesuraParseCsv(caesura.Benchmarks.csvLargeText) }
 
       bench(m"Univocity")(target = 1*Second, operationSize = sizeLarge):
@@ -337,7 +337,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
 
     suite(m"Medium TSV (1 000 rows × 8 cols, tab-delimited)"):
       bench(m"Caesura")
-       (target = 1*Second, operationSize = sizeTsv, baseline = Baseline(compare = Min)):
+       ( target = 1*Second, operationSize = sizeTsv, baseline = Baseline(compare = Min) ):
         '{ caesura.Benchmarks.caesuraParseTsv(caesura.Benchmarks.tsvMediumText) }
 
       bench(m"Univocity")(target = 1*Second, operationSize = sizeTsv):

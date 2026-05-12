@@ -59,4 +59,4 @@ object RecordSchemaError:
 
 case class RecordSchemaError(reason: RecordSchemaError.Reason)(using Diagnostics)
 extends Error(624, reason.number)
-         (m"the JSON was not valid according to the schema because $reason")
+  ( m"the JSON was not valid according to the schema because $reason" )

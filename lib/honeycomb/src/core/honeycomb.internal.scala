@@ -53,7 +53,7 @@ import zephyrine.*
 
 object internal:
   def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
-    (scrutinee: Expr[Html])
+    ( scrutinee: Expr[Html] )
   :   Macro[Extrapolation[Html]] =
 
     import quotes.reflect.*
@@ -253,7 +253,7 @@ object internal:
               '{$result.asInstanceOf[Option[result]]}
 
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
-    (insertions0: Expr[Seq[Any]])
+    ( insertions0: Expr[Seq[Any]] )
   :   Macro[Html] =
 
     import quotes.reflect.*

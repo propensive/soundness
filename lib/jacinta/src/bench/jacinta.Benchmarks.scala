@@ -68,7 +68,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
   def parseWithJsoniter(text: String): io.circe.Json =
     com.github.plokhotnyuk.jsoniter_scala.core.readFromString[io.circe.Json](text)
-      (using jsoniterCodec)
+      ( using jsoniterCodec )
 
   // Jackson tree-model parser (closest analog to the other parsers' AST
   // outputs). The `ObjectMapper` is shared across iterations because
@@ -91,7 +91,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
     suite(m"Parse example 1"):
       bench(m"Parse file with Merino")
-        (target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min) ):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes1) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size1):
@@ -111,7 +111,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
     suite(m"Parse example 2"):
       bench(m"Parse file with Merino")
-        (target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min) ):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes2) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size2):
@@ -131,7 +131,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
     suite(m"Parse example 3"):
       bench(m"Parse file with Merino")
-        (target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min) ):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes3) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size3):
@@ -151,7 +151,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
     suite(m"Parse example 4 (100 user records)"):
       bench(m"Parse file with Merino")
-        (target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min) ):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes4) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size4):
@@ -171,7 +171,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
     suite(m"Parse example 5 (500 log entries)"):
       bench(m"Parse file with Merino")
-        (target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min) ):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes5) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size5):
@@ -191,7 +191,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
     suite(m"Parse example 6 (50 high-precision blockchain transactions)"):
       bench(m"Parse file with Merino")
-        (target = 1*Second, operationSize = size6, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size6, baseline = Baseline(compare = Min) ):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes6) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size6):
@@ -217,7 +217,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       val size7 = jsonBytes7.length*Byte
 
       bench(m"Parse file with Merino")
-        (target = 1*Second, operationSize = size7, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size7, baseline = Baseline(compare = Min) ):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes7) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size7):
@@ -239,7 +239,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       val size8 = jsonBytes8.length*Byte
 
       bench(m"Parse file with Merino")
-        (target = 1*Second, operationSize = size8, baseline = Baseline(compare = Min)):
+        ( target = 1*Second, operationSize = size8, baseline = Baseline(compare = Min) ):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes8) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size8):

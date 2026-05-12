@@ -218,8 +218,8 @@ object Regex:
           group(start, newGroup :: children, top, false, false)
 
         case '\\' if !escape && !charClass && captured.has(index)
-              && index + 1 < text.s.length
-              && "dDwWsS".indexOf(text.s.charAt(index + 1)) >= 0 =>
+          && index + 1 < text.s.length
+          && "dDwWsS".indexOf(text.s.charAt(index + 1)) >= 0 =>
 
           val groupStart = index
           index += 2

@@ -40,4 +40,4 @@ object Sandbox:
 
 enum Sandbox:
   case AllowForms, AllowPointerLock, AllowPopups, AllowPresentation, AllowSameOrigin, AllowScripts,
-      AllowTopNavigation
+    AllowTopNavigation

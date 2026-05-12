@@ -47,9 +47,9 @@ object GivensWriter:
   private val SourcePrefix = "# source: "
 
   def merge
-        ( collected:         mutable.LinkedHashMap[String, mutable.Buffer[Entry]],
-          recompiledSources: Set[String] )
-        (using Context)
+    ( collected:         mutable.LinkedHashMap[String, mutable.Buffer[Entry]],
+      recompiledSources: Set[String] )
+    ( using Context )
   :     Unit =
 
     val outputRoot = outputRootOrNull
@@ -62,9 +62,9 @@ object GivensWriter:
       mergeOne(new File(givensDir, typeclassFqn), entries, recompiledSources)
 
   def mergeSuites
-        ( collected:         mutable.Buffer[Entry],
-          recompiledSources: Set[String] )
-        (using Context)
+    ( collected:         mutable.Buffer[Entry],
+      recompiledSources: Set[String] )
+    ( using Context )
   :     Unit =
 
     // Mirrors the givens path: when a compilation registers no entries we
@@ -83,9 +83,9 @@ object GivensWriter:
     ctx.settings.outputDir.value.file
 
   private def mergeOne
-                ( target:            File,
-                  entries:           collection.Seq[Entry],
-                  recompiledSources: Set[String] )
+    ( target:            File,
+      entries:           collection.Seq[Entry],
+      recompiledSources: Set[String] )
   :     Unit =
 
     val current = if target.exists then read(target) else Map.empty[String, List[String]]
@@ -108,8 +108,8 @@ object GivensWriter:
     var currentSource: String | Null = null
 
     val reader = new BufferedReader
-                       (new InputStreamReader
-                              (new FileInputStream(file), StandardCharsets.UTF_8))
+      ( new InputStreamReader
+             ( new FileInputStream(file), StandardCharsets.UTF_8 ) )
     try
       var line: String | Null = reader.readLine()
       while line != null do
@@ -134,8 +134,8 @@ object GivensWriter:
 
     val tmp = new File(file.getParentFile, file.getName.nn + ".tmp")
     val writer = new BufferedWriter
-                       (new OutputStreamWriter
-                              (new FileOutputStream(tmp), StandardCharsets.UTF_8))
+      ( new OutputStreamWriter
+             ( new FileOutputStream(tmp), StandardCharsets.UTF_8 ) )
     try
       var first = true
       blocks.foreach: (source, givens) =>

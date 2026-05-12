@@ -104,7 +104,7 @@ object PropertyDef:
   inline given backgroundRepeat3
   :   ("backgroundRepeat" is PropertyDef[(BackgroundRepeat, BackgroundRepeat)]) =
 
-      !!
+    !!
 
 
   inline given backgroundSize: ("backgroundSize" is PropertyDef[Text]) = !!

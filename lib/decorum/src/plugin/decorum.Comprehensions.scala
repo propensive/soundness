@@ -38,10 +38,10 @@ import dotty.tools.dotc.ast.untpd
 import dotty.tools.dotc.util.SourceFile
 
 case class GenLine
-   ( line:     Int,
-     startCol: Int,
-     opCol:    Int,
-     isFilter: Boolean )
+  ( line:     Int,
+    startCol: Int,
+    opCol:    Int,
+    isFilter: Boolean )
 
 object Comprehensions:
   // Walk the tree for every `for ... yield`/`for ... do` and return each

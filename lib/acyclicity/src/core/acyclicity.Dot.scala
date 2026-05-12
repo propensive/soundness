@@ -58,7 +58,7 @@ object Dot:
 
     given interpolable: Ref is Interpolable:
       inline def interpolate[parts <: Tuple, origins <: Tuple]
-        (inline insertions: Any*)
+        ( inline insertions: Any* )
       :   Ref =
 
         ${acyclicity.internal.refInterpolator[parts]('insertions)}

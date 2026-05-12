@@ -106,7 +106,7 @@ object Html extends Tag.Container
     type Result = Html
 
     transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
-      (inline insertions: Any*)
+      ( inline insertions: Any* )
     :   Html =
 
       ${honeycomb.internal.interpolator[parts, origins]('insertions)}
@@ -114,7 +114,7 @@ object Html extends Tag.Container
   inline given extrapolator: Html is Extrapolable:
 
     transparent inline def extrapolate[parts <: Tuple, origins <: Tuple]
-      (scrutinee: Html)
+      ( scrutinee: Html )
     :   Extrapolation[Html] =
 
       ${honeycomb.internal.extractor[parts, origins]('scrutinee)}
@@ -477,8 +477,8 @@ object Html extends Tag.Container
     protected def reset(start: Cursor.Mark): Unit = cursor.cue(start)
 
     protected def cloneTo
-                  (start: Cursor.Mark, end: Cursor.Mark)
-                  (target: jl.StringBuilder)
+      ( start: Cursor.Mark, end: Cursor.Mark )
+      ( target: jl.StringBuilder )
     :   Unit = cursor.clone(start, end)(target.asInstanceOf[cursor.addressable.Target])
 
     protected def computePosition

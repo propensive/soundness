@@ -34,6 +34,6 @@ package cataclysm
 
 enum Cursor extends PropertyValue:
   case Auto, Default, None, ContextMenu, Help, Pointer, Progress, Wait, Cell, Crosshair, Text,
-      VerticalText, Alias, Copy, Move, NoDrop, NotAllowed, Grab, Grabbing, AllScroll, ColResize,
-      RowResize, NResize, EResize, SResize, WResize, NeResize, NwResize, SeResize, SwResize,
-      EwResize, NsResize, NeswResize, NwseResize, ZoomIn, ZoomOut
+    VerticalText, Alias, Copy, Move, NoDrop, NotAllowed, Grab, Grabbing, AllScroll, ColResize,
+    RowResize, NResize, EResize, SResize, WResize, NeResize, NwResize, SeResize, SwResize,
+    EwResize, NsResize, NeswResize, NwseResize, ZoomIn, ZoomOut

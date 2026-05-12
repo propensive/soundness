@@ -700,8 +700,8 @@ private[ypsiloid] final class YamlParser:
   //    context that will consume the terminator;
   // anything else is an error per spec.
   private def maybeBlockMappingFromQuotedKey
-                ( scalar: Yaml.Ast, indent: Int, headTag: Text, headAnchor: Text )
-                ( using Tactic[ParseError] )
+    ( scalar: Yaml.Ast, indent: Int, headTag: Text, headAnchor: Text )
+    ( using Tactic[ParseError] )
   :   Yaml.Ast =
 
     val hadSpaceOrTab = more && (peek == Space || peek == Tab)
@@ -784,8 +784,8 @@ private[ypsiloid] final class YamlParser:
     docStartLineEnd >= 0 && pos <= docStartLineEnd
 
   private def parsePlainOrBlockMapping
-                ( indent: Int, headTag: Text = t"", headAnchor: Text = t"" )
-                ( using Tactic[ParseError] )
+    ( indent: Int, headTag: Text = t"", headAnchor: Text = t"" )
+    ( using Tactic[ParseError] )
   :   Yaml.Ast =
 
     val textValue = readPlainScalarText(indent)
@@ -816,7 +816,7 @@ private[ypsiloid] final class YamlParser:
   // to true if a `: ` (or `:` at line-end) at the same line level was
   // seen so the caller knows this is the key of a block mapping.
   private def readPlainScalarText(indent: Int)
-                              (using Tactic[ParseError])
+    ( using Tactic[ParseError] )
   :   Text =
 
     resetString()
@@ -1596,7 +1596,7 @@ private[ypsiloid] final class YamlParser:
       val value =
         if headByte == -1 then Yaml.Ast.Null
         else if headByte == Comma || headByte == CloseBracket
-                || headByte == CloseBrace then
+          || headByte == CloseBrace then
           // The flow node is empty — caller will consume the terminator.
           Yaml.Ast.Null
         else if headByte == Colon && {
@@ -1710,8 +1710,8 @@ private[ypsiloid] final class YamlParser:
       var j = pos - 1
       while j >= 0 && (bytes(j) == Space || bytes(j) == Tab) do j -= 1
       val ok = j < 0 || bytes(j) == Newline || bytes(j) == Return
-                     || bytes(j) == Minus || bytes(j) == Colon
-                     || bytes(j) == Question
+        || bytes(j) == Minus || bytes(j) == Colon
+        || bytes(j) == Question
       if !ok then errorAt(Issue.BlockSequenceIndicatorNotAtLineStart)
       // Use the dash's actual column, not the caller's indent param —
       // an inline-value sequence (`: - v`, `? k\n: - v`) starts where
@@ -1755,8 +1755,8 @@ private[ypsiloid] final class YamlParser:
   // Walks subsequent block-mapping pairs at `indent`, supporting both
   // explicit (`? key`) and implicit (`key:`) keys.
   private def iterateBlockMapping
-                ( buf: scala.collection.mutable.ArrayBuffer[Any], indent: Int )
-                ( using Tactic[ParseError] )
+    ( buf: scala.collection.mutable.ArrayBuffer[Any], indent: Int )
+    ( using Tactic[ParseError] )
   :   Unit =
 
     var done = false
@@ -1937,8 +1937,8 @@ private[ypsiloid] final class YamlParser:
   // are positioned at the `:` following it. Parse the rest of the
   // block mapping at `indent`. Subsequent keys may also be quoted.
   private def parseBlockMappingFromFirstKey
-                ( firstKey: Yaml.Ast, indent: Int )
-                ( using Tactic[ParseError] )
+    ( firstKey: Yaml.Ast, indent: Int )
+    ( using Tactic[ParseError] )
   :   Yaml.Ast =
 
     val buf = acquireBuffer()
@@ -2024,8 +2024,8 @@ private[ypsiloid] final class YamlParser:
   // Parse the value side of a `key: VALUE` entry. Either inline (after
   // the colon, on the same line) or a block on the next indented lines.
   private def parseMappingValue
-                ( parentIndent: Int, isExplicitValue: Boolean = false )
-                ( using Tactic[ParseError] )
+    ( parentIndent: Int, isExplicitValue: Boolean = false )
+    ( using Tactic[ParseError] )
   :   Yaml.Ast =
 
     skipSpaces()
@@ -2068,8 +2068,8 @@ private[ypsiloid] final class YamlParser:
   // the value (spec 8.2.2). More-indented => a regular nested node.
   // Rewinds to lineStart on Null so the outer scope re-reads the line.
   private inline def pickValueOrNull
-                       ( parentIndent: Int, childIndent: Int, lineStart: Int )
-                       ( using Tactic[ParseError] )
+    ( parentIndent: Int, childIndent: Int, lineStart: Int )
+    ( using Tactic[ParseError] )
   :   Yaml.Ast =
 
     if more && peek == Tab then errorAt(Issue.TabInIndentation)
@@ -2084,8 +2084,8 @@ private[ypsiloid] final class YamlParser:
     result
 
   private inline def pickValueOrNullBody
-                       ( parentIndent: Int, childIndent: Int, lineStart: Int )
-                       ( using Tactic[ParseError] )
+    ( parentIndent: Int, childIndent: Int, lineStart: Int )
+    ( using Tactic[ParseError] )
   :   Yaml.Ast =
 
     if !more then Yaml.Ast.Null
@@ -2115,7 +2115,7 @@ private[ypsiloid] final class YamlParser:
     case None, Blank, Regular, MoreIndented
 
   private def parseBlockScalar(literal: Boolean)
-                            ( using Tactic[ParseError] )
+    ( using Tactic[ParseError] )
   :   Yaml.Ast =
 
     advance() // consume `|` or `>`

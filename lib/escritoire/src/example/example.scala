@@ -51,21 +51,21 @@ given decimalizer: Decimalizer = Decimalizer(3)
 case class Library(id: Text, name: Text, linesOfCode: Int, year: Int, description: Text)
 
 val libraries: List[Library] = List
-    ( Library
-      ( t"wisteria",
+  ( Library
+    ( t"wisteria",
+      t"internal",
+      581,
+      2017,
+      t"Simple, fast and transparant generic derivation for typeclasses" ),
+    Library
+      ( t"quantitative",
         t"internal",
-        581,
-        2017,
-        t"Simple, fast and transparant generic derivation for typeclasses" ),
-      Library
-        ( t"quantitative",
-          t"internal",
-          1271,
-          2023,
-          t"Statically-checked physical units with seamless syntax" ),
-      Library
-        ( t"turbulence", t"internal", 1047, 2022, t"Simple tools for working with data streams" ),
-      Library(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables") )
+        1271,
+        2023,
+        t"Statically-checked physical units with seamless syntax" ),
+    Library
+      ( t"turbulence", t"internal", 1047, 2022, t"Simple tools for working with data streams" ),
+    Library(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables") )
 
 import columnAttenuation.fail
 

@@ -87,7 +87,7 @@ object internal:
                     m"""
                       the value $string is greater than the upper bound for this value,
                       ${upperBound.toString}
-                    """)
+                    """ )
 
                 '{${Expr(value)}.asInstanceOf[left ~ right]}
 

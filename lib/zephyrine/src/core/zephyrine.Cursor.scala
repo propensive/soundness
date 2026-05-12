@@ -433,7 +433,7 @@ final class Cursor[data]
   // receives the buffer, offset, and length; it must not retain the storage
   // reference, since compaction may invalidate it after the call returns.
   inline def slice[result](start: Cursor.Mark, end: Cursor.Mark)
-                          (inline lambda: (addressable.Storage, Int, Int) => result)
+    ( inline lambda: (addressable.Storage, Int, Int) => result )
   :   result =
 
     val off = (start.absolute - basePos).toInt

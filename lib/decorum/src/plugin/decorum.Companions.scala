@@ -38,8 +38,8 @@ import dotty.tools.dotc.ast.untpd
 import dotty.tools.dotc.util.SourceFile
 
 case class CompanionDecls
-   ( typeLines:   Map[String, Int],
-     objectLines: Map[String, Int] )
+  ( typeLines:   Map[String, Int],
+    objectLines: Map[String, Int] )
 
 object Companions:
   // Walk the tree collecting (name -> first-line) maps for type-like decls

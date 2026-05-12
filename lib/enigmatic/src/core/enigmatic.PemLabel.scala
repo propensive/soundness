@@ -49,7 +49,7 @@ object PemLabel:
 
 enum PemLabel:
   case Certificate, CertificateRequest, NewCertificateRequest, PrivateKey, RsaPrivateKey,
-      DsaPrivateKey, EcPrivateKey, EncryptedPrivateKey, PublicKey, Pkcs7, Cms, DhParameters,
-      X509Crl, AttributeCertificate, EncryptedMessage, SignedMessage, RsaPublicKey, DsaPublicKey
+    DsaPrivateKey, EcPrivateKey, EncryptedPrivateKey, PublicKey, Pkcs7, Cms, DhParameters,
+    X509Crl, AttributeCertificate, EncryptedMessage, SignedMessage, RsaPublicKey, DsaPublicKey
 
   case Proprietary(label: Text)

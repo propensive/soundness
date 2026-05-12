@@ -128,51 +128,51 @@ object Benchmarks extends Suite(m"Escapade benchmarks"):
 
     suite(m"Concatenate 10 fragments"):
       bench(m"append Teletype × 10")
-       (target = 1*Second, operationSize = fragSize*10, baseline = Baseline(compare = Min)):
+       ( target = 1*Second, operationSize = fragSize*10, baseline = Baseline(compare = Min) ):
         '{ escapade.Benchmarks.appendN(escapade.Benchmarks.fragment, escapade.Benchmarks.fragment, 10) }
 
     suite(m"Concatenate 100 fragments"):
       bench(m"append Teletype × 100")
-       (target = 1*Second, operationSize = fragSize*100, baseline = Baseline(compare = Min)):
+       ( target = 1*Second, operationSize = fragSize*100, baseline = Baseline(compare = Min) ):
         '{ escapade.Benchmarks.appendN(escapade.Benchmarks.fragment, escapade.Benchmarks.fragment, 100) }
 
     suite(m"Concatenate 1000 fragments"):
       bench(m"append Teletype × 1000")
-       (target = 1*Second, operationSize = fragSize*1000, baseline = Baseline(compare = Min)):
+       ( target = 1*Second, operationSize = fragSize*1000, baseline = Baseline(compare = Min) ):
         '{ escapade.Benchmarks.appendN(escapade.Benchmarks.fragment, escapade.Benchmarks.fragment, 1000) }
 
     // ─── slice ──────────────────────────────────────────────────────────────
 
     suite(m"Slice (dropChars / takeChars on long styled text)"):
       bench(m"dropChars(100) on a ~4.5k-char paragraph")
-       (target = 1*Second, operationSize = paraSize, baseline = Baseline(compare = Min)):
+       ( target = 1*Second, operationSize = paraSize, baseline = Baseline(compare = Min) ):
         '{ escapade.Benchmarks.paragraph.dropChars(100) }
 
       bench(m"takeChars(half) on a ~4.5k-char paragraph")
-       (target = 1*Second, operationSize = paraSize):
+       ( target = 1*Second, operationSize = paraSize ):
         '{ escapade.Benchmarks.paragraph.takeChars(escapade.Benchmarks.paragraph.plain.length/2) }
 
       bench(m"dropChars(100) on a 200-coloured-words rainbow")
-       (target = 1*Second, operationSize = rainSize):
+       ( target = 1*Second, operationSize = rainSize ):
         '{ escapade.Benchmarks.rainbow.dropChars(100) }
 
     // ─── render ─────────────────────────────────────────────────────────────
 
     suite(m"Render (Teletype → Text)"):
       bench(m"render long paragraph (true colour)")
-       (target = 1*Second, operationSize = paraSize, baseline = Baseline(compare = Min)):
+       ( target = 1*Second, operationSize = paraSize, baseline = Baseline(compare = Min) ):
         '{ escapade.Benchmarks.renderTrueColor(escapade.Benchmarks.paragraph) }
 
       bench(m"render long paragraph (xterm-256)")(target = 1*Second, operationSize = paraSize):
         '{ escapade.Benchmarks.renderXterm256(escapade.Benchmarks.paragraph) }
 
       bench(m"render 200-coloured-words rainbow (true colour)")
-       (target = 1*Second, operationSize = rainSize):
+       ( target = 1*Second, operationSize = rainSize ):
         '{ escapade.Benchmarks.renderTrueColor(escapade.Benchmarks.rainbow) }
 
     // ─── build (interpolator) ───────────────────────────────────────────────
 
     suite(m"Build (e\"...\" interpolation)"):
       bench(m"interpolate a nested-markup expression")
-       (target = 1*Second, baseline = Baseline(compare = Min)):
+       ( target = 1*Second, baseline = Baseline(compare = Min) ):
         '{ escapade.Benchmarks.buildInterpolation() }

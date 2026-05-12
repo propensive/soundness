@@ -257,7 +257,7 @@ class Report(using Environment)(using palette: TestPalette):
       t"  at ${frame.method.cls}.${frame.method.method} (${frame.file}:$ln)"
 
     val bySuite = benches(lines).to(List).groupBy(_.test.suite).to(List)
-                                . sortBy(_(1).iterator.map(_.test.timestamp).min)
+      . sortBy(_(1).iterator.map(_.test.timestamp).min)
 
     bySuite.each: (suite, benchmarks) =>
       val suiteName = suite.let(_.name.text).or(t"")
@@ -745,8 +745,8 @@ class Report(using Environment)(using palette: TestPalette):
         val cause = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
         val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
         val message = if active.isEmpty
-                      then truncate(t"Fatal error: $errorClass: $cause")
-                      else truncate(t"Fatal error in $activeNames: $errorClass: $cause")
+          then truncate(t"Fatal error: $errorClass: $cause")
+          else truncate(t"Fatal error in $activeNames: $errorClass: $cause")
 
         GithubActions.error(message = message, title = t"Fatal error")
         GithubActions.group(t"Fatal error stack trace")

@@ -111,9 +111,9 @@ object SvgParser:
 
   private def decodeRectangle(elem: Element): Rectangle =
     Rectangle
-     (Point(numAttr(elem, t"x"), numAttr(elem, t"y")),
+     ( Point(numAttr(elem, t"x"), numAttr(elem, t"y")),
       numAttr(elem, t"width"),
-      numAttr(elem, t"height"))
+      numAttr(elem, t"height") )
 
 
   private def decodeCircle(elem: Element): Ellipse =
@@ -140,7 +140,7 @@ object SvgParser:
 
 
   private def decodeSvgDef(elem: Element)
-        (using Tactic[SvgError])
+    ( using Tactic[SvgError] )
   :     Optional[SvgDef] =
 
     elem.label match
@@ -149,7 +149,7 @@ object SvgParser:
 
 
   private def decodeLinearGradient(elem: Element)
-        (using Tactic[SvgError])
+    ( using Tactic[SvgError] )
   :     LinearGradient[Color in Srgb] =
 
     val id = elem.attributes.at(t"id").let(SvgId(_)).or(SvgId(t""))
@@ -162,8 +162,8 @@ object SvgParser:
 
   private def decodeStop(elem: Element)(using Tactic[SvgError]): Stop[Color in Srgb] =
     val rawOffset = elem.attributes.at(t"offset")
-                  . let { text => safely(text.decode[Double]).or(0.0) }
-                  . or(0.0)
+      . let { text => safely(text.decode[Double]).or(0.0) }
+      . or(0.0)
 
     val clamped = rawOffset.max(0.0).min(1.0)
     val offset: 0.0 ~ 1.0 = NumericRange.apply[0.0, 1.0](clamped)

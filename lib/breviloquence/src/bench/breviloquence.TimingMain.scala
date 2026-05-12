@@ -36,7 +36,7 @@ import contingency.*, strategies.throwUnsafely
 
 object TimingMain:
   def time(label: String, payload: IArray[Byte], iterations: Int)
-    (parse: IArray[Byte] => Any): Unit =
+    ( parse: IArray[Byte] => Any ): Unit =
 
     val raw = payload.asInstanceOf[Array[Byte]]
 

@@ -73,7 +73,7 @@ object MediaType:
 
   inline given interpolable: MediaType is Interpolable:
     transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
-      (inline insertions: Any*)
+      ( inline insertions: Any* )
     :   MediaType =
 
       ${gesticulate.internal.mediaInterpolator[parts]('insertions)}

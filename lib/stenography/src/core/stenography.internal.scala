@@ -88,7 +88,7 @@ object internal:
     Syntax(TypeRepr.of[typename]).text
 
   private def exportedTargets(using Quotes, dotty.tools.dotc.core.Contexts.Context)
-                             (rootSym: dotty.tools.dotc.core.Symbols.Symbol)
+    ( rootSym: dotty.tools.dotc.core.Symbols.Symbol )
   :     List[Typename] =
 
     import dotty.tools.dotc.core.{Flags, Types}
