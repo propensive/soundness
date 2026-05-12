@@ -388,7 +388,8 @@ package proximities:
             found1(i) = true
             found2(j) = true
             recur(i + 1, (i + 1 - maxDist).max(0), matches + 1)
-          else recur(i, j + 1, matches)
+          else
+            recur(i, j + 1, matches)
 
       val matches = recur(0, 0, 0)
 
@@ -403,7 +404,8 @@ package proximities:
                 then count
                 else count + 1)
 
-        else transform(i + 1, j, count)
+        else
+          transform(i + 1, j, count)
 
       val count = transform(0, 0, 0)
 

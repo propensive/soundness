@@ -80,7 +80,8 @@ object internal:
       if idx > 0 && part.startsWith("*") then
         spreads = spreads + (idx - 1)
         part.substring(1).nn
-      else part
+      else
+        part
 
     (cleaned, spreads)
 
@@ -132,7 +133,8 @@ object internal:
             val upper = (effectiveStart + parserPart.length * 6 + 16).min(content.length)
             val sourceText = content.substring(effectiveStart, upper).nn
             Interpolation.buildMapping(sourceText, parserPart)
-          else (i: Int) => i
+          else
+            (i: Int) => i
         ((parserPart, effectiveStart, srcSkip), mapping)
       . toIndexedSeq
 
@@ -485,7 +487,8 @@ object internal:
             if s.regionMatches(idx, MarkerString, 0, mlen) then
               c += 1
               idx += mlen
-            else idx += 1
+            else
+              idx += 1
           c
         case arr: IArray[Any] @unchecked =>
           if (arr.length & 1) == 0 then

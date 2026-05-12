@@ -283,11 +283,14 @@ object Syntax:
 
             Infix(arguments, arrow, apply(arguments0.last))
           else if typ.typeSymbol == defn.RepeatedParamClass
-          then Suffix(apply(arguments0.head), " *")
+          then
+            Suffix(apply(arguments0.head), " *")
           else if arguments0.length == 2 && repr.typeSymbol.flags.is(Flags.Infix)
-          then Application(apply(base), arguments0.map(apply(_)), true)
+          then
+            Application(apply(base), arguments0.map(apply(_)), true)
           else if defn.isTupleClass(base.typeSymbol)
-          then Sequence('(', arguments0.map(apply(_)))
+          then
+            Sequence('(', arguments0.map(apply(_)))
           else if base <:< TypeRepr.of[NamedTuple.NamedTuple]
           then arguments0(0).absolve match
             case AppliedType(_, names) => apply(arguments0(1)).absolve match
@@ -302,7 +305,8 @@ object Syntax:
             case ref@TypeRef(prefix, name) =>
               apply(ref)
 
-          else Application(apply(base), arguments0.map(apply(_)), false)
+          else
+            Application(apply(base), arguments0.map(apply(_)), false)
 
         case ConstantType(constant) =>
           constant.absolve match

@@ -129,7 +129,8 @@ object internal:
 
                 Ipv4(bytes(0).toByte, bytes(1).toByte, bytes(2).toByte, bytes(3).toByte)
 
-        else raise(IpAddressError(Ipv4WrongNumberOfGroups(bytes.length))) yet 0
+        else
+          raise(IpAddressError(Ipv4WrongNumberOfGroups(bytes.length))) yet 0
 
     object MacAddress:
       import MacAddressError.Reason.*
@@ -328,7 +329,8 @@ object internal:
             if tcp then '{TcpPort.unsafe(${Expr(portNumber)}).asInstanceOf[TcpPort of number]}
             else '{UdpPort.unsafe(${Expr(portNumber)}).asInstanceOf[UdpPort of number]}
 
-      else halt(340, m"the $portType port number ${portNumber} is not in the range 1-65535")
+      else
+        halt(340, m"the $portType port number ${portNumber} is not in the range 1-65535")
 
     . or:
         serviceNames.at((tcp, id)).lay(halt(915, m"$id is not a valid $portType port")):

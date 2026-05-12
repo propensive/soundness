@@ -743,7 +743,8 @@ object Xml extends Tag.Container
             else if q == '"' || q == '\'' then
               advance()
               readAttrValue(tag, q)
-            else fail(Issue.UnquotedAttribute, keyStart)
+            else
+              fail(Issue.UnquotedAttribute, keyStart)
           ensureCapacity()
           attrBuf(2*n) = keyStr
           attrBuf(2*n + 1) = value.s
@@ -792,7 +793,8 @@ object Xml extends Tag.Container
           buf.nn.append('\u0000')
           advance()
           segStart = begin()
-        else advance()
+        else
+          advance()
 
       if buf == null then slice(start)
       else
@@ -849,7 +851,8 @@ object Xml extends Tag.Container
               endRegion = maybeEnd
               advance()
               done = true
-        else advance()
+        else
+          advance()
       slice(start, endRegion)
 
     // Position must be just after '<?'. Reads PI target + data, returning

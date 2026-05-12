@@ -895,9 +895,12 @@ object Html extends Tag.Container
                   if lay(false)(_ == '>')
                   then
                     cloneTo(mark, end)(buffer) yet result().also(advance())
-                  else reset(resume) yet textualSlow(mark, tag, entities)
-                else reset(resume) yet textualSlow(mark, tag, entities)
-              else reset(resume) yet textualSlow(mark, tag, entities)
+                  else
+                    reset(resume) yet textualSlow(mark, tag, entities)
+                else
+                  reset(resume) yet textualSlow(mark, tag, entities)
+              else
+                reset(resume) yet textualSlow(mark, tag, entities)
 
           case '&' if entities =>
             val start = begin()
@@ -956,8 +959,10 @@ object Html extends Tag.Container
                     cursor.unsafeSetColumn(p - lastNewline - 1)(using Unsafe)
 
               if hit == '&' then textualSlow(mark, close, entities)
-              else if hit != 1.toChar then slice(mark, begin())
-              else fast() // buffer exhausted; outer @tailrec re-fetches buf via cursor.more
+              else if hit != 1.toChar then
+                slice(mark, begin())
+              else
+                fast() // buffer exhausted; outer @tailrec re-fetches buf via cursor.more
 
           fast()
 
@@ -1136,7 +1141,8 @@ object Html extends Tag.Container
                 node()
                 expect('>')
                 next()
-              else tag(doctypes && parent == root, parent.foreign) match
+              else
+                tag(doctypes && parent == root, parent.foreign) match
                 case Token.Comment => current = Comment(content)
                 case Token.Doctype => current = Doctype(content)
                 case Token.Cdata   => current =
@@ -1167,12 +1173,14 @@ object Html extends Tag.Container
                       reset(mark)
                       focus = inferred.vouch
                       level = Level.Descend
-                  else if focus.void then empty()
+                  else if focus.void then
+                    empty()
                   else if (content == t"a" || content == t"nobr")
                   && (parent.label == content || stackContainsAncestor(content)) then
                     reset(mark)
                     close()
-                  else level = Level.Descend
+                  else
+                    level = Level.Descend
 
                 case Token.Close =>
                   // For non-foreign tags, `tagname` returns a `Tag` instance

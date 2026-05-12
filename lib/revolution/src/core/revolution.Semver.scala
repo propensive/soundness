@@ -132,9 +132,12 @@ object Semver:
           if left.prerelease.nil then false
           else if right.prerelease.nil then true
           else compare(left.prerelease, right.prerelease)
-        else left.patch < right.patch
-      else left.minor < right.minor
-    else left.major < right.major
+        else
+          left.patch < right.patch
+      else
+        left.minor < right.minor
+    else
+      left.major < right.major
 
 
 case class Semver
