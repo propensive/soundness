@@ -308,7 +308,7 @@ object Tests extends Suite(m"Decorum Tests"):
 
       test(m"Compact `if/then/else` is accepted"):
         rules("def f(x: Int): Int = if x > 0 then x else -x\n")
-      . assert(r => !r.contains("833.1") && !r.contains("833.2") && !r.contains("833.3"))
+      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
 
       test(m"`if/then/else` with `else` on a new line is accepted"):
         rules("def f(x: Int): Int =\n  if x > 0 then x\n  else -x\n")
@@ -316,7 +316,7 @@ object Tests extends Suite(m"Decorum Tests"):
 
       test(m"`if/then/else` fully split with aligned keywords is accepted"):
         rules("def f(x: Int): Int =\n  if x > 0\n  then x\n  else -x\n")
-      . assert(r => !r.contains("833.1") && !r.contains("833.3"))
+      . assert(r => !r.contains("833.1"))
 
       test(m"`if/then/else` with `then` broken but `else` not is rejected"):
         rules("def f(x: Int): Int =\n  if x > 0\n  then x else -x\n")
@@ -324,7 +324,7 @@ object Tests extends Suite(m"Decorum Tests"):
 
       test(m"`if/then/else` with `then` not aligned with `if` is rejected"):
         rules("def f(x: Int): Int =\n  if x > 0\n      then x\n      else -x\n")
-      . assert(_.contains("833.3"))
+      . assert(_.contains("833.1"))
 
       test(m"`if/then/else` with `then` indented, `else` inline is rejected"):
         rules("def f(x: Int): Int =\n  if x > 0 then\n    x\n  else -x\n")
@@ -332,11 +332,11 @@ object Tests extends Suite(m"Decorum Tests"):
 
       test(m"`if/then/else` with both bodies indented is accepted"):
         rules("def f(x: Int): Int =\n  if x > 0 then\n    x\n  else\n    -x\n")
-      . assert(r => !r.contains("833.1") && !r.contains("833.2") && !r.contains("833.3"))
+      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
 
       test(m"Compact `else if` chain is accepted"):
         rules("def f(x: Int): Int = if x > 0 then 1 else if x < 0 then -1 else 0\n")
-      . assert(r => !r.contains("833.1") && !r.contains("833.2") && !r.contains("833.3"))
+      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
 
       test(m"`else if` with broken keywords and inline bodies is accepted"):
         rules
@@ -344,7 +344,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  if x > 0 then 1\n"
             +"  else if x < 0 then -1\n"
             +"  else 0\n" )
-      . assert(r => !r.contains("833.1") && !r.contains("833.2") && !r.contains("833.3"))
+      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
 
       test(m"`else if` chain with all bodies indented is accepted"):
         rules
@@ -355,7 +355,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"    -1\n"
             +"  else\n"
             +"    0\n" )
-      . assert(r => !r.contains("833.1") && !r.contains("833.2") && !r.contains("833.3"))
+      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
 
       test(m"`else if` chain: indented then-body, inline tail-body rejected"):
         rules
@@ -372,13 +372,50 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  if x > 0 then 1\n"
             +"    else if x < 0 then -1\n"
             +"  else 0\n" )
-      . assert(_.contains("833.3"))
+      . assert(_.contains("833.1"))
+
+      test(m"`else` followed by indented inner `if` starts a new anchor"):
+        // Newline + indentation between `else` and the next `if` means
+        // the inner `if` is not a bridge: the outer chain ends at
+        // `else`, and the inner `if` starts a fresh chain whose
+        // `then`/`else` align with the inner `if`'s column.
+        rules
+         ( "def f(x: Int): Int =\n"
+            +"  if x > 0 then x\n"
+            +"  else\n"
+            +"    if x < 0 then -x\n"
+            +"    else 0\n" )
+      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
+
+      test(m"Inner `if` as new anchor: misaligned inner `then` is rejected"):
+        rules
+         ( "def f(x: Int): Int =\n"
+            +"  if x > 0 then x\n"
+            +"  else\n"
+            +"    if x < 0\n"
+            +"        then -x\n"
+            +"    else 0\n" )
+      . assert(_.contains("833.1"))
+
+      test(m"Bridge's internal `then` is part of the unit (not checked)"):
+        // The inner `then` of an `else if … then` bridge belongs to
+        // the bridge unit. Even though it sits at a column far from
+        // the outer `if`'s anchor, the placement rule does not apply
+        // to it; only the bridge's leading `else` is checked.
+        rules
+         ( "def f(x: Int): Int =\n"
+            +"  if x > 0\n"
+            +"  then 1\n"
+            +"  else if x < 0\n"
+            +"       then -1\n"
+            +"  else 0\n" )
+      . assert(r => !r.contains("833.1"))
 
       test(m"Inner then-only `if` doesn't steal the outer chain's `else`"):
         // The inner `if char >= 0 then ...` (no else) sits inside the
         // outer `then`-body. Without indentation-aware else-matching,
         // findKeyword would absorb the outer `else if esc` as the
-        // inner `if`'s else, producing a spurious 33.3 misalignment.
+        // inner `if`'s else, producing a spurious 833.1 misalignment.
         rules
          ( "def recur(text: String, esc: Boolean): Unit =\n"
             +"  if 1 < text.length\n"
@@ -387,14 +424,14 @@ object Tests extends Suite(m"Decorum Tests"):
             +"    if char >= 0 then println(char.toChar)\n"
             +"    recur(text, esc)\n"
             +"  else if esc then throw new RuntimeException(\"\")\n" )
-      . assert(r => !r.contains("833.3"))
+      . assert(r => !r.contains("833.1"))
 
       test(m"Case-guard `if` in pattern match isn't processed as if-chain"):
         // `case x if guard => …` looks like an `if` with no `then` to
         // findKeyword unless we bail on `=>` at depth 0. Without the
         // bail, the case-guard `if` would walk forward and pair with
         // an unrelated `then` later in the file, producing spurious
-        // 33.3 violations against an `if` column nowhere near the
+        // 833.1 violations against an `if` column nowhere near the
         // actual chain.
         rules
          ( "def f(x: Int): Int = x match\n"
@@ -405,7 +442,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"def g(y: Int): Int =\n"
             +"  if y > 0 then y\n"
             +"  else -y\n" )
-      . assert(r => !r.contains("833.3"))
+      . assert(r => !r.contains("833.1"))
 
       test(m"For-comprehension filter `if` isn't processed as if-chain"):
         // `if filter` inside a for-comprehension has no `then`. Without
@@ -417,19 +454,19 @@ object Tests extends Suite(m"Decorum Tests"):
             +"def g(y: Int): Int =\n"
             +"  if y > 0 then y\n"
             +"  else -y\n" )
-      . assert(r => !r.contains("833.3"))
+      . assert(r => !r.contains("833.1"))
 
       test(m"Compact `while/do` is accepted"):
         rules("def f(): Unit = while running() do step()\n")
-      . assert(r => !r.contains("833.1") && !r.contains("833.3"))
+      . assert(r => !r.contains("833.1"))
 
       test(m"`while/do` with `do` misaligned with `while` is rejected"):
         rules("def f(): Unit =\n  while running()\n      do step()\n")
-      . assert(_.contains("833.3"))
+      . assert(_.contains("833.1"))
 
       test(m"Compact `try/catch/finally` is accepted"):
         rules("def f: Int = try compute() catch case e: Throwable => 0 finally cleanup()\n")
-      . assert(r => !r.contains("833.1") && !r.contains("833.3"))
+      . assert(r => !r.contains("833.1"))
 
       test(m"`try/catch/finally`: broken `catch`, inline `finally` rejected"):
         rules("def f: Int =\n  try compute()\n  catch case e: Throwable => 0 finally cleanup()\n")
@@ -437,7 +474,7 @@ object Tests extends Suite(m"Decorum Tests"):
 
       test(m"`try`/`finally` without `catch` is accepted (compact)"):
         rules("def f(): Unit =\n  try block\n  finally cleanup()\n")
-      . assert(r => !r.contains("833.1") && !r.contains("833.2") && !r.contains("833.3"))
+      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
 
       test(m"`inline if` aligns broken `then`/`else` with `inline`, not `if`"):
         // The `if` after `inline` starts mid-line, but visually the
@@ -448,7 +485,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  inline if x > 0\n"
             +"  then x\n"
             +"  else -x\n" )
-      . assert(r => !r.contains("833.1") && !r.contains("833.2") && !r.contains("833.3"))
+      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
 
       test(m"`else inline if … then` is recognised as a chain bridge"):
         // The `else` is followed by `inline if` (modifier + `if`) on
@@ -460,9 +497,9 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  inline if x > 0 then 1\n"
             +"  else inline if x < 0 then -1\n"
             +"  else 0\n" )
-      . assert(r => !r.contains("833.1") && !r.contains("833.2") && !r.contains("833.3"))
+      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
 
-      test(m"Inline inner `else` in bridge doesn't fire 33.1"):
+      test(m"Inline inner `else` in bridge doesn't fire 833.1"):
         // The bridge's inner `if/then` brings its own inline `else`;
         // that inner `else` belongs to the bridge, not to the outer
         // chain, so it must not be appended as the chain's K_(i+1).
@@ -477,7 +514,7 @@ object Tests extends Suite(m"Decorum Tests"):
         // def's `try foo finally bar` has its own. Without a dedent
         // bail in `findKeyword`, the first `try` would walk past the
         // function boundary, pair with the second def's `finally`,
-        // and produce a 33.2 violation against the inline body of
+        // and produce a 833.2 violation against the inline body of
         // that stolen `finally`.
         rules
          ( "def safely(): Unit =\n"
@@ -495,11 +532,11 @@ object Tests extends Suite(m"Decorum Tests"):
 
       test(m"Compact `for/yield` is accepted"):
         rules("def f: List[Int] = for x <- List(1, 2) yield x\n")
-      . assert(r => !r.contains("833.1") && !r.contains("833.3"))
+      . assert(r => !r.contains("833.1"))
 
       test(m"Compact `for/do` is accepted"):
         rules("def f(): Unit = for x <- List(1, 2) do println(x)\n")
-      . assert(r => !r.contains("833.1") && !r.contains("833.3"))
+      . assert(r => !r.contains("833.1"))
 
     suite(m"Phase 5: For-comprehension generator alignment (R34)"):
 

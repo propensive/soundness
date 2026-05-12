@@ -441,58 +441,115 @@ sequences are:
 - `try … catch … finally …` (with one or both of `catch` and `finally`)
 
 Each sequence has the shape `K₁ B₁ K₂ B₂ … Kₙ Bₙ` — keywords interleaved with
-bodies. There are two layouts:
+bodies.
 
-- **Compact** — every keyword and body on a single line. Use this when it
-  fits.
-- **Split** — at least one keyword starts a new line, or at least one body
-  is indented onto its own line(s). Required when the compact form does
-  not fit, or any body is multi-line.
+#### Anchor point
 
-In split mode, two cascade rules apply, both forward-only:
+The **anchor point** of a sequence is the line and column of the first
+character of K₁. When K₁ is preceded by modifiers (`inline`, `transparent
+inline`), the anchor moves to the leftmost modifier, so all alignment is
+measured from the visual start of the construct.
 
-- **Keyword cascade.** Once any Kᵢ starts a new line, every later keyword
-  must also start a new line. (Kᵢ₋₁ and earlier are unaffected.)
-- **Body cascade.** Once any Bᵢ (for i ≥ 2) is indented onto its own
-  line(s), every later body must be indented too. The first body B₁ —
-  the condition of `if`/`while`, the generators of `for`, the body of
-  `try` — does not trigger the cascade.
+#### `else if` bridges
 
-The two cascades are independent: a keyword may start a new line with its
-body inline, and a body may be indented while its keyword stays on the
-previous line.
+An `else` followed on the same line by `if` (optionally with modifiers
+between them, as in `else inline if`) forms a single **`else if` bridge**.
+The bridge is one chain element; its internal `if` and the `then` that
+follows it are part of the bridge unit and are not separately subject to
+the placement rule below. The condition between `if` and `then` belongs
+to the bridge.
 
-A keyword that starts a new line must sit in the column of K₁.
+If `else` appears on its own line and the next `if` is on a subsequent,
+more deeply indented line, that inner `if` is **not** a bridge — it starts
+a fresh chain with its own anchor, and the outer chain ends at `else`.
 
-Examples — compact and split:
+#### Placement rule
+
+For a chain with anchor (line `L`, column `C`), each subsequent keyword
+Kᵢ (i ≥ 2) is placed in exactly one of two ways:
+
+- **inline** — Kᵢ starts on line `L`; or
+- **broken** — Kᵢ starts a new line, in column `C`.
+
+Once any Kᵢ is broken, every later Kⱼ must also be broken. The chain has
+a single break point: keywords before it sit on line `L`; keywords from
+it onwards each sit on their own new line in column `C`. In particular,
+`then` and `else` may share a line only if that line is also the anchor
+line — once `then` is on its own line, `else` must be too.
+
+The compact form (every Kᵢ inline) is preferred to any broken form when
+it fits within the line length.
+
+#### Body cascade
+
+Bodies Bᵢ for i ≥ 2 are placed in one of two ways:
+
+- **inline** — Bᵢ starts on the same line as Kᵢ; or
+- **indented** — Bᵢ starts on a new line, indented past column `C`.
+
+Once any Bᵢ (i ≥ 2) is indented, every later Bⱼ must also be indented.
+The first body B₁ — the condition of `if`/`while`, the generators of
+`for`, the body of `try` — is exempt; its layout does not constrain the
+later bodies. For an `else if` bridge, the body whose layout is checked
+is the body after the bridge's internal `then`, not the bridge's own
+condition.
+
+#### Examples — accepted
 
 ```scala
 if x > 0 then x else -x
 
-if x > 0 then x       // `else` is the first to break; `then` is unaffected
+if x > 0 then x       // inline up to `then`, broken at `else`
 else -x
 
-if x > 0              // both follow-on keywords broken, aligned with `if`
+if x > 0              // broken at `then`, all later keywords broken
 then x
 else -x
 
-if x > 0 then         // `then` inline, body indented; body cascade forces
-  longBody            // `else`'s body to be indented too
+if x > 0 then         // `then` inline; first inner body indented
+  longBody            // forces `else`'s body to indent too
 else
   other
+
+if a then x else if b then y else z
+
+if a                  // broken throughout; bridge sits in anchor column
+then x
+else if b
+then y
+else z
+
+if x > 0 then         // bridge with indented bodies
+  1
+else if x < 0 then
+  -1
+else
+  0
+
+if a then x           // newline + indent between `else` and inner `if`:
+else                  // outer chain ends at `else`; inner `if` is a
+  if b then y         // fresh chain anchored at column 3
+  else z
 ```
 
-Examples — rejected layouts:
+#### Examples — rejected
 
 ```scala
-if x > 0              // `then` broke, so `else` must too (33.1)
-then x else -x
+if x > 0              // `then` broken from `if`, but `else` inline with
+then x else -x        // `then` — cascade violated
 
-if x > 0              // `then` should align with `if` at column 1 (33.3)
+if x > 0              // broken `then` not in anchor column
     then x
     else -x
 
-if x > 0 then         // `then`-body indented, `else`-body inline (33.2)
+if x > 0 then 1       // `else if` bridge not in anchor column
+    else if x < 0 then -1
+  else 0
+
+while running()       // `do` broken but not aligned with `while`
+    do step()
+
+if x > 0 then         // first inner body indented but `else`'s body inline
   longBody
 else other
 ```

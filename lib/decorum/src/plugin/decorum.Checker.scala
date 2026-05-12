@@ -1692,18 +1692,26 @@ object Checker:
   // R33: keyword-sequence layout (`if`/`then`/`else`, `for`/`yield`,
   // `for`/`do`, `while`/`do`, `try`/`catch`/`finally`).
   //
-  //   * Keyword cascade (33.1): once any K_i (i ≥ 2) starts a new line, every
-  //     later keyword must also start a new line.
-  //   * Body cascade (33.2): once any B_i (i ≥ 2) is indented onto its own
-  //     line(s), every later body must be indented too.
-  //   * Keyword alignment (33.3): a keyword that starts a new line must sit
-  //     in the column of K_1.
+  // A sequence K_1 B_1 K_2 B_2 … K_n B_n has an **anchor point** at the
+  // (line L, column C) of K_1 (or the leftmost modifier prefix such as
+  // `inline` / `transparent inline`, when present).
   //
-  //   `else if` exception: when an `else` is immediately followed by an `if`
-  //   on the same line, the trio `else if … then` is folded into a single
-  //   chain element. Its alignment column is the leading `else`'s, and the
-  //   body cascade looks past the inline `if` predicate to whatever follows
-  //   the inner `then`. This means
+  //   * Keyword placement (833.1): every subsequent keyword K_i (i ≥ 2) is
+  //     either **inline** (starts on line L) or **broken** (starts a new
+  //     line in column C). Once any K_i is broken, every later K_j must
+  //     also be broken — i.e. the chain has a single break point,
+  //     keywords before it on line L, keywords from it on their own lines
+  //     in column C.
+  //   * Body cascade (833.2): once any B_i (i ≥ 2) is indented onto its
+  //     own line(s), every later body must be indented too. B_1 (the
+  //     condition of `if`/`while`, the generators of `for`, the body of
+  //     `try`) is exempt.
+  //
+  //   `else if` bridge: when an `else` is immediately followed by an `if`
+  //   on the same line (possibly with modifiers between them), the trio
+  //   `else if … then` is folded into a single chain element. Its
+  //   placement column is the `else`'s, and the body whose layout is
+  //   checked is the body after the inner `then`. This means
   //
   //       if cond1 then
   //         body1
@@ -1713,9 +1721,14 @@ object Checker:
   //         body3
   //
   //   is accepted: the inline `if cond2 then` does not register as an
-  //   un-indented body for the outer `else`. The reference column for any
-  //   broken keyword in the extended chain — every `then`, every `else`,
-  //   and every `else if` — remains the column of the first `if`.
+  //   un-indented body for the outer `else`. The reference column for
+  //   every broken keyword in the chain — every `then`, every `else`,
+  //   every `else if` — remains the column of the first `if`.
+  //
+  //   If `else` is on its own line and the next `if` is on a later,
+  //   more-indented line, the inner `if` is not a bridge: it starts a
+  //   fresh chain with its own anchor, and the outer chain ends at
+  //   `else`.
   //
   // R34: for-comprehension generator alignment.
   //
@@ -1875,8 +1888,11 @@ object Checker:
       val k1Label = (k1Idx to start).map(toks(_).text).mkString(" ")
       ChainElem(k1Pos, k1Idx, start, k1Label)
 
-  // Apply the cascade and alignment rules to a sequence of chain
-  // elements. `seq.head` is K_1.
+  // Apply the placement and body-cascade rules to a sequence of chain
+  // elements. `seq.head` is K_1, which defines the anchor (line, column).
+  // Each later keyword must be either on the anchor's line (inline) or on
+  // its own new line in the anchor's column (broken); once any keyword is
+  // broken, every later one must be broken too.
   private def applySequenceRules
     ( file: String,
       seq:  List[ChainElem],
@@ -1885,34 +1901,29 @@ object Checker:
   :   Unit =
 
     if seq.length < 2 then return
-    val k1 = seq.head
+    val k1         = seq.head
+    val anchorLine = k1.pos.line
+    val anchorCol  = k1.pos.col
 
-    var splitMode    = false
     var indentedMode = false
     var i            = 1
     while i < seq.length do
       val elem  = seq(i)
       val cur   = elem.pos
-      val broke = startsNewLine(toks, elem.keywordIdx)
-      if broke then
-        if cur.col != k1.pos.col then
-          out += Violation
-                  ( file, cur.line, cur.col, "833.3",
-                    s"keyword `${elem.label}` on a new line should align with `${k1.label}` "
-                      +s"at column ${k1.pos.col} (found ${cur.col})" )
-        splitMode = true
-      else if splitMode then
+      val onAnchorLine = cur.line == anchorLine
+      val brokenAtCol  = startsNewLine(toks, elem.keywordIdx) && cur.col == anchorCol
+      if !(onAnchorLine || brokenAtCol) then
         out += Violation
                 ( file, cur.line, cur.col, "833.1",
-                  s"keyword `${elem.label}` must start a new line because an earlier "
-                    +s"keyword in this sequence does" )
+                  s"keyword `${elem.label}` must start on the same line as "
+                    +s"`${k1.label}` (line $anchorLine) or on a new line in "
+                    +s"column $anchorCol (found line ${cur.line}, column ${cur.col})" )
       // Body cascade applies to bodies after K_2 onward (i.e. body following
       // each K_i for i ≥ 2). The body following K_1 (the condition or
       // generator block) does not trigger the cascade.
       val anchor          = elem.bodyAnchorIdx
       val curBodyIndented = isBodyIndented(toks, anchor)
       if indentedMode && !curBodyIndented then
-        // The cur keyword's body should be indented but isn't.
         val bodyCol = if anchor + 1 < toks.length then toks(anchor + 1).col else cur.col
         out += Violation
                 ( file, cur.line, bodyCol, "833.2",
