@@ -292,18 +292,19 @@ object Syntax:
           then
             Sequence('(', arguments0.map(apply(_)))
           else if base <:< TypeRepr.of[NamedTuple.NamedTuple]
-          then arguments0(0).absolve match
-            case AppliedType(_, names) => apply(arguments0(1)).absolve match
-              case Sequence(_, elements) =>
-                Sequence
-                  ( '(',
-                    names.zip(elements).map:
-                      _.absolve match
-                        case (ConstantType(StringConstant(name)), element) =>
-                          Named(false, name.tt, element) )
+          then
+            arguments0(0).absolve match
+              case AppliedType(_, names) => apply(arguments0(1)).absolve match
+                case Sequence(_, elements) =>
+                  Sequence
+                    ( '(',
+                      names.zip(elements).map:
+                        _.absolve match
+                          case (ConstantType(StringConstant(name)), element) =>
+                            Named(false, name.tt, element) )
 
-            case ref@TypeRef(prefix, name) =>
-              apply(ref)
+              case ref@TypeRef(prefix, name) =>
+                apply(ref)
 
           else
             Application(apply(base), arguments0.map(apply(_)), false)

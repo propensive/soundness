@@ -173,13 +173,26 @@ object Sequences:
         else
           val elseLine = source.offsetToLine(elseOffset) + 1
           val elseCol  = source.column(elseOffset) + 1
-          // Once we've passed a bridge, an inline else (col ≠ anchorCol)
-          // belongs to the bridge's inner If, not the outer chain.
-          if afterBridge && elseCol != anchorCol then done = true
+          val isBridgeShape =
+            elseTree match
+              case innerIf: untpd.If =>
+                source.offsetToLine(innerIf.span.start) + 1 == elseLine
+              case _ => false
+          // After a bridge, an inline `else` (col ≠ anchorCol) belongs to
+          // the bridge's inner If — not the outer chain. We skip past it
+          // and (for inline bridges) continue walking the inner chain in
+          // case a later `else` is broken to anchorCol.
+          if afterBridge && elseCol != anchorCol then
+            if isBridgeShape then
+              val innerIf = elseTree.asInstanceOf[untpd.If]
+              absorbed += innerIf.span.start
+              current = innerIf
+              // keep afterBridge = true; don't add to elems
+            else
+              done = true
           else
             elseTree match
-              case innerIf: untpd.If
-                if source.offsetToLine(innerIf.span.start) + 1 == elseLine =>
+              case innerIf: untpd.If if isBridgeShape =>
                 val innerSpan   = innerIf.span
                 val innerCondSp = innerIf.cond.span
                 val innerThenSp = innerIf.thenp.span

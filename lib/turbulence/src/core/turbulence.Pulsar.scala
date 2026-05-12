@@ -43,7 +43,9 @@ class Pulsar[duration: Abstractable across Durations to Long](duration: duration
   def stop(): Unit = continue = false
 
   def stream(using Monitor): Stream[Unit] =
-    if !continue then Stream() else try
-      snooze(duration)
-      () #:: stream
-    catch case error: AsyncError => Stream()
+    if !continue then Stream()
+    else
+      try
+        snooze(duration)
+        () #:: stream
+      catch case error: AsyncError => Stream()

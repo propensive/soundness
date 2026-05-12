@@ -42,14 +42,16 @@ case class SelectMenu[item](options: List[item], current: item)
 extends Question[item]:
   import Keypress.*
 
-  def apply(keypress: TerminalEvent): SelectMenu[item] = try keypress match
-    case Up   => copy(current = options(0 max options.indexOf(current) - 1))
-    case Down => copy(current = options(options.size - 1 min options.indexOf(current) + 1))
-    case Home => copy(current = options.head)
-    case End  => copy(current = options.last)
-    case _    => this
+  def apply(keypress: TerminalEvent): SelectMenu[item] =
+    try
+      keypress match
+        case Up   => copy(current = options(0 max options.indexOf(current) - 1))
+        case Down => copy(current = options(options.size - 1 min options.indexOf(current) + 1))
+        case Home => copy(current = options.head)
+        case End  => copy(current = options.last)
+        case _    => this
 
-  catch case e: RangeError => this
+    catch case e: RangeError => this
 
 
   def ask
