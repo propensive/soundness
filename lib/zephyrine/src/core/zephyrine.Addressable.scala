@@ -75,6 +75,7 @@ object Addressable:
                  destOff: Int,
                  len:     Int)
     :   Unit =
+
       System.arraycopy(source.mutable(using Unsafe), srcOff, dest, destOff, len)
 
     inline def transfer

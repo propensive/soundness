@@ -49,6 +49,7 @@ object internal:
   def applyFold[value]
     (v: value, lambdas: Seq[(Optic from value onto value) => value => value])
   :   value =
+
     lambdas.foldLeft(v): (acc, lambda) =>
       lambda(Optic.identity[value])(acc)
 
@@ -114,6 +115,7 @@ object internal:
     def matchSelectDynamic(t: Term): Option[(Term, String)] = t match
       case Apply(Apply(Select(receiver, "selectDynamic"), List(Literal(StringConstant(name)))), _)  =>
         Some((receiver, name))
+
       case Apply(Select(receiver, "selectDynamic"), List(Literal(StringConstant(name))))            =>
         Some((receiver, name))
       case _ => None
@@ -124,6 +126,7 @@ object internal:
               Apply(Apply(Select(receiver, "updateDynamic"), List(Literal(StringConstant(name)))), _),
               List(value)) =>
         Some((receiver, name, value))
+
       case Apply(
               Apply(Select(receiver, "updateDynamic"), List(Literal(StringConstant(name)))),
               List(value)) =>
@@ -188,14 +191,17 @@ object internal:
       val s = strip(body)
       s match
         case Ident(_) if s.symbol == paramSym => Some(Nil)
+
         case _ => matchSelectDynamic(s) match
           case Some((receiver, name)) =>
             gatherSteps(receiver, paramSym).map(_ :+ FieldStep(name))
+
           case None => matchApplyDynamic(s) match
             case Some((receiver, name, opTerm)) if isSingleton(opTerm.tpe) =>
               gatherSteps(receiver, paramSym).map: steps =>
                 steps :+ FieldStep(name) :+ TraversalStep(opTerm, opTerm.tpe)
             case Some(_) => None  // non-singleton operand — can't fuse
+
             case None    => matchOpticApply(s) match
               case Some((receiver, opTerm)) if isSingleton(opTerm.tpe) =>
                 gatherSteps(receiver, paramSym).map: steps =>
@@ -209,6 +215,7 @@ object internal:
           // updateDynamic's value param is a context function `(T aka "prior") ?=> T`.
           gatherSteps(receiver, paramSym).map: prefix =>
             (prefix :+ FieldStep(name), leaf, true)
+
         case None => matchUpdate(body) match
           case Some((receiver, opTerm, leaf)) if isSingleton(opTerm.tpe) =>
             // update's value param is a plain T.
@@ -254,14 +261,15 @@ object internal:
     /** Two adjacent step nodes merge if their step identities match: FieldStep by name,
       * TraversalStep by singleton operand type (`=:=`). */
     def stepEq(a: Step, b: Step): Boolean = (a, b) match
-      case (FieldStep(n1), FieldStep(n2))           => n1 == n2
+      case (FieldStep(n1), FieldStep(n2))               => n1 == n2
       case (TraversalStep(_, t1), TraversalStep(_, t2)) => t1 =:= t2
-      case _                                         => false
+      case _                                            => false
 
     def mergeAdjacent(branches: List[Branch]): List[Branch] =
       branches.foldRight[List[Branch]](Nil):
         case (StepB(s, cs), StepB(s2, cs2) :: rest) if stepEq(s, s2) =>
           StepB(s, mergeAdjacent(cs ++ cs2)) :: rest
+
         case (b, rest) =>
           b :: rest
 
@@ -318,11 +326,13 @@ object internal:
     def resolveAll(branches: List[Branch], originTpe: TypeRepr): Option[List[Resolved]] =
       val opts: List[Option[Resolved]] = branches.map:
         case LeafB(leaf, isCtxFn) => Some(LeafR(leaf, isCtxFn))
+
         case StepB(FieldStep(name), children) =>
           summonLens(name, originTpe).flatMap: lensTerm =>
             extractTarget(lensTerm).flatMap: targetTpe =>
               resolveAll(children, targetTpe).map: resolvedChildren =>
                 FieldR(name, lensTerm, targetTpe, resolvedChildren)
+
         case StepB(TraversalStep(operand, _), children) =>
           summonOptical(operand.tpe, originTpe).flatMap: opticalTerm =>
             extractTarget(opticalTerm).flatMap: targetTpe =>
@@ -356,8 +366,10 @@ object internal:
           val nextExpr: Expr[T] = branch match
             case LeafR(leaf, isCtxFn) =>
               applyLeaf[T](acc.asExprOf[T], leaf, isCtxFn)
+
             case FieldR(name, lens, target, children) =>
               emitFieldUpdate[T](acc.asExprOf[T], name, lens, target, children)
+
             case TravR(operand, optical, target, children) =>
               emitTraversalUpdate[T](acc.asExprOf[T], operand, optical, target, children)
 
@@ -396,6 +408,7 @@ object internal:
     def emitFieldUpdate[T: Type]
       (origin: Expr[T], name: String, lensTerm: Term, targetTpe: TypeRepr, children: List[Resolved])
     :   Expr[T] =
+
       targetTpe.asType match
         case '[targetT] =>
           // Build the get expression. If the lens was constructed via `Lens.apply(getFn,
@@ -455,6 +468,7 @@ object internal:
       ( origin: Expr[T], operand: Term, opticalTerm: Term, targetTpe: TypeRepr,
         children: List[Resolved] )
     :   Expr[T] =
+
       targetTpe.asType match
         case '[targetT] =>
           // Build the optic by calling `optical.optic(operand)`, then `.modify(origin)
@@ -499,6 +513,7 @@ object internal:
 
     Varargs.unapply(lambdasExpr) match
       case None        => fallback
+
       case Some(exprs) =>
         if exprs.isEmpty then valueExpr else
           val parsed = exprs.toList.map(parseLambda)

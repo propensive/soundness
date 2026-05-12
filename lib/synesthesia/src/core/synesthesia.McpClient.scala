@@ -35,13 +35,13 @@ package synesthesia
 import scala.annotation.*
 
 import anticipation.*
+import beneficence.*
 import gossamer.*
 import jacinta.*
 import obligatory.*
 import prepositional.*
 import proscenium.*
 import vacuous.*
-import beneficence.*
 
 trait McpClient extends Findable:
   import Mcp.*

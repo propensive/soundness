@@ -69,11 +69,13 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
     if seen.add(path) then
       val text: String = String(source.content)
       val module       = Checker.expectedModule(path)
+
       val useColor     =
         try
           import dotty.tools.dotc.config.Settings.Setting.value
           value(context.settings.color)(using context) != "never"
         catch case _: Throwable => false
+
       val unitTree = context.compilationUnit.untpdTree
       Checker.check(path, module, text, unitTree, source).foreach: violation =>
         val pos = position(source, violation.line, violation.column)

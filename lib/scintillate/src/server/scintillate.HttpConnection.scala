@@ -37,6 +37,7 @@ import java.io as ji
 import com.sun.net.httpserver as csnh
 
 import anticipation.*
+import beneficence.*
 import contingency.*
 import distillate.*
 import gossamer.*
@@ -48,7 +49,6 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-import beneficence.*
 
 object HttpConnection:
   def apply(exchange: csnh.HttpExchange): HttpConnection logs HttpServerEvent =

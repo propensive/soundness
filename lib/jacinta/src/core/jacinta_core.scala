@@ -101,6 +101,7 @@ extension (json: Json.Ast)
       if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
       then Json.Ast(d.toLong)
       else Json.Ast(d)
+
     case _ =>
       json.asInstanceOf[IArray[Json.Ast]](index)
 
@@ -126,6 +127,7 @@ extension (json: Json.Ast)
   def array: IArray[Json.Ast] raises JsonError = (json: @unchecked) match
     case nums: Array[Double] @unchecked =>
       IArray.tabulate(nums.length)(json.arrayElement(_))
+
     case _ =>
       if isArray then
         val full = json.asInstanceOf[IArray[Json.Ast]]

@@ -34,9 +34,9 @@ package exoskeleton
 
 import ambience.*
 import anticipation.*
+import beneficence.*
 import rudiments.*
 import turbulence.*
-import beneficence.*
 
 trait Executive extends Findable:
   type Return

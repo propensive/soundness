@@ -619,6 +619,7 @@ object Html extends Tag.Container
           start: Optional[Cursor.Mark] = Unset,
           end:   Optional[Cursor.Mark] = Unset )
       :   Nothing =
+
         abort(ParseError(Html, computePosition(start, end), issue))
 
       def warn(issue: Issue): Unit = raise(ParseError(Html, currentPosition(), issue))
@@ -851,8 +852,8 @@ object Html extends Tag.Container
       @tailrec
       def decimalEntity(mark: Mark, value: Int): Optional[Text] = lay(fail(ExpectedMore, mark)):
         case digit if asciiDigit(digit) => next() yet decimalEntity(mark, 10*value + (digit - '0'))
-        case ';'                    => next() yet value.unicode
-        case char                   => Unset
+        case ';'                        => next() yet value.unicode
+        case char                       => Unset
 
       @tailrec
       def textEntity(mark: Mark, dictionary: Dictionary[Text]): Optional[Text] =
@@ -1145,6 +1146,7 @@ object Html extends Tag.Container
                 tag(doctypes && parent == root, parent.foreign) match
                 case Token.Comment => current = Comment(content)
                 case Token.Doctype => current = Doctype(content)
+
                 case Token.Cdata   => current =
                   if parent.foreign then TextNode(content) else
                     fail(InvalidCdata, mark)
@@ -1248,6 +1250,7 @@ object Html extends Tag.Container
                     pop()
                     cloneChild match
                       case Element(_, _, children, _) if children.length == 0 => ()
+
                       case _ =>
                         append(cloneChild)
                         added += 1

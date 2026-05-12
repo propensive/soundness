@@ -46,6 +46,7 @@ object DaemonLogEvent:
     case Failure                   => m"A failure occurred"
     case NewCli                    => m"Instantiating a new CLI"
     case UnrecognizedMessage       => m"Unrecognized message"
+
     case ReceivedSignal(signal)    => signal match
       case unix: UnixSignal       => m"Received signal $unix"
       case windows: WindowsSignal => m"Received signal $windows"

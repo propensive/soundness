@@ -37,10 +37,10 @@ import language.dynamics
 import scala.collection.mutable as scm
 
 import anticipation.*
+import beneficence.*
 import gossamer.*
 import proscenium.*
 import vacuous.*
-import beneficence.*
 
 object Dom:
   private[honeycomb] val elements: scm.HashMap[Dom, Dictionary[Tag]] = scm.HashMap()

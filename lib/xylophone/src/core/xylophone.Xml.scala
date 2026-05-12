@@ -735,6 +735,7 @@ object Xml extends Tag.Container
           skipWs()
           if !more then fail(Issue.ExpectedMore, keyStart)
           val q = peek
+
           val value =
             if q == '\u0000' then
               callback.let(_(position.z, Hole.Attribute(tag, key)))
@@ -1103,6 +1104,7 @@ object Xml extends Tag.Container
         if !more then fail(Issue.ExpectedMore)
         val expected = literal.charAt(i)
         val got = peek
+
         val matches =
           got == expected
           || (isAsciiLetter(expected) && (got == (expected | 0x20).toChar || got == (expected & ~0x20).toChar))

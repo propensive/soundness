@@ -44,6 +44,7 @@ extension [value](value: value)
   private[panopticon] def lensFold
                           (lambdas: (Optic from value onto value => value => value)*)
   :   value =
+
     lambdas.foldLeft(value): (value, lambda) =>
       lambda(Optic.identity)(value)
 

@@ -36,6 +36,7 @@ import scala.annotation.*
 import scala.collection.mutable as scm
 
 import anticipation.*
+import beneficence.*
 import contingency.*
 import denominative.*
 import gossamer.*
@@ -45,7 +46,6 @@ import serpentine.*
 import symbolism.*
 import urticose.*
 import vacuous.*
-import beneficence.*
 
 object JsonPointer extends Root(""):
   type Plane = JsonPointer

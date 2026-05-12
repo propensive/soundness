@@ -166,6 +166,7 @@ object Bytecode:
     given teletypeable: (palette: BytecodePalette) => List[Linearized] is Teletypeable = lines =>
       lines.map: line =>
         val indent: Text = Text("  ".repeat(line.depth).nn)
+
         val src =
           if line.source == t"" then e""
           else e"${Fg(palette.bytecode)}(${line.source})  "
@@ -1288,15 +1289,15 @@ object Bytecode:
         parsed.result.lay(popped)(_ :: popped)
 
       this match
-        case Nop => stack
-        case AconstNull => L(t"null") :: stack
+        case Nop                                                                  => stack
+        case AconstNull                                                           => L(t"null") :: stack
         case IconstM1 | Iconst0 | Iconst1 | Iconst2 | Iconst3 | Iconst4 | Iconst5 => I :: stack
-        case Lconst0 | Lconst1 => J :: stack
-        case Fconst0 | Fconst1 | Fconst2 => F :: stack
-        case Dconst0 | Dconst1 => D :: stack
-        case Bipush(_) | Sipush(_) => I :: stack
-        case Ldc(_) | LdcW(_) => L(t"?") :: stack
-        case Ldc2W(_) => J :: stack
+        case Lconst0 | Lconst1                                                    => J :: stack
+        case Fconst0 | Fconst1 | Fconst2                                          => F :: stack
+        case Dconst0 | Dconst1                                                    => D :: stack
+        case Bipush(_) | Sipush(_)                                                => I :: stack
+        case Ldc(_) | LdcW(_)                                                     => L(t"?") :: stack
+        case Ldc2W(_)                                                             => J :: stack
 
         case Iload(_) | Iload0 | Iload1 | Iload2 | Iload3 => I :: stack
         case Lload(_) | Lload0 | Lload1 | Lload2 | Lload3 => J :: stack
@@ -1304,73 +1305,73 @@ object Bytecode:
         case Dload(_) | Dload0 | Dload1 | Dload2 | Dload3 => D :: stack
         case Aload(_) | Aload0 | Aload1 | Aload2 | Aload3 => L(t"?") :: stack
 
-        case Iaload => I :: stack.drop(2)
-        case Laload => J :: stack.drop(2)
-        case Faload => F :: stack.drop(2)
-        case Daload => D :: stack.drop(2)
-        case Aaload => L(t"?") :: stack.drop(2)
+        case Iaload                   => I :: stack.drop(2)
+        case Laload                   => J :: stack.drop(2)
+        case Faload                   => F :: stack.drop(2)
+        case Daload                   => D :: stack.drop(2)
+        case Aaload                   => L(t"?") :: stack.drop(2)
         case Baload | Caload | Saload => I :: stack.drop(2)
 
         case Istore(_) | Lstore(_) | Fstore(_) | Dstore(_) | Astore(_) => stack.drop(1)
-        case Istore0 | Istore1 | Istore2 | Istore3 => stack.drop(1)
-        case Lstore0 | Lstore1 | Lstore2 | Lstore3 => stack.drop(1)
-        case Fstore0 | Fstore1 | Fstore2 | Fstore3 => stack.drop(1)
-        case Dstore0 | Dstore1 | Dstore2 | Dstore3 => stack.drop(1)
-        case Astore0 | Astore1 | Astore2 | Astore3 => stack.drop(1)
+        case Istore0 | Istore1 | Istore2 | Istore3                     => stack.drop(1)
+        case Lstore0 | Lstore1 | Lstore2 | Lstore3                     => stack.drop(1)
+        case Fstore0 | Fstore1 | Fstore2 | Fstore3                     => stack.drop(1)
+        case Dstore0 | Dstore1 | Dstore2 | Dstore3                     => stack.drop(1)
+        case Astore0 | Astore1 | Astore2 | Astore3                     => stack.drop(1)
 
         case Iastore | Lastore | Fastore | Dastore | Aastore => stack.drop(3)
-        case Bastore | Castore | Sastore => stack.drop(3)
+        case Bastore | Castore | Sastore                     => stack.drop(3)
 
-        case Pop => stack.drop(1)
+        case Pop  => stack.drop(1)
         case Pop2 => stack.drop(2)
-        case Dup => stack.head :: stack
+        case Dup  => stack.head :: stack
 
         case DupX1 => stack match
           case a :: b :: rest => a :: b :: a :: rest
-          case _ => stack
+          case _              => stack
 
         case DupX2 => stack match
           case a :: b :: c :: rest => a :: b :: c :: a :: rest
-          case _ => stack
+          case _                   => stack
 
         case Dup2 => stack match
           case a :: b :: rest => a :: b :: a :: b :: rest
-          case _ => stack
+          case _              => stack
 
         case Dup2X1 => stack match
           case a :: b :: c :: rest => a :: b :: c :: a :: b :: rest
-          case _ => stack
+          case _                   => stack
 
         case Dup2X2 => stack match
           case a :: b :: c :: d :: rest => a :: b :: c :: d :: a :: b :: rest
-          case _ => stack
+          case _                        => stack
 
         case Swap => stack match
           case a :: b :: rest => b :: a :: rest
-          case _ => stack
+          case _              => stack
 
         case Iadd | Isub | Imul | Idiv | Irem | Iand | Ior | Ixor => I :: stack.drop(2)
-        case Ishl | Ishr | Iushr => I :: stack.drop(2)
+        case Ishl | Ishr | Iushr                                  => I :: stack.drop(2)
         case Ladd | Lsub | Lmul | Ldiv | Lrem | Land | Lor | Lxor => J :: stack.drop(2)
-        case Lshl | Lshr | Lushr => J :: stack.drop(2)
-        case Fadd | Fsub | Fmul | Fdiv | Frem => F :: stack.drop(2)
-        case Dadd | Dsub | Dmul | Ddiv | Drem => D :: stack.drop(2)
+        case Lshl | Lshr | Lushr                                  => J :: stack.drop(2)
+        case Fadd | Fsub | Fmul | Fdiv | Frem                     => F :: stack.drop(2)
+        case Dadd | Dsub | Dmul | Ddiv | Drem                     => D :: stack.drop(2)
 
         case Ineg | Lneg | Fneg | Dneg => stack
-        case Iinc(_, _) => stack
+        case Iinc(_, _)                => stack
 
-        case I2l => J :: stack.drop(1)
-        case I2f => F :: stack.drop(1)
-        case I2d => D :: stack.drop(1)
-        case L2i => I :: stack.drop(1)
-        case L2f => F :: stack.drop(1)
-        case L2d => D :: stack.drop(1)
-        case F2i => I :: stack.drop(1)
-        case F2l => J :: stack.drop(1)
-        case F2d => D :: stack.drop(1)
-        case D2i => I :: stack.drop(1)
-        case D2l => J :: stack.drop(1)
-        case D2f => F :: stack.drop(1)
+        case I2l             => J :: stack.drop(1)
+        case I2f             => F :: stack.drop(1)
+        case I2d             => D :: stack.drop(1)
+        case L2i             => I :: stack.drop(1)
+        case L2f             => F :: stack.drop(1)
+        case L2d             => D :: stack.drop(1)
+        case F2i             => I :: stack.drop(1)
+        case F2l             => J :: stack.drop(1)
+        case F2d             => D :: stack.drop(1)
+        case D2i             => I :: stack.drop(1)
+        case D2l             => J :: stack.drop(1)
+        case D2f             => F :: stack.drop(1)
         case I2b | I2c | I2s => stack
 
         case Lcmp | Fcmpl | Fcmpg | Dcmpl | Dcmpg => I :: stack.drop(2)
@@ -1380,41 +1381,41 @@ object Bytecode:
         case IfIcmpeq(_) | IfIcmpne(_) | IfIcmplt(_)
           | IfIcmpge(_) | IfIcmpgt(_) | IfIcmple(_) => stack.drop(2)
 
-        case IfAcmpeq(_) | IfAcmpne(_) => stack.drop(2)
-        case Ifnull(_) | Ifnonnull(_) => stack.drop(1)
-        case Goto(_) | GotoW(_) | Ret(_) => stack
-        case Jsr(_) | JsrW(_) => L(t"retaddr") :: stack
+        case IfAcmpeq(_) | IfAcmpne(_)                    => stack.drop(2)
+        case Ifnull(_) | Ifnonnull(_)                     => stack.drop(1)
+        case Goto(_) | GotoW(_) | Ret(_)                  => stack
+        case Jsr(_) | JsrW(_)                             => L(t"retaddr") :: stack
         case Tableswitch(_, _, _, _) | Lookupswitch(_, _) => stack.drop(1)
 
         case Ireturn | Lreturn | Freturn | Dreturn | Areturn => Nil
-        case Return => Nil
-        case Athrow => stack.take(1)
+        case Return                                          => Nil
+        case Athrow                                          => stack.take(1)
 
         case Getstatic(_, _, descriptor) => Frame.fromFieldDescriptor(descriptor) :: stack
-        case Putstatic(_, _, _) => stack.drop(1)
+        case Putstatic(_, _, _)          => stack.drop(1)
 
         case Getfield(_, _, descriptor) =>
           Frame.fromFieldDescriptor(descriptor) :: stack.drop(1)
 
         case Putfield(_, _, _) => stack.drop(2)
 
-        case Invokestatic(_, _, descriptor) => invokeStaticOrDynamic(descriptor)
-        case Invokevirtual(_, _, descriptor) => invokeWithReceiver(descriptor)
-        case Invokespecial(_, _, descriptor) => invokeWithReceiver(descriptor)
+        case Invokestatic(_, _, descriptor)       => invokeStaticOrDynamic(descriptor)
+        case Invokevirtual(_, _, descriptor)      => invokeWithReceiver(descriptor)
+        case Invokespecial(_, _, descriptor)      => invokeWithReceiver(descriptor)
         case Invokeinterface(_, _, descriptor, _) => invokeWithReceiver(descriptor)
-        case Invokedynamic(_, descriptor) => invokeStaticOrDynamic(descriptor)
+        case Invokedynamic(_, descriptor)         => invokeStaticOrDynamic(descriptor)
 
-        case New(cls) => L(cls) :: stack
-        case Newarray(elem) => Array(elem) :: stack.drop(1)
-        case Anewarray(cls) => Array(L(cls)) :: stack.drop(1)
-        case Multianewarray(cls, dims) => Array(L(cls)) :: stack.drop(dims)
-        case Arraylength => I :: stack.drop(1)
-        case Checkcast(cls) => L(cls) :: stack.drop(1)
-        case Instanceof(_) => I :: stack.drop(1)
+        case New(cls)                   => L(cls) :: stack
+        case Newarray(elem)             => Array(elem) :: stack.drop(1)
+        case Anewarray(cls)             => Array(L(cls)) :: stack.drop(1)
+        case Multianewarray(cls, dims)  => Array(L(cls)) :: stack.drop(dims)
+        case Arraylength                => I :: stack.drop(1)
+        case Checkcast(cls)             => L(cls) :: stack.drop(1)
+        case Instanceof(_)              => I :: stack.drop(1)
         case Monitorenter | Monitorexit => stack.drop(1)
 
         case Wide() | Breakpoint | Impdep1 | Impdep2 => stack
-        case _: Opcode => stack
+        case _: Opcode                               => stack
 
 case class Bytecode
   ( sourceFile:   Optional[Text],
@@ -1469,6 +1470,7 @@ case class Bytecode
   def effectivelyStaticCalls: Set[Int] =
     import Bytecode.Opcode.*
     val byOffset = instructions.iterator.map(i => i.offset -> i).toMap
+
     val priorStacks: Map[Int, List[Bytecode.Frame]] =
       var prev: Optional[List[Bytecode.Frame]] = Nil
       val builder = Map.newBuilder[Int, List[Bytecode.Frame]]

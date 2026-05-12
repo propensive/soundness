@@ -151,6 +151,7 @@ enum Dictionary[+element]:
 
   protected def lookup(entry: Text, offset: Int): Optional[element] = this match
     case Empty                  => Unset
+
     case just: Just[element]    =>
       if matchesEntry(just.text, just.offset, entry, offset) then just.value else Unset
 
@@ -174,6 +175,7 @@ enum Dictionary[+element]:
     def step(node: Dictionary[element], extra: Int, position: Int): Optional[element] =
       if position >= stop then node match
         case Empty                  => Unset
+
         case just: Just[element]    =>
           if just.offset + extra == just.text.length then just.value else Unset
         case Branch(value, _)       => value
@@ -182,6 +184,7 @@ enum Dictionary[+element]:
         val char: Char = if raw >= 'A' && raw <= 'Z' then (raw + 32).toChar else raw
         node match
           case Empty                  => Unset
+
           case Branch(_, map)         => map.at(char) match
             case next: Dictionary[element] @unchecked => step(next, 0, position + 1)
             case _                                    => Unset

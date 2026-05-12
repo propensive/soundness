@@ -33,8 +33,8 @@
 package aviation
 
 import anticipation.*
-import contingency.*
 import beneficence.*
+import contingency.*
 
 trait Calendar extends Findable:
   type Diurnal

@@ -138,6 +138,7 @@ object Attributes:
       new Iterator[Text]:
         private var i: Int = 0
         def hasNext: Boolean = i < a.length
+
         def next(): Text =
           val k = a(i).asInstanceOf[Text]
           i += 2
@@ -148,6 +149,7 @@ object Attributes:
       new Iterator[Text]:
         private var i: Int = 1
         def hasNext: Boolean = i < a.length
+
         def next(): Text =
           val v = a(i).asInstanceOf[Text]
           i += 2
@@ -158,6 +160,7 @@ object Attributes:
       new Iterator[(Text, Text)]:
         private var i: Int = 0
         def hasNext: Boolean = i < a.length
+
         def next(): (Text, Text) =
           val pair = (a(i).asInstanceOf[Text], a(i + 1).asInstanceOf[Text])
           i += 2

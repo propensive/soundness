@@ -340,6 +340,7 @@ extension [textual: Textual { type Operand = Char }](text: textual)
           while i < padSize do
             builder.append(char)
             i += 1
+
         case Rtl =>
           var i = 0
           while i < padSize do

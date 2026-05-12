@@ -34,10 +34,10 @@ package contingency
 
 import scala.collection.mutable as scm
 
+import beneficence.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-import beneficence.*
 
 object Foci:
   given default: [focus] => Foci[focus]:

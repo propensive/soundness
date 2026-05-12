@@ -35,9 +35,9 @@ package turbulence
 import java.io as ji
 
 import anticipation.*
+import beneficence.*
 import rudiments.*
 import vacuous.*
-import beneficence.*
 
 object Stdio:
   def apply

@@ -319,6 +319,7 @@ object internal:
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
     (insertions0: Expr[Seq[Any]])
   :   Macro[Xml] =
+
     import quotes.reflect.*
     import Xml.Hole
 
@@ -335,9 +336,11 @@ object internal:
           val pair = TypeRepr.of[head].dealias match
             case AppliedType(_, List(ConstantType(IntConstant(s)), ConstantType(IntConstant(e)))) =>
               (s, e)
+
             case _ =>
               (0, 0)
           recurOrigins[tail](pair :: acc)
+
         case _ =>
           acc.reverse
 
@@ -401,6 +404,7 @@ object internal:
     // underline the precise span inside the literal.
     val xml: Xml =
       given diagnostics: Diagnostics = Diagnostics.omit
+
       given parseTactic: HaltTactic[ParseError, Xml] = new HaltTactic[ParseError, Xml]:
         override def abort(error: Diagnostics ?=> ParseError): Nothing =
           val pe = error

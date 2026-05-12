@@ -78,7 +78,7 @@ class Report(using Environment)(using palette: TestPalette):
 
   given measurable: Char is Measurable:
     def width(char: Char): Int = char match
-      case '✓' | '✗' | '⎇' | '↑' | '↓' => 1
+      case '✓' | '✗' | '⎇' | '↑' | '↓'  => 1
       case _                            => metrics.width(char)
 
   private var failure: Optional[(Throwable, Set[TestId])] = Unset
@@ -526,10 +526,13 @@ class Report(using Environment)(using palette: TestPalette):
           given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)
           val passText = e"$Bold(${Fg(palette.foreground)}($passed)) passed (${100.0*passed/total}%)"
           val failText = e"$Bold(${Fg(palette.foreground)}($failed)) failed (${100.0*failed/total}%)"
+
           val aspirePassText =
             e"$Bold(${Fg(palette.foreground)}($aspirePassed)) aspire-passed (${100.0*aspirePassed/total}%)"
+
           val aspireFailText =
             e"$Bold(${Fg(palette.foreground)}($aspireFailed)) aspire-failed (${100.0*aspireFailed/total}%)"
+
           val allText = e"$Bold(${Fg(palette.foreground)}($total)) total"
 
           if aspirePassed + aspireFailed == 0

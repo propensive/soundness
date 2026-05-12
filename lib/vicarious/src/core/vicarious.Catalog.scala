@@ -34,9 +34,9 @@ package vicarious
 
 import language.dynamics
 
+import beneficence.*
 import proscenium.*
 import vacuous.*
-import beneficence.*
 
 object Catalog:
   extension [key, value: ClassTag](catalog: Catalog[key, value])

@@ -361,6 +361,7 @@ case class Teletype
       else if n <= 0 then this
       else
         val newHyperlinks = hyperlinks.collect { case (k, v) if k >= n => (k - n) -> v }
+
         val newInsertions =
           insertions.collect { case (k, v) if k >= n => (k - n) -> v }.to(TreeMap)
         if isDense then

@@ -143,15 +143,19 @@ object StackTrace:
         case '$' =>
           char(index + 1) match
             case '_' => token(index, "$_avoid_name_clash_$", "′")
+
             case 'a' => char(index + 2) match
               case 'm' => token(index, "$amp", "&")
+
               case 'n' => char(index + 9) match
                 case 'a' => token(index, "$anonfun$adapted", "Λ")
+
                 case _   => char(index + 5) match
                   case 'f' => token(index, "$anonfun", "λ")
                   case _   => token(index, "$anon", "α")
               case 't' => token(index, "$at", "@")
               case _   => skip()
+
             case 'b' => char(index + 2) match
               case 'a' => char(index + 3) match
                 case 'n' => token(index, "$bang", "!")
@@ -160,13 +164,16 @@ object StackTrace:
               case 's' => token(index, "$bslash", "\\")
               case _   => skip()
             case 'c' => token(index, "$colon", ":")
+
             case 'd' => char(index + 2) match
               case 'e' => token(index, "$default", "δ")
+
               case 'i' => char(index + 3) match
                 case 'r' => token(index, "$direct", "∂")
                 case 'v' => token(index, "$div", "/")
                 case _   => skip()
               case _   => skip()
+
             case 'e' => char(index + 2) match
               case 'q' => token(index, "$eq", "=")
               case 'x' => token(index, "$extension", "⊢")
@@ -174,6 +181,7 @@ object StackTrace:
             case 'g' => token(index, "$greater", ">")
             case 'h' => token(index, "$hash", "#")
             case 'l' => token(index, "$less", "<")
+
             case 'm' => char(index + 2) match
               case 'c' =>
                 var index2: Int = index + 3
@@ -193,15 +201,18 @@ object StackTrace:
                 token(index, mc, name2)
               case 'i' => token(index, "$minus", "-")
               case _   => skip()
+
             case 'p' => char(index + 2) match
               case 'a' => token(index, "$package", "⁆")
               case 'e' => token(index, "$percent", "%")
               case 'l' => token(index, "$plus", "+")
               case _   => skip()
             case 'q' => token(index, "$qmark", "?")
+
             case 's' => char(index + 2) match
               case 'p' => token(index, "$sp", "ζ")
               case _   => skip()
+
             case 't' => char(index + 2) match
               case 'i' => char(index + 3) match
                 case 'l' => token(index, "$tilde", "~")

@@ -134,7 +134,7 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
 
   def entryName: Text = this match
     case directory: Directory => t"${directory.path}/"
-    case _: Pax              => t"PaxHeaders/0"
+    case _: Pax               => t"PaxHeaders/0"
     case other                => this.path.show
 
   def link: Optional[Text] = this.only:

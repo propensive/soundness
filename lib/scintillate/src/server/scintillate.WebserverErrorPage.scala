@@ -32,8 +32,8 @@
                                                                                                   */
 package scintillate
 
-import telekinesis.*
 import beneficence.*
+import telekinesis.*
 
 trait WebserverErrorPage extends Findable:
   def handle(throwable: Throwable, request: Http.Request): Http.Response

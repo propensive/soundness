@@ -32,11 +32,11 @@
                                                                                                   */
 package anamnesis
 
+import beneficence.*
 import contingency.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-import beneficence.*
 
 object Database:
   sealed trait Relation[left, right]

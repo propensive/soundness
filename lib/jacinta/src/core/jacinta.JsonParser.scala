@@ -721,6 +721,7 @@ private[jacinta] final class JsonParser:
       // and can be distinguished from objects (always even).
       val src = anyItems.nn
       val n = src.length
+
       val out =
         if (n & 1) == 1 then
           val arr = new Array[Any](n)

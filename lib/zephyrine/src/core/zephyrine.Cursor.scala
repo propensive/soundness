@@ -308,6 +308,7 @@ final class Cursor[data]
   // streaming consumer pays nothing until it pulls.
   def remainder: Stream[data] =
     val tailLen = writeEnd - pos
+
     val tail: data =
       if tailLen <= 0 then addressable.empty
       else addressable.materialize(buffer, pos, tailLen)
@@ -320,6 +321,7 @@ final class Cursor[data]
       case Unset =>
         ended = true
         Stream.empty
+
       case chunk: data @unchecked =>
         if addressable.length(chunk) > 0 then chunk #:: loaderStream
         else loaderStream
@@ -433,6 +435,7 @@ final class Cursor[data]
   inline def slice[result](start: Cursor.Mark, end: Cursor.Mark)
                           (inline lambda: (addressable.Storage, Int, Int) => result)
   :   result =
+
     val off = (start.absolute - basePos).toInt
     val len = (end.absolute - start.absolute).toInt
     lambda(buffer, off, len)

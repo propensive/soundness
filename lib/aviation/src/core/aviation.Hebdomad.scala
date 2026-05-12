@@ -32,8 +32,8 @@
                                                                                                   */
 package aviation
 
-import denominative.*
 import beneficence.*
+import denominative.*
 
 trait Hebdomad extends Findable:
   def start: Weekday

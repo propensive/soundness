@@ -32,9 +32,9 @@
                                                                                                   */
 package caduceus
 
+import beneficence.*
 import prepositional.*
 import turbulence.*
-import beneficence.*
 
 trait Courier extends Resultant, Findable:
   def send(message: Document[Email]): Result

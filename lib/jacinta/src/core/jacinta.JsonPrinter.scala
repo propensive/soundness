@@ -81,6 +81,7 @@ object JsonPrinter:
       // Strip the sentinel pad if present (parity-padded heterogeneous
       // arrays carry one for empty/even-length cases).
       val raw = elements.length
+
       val n =
         if raw > 0 && (elements(raw - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad)
         then raw - 1

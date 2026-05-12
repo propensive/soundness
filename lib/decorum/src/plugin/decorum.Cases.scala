@@ -60,9 +60,11 @@ object Cases:
         case m: untpd.Match =>
           val infos = m.cases.flatMap(infoFor(_, source))
           if infos.nonEmpty then out += infos
+
         case tr: untpd.Try =>
           val infos = tr.cases.flatMap(infoFor(_, source))
           if infos.nonEmpty then out += infos
+
         case _ =>
           ()
       t.productIterator.foreach(descend(_, visit))
@@ -71,7 +73,7 @@ object Cases:
     out.toList
 
   private def descend(x: Any, visit: untpd.Tree => Unit): Unit = x match
-    case sub: untpd.Tree => visit(sub)
+    case sub: untpd.Tree  => visit(sub)
     case it:  Iterable[?] => it.foreach(descend(_, visit))
     case _                => ()
 

@@ -37,10 +37,10 @@ import language.dynamics
 import scala.collection.mutable as scm
 
 import anticipation.*
+import beneficence.*
 import gossamer.*
 import proscenium.*
 import vacuous.*
-import beneficence.*
 
 object XmlSchema:
   private[xylophone] val elements: scm.HashMap[XmlSchema, Dictionary[Tag]] = scm.HashMap()

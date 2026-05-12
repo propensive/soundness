@@ -33,11 +33,11 @@
 package orthodoxy
 
 import anticipation.*
+import beneficence.*
 import gossamer.*
 import prepositional.*
 import telekinesis.*
 import vacuous.*
-import beneficence.*
 
 
 object Authorization:

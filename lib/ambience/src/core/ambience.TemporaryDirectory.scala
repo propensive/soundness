@@ -33,8 +33,8 @@
 package ambience
 
 import anticipation.*
-import prepositional.*
 import beneficence.*
+import prepositional.*
 
 trait TemporaryDirectory extends Findable:
   def directory(): Text

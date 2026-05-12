@@ -88,6 +88,7 @@ object Subcompiler:
               then found = c
               if c.outer == NoSourcePosition then c = NoSourcePosition else c = c.outer
             position = found
+
           case _ =>
             while position.outer != NoSourcePosition do position = position.outer
 

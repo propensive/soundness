@@ -33,8 +33,8 @@
 package probably
 
 import ambience.*
-import turbulence.*
 import beneficence.*
+import turbulence.*
 
 object Reporter:
   given report: (Stdio, Environment, TestPalette) => Reporter[Report]:

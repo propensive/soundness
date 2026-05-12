@@ -165,18 +165,22 @@ object internal extends protointernal:
 
     transparent inline given quantityAddOp
     :   [ u <: Measure, v <: Measure ] => Quantity[u] is AddOp by Quantity[v] =
+
       ${quantitative.internal.makeAddOp[u, v]}
 
     transparent inline given quantitySubOp
     :   [ u <: Measure, v <: Measure ] => Quantity[u] is SubOp by Quantity[v] =
+
       ${quantitative.internal.makeSubOp[u, v]}
 
     transparent inline given quantityMulOp
     :   [ u <: Measure, v <: Measure ] => Quantity[u] is MulOp by Quantity[v] =
+
       ${quantitative.internal.makeMulOp[u, v]}
 
     transparent inline given quantityDivOp
     :   [ u <: Measure, v <: Measure ] => Quantity[u] is DivOp by Quantity[v] =
+
       ${quantitative.internal.makeDivOp[u, v]}
 
 

@@ -33,10 +33,10 @@
 package escapade
 
 import anticipation.*
+import beneficence.*
 import gossamer.*
 import prepositional.*
 import spectacular.*
-import beneficence.*
 
 object escapes:
   object foreground:

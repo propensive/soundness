@@ -67,6 +67,6 @@ object Annotations:
     t.productIterator.foreach(descend(_, visit))
 
   private def descend(x: Any, visit: untpd.Tree => Unit): Unit = x match
-    case sub: untpd.Tree => walk(sub)(visit)
+    case sub: untpd.Tree  => walk(sub)(visit)
     case it:  Iterable[?] => it.foreach(descend(_, visit))
     case _                => ()
