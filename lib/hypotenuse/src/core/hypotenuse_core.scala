@@ -244,16 +244,16 @@ extension (byte: Byte)
   inline infix def ** (exponent: Double): Double = math.pow(byte.toDouble, exponent)
 
   @targetName("octalByte")
-  inline def octal: Text = JInt.toOctalString(byte).nn.tt
+  inline def octal: Text = JInt.toOctalString(byte & 0xff).nn.tt
 
   @targetName("hexByte")
-  inline def hex: Text = JInt.toHexString(byte).nn.tt
+  inline def hex: Text = JInt.toHexString(byte & 0xff).nn.tt
 
   @targetName("base32Byte")
   inline def base32: Text = JInt.toString(byte, 32).tt
 
   @targetName("binaryByte")
-  inline def binary: Text = JInt.toBinaryString(byte).nn.tt
+  inline def binary: Text = JInt.toBinaryString(byte & 0xff).nn.tt
 
   @targetName("floorModByte")
   inline infix def %% (right: Int): Int = math.floorMod(byte, right)
@@ -281,16 +281,16 @@ extension (short: Short)
   inline infix def ** (exponent: Double): Double = math.pow(short.toDouble, exponent)
 
   @targetName("octalShort")
-  inline def octal: Text = JInt.toOctalString(short).nn.tt
+  inline def octal: Text = JInt.toOctalString(short & 0xffff).nn.tt
 
   @targetName("hexShort")
-  inline def hex: Text = JInt.toHexString(short).nn.tt
+  inline def hex: Text = JInt.toHexString(short & 0xffff).nn.tt
 
   @targetName("base32Short")
   inline def base32: Text = JInt.toString(short, 32).tt
 
   @targetName("binaryShort")
-  inline def binary: Text = JInt.toBinaryString(short).nn.tt
+  inline def binary: Text = JInt.toBinaryString(short & 0xffff).nn.tt
 
   @targetName("floorModShort")
   inline infix def %% (right: Short): Short = math.floorMod(short, right).toShort
