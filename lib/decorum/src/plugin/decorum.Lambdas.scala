@@ -68,32 +68,34 @@ object Lambdas:
     val out     = mutable.ListBuffer[LambdaSite]()
     val content = String(source.content)
 
-    def visit(t: untpd.Tree, parentApply: Option[untpd.Apply]): Unit =
+    // Only Functions that are *direct* arguments to an Apply count for this
+    // rule. A Function nested inside a tuple, conditional, or other
+    // expression in an argument position doesn't get attributed to the
+    // surrounding call — only an Apply whose arg slot literally holds the
+    // lambda (or a block whose result is the lambda) does.
+    def walk(t: untpd.Tree): Unit =
       t match
-        case f: untpd.Function => parentApply.foreach: parent =>
-          siteFor(f, parent, content, source).foreach(out += _)
+        case a: untpd.Apply =>
+          a.args.foreach: arg =>
+            directLambda(arg).foreach: f =>
+              siteFor(f, a, content, source).foreach(out += _)
 
         case _ => ()
+      t.productIterator.foreach(descend(_, walk))
 
-      val nextParent: Option[untpd.Apply] = t match
-        case a: untpd.Apply => Some(a)
-        case _              => parentApply
-
-      t.productIterator.foreach(descend(_, nextParent, visit))
-
-    visit(tree, None)
+    walk(tree)
     out.toList
 
-  private def descend
-     ( x:           Any,
-       parent:      Option[untpd.Apply],
-       visit:       (untpd.Tree, Option[untpd.Apply]) => Unit )
-  :   Unit =
+  private def directLambda(t: untpd.Tree): Option[untpd.Function] = t match
+    case f: untpd.Function                          => Some(f)
+    case b: untpd.Block if b.expr.isInstanceOf[untpd.Function] =>
+      Some(b.expr.asInstanceOf[untpd.Function])
+    case _                                          => None
 
-    x match
-      case sub: untpd.Tree  => visit(sub, parent)
-      case it:  Iterable[?] => it.foreach(descend(_, parent, visit))
-      case _                => ()
+  private def descend(x: Any, visit: untpd.Tree => Unit): Unit = x match
+    case sub: untpd.Tree  => visit(sub)
+    case it:  Iterable[?] => it.foreach(descend(_, visit))
+    case _                => ()
 
 
   private def siteFor
@@ -111,27 +113,49 @@ object Lambdas:
       if op == Opener.Unknown then None
       else
         val arrowOffset = findArrow(content, lamSp.start, lamSp.end)
-        if arrowOffset < 0 then None
+        val isPlaceholder = arrowOffset < 0
+        // An explicit `_ => …` (or `(_, _) => …`) is exempt from R312: the
+        // author chose `_` as the parameter name to signal that the value
+        // is unused, and that signal is independent of `(…)` / `{…}` /
+        // `: …` choice. Detect by: the function HAS an explicit `=>` in
+        // source, and every parameter is a synthetic `_$N` (the name
+        // dotty assigns to a user-written `_` parameter).
+        val unusedExplicit = !isPlaceholder && allParamsUnderscore(f)
+        if unusedExplicit then None
         else
-          val arrowLine = source.offsetToLine(arrowOffset) + 1
-          val arrowCol  = arrowOffset - source.startOfLine(arrowOffset) + 1
-          val openerLn  = source.offsetToLine(openerOffset) + 1
-          val openerCl  = openerOffset - source.startOfLine(openerOffset) + 1
-          val startLine = source.offsetToLine(lamSp.start) + 1
-          val endLine   = source.offsetToLine(lamSp.end - 1) + 1
-          val anon      = isAnonymous(f)
-          val multi     = endLine > startLine
-          val last      = isLastOnLine(content, lamSp.end)
+          val pivotOffset = if isPlaceholder then lamSp.start else arrowOffset
+          val pivotLine   = source.offsetToLine(pivotOffset) + 1
+          val pivotCol    = pivotOffset - source.startOfLine(pivotOffset) + 1
+          val openerLn    = source.offsetToLine(openerOffset) + 1
+          val openerCl    = openerOffset - source.startOfLine(openerOffset) + 1
+          val startLine   = source.offsetToLine(lamSp.start) + 1
+          val endLine     = source.offsetToLine(lamSp.end - 1) + 1
+          val multi       = endLine > startLine
+          val last        = isLastOnLine(content, lamSp.end)
+          // "Anonymous" here means *placeholder syntax* — `f(_.bar)`,
+          // `f(_ + 1)` — distinguished from `f(_ => body)` by the absence
+          // of `=>` in the function's source span.
           Some
            ( LambdaSite
               ( opener      = op,
-                line        = arrowLine,
-                col         = arrowCol,
+                line        = pivotLine,
+                col         = pivotCol,
                 openerLine  = openerLn,
                 openerCol   = openerCl,
-                isAnonymous = anon,
+                isAnonymous = isPlaceholder,
                 isMultiLine = multi,
                 lastOnLine  = last ) )
+
+  // True if every parameter of the function is a synthesised `_$N` name —
+  // dotty's renaming for both placeholder-lifting and an explicit `_`
+  // user-written parameter name.
+  private def allParamsUnderscore(f: untpd.Function): Boolean =
+    f.args.nonEmpty && f.args.forall:
+      case v: untpd.ValDef =>
+        val name = v.name.toString
+        name.startsWith("_$") && name.drop(2).forall(_.isDigit)
+
+      case _ => false
 
 
   // Scan forward from `from` (typically the end of the call receiver's span)
@@ -170,20 +194,6 @@ object Lambdas:
       else if c == '=' && content.charAt(i + 1) == '>' then return i
       else i += 1
     -1
-
-  // A lambda is "anonymous" in the placeholder sense if every parameter has
-  // a synthesised name (e.g. `_$1`, `x$1`) — these are the names dotty
-  // assigns when lifting a `_` placeholder into a `Function`. Explicit
-  // `x => …` lambdas have user-given names.
-  private def isAnonymous(f: untpd.Function): Boolean =
-    f.args.nonEmpty && f.args.forall:
-      case v: untpd.ValDef =>
-        val name = v.name.toString
-        // Dotty uses `_$N` for `_`-derived placeholders; some Scala
-        // versions use `x$N` for synthetics. Either matches.
-        (name.startsWith("_$") || name.startsWith("x$")) && name.tail.tail.forall(_.isDigit)
-
-      case _ => false
 
   // True if nothing but whitespace, closing brackets, commas, or semicolons
   // follows the lambda's last token until the next newline. The colon-arg
