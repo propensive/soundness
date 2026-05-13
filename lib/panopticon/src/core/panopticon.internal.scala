@@ -113,12 +113,10 @@ object internal:
 
     /** Matches `receiver.selectDynamic("name")(<using lens>)`. */
     def matchSelectDynamic(t: Term): Option[(Term, String)] = t match
-      case Apply(Apply(Select(receiver, "selectDynamic"), List(Literal(StringConstant(name)))), _)
-      =>
-        Some((receiver, name))
+      case Apply(Apply(Select(recv, "selectDynamic"), List(Literal(StringConstant(name)))), _) =>
+        Some((recv, name))
 
-      case Apply(Select(receiver, "selectDynamic"), List(Literal(StringConstant(name))))
-      =>
+      case Apply(Select(receiver, "selectDynamic"), List(Literal(StringConstant(name)))) =>
         Some((receiver, name))
 
       case _ => None
@@ -212,7 +210,7 @@ object internal:
 
             case Some(_) => None  // non-singleton operand — can't fuse
 
-            case None    => matchOpticApply(s) match
+            case None => matchOpticApply(s) match
               case Some((receiver, opTerm)) if isSingleton(opTerm.tpe) =>
                 gatherSteps(receiver, paramSym).map: steps =>
                   steps :+ TraversalStep(opTerm, opTerm.tpe)

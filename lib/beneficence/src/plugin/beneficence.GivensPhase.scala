@@ -71,7 +71,7 @@ class GivensPhase() extends PluginPhase:
       findable:        Symbols.Symbol,
       suite:           Symbols.Symbol )
     ( using Context )
-  :     Unit =
+  :   Unit =
 
     val sourceFile = unit.source.file.path
 
@@ -128,7 +128,7 @@ class GivensPhase() extends PluginPhase:
         collectedSuites += Entry(sourcePath(symbol), sourceFile)
 
       private def typeclassOf(tpe: Types.Type, valSymbol: Symbols.Symbol)(using Context)
-      :     Symbols.Symbol =
+      :   Symbols.Symbol =
 
         // For a "normal" given like `given foo: Show[Int] = ...` baseClasses leads with
         // the typeclass class. For a modular `given X: T:` (with a refining body), the

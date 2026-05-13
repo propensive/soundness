@@ -133,7 +133,7 @@ extension (yaml: Yaml.Ast)
     case value: Long                   => jacinta.Bcd(BigDecimal(value))
     case value: Double                 => jacinta.Bcd(BigDecimal(value))
 
-    case _                             =>
+    case _ =>
       expected(YamlPrimitive.Decimal) yet jacinta.Bcd(BigDecimal(0))
 
   def string(using Tactic[YamlError]): Text =

@@ -41,10 +41,6 @@ import prepositional.*
 import spectacular.*
 import symbolism.*
 
-final case class Delta(tensor: Tensor[Float, 2]):
-  def dx: Float = tensor.element(0)
-  def dy: Float = tensor.element(1)
-
 object Delta:
   def apply(dx: Float, dy: Float): Delta = Delta(Tensor((dx, dy)))
 
@@ -78,10 +74,14 @@ object Delta:
   given multiplicableByInt: Delta is Multiplicable by Int to Delta = Multiplicable:
     (delta, scalar) => Delta(delta.dx*scalar, delta.dy*scalar)
 
+final case class Delta(tensor: Tensor[Float, 2]):
+  def dx: Float = tensor.element(0)
+  def dy: Float = tensor.element(1)
+
 val Up:    Delta = Delta(0.0f, -1.0f)
-val Down:  Delta = Delta(0.0f,  1.0f)
+val Down:  Delta = Delta(0.0f, 1.0f)
 val Left:  Delta = Delta(-1.0f, 0.0f)
-val Right: Delta = Delta( 1.0f, 0.0f)
+val Right: Delta = Delta(1.0f, 0.0f)
 
 extension [numeric: Numeric, numeric2: Numeric](tuple: (numeric, numeric2))
   def `unary_+`: Delta = Delta(numeric.toFloat(tuple(0)), numeric2.toFloat(tuple(1)))

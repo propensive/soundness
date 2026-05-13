@@ -33,7 +33,6 @@
 package caesura
 
 import scala.language.unsafeNulls
-
 import scala.quoted.*
 
 import ambience.*, environments.java, systems.java
@@ -120,7 +119,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
         .append(i*1.25).append(',')
         .append("event_").append(i).append(',')
         .append("category-").append(i % 50).append(',')
-        .append(i*7919L % 100003L).append('\n')
+        .append((i*7919L)%100003L).append('\n')
       i += 1
     sb.toString
 

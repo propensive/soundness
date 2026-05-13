@@ -59,7 +59,8 @@ object GithubActions:
       line:    Optional[Int]  = Unset,
       title:   Optional[Text] = Unset )
     ( using Stdio )
-  :     Unit =
+  :   Unit =
+
     emit(t"error", file, line, title, message)
 
 
@@ -69,7 +70,8 @@ object GithubActions:
       line:    Optional[Int]  = Unset,
       title:   Optional[Text] = Unset )
     ( using Stdio )
-  :     Unit =
+  :   Unit =
+
     emit(t"warning", file, line, title, message)
 
 
@@ -79,7 +81,8 @@ object GithubActions:
       line:    Optional[Int]  = Unset,
       title:   Optional[Text] = Unset )
     ( using Stdio )
-  :     Unit =
+  :   Unit =
+
     emit(t"notice", file, line, title, message)
 
 
@@ -114,7 +117,7 @@ object GithubActions:
       title:   Optional[Text],
       message: Text )
     ( using Stdio )
-  :     Unit =
+  :   Unit =
 
     val props =
       List

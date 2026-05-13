@@ -33,6 +33,7 @@
 package urticose
 
 import language.adhocExtensions
+
 import beneficence.*
 
 object Online extends Online()

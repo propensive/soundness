@@ -45,7 +45,9 @@ case class Poset[element: PartiallyOrdered](elements: Set[element]):
     val map: scm.HashMap[element, scm.HashSet[element]] =
       elements.map(_ -> scm.HashSet()).to(scm.HashMap)
 
-    for left <- elements; right <- elements
+    for
+      left  <- elements
+      right <- elements
     do if element.compare(left, right) then map(left) += right
 
     Dag(map.view.mapValues(_.to(Set)).to(Map)).reduction

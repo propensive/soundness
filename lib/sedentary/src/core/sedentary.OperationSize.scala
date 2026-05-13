@@ -39,8 +39,6 @@ import quantitative.*
 import symbolism.*
 import vacuous.*
 
-case class OperationSize(sizeText: Text, rateText: Double => Text)
-
 object OperationSize:
   // Captures the `Decimalizer` available where `Quantity` is used as an
   // `operationSize` argument to `Bench.apply`. The captured closure renders
@@ -55,3 +53,5 @@ object OperationSize:
         meanSeconds =>
           val rate: Quantity[size & Seconds[-1]] = Quantity(quantity.value/meanSeconds)
           rate.express )
+
+case class OperationSize(sizeText: Text, rateText: Double => Text)

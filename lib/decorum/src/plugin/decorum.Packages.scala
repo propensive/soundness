@@ -62,7 +62,7 @@ object Packages:
   // Render a package qualifier (`a.b.c`) as a list of segments. The empty
   // package's synthetic `Ident("<empty>")` produces an empty list.
   private def pidSegments(t: untpd.Tree): List[String] = t match
-    case untpd.Ident(name)        =>
+    case untpd.Ident(name) =>
       val n = name.toString
       if n == "<empty>" || n.isEmpty then Nil else List(n)
 

@@ -244,7 +244,7 @@ object internal:
       ( symbol:     Symbol,
         target:     TypeRepr,
         typeParams: List[Symbol] )
-    :     List[List[TypeRepr]] =
+    :   List[List[TypeRepr]] =
 
       val raw = resultOf(symbol.info)
       val bindings = unify(raw, target, typeParams.toSet)
@@ -278,7 +278,7 @@ object internal:
           Nil
 
     def boundsRespected(typeParams: List[Symbol], bindings: Map[Symbol, TypeRepr])
-    :     Boolean =
+    :   Boolean =
 
       typeParams.forall: tp =>
         bindings.get(tp).fold(true): boundType =>
@@ -358,7 +358,7 @@ object internal:
     // Used to instantiate type variables in `using` clauses according to the
     // type that the proposed given is being asked to provide.
     def unify(template: TypeRepr, target: TypeRepr, params: Set[Symbol])
-    :     Map[Symbol, TypeRepr] =
+    :   Map[Symbol, TypeRepr] =
 
       val templateSymbol = template.typeSymbol
 
@@ -380,7 +380,7 @@ object internal:
           Map.empty
 
     def unifyInfo(template: TypeRepr, target: TypeRepr, params: Set[Symbol])
-    :     Map[Symbol, TypeRepr] =
+    :   Map[Symbol, TypeRepr] =
 
       (template, target) match
         case (TypeBounds(tLo, tHi), TypeBounds(rLo, rHi)) =>

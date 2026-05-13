@@ -89,7 +89,7 @@ object internal:
 
   private def exportedTargets(using Quotes, dotty.tools.dotc.core.Contexts.Context)
     ( rootSym: dotty.tools.dotc.core.Symbols.Symbol )
-  :     List[Typename] =
+  :   List[Typename] =
 
     import dotty.tools.dotc.core.{Flags, Types}
     import quotes.reflect.TypeRepr

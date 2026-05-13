@@ -1147,10 +1147,11 @@ object Html extends Tag.Container
                 case Token.Comment => current = Comment(content)
                 case Token.Doctype => current = Doctype(content)
 
-                case Token.Cdata   => current =
-                  if parent.foreign then TextNode(content) else
-                    fail(InvalidCdata, mark)
-                    Comment(t"[CDATA[${content}]]")
+                case Token.Cdata =>
+                  current =
+                    if parent.foreign then TextNode(content) else
+                      fail(InvalidCdata, mark)
+                      Comment(t"[CDATA[${content}]]")
 
                 case Token.Empty =>
                   if admit(content) then empty() else infer:
@@ -1208,7 +1209,7 @@ object Html extends Tag.Container
                           val na = new Array[Attributes](newCap)
                           val sz = pendingFormattingSize
                           jl.System.arraycopy(pendingFormattingLabels, 0, nl, 0, sz)
-                          jl.System.arraycopy(pendingFormattingAttrs,  0, na, 0, sz)
+                          jl.System.arraycopy(pendingFormattingAttrs, 0, na, 0, sz)
                           pendingFormattingLabels = nl
                           pendingFormattingAttrs  = na
                         pendingFormattingLabels(pendingFormattingSize) = parent.label

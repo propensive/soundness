@@ -76,7 +76,8 @@ object Semver:
           if prerelease == t"-" || build == t"+" then
             raise(SemverError(text, SemverError.Reason.EmptyIdentifier))
 
-          for extra   <- List(prerelease2, build2).compact
+          for
+            extra   <- List(prerelease2, build2).compact
             element <- extra
           do element match
             case r"0[0-9]+"       => raise(SemverError(text, SemverError.Reason.LeadingZero))
