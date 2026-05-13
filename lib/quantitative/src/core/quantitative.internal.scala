@@ -73,13 +73,13 @@ object internal extends protointernal:
       _ + _.value
 
     given addable2: Temperature is Addable by Quantity[Rankines[1]] to Temperature =
-      _ + _.value*9/5
+      _ + _.value*5/9
 
     given subtractable: Temperature is Subtractable by Quantity[Kelvins[1]] to Temperature =
       _ - _.value
 
     given subtractable2: Temperature is Subtractable by Quantity[Rankines[1]] to Temperature =
-      _ - _.value*9/5
+      _ - _.value*5/9
 
     given subtractable3: Temperature is Subtractable by Temperature to Quantity[Kelvins[1]] =
       (left, right) => Quantity(left.kelvin - right.kelvin)
