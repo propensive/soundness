@@ -65,3 +65,20 @@ object Tests extends Suite(m"Geodesy tests"):
       angle.canonical.show
 
     . assert(_ == t"-5.0°")
+
+    suite(m"Compass.points8"):
+      test(m"contains eight points"):
+        Compass.points8.length
+      . assert(_ == 8)
+
+      test(m"index 7 is Northwest"):
+        Compass.points8(7)
+      . assert(_ == Northwest)
+
+      test(m"contains no duplicates"):
+        Compass.points8.toSet.size
+      . assert(_ == 8)
+
+      test(m"315 degrees maps to Northwest"):
+        Compass[8](Angle.degrees(315))
+      . assert(_ == Northwest)

@@ -108,6 +108,27 @@ object Tests extends Suite(m"Hypotenuse tests"):
       //   Iterable[Quanta[Height]](Quanta[Height](6, 11), Quanta[Height](5, 10), Quanta[Height](6, 2)).median
       // . assert(_ == Quanta[Height](6, 2))
 
+    suite(m"Power tests"):
+      test(m"Short ** beyond Short range does not truncate"):
+        (200: Short) ** 2.0
+      . assert(_ == 40000.0)
+
+      test(m"Short ** preserves fractional results"):
+        (1000: Short) ** 1.5
+      . assert(_ == math.pow(1000.0, 1.5))
+
+      test(m"Byte ** beyond Byte range does not truncate"):
+        (50: Byte) ** 2.0
+      . assert(_ == 2500.0)
+
+      test(m"Int ** preserves fractional results"):
+        2 ** 0.5
+      . assert(_ == math.sqrt(2.0))
+
+      test(m"Long ** preserves fractional results"):
+        2L ** 0.5
+      . assert(_ == math.sqrt(2.0))
+
     suite(m"Inequality tests"):
       test(m"1.2 < x < 1.4"):
         List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 < _ < 1.4)

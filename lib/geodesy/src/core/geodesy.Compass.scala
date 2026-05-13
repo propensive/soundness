@@ -39,7 +39,7 @@ object Compass:
     IArray(North, East, South, West)
 
   val points8: IArray[CardinalWind | IntercardinalWind] =
-    IArray(North, Northeast, East, Southeast, South, Southwest, West, Southwest)
+    IArray(North, Northeast, East, Southeast, South, Southwest, West, Northwest)
 
   val points16: IArray[CardinalWind | IntercardinalWind | HalfWind] =
     IArray
