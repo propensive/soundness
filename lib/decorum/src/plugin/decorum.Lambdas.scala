@@ -135,7 +135,13 @@ object Lambdas:
           val startLine   = source.offsetToLine(lamSp.start) + 1
           val endLine     = source.offsetToLine(lamSp.end - 1) + 1
           val multi       = endLine > startLine
-          val last        = isLastOnLine(content, lamSp.end)
+          // "Last on line" governs whether `f: x => …` is a syntactically
+          // valid alternative: it is only if the *whole call* extends to
+          // end-of-line. Anchor the check after the enclosing Apply's
+          // span, not after the lambda — so a lambda nested inside an
+          // outer call like `recur(0, xs.map { … })` correctly reports
+          // not-last (`)` of `recur` trails the call).
+          val last        = isLastOnLine(content, parent.span.end)
           // "Anonymous" here means *placeholder syntax* — `f(_.bar)`,
           // `f(_ + 1)` — distinguished from `f(_ => body)` by the absence
           // of `=>` in the function's source span.
@@ -201,16 +207,17 @@ object Lambdas:
       else i += 1
     -1
 
-  // True if nothing but whitespace, closing brackets, commas, or semicolons
-  // follows the lambda's last token until the next newline. The colon-arg
-  // form `f: x => …` is only legal when the lambda is the trailing item on
-  // its source line — this is what permits / forbids that form.
+  // True if only whitespace and end-of-line comments follow `endOffset`
+  // until the next newline. The colon-arg form `f: x => …` is only legal
+  // when the *whole call* extends to the end of the source line —
+  // any subsequent `)`, `}`, `,`, etc. would have to come after the
+  // colon-arg block, which the syntax does not allow.
   private def isLastOnLine(content: String, endOffset: Int): Boolean =
     var i = endOffset
     val n = content.length
     while i < n do
       val c = content.charAt(i)
       if c == '\n' || c == '\r' then return true
-      if c != ' ' && c != '\t' && c != ')' && c != '}' && c != ',' && c != ';' then return false
+      if c != ' ' && c != '\t' then return false
       i += 1
     true
