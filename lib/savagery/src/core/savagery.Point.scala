@@ -41,10 +41,6 @@ import prepositional.*
 import spectacular.*
 import symbolism.*
 
-final case class Point(tensor: Tensor[Float, 2]):
-  def x: Float = tensor.element(0)
-  def y: Float = tensor.element(1)
-
 object Point:
   def apply(x: Float, y: Float): Point = Point(Tensor((x, y)))
 
@@ -66,3 +62,7 @@ object Point:
   given subtractableByPoint: Point is Subtractable by Point to Delta =
     Subtractable: (left, right) =>
       Delta(left.x - right.x, left.y - right.y)
+
+final case class Point(tensor: Tensor[Float, 2]):
+  def x: Float = tensor.element(0)
+  def y: Float = tensor.element(1)

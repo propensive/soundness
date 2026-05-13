@@ -35,9 +35,6 @@ package breviloquence
 import fulminate.*
 
 object CborError:
-  enum Primitive:
-    case Integer, Float, ByteString, TextString, Array, Map, Tag, Boolean, Null, Undefined
-
   object Primitive:
     given communicable: Primitive is Communicable =
       case Integer    => m"integer"
@@ -51,6 +48,9 @@ object CborError:
       case Null       => m"null"
       case Undefined  => m"undefined"
 
+  enum Primitive:
+    case Integer, Float, ByteString, TextString, Array, Map, Tag, Boolean, Null, Undefined
+
   object Reason:
     given communicable: Reason is Communicable =
       case Truncated(offset)        => m"the input was truncated at byte $offset"
@@ -63,7 +63,7 @@ object CborError:
       case NonStringKey             => m"the map key was not a string"
       case Absent                   => m"the CBOR value was not present"
 
-      case Reserved(offset, byte)   =>
+      case Reserved(offset, byte) =>
         m"a reserved CBOR head byte ${byte.toString} was found at byte $offset"
 
       case BadSimpleValue(offset, value) =>

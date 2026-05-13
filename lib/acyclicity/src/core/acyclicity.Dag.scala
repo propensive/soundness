@@ -108,13 +108,12 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
 
   def reduction: Dag[node] =
     val allEdges = closure.edgeMap
-
-    val removals = for
-      i <- keys
-      j <- edgeMap(i)
-      k <- edgeMap.getOrElse(j, Set())
-        if allEdges(i)(k)
-    yield (i, k)
+    val removals =
+      for
+        i <- keys
+        j <- edgeMap(i)
+        k <- edgeMap.getOrElse(j, Set()) if allEdges(i)(k)
+      yield (i, k)
 
     Dag:
       removals.foldLeft(edgeMap):

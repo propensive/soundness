@@ -150,7 +150,7 @@ object StackTrace:
               case 'n' => char(index + 9) match
                 case 'a' => token(index, "$anonfun$adapted", "Λ")
 
-                case _   => char(index + 5) match
+                case _ => char(index + 5) match
                   case 'f' => token(index, "$anonfun", "λ")
                   case _   => token(index, "$anon", "α")
 

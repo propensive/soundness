@@ -193,7 +193,9 @@ object Matrix:
       ( rowCount,
         columnCount,
         IArray.build[element](columnCount*rowCount): array =>
-          for row <- 0 until rowCount; column <- 0 until columnCount
+          for
+            row    <- 0 until rowCount
+            column <- 0 until columnCount
           do rows.productElement(row).asMatchable.absolve match
             case tuple: Tuple =>
               array(columnCount*row + column) =

@@ -127,7 +127,7 @@ object UrlInterpolator:
             case '{$_ : Substitution[UrlFragment, tpe, sub]} =>
               val label: String = TypeRepr.of[sub] match
                 case ConstantType(StringConstant(s)) => s
-                case _                               =>
+                case _ =>
                   halt(m"expected a literal string label for the substitution")
               checkState = rethrow(Runtime.substitute(checkState, label.tt))
 

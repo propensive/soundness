@@ -66,7 +66,7 @@ object SvgParser:
   def rootElement(xml: Xml)(using Tactic[SvgError]): Element = xml match
     case e: Element if e.label == t"svg" => e
     case Fragment(nodes*)                => findSvg(nodes)
-    case other                           =>
+    case other =>
       abort(SvgError(SvgError.Reason.NotAnSvg(labelOf(other))))
 
 
@@ -142,7 +142,7 @@ object SvgParser:
 
   private def decodeSvgDef(elem: Element)
     ( using Tactic[SvgError] )
-  :     Optional[SvgDef] =
+  :   Optional[SvgDef] =
 
     elem.label match
       case t"linearGradient" => decodeLinearGradient(elem)
@@ -151,7 +151,7 @@ object SvgParser:
 
   private def decodeLinearGradient(elem: Element)
     ( using Tactic[SvgError] )
-  :     LinearGradient[Color in Srgb] =
+  :   LinearGradient[Color in Srgb] =
 
     val id = elem.attributes.at(t"id").let(SvgId(_)).or(SvgId(t""))
 
@@ -353,10 +353,10 @@ object SvgParser:
             case ("scale", List(x, y))              => xs += Transform.Scale(x, y)
             case ("rotate", List(angle))            => xs += Transform.Rotate(Angle.degrees(angle))
 
-            case ("skewX", List(angle))             =>
+            case ("skewX", List(angle)) =>
               xs += Transform.Skew(Angle.degrees(angle), Orientation.Horizontal)
 
-            case ("skewY", List(angle))             =>
+            case ("skewY", List(angle)) =>
               xs += Transform.Skew(Angle.degrees(angle), Orientation.Vertical)
 
             case ("matrix", List(a, b, c, d, e, f)) =>

@@ -538,17 +538,17 @@ private[ypsiloid] final class YamlParser:
         maybeBlockMappingFromQuotedKey(a, indent, tagText, anchorName)
       else
         (headByte: @switch) match
-          case Quote        =>
+          case Quote =>
             advance()
             val s = parseDoubleQuoted()
             maybeBlockMappingFromQuotedKey(s, indent, tagText, anchorName)
 
-          case Apostrophe   =>
+          case Apostrophe =>
             advance()
             val s = parseSingleQuoted()
             maybeBlockMappingFromQuotedKey(s, indent, tagText, anchorName)
 
-          case OpenBracket  =>
+          case OpenBracket =>
             val savedFlowParent = flowParentIndent
             flowParentIndent = blockParentIndent
             advance()
@@ -556,7 +556,7 @@ private[ypsiloid] final class YamlParser:
             flowParentIndent = savedFlowParent
             maybeBlockMappingFromQuotedKey(s, indent, tagText, anchorName)
 
-          case OpenBrace    =>
+          case OpenBrace =>
             val savedFlowParent = flowParentIndent
             flowParentIndent = blockParentIndent
             advance()
@@ -572,7 +572,7 @@ private[ypsiloid] final class YamlParser:
           case CloseBracket | CloseBrace | Comma | 0x40 | 0x60 =>
             errorAt(Issue.ReservedIndicatorAtNodeStart)
 
-          case _            =>
+          case _ =>
             prefixesConsumed = false
             parsePlainOrBlockMapping(indent, tagText, anchorName)
 
@@ -681,7 +681,7 @@ private[ypsiloid] final class YamlParser:
       else peek match
         case Newline => advance()
 
-        case Hash    =>
+        case Hash =>
           while more && peek != Newline do advance()
           if more then advance()
 
@@ -1035,8 +1035,8 @@ private[ypsiloid] final class YamlParser:
       case "true" | "True" | "TRUE"         => Yaml.Ast.Bool(true)
       case "false" | "False" | "FALSE"      => Yaml.Ast.Bool(false)
 
-      case ".inf" | ".Inf" | ".INF"
-        | "+.inf" | "+.Inf" | "+.INF"       => Yaml.Ast.Decimal(Double.PositiveInfinity)
+      case ".inf" | ".Inf" | ".INF" | "+.inf" | "+.Inf" | "+.INF" =>
+        Yaml.Ast.Decimal(Double.PositiveInfinity)
 
       case "-.inf" | "-.Inf" | "-.INF"      => Yaml.Ast.Decimal(Double.NegativeInfinity)
       case ".nan" | ".NaN" | ".NAN"         => Yaml.Ast.Decimal(Double.NaN)
@@ -1262,7 +1262,7 @@ private[ypsiloid] final class YamlParser:
       case LowerV     => appendChar(0x0b.toChar)
       case Tab        => appendChar('\t')
 
-      case Newline    =>
+      case Newline =>
         // \<newline> = explicit line-break suppression. The newline
         // itself is consumed (advance was done above) and any leading
         // whitespace on the continuation line is stripped, so a literal
@@ -1930,7 +1930,7 @@ private[ypsiloid] final class YamlParser:
         case Newline =>
           advance()
 
-        case Hash    =>
+        case Hash =>
           while more && peek != Newline do advance()
           if more then advance()
 

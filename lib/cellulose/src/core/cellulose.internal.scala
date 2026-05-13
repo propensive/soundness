@@ -689,5 +689,3 @@ object internal extends protointernal:
                   case ch                                          => consume(Word)
 
       (first.column, stream(first, padding = false).drop(1))
-
-

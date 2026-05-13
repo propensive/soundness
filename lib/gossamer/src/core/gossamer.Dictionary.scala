@@ -47,7 +47,8 @@ object Dictionary:
   // allocating a fresh substring at construction time; the offset is consumed
   // virtually as the dictionary is walked.
   private[gossamer] inline def just[element](text: Text, offset: Int, value: element)
-  :     Just[element] =
+  :   Just[element] =
+
     Just(text, offset, value)
 
   extension [element](just: Just[element])
@@ -153,7 +154,7 @@ enum Dictionary[+element]:
   protected def lookup(entry: Text, offset: Int): Optional[element] = this match
     case Empty                  => Unset
 
-    case just: Just[element]    =>
+    case just: Just[element] =>
       if matchesEntry(just.text, just.offset, entry, offset) then just.value else Unset
 
     case Branch(value, map) =>
@@ -177,7 +178,7 @@ enum Dictionary[+element]:
       if position >= stop then node match
         case Empty                  => Unset
 
-        case just: Just[element]    =>
+        case just: Just[element] =>
           if just.offset + extra == just.text.length then just.value else Unset
 
         case Branch(value, _)       => value
@@ -187,11 +188,11 @@ enum Dictionary[+element]:
         node match
           case Empty                  => Unset
 
-          case Branch(_, map)         => map.at(char) match
+          case Branch(_, map) => map.at(char) match
             case next: Dictionary[element] @unchecked => step(next, 0, position + 1)
             case _                                    => Unset
 
-          case just: Just[element]    =>
+          case just: Just[element] =>
             val pos: Int = just.offset + extra
             if pos < just.text.length && just.text.s.charAt(pos) == char
             then step(just, extra + 1, position + 1)

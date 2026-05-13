@@ -295,7 +295,7 @@ object Sequences:
     ( t:       untpd.Tree,
       enums:   List[untpd.Tree],
       body:    untpd.Tree,
-      kw:      String,            // "yield" or "do"
+      kw:      String, // "yield" or "do"
       content: String,
       source:  SourceFile )
   :   Option[Sequence] =
@@ -307,13 +307,13 @@ object Sequences:
     // (`yield` or `do`) follows the last enumerator.
     val enumEnd =
       enums.lastOption.flatMap(e => if e.span.exists then Some(e.span.end) else None)
-            .getOrElse(sp.start + 3)
+      . getOrElse(sp.start + 3)
     val kwUntil = if bodySp.exists then bodySp.end else sp.end
     val kwOffset = findKeyword(content, enumEnd, kwUntil, kw)
     if kwOffset < 0 then return None
     val firstEnumStart =
       enums.headOption.flatMap(e => if e.span.exists then Some(e.span.start) else None)
-            .getOrElse(sp.start + 4)
+      . getOrElse(sp.start + 4)
     val anchor =
       makeElem
         ( label        = "for",
@@ -476,8 +476,9 @@ object Sequences:
   // after the keyword. Fall back to the tree's body span if scanning past
   // whitespace runs off the end of the construct.
   private def bodyStartAfter
-    (content: String, from: Int, bodySp: dotty.tools.dotc.util.Spans.Span)
+    ( content: String, from: Int, bodySp: dotty.tools.dotc.util.Spans.Span )
   :   Int =
+
     val end = content.length
     var i   = from
     while i < end && (content.charAt(i) == ' ' || content.charAt(i) == '\t') do

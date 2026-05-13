@@ -85,7 +85,7 @@ trait Yaml2:
           yaml.root.asMatchable match
             case s: String => s.tt.decode[value]
 
-            case _         =>
+            case _ =>
               raise(YamlError(Reason.NotType(Yaml.primitive(yaml.root), YamlPrimitive.Str)))
               .yet(t"".decode[value])
 

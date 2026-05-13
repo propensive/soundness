@@ -390,7 +390,7 @@ final class Cursor[data]
       val newCap = cap*2
       val nm = new Array[Long](newCap)
       val no = new Array[Long](newCap)
-      System.arraycopy(marks,   0, nm, 0, marksSize)
+      System.arraycopy(marks, 0, nm, 0, marksSize)
       System.arraycopy(offsets, 0, no, 0, marksSize)
       marks   = nm
       offsets = no

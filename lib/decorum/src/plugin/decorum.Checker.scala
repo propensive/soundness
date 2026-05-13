@@ -87,7 +87,7 @@ object Checker:
     if state.prevWasAnnotation then
       out +=
         Violation
-          (file, state.prevLineNum, 1, "551.1", "annotation is not followed by a declaration")
+          ( file, state.prevLineNum, 1, "551.1", "annotation is not followed by a declaration" )
 
     state.pendingR11.foreach(out += _)
     state.pendingR11 = Nil
@@ -1971,7 +1971,7 @@ object Checker:
         val prev = stmts(i - 1)
         val cur  = stmts(i)
         if (prev.isMultiLine || cur.isMultiLine)
-            && !hasBlankLineBetween(prev.endLine, cur.startLine, content, source)
+        && !hasBlankLineBetween(prev.endLine, cur.startLine, content, source)
         then
           out +=
             Violation
@@ -1981,7 +1981,7 @@ object Checker:
         i += 1
 
   private def hasBlankLineBetween
-    (endLine: Int, startLine: Int, content: String, source: SourceFile): Boolean =
+    ( endLine: Int, startLine: Int, content: String, source: SourceFile ): Boolean =
     // Walk each line index `l` strictly between `endLine` and `startLine`
     // (1-indexed) — those are the lines that lie *between* the two
     // statements. If any is blank (whitespace only), there's a separator.

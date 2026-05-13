@@ -97,8 +97,9 @@ object Statements:
     case _                => ()
 
   private def collect
-    (stmts: List[untpd.Tree], source: SourceFile)
+    ( stmts: List[untpd.Tree], source: SourceFile )
   :   Option[StmtGroup] =
+
     val content = String(source.content)
     val infos   = mutable.ListBuffer[StmtInfo]()
     stmts.foreach: s =>
@@ -115,7 +116,7 @@ object Statements:
   // line, so walk back from `spanEnd` past whitespace to find the last
   // line containing real content.
   private def trueEndLine
-    (spanStart: Int, spanEnd: Int, content: String, source: SourceFile): Int =
+    ( spanStart: Int, spanEnd: Int, content: String, source: SourceFile ): Int =
     var i = spanEnd - 1
     val lo = spanStart
     while i > lo && i < content.length && isWhitespace(content.charAt(i)) do i -= 1

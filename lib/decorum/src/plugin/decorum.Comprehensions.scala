@@ -81,7 +81,7 @@ object Comprehensions:
   private def genLine(t: untpd.Tree, source: SourceFile): Option[GenLine] =
     t match
       case g: untpd.GenFrom  => binaryEnum(t, g.pat, g.expr, "<-", source)
-      case g: untpd.GenAlias => binaryEnum(t, g.pat, g.expr, "=",  source)
+      case g: untpd.GenAlias => binaryEnum(t, g.pat, g.expr, "=", source)
 
       case other =>
         val sp = other.span

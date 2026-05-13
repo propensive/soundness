@@ -166,7 +166,7 @@ limits:
       sb.append("\n  email: user").append(i).append("@example.com")
       sb.append("\n  active: ").append(active)
       sb.append("\n  role: ").append(role)
-      sb.append("\n  score: ").append(i*7 % 100).append('.').append(i % 10)
+      sb.append("\n  score: ").append((i*7)%100).append('.').append(i%10)
       sb.append('\n')
       i += 1
     sb.toString.tt

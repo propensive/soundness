@@ -46,7 +46,10 @@ import turbulence.*
 object Raster:
   def apply(width: Int, height: Int)(pixel: (Int, Int) => Chroma): Raster =
     val image = jai.BufferedImage(width, height, jai.BufferedImage.TYPE_INT_RGB)
-    for x <- 0 until width; y <- 0 until height do image.setRGB(x, y, pixel(x, y).underlying)
+    for
+      x <- 0 until width
+      y <- 0 until height
+    do image.setRGB(x, y, pixel(x, y).underlying)
     new Raster(image)
 
   def apply[streamable: Streamable by Data](input: streamable): Raster =

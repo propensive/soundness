@@ -34,7 +34,6 @@ package beneficence
 
 import java.io.{BufferedReader, BufferedWriter, File, FileInputStream, FileOutputStream,
     InputStreamReader, OutputStreamWriter}
-
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, StandardCopyOption}
 
@@ -51,7 +50,7 @@ object GivensWriter:
     ( collected:         mutable.LinkedHashMap[String, mutable.Buffer[Entry]],
       recompiledSources: Set[String] )
     ( using Context )
-  :     Unit =
+  :   Unit =
 
     val outputRoot = outputRootOrNull
     if outputRoot == null then return  // JAR output: skip; future work to support
@@ -66,7 +65,7 @@ object GivensWriter:
     ( collected:         mutable.Buffer[Entry],
       recompiledSources: Set[String] )
     ( using Context )
-  :     Unit =
+  :   Unit =
 
     // Mirrors the givens path: when a compilation registers no entries we
     // skip rewriting altogether, leaving any prior file untouched.
@@ -87,7 +86,7 @@ object GivensWriter:
     ( target:            File,
       entries:           collection.Seq[Entry],
       recompiledSources: Set[String] )
-  :     Unit =
+  :   Unit =
 
     val current = if target.exists then read(target) else Map.empty[String, List[String]]
     val pruned  = current.filterNot((source, _) => recompiledSources.contains(source))
