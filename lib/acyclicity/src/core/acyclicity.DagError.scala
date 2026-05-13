@@ -30,8 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package acyclicity
 
-export
-  acyclicity
-  . { Dag, DagError, Digraph, Dot, explore, Graph, PartiallyOrdered, Poset, Subgraph }
+import anticipation.*
+import fulminate.*
+
+object DagError:
+  enum Reason(val number: Int) extends Clarification:
+    case NodeMissing(node: Text) extends Reason(1)
+    case Cyclic                  extends Reason(2)
+
+  given communicable: Reason is Communicable =
+    case Reason.NodeMissing(node) => m"the node $node is not present in the graph"
+    case Reason.Cyclic            => m"the graph contains a cycle"
+
+case class DagError(reason: DagError.Reason)(using Diagnostics)
+extends Error(191, reason.number)(m"the DAG operation failed because $reason")
