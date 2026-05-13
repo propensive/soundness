@@ -84,14 +84,14 @@ def daemon(using Codepoint)(evaluate: Worker ?=> Unit)(using Monitor, Codicil): 
 def async[result](using Codepoint)(evaluate: Worker ?=> result)(using Monitor, Codicil)
 :   Task[result] =
 
-  Task(evaluate(using _), daemon = false, name = Unset)
+  Task(evaluate(using _), name = Unset)
 
 
 def task[result](using Codepoint)(name: Text)(evaluate: Worker ?=> result)
   ( using Monitor, Codicil )
 :   Task[result] =
 
-  Task(evaluate(using _), daemon = false, name = name)
+  Task(evaluate(using _), name = name)
 
 
 def relent[result]()(using Worker): Unit = monitor.relent()
