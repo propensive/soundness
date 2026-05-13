@@ -120,10 +120,10 @@ object internal:
             types ::= TypeRepr.of[Map[Text, Optional[Text]]]
             iterator.next()
             val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
-            '{
-              $expr
-              && { $array(${Expr(index)}) = (${scrutinee}.attributes -- $others).toMap; true }
-            }
+            ' {
+                $expr
+                && { $array(${Expr(index)}) = (${scrutinee}.attributes -- $others).toMap; true }
+              }
 
           case head :: tail =>
             attributes(tail):
