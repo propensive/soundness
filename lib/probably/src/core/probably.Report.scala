@@ -162,7 +162,7 @@ class Report(using Environment)(using palette: TestPalette):
 
   private def benches(line: ReportLine): Iterable[ReportLine.Bench] = line match
     case bench@ReportLine.Bench(_, _) => Iterable(bench)
-    case ReportLine.Suite(_, tests)   => tests.list.flatMap((_, line) => benches(line))
+    case ReportLine.Suite(_, tests)   => tests.list.flatMap{ (_, line) => benches(line) }
     case _                            => Nil
 
   enum Status:
@@ -287,7 +287,7 @@ class Report(using Environment)(using palette: TestPalette):
     val failureStatuses: Set[Status] =
       Set(Status.Fail, Status.Throws, Status.CheckThrows, Status.Mixed)
 
-    val failures = summaryLines.filter(s => failureStatuses.contains(s.status))
+    val failures = summaryLines.filter{ s => failureStatuses.contains(s.status) }
 
     if failures.nonEmpty then
       Out.println(t"")
@@ -342,7 +342,7 @@ class Report(using Environment)(using palette: TestPalette):
       val msg = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
       if active.isEmpty then Out.println(t"FATAL: $errorClass: $msg")
       else Out.println(t"FATAL in $activeNames: $errorClass: $msg")
-      StackTrace(error).frames.take(3).each(frame => Out.println(formatFrame(frame)))
+      StackTrace(error).frames.take(3).each{ frame => Out.println(formatFrame(frame)) }
 
   private def humanComplete(coverage: Option[Coverage])(using Stdio): Unit =
     val table =
@@ -619,9 +619,9 @@ class Report(using Environment)(using palette: TestPalette):
         ::: (
           if benchmarks.exists(_.benchmark.operationSize.present) then List(
             Column(e"$Bold(Size)", textAlign = TextAlignment.Right):
-              (s: ReportLine.Bench) => s.benchmark.operationSize.lay(e"")(t => e"$t"),
+              (s: ReportLine.Bench) => s.benchmark.operationSize.lay(e""){ t => e"$t" },
             Column(e"$Bold(Rate)", textAlign = TextAlignment.Right):
-              (s: ReportLine.Bench) => s.benchmark.operationRate.lay(e"")(t => e"$t"))
+              (s: ReportLine.Bench) => s.benchmark.operationRate.lay(e""){ t => e"$t" })
           else Nil)
         ::: comparisons.map: comparison =>
           import Baseline.*

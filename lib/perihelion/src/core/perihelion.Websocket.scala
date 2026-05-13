@@ -91,12 +91,12 @@ class Websocket[ResultType](request: Http.Request, handle: Stream[Frame] => Resu
     lazy val cursor = Cursor(request.body().filter(_.nonEmpty).iterator)
 
     def recur(): Stream[Frame] =
-      val head: Int = cursor.lay(0)(b => b & 0xff)
+      val head: Int = cursor.lay(0){ b => b & 0xff }
       val fin = (head & 128) == 128
       val opcode = Websocket.Opcode.fromOrdinal(head & 16)
       cursor.next()
 
-      val length = (cursor.lay(0)(b => (b & 0xff) & bin"01111111")) match
+      val length = (cursor.lay(0){ b => (b & 0xff) & bin"01111111" }) match
         case 127   => B64(cursor.take(Data())(8)).s64.long.toInt
         case 126   => B16(cursor.take(Data())(2)).s16.int
         case count => count

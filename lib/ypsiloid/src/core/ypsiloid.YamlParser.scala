@@ -49,7 +49,7 @@ import Yaml.Ast.Issue
 
 object YamlParser:
   private val pool: ThreadLocal[YamlParser] =
-    ThreadLocal.withInitial(() => new YamlParser).nn
+    ThreadLocal.withInitial{ () => new YamlParser }.nn
 
   def parse(input: Text)(using Tactic[ParseError]): Yaml.Ast =
     val parser = pool.get.nn

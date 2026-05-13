@@ -98,7 +98,7 @@ object VirtualSupervisor extends Supervisor():
   def name: Text = "virtual".tt
 
   def fork(name: Optional[Text])(block: => Unit): Thread =
-    Thread.ofVirtual().nn.start(() => block).nn
+    Thread.ofVirtual().nn.start{ () => block }.nn
 
 object AdaptiveSupervisor extends Supervisor():
   def name: Text = "adaptive".tt

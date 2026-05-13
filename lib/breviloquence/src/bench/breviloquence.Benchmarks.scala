@@ -109,7 +109,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
   // Corpus 4: 1000 small integers — exercises the integer head-byte hot path
   // without string or map overhead.
   lazy val cborBytes4: IArray[Byte] =
-    val items = IArray.from((0 until 1000).map(index => (index*37 + 1).toLong.asInstanceOf[Any]))
+    val items = IArray.from((0 until 1000).map{ index => (index*37 + 1).toLong.asInstanceOf[Any] })
     encode(Cbor.Ast.array(items))
 
   // Corpus 5: 100 byte-string records — exercises major-type-2 (byte strings),

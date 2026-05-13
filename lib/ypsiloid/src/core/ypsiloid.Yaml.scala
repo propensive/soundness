@@ -999,7 +999,7 @@ object Yaml extends Yaml2, Dynamic:
     YamlParser.parseAll(input).map(Yaml(_))
 
   given aggregable: Tactic[ParseError] => Yaml is Aggregable by Text =
-    summon[Text is Aggregable by Text].map(text => Yaml(YamlParser.parse(text)))
+    summon[Text is Aggregable by Text].map{ text => Yaml(YamlParser.parse(text)) }
 
   def primitive(ast: Yaml.Ast): YamlPrimitive =
     if ast.asInstanceOf[AnyRef] == null then YamlPrimitive.Null

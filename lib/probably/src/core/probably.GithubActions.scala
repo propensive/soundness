@@ -121,9 +121,9 @@ object GithubActions:
 
     val props =
       List
-        ( file.let(workspaceRelative).let(path => t"file=${escapeProperty(path)}").option,
-          line.let(value => t"line=${value.show}").option,
-          title.let(text => t"title=${escapeProperty(text)}").option )
+        ( file.let(workspaceRelative).let{ path => t"file=${escapeProperty(path)}" }.option,
+          line.let{ value => t"line=${value.show}" }.option,
+          title.let{ text => t"title=${escapeProperty(text)}" }.option )
       . flatten
 
     val propsText = if props.isEmpty then t"" else t" ${props.join(t",")}"

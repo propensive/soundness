@@ -89,7 +89,7 @@ object GivensWriter:
   :   Unit =
 
     val current = if target.exists then read(target) else Map.empty[String, List[String]]
-    val pruned  = current.filterNot((source, _) => recompiledSources.contains(source))
+    val pruned  = current.filterNot{ (source, _) => recompiledSources.contains(source) }
 
     val merged: List[(String, List[String])] =
       val byNew: Map[String, List[String]] =
