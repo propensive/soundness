@@ -85,3 +85,12 @@ object Tests extends Suite(m"Gastronomy tests"):
       import alphabets.binary.standard
       IArray[Byte](1, 2, 3, 4).serialize[Binary]
     . assert(_ == t"00000001000000100000001100000100")
+
+    test(m"Long digest covers the low nibble"):
+      0L.digest[Sha2[256]].serialize[Hex] != 0xfL.digest[Sha2[256]].serialize[Hex]
+    . assert(identity(_))
+
+    test(m"Long digest covers the high nibble"):
+      0L.digest[Sha2[256]].serialize[Hex]
+      != 0xf000000000000000L.digest[Sha2[256]].serialize[Hex]
+    . assert(identity(_))
