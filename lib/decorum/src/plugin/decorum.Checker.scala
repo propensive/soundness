@@ -498,7 +498,10 @@ object Checker:
   // opener nor the closer — the first non-whitespace character must
   // sit at column `{`+2 (the canonical body indent). Continuations and
   // sub-expressions inside a body statement may indent further; only
-  // dedents below the canonical column are flagged.
+  // dedents below the canonical column are flagged. Lines that begin
+  // inside a multi-line string literal (Kind.Strs) or are comment-only
+  // don't count as body lines for this rule — their layout is governed
+  // by the surrounding string/comment, not by the quote's indent.
   private def checkR44BodyIndent
     ( s:           State,
       lineNum:     Int,
@@ -513,6 +516,7 @@ object Checker:
     val top = s.quoteSpliceBraces.top
     if top.braceCol < 0 then return
     if lineNum == top.openerLine then return
+    if firstReal.exists(t => t.kind == Kind.Strs || t.kind == Kind.Comment) then return
     // The closer line is `}` alone (or with content) at column braceCol;
     // its `}` is processed by `trackQuoteSpliceBraces`, not here.
     if firstReal.exists(_.text == "}") && leadingCols + 1 == top.braceCol then return

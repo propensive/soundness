@@ -92,12 +92,13 @@ object internal:
       concatExpr = '{$concatExpr + $insertion + $nextPart}
       i += 1
 
-    if normalize then '{
-      val array =
-        $concatExpr.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
+    if normalize then
+      ' {
+          val array =
+            $concatExpr.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
 
-      anticipation.Text(String.join("\n", array*).nn)
-    }
+          anticipation.Text(String.join("\n", array*).nn)
+        }
     else '{anticipation.Text($concatExpr)}
 
 
