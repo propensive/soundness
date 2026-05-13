@@ -499,13 +499,19 @@ object Checker:
                   ( s.file, lineNum, cols(i), "473.3",
                     s"`${arr(j).text}` and `{` of a multi-line quote/splice must "
                       +"be separated by exactly one space" )
-            // (b) Nothing semantic before `'`/`$` on the line.
-            if firstSemantic >= 0 && firstSemantic < j then
+            // (b) Only enclosing opening brackets (`(`, `{`) may sit
+            // before `'`/`$` on the line. Anything else is a violation.
+            val badBefore =
+              (0 until j).exists: k =>
+                val t = arr(k)
+                t.kind != Kind.Space && t.kind != Kind.Comment
+                  && t.text != "(" && t.text != "{"
+            if badBefore then
               out +=
                 Violation
                   ( s.file, lineNum, cols(firstSemantic), "473.4",
                     s"the `${arr(j).text} {` opener of a multi-line quote/splice "
-                      +"must be alone on its line" )
+                      +"must be alone on its line (only enclosing `(` / `{` permitted)" )
             stack.push(QuoteBrace(braceCol = cols(i), prefixCol = cols(j), openerLine = lineNum))
           else
             stack.push(QuoteBrace(braceCol = -1, prefixCol = -1, openerLine = lineNum))
@@ -520,15 +526,20 @@ object Checker:
                     ( s.file, lineNum, cols(i), "473.2",
                       s"closing `}` of a multi-line quote/splice at column ${cols(i)} "
                         +s"does not align with its opening `{` at column ${opener.braceCol}" )
-              // (d-alone) `}` is the only semantic token on the line.
-              val anotherSemantic =
-                (firstSemantic >= 0 && firstSemantic != i)
-                  || (lastSemantic >= 0 && lastSemantic != i)
-              if anotherSemantic then
+              // (d-alone) Nothing semantic before `}` on the line; only
+              // enclosing closing brackets (`)`, `}`) may trail it.
+              val semanticBefore = firstSemantic >= 0 && firstSemantic < i
+              val badAfter =
+                (i + 1 until arr.length).exists: k =>
+                  val t = arr(k)
+                  t.kind != Kind.Space && t.kind != Kind.Comment
+                    && t.text != ")" && t.text != "}"
+              if semanticBefore || badAfter then
                 out +=
                   Violation
                     ( s.file, lineNum, cols(i), "473.6",
-                      "closing `}` of a multi-line quote/splice must be alone on its line" )
+                      "closing `}` of a multi-line quote/splice must be alone on its line "
+                        +"(only trailing `)` / `}` permitted)" )
       i += 1
 
   // (c) On lines inside an open multi-line quote/splice — neither the
