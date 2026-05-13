@@ -90,17 +90,17 @@ object Benchmarks extends Suite(m"Punctuation benchmarks"):
 
     suite(m"Markdown parsing throughput"):
       bench(m"parse small (~2 KB, mixed prose)")
-       ( target = 1*Second, operationSize = smallSize ):
+        ( target = 1*Second, operationSize = smallSize ):
         '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.small) }
 
       bench(m"parse medium (~19 KB, real README)")
-       ( target = 1*Second, operationSize = mediumSize ):
+        ( target = 1*Second, operationSize = mediumSize ):
         '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.medium) }
 
       bench(m"parse stress-mix (~38 KB, every feature)")
-       ( target = 1*Second, operationSize = stressMixSize ):
+        ( target = 1*Second, operationSize = stressMixSize ):
         '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.stressMix) }
 
       bench(m"parse emphasis-stress (~4 KB, inline-dense)")
-       ( target = 1*Second, operationSize = emphasisStressSize ):
+        ( target = 1*Second, operationSize = emphasisStressSize ):
         '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.emphasisStress) }

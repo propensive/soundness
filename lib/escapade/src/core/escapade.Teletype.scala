@@ -269,7 +269,7 @@ case class Teletype
           arr(i) = tail
           i += 1
         Teletype
-         (combinedPlain, IArray.unsafeFromArray(arr), hyperlinks, insertions, IArray.empty[Int])
+          (combinedPlain, IArray.unsafeFromArray(arr), hyperlinks, insertions, IArray.empty[Int])
       else
         // Stay sparse: the new chars become part of the last run (since trailing style = last run
         // style) unless the last run's style differs from the trailing style — but that can't

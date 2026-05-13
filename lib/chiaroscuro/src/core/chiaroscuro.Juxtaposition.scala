@@ -171,10 +171,10 @@ object Juxtaposition:
 
                   else
                     Row
-                     ( line(t"■"),
-                       e"${Fg(palette.informative)}($left)",
-                       e"${Fg(palette.informative)}($right)",
-                       e"" )
+                      ( line(t"■"),
+                        e"${Fg(palette.informative)}($left)",
+                        e"${Fg(palette.informative)}($right)",
+                        e"" )
 
             val table =
               Scaffold[Row]

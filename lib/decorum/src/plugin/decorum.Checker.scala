@@ -604,11 +604,11 @@ object Checker:
   // application.
   private val ExprIntroKeywords: Set[String] =
     Set
-     ( "new", "throw", "return", "yield",
-       "then", "else", "do", "try", "catch", "finally",
-       // Class/trait parent-spec introducers: `extends Foo(args)` and
-       // `with Foo(args)` take an expression-shaped tail just like `new`.
-       "extends", "with" )
+      ( "new", "throw", "return", "yield",
+        "then", "else", "do", "try", "catch", "finally",
+        // Class/trait parent-spec introducers: `extends Foo(args)` and
+        // `with Foo(args)` take an expression-shaped tail just like `new`.
+        "extends", "with" )
 
   // Tokens that, at the end of a code line, signal "the next line is a
   // body" (lambda body, assignment RHS, block content, keyword-sequence
@@ -616,11 +616,11 @@ object Checker:
   // line's expression. Used to skip R33.4's anchor check on those lines.
   private val BodyOpenerTerminators: Set[String] =
     Set
-     ( "=", "=>", ":", ";", "match",
-       "then", "else", "do", "yield",
-       "try", "catch", "finally",
-       "for", "if", "while",
-       "with", "extends", "derives", "case" )
+      ( "=", "=>", ":", ";", "match",
+        "then", "else", "do", "yield",
+        "try", "catch", "finally",
+        "for", "if", "while",
+        "with", "extends", "derives", "case" )
 
   // A **tight expression** has no top-level whitespace between code
   // tokens: at bracket depth zero, the only whitespace allowed is a

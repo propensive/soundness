@@ -112,9 +112,9 @@ object SvgParser:
 
   private def decodeRectangle(elem: Element): Rectangle =
     Rectangle
-     ( Point(numAttr(elem, t"x"), numAttr(elem, t"y")),
-      numAttr(elem, t"width"),
-      numAttr(elem, t"height") )
+      ( Point(numAttr(elem, t"x"), numAttr(elem, t"y")),
+       numAttr(elem, t"width"),
+       numAttr(elem, t"height") )
 
 
   private def decodeCircle(elem: Element): Ellipse =
