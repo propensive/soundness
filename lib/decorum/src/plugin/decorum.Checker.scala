@@ -70,11 +70,13 @@ object Checker:
     val forGroups            = Comprehensions.extract(untpdTree, source)
     val sequences            = Sequences.extract(untpdTree, source)
     scanRawTabs(file, rawText, out)
+    val stmtGroups           = Statements.extract(untpdTree, source)
     checkFileNaming(file, untpdTree, out)
     checkPackageRules(file, expectedModule, state.packageInfo, out)
     checkImportRules(file, imports, lines, out)
     checkCaseRules(file, caseGroups, lines, out)
     checkForRules(file, forGroups, out)
+    checkChunkBlanks(file, stmtGroups, rawText, source, out)
     var idx = 0
 
     while idx < lines.length do
@@ -113,8 +115,6 @@ object Checker:
       val idx    = base.indexOf(prefix)
       if idx > 0 then Some(base.substring(0, idx).nn) else Some(moduleDir)
 
-  private case class DeclShape(line: Int, indent: Int, kwSeq: String, padding: Int)
-
   // One open `{` on the brace stack. `braceCol >= 0` means this opener
   // is a multi-line quote/splice (`' {` or `$ {`) and the entry carries
   // enough state to apply rule 473.2–473.6 when `}` closes; `braceCol
@@ -134,8 +134,6 @@ object Checker:
     var prevWasReturnType:    Boolean                    = false
     var prevCodeLineIndent:   Int                        = -1
     var prevCodeLineLastTok:  String                     = ""
-    var blanksSinceDecl:      Int                        = 0
-    var prevDeclByIndent:     mutable.Map[Int, DeclShape] = mutable.Map.empty
     var openParens:           Int                        = 0
     var usingNameColumn:      Option[Int]                = None
     var prevLineHadAlignment: Boolean                    = false
@@ -251,7 +249,9 @@ object Checker:
     checkChainContinuation(s, lineNum, leadingCols, isBlank, firstReal, emit)
     checkR32GivenArrowAlign(s, leadingCols, isBlank, rest, emit)
     checkReturnTypeBlank(s, lineNum, isBlank, rest, emit)
-    checkSiblingPadding(s, lineNum, leadingCols, isBlank, rest, out)
+    // R28 chunk separation (315) is enforced tree-based by
+    // `checkChunkBlanks`; the old line-by-line sibling-padding check has
+    // been removed as redundant.
     checkUsingAlignment(s, lineNum, leadingCols, rest, emit)
     if !isBlank then
       val sem = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
@@ -1729,20 +1729,15 @@ object Checker:
   :   Unit =
 
     groups.foreach: group =>
-      // R20: blank line required before each non-first multi-line case
-      // unless the source already has one.
-      group.zipWithIndex.foreach: (c, i) =>
-        if !c.isSingleLine then
-          if i > 0 && !blankBetween(group(i - 1).endLine, c.caseLine, lines) then
-            out += Violation
-              ( file, c.caseLine, c.caseCol, "982",
-                "a blank line is required before a multi-line case "
-                  +"(except for the first case)" )
-          // Sub-check: exactly one space before `=>` in a multi-line case.
-          if c.spacesBeforeArrow != 1 then
-            out += Violation
-              ( file, c.arrowLine, c.arrowCol, "R33-multiline-case-arrow-space",
-                "exactly one space is required before `=>` in a multi-line case" )
+      // R20 (blank line before multi-line case) is subsumed by R28's
+      // generic chunk-separation rule (`checkChunkBlanks`). Here we
+      // retain only the sub-check requiring exactly one space before
+      // `=>` in a multi-line case.
+      group.foreach: c =>
+        if !c.isSingleLine && c.spacesBeforeArrow != 1 then
+          out += Violation
+            ( file, c.arrowLine, c.arrowCol, "R33-multiline-case-arrow-space",
+              "exactly one space is required before `=>` in a multi-line case" )
 
       // R19: split into runs of consecutive single-line cases at the same
       // case-keyword column with no blank line between them; align `=>` in
@@ -1791,98 +1786,6 @@ object Checker:
 
   private val DeclKeywords: Set[String] =
     Set("def", "val", "var", "type", "class", "trait", "object", "enum", "given")
-
-  private def declKeywordSequence(rest: IndexedSeq[Token]): Option[String] =
-    val nonWs = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment).toList
-    val (kwsBuf, declOpt) = collectKeywords(nonWs, mutable.ListBuffer.empty)
-    declOpt.map: kw =>
-      (kwsBuf :+ kw).mkString(" ")
-
-  private def collectKeywords
-    ( tokens: List[Token], buf: mutable.ListBuffer[String] )
-  :   (mutable.ListBuffer[String], Option[String]) =
-
-    tokens match
-      case t :: rest if t.kind == Kind.Code && ModifierWords.contains(t.text)
-        && !DeclKeywords.contains(t.text) =>
-        buf += t.text
-        collectKeywords(rest, buf)
-
-      case t :: _ if t.kind == Kind.Code && DeclKeywords.contains(t.text) =>
-        (buf, Some(t.text))
-
-      case _ =>
-        (buf, None)
-
-  private def lineOpensBody(rest: IndexedSeq[Token]): Boolean =
-    val nonWs = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
-    nonWs.lastOption.exists(t => t.text == "=" || t.text == ":")
-
-  private def checkSiblingPadding
-    ( s:           State,
-      lineNum:     Int,
-      leadingCols: Int,
-      isBlank:     Boolean,
-      rest:        IndexedSeq[Token],
-      out:         mutable.ListBuffer[Violation] )
-  :   Unit =
-
-    if isBlank then s.blanksSinceDecl += 1
-    else
-      val firstTok = rest.headOption
-      val isAnnotation = firstTok.exists(_.text.startsWith("@"))
-      val isCommentOnly = firstTok.exists(_.kind == Kind.Comment)
-
-      // Drop entries from scopes we've exited. This must fire on every code
-      // line, not just declaration lines: a non-declaration line at a smaller
-      // indent (e.g. `else if c == '\'' then`) signals we have left the inner
-      // scope, and any declarations recorded inside that scope must not be
-      // treated as siblings of the next declaration we encounter.
-      if !isCommentOnly && !isAnnotation then
-        s.prevDeclByIndent.keysIterator.toList.foreach: k =>
-          if k > leadingCols then s.prevDeclByIndent.remove(k)
-
-      // R27 does not apply inside an open `(…)` parameter list: `val name:
-      // type,` rows there are constructor parameters, not body declarations.
-      if s.openParens > 0 then ()
-      else declKeywordSequence(rest) match
-        case Some(kwSeq) =>
-          val padding =
-            if lineOpensBody(rest) then 1 else 0
-
-          val cur = DeclShape(lineNum, leadingCols, kwSeq, padding)
-          val isFirstInScope = s.prevCodeLineIndent < leadingCols
-
-          // First declaration in a new scope: blank line is enforced separately by R21
-          // (heavy signatures only); regular non-heavy scopes have no requirement.
-          if isFirstInScope then s.prevDeclByIndent.remove(leadingCols)
-          s.prevDeclByIndent.get(leadingCols).foreach: prev =>
-            val sameKw   = prev.kwSeq == kwSeq
-
-            val expected =
-              if sameKw && prev.padding == 0 && cur.padding == 0 then 0
-              else math.max(prev.padding, cur.padding)
-
-            val actual = s.blanksSinceDecl
-            if actual < expected then
-              out +=
-                Violation
-                  ( s.file, lineNum, 1, "315",
-                    s"expected $expected blank line(s) between sibling declarations (saw $actual)" )
-
-          s.prevDeclByIndent(leadingCols) = cur
-          s.blanksSinceDecl = 0
-
-        case None =>
-          // Annotation and comment-only lines belong to the next declaration;
-          // they don't consume the blank-line counter that separates the
-          // previous declaration from the upcoming one. Anything else
-          // (free-floating statements like method calls) breaks the sibling
-          // chain — the next declaration is not a sibling of whatever came
-          // before the statement.
-          if !isAnnotation && !isCommentOnly then
-            s.blanksSinceDecl = 0
-            s.prevDeclByIndent.remove(leadingCols)
 
   private def checkUsingAlignment
     ( s:           State,
@@ -2014,6 +1917,63 @@ object Checker:
   // The cascades fire forward only — a break in K_i does not retroactively
   // require K_1..K_{i-1} to break.
   // -----------------------------------------------------------------------
+
+  // R28: a **chunk** — any statement (or expression at statement position)
+  // that spans two or more source lines — must be separated from its
+  // siblings by a blank line. A chunk that's the first member of its
+  // enclosing scope is exempt from "preceded-by-blank" by construction
+  // (no preceding sibling to check). Single-line siblings don't trigger
+  // the rule.
+  //
+  // This rule generalises and supersedes the prior 982 ("blank before
+  // multi-line `case`") and the multi-line side of 315 ("sibling-
+  // declaration padding"): both are instances of the same principle.
+  // Single-line declarations can still sit adjacent with zero blanks
+  // between them — only chunks compel a separator.
+  private def checkChunkBlanks
+    ( file:    String,
+      groups:  List[StmtGroup],
+      content: String,
+      source:  SourceFile,
+      out:     mutable.ListBuffer[Violation] )
+  :   Unit =
+
+    groups.foreach: group =>
+      val stmts = group.stmts
+      var i = 1
+      while i < stmts.length do
+        val prev = stmts(i - 1)
+        val cur  = stmts(i)
+        if (prev.isMultiLine || cur.isMultiLine)
+            && !hasBlankLineBetween(prev.endLine, cur.startLine, content, source)
+        then
+          out += Violation
+            ( file, cur.startLine, 1, "315",
+              "a multi-line statement must be separated from its siblings "
+                +"by a blank line" )
+        i += 1
+
+  private def hasBlankLineBetween
+    (endLine: Int, startLine: Int, content: String, source: SourceFile): Boolean =
+    // Walk each line index `l` strictly between `endLine` and `startLine`
+    // (1-indexed) — those are the lines that lie *between* the two
+    // statements. If any is blank (whitespace only), there's a separator.
+    var l = endLine + 1
+    while l < startLine do
+      val from = source.lineToOffset(l - 1)
+      val to   =
+        if l < content.split('\n').nn.length + 1
+        then source.lineToOffset(l).min(content.length)
+        else content.length
+      var i = from
+      var blank = true
+      while blank && i < to do
+        val c = content.charAt(i)
+        if c != ' ' && c != '\t' && c != '\n' && c != '\r' then blank = false
+        i += 1
+      if blank then return true
+      l += 1
+    false
 
   // Apply the placement and body-cascade rules to one keyword sequence.
   // `seq.elements.head` is K₁; its (line, col) is the anchor point.
