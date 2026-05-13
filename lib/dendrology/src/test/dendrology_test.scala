@@ -34,6 +34,8 @@ package dendrology
 
 import soundness.*
 
+import strategies.throwUnsafely
+
 object Tests extends Suite(m"Dendrology tests"):
 
   case class Tree(value: Text, children: List[Tree] = Nil)
