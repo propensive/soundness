@@ -37,6 +37,7 @@ import soundness.*
 import charEncoders.utf8, charDecoders.utf8, textSanitizers.strict
 import threading.platform
 import strategies.throwUnsafely
+import errorDiagnostics.empty
 
 import scala.collection.mutable as scm
 
@@ -445,3 +446,46 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"Roundtrip a long repetitive Deflate stream"):
         longData.compress[Deflate].decompress[Deflate]
       . assert: stream => stream === longData
+
+    suite(m"Framing"):
+      test(m"Single 4-byte-prefixed frame in one chunk"):
+        Stream(Data(0, 0, 0, 3, 10, 20, 30)).framed[U32]().map(_.to(List)).to(List)
+      . assert(_ == List(List[Byte](10, 20, 30)))
+
+      test(m"Single 2-byte-prefixed frame in one chunk"):
+        Stream(Data(0, 3, 10, 20, 30)).framed[U16]().map(_.to(List)).to(List)
+      . assert(_ == List(List[Byte](10, 20, 30)))
+
+      test(m"Multiple 4-byte-prefixed frames in one chunk"):
+        val data = Data(0, 0, 0, 2, 1, 2, 0, 0, 0, 3, 3, 4, 5)
+        Stream(data).framed[U32]().map(_.to(List)).to(List)
+      . assert(_ == List(List[Byte](1, 2), List[Byte](3, 4, 5)))
+
+      test(m"Frame split across two chunks"):
+        val s = Stream(Data(0, 0, 0, 5, 1, 2), Data(3, 4, 5))
+        s.framed[U32]().map(_.to(List)).to(List)
+      . assert(_ == List(List[Byte](1, 2, 3, 4, 5)))
+
+      test(m"Length prefix split across chunks"):
+        val s = Stream(Data(0, 0), Data(0, 3, 7, 8, 9))
+        s.framed[U32]().map(_.to(List)).to(List)
+      . assert(_ == List(List[Byte](7, 8, 9)))
+
+      test(m"Terminator ends stream cleanly"):
+        val data = Data(0, 0, 0, 2, 1, 2, 0, 0, 255.toByte, 255.toByte)
+        Stream(data).framed[U32](U32(0xFFFF.bits)).map(_.to(List)).to(List)
+      . assert(_ == List(List[Byte](1, 2)))
+
+      test(m"Truncated frame raises StreamError"):
+        capture[StreamError]:
+          Stream(Data(0, 0, 0, 5, 1, 2)).framed[U32]().to(List)
+      . assert(_ == StreamError(6L.b))
+
+      test(m"Truncated length prefix raises StreamError"):
+        capture[StreamError]:
+          Stream(Data(0, 0)).framed[U32]().to(List)
+      . assert(_ == StreamError(2L.b))
+
+      test(m"Empty stream yields empty result"):
+        Stream[Data]().framed[U32]().to(List)
+      . assert(_ == Nil)
