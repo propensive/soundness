@@ -158,6 +158,56 @@ object Tests extends Suite(m"Hypotenuse tests"):
         (-1: Short).octal
       . assert(_ == t"177777")
 
+    suite(m"Signed overflow detection"):
+      import arithmeticOptions.overflow.checked
+      val co = summon[CheckOverflow]
+
+      test(m"S64.MinValue + S64(-1) overflows"):
+        safely(co.addS64(S64(Long.MinValue.bits), S64((-1L).bits)))
+      . assert(_.absent)
+
+      test(m"S64.MinValue + S64.MinValue overflows"):
+        safely(co.addS64(S64(Long.MinValue.bits), S64(Long.MinValue.bits)))
+      . assert(_.absent)
+
+      test(m"S64.MaxValue + S64(1) overflows"):
+        safely(co.addS64(S64(Long.MaxValue.bits), S64(1L.bits)))
+      . assert(_.absent)
+
+      test(m"S64(5) + S64(3) does not overflow"):
+        import strategies.throwUnsafely
+        co.addS64(S64(5L.bits), S64(3L.bits)).long
+      . assert(_ == 8L)
+
+      test(m"S64(-5) + S64(-3) does not overflow"):
+        import strategies.throwUnsafely
+        co.addS64(S64((-5L).bits), S64((-3L).bits)).long
+      . assert(_ == -8L)
+
+      test(m"S32.MinValue + S32(-1) overflows"):
+        safely(co.addS32(S32(Int.MinValue.bits), S32((-1).bits)))
+      . assert(_.absent)
+
+      test(m"S32.MaxValue + S32(1) overflows"):
+        safely(co.addS32(S32(Int.MaxValue.bits), S32(1.bits)))
+      . assert(_.absent)
+
+      test(m"S16.MinValue + S16(-1) overflows"):
+        safely(co.addS16(S16(Short.MinValue.bits), S16((-1: Short).bits)))
+      . assert(_.absent)
+
+      test(m"S16.MaxValue + S16(1) overflows"):
+        safely(co.addS16(S16(Short.MaxValue.bits), S16((1: Short).bits)))
+      . assert(_.absent)
+
+      test(m"S8.MinValue + S8(-1) overflows"):
+        safely(co.addS8(S8(Byte.MinValue.bits), S8((-1: Byte).bits)))
+      . assert(_.absent)
+
+      test(m"S8.MaxValue + S8(1) overflows"):
+        safely(co.addS8(S8(Byte.MaxValue.bits), S8((1: Byte).bits)))
+      . assert(_.absent)
+
     suite(m"Inequality tests"):
       test(m"1.2 < x < 1.4"):
         List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 < _ < 1.4)
