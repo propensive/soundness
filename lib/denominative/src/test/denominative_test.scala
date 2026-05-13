@@ -35,4 +35,22 @@ package denominative
 import soundness.*
 
 object Tests extends Suite(m"Denominative Tests"):
-  def run(): Unit = ()
+  def run(): Unit =
+    suite(m"Interval-construction tests"):
+      test(m"subsequent yields an Interval of the requested size"):
+        Prim.subsequent(3).size
+      . assert(_ == 3)
+
+      test(m"span yields an Interval of the requested size"):
+        (Prim span 3).size
+      . assert(_ == 3)
+
+      test(m"preceding yields an Interval of the requested size"):
+        Sept.preceding(3).size
+      . assert(_ == 3)
+
+      test(m"subsequent and span agree on size"):
+        val skip = Prim.subsequent(3).size
+        val full = (Prim span 3).size
+        skip == full
+      . assert(identity(_))
