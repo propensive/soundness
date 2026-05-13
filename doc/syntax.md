@@ -222,13 +222,23 @@ A heavy signature has, in order:
    if it fits there).
 2. Each subsequent parameter list on its own line, indented 2 spaces, with a
    single space inside each parenthesis: `( name: Type, … )`.
-3. The return-type colon line, flush-left with the `def` keyword, written as
+3. The return-type colon line, **anchored to the column of the leftmost
+   keyword that introduces the definition** (the `d` of `def`, the `p` of
+   `private val`, the `i` of `inline def`, etc.). The line is written
    `:   ReturnType =`. The `:` is followed by **three spaces** before the
    return type (an exception to the general "one space after `:`" rule, used
    here to make the return type stand out at the same column as a 4-space
    indent level would land).
 4. A blank line.
 5. The body, indented 2 spaces from the `def`.
+
+The colon-line anchor rule is the same anchor-point concept used by §5.3
+for keyword sequences: a `:` that introduces the type of a definition
+must either sit on the same line as the keyword that introduces it (the
+inline case) or, when it breaks onto its own line, sit in the same
+column as the first character of that keyword's leading modifier (or
+the keyword itself if there is no modifier). The rule applies uniformly
+to `val`, `var`, `lazy val`, `def`, and `given` declarations.
 
 Example:
 
