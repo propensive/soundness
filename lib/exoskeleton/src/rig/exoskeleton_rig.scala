@@ -145,8 +145,27 @@ extension (shell: Shell)
               sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
 
           case Shell.Bash =>
+            val cmd = summon[Enclave.Tool].command
+
             sh"""tmux send-keys -t ${tmux.id} "PS1='> '" C-m""".exec[Unit]()
             sh"""tmux send-keys -t ${tmux.id} 'export PATH="$path:$$PATH"' C-m""".exec[Unit]()
+
+            // Stock bash on macOS does not ship with bash-completion 2, which
+            // defines `_init_completion` (used by exoskeleton's installed bash
+            // completion script) and provides on-demand loading from the XDG
+            // bash-completion directories. Stub `_init_completion` as a no-op
+            // and source the installed completion script directly so the test
+            // doesn't depend on bash-completion 2 being present.
+            sh"""tmux send-keys -t ${tmux.id} '_init_completion() { return 0; }' C-m"""
+            . exec[Unit]()
+
+            val sourceScript =
+              t"""for d in "$$XDG_DATA_HOME" "$$HOME/.local/share" /usr/local/share """+
+              t"""/usr/share; do [ -n "$$d" ] && """+
+              t"""[ -r "$$d/bash-completion/completions/$cmd" ] && """+
+              t""". "$$d/bash-completion/completions/$cmd" && break; done"""
+
+            sh"""tmux send-keys -t ${tmux.id} '$sourceScript' C-m""".exec[Unit]()
 
             sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-ambiguous on"' C-m"""
             . exec[Unit]()
@@ -154,15 +173,58 @@ extension (shell: Shell)
             sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-unmodified on"' C-m"""
             . exec[Unit]()
 
+            // Send a marker echo and wait for it to appear, so we know every
+            // setup command above has been processed before the test starts
+            // sending keystrokes.
+            sh"""tmux send-keys -t ${tmux.id} 'echo READY-${tmux.id}' C-m""".exec[Unit]()
+            var bashReady = false
+            var bashAttempts = 0
+            while !bashReady && bashAttempts < 666 do
+              delay(0.03*Second)
+              bashReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").length > 0
+              bashAttempts += 1
+
             Tmux.attend:
               sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
 
           case Shell.Fish =>
+            val cmd = summon[Enclave.Tool].command
+
             sh"""tmux send-keys -t ${tmux.id} "function fish_prompt; echo -n '> '; end" C-m"""
+            . exec[Unit]()
+
+            // Override fish_right_prompt too — the user may have a global
+            // override (e.g. git branch indicator) that would otherwise
+            // appear at the end of the line and break exact-text assertions.
+            sh"""tmux send-keys -t ${tmux.id} "function fish_right_prompt; end" C-m"""
             . exec[Unit]()
 
             sh"""tmux send-keys -t ${tmux.id} 'fish_add_path --global "$path"' C-m"""
             . exec[Unit]()
+
+            // Fish auto-loads completions from $XDG_CONFIG_HOME/fish/completions/
+            // lazily on first completion request, but the loaded script's
+            // `complete -c $cmd -a '(completions)'` only takes effect once
+            // fish has parsed the file. Source the installed script explicitly
+            // so it's registered before the first test key is sent.
+            val sourceFish =
+              t"""for d in $$XDG_CONFIG_HOME $$HOME/.config; """+
+              t"""test -r "$$d/fish/completions/$cmd.fish"; """+
+              t"""and source "$$d/fish/completions/$cmd.fish"; and break; end"""
+
+            sh"""tmux send-keys -t ${tmux.id} '$sourceFish' C-m""".exec[Unit]()
+
+            // Fish's login-shell startup (welcome banner + greeting) can still
+            // be drawing when the next send-keys arrives, so prior setup
+            // commands get echoed into the banner rather than processed. Send
+            // a marker echo and wait for it to appear before the test starts.
+            sh"""tmux send-keys -t ${tmux.id} 'echo READY-${tmux.id}' C-m""".exec[Unit]()
+            var fishReady = false
+            var fishAttempts = 0
+            while !fishReady && fishAttempts < 666 do
+              delay(0.03*Second)
+              fishReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").length > 0
+              fishAttempts += 1
 
             Tmux.attend:
               sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
