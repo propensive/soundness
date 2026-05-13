@@ -37,8 +37,8 @@ import proscenium.*
 import vacuous.*
 
 object Validate:
-  extension [accrual <: Exception, lambda[_], focus]
-    ( inline validate: Validate[accrual, lambda, focus] )
+  extension [accrual <: Exception, lambda[_],
+    focus]( inline validate: Validate[accrual, lambda, focus] )
 
     inline def within(inline lambda: Foci[focus] ?=> lambda[Any])(using diagnostics: Diagnostics)
     :   accrual =

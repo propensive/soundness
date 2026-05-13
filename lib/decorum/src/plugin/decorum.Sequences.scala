@@ -126,24 +126,26 @@ object Sequences:
     val ifOffset = findIfWithinSpan(content, sp.start)
     if ifOffset < 0 then return None
     val anchorLabel = labelFrom(content, sp.start, ifOffset + 2)
-    val anchor      = makeElem
-                       ( label        = anchorLabel,
-                         pos          = sp.start,
-                         bodyStart    = condSp.start,
-                         content      = content,
-                         source       = source )
+    val anchor      =
+      makeElem
+        ( label        = anchorLabel,
+          pos          = sp.start,
+          bodyStart    = condSp.start,
+          content      = content,
+          source       = source )
 
     // K₂: `then`, between cond's end and thenp's start. Some parser paths
     // give thenp a span that opens at `then` itself, so the search is
     // capped at thenp.span.end as a safety bound rather than thenp.start.
     val thenOffset = findKeyword(content, condSp.end, thenpSp.end, "then")
     if thenOffset < 0 then return None
-    val thenElem = makeElem
-                    ( label        = "then",
-                      pos          = thenOffset,
-                      bodyStart    = bodyStartAfter(content, thenOffset + "then".length, thenpSp),
-                      content      = content,
-                      source       = source )
+    val thenElem =
+      makeElem
+        ( label        = "then",
+          pos          = thenOffset,
+          bodyStart    = bodyStartAfter(content, thenOffset + "then".length, thenpSp),
+          content      = content,
+          source       = source )
 
     val elems = mutable.ListBuffer[SeqElem](anchor, thenElem)
     extendElseChain(ifT, elems, content, source, absorbed)
@@ -204,51 +206,57 @@ object Sequences:
                 val innerThenSp = innerIf.thenp.span
                 val innerIfKw   = findIfWithinSpan(content, innerSpan.start)
                 if innerIfKw < 0 || !innerCondSp.exists || !innerThenSp.exists then
-                  elems += makeElem
-                            ( label        = "else",
-                              pos          = elseOffset,
-                              bodyStart    = elseStart,
-                              content      = content,
-                              source       = source )
+                  elems +=
+                    makeElem
+                      ( label        = "else",
+                        pos          = elseOffset,
+                        bodyStart    = elseStart,
+                        content      = content,
+                        source       = source )
                   done = true
                 else
                   val innerThenOffset =
                     findKeyword(content, innerCondSp.end, innerThenSp.end, "then")
                   if innerThenOffset < 0 then
-                    elems += makeElem
-                              ( label        = "else",
-                                pos          = elseOffset,
-                                bodyStart    = elseStart,
-                                content      = content,
-                                source       = source )
+                    elems +=
+                      makeElem
+                        ( label        = "else",
+                          pos          = elseOffset,
+                          bodyStart    = elseStart,
+                          content      = content,
+                          source       = source )
                     done = true
                   else
-                    val bridgeLabel = "else " + labelFrom
-                                                  ( content,
-                                                    innerSpan.start,
-                                                    innerIfKw + 2 )
-                    val bridgeBody  = bodyStartAfter
-                                        ( content,
-                                          innerThenOffset + "then".length,
-                                          innerThenSp )
-                    elems += makeElem
-                              ( label         = bridgeLabel,
-                                pos           = elseOffset,
-                                bodyStart     = bridgeBody,
-                                content       = content,
-                                source        = source,
-                                bodyAnchorPos = innerThenOffset )
+                    val bridgeLabel = "else " +
+                      labelFrom
+                        ( content,
+                          innerSpan.start,
+                          innerIfKw + 2 )
+                    val bridgeBody  =
+                      bodyStartAfter
+                        ( content,
+                          innerThenOffset + "then".length,
+                          innerThenSp )
+                    elems +=
+                      makeElem
+                        ( label         = bridgeLabel,
+                          pos           = elseOffset,
+                          bodyStart     = bridgeBody,
+                          content       = content,
+                          source        = source,
+                          bodyAnchorPos = innerThenOffset )
                     absorbed += innerIf.span.start
                     current     = innerIf
                     afterBridge = true
 
               case _ =>
-                elems += makeElem
-                          ( label        = "else",
-                            pos          = elseOffset,
-                            bodyStart    = elseStart,
-                            content      = content,
-                            source       = source )
+                elems +=
+                  makeElem
+                    ( label        = "else",
+                      pos          = elseOffset,
+                      bodyStart    = elseStart,
+                      content      = content,
+                      source       = source )
                 done = true
 
   // ── While / For / Try ────────────────────────────────────────────────────
@@ -266,18 +274,20 @@ object Sequences:
     // Old-style `while (cond) body` has no `do` keyword — no K₂, no rule.
     val doOffset = findKeyword(content, condSp.end, if bodySp.exists then bodySp.end else sp.end, "do")
     if doOffset < 0 then return None
-    val anchor = makeElem
-                  ( label        = "while",
-                    pos          = sp.start,
-                    bodyStart    = condSp.start,
-                    content      = content,
-                    source       = source )
-    val doElem = makeElem
-                  ( label        = "do",
-                    pos          = doOffset,
-                    bodyStart    = bodyStartAfter(content, doOffset + "do".length, bodySp),
-                    content      = content,
-                    source       = source )
+    val anchor =
+      makeElem
+        ( label        = "while",
+          pos          = sp.start,
+          bodyStart    = condSp.start,
+          content      = content,
+          source       = source )
+    val doElem =
+      makeElem
+        ( label        = "do",
+          pos          = doOffset,
+          bodyStart    = bodyStartAfter(content, doOffset + "do".length, bodySp),
+          content      = content,
+          source       = source )
     Some(Sequence(List(anchor, doElem)))
 
   private def mkForSequence
@@ -303,18 +313,20 @@ object Sequences:
     val firstEnumStart =
       enums.headOption.flatMap(e => if e.span.exists then Some(e.span.start) else None)
             .getOrElse(sp.start + 4)
-    val anchor = makeElem
-                  ( label        = "for",
-                    pos          = sp.start,
-                    bodyStart    = firstEnumStart,
-                    content      = content,
-                    source       = source )
-    val kwElem = makeElem
-                  ( label        = kw,
-                    pos          = kwOffset,
-                    bodyStart    = bodyStartAfter(content, kwOffset + kw.length, bodySp),
-                    content      = content,
-                    source       = source )
+    val anchor =
+      makeElem
+        ( label        = "for",
+          pos          = sp.start,
+          bodyStart    = firstEnumStart,
+          content      = content,
+          source       = source )
+    val kwElem =
+      makeElem
+        ( label        = kw,
+          pos          = kwOffset,
+          bodyStart    = bodyStartAfter(content, kwOffset + kw.length, bodySp),
+          content      = content,
+          source       = source )
     Some(Sequence(List(anchor, kwElem)))
 
   private def mkTrySequence
@@ -326,12 +338,13 @@ object Sequences:
     val sp     = tr.span
     val exprSp = tr.expr.span
     if !sp.exists || !exprSp.exists then return None
-    val anchor = makeElem
-                  ( label        = "try",
-                    pos          = sp.start,
-                    bodyStart    = exprSp.start,
-                    content      = content,
-                    source       = source )
+    val anchor =
+      makeElem
+        ( label        = "try",
+          pos          = sp.start,
+          bodyStart    = exprSp.start,
+          content      = content,
+          source       = source )
     val elems = mutable.ListBuffer[SeqElem](anchor)
 
     val handlerSp = tr.handler.span
@@ -342,23 +355,25 @@ object Sequences:
       if !hasCatch then -1
       else findKeyword(content, exprSp.end, handlerSp.end, "catch")
     if catchOffset >= 0 then
-      elems += makeElem
-                ( label        = "catch",
-                  pos          = catchOffset,
-                  bodyStart    = handlerSp.start,
-                  content      = content,
-                  source       = source )
+      elems +=
+        makeElem
+          ( label        = "catch",
+            pos          = catchOffset,
+            bodyStart    = handlerSp.start,
+            content      = content,
+            source       = source )
 
     if hasFin then
       val searchFrom = if hasCatch then handlerSp.end else exprSp.end
       val finOffset = findKeyword(content, searchFrom, finSp.start + 1, "finally")
       if finOffset >= 0 then
-        elems += makeElem
-                  ( label        = "finally",
-                    pos          = finOffset,
-                    bodyStart    = finSp.start,
-                    content      = content,
-                    source       = source )
+        elems +=
+          makeElem
+            ( label        = "finally",
+              pos          = finOffset,
+              bodyStart    = finSp.start,
+              content      = content,
+              source       = source )
 
     if elems.length < 2 then None else Some(Sequence(elems.toList))
 

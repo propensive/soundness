@@ -108,9 +108,10 @@ object GivensWriter:
     val builder = mutable.LinkedHashMap.empty[String, mutable.ListBuffer[String]]
     var currentSource: String | Null = null
 
-    val reader = new BufferedReader
-      ( new InputStreamReader
-             ( new FileInputStream(file), StandardCharsets.UTF_8 ) )
+    val reader = new
+      BufferedReader
+        ( new InputStreamReader
+               ( new FileInputStream(file), StandardCharsets.UTF_8 ) )
     try
       var line: String | Null = reader.readLine()
       while line != null do
@@ -134,9 +135,10 @@ object GivensWriter:
     if parent != null && !parent.exists then parent.mkdirs(): @annotation.nowarn
 
     val tmp = new File(file.getParentFile, file.getName.nn + ".tmp")
-    val writer = new BufferedWriter
-      ( new OutputStreamWriter
-             ( new FileOutputStream(tmp), StandardCharsets.UTF_8 ) )
+    val writer = new
+      BufferedWriter
+        ( new OutputStreamWriter
+               ( new FileOutputStream(tmp), StandardCharsets.UTF_8 ) )
     try
       var first = true
       blocks.foreach: (source, givens) =>

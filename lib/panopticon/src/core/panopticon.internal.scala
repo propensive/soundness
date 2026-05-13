@@ -294,9 +294,10 @@ object internal:
       // `name.type is Lens from originT` desugars to `Lens { type Self = name.type;
       // type Origin = originT }`. Type-member refinements need TypeBounds with equal
       // lower and upper bounds.
-      val refined = Refinement
-        ( Refinement(TypeRepr.of[Lens], "Self", TypeBounds(nameTpe, nameTpe)),
-          "Origin", TypeBounds(originTpe, originTpe) )
+      val refined =
+        Refinement
+          ( Refinement(TypeRepr.of[Lens], "Self", TypeBounds(nameTpe, nameTpe)),
+            "Origin", TypeBounds(originTpe, originTpe) )
       refined.asType match
         case '[lensT] => Expr.summon[lensT].map(_.asTerm)
 
@@ -323,11 +324,12 @@ object internal:
       * served by the `Ordinal is Optical from List[…]` given. Origin is exact.
       */
     def summonOptical(operandTpe: TypeRepr, originTpe: TypeRepr): Option[Term] =
-      val refined = Refinement
-        ( Refinement
-           ( TypeRepr.of[Optical], "Self",
-             TypeBounds(operandTpe, TypeRepr.of[Any]) ),
-          "Origin", TypeBounds(originTpe, originTpe) )
+      val refined =
+        Refinement
+          ( Refinement
+             ( TypeRepr.of[Optical], "Self",
+               TypeBounds(operandTpe, TypeRepr.of[Any]) ),
+            "Origin", TypeBounds(originTpe, originTpe) )
       refined.asType match
         case '[opT] => Expr.summon[opT].map(_.asTerm)
 
@@ -384,9 +386,10 @@ object internal:
               emitTraversalUpdate[T](acc.asExprOf[T], operand, optical, target, children)
 
           if idx < last then
-            val sym = Symbol.newVal
-              ( Symbol.spliceOwner, s"v$$$idx", TypeRepr.of[T], Flags.EmptyFlags,
-                Symbol.noSymbol )
+            val sym =
+              Symbol.newVal
+                ( Symbol.spliceOwner, s"v$$$idx", TypeRepr.of[T], Flags.EmptyFlags,
+                  Symbol.noSymbol )
             defs += ValDef(sym, Some(nextExpr.asTerm.changeOwner(sym)))
             acc = Ref(sym)
           else
@@ -445,9 +448,10 @@ object internal:
               // to a val so apply + update share it. Use a quoted block so the typer picks
               // the right overload of apply (Lens.apply takes Origin; Optic.apply takes a
               // traversal — Select.unique can't disambiguate by name).
-              val lensSym = Symbol.newVal
-                ( Symbol.spliceOwner, s"l$$$name", lensTerm.tpe, Flags.EmptyFlags,
-                  Symbol.noSymbol )
+              val lensSym =
+                Symbol.newVal
+                  ( Symbol.spliceOwner, s"l$$$name", lensTerm.tpe, Flags.EmptyFlags,
+                    Symbol.noSymbol )
               val lensDef = ValDef(lensSym, Some(lensTerm.changeOwner(lensSym)))
               val lensExpr = Ref(lensSym)
                 . asExprOf[Lens { type Origin = T; type Target = targetT }]
@@ -457,17 +461,19 @@ object internal:
                 '{ $lensExpr.update($origin, $newValueExpr) }.asTerm
               (List(lensDef), getRaw, set)
 
-          val inSym = Symbol.newVal
-            ( Symbol.spliceOwner, s"v$$$name", targetTpe, Flags.EmptyFlags,
-              Symbol.noSymbol )
+          val inSym =
+            Symbol.newVal
+              ( Symbol.spliceOwner, s"v$$$name", targetTpe, Flags.EmptyFlags,
+                Symbol.noSymbol )
           val inDef   = ValDef(inSym, Some(getTerm.changeOwner(inSym)))
           val inRef   = Ref(inSym).asExprOf[targetT]
 
           val updated = emit[targetT](inRef, children)
 
-          val outSym = Symbol.newVal
-            ( Symbol.spliceOwner, s"v$$$name'", targetTpe, Flags.EmptyFlags,
-              Symbol.noSymbol )
+          val outSym =
+            Symbol.newVal
+              ( Symbol.spliceOwner, s"v$$$name'", targetTpe, Flags.EmptyFlags,
+                Symbol.noSymbol )
           val outDef  = ValDef(outSym, Some(updated.asTerm.changeOwner(outSym)))
           val outRef  = Ref(outSym)
 
@@ -485,26 +491,27 @@ object internal:
           // Build the optic by calling `optical.optic(operand)`, then `.modify(origin)
           // { inner => emit(inner, children) }`. We bind the resulting Optic to a val
           // so the typer can dispatch its `modify` method without ambiguity.
-          val opticTerm = Apply
-            ( Select.unique(opticalTerm, "optic"), List(operand) )
+          val opticTerm = Apply( Select.unique(opticalTerm, "optic"), List(operand) )
           val opticTpe = opticTerm.tpe
 
-          val opticSym = Symbol.newVal
-            ( Symbol.spliceOwner, "o$trav", opticTpe, Flags.EmptyFlags,
-              Symbol.noSymbol )
+          val opticSym =
+            Symbol.newVal
+              ( Symbol.spliceOwner, "o$trav", opticTpe, Flags.EmptyFlags,
+                Symbol.noSymbol )
           val opticDef = ValDef(opticSym, Some(opticTerm.changeOwner(opticSym)))
           val opticExpr = Ref(opticSym)
             . asExprOf[Optic { type Origin = T; type Target = targetT }]
 
           // Build the inner lambda: (inner: Target) => emit(inner, children)
-          val innerLambda = Lambda
-            ( Symbol.spliceOwner,
-              MethodType(List("inner"))
-               ( _ => List(targetTpe), _ => targetTpe ),
-              (lambdaSym, args) =>
-                val innerRef = args.head.asInstanceOf[Term]
-                                . asExprOf[targetT]
-                emit[targetT](innerRef, children).asTerm.changeOwner(lambdaSym) )
+          val innerLambda =
+            Lambda
+              ( Symbol.spliceOwner,
+                MethodType(List("inner"))
+                 ( _ => List(targetTpe), _ => targetTpe ),
+                (lambdaSym, args) =>
+                  val innerRef = args.head.asInstanceOf[Term]
+                                  . asExprOf[targetT]
+                  emit[targetT](innerRef, children).asTerm.changeOwner(lambdaSym) )
 
           val innerLambdaExpr = innerLambda.asExprOf[targetT => targetT]
           val modifyCall = '{ $opticExpr.modify($origin)($innerLambdaExpr) }.asTerm
@@ -512,9 +519,10 @@ object internal:
           Block(List(opticDef), modifyCall).asExprOf[T]
 
     def emitTop(branches: List[Resolved]): Expr[value] =
-      val rootSym  = Symbol.newVal
-        ( Symbol.spliceOwner, "v$root", TypeRepr.of[value], Flags.EmptyFlags,
-          Symbol.noSymbol )
+      val rootSym  =
+        Symbol.newVal
+          ( Symbol.spliceOwner, "v$root", TypeRepr.of[value], Flags.EmptyFlags,
+            Symbol.noSymbol )
       val rootDef  = ValDef(rootSym, Some(valueExpr.asTerm.changeOwner(rootSym)))
       val rootRef  = Ref(rootSym).asExprOf[value]
       val resultEx = emit[value](rootRef, branches)

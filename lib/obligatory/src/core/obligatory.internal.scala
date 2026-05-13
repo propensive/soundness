@@ -159,14 +159,15 @@ object internal:
 
     val parents  = List(TypeTree.of[Object], TypeTree.of[interface])
 
-    val module = Symbol.newModule
-      ( owner    = Symbol.spliceOwner,
-        name     = Symbol.freshName(interface.typeSymbol.name),
-        modFlags = Flags.EmptyFlags,
-        clsFlags = Flags.EmptyFlags,
-        parents  = _ => parents.map(_.tpe),
-        decls    = decls,
-        privateWithin = Symbol.noSymbol )
+    val module =
+      Symbol.newModule
+        ( owner    = Symbol.spliceOwner,
+          name     = Symbol.freshName(interface.typeSymbol.name),
+          modFlags = Flags.EmptyFlags,
+          clsFlags = Flags.EmptyFlags,
+          parents  = _ => parents.map(_.tpe),
+          decls    = decls,
+          privateWithin = Symbol.noSymbol )
 
     val classSymbol = module.moduleClass
 
@@ -278,14 +279,15 @@ object internal:
 
     val parents  = List(TypeTree.of[Object], TypeTree.of[interface])
 
-    val module = Symbol.newModule
-      ( owner    = Symbol.spliceOwner,
-        name     = Symbol.freshName(interface.typeSymbol.name),
-        modFlags = Flags.EmptyFlags,
-        clsFlags = Flags.EmptyFlags,
-        parents  = _ => parents.map(_.tpe),
-        decls    = decls,
-        privateWithin = Symbol.noSymbol )
+    val module =
+      Symbol.newModule
+        ( owner    = Symbol.spliceOwner,
+          name     = Symbol.freshName(interface.typeSymbol.name),
+          modFlags = Flags.EmptyFlags,
+          clsFlags = Flags.EmptyFlags,
+          parents  = _ => parents.map(_.tpe),
+          decls    = decls,
+          privateWithin = Symbol.noSymbol )
 
     val classSymbol = module.moduleClass
 

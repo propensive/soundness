@@ -73,14 +73,15 @@ trait Audible extends Typeclass:
         then raw
         else
           val src = raw.getFormat.nn
-          val target = jss.AudioFormat
-            ( jss.AudioFormat.Encoding.PCM_SIGNED,
-              src.getSampleRate,
-              16,
-              src.getChannels,
-              src.getChannels*2,
-              src.getSampleRate,
-              false )
+          val target =
+            jss.AudioFormat
+              ( jss.AudioFormat.Encoding.PCM_SIGNED,
+                src.getSampleRate,
+                16,
+                src.getChannels,
+                src.getChannels*2,
+                src.getSampleRate,
+                false )
 
           try jss.AudioSystem.getAudioInputStream(target, raw).nn
           catch case _: IllegalArgumentException => abort(AudioError(this))

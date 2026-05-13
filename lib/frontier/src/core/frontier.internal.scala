@@ -51,8 +51,9 @@ object internal:
 
   private object SafeInlined:
     def unapply(using Quotes)(scrutinee: quotes.reflect.ImplicitSearchFailure)
-    :   Option
-      [ (Option[quotes.reflect.Tree], List[quotes.reflect.Definition], quotes.reflect.Term) ] =
+    :
+      Option
+        [ (Option[quotes.reflect.Tree], List[quotes.reflect.Definition], quotes.reflect.Term) ] =
 
       import quotes.reflect.*
 
