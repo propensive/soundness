@@ -1760,7 +1760,35 @@ object Checker:
       // retain only the sub-check requiring exactly one space before
       // `=>` in a multi-line case.
       group.foreach: c =>
-        if !c.isSingleLine && c.spacesBeforeArrow != 1 then
+        // Multi-line pattern: the heavy-pattern shape
+        //   case Foo
+        //     ( a, b )
+        //   =>
+        //     rhs
+        // requires `=>` alone on its own line, aligned with the `c` of
+        // `case`. The body must then start on a fresh line.
+        if c.patternMultiLine then
+          if !c.arrowAloneOnLine then
+            out +=
+              Violation
+                ( file, c.arrowLine, c.arrowCol, "R33-multiline-pattern-arrow-position",
+                  "`=>` of a multi-line case pattern must be alone on its own line "
+                    +s"aligned with `case` at column ${c.caseCol}" )
+          else if c.arrowCol != c.caseCol then
+            out +=
+              Violation
+                ( file, c.arrowLine, c.arrowCol, "R33-multiline-pattern-arrow-align",
+                  s"`=>` of a multi-line case pattern must be aligned with `case` "
+                    +s"at column ${c.caseCol} (found ${c.arrowCol})" )
+          else if !c.bodyStartsAfterArrow then
+            out +=
+              Violation
+                ( file, c.arrowLine, c.arrowCol, "R33-multiline-pattern-body-newline",
+                  "body of a multi-line case pattern must start on the line "
+                    +"after `=>`" )
+        // Single-line pattern, multi-line body: keep the original sub-rule
+        // (exactly one space before `=>` on the case-keyword line).
+        else if !c.isSingleLine && c.spacesBeforeArrow != 1 then
           out +=
             Violation
               ( file, c.arrowLine, c.arrowCol, "R33-multiline-case-arrow-space",
