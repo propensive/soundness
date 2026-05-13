@@ -194,6 +194,12 @@ object Checker:
     // breaking onto its own line align with the declaration's anchor
     // column.
     var defAnchorIndent:          Int                     = -1
+    // True iff the immediately preceding non-blank code line was a "tight
+    // expression" — one whose top-level (depth 0) tokens contain no
+    // whitespace between code tokens, with at most one allowed space after
+    // a leading expression-introducing keyword. Used by R33 (833.4) to
+    // require that a heavy `(`/`[` continuation attach to a tight anchor.
+    var prevLineIsTight:          Boolean                  = false
 
   private def checkLine
     ( s:       State,
@@ -223,6 +229,7 @@ object Checker:
     checkR31ContinuationIndent(s, lineNum, leadingCols, isBlank, firstReal, emit)
     checkR44BodyIndent(s, lineNum, isBlank, leadingCols, firstReal, emit)
     checkR33TypeAnchor(s, leadingCols, isBlank, firstReal, emit)
+    checkR33HeavyBracketAnchor(s, leadingCols, isBlank, firstReal, emit)
 
     if isBlank then
       s.consecutiveBlanks += 1
@@ -278,6 +285,7 @@ object Checker:
       // track quote/splice brace columns for the closing-`}`-alignment check.
       s.prevLineOpensQuoteSplice = lineEndsWithQuoteSpliceBrace(sem)
       s.prevLineOpensChain       = lineIsChainOpener(sem)
+      s.prevLineIsTight          = isTightExpression(line)
       trackQuoteSpliceBraces(s, line, leadingCols, lineNum, out)
 
       // R32 anchor: a line that begins a `given` declaration (after any
@@ -582,6 +590,125 @@ object Checker:
           ( leadingCols + 1, "140",
             s"`=>` continuation of a `given` signature should align at column "
               +s"${s.givenSignatureIndent + 1} (found ${leadingCols + 1})" )
+
+  // The keywords that may introduce a tight expression — `new T`,
+  // `throw E`, `return E`, `yield E`, `then E`, `else E`, `do E`, `try E`,
+  // `catch …`, `finally …`. The space following one of these at the head
+  // of a line does not break "tightness": grammatically the keyword and
+  // the expression that follows it are one production, not an infix
+  // application.
+  private val ExprIntroKeywords: Set[String] =
+    Set
+     ( "new", "throw", "return", "yield",
+       "then", "else", "do", "try", "catch", "finally",
+       // Class/trait parent-spec introducers: `extends Foo(args)` and
+       // `with Foo(args)` take an expression-shaped tail just like `new`.
+       "extends", "with" )
+
+  // Tokens that, at the end of a code line, signal "the next line is a
+  // body" (lambda body, assignment RHS, block content, keyword-sequence
+  // body, etc.) rather than a heavy-bracket continuation of the current
+  // line's expression. Used to skip R33.4's anchor check on those lines.
+  private val BodyOpenerTerminators: Set[String] =
+    Set
+     ( "=", "=>", ":", ";", "match",
+       "then", "else", "do", "yield",
+       "try", "catch", "finally",
+       "for", "if", "while",
+       "with", "extends", "derives", "case" )
+
+  // A **tight expression** has no top-level whitespace between code
+  // tokens: at bracket depth zero, the only whitespace allowed is a
+  // single space directly after one leading expression-introducing
+  // keyword. Parenthesising any expression makes it tight, since the
+  // interior moves to depth > 0 where the rule does not reach.
+  //
+  // Examples — tight: `recur`, `foo.bar(baz).quux`, `new Exception`,
+  // `(x: Int)`, `Some(x)`, `( arg )` (a whole-line bracketed clause).
+  //
+  // Examples — not tight: `head :: recur`, `val foo = bar`,
+  // `if x then y else z`, `x: Int`.
+  private def isTightExpression(line: IndexedSeq[Token]): Boolean =
+    val arr = line.toArray
+    var i = 0
+    while i < arr.length && arr(i).kind == Kind.Space do i += 1
+    if i >= arr.length then return false
+    var depth             = 0
+    var sawCodeAtTopLevel = false
+    // Optional leading expression-introducing keyword followed by one space.
+    if arr(i).kind == Kind.Code && ExprIntroKeywords.contains(arr(i).text) then
+      sawCodeAtTopLevel = true
+      i += 1
+      if i < arr.length && arr(i).kind == Kind.Space && arr(i).text == " " then
+        i += 1
+    // OR: optional leading `.` (chain continuation) followed by one space.
+    else if arr(i).kind == Kind.Code && arr(i).text == "." then
+      sawCodeAtTopLevel = true
+      i += 1
+      if i < arr.length && arr(i).kind == Kind.Space && arr(i).text == " " then
+        i += 1
+    while i < arr.length do
+      val tok = arr(i)
+      tok.kind match
+        case Kind.Space =>
+          if depth == 0 && sawCodeAtTopLevel then return false
+        case Kind.Comment => ()
+        case _ =>
+          if depth == 0 then sawCodeAtTopLevel = true
+          tok.text match
+            case "(" | "[" | "{" => depth += 1
+            case ")" | "]" | "}" => depth -= 1
+            case _               => ()
+      i += 1
+    true
+
+  // R33.4: a line whose first semantic token is `(` or `[` is a "heavy
+  // argument block" applied to the previous line's expression. That
+  // expression must be **tight** so the `(`/`[` attaches unambiguously
+  // to the entire previous line's content rather than to some mid-line
+  // subexpression.
+  //
+  // Three other ways a line is a valid anchor for a heavy continuation:
+  // - The previous line is a declaration signature in progress (no
+  //   top-level `=` yet) — its `(args)` is a parameter list, governed
+  //   by its own rules; the anchor check is exempt.
+  // - The previous line was itself a closed heavy bracket continuation
+  //   (multi-clause currying like `f` / `(x)` / `(y)`): a whole-line
+  //   `( ... )` is itself tight, so this case is naturally handled by
+  //   the tight check.
+  // - The current line is inside an open multi-line bracket (`openParens
+  //   > 0` from a previous line) — the `(` is not a heavy continuation
+  //   but interior content of an enclosing bracket.
+  private def checkR33HeavyBracketAnchor
+    ( s:           State,
+      leadingCols: Int,
+      isBlank:     Boolean,
+      firstReal:   Option[Token],
+      emit:        (Int, String, String) => Unit )
+  :   Unit =
+
+    if isBlank then ()
+    else if s.openParens > 0 then ()
+    else if s.prevLineWasBlank then ()
+    else if !firstReal.exists(t => t.kind == Kind.Code && (t.text == "(" || t.text == "[")) then ()
+    // A heavy continuation is indented *more* than its anchor. If the
+    // current line's indent is ≤ the previous code line's indent, the
+    // `(`/`[` is a sibling statement (a tuple, parenthesised expression
+    // or type-application standing on its own), not a continuation.
+    else if s.prevCodeLineIndent < 0 || leadingCols <= s.prevCodeLineIndent then ()
+    // If the previous line ends with a "body opener" — `=`, `=>`, `:`,
+    // `then`, `else`, etc. — the current line is the body of that
+    // construct (assignment RHS, lambda body, case body, etc.), not a
+    // heavy continuation. Skip the check.
+    else if BodyOpenerTerminators.contains(s.prevCodeLineLastTok) then ()
+    else if s.prevLineIsTight then ()
+    else if s.prevLineStartedDecl then ()
+    else
+      emit
+        ( leadingCols + 1, "833.4",
+          "heavy `(`/`[` continuation must follow a tight expression on its "
+            +"own line; the preceding line contains a top-level operator or "
+            +"assignment, so the anchor is mid-line" )
 
   // R33.3: a type-annotation `:` that breaks onto its own line (the
   // "heavy-signature" return-type or declared-type) must align with the
