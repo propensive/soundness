@@ -38,14 +38,17 @@ import dotty.tools.dotc.ast.untpd
 import dotty.tools.dotc.util.SourceFile
 
 case class CaseInfo
-  ( caseLine:     Int,
-    caseCol:      Int,
-    arrowLine:    Int,
-    arrowCol:     Int,
-    spacesBeforeArrow: Int,
-    bodyLine:     Int,
-    endLine:      Int,
-    isSingleLine: Boolean )
+  ( caseLine:             Int,
+    caseCol:              Int,
+    arrowLine:            Int,
+    arrowCol:             Int,
+    spacesBeforeArrow:    Int,
+    bodyLine:             Int,
+    endLine:              Int,
+    isSingleLine:         Boolean,
+    patternMultiLine:     Boolean,
+    arrowAloneOnLine:     Boolean,
+    bodyStartsAfterArrow: Boolean )
 
 object Cases:
   // Group every `case` arm by its enclosing `Match` or `Try.cases`. R19 and
@@ -114,6 +117,32 @@ object Cases:
         var k = arrowOffset - 1
         while k >= 0 && content.charAt(k) == ' ' do k -= 1
         val spacesBeforeArrow = arrowOffset - 1 - k
+        // The pattern (and optional guard) spans multiple source lines if
+        // its end-line is greater than the case-keyword's line. This is
+        // the heavy-pattern shape: `case Foo\n  ( a, b )\n=> rhs`.
+        val patternEndLine = source.offsetToLine((patternEnd - 1).max(psp.start)) + 1
+        val patternMultiLine = patternEndLine > caseLine
+        // True when the `=>` is the first non-whitespace token on its line.
+        val arrowLineStart = source.startOfLine(arrowOffset)
+        var aw = arrowLineStart
+        while aw < arrowOffset
+              && (content.charAt(aw) == ' ' || content.charAt(aw) == '\t')
+        do aw += 1
+        val arrowAloneOnLine = aw == arrowOffset
+        // True if the body begins on a fresh line after `=>` (dotty's body
+        // span often opens at the `=>` token itself, so we scan the source
+        // for the first non-whitespace character after `=>` rather than
+        // trusting `bsp.start`).
+        var bw  = arrowOffset + 2
+        var nl  = false
+        val sn  = content.length
+        while bw < sn
+              && (content.charAt(bw) == ' ' || content.charAt(bw) == '\t'
+                  || content.charAt(bw) == '\n' || content.charAt(bw) == '\r')
+        do
+          if content.charAt(bw) == '\n' then nl = true
+          bw += 1
+        val bodyStartsAfterArrow = nl
         Some(CaseInfo
               ( caseLine          = caseLine,
                 caseCol           = caseCol,
@@ -122,4 +151,7 @@ object Cases:
                 spacesBeforeArrow = spacesBeforeArrow,
                 bodyLine          = bodyLine,
                 endLine           = endLine,
-                isSingleLine      = isSingleLine ))
+                isSingleLine         = isSingleLine,
+                patternMultiLine     = patternMultiLine,
+                arrowAloneOnLine     = arrowAloneOnLine,
+                bodyStartsAfterArrow = bodyStartsAfterArrow ))
