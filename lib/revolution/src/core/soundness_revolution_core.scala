@@ -42,4 +42,4 @@ package manifestAttributes:
     revolution.manifestAttributes
     . { ClassPath, ContentType, CreatedBy, ExtensionList, ExtensionName, ImplementationTitle,
         ImplementationVendor, ImplementationVersion, MainClass, ManifestVersion, Sealed,
-        SignatureVersion, SpecifacationVendor, SpecifacationVersion, SpecificationTitle }
+        SignatureVersion, SpecificationTitle, SpecificationVendor, SpecificationVersion }
