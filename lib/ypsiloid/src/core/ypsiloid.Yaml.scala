@@ -104,6 +104,7 @@ trait Yaml2:
           val arr: IArray[Any] | Null = yaml.root.asMatchable match
             case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
               xs.asInstanceOf[IArray[Any]]
+
             case _ => null
 
           build: [field] =>
@@ -593,6 +594,7 @@ object Yaml extends Yaml2, Dynamic:
             Some(out.asInstanceOf[IArray[Yaml.Ast]])
           else
             Some(xs.asInstanceOf[IArray[Yaml.Ast]])
+
         case _ => None
   
     object Mapping:
@@ -602,6 +604,7 @@ object Yaml extends Yaml2, Dynamic:
           val n = xs.length / 2
           Some(IArray.tabulate(n): i =>
             (xs(i*2).asInstanceOf[Yaml.Ast], xs(i*2 + 1).asInstanceOf[Yaml.Ast]))
+
         case _ => None
   
     // ── Deep equality ───────────────────────────────────────────────────────
@@ -672,6 +675,7 @@ object Yaml extends Yaml2, Dynamic:
             h = h*31 + deepHash(xs(i).asInstanceOf[Yaml.Ast])
           i += 1
         h
+
       case _: Unset.type => 1
 
   def ast(value: Yaml.Ast): Yaml = new Yaml(value)
@@ -920,6 +924,7 @@ object Yaml extends Yaml2, Dynamic:
                   xs(i + 1).asMatchable match
                     case v: String => result = v.tt
                     case _         => ()
+
                 case _ => ()
               i += 2
             result

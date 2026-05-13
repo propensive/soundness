@@ -65,5 +65,6 @@ object Packages:
     case untpd.Ident(name)        =>
       val n = name.toString
       if n == "<empty>" || n.isEmpty then Nil else List(n)
+
     case untpd.Select(qual, name) => pidSegments(qual) :+ name.toString
     case _                        => Nil

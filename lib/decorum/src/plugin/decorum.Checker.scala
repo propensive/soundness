@@ -652,7 +652,9 @@ object Checker:
       tok.kind match
         case Kind.Space =>
           if depth == 0 && sawCodeAtTopLevel then return false
+
         case Kind.Comment => ()
+
         case _ =>
           if depth == 0 then sawCodeAtTopLevel = true
           tok.text match
@@ -895,6 +897,7 @@ object Checker:
                   ( file, imp.startLine, 1, "302.2",
                     s"import `${imp.path}` is out of alphabetical order "
                       +s"(after `$pn`)" )
+
         case None => ()
 
       prevGroup   = Some(group)
@@ -1576,6 +1579,7 @@ object Checker:
             emit
               ( leadingCols + 2, "444",
                 "heavy-signature return type `:` must be followed by exactly three spaces" )
+
       case _ => ()
 
   private def lineEndsWithEqualsToken(rest: IndexedSeq[Token]): Boolean =
@@ -1703,6 +1707,7 @@ object Checker:
           case md: untpd.ModuleDef      => md.name.toString == target
           case nested: untpd.PackageDef => declaresTopLevel(nested, target)
           case _                        => false
+
       case _                     => false
 
   private def isCrossModuleExport(base: String): Boolean =

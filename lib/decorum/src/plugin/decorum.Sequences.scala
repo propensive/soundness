@@ -80,14 +80,19 @@ object Sequences:
       t match
         case ifT: untpd.If if !absorbed.contains(ifT.span.start) =>
           mkIfSequence(ifT, content, source, absorbed).foreach(out += _)
+
         case w: untpd.WhileDo =>
           mkWhileSequence(w, content, source).foreach(out += _)
+
         case fy: untpd.ForYield =>
           mkForSequence(fy, fy.enums, fy.expr, "yield", content, source).foreach(out += _)
+
         case fd: untpd.ForDo =>
           mkForSequence(fd, fd.enums, fd.body, "do", content, source).foreach(out += _)
+
         case tr: untpd.ParsedTry =>
           mkTrySequence(tr, content, source).foreach(out += _)
+
         case _ => ()
       t.productIterator.foreach(descend(_, visit))
 
@@ -177,6 +182,7 @@ object Sequences:
             elseTree match
               case innerIf: untpd.If =>
                 source.offsetToLine(innerIf.span.start) + 1 == elseLine
+
               case _ => false
           // After a bridge, an inline `else` (col ≠ anchorCol) belongs to
           // the bridge's inner If — not the outer chain. We skip past it
@@ -235,6 +241,7 @@ object Sequences:
                     absorbed += innerIf.span.start
                     current     = innerIf
                     afterBridge = true
+
               case _ =>
                 elems += makeElem
                           ( label        = "else",

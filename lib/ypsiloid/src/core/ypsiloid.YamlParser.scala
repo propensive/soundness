@@ -407,6 +407,7 @@ private[ypsiloid] final class YamlParser:
           val parts = argText.split("\\s+").nn.asInstanceOf[Array[String]]
           if parts.length != 2 then errorAt(Issue.TagDirectiveRequiresHandleAndPrefix)
           tagHandles(parts(0)) = parts(1)
+
         case _ => () // reserved/unknown directive — silently accept
       skipBlankAndCommentLines()
     sawAny
@@ -562,6 +563,7 @@ private[ypsiloid] final class YamlParser:
             val m = parseFlowMapping()
             flowParentIndent = savedFlowParent
             maybeBlockMappingFromQuotedKey(m, indent, tagText, anchorName)
+
           case Pipe         => parseBlockScalar(literal = true)
           case Greater      => parseBlockScalar(literal = false)
           case Minus        => parseMinus(indent)
@@ -682,6 +684,7 @@ private[ypsiloid] final class YamlParser:
         case Hash    =>
           while more && peek != Newline do advance()
           if more then advance()
+
         case _ => done = true
 
   // ── Plain scalars / block mappings detection ────────────────────────────
@@ -737,6 +740,7 @@ private[ypsiloid] final class YamlParser:
           parseBlockMappingFromFirstKey(keyAst, indent)
         else
           errorAt(Issue.TrailingContentAfterQuotedScalar)
+
       case Comma | CloseBracket | CloseBrace => scalar
       case _                                 => errorAt(Issue.TrailingContentAfterQuotedScalar)
 
@@ -1033,6 +1037,7 @@ private[ypsiloid] final class YamlParser:
 
       case ".inf" | ".Inf" | ".INF"
         | "+.inf" | "+.Inf" | "+.INF"       => Yaml.Ast.Decimal(Double.PositiveInfinity)
+
       case "-.inf" | "-.Inf" | "-.INF"      => Yaml.Ast.Decimal(Double.NegativeInfinity)
       case ".nan" | ".NaN" | ".NAN"         => Yaml.Ast.Decimal(Double.NaN)
 
@@ -2355,6 +2360,7 @@ private[ypsiloid] final class YamlParser:
         case s: String =>
           val r = parsePlainIntegerOrNull(s)
           if r != null then r else value
+
         case _         => value
 
     case "!!float" =>
@@ -2365,6 +2371,7 @@ private[ypsiloid] final class YamlParser:
         case s: String =>
           val r = parsePlainDecimalOrNull(s)
           if r != null then r else value
+
         case _         => value
 
     case "!!bool" =>

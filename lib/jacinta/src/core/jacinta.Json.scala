@@ -739,6 +739,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
             case _: Array[AnyRef] @unchecked if left.asInstanceOf[Json.Ast].isArray =>
               arrayEq(left, rightAst)
+
             case _ => false
 
         case right: Array[Long] @unchecked =>
@@ -766,6 +767,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
             case _: Array[Double] @unchecked if !rightIsObject =>
               arrayEq(left, rightAst)
+
             case _ => false
 
         case _ =>

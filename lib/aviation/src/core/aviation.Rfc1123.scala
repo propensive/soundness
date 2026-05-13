@@ -123,6 +123,7 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
             case 'l' => Jul
             case 'n' => Jun
             case _   => fail(MonthName(Jun, Jul)) yet Jul
+
           case _   => fail(MonthName(Jan, Jun, Jul)) yet Jan
 
       case 'M' =>

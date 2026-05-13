@@ -118,6 +118,7 @@ object internal:
 
       case Apply(Select(receiver, "selectDynamic"), List(Literal(StringConstant(name))))            =>
         Some((receiver, name))
+
       case _ => None
 
     /** Matches `receiver.updateDynamic("name")(<using lens>)(value)`. */
@@ -131,6 +132,7 @@ object internal:
               Apply(Select(receiver, "updateDynamic"), List(Literal(StringConstant(name)))),
               List(value)) =>
         Some((receiver, name, value))
+
       case _ => None
 
     /** Strips `Apply` and `TypeApply` layers off a term, recording the term-arg lists in
@@ -158,7 +160,9 @@ object internal:
           (termArgss(0), termArgss(2)) match
             case (List(Literal(StringConstant(name))), List(traversalArg)) =>
               Some((receiver, name, traversalArg))
+
             case _ => None
+
         case _ => None
 
     /** Matches `receiver.update[T](traversal, value)(<using optical>)` — the terminal
@@ -170,6 +174,7 @@ object internal:
           termArgss.head match
             case List(traversalArg, valueArg) => Some((receiver, traversalArg, valueArg))
             case _                            => None
+
         case _ => None
 
     /** Matches `receiver.apply[T, O](traversal)(<using optical>)` — the bare
@@ -181,6 +186,7 @@ object internal:
           termArgss.head match
             case List(traversalArg) => Some((receiver, traversalArg))
             case _                  => None
+
         case _ => None
 
     /** Walks a non-terminal chain, building the list of steps from the parameter
@@ -200,12 +206,14 @@ object internal:
             case Some((receiver, name, opTerm)) if isSingleton(opTerm.tpe) =>
               gatherSteps(receiver, paramSym).map: steps =>
                 steps :+ FieldStep(name) :+ TraversalStep(opTerm, opTerm.tpe)
+
             case Some(_) => None  // non-singleton operand — can't fuse
 
             case None    => matchOpticApply(s) match
               case Some((receiver, opTerm)) if isSingleton(opTerm.tpe) =>
                 gatherSteps(receiver, paramSym).map: steps =>
                   steps :+ TraversalStep(opTerm, opTerm.tpe)
+
               case Some(_) => None
               case None    => None
 
@@ -221,6 +229,7 @@ object internal:
             // update's value param is a plain T.
             gatherSteps(receiver, paramSym).map: prefix =>
               (prefix :+ TraversalStep(opTerm, opTerm.tpe), leaf, false)
+
           case Some(_) => None
           case None    => None
 
@@ -230,6 +239,7 @@ object internal:
           paramss.head match
             case TermParamClause(List(p)) => parseChain(strip(body), p.symbol)
             case _                        => None
+
         case _ => None
 
     // ─── tree types (live inside this method scope) ──────────────────────
@@ -403,6 +413,7 @@ object internal:
           if applyFn.symbol.exists && applyFn.symbol.owner == TypeRepr.of[Lens.type].typeSymbol
           && applyFn.symbol.name == "apply" =>
           Some((getLambda, setLambda))
+
         case _ => None
 
     def emitFieldUpdate[T: Type]

@@ -179,8 +179,10 @@ object Html4Transitional:
   given accept: ("accept" is Attribute on "form" | "input" of MimeList) = attribute()
   given acceptCharset: ("accept-charset" is Attribute on "form" of Charset) = attribute()
   given checked: ("checked" is Attribute on "input" of Presence) = attribute()
+
   given disabled: ("disabled" is Attribute on
     "button" | "input" | "optgroup" | "option" | "select" | "textarea" of Presence) = attribute()
+
   given readonly: ("readonly" is Attribute on "input" | "textarea" of Presence) = attribute()
   given multiple: ("multiple" is Attribute on "select" of Presence) = attribute()
   given selected: ("selected" is Attribute on "option" of Presence) = attribute()
@@ -210,10 +212,13 @@ object Html4Transitional:
   given scheme: ("scheme" is Attribute on "meta" of Textual) = attribute()
   given cite: ("cite" is Attribute on "blockquote" | "del" | "ins" | "q" of Url) = attribute()
   given datetime: ("datetime" is Attribute on "del" | "ins" of Datetime) = attribute()
+
   given accesskey: ("accesskey" is Attribute on
     "a" | "area" | "button" | "input" | "label" | "legend" | "textarea" of Textual) = attribute()
+
   given tabindex: ("tabindex" is Attribute on
     "a" | "area" | "button" | "input" | "object" | "select" | "textarea" of Integral) = attribute()
+
   given profile: ("profile" is Attribute on "head" of Url) = attribute()
   given version: ("version" is Attribute on "html" of Textual) = attribute()
   given prompt: ("prompt" is Attribute on "isindex" of Textual) = attribute()
@@ -258,16 +263,21 @@ object Html4Transitional:
   given abbr: ("abbr" is Attribute on "td" | "th" of Textual) = attribute()
   given axis: ("axis" is Attribute on "td" | "th" of Textual) = attribute()
   given scope: ("scope" is Attribute on "td" | "th" of Scope) = attribute()
+
   given valign: ("valign" is Attribute on
     "col" | "colgroup" | "tbody" | "td" | "tfoot" | "th" | "thead" | "tr" of Valign) = attribute()
+
   given char: ("char" is Attribute on
     "col" | "colgroup" | "tbody" | "td" | "tfoot" | "th" | "thead" | "tr" of Textual) = attribute()
+
   given charoff: ("charoff" is Attribute on
     "col" | "colgroup" | "tbody" | "td" | "tfoot" | "th" | "thead" | "tr" of Textual) = attribute()
+
   given span: ("span" is Attribute on "col" | "colgroup" of PositiveInt) = attribute()
 
   // List attributes
   given start: ("start" is Attribute on "ol" of PositiveInt) = attribute()
+
   given compact: ("compact" is Attribute on
     "dir" | "dl" | "menu" | "ol" | "ul" of Presence) = attribute()
 
@@ -289,11 +299,14 @@ object Html4Transitional:
   given face: ("face" is Attribute on "basefont" | "font" of Textual) = attribute()
   given noshade: ("noshade" is Attribute on "hr" of Presence) = attribute()
   given clear: ("clear" is Attribute on "br" of Clear) = attribute()
+
   given width: ("width" is Attribute on
     "applet" | "col" | "colgroup" | "hr" | "iframe" | "img" | "object" | "pre" | "table" | "td"
     | "th" of PositiveInt) = attribute()
+
   given height: ("height" is Attribute on
     "applet" | "iframe" | "img" | "object" | "td" | "th" of PositiveInt) = attribute()
+
   given hspace: ("hspace" is Attribute on "applet" | "img" | "object" of PositiveInt) = attribute()
   given vspace: ("vspace" is Attribute on "applet" | "img" | "object" of PositiveInt) = attribute()
   given nowrap: ("nowrap" is Attribute on "td" | "th" of Presence) = attribute()

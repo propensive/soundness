@@ -268,6 +268,7 @@ object Completions:
 
   enum Installation:
     case CommandNotOnPath(script: Text)
+
     case Shells
       ( zsh:        Installation.InstallResult,
         bash:       Installation.InstallResult,

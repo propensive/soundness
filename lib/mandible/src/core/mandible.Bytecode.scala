@@ -650,6 +650,7 @@ object Bytecode:
       case Lookupswitch(default, cases) =>
         val rendered = cases.map((v, t) => t"$v→$t").join(t",")
         t"lookup·switch $rendered default →$default"
+
       case Ireturn              => t"i·return"
       case Lreturn              => t"l·return"
       case Freturn              => t"f·return"
@@ -676,6 +677,7 @@ object Bytecode:
         val owner2 = StackTrace.rewrite(owner.s)
         val field2 = StackTrace.rewrite(field.s, true)
         t"put·field $owner2 ⌗ $field2"
+
       case New(cls)             => t"new ${StackTrace.rewrite(cls.s)}"
       case Newarray(element)    => t"new·array $element"
       case Anewarray(cls)       => t"a·new·array ${StackTrace.rewrite(cls.s)}"
@@ -689,6 +691,7 @@ object Bytecode:
 
       case Multianewarray(cls, dims) =>
         t"multi·a·new·array ${StackTrace.rewrite(cls.s)} $dims"
+
       case Ifnull(target)       => t"if·null →$target"
       case Ifnonnull(target)    => t"if·!null →$target"
       case GotoW(target)        => t"gotoʷ →$target"

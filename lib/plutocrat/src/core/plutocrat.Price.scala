@@ -72,6 +72,7 @@ trait Price:
 
   @targetName("negate")
   def `unary_-`: Price in Form = Price(-principal, -tax)
+
   def inclusive: Money in Form = principal + tax
   override def hashCode(): Int = (principal.asInstanceOf[Long] ^ tax.asInstanceOf[Long]*31).hashCode
 

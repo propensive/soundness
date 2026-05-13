@@ -114,6 +114,7 @@ def evolve[element: ClassTag]
 
   if versions.isEmpty then Evolution(Nil)
   else recur(Sec, versions, Evolution(versions.head.map(Atom(_, Set(Prim)))))
+
 def diff[element]
   ( left:    IndexedSeq[element],
     right:   IndexedSeq[element],

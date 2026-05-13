@@ -159,6 +159,7 @@ object Mcp:
 
   case class TaskMetadata(ttl: Optional[Int] = Unset)
   case class RelatedTaskMetadata(taskId: Text)
+
   case class Icon
     ( src:      Text,
       mimeType: Optional[Text]       = Unset,
@@ -166,6 +167,7 @@ object Mcp:
       theme:    Optional[Text]       = Unset )
 
   case class BaseMetadata(name: Text, title: Optional[Text] = Unset)
+
   case class Implementation
     ( name:        Text,
       title:       Optional[Text]       = Unset,
@@ -202,12 +204,14 @@ object Mcp:
   case class RequestsElicitation(create: Optional[Json] = Unset)
   case class Call(call: Optional[Json] = Unset)
   case class RequestsSampling(createMessage: Optional[Json] = Unset)
+
   case class Tasks
     ( list:     Optional[Json]     = Unset,
       cancel:   Optional[Json]     = Unset,
       requests: Optional[Requests] = Unset )
 
   case class ListTasks(nextCursor: Optional[Cursor] = Unset, tasks: List[Task] = Nil)
+
   case class Requests
     ( sampling:    Optional[RequestsSampling]    = Unset,
       elicitation: Optional[RequestsElicitation] = Unset,
@@ -240,10 +244,12 @@ object Mcp:
   case class Contents(contents: TextResourceContents | BlobResourceContents)
   case class Context(arguments: Optional[Map[Text, Text]] = Unset)
   case class ListResources(nextCursor: Optional[Cursor] = Unset, resources: List[Resource] = Nil)
+
   case class ListResourceTemplates
     ( nextCursor: Optional[Cursor] = Unset, resourceTemplates: List[ResourceTemplate] = Nil )
 
   case class ReadResource(contents: List[Contents] = Nil)
+
   case class Resource
     ( name:        Text,
       uri:         Text,
@@ -275,12 +281,14 @@ object Mcp:
     ( uri: Text, mimeType: Optional[Text] = Unset, blob: Text, _meta: Optional[Json] = Unset )
 
   case class ListPrompts(nextCursor: Optional[Cursor] = Unset, prompts: List[Prompt] = Nil)
+
   case class Annotations
     ( audience:     Optional[List[Role]] = Unset,
       priority:     Optional[Double]     = Unset,
       lastModified: Optional[Text]       = Unset )
 
   case class Complete(completion: Completion)
+
   case class Completion
     ( values: List[Text] = Nil, total: Optional[Int] = Unset, hasMore: Optional[Boolean] = Unset )
 
@@ -363,6 +371,7 @@ object Mcp:
       description: Optional[Text]                 = Unset,
       arguments:   Optional[List[PromptArgument]] = Unset,
       _meta:       Optional[Json]                 = Unset )
+
   case class Argument(name: Text, value: Text)
 
   object Reference:
@@ -384,6 +393,7 @@ object Mcp:
   case class ResourceTemplateReference(uri: Text) extends Reference
   case class PromptMessage(role: Role, content: ContentBlock)
   case class GetPrompt(description: Optional[Text] = Unset, messages: List[PromptMessage] = Nil)
+
   case class CallTool
     ( content:           List[ContentBlock] = Nil,
       structuredContent: Optional[Json]     = Unset,
@@ -392,6 +402,7 @@ object Mcp:
   case class ListTools(nextCursor: Optional[Cursor] = Unset, tools: List[Tool] = Nil)
   case class ListRoots(roots: List[Root] = Nil)
   case class Root(uri: Text, name: Optional[Text] = Unset, _meta: Optional[Json] = Unset)
+
   case class Tool
     ( name:         Text,
       inputSchema:  JsonSchema,
@@ -404,6 +415,7 @@ object Mcp:
       _meta:        Optional[Json]            = Unset )
 
   case class ToolExecution(taskSupport: Optional[TaskSupport] = Unset)
+
   case class ToolAnnotations
     ( title:           Optional[Text]    = Unset,
       readOnlyHint:    Optional[Boolean] = Unset,
@@ -501,6 +513,7 @@ object Mcp:
       size:        Optional[Long]       = Unset,
       _meta:       Optional[Json]       = Unset )
   extends ContentBlock
+
   case class EmbeddedResource
     ( resource:    Contents,
       annotations: Optional[Annotations] = Unset,

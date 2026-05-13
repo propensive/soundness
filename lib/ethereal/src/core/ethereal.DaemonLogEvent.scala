@@ -50,6 +50,7 @@ object DaemonLogEvent:
     case ReceivedSignal(signal)    => signal match
       case unix: UnixSignal       => m"Received signal $unix"
       case windows: WindowsSignal => m"Received signal $windows"
+
     case ExitStatusRequest(pid)    => m"Exit status requested from $pid"
     case CloseConnection(pid)      => m"Connection closed from $pid"
     case StderrRequest(pid)        => m"STDERR requested from $pid"

@@ -50,6 +50,7 @@ case class CodeData(code: Text)                                                e
 case class HtmlInlineData(html: Text)                                          extends InlineData
 case object SoftbreakData                                                      extends InlineData
 case object LinebreakData                                                      extends InlineData
+
 case class LinkData
   ( dest: Text, title: Optional[Text], children: List[InlineNode] )
 extends InlineData
@@ -57,6 +58,7 @@ extends InlineData
 case class ImageData
   ( dest: Text, title: Optional[Text], children: List[InlineNode] )
 extends InlineData
+
 case class EmphasisData(children: List[InlineNode])                            extends InlineData
 case class StrongData(children: List[InlineNode])                              extends InlineData
 

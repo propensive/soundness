@@ -45,6 +45,7 @@ import vacuous.*
 object Renderable:
   given message: Message is Renderable:
     type Form = Phrasing
+
       def render(message: Message): Html of Phrasing =
         val elements: List[Html of Phrasing] = message.segments.flatMap:
           case message: Message => List(render(message))
