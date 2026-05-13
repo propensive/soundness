@@ -30,80 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hallucination
-
-import java.awt as ja
-import java.awt.image as jai
-import javax.imageio as ji
+package acyclicity
 
 import anticipation.*
-import contingency.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
-import turbulence.*
+import fulminate.*
 
-object Raster:
-  def apply(width: Int, height: Int)(pixel: (Int, Int) => Chroma): Raster =
-    val image = jai.BufferedImage(width, height, jai.BufferedImage.TYPE_INT_RGB)
-    for x <- 0 until width; y <- 0 until height do image.setRGB(x, y, pixel(x, y).underlying)
-    new Raster(image)
+object DagError:
+  enum Reason(val number: Int) extends Clarification:
+    case NodeMissing(node: Text) extends Reason(1)
+    case Cyclic                  extends Reason(2)
 
-  def apply[streamable: Streamable by Data](input: streamable): Raster =
-    new Raster(ji.ImageIO.read(input.read[Data].javaInputStream).nn)
+  given communicable: Reason is Communicable =
+    case Reason.NodeMissing(node) => m"the node $node is not present in the graph"
+    case Reason.Cyclic            => m"the graph contains a cycle"
 
-  def apply[form: Rasterizable as rasterizable](image: jai.BufferedImage): Raster in form =
-    new Raster(image):
-      type Form = form
-
-  given streamable: [form: Rasterizable] => (Raster in form) is Streamable by Data = raster =>
-    val out = StreamOutputStream()
-    ji.ImageIO.write(raster.image, form.name.s, out)
-    out.close()
-    out.stream
-
-  given abstractable: [format: Rasterizable] => (Raster in format) is Abstractable:
-    type Domain = HttpStreams
-    type Result = HttpStreams.Content
-
-    def genericize(image: Raster in format): HttpStreams.Content =
-      (format.mediaType.basic, image.read[Stream[Data]])
-
-  given graphical: Raster is Graphical:
-    def pixel(raster: Raster, x: Int, y: Int): Chroma = raster(x, y)
-    def width(raster: Raster): Int = raster.width
-    def height(raster: Raster): Int = raster.height
-
-
-  given aggregable: [format: Rasterizable as rasterizable] => Tactic[RasterError]
-  =>  (Raster in format) is Aggregable by Data =
-
-    rasterizable.read(_)
-
-
-  given aggregable2: Tactic[RasterError] => Raster is Aggregable by Data = Raster(_)
-
-case class Raster(private[hallucination] val image: jai.BufferedImage) extends Formal:
-  def width: Int = image.getWidth
-  def height: Int = image.getHeight
-
-  def apply(x: Int, y: Int): Chroma =
-    val color: ja.Color = ja.Color(image.getRGB(x, y), true)
-    Chroma(color.getRed, color.getGreen, color.getBlue)
-
-  def to[format: Rasterizable as rasterizable]: Raster in format = Raster[format](image)
-
-  def crop(left: Int = 0, bottom: Int = 0, top: Int = 0, right: Int = 0): Raster =
-    Raster(width - left - right, height - top - bottom) { (x, y) => apply(x + left, y + top) }
-
-  def flipX: Raster = Raster(width, height) { (x, y) => apply(width - 1 - x, y) }
-  def flipY: Raster = Raster(width, height) { (x, y) => apply(x, height - 1 - y) }
-
-  def rotate(angle: 90 | 180 | 270): Raster = angle match
-    case 90  => Raster(height, width) { (x, y) => apply(width - 1 - y, x) }
-    case 180 => Raster(width, height) { (x, y) => apply(width - 1 - x, height - 1 - y) }
-    case 270 => Raster(height, width) { (x, y) => apply(y, height - 1 - x) }
-
-  def portrait: Boolean = height > width
-  def square: Boolean = width == height
-  def landscape: Boolean = width > height
+case class DagError(reason: DagError.Reason)(using Diagnostics)
+extends Error(191, reason.number)(m"the DAG operation failed because $reason")

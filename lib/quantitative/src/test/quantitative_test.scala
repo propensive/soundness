@@ -377,6 +377,17 @@ object Tests extends Suite(m"Quantitative Tests"):
         Fahrenheit(100).show
       . assert(_ == t"37.8 °C")
 
+      test(m"Add a Rankine quantity to a Temperature"):
+        import temperatureScales.kelvin
+        // (9*Kelvin).in[Rankines] is 16.2 R, equivalent to 9 K
+        (zero[Temperature] + (9.0*Kelvin).in[Rankines]).show
+      . assert(_ == t"9.00 K")
+
+      test(m"Subtract a Rankine quantity from a Temperature"):
+        import temperatureScales.kelvin
+        ((zero[Temperature] + 20.0*Kelvin) - (9.0*Kelvin).in[Rankines]).show
+      . assert(_ == t"11.0 K")
+
     suite(m"Aggregation tests"):
       test(m"Total some values"):
         List(1*Second, 2*Second, 3*Second).total
