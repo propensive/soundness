@@ -126,7 +126,6 @@ object Checker:
     var prevWasAnnotation:    Boolean                    = false
     var prevLineNum:          Int                        = 0
     var prevWasReturnType:    Boolean                    = false
-    var prevReturnTypeLine:   Int                        = 0
     var prevCodeLineIndent:   Int                        = -1
     var prevCodeLineLastTok:  String                     = ""
     var blanksSinceDecl:      Int                        = 0
@@ -1797,11 +1796,11 @@ object Checker:
       i += 1
 
   // R34: alignment within each for-comprehension's enumerator block. The
-  // first non-filter generator's LHS column and `<-`/`=` column define the
-  // reference. Other generators must match both; bindings (`y = e`) match
-  // the same way; filter lines (`if expr`) must instead sit at the
-  // operator column. Single-line comprehensions collapse to one
-  // enumerator per group and skip the check.
+  // first non-filter generator defines the **anchor** — its LHS column
+  // and `<-`/`=` column. Other generators must match both; bindings
+  // (`y = e`) match the same way; filter lines (`if expr`) must instead
+  // sit at the anchor's operator column. Single-line comprehensions
+  // collapse to one enumerator per group and skip the check.
   private def checkForRules
     ( file:    String,
       groups:  List[List[GenLine]],
@@ -1810,26 +1809,26 @@ object Checker:
 
     groups.foreach: gens =>
       if gens.length >= 2 then
-        val firstGen = gens.find(!_.isFilter).getOrElse(gens.head)
-        val refLhs   = firstGen.startCol
-        val refOp    = firstGen.opCol
+        val anchorGen    = gens.find(!_.isFilter).getOrElse(gens.head)
+        val anchorLhsCol = anchorGen.startCol
+        val anchorOpCol  = anchorGen.opCol
 
         gens.foreach: gl =>
-          if !(gl.line == firstGen.line && gl.startCol == firstGen.startCol) then
+          if !(gl.line == anchorGen.line && gl.startCol == anchorGen.startCol) then
             if gl.isFilter then
-              if gl.startCol != refOp then
+              if gl.startCol != anchorOpCol then
                 out += Violation
                   ( file, gl.line, gl.startCol, "924.3",
-                    s"`if` filter should align with `<-`/`=` at column $refOp "
+                    s"`if` filter should align with `<-`/`=` at column $anchorOpCol "
                       +s"(found ${gl.startCol})" )
             else
-              if gl.startCol != refLhs then
+              if gl.startCol != anchorLhsCol then
                 out += Violation
                   ( file, gl.line, gl.startCol, "924.2",
                     s"generator should align with the first generator's LHS at column "
-                      +s"$refLhs (found ${gl.startCol})" )
-              if gl.opCol != refOp then
+                      +s"$anchorLhsCol (found ${gl.startCol})" )
+              if gl.opCol != anchorOpCol then
                 out += Violation
                   ( file, gl.line, gl.opCol, "924.1",
-                    s"`<-`/`=` should be vertically aligned at column $refOp "
+                    s"`<-`/`=` should be vertically aligned at column $anchorOpCol "
                       +s"(found ${gl.opCol})" )
