@@ -36,6 +36,7 @@ import scala.collection.mutable as scm
 
 import acyclicity.*
 import anticipation.*
+import contingency.*
 import gossamer.*
 import spectacular.*
 import vacuous.*
@@ -77,7 +78,7 @@ object LayeredDagDiagram:
         case (true,  true,  true,  true)  => Junction
         case _                            => Space
 
-  def apply[node](dag: Dag[node]): LayeredDagDiagram[node] =
+  def apply[node](dag: Dag[node]): LayeredDagDiagram[node] raises DagError =
     val nodes: Vector[node] = dag.sorted.to(Vector)
     if nodes.isEmpty then LayeredDagDiagram(Nil) else
       val parents: Map[node, Set[node]] = dag.edgeMap
