@@ -629,21 +629,31 @@ the leading `:` and the return type on a heavy-signature return-type line.**
 
 ### Macro quotes and splices
 
-Scala 3 macro quote (`'{ … }`, `'[ … ]`) and splice (`${ … }`) syntax has
-two styles:
+Scala 3 macro quote (`'{ … }`, `'[ … ]`) and splice (`${ … }`) syntax
+has two layouts:
 
-- **Inline.** No padding between `'` (or `$`) and the opening `{`/`[`,
-  with the contents on the same line:
+- **Inline** — closer on the same source line as the opener. No space
+  between `'` (or `$`) and the opening `{`/`[`:
 
   ```scala
   '{Quantity(left)}
   ${quantitative.internal.multiply('left, 'right)}
   ```
 
-- **Block.** A space between `'` (or `$`) and the opening `{`, with
-  `' {` (or `$ {`) alone at the end of a line. The quoted/spliced
-  content is indented two spaces, starting on the next line, and the
-  closing `}` sits in the same column as the opening `{`:
+- **Multi-line** — closer on a different line from the opener. The
+  layout is fixed:
+
+  1. **Space between `'`/`$` and `{`.** The opener is two tokens,
+     written `' {` (or `$ {`).
+  2. **The opener pair is alone on its line.** Only indentation
+     before `'`/`$`; only whitespace (or EOL) after `{`.
+  3. **Body indented to column `{`+2.** Every body line that begins
+     a top-level statement of the quoted block sits two columns past
+     the `{` column (equivalently four past the `'`/`$`). Sub-
+     expressions within the body deepen further by the usual rules.
+  4. **`}` alone on its line at column `{`.** The closing brace
+     occupies its own line and sits in the same column as the
+     opening `{`.
 
   ```scala
   ' {
@@ -652,6 +662,15 @@ two styles:
           ${quantitative.internal.multiply('left, 'right).asExprOf[Quantity[result]]}
     }
   ```
+
+  In the example above the `'` sits at column 3, the `{` at column
+  5, body lines at column 7 (= `{`+2 = `'`+4), and the `}` at
+  column 5.
+
+The two layouts are determined by whether the closer ends up on the
+opener's line. The inline layout is preferred when the content fits
+within the line-length budget on a single line; otherwise the multi-
+line layout applies.
 
 Quoted references (`'identifier`) take no padding.
 
@@ -735,8 +754,10 @@ scope is always preceded by a blank.
 - Multi-line method applications: when the param block lives on its own
   line, use `( arg, arg )` (or all-aligned multi-line) with a space inside
   each paren; the closing bracket sits with the last argument, never alone.
-- Macro quotes/splices have inline (`'{x}`, `${x}`) and block (`' {`/`$ {`
-  on its own line, content +2, closing `}` aligned with `{`) styles.
+- Macro quotes/splices have inline (`'{x}`, `${x}`) and multi-line
+  layouts. The multi-line layout requires `' {` (or `$ {`) — with a
+  space — alone on its line, the body indented to `{`+2, and the `}`
+  alone on its line at the column of `{`.
 - Keyword sequences (`if`/`then`/`else`, `for`/`yield`, `for`/`do`,
   `while`/`do`, `try`/`catch`/`finally`): broken keywords align with K₁;
   once one keyword breaks, all later keywords break (forward cascade);
