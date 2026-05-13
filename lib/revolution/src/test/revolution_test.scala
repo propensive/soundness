@@ -141,3 +141,15 @@ object Tests extends Suite(m"Revolution Tests"):
         test(m"Check that $left < $right"):
           left < right
         . assert(identity(_))
+
+      test(m"Equal versions are not less than each other"):
+        v"1.0.0" < v"1.0.0"
+      . assert(_ == false)
+
+      test(m"Equal prerelease versions are not less than each other"):
+        v"1.0.0-alpha" < v"1.0.0-alpha"
+      . assert(_ == false)
+
+      test(m"Release is not less than its prerelease"):
+        v"1.0.0" < v"1.0.0-alpha"
+      . assert(_ == false)
