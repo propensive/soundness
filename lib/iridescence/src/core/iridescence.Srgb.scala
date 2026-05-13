@@ -96,3 +96,9 @@ object Srgb:
 
 case class Srgb(red: Double, green: Double, blue: Double) extends Color:
   type Form = Srgb
+
+  def mix(that: Srgb, ratio: Double = 0.5): Srgb =
+    Srgb
+      ( red*(1 - ratio) + that.red*ratio,
+        green*(1 - ratio) + that.green*ratio,
+        blue*(1 - ratio) + that.blue*ratio )
