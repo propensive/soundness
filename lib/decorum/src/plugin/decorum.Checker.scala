@@ -71,12 +71,14 @@ object Checker:
     val sequences            = Sequences.extract(untpdTree, source)
     scanRawTabs(file, rawText, out)
     val stmtGroups           = Statements.extract(untpdTree, source)
+    val lambdaSites          = Lambdas.extract(untpdTree, source)
     checkFileNaming(file, untpdTree, out)
     checkPackageRules(file, expectedModule, state.packageInfo, out)
     checkImportRules(file, imports, lines, out)
     checkCaseRules(file, caseGroups, lines, out)
     checkForRules(file, forGroups, out)
     checkChunkBlanks(file, stmtGroups, rawText, source, out)
+    checkLambdaLayout(file, lambdaSites, out)
     var idx = 0
 
     while idx < lines.length do
@@ -1956,6 +1958,51 @@ object Checker:
   // declaration padding"): both are instances of the same principle.
   // Single-line declarations can still sit adjacent with zero blanks
   // between them — only chunks compel a separator.
+  // R312 — lambda layout, four sub-rules:
+  //   312.1 named single-line lambda using `(…)` (must be `{…}` or `: …`)
+  //   312.2 named single-line `{…}` at end-of-line (must be `: …`)
+  //   312.3 multi-line lambda using `{…}` or `(…)` (must be `: …`)
+  //   312.4 anonymous (placeholder) lambda using `{…}` or `: …` (must be `(…)`)
+  private def checkLambdaLayout
+    ( file: String,
+      sites: List[Lambdas.LambdaSite],
+      out: mutable.ListBuffer[Violation] )
+  :   Unit =
+
+    import Lambdas.Opener
+    sites.foreach: s =>
+      // Multi-line wins regardless of parameter shape — only a colon-arg
+      // body can house a multi-line lambda cleanly.
+      if s.isMultiLine then
+        if s.opener != Opener.Colon then
+          out +=
+            Violation
+              ( file, s.openerLine, s.openerCol, "312.3",
+                "multi-line lambda must use a colon-arg `f: x => …` form, "
+                  +s"not `${s.opener.toString.toLowerCase}`" )
+      else if s.isAnonymous then
+        if s.opener != Opener.Paren then
+          out +=
+            Violation
+              ( file, s.openerLine, s.openerCol, "312.4",
+                "anonymous (`_`-)lambda must be wrapped in `(…)`, not "
+                  +s"`${s.opener.toString.toLowerCase}`" )
+      else // named, single-line
+        if s.opener == Opener.Paren then
+          out +=
+            Violation
+              ( file, s.openerLine, s.openerCol, "312.1",
+                "named-parameter lambda must be wrapped in `{…}`, not `(…)`"
+                  +(if s.lastOnLine
+                    then " (or use `f: x => …` since the lambda is last on the line)"
+                    else "") )
+        else if s.opener == Opener.Brace && s.lastOnLine then
+          out +=
+            Violation
+              ( file, s.openerLine, s.openerCol, "312.2",
+                "lambda is the last thing on its line; prefer `f: x => …` "
+                  +"over `f { x => … }`" )
+
   private def checkChunkBlanks
     ( file:    String,
       groups:  List[StmtGroup],
