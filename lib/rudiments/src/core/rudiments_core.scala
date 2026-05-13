@@ -115,6 +115,9 @@ extension (inline statement: => Unit)
     statement
     block
 
+extension [input, result](inline lambda: input => result)
+  inline infix def and (inline input2: => input): result = lambda(input2)
+
 def loop(block: => Unit): Loop = Loop({ () => block })
 
 
