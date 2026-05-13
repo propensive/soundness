@@ -81,11 +81,11 @@ object internal:
 
           val current = runtimeExpr
           runtimeExpr =
-            '{
-              Sh.Runtime.parse
-                ( Sh.Runtime.insert($current, $typeclassExpr.embed($value)),
-                  ${Expr(nextPart)}.tt )
-            }
+            ' {
+                Sh.Runtime.parse
+                  ( Sh.Runtime.insert($current, $typeclassExpr.embed($value)),
+                    ${Expr(nextPart)}.tt )
+              }
 
       i += 1
 

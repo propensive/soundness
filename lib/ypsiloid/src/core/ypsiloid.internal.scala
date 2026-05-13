@@ -206,11 +206,11 @@ object internal:
           case '[Iterable[t]] =>
             Expr.summon[(? >: t) is Encodable in Yaml] match
               case Some('{$enc: Encodable}) =>
-                '{
-                  $value.asInstanceOf[Iterable[t]].iterator
-                  . map(item => Yaml.unseal($enc.encode(item)))
-                  . to(Iterable)
-                }
+                ' {
+                    $value.asInstanceOf[Iterable[t]].iterator
+                    . map(item => Yaml.unseal($enc.encode(item)))
+                    . to(Iterable)
+                  }
 
               case _ =>
                 halt
@@ -226,11 +226,11 @@ object internal:
         expr.absolve match
           case '{$value: tpe} => Type.of[tpe] match
             case '[Map[Text, Yaml]] =>
-              '{
-                $value.asInstanceOf[Map[Text, Yaml]].iterator.map: (key, yaml) =>
-                  (key.s, Yaml.unseal(yaml))
-                . toList
-              }
+              ' {
+                  $value.asInstanceOf[Map[Text, Yaml]].iterator.map: (key, yaml) =>
+                    (key.s, Yaml.unseal(yaml))
+                  . toList
+                }
 
             case _ =>
               halt
@@ -272,10 +272,10 @@ object internal:
                 val v = serialize(other)
                 '{Iterable($v)}
 
-        '{
-          val all = ${Expr.ofList(pieces)}.foldLeft(List.empty[Yaml.Ast])(_ ++ _)
-          Yaml.Ast.Sequence(IArray.from(all))
-        }
+        ' {
+            val all = ${Expr.ofList(pieces)}.foldLeft(List.empty[Yaml.Ast])(_ ++ _)
+            Yaml.Ast.Sequence(IArray.from(all))
+          }
 
       def serializeObject(node: IArray[Any]): Expr[Yaml.Ast] =
         val n = node.length/2
@@ -301,18 +301,18 @@ object internal:
                   val expr = serialize(other)
                   '{Iterable((${Expr(k)}, $expr))}
 
-        '{
-          val all =
-            ${Expr.ofList(pieces)}.foldLeft(List.empty[(String, Yaml.Ast)])(_ ++ _)
+        ' {
+            val all =
+              ${Expr.ofList(pieces)}.foldLeft(List.empty[(String, Yaml.Ast)])(_ ++ _)
 
-          val arr = new Array[Any](all.length*2)
-          var k = 0
-          all.foreach: pair =>
-            arr(k*2)     = Yaml.Ast.Str(pair(0).tt).asInstanceOf[Any]
-            arr(k*2 + 1) = pair(1).asInstanceOf[Any]
-            k += 1
-          Yaml.Ast.mapFromAnyArray(arr)
-        }
+            val arr = new Array[Any](all.length*2)
+            var k = 0
+            all.foreach: pair =>
+              arr(k*2)     = Yaml.Ast.Str(pair(0).tt).asInstanceOf[Any]
+              arr(k*2 + 1) = pair(1).asInstanceOf[Any]
+              k += 1
+            Yaml.Ast.mapFromAnyArray(arr)
+          }
 
       def serialize(node: Any): Expr[Yaml.Ast] = node.asMatchable match
         case s: String if s == MarkerString =>
@@ -394,28 +394,28 @@ object internal:
               """
 
           case s: String =>
-            '{
-              $accept && $scrutinee.isString
-              && $scrutinee.asInstanceOf[String] == ${Expr(s)}
-            }
+            ' {
+                $accept && $scrutinee.isString
+                && $scrutinee.asInstanceOf[String] == ${Expr(s)}
+              }
 
           case b: Boolean =>
-            '{
-              $accept && $scrutinee.isBoolean
-              && $scrutinee.asInstanceOf[Boolean] == ${Expr(b)}
-            }
+            ' {
+                $accept && $scrutinee.isBoolean
+                && $scrutinee.asInstanceOf[Boolean] == ${Expr(b)}
+              }
 
           case l: Long =>
-            '{
-              $accept && $scrutinee.isLong
-              && $scrutinee.asInstanceOf[Long] == ${Expr(l)}
-            }
+            ' {
+                $accept && $scrutinee.isLong
+                && $scrutinee.asInstanceOf[Long] == ${Expr(l)}
+              }
 
           case d: Double =>
-            '{
-              $accept && $scrutinee.isDouble
-              && $scrutinee.asInstanceOf[Double] == ${Expr(d)}
-            }
+            ' {
+                $accept && $scrutinee.isDouble
+                && $scrutinee.asInstanceOf[Double] == ${Expr(d)}
+              }
 
           case null =>
             '{$accept && $scrutinee.isNull}
@@ -463,19 +463,19 @@ object internal:
           nextHole += 1
           types ::= TypeRepr.of[Yaml]
           combined =
-            '{
-              $combined && {
-                val total = $scrutinee.arrayLength
-                val tailLen = total - ${Expr(prefixLen)}
-                val tail = new Array[Any](tailLen)
-                var k = 0
-                while k < tailLen do
-                  tail(k) = $scrutinee.arrayElement(${Expr(prefixLen)} + k).asInstanceOf[Any]
-                  k += 1
-                $array(${Expr(idx)}) = Yaml.ast(Yaml.Ast.seqFromAnyArray(tail))
-                true
+            ' {
+                $combined && {
+                  val total = $scrutinee.arrayLength
+                  val tailLen = total - ${Expr(prefixLen)}
+                  val tail = new Array[Any](tailLen)
+                  var k = 0
+                  while k < tailLen do
+                    tail(k) = $scrutinee.arrayElement(${Expr(prefixLen)} + k).asInstanceOf[Any]
+                    k += 1
+                  $array(${Expr(idx)}) = Yaml.ast(Yaml.Ast.seqFromAnyArray(tail))
+                  true
+                }
               }
-            }
 
         combined
 
@@ -541,24 +541,10 @@ object internal:
 
         val cardinality: Expr[Boolean] =
           if hasRest then
-            '{
-              $accept && $scrutinee.isObject
-              && {
-                val n = $scrutinee.objectSize
-                var keysSet = Set.empty[String]
-                var k = 0
-                while k < n do
-                  keysSet += $scrutinee.objectKey(k)
-                  k += 1
-                ${Expr(literalKeys)}.forall(keysSet.contains)
-              }
-            }
-          else
-            '{
-              $accept && $scrutinee.isObject
-              && {
-                val n = $scrutinee.objectSize
-                n == ${Expr(literalKeys.length)} && {
+            ' {
+                $accept && $scrutinee.isObject
+                && {
+                  val n = $scrutinee.objectSize
                   var keysSet = Set.empty[String]
                   var k = 0
                   while k < n do
@@ -567,7 +553,21 @@ object internal:
                   ${Expr(literalKeys)}.forall(keysSet.contains)
                 }
               }
-            }
+          else
+            ' {
+                $accept && $scrutinee.isObject
+                && {
+                  val n = $scrutinee.objectSize
+                  n == ${Expr(literalKeys.length)} && {
+                    var keysSet = Set.empty[String]
+                    var k = 0
+                    while k < n do
+                      keysSet += $scrutinee.objectKey(k)
+                      k += 1
+                    ${Expr(literalKeys)}.forall(keysSet.contains)
+                  }
+                }
+              }
 
         var combined: Expr[Boolean] = cardinality
         var i = 0
@@ -580,37 +580,37 @@ object internal:
             types ::= TypeRepr.of[Yaml]
             val literalKeysExpr = Expr(literalKeys)
             combined =
-              '{
-                $combined && {
-                  val n = $scrutinee.objectSize
-                  val keep = $literalKeysExpr.toSet
-                  val keysBuf = scala.collection.mutable.ArrayBuffer.empty[String]
-                  val valsBuf = scala.collection.mutable.ArrayBuffer.empty[Any]
-                  var j = 0
-                  while j < n do
-                    val key = $scrutinee.objectKey(j)
-                    if !keep.contains(key) then
-                      keysBuf += key
-                      valsBuf += $scrutinee.objectValue(j)
-                    j += 1
-                  val arr = new Array[Any](keysBuf.length*2)
-                  var m = 0
-                  while m < keysBuf.length do
-                    arr(m*2)     = Yaml.Ast.Str(keysBuf(m).tt).asInstanceOf[Any]
-                    arr(m*2 + 1) = valsBuf(m)
-                    m += 1
-                  $array(${Expr(idx)}) = Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
-                  true
+              ' {
+                  $combined && {
+                    val n = $scrutinee.objectSize
+                    val keep = $literalKeysExpr.toSet
+                    val keysBuf = scala.collection.mutable.ArrayBuffer.empty[String]
+                    val valsBuf = scala.collection.mutable.ArrayBuffer.empty[Any]
+                    var j = 0
+                    while j < n do
+                      val key = $scrutinee.objectKey(j)
+                      if !keep.contains(key) then
+                        keysBuf += key
+                        valsBuf += $scrutinee.objectValue(j)
+                      j += 1
+                    val arr = new Array[Any](keysBuf.length*2)
+                    var m = 0
+                    while m < keysBuf.length do
+                      arr(m*2)     = Yaml.Ast.Str(keysBuf(m).tt).asInstanceOf[Any]
+                      arr(m*2 + 1) = valsBuf(m)
+                      m += 1
+                    $array(${Expr(idx)}) = Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
+                    true
+                  }
                 }
-              }
           else
             val keyLiteral = Expr(k)
 
             val valueExpr =
-              '{
-                val idx2 = $scrutinee.objectIndexOf($keyLiteral)
-                if idx2 < 0 then null.asInstanceOf[Yaml.Ast] else $scrutinee.objectValue(idx2)
-              }
+              ' {
+                  val idx2 = $scrutinee.objectIndexOf($keyLiteral)
+                  if idx2 < 0 then null.asInstanceOf[Yaml.Ast] else $scrutinee.objectValue(idx2)
+                }
             combined = descend(array, v, valueExpr, combined)
           i += 1
 
@@ -625,19 +625,19 @@ object internal:
         c
 
       val result: Expr[Extrapolation[Yaml]] =
-        '{
-          val extracts = new Array[Any](${Expr(numberOfHoles)})
+        ' {
+            val extracts = new Array[Any](${Expr(numberOfHoles)})
 
-          val matches: Boolean =
-            ${descend('extracts, ast, '{Yaml.unseal($scrutinee)}, '{true})}
-          ${
-            if numberOfHoles == 0 then '{matches}
-            else if numberOfHoles == 1 then
-              '{if !matches then None else Some(extracts(0).asInstanceOf[Yaml])}
-            else
-              '{if !matches then None else Some(Tuple.fromArray(extracts))}
+            val matches: Boolean =
+              ${descend('extracts, ast, '{Yaml.unseal($scrutinee)}, '{true})}
+            $ {
+                if numberOfHoles == 0 then '{matches}
+                else if numberOfHoles == 1 then
+                  '{if !matches then None else Some(extracts(0).asInstanceOf[Yaml])}
+                else
+                  '{if !matches then None else Some(Tuple.fromArray(extracts))}
+              }
           }
-        }
 
       types.length match
         case 0 =>

@@ -53,42 +53,42 @@ object Benchmarks extends Suite(m"Serpentine benchmarks"):
     suite(m"Conjunctions"):
       bench(m"Find conjunction of 2-element paths")
         ( target = 500*Milli(Second), baseline = Baseline(compare = Min) ):
-        '{
+        ' {
             val p1 = % / "foo" / "bar"
             val p2 = % / "foo" / "baz"
             p1.conjunction(p2)
           }
 
       bench(m"Find conjunction of 3-element paths")(target = 500*Milli(Second)):
-        '{
+        ' {
             val p1 = % / "foo" / "bar" / "quux"
             val p2 = % / "foo" / "baz" / "quux"
             p1.conjunction(p2)
           }
 
       bench(m"Find conjunction of 4-element paths")(target = 500*Milli(Second)):
-        '{
+        ' {
             val p1 = % / "foo" / "bar" / "quux" / "bippy"
             val p2 = % / "foo" / "baz" / "quux" / "bop"
             p1.conjunction(p2)
           }
 
       bench(m"Find conjunction of 5-element paths")(target = 500*Milli(Second)):
-        '{
+        ' {
             val p1 = % / "foo" / "bar" / "quux" / "bippy" / "abc"
             val p2 = % / "foo" / "baz" / "quux" / "bop" / "def"
             p1.conjunction(p2)
           }
 
       bench(m"Find conjunction of 6-element paths")(target = 500*Milli(Second)):
-        '{
+        ' {
             val p1 = % / "foo" / "bar" / "quux" / "bippy" / "abc" / "ghi"
             val p2 = % / "foo" / "baz" / "quux" / "bop" / "def" / "jkl"
             p1.conjunction(p2)
           }
 
       bench(m"Find conjunction of 7-element paths")(target = 500*Milli(Second)):
-        '{
+        ' {
             val p1 = % / "foo" / "bar" / "quux" / "bippy" / "abc" / "ghi" / "mno"
             val p2 = % / "foo" / "baz" / "quux" / "bop" / "def" / "jkl" / "pqr"
             p1.conjunction(p2)

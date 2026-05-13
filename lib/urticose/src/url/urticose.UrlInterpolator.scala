@@ -137,11 +137,11 @@ object UrlInterpolator:
 
           val current = runtimeExpr
           runtimeExpr =
-            '{
-              Runtime.parse
-                ( Runtime.insert($current, $typeclassExpr.embed($value)),
-                  ${Expr(nextPart)}.tt )
-            }
+            ' {
+                Runtime.parse
+                  ( Runtime.insert($current, $typeclassExpr.embed($value)),
+                    ${Expr(nextPart)}.tt )
+              }
 
       i += 1
 

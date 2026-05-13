@@ -95,7 +95,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes1) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size1):
-        '{
+        ' {
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(jacinta.Benchmarks.jsonText1)
           }
@@ -115,7 +115,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes2) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size2):
-        '{
+        ' {
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(jacinta.Benchmarks.jsonText2)
           }
@@ -135,7 +135,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes3) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size3):
-        '{
+        ' {
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(jacinta.Benchmarks.jsonText3)
           }
@@ -155,7 +155,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes4) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size4):
-        '{
+        ' {
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(jacinta.Benchmarks.jsonText4)
           }
@@ -175,7 +175,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes5) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size5):
-        '{
+        ' {
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(jacinta.Benchmarks.jsonText5)
           }
@@ -195,7 +195,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes6) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size6):
-        '{
+        ' {
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(jacinta.Benchmarks.jsonText6)
           }
@@ -221,7 +221,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes7) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size7):
-        '{
+        ' {
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(jacinta.Benchmarks.jsonText7)
           }
@@ -243,7 +243,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes8) }
 
       bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size8):
-        '{
+        ' {
             import org.typelevel.jawn.ast.JParser
             JParser.parseFromString(jacinta.Benchmarks.jsonText8)
           }

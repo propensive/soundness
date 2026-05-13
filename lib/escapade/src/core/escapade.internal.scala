@@ -122,11 +122,11 @@ object internal:
 
             val current = runtimeExpr
             runtimeExpr =
-              '{
-                Ansi.Runtime.parse
-                  ( Ansi.Runtime.skip($current),
-                    ${Expr(nextPart)}.tt )
-              }
+              ' {
+                  Ansi.Runtime.parse
+                    ( Ansi.Runtime.skip($current),
+                      ${Expr(nextPart)}.tt )
+                }
           else
             typeclassExpr.absolve match
               case '{$_ : Substitution[Ansi.Input, tpe, sub]} =>
@@ -149,11 +149,11 @@ object internal:
 
             val current = runtimeExpr
             runtimeExpr =
-              '{
-                Ansi.Runtime.parse
-                  ( Ansi.Runtime.insert($current, $typeclassExpr.embed($value)),
-                    ${Expr(nextPart)}.tt )
-              }
+              ' {
+                  Ansi.Runtime.parse
+                    ( Ansi.Runtime.insert($current, $typeclassExpr.embed($value)),
+                      ${Expr(nextPart)}.tt )
+                }
 
       i += 1
 

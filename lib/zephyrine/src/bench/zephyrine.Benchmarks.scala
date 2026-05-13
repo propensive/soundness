@@ -208,7 +208,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
 
       bench(m"hold + mark + grab cross-block (350 chars across 4 blocks)")
        (target = 1*Second):
-        '{
+        ' {
             zephyrine.Benchmarks.cursorHoldMarkGrabCrossBlock
              ( zephyrine.Benchmarks.text10kFragments, 350 )
           }
