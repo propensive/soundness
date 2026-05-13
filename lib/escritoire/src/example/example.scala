@@ -50,22 +50,23 @@ given decimalizer: Decimalizer = Decimalizer(3)
 
 case class Library(id: Text, name: Text, linesOfCode: Int, year: Int, description: Text)
 
-val libraries: List[Library] = List
-  ( Library
-    ( t"wisteria",
-      t"internal",
-      581,
-      2017,
-      t"Simple, fast and transparant generic derivation for typeclasses" ),
-    Library
-      ( t"quantitative",
+val libraries: List[Library] =
+  List
+    ( Library
+      ( t"wisteria",
         t"internal",
-        1271,
-        2023,
-        t"Statically-checked physical units with seamless syntax" ),
-    Library
-      ( t"turbulence", t"internal", 1047, 2022, t"Simple tools for working with data streams" ),
-    Library(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables") )
+        581,
+        2017,
+        t"Simple, fast and transparant generic derivation for typeclasses" ),
+      Library
+        ( t"quantitative",
+          t"internal",
+          1271,
+          2023,
+          t"Statically-checked physical units with seamless syntax" ),
+      Library
+        ( t"turbulence", t"internal", 1047, 2022, t"Simple tools for working with data streams" ),
+      Library(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables") )
 
 import columnAttenuation.fail
 
@@ -96,13 +97,14 @@ def run(): Unit =
     val data = List(Digit(1, t"one"), Digit(2, t"two"), Digit(3, t"three"))
     Out.println(data.table)
 
-    val table2 = Table[Fruit]
-      ( Column(e"$Bold(Color)", textAlign = TextAlignment.Center): fruit =>
-          e"${Bg(fruit.color)}(   )",
-        Column(e"$Bold(English)")(_.english),
-        Column(e"$Bold(Russian)")(_.russian),
-        Column(e"$Bold(Chinese)")(_.chinese),
-        Column(e"$Bold(Japanese)")(_.japanese) )
+    val table2 =
+      Table[Fruit]
+        ( Column(e"$Bold(Color)", textAlign = TextAlignment.Center): fruit =>
+            e"${Bg(fruit.color)}(   )",
+          Column(e"$Bold(English)")(_.english),
+          Column(e"$Bold(Russian)")(_.russian),
+          Column(e"$Bold(Chinese)")(_.chinese),
+          Column(e"$Bold(Japanese)")(_.japanese) )
 
     Out.println(table2.tabulate(fruits).grid(100))
 

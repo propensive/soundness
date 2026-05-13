@@ -166,12 +166,13 @@ class Issuer
       val state = OAuth.State(request.path)
       store(session) = state
 
-      val query = Query.make
-        ( client_id     = client,
-          redirect_uri  = redirect,
-          access_type   = t"offline",
-          scope         = scopes.flatMap(_.names).to(Set).to(List).join(t" "),
-          state         = state.uuid.show,
-          response_type = t"code" )
+      val query =
+        Query.make
+          ( client_id     = client,
+            redirect_uri  = redirect,
+            access_type   = t"offline",
+            scope         = scopes.flatMap(_.names).to(Set).to(List).join(t" "),
+            state         = state.uuid.show,
+            response_type = t"code" )
 
       Redirect(init.query(query))

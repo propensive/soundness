@@ -476,9 +476,10 @@ object Json extends Json2, Dynamic:
       var i = 0
       var acc = Map.empty[key, element]
       while i < n do
-        acc = acc.updated
-          ( root.objectKey(i).tt.decode,
-            decodable.decoded(Json.ast(root.objectValue(i))) )
+        acc =
+          acc.updated
+            ( root.objectKey(i).tt.decode,
+              decodable.decoded(Json.ast(root.objectValue(i))) )
         i += 1
       acc
 

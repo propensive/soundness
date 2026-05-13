@@ -416,8 +416,7 @@ class Whatwg() extends Dom:
         | "meta" | "meter" | "noscript" | "object" | "ol" | "output" | "p" | "picture" | "pre"
         | "progress" | "q" | "ruby" | "s" | "samp" | "script" | "select" | "slot" | "small" | "span"
         | "strong" | "sub" | "sup" | "table" | "template" | "textarea" | "time" | "u" | "ul" | "var"
-        | "video" | "wbr", Whatwg ]
-          ( )
+        | "video" | "wbr", Whatwg ]( )
 
   object Area extends Tag.Void("area", sci.Map(), false):
     type Topic = "area"
@@ -598,8 +597,8 @@ class Whatwg() extends Dom:
   val Output = Tag.container["output", Phrasing, Whatwg]()
   val P = Tag.container["p", Phrasing, Whatwg](autoclose = true)
 
-  val Picture = Tag.container["picture", "source" | "img" | ScriptSupporting, Whatwg]
-    ( mode = Html.Mode.Whitespace )
+  val Picture = Tag.container["picture", "source" | "img" | ScriptSupporting,
+    Whatwg]( mode = Html.Mode.Whitespace )
 
   val Pre = Tag.container["pre", Phrasing, Whatwg]()
   val Progress = Tag.container["progress", Phrasing, Whatwg]()
@@ -637,20 +636,19 @@ class Whatwg() extends Dom:
         Whatwg ]
       ( mode = Html.Mode.Whitespace, boundary = true )
 
-  val Tbody = Tag.container["tbody", "tr", Whatwg]
-    ( autoclose = true, mode = Html.Mode.Whitespace, insertable = true )
+  val Tbody = Tag.container["tbody", "tr",
+    Whatwg]( autoclose = true, mode = Html.Mode.Whitespace, insertable = true )
 
   val Td = Tag.container["td", Flow, Whatwg](autoclose = true, boundary = true)
   val Template = Tag.void["template", Whatwg](boundary = true)
   val Textarea = Tag.container["textarea", "#text", Whatwg](mode = Html.Mode.Rcdata)
 
-  val Tfoot = Tag.container["tfoot", "tr", Whatwg]
-    ( autoclose = true, mode = Html.Mode.Whitespace )
+  val Tfoot = Tag.container["tfoot", "tr", Whatwg]( autoclose = true, mode = Html.Mode.Whitespace )
 
   val Th = Tag.container["th", Flow, Whatwg](autoclose = true, boundary = true)
 
-  val Thead = Tag.container["thead", "tr" | ScriptSupporting, Whatwg]
-    ( autoclose = true, mode = Html.Mode.Whitespace )
+  val Thead = Tag.container["thead", "tr" | ScriptSupporting,
+    Whatwg]( autoclose = true, mode = Html.Mode.Whitespace )
 
   val Time = Tag.container["time", Phrasing, Whatwg]()
   val Title = Tag.container["title", "#text", Whatwg](mode = Html.Mode.Rcdata)

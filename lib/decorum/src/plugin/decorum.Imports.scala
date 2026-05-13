@@ -78,11 +78,12 @@ object Imports:
       val end   = span.end.max(start).min(content.length)
       val text  = content.substring(start, end).nn
       val (path, hasAlias) = analyse(text)
-      out += ImportInfo
-        ( startLine        = source.offsetToLine(start) + 1,
-          endLine          = source.offsetToLine((end - 1).max(start)) + 1,
-          path             = path,
-          hasTopLevelAlias = hasAlias )
+      out +=
+        ImportInfo
+          ( startLine        = source.offsetToLine(start) + 1,
+            endLine          = source.offsetToLine((end - 1).max(start)) + 1,
+            path             = path,
+            hasTopLevelAlias = hasAlias )
 
   // Reduce an import statement's source text to:
   //   - the path string (concatenation of the path tokens and any selector

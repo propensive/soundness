@@ -56,16 +56,17 @@ import textMetrics.uniform
 
 object Bytecode:
   given teletypeable: (palette: BytecodePalette) => Bytecode is Teletypeable = bytecode =>
-    val table = Scaffold[Instruction]
-      ( Column(e"$Bold(Source)", textAlign = TextAlignment.Right): line =>
-          line.line.let: line =>
-            val source = e"${Fg(palette.bytecode)}(${bytecode.sourceFile.or(t"")})"
-            e"$source:${Fg(palette.sourceCode)}(${line.show})"
+    val table =
+      Scaffold[Instruction]
+        ( Column(e"$Bold(Source)", textAlign = TextAlignment.Right): line =>
+            line.line.let: line =>
+              val source = e"${Fg(palette.bytecode)}(${bytecode.sourceFile.or(t"")})"
+              e"$source:${Fg(palette.sourceCode)}(${line.show})"
 
-          . or(e""),
-        Column(e"")(_.offset.show.subscripts),
-        Column(e"$Bold(Opcode)")(_.opcode.teletype),
-        Column(e"$Bold(Stack)")(_.stack.let(_.teletype).or(e"")) )
+            . or(e""),
+          Column(e"")(_.offset.show.subscripts),
+          Column(e"$Bold(Opcode)")(_.opcode.teletype),
+          Column(e"$Bold(Stack)")(_.stack.let(_.teletype).or(e"")) )
 
     table.tabulate(bytecode.instructions).grid(160).render.join(e"\n")
 

@@ -109,18 +109,19 @@ def laneDemo(): Unit =
          t"C" -> Set(),
          t"D" -> Set(t"C") ) )
 
-  val scalaTypes = Dag
-    ( t"Any"        -> Set(),
-      t"Matchable"  -> Set(t"Any"),
-      t"AnyVal"     -> Set(t"Matchable"),
-      t"AnyRef"     -> Set(t"Matchable"),
-      t"Unit"       -> Set(t"AnyVal"),
-      t"Boolean"    -> Set(t"AnyVal"),
-      t"Int"        -> Set(t"AnyVal"),
-      t"String"     -> Set(t"AnyRef"),
-      t"List[Int]"  -> Set(t"AnyRef"),
-      t"Null"       -> Set(t"String", t"List[Int]"),
-      t"Nothing"    -> Set(t"Null", t"Unit", t"Boolean", t"Int") )
+  val scalaTypes =
+    Dag
+      ( t"Any"        -> Set(),
+        t"Matchable"  -> Set(t"Any"),
+        t"AnyVal"     -> Set(t"Matchable"),
+        t"AnyRef"     -> Set(t"Matchable"),
+        t"Unit"       -> Set(t"AnyVal"),
+        t"Boolean"    -> Set(t"AnyVal"),
+        t"Int"        -> Set(t"AnyVal"),
+        t"String"     -> Set(t"AnyRef"),
+        t"List[Int]"  -> Set(t"AnyRef"),
+        t"Null"       -> Set(t"String", t"List[Int]"),
+        t"Nothing"    -> Set(t"Null", t"Unit", t"Boolean", t"Int") )
 
   show(t"Scala types", scalaTypes)
 

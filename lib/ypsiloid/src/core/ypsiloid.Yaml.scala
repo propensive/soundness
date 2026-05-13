@@ -958,9 +958,10 @@ object Yaml extends Yaml2, Dynamic:
 
           case _ =>
             // Not a mapping — wrap in a one-entry mapping.
-            val arr = Array[Any]
-              ( Yaml.Ast.Str(label).asInstanceOf[Any],
-                Yaml.Ast.Str(kind).asInstanceOf[Any] )
+            val arr =
+              Array[Any]
+                ( Yaml.Ast.Str(label).asInstanceOf[Any],
+                  Yaml.Ast.Str(kind).asInstanceOf[Any] )
             Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
 
       def variant(yaml: Yaml): Yaml =

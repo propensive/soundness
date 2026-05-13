@@ -491,16 +491,18 @@ object Checker:
               i - 1 >= 0 && arr(i - 1).kind == Kind.Space && arr(i - 1).text == " "
                 && (i - 2) == j
             if !hasSingleSpace then
-              out += Violation
-                ( s.file, lineNum, cols(i), "473.3",
-                  s"`${arr(j).text}` and `{` of a multi-line quote/splice must "
-                    +"be separated by exactly one space" )
+              out +=
+                Violation
+                  ( s.file, lineNum, cols(i), "473.3",
+                    s"`${arr(j).text}` and `{` of a multi-line quote/splice must "
+                      +"be separated by exactly one space" )
             // (b) Nothing semantic before `'`/`$` on the line.
             if firstSemantic >= 0 && firstSemantic < j then
-              out += Violation
-                ( s.file, lineNum, cols(firstSemantic), "473.4",
-                  s"the `${arr(j).text} {` opener of a multi-line quote/splice "
-                    +"must be alone on its line" )
+              out +=
+                Violation
+                  ( s.file, lineNum, cols(firstSemantic), "473.4",
+                    s"the `${arr(j).text} {` opener of a multi-line quote/splice "
+                      +"must be alone on its line" )
             stack.push(QuoteBrace(braceCol = cols(i), prefixCol = cols(j), openerLine = lineNum))
           else
             stack.push(QuoteBrace(braceCol = -1, prefixCol = -1, openerLine = lineNum))
@@ -510,18 +512,20 @@ object Checker:
             if opener.braceCol >= 0 then
               // (d-col) closer column matches `{`.
               if cols(i) != opener.braceCol then
-                out += Violation
-                  ( s.file, lineNum, cols(i), "473.2",
-                    s"closing `}` of a multi-line quote/splice at column ${cols(i)} "
-                      +s"does not align with its opening `{` at column ${opener.braceCol}" )
+                out +=
+                  Violation
+                    ( s.file, lineNum, cols(i), "473.2",
+                      s"closing `}` of a multi-line quote/splice at column ${cols(i)} "
+                        +s"does not align with its opening `{` at column ${opener.braceCol}" )
               // (d-alone) `}` is the only semantic token on the line.
               val anotherSemantic =
                 (firstSemantic >= 0 && firstSemantic != i)
                   || (lastSemantic >= 0 && lastSemantic != i)
               if anotherSemantic then
-                out += Violation
-                  ( s.file, lineNum, cols(i), "473.6",
-                    "closing `}` of a multi-line quote/splice must be alone on its line" )
+                out +=
+                  Violation
+                    ( s.file, lineNum, cols(i), "473.6",
+                      "closing `}` of a multi-line quote/splice must be alone on its line" )
       i += 1
 
   // (c) On lines inside an open multi-line quote/splice — neither the
@@ -784,28 +788,32 @@ object Checker:
         out += Violation(file, PackageLine, 1, "131", "line 33 must be `package <module>`")
 
       case Some(p) if p.line != PackageLine =>
-        out += Violation
-          ( file, p.line, 1, "131",
-            s"expected `package` declaration on line 33, "
-              +s"found content on line ${p.line}" )
+        out +=
+          Violation
+            ( file, p.line, 1, "131",
+              s"expected `package` declaration on line 33, "
+                +s"found content on line ${p.line}" )
 
       case Some(p) =>
         val name = p.segments.mkString(".")
         if p.segments.length > 1 || !p.segments.head.matches("[A-Za-z_][A-Za-z0-9_]*") then
-          out += Violation
-            ( file, p.line, 1, "131",
-              s"package declaration must be a single identifier segment, not `$name`" )
+          out +=
+            Violation
+              ( file, p.line, 1, "131",
+                s"package declaration must be a single identifier segment, not `$name`" )
         else
           expectedModule.foreach: expected =>
             if name != expected then
-              out += Violation
-                ( file, p.line, 1, "131",
-                  s"package `$name` does not match expected module `$expected`" )
+              out +=
+                Violation
+                  ( file, p.line, 1, "131",
+                    s"package `$name` does not match expected module `$expected`" )
 
         if p.extraStatementOnSameLine then
-          out += Violation
-            ( file, p.line, 1, "131",
-              "package declaration must contain only `package <ident>` on line 33" )
+          out +=
+            Violation
+              ( file, p.line, 1, "131",
+                "package declaration must contain only `package <ident>` on line 33" )
 
   private def checkAfterPackage
     ( s: State, isBlank: Boolean, emit: (Int, String, String) => Unit )
@@ -861,10 +869,11 @@ object Checker:
       // `import java.util.concurrent as juc`) and language-feature aliases
       // remain an established convention.
       if imp.hasTopLevelAlias && group >= 5 then
-        out += Violation
-          ( file, imp.startLine, 1, "302.1",
-            "top-level imports must not use aliases (`as` or `=>`); "
-              +"write the full path" )
+        out +=
+          Violation
+            ( file, imp.startLine, 1, "302.1",
+              "top-level imports must not use aliases (`as` or `=>`); "
+                +"write the full path" )
 
       prevGroup match
         case Some(pg) =>
@@ -878,25 +887,29 @@ object Checker:
           val areSiblings  = group >= 5 && pg >= 5
           val blankBetween = blankLinesBetween(prevEndLine, imp.startLine, lines) > 0
           if !areSiblings && group < pg then
-            out += Violation
-              ( file, imp.startLine, 1, "302.2",
-                s"import group $group appears after group $pg" )
+            out +=
+              Violation
+                ( file, imp.startLine, 1, "302.2",
+                  s"import group $group appears after group $pg" )
           else if !areSiblings && group > pg then
             if !blankBetween then
-              out += Violation
-                ( file, imp.startLine, 1, "302.3",
-                  "import groups must be separated by exactly one blank line" )
+              out +=
+                Violation
+                  ( file, imp.startLine, 1, "302.3",
+                    "import groups must be separated by exactly one blank line" )
           else if group == pg then
             if blankBetween then
-              out += Violation
-                ( file, imp.startLine, 1, "302.3",
-                  "unexpected blank line within an import group" )
+              out +=
+                Violation
+                  ( file, imp.startLine, 1, "302.3",
+                    "unexpected blank line within an import group" )
             prevName.foreach: pn =>
               if imp.path < pn then
-                out += Violation
-                  ( file, imp.startLine, 1, "302.2",
-                    s"import `${imp.path}` is out of alphabetical order "
-                      +s"(after `$pn`)" )
+                out +=
+                  Violation
+                    ( file, imp.startLine, 1, "302.2",
+                      s"import `${imp.path}` is out of alphabetical order "
+                        +s"(after `$pn`)" )
 
         case None => ()
 
@@ -1337,10 +1350,11 @@ object Checker:
               "`/* ... */` block comments are reserved for the license header (lines 1-32)" )
       i += 1
 
-  private val CheckedOps: Set[String] = Set
-    ( "+", "-", "*", "/", "%", "&", "|", "^", "<", ">", "<<", ">>", ">>>",
-      "&&", "||", "==", "!=", "<=", ">=", "=>", "->", "<-", "<:", ">:",
-      "&~", "?=>" )
+  private val CheckedOps: Set[String] =
+    Set
+      ( "+", "-", "*", "/", "%", "&", "|", "^", "<", ">", "<<", ">>", ">>>",
+        "&&", "||", "==", "!=", "<=", ">=", "=>", "->", "<-", "<:", ">:",
+        "&~", "?=>" )
 
   private def operatorPrecedence(op: String): Int =
     if op.isEmpty then 0
@@ -1363,22 +1377,24 @@ object Checker:
       leftSpace:  Boolean,
       rightSpace: Boolean )
 
-  private val NonOperandWords: Set[String] = Set
-    ( "case", "if", "then", "else", "do", "while", "for", "yield", "return",
-      "match", "with", "extends", "derives", "given", "using", "new", "throw",
-      "try", "catch", "finally", "import", "package", "def", "val", "var",
-      "lazy", "object", "class", "trait", "enum", "type", "private", "protected",
-      "public", "final", "sealed", "abstract", "implicit", "override", "inline",
-      "transparent", "infix", "open", "opaque", "erased", "tracked",
-      "is", "of", "in", "by", "to", "under", "on", "raises", "until" )
+  private val NonOperandWords: Set[String] =
+    Set
+      ( "case", "if", "then", "else", "do", "while", "for", "yield", "return",
+        "match", "with", "extends", "derives", "given", "using", "new", "throw",
+        "try", "catch", "finally", "import", "package", "def", "val", "var",
+        "lazy", "object", "class", "trait", "enum", "type", "private", "protected",
+        "public", "final", "sealed", "abstract", "implicit", "override", "inline",
+        "transparent", "infix", "open", "opaque", "erased", "tracked",
+        "is", "of", "in", "by", "to", "under", "on", "raises", "until" )
 
   // Control-flow keywords that separate sub-expressions: encountering one
   // closes the current operator frame and opens a fresh one at the same
   // nesting depth, just like `,` does. `case` is excluded when used as a
   // modifier (`case class`, `case object`).
-  private val BoundaryWords: Set[String] = Set
-    ( "if", "then", "else", "match", "case", "do", "while", "for", "yield",
-      "return", "throw", "try", "catch", "finally" )
+  private val BoundaryWords: Set[String] =
+    Set
+      ( "if", "then", "else", "match", "case", "do", "while", "for", "yield",
+        "return", "throw", "try", "catch", "finally" )
 
   private def caseIsModifier(arr: Array[Token], i: Int): Boolean =
     var j = i + 1
@@ -1628,10 +1644,11 @@ object Checker:
     rest.length >= 2 && rest(0).text == ":" && rest(1).kind == Kind.Space
       && rest(1).text == "   " && rest.lastOption.exists(_.text == "=")
 
-  private val ModifierWords: Set[String] = Set
-    ( "private", "protected", "public", "final", "sealed", "abstract",
-      "implicit", "lazy", "override", "case", "inline", "transparent",
-      "infix", "open", "opaque", "erased", "tracked", "given" )
+  private val ModifierWords: Set[String] =
+    Set
+      ( "private", "protected", "public", "final", "sealed", "abstract",
+        "implicit", "lazy", "override", "case", "inline", "transparent",
+        "infix", "open", "opaque", "erased", "tracked", "given" )
 
   private def skipModifiers(tokens: IndexedSeq[Token], start: Int): (Option[String], Int) =
     var i = start
@@ -1689,10 +1706,11 @@ object Checker:
         typedName.findFirstMatchIn(base).foreach: m =>
           val typeName = m.group(1).nn
           if !declaresTopLevel(untpdTree, typeName) then
-            out += Violation
-              ( file, 1, 1, "847",
-                s"file name `$name` declares no top-level `$typeName` "
-                  +"(class/trait/enum/object/type)" )
+            out +=
+              Violation
+                ( file, 1, 1, "847",
+                  s"file name `$name` declares no top-level `$typeName` "
+                    +"(class/trait/enum/object/type)" )
 
   // True iff the package body (or any nested package body) holds a `TypeDef`
   // or `ModuleDef` whose name matches `target`. Used by R29 to verify that
@@ -1740,9 +1758,10 @@ object Checker:
       // `=>` in a multi-line case.
       group.foreach: c =>
         if !c.isSingleLine && c.spacesBeforeArrow != 1 then
-          out += Violation
-            ( file, c.arrowLine, c.arrowCol, "R33-multiline-case-arrow-space",
-              "exactly one space is required before `=>` in a multi-line case" )
+          out +=
+            Violation
+              ( file, c.arrowLine, c.arrowCol, "R33-multiline-case-arrow-space",
+                "exactly one space is required before `=>` in a multi-line case" )
 
       // R19: split into runs of consecutive single-line cases at the same
       // case-keyword column with no blank line between them; align `=>` in
@@ -1770,9 +1789,10 @@ object Checker:
           val expected = run.iterator.map(_.arrowCol).max
           run.foreach: c =>
             if c.arrowCol != expected then
-              out += Violation
-                ( file, c.arrowLine, c.arrowCol, "326",
-                  s"`=>` should be at column $expected to align with the case run" )
+              out +=
+                Violation
+                  ( file, c.arrowLine, c.arrowCol, "326",
+                    s"`=>` should be at column $expected to align with the case run" )
 
   private def blankBetween
     ( prevEnd:  Int,
@@ -1952,10 +1972,11 @@ object Checker:
         if (prev.isMultiLine || cur.isMultiLine)
             && !hasBlankLineBetween(prev.endLine, cur.startLine, content, source)
         then
-          out += Violation
-            ( file, cur.startLine, 1, "315",
-              "a multi-line statement must be separated from its siblings "
-                +"by a blank line" )
+          out +=
+            Violation
+              ( file, cur.startLine, 1, "315",
+                "a multi-line statement must be separated from its siblings "
+                  +"by a blank line" )
         i += 1
 
   private def hasBlankLineBetween
@@ -2000,18 +2021,20 @@ object Checker:
       val onAnchorLine = elem.line == anchorLine
       val brokenAtCol  = elem.startsLine && elem.col == anchorCol
       if !(onAnchorLine || brokenAtCol) then
-        out += Violation
-          ( file, elem.line, elem.col, "833.1",
-            s"keyword `${elem.label}` must start on the same line as "
-              +s"`${anchor.label}` (line $anchorLine) or on a new line in "
-              +s"column $anchorCol (found line ${elem.line}, column ${elem.col})" )
+        out +=
+          Violation
+            ( file, elem.line, elem.col, "833.1",
+              s"keyword `${elem.label}` must start on the same line as "
+                +s"`${anchor.label}` (line $anchorLine) or on a new line in "
+                +s"column $anchorCol (found line ${elem.line}, column ${elem.col})" )
       // Body cascade applies to bodies after K₂ onward. K₁'s body (the
       // condition/generators/try-body) doesn't trigger the cascade.
       if indentedMode && !elem.bodyIndented then
-        out += Violation
-          ( file, elem.line, elem.bodyCol, "833.2",
-            s"body after `${elem.label}` must be indented onto a new line because "
-              +s"an earlier body in this sequence is" )
+        out +=
+          Violation
+            ( file, elem.line, elem.bodyCol, "833.2",
+              s"body after `${elem.label}` must be indented onto a new line because "
+                +s"an earlier body in this sequence is" )
       if elem.bodyIndented then indentedMode = true
       i += 1
 
@@ -2037,18 +2060,21 @@ object Checker:
           if !(gl.line == anchorGen.line && gl.startCol == anchorGen.startCol) then
             if gl.isFilter then
               if gl.startCol != anchorOpCol then
-                out += Violation
-                  ( file, gl.line, gl.startCol, "924.3",
-                    s"`if` filter should align with `<-`/`=` at column $anchorOpCol "
-                      +s"(found ${gl.startCol})" )
+                out +=
+                  Violation
+                    ( file, gl.line, gl.startCol, "924.3",
+                      s"`if` filter should align with `<-`/`=` at column $anchorOpCol "
+                        +s"(found ${gl.startCol})" )
             else
               if gl.startCol != anchorLhsCol then
-                out += Violation
-                  ( file, gl.line, gl.startCol, "924.2",
-                    s"generator should align with the first generator's LHS at column "
-                      +s"$anchorLhsCol (found ${gl.startCol})" )
+                out +=
+                  Violation
+                    ( file, gl.line, gl.startCol, "924.2",
+                      s"generator should align with the first generator's LHS at column "
+                        +s"$anchorLhsCol (found ${gl.startCol})" )
               if gl.opCol != anchorOpCol then
-                out += Violation
-                  ( file, gl.line, gl.opCol, "924.1",
-                    s"`<-`/`=` should be vertically aligned at column $anchorOpCol "
-                      +s"(found ${gl.opCol})" )
+                out +=
+                  Violation
+                    ( file, gl.line, gl.opCol, "924.1",
+                      s"`<-`/`=` should be vertically aligned at column $anchorOpCol "
+                        +s"(found ${gl.opCol})" )

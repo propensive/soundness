@@ -52,8 +52,8 @@ extension (text: Text)
       builder.append(lambda(char).s)
     builder.toString.tt
 
-extension [monad[_], collection[element] <: Iterable[element], element]
-  ( elems: collection[monad[element]] )
+extension [monad[_], collection[element] <: Iterable[element],
+  element]( elems: collection[monad[element]] )
   ( using monad: Monad[monad] )
 
   def sequence(using buildFrom: BuildFrom[List[element], element, collection[element]])

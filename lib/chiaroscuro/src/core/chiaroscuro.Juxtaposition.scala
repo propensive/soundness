@@ -176,11 +176,12 @@ object Juxtaposition:
                        e"${Fg(palette.informative)}($right)",
                        e"" )
 
-            val table = Scaffold[Row]
-              ( Column(e"$name")(_.treeLine),
-                Column(e"Expected", textAlign = TextAlignment.Left)(_.left),
-                Column(e"Observed")(_.right),
-                Column(e"Details")(_.memo.teletype) )
+            val table =
+              Scaffold[Row]
+                ( Column(e"$name")(_.treeLine),
+                  Column(e"Expected", textAlign = TextAlignment.Left)(_.left),
+                  Column(e"Observed")(_.right),
+                  Column(e"Details")(_.memo.teletype) )
 
             table
             . tabulate(TreeDiagram.by(children(_))(comparison*).render(line))

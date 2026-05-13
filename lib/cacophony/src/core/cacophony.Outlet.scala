@@ -80,14 +80,15 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info):
     val sampleRate = rate.value.toFloat
     val bytesPerFrame = cl.channels*(bits/8)
 
-    val format = jss.AudioFormat
-      ( jss.AudioFormat.Encoding.PCM_SIGNED,
-        sampleRate,
-        bits,
-        cl.channels,
-        bytesPerFrame,
-        sampleRate,
-        false )
+    val format =
+      jss.AudioFormat
+        ( jss.AudioFormat.Encoding.PCM_SIGNED,
+          sampleRate,
+          bits,
+          cl.channels,
+          bytesPerFrame,
+          sampleRate,
+          false )
 
     val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
     mixer.isLineSupported(jss.DataLine.Info(classOf[jss.SourceDataLine], format))
