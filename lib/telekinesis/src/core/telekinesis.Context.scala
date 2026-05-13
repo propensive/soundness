@@ -32,18 +32,17 @@
                                                                                                   */
 package telekinesis
 
-import scala.collection.mutable as scm
+import java.util.concurrent as juc
 
-import rudiments.*
 import vacuous.*
 import beneficence.*
 
 object Context:
   def apply[value](): Context[value] = new Context[value]:
-    private val store: scm.HashMap[Session, value] = scm.HashMap()
+    private val store: juc.ConcurrentHashMap[Session, value] = juc.ConcurrentHashMap()
 
-    def apply()(using session: Session): Optional[value] = store.at(session)
-    def update(value: value)(using session: Session): Unit = store(session) = value
+    def apply()(using session: Session): Optional[value] = Optional(store.get(session))
+    def update(value: value)(using session: Session): Unit = store.put(session, value)
 
 trait Context[value] extends Findable:
   def apply()(using session: Session): Optional[value]

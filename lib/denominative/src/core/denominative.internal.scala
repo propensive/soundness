@@ -62,7 +62,7 @@ object internal:
 
     inline def n0: Int = ordinal
     inline def n1: Int = ordinal + 1
-    inline def subsequent(size: Int): Interval = Interval(ordinal + 1, ordinal + size + 1)
+    inline def subsequent(size: Int): Interval = Interval(ordinal + 1, ordinal + size)
     inline def preceding(size: Int): Interval = Interval((ordinal - size).max(0), ordinal - 1)
 
 
