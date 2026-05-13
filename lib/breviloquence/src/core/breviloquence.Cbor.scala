@@ -101,7 +101,10 @@ trait Cbor2:
 
           build: [field] =>
             context =>
-              values.get(label.s) match
+              val key: Text = compiletime.summonFrom:
+                case relabelling: CborRelabelling[derivation] => relabelling(label).or(label)
+                case _                                        => label
+              values.get(key.s) match
                 case Some(value) => context.decoded(new Cbor(value))
                 case None        => default.or(context.decoded(new Cbor(Ast(Unset))))
 
@@ -121,6 +124,10 @@ trait Cbor2:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Cbor =
 
+      val mapping: Map[Text, Text] = compiletime.summonFrom:
+        case relabelling: CborRelabelling[derivation] => relabelling.relabelling()
+        case _                                        => Map()
+
       value =>
         val labels: scm.ArrayBuffer[Any] = scm.ArrayBuffer()
         val values: scm.ArrayBuffer[Any] = scm.ArrayBuffer()
@@ -129,7 +136,7 @@ trait Cbor2:
           field =>
             val encoded = contextual.encode(field).root
             if !encoded.unset then
-              labels += label.s
+              labels += mapping.at(label).or(label).s
               values += encoded
 
         ast(Ast.map(IArray.from(labels), IArray.from(values)))

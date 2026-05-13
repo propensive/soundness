@@ -30,7 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package breviloquence
 
-export breviloquence.{Cbor, Cbor2, CborPrinter, CborRelabelling, DynamicCborEnabler,
-    dynamicCborAccess}
+import anticipation.*
+import vacuous.*
+
+trait CborRelabelling[+target]:
+  def relabelling(): Map[Text, Text]
+  private lazy val labels: Map[Text, Text] = relabelling()
+
+  def apply(label: Text): Optional[Text] = if labels.contains(label) then labels(label) else Unset

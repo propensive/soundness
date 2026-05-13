@@ -39,6 +39,11 @@ import strategies.throwUnsafely
 case class Point(x: Int, y: Int) derives CanEqual
 case class Person(name: Text, age: Int) derives CanEqual
 case class Wrapper(values: List[Int], label: Text) derives CanEqual
+case class Renamed(dataFiles: List[Long], indexFiles: List[Long]) derives CanEqual
+
+given CborRelabelling[Renamed] = () => Map(
+  t"dataFiles"  -> t"data_files",
+  t"indexFiles" -> t"index_files")
 
 enum Shape derives CanEqual:
   case Circle(radius: Double)
@@ -254,3 +259,25 @@ object Tests extends Suite(m"Breviloquence Tests"):
         val bytes = CborPrinter.encode(Cbor.unseal(original.cbor))
         Cbor.ast(Stream(bytes).read[Cbor.Ast]).as[Wrapper]
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
+
+    suite(m"Relabelling"):
+      test(m"Encode renames fields to wire keys"):
+        val cbor = Renamed(List(1L, 2L), List(3L)).cbor
+        val ast = Cbor.unseal(cbor)
+        val keys = (0 until ast.entries).map(ast.key(_).string).toSet
+        keys == Set("data_files", "index_files")
+      . assert(identity)
+
+      test(m"Decode reads wire keys back into Scala fields"):
+        val original = Renamed(List(10L, 20L, 30L), List(99L))
+        val bytes = CborPrinter.encode(Cbor.unseal(original.cbor))
+        Cbor.ast(Cbor.Ast.parse(bytes)).as[Renamed]
+      . assert(_ == Renamed(List(10L, 20L, 30L), List(99L)))
+
+      test(m"No relabelling uses original field names"):
+        val original = Wrapper(List(1, 2, 3), t"x")
+        val cbor = original.cbor
+        val ast = Cbor.unseal(cbor)
+        val keys = (0 until ast.entries).map(ast.key(_).string).toSet
+        keys == Set("values", "label")
+      . assert(identity)
