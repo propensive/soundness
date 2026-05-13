@@ -109,7 +109,11 @@ object Lambdas:
     val lamSp  = f.span
     if !funSp.exists || !lamSp.exists then None
     else
-      val (op, openerOffset) = detectOpener(content, funSp.end)
+      // The opener relevant to R312 is the *immediate* wrapper of the
+      // lambda — so for `f({ x => … })` we want `{`, not the outer `(`.
+      // Scan backward from the function's start past whitespace; the
+      // first non-whitespace character is the wrapper.
+      val (op, openerOffset) = detectOpener(content, lamSp.start)
       if op == Opener.Unknown then None
       else
         val arrowOffset = findArrow(content, lamSp.start, lamSp.end)
@@ -158,16 +162,18 @@ object Lambdas:
       case _ => false
 
 
-  // Scan forward from `from` (typically the end of the call receiver's span)
-  // through whitespace until we land on `(`, `{`, or `:` — those are the
-  // three argument-list openers we care about. Returns the opener kind and
-  // its source offset. Anything else (e.g. `.` for a chain continuation,
-  // `;`, EOF) yields `Unknown` and the call site is skipped.
+  // Scan *backward* from `from` (the lambda's source start) past whitespace
+  // and look at the first non-whitespace character. That character is the
+  // immediate wrapper of the lambda — `{`, `(`, or `:` for an arg-list
+  // colon. Any other character (e.g. `;` for the tail of a multi-statement
+  // block, `,` for a sibling argument) yields `Unknown` and the call site
+  // is skipped. The "look at the immediate wrapper" approach correctly
+  // classifies `f({ x => … })` as brace-wrapped even though the outer call
+  // uses parens, because the `{` sits closer to the lambda.
   private def detectOpener(content: String, from: Int): (Opener, Int) =
-    var i = from
-    val n = content.length
-    while i < n && isSpaceOrNewline(content.charAt(i)) do i += 1
-    if i >= n then (Opener.Unknown, -1)
+    var i = from - 1
+    while i >= 0 && isSpaceOrNewline(content.charAt(i)) do i -= 1
+    if i < 0 then (Opener.Unknown, -1)
     else content.charAt(i) match
       case '(' => (Opener.Paren, i)
       case '{' => (Opener.Brace, i)
