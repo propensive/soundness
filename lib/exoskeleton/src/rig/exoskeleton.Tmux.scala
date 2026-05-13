@@ -154,6 +154,7 @@ object TmuxError:
 
 case class TmuxError(reason: TmuxError.Reason)(using Diagnostics)
 extends Error(271, reason.number)(m"can't drive tmux: $reason")
+
 case class Tmux(id: Text, workingDirectory: WorkingDirectory, width: Int, height: Int, shell: Shell)
 extends Findable
 

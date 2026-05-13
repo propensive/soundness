@@ -432,6 +432,7 @@ object Honeycomb:
                       case _: Element         => one.asExprOf[Element]
                       case _: Comment         => one.asExprOf[Comment]
                       case _: Doctype         => one.asExprOf[Doctype]
+
                     case many               => '{Fragment(${Expr.ofList(many)}*)}
                 }
 

@@ -143,8 +143,11 @@ object internal:
                               case '[type tuple <: Tuple; tuple] =>
                                 val varargs = Varargs(descent.map(Expr[Text](_)))
                                 '{Relative[plane, tuple, limit](${Expr(ascent)}, $varargs*)}
+
                           case Left(_) => Unset
+
                   case Left(_) => Unset
+
               case Left(_) => Unset
 
             . or:

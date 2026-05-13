@@ -178,6 +178,7 @@ enum Dictionary[+element]:
 
         case just: Just[element]    =>
           if just.offset + extra == just.text.length then just.value else Unset
+
         case Branch(value, _)       => value
       else
         val raw: Char = buffer(position)

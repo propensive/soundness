@@ -53,6 +53,7 @@ object Example1:
   val baz: 12 = 12
 
 sealed trait Colored
+
 @number(3)
 case class Hsv(hue: Double, saturation: Double, @ident value: Double) extends Colored
 

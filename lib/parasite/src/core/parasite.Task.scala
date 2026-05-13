@@ -82,6 +82,7 @@ trait Task[+result]:
   def await(): result raises AsyncError
   def attend(): Unit
   def cancel(): Unit
+
   def await[duration: Abstractable across Durations to Long](duration: duration)
   :   result raises AsyncError
 

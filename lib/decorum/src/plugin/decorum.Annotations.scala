@@ -55,6 +55,7 @@ object Annotations:
             if sp.exists then
               val endOffset = (sp.end - 1).max(sp.start).max(0).min(source.content.length - 1)
               if endOffset >= 0 then out += source.offsetToLine(endOffset) + 1
+
         case _ => ()
     out.toSet
 

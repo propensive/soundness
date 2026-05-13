@@ -81,6 +81,7 @@ trait Emittable:
   def allocate(size: Int): Transport
   def length(input: Source): Int
   def produce(block: Transport, size: Int): Self
+
   inline def copy
     ( source: Source,
       start:  Ordinal,

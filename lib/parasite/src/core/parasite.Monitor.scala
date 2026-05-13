@@ -62,6 +62,7 @@ sealed trait Monitor extends Resultant, Findable:
     juca.AtomicReference(Set())
 
   protected[parasite] def workers: Set[Worker] = workersRef.get().nn
+
   protected[parasite] def addWorker(worker: Worker): Unit =
     workersRef.updateAndGet(_.nn + worker)
 

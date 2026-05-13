@@ -80,6 +80,7 @@ object internal:
                 TypeRepr.of[sub] match
                   case ConstantType(StringConstant(s)) => Some(s)
                   case _                               => None
+
               case _ => None
 
     // A part ending with `\\` (raw source form: two consecutive backslash

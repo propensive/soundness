@@ -249,7 +249,9 @@ object internal:
                           """
 
                 case _ => halt(593, m"a contextual `Online` instance is required")
+
               case _ => halt(169, m"a contextual `Codicil` instance is required")
+
             case _ => halt(323, m"a contextual `Monitor` instance is required")
 
         case _ =>

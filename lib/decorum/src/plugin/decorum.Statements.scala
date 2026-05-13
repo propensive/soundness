@@ -63,17 +63,22 @@ object Statements:
       t match
         case pkg: untpd.PackageDef =>
           collect(pkg.stats, source).foreach(out += _)
+
         case tmpl: untpd.Template =>
           // The parser populates `preBody` eagerly as a plain `List`; we
           // avoid `Template.body` which would require an implicit `Context`.
           tmpl.unforcedBody match
             case list: List[untpd.Tree @unchecked] =>
               collect(list, source).foreach(out += _)
+
             case _ => ()
+
         case m: untpd.Match =>
           collect(m.cases, source).foreach(out += _)
+
         case tr: untpd.Try =>
           collect(tr.cases, source).foreach(out += _)
+
         case _ => ()
       // Note: `Block.stats` (statements inside a function body, lambda,
       // or control-flow body) are NOT processed here. The chunk rule
@@ -94,12 +99,28 @@ object Statements:
   private def collect
     (stmts: List[untpd.Tree], source: SourceFile)
   :   Option[StmtGroup] =
-    val infos = mutable.ListBuffer[StmtInfo]()
+    val content = String(source.content)
+    val infos   = mutable.ListBuffer[StmtInfo]()
     stmts.foreach: s =>
       val sp = s.span
       if sp.exists then
         val startLine   = source.offsetToLine(sp.start) + 1
-        val endLine     = source.offsetToLine((sp.end - 1).max(sp.start)) + 1
+        val endLine     = trueEndLine(sp.start, sp.end, content, source)
         val isMultiLine = startLine != endLine
         infos += StmtInfo(startLine, endLine, isMultiLine)
     if infos.length < 2 then None else Some(StmtGroup(infos.toList))
+
+  // Dotty's parser sometimes extends a statement's span through trailing
+  // whitespace to the start of the next token. We need the *visual* end
+  // line, so walk back from `spanEnd` past whitespace to find the last
+  // line containing real content.
+  private def trueEndLine
+    (spanStart: Int, spanEnd: Int, content: String, source: SourceFile): Int =
+    var i = spanEnd - 1
+    val lo = spanStart
+    while i > lo && i < content.length && isWhitespace(content.charAt(i)) do i -= 1
+    if i < 0 then source.offsetToLine(spanStart) + 1
+    else source.offsetToLine(i) + 1
+
+  private def isWhitespace(c: Char): Boolean =
+    c == ' ' || c == '\t' || c == '\n' || c == '\r'

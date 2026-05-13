@@ -65,6 +65,7 @@ package couriers:
     type Result = Resend.Receipt
 
     private case class Attachment(filename: Text, content: Text)
+
     private case class Request
       ( from:         EmailAddress,
         to:           List[EmailAddress],

@@ -153,6 +153,7 @@ object StackTrace:
                 case _   => char(index + 5) match
                   case 'f' => token(index, "$anonfun", "λ")
                   case _   => token(index, "$anon", "α")
+
               case 't' => token(index, "$at", "@")
               case _   => skip()
 
@@ -161,8 +162,10 @@ object StackTrace:
                 case 'n' => token(index, "$bang", "!")
                 case 'r' => token(index, "$bar", "|")
                 case _   => skip()
+
               case 's' => token(index, "$bslash", "\\")
               case _   => skip()
+
             case 'c' => token(index, "$colon", ":")
 
             case 'd' => char(index + 2) match
@@ -172,12 +175,14 @@ object StackTrace:
                 case 'r' => token(index, "$direct", "∂")
                 case 'v' => token(index, "$div", "/")
                 case _   => skip()
+
               case _   => skip()
 
             case 'e' => char(index + 2) match
               case 'q' => token(index, "$eq", "=")
               case 'x' => token(index, "$extension", "⊢")
               case _   => skip()
+
             case 'g' => token(index, "$greater", ">")
             case 'h' => token(index, "$hash", "#")
             case 'l' => token(index, "$less", "<")
@@ -199,6 +204,7 @@ object StackTrace:
 
                 val mc = name.substring(index, index + 3).nn
                 token(index, mc, name2)
+
               case 'i' => token(index, "$minus", "-")
               case _   => skip()
 
@@ -207,6 +213,7 @@ object StackTrace:
               case 'e' => token(index, "$percent", "%")
               case 'l' => token(index, "$plus", "+")
               case _   => skip()
+
             case 'q' => token(index, "$qmark", "?")
 
             case 's' => char(index + 2) match
@@ -218,6 +225,7 @@ object StackTrace:
                 case 'l' => token(index, "$tilde", "~")
                 case 'm' => token(index, "$times", "*")
                 case _   => skip()
+
               case _  => skip()
 
             case 'u' =>

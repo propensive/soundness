@@ -86,12 +86,14 @@ object Bcd:
       (c: @scala.annotation.switch) match
         case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
           builder.add(c - '0'); prevWasE = false
+
         case '.'             => builder.add(0xA); prevWasE = false
         case 'e' | 'E'       => builder.add(0xB); prevWasE = true
         case '+' if prevWasE => prevWasE = false
 
         case '-' if prevWasE =>
           builder.overwriteLast(0xC); prevWasE = false
+
         case _ => () // ignore unexpected characters
       i += 1
     builder.finish(negative)

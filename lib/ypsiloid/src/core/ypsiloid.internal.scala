@@ -440,6 +440,7 @@ object internal:
           n > 0 && (elements(n - 1).asMatchable match
             case s: String if s == MarkerString =>
               spreads.contains(nextHole + countHolesInPrefix(elements, n - 1))
+
             case _ => false)
 
         val prefixLen = if tailSpread then n - 1 else n
@@ -520,6 +521,7 @@ object internal:
               c += countHolesIn(elems(k))
               k += 1
             c
+
         case _ => 0
 
       def descendObject

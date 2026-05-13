@@ -58,6 +58,7 @@ trait Foci[focus] extends Findable:
   def length: Int
   def success: Boolean
   def register(error: Exception): Unit
+
   def fold[accrual](initial: accrual)(lambda: (Optional[focus], accrual) => Exception ~> accrual)
   :   accrual
 

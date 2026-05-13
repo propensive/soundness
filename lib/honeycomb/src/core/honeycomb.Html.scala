@@ -1378,6 +1378,7 @@ object Html extends Tag.Container
     val parser = HtmlParser.fromIterator(input)
     parser.callback = callback
     parser.parseHtml(root, doctypes)
+
 sealed into trait Html extends Topical, Documentary, Formal:
   type Topic <: Label
   type Transport <: Label

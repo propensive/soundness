@@ -141,6 +141,7 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
         // major types 0/1 but breviloquence rejects it.
         if v < 0 then abort(CborError(Reason.Overflow(headOffset)))
         v
+
       case 31 => -1L
       case _  => abort(CborError(Reason.Reserved(headOffset, info)))
 

@@ -548,6 +548,7 @@ private[jacinta] final class JsonParser:
     (state: @switch) match
       case NumAfterDot | NumAfterE | NumAfterESign =>
         errorAt(Issue.PrematureEnd)
+
       case _ => ()
 
     if bcdValid then
@@ -779,6 +780,7 @@ private[jacinta] final class JsonParser:
                   continue = false
 
                 case ch  => errorAt(Issue.UnexpectedChar(ch.toChar))
+
             case ch => errorAt(Issue.ExpectedColon(ch.toChar))
 
         case 0 if holes =>

@@ -83,7 +83,9 @@ enum Stroke:
   case Cubic(ctrl1: Optional[Delta], ctrl2: Delta, shift: Delta)
   case QuadraticTo(ctrl1: Optional[Point], point: Point)
   case Quadratic(ctrl1: Optional[Delta], shift: Delta)
+
   case ArcTo
     ( rx: Float, ry: Float, angle: Angle, largeArc: Boolean, sweep: Sweep, point: Point )
+
   case Arc
     ( rx: Float, ry: Float, angle: Angle, largeArc: Boolean, sweep: Sweep, shift: Delta )

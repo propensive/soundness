@@ -187,7 +187,9 @@ object internal:
                   case left: Pojo @unchecked => right(index) match
                     case right: Pojo @unchecked => checkable.check(left, right)
                     case _                      => false
+
                   case _                     => false
+
             case _               => false
 
         case left =>

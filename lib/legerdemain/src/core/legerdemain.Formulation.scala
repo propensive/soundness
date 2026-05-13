@@ -43,6 +43,7 @@ import beneficence.*
 
 trait Formulation extends Findable:
   def form(content: Seq[Html of Flow], submit: Optional[Text]): Html of Flow
+
   def element
     ( widget:     Html of Phrasing,
       legend:     Text,

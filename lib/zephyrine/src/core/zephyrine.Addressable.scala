@@ -167,6 +167,7 @@ trait Addressable extends Typeclass, Operable, Targetable:
   def allocate(size: Int): Storage
   def storageSize(storage: Storage): Int
   def storageAddress(storage: Storage, index: Int): Operand
+
   def copyChunk
     ( source: Self, srcOff: Int, dest: Storage, destOff: Int, len: Int )
   :   Unit
