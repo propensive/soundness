@@ -57,8 +57,11 @@ object Hsl:
 case class Hsl(hue: Double, saturation: Double, lightness: Double) extends Color:
   type Form = Hsl
 
-// case class Hsl(hue: Double, saturation: Double, lightness: Double) extends Color:
-//   def saturate: Hsv = Hsv(hue, 1, lightness)
-//   def desaturate: Hsv = Hsv(hue, 0, lightness)
-//   def rotate(degrees: Double): Hsv = Hsv(unitary(hue + degrees/360), saturation, lightness)
-//   def pure: Hsv = Hsv(hue, 1, 0)
+  def saturate: Hsl                = Hsl(hue, 1, lightness)
+  def desaturate: Hsl              = Hsl(hue, 0, lightness)
+  def rotate(degrees: Double): Hsl = Hsl(unitary(hue + degrees/360), saturation, lightness)
+  def complement: Hsl              = rotate(180)
+  def pure: Hsl                    = Hsl(hue, 1, 0.5)
+
+  def lighten(amount: Double): Hsl = Hsl(hue, saturation, lightness + (1 - lightness)*amount)
+  def darken(amount: Double): Hsl  = Hsl(hue, saturation, lightness*(1 - amount))
