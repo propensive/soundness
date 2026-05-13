@@ -60,8 +60,10 @@ object Tmux:
 
     . within:
         val content = IArray.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]())
-        val x = sh"tmux display-message -pt ${tmux.id} '#{cursor_x}'".exec[Text]().trim.decode[Int].z
-        val y = sh"tmux display-message -pt ${tmux.id} '#{cursor_y}'".exec[Text]().trim.decode[Int].z
+        val cx = sh"tmux display-message -pt ${tmux.id} '#{cursor_x}'".exec[Text]()
+        val cy = sh"tmux display-message -pt ${tmux.id} '#{cursor_y}'".exec[Text]()
+        val x = cx.trim.decode[Int].z
+        val y = cy.trim.decode[Int].z
 
         Screenshot(content, (tmux.width, tmux.height), (x, y))
 

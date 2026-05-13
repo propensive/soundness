@@ -120,7 +120,10 @@ object internal:
             types ::= TypeRepr.of[Map[Text, Optional[Text]]]
             iterator.next()
             val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
-            '{$expr && { $array(${Expr(index)}) = (${scrutinee}.attributes -- $others).toMap; true }}
+            '{
+              $expr
+              && { $array(${Expr(index)}) = (${scrutinee}.attributes -- $others).toMap; true }
+            }
 
           case head :: tail =>
             attributes(tail):
@@ -416,14 +419,18 @@ object internal:
                   '{$showable.text($expr)}
 
                 case None =>
-                  halt(m"a ${TypeRepr.of[value is Showable].show} is required", expr.asTerm.underlyingArgument.pos)
+                  halt
+                   ( m"a ${TypeRepr.of[value is Showable].show} is required",
+                     expr.asTerm.underlyingArgument.pos )
 
               case Hole.Text => Expr.summon[(? >: value) is Showable] match
                 case Some(showable) =>
                   '{$showable.text($expr)}
 
                 case None =>
-                  halt(m"a ${TypeRepr.of[value is Showable].show} is required", expr.asTerm.underlyingArgument.pos)
+                  halt
+                   ( m"a ${TypeRepr.of[value is Showable].show} is required",
+                     expr.asTerm.underlyingArgument.pos )
 
               case Hole.Tagbody => Type.of[value] match
                 case '[Map[Text, Optional[Text]]] =>
@@ -574,4 +581,5 @@ object internal:
 
                 . or(halt(m"unexpected type"))
 
-    '{$tag.node(Attributes.from($presets ++ ${Expr.ofList(attributes)}.compact.to(Map)))}.asExprOf[result]
+    val attrsExpr = '{Attributes.from($presets ++ ${Expr.ofList(attributes)}.compact.to(Map))}
+    '{$tag.node($attrsExpr)}.asExprOf[result]

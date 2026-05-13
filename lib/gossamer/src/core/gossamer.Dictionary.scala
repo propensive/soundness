@@ -46,7 +46,8 @@ object Dictionary:
   // Build a `Just` whose suffix begins at the given offset of `text`. Avoids
   // allocating a fresh substring at construction time; the offset is consumed
   // virtually as the dictionary is walked.
-  private[gossamer] inline def just[element](text: Text, offset: Int, value: element): Just[element] =
+  private[gossamer] inline def just[element](text: Text, offset: Int, value: element)
+  :     Just[element] =
     Just(text, offset, value)
 
   extension [element](just: Just[element])

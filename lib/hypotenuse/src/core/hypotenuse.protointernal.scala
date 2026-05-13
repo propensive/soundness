@@ -140,7 +140,8 @@ object protointernal:
     case Some(digits) =>
       val int = JInt.parseInt(digits)
       if int < Short.MinValue then halt(46, m"an S16 may not be less than ${Short.MinValue.toInt}")
-      if int > Short.MaxValue then halt(461, m"an S16 may not be greater than ${Short.MaxValue.toInt}")
+      if int > Short.MaxValue
+      then halt(461, m"an S16 may not be greater than ${Short.MaxValue.toInt}")
 
       Expr(int.toShort)
 

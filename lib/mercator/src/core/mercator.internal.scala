@@ -85,7 +85,9 @@ object internal:
     then
       halt(569, m"the companion object ${identityType.name} has no candidate apply methods")
     else
-      halt(659, m"the companion object ${identityType.name} has more than one candidate apply method")
+      halt
+       ( 659,
+         m"the companion object ${identityType.name} has more than one candidate apply method" )
 
   def functor[functor[_]](using Type[functor], Quotes): Expr[Functor[functor]] =
     import quotes.reflect.*
@@ -115,7 +117,8 @@ object internal:
         }
 
     if mapMethods.length == 1 then makeFunctor
-    else if mapMethods.length == 0 then halt(899, m"the type ${functorType.name} has no map methods")
+    else if mapMethods.length == 0
+    then halt(899, m"the type ${functorType.name} has no map methods")
     else halt(380, m"the type ${functorType.name} has more than one possible map method")
 
   def monad[monad[_]](using Type[monad], Quotes): Expr[Monad[monad]] =

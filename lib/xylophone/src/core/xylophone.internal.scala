@@ -142,7 +142,10 @@ object internal:
             types ::= TypeRepr.of[Map[Text, Text]]
             iterator.next()
             val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
-            '{$expr && { $array(${Expr(index)}) = (${scrutinee}.attributes -- $others).toMap; true }}
+            '{
+              $expr
+              && { $array(${Expr(index)}) = (${scrutinee}.attributes -- $others).toMap; true }
+            }
 
           case head :: tail =>
             attributes(tail):
@@ -492,14 +495,18 @@ object internal:
                   '{$showable.text($expr)}
 
                 case None =>
-                  halt(m"a ${TypeRepr.of[value is Showable].show} is required", expr.asTerm.underlyingArgument.pos)
+                  halt
+                   ( m"a ${TypeRepr.of[value is Showable].show} is required",
+                     expr.asTerm.underlyingArgument.pos )
 
               case Hole.Text => Expr.summon[(? >: value) is Showable] match
                 case Some(showable) =>
                   '{$showable.text($expr)}
 
                 case None =>
-                  halt(m"a ${TypeRepr.of[value is Showable].show} is required", expr.asTerm.underlyingArgument.pos)
+                  halt
+                   ( m"a ${TypeRepr.of[value is Showable].show} is required",
+                     expr.asTerm.underlyingArgument.pos )
 
               case Hole.Tagbody => Type.of[value] match
                 case '[Map[Text, Text]] =>

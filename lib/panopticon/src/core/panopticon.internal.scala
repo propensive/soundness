@@ -113,10 +113,12 @@ object internal:
 
     /** Matches `receiver.selectDynamic("name")(<using lens>)`. */
     def matchSelectDynamic(t: Term): Option[(Term, String)] = t match
-      case Apply(Apply(Select(receiver, "selectDynamic"), List(Literal(StringConstant(name)))), _)  =>
+      case Apply(Apply(Select(receiver, "selectDynamic"), List(Literal(StringConstant(name)))), _)
+      =>
         Some((receiver, name))
 
-      case Apply(Select(receiver, "selectDynamic"), List(Literal(StringConstant(name))))            =>
+      case Apply(Select(receiver, "selectDynamic"), List(Literal(StringConstant(name))))
+      =>
         Some((receiver, name))
 
       case _ => None
@@ -124,7 +126,8 @@ object internal:
     /** Matches `receiver.updateDynamic("name")(<using lens>)(value)`. */
     def matchUpdateDynamic(t: Term): Option[(Term, String, Term)] = t match
       case Apply(
-              Apply(Apply(Select(receiver, "updateDynamic"), List(Literal(StringConstant(name)))), _),
+              Apply(Apply(Select(receiver, "updateDynamic"),
+                          List(Literal(StringConstant(name)))), _),
               List(value)) =>
         Some((receiver, name, value))
 
@@ -420,7 +423,11 @@ object internal:
         case _ => None
 
     def emitFieldUpdate[T: Type]
-      ( origin: Expr[T], name: String, lensTerm: Term, targetTpe: TypeRepr, children: List[Resolved] )
+      ( origin:    Expr[T],
+        name:      String,
+        lensTerm:  Term,
+        targetTpe: TypeRepr,
+        children:  List[Resolved] )
     :   Expr[T] =
 
       targetTpe.asType match

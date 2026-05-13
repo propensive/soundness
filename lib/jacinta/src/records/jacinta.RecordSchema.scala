@@ -161,8 +161,8 @@ object RecordSchema:
 
 
   given email
-  :   ("email" is Intensional in RecordSchema from Json to (EmailAddress raises EmailAddressError)) =
-
+  :   ("email" is Intensional in RecordSchema from Json to (EmailAddress raises EmailAddressError))
+  =
     RecordSchema.intensional(_.as[EmailAddress])
 
 
@@ -319,7 +319,8 @@ object RecordSchema:
       case List(pattern: Text) =>
         val regex = Regex(pattern)
         if regex.matches(value.as[Text]) then value.as[Text]
-        else abort(RecordSchemaError(RecordSchemaError.Reason.PatternMismatch(value.as[Text], regex)))
+        else
+          abort(RecordSchemaError(RecordSchemaError.Reason.PatternMismatch(value.as[Text], regex)))
 
   given optionalPattern: ("pattern?" is Intensional):
     type Origin = Json
@@ -330,7 +331,8 @@ object RecordSchema:
       case pattern :: Nil =>
         val regex = Regex(pattern)
         if regex.matches(value.as[Text]) then value.as[Text]
-        else abort(RecordSchemaError(RecordSchemaError.Reason.PatternMismatch(value.as[Text], regex)))
+        else
+          abort(RecordSchemaError(RecordSchemaError.Reason.PatternMismatch(value.as[Text], regex)))
 
   def record(data0: Json, access0: Text => Json => Any): Record = new Record:
     type Origin = Json

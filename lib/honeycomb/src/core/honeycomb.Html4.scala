@@ -155,7 +155,8 @@ object Html4Transitional:
   given alt: ("alt" is Attribute on "applet" | "area" | "img" | "input" of Textual) = attribute()
 
   given `type`: ("type" is Attribute on
-    "a" | "link" | "object" | "param" | "script" | "style" | "input" | "button" of Mime) = attribute()
+    "a" | "link" | "object" | "param" | "script" | "style" | "input" | "button" of Mime) =
+    attribute()
 
   given typeOl: ("type" is Attribute on "ol" | "ul" | "li" of OlType) = attribute()
 
@@ -316,7 +317,8 @@ class Html4Transitional() extends Dom:
   import Html4Transitional.*
 
   def doctype: Doctype =
-    Doctype(t"""HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"""")
+    val dtd = t""""-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd""""
+    Doctype(t"HTML PUBLIC $dtd")
 
   // Content categories
   type Heading = "h1" | "h2" | "h3" | "h4" | "h5" | "h6"
@@ -516,7 +518,8 @@ class Html4Transitional() extends Dom:
       Html4Transitional.membersOfType[honeycomb.Attribute]
       . foldLeft(sci.Map[Text, Attribute]()): (map, next) =>
         val coerced = next.asInstanceOf[Attribute]
-        map.updated(coerced.label, map.at(coerced.label).let(_.merge(coerced).asInstanceOf[Attribute]).or(coerced))
+        val merged = map.at(coerced.label).let(_.merge(coerced).asInstanceOf[Attribute]).or(coerced)
+        map.updated(coerced.label, merged)
 
       . to(List)
 

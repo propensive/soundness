@@ -268,11 +268,13 @@ case class Teletype
         while i < newLength do
           arr(i) = tail
           i += 1
-        Teletype(combinedPlain, IArray.unsafeFromArray(arr), hyperlinks, insertions, IArray.empty[Int])
+        Teletype
+         (combinedPlain, IArray.unsafeFromArray(arr), hyperlinks, insertions, IArray.empty[Int])
       else
-        // Stay sparse: the new chars become part of the last run (since trailing style = last run style)
-        // unless the last run's style differs from the trailing style — but that can't happen because
-        // styles(boundaries.length-1) is the last run's style, and styles(boundaries.length) is trailing.
+        // Stay sparse: the new chars become part of the last run (since trailing style = last run
+        // style) unless the last run's style differs from the trailing style — but that can't
+        // happen because styles(boundaries.length-1) is the last run's style, and
+        // styles(boundaries.length) is trailing.
         // They may differ. If so, we need a new run for the appended text.
         val k = boundaries.length
         val lastRunStyle = styles(k - 1)

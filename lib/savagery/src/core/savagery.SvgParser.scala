@@ -66,7 +66,8 @@ object SvgParser:
   def rootElement(xml: Xml)(using Tactic[SvgError]): Element = xml match
     case e: Element if e.label == t"svg" => e
     case Fragment(nodes*)                => findSvg(nodes)
-    case other                           => abort(SvgError(SvgError.Reason.NotAnSvg(labelOf(other))))
+    case other                           =>
+      abort(SvgError(SvgError.Reason.NotAnSvg(labelOf(other))))
 
 
   private def numAttr(elem: Element, name: Text, default: Float = 0.0f): Float =
@@ -202,8 +203,9 @@ object SvgParser:
 
       while pos < s.length && {
         val c = s.charAt(pos)
+        val prev = if pos > 0 then s.charAt(pos - 1) else ' '
         (c >= '0' && c <= '9') || c == '.' || c == 'e' || c == 'E' ||
-            ((c == '-' || c == '+') && pos > start && (s.charAt(pos - 1) == 'e' || s.charAt(pos - 1) == 'E'))
+            ((c == '-' || c == '+') && pos > start && (prev == 'e' || prev == 'E'))
       }
       do pos += 1
 
@@ -345,15 +347,21 @@ object SvgParser:
           if pos < s.length then pos += 1 // skip )
 
           (name, args.toList) match
-            case ("translate", List(dx, dy))            => xs += Transform.Translate(Delta(dx, dy))
-            case ("translate", List(dx))                => xs += Transform.Translate(Delta(dx, 0.0f))
-            case ("scale", List(x))                     => xs += Transform.Scale(x, Unset)
-            case ("scale", List(x, y))                  => xs += Transform.Scale(x, y)
-            case ("rotate", List(angle))                => xs += Transform.Rotate(Angle.degrees(angle))
-            case ("skewX", List(angle))                 => xs += Transform.Skew(Angle.degrees(angle), Orientation.Horizontal)
-            case ("skewY", List(angle))                 => xs += Transform.Skew(Angle.degrees(angle), Orientation.Vertical)
-            case ("matrix", List(a, b, c, d, e, f))     => xs += Transform.Matrix(Affine(a, b, c, d, e, f))
-            case _                                      => () // ignore unknown
+            case ("translate", List(dx, dy))        => xs += Transform.Translate(Delta(dx, dy))
+            case ("translate", List(dx))            => xs += Transform.Translate(Delta(dx, 0.0f))
+            case ("scale", List(x))                 => xs += Transform.Scale(x, Unset)
+            case ("scale", List(x, y))              => xs += Transform.Scale(x, y)
+            case ("rotate", List(angle))            => xs += Transform.Rotate(Angle.degrees(angle))
+
+            case ("skewX", List(angle))             =>
+              xs += Transform.Skew(Angle.degrees(angle), Orientation.Horizontal)
+
+            case ("skewY", List(angle))             =>
+              xs += Transform.Skew(Angle.degrees(angle), Orientation.Vertical)
+
+            case ("matrix", List(a, b, c, d, e, f)) =>
+              xs += Transform.Matrix(Affine(a, b, c, d, e, f))
+            case _                                  => () // ignore unknown
         else
           if pos == nameStart then pos += 1 // avoid infinite loop on stray punctuation
 

@@ -1293,15 +1293,16 @@ object Bytecode:
         parsed.result.lay(popped)(_ :: popped)
 
       this match
-        case Nop                                                                  => stack
-        case AconstNull                                                           => L(t"null") :: stack
-        case IconstM1 | Iconst0 | Iconst1 | Iconst2 | Iconst3 | Iconst4 | Iconst5 => I :: stack
-        case Lconst0 | Lconst1                                                    => J :: stack
-        case Fconst0 | Fconst1 | Fconst2                                          => F :: stack
-        case Dconst0 | Dconst1                                                    => D :: stack
-        case Bipush(_) | Sipush(_)                                                => I :: stack
-        case Ldc(_) | LdcW(_)                                                     => L(t"?") :: stack
-        case Ldc2W(_)                                                             => J :: stack
+        case Nop                                                              => stack
+        case AconstNull                                                       => L(t"null") :: stack
+        case IconstM1 | Iconst0 | Iconst1 | Iconst2 | Iconst3 | Iconst4 | Iconst5 =>
+          I :: stack
+        case Lconst0 | Lconst1                                                => J :: stack
+        case Fconst0 | Fconst1 | Fconst2                                      => F :: stack
+        case Dconst0 | Dconst1                                                => D :: stack
+        case Bipush(_) | Sipush(_)                                            => I :: stack
+        case Ldc(_) | LdcW(_)                                                 => L(t"?") :: stack
+        case Ldc2W(_)                                                         => J :: stack
 
         case Iload(_) | Iload0 | Iload1 | Iload2 | Iload3 => I :: stack
         case Lload(_) | Lload0 | Lload1 | Lload2 | Lload3 => J :: stack

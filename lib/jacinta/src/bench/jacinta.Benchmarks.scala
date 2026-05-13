@@ -274,7 +274,8 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       if i > 0 then sb.append(',')
       val active = if (i & 1) == 0 then "true" else "false"
       val role = if i % 10 == 0 then "admin" else "user"
-      sb.append(s"""{"id":$i,"username":"user$i","email":"user$i@example.com","active":$active,"role":"$role"}""")
+      sb.append(s"""{"id":$i,"username":"user$i","email":"user$i@example.com",""")
+      sb.append(s"""\"active":$active,"role":"$role"}""")
       i += 1
     sb.append("]}")
     sb.toString.nn
@@ -296,7 +297,8 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       val level = levels(i & 3)
       val service = services(i % 5)
       val userId = 1000 + (i % 50)
-      sb.append(s"""{"timestamp":$ts,"level":"$level","service":"$service","requestId":"req-$i","userId":$userId,"message":"event $i processed"}""")
+      sb.append(s"""{"timestamp":$ts,"level":"$level","service":"$service",""")
+      sb.append(s"""\"requestId":"req-$i","userId":$userId,"message":"event $i processed"}""")
       i += 1
     sb.append("]}")
     sb.toString.nn
@@ -325,7 +327,9 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       val gasPriceWei = s"30000000000.0123456789${i % 10}"
       // Scientific notation, ~20 sig figs
       val temperature = s"2.7345678901234567890${i % 10}e-3"
-      sb.append(s"""{"from":"0xabcdef${i}","to":"0x123456${i}","value":$valueWei,"valueEth":$valueEth,"gasPriceWei":$gasPriceWei,"gasUsed":$gasUsed,"blockNumber":$blockNumber,"nonce":$nonce,"temperatureDelta":$temperature}""")
+      sb.append(s"""{"from":"0xabcdef${i}","to":"0x123456${i}","value":$valueWei,""")
+      sb.append(s"""\"valueEth":$valueEth,"gasPriceWei":$gasPriceWei,"gasUsed":$gasUsed,""")
+      sb.append(s"""\"blockNumber":$blockNumber,"nonce":$nonce,"temperatureDelta":$temperature}""")
       i += 1
     sb.append("]}")
     sb.toString.nn
