@@ -38,10 +38,7 @@ import scala.annotation.*
 
 import anticipation.*
 import contextual.*
-import fulminate.*
 import prepositional.*
-import rudiments.*
-import vacuous.*
 
 export Xml.attribute
 

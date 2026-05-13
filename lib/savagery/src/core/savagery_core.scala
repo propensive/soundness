@@ -32,6 +32,5 @@
                                                                                                   */
 package savagery
 
-import proscenium.*
 
 export internal.SvgId

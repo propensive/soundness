@@ -34,7 +34,6 @@ package savagery
 
 import anticipation.*
 import gossamer.*
-import spectacular.*
 
 case class Segment(symbol: Char, parameters: (Double | Boolean)*):
   def text: Text =

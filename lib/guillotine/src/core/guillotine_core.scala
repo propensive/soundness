@@ -34,8 +34,6 @@ package guillotine
 
 import language.experimental.pureFunctions
 
-import anticipation.*
-import fulminate.*
 
 extension (inline context: StringContext)
   transparent inline def sh(inline parts: Any*): Any = ${guillotine.internal.sh('context, 'parts)}

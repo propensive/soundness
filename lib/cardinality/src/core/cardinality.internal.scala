@@ -39,7 +39,6 @@ import scala.quoted.*
 import anticipation.*
 import fulminate.*
 import gigantism.*
-import proscenium.*
 
 object internal:
   type Asym[value <: Double, truth <: Double, falsehood <: Double] <: Double =

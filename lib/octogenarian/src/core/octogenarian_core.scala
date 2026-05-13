@@ -35,7 +35,6 @@ package octogenarian
 import ambience.*
 import anticipation.*
 import contingency.*
-import fulminate.*
 import galilei.*
 import guillotine.*
 import nomenclature.*

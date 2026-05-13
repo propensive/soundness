@@ -40,7 +40,6 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import gossamer.*
-import hieroglyph.*, textMetrics.uniform
 import parasite.*, codicils.cancel
 import prepositional.*
 import proscenium.*

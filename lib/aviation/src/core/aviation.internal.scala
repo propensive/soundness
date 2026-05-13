@@ -38,7 +38,6 @@ import scala.quoted.*
 
 import abacist.*
 import anticipation.*
-import contextual.*
 import contingency.*
 import denominative.*
 import distillate.*

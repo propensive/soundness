@@ -32,8 +32,6 @@
                                                                                                   */
 package nomenclature
 
-import anticipation.*
-import fulminate.*
 
 export nomenclature.internal.Name
 

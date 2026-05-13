@@ -38,19 +38,14 @@ import anticipation.*
 import cardinality.*
 import contingency.*
 import distillate.*
-import fulminate.*
 import geodesy.*
 import gossamer.*
-import hieroglyph.*
 import iridescence.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import spectacular.*
-import turbulence.*
 import vacuous.*
 import xylophone.*
-import zephyrine.*
 
 object SvgParser:
   def labelOf(xml: Xml): Text = xml match

@@ -36,7 +36,6 @@ import language.experimental.pureFunctions
 
 import anticipation.*
 import gossamer.*
-import spectacular.*
 
 object Bg:
   def apply[color: Chromatic](color: color): Bg = Bg(color.chroma)

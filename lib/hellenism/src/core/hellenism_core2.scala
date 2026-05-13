@@ -32,6 +32,5 @@
                                                                                                   */
 package hellenism
 
-import anticipation.*
 
 export hellenism.internal.ClassRef

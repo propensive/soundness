@@ -44,7 +44,6 @@ import hellenism.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import spectacular.*
 import turbulence.*
 import vacuous.*
 

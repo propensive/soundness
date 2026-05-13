@@ -34,7 +34,6 @@ package profanity
 
 import anticipation.*
 import contingency.*
-import fulminate.*
 import parasite.*
 import proscenium.*
 import turbulence.*

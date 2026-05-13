@@ -37,7 +37,6 @@ import language.dynamics
 import java.lang as jl
 import java.util as ju
 
-import scala.annotation.tailrec
 import scala.quoted.*
 
 import anticipation.*

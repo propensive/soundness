@@ -35,7 +35,6 @@ package scintillate
 import anticipation.*
 import contingency.*
 import digression.*
-import fulminate.*
 import gesticulate.*
 import gossamer.*
 import hellenism.*
