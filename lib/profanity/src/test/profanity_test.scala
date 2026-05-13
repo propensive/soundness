@@ -324,3 +324,23 @@ object Tests extends Suite(m"Profanity Tests"):
         edited
           ( Keypress.CharKey('h'), Keypress.CharKey('i'), Keypress.Ctrl('U'), Keypress.Enter )
       . assert(_ == t"")
+
+    suite(m"Signal POSIX numbering"):
+      test(m"SIGHUP is 1")  (Signal.Hup.id)   .assert(_ == 1)
+      test(m"SIGINT is 2")  (Signal.Int.id)   .assert(_ == 2)
+      test(m"SIGQUIT is 3") (Signal.Quit.id)  .assert(_ == 3)
+      test(m"SIGKILL is 9") (Signal.Kill.id)  .assert(_ == 9)
+      test(m"SIGTERM is 15")(Signal.Term.id)  .assert(_ == 15)
+      test(m"SIGCHLD is 17")(Signal.Chld.id)  .assert(_ == 17)
+      test(m"SIGCONT is 18")(Signal.Cont.id)  .assert(_ == 18)
+      test(m"SIGSTOP is 19")(Signal.Stop.id)  .assert(_ == 19)
+      test(m"SIGSYS is 31") (Signal.Sys.id)   .assert(_ == 31)
+
+      test(m"every signal id is positive"):
+        Signal.values.toList.map(_.id).forall(_ > 0)
+      . assert(identity(_))
+
+      test(m"signal ids are distinct"):
+        val ids = Signal.values.toList.map(_.id)
+        ids.length == ids.distinct.length
+      . assert(identity(_))

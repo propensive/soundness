@@ -58,7 +58,7 @@ enum Signal extends TerminalEvent:
 
   def shortName: Text = this.toString.show.upper
   def name: Text = t"SIG${this.toString.show.upper}"
-  def id: Int = if ordinal < 15 then ordinal - 1 else ordinal
+  def id: Int = if ordinal < 15 then ordinal + 1 else ordinal + 2
 
 type UnixSignal = Signal
 val UnixSignal = Signal
