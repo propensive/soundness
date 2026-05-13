@@ -68,17 +68,18 @@ object Lambdas:
     val out     = mutable.ListBuffer[LambdaSite]()
     val content = String(source.content)
 
-    // Only Functions that are *direct* arguments to an Apply count for this
-    // rule. A Function nested inside a tuple, conditional, or other
-    // expression in an argument position doesn't get attributed to the
-    // surrounding call — only an Apply whose arg slot literally holds the
-    // lambda (or a block whose result is the lambda) does.
+    // The rule only applies to lambdas that are the *sole direct argument*
+    // to a call. Restricting to single-argument applies means the
+    // suggested transformation `f(λ) → f { λ } → f: λ` is always safe —
+    // multi-arg calls like `f(λ, other)` can't be rewritten in the brace
+    // or colon form without losing the other argument(s). Lambdas
+    // nested inside tuples, conditionals, or non-Apply parents are
+    // skipped for the same reason.
     def walk(t: untpd.Tree): Unit =
       t match
-        case a: untpd.Apply =>
-          a.args.foreach: arg =>
-            directLambda(arg).foreach: f =>
-              siteFor(f, a, content, source).foreach(out += _)
+        case a: untpd.Apply if a.args.length == 1 =>
+          directLambda(a.args.head).foreach: f =>
+            siteFor(f, a, content, source).foreach(out += _)
 
         case _ => ()
       t.productIterator.foreach(descend(_, walk))
@@ -87,10 +88,10 @@ object Lambdas:
     out.toList
 
   private def directLambda(t: untpd.Tree): Option[untpd.Function] = t match
-    case f: untpd.Function                          => Some(f)
-    case b: untpd.Block if b.expr.isInstanceOf[untpd.Function] =>
+    case f: untpd.Function => Some(f)
+    case b: untpd.Block if b.stats.isEmpty && b.expr.isInstanceOf[untpd.Function] =>
       Some(b.expr.asInstanceOf[untpd.Function])
-    case _                                          => None
+    case _ => None
 
   private def descend(x: Any, visit: untpd.Tree => Unit): Unit = x match
     case sub: untpd.Tree  => visit(sub)
