@@ -126,7 +126,7 @@ object internal:
 
       val matched =
         cachedGivens(repr)
-        . filterNot(s => excludedCanonicals.contains(canonical(s)))
+        . filterNot{ s => excludedCanonicals.contains(canonical(s)) }
         . filter(respectsOpaqueScope(_, repr))
         . flatMap(matchAgainst(_, repr))
 
@@ -172,7 +172,7 @@ object internal:
       matched.groupBy(_.symbol.name.toString.stripSuffix("$")).values.toList.map: group =>
         val exports = group.filter(_.symbol.flags.is(Flags.Exported))
         val candidates = if exports.nonEmpty then exports else group
-        candidates.minBy(m => renderSymbol(m.symbol).s.length)
+        candidates.minBy{ m => renderSymbol(m.symbol).s.length }
 
     // Same export-preferring dedupe applied to method-level candidates
     // surfaced by the implicit-search-failure trace.
@@ -180,7 +180,7 @@ object internal:
       candidates.groupBy(_.symbol.name.toString.stripSuffix("$")).values.toList.flatMap: group =>
         val exports = group.filter(_.symbol.flags.is(Flags.Exported))
         val pool = if exports.nonEmpty then exports else group
-        List(pool.minBy(c => renderSymbol(c.symbol).s.length))
+        List(pool.minBy{ c => renderSymbol(c.symbol).s.length })
 
     // Render a proposal: the symbol's stenography path, suffixed by an
     // explicit type-parameter substitution `[T = X, U = Y]` whenever the

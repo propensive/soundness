@@ -171,7 +171,7 @@ object ParserSupport:
     while i < n do
       i = walk(s, i)(isSpaceTab)
       val start = i
-      i = walk(s, i)(c => !isSpaceTab(c))
+      i = walk(s, i){ c => !isSpaceTab(c) }
       if i > start then result += Text(s.substring(start, i).nn)
     result.toList
 
@@ -338,7 +338,7 @@ object ParserSupport:
     val indent = leadingIndent(s)
     if indent < 0 || indent >= n then return Unset
 
-    val digitEnd = walkUpTo(s, indent, 9)(c => c >= '0' && c <= '9')
+    val digitEnd = walkUpTo(s, indent, 9){ c => c >= '0' && c <= '9' }
     val digitCount = digitEnd - indent
     if digitCount < 1 || digitEnd >= n then return Unset
 

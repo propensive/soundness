@@ -304,10 +304,10 @@ case class Teletype
       val combinedPlain = plain+that.plain
 
       val shiftedLinks = if that.hyperlinks.isEmpty then hyperlinks else
-        hyperlinks ++ that.hyperlinks.map((k, v) => (k + aN) -> v)
+        hyperlinks ++ that.hyperlinks.map{ (k, v) => (k + aN) -> v }
 
       val shiftedInsertions = if that.insertions.isEmpty then insertions else
-        insertions ++ that.insertions.map((k, v) => (k + aN) -> v)
+        insertions ++ that.insertions.map{ (k, v) => (k + aN) -> v }
 
       if isDense && that.isDense then
         // Both dense — direct array copy
@@ -414,7 +414,7 @@ case class Teletype
       if n <= 0 then Teletype.empty
       else if n >= plain.length then this
       else
-        val newHyperlinks = hyperlinks.filter((k, _) => k < n)
+        val newHyperlinks = hyperlinks.filter{ (k, _) => k < n }
         val newInsertions = insertions.rangeUntil(n)
         if isDense then
           val arr = new Array[Long](n + 1)

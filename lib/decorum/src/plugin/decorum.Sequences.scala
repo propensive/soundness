@@ -306,13 +306,13 @@ object Sequences:
     // The `for` keyword is at the start of the span. The K₂ keyword
     // (`yield` or `do`) follows the last enumerator.
     val enumEnd =
-      enums.lastOption.flatMap(e => if e.span.exists then Some(e.span.end) else None)
+      enums.lastOption.flatMap{ e => if e.span.exists then Some(e.span.end) else None }
       . getOrElse(sp.start + 3)
     val kwUntil = if bodySp.exists then bodySp.end else sp.end
     val kwOffset = findKeyword(content, enumEnd, kwUntil, kw)
     if kwOffset < 0 then return None
     val firstEnumStart =
-      enums.headOption.flatMap(e => if e.span.exists then Some(e.span.start) else None)
+      enums.headOption.flatMap{ e => if e.span.exists then Some(e.span.start) else None }
       . getOrElse(sp.start + 4)
     val anchor =
       makeElem

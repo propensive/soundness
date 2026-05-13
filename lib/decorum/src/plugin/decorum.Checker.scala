@@ -62,7 +62,7 @@ object Checker:
     val lines = Tokenizer.tokenize(rawText)
     val imports = Imports.extract(untpdTree, source)
     state.packageInfo        = Packages.extract(untpdTree, source)
-    state.importLineSet      = imports.iterator.flatMap(i => i.startLine to i.endLine).toSet
+    state.importLineSet      = imports.iterator.flatMap{ i => i.startLine to i.endLine }.toSet
     state.hasImports         = imports.nonEmpty
     state.annotationEndLines = Annotations.collectEndLines(untpdTree, source)
     state.companions         = Companions.extract(untpdTree, source)
@@ -209,7 +209,7 @@ object Checker:
       out:     mutable.ListBuffer[Violation] )
   :   Unit =
 
-    val leadingWs   = line.takeWhile(t => t.kind == Kind.Space)
+    val leadingWs   = line.takeWhile{ t => t.kind == Kind.Space }
     val rest        = line.drop(leadingWs.length)
     val visibleLen  = line.iterator.map(_.text.length).sum
     val firstReal   = rest.headOption
@@ -257,7 +257,7 @@ object Checker:
     // been removed as redundant.
     checkUsingAlignment(s, lineNum, leadingCols, rest, emit)
     if !isBlank then
-      val sem = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+      val sem = rest.filter{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
       sem.lastOption.foreach: t => s.prevCodeLineLastTok = t.text
       s.prevFormalOpenerIndent = s.currentFormalOpenerIndent
       // Track whether the previous line is part of a (still incomplete)
@@ -276,11 +276,11 @@ object Checker:
         found
 
       val startsWithDecl =
-        sem.headOption.exists(t => DeclKeywords.contains(t.text) || ModifierWords.contains(t.text))
+        sem.headOption.exists{ t => DeclKeywords.contains(t.text) || ModifierWords.contains(t.text) }
 
       val isContinuationOfDecl =
         s.prevLineStartedDecl
-          && sem.headOption.exists(t => t.text == "(" || t.text == "[")
+          && sem.headOption.exists{ t => t.text == "(" || t.text == "[" }
       s.prevLineStartedDecl = !hasTopLevelEq && (startsWithDecl || isContinuationOfDecl)
 
       // R31 exceptions: detect quote/splice opener and chain opener on this
@@ -475,8 +475,8 @@ object Checker:
     while i < arr.length do
       cols(i + 1) = cols(i) + arr(i).text.length
       i += 1
-    val firstSemantic = arr.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment)
-    val lastSemantic  = arr.lastIndexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+    val firstSemantic = arr.indexWhere{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
+    val lastSemantic  = arr.lastIndexWhere{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
     val stack = s.quoteSpliceBraces
     i = 0
     while i < arr.length do
@@ -564,7 +564,7 @@ object Checker:
     val top = s.quoteSpliceBraces.top
     if top.braceCol < 0 then return
     if lineNum == top.openerLine then return
-    if firstReal.exists(t => t.kind == Kind.Strs || t.kind == Kind.Comment) then return
+    if firstReal.exists{ t => t.kind == Kind.Strs || t.kind == Kind.Comment } then return
     // The closer line is `}` alone (or with content) at column braceCol;
     // its `}` is processed by `trackQuoteSpliceBraces`, not here.
     if firstReal.exists(_.text == "}") && leadingCols + 1 == top.braceCol then return
@@ -580,7 +580,7 @@ object Checker:
 
     line.lastOption match
       case Some(token) if token.kind == Kind.Space && token.text.length > 0 =>
-        val hasNonWs = line.exists(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+        val hasNonWs = line.exists{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
         if hasNonWs then
           val col = line.iterator.map(_.text.length).sum - token.text.length + 1
           emit(col, "015", "line has trailing whitespace")
@@ -602,7 +602,7 @@ object Checker:
     if isBlank then ()
     else if s.givenSignatureIndent < 0 then ()
     else
-      val sem = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+      val sem = rest.filter{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
       if sem.headOption.exists(_.text == "=>") && leadingCols != s.givenSignatureIndent then
         emit
           ( leadingCols + 1, "140",
@@ -710,7 +710,7 @@ object Checker:
     if isBlank then ()
     else if s.openParens > 0 then ()
     else if s.prevLineWasBlank then ()
-    else if !firstReal.exists(t => t.kind == Kind.Code && (t.text == "(" || t.text == "[")) then ()
+    else if !firstReal.exists{ t => t.kind == Kind.Code && (t.text == "(" || t.text == "[") } then ()
     // A heavy continuation is indented *more* than its anchor. If the
     // current line's indent is ≤ the previous code line's indent, the
     // `(`/`[` is a sibling statement (a tuple, parenthesised expression
@@ -754,7 +754,7 @@ object Checker:
     // type-parameter `:`, etc.) — only the top-level return/declared-type
     // `:` is governed by the anchor rule.
     else if s.openParens > 0 then ()
-    else if !firstReal.exists(t => t.kind == Kind.Code && t.text == ":") then ()
+    else if !firstReal.exists{ t => t.kind == Kind.Code && t.text == ":" } then ()
     else if leadingCols != s.defAnchorIndent then
       emit
         ( leadingCols + 1, "833.3",
@@ -966,7 +966,7 @@ object Checker:
           else sb.append(c)
       sb.toString
 
-    val firstSegment = firstImport.takeWhile(c => c != '.' && c != '{' && c != ' ')
+    val firstSegment = firstImport.takeWhile{ c => c != '.' && c != '{' && c != ' ' }
 
     val wildcardImport =
       firstImport.endsWith(".*") || firstImport.endsWith("*}") || firstImport.endsWith("*, *}")
@@ -1084,8 +1084,8 @@ object Checker:
       emit:    (Int, String, String) => Unit )
   :   Unit =
 
-    val firstSemantic = arr.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment)
-    val lastSemantic  = arr.lastIndexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+    val firstSemantic = arr.indexWhere{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
+    val lastSemantic  = arr.lastIndexWhere{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
 
     val lineStartsWithBracket =
       firstSemantic >= 0 && (arr(firstSemantic).text == "(" || arr(firstSemantic).text == "[")
@@ -1459,8 +1459,8 @@ object Checker:
       emit: (Int, String, String) => Unit )
   :   Unit =
 
-    val firstSemantic = arr.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment)
-    val lastSemantic  = arr.lastIndexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+    val firstSemantic = arr.indexWhere{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
+    val lastSemantic  = arr.lastIndexWhere{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
     val frames = mutable.Stack[mutable.ArrayBuffer[OpHit]]()
     frames.push(mutable.ArrayBuffer.empty)
 
@@ -1527,9 +1527,9 @@ object Checker:
     else
       // Same-precedence consistency: every operator at a given precedence
       // must use the same spacing within this frame.
-      ops.groupBy(op => operatorPrecedence(op.text)).foreach: (_, group) =>
-        val mixed = group.exists(op => op.leftSpace || op.rightSpace)
-          && group.exists(op => !(op.leftSpace || op.rightSpace))
+      ops.groupBy{ op => operatorPrecedence(op.text) }.foreach: (_, group) =>
+        val mixed = group.exists{ op => op.leftSpace || op.rightSpace }
+          && group.exists{ op => !(op.leftSpace || op.rightSpace) }
         if mixed then
           group.foreach: op =>
             emit
@@ -1613,7 +1613,7 @@ object Checker:
       case _ => ()
 
   private def lineEndsWithEqualsToken(rest: IndexedSeq[Token]): Boolean =
-    val nonWs = rest.filter(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+    val nonWs = rest.filter{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
     nonWs.lastOption.exists(_.text == "=")
 
   private def checkChainContinuation
@@ -1873,7 +1873,7 @@ object Checker:
           s.prevCodeLineLastTok == "," || s.prevCodeLineLastTok == "("
             || s.prevCodeLineLastTok == "using"
 
-        val firstSemIdx = rest.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment)
+        val firstSemIdx = rest.indexWhere{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
         if freshRow && firstSemIdx >= 0 && rest(firstSemIdx).text != ")" then
           var c = leadingCols + 1
           var k = 0

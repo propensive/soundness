@@ -102,7 +102,7 @@ object LayeredDagDiagram:
       for l <- 0 to maxLevel do
         val levelNodes = byLevel(l)
 
-        val terminating = state.toMap.filter((_, lane) => level(lane.target) == l)
+        val terminating = state.toMap.filter{ (_, lane) => level(lane.target) == l }
         val continuing = state.toMap -- terminating.keys
 
         val incomingByNode: Map[node, Vector[Int]] =
@@ -162,7 +162,7 @@ object LayeredDagDiagram:
 
       layouts.iterator.zipWithIndex.foreach: (lay, l) =>
         if l > 0 then rows += ((connectorRow(lay, width), Map.empty[Int, node]))
-        rows += ((nodeRow(lay, width), lay.nodeCol.iterator.map((n, c) => c -> n).to(Map)))
+        rows += ((nodeRow(lay, width), lay.nodeCol.iterator.map{ (n, c) => c -> n }.to(Map)))
 
       LayeredDagDiagram(rows.to(List))
 
@@ -223,7 +223,7 @@ object LayeredDagDiagram:
 
   given printable: [node: Showable] => (style: LaneDagStyle[Text])
   =>  LayeredDagDiagram[node] is Printable =
-    (diagram, termcap) => diagram.render[Text](node => t"● $node  ").join(t"\n")
+    (diagram, termcap) => diagram.render[Text]{ node => t"● $node  " }.join(t"\n")
 
 case class LayeredDagDiagram[node](rows: List[(List[DagTile], Map[Int, node])]):
   val size: Int = rows.length
@@ -240,7 +240,7 @@ case class LayeredDagDiagram[node](rows: List[(List[DagTile], Map[Int, node])]):
     val widthsList = widths.to(List)
 
     rows.map: (tiles, nodesAt) =>
-      val glyphs: Map[Int, line] = nodesAt.map((col, n) => col -> glyph(n))
+      val glyphs: Map[Int, line] = nodesAt.map{ (col, n) => col -> glyph(n) }
       style.serialize(tiles, glyphs, widthsList, Unset)
 
   def tiles: List[List[DagTile]] = rows.map(_(0))

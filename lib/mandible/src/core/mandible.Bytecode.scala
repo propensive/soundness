@@ -649,7 +649,7 @@ object Bytecode:
         t"table·switch [$low..$high] →${targets.map(_.show).join(t",")} default →$default"
 
       case Lookupswitch(default, cases) =>
-        val rendered = cases.map((v, t) => t"$v→$t").join(t",")
+        val rendered = cases.map{ (v, t) => t"$v→$t" }.join(t",")
         t"lookup·switch $rendered default →$default"
 
       case Ireturn              => t"i·return"
@@ -1474,7 +1474,7 @@ case class Bytecode
 
   def effectivelyStaticCalls: Set[Int] =
     import Bytecode.Opcode.*
-    val byOffset = instructions.iterator.map(i => i.offset -> i).toMap
+    val byOffset = instructions.iterator.map{ i => i.offset -> i }.toMap
 
     val priorStacks: Map[Int, List[Bytecode.Frame]] =
       var prev: Optional[List[Bytecode.Frame]] = Nil

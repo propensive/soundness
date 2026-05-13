@@ -90,7 +90,7 @@ object LaneDagDiagram:
       for r <- 0 until total do
         val current = nodes(r)
         val state = laneState(r)
-        val terminating = state.filter((_, lane) => lane.target == current)
+        val terminating = state.filter{ (_, lane) => lane.target == current }
         val continuing = state -- terminating.keys
         val terminatingCols = terminating.keys.to(Array).sortInPlace()
 
@@ -118,7 +118,7 @@ object LaneDagDiagram:
           Lane(current, target, col)
 
         started(r) = newLanes
-        laneState(r + 1) = continuing ++ newLanes.map(lane => lane.col -> lane)
+        laneState(r + 1) = continuing ++ newLanes.map{ lane => lane.col -> lane }
 
       val width: Int =
         val colsUsed = laneState.flatMap(_.keys) ++ nodeCol
@@ -211,7 +211,7 @@ object LaneDagDiagram:
       width:    Int )
   :   List[DagTile] =
 
-    val continuing = state.filter((_, lane) => lane.target != current).keys.to(Set)
+    val continuing = state.filter{ (_, lane) => lane.target != current }.keys.to(Set)
 
     (0 until width).map: c =>
       if c == col then Node
@@ -222,7 +222,7 @@ object LaneDagDiagram:
 
   given printable: [node: Showable] => (style: LaneDagStyle[Text])
   =>  LaneDagDiagram[node] is Printable =
-    (diagram, termcap) => diagram.render[Text](node => t" $node").join(t"\n")
+    (diagram, termcap) => diagram.render[Text]{ node => t" $node" }.join(t"\n")
 
   private def keepRow[node](row: (List[DagTile], Optional[node])): Boolean =
     val (tiles, node) = row
@@ -270,7 +270,7 @@ case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
 
       val glyphs: Map[Int, line] =
         if nodeIdx < 0 then Map.empty
-        else node.let(n => Map(nodeIdx -> glyph(n))).or(Map.empty)
+        else node.let{ n => Map(nodeIdx -> glyph(n)) }.or(Map.empty)
 
       style.serialize(tiles, glyphs, widths, node.let(label))
 

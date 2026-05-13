@@ -338,7 +338,7 @@ object Cbor extends Cbor2, Dynamic:
     map =>
       val keys: List[key] = map.keys.to(List)
       val values = IArray.from(keys.map(map(_).encode.root))
-      ast(Ast.map(IArray.from(keys.map(k => k.encode.s)), values))
+      ast(Ast.map(IArray.from(keys.map{ k => k.encode.s }), values))
 
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Cbor)*): Cbor =
