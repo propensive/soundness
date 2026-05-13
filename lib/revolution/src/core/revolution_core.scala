@@ -49,5 +49,5 @@ package manifestAttributes:
   object Sealed                extends ManifestAttribute["Sealed"]()
   object SignatureVersion      extends ManifestAttribute["Signature-Version"]()
   object SpecificationTitle    extends ManifestAttribute["Specification-Title"]()
-  object SpecifacationVendor   extends ManifestAttribute["Specification-Vendor"]()
-  object SpecifacationVersion  extends ManifestAttribute["Specification-Version"]()
+  object SpecificationVendor   extends ManifestAttribute["Specification-Vendor"]()
+  object SpecificationVersion  extends ManifestAttribute["Specification-Version"]()

@@ -129,7 +129,9 @@ object Semver:
     if left.major == right.major then
       if left.minor == right.minor then
         if left.patch == right.patch then
-          right.prerelease.nil || compare(left.prerelease, right.prerelease)
+          if left.prerelease.nil then false
+          else if right.prerelease.nil then true
+          else compare(left.prerelease, right.prerelease)
         else left.patch < right.patch
       else left.minor < right.minor
     else left.major < right.major
