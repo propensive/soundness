@@ -129,6 +129,35 @@ object Tests extends Suite(m"Hypotenuse tests"):
         2L ** 0.5
       . assert(_ == math.sqrt(2.0))
 
+    suite(m"Bit-pattern formatting"):
+      test(m"Byte.hex of -1 is two characters"):
+        (-1: Byte).hex
+      . assert(_ == t"ff")
+
+      test(m"Byte.hex of 0x80 is two characters"):
+        (0x80.toByte).hex
+      . assert(_ == t"80")
+
+      test(m"Byte.binary of -1 is eight characters"):
+        (-1: Byte).binary
+      . assert(_ == t"11111111")
+
+      test(m"Byte.octal of -1 is three characters"):
+        (-1: Byte).octal
+      . assert(_ == t"377")
+
+      test(m"Short.hex of -1 is four characters"):
+        (-1: Short).hex
+      . assert(_ == t"ffff")
+
+      test(m"Short.binary of -1 is sixteen characters"):
+        (-1: Short).binary
+      . assert(_ == t"1111111111111111")
+
+      test(m"Short.octal of -1 is six characters"):
+        (-1: Short).octal
+      . assert(_ == t"177777")
+
     suite(m"Inequality tests"):
       test(m"1.2 < x < 1.4"):
         List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 < _ < 1.4)
