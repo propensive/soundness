@@ -260,14 +260,14 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  case Foo => 1\n"
             +"  case Bar =>\n"
             +"    bigBody\n" )
-      . assert(_.contains("982"))
+      . assert(_.contains("315"))
 
       test(m"Multi-line case as first case (after `match`) is accepted"):
         rules
          ( "def f(x: Any): Any = x match\n"
             +"  case Bar =>\n"
             +"    bigBody\n" )
-      . assert(!_.contains("982"))
+      . assert(!_.contains("315"))
 
       test(m"Multi-line case after blank is accepted"):
         rules
@@ -276,7 +276,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"\n"
             +"  case Bar =>\n"
             +"    bigBody\n" )
-      . assert(!_.contains("982"))
+      . assert(!_.contains("315"))
 
     suite(m"Phase 3: Sibling padding and using alignment"):
 

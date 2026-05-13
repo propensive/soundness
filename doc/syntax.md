@@ -741,46 +741,49 @@ Quoted references (`'identifier`) take no padding.
 
 ## 6. Blank-line conventions
 
-Each definition imposes a _padding requirement_: the number of blank lines
-required between it and an adjacent sibling definition.
+### Chunks
 
-- **Single-line definition**: padding 0.
-- **Multi-line definition** (single-line signature, multi-line body): padding 1.
-- **Heavy-signature definition**: padding 2.
+A **chunk** is a sequence of two or more source lines that forms a single
+expression or statement. Chunks may contain blank lines in their interior.
+Single-line statements are not chunks.
 
-Between two adjacent siblings, the actual number of blank lines is the
-_greater_ of the two padding requirements:
+The chunk rule is the unifying blank-line principle:
 
-- Two adjacent single-liners with the same keyword: no blank line between them.
-- A single-liner next to a multi-line definition: one blank line.
-- A multi-line definition next to a heavy-signature definition: two blank
-  lines.
-- Two heavy-signature definitions: two blank lines.
+> Every chunk must be **followed** by a blank line, and **preceded** by
+> a blank line — except when it is the first thing in a newly opened
+> indented scope (a class/trait/object body, a method body, a block, a
+> match's case list, etc.), in which case the preceding-blank rule does
+> not apply.
 
-The "same keyword" relaxation lets runs of `inline given …` or `case …` lines
-stack with no separators. A keyword change (e.g. from `given` to `def`)
-introduces at least the lower of the two paddings as a separator regardless.
-The relaxation permits but does not require zero blanks: blank lines may be
-inserted within a same-keyword run for visual grouping.
+Two single-line statements may sit adjacent with no blank between them
+(neither is a chunk, so the rule says nothing). The moment one of them
+becomes a chunk, a blank line is required on either side.
 
-The hard ceiling of two consecutive blank lines is never exceeded.
+This rule subsumes two older blank-line rules: the previous
+"multi-line case must have a blank before it" rule, and the multi-line
+side of the sibling-declaration padding rule.
 
-#### First definition in a new indented scope
+### Maximum blank lines
 
-The padding rule applies only between *sibling* definitions at the same
-indent level. The first definition inside a newly-opened indented scope
-(class body, object body, def body, …) is not subject to the
-greater-of-paddings rule with respect to its enclosing-scope opener — the
-opener and the first member can sit on consecutive lines:
+At most **one** blank line is allowed anywhere, with one exception:
+around a heavy-signature definition, up to **two** blanks are permitted
+to give the signature visual weight.
+
+### First-in-scope exemption
+
+The chunk rule's preceding-blank requirement applies only when the
+chunk has a preceding sibling at the same indent level. The first
+statement inside a newly-opened indented scope (class body, def body,
+match's first case, …) needs no blank line before it:
 
 ```scala
 class Foo:
-  val a = 1     // first member; no blank required before it
-  val b = 2
+  def first =     // first member, no blank required before
+    body
 ```
 
-The exception is when the enclosing scope's signature is *heavy*: the
-heavy-signature rule (§4) requires a blank line between the
+The exception remains when the enclosing scope's signature is *heavy*:
+§4's heavy-signature rule requires a blank line between the
 `:   ReturnType =` line and the body, so the first member of a heavy
 scope is always preceded by a blank.
 
