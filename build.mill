@@ -421,7 +421,7 @@ object bitumen extends Library:
   object test extends Tests(core)
 
 object breviloquence extends Library:
-  object core extends Component(urticose.url, panopticon.core)
+  object core extends Component(urticose.url, panopticon.core, turbulence.core)
   object test extends Tests(core, sedentary.core, eucalyptus.core)
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(

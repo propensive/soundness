@@ -45,6 +45,7 @@ import distillate.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import turbulence.*
 import vacuous.*
 import wisteria.*
 
@@ -223,6 +224,9 @@ object Cbor extends Cbor2, Dynamic:
   given string: Tactic[CborError] => String is Decodable in Cbor = _.root.string
   given byteString: Tactic[CborError] => IArray[Byte] is Decodable in Cbor = _.root.byteString
   given cbor: Cbor is Decodable in Cbor = identity(_)
+
+  given aggregable: Tactic[CborError] => Cbor is Aggregable by Data =
+    bytes => Cbor.ast(bytes.read[Cbor.Ast])
 
   given unit: Tactic[CborError] => Unit is Decodable in Cbor =
     value =>
