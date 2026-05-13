@@ -108,3 +108,22 @@ object Tests extends Suite(m"Hallucination Tests"):
       val gif = png.read[Raster in Png].to[Gif].read[Data]
       gif.read[Raster in Gif].width
     . assert(_ == 1)
+
+    // Each row carries its own y coordinate in the red channel so that crop()
+    // can be checked structurally.
+    def stripes: Raster = Raster(2, 4)((_, y) => Chroma(y*10, 0, 0))
+
+    test(m"crop(top = n) drops rows from the top"):
+      val cropped = stripes.crop(top = 2)
+      (cropped.height, cropped(0, 0).red, cropped(0, 1).red)
+    . assert(_ == (2, 20, 30))
+
+    test(m"crop(bottom = n) drops rows from the bottom"):
+      val cropped = stripes.crop(bottom = 2)
+      (cropped.height, cropped(0, 0).red, cropped(0, 1).red)
+    . assert(_ == (2, 0, 10))
+
+    test(m"crop with top and bottom keeps the middle rows"):
+      val cropped = stripes.crop(top = 1, bottom = 1)
+      (cropped.height, cropped(0, 0).red, cropped(0, 1).red)
+    . assert(_ == (2, 10, 20))

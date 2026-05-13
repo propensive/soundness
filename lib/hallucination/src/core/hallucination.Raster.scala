@@ -94,7 +94,7 @@ case class Raster(private[hallucination] val image: jai.BufferedImage) extends F
   def to[format: Rasterizable as rasterizable]: Raster in format = Raster[format](image)
 
   def crop(left: Int = 0, bottom: Int = 0, top: Int = 0, right: Int = 0): Raster =
-    Raster(width - left - right, height - top - bottom) { (x, y) => apply(x + left, y + bottom) }
+    Raster(width - left - right, height - top - bottom) { (x, y) => apply(x + left, y + top) }
 
   def flipX: Raster = Raster(width, height) { (x, y) => apply(width - 1 - x, y) }
   def flipY: Raster = Raster(width, height) { (x, y) => apply(x, height - 1 - y) }
