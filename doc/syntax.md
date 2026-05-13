@@ -427,6 +427,61 @@ its own line — heavy method signatures, anonymous given continuations,
 multi-line type-parameter blocks. The closing bracket sits on the same
 line as the last parameter; it is never alone on a line.
 
+#### Anchor of a heavy argument block
+
+When a line begins (after indentation) with `(` or `[`, the **previous
+line must be a tight expression**. A *tight expression* is one that
+does not decompose into separate parts at top level: at bracket depth
+zero, it consists of a single chain of references, member accesses,
+applications, and type applications, optionally headed by one
+**expression-introducing keyword** (`new`, `throw`, `return`, `yield`,
+`then`, `else`, `do`, `try`, `catch`, `finally`). Equivalently in
+source-layout terms: a tight expression has no whitespace between top-
+level code tokens except for a single space that may follow a leading
+expression-introducing keyword.
+
+Parenthesising any expression makes it tight: the content moves to
+depth > 0 where the no-top-level-whitespace condition no longer
+applies. (The one case that can't be parenthesised this way is an
+assignment — `(x = y)` is tight by layout, but applying further
+arguments to it is rejected by the type system, so the case doesn't
+arise in valid code.)
+
+```scala
+// accepted — anchor is a tight expression on its own line
+recur
+  ( arg1, arg2 )
+
+new Exception
+  ( reason )
+
+foo.bar(baz).quux
+  ( arg )
+
+// rejected — the line containing the anchor also contains a top-level
+// operator or assignment, so the heavy bracket appears to attach to a
+// mid-line subexpression
+head :: recur
+  ( arg )
+
+val foo = bar
+  ( arg )
+
+// accepted via parenthesisation
+(if x then a else b)
+  ( arg )
+
+// accepted — multi-clause currying naturally satisfies the rule, since
+// a whole-line `( ... )` is itself tight
+f
+  ( x )
+  ( y )
+```
+
+Declaration signatures are not subject to this rule: the heavy `( … )`
+of `def`/`val`/`given` is a parameter list, not a method application,
+and is governed by §4's heavy-signature shape.
+
 ### Function literals
 
 - Inline arrow form: `x => …` or `(x, y) => …` with spaces around `=>`.
