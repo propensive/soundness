@@ -269,7 +269,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
 
     suite(m"Tiny CSV (10 rows × 5 numeric cols, no quoting)"):
       bench(m"Caesura")
-       ( target = 1*Second, operationSize = sizeSmall, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = sizeSmall, baseline = Baseline(compare = Min) ):
         '{ caesura.Benchmarks.caesuraParseCsv(caesura.Benchmarks.csvSmallText) }
 
       bench(m"Univocity")(target = 1*Second, operationSize = sizeSmall):
@@ -286,7 +286,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
 
     suite(m"Medium CSV (1 000 rows × 8 cols, no quoting)"):
       bench(m"Caesura")
-       ( target = 1*Second, operationSize = sizeMedium, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = sizeMedium, baseline = Baseline(compare = Min) ):
         '{ caesura.Benchmarks.caesuraParseCsv(caesura.Benchmarks.csvMediumText) }
 
       bench(m"Univocity")(target = 1*Second, operationSize = sizeMedium):
@@ -303,7 +303,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
 
     suite(m"Medium CSV (1 000 rows × 8 cols, fully quoted with embedded commas/quotes)"):
       bench(m"Caesura")
-       ( target = 1*Second, operationSize = sizeMediumQuoted, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = sizeMediumQuoted, baseline = Baseline(compare = Min) ):
         '{ caesura.Benchmarks.caesuraParseCsv(caesura.Benchmarks.csvMediumQuotedText) }
 
       bench(m"Univocity")(target = 1*Second, operationSize = sizeMediumQuoted):
@@ -320,7 +320,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
 
     suite(m"Large CSV (100 000 rows × 10 cols, no quoting)"):
       bench(m"Caesura")
-       ( target = 1*Second, operationSize = sizeLarge, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = sizeLarge, baseline = Baseline(compare = Min) ):
         '{ caesura.Benchmarks.caesuraParseCsv(caesura.Benchmarks.csvLargeText) }
 
       bench(m"Univocity")(target = 1*Second, operationSize = sizeLarge):
@@ -337,7 +337,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
 
     suite(m"Medium TSV (1 000 rows × 8 cols, tab-delimited)"):
       bench(m"Caesura")
-       ( target = 1*Second, operationSize = sizeTsv, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = sizeTsv, baseline = Baseline(compare = Min) ):
         '{ caesura.Benchmarks.caesuraParseTsv(caesura.Benchmarks.tsvMediumText) }
 
       bench(m"Univocity")(target = 1*Second, operationSize = sizeTsv):

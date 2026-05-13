@@ -86,8 +86,8 @@ object internal:
       halt(569, m"the companion object ${identityType.name} has no candidate apply methods")
     else
       halt
-       ( 659,
-         m"the companion object ${identityType.name} has more than one candidate apply method" )
+        ( 659,
+          m"the companion object ${identityType.name} has more than one candidate apply method" )
 
   def functor[functor[_]](using Type[functor], Quotes): Expr[Functor[functor]] =
     import quotes.reflect.*

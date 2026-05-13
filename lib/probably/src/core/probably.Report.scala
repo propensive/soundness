@@ -688,10 +688,10 @@ class Report(using Environment)(using palette: TestPalette):
             details.get(summary.id).flatMap(_.headOption).getOrElse(Unset)
 
           GithubActions.error
-           ( message = describeFailure(firstDetail),
-             file    = summary.id.codepoint.source,
-             line    = summary.id.codepoint.line,
-             title   = summary.id.name.text )
+            ( message = describeFailure(firstDetail),
+              file    = summary.id.codepoint.source,
+              line    = summary.id.codepoint.line,
+              title   = summary.id.name.text )
 
         case _ => ()
 

@@ -73,45 +73,45 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
 
   def twoSharedDepth3(o: Org): Org =
     o.lens
-     ( _.depts(Prim).lead.addr.city     = t"X",
-       _.depts(Prim).lead.addr.postcode = t"Y" )
+      ( _.depts(Prim).lead.addr.city     = t"X",
+        _.depts(Prim).lead.addr.postcode = t"Y" )
 
   def fourSharedDepth2(o: Org): Org =
     o.lens
-     ( _.depts(Prim).lead.addr.city     = t"X",
-       _.depts(Prim).lead.addr.postcode = t"Y",
-       _.depts(Prim).lead.role.name     = t"Z",
-       _.depts(Prim).lead.role.count    = 99 )
+      ( _.depts(Prim).lead.addr.city     = t"X",
+        _.depts(Prim).lead.addr.postcode = t"Y",
+        _.depts(Prim).lead.role.name     = t"Z",
+        _.depts(Prim).lead.role.count    = 99 )
 
   def fourDisjoint(o: Org): Org =
     o.lens
-     ( _.name                          = t"A",
-       _.hq.city                       = t"B",
-       _.depts(Prim).name              = t"C",
-       _.depts(Prim).lead.role.count   = 99 )
+      ( _.name                          = t"A",
+        _.hq.city                       = t"B",
+        _.depts(Prim).name              = t"C",
+        _.depts(Prim).lead.role.count   = 99 )
 
   def eightMixed(o: Org): Org =
     o.lens
-     ( _.depts(Prim).lead.addr.city     = t"X",
-       _.depts(Prim).lead.addr.postcode = t"Y",
-       _.depts(Prim).lead.role.name     = t"Z",
-       _.depts(Prim).lead.role.count    = 99,
-       _.hq.street                      = t"S",
-       _.hq.city                        = t"C",
-       _.hq.postcode                    = t"P",
-       _.name                           = t"N" )
+      ( _.depts(Prim).lead.addr.city     = t"X",
+        _.depts(Prim).lead.addr.postcode = t"Y",
+        _.depts(Prim).lead.role.name     = t"Z",
+        _.depts(Prim).lead.role.count    = 99,
+        _.hq.street                      = t"S",
+        _.hq.city                        = t"C",
+        _.hq.postcode                    = t"P",
+        _.name                           = t"N" )
 
   def eachTwoLeaves(o: Org): Org =
     o.lens
-     ( _.depts(Each).lead.role.name  = t"Boss",
-       _.depts(Each).lead.role.count = 0 )
+      ( _.depts(Each).lead.role.name  = t"Boss",
+        _.depts(Each).lead.role.count = 0 )
 
   // Same updates routed through the pre-fusion `lensFold` (the original `def lens`
   // body). Used to measure the speedup of singleton-traversal fusion.
   def eachTwoLeavesFold(o: Org): Org =
     o.lensFold
-     ( _.depts(Each).lead.role.name  = t"Boss",
-       _.depts(Each).lead.role.count = 0 )
+      ( _.depts(Each).lead.role.name  = t"Boss",
+        _.depts(Each).lead.role.count = 0 )
 
   // Manual map-and-copy: the theoretical optimum for `_.depts(Each).lead.role.…`.
   def eachTwoLeavesManual(o: Org): Org =
@@ -131,17 +131,17 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
   // three times; fusion rebuilds each once.
   def threeSharedHq(o: Org): Org =
     o.lens
-     ( _.hq.street   = t"S",
-       _.hq.city     = t"C",
-       _.hq.postcode = t"P" )
+      ( _.hq.street   = t"S",
+        _.hq.city     = t"C",
+        _.hq.postcode = t"P" )
 
   // Three top-level disjoint updates. Foldleft rebuilds Org three times; fusion
   // rebuilds it once.
   def threeDisjointTop(o: Org): Org =
     o.lens
-     ( _.name  = t"N",
-       _.hq    = addr,
-       _.depts = Nil )
+      ( _.name  = t"N",
+        _.hq    = addr,
+        _.depts = Nil )
 
   // Comparison baselines for the field-only fusion targets above. `Manual` uses direct
   // `.copy(...)` — the theoretical optimum any optic library should be measured against.
@@ -163,15 +163,15 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
 
   def threeSharedHqFold(o: Org): Org =
     o.lensFold
-     ( _.hq.street   = t"S",
-       _.hq.city     = t"C",
-       _.hq.postcode = t"P" )
+      ( _.hq.street   = t"S",
+        _.hq.city     = t"C",
+        _.hq.postcode = t"P" )
 
   def threeDisjointTopFold(o: Org): Org =
     o.lensFold
-     ( _.name  = t"N",
-       _.hq    = addr,
-       _.depts = Nil )
+      ( _.name  = t"N",
+        _.hq    = addr,
+        _.depts = Nil )
 
   // ─── benchmarks ───────────────────────────────────────────────────────────
 

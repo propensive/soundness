@@ -420,8 +420,8 @@ object internal:
 
                 case None =>
                   halt
-                   ( m"a ${TypeRepr.of[value is Showable].show} is required",
-                     expr.asTerm.underlyingArgument.pos )
+                    ( m"a ${TypeRepr.of[value is Showable].show} is required",
+                      expr.asTerm.underlyingArgument.pos )
 
               case Hole.Text => Expr.summon[(? >: value) is Showable] match
                 case Some(showable) =>
@@ -429,8 +429,8 @@ object internal:
 
                 case None =>
                   halt
-                   ( m"a ${TypeRepr.of[value is Showable].show} is required",
-                     expr.asTerm.underlyingArgument.pos )
+                    ( m"a ${TypeRepr.of[value is Showable].show} is required",
+                      expr.asTerm.underlyingArgument.pos )
 
               case Hole.Tagbody => Type.of[value] match
                 case '[Map[Text, Optional[Text]]] =>

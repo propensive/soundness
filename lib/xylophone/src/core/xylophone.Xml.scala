@@ -1108,7 +1108,7 @@ object Xml extends Tag.Container
         val matches =
           got == expected
           || isAsciiLetter(expected)
-             && (got == (expected | 0x20).toChar || got == (expected & ~0x20).toChar)
+            && (got == (expected | 0x20).toChar || got == (expected & ~0x20).toChar)
         if !matches then fail(Issue.Unexpected(got))
         advance()
         i += 1

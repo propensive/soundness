@@ -153,8 +153,8 @@ object GivensWriter:
     finally writer.close()
 
     Files.move
-     ( tmp.toPath,
-       file.toPath,
-       StandardCopyOption.REPLACE_EXISTING,
-       StandardCopyOption.ATOMIC_MOVE )
+      ( tmp.toPath,
+        file.toPath,
+        StandardCopyOption.REPLACE_EXISTING,
+        StandardCopyOption.ATOMIC_MOVE )
     ()

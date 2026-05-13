@@ -65,9 +65,9 @@ object Tag:
 
 
   class Container
-   ( label:      Text,
-     presets:    Attributes = Attributes.empty,
-     admissible: Set[Text]  = Set() )
+    ( label:      Text,
+      presets:    Attributes = Attributes.empty,
+      admissible: Set[Text]  = Set() )
   extends Tag(label, presets, admissible):
 
     type Result = Element & Xml.Populable of Topic over Transport in Form
