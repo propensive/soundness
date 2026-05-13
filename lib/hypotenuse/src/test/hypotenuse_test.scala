@@ -208,6 +208,47 @@ object Tests extends Suite(m"Hypotenuse tests"):
         safely(co.addS8(S8(Byte.MaxValue.bits), S8((1: Byte).bits)))
       . assert(_.absent)
 
+    suite(m"Floor-mod tests"):
+      test(m"Float %% positive divisor with positive dividend"):
+        7.0f %% 3.0f
+      . assert(_ == 1.0f)
+
+      test(m"Float %% positive divisor with negative dividend"):
+        -7.0f %% 3.0f
+      . assert(_ == 2.0f)
+
+      test(m"Float %% negative divisor with positive dividend"):
+        7.0f %% -3.0f
+      . assert(_ == -2.0f)
+
+      test(m"Float %% negative divisor with negative dividend"):
+        -7.0f %% -3.0f
+      . assert(_ == -1.0f)
+
+      test(m"Float %% with exact zero remainder"):
+        6.0f %% -3.0f
+      . assert(_ == 0.0f)
+
+      test(m"Double %% positive divisor with positive dividend"):
+        7.0 %% 3.0
+      . assert(_ == 1.0)
+
+      test(m"Double %% positive divisor with negative dividend"):
+        -7.0 %% 3.0
+      . assert(_ == 2.0)
+
+      test(m"Double %% negative divisor with positive dividend"):
+        7.0 %% -3.0
+      . assert(_ == -2.0)
+
+      test(m"Double %% negative divisor with negative dividend"):
+        -7.0 %% -3.0
+      . assert(_ == -1.0)
+
+      test(m"Double %% with exact zero remainder"):
+        6.0 %% -3.0
+      . assert(_ == 0.0)
+
     suite(m"Inequality tests"):
       test(m"1.2 < x < 1.4"):
         List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 < _ < 1.4)

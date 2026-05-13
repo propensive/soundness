@@ -159,7 +159,8 @@ extension (float: Float)
   @targetName("floorModFloat")
   inline infix def %% (right: Float): Float =
     val remainder: Float = float%right
-    if remainder < 0.0f then remainder + right else remainder
+    if remainder != 0.0f && (remainder > 0.0f) != (right > 0.0f) then remainder + right
+    else remainder
 
 extension (double: Double)
   @targetName("mantissaDouble")
@@ -222,7 +223,8 @@ extension (double: Double)
   @targetName("floorModDouble")
   inline infix def %% (right: Double): Double =
     val remainder = double%right
-    if remainder < 0.0 then remainder + right else remainder
+    if remainder != 0.0 && (remainder > 0.0) != (right > 0.0) then remainder + right
+    else remainder
 
 extension (byte: Byte)
   @targetName("bitsByte")
