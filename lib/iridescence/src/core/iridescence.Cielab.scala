@@ -32,7 +32,6 @@
                                                                                                   */
 package iridescence
 
-import hypotenuse.*
 import prepositional.*
 
 object Cielab:
@@ -51,8 +50,14 @@ object Cielab:
 case class Cielab(lightness: Double, blueYellow: Double, greenRed: Double) extends Color:
   type Form = Cielab
 
-  def delta(left: Cielab, right: Cielab): Double =
-    ( hyp(F64(right.blueYellow), F64(right.greenRed))
-      - hyp(F64(left.blueYellow), F64(left.greenRed)) )
+  def delta(that: Cielab): Double =
+    val dl = lightness - that.lightness
+    val da = greenRed - that.greenRed
+    val db = blueYellow - that.blueYellow
+    math.sqrt(dl*dl + da*da + db*db)
 
-    . double
+  def mix(that: Cielab, ratio: Double = 0.5): Cielab =
+    Cielab
+      ( lightness*(1 - ratio) + that.lightness*ratio,
+        blueYellow*(1 - ratio) + that.blueYellow*ratio,
+        greenRed*(1 - ratio) + that.greenRed*ratio )

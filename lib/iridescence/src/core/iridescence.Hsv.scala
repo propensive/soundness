@@ -51,10 +51,12 @@ object Hsv:
 case class Hsv(hue: Double, saturation: Double, value: Double) extends Color:
   type Form = Hsv
 
-//   def saturate: Hsv = Hsv(hue, 1, value)
-//   def desaturate: Hsv = Hsv(hue, 0, value)
-//   def rotate(degrees: Double): Hsv = Hsv(unitary(hue + degrees/360), saturation, value)
-//   def pure: Hsv = Hsv(hue, 1, 0)
-//   def tone(black: Double = 0, white: Double = 0) = shade(black).tint(white)
-//   def shade(black: Double = 0): Hsv = Hsv(hue, saturation, value*(1 - black) + (1 - value)*black)
-//   def tint(white: Double = 0): Hsv = Hsv(hue, saturation*(1 - white) + (1 - saturation)*white, value)
+  def saturate: Hsv                = Hsv(hue, 1, value)
+  def desaturate: Hsv              = Hsv(hue, 0, value)
+  def rotate(degrees: Double): Hsv = Hsv(unitary(hue + degrees/360), saturation, value)
+  def complement: Hsv              = rotate(180)
+  def pure: Hsv                    = Hsv(hue, 1, 1)
+
+  def shade(black: Double = 0): Hsv = Hsv(hue, saturation, value*(1 - black))
+  def tint(white: Double = 0): Hsv  = Hsv(hue, saturation*(1 - white), value)
+  def tone(black: Double = 0, white: Double = 0): Hsv = shade(black).tint(white)
