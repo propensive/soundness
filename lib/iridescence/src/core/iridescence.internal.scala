@@ -36,14 +36,11 @@ import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
-import gigantism.*
-import rudiments.*
 
 object internal:
   def rgbMacro(context: Expr[StringContext], insertions: Expr[Seq[Any]])(using Quotes)
   :   Expr[Chroma] =
 
-    import quotes.reflect.*
 
     val parts: List[String] =
       context.value.getOrElse:

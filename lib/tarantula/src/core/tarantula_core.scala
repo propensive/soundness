@@ -32,7 +32,5 @@
                                                                                                   */
 package tarantula
 
-import anticipation.*
-import fulminate.*
 
 def browser(using WebDriver#Session): WebDriver#Session = summon[WebDriver#Session]

@@ -40,7 +40,6 @@ import beneficence.*
 import contextual.*
 import contingency.*
 import distillate.*
-import fulminate.*
 import prepositional.*
 import rudiments.*
 

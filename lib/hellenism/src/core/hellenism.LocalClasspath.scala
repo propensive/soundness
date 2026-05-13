@@ -38,7 +38,6 @@ import contingency.*
 import distillate.*
 import galilei.*
 import gossamer.*
-import nomenclature.*
 import prepositional.*
 import rudiments.*
 import serpentine.*

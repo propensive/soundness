@@ -32,8 +32,6 @@
                                                                                                   */
 package digression
 
-import anticipation.*
-import fulminate.*
 
 extension (error: Throwable) def stackTrace: StackTrace = StackTrace(error)
 

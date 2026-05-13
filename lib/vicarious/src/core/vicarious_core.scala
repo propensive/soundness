@@ -32,8 +32,6 @@
                                                                                                   */
 package vicarious
 
-import anticipation.*
-import fulminate.*
 import proscenium.*
 
 inline def catalog[key](key: key)[value](inline lambda: [field] => (field: field) => value)

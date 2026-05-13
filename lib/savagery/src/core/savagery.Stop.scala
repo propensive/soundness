@@ -32,7 +32,6 @@
                                                                                                   */
 package savagery
 
-import scala.collection.immutable.SeqMap
 
 import anticipation.*
 import cardinality.*

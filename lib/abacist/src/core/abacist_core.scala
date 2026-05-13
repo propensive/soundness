@@ -34,8 +34,6 @@ package abacist
 
 import scala.quoted.*
 
-import anticipation.*
-import fulminate.*
 import quantitative.*
 
 export protointernal.Quanta

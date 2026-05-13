@@ -34,10 +34,7 @@ package sedentary
 
 import anticipation.*
 import gossamer.*
-import prepositional.*
 import quantitative.*
-import symbolism.*
-import vacuous.*
 
 object OperationSize:
   // Captures the `Decimalizer` available where `Quantity` is used as an

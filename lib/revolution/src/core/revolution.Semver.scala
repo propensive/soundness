@@ -32,7 +32,6 @@
                                                                                                   */
 package revolution
 
-import scala.collection as sc
 
 import anticipation.*
 import contingency.*

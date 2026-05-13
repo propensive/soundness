@@ -40,7 +40,6 @@ import anticipation.*
 import contextual.*
 import denominative.*
 import fulminate.*
-import gigantism.*
 import gossamer.*
 import hypotenuse.*
 import proscenium.*

@@ -32,7 +32,6 @@
                                                                                                   */
 package revolution
 
-import scala.collection as sc
 import scala.quoted.*
 
 import anticipation.*
@@ -40,7 +39,6 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import gigantism.*
-import gossamer.*
 import proscenium.*
 import vacuous.*
 

@@ -33,7 +33,6 @@
 package cellulose
 
 import anticipation.*
-import contextual.*
 import contingency.*
 import denominative.*
 import distillate.*
@@ -42,7 +41,6 @@ import gossamer.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import spectacular.*
 import turbulence.*
 import vacuous.*
 import wisteria.*

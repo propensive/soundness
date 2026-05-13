@@ -32,8 +32,6 @@
                                                                                                   */
 package serpentine
 
-import anticipation.*
-import vacuous.*
 
 export Path.`%`
 export Relative.{`^`, `?`}

@@ -33,7 +33,6 @@
 package cataclysm
 
 import anticipation.*
-import fulminate.*
 import gossamer.*
 import proscenium.*
 import rudiments.*

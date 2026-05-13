@@ -36,7 +36,6 @@ import language.dynamics
 
 import anticipation.*
 import fulminate.*
-import proscenium.*
 
 case class XmlError()(using Diagnostics)
 extends Error(149, 0)(m"there was an XML error")

@@ -37,13 +37,11 @@ import digression.*
 import escapade.*
 import fulminate.*
 import gossamer.*
-import hieroglyph.*
 import iridescence.*
 import prepositional.*
 import spectacular.*
 import symbolism.*
 
-import textMetrics.uniform
 
 package logFormats:
   given teleypeable: (palette: LogPalette) => Level is Teletypeable = level =>

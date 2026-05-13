@@ -49,10 +49,8 @@ import jacinta.*
 import nomenclature.*
 import prepositional.*
 import probably.*
-import quantitative.*
 import rudiments.*
 import serpentine.*
-import spectacular.*
 import superlunary.*
 import symbolism.*
 import vacuous.*

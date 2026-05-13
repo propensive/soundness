@@ -38,7 +38,6 @@ import scala.util.NotGiven
 
 import anticipation.*
 import contextual.*
-import fulminate.*
 import prepositional.*
 import proscenium.*
 

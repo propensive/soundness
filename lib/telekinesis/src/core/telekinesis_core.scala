@@ -36,7 +36,6 @@ import language.dynamics
 
 import anticipation.*
 import distillate.*
-import fulminate.*
 import legerdemain.*
 import prepositional.*
 import proscenium.*

@@ -36,7 +36,6 @@ import language.experimental.pureFunctions
 
 import scala.quoted.*
 
-import anticipation.*
 import denominative.*
 import fulminate.*
 import prepositional.*

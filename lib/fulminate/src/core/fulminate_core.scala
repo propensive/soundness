@@ -32,7 +32,6 @@
                                                                                                   */
 package fulminate
 
-import scala.compiletime.*
 import scala.quoted.*
 
 import anticipation.*
