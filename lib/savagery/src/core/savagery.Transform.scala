@@ -53,7 +53,8 @@ object Transform:
       case Rotate(angle)                       => t"rotate(${angle.degrees})"
       case Skew(angle, Orientation.Horizontal) => t"skewX(${angle.degrees})"
       case Skew(angle, Orientation.Vertical)   => t"skewY(${angle.degrees})"
-      case Matrix(m)                           => t"matrix(${m.a},${m.b},${m.c},${m.d},${m.e},${m.f})"
+      case Matrix(m)                           =>
+        t"matrix(${m.a},${m.b},${m.c},${m.d},${m.e},${m.f})"
 
 enum Transform:
   case Translate(vector: Delta)

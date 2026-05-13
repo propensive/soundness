@@ -105,9 +105,11 @@ object GraphemeBreak:
   private def parseIncbEntries(in: ji.InputStream): List[Entry] =
     scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
       Text(line) match
-        case
-          r"${Hex(from)}([0-9A-Fa-f]+)\.\.${Hex(to)}([0-9A-Fa-f]+)\s*;\s*InCB\s*;\s*$name([A-Za-z]+).*" =>
+        case r"${Hex(from)}([0-9A-Fa-f]+)\.\.$rest(.*)" => rest match
+          case r"${Hex(to)}([0-9A-Fa-f]+)\s*;\s*InCB\s*;\s*$name([A-Za-z]+).*" =>
             incbClassify(name).option.map(Entry(from, to, _))
+
+          case _ => None
 
         case r"${Hex(from)}([0-9A-Fa-f]+)\s*;\s*InCB\s*;\s*$name([A-Za-z]+).*" =>
           incbClassify(name).option.map(Entry(from, from, _))

@@ -133,7 +133,8 @@ object internal:
               case '{$_ : Substitution[Ansi.Input, tpe, sub]} =>
                 val label: String = TypeRepr.of[sub] match
                   case ConstantType(StringConstant(s)) => s
-                  case _                               => halt(m"expected a literal string label for the substitution")
+                  case _                               =>
+                    halt(m"expected a literal string label for the substitution")
 
                 // Mirror runtime's insert at compile time so the State machine
                 // tracks brackets opened by the substitution and `complete`

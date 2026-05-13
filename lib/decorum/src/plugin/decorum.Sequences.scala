@@ -272,7 +272,8 @@ object Sequences:
     val bodySp = w.body.span
     if !sp.exists || !condSp.exists then return None
     // Old-style `while (cond) body` has no `do` keyword — no K₂, no rule.
-    val doOffset = findKeyword(content, condSp.end, if bodySp.exists then bodySp.end else sp.end, "do")
+    val doEnd    = if bodySp.exists then bodySp.end else sp.end
+    val doOffset = findKeyword(content, condSp.end, doEnd, "do")
     if doOffset < 0 then return None
     val anchor =
       makeElem

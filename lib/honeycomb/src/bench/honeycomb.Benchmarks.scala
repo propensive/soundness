@@ -216,7 +216,7 @@ parser. It contains a single heading and one short paragraph.</p>
 <title>Acme Industries — Widgets, Sprockets &amp; More</title>
 <link rel="stylesheet" href="/static/site.css">
 <link rel="icon" href="/favicon.ico">
-<meta name="description" content="Acme Industries is the original supplier of widgets, sprockets and assorted novelties.">
+<meta name="description" content="Acme Industries — widgets, sprockets and novelties.">
 </head>
 <body class="home">
 <header class="site-header">
@@ -333,7 +333,7 @@ table, as though adopted by the table&rsquo;s parent.</p>
 <p>This behaviour exists because real-world HTML is full of malformed tables,
 and browsers must produce <em>some</em> sensible rendering. As a famous
 example:</p>
-<pre><code>&lt;table&gt;hello&lt;tr&gt;&lt;td&gt;world&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</code></pre>
+<pre><code>&lt;table&gt;hello&lt;tr&gt;&lt;td&gt;world&lt;/td&gt;&lt;/tr&gt;</code></pre>
 <p>parses as if the bare text <q>hello</q> appeared <em>before</em> the table,
 not inside it.</p>
 </section>

@@ -129,17 +129,26 @@ object Benchmarks extends Suite(m"Escapade benchmarks"):
     suite(m"Concatenate 10 fragments"):
       bench(m"append Teletype × 10")
        ( target = 1*Second, operationSize = fragSize*10, baseline = Baseline(compare = Min) ):
-        '{ escapade.Benchmarks.appendN(escapade.Benchmarks.fragment, escapade.Benchmarks.fragment, 10) }
+        '{
+          val f = escapade.Benchmarks.fragment
+          escapade.Benchmarks.appendN(f, f, 10)
+        }
 
     suite(m"Concatenate 100 fragments"):
       bench(m"append Teletype × 100")
        ( target = 1*Second, operationSize = fragSize*100, baseline = Baseline(compare = Min) ):
-        '{ escapade.Benchmarks.appendN(escapade.Benchmarks.fragment, escapade.Benchmarks.fragment, 100) }
+        '{
+          val f = escapade.Benchmarks.fragment
+          escapade.Benchmarks.appendN(f, f, 100)
+        }
 
     suite(m"Concatenate 1000 fragments"):
       bench(m"append Teletype × 1000")
        ( target = 1*Second, operationSize = fragSize*1000, baseline = Baseline(compare = Min) ):
-        '{ escapade.Benchmarks.appendN(escapade.Benchmarks.fragment, escapade.Benchmarks.fragment, 1000) }
+        '{
+          val f = escapade.Benchmarks.fragment
+          escapade.Benchmarks.appendN(f, f, 1000)
+        }
 
     // ─── slice ──────────────────────────────────────────────────────────────
 

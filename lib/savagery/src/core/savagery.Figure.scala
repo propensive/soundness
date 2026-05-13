@@ -101,7 +101,8 @@ extends Figure:
   def curve(ctrl2: Delta, vector: Delta): Outline = copy(ops = Cubic(Unset, ctrl2, vector) :: ops)
   def curveTo(ctrl2: Point, point: Point): Outline = copy(ops = CubicTo(Unset, ctrl2, point) :: ops)
   def quadCurve(ctrl1: Delta, vector: Delta): Outline = copy(ops = Quadratic(ctrl1, vector) :: ops)
-  def quadCurveTo(ctrl1: Point, point: Point): Outline = copy(ops = QuadraticTo(ctrl1, point) :: ops)
+  def quadCurveTo(ctrl1: Point, point: Point): Outline =
+    copy(ops = QuadraticTo(ctrl1, point) :: ops)
   def quadCurve(vector: Delta): Outline = copy(ops = Quadratic(Unset, vector) :: ops)
   def quadCurveTo(point: Point): Outline = copy(ops = QuadraticTo(Unset, point) :: ops)
   def moveUp(value: Float): Outline = copy(ops = Move(Delta(value, 0.0)) :: ops)

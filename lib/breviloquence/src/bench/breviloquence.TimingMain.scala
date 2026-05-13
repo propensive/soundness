@@ -56,7 +56,8 @@ object TimingMain:
     val nsPerOp = elapsed.toDouble/iterations
     val opsPerSec = 1e9/nsPerOp
     val mbPerSec = opsPerSec*payload.length/(1024.0*1024.0)
-    println(f"$label%-40s ${nsPerOp}%9.1f ns/op  ${opsPerSec.toLong}%14d ops/s  ${mbPerSec}%8.1f MB/s")
+    println:
+      f"$label%-40s ${nsPerOp}%9.1f ns/op  ${opsPerSec.toLong}%14d ops/s  ${mbPerSec}%8.1f MB/s"
 
   def main(args: Array[String]): Unit =
     val iterations =
@@ -65,7 +66,8 @@ object TimingMain:
     println(s"Timing $iterations iterations per benchmark.")
     println()
 
-    println(f"${"Corpus 1: small object (3 fields)"}%-40s   payload=${Benchmarks.cborBytes1.length} bytes")
+    println:
+      f"${"Corpus 1: small object (3 fields)"}%-40s   payload=${Benchmarks.cborBytes1.length} bytes"
     time("  Breviloquence", Benchmarks.cborBytes1, iterations)(Cbor.Ast.parse)
     time("  Jackson", Benchmarks.cborBytes1, iterations): bytes =>
       Benchmarks.parseWithJackson(bytes.asInstanceOf[Array[Byte]])
@@ -81,7 +83,8 @@ object TimingMain:
       Benchmarks.parseWithBorer(bytes.asInstanceOf[Array[Byte]])
     println()
 
-    println(f"${"Corpus 4: 1000 small integers"}%-40s   payload=${Benchmarks.cborBytes4.length} bytes")
+    println:
+      f"${"Corpus 4: 1000 small integers"}%-40s   payload=${Benchmarks.cborBytes4.length} bytes"
     time("  Breviloquence", Benchmarks.cborBytes4, iterations/10)(Cbor.Ast.parse)
     time("  Jackson", Benchmarks.cborBytes4, iterations/10): bytes =>
       Benchmarks.parseWithJackson(bytes.asInstanceOf[Array[Byte]])

@@ -1206,8 +1206,9 @@ object Html extends Tag.Container
                           val newCap = pendingFormattingLabels.length*2
                           val nl = new Array[Text](newCap)
                           val na = new Array[Attributes](newCap)
-                          jl.System.arraycopy(pendingFormattingLabels, 0, nl, 0, pendingFormattingSize)
-                          jl.System.arraycopy(pendingFormattingAttrs,  0, na, 0, pendingFormattingSize)
+                          val sz = pendingFormattingSize
+                          jl.System.arraycopy(pendingFormattingLabels, 0, nl, 0, sz)
+                          jl.System.arraycopy(pendingFormattingAttrs,  0, na, 0, sz)
                           pendingFormattingLabels = nl
                           pendingFormattingAttrs  = na
                         pendingFormattingLabels(pendingFormattingSize) = parent.label

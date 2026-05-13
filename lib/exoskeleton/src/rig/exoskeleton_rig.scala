@@ -73,17 +73,19 @@ extension (shell: Shell)
             val cmd = summon[Enclave.Tool].command
 
             val psScript =
-              s"""function global:prompt { '> ' }
+              s"""using namespace Microsoft.PowerShell
+                 |function global:prompt { '> ' }
                  |$$env:PATH = "${path}:" + $$env:PATH
                  |try {
                  |    Set-PSReadLineKeyHandler -Key Tab -ScriptBlock {
                  |        param($$key, $$arg)
                  |        $$line = $$null; $$cursor = $$null
-                 |        [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$$line, [ref]$$cursor)
-                 |        $$wordStart = $$cursor
-                 |        while ($$wordStart -gt 0 -and $$line[$$wordStart - 1] -ne ' ') { $$wordStart-- }
-                 |        $$w = $$line.Substring($$wordStart, $$cursor - $$wordStart)
-                 |        $$cmpArgs = @('{completions}', 'powershell', "$$cursor", '0', '-', '--', $$line)
+                 |        [PSConsoleReadLine]::GetBufferState([ref]$$line, [ref]$$cursor)
+                 |        $$ws = $$cursor
+                 |        while ($$ws -gt 0 -and $$line[$$ws - 1] -ne ' ') { $$ws-- }
+                 |        $$w = $$line.Substring($$ws, $$cursor - $$ws)
+                 |        $$cmpArgs = @('{completions}', 'powershell', "$$cursor", `
+                 |                      '0', '-', '--', $$line)
                  |        $$results = @(& '$cmd' @cmpArgs 2>$$null |
                  |            ForEach-Object { ($$_ -split "`t", 2)[0] })
                  |        $$matching = @($$results | Where-Object { $$_.StartsWith($$w) })
@@ -91,15 +93,16 @@ extension (shell: Shell)
                  |        $$lcp = $$matching[0]
                  |        for ($$i = 1; $$i -lt $$matching.Count; $$i++) {
                  |            $$m = $$matching[$$i]; $$j = 0
-                 |            while ($$j -lt $$lcp.Length -and $$j -lt $$m.Length -and $$lcp[$$j] -eq $$m[$$j]) { $$j++ }
+                 |            while ($$j -lt $$lcp.Length -and $$j -lt $$m.Length `
+                 |                   -and $$lcp[$$j] -eq $$m[$$j]) { $$j++ }
                  |            $$lcp = $$lcp.Substring(0, $$j)
                  |        }
                  |        if ($$matching.Count -eq 1) {
-                 |            [Microsoft.PowerShell.PSConsoleReadLine]::Replace($$wordStart, $$cursor - $$wordStart, $$lcp + ' ')
-                 |            [Microsoft.PowerShell.PSConsoleReadLine]::SetCursorPosition($$wordStart + $$lcp.Length + 1)
+                 |            [PSConsoleReadLine]::Replace($$ws, $$cursor - $$ws, $$lcp + ' ')
+                 |            [PSConsoleReadLine]::SetCursorPosition($$ws + $$lcp.Length + 1)
                  |        } elseif ($$lcp.Length -gt $$w.Length) {
-                 |            [Microsoft.PowerShell.PSConsoleReadLine]::Replace($$wordStart, $$cursor - $$wordStart, $$lcp)
-                 |            [Microsoft.PowerShell.PSConsoleReadLine]::SetCursorPosition($$wordStart + $$lcp.Length)
+                 |            [PSConsoleReadLine]::Replace($$ws, $$cursor - $$ws, $$lcp)
+                 |            [PSConsoleReadLine]::SetCursorPosition($$ws + $$lcp.Length)
                  |        }
                  |    }
                  |} catch {}
@@ -107,11 +110,13 @@ extension (shell: Shell)
                  |    param($$text)
                  |    $$line = '$cmd ' + $$text
                  |    $$cursor = $$line.Length
-                 |    $$cmpArgs = @('{completions}', 'powershell', "$$cursor", '0', '-', '--', $$line)
+                 |    $$cmpArgs = @('{completions}', 'powershell', "$$cursor", `
+                 |                  '0', '-', '--', $$line)
                  |    & '$cmd' @cmpArgs 2>$$null | ForEach-Object {
                  |        $$p = $$_ -split "`t", 2
                  |        $$n = $$p[0].TrimEnd()
-                 |        if ($$p.Length -gt 1 -and $$p[1] -cne $$n) { "$$n@@$$($$p[1])" } else { $$n }
+                 |        if ($$p.Length -gt 1 -and $$p[1] -cne $$n) `
+                 |        { "$$n@@$$($$p[1])" } else { $$n }
                  |    }
                  |}
                  |""".stripMargin

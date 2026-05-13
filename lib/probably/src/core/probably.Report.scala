@@ -236,7 +236,9 @@ class Report(using Environment)(using palette: TestPalette):
     if failed == 0 && failure.absent then pass = true
 
     if total == 0 then Out.println(t"No tests were run.")
-    else Out.println(t"$passed passed, $failed failed, $aspirePassed aspire-passed, $aspireFailed aspire-failed, $total total")
+    else
+      val summary = t"$passed passed, $failed failed, $aspirePassed aspire-passed, "
+      Out.println(t"$summary$aspireFailed aspire-failed, $total total")
 
     def truncate(text: Text, max: Int = 800): Text =
       if text.length <= max then text else t"${text.keep(max)}…"
@@ -438,7 +440,9 @@ class Report(using Environment)(using palette: TestPalette):
           Column(e"Juncture")(_(1)),
 
           Column(e"Line"): row =>
-            e"${Fg(palette.pass)}(${row(0).juncture.path})${Fg(palette.subdued)}(:)${Fg(palette.accented)}(${row(0).juncture.lineNo})",
+            val path = e"${Fg(palette.pass)}(${row(0).juncture.path})"
+            val line = e"${Fg(palette.accented)}(${row(0).juncture.lineNo})"
+            e"$path${Fg(palette.subdued)}(:)$line",
 
           Column(e"Symbol")(_(0).juncture.symbolName) )
 
@@ -464,7 +468,10 @@ class Report(using Environment)(using palette: TestPalette):
             val notCovered: Text = width(maxHits.map((data.branches.toDouble - data.hits -
                 data.oldHits)/_).getOrElse(0))
 
-            val bars = List(palette.accented -> covered, palette.detail -> oldCovered, palette.highlight -> notCovered)
+            val bars = List
+                        ( palette.accented  -> covered,
+                          palette.detail    -> oldCovered,
+                          palette.highlight -> notCovered )
 
             bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join )
 
@@ -516,22 +523,25 @@ class Report(using Environment)(using palette: TestPalette):
         val width = if pass then 38 else 34
         if !pass || !tabulation then
           Out.println(e"$color(╭${t"─"*width}╮)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}(${Fg(palette.black)}(  $text1  ))) $color(│)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}(${Fg(palette.black)}(  $text2  ))) $color(│)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}(${Fg(palette.black)}(  $text3  ))) $color(│)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}(${Fg(palette.black)}(  $text4  ))) $color(│)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}(${Fg(palette.black)}(  $text5  ))) $color(│)")
+          def banner(text: Text): Teletype =
+            e"$color(│) $Bold(${Bg(color)}(${Fg(palette.black)}(  $text  ))) $color(│)"
+          Out.println(banner(text1))
+          Out.println(banner(text2))
+          Out.println(banner(text3))
+          Out.println(banner(text4))
+          Out.println(banner(text5))
           Out.println(e"$color(╰${t"─"*width}╯)")
 
           given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)
-          val passText = e"$Bold(${Fg(palette.foreground)}($passed)) passed (${100.0*passed/total}%)"
-          val failText = e"$Bold(${Fg(palette.foreground)}($failed)) failed (${100.0*failed/total}%)"
+          val fg = Fg(palette.foreground)
+          val passText = e"$Bold($fg($passed)) passed (${100.0*passed/total}%)"
+          val failText = e"$Bold($fg($failed)) failed (${100.0*failed/total}%)"
 
           val aspirePassText =
-            e"$Bold(${Fg(palette.foreground)}($aspirePassed)) aspire-passed (${100.0*aspirePassed/total}%)"
+            e"$Bold($fg($aspirePassed)) aspire-passed (${100.0*aspirePassed/total}%)"
 
           val aspireFailText =
-            e"$Bold(${Fg(palette.foreground)}($aspireFailed)) aspire-failed (${100.0*aspireFailed/total}%)"
+            e"$Bold($fg($aspireFailed)) aspire-failed (${100.0*aspireFailed/total}%)"
 
           val allText = e"$Bold(${Fg(palette.foreground)}($total)) total"
 
@@ -542,7 +552,9 @@ class Report(using Environment)(using palette: TestPalette):
 
         import Status.*
 
-        List(Pass, Bench, AspirePass, Throws, Fail, AspireFail, Mixed, CheckThrows).grouped(4).each: statuses =>
+        val allStatuses =
+          List(Pass, Bench, AspirePass, Throws, Fail, AspireFail, Mixed, CheckThrows)
+        allStatuses.grouped(4).each: statuses =>
           Out.println:
             statuses.map[Teletype]: status =>
               gossamer.pad[Teletype](e"  ${status.symbol} ${status.describe}")(20)
@@ -583,7 +595,9 @@ class Report(using Environment)(using palette: TestPalette):
 
       def frequency(benchmark: Benchmark): Teletype =
         if benchmark.throughput == 0 then e""
-        else e"${Fg(palette.foreground)}(${benchmark.throughput}) ${Fg(palette.accented)}(op${Fg(palette.subdued)}(·)s¯¹)"
+        else
+          val tp = e"${Fg(palette.foreground)}(${benchmark.throughput})"
+          e"$tp ${Fg(palette.accented)}(op${Fg(palette.subdued)}(·)s¯¹)"
 
       val bench: Scaffold[ReportLine.Bench, Teletype] = Scaffold[ReportLine.Bench](
         (List(
@@ -613,7 +627,8 @@ class Report(using Environment)(using palette: TestPalette):
           import Baseline.*
           val baseline = comparison.benchmark.baseline.vouch
 
-          Column(e"$Bold(${Fg(palette.informative)}(${comparison.test.id}))", textAlign = TextAlignment.Right):
+          val title = e"$Bold(${Fg(palette.informative)}(${comparison.test.id}))"
+          Column(title, textAlign = TextAlignment.Right):
             (bench: ReportLine.Bench) =>
               def operations(left: Double, right: Double): Double = baseline.mode match
                 case Arithmetic => left - right
@@ -636,7 +651,8 @@ class Report(using Environment)(using palette: TestPalette):
                   showTime(value.toLong)
 
                 case Cadential =>
-                  e"${Fg(palette.foreground)}(${value}) ${Fg(palette.accented)}(op${Fg(palette.subdued)}(·)s¯¹)"
+                  val v = e"${Fg(palette.foreground)}(${value})"
+                  e"$v ${Fg(palette.accented)}(op${Fg(palette.subdued)}(·)s¯¹)"
 
               baseline.mode match
                 case Arithmetic =>
@@ -680,7 +696,8 @@ class Report(using Environment)(using palette: TestPalette):
         case _ => ()
 
     details.to(List).sortBy(_(0).timestamp).each: (id, info) =>
-      val ribbon = Ribbon(palette.fail, palette.subdue(palette.fail, 0.5), palette.subdue(palette.fail, 0.75))
+      val ribbon =
+        Ribbon(palette.fail, palette.subdue(palette.fail, 0.5), palette.subdue(palette.fail, 0.75))
 
       if githubActions then GithubActions.group(t"Failure: ${id.name.text} (${id.id})")
 
@@ -697,7 +714,8 @@ class Report(using Environment)(using palette: TestPalette):
 
           case Verdict.Detail.CheckThrows(err) =>
             val name = e"$Italic(${Fg(palette.foreground)}(${err.component}.${err.className}))"
-            Out.println(e"${Fg(palette.foreground)}(An exception was thrown while checking the test predicate:)")
+            val msg = e"An exception was thrown while checking the test predicate:"
+            Out.println(e"${Fg(palette.foreground)}($msg)")
             Out.println(err.crop(t"probably.Verdict#", t"apply()").dropRight(1).teletype)
             showLegend()
 
@@ -754,7 +772,8 @@ class Report(using Environment)(using palette: TestPalette):
 
       Out.println()
 
-      Out.println(Ribbon(palette.pass, palette.subdue(palette.pass, 0.5)).fill(e"$Bold(FATAL)", explanation))
+      val fatalRibbon = Ribbon(palette.pass, palette.subdue(palette.pass, 0.5))
+      Out.println(fatalRibbon.fill(e"$Bold(FATAL)", explanation))
       Out.println(StackTrace(error).teletype)
 
       if githubActions then GithubActions.endGroup()

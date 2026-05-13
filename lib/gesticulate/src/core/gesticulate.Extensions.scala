@@ -88,7 +88,8 @@ object Extensions:
         t"pdf"    -> media"application/pdf",
         t"php"    -> media"application/x-httpd-php",
         t"ppt"    -> media"application/vnd.ms-powerpoint",
-        t"pptx"   -> media"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        t"pptx"   ->
+          media"application/vnd.openxmlformats-officedocument.presentationml.presentation",
         t"rar"    -> media"application/vnd.rar",
         t"rtf"    -> media"application/rtf",
         t"sh"     -> media"application/x-sh",

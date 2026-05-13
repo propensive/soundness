@@ -94,11 +94,17 @@ package syntaxHighlighting:
 
       . let: focus =>
           val prefix = lineNo.show.pad(indent, Rtl)
-          e"${Bg(palette.margin)}(${Fg(palette.accented)}($prefix)${Fg(palette.subdued)}(┋))  $content"
+          val bg = Bg(palette.margin)
+          val fg = Fg(palette.accented)
+          val divider = Fg(palette.subdued)
+          e"$bg(${fg}($prefix)${divider}(┋))  $content"
 
       . or:
           val prefix = lineNo.show.pad(indent, Rtl)
-          e"${Bg(palette.margin)}(${Fg(palette.accented)}($prefix)${Fg(palette.subdued)}(┋)) $error$content"
+          val bg = Bg(palette.margin)
+          val fg = Fg(palette.accented)
+          val divider = Fg(palette.subdued)
+          e"$bg(${fg}($prefix)${divider}(┋)) $error$content"
 
     . join(e"", e"\n", markup)
 

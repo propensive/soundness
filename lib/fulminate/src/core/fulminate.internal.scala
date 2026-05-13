@@ -70,7 +70,8 @@ object internal:
       else
         try Integer.parseInt(part.substring(current, current + 4), 16).toChar
         catch case _: NumberFormatException =>
-          report.errorAndAbort(s"invalid unicode escape: \\u${part.substring(current, current + 4)}")
+          val seq = part.substring(current, current + 4)
+          report.errorAndAbort(s"invalid unicode escape: \\u$seq")
 
     def decodeEscape(char: Char): Char = char match
       case 'n'   => '\n'

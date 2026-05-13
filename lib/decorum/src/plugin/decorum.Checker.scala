@@ -86,7 +86,8 @@ object Checker:
 
     if state.prevWasAnnotation then
       out +=
-        Violation(file, state.prevLineNum, 1, "551.1", "annotation is not followed by a declaration")
+        Violation
+          (file, state.prevLineNum, 1, "551.1", "annotation is not followed by a declaration")
 
     state.pendingR11.foreach(out += _)
     state.pendingR11 = Nil
