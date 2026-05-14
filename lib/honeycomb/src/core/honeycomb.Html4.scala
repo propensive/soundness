@@ -480,18 +480,18 @@ class Html4Transitional() extends Dom:
       ( mode = Html.Mode.Whitespace, boundary = true )
 
   val Tbody = Tag.container["tbody", "tr",
-    Html4Transitional]( autoclose = true, mode = Html.Mode.Whitespace, insertable = true )
+    Html4Transitional](autoclose = true, mode = Html.Mode.Whitespace, insertable = true)
 
   val Td = Tag.container["td", Flow, Html4Transitional](autoclose = true, boundary = true)
   val Textarea = Tag.container["textarea", "#text", Html4Transitional](mode = Html.Mode.Rcdata)
 
   val Tfoot = Tag.container["tfoot", "tr",
-    Html4Transitional]( autoclose = true, mode = Html.Mode.Whitespace )
+    Html4Transitional](autoclose = true, mode = Html.Mode.Whitespace)
 
   val Th = Tag.container["th", Flow, Html4Transitional](autoclose = true, boundary = true)
 
   val Thead = Tag.container["thead", "tr",
-    Html4Transitional]( autoclose = true, mode = Html.Mode.Whitespace )
+    Html4Transitional](autoclose = true, mode = Html.Mode.Whitespace)
 
   val Title = Tag.container["title", "#text", Html4Transitional](mode = Html.Mode.Rcdata)
 

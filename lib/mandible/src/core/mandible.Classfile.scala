@@ -96,6 +96,7 @@ class Classfile(data: Data):
             val frames =
               entry.stack.nn.asScala.toList.map(Bytecode.Frame.fromVerificationType).reverse
             entry.target.nn -> frames
+
           . toMap
 
       def recur

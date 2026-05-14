@@ -714,15 +714,19 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
         case right: Long => left.asMatchable match
           case left: Long                   => left == right
           case left: Double                 => left == right
+
           case left: Array[Long] @unchecked =>
             left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(right)
+
           case _                            => false
 
         case right: Double => left.asMatchable match
           case left: Long                   => left == right
           case left: Double                 => left == right
+
           case left: Array[Long] @unchecked =>
             left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(right)
+
           case _                            => false
 
         case right: String => left.asMatchable match
@@ -751,8 +755,10 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           left.asMatchable match
             case left: Long                   => BigDecimal(left) == rb.toBigDecimal
             case left: Double                 => BigDecimal(left) == rb.toBigDecimal
+
             case left: Array[Long] @unchecked =>
               left.asInstanceOf[Bcd].toBigDecimal == rb.toBigDecimal
+
             case _                            => false
 
         case right: IArray[Any] @unchecked =>

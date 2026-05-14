@@ -132,6 +132,7 @@ object internal:
               case '{$_ : Substitution[Ansi.Input, tpe, sub]} =>
                 val label: String = TypeRepr.of[sub] match
                   case ConstantType(StringConstant(s)) => s
+
                   case _ =>
                     halt(m"expected a literal string label for the substitution")
 

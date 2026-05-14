@@ -376,6 +376,7 @@ object internal:
           else
             (i: Int) => i
         ((part, srcStart), mapping)
+
       . toIndexedSeq
 
     def translateOffset(parserOff: Int, len: Int): Position =

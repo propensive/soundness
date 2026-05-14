@@ -144,6 +144,7 @@ class GivensPhase() extends PluginPhase:
           && cls != Symbols.defn.AnyClass
           && cls != Symbols.defn.MatchableClass
           && stripDollar(cls.name.toString) != valName
+
         .nextOption().getOrElse(tpe.dealias.classSymbol)
 
       private def stripDollar(name: String): String =

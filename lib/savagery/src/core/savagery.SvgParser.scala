@@ -61,6 +61,7 @@ object SvgParser:
   def rootElement(xml: Xml)(using Tactic[SvgError]): Element = xml match
     case e: Element if e.label == t"svg" => e
     case Fragment(nodes*)                => findSvg(nodes)
+
     case other =>
       abort(SvgError(SvgError.Reason.NotAnSvg(labelOf(other))))
 
@@ -356,6 +357,7 @@ object SvgParser:
 
             case ("matrix", List(a, b, c, d, e, f)) =>
               xs += Transform.Matrix(Affine(a, b, c, d, e, f))
+
             case _                                  => () // ignore unknown
         else
           if pos == nameStart then pos += 1 // avoid infinite loop on stray punctuation

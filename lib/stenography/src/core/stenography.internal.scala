@@ -78,6 +78,7 @@ object internal:
           val rootSym = imp.term.asInstanceOf[core.Types.Type].termSymbol(using context)
           if !rootSym.exists then Nil
           else exportedTargets(rootSym)
+
         .toSet
 
       case _ => Set.empty[Typename]
