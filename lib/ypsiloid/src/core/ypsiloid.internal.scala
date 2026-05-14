@@ -139,6 +139,7 @@ object internal:
           else
             (i: Int) => i
         ((parserPart, effectiveStart, srcSkip), mapping)
+
       . toIndexedSeq
 
     def translateOffset(parserOff: Int, len: Int): Position =
@@ -229,6 +230,7 @@ object internal:
               ' {
                   $value.asInstanceOf[Map[Text, Yaml]].iterator.map: (key, yaml) =>
                     (key.s, Yaml.unseal(yaml))
+
                   . toList
                 }
 

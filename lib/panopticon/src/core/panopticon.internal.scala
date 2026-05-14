@@ -496,7 +496,7 @@ object internal:
           // Build the optic by calling `optical.optic(operand)`, then `.modify(origin)
           // { inner => emit(inner, children) }`. We bind the resulting Optic to a val
           // so the typer can dispatch its `modify` method without ambiguity.
-          val opticTerm = Apply( Select.unique(opticalTerm, "optic"), List(operand) )
+          val opticTerm = Apply(Select.unique(opticalTerm, "optic"), List(operand))
           val opticTpe = opticTerm.tpe
 
           val opticSym =

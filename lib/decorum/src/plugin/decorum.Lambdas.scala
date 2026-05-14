@@ -55,7 +55,7 @@ object Lambdas:
     case Paren, Brace, Colon, Unknown
 
   case class LambdaSite
-   ( opener:       Opener,
+    ( opener:       Opener,
      line:         Int,           // line of `=>`
      col:          Int,           // 1-based column of `=>`
      openerLine:   Int,
@@ -89,8 +89,10 @@ object Lambdas:
 
   private def directLambda(t: untpd.Tree): Option[untpd.Function] = t match
     case f: untpd.Function => Some(f)
+
     case b: untpd.Block if b.stats.isEmpty && b.expr.isInstanceOf[untpd.Function] =>
       Some(b.expr.asInstanceOf[untpd.Function])
+
     case _ => None
 
   private def descend(x: Any, visit: untpd.Tree => Unit): Unit = x match
@@ -100,7 +102,7 @@ object Lambdas:
 
 
   private def siteFor
-     ( f:      untpd.Function,
+      ( f:      untpd.Function,
        parent: untpd.Apply,
        content: String,
        source: SourceFile )
@@ -147,7 +149,7 @@ object Lambdas:
           // `f(_ + 1)` — distinguished from `f(_ => body)` by the absence
           // of `=>` in the function's source span.
           Some
-           ( LambdaSite
+            ( LambdaSite
               ( opener      = op,
                 line        = pivotLine,
                 col         = pivotCol,

@@ -80,7 +80,7 @@ object Sh:
       case head :: tail =>
         if state.escape
         then throw
-          ShError(  m"escaping with '\\' is not allowed immediately before a substitution" )
+          ShError( m"escaping with '\\' is not allowed immediately before a substitution")
 
         state.absolve match
           case State(Awaiting, false, arguments) =>

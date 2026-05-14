@@ -228,6 +228,7 @@ object internal:
               val substituted = resultOf(symbol.info.appliedTo(args))
               if substituted <:< target then Some(Matched(symbol, typeParams, pairs))
               else None
+
         . nextOption()
 
     // Generate candidate type-argument lists to try when matching a polymorphic

@@ -1295,8 +1295,10 @@ object Bytecode:
       this match
         case Nop                                                              => stack
         case AconstNull                                                       => L(t"null") :: stack
+
         case IconstM1 | Iconst0 | Iconst1 | Iconst2 | Iconst3 | Iconst4 | Iconst5 =>
           I :: stack
+
         case Lconst0 | Lconst1                                                => J :: stack
         case Fconst0 | Fconst1 | Fconst2                                      => F :: stack
         case Dconst0 | Dconst1                                                => D :: stack
@@ -1499,4 +1501,5 @@ case class Bytecode
         else pre.drop(argCount).head match
           case Bytecode.Frame.L(name) if name == owner => Some(instr.offset)
           case _                                       => None
+
     . toSet

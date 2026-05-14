@@ -34,6 +34,7 @@ package beneficence
 
 import java.io.{BufferedReader, BufferedWriter, File, FileInputStream, FileOutputStream,
     InputStreamReader, OutputStreamWriter}
+
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, StandardCopyOption}
 

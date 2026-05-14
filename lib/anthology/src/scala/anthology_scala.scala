@@ -100,7 +100,7 @@ object scalacOptions:
         Scalac.Option[3.3](t"-language:experimental.relaxedExtensionImports")
 
       val erasedDefinitions =
-        Scalac.Option[Scalac.Versions]( t"-language:experimental.erasedDefinitions" )
+        Scalac.Option[Scalac.Versions](t"-language:experimental.erasedDefinitions")
 
       val saferExceptions =
         Scalac.Option[3.2 | 3.3 | 3.4 | 3.5 | 3.6](t"-language:experimental.saferExceptions")

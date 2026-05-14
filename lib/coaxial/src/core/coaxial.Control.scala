@@ -57,6 +57,7 @@ object Control:
       Reply(transmissible.serialize(message), state)
 
   case class Conclude[+state](message: Data, state: Optional[state]) extends Control[state]
+
   case class Reply[+state](message: Data, state: Optional[state])
   extends Control[state], Interactive
 
