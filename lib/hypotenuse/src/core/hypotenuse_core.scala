@@ -159,7 +159,8 @@ extension (float: Float)
   @targetName("floorModFloat")
   inline infix def %% (right: Float): Float =
     val remainder: Float = float%right
-    if remainder < 0.0f then remainder + right else remainder
+    if remainder != 0.0f && (remainder > 0.0f) != (right > 0.0f) then remainder + right
+    else remainder
 
 extension (double: Double)
   @targetName("mantissaDouble")
@@ -222,7 +223,8 @@ extension (double: Double)
   @targetName("floorModDouble")
   inline infix def %% (right: Double): Double =
     val remainder = double%right
-    if remainder < 0.0 then remainder + right else remainder
+    if remainder != 0.0 && (remainder > 0.0) != (right > 0.0) then remainder + right
+    else remainder
 
 extension (byte: Byte)
   @targetName("bitsByte")
@@ -576,8 +578,9 @@ package arithmeticOptions:
         then raise(OverflowError()) yet U64(result) else U64(result)
 
       inline def addS64(left: S64, right: S64): S64 raises OverflowError =
-        val result: S64 = S64((left.long + right.long).bits)
-        if result < left || result < right then raise(OverflowError()) yet result else result
+        val sum: Long = left.long + right.long
+        if ((left.long^sum) & (right.long^sum)) < 0L
+        then raise(OverflowError()) yet S64(sum.bits) else S64(sum.bits)
 
       inline def addU32(left: U32, right: U32): U32 raises OverflowError =
         val result: B32 = (Int(left.bits) + Int(right.bits)).bits
@@ -586,8 +589,9 @@ package arithmeticOptions:
         then raise(OverflowError()) yet U32(result) else U32(result)
 
       inline def addS32(left: S32, right: S32): S32 raises OverflowError =
-        val result: S32 = S32((left.int + right.int).bits)
-        if result < left || result < right then raise(OverflowError()) yet result else result
+        val sum: Int = left.int + right.int
+        if ((left.int^sum) & (right.int^sum)) < 0
+        then raise(OverflowError()) yet S32(sum.bits) else S32(sum.bits)
 
       inline def addU16(left: U16, right: U16): U16 raises OverflowError =
         val result: B16 = (Short(left.bits) + Short(right.bits)).toShort.bits
@@ -596,8 +600,9 @@ package arithmeticOptions:
         then U16(raise(OverflowError()) yet result) else U16(result)
 
       inline def addS16(left: S16, right: S16): S16 raises OverflowError =
-        val result: S16 = S16((left.short + right.short).toShort.bits)
-        if result < left || result < right then raise(OverflowError()) yet result else result
+        val sum: Short = (left.short + right.short).toShort
+        if ((left.short^sum) & (right.short^sum)) < 0
+        then raise(OverflowError()) yet S16(sum.bits) else S16(sum.bits)
 
       inline def addU8(left: U8, right: U8): U8 raises OverflowError =
         val result: B8 = (left.short + right.short).toByte.bits
@@ -606,5 +611,6 @@ package arithmeticOptions:
         then U8(raise(OverflowError()) yet result) else U8(result)
 
       inline def addS8(left: S8, right: S8): S8 raises OverflowError =
-        val result: S8 = S8((left.short + right.short).toByte.bits)
-        if result < left || result < right then raise(OverflowError()) yet result else result
+        val sum: Byte = (left.short + right.short).toByte
+        if ((left.short^sum) & (right.short^sum)) < 0
+        then raise(OverflowError()) yet S8(sum.bits) else S8(sum.bits)

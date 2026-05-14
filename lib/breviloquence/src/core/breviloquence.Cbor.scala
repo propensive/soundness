@@ -45,6 +45,7 @@ import distillate.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import turbulence.*
 import vacuous.*
 import wisteria.*
 
@@ -100,7 +101,10 @@ trait Cbor2:
 
           build: [field] =>
             context =>
-              values.get(label.s) match
+              val key: Text = compiletime.summonFrom:
+                case relabelling: CborRelabelling[derivation] => relabelling(label).or(label)
+                case _                                        => label
+              values.get(key.s) match
                 case Some(value) => context.decoded(new Cbor(value))
                 case None        => default.or(context.decoded(new Cbor(Ast(Unset))))
 
@@ -120,6 +124,10 @@ trait Cbor2:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Cbor =
 
+      val mapping: Map[Text, Text] = compiletime.summonFrom:
+        case relabelling: CborRelabelling[derivation] => relabelling.relabelling()
+        case _                                        => Map()
+
       value =>
         val labels: scm.ArrayBuffer[Any] = scm.ArrayBuffer()
         val values: scm.ArrayBuffer[Any] = scm.ArrayBuffer()
@@ -128,7 +136,7 @@ trait Cbor2:
           field =>
             val encoded = contextual.encode(field).root
             if !encoded.unset then
-              labels += label.s
+              labels += mapping.at(label).or(label).s
               values += encoded
 
         ast(Ast.map(IArray.from(labels), IArray.from(values)))
@@ -223,6 +231,9 @@ object Cbor extends Cbor2, Dynamic:
   given string: Tactic[CborError] => String is Decodable in Cbor = _.root.string
   given byteString: Tactic[CborError] => IArray[Byte] is Decodable in Cbor = _.root.byteString
   given cbor: Cbor is Decodable in Cbor = identity(_)
+
+  given aggregable: Tactic[CborError] => Cbor is Aggregable by Data =
+    bytes => Cbor.ast(bytes.read[Cbor.Ast])
 
   given unit: Tactic[CborError] => Unit is Decodable in Cbor =
     value =>
