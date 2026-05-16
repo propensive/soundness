@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+#
+# Sample pre-push hook for soundness local-CI.
+#
+# Install:
+#     ln -s ../../etc/ci/pre-push.sample .git/hooks/pre-push
+#
+# Refuses the push if any ref being pushed lacks a valid attestation note,
+# and ensures the attestation notes ref is part of the push.
+
+set -euo pipefail
+
+remote="$1"
+url="$2"
+
+failed=0
+push_notes=0
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [[ "$local_sha" == "0000000000000000000000000000000000000000" ]]; then
+    continue  # ref deletion
+  fi
+  if [[ "$local_ref" == refs/notes/* ]]; then
+    push_notes=1
+    continue
+  fi
+  if ! etc/ci/verify-attest.sh "$local_sha" >/dev/null 2>&1; then
+    echo "pre-push: missing or invalid attestation for $local_ref ($local_sha)" >&2
+    echo "  run \`make attest\` first." >&2
+    failed=1
+  fi
+done
+
+if [[ $failed -eq 1 ]]; then
+  exit 1
+fi
+
+# Best-effort: push the attestation notes ref alongside the regular push if the
+# user didn't include it explicitly.
+if [[ $push_notes -eq 0 ]]; then
+  echo "pre-push: also pushing refs/notes/ci-attestation to $remote" >&2
+  git push "$remote" refs/notes/ci-attestation || true
+fi

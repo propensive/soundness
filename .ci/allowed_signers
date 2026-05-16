@@ -1,0 +1,12 @@
+# SSH allowed-signers file for soundness local-CI attestations.
+#
+# Format (one entry per line, OpenSSH `allowed_signers` syntax):
+#     <principal> [options] <key-type> <base64-key> [comment]
+#
+# Where <principal> is the signer's git email (matches `git config user.email`).
+# Add a line below with your existing GitHub SSH key. Example:
+#
+#     jon.pretty@propensive.com ssh-ed25519 AAAAC3Nz... soundness-ci
+#
+# This file is also consumed by .github/workflows/main.yml when verifying
+# attestations on push/PR. Adding a co-signer = a PR that adds a line here.
