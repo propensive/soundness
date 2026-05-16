@@ -85,10 +85,25 @@ for ancestor in $(git log --format='%H' -n 50 HEAD --skip=1 2>/dev/null); do
   fi
 done
 
-# Slow path: run the test suite in Docker.
+# Slow path: run the test suite in Docker. Tee the BuildKit output to a log
+# file because Docker's UI truncates long step output, which makes diagnosing
+# real test failures painful.
 if [[ "${SOUNDNESS_CI_SKIP_DOCKER:-0}" != "1" ]]; then
-  echo "Running test suite in Docker (img/test)..." >&2
-  DOCKER_BUILDKIT=1 docker build -f img/test --progress=plain .
+  mkdir -p out
+  LOG="out/attest-$(date -u +%Y%m%dT%H%M%SZ).log"
+  echo "Running test suite in Docker (img/test); full output → $LOG" >&2
+  set +e
+  DOCKER_BUILDKIT=1 docker build -f img/test --progress=plain . 2>&1 | tee "$LOG"
+  rc=${PIPESTATUS[0]}
+  set -e
+  if [[ $rc -ne 0 ]]; then
+    echo >&2
+    echo "docker build exited with $rc. Full log at $LOG" >&2
+    echo "Last 80 lines of the log:" >&2
+    echo "----" >&2
+    tail -n 80 "$LOG" >&2
+    exit $rc
+  fi
 fi
 
 # Build the in-toto statement and sign it.
