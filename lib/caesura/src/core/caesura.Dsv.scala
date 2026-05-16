@@ -73,7 +73,12 @@ object Dsv:
 
   given showable: (format: DsvFormat) => Dsv is Showable =
     _.data.map: cell =>
-      if !cell.contains(format.Quote) then cell else
+      if !cell.contains(format.Quote)
+         && !cell.contains(format.Delimiter)
+         && !cell.contains('\n')
+         && !cell.contains('\r')
+      then cell
+      else
         Text.build:
           append(format.quote)
 
