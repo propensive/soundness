@@ -124,17 +124,7 @@ package executives:
                 read(tail, head.starts(t"--"), head :: done)
 
             val rest2 = read(rest.to(List), false, Nil)
-
-            // Fish's `count (commandline --tokenize --cut-at-cursor)` includes the partial token
-            // at the cursor when mid-word, but not the empty token at a trailing-space cursor.
-            // So fish `position` is one less than zsh `$CURRENT` after a trailing space, and
-            // equal to it mid-word. `position0` (fish's `commandline -C -t`) is 0 only when the
-            // cursor is at the start of an empty token; non-zero means mid-word.
-            val focus = focus1 - (shell match
-              case Shell.Zsh                            => 2
-              case Shell.Fish if position0 > 0          => 2
-              case Shell.Fish                           => 1
-              case _                                    => 1)
+            val focus = focus1 - (if shell == Shell.Zsh then 2 else 1)
             val position = if shell == Shell.Bash then Unset else position0
             val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position0))
             val equalses = rest.take(focus0).count(_ == t"=")

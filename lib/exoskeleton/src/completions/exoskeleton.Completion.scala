@@ -200,16 +200,8 @@ extends Cli:
         items.flatMap:
           case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _) =>
             if hidden then Nil else
-              val mainLines = (suggestion.text :: aliases).map: text =>
+              (suggestion.text :: aliases).map: text =>
                 description.absolve match
                   case Unset                 => t"$text"
                   case description: Text     => t"$text\t$description"
                   case description: Teletype => t"$text\t${description.plain}"
-
-              // Fish auto-appends a space when there is a single candidate. When the
-              // suggestion is `incomplete` — used by progressive completion to extend by
-              // one segment per TAB — emit a sentinel duplicate so fish sees multiple
-              // candidates sharing the typed text and skips the auto-space. Zsh has a
-              // direct `compadd -S ''` for this; fish doesn't, so we force LCP behaviour.
-              if !incomplete then mainLines
-              else mainLines ++ (suggestion.text :: aliases).map(text => t"${text} ")
