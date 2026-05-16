@@ -12,6 +12,9 @@ jobs:
         with:
           fetch-depth: 0
       - name: Fetch CI attestation notes
-        run: git fetch origin 'refs/notes/ci-attestation:refs/notes/ci-attestation'
+        # The notes ref may not exist on origin yet (e.g. immediately after this
+        # workflow is first introduced). Tolerate that so the verify step can
+        # produce a user-friendly "no attestation note" error instead.
+        run: git fetch origin 'refs/notes/ci-attestation:refs/notes/ci-attestation' || true
       - name: Verify local-CI attestation
         run: ./etc/ci/verify-attest.sh
