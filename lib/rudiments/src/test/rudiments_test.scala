@@ -51,6 +51,55 @@ object Tests extends Suite(m"Rudiments Tests"):
         case _                    => ('X', 'X')
     . assert(_ == ('I', 'J'))
 
+    suite(m"has tests"):
+      test(m"List membership via has"):
+        List(1, 2, 3).has(2)
+      . assert(_ == true)
+
+      test(m"List non-membership via has"):
+        List(1, 2, 3).has(4)
+      . assert(_ == false)
+
+      test(m"Vector[Int] has is membership, not index validity"):
+        Vector(10, 20, 30).has(2)
+      . assert(_ == false)
+
+      test(m"Range has is membership, not index validity"):
+        (100 to 110).has(5)
+      . assert(_ == false)
+
+      test(m"Range has positive membership"):
+        (100 to 110).has(105)
+      . assert(_ == true)
+
+      test(m"Set has element"):
+        Set(1, 2, 3).has(2)
+      . assert(_ == true)
+
+      test(m"Set has missing element"):
+        Set(1, 2, 3).has(4)
+      . assert(_ == false)
+
+      test(m"IArray element membership"):
+        IArray(1, 2, 3).has(2)
+      . assert(_ == true)
+
+      test(m"IArray missing element"):
+        IArray(1, 2, 3).has(4)
+      . assert(_ == false)
+
+      test(m"Array element membership"):
+        Array(1, 2, 3).has(2)
+      . assert(_ == true)
+
+      test(m"Map key membership"):
+        Map(t"a" -> 1, t"b" -> 2).has(t"a")
+      . assert(_ == true)
+
+      test(m"Map missing key"):
+        Map(t"a" -> 1, t"b" -> 2).has(t"c")
+      . assert(_ == false)
+
     // test(m"Display a PID"):
     //   Pid(2999).toString
     // .assert(_ == "↯2999")
