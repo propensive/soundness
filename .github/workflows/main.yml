@@ -10,6 +10,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # For pull_request events, default checkout points at the synthesised
+          # merge commit between base and head. Our attestation notes are
+          # attached to the head commit, so check that out instead. (For push
+          # events, github.sha already equals the pushed commit, so the same
+          # expression works.)
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - name: Fetch CI attestation notes
         # The notes ref may not exist on origin yet (e.g. immediately after this
