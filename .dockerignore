@@ -1,0 +1,57 @@
+# soundness local-CI input set
+#
+# Everything *not* excluded here is part of the Docker build context for
+# `img/test`, which means it is also part of the CI input digest.
+# Keep this list as the single source of truth for "what counts as a CI input".
+
+# Git metadata
+.git
+.gitignore
+.gitattributes
+
+# CI / repo metadata that has no effect on test outcomes.
+# `.dockerignore` itself is *not* listed: it defines the input set, so changes
+# to it must invalidate prior attestations.
+.github
+.claude
+
+# Editor / IDE
+.bsp
+.bloop
+.metals
+.vscode
+
+# Build outputs (also in .gitignore, but exclude here for clean Docker context)
+out
+boot
+bin
+**/target
+lib/ethereal/target
+
+# Bootstrap docker image build path — not used by `mill test.assembly && make ci`.
+# But keep `img/test` itself as an input: changes to the test Dockerfile must
+# invalidate the attestation, since they change *how* tests run.
+img
+!img/test
+etc/build1
+etc/build2
+etc/build3
+etc/build4
+etc/header.txt
+etc/headers
+etc/oldbranches
+
+# Docs / samples / images (top-level and per-module)
+doc
+sample
+**/doc
+**/images
+**/*.md
+LICENSE
+
+# Per-module metadata files that aren't test inputs
+**/.gitignore
+**/.github
+
+# Test fixtures we don't track in git
+tests/JSONTestSuite

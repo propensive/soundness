@@ -1,0 +1,58 @@
+# syntax=docker/dockerfile:1.7
+#
+# Test-running image for soundness CI.
+#
+# The build context (controlled by `.dockerignore`) is the canonical "CI input set":
+# any file inside this context is part of the input digest that `make attest` signs.
+#
+# Usage:
+#   DOCKER_BUILDKIT=1 docker build -f img/test --progress=plain .
+#
+# A successful build implies `./mill test.assembly && make ci` passed.
+
+ARG JDK=23
+FROM eclipse-temurin:${JDK}-jdk
+
+# Shells and tooling the tests exercise (matches `.github/workflows/main.yml`).
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      bash zsh fish tmux \
+      curl ca-certificates xz-utils git \
+      build-essential pkg-config \
+ && rm -rf /var/lib/apt/lists/* \
+ && touch /root/.zshrc
+
+# Zig (matches main.yml: 0.13.0)
+ARG ZIG_VERSION=0.13.0
+RUN curl -fsSL "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
+      | tar -xJ -C /opt \
+ && ln -s "/opt/zig-linux-x86_64-${ZIG_VERSION}/zig" /usr/local/bin/zig
+
+# Rust with the cross-targets main.yml installs, plus cargo-zigbuild.
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+      | sh -s -- -y --default-toolchain stable \
+          --target x86_64-pc-windows-gnu \
+          --target x86_64-unknown-linux-gnu \
+          --target aarch64-unknown-linux-gnu \
+          --target x86_64-apple-darwin \
+          --target aarch64-apple-darwin
+ENV PATH=/root/.cargo/bin:${PATH}
+RUN --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/root/.cargo/git \
+    cargo install --locked cargo-zigbuild
+
+WORKDIR /src
+COPY . /src
+
+# The actual test run. BuildKit cache mounts persist Mill/Coursier/Cargo
+# state across invocations on the same machine, making re-runs fast.
+RUN --mount=type=cache,target=/root/.cache/coursier \
+    --mount=type=cache,target=/root/.cache/mill \
+    --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/root/.cargo/git \
+    --mount=type=cache,target=/src/out \
+    ./mill --ticker false --silent test.assembly \
+ && make ci
+
+# Final image is intentionally not optimised — it exists only as the side
+# effect of a successful test run. We don't push or otherwise use it.
