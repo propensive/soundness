@@ -85,7 +85,7 @@ extends Topical:
       if key().starts(t"--") then key().skip(2) else if key().starts(t"-")
       then key().at(Sec) else Unset
 
-    flag == name || aliases.has(flag)
+    flag == name || aliases.contains(flag)
 
 
   def apply()
