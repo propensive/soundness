@@ -3,10 +3,7 @@
 # Format (one entry per line, OpenSSH `allowed_signers` syntax):
 #     <principal> [options] <key-type> <base64-key> [comment]
 #
-# Where <principal> is the signer's git email (matches `git config user.email`).
-# Add a line below with your existing GitHub SSH key. Example:
-#
-#     jon.pretty@propensive.com ssh-ed25519 AAAAC3Nz... soundness-ci
-#
-# This file is also consumed by .github/workflows/main.yml when verifying
-# attestations on push/PR. Adding a co-signer = a PR that adds a line here.
+# `<principal>` is the signer's git email (must match `git config user.email`).
+# This file is also consumed by .github/workflows/main.yml during verification.
+# Adding a co-signer = a PR that adds a line here.
+jon.pretty@propensive.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDSnmYjoBstsoEdV5yh4z5Bg9XZwz/KzzA5Gk38m6LKz6ED13OnZ8dvGXnUwfoEJltUWwXhTuMTlFnT+jGyWW5kB5KN3vjkAJ6p/EQ985ieB2KhvjhdZ/XUvPbRBtMq5SWqDH1kpubjCv4hngVSABzzz3oymONV9AD1P+BuaO/t2L9iSnCv5web3dQNFwTpxiQjkBszscRQCF9bd27bhD8i9OOeNHgDgLZujsbjF7actOe4gUK/PUrRNzqEMVPTcXfEHdPuhtW6lY43YYcvgVOQ/DHd45BMkD+lGp/p5nMQPkwxtZtGTZLrGalraI144MakwmakojTvOycsirTqVixHkZZvfoQO12vBz7vIbEfntCYaLV6S3sSbwgVSutGU3c35oQro0/Bq14kYzAzBe6xz8gWiyG1JeRLqFNcicn7uKWXSYKcXtcx0F+SBhsvDF7jrCfSdiKl/Ys7mSDUuQLMnHxV/mNWLyJ8wC8YQIRCo67L8ov7tyrXv+IXKC762xcE= jon.pretty@propensive.com

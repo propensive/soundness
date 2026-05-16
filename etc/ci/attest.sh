@@ -22,16 +22,27 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
 NOTES_REF="refs/notes/ci-attestation"
-KEY="${SOUNDNESS_CI_KEY:-$HOME/.ssh/id_ed25519}"
 HEAD_SHA=$(git rev-parse HEAD)
 SIGNER=$(git config user.email)
+
+# Pick a signing key: $SOUNDNESS_CI_KEY if set, otherwise the first existing
+# default (ed25519 preferred, then rsa).
+if [[ -n "${SOUNDNESS_CI_KEY:-}" ]]; then
+  KEY="$SOUNDNESS_CI_KEY"
+elif [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+  KEY="$HOME/.ssh/id_ed25519"
+elif [[ -f "$HOME/.ssh/id_rsa" ]]; then
+  KEY="$HOME/.ssh/id_rsa"
+else
+  KEY=""
+fi
 
 if [[ -z "$SIGNER" ]]; then
   echo "fatal: git config user.email is empty" >&2
   exit 1
 fi
-if [[ ! -f "$KEY" ]]; then
-  echo "fatal: signing key not found at $KEY (set SOUNDNESS_CI_KEY)" >&2
+if [[ -z "$KEY" || ! -f "$KEY" ]]; then
+  echo "fatal: no signing key found (tried \$SOUNDNESS_CI_KEY, ~/.ssh/id_ed25519, ~/.ssh/id_rsa)" >&2
   exit 1
 fi
 if ! grep -q "^$SIGNER " .ci/allowed_signers 2>/dev/null; then
