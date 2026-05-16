@@ -28,11 +28,21 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* \
  && touch /root/.zshrc
 
-# PowerShell, installed from the official tarball release — works on any Linux
-# x86_64 distribution, independent of Microsoft's apt repo per-distro support.
+# BuildKit auto-populates $TARGETARCH (amd64 / arm64 / ...) — we use it to
+# fetch native binaries on whatever host runs this build. Building x86_64-only
+# binaries on an Apple Silicon host forces Rosetta emulation, which fails for
+# binaries that do heavy native I/O at startup (notably pwsh).
+ARG TARGETARCH
+
+# PowerShell, installed from the official tarball release.
 ARG PWSH_VERSION=7.4.6
-RUN mkdir -p /opt/powershell \
- && curl -fsSL "https://github.com/PowerShell/PowerShell/releases/download/v${PWSH_VERSION}/powershell-${PWSH_VERSION}-linux-x64.tar.gz" \
+RUN case "${TARGETARCH}" in \
+      amd64) PWSH_ARCH=linux-x64 ;; \
+      arm64) PWSH_ARCH=linux-arm64 ;; \
+      *) echo "unsupported TARGETARCH: ${TARGETARCH}" >&2 ; exit 1 ;; \
+    esac \
+ && mkdir -p /opt/powershell \
+ && curl -fsSL "https://github.com/PowerShell/PowerShell/releases/download/v${PWSH_VERSION}/powershell-${PWSH_VERSION}-${PWSH_ARCH}.tar.gz" \
       | tar -xz -C /opt/powershell \
  && chmod +x /opt/powershell/pwsh \
  && ln -s /opt/powershell/pwsh /usr/local/bin/pwsh \
@@ -40,9 +50,14 @@ RUN mkdir -p /opt/powershell \
 
 # Zig (matches main.yml: 0.13.0)
 ARG ZIG_VERSION=0.13.0
-RUN curl -fsSL "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
+RUN case "${TARGETARCH}" in \
+      amd64) ZIG_ARCH=x86_64 ;; \
+      arm64) ZIG_ARCH=aarch64 ;; \
+      *) echo "unsupported TARGETARCH: ${TARGETARCH}" >&2 ; exit 1 ;; \
+    esac \
+ && curl -fsSL "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-${ZIG_ARCH}-${ZIG_VERSION}.tar.xz" \
       | tar -xJ -C /opt \
- && ln -s "/opt/zig-linux-x86_64-${ZIG_VERSION}/zig" /usr/local/bin/zig
+ && ln -s "/opt/zig-linux-${ZIG_ARCH}-${ZIG_VERSION}/zig" /usr/local/bin/zig
 
 # Rust with the cross-targets main.yml installs, plus cargo-zigbuild.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
