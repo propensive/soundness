@@ -260,7 +260,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
         test(m"short flag options on fish"):
           Fish.tmux()(Tmux.completions(t"distribution gentoo -"))
-        . aspire(_ == t"-f  --color  (red, green or blue)")
+        . assert(_ == t"-f  --color  (red, green or blue)")
 
         test(m"short flag options on bash"):
           Bash.tmux()(Tmux.completions(t"distribution gentoo -"))
@@ -272,7 +272,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
         test(m"flag options on fish"):
           Fish.tmux()(Tmux.progress(t"distribution gentoo --"))
-        . aspire(_ == t"distribution gentoo --color ^")
+        . assert(_ == t"distribution gentoo --color ^")
 
         test(m"flag options on bash"):
           Bash.tmux()(Tmux.progress(t"distribution gentoo --"))
