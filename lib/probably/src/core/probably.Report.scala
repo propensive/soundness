@@ -287,7 +287,7 @@ class Report(using Environment)(using palette: TestPalette):
     val failureStatuses: Set[Status] =
       Set(Status.Fail, Status.Throws, Status.CheckThrows, Status.Mixed)
 
-    val failures = summaryLines.filter{ s => failureStatuses.contains(s.status) }
+    val failures = summaryLines.filter{ s => failureStatuses.has(s.status) }
 
     if failures.nonEmpty then
       Out.println(t"")
@@ -401,10 +401,10 @@ class Report(using Environment)(using palette: TestPalette):
 
       val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
         val hitCount: Int =
-          branches.to(List).map(_.id).map(coverage.hits.contains).count(identity(_))
+          branches.to(List).map(_.id).map(coverage.hits.has).count(identity(_))
 
         val oldHitCount: Int =
-          branches.to(List).map(_.id).map(coverage.oldHits.contains).count(identity(_))
+          branches.to(List).map(_.id).map(coverage.oldHits.has).count(identity(_))
 
         CoverageData(path, branches.size, hitCount, oldHitCount)
 
@@ -433,8 +433,8 @@ class Report(using Environment)(using palette: TestPalette):
             if row(0).juncture.branch then e"⎇" else e"",
 
           Column(e""): row =>
-            if coverage.hits.contains(row(0).juncture.id) then e"${Bg(palette.detail)}(  )"
-            else if coverage.oldHits.contains(row(0).juncture.id) then e"${Bg(palette.detail)}(  )"
+            if coverage.hits.has(row(0).juncture.id) then e"${Bg(palette.detail)}(  )"
+            else if coverage.oldHits.has(row(0).juncture.id) then e"${Bg(palette.detail)}(  )"
             else e"${Bg(palette.highlight)}(  )",
 
           Column(e"Juncture")(_(1)),

@@ -113,7 +113,7 @@ object Media:
     parsed.subtype match
       case Subtype.Standard(_) =>
         if !systemMediaTypes.nil then
-          if !systemMediaTypes.contains(parsed.basic) then
+          if !systemMediaTypes.has(parsed.basic) then
             val suggestion = systemMediaTypes.minBy(_.proximity(parsed.basic))
 
             return
@@ -157,7 +157,7 @@ object Media:
 
     def parseSubtype(string: Text): Subtype =
       def notAllowed(char: Char): Boolean =
-        char.isWhitespace || char.isControl || specials.contains(char)
+        char.isWhitespace || char.isControl || specials.has(char)
 
       string.chars.find(notAllowed(_)).map: char =>
         raise(MediaTypeError(string, MediaTypeError.Reason.InvalidChar(char)))

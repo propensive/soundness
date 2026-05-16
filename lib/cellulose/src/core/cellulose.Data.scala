@@ -72,7 +72,7 @@ extends Indexed:
     case _                                    => key
 
   def promote(n: Int): Atom = copy(layout = layout.copy(params = n))
-  def has(key: Text): Boolean = index.contains(key) || paramIndex.contains(key)
+  def has(key: Text): Boolean = index.has(key) || paramIndex.has(key)
 
   override def equals(that: Any) = that.matchable(using Unsafe) match
     case that: Atom =>

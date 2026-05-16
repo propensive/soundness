@@ -666,7 +666,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         worktree.makeBranch(GitBranch(t"oldname"))
         worktree.repo.renameBranch(GitBranch(t"oldname"), GitBranch(t"newname"))
         val names = worktree.branches().map(_.show).to(Set)
-        names.contains(t"newname") && !names.contains(t"oldname")
+        names.has(t"newname") && !names.has(t"oldname")
       .assert(_ == true)
 
       test(m"tags() returns an empty list for a tagless repo"):

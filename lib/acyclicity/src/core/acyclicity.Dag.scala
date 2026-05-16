@@ -120,7 +120,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
         case (m, (k, v)) => m.updated(k, m(k) - v)
 
   def reachable(node: node): Set[node] raises DagError =
-    if !edgeMap.contains(node)
+    if !edgeMap.has(node)
     then abort(DagError(DagError.Reason.NodeMissing(node.toString.tt)))
     else reach(node)
 
@@ -162,7 +162,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
       } -- deletions
 
   private def findCycle(start: node): Option[List[node]] raises DagError =
-    if !edgeMap.contains(start)
+    if !edgeMap.has(start)
     then abort(DagError(DagError.Reason.NodeMissing(start.toString.tt)))
 
     @tailrec

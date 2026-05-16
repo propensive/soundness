@@ -97,7 +97,7 @@ extends Dynamic:
     else if endlessParams && paramCount > 0 then subschemas(paramCount - 1)
     else Unset
 
-  def has(key: Optional[Text]): Boolean = dictionary.contains(key)
+  def has(key: Optional[Text]): Boolean = dictionary.has(key)
 
   lazy val requiredKeys: List[Text] =
     subschemas.filter(_.required).map(_.key).collect { case text: Text => text }.to(List)

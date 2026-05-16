@@ -87,7 +87,7 @@ object LocalClasspath:
           case Directory => ClasspathEntry.Directory(path.encode)
           case _         => ClasspathEntry.Jar(path.encode)
 
-        if classpath.entrySet.contains(entry) then classpath
+        if classpath.entrySet.has(entry) then classpath
         else new LocalClasspath(entry :: classpath.entries, classpath.entrySet + entry)
 
 

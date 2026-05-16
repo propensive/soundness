@@ -262,7 +262,7 @@ object internal:
           (elem, idx) =>
             elem.asMatchable match
               case s: String if s == MarkerString =>
-                if spreads.contains(holeIndex) then
+                if spreads.has(holeIndex) then
                   if idx != n - 1 then halt:
                     m"a `*`-spread is only allowed as the last element of a sequence"
                   encodeArraySpread(consumeHole())
@@ -318,7 +318,7 @@ object internal:
 
       def serialize(node: Any): Expr[Yaml.Ast] = node.asMatchable match
         case s: String if s == MarkerString =>
-          if spreads.contains(holeIndex) then halt:
+          if spreads.has(holeIndex) then halt:
             m"a `*`-spread is only allowed as the last element of a sequence"
           encodeValue(consumeHole())
 
@@ -382,7 +382,7 @@ object internal:
         pattern.asMatchable match
           case s: String if s == MarkerString =>
             val idx = nextHole
-            if spreads.contains(idx) then halt:
+            if spreads.has(idx) then halt:
               m"a `*`-spread is only allowed as the last element of a sequence"
             nextHole += 1
             types ::= TypeRepr.of[Yaml]
@@ -441,7 +441,7 @@ object internal:
         val tailSpread: Boolean =
           n > 0 && (elements(n - 1).asMatchable match
             case s: String if s == MarkerString =>
-              spreads.contains(nextHole + countHolesInPrefix(elements, n - 1))
+              spreads.has(nextHole + countHolesInPrefix(elements, n - 1))
 
             case _ => false)
 
@@ -593,7 +593,7 @@ object internal:
                     var j = 0
                     while j < n do
                       val key = $scrutinee.objectKey(j)
-                      if !keep.contains(key) then
+                      if !keep.has(key) then
                         keysBuf += key
                         valsBuf += $scrutinee.objectValue(j)
                       j += 1
