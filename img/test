@@ -13,14 +13,27 @@
 ARG JDK=23
 FROM eclipse-temurin:${JDK}-jdk
 
-# Shells and tooling the tests exercise (matches `.github/workflows/main.yml`).
+# Shells and tooling the tests exercise. We need the same userland as the
+# GitHub Actions ubuntu-latest runner image, which preinstalls many of these.
+# Notably: `psmisc` provides `killall` (used by ethereal tests), and PowerShell
+# (installed below) is required by the exoskeleton powershell test suite.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       bash zsh fish tmux \
       curl ca-certificates xz-utils git \
       build-essential pkg-config \
+      psmisc \
  && rm -rf /var/lib/apt/lists/* \
  && touch /root/.zshrc
+
+# PowerShell, installed from the official tarball release — works on any Linux
+# x86_64 distribution, independent of Microsoft's apt repo per-distro support.
+ARG PWSH_VERSION=7.4.6
+RUN mkdir -p /opt/powershell \
+ && curl -fsSL "https://github.com/PowerShell/PowerShell/releases/download/v${PWSH_VERSION}/powershell-${PWSH_VERSION}-linux-x64.tar.gz" \
+      | tar -xz -C /opt/powershell \
+ && chmod +x /opt/powershell/pwsh \
+ && ln -s /opt/powershell/pwsh /usr/local/bin/pwsh
 
 # Zig (matches main.yml: 0.13.0)
 ARG ZIG_VERSION=0.13.0
