@@ -103,7 +103,7 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
       Textual:
         Text.fill(width): index =>
           def vertical(bitSet: sci.BitSet, line: BoxLine): BoxLine =
-            if bitSet.contains(index) then line else BoxLine.Blank
+            if bitSet.has(index) then line else BoxLine.Blank
 
           if index == 0 then
             style.charset

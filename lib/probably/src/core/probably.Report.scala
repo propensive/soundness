@@ -102,7 +102,7 @@ class Report(using Environment)(using palette: TestPalette):
       tests = tests.updated(testId, reportLine)
 
     def getOrElseUpdate(testId: TestId, reportLine: => ReportLine): ReportLine = synchronized:
-      if !tests.contains(testId) then tests = tests.updated(testId, reportLine)
+      if !tests.has(testId) then tests = tests.updated(testId, reportLine)
       tests(testId)
 
   enum ReportLine:

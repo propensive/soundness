@@ -58,7 +58,7 @@ object Permutation:
         raise
           ( PermutationError(PermutationError.Reason.InvalidIndex(element, sequence.length - 1)) )
 
-      if seen.contains(element)
+      if seen.has(element)
       then raise(PermutationError(PermutationError.Reason.DuplicateIndex(element, index)))
 
       seen(element) = true
