@@ -1201,7 +1201,7 @@ object Html extends Tag.Container
                       reset(mark)
                       close()
                     else if stackContainsAncestor(content) then
-                      if formattingTags.contains(parent.label) then
+                      if formattingTags.has(parent.label) then
                         pendingAtDepth = findAncestorIndex(content)
                         if pendingFormattingSize >= pendingFormattingLabels.length then
                           val newCap = pendingFormattingLabels.length*2
@@ -1217,7 +1217,7 @@ object Html extends Tag.Container
                         pendingFormattingSize += 1
                       reset(mark)
                       close()
-                    else if formattingTags.contains(content) then
+                    else if formattingTags.has(content) then
                       advance()
                       level = Level.Skip
                     else
