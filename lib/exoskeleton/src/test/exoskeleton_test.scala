@@ -64,8 +64,10 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           val RedHat = Subcommand("red hat", e"Red Hat Linux")
           val Ubuntu = Subcommand("ubuntu", e"Ubuntu")
           val Gentoo = Subcommand("gentoo", e"Gentoo Linux")
+          val Tree = Subcommand("tree", e"path-segment completion", hidden = true)
 
           class Hue(name: Text)
+          class Segment(name: Text)
 
           cli:
             arguments match
@@ -100,6 +102,15 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                     execute(Exit.Ok)
 
                   case _             => execute(Exit.Ok)
+
+              case Tree() :: _ =>
+                given Segment is Discoverable = _ => List(Suggestion(t"src/", incomplete = true))
+                given Segment is Interpretable =
+                  case argument :: Nil => Segment(argument())
+                  case _               => Segment(t"")
+
+                Flag[Segment]("at", description = t"path segment")()
+                execute(Exit.Ok)
 
               case _ =>
                 execute(Exit.Fail(1))
@@ -371,3 +382,21 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           test(m"completion with fish args returns alpha"):
             sh"$tool '{completions}' fish 1 0 /dev/null -- abcd ''".exec[Text]()
           .check(_.contains(t"alpha"))
+
+          // Regression check for #1086 part (1): mid-word completion in fish. With the
+          // buggy off-by-one focus calculation, `gentoo` is dropped from the suggestions
+          // and the executive falls back to flag-only output (which here is empty,
+          // since `distribution` has no flags). Position arguments mimic fish's
+          // `count (commandline --tokenize --cut-at-cursor)` (3 — includes partial
+          // token at cursor) and `commandline -C -t` (1 — non-zero indicates mid-word).
+          test(m"fish mid-word completion suggests focused subcommand"):
+            sh"$tool '{completions}' fish 3 1 /dev/null -- abcd distribution g".exec[Text]()
+          .aspire(_.contains(t"gentoo"))
+
+          // Regression check for #1086 part (2): `Suggestion.incomplete` on fish branch.
+          // With the bug, output contains `src/` once; with the fix, it appears twice
+          // (the second with a trailing space) to force fish's LCP no-trailing-space
+          // behaviour for progressive completion.
+          test(m"fish incomplete suggestion emits LCP duplicate"):
+            sh"$tool '{completions}' fish 3 0 /dev/null -- abcd tree --at ".exec[Text]()
+          .aspire(_.cut(t"\n").count(_.starts(t"src/")) >= 2)
