@@ -161,17 +161,40 @@ def _ls_tree(commit: str = "HEAD") -> Iterable[tuple[str, str]]:
 
 def _batch_sha256(blob_shas: list[str]) -> list[str]:
     """Pass `blob_shas` through a single `git cat-file --batch` process and
-    return the SHA-256 of each blob's content. Order is preserved."""
+    return the SHA-256 of each blob's content. Order is preserved.
+
+    Writing all SHAs up front and then reading every response is unsafe:
+    for a tree of any real size, git's blob output (many MB) fills its
+    stdout pipe and blocks git, while the parent is still writing to git's
+    stdin (also pipe-bounded), so neither side makes progress. We feed
+    stdin from a background thread so the main thread can drain stdout
+    concurrently."""
     if not blob_shas:
         return []
+    import threading
+
     proc = subprocess.Popen(
         ["git", "cat-file", "--batch"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
     )
     assert proc.stdin is not None and proc.stdout is not None
-    proc.stdin.write(("\n".join(blob_shas) + "\n").encode("ascii"))
-    proc.stdin.close()
+
+    write_error: list[BaseException] = []
+
+    def write_input() -> None:
+        try:
+            for sha in blob_shas:
+                proc.stdin.write((sha + "\n").encode("ascii"))
+            proc.stdin.close()
+        except BrokenPipeError:
+            pass
+        except BaseException as e:  # noqa: BLE001
+            write_error.append(e)
+
+    writer = threading.Thread(target=write_input, daemon=True)
+    writer.start()
+
     out: list[str] = []
     for _ in blob_shas:
         header = proc.stdout.readline().decode().rstrip("\n")
@@ -184,6 +207,10 @@ def _batch_sha256(blob_shas: list[str]) -> list[str]:
         # Consume the trailing newline emitted after content.
         proc.stdout.read(1)
         out.append(hashlib.sha256(content).hexdigest())
+
+    writer.join()
+    if write_error:
+        raise write_error[0]
     proc.wait()
     if proc.returncode != 0:
         raise RuntimeError(f"git cat-file exited with status {proc.returncode}")
