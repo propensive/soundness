@@ -200,8 +200,11 @@ extends Cli:
         items.flatMap:
           case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _) =>
             if hidden then Nil else
-              (suggestion.text :: aliases).map: text =>
+              val mainLines = (suggestion.text :: aliases).map: text =>
                 description.absolve match
                   case Unset                 => t"$text"
                   case description: Text     => t"$text\t$description"
                   case description: Teletype => t"$text\t${description.plain}"
+
+              if !incomplete then mainLines
+              else mainLines ++ (suggestion.text :: aliases).map(text => t"$text ")
