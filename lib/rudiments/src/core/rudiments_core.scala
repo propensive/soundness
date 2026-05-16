@@ -138,10 +138,6 @@ extension [value <: Matchable](iterable: Iterable[value])
   transparent inline def weave(right: Iterable[value]): Iterable[value] =
     iterable.zip(right).flatMap(Iterable(_, _))
 
-extension [value <: Matchable](set: Set[value])
-  @targetName("hasSet")
-  inline def has(value: value): Boolean = set.contains(value)
-
 extension [element <: Matchable](iarray: IArray[element])
   @targetName("hasIArray")
   inline def has(value: element): Boolean = iarray.exists(_ == value)
