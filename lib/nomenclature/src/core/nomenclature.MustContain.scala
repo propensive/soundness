@@ -37,6 +37,6 @@ import fulminate.*
 import gossamer.*
 import proscenium.*
 
-object MustContain extends Rule({ text => m"must contain $text" }, _.contains(_))
+object MustContain extends Rule({ text => m"must contain $text" }, _.has(_))
 
 sealed trait MustContain[text <: Label] extends Check[text]
