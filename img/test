@@ -46,13 +46,17 @@ COPY . /src
 
 # The actual test run. BuildKit cache mounts persist Mill/Coursier/Cargo
 # state across invocations on the same machine, making re-runs fast.
+#
+# CLAUDECODE=1 tells `probably`'s reporter to emit the terse, log-friendly
+# format (per-failure source location + stack frames), as opposed to the
+# default human/table mode that assumes an interactive terminal.
 RUN --mount=type=cache,target=/root/.cache/coursier \
     --mount=type=cache,target=/root/.cache/mill \
     --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
     --mount=type=cache,target=/src/out \
-    ./mill --ticker false test.assembly \
- && make ci
+    CLAUDECODE=1 ./mill --ticker false test.assembly \
+ && CLAUDECODE=1 make ci
 
 # Final image is intentionally not optimised — it exists only as the side
 # effect of a successful test run. We don't push or otherwise use it.
