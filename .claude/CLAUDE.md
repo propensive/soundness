@@ -44,14 +44,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Pull requests
 
-- Check that the tests compile and pass before opening a PR, by running `make attest` (which builds and runs the suite in Docker and signs the result).
-- Let the user approve the text before the PR is opened.
-- Open as **draft** until ready for review. Set the PR to be auto-mergeable.
-- Immediately before opening the PR, make sure the branch is based upon the current `origin/main` before opening the PR, and rebase if necessary.
-- After pushing the branch, push attestation notes with `git push origin refs/notes/ci-attestation` (or use `make push` instead of plain `git push`).
+- A PR may **only** be opened after `make attest` has completed successfully and the corresponding signed attestation note has been pushed to `refs/notes/ci-attestation` (use `make push`, or `git push origin refs/notes/ci-attestation` after a plain `git push`). The GitHub `Build` check verifies that note; opening a PR without one will leave the check red.
+- Let the user approve the title and body text before the PR is opened.
+- Open as **ready for review** (not draft). Enable auto-merge so the PR merges as soon as the `Build` check passes.
+- Immediately before opening the PR, make sure the branch is based upon the current `origin/main`, and rebase if necessary.
 - Title is a clear one-line description of the work.
 - Body follows `.github/pull_request_template.md`: a single summary paragraph, a blank line, then Markdown release notes for users (with code examples if useful).
-- Whenever a new commit is added to a PR, re-read the PR description and update it if it no longer accurately describes the full set of commits.
+- Whenever a new commit is added to a PR, re-read the PR description and update it if it no longer accurately describes the full set of commits. Each new commit also requires a fresh `make attest && make push` before the `Build` check can pass.
 - PRs from external contributors do not have valid attestations. To merge them, pull the branch locally, run `make attest`, and merge locally with `make push`.
 
 ### CI workflow
