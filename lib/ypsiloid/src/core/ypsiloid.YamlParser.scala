@@ -2325,7 +2325,7 @@ private[ypsiloid] final class YamlParser:
       val secondBang = s.indexOf('!', 1)
       if secondBang > 1 then
         val handle = s.substring(0, secondBang + 1).nn
-        if handle != "!!" && !tagHandles.contains(handle) then
+        if handle != "!!" && !tagHandles.has(handle) then
           errorAt(Issue.UndefinedTagHandle(handle.tt))
 
   private def applyTag(tag: Text, value: Yaml.Ast)(using Tactic[ParseError])
