@@ -123,6 +123,7 @@ statement = {
     "predicateType": "https://soundness.dev/local-ci/v1",
     "predicate": {
         "commands": [
+            "./mill --ticker false --silent soundness.all.compile",
             "./mill --ticker false --silent test.assembly",
             "make ci",
         ],
