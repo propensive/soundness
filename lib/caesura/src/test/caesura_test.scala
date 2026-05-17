@@ -196,6 +196,21 @@ object Tests extends Suite(m"Caesura tests"):
       Sheet(Stream(Dsv(t"hello\"world"))).show
     . assert(_ == t""""hello""world"""")
 
+    test(m"convert row with delimiter in cell"):
+      import dsvFormats.csv
+      Sheet(Stream(Dsv(t"hello, world", t"test"))).show
+    . assert(_ == t""""hello, world",test""")
+
+    test(m"convert row with newline in cell"):
+      import dsvFormats.csv
+      Sheet(Stream(Dsv(t"line1\nline2", t"test"))).show
+    . assert(_ == t""""line1\nline2",test""")
+
+    test(m"convert row with carriage return in cell"):
+      import dsvFormats.csv
+      Sheet(Stream(Dsv(t"line1\rline2", t"test"))).show
+    . assert(_ == t""""line1\rline2",test""")
+
     test(m"simple parse TSV"):
       import dsvFormats.tsv
       t"hello\tworld".read[Sheet]
