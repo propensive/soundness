@@ -453,7 +453,7 @@ package proximities:
 
         for j <- 0 to n do old(j) = dist(j)
 
-      dist(n)
+      if m == 0 then n else dist(n)
 
 
   given normalizedLevenshteinDistance: CaseSensitivity => Proximity by Double =

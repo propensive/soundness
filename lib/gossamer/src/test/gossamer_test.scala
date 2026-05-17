@@ -79,6 +79,21 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       . assert(_ == 4)
 
+      test(m"empty left string has edit distance equal to right length"):
+        t"".proximity(t"abc").toLong
+
+      . assert(_ == 3)
+
+      test(m"empty right string has edit distance equal to left length"):
+        t"abc".proximity(t"").toLong
+
+      . assert(_ == 3)
+
+      test(m"two empty strings have zero edit distance"):
+        t"".proximity(t"").toLong
+
+      . assert(_ == 0)
+
     suite(m"String functions"):
       test(m"punycode test"):
         t"www.äpfel.com".punycode
