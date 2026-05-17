@@ -495,8 +495,8 @@ object Tests extends Suite(m"Quantitative Tests"):
         val ops = Set(t"negate", t"add", t"subtract", t"multiply", t"divide", t"root", t"op")
         bytecode.instructions.exists: instruction =>
           instruction.opcode match
-            case Bytecode.Opcode.Invokevirtual(_, name, _)      => ops.contains(name)
-            case Bytecode.Opcode.Invokeinterface(_, name, _, _) => ops.contains(name)
+            case Bytecode.Opcode.Invokevirtual(_, name, _)      => ops.has(name)
+            case Bytecode.Opcode.Invokeinterface(_, name, _, _) => ops.has(name)
             case _                                              => false
 
       def hasBoxing(bytecode: Bytecode): Boolean =

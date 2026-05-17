@@ -510,7 +510,7 @@ object Tests extends Suite(m"Parasite tests"):
           val tasks = (1 to 5).map: i =>
             async(i)
           val result = async(tasks.race()).await()
-          (1 to 5).contains(result)
+          (1 to 5).has(result)
         . assert(_ == true)
 
       suite(m"Retry / Tenacity"):

@@ -127,7 +127,7 @@ enum Dictionary[+element]:
           val next = entry.s.charAt(offset)
 
           val child =
-            if map.contains(next) then map(next).add(entry, value, offset + 1)
+            if map.has(next) then map(next).add(entry, value, offset + 1)
             else Just(entry, offset + 1, value)
 
           Branch(value0, map.updated(next, child))

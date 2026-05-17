@@ -138,6 +138,14 @@ extension [value <: Matchable](iterable: Iterable[value])
   transparent inline def weave(right: Iterable[value]): Iterable[value] =
     iterable.zip(right).flatMap(Iterable(_, _))
 
+extension [element <: Matchable](iarray: IArray[element])
+  @targetName("hasIArray")
+  inline def has(value: element): Boolean = iarray.exists(_ == value)
+
+extension [element <: Matchable](array: Array[element])
+  @targetName("hasArray")
+  inline def has(value: element): Boolean = array.exists(_ == value)
+
 extension [value](iterator: Iterator[value])
   transparent inline def each(predicate: Ordinal aka "ordinal" ?=> value => Unit): Unit =
     var ordinal: Ordinal = Prim
@@ -317,7 +325,7 @@ extension [key, value](map: sc.Map[key, value])
 
 extension [key, value](map: Map[key, value])
   def upsert(key: key, optional: Optional[value] => value): Map[key, value] =
-    map.updated(key, optional(if map.contains(key) then map(key) else Unset))
+    map.updated(key, optional(if map.has(key) then map(key) else Unset))
 
   def collate(right: Map[key, value])(merge: (value, value) => value): Map[key, value] =
     right.fuse(map)(state.updated(next(0), state.get(next(0)).fold(next(1))(merge(_, next(1)))))
@@ -353,9 +361,6 @@ extension [element](sequence: Seq[element])
 
     if sequence.nil then Nil
     else recur(lambda(sequence.head), sequence.tail, List(sequence.head), Nil)
-
-extension [element](sequence: IndexedSeq[element])
-  transparent inline def has(index: Int): Boolean = index >= 0 && index < sequence.length
 
 extension (bytes: Data)
   def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(bytes.mutable(using Unsafe))

@@ -37,6 +37,6 @@ import fulminate.*
 import gossamer.*
 import proscenium.*
 
-object MustNotContain extends Rule({ text => m"must not contain $text"}, !_.contains(_))
+object MustNotContain extends Rule({ text => m"must not contain $text"}, !_.has(_))
 
 sealed trait MustNotContain[text <: Label] extends Check[text]

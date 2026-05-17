@@ -386,7 +386,7 @@ object internal extends protointernal:
                         focus.commit(Proto(word, line, col, multiline = block))
 
                       uniqueId.let: uniqueId =>
-                        if peerIds.contains(uniqueId(0)) then
+                        if peerIds.has(uniqueId(0)) then
                           val first = peerIds(uniqueId(0))
                           val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
                           raise
@@ -403,7 +403,7 @@ object internal extends protointernal:
                         focus.commit(Proto(word, line, col, multiline = block))
 
                       uniqueId.let: uniqueId =>
-                        if peerIds.contains(uniqueId(0)) then
+                        if peerIds.has(uniqueId(0)) then
                           val first = peerIds(uniqueId(0))
                           val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
                           raise
@@ -430,7 +430,7 @@ object internal extends protointernal:
                         val (uniqueId, focus2) = focus.commit(peer)
 
                         uniqueId.let: uniqueId =>
-                          if peerIds.contains(uniqueId(0)) then
+                          if peerIds.has(uniqueId(0)) then
                             val first = peerIds(uniqueId(0))
                             val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
                             raise

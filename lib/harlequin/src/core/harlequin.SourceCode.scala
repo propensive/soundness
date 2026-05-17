@@ -51,7 +51,7 @@ object SourceCode:
     else if token >= 4 && token <= 9 || token == 23 || token == 24 || token == 42 || token == 43
     then Accent.Number
     else if token == 14 then Accent.Ident
-    else if token >= 20 && token <= 62 && Tokens.modifierTokens.contains(token) then Accent.Modifier
+    else if token >= 20 && token <= 62 && Tokens.modifierTokens.has(token) then Accent.Modifier
     else if token >= 20 && token <= 66 then Accent.Keyword
     else if token >= 78 && token <= 99 then Accent.Symbol
     else Accent.Parens

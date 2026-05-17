@@ -146,6 +146,18 @@ extension (shell: Shell)
             sh"""tmux send-keys -t ${tmux.id} "autoload -Uz compinit; compinit -u" C-m"""
             . exec[Unit]()
 
+            // `compinit` walks every completion function and can take seconds
+            // under Docker load; without an explicit ready-marker the test
+            // would start sending keys (including TAB) before the completion
+            // system is initialised, so TAB resolves to nothing.
+            sh"""tmux send-keys -t ${tmux.id} 'echo READY-${tmux.id}' C-m""".exec[Unit]()
+            var zshReady = false
+            var zshAttempts = 0
+            while !zshReady && zshAttempts < 666 do
+              delay(0.03*Second)
+              zshReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").length > 0
+              zshAttempts += 1
+
             Tmux.attend:
               sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
 
