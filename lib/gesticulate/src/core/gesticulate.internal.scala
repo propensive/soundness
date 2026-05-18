@@ -36,12 +36,88 @@ import scala.quoted.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gigantism.*
+import gossamer.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 
+import caseSensitivity.insensitive
+import proximities.levenshteinDistance
+
 object internal:
+  // Validation runs at macro-expansion time, so it must not reflectively
+  // touch other classes in this same Mill module — when zinc batches the
+  // macro implementation, its caller, and any class it would call (here
+  // `Media`) into one recompile, the macro classloader cannot resolve a
+  // sibling class. Keep this self-contained: only depend on classes from
+  // other modules (anticipation/gossamer/fulminate/vacuous), never on
+  // gesticulate's own types.
+  private lazy val systemMediaTypes: Set[Text] =
+    Optional(getClass.getResourceAsStream("/gesticulate/media.types")).lay(Set()): stream =>
+      scala.io.Source.fromInputStream(stream)
+      . getLines
+      . map(Text(_))
+      . map(_.cut(t"\t").head.lower)
+      . to(Set)
+
+  private val validGroups: Set[Text] =
+    Set
+      ( t"application", t"audio", t"image", t"message", t"multipart",
+        t"text", t"video", t"font", t"example", t"model" )
+
+  private val specials: Set[Char] =
+    Set('(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '+')
+
+  def validateLiteral(text: Text): Optional[Message] =
+    val parts: List[Text] = text.cut(t";").map(_.trim).to(List)
+
+    parts.absolve match
+      case Nil          => m"empty media type"
+      case basic :: _   => validateBasic(basic)
+
+  private def validateBasic(basic: Text): Optional[Message] =
+    basic.cut(t"/").to(List).absolve match
+      case List(group, subtype) =>
+        val groupLower = group.lower
+        if !validGroups.has(groupLower) then m"$group is not a valid media group"
+        else validateSubtype(groupLower, subtype)
+
+      case _ =>
+        m"a media type must have exactly one '/' character"
+
+  private def validateSubtype(group: Text, subtype: Text): Optional[Message] =
+    // The full subtype may be a `main+suffix` (e.g. `svg+xml`); the
+    // character check applies to each segment individually since `+`
+    // is itself a separator, not a body character.
+    val segments: List[Text] = subtype.cut(t"+").to(List)
+
+    val badChar: Option[Char] = segments.iterator.flatMap: seg =>
+      seg.chars.find: c =>
+        c.isWhitespace || c.isControl || specials.has(c)
+
+    . nextOption()
+
+    badChar match
+      case Some(char) =>
+        m"$char is not a valid character in a media-type subtype"
+
+      case None =>
+        val main: Text = segments.head
+        val isStandard =
+          !main.starts(t"vnd.") && !main.starts(t"prs.")
+          && !main.starts(t"x.") && !main.starts(t"x-")
+
+        if !isStandard then Unset
+        else
+          val canonical: Text = t"$group/${subtype.lower}"
+          if systemMediaTypes.nil || systemMediaTypes.has(canonical) then Unset
+          else
+            val suggestion = systemMediaTypes.minBy(_.proximity(canonical))
+            m"$canonical is not a registered media type; did you mean $suggestion?"
+
   def mediaInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[MediaType] =
     import quotes.reflect.*
 
@@ -54,6 +130,6 @@ object internal:
 
     val raw: String = parts.head
 
-    Media.validateLiteral(raw.tt).let(halt(_))
+    internal.validateLiteral(raw.tt).let(halt(_))
 
     '{unsafely(Media.parse(${Expr(raw)}.tt))}

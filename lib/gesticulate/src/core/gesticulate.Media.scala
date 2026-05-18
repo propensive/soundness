@@ -34,21 +34,15 @@ package gesticulate
 
 import language.dynamics
 
-import scala.io.*
-
 import anticipation.*
 import contingency.*
 import denominative.*
-import fulminate.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
-
-import caseSensitivity.insensitive
-import proximities.levenshteinDistance
 
 object Media:
   given text: Text is Media:
@@ -95,36 +89,6 @@ object Media:
       case JsonSeq => t"json-seq"
       case CborSeq => t"cbor-seq"
       case other   => other.toString.tt.uncamel.kebab
-
-  lazy val systemMediaTypes: Set[Text] =
-    Optional(getClass.getResourceAsStream("/gesticulate/media.types")).lay(Set()): stream =>
-      scala.io.Source.fromInputStream(stream)
-      . getLines
-      . map(Text(_))
-      . map(_.cut(t"\t").head.lower)
-      . to(Set)
-
-  def validateLiteral(text: Text): Optional[Message] =
-    val parsed = try throwErrors(Media.parse(text)) catch
-      case error: MediaTypeError =>
-        return m"${error.value} is not a valid media type; ${error.reason.message}"
-
-    parsed.subtype match
-      case Subtype.Standard(_) =>
-        if !systemMediaTypes.nil then
-          if !systemMediaTypes.has(parsed.basic) then
-            val suggestion = systemMediaTypes.minBy(_.proximity(parsed.basic))
-
-            return
-              m"""
-                ${parsed.basic} is not a registered media type; did you mean $suggestion or
-                ${parsed.basic.sub(t"/", t"/x-")}?
-              """
-
-      case _ =>
-        ()
-
-    Unset
 
   def parse(string: Text)(using Tactic[MediaTypeError]): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =
