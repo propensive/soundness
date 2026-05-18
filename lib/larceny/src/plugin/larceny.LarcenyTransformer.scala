@@ -34,10 +34,52 @@ package larceny
 
 import language.adhocExtensions
 
+import java.io.{File, FileInputStream}
+import java.util.Properties
+import java.util.jar.JarFile
+
 import scala.collection.mutable as scm
+import scala.util.control.NonFatal
 
 import dotty.tools.*, dotc.*, util.*, ast.Trees.*, ast.tpd, core.*,
     Constants.Constant, Contexts.*, Decorators.*, StdNames.*, plugins.*
+
+object LarcenyTransformer:
+  // Read the `plugin.properties` manifest from a `-Xplugin` path and tell
+  // whether it identifies this larceny plugin. Path may be a jar (read via
+  // JarFile) or a class directory (read as a plain file). Any I/O error
+  // means "not larceny" — the worst that happens is larceny propagates
+  // itself and the sub-compilation explodes, which surfaces as a test
+  // failure, not silent corruption.
+  def isLarceny(path: String): Boolean =
+    try
+      val file = new File(path)
+      val pluginClass =
+        if file.isDirectory then
+          val propsFile = new File(file, "plugin.properties")
+          if !propsFile.exists then null
+          else
+            val stream = new FileInputStream(propsFile)
+            try
+              val props = new Properties()
+              props.load(stream)
+              props.getProperty("pluginClass")
+            finally stream.close()
+        else
+          val jar = new JarFile(file)
+          try
+            val entry = jar.getEntry("plugin.properties")
+            if entry == null then null
+            else
+              val stream = jar.getInputStream(entry).nn
+              try
+                val props = new Properties()
+                props.load(stream)
+                props.getProperty("pluginClass")
+              finally stream.close()
+          finally jar.close()
+      pluginClass == "larceny.LarcenyPlugin"
+    catch case NonFatal(_) => false
 
 class LarcenyTransformer() extends PluginPhase:
   import tpd.*
@@ -67,8 +109,17 @@ class LarcenyTransformer() extends PluginPhase:
     val regions = collector.regions.to(Set)
     val source = String(context.compilationUnit.source.content)
 
+    // Propagate the outer compilation's `-Xplugin` flags to the
+    // sub-compilation, except for larceny itself — otherwise every
+    // `demilitarize(...)` in the sub-source would re-fire the larceny
+    // transformer and recurse forever. Larceny is identified by reading the
+    // `plugin.properties` manifest entry of each plugin path (jar or
+    // directory) and matching `pluginClass=larceny.LarcenyPlugin`.
+    val plugins: List[String] =
+      context.settings.plugin.value.filterNot(LarcenyTransformer.isLarceny)
+
     val errors: List[CompileError] =
-      Subcompiler.compile(language, classpath, source, regions)
+      Subcompiler.compile(language, classpath, source, regions, plugins)
 
     object transformer extends UntypedTreeMap:
       override def transform(tree: Tree)(using Context): Tree = tree match
