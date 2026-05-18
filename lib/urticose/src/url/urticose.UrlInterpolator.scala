@@ -44,8 +44,6 @@ import proscenium.*
 import spectacular.*
 import symbolism.*
 
-import errorDiagnostics.empty
-
 object UrlInterpolator:
   case class UrlInterpolatorError(detail: Message)
   extends Exception(s"urticose: ${detail.text.s}")

@@ -45,8 +45,6 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-import errorDiagnostics.empty
-
 object internal:
   // Both `t""` and `txt""` build a Text by escape-processing each static part
   // at compile time and converting each substitution via Showable at runtime.

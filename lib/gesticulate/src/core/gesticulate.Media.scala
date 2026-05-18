@@ -48,7 +48,6 @@ import spectacular.*
 import vacuous.*
 
 import caseSensitivity.insensitive
-import errorDiagnostics.empty
 import proximities.levenshteinDistance
 
 object Media:
