@@ -5,9 +5,12 @@ echo \" <<'next' >/dev/null ">nul "\" \`" <#"
 chcp 65001 > nul 2>&1
 for /f "delims=" %%a in ('"prompt $E&for %%b in (1) do rem"') do set "ESC=%%a"
 set "xeq_label=%~n0"
+set "xeq_completion=0"
+if "%~1"=="{completions}" set "xeq_completion=1"
 @@BAT@@
 goto :eof & type con >nul
 :xeq_msg
+if "%xeq_completion%"=="1" goto :eof
 if defined NO_COLOR (
 <nul set /p="%ESC%[1G%~2	%xeq_label%	┃ %~4%ESC%[K" 1>&2
 ) else (
@@ -21,7 +24,9 @@ echo \" <<'next' >/dev/null # " | Out-Null
 $xeq_base = [IO.Path]::GetFileName($MyInvocation.MyCommand.Definition)
 $xeq_ext = [IO.Path]::GetExtension($xeq_base)
 $xeq_label = if ($xeq_ext.Length -eq 4) { $xeq_base.Substring(0, $xeq_base.Length - 4) } else { $xeq_base }
+$xeq_completion = ($args.Count -ge 1 -and $args[0] -eq '{completions}')
 function xeq_msg($c, $b, $n, $m) {
+    if ($script:xeq_completion) { return }
     if ([Console]::IsErrorRedirected) { return }
     $e = [char]27
     if ($env:NO_COLOR -or $env:TERM -eq 'dumb') {
@@ -42,7 +47,10 @@ xeq_label=$(basename "$0")
 case "$xeq_label" in
     *.???) xeq_label="${xeq_label%.???}" ;;
 esac
+xeq_completion=0
+[ "${1-}" = "{completions}" ] && xeq_completion=1
 xeq_msg() {
+    [ "$xeq_completion" = "1" ] && return 0
     [ -t 2 ] || return 0
     if [ -z "${NO_COLOR-}" ] && [ "${TERM-}" != "dumb" ]
     then printf '\r\033[%sm%s\033[0m\t%s\t┃ %s\033[K' "$1" "$2" "$xeq_label" "$4" >&2
