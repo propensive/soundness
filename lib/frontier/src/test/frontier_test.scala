@@ -117,3 +117,32 @@ object Tests extends Suite(m"Frontier Tests"):
         summon[Char is symbolism.Concatenable]
       . map(_.message)
     . assert(_.exists(_.contains("textual = Char")))
+
+    // Diagnostic-behavior tests: the catch-all fires at the deepest missing
+    // implicit. With a chain `summon[Alpha]` ← `mkAlpha(using Beta)` ← `Beta?`,
+    // the user sees the diagnostic for Beta, not for Alpha — the inner
+    // using-clause search triggers the catch-all first, and its `errorAndAbort`
+    // is a hard error that propagates before the outer Alpha resolution can
+    // fall back to the catch-all itself.
+
+    test(m"explainMissingContext fires for a missing using-clause implicit"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        trait A
+        trait B
+        given mkA(using B): A = new A {}
+        summon[A]
+      . map(_.message)
+    . assert(_.exists(_.contains("contextual value not found")))
+
+    test(m"explainMissingContext fires across a two-deep using-chain"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        trait A
+        trait B
+        trait C
+        given mkA(using B): A = new A {}
+        given mkB(using C): B = new B {}
+        summon[A]
+      . map(_.message)
+    . assert(_.exists(_.contains("contextual value not found")))
