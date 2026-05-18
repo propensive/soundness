@@ -640,8 +640,12 @@ object exoskeleton extends Library:
   object test extends Tests(rig)
 
 object frontier extends Library:
-  object core extends Component(dendrology.tree, escapade.core, beneficence.core)
-  object test extends Tests(core, scintillate.servlet, jacinta.schema)
+  object plugin extends BareComponent():
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+  object core extends Component(dendrology.tree, escapade.core, beneficence.core, plugin)
+  object test extends Tests(core, scintillate.servlet, jacinta.schema):
+    override def scalacOptions = Task:
+      super.scalacOptions() :+ s"-Xplugin:${plugin.assembly().path}"
 
 object fulminate extends Library:
   object core extends Component(anticipation.css, anticipation.http, anticipation.print, anticipation.log, proscenium.core, gigantism.core):

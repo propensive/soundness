@@ -108,7 +108,7 @@ object Subcompiler:
     ( language: List[Settings.Setting.ChoiceWithHelp[String]], classpath: String, source: String )
   :   List[CompileError] =
 
-    compile(language, classpath, source, Set((0, source.length)))
+    compile(language, classpath, source, Set((0, source.length)), Nil)
 
 
   def compile
@@ -118,11 +118,29 @@ object Subcompiler:
       regions:   Set[(Int, Int)] )
   :   List[CompileError] =
 
+    compile(language, classpath, source, regions, Nil)
+
+
+  // `plugins` is a list of `-Xplugin:` paths (jar files or directories) that
+  // should be loaded into the sub-compilation. The outer LarcenyTransformer
+  // computes this from the parent compilation's `-Xplugin` settings minus
+  // larceny itself, so the inner compile sees the same plugin pipeline that
+  // production code would see — except for larceny, whose recursion would
+  // re-fire on any `demilitarize(...)` calls in the sub-source.
+  def compile
+    ( language:  List[Settings.Setting.ChoiceWithHelp[String]],
+      classpath: String,
+      source:    String,
+      regions:   Set[(Int, Int)],
+      plugins:   List[String] )
+  :   List[CompileError] =
+
     object driver extends Driver:
       val currentContext: Context =
         val context = initCtx.fresh
         val context2 = context.setSetting(context.settings.classpath, classpath)
-        setup(Array[String](""), context2).map(_(1)).get
+        val args = Array[String]("") ++ plugins.map: p => s"-Xplugin:$p"
+        setup(args, context2).map(_(1)).get
 
 
       def run(source: String, regions: Set[(Int, Int)], errors: List[CompileError])
