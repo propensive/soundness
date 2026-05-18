@@ -118,24 +118,28 @@ object Tests extends Suite(m"Frontier Tests"):
       . map(_.message)
     . assert(_.exists(_.contains("textual = Char")))
 
-    // Diagnostic-behavior tests: the catch-all fires at the deepest missing
-    // implicit. With a chain `summon[Alpha]` ← `mkAlpha(using Beta)` ← `Beta?`,
-    // the user sees the diagnostic for Beta, not for Alpha — the inner
-    // using-clause search triggers the catch-all first, and its `errorAndAbort`
-    // is a hard error that propagates before the outer Alpha resolution can
-    // fall back to the catch-all itself.
+    // Chain-rendering tests: when the catch-all fires for a deeply-nested
+    // missing implicit, the plugin walks up the typed tree's Apply
+    // ancestors (each `given`-method call), uses the outermost given's
+    // result type as the type the user originally summoned, and renders
+    // the full chain — `■ resolving Outer ▪ candidate mkOuter ✗ requires
+    // Mid` — rather than the deepest-only `■ resolving Mid`.
 
-    test(m"explainMissingContext fires for a missing using-clause implicit"):
+    test(m"explainMissingContext renders full chain for a one-link given"):
       demilitarize:
         import frontier.context.explainMissingContext
-        trait A
-        trait B
-        given mkA(using B): A = new A {}
-        summon[A]
+        trait Outer
+        trait Mid
+        given mkOuter(using Mid): Outer = new Outer {}
+        summon[Outer]
       . map(_.message)
-    . assert(_.exists(_.contains("contextual value not found")))
+    . assert: msgs =>
+        msgs.exists: m =>
+          m.contains("resolving Outer")
+          && m.contains("candidate mkOuter")
+          && m.contains("requires Mid")
 
-    test(m"explainMissingContext fires across a two-deep using-chain"):
+    test(m"explainMissingContext renders full chain across two given links"):
       demilitarize:
         import frontier.context.explainMissingContext
         trait A
@@ -145,5 +149,10 @@ object Tests extends Suite(m"Frontier Tests"):
         given mkB(using C): B = new B {}
         summon[A]
       . map(_.message)
-    . assert(_.exists(_.contains("contextual value not found")))
+    . assert: msgs =>
+        msgs.exists: m =>
+          m.contains("resolving A")
+          && m.contains("candidate mkA")
+          && m.contains("candidate mkB")
+          && m.contains("requires C")
 
