@@ -52,6 +52,4 @@ package jsonDecodables:
       Instant(json.as[Long])
 
   given decodeDurationsAsMilliseconds: Tactic[JsonError] => Duration is Decodable in Json =
-    json =>
-      import abstractables.durationIsAbstractable
-      Duration(json.as[Long])
+    json => Duration(json.as[Long])

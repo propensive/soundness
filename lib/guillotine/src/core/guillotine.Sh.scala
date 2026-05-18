@@ -42,8 +42,6 @@ import proscenium.*
 import rudiments.*
 import spectacular.*
 
-import errorDiagnostics.empty
-
 object Sh:
   enum Context:
     case Awaiting, Unquoted, Quotes2, Quotes1

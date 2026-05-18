@@ -49,8 +49,6 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-import errorDiagnostics.empty
-
 trait Ansi2:
   class TeletypeSubstitution[value](teletype: value => Teletype)
   extends Substitution[Ansi.Input, value, "t"]:
