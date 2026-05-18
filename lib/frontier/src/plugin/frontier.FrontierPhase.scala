@@ -32,118 +32,46 @@
                                                                                                   */
 package frontier
 
-import soundness.{every as _, *}
+import dotty.tools.dotc.*, ast.tpd, core.*, Constants.Constant, Contexts.*,
+    Symbols.*, plugins.*
 
-object Tests extends Suite(m"Frontier Tests"):
-  trait Plug
+class FrontierPhase() extends PluginPhase:
+  val phaseName: String                = "frontier"
+  // Run AFTER `inlining`/`splicing` so the macro splice inside the
+  // `internal.explanation` inline def has been fully expanded into a
+  // `Sentinel.missing[T]("...")` call we can recognise. Typer alone leaves
+  // the inline def as an unexpanded `Apply(explanation, ...)`; the splice
+  // doesn't fire until the `splicing` phase.
+  override val runsAfter: Set[String]  = Set("splicing")
+  override val runsBefore: Set[String] = Set("pickleQuotes")
 
-  object NoPlugs:
-    def explicit: Int = every[Plug].values.length
-    def viaSummon: Int = summon[Every[Plug]].values.length
+  // Walk each unit's typed tree for `frontier.Sentinel.missing[T](text)`
+  // calls emitted by the catch-all macro in place of missing implicits and
+  // emit the pre-rendered diagnostic via `report.error` at the sentinel's
+  // source position. Reporting from this phase (rather than from the macro
+  // itself via `report.errorAndAbort`) is what lets the user see a real
+  // error: a macro abort emitted during nested implicit-search elaboration
+  // would be buffered, but a `report.error` at this phase reaches the user.
+  override def runOn(units: List[CompilationUnit])(using Context): List[CompilationUnit] =
+    val sentinelMissing: Symbol =
+      Symbols.requiredModule("frontier.Sentinel").requiredMethod("missing")
 
-  object OnePlug:
-    given p1: Plug = new Plug {}
+    def extractStringLiteral(tree: tpd.Tree): Option[String] = tree match
+      case tpd.Literal(Constant(text: String)) => Some(text)
+      case tpd.Inlined(_, _, body)             => extractStringLiteral(body)
+      case tpd.Block(_, expr)                  => extractStringLiteral(expr)
+      case tpd.Typed(expr, _)                  => extractStringLiteral(expr)
+      case _                                   => None
 
-    def explicit: Int = every[Plug].values.length
-    def viaSummon: Int = summon[Every[Plug]].values.length
-
-  object TwoPlugs:
-    given p1: Plug = new Plug {}
-    given p2: Plug = new Plug {}
-
-    def explicit: Int = every[Plug].values.length
-    def viaSummon: Int = summon[Every[Plug]].values.length
-
-  def run(): Unit =
-    test(m"every[X] returns empty Every when no givens in scope"):
-      NoPlugs.explicit
-    . assert(_ == 0)
-
-    test(m"summon[Every[X]] returns empty Every when no givens in scope"):
-      NoPlugs.viaSummon
-    . assert(_ == 0)
-
-    test(m"every[X] with one given in scope returns 1"):
-      OnePlug.explicit
-    . assert(_ == 1)
-
-    test(m"summon[Every[X]] with one given in scope returns 1"):
-      OnePlug.viaSummon
-    . assert(_ == 1)
-
-    test(m"every[X] collects two ambiguous givens in scope"):
-      TwoPlugs.explicit
-    . assert(_ == 2)
-
-    test(m"summon[Every[X]] collects two ambiguous givens in scope"):
-      TwoPlugs.viaSummon
-    . assert(_ == 2)
-
-    test(m"every[X] compiles cleanly with givens in scope"):
-      demilitarize:
-        trait Widget
-        given w1: Widget = new Widget {}
-        given w2: Widget = new Widget {}
-        val all: Every[Widget] = every[Widget]
-      . map(_.message)
-    . assert(_ == Nil)
-
-    test(m"summon[Every[X]] compiles cleanly with givens in scope"):
-      demilitarize:
-        trait Widget
-        given w1: Widget = new Widget {}
-        given w2: Widget = new Widget {}
-        val all: Every[Widget] = summon[Every[Widget]]
-      . map(_.message)
-    . assert(_ == Nil)
-
-    test(m"every[X] compiles cleanly when no givens are in scope"):
-      demilitarize:
-        trait Widget
-        val all: Every[Widget] = every[Widget]
-      . map(_.message)
-    . assert(_ == Nil)
-
-    test(m"explainMissingContext lists classpath givens for missing implicit"):
-      demilitarize:
-        import frontier.context.explainMissingContext
-        summon[rudiments.DecimalConverter]
-      . map(_.message)
-    . assert(_.exists(_.contains("decimalFormatters.java")))
-
-    test(m"explainMissingContext shows type-parameter bindings for polymorphic givens"):
-      demilitarize:
-        import frontier.context.explainMissingContext
-        summon[Char is symbolism.Concatenable]
-      . map(_.message)
-    . assert(_.exists(_.contains("textual = Char")))
-
-    // Diagnostic-behavior tests: the catch-all fires at the deepest missing
-    // implicit. With a chain `summon[Alpha]` ← `mkAlpha(using Beta)` ← `Beta?`,
-    // the user sees the diagnostic for Beta, not for Alpha — the inner
-    // using-clause search triggers the catch-all first, and its `errorAndAbort`
-    // is a hard error that propagates before the outer Alpha resolution can
-    // fall back to the catch-all itself.
-
-    test(m"explainMissingContext fires for a missing using-clause implicit"):
-      demilitarize:
-        import frontier.context.explainMissingContext
-        trait A
-        trait B
-        given mkA(using B): A = new A {}
-        summon[A]
-      . map(_.message)
-    . assert(_.exists(_.contains("contextual value not found")))
-
-    test(m"explainMissingContext fires across a two-deep using-chain"):
-      demilitarize:
-        import frontier.context.explainMissingContext
-        trait A
-        trait B
-        trait C
-        given mkA(using B): A = new A {}
-        given mkB(using C): B = new B {}
-        summon[A]
-      . map(_.message)
-    . assert(_.exists(_.contains("contextual value not found")))
-
+    units.foreach: unit =>
+      val traverser = new tpd.TreeTraverser:
+        def traverse(tree: tpd.Tree)(using Context): Unit =
+          tree match
+            case tpd.Apply(fun, List(arg)) if fun.symbol == sentinelMissing =>
+              extractStringLiteral(arg) match
+                case Some(text) => report.error(text, tree.sourcePos)
+                case None       => traverseChildren(tree)
+            case _ =>
+              traverseChildren(tree)
+      traverser.traverse(unit.tpdTree)
+    units

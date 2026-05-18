@@ -32,118 +32,14 @@
                                                                                                   */
 package frontier
 
-import soundness.{every as _, *}
-
-object Tests extends Suite(m"Frontier Tests"):
-  trait Plug
-
-  object NoPlugs:
-    def explicit: Int = every[Plug].values.length
-    def viaSummon: Int = summon[Every[Plug]].values.length
-
-  object OnePlug:
-    given p1: Plug = new Plug {}
-
-    def explicit: Int = every[Plug].values.length
-    def viaSummon: Int = summon[Every[Plug]].values.length
-
-  object TwoPlugs:
-    given p1: Plug = new Plug {}
-    given p2: Plug = new Plug {}
-
-    def explicit: Int = every[Plug].values.length
-    def viaSummon: Int = summon[Every[Plug]].values.length
-
-  def run(): Unit =
-    test(m"every[X] returns empty Every when no givens in scope"):
-      NoPlugs.explicit
-    . assert(_ == 0)
-
-    test(m"summon[Every[X]] returns empty Every when no givens in scope"):
-      NoPlugs.viaSummon
-    . assert(_ == 0)
-
-    test(m"every[X] with one given in scope returns 1"):
-      OnePlug.explicit
-    . assert(_ == 1)
-
-    test(m"summon[Every[X]] with one given in scope returns 1"):
-      OnePlug.viaSummon
-    . assert(_ == 1)
-
-    test(m"every[X] collects two ambiguous givens in scope"):
-      TwoPlugs.explicit
-    . assert(_ == 2)
-
-    test(m"summon[Every[X]] collects two ambiguous givens in scope"):
-      TwoPlugs.viaSummon
-    . assert(_ == 2)
-
-    test(m"every[X] compiles cleanly with givens in scope"):
-      demilitarize:
-        trait Widget
-        given w1: Widget = new Widget {}
-        given w2: Widget = new Widget {}
-        val all: Every[Widget] = every[Widget]
-      . map(_.message)
-    . assert(_ == Nil)
-
-    test(m"summon[Every[X]] compiles cleanly with givens in scope"):
-      demilitarize:
-        trait Widget
-        given w1: Widget = new Widget {}
-        given w2: Widget = new Widget {}
-        val all: Every[Widget] = summon[Every[Widget]]
-      . map(_.message)
-    . assert(_ == Nil)
-
-    test(m"every[X] compiles cleanly when no givens are in scope"):
-      demilitarize:
-        trait Widget
-        val all: Every[Widget] = every[Widget]
-      . map(_.message)
-    . assert(_ == Nil)
-
-    test(m"explainMissingContext lists classpath givens for missing implicit"):
-      demilitarize:
-        import frontier.context.explainMissingContext
-        summon[rudiments.DecimalConverter]
-      . map(_.message)
-    . assert(_.exists(_.contains("decimalFormatters.java")))
-
-    test(m"explainMissingContext shows type-parameter bindings for polymorphic givens"):
-      demilitarize:
-        import frontier.context.explainMissingContext
-        summon[Char is symbolism.Concatenable]
-      . map(_.message)
-    . assert(_.exists(_.contains("textual = Char")))
-
-    // Diagnostic-behavior tests: the catch-all fires at the deepest missing
-    // implicit. With a chain `summon[Alpha]` ← `mkAlpha(using Beta)` ← `Beta?`,
-    // the user sees the diagnostic for Beta, not for Alpha — the inner
-    // using-clause search triggers the catch-all first, and its `errorAndAbort`
-    // is a hard error that propagates before the outer Alpha resolution can
-    // fall back to the catch-all itself.
-
-    test(m"explainMissingContext fires for a missing using-clause implicit"):
-      demilitarize:
-        import frontier.context.explainMissingContext
-        trait A
-        trait B
-        given mkA(using B): A = new A {}
-        summon[A]
-      . map(_.message)
-    . assert(_.exists(_.contains("contextual value not found")))
-
-    test(m"explainMissingContext fires across a two-deep using-chain"):
-      demilitarize:
-        import frontier.context.explainMissingContext
-        trait A
-        trait B
-        trait C
-        given mkA(using B): A = new A {}
-        given mkB(using C): B = new B {}
-        summon[A]
-      . map(_.message)
-    . assert(_.exists(_.contains("contextual value not found")))
-
+// Sentinel call the catch-all macro emits in place of a missing implicit
+// (instead of `null.asInstanceOf[T]` plus a tree attachment, which doesn't
+// reliably survive inline + transparent-given expansion). The plugin's
+// post-typer phase walks the typed tree for calls to `Sentinel.missing`,
+// extracts the pre-rendered diagnostic string from the literal argument,
+// and emits it via `report.error`. The runtime body must never be reached
+// — the plugin's `report.error` fails the compilation before any class
+// containing the call can be loaded.
+object Sentinel:
+  def missing[any](text: String): any =
+    null.asInstanceOf[any]

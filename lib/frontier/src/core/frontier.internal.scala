@@ -469,38 +469,53 @@ object internal:
               missing(repr, Nil)
 
 
+    def renderText(available: List[Available], candidates: List[Candidate]): String =
+      given Result is Expandable =
+        case Candidate(_, _, missing)          => missing
+        case Missing(_, available, candidates) => available ::: candidates
+        case Available(_, requirements)        => requirements
+        case Found(_, _)                       => Nil
+
+      TreeDiagram[Result]((available ::: candidates)*).render:
+        case Found(name, _) =>
+          e" \e[38;5;34m$Bold(✓)\e[0m found \e[38;5;119m$Italic($name)\e[0m"
+
+        case Missing(name, _, _) =>
+          e" \e[38;5;88m$Bold(✗)\e[0m requires \e[38;5;114m$Italic($name)\e[0m"
+
+        case Candidate(name, _, _) =>
+          e" \e[38;5;208m$Bold(▪)\e[0m candidate \e[38;5;227m$Italic($name)\e[0m"
+
+        case Available(name, _) =>
+          e" \e[38;5;75m$Bold(▸)\e[0m propose \e[38;5;117m$Italic($name)\e[0m"
+
+      . join
+        ( e"contextual value not found\n\n \e[38;5;88m$Bold(■)\e[0m resolving "
+          +e"\e[38;5;208m$Italic(${stenography.internal.name[target]})\e[0m\n",
+          e"\n",
+          e"\n" )
+
+      . render(termcapDefinitions.xterm256)
+      . s
+
+    // Detect whether the Frontier compiler plugin is wired into this
+    // compilation. When it is, the macro emits a `Sentinel.missing[T](text)`
+    // call carrying the rendered diagnostic; the plugin's post-splicing
+    // phase walks the typed tree for those calls and reports the stored
+    // text via `report.error`. When it isn't, the macro falls back to
+    // `report.errorAndAbort` so callers without the plugin still see the
+    // (deepest-only) Frontier diagnostic the plugin path generalises.
+    val frontierPluginPresent: Boolean =
+      context.base.allPhases.exists(_.phaseName == "frontier")
+
     seek(TypeRepr.of[target], Nil, 1).absolve match
       case Found(_, expr) => expr.asExprOf[target]
 
       case Missing(_, available, candidates) =>
-        report.errorAndAbort:
-          given Result is Expandable =
-            case Candidate(_, _, missing)          => missing
-            case Missing(_, available, candidates) => available ::: candidates
-            case Available(_, requirements)        => requirements
-            case Found(_, _)                       => Nil
-
-          TreeDiagram[Result]((available ::: candidates)*).render:
-            case Found(name, _) =>
-              e" \e[38;5;34m$Bold(✓)\e[0m found \e[38;5;119m$Italic($name)\e[0m"
-
-            case Missing(name, _, _) =>
-              e" \e[38;5;88m$Bold(✗)\e[0m requires \e[38;5;114m$Italic($name)\e[0m"
-
-            case Candidate(name, _, _) =>
-              e" \e[38;5;208m$Bold(▪)\e[0m candidate \e[38;5;227m$Italic($name)\e[0m"
-
-            case Available(name, _) =>
-              e" \e[38;5;75m$Bold(▸)\e[0m propose \e[38;5;117m$Italic($name)\e[0m"
-
-          . join
-            ( e"contextual value not found\n\n \e[38;5;88m$Bold(■)\e[0m resolving "
-              +e"\e[38;5;208m$Italic(${stenography.internal.name[target]})\e[0m\n",
-              e"\n",
-              e"\n" )
-
-          . render(termcapDefinitions.xterm256)
-          . s
+        val text = renderText(available, candidates)
+        if frontierPluginPresent
+        then '{frontier.Sentinel.missing[target](${Expr(text)})}
+        else report.errorAndAbort(text)
 
   def every[value: Type]: Macro[Every[value]] =
     import quotes.reflect.*
