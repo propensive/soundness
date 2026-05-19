@@ -132,6 +132,7 @@ extends BaseScalaModule, SonatypeCentralPublishModule:
       :+ s"-Xplugin:${frontier.plugin.assembly().path}"
 
 trait Tests(dependencies: PublishModule*) extends BaseScalaModule:
+  def enabled: Boolean = true
   def moduleId: String = moduleDir.last
   def finalMainClass = (moduleDir / ".." / "..").last + ".Tests"
   def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
@@ -206,128 +207,81 @@ object soundness extends ScalaModule:
 object test extends ScalaModule:
   def scalaVersion = settings.scalaVersion
   def scalacOptions = settings.scalaOptions
-  def moduleDeps = Seq(
-    abacist.test,
-    acyclicity.test,
-    adversaria.test,
-    ambience.test,
-    anamnesis.test,
-    anthology.test,
-    anticipation.test,
-    austronesian.test,
-    aviation.test,
-    baroque.test,
-    beneficence.test,
-    bitumen.test,
-    burdock.test,
-    cacophony.test,
-    caduceus.test,
-    caesura.test,
-    camouflage.test,
-    capricious.test,
-    cardinality.test,
-    cataclysm.test,
-    cellulose.test,
-    charisma.test,
-    chiaroscuro.test,
-    //coaxial.test,
-    contextual.test,
-    contingency.test,
-    //cosmopolite.test,
-    decorum.test,
-    dendrology.test,
-    denominative.test,
-    digression.test,
-    dissonance.test,
-    distillate.test,
-    diuretic.test,
-    //embarcadero.test,
-    enigmatic.test,
-    escapade.test,
-    //escritoire.test,
-    ethereal.test,
-    //eucalyptus.test,
-    exegesis.test,
-    exoskeleton.test,
-    frontier.test,
-    fulminate.test,
-    galilei.test,
-    gastronomy.test,
-    geodesy.test,
-    gesticulate.test,
-    //gigantism.test,
-    gnossienne.test,
-    gossamer.test,
-    guillotine.test,
-    hallucination.test,
-    harlequin.test,
-    hellenism.test,
-    hieroglyph.test,
-    honeycomb.test,
-    hyperbole.test,
-    hypotenuse.test,
-    imperial.test,
-    inimitable.test,
-    iridescence.test,
-    jacinta.test,
-    kaleidoscope.test,
-    larceny.test,
-    //legerdemain.test,
-    mandible.test,
-    mercator.test,
-    metamorphose.test,
-    monotonous.test,
-    mosquito.test,
-    nomenclature.test,
-    obligatory.test,
-    octogenarian.test,
-    //orthodoxy.test,
-    panopticon.test,
-    parasite.test,
-    //perihelion.test,
-    phoenicia.test,
-    plutocrat.test,
-    polaris.test,
-    polyvinyl.test,
-    prepositional.test,
-    probably.test,
-    profanity.test,
-    proscenium.test,
-    punctuation.test,
-    quantitative.test,
-    revolution.test,
-    rudiments.test,
-    satirical.test,
-    savagery.test,
-    scintillate.test,
-    sedentary.test,
-    serpentine.test,
-    spectacular.test,
-    stenography.test,
-    superlunary.test,
-    surveillance.test,
-    symbolism.test,
-    synesthesia.test,
-    tarantula.test,
-    telekinesis.test,
-    turbulence.test,
-    typonym.test,
-    ulysses.test,
-    umbrageous.test,
-    urticose.test,
-    vacuous.test,
-    vexillology.test,
-    vicarious.test,
-    //wisteria.test,
-    xylophone.test,
-    yossarian.test,
-    ypsiloid.test,
-    zephyrine.test,
-    //zeppelin.test
-  )
-
+  def moduleDeps: Seq[JavaModule] =
+    allLibraries.flatMap(_.moduleDirectChildren).collect { case t: Tests if t.enabled => t }
   def sources = Task.Sources(moduleDir / ".." / "src" / "test")
   override def finalMainClass: Task.Simple[String] = "soundness.Tests"
+
+// ------------------------ VALIDATION ------------------------
+
+object groupCheck extends Module:
+  // Library directories on disk that are deliberately not wired into the build
+  // (work-in-progress modules with no compiling sources yet).
+  def disabledLibraries: Set[String] = Set("embarcadero", "perihelion")
+
+  // Components deliberately not included in any soundness.{base,cli,data,sci,test,
+  // tool,web} group bundle. Compiler plugins, internal subtypes, examples/demos,
+  // and helper modules that aren't published as part of `soundness-all` go here.
+  // The second group (after the blank line) are full Library cores not yet wired
+  // into any group bundle; review whether each belongs in a bundle or stays here.
+  def excluded: Set[String] = Set(
+    "adversaria.examples", "anthology.bundle", "anthology.scala",
+    "anticipation.codec", "anticipation.color", "anticipation.css",
+    "anticipation.generic", "anticipation.gfx", "anticipation.html",
+    "anticipation.http", "anticipation.log", "anticipation.opaque",
+    "anticipation.path", "anticipation.print", "anticipation.text",
+    "anticipation.time", "anticipation.url",
+    "beneficence.core", "beneficence.plugin", "dendrology.demo",
+    "ethereal.example", "exoskeleton.args", "exoskeleton.core",
+    "exoskeleton.rig", "frontier.plugin", "probably.coverage",
+    "quantitative.units",
+
+    "bitumen.core", "breviloquence.core", "distillate.core", "exegesis.core",
+    "gigantism.core", "proscenium.core", "satirical.core", "stenography.core",
+    "ypsiloid.core"
+  )
+
+  def validate(): Command[Unit] = Task.Command:
+    val onDisk = os.list(mill.api.BuildCtx.workspaceRoot / "lib").iterator
+      .filter(p => os.isDir(p) && os.exists(p / "src"))
+      .map(_.last)
+      .toSet
+    val declaredLibraries = allLibraries.map(_.moduleSegments.render).toSet
+    val declaredComponents = allLibraries.flatMap(_.moduleDirectChildren).collect:
+      case c: (Component | BareComponent) => c.moduleSegments.render
+    .toSet
+    val groupBundles = Seq(soundness.base, soundness.cli, soundness.data,
+                           soundness.sci, soundness.test, soundness.tool, soundness.web)
+    val coveredComponents = groupBundles.flatMap(_.moduleDeps.map(_.moduleSegments.render)).toSet
+
+    val problems = scala.collection.mutable.Buffer.empty[String]
+
+    val newOnDisk = onDisk -- declaredLibraries -- disabledLibraries
+    if newOnDisk.nonEmpty then
+      problems += "Library directories on disk but not in `allLibraries` (add to "
+        + "build.mill or to `groupCheck.disabledLibraries`):\n  "
+        + newOnDisk.toSeq.sorted.mkString("\n  ")
+
+    val orphanLibs = declaredLibraries -- onDisk
+    if orphanLibs.nonEmpty then
+      problems += "`allLibraries` references libraries with no `lib/<name>/src` "
+        + "directory:\n  " + orphanLibs.toSeq.sorted.mkString("\n  ")
+
+    val unbundled = declaredComponents -- coveredComponents -- excluded
+    if unbundled.nonEmpty then
+      problems += "Components not in any soundness.* group bundle and not in "
+        + "`groupCheck.excluded` (a new module needs to join a group bundle, or "
+        + "be explicitly excluded):\n  " + unbundled.toSeq.sorted.mkString("\n  ")
+
+    val unknownInBundles = coveredComponents -- declaredComponents
+    if unknownInBundles.nonEmpty then
+      problems += "Group bundles reference components that aren't declared in any "
+        + "Library:\n  " + unknownInBundles.toSeq.sorted.mkString("\n  ")
+
+    if problems.nonEmpty then Result.Failure(problems.mkString("\n\n"))
+    else
+      Task.log.info(s"groupCheck: ${declaredLibraries.size} libraries, ${declaredComponents.size} components, ${coveredComponents.size} in group bundles. OK.")
+      Result.Success(())
 
 // ------------------------ WEBSITE ------------------------
 
@@ -424,7 +378,8 @@ object bitumen extends Library:
 
 object breviloquence extends Library:
   object core extends Component(urticose.url, panopticon.core, turbulence.core)
-  object test extends Tests(core, sedentary.core, eucalyptus.core)
+  object test extends Tests(core, sedentary.core, eucalyptus.core):
+    override def enabled = false
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(
       mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.18.2",
@@ -486,7 +441,8 @@ object chiaroscuro extends Library:
 
 object coaxial extends Library:
   object core extends Component(galilei.core, urticose.core)
-  //object test extends Tests(core, jacinta.core, superlunary.core)
+  object test extends Tests(core, jacinta.core, superlunary.core):
+    override def enabled = false
 
 object contextual extends Library:
   object core extends Component(rudiments.core)
@@ -498,7 +454,8 @@ object contingency extends Library:
 
 object cosmopolite extends Library:
   object core extends Component(gossamer.core)
-  //object test extends Tests(core)
+  object test extends Tests(core):
+    override def enabled = false
 
 object dendrology extends Library:
   object tree extends Component(gossamer.core)
@@ -546,7 +503,8 @@ object escapade extends Library:
 
 object escritoire extends Library:
   object core extends Component(gossamer.core)
-  // object test extends Tests(core)
+  object test extends Tests(core):
+    override def enabled = false
 
 object ethereal extends Library:
   object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core):
@@ -622,7 +580,8 @@ object eucalyptus extends Library:
   object syslog extends Component(guillotine.core, core)
   object gcp extends Component(jacinta.core, core)
   object ansi extends Component(escapade.core, core)
-  object test extends Tests(ansi, core, syslog)
+  object test extends Tests(ansi, core, syslog):
+    override def enabled = false
 
 object exegesis extends Library:
   object core extends Component(obligatory.core)
@@ -673,7 +632,8 @@ object gigantism extends Library:
   object core extends Component():
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object test extends Tests(core)
+  object test extends Tests(core):
+    override def enabled = false
 
 object gnossienne extends Library:
   object core extends Component(distillate.core, adversaria.core)
@@ -766,7 +726,8 @@ object larceny extends Library:
 
 object legerdemain extends Library:
   object core extends Component(honeycomb.core, anamnesis.core)
-  object test extends Tests(core, scintillate.server)
+  object test extends Tests(core, scintillate.server):
+    override def enabled = false
 
 object mandible extends Library:
   object core extends Component(hyperbole.core):
@@ -806,7 +767,8 @@ object octogenarian extends Library:
 
 object orthodoxy extends Library:
   object core extends Component(scintillate.server, jacinta.core)
-  object test extends Tests(core)
+  object test extends Tests(core):
+    override def enabled = false
 
 object obligatory extends Library:
   object core extends Component(scintillate.server, hyperbole.core, eucalyptus.core, revolution.core, jacinta.schema, jacinta.http)
@@ -993,7 +955,8 @@ object vicarious extends Library:
 
 object wisteria extends Library:
   object core extends Component(contingency.core)
-  object test extends Tests(core)
+  object test extends Tests(core):
+    override def enabled = false
 
 object xylophone extends Library:
   object core extends Component(zephyrine.core, adversaria.core, typonym.core, hellenism.core, urticose.core)
@@ -1042,173 +1005,33 @@ object zephyrine extends Library:
 
 object zeppelin extends Library:
   object core extends Component(galilei.core, zephyrine.core)
-  object test extends Tests(core, imperial.core, diuretic.core)
+  object test extends Tests(core, imperial.core, diuretic.core):
+    override def enabled = false
 
 object ziggurat extends Library:
   object core extends Component(hellenism.core, monotonous.core, turbulence.core)
   object test extends Tests(core)
 
-object publishing extends Module:
-  def local(localIvyRepo: String = null): Command[Unit] = Task.Command:
-    abacist.core.publishLocal()()
-    acyclicity.core.publishLocal()()
-    adversaria.core.publishLocal()()
-    ambience.core.publishLocal()()
-    anamnesis.core.publishLocal()()
-    anthology.core.publishLocal()()
-    anthology.java.publishLocal()()
-    anthology.scala.publishLocal()()
-    anthology.bundle.publishLocal()()
-    anticipation.codec.publishLocal()()
-    anticipation.color.publishLocal()()
-    anticipation.css.publishLocal()()
-    anticipation.generic.publishLocal()()
-    anticipation.gfx.publishLocal()()
-    anticipation.html.publishLocal()()
-    anticipation.http.publishLocal()()
-    anticipation.log.publishLocal()()
-    anticipation.opaque.publishLocal()()
-    anticipation.path.publishLocal()()
-    anticipation.print.publishLocal()()
-    anticipation.text.publishLocal()()
-    anticipation.time.publishLocal()()
-    anticipation.url.publishLocal()()
-    austronesian.core.publishLocal()()
-    aviation.core.publishLocal()()
-    baroque.core.publishLocal()()
-    breviloquence.core.publishLocal()()
-    burdock.boot.publishLocal()()
-    burdock.core.publishLocal()()
-    caduceus.core.publishLocal()()
-    caduceus.resend.publishLocal()()
-    caesura.core.publishLocal()()
-    camouflage.core.publishLocal()()
-    capricious.core.publishLocal()()
-    cardinality.core.publishLocal()()
-    cataclysm.core.publishLocal()()
-    cellulose.core.publishLocal()()
-    charisma.core.publishLocal()()
-    chiaroscuro.core.publishLocal()()
-    coaxial.core.publishLocal()()
-    contextual.core.publishLocal()()
-    contingency.core.publishLocal()()
-    cosmopolite.core.publishLocal()()
-    dendrology.dag.publishLocal()()
-    dendrology.tree.publishLocal()()
-    denominative.core.publishLocal()()
-    digression.core.publishLocal()()
-    dissonance.core.publishLocal()()
-    distillate.core.publishLocal()()
-    diuretic.core.publishLocal()()
-    enigmatic.core.publishLocal()()
-    escapade.core.publishLocal()()
-    escritoire.core.publishLocal()()
-    ethereal.core.publishLocal()()
-    eucalyptus.ansi.publishLocal()()
-    eucalyptus.core.publishLocal()()
-    eucalyptus.gcp.publishLocal()()
-    eucalyptus.syslog.publishLocal()()
-    exegesis.core.publishLocal()()
-    exoskeleton.args.publishLocal()()
-    exoskeleton.completions.publishLocal()()
-    exoskeleton.core.publishLocal()()
-    frontier.core.publishLocal()()
-    fulminate.core.publishLocal()()
-    galilei.core.publishLocal()()
-    gastronomy.core.publishLocal()()
-    geodesy.core.publishLocal()()
-    gesticulate.core.publishLocal()()
-    gnossienne.core.publishLocal()()
-    gossamer.core.publishLocal()()
-    guillotine.core.publishLocal()()
-    hallucination.ansi.publishLocal()()
-    hallucination.core.publishLocal()()
-    harlequin.ansi.publishLocal()()
-    harlequin.core.publishLocal()()
-    harlequin.md.publishLocal()()
-    hellenism.core.publishLocal()()
-    hieroglyph.core.publishLocal()()
-    honeycomb.core.publishLocal()()
-    hyperbole.core.publishLocal()()
-    hypotenuse.core.publishLocal()()
-    imperial.core.publishLocal()()
-    inimitable.core.publishLocal()()
-    iridescence.core.publishLocal()()
-    jacinta.core.publishLocal()()
-    jacinta.http.publishLocal()()
-    jacinta.time.publishLocal()()
-    jacinta.schema.publishLocal()()
-    jacinta.records.publishLocal()()
-    kaleidoscope.core.publishLocal()()
-    larceny.plugin.publishLocal()()
-    legerdemain.core.publishLocal()()
-    mandible.core.publishLocal()()
-    mercator.core.publishLocal()()
-    metamorphose.core.publishLocal()()
-    monotonous.core.publishLocal()()
-    mosquito.core.publishLocal()()
-    urticose.core.publishLocal()()
-    urticose.url.publishLocal()()
-    nomenclature.core.publishLocal()()
-    obligatory.core.publishLocal()()
-    octogenarian.core.publishLocal()()
-    orthodoxy.core.publishLocal()()
-    panopticon.core.publishLocal()()
-    parasite.core.publishLocal()()
-    //perihelion.core.publishLocal()()
-    phoenicia.core.publishLocal()()
-    plutocrat.core.publishLocal()()
-    polaris.core.publishLocal()()
-    polyvinyl.core.publishLocal()()
-    prepositional.core.publishLocal()()
-    probably.coverage.publishLocal()()
-    probably.cli.publishLocal()()
-    probably.core.publishLocal()()
-    profanity.core.publishLocal()()
-    proscenium.core.publishLocal()()
-    punctuation.ansi.publishLocal()()
-    punctuation.core.publishLocal()()
-    punctuation.html.publishLocal()()
-    quantitative.core.publishLocal()()
-    quantitative.units.publishLocal()()
-    revolution.core.publishLocal()()
-    rudiments.core.publishLocal()()
-    savagery.core.publishLocal()()
-    scintillate.server.publishLocal()()
-    scintillate.servlet.publishLocal()()
-    sedentary.core.publishLocal()()
-    serpentine.core.publishLocal()()
-    spectacular.core.publishLocal()()
-    stenography.core.publishLocal()()
-    superlunary.core.publishLocal()()
-    superlunary.jvm.publishLocal()()
-    surveillance.core.publishLocal()()
-    symbolism.core.publishLocal()()
-    synesthesia.core.publishLocal()()
-    tarantula.core.publishLocal()()
-    telekinesis.core.publishLocal()()
-    turbulence.core.publishLocal()()
-    typonym.core.publishLocal()()
-    ulysses.core.publishLocal()()
-    umbrageous.plugin.publishLocal()()
-    vacuous.core.publishLocal()()
-    vexillology.core.publishLocal()()
-    vicarious.core.publishLocal()()
-    wisteria.core.publishLocal()()
-    xylophone.core.publishLocal()()
-    yossarian.core.publishLocal()()
-    ypsiloid.core.publishLocal()()
-    zephyrine.core.publishLocal()()
-    zeppelin.core.publishLocal()()
-    ziggurat.core.publishLocal()()
-    soundness.base.publishLocal()()
-    soundness.cli.publishLocal()()
-    soundness.data.publishLocal()()
-    soundness.sci.publishLocal()()
-    soundness.test.publishLocal()()
-    soundness.tool.publishLocal()()
-    soundness.web.publishLocal()()
+// Every top-level Library declared above must appear here exactly once. The
+// `groupCheck.validate` task verifies this list against the on-disk `lib/*/src`
+// directories.
+val allLibraries: Seq[Library] = Seq(
+  abacist, acyclicity, adversaria, ambience, anamnesis, anthology, anticipation,
+  austronesian, aviation, baroque, beneficence, bitumen, breviloquence, burdock,
+  cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
+  cellulose, charisma, chiaroscuro, coaxial, contextual, contingency, cosmopolite,
+  decorum, dendrology, denominative, digression, dissonance, distillate, diuretic,
+  enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis, exoskeleton,
+  frontier, fulminate, galilei, gastronomy, geodesy, gesticulate, gigantism,
+  gnossienne, gossamer, guillotine, hallucination, harlequin, hellenism, hieroglyph,
+  honeycomb, hyperbole, hypotenuse, imperial, inimitable, iridescence, jacinta,
+  kaleidoscope, larceny, legerdemain, mandible, mercator, metamorphose, monotonous,
+  mosquito, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
+  phoenicia, plutocrat, polaris, polyvinyl, prepositional, probably, profanity,
+  proscenium, punctuation, quantitative, revolution, rudiments, satirical, savagery,
+  scintillate, sedentary, serpentine, spectacular, stenography, superlunary,
+  surveillance, symbolism, synesthesia, tarantula, telekinesis, turbulence, typonym,
+  ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, wisteria, xylophone,
+  yossarian, ypsiloid, zephyrine, zeppelin, ziggurat
+)
 
-    soundness.all.publishLocal()()
-
-    Result.Success(())
