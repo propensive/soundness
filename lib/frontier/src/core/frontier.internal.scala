@@ -508,13 +508,38 @@ object internal:
     val frontierPluginPresent: Boolean =
       context.base.allPhases.exists(_.phaseName == "frontier")
 
+    // Serialise the search Result tree to a tab-separated, depth-prefixed
+    // flat text the plugin can parse without depending on dendrology or
+    // escapade. Pre-order traversal: each node emits `<depth>\t<kind>\t<name>`
+    // and then its children at `depth + 1`. Kind is M/C/A/F.
+    def serializeTree(result: Result, depth: Int, builder: StringBuilder): Unit =
+      result match
+        case Found(name, _) =>
+          builder.append(depth).append('\t').append('F').append('\t')
+            .append(name.s).append('\n')
+        case Missing(name, available, candidates) =>
+          builder.append(depth).append('\t').append('M').append('\t')
+            .append(name.s).append('\n')
+          available.foreach(serializeTree(_, depth + 1, builder))
+          candidates.foreach(serializeTree(_, depth + 1, builder))
+        case Available(name, requirements) =>
+          builder.append(depth).append('\t').append('A').append('\t')
+            .append(name.s).append('\n')
+          requirements.foreach(serializeTree(_, depth + 1, builder))
+        case Candidate(name, _, missing) =>
+          builder.append(depth).append('\t').append('C').append('\t')
+            .append(name.s).append('\n')
+          missing.foreach(serializeTree(_, depth + 1, builder))
+
     seek(TypeRepr.of[target], Nil, 1).absolve match
       case Found(_, expr) => expr.asExprOf[target]
 
-      case Missing(_, available, candidates) =>
+      case m @ Missing(_, available, candidates) =>
         val text = renderText(available, candidates)
-        if frontierPluginPresent
-        then '{frontier.Sentinel.missing[target](${Expr(text)})}
+        if frontierPluginPresent then
+          val sb = new StringBuilder
+          serializeTree(m, 0, sb)
+          '{frontier.Sentinel.missing[target](${Expr(text)}, ${Expr(sb.toString)})}
         else report.errorAndAbort(text)
 
   def every[value: Type]: Macro[Every[value]] =
