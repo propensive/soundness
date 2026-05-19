@@ -147,3 +147,17 @@ object Tests extends Suite(m"Frontier Tests"):
       . map(_.message)
     . assert(_.exists(_.contains("contextual value not found")))
 
+    test(m"explainMissingContext shows classpath alternatives at deepest in chain"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        trait Holder
+        given mkHolder(using rudiments.DecimalConverter): Holder = new Holder {}
+        summon[Holder]
+      . map(_.message)
+    . assert: msgs =>
+        msgs.exists: m =>
+          m.contains("resolving Holder")
+          && m.contains("candidate mkHolder")
+          && m.contains("requires") && m.contains("DecimalConverter")
+          && m.contains("decimalFormatters.java")
+
