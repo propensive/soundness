@@ -129,6 +129,7 @@ extends BaseScalaModule, SonatypeCentralPublishModule:
     settings.scalaOptions
       :+ s"-Xplugin:${decorum.plugin.assembly().path}"
       :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
+      :+ s"-Xplugin:${frontier.plugin.assembly().path}"
 
 trait Tests(dependencies: PublishModule*) extends BaseScalaModule:
   def moduleId: String = moduleDir.last

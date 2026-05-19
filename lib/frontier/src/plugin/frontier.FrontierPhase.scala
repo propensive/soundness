@@ -41,13 +41,15 @@ import dotty.tools.dotc.core.TypeError
 
 class FrontierPhase() extends PluginPhase:
   val phaseName: String                = "frontier"
-  // Run AFTER `inlining`/`splicing` so the macro splice inside the
-  // `internal.explanation` inline def has been fully expanded into a
-  // `Sentinel.missing[T]("...")` call we can recognise. Typer alone leaves
-  // the inline def as an unexpanded `Apply(explanation, ...)`; the splice
-  // doesn't fire until the `splicing` phase.
-  override val runsAfter: Set[String]  = Set("splicing")
-  override val runsBefore: Set[String] = Set("pickleQuotes")
+  // Run AFTER `pickleQuotes` (which comes after `splicing`) so quoted
+  // expression bodies — e.g. the literal `'{Sentinel.missing[T](...)}`
+  // inside the macro's *own source* — are pickled into opaque blobs
+  // before we walk the tree. Without that, the plugin matches the Apply
+  // nodes inside those quotes when compiling `frontier.core` itself and
+  // treats them as real sentinel calls. After pickleQuotes, only
+  // expanded user-site Apply nodes remain.
+  override val runsAfter: Set[String]  = Set("pickleQuotes")
+  override val runsBefore: Set[String] = Set("crossVersionChecks")
 
   // Walk each unit's typed tree for `frontier.Sentinel.missing[T](pretty,
   // tree)` calls emitted by the catch-all macro in place of missing
