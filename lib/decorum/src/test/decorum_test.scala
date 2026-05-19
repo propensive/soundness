@@ -138,6 +138,14 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("@deprecated\n\ndef foo(): Int = 1\n")
       . assert(_.contains("551.2"))
 
+      test(m"Param annotation does not arm 551.2 on a following blank line"):
+        rules("case class P(@ident x: Int)\n\ncase class Q(y: Int)\n")
+      . assert(!_.contains("551.2"))
+
+      test(m"Annotation immediately before a decl, then a blank line, is accepted"):
+        rules("@foo\ncase class A(x: Int)\n\ncase class B(y: Int)\n")
+      . assert(!_.contains("551.2"))
+
     suite(m"Phase 2: Operator and method-name spacing"):
 
       test(m"Missing space before `=>` is rejected"):
