@@ -1,5 +1,5 @@
 publishLocal:
-	./mill publishing.local
+	./mill __.publishLocal
 
 test:
 	./mill test.assembly
