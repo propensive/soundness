@@ -531,16 +531,34 @@ object internal:
             .append(name.s).append('\n')
           missing.foreach(serializeTree(_, depth + 1, builder))
 
-    seek(TypeRepr.of[target], Nil, 1).absolve match
-      case Found(_, expr) => expr.asExprOf[target]
+    // Funnel any non-Found seek result through the same render/emit
+    // pipeline. `seek` is declared to return any of `Found`, `Missing`,
+    // `Candidate`, or `Available`; a bare `Candidate` escapes via the
+    // SafeInlined+TypeApply branch (#1031). Wrap such bare nodes in a
+    // synthetic `Missing` using the user's target type so the renderer
+    // and serialiser get the outer "■ resolving <target>" framing they
+    // need. `Available` doesn't escape today but the wrapping is cheap
+    // defence against future drift in `seek`.
+    def emit(m: Missing): Expr[target] =
+      val text = renderText(m.available, m.candidates)
+      if frontierPluginPresent then
+        val sb = new StringBuilder
+        serializeTree(m, 0, sb)
+        '{frontier.Sentinel.missing[target](${Expr(text)}, ${Expr(sb.toString)})}
+      else report.errorAndAbort(text)
 
-      case m @ Missing(_, available, candidates) =>
-        val text = renderText(available, candidates)
-        if frontierPluginPresent then
-          val sb = new StringBuilder
-          serializeTree(m, 0, sb)
-          '{frontier.Sentinel.missing[target](${Expr(text)}, ${Expr(sb.toString)})}
-        else report.errorAndAbort(text)
+    seek(TypeRepr.of[target], Nil, 1).absolve match
+      case Found(_, expr) =>
+        expr.asExprOf[target]
+
+      case m: Missing =>
+        emit(m)
+
+      case c: Candidate =>
+        emit(Missing(stenography.internal.name[target], Nil, List(c)))
+
+      case a: Available =>
+        emit(Missing(stenography.internal.name[target], List(a), Nil))
 
   def every[value: Type]: Macro[Every[value]] =
     import quotes.reflect.*
