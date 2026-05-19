@@ -79,13 +79,16 @@ object Statements:
         case tr: untpd.Try =>
           collect(tr.cases, source).foreach(out += _)
 
+        case b: untpd.Block =>
+          // Statements inside a function body, lambda, or control-flow body.
+          // We include the trailing expression so the last → second-to-last
+          // adjacency is checked too. Single-line stats with no multi-line
+          // neighbour are collected but produce no violations downstream;
+          // R28 (315) only fires when at least one of an adjacent pair is
+          // multi-line.
+          collect(b.stats :+ b.expr, source).foreach(out += _)
+
         case _ => ()
-      // Note: `Block.stats` (statements inside a function body, lambda,
-      // or control-flow body) are NOT processed here. The chunk rule
-      // applies at *structural* scope boundaries — class/trait/object
-      // bodies, top-level statements, `match` and `try` case lists. A
-      // 2-line `if-then-else` inside a small function body isn't a chunk
-      // for blank-line purposes.
       t.productIterator.foreach(descend(_, visit))
 
     visit(tree)
