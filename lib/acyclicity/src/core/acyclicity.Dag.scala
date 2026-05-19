@@ -110,10 +110,10 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
     val allEdges = closure.edgeMap
     val removals =
       for
-        key    <- keys
-        edge   <- edgeMap(key)
-        target <- edgeMap.getOrElse(edge, Set())
-               if allEdges(key)(target)
+        key     <- keys
+        edge    <- edgeMap(key)
+        target  <- edgeMap.getOrElse(edge, Set())
+                if allEdges(key)(target)
       yield (key, target)
 
     Dag:
@@ -157,10 +157,10 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
     val inverted = invert
 
     Dag:
-      deletions.foldLeft(edgeMap) { (acc, next) =>
+      deletions.foldLeft(edgeMap): (acc, next) =>
         inverted(next).foldLeft(acc):
           (acc2, ref) => acc2.updated(ref, acc2(ref) - next ++ acc(next))
-      } -- deletions
+      -- deletions
 
   private def findCycle(start: node): Option[List[node]] raises DagError =
     if !edgeMap.has(start)

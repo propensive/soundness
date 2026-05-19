@@ -79,27 +79,27 @@ package executives:
           :: Nil
         =>
 
-            val parts0 = rawLine.cut(t" ")
-            val parts = if cursor > rawLine.length then parts0 :+ t"" else parts0
-            val wordStarts = parts.scanLeft(0){ (pos, w) => pos + w.length + 1 }.init
-            val wordIdx = wordStarts.lastIndexWhere(_ <= cursor).max(0)
-            val posInWord = cursor - wordStarts(wordIdx)
-            val focus = (wordIdx - 1).max(0)
-            val restParts = if parts.length > 1 then parts.tail else List(t"")
-            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, cursor))
+          val parts0 = rawLine.cut(t" ")
+          val parts = if cursor > rawLine.length then parts0 :+ t"" else parts0
+          val wordStarts = parts.scanLeft(0){ (pos, w) => pos + w.length + 1 }.init
+          val wordIdx = wordStarts.lastIndexWhere(_ <= cursor).max(0)
+          val posInWord = cursor - wordStarts(wordIdx)
+          val focus = (wordIdx - 1).max(0)
+          val restParts = if parts.length > 1 then parts.tail else List(t"")
+          val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, cursor))
 
-            Completion
-              ( Cli.arguments(arguments, focus, posInWord, tab),
-                Cli.arguments(restParts, focus, posInWord, tab),
-                environment,
-                workingDirectory,
-                Shell.Powershell,
-                focus,
-                posInWord,
-                stdio,
-                tty,
-                tab,
-                login )
+          Completion
+            ( Cli.arguments(arguments, focus, posInWord, tab),
+              Cli.arguments(restParts, focus, posInWord, tab),
+              environment,
+              workingDirectory,
+              Shell.Powershell,
+              focus,
+              posInWord,
+              stdio,
+              tty,
+              tab,
+              login )
 
         case
           t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position0) :: tty
