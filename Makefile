@@ -15,6 +15,7 @@ failing:
 	java -cp out/test/assembly.dest/out.jar soundness.FailingTests
 
 build:
+	./mill groupCheck.validate
 	./mill soundness.all
 
 dev:

@@ -212,6 +212,77 @@ object test extends ScalaModule:
   def sources = Task.Sources(moduleDir / ".." / "src" / "test")
   override def finalMainClass: Task.Simple[String] = "soundness.Tests"
 
+// ------------------------ VALIDATION ------------------------
+
+object groupCheck extends Module:
+  // Library directories on disk that are deliberately not wired into the build
+  // (work-in-progress modules with no compiling sources yet).
+  def disabledLibraries: Set[String] = Set("embarcadero", "perihelion")
+
+  // Components deliberately not included in any soundness.{base,cli,data,sci,test,
+  // tool,web} group bundle. Compiler plugins, internal subtypes, examples/demos,
+  // and helper modules that aren't published as part of `soundness-all` go here.
+  // The second group (after the blank line) are full Library cores not yet wired
+  // into any group bundle; review whether each belongs in a bundle or stays here.
+  def excluded: Set[String] = Set(
+    "adversaria.examples", "anthology.bundle", "anthology.scala",
+    "anticipation.codec", "anticipation.color", "anticipation.css",
+    "anticipation.generic", "anticipation.gfx", "anticipation.html",
+    "anticipation.http", "anticipation.log", "anticipation.opaque",
+    "anticipation.path", "anticipation.print", "anticipation.text",
+    "anticipation.time", "anticipation.url",
+    "beneficence.core", "beneficence.plugin", "dendrology.demo",
+    "ethereal.example", "exoskeleton.args", "exoskeleton.core",
+    "exoskeleton.rig", "frontier.plugin", "probably.coverage",
+    "quantitative.units",
+
+    "bitumen.core", "breviloquence.core", "distillate.core", "exegesis.core",
+    "gigantism.core", "proscenium.core", "satirical.core", "stenography.core",
+    "ypsiloid.core"
+  )
+
+  def validate(): Command[Unit] = Task.Command:
+    val onDisk = os.list(mill.api.BuildCtx.workspaceRoot / "lib").iterator
+      .filter(p => os.isDir(p) && os.exists(p / "src"))
+      .map(_.last)
+      .toSet
+    val declaredLibraries = allLibraries.map(_.moduleSegments.render).toSet
+    val declaredComponents = allLibraries.flatMap(_.moduleDirectChildren).collect:
+      case c: (Component | BareComponent) => c.moduleSegments.render
+    .toSet
+    val groupBundles = Seq(soundness.base, soundness.cli, soundness.data,
+                           soundness.sci, soundness.test, soundness.tool, soundness.web)
+    val coveredComponents = groupBundles.flatMap(_.moduleDeps.map(_.moduleSegments.render)).toSet
+
+    val problems = scala.collection.mutable.Buffer.empty[String]
+
+    val newOnDisk = onDisk -- declaredLibraries -- disabledLibraries
+    if newOnDisk.nonEmpty then
+      problems += "Library directories on disk but not in `allLibraries` (add to "
+        + "build.mill or to `groupCheck.disabledLibraries`):\n  "
+        + newOnDisk.toSeq.sorted.mkString("\n  ")
+
+    val orphanLibs = declaredLibraries -- onDisk
+    if orphanLibs.nonEmpty then
+      problems += "`allLibraries` references libraries with no `lib/<name>/src` "
+        + "directory:\n  " + orphanLibs.toSeq.sorted.mkString("\n  ")
+
+    val unbundled = declaredComponents -- coveredComponents -- excluded
+    if unbundled.nonEmpty then
+      problems += "Components not in any soundness.* group bundle and not in "
+        + "`groupCheck.excluded` (a new module needs to join a group bundle, or "
+        + "be explicitly excluded):\n  " + unbundled.toSeq.sorted.mkString("\n  ")
+
+    val unknownInBundles = coveredComponents -- declaredComponents
+    if unknownInBundles.nonEmpty then
+      problems += "Group bundles reference components that aren't declared in any "
+        + "Library:\n  " + unknownInBundles.toSeq.sorted.mkString("\n  ")
+
+    if problems.nonEmpty then Result.Failure(problems.mkString("\n\n"))
+    else
+      Task.log.info(s"groupCheck: ${declaredLibraries.size} libraries, ${declaredComponents.size} components, ${coveredComponents.size} in group bundles. OK.")
+      Result.Success(())
+
 // ------------------------ WEBSITE ------------------------
 
 object website extends BaseScalaModule:
