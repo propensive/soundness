@@ -85,6 +85,7 @@ object Checker:
     checkForRules(file, forGroups, rawText, source, out)
     checkChunkBlanks(file, stmtGroups, rawText, source, out)
     checkLambdaLayout(file, lambdaSites, out)
+    checkDefnAnchors(file, Definitions.extract(untpdTree, source), out)
     var idx = 0
 
     while idx < lines.length do
@@ -199,15 +200,6 @@ object Checker:
     // `=>` continuation line align vertically with the leading modifier or
     // `given` keyword on the first signature line.
     var givenSignatureIndent:     Int                     = -1
-    // Indent of the leftmost modifier/keyword of the most recent
-    // declaration whose signature is still in progress (no top-level `=`
-    // body opener seen yet), or -1 if we are not inside one. Set when a
-    // line begins with a declaration keyword (`val`, `var`, `def`, etc.,
-    // optionally preceded by modifiers) and reset when the body opener
-    // appears. Used by R33 (833.3) to require that a type-annotation `:`
-    // breaking onto its own line align with the declaration's anchor
-    // column.
-    var defAnchorIndent:          Int                     = -1
     // True iff the immediately preceding non-blank code line was a "tight
     // expression" — one whose top-level (depth 0) tokens contain no
     // whitespace between code tokens, with at most one allowed space after
@@ -242,7 +234,6 @@ object Checker:
     checkR4TrailingWs(line, emit)
     checkR31ContinuationIndent(s, lineNum, leadingCols, isBlank, firstReal, emit)
     checkR44BodyIndent(s, lineNum, isBlank, leadingCols, firstReal, emit)
-    checkR33TypeAnchor(s, leadingCols, isBlank, firstReal, emit)
     checkR33HeavyBracketAnchor(s, leadingCols, isBlank, firstReal, emit)
 
     if isBlank then
@@ -315,20 +306,12 @@ object Checker:
       if startsGiven then s.givenSignatureIndent = leadingCols
       else if s.givenSignatureIndent >= 0 && hasTopLevelEq then s.givenSignatureIndent = -1
 
-      // R33.3 anchor: a line that begins any declaration (after any
-      // modifiers) records its leading-cols as the anchor for the
-      // type-annotation `:` continuation. The anchor clears when the
-      // body opener (`=`) appears — including on the same line as the
-      // declaration keyword, since a single-line `def foo = 42` doesn't
-      // open a signature region.
-      val startsDecl =
-        kwIdx < sem.length && sem(kwIdx).kind == Kind.Code
-          && DeclKeywords.contains(sem(kwIdx).text)
-      if startsDecl && !hasTopLevelEq then s.defAnchorIndent = leadingCols
-      else if s.defAnchorIndent >= 0 && hasTopLevelEq then s.defAnchorIndent = -1
-      else if s.givenSignatureIndent >= 0 && !sem.headOption.exists(_.text == "=>") then
-        // Any line that's neither an `=>` continuation nor part of the
-        // initial signature ends the given-signature region.
+      // R32 given-signature termination: any line that's neither an `=>`
+      // continuation nor part of the initial signature ends the
+      // given-signature region. (The R33.3 type-annotation anchor used
+      // to be tracked here too, but is now driven from the untyped tree
+      // — see `Definitions.extract` and `checkDefnAnchors`.)
+      if s.givenSignatureIndent >= 0 && !sem.headOption.exists(_.text == "=>") then
         if !startsWithDecl && !isContinuationOfDecl then s.givenSignatureIndent = -1
 
     if isBlank then
@@ -744,36 +727,28 @@ object Checker:
             +"own line; the preceding line contains a top-level operator or "
             +"assignment, so the anchor is mid-line" )
 
-  // R33.3: a type-annotation `:` that breaks onto its own line (the
-  // "heavy-signature" return-type or declared-type) must align with the
-  // first letter of the keyword (or leftmost modifier) that introduces
-  // the definition.
+  // R33.3 (833.3): a type-annotation `:` introducing the declared type
+  // of a `val`/`var`/`def`/`given` must either sit on the same line as
+  // the declaration's leftmost modifier/keyword, or — when broken onto
+  // a fresh line — start at exactly that column.
   //
-  // This extends the anchor-point concept of §5.3 from keyword sequences
-  // to definition signatures: just as `then`/`else` of a broken `if` chain
-  // must sit in the column of `if` (or its leading modifier), the broken
-  // `:` of a `def`/`val`/etc. must sit in the column of `def`/`val`/etc.
-  // (or its leading modifier).
-  private def checkR33TypeAnchor
-    ( s:           State,
-      leadingCols: Int,
-      isBlank:     Boolean,
-      firstReal:   Option[Token],
-      emit:        (Int, String, String) => Unit )
+  // Definition anchors are extracted from the untyped tree (see
+  // `decorum.Definitions`), so the rule does not depend on the token
+  // stream's bracket-nesting heuristics. The parser pairs each `:`
+  // with its containing `ValOrDefDef` for us.
+  private def checkDefnAnchors
+    ( file:    String,
+      anchors: List[DefnAnchor],
+      out:     mutable.ListBuffer[Violation] )
   :   Unit =
 
-    if isBlank then ()
-    else if s.defAnchorIndent < 0 then ()
-    // Skip `:` inside an open multi-line bracket block (parameter `:`,
-    // type-parameter `:`, etc.) — only the top-level return/declared-type
-    // `:` is governed by the anchor rule.
-    else if s.openParens > 0 then ()
-    else if !firstReal.exists{ t => t.kind == Kind.Code && t.text == ":" } then ()
-    else if leadingCols != s.defAnchorIndent then
-      emit
-        ( leadingCols + 1, "833.3",
-          s"type-annotation `:` should align with the definition's anchor at "
-            +s"column ${s.defAnchorIndent + 1} (found ${leadingCols + 1})" )
+    anchors.foreach: a =>
+      if a.colonLine != a.anchorLine && a.colonCol != a.anchorCol then
+        out +=
+          Violation
+            ( file, a.colonLine, a.colonCol, "833.3",
+              s"type-annotation `:` should align with the definition's anchor at "
+                +s"column ${a.anchorCol} (found ${a.colonCol})" )
 
   private def checkLicense
     ( s: State, lineNum: Int, line: IndexedSeq[Token], emit: (Int, String, String) => Unit )

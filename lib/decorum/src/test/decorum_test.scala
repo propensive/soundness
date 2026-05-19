@@ -352,6 +352,16 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("def f\n  ( a: Int )\n:   Int =\n  a\n")
       . assert(!_.contains("833.3"))
 
+      test(m"Mis-indented `:` after multi-line param list with type params is rejected"):
+        rules
+         ( "def f[a, b]\n  ( x: Int,\n    y: Int )\n        :   Int =\n  0\n" )
+      . assert(_.contains("833.3"))
+
+      test(m"Mis-indented `:` after param list containing a default value is rejected"):
+        rules
+         ( "def f\n  ( x: Int = 0,\n    y: Int = 1 )\n        :   Int =\n  0\n" )
+      . assert(_.contains("833.3"))
+
     suite(m"Phase 5: Keyword sequences (R33)"):
 
       test(m"Compact `if/then/else` is accepted"):
