@@ -286,8 +286,7 @@ object Honeycomb:
                           ( ' {
                                 type result
                                 $typeclass: Attribute { type Topic = result }
-                              } )
-                        =>
+                              } ) =>
 
                           Expr.summon[(? >: value) is Attributive to result] match
                             case Some('{$attributive}) =>

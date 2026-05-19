@@ -76,8 +76,7 @@ package executives:
           t"{completions}" :: t"powershell" :: As[Int](cursor) :: _ :: tty
           :: t"--"
           :: rawLine
-          :: Nil
-        =>
+          :: Nil =>
 
           val parts0 = rawLine.cut(t" ")
           val parts = if cursor > rawLine.length then parts0 :+ t"" else parts0

@@ -365,8 +365,7 @@ object internal:
       if params.contains(templateSymbol) then Map(templateSymbol -> target)
       else (template.dealias, target.dealias) match
         case (AppliedType(tTycon, tArgs), AppliedType(rTycon, rArgs))
-        if tArgs.length == rArgs.length
-        =>
+        if tArgs.length == rArgs.length =>
           val tyconBindings = unify(tTycon, rTycon, params)
 
           tArgs.zip(rArgs).foldLeft(tyconBindings): (acc, pair) =>

@@ -1386,7 +1386,8 @@ object Bytecode:
         case Ifeq(_) | Ifne(_) | Iflt(_) | Ifge(_) | Ifgt(_) | Ifle(_) => stack.drop(1)
 
         case IfIcmpeq(_) | IfIcmpne(_) | IfIcmplt(_)
-          | IfIcmpge(_) | IfIcmpgt(_) | IfIcmple(_) => stack.drop(2)
+          | IfIcmpge(_) | IfIcmpgt(_) | IfIcmple(_) =>
+          stack.drop(2)
 
         case IfAcmpeq(_) | IfAcmpne(_)                    => stack.drop(2)
         case Ifnull(_) | Ifnonnull(_)                     => stack.drop(1)
