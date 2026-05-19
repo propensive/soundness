@@ -35,7 +35,6 @@ package bitumen
 import anticipation.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8
-import rudiments.*
 
 object Pax:
   def record(key: Text, value: Text): Data =
@@ -45,7 +44,7 @@ object Pax:
     (total.toString+" "+key.s+"="+value.s+"\n").tt.data
 
   def records(pairs: Iterable[(Text, Text)]): Data =
-    pairs.foldLeft(IArray.empty[Byte]) { (acc, pair) => acc ++ record(pair(0), pair(1)) }
+    pairs.foldLeft(IArray.empty[Byte]): (acc, pair) => acc ++ record(pair(0), pair(1))
 
   private def computeLength(payloadLen: Int): Int =
     var n = 1

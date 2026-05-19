@@ -112,7 +112,7 @@ object Geolocation:
   given encodable: Geolocation is Encodable in Text = geolocation =>
     import geolocation.{location, altitude, uncertainty}
 
-    val alt = altitude.lay(t"") { a => t",$a" }
+    val alt = altitude.lay(t""): a => t",$a"
     t"geo:${location.encode}$alt${uncertainty.lay(t"") { u => t";u=$u" }}"
 
 case class Geolocation

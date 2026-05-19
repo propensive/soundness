@@ -64,8 +64,8 @@ class TeletypeBuilder(size: Optional[Int] = Unset) extends Builder[Teletype]:
       styles += text.styleAt(i)
       i += 1
 
-    text.hyperlinks.each { (k, v) => hyperlinks(k + offset) = v }
-    text.insertions.each { (k, v) => insertions(k + offset) = v }
+    text.hyperlinks.each: (k, v) => hyperlinks(k + offset) = v
+    text.insertions.each: (k, v) => insertions(k + offset) = v
 
     offset += text.plain.length
 

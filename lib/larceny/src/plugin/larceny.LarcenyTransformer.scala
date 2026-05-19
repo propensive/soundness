@@ -41,8 +41,8 @@ import java.util.jar.JarFile
 import scala.collection.mutable as scm
 import scala.util.control.NonFatal
 
-import dotty.tools.*, dotc.*, util.*, ast.Trees.*, ast.tpd, core.*,
-    Constants.Constant, Contexts.*, Decorators.*, StdNames.*, plugins.*
+import dotty.tools.*, dotc.*, util.*, ast.Trees.*, ast.tpd, core.*
+import Constants.Constant, Contexts.*, Decorators.*, StdNames.*, plugins.*
 
 object LarcenyTransformer:
   // Read the `plugin.properties` manifest from a `-Xplugin` path and tell

@@ -81,7 +81,9 @@ object internal:
 
         param.info match
           case AnnotatedType(repr, Apply(Select(New(annotation), _), _))
-          if annotation.symbol == defn.RepeatedAnnot => Some(repr)
+          if annotation.symbol == defn.RepeatedAnnot
+          =>
+            Some(repr)
 
           case _ => None
 

@@ -110,7 +110,7 @@ object Unicode:
 
       . or(panic(m"could not find hieroglyph/UnicodeData.txt on the classpath"))
 
-    scala.io.Source.fromInputStream(in).getLines.map(_.split(";").nn.to(List)).flatMap:
+    scala.io.Source.fromInputStream(in).getLines().map(_.split(";").nn.to(List)).flatMap:
       case hex :: name :: _ if !name.nn.startsWith("<") =>
         val hexInt = Integer.parseInt(hex, 16)
 
@@ -138,8 +138,9 @@ object Unicode:
       stream match
         case
           r"${Hex(from)}([0-9A-F]{4,6})\.\.${Hex(to)}([0-9A-F]{4,6});${EaWidth(w)}([AFHNW]a?).*"
-          #:: tail =>
-            recur(tail, map.append(CharRange(from, to), w))
+          #:: tail
+        =>
+          recur(tail, map.append(CharRange(from, to), w))
 
         case r"${Hex(from)}([0-9A-F]{4,6});${EaWidth(w)}([AFHNW]a?).*" #:: tail =>
           recur(tail, map.append(CharRange(from, from), w))
@@ -159,6 +160,6 @@ object Unicode:
         . or:
             panic(m"could not find hieroglyph/EastAsianWidth.txt on the classpath")
 
-    val stream = scala.io.Source.fromInputStream(in).getLines.map(Text(_)).to(Stream)
+    val stream = scala.io.Source.fromInputStream(in).getLines().map(Text(_)).to(Stream)
 
     recur(stream, TreeMap())

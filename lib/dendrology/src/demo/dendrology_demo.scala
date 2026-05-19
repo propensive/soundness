@@ -43,7 +43,9 @@ import termcaps.environment
 def laneDemo(): Unit =
   def show(name: Text, dag: Dag[Text]): Unit =
     Out.println(t"=== $name ===")
-    LaneDagDiagram(dag).render{ node => t" $node" }.each(Out.println(_))
+    LaneDagDiagram(dag).render: node => t" $node"
+    . each(Out.println(_))
+
     Out.println(t"")
 
   def showCompact(name: Text, dag: Dag[Text]): Unit =

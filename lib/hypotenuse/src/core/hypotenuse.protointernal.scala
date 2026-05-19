@@ -96,7 +96,7 @@ object protointernal:
 
           halt(148, m"${nibbles(index)} is not a valid hexadecimal character", position)
 
-    val nibbles3 = nibbles2.filterNot { ch => ch == ' ' || ch == '\n' }
+    val nibbles3 = nibbles2.filterNot: ch => ch == ' ' || ch == '\n'
 
     if nibbles3.length%2 != 0
     then halt

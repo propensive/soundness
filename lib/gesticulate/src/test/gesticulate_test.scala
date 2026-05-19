@@ -46,7 +46,6 @@ import turbulence.*
 import vacuous.*
 
 import charEncoders.utf8
-import charDecoders.utf8
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces

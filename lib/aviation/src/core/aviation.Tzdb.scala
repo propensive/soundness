@@ -79,7 +79,7 @@ object Tzdb:
       val stream2 = stream.or:
         abort(TzdbError(TzdbError.Reason.NoTzdbFile(name), 0))
 
-      Source.fromInputStream(stream2).getLines.map(Text(_)).map(_.cut(t"\t").head.lower)
+      Source.fromInputStream(stream2).getLines().map(Text(_)).map(_.cut(t"\t").head.lower)
       . to(Stream)
 
     parse(name, lines)

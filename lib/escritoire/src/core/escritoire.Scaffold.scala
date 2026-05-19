@@ -60,4 +60,5 @@ case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[
       val dataLength: Int = data.length
 
       val rows: Seq[IArray[IArray[text]]] =
-        data.map { row => columns.map { column => IArray.from(column.get(row).lines) } }
+        data.map: row =>
+          columns.map: column => IArray.from(column.get(row).lines)

@@ -126,7 +126,7 @@ object internal:
 
       val matched =
         cachedGivens(repr)
-        . filterNot{ s => excludedCanonicals.contains(canonical(s)) }
+        . filterNot: s => excludedCanonicals.contains(canonical(s))
         . filter(respectsOpaqueScope(_, repr))
         . flatMap(matchAgainst(_, repr))
 
@@ -172,7 +172,7 @@ object internal:
       matched.groupBy(_.symbol.name.toString.stripSuffix("$")).values.toList.map: group =>
         val exports = group.filter(_.symbol.flags.is(Flags.Exported))
         val candidates = if exports.nonEmpty then exports else group
-        candidates.minBy{ m => renderSymbol(m.symbol).s.length }
+        candidates.minBy: m => renderSymbol(m.symbol).s.length
 
     // Same export-preferring dedupe applied to method-level candidates
     // surfaced by the implicit-search-failure trace.
@@ -365,8 +365,10 @@ object internal:
       if params.contains(templateSymbol) then Map(templateSymbol -> target)
       else (template.dealias, target.dealias) match
         case (AppliedType(tTycon, tArgs), AppliedType(rTycon, rArgs))
-        if tArgs.length == rArgs.length =>
+        if tArgs.length == rArgs.length
+        =>
           val tyconBindings = unify(tTycon, rTycon, params)
+
           tArgs.zip(rArgs).foldLeft(tyconBindings): (acc, pair) =>
             acc ++ unify(pair(0), pair(1), params)
 
@@ -517,15 +519,18 @@ object internal:
         case Found(name, _) =>
           builder.append(depth).append('\t').append('F').append('\t')
             .append(name.s).append('\n')
+
         case Missing(name, available, candidates) =>
           builder.append(depth).append('\t').append('M').append('\t')
             .append(name.s).append('\n')
           available.foreach(serializeTree(_, depth + 1, builder))
           candidates.foreach(serializeTree(_, depth + 1, builder))
+
         case Available(name, requirements) =>
           builder.append(depth).append('\t').append('A').append('\t')
             .append(name.s).append('\n')
           requirements.foreach(serializeTree(_, depth + 1, builder))
+
         case Candidate(name, _, missing) =>
           builder.append(depth).append('\t').append('C').append('\t')
             .append(name.s).append('\n')

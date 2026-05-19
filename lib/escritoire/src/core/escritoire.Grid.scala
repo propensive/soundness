@@ -133,6 +133,6 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
       if style.bottomLine.absent then Stream() else Stream(rule(sections.head.widths, Unset))
 
     val body =
-      sections.to(Stream).flatMap { section => midRule #:: recur(section.widths, section.rows) }
+      sections.to(Stream).flatMap: section => midRule #:: recur(section.widths, section.rows)
 
     topLine #::: body.tail #::: bottomLine

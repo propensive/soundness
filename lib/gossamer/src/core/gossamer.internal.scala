@@ -97,7 +97,8 @@ object internal:
 
           anticipation.Text(String.join("\n", array*).nn)
         }
-    else '{anticipation.Text($concatExpr)}
+    else
+      '{anticipation.Text($concatExpr)}
 
 
   def t(context: Expr[StringContext], insertions: Expr[Seq[Any]]): Macro[Text] =

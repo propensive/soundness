@@ -39,7 +39,6 @@ import distillate.*
 import gossamer.*
 import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
-import nomenclature.*
 import prepositional.*
 import rudiments.*
 import serpentine.*

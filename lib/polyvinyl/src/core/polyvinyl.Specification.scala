@@ -80,7 +80,8 @@ trait Specification extends Original:
                     m"could not find an Intensional instance for the field $name with type $label"
 
                 case
-                  Some('{$accessor: label `is` Intensional `in` Form `from` Origin `to` result}) =>
+                  Some('{$accessor: label `is` Intensional `in` Form `from` Origin `to` result})
+                =>
                     val rhs: Expr[Origin => Any] =
                       ' {
                           (data: Origin) =>
