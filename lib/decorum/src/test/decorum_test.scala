@@ -286,6 +286,30 @@ object Tests extends Suite(m"Decorum Tests"):
             +"    bigBody\n" )
       . assert(!_.contains("315"))
 
+      test(m"Multi-line pattern with trailing `=>` is accepted"):
+        rules
+         ( "def f(x: Any): Any = x match\n"
+            +"  case Foo\n"
+            +"    ( a, b ) =>\n"
+            +"    body\n" )
+      . assert(!_.contains("R33-multiline-pattern-arrow-position"))
+
+      test(m"Multi-line pattern with `=>` alone on its own line is rejected"):
+        rules
+         ( "def f(x: Any): Any = x match\n"
+            +"  case Foo\n"
+            +"    ( a, b )\n"
+            +"  =>\n"
+            +"    body\n" )
+      . assert(_.contains("R33-multiline-pattern-arrow-position"))
+
+      test(m"Multi-line pattern with body on same line as `=>` is rejected"):
+        rules
+         ( "def f(x: Any): Any = x match\n"
+            +"  case Foo\n"
+            +"    ( a, b ) => body\n" )
+      . assert(_.contains("R33-multiline-pattern-body-newline"))
+
     suite(m"Phase 3: Sibling padding and using alignment"):
 
       test(m"Adjacent multi-line defs without blank line is rejected"):
