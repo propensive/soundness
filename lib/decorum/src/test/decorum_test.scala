@@ -336,6 +336,22 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("def f\n  ( using a: A,\n          b: B )\n:   Int = 0\n")
       . assert(!_.contains("946"))
 
+      test(m"Same-line type-annotation `:` is accepted"):
+        rules("def foo: Int = 1\n")
+      . assert(!_.contains("833.3"))
+
+      test(m"Type-annotation `:` aligned with `def` on its own line is accepted"):
+        rules("def foo\n:   Int =\n  1\n")
+      . assert(!_.contains("833.3"))
+
+      test(m"Mis-indented type-annotation `:` on its own line is rejected"):
+        rules("def foo\n  : Int =\n    1\n")
+      . assert(_.contains("833.3"))
+
+      test(m"`:` inside a parameter list is not flagged by 833.3"):
+        rules("def f\n  ( a: Int )\n:   Int =\n  a\n")
+      . assert(!_.contains("833.3"))
+
     suite(m"Phase 5: Keyword sequences (R33)"):
 
       test(m"Compact `if/then/else` is accepted"):
