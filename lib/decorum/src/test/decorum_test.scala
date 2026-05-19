@@ -575,3 +575,19 @@ object Tests extends Suite(m"Decorum Tests"):
          ( "val r =\n  for x  <- List(1)\n      if x > 0\n      y  <- List(2)"
             +"\n  yield x + y\n" )
       . assert(_.contains("924.3"))
+
+      test(m"For-comprehension with `if` on same line as `<-` is accepted"):
+        rules("val r =\n  for x <- List(1) if x > 0\n  yield x\n")
+      . assert(r => !r.contains("924.3") && !r.contains("924.4"))
+
+      test(m"For-comprehension with blank line before `if` is rejected"):
+        rules
+         ( "val r =\n  for x  <- List(1)\n\n         if x > 0\n      y  <- List(2)"
+            +"\n  yield x + y\n" )
+      . assert(_.contains("924.4"))
+
+      test(m"For-comprehension aligned `if` filter is exempt from 473.1"):
+        rules
+         ( "val r =\n  for x  <- List(1)\n         if x > 0\n      y  <- List(2)"
+            +"\n  yield x + y\n" )
+      . assert(r => !r.contains("473.1"))

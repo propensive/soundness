@@ -68,6 +68,12 @@ object Checker:
     state.companions         = Companions.extract(untpdTree, source)
     val caseGroups           = Cases.extract(untpdTree, source)
     val forGroups            = Comprehensions.extract(untpdTree, source)
+    state.forFilterLines     = forGroups.iterator.flatMap: gens =>
+                                 gens.iterator.collect:
+                                   case gl if gl.isFilter
+                                         && !gens.exists(o => (o ne gl) && o.line == gl.line) =>
+                                     gl.line
+                               .toSet
     val sequences            = Sequences.extract(untpdTree, source)
     scanRawTabs(file, rawText, out)
     val stmtGroups           = Statements.extract(untpdTree, source)
@@ -76,7 +82,7 @@ object Checker:
     checkPackageRules(file, expectedModule, state.packageInfo, out)
     checkImportRules(file, imports, lines, out)
     checkCaseRules(file, caseGroups, lines, out)
-    checkForRules(file, forGroups, out)
+    checkForRules(file, forGroups, rawText, source, out)
     checkChunkBlanks(file, stmtGroups, rawText, source, out)
     checkLambdaLayout(file, lambdaSites, out)
     var idx = 0
@@ -131,6 +137,13 @@ object Checker:
     var hasImports:           Boolean                    = false
     var packageInfo:          Option[PackageInfo]        = None
     var annotationEndLines:   Set[Int]                   = Set.empty
+    // Lines that are `if`-filter rows inside a `for`-comprehension and sit
+    // alone on their line (i.e. the filter doesn't share a line with the
+    // generator above it). R34 (924.3) requires these to align vertically
+    // with the comprehension's `<-`/`=` column, which can sit far to the
+    // right of the previous line's indent — so R31 (473.1) must not
+    // additionally complain about that indent jump.
+    var forFilterLines:       Set[Int]                   = Set.empty
     var prevLineWasBlank:     Boolean                    = false
     var prevWasAnnotation:    Boolean                    = false
     var prevLineNum:          Int                        = 0
@@ -411,6 +424,7 @@ object Checker:
     else if s.bracketFormality.nonEmpty then ()
     else if s.quoteSpliceBraces.nonEmpty then ()
     else if s.importLineSet.contains(lineNum) then ()
+    else if s.forFilterLines.contains(lineNum) then ()
     else
       val isCommentOnly   = firstReal.exists(_.kind == Kind.Comment)
       val isStringContent = firstReal.exists(_.kind == Kind.Strs)
@@ -2134,6 +2148,8 @@ object Checker:
   private def checkForRules
     ( file:    String,
       groups:  List[List[GenLine]],
+      content: String,
+      source:  SourceFile,
       out:     mutable.ListBuffer[Violation] )
   :   Unit =
 
@@ -2143,15 +2159,37 @@ object Checker:
         val anchorLhsCol = anchorGen.startCol
         val anchorOpCol  = anchorGen.opCol
 
-        gens.foreach: gl =>
+        var i = 0
+        while i < gens.length do
+          val gl = gens(i)
           if !(gl.line == anchorGen.line && gl.startCol == anchorGen.startCol) then
             if gl.isFilter then
-              if gl.startCol != anchorOpCol then
-                out +=
-                  Violation
-                    ( file, gl.line, gl.startCol, "924.3",
-                      s"`if` filter should align with `<-`/`=` at column $anchorOpCol "
-                        +s"(found ${gl.startCol})" )
+              // A filter that shares a line with another enumerator
+              // (typically the generator above, e.g. `x <- xs if cond`) is
+              // accepted as-is: the user is laying the filter inline rather
+              // than as a separate enumerator row, and the column-alignment
+              // rule does not apply.
+              val sameLineAsOther =
+                gens.exists(o => (o ne gl) && o.line == gl.line)
+              if !sameLineAsOther then
+                // A separate-line filter must not be separated from the
+                // preceding enumerator by a blank line.
+                if i > 0 then
+                  val prev = gens(i - 1)
+                  if prev.line < gl.line - 1
+                  && hasBlankLineBetween(prev.line, gl.line, content, source)
+                  then
+                    out +=
+                      Violation
+                        ( file, gl.line, gl.startCol, "924.4",
+                          "`if` filter must not be separated from the preceding "
+                            +"enumerator by a blank line" )
+                if gl.startCol != anchorOpCol then
+                  out +=
+                    Violation
+                      ( file, gl.line, gl.startCol, "924.3",
+                        s"`if` filter should align with `<-`/`=` at column $anchorOpCol "
+                          +s"(found ${gl.startCol})" )
             else
               if gl.startCol != anchorLhsCol then
                 out +=
@@ -2165,3 +2203,4 @@ object Checker:
                     ( file, gl.line, gl.opCol, "924.1",
                       s"`<-`/`=` should be vertically aligned at column $anchorOpCol "
                         +s"(found ${gl.opCol})" )
+          i += 1
