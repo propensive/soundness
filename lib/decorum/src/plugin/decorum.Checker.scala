@@ -547,7 +547,7 @@ object Checker:
                 (i + 1 until arr.length).exists: k =>
                   val t = arr(k)
                   t.kind != Kind.Space && t.kind != Kind.Comment
-                    && t.text != ")" && t.text != "}"
+                    && t.text != ")" && t.text != "}" && t.text != "=>"
               if semanticBefore || badAfter then
                 out +=
                   Violation
@@ -1223,6 +1223,7 @@ object Checker:
                 else
                   t == ":" || t == "=" || t == "extends" || t == "derives"
                     || t == ")" || t == "]" || t == "}" || t == ","
+                    || t == "=>"
 
             // Inspect contents at depth 0 (relative to this bracket): if
             // there is no top-level comma but there is at least one binary
@@ -1792,7 +1793,11 @@ object Checker:
         // requires `=>` to trail the last pattern token on the same line.
         // It must not stand alone on its own line, and the body must
         // begin on a fresh line after the `=>`.
-        if c.patternMultiLine then
+        //
+        // Cases whose *guard* spans multiple lines are exempt: the Scala
+        // parser needs the `=>` dedented below the indented guard to end
+        // the guard expression, so a trailing `=>` isn't an option there.
+        if c.patternMultiLine && !c.guardMultiLine then
           if c.arrowAloneOnLine then
             out +=
               Violation
@@ -1806,8 +1811,11 @@ object Checker:
                   "body of a multi-line case pattern must start on the line "
                     +"after `=>`" )
         // Single-line pattern, multi-line body: keep the original sub-rule
-        // (exactly one space before `=>` on the case-keyword line).
-        else if !c.isSingleLine && c.spacesBeforeArrow != 1 then
+        // (exactly one space before `=>` on the case-keyword line). Only
+        // meaningful when `=>` trails content on a line; if the case has a
+        // multi-line guard that forces `=>` onto its own line, the leading
+        // whitespace isn't a "space before `=>`" in the rule's sense.
+        else if !c.isSingleLine && !c.arrowAloneOnLine && c.spacesBeforeArrow != 1 then
           out +=
             Violation
               ( file, c.arrowLine, c.arrowCol, "R33-multiline-case-arrow-space",
