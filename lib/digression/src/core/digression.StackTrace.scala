@@ -34,6 +34,8 @@ package digression
 
 import anticipation.*
 import fulminate.*
+import iridescence.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import symbolism.*
@@ -47,6 +49,36 @@ object StackTrace:
     lazy val prefix: Text = if pivot >= 0 then className.s.substring(0, pivot).nn.tt else "".tt
 
   case class Frame(method: Method, file: Text, line: Optional[Int], native: Boolean)
+
+  trait Palette extends iridescence.Palette:
+    type Form = Srgb
+    def message:   Color in Srgb
+    def file:      Color in Srgb
+    def method:    Color in Srgb
+    def line:      Color in Srgb
+    def separator: Color in Srgb
+    def accent1:   Color in Srgb
+    def accent2:   Color in Srgb
+    def accent3:   Color in Srgb
+    def accent4:   Color in Srgb
+    def accent5:   Color in Srgb
+
+  private def hex(n: Int): Color in Srgb =
+    Srgb(((n >> 16) & 255)/255.0, ((n >> 8) & 255)/255.0, (n & 255)/255.0)
+
+  given defaultPalette: StackTrace.Palette = new Palette:
+    def background: Color in Srgb = hex(0x000000)
+    def foreground: Color in Srgb = hex(0xffffff)
+    def message:    Color in Srgb = hex(0xffffff)
+    def file:       Color in Srgb = hex(0x5f9e9f)
+    def method:     Color in Srgb = hex(0xabcfdf)
+    def line:       Color in Srgb = hex(0x47d1cc)
+    def separator:  Color in Srgb = hex(0x808080)
+    def accent1:    Color in Srgb = hex(0xf84020)
+    def accent2:    Color in Srgb = hex(0xd88600)
+    def accent3:    Color in Srgb = hex(0xfefe00)
+    def accent4:    Color in Srgb = hex(0xfeae00)
+    def accent5:    Color in Srgb = hex(0xaefe00)
 
   val legend: Map[Text, Text] =
     Map

@@ -473,7 +473,7 @@ object denominative extends Library:
   object test extends Tests(core)
 
 object digression extends Library:
-  object core extends Component(contingency.core)
+  object core extends Component(contingency.core, iridescence.core)
   object test extends Tests(core)
 
 object dissonance extends Library:
@@ -497,7 +497,7 @@ object enigmatic extends Library:
   object test extends Tests(core)
 
 object escapade extends Library:
-  object core extends Component(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core)
+  object core extends Component(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, escritoire.core)
   object test extends Tests(core, yossarian.core)
   object bench extends Benchmarks(core, quantitative.units)
 
