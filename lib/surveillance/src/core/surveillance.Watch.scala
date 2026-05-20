@@ -105,6 +105,7 @@ class Watch():
       event.context.nn.absolve match
         case path: jnf.Path =>
           val name = path.toString.tt
+
           if filter(name) then
             try
               event.kind match

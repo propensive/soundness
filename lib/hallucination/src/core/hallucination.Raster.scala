@@ -46,10 +46,12 @@ import turbulence.*
 object Raster:
   def apply(width: Int, height: Int)(pixel: (Int, Int) => Chroma): Raster =
     val image = jai.BufferedImage(width, height, jai.BufferedImage.TYPE_INT_RGB)
+
     for
       x <- 0 until width
       y <- 0 until height
     do image.setRGB(x, y, pixel(x, y).underlying)
+
     new Raster(image)
 
   def apply[streamable: Streamable by Data](input: streamable): Raster =
@@ -97,15 +99,15 @@ case class Raster(private[hallucination] val image: jai.BufferedImage) extends F
   def to[format: Rasterizable as rasterizable]: Raster in format = Raster[format](image)
 
   def crop(left: Int = 0, bottom: Int = 0, top: Int = 0, right: Int = 0): Raster =
-    Raster(width - left - right, height - top - bottom) { (x, y) => apply(x + left, y + top) }
+    Raster(width - left - right, height - top - bottom): (x, y) => apply(x + left, y + top)
 
-  def flipX: Raster = Raster(width, height) { (x, y) => apply(width - 1 - x, y) }
-  def flipY: Raster = Raster(width, height) { (x, y) => apply(x, height - 1 - y) }
+  def flipX: Raster = Raster(width, height): (x, y) => apply(width - 1 - x, y)
+  def flipY: Raster = Raster(width, height): (x, y) => apply(x, height - 1 - y)
 
   def rotate(angle: 90 | 180 | 270): Raster = angle match
-    case 90  => Raster(height, width) { (x, y) => apply(width - 1 - y, x) }
-    case 180 => Raster(width, height) { (x, y) => apply(width - 1 - x, height - 1 - y) }
-    case 270 => Raster(height, width) { (x, y) => apply(y, height - 1 - x) }
+    case 90  => Raster(height, width): (x, y) => apply(width - 1 - y, x)
+    case 180 => Raster(width, height): (x, y) => apply(width - 1 - x, height - 1 - y)
+    case 270 => Raster(height, width): (x, y) => apply(y, height - 1 - x)
 
   def portrait: Boolean = height > width
   def square: Boolean = width == height

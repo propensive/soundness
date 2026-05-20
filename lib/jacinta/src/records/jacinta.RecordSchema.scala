@@ -318,6 +318,7 @@ object RecordSchema:
     def transform(value: Json, params: List[Text]): Text = params.absolve match
       case List(pattern: Text) =>
         val regex = Regex(pattern)
+
         if regex.matches(value.as[Text]) then value.as[Text]
         else
           abort(RecordSchemaError(RecordSchemaError.Reason.PatternMismatch(value.as[Text], regex)))
@@ -330,6 +331,7 @@ object RecordSchema:
     def transform(value: Json, params: List[Text] = Nil): Optional[Text] = params.absolve match
       case pattern :: Nil =>
         val regex = Regex(pattern)
+
         if regex.matches(value.as[Text]) then value.as[Text]
         else
           abort(RecordSchemaError(RecordSchemaError.Reason.PatternMismatch(value.as[Text], regex)))

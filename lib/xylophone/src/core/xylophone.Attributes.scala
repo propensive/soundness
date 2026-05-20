@@ -41,23 +41,6 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-// `Attributes` is an opaque view over an `IArray[String]` whose entries
-// alternate keys and values: at index `2k` is the attribute label, at index
-// `2k+1` is the value (XML attributes always have values, so unlike the HTML
-// equivalent there is no `null` sentinel for unvalued attributes). Storing
-// the pairs interleaved in a single `IArray` collapses the per-element
-// attribute representation to one heap allocation, against the previous
-// `Map[Text, Text]` whose `.updated`-per-attribute build-up cost
-// `O(n²)` `ListMap` allocations.
-//
-// Extension methods live inside the companion object so they have transparent
-// access to the underlying `IArray`. Structural equality and hashing are
-// exposed via dedicated `equalsAttributes` / `hashAttributes` extensions
-// rather than `Object.equals`/`hashCode`, since the underlying `IArray` would
-// otherwise answer with reference equality. `Element` (the only externally
-// significant `Attributes` consumer that needs structural equality) calls
-// these extensions explicitly.
-
 opaque type Attributes = IArray[String]
 
 object Attributes:
@@ -68,10 +51,12 @@ object Attributes:
       val n = pairs.length
       val arr = new Array[String](n*2)
       var i = 0
+
       pairs.foreach: pair =>
         arr(i*2) = pair._1.s
         arr(i*2 + 1) = pair._2.s
         i += 1
+
       arr.immutable(using Unsafe)
 
   def from(map: Map[Text, Text]): Attributes =

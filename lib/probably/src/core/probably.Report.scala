@@ -59,6 +59,7 @@ object Report:
   given verdict: Inclusion[Report, Verdict]:
     def include(report: Report, testId: TestId, verdict: Verdict): Report =
       val report2 = report.addVerdict(testId, verdict)
+
       verdict match
         case Verdict.Pass(_)       => report2
         case Verdict.Fail(_)       => report2
@@ -113,6 +114,7 @@ class Report(using Environment)(using palette: TestPalette):
     def summaries: List[Summary] = this match
       case Suite(suite, tests) =>
         val rest = tests.list.sortBy(_(0).timestamp).flatMap(_(1).summaries)
+
         if suite.absent then rest
         else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
 
@@ -162,7 +164,7 @@ class Report(using Environment)(using palette: TestPalette):
 
   private def benches(line: ReportLine): Iterable[ReportLine.Bench] = line match
     case bench@ReportLine.Bench(_, _) => Iterable(bench)
-    case ReportLine.Suite(_, tests)   => tests.list.flatMap{ (_, line) => benches(line) }
+    case ReportLine.Suite(_, tests)   => tests.list.flatMap: (_, line) => benches(line)
     case _                            => Nil
 
   enum Status:
@@ -287,7 +289,7 @@ class Report(using Environment)(using palette: TestPalette):
     val failureStatuses: Set[Status] =
       Set(Status.Fail, Status.Throws, Status.CheckThrows, Status.Mixed)
 
-    val failures = summaryLines.filter{ s => failureStatuses.has(s.status) }
+    val failures = summaryLines.filter: s => failureStatuses.has(s.status)
 
     if failures.nonEmpty then
       Out.println(t"")
@@ -314,12 +316,14 @@ class Report(using Environment)(using palette: TestPalette):
             case Verdict.Detail.Throws(err) =>
               Out.println:
                 t"  threw ${err.component}.${err.className}: ${truncate(err.message.text)}"
+
               err.crop(t"probably.Runner", t"run()").frames.take(3).each: frame =>
                 Out.println(formatFrame(frame))
 
             case Verdict.Detail.CheckThrows(err) =>
               Out.println:
                 t"  check threw ${err.component}.${err.className}: ${truncate(err.message.text)}"
+
               err.crop(t"probably.Verdict#", t"apply()").frames.take(3).each: frame =>
                 Out.println(formatFrame(frame))
 
@@ -340,9 +344,11 @@ class Report(using Environment)(using palette: TestPalette):
       val activeNames = active.to(List).map(_.name.text).join(t", ")
       val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
       val msg = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
+
       if active.isEmpty then Out.println(t"FATAL: $errorClass: $msg")
       else Out.println(t"FATAL in $activeNames: $errorClass: $msg")
-      StackTrace(error).frames.take(3).each{ frame => Out.println(formatFrame(frame)) }
+
+      StackTrace(error).frames.take(3).each: frame => Out.println(formatFrame(frame))
 
   private def humanComplete(coverage: Option[Coverage])(using Stdio): Unit =
     val table =
@@ -392,6 +398,7 @@ class Report(using Environment)(using palette: TestPalette):
 
     coverage.each: coverage =>
       Out.println(e"$Bold($Underline(Test coverage))")
+
       case class CoverageData(path: Text, branches: Int, hits: Int, oldHits: Int):
         def hitsText: Teletype =
           val main = e"${if hits == 0 then palette.subdued else palette.detail}($hits)"
@@ -465,8 +472,8 @@ class Report(using Environment)(using palette: TestPalette):
             val covered: Text = width(maxHits.map(data.hits.toDouble/_).getOrElse(0))
             val oldCovered: Text = width(maxHits.map(data.oldHits.toDouble/_).getOrElse(0))
 
-            val notCovered: Text = width(maxHits.map((data.branches.toDouble - data.hits -
-                data.oldHits)/_).getOrElse(0))
+            val notCovered: Text =
+              width(maxHits.map((data.branches.toDouble - data.hits - data.oldHits)/_).getOrElse(0))
 
             val bars = List
                         ( palette.accented  -> covered,
@@ -521,10 +528,13 @@ class Report(using Environment)(using palette: TestPalette):
           else t"┻┻       ┻┻   ┻┻  ┗━━━┻┛  ┗━━━┻┛"
 
         val width = if pass then 38 else 34
+
         if !pass || !tabulation then
           Out.println(e"$color(╭${t"─"*width}╮)")
+
           def banner(text: Text): Teletype =
             e"$color(│) $Bold(${Bg(color)}(${Fg(palette.black)}(  $text  ))) $color(│)"
+
           Out.println(banner(text1))
           Out.println(banner(text2))
           Out.println(banner(text3))
@@ -548,12 +558,14 @@ class Report(using Environment)(using palette: TestPalette):
           if aspirePassed + aspireFailed == 0
           then Out.println(e" $passText, $failText, $allText")
           else Out.println(e" $passText, $failText, $aspirePassText, $aspireFailText, $allText")
+
           Out.println(t"─"*72)
 
         import Status.*
 
         val allStatuses =
           List(Pass, Bench, AspirePass, Throws, Fail, AspireFail, Mixed, CheckThrows)
+
         allStatuses.grouped(4).each: statuses =>
           Out.println:
             statuses.map[Teletype]: status =>
@@ -576,6 +588,7 @@ class Report(using Environment)(using palette: TestPalette):
             palette.subdue(palette.detail, 0.9) )
 
       val suiteName = suite.let(_.name.teletype).or(e"")
+
       if githubActions then
         GithubActions.group(t"Benchmarks: ${suite.let(_.name.text).or(t"")}")
 
@@ -628,6 +641,7 @@ class Report(using Environment)(using palette: TestPalette):
           val baseline = comparison.benchmark.baseline.vouch
 
           val title = e"$Bold(${Fg(palette.informative)}(${comparison.test.id}))"
+
           Column(title, textAlign = TextAlignment.Right):
             (bench: ReportLine.Bench) =>
               def operations(left: Double, right: Double): Double = baseline.mode match
@@ -673,6 +687,7 @@ class Report(using Environment)(using palette: TestPalette):
 
     def showLegend(): Unit =
       Out.println(t"─"*74)
+
       Out.println:
         StackTrace.legend.to(List).map: (symbol, description) =>
           e"$Bold(${Fg(palette.foreground)}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
@@ -705,6 +720,7 @@ class Report(using Environment)(using palette: TestPalette):
 
       info.each: details =>
         Out.println(t"")
+
         details match
           case Verdict.Detail.Throws(err) =>
             val name = e"$Italic(${Fg(palette.foreground)}(${err.component}.${err.className}))"
@@ -762,6 +778,7 @@ class Report(using Environment)(using palette: TestPalette):
         val activeNames = active.to(List).map(_.name.text).join(t", ")
         val cause = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
         val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
+
         val message =
           if active.isEmpty
           then truncate(t"Fatal error: $errorClass: $cause")

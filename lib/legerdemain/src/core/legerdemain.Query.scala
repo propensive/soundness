@@ -54,7 +54,7 @@ object Query extends Dynamic:
   def apply(parameter: Text): Query = new Query(List(t"" -> parameter))
 
   given encodable: Query is Encodable in Text =
-    _.values.map { (key, value) => t"${key.urlEncode}=${value.urlEncode}" }
+    _.values.map: (key, value) => t"${key.urlEncode}=${value.urlEncode}"
     . join(t"&")
 
   given decodable: Query is Decodable in Text = text => Query:
@@ -161,6 +161,7 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
 
   def apply(label: Text): Query =
     val prefix = label+t"."
+
     Query:
       values.collect:
         case (`label`, value)                   => (t"", value)

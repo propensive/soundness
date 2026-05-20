@@ -96,7 +96,7 @@ object protointernal:
 
           halt(148, m"${nibbles(index)} is not a valid hexadecimal character", position)
 
-    val nibbles3 = nibbles2.filterNot { ch => ch == ' ' || ch == '\n' }
+    val nibbles3 = nibbles2.filterNot: ch => ch == ' ' || ch == '\n'
 
     if nibbles3.length%2 != 0
     then halt
@@ -140,6 +140,7 @@ object protointernal:
     case Some(digits) =>
       val int = JInt.parseInt(digits)
       if int < Short.MinValue then halt(46, m"an S16 may not be less than ${Short.MinValue.toInt}")
+
       if int > Short.MaxValue
       then halt(461, m"an S16 may not be greater than ${Short.MaxValue.toInt}")
 

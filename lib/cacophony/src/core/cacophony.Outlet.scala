@@ -119,6 +119,7 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info):
         val task: Runnable = () =>
           try
             var offset = 0
+
             while !stopped && offset < data.length do
               val len     = math.min(chunkBytes, data.length - offset)
               val written = line.write(data, offset, len)

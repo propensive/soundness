@@ -79,12 +79,12 @@ extends Figure:
     val d: Text = ops.reverse.map(_.encode).join(t" ")
     val attrs = SeqMap.newBuilder[Text, Text]
     attrs += t"d" -> d
-    id.let { svgId => attrs += t"id" -> svgId.text }
+    id.let: svgId => attrs += t"id" -> svgId.text
 
     if transforms.nonEmpty
     then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
-    style.let { css => attrs += t"style" -> css.properties.map(_.text).join(t";") }
+    style.let: css => attrs += t"style" -> css.properties.map(_.text).join(t";")
     Element(t"path", Attributes.from(attrs.result()), IArray())
 
   def moveTo(point: Point): Outline = copy(ops = MoveTo(point) :: ops)

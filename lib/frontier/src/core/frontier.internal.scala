@@ -126,7 +126,7 @@ object internal:
 
       val matched =
         cachedGivens(repr)
-        . filterNot{ s => excludedCanonicals.contains(canonical(s)) }
+        . filterNot: s => excludedCanonicals.contains(canonical(s))
         . filter(respectsOpaqueScope(_, repr))
         . flatMap(matchAgainst(_, repr))
 
@@ -136,6 +136,7 @@ object internal:
           else usingTypesInstantiated(m).map: paramType =>
             val nextAvailable = availableFor(paramType, m.symbol :: exclusions, gas - 1)
             Missing(stenography.internal.name(paramType), nextAvailable, Nil)
+
         Available(formatProposal(m), requirements)
 
     // A symbol introduced via `export X.y` carries the `Exported` flag and its
@@ -172,7 +173,7 @@ object internal:
       matched.groupBy(_.symbol.name.toString.stripSuffix("$")).values.toList.map: group =>
         val exports = group.filter(_.symbol.flags.is(Flags.Exported))
         val candidates = if exports.nonEmpty then exports else group
-        candidates.minBy{ m => renderSymbol(m.symbol).s.length }
+        candidates.minBy: m => renderSymbol(m.symbol).s.length
 
     // Same export-preferring dedupe applied to method-level candidates
     // surfaced by the implicit-search-failure trace.
@@ -193,6 +194,7 @@ object internal:
       val pairs = matched.typeParams.collect:
         case tp if matched.bindings.contains(tp) =>
           s"${tp.name.toString} = ${stenography.internal.name(matched.bindings(tp)).s}"
+
       if pairs.isEmpty then baseName.tt
       else s"$baseName [${pairs.mkString(", ")}]".tt
 
@@ -223,9 +225,11 @@ object internal:
         . iterator
         . flatMap: args =>
             val pairs = typeParams.zip(args).toMap
+
             if !boundsRespected(typeParams, pairs) then None
             else
               val substituted = resultOf(symbol.info.appliedTo(args))
+
               if substituted <:< target then Some(Matched(symbol, typeParams, pairs))
               else None
 
@@ -269,9 +273,11 @@ object internal:
       t.dealias match
         case Refinement(parent, _, info) =>
           val parentValues = collectRefinementValues(parent)
+
           val infoValue = info match
             case TypeBounds(lo, hi) if lo =:= hi => List(hi)
             case _                               => Nil
+
           parentValues ++ infoValue
 
         case _ =>
@@ -295,6 +301,7 @@ object internal:
       if matched.typeParams.isEmpty then usingTypes(matched.symbol)
       else
         val args = matched.typeParams.map(matched.bindings)
+
         matched.symbol.info.appliedTo(args) match
           case mt: MethodType =>
             collectUsingClause(mt)
@@ -320,6 +327,7 @@ object internal:
         if current.isNoSymbol || current == defn.RootClass then None
         else if current.flags.is(Flags.Module) then
           val moduleName = current.name.toString.stripSuffix("$")
+
           val sibling = current.owner.declaredTypes.find: t =>
             t.name.toString == moduleName && t.flags.is(Flags.Opaque)
 
@@ -367,12 +375,14 @@ object internal:
         case (AppliedType(tTycon, tArgs), AppliedType(rTycon, rArgs))
         if tArgs.length == rArgs.length =>
           val tyconBindings = unify(tTycon, rTycon, params)
+
           tArgs.zip(rArgs).foldLeft(tyconBindings): (acc, pair) =>
             acc ++ unify(pair(0), pair(1), params)
 
         case (tRef: Refinement, rRef: Refinement) =>
           val Refinement(tParent, tName, tInfo) = tRef
           val Refinement(rParent, rName, rInfo) = rRef
+
           if tName != rName then Map.empty
           else unify(tParent, rParent, params) ++ unifyInfo(tInfo, rInfo, params)
 
@@ -409,6 +419,7 @@ object internal:
       // tried as a candidate for this position; doing so would just repeat
       // information already shown under the `▪ candidate` lines.
       val candidateSymbols = candidates.map(_.symbol).filterNot(_.isNoSymbol)
+
       Missing
         ( stenography.internal.name(repr),
           availableFor(repr, candidateSymbols, initialGas),
@@ -517,15 +528,18 @@ object internal:
         case Found(name, _) =>
           builder.append(depth).append('\t').append('F').append('\t')
             .append(name.s).append('\n')
+
         case Missing(name, available, candidates) =>
           builder.append(depth).append('\t').append('M').append('\t')
             .append(name.s).append('\n')
           available.foreach(serializeTree(_, depth + 1, builder))
           candidates.foreach(serializeTree(_, depth + 1, builder))
+
         case Available(name, requirements) =>
           builder.append(depth).append('\t').append('A').append('\t')
             .append(name.s).append('\n')
           requirements.foreach(serializeTree(_, depth + 1, builder))
+
         case Candidate(name, _, missing) =>
           builder.append(depth).append('\t').append('C').append('\t')
             .append(name.s).append('\n')
@@ -541,6 +555,7 @@ object internal:
     // defence against future drift in `seek`.
     def emit(m: Missing): Expr[target] =
       val text = renderText(m.available, m.candidates)
+
       if frontierPluginPresent then
         val sb = new StringBuilder
         serializeTree(m, 0, sb)
@@ -578,6 +593,7 @@ object internal:
       Implicits.searchIgnoring(TypeRepr.of[value])(ignored*).absolve match
         case success: ImplicitSearchSuccess =>
           val symbol = underlying(success.tree)
+
           if symbol.isNoSymbol || ignored.contains(symbol) then acc.reverse
           else collect(symbol :: ignored, success.tree.asExprOf[value] :: acc)
 

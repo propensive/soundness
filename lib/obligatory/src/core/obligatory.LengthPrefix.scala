@@ -48,10 +48,13 @@ object LengthPrefix:
     def length: Optional[Int] =
       cursor.lay(Unset): byte0 =>
         cursor.next()
+
         cursor.lay(fail()): byte1 =>
           cursor.next()
+
           cursor.lay(fail()): byte2 =>
             cursor.next()
+
             cursor.lay(fail()): byte3 =>
               cursor.next()
               byte0 << 24 | byte1 << 16 | byte2 << 8 | byte3

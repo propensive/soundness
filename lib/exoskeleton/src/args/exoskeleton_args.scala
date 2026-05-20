@@ -97,6 +97,7 @@ package interpreters:
         val parameters2: Map[Argument, List[Argument]] =
           commandline.parameters.to(List).flatMap: (key, values) =>
             val flag = key.value
+
             if flag.starts(t"--") && flag.contains(t"=")
             then
               val key2 = key.copy(format = Argument.Format.EqualityPrefix)
@@ -137,6 +138,7 @@ package interpreters:
           else
             val commandline2 =
               if head.cursor.present then commandline.copy(focus = current) else commandline
+
             recur(tail, head :: arguments, current, commandline2)
 
         case Nil =>

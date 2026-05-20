@@ -52,6 +52,7 @@ object JsonPrinter:
         case '\\' => append(t"\\\\")
         case '\f' => append(t"\\f")
         case ch   => append(ch)
+
       append('"')
 
     def printObject(node: IArray[Any], indent: Int): Unit =
@@ -60,10 +61,12 @@ object JsonPrinter:
       val last = n - 1
 
       var index = 0
+
       while index < n do
         if indentation then
           append('\n')
           for i <- 0 until indent*2 do append(' ')
+
         appendString(node(index*2).asInstanceOf[String])
         append(':')
         if indentation then append(' ')
@@ -75,6 +78,7 @@ object JsonPrinter:
       if indentation then
         append('\n')
         for i <- 0 until indent*2 - 2 do append(' ')
+
       append('}')
 
     def printArray(elements: IArray[Any], indent: Int): Unit =
@@ -86,10 +90,12 @@ object JsonPrinter:
         if raw > 0 && (elements(raw - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad)
         then raw - 1
         else raw
+
       append('[')
       val last = n - 1
 
       var index = 0
+
       while index < n do
         if indentation then
           append('\n')
@@ -110,6 +116,7 @@ object JsonPrinter:
       append('[')
       val last = n - 1
       var index = 0
+
       while index < n do
         val d = nums(index)
         // Render whole-valued numbers without a trailing `.0` so that
@@ -117,8 +124,10 @@ object JsonPrinter:
         if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
         then append(d.toLong.toString)
         else append(d.toString)
+
         if index < last then append(',')
         index += 1
+
       append(']')
 
     def recur(json: Json.Ast, indent: Int): Unit = json.asMatchable match

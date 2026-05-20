@@ -62,8 +62,10 @@ object internal:
 
   def fieldNames[product: Type](prefix: String)(using Quotes): List[String] =
     import quotes.reflect.*
+
     TypeRepr.of[product].typeSymbol.caseFields.flatMap: field =>
       val label = if prefix == "" then field.name else prefix+"."+field.name
+
       field.info.asType.absolve match
         case '[fieldType] => label :: fieldNames[fieldType](label)
 
@@ -78,6 +80,7 @@ object internal:
 
     val fields = fieldNames[key]("")
     val label = fields(index)+"."+key.valueOrAbort
+
     ConstantType(IntConstant(fields.indexOf(label))).asType.absolve match
       case '[type id <: Nat; id] => '{Proxy[key, value, id]()}
 

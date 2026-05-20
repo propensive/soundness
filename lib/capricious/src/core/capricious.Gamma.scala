@@ -60,6 +60,7 @@ case class Gamma(shape: Double, scale: Double) extends Distribution:
     def recur(): Double =
       val x = randomDistributions.gaussian.transform(random)
       val value = 1.0 + factor*x
+
       if value <= 0 then recur() else
         val value2 = value**3
         val u = random.unitInterval()

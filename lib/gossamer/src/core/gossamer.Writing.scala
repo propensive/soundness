@@ -65,9 +65,11 @@ object Writing:
     var total = 0
     var i = 0
     val n = boundaries.length - 1
+
     while i < n do
       total += graphemeM.width(Grapheme(s.substring(boundaries(i), boundaries(i + 1)).nn))
       i += 1
+
     total
 
   given textual: Writing is Textual:
@@ -88,6 +90,7 @@ object Writing:
       val builder = jl.StringBuilder()
       val n = writing.boundaries.length - 1
       var i = 0
+
       while i < n do
         val piece = writing.text.s.substring(writing.boundaries(i), writing.boundaries(i + 1)).nn
         builder.append(lambda(Grapheme(piece)).text.s)
@@ -105,6 +108,7 @@ object Writing:
     def indexOf(writing: Writing, sub: Text, start: Ordinal): Optional[Ordinal] =
       val charStart = writing.boundaries(start.n0.min(writing.boundaries.length - 1))
       val foundChar = writing.text.s.indexOf(sub.s, charStart)
+
       if foundChar < 0 then Unset else
         val idx = writing.boundaries.indexWhere(_ == foundChar)
         if idx < 0 then Unset else idx.z
@@ -121,6 +125,7 @@ object Writing:
   extension (writing: Writing)
     def graphemes: IndexedSeq[Grapheme] =
       val n = writing.boundaries.length - 1
+
       IndexedSeq.tabulate(n): i =>
         Grapheme(writing.text.s.substring(writing.boundaries(i), writing.boundaries(i + 1)).nn)
 

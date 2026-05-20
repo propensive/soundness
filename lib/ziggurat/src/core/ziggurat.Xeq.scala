@@ -85,6 +85,7 @@ object Xeq:
     if !prefix.ends(t"\n") then builder.add('\n')
 
     var offset = 1
+
     val indexEntries = encoded.map: (label, content) =>
       val entry = t"$label=$offset"
       offset = offset + content.count(_ == '\n') + 2
@@ -127,8 +128,10 @@ object Xeq:
 
   private def write(output: Path on Linux, data: Data): Unit = unsafely:
     output.create[File]()
+
     output.open: handle =>
       Stream(data).writeTo(handle)
+
     output.executable() = true
 
 

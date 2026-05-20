@@ -99,6 +99,7 @@ enum Decomposition:
           append(ordinal.show)
           append(t": ")
           item.multiline(indent + 1, true)
+
           if ordinal < last - 1 then
             append(t"\n"+(space*indent))
 
@@ -114,5 +115,6 @@ enum Decomposition:
         values.each: (key, value) =>
           append(t"$space$key:")
           value.multiline(indent + 2, true)
+
           if ordinal < last - 1 then
             append(t"\n"+(space*indent))

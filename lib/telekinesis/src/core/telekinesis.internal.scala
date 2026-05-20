@@ -174,7 +174,7 @@ object internal:
     headers.absolve.match
       case Varargs(exprs) => exprs.to(List).only:
         case '{$value: valueType} :: Nil =>
-          Expr.summon[(? >: valueType) is Servable].map { servable => '{$servable.serve($value)} }
+          Expr.summon[(? >: valueType) is Servable].map: servable => '{$servable.serve($value)}
           . optional
 
     . or:

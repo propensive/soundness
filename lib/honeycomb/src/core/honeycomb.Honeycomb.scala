@@ -116,6 +116,7 @@ object Honeycomb:
             types ::= TypeRepr.of[Map[Text, Optional[Text]]]
             iterator.next()
             val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
+
             ' {
                 $expr
                 && { $array(${Expr(index)}) = (${scrutinee}.attributes -- $others).toMap; true }
@@ -174,6 +175,7 @@ object Honeycomb:
 
           case TextNode("\u0000") =>
             index += 1
+
             iterator.next() match
               case Html.Hole.Node(label) =>
                 types ::= whatwg.elements(label).lay(TypeRepr.of[Node]): tag =>
@@ -204,6 +206,7 @@ object Honeycomb:
 
           case Element("\u0000", _, _, _) =>
             index += 1
+
             iterator.next() match
               case Html.Hole.Element(label) =>
                 types ::= whatwg.elements(label).lay(TypeRepr.of[Element]): tag =>
@@ -228,6 +231,7 @@ object Honeycomb:
         ' {
             val extracts = new Array[Any](${Expr(holes.size)})
             val matches: Boolean = ${descend('extracts, html, scrutinee, '{true})}
+
             $ {
                 if holes.size == 0 then '{matches}
                 else if holes.size == 1
@@ -282,12 +286,11 @@ object Honeycomb:
                     case '[attribute] =>
                       Expr.summon[attribute is Attribute in Whatwg on (? >: tag)]
                       . orElse(Expr.summon[attribute is Attribute in Whatwg]) match
-                        case
-                          Some
-                            ( ' {
-                                  type result
-                                  $typeclass: Attribute { type Topic = result }
-                                } ) =>
+                        case Some
+                          ( ' {
+                                type result
+                                $typeclass: Attribute { type Topic = result }
+                              } ) =>
 
                           Expr.summon[(? >: value) is Attributive to result] match
                             case Some('{$attributive}) =>

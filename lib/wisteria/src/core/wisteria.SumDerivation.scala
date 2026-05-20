@@ -174,6 +174,7 @@ object SumDerivation:
           inline !![labels] match
             case _: (label *: moreLabels) =>
               type variant0 = variant & derivation
+
               if index >= size then Unset else
                 (valueOf[label].asMatchable: @unchecked) match
                   case label: String =>
@@ -183,6 +184,7 @@ object SumDerivation:
                     then
                       val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
                       val context = requirement.wrap(infer[typeclass[variant0]])
+
                       lambda[variant0](context)
                         ( using context.aka["contextual"],
                                 label.tt.aka["label"],
@@ -220,13 +222,13 @@ object SumDerivation:
           inline !![labels] match
             case _: (label *: moreLabels) =>
               type variant0 = variant & derivation
+
               if index >= size then Unset else
                 (valueOf[label].asMatchable: @unchecked) match
                   case label: String =>
                     val index2: Int & VariantIndex[derivation] = VariantIndex[derivation](index)
 
-                    if predicate(using label.tt.aka["label"], index2.aka["index"])
-                    then
+                    if predicate(using label.tt.aka["label"], index2.aka["index"]) then
                       val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
                       val variant: variant0 = sum.asInstanceOf[variant0]
                       val context = requirement.wrap(infer[typeclass[variant0]])

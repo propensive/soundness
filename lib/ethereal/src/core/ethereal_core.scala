@@ -147,6 +147,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
               val arch =
                 if osArch.contains(t"aarch") || osArch == t"arm64" then t"arm64" else t"x64"
+
               t"$os-$arch"
 
             val isWindows: Boolean = platformLabel.starts(t"windows")
@@ -164,17 +165,22 @@ def cli[bus <: Matchable](using executive: Executive)
             val magicOffset: Int =
               var found: Int = -1
               var i = 0
+
               while found < 0 && i <= runnerBytes.length - magic.length do
                 var matches = true
                 var j = 0
+
                 while matches && j < magic.length do
                   if runnerBytes(i + j) != magic(j) then matches = false
                   j += 1
+
                 if matches then found = i
                 i += 1
+
               if found < 0 then
                 Out.println(e"Runner binary does not contain the ETHRCFG magic marker")
                 Exit.Fail(1).terminate()
+
               found
 
             val configOffset: Int = magicOffset + magic.length
@@ -248,9 +254,11 @@ def cli[bus <: Matchable](using executive: Executive)
       def line(): Text =
         val sb = jl.StringBuilder()
         var b = in.read()
+
         while b != '\n' && b != -1 do
           sb.append(b.toChar)
           b = in.read()
+
         sb.toString.tt
 
       def chunk(): Text =
@@ -275,6 +283,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
           val signal: UnixSignal | WindowsSignal =
             safely(name.decode[UnixSignal]).or(name.decode[WindowsSignal])
+
           DaemonEvent.Trap(pid, signal)
 
         case t"x" =>
@@ -304,6 +313,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
         case DaemonEvent.Trap(pid, signal) =>
           Log.info(DaemonLogEvent.ReceivedSignal(signal))
+
           val response: SignalResponse =
             safely:
               val invocation = client(pid).invocation.await(250L*1_000_000L)
@@ -343,6 +353,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
             private def connected(): ji.OutputStream =
               val s = stderrOut.get()
+
               if s != null then s
               else
                 val newS = connection.stderr.await()
@@ -451,6 +462,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
       val buildId = safely(System.properties.build.id[Int]()).or:
         safely((Classpath/"build.id").read[Text].trim.decode[Int]).or(0)
+
       buildFile.open(t"$buildId".writeTo(_))
       val pidValue = Process().pid.value.show
       pidFile.open(pidValue.writeTo(_))

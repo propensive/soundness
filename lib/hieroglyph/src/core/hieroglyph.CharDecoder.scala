@@ -56,7 +56,7 @@ class CharDecoder(val encoding: Encoding)(using sanitizer: TextSanitizer) extend
 
   def decoded(bytes: Data, omit: Boolean): Text =
     val buffer: StringBuilder = StringBuilder()
-    decoded(Stream(bytes)).each { text => buffer.append(text.s) }
+    decoded(Stream(bytes)).each: text => buffer.append(text.s)
     buffer.toString.tt
 
   def decoded(bytes: Data): Text = decoded(bytes, false)

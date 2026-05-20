@@ -42,6 +42,7 @@ import proscenium.*
 object internal:
   def check[value: Type]: Macro[Optionality[value]] =
     import quotes.reflect.*
+
     if TypeRepr.of[Unset.type] <:< TypeRepr.of[value].widen
     then '{null.asInstanceOf[Optionality[value]]}
     else halt(465, m"the type ${TypeRepr.of[value].widen.show} is not an `Optional`")

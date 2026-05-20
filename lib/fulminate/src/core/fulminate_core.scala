@@ -48,6 +48,7 @@ def panic(message: Message): Nothing = throw Panic(message)
 private def errorPrefix(d: Int, e: Int, useColor: Boolean): String =
   val esc = 27.toChar
   val padded = f"$d%03d"
+
   if useColor then
     val hyperlink = false
     val bel = 7.toChar
@@ -65,6 +66,7 @@ private def errorPrefix(d: Int, e: Int, useColor: Boolean): String =
 
 private def detectColor(using quotes: Quotes): Boolean =
   import dotty.tools.dotc.config.Settings.Setting.value
+
   quotes match
     case quotes: runtime.impl.QuotesImpl =>
       value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
@@ -90,6 +92,7 @@ def halt(d: Int, message: Message, position: Matchable)(using quotes: Quotes): N
   import quotes.reflect.*
   val body = if detectColor then message.colorText.s else message.text.s
   val text = errorPrefix(d, 0, detectColor)+body
+
   position match
     case null                     => report.errorAndAbort(text)
     case pos: Position @unchecked => report.errorAndAbort(text, pos)
@@ -109,6 +112,7 @@ def halt(d: Int, reason: Clarification, message: Message, position: Matchable)
   import quotes.reflect.*
   val body = if detectColor then message.colorText.s else message.text.s
   val text = errorPrefix(d, reason.number, detectColor)+body
+
   position match
     case null                     => report.errorAndAbort(text)
     case pos: Position @unchecked => report.errorAndAbort(text, pos)
@@ -153,6 +157,7 @@ def warn(d: Int, reason: Clarification, message: Message, position: Matchable)
   import quotes.reflect.*
   val body = if detectColor then message.colorText.s else message.text.s
   val text = errorPrefix(d, reason.number, detectColor)+body
+
   position match
     case null                     => report.warning(text)
     case pos: Position @unchecked => report.warning(text, pos)

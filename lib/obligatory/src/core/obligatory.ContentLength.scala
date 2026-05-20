@@ -54,6 +54,7 @@ object ContentLength:
       case Cr =>
         if mark != cursor.mark then fail() else
         cursor.consume(fail())("\n")
+
         cursor.next()
         Unset
 

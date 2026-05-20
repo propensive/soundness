@@ -85,13 +85,16 @@ object Multipart:
           val start = cursor.mark
           cursor.seek(':'.toByte)
           Text.ascii(cursor.grab(start, cursor.mark))
+
         cursor.next()
         if datum != ' '.toByte then raise(MultipartError(Reason.Expected(' ')))
         cursor.next()
+
         val value: Text = cursor.hold:
           val start = cursor.mark
           cursor.seek('\r'.toByte)
           Text.ascii(cursor.grab(start, cursor.mark))
+
         cursor.next()
         if datum != '\n'.toByte then raise(MultipartError(Reason.Expected('\n')))
         cursor.next()
@@ -105,6 +108,7 @@ object Multipart:
       val bodyStart = cursor.mark
       var bodyEnd: Optional[Cursor.Mark] = Unset
       var continue = true
+
       while continue do
         if cursor.finished then continue = false
         else if datum != '\r'.toByte then
@@ -114,11 +118,14 @@ object Multipart:
             val crMark = cursor.mark
             var ok = cursor.next() && datum == '\n'.toByte
             var i = 0
+
             while ok && i < boundary.length do
               ok = cursor.next() && datum == boundary(i)
               i += 1
+
             cursor.cue(crMark)
             ok
+
           if matched then
             bodyEnd = cursor.mark
             continue = false
@@ -189,6 +196,7 @@ object Multipart:
 
           if !cursor.next() || datum != '\n'.toByte
           then raise(MultipartError(Reason.Expected('\n')))
+
           Stream(part)
 
         case other =>

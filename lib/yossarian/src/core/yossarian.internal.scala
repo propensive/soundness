@@ -87,8 +87,10 @@ object internal:
     def render: Text =
       val sb = StringBuilder()
       var y = 0
+
       while y < height do
         var x = 0
+
         while x < width do
           val s = graphemeBuffer(y*width + x).text.s
           if s.nonEmpty then sb.append(s)
@@ -101,6 +103,7 @@ object internal:
 
     def find(text: Text): Optional[Screen] = line.render.seek(text).let: ordinal =>
       val index = ordinal.n0
+
       new Screen
         ( text.length, styleBuffer.slice(index, index + text.length),
           graphemeBuffer.slice(index, index + text.length),

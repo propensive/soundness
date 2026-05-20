@@ -91,6 +91,7 @@ object Html extends Tag.Container
       val array = new Array[Node](count)
 
       var index = 0
+
       for item <- html do item match
         case Fragment(nodes*) => for node <- nodes do
           array(index) = node
@@ -145,6 +146,7 @@ object Html extends Tag.Container
 
   given loadable: (dom: Dom) => Tactic[ParseError] => Html is Loadable by Text = stream =>
     val root = Tag.root(Set(t"html"))
+
     HtmlParser.fromIterator(stream.iterator).parseHtml(root, doctypes = true) match
       case Fragment(Doctype(doctype), content) => Document(content, dom)
       case html@Element("html", _, _, _)       => Document(html, dom)
@@ -164,6 +166,7 @@ object Html extends Tag.Container
 
     val dom = document.metadata
     val emitter = Emitter[Text](4096)
+
     async:
       def recur(node: Html, indent: Int, block: Boolean, mode: Mode): Unit =
         node match
@@ -265,7 +268,7 @@ object Html extends Tag.Container
     case Element(tagname, attributes, children, _) =>
       val tagContent = if attributes.nil then t"" else
         attributes.map:
-          case (key, value) => value.lay(key) { value => t"""$key="$value"""" }
+          case (key, value) => value.lay(key): value => t"""$key="$value""""
 
         . join(t" ", t" ", t"")
 
@@ -493,7 +496,7 @@ object Html extends Tag.Container
       val col = cursor.column.n1 - (if cursor.more then 0 else 1)
       val endPos = end.lay(cursor.position.n0)(_.absolute.toInt)
       val offset: Optional[Int] = start.let(_.absolute.toInt)
-      val length: Optional[Int] = start.let{ mark => endPos - mark.absolute.toInt }
+      val length: Optional[Int] = start.let: mark => endPos - mark.absolute.toInt
       Position(cursor.line.n1.u, col.max(1).u, offset = offset, length = length)
 
     // Optional callback invoked for null-placeholder holes during macro
@@ -569,6 +572,7 @@ object Html extends Tag.Container
       def findAncestorIndex(label: Text): Int =
         var i = 0
         val end = depth - 1
+
         while i < end do
           if stack(i).label == label then return i
           i += 1
@@ -606,11 +610,13 @@ object Html extends Tag.Container
       // `tag\$8`'s bytecode.
       def expect(char: Char): Unit =
         advance()
+
         lay(fail(ExpectedMore)): datum =>
           if datum != char then fail(Unexpected(datum))
 
       def expectInsensitive(char: Char): Unit =
         advance()
+
         lay(fail(ExpectedMore)): datum =>
           if asciiLower(datum) != asciiLower(char) then fail(Unexpected(datum))
 
@@ -706,10 +712,12 @@ object Html extends Tag.Container
         case '&' =>
           val start = begin()
           next()
+
           val mark2 = entity(begin()).lay(mark): text =>
             cloneTo(mark, start)(buffer)
             buffer.append(text)
             begin()
+
           value(mark2)
 
         case char =>
@@ -765,6 +773,7 @@ object Html extends Tag.Container
 
         while !done do
           skip()
+
           lay(fail(ExpectedMore)):
             case '>' | '/' => done = true
 
@@ -792,6 +801,7 @@ object Html extends Tag.Container
               // envelope (i.e. it might match a prior key).
               if (hashOr | h) == hashOr then
                 var dup = 0
+
                 while dup < 2*n do
                   if attrInterleaved(dup) == key2Str then fail(DuplicateAttribute(key2))
                   dup += 2
@@ -892,6 +902,7 @@ object Html extends Tag.Container
                 val tagStart = begin()
                 repeat(tag.length)(advance())
                 val candidate = slice(tagStart, begin())
+
                 if more && candidate == tag then
                   if lay(false)(_ == '>')
                   then
@@ -906,10 +917,12 @@ object Html extends Tag.Container
           case '&' if entities =>
             val start = begin()
             next()
+
             val mark2 = entity(begin()).lay(mark): text =>
               cloneTo(mark, start)(buffer)
               buffer.append(text)
               begin()
+
             textualSlow(mark2, close, entities)
 
           case char =>
@@ -942,17 +955,21 @@ object Html extends Tag.Container
 
               while p < limit && hit == 1.toChar do
                 val c = buf(p)
+
                 if c == '<' || c == 0.toChar then hit = c
                 else if c == '&' && entities then hit = c
                 else
                   if c == '\n' then
                     newlines += 1
                     lastNewline = p
+
                   p += 1
 
               val consumed = p - startPos
+
               if consumed > 0 then
                 cursor.unsafeBumpPos(consumed)(using Unsafe)
+
                 if cursor.lineActive then
                   if newlines == 0 then cursor.unsafeBumpColumn(consumed)(using Unsafe)
                   else
@@ -972,6 +989,7 @@ object Html extends Tag.Container
         case '-' =>
           val end = begin()
           next()
+
           lay(fail(ExpectedMore)):
             case '-' => expect('>') yet slice(mark, end)
             case _   => comment(mark)
@@ -987,6 +1005,7 @@ object Html extends Tag.Container
         case ']' =>
           val end = begin()
           next()
+
           lay(fail(ExpectedMore, mark)):
             case ']' => expect('>') yet slice(mark, end)
             case _   => cdata(mark)
@@ -1001,6 +1020,7 @@ object Html extends Tag.Container
       def tag(doctypes: Boolean, foreign: Boolean): Token = lay(fail(ExpectedMore)):
         case '!' =>
           next()
+
           lay(fail(ExpectedMore)):
             case '-' =>
               expect('-')
@@ -1039,6 +1059,7 @@ object Html extends Tag.Container
 
         case '/' =>
           next()
+
           if foreign then content = foreignTag(begin())
           else
             val tagDef = tagname(begin(), dom.elements)
@@ -1048,6 +1069,7 @@ object Html extends Tag.Container
             // interned `Tag` instance) instead of `content != parent.label`
             // (`String.equals` on the labels).
             openTag = tagDef
+
           Token.Close
 
         case '\u0000' => fail(BadInsertion)
@@ -1128,6 +1150,7 @@ object Html extends Tag.Container
                 // `focus` and `level` `var`s as `ObjectRef`s on every `<`
                 // entry, allocating two refs per element open.
                 val inferred: Optional[Tag] = dom.infer(parent, tag)
+
                 if inferred.absent then
                   if parent.autoclose then close()
                   else fail(InadmissibleTag(content, parent.label), mark)
@@ -1136,6 +1159,7 @@ object Html extends Tag.Container
                   level = Level.Descend
 
               next()
+
               if lay(false)(_ == '\u0000') then
                 callback.let(_(position.z, Hole.Element(parent.label)))
                 content = t"\u0000"
@@ -1162,6 +1186,7 @@ object Html extends Tag.Container
 
                   if !admit(content) then
                     val inferred = dom.infer(parent, focus)
+
                     if inferred.absent then
                       if parent.autoclose then
                         reset(mark)
@@ -1196,6 +1221,7 @@ object Html extends Tag.Container
                   val nameMismatch =
                     if parent.foreign then content != parent.label
                     else openTag ne parent
+
                   if nameMismatch then
                     if parent.autoclose then
                       reset(mark)
@@ -1203,6 +1229,7 @@ object Html extends Tag.Container
                     else if stackContainsAncestor(content) then
                       if formattingTags.has(parent.label) then
                         pendingAtDepth = findAncestorIndex(content)
+
                         if pendingFormattingSize >= pendingFormattingLabels.length then
                           val newCap = pendingFormattingLabels.length*2
                           val nl = new Array[Text](newCap)
@@ -1212,9 +1239,11 @@ object Html extends Tag.Container
                           jl.System.arraycopy(pendingFormattingAttrs, 0, na, 0, sz)
                           pendingFormattingLabels = nl
                           pendingFormattingAttrs  = na
+
                         pendingFormattingLabels(pendingFormattingSize) = parent.label
                         pendingFormattingAttrs (pendingFormattingSize) = map
                         pendingFormattingSize += 1
+
                       reset(mark)
                       close()
                     else if formattingTags.has(content) then
@@ -1222,6 +1251,7 @@ object Html extends Tag.Container
                       level = Level.Skip
                     else
                       reset(mark)
+
                       if parent == root then fail(UnopenedTag(content), mark)
                       else fail(MismatchedTag(parent.label, content), mark)
                   else
@@ -1241,22 +1271,27 @@ object Html extends Tag.Container
                 pendingAtDepth = -1
                 var added = 0
                 var i = 0
+
                 while i < pendingCount do
                   val label = pendingFormattingLabels(i)
                   val attrs = pendingFormattingAttrs(i)
                   val cloneTag: Optional[Tag] = dom.elements(label)
+
                   if cloneTag.present then
                     val tag = cloneTag.vouch
                     push(tag)
                     val cloneChild = descend(tag, admissible, attrs)
                     pop()
+
                     cloneChild match
                       case Element(_, _, children, _) if children.length == 0 => ()
 
                       case _ =>
                         append(cloneChild)
                         added += 1
+
                   i += 1
+
                 added
 
             level match
@@ -1278,12 +1313,14 @@ object Html extends Tag.Container
                 if parent.isTable && !savedFosterFlag then inTableContent = true
                 val child = descend(focus, admissible, extra)
                 pop()
+
                 if savedFosterFlag then
                   if inTableContent then
                     if fosteredAfterSize >= fosteredAfter.length then
                       val nu = new Array[Node](fosteredAfter.length*2)
                       jl.System.arraycopy(fosteredAfter, 0, nu, 0, fosteredAfterSize)
                       fosteredAfter = nu
+
                     fosteredAfter(fosteredAfterSize) = child
                     fosteredAfterSize += 1
                   else
@@ -1291,23 +1328,29 @@ object Html extends Tag.Container
                       val nu = new Array[Node](fosteredBefore.length*2)
                       jl.System.arraycopy(fosteredBefore, 0, nu, 0, fosteredBeforeSize)
                       fosteredBefore = nu
+
                     fosteredBefore(fosteredBeforeSize) = child
                     fosteredBeforeSize += 1
+
                   val added = reconstructPending()
                   read(parent, admissible, map, count + added)
                 else if focus.isTable then
                   val beforeAdded = fosteredBeforeSize
                   var i = 0
+
                   while i < fosteredBeforeSize do
                     append(fosteredBefore(i))
                     i += 1
+
                   fosteredBeforeSize = 0
                   append(child)
                   val afterAdded = fosteredAfterSize
                   i = 0
+
                   while i < fosteredAfterSize do
                     append(fosteredAfter(i))
                     i += 1
+
                   fosteredAfterSize = 0
                   inTableContent = false
                   val added = reconstructPending()
@@ -1322,13 +1365,16 @@ object Html extends Tag.Container
               if parent.tableLike then
                 val text = textual(begin(), Unset, true)
                 val trimmed = text.trim
+
                 if trimmed.length > 0 then
                   val node = TextNode(trimmed)
+
                   if inTableContent then
                     if fosteredAfterSize >= fosteredAfter.length then
                       val nu = new Array[Node](fosteredAfter.length*2)
                       jl.System.arraycopy(fosteredAfter, 0, nu, 0, fosteredAfterSize)
                       fosteredAfter = nu
+
                     fosteredAfter(fosteredAfterSize) = node
                     fosteredAfterSize += 1
                   else
@@ -1336,29 +1382,35 @@ object Html extends Tag.Container
                       val nu = new Array[Node](fosteredBefore.length*2)
                       jl.System.arraycopy(fosteredBefore, 0, nu, 0, fosteredBeforeSize)
                       fosteredBefore = nu
+
                     fosteredBefore(fosteredBeforeSize) = node
                     fosteredBeforeSize += 1
+
                 read(parent, admissible, map, count)
               else
                 whitespace() yet read(parent, admissible, map, count)
 
             case Mode.Raw =>
               val text = textual(begin(), parent.label, false)
+
               if text.nil then Element(parent.label, parent.attributes, IArray(), parent.foreign)
               else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
 
             case Mode.Rcdata =>
               val text = textual(begin(), parent.label, true)
+
               if text.nil then Element(parent.label, parent.attributes, IArray(), parent.foreign)
               else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
 
             case Mode.Normal =>
               val text = textual(begin(), Unset, true)
+
               if text.length == 0 then read(parent, admissible, map, count + 1)
               else append(TextNode(text)) yet read(parent, admissible, map, count + 1)
 
       if !more then Fragment() else locally:
         skip()
+
         if !more then Fragment() else
           append(root)
           val head = read(root, root.admissible, Attributes.empty, 0)

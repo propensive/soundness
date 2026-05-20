@@ -117,6 +117,7 @@ object EmailAddress:
           if 'A' <= char <= 'Z' || 'a' <= char <= 'z' || char.isDigit || symbolic
           then buffer.append(char)
           else raise(EmailAddressError(InvalidChar(char)))
+
           unquoted(index + 1, false)
 
         case Unset =>

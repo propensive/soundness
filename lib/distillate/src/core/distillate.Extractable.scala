@@ -155,6 +155,7 @@ object Extractable:
 
     ordinal =>
       import Selectable.reflectiveSelectable
+
       mirror match
         case mirror: { def fromOrdinal(ordinal: Int): enumeration } @unchecked =>
           try mirror.fromOrdinal(ordinal) catch case error: Exception => Unset

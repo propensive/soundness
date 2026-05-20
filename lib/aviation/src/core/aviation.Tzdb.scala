@@ -79,7 +79,7 @@ object Tzdb:
       val stream2 = stream.or:
         abort(TzdbError(TzdbError.Reason.NoTzdbFile(name), 0))
 
-      Source.fromInputStream(stream2).getLines.map(Text(_)).map(_.cut(t"\t").head.lower)
+      Source.fromInputStream(stream2).getLines().map(Text(_)).map(_.cut(t"\t").head.lower)
       . to(Stream)
 
     parse(name, lines)
@@ -188,6 +188,7 @@ object Tzdb:
 
       if lines.nil then entries ++ zone else
         val line: Text = lines.head.upto(_ == '#')
+
         line.cut(unsafely(r"\s+")).to(List) match
           case t"Rule" :: tail =>
             recur(lineNo + 1, lines.tail, parseRule(lineNo, tail) :: (zone.to(List) ++ entries))

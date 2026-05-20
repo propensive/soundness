@@ -89,6 +89,7 @@ object Hostname:
         if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit
         then builder.append(char.toString.tt)
         else raise(HostnameError(text, InvalidChar(char)))
+
         recur(index + 1, dnsLabels)
 
     recur(Prim, Nil)

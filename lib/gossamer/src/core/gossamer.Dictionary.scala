@@ -142,13 +142,16 @@ enum Dictionary[+element]:
 
     val justLen: Int = justText.length - justOffset
     val entryLen: Int = entry.length - entryOffset
+
     if justLen != entryLen then false
     else
       var ok = true
       var i = 0
+
       while ok && i < justLen do
         ok = justText.s.charAt(justOffset + i) == entry.s.charAt(entryOffset + i)
         i += 1
+
       ok
 
   protected def lookup(entry: Text, offset: Int): Optional[element] = this match
@@ -185,6 +188,7 @@ enum Dictionary[+element]:
       else
         val raw: Char = buffer(position)
         val char: Char = if raw >= 'A' && raw <= 'Z' then (raw + 32).toChar else raw
+
         node match
           case Empty                  => Unset
 
@@ -194,6 +198,7 @@ enum Dictionary[+element]:
 
           case just: Just[element] =>
             val pos: Int = just.offset + extra
+
             if pos < just.text.length && just.text.s.charAt(pos) == char
             then step(just, extra + 1, position + 1)
             else Unset

@@ -66,11 +66,13 @@ final class BlockParser:
     val len = s.length
     var pos = 0
     var lineNum = 0
+
     while pos < len do
       val nlPos = s.indexOf('\n', pos)
       val end = if nlPos < 0 then len else nlPos
       val line = if pos == 0 && end == len then text else Text(s.substring(pos, end).nn)
       processLine(line, lineNum.z)
+
       if nlPos < 0 then pos = len
       else
         pos = nlPos + 1
@@ -108,6 +110,7 @@ final class BlockParser:
   private def closeOne(): Unit =
     val builder = openStack.remove(openStack.length - 1)
     val parent = openStack.last
+
     builder match
       case item: ListItemBuilder =>
         parent match
@@ -151,6 +154,7 @@ final class BlockParser:
       // child added later.
       if item.hadBlank && item.children.nonEmpty then
         val itemIdx = openStack.indexOf(item)
+
         if itemIdx > 0 then openStack(itemIdx - 1) match
           case bl: BulletListBuilder  => bl.loose = true
           case ol: OrderedListBuilder => ol.loose = true
@@ -180,13 +184,16 @@ final class BlockParser:
     val om = ParserSupport.orderedMarker(residual)
     if bm.absent && om.absent then return false
     var idx = openStack.length - 1
+
     while idx >= 0 do
       openStack(idx) match
         case _: BulletListBuilder | _: OrderedListBuilder | _: ListItemBuilder =>
           return true
 
         case _ => ()
+
       idx -= 1
+
     false
 
   // ─── phase 1: walk containers ───────────────────────────────────────────
@@ -197,16 +204,19 @@ final class BlockParser:
     var idx = 1
     var remaining = line
     var continueLoop = true
+
     while idx < openStack.length && continueLoop do
       openStack(idx) match
         case container: ContainerBuilder =>
           val cont = container.tryContinue(remaining)
+
           if cont.absent then continueLoop = false
           else
             remaining = cont.vouch
             idx += 1
 
         case _: LeafBuilder => continueLoop = false
+
     (idx, remaining)
 
   // ─── phase 3: try to open new container blocks repeatedly ───────────────
@@ -214,9 +224,11 @@ final class BlockParser:
   private def tryOpenContainers(line: Text, ln: Ordinal): Text =
     var current = line
     var keepGoing = true
+
     while keepGoing do
       val (next, opened) = tryOpenOneContainer(current, ln)
       if opened then current = next else keepGoing = false
+
     current
 
   private def tryOpenOneContainer(line: Text, ln: Ordinal): (Text, Boolean) =
@@ -226,6 +238,7 @@ final class BlockParser:
     var i = 0
     var indent = 0
     while i < n && s.charAt(i) == ' ' && indent < 4 do { i += 1; indent += 1 }
+
     if indent < 4 && i < n && s.charAt(i) == '>' then
       i += 1
       val colAfterMarker = indent + 1
@@ -329,6 +342,7 @@ final class BlockParser:
       // would have been closed during phase-1 walk if its indent didn't
       // match, but in case it didn't we close any item now.
       closeOpenLeafForNewBlock()
+
       deepest match
         case _: ListItemBuilder => closeOne()
         case _                  => ()
@@ -363,6 +377,7 @@ final class BlockParser:
           if ParserSupport.isFenceCloser(residual0, fenced.fenceChar, fenced.fenceLen)
           then closeFromIndex(matchedDepth)
           else fenced.addLine(ParserSupport.stripIndent(residual0, fenced.indent))
+
           return
 
         case indented: IndentedCodeBlockBuilder =>
@@ -384,6 +399,7 @@ final class BlockParser:
     // Must run before lazy continuation, otherwise the underline gets absorbed
     // as paragraph content.
     val paraReachable = matchedDepth >= openStack.length - 1
+
     if paraReachable then
       deepest match
         case para: ParagraphBuilder if !para.isEmpty =>
@@ -391,6 +407,7 @@ final class BlockParser:
             case lvl @ (1 | 2) =>
               val maybeHeading = para.toHeading(lvl, refs)
               openStack.remove(openStack.length - 1)
+
               maybeHeading.let: heading =>
                 addToParent(deepest, heading)
               if maybeHeading.present then return
@@ -429,6 +446,7 @@ final class BlockParser:
     if ParserSupport.isBlank(residual0) then
       var idx = openStack.length - 1
       while idx >= 0 && openStack(idx).isInstanceOf[LeafBuilder] do idx -= 1
+
       if idx >= 0 then openStack(idx) match
         case item: ListItemBuilder => item.hadBlank = true
         case _                     => ()
@@ -447,6 +465,7 @@ final class BlockParser:
       deepest match
         case _: ParagraphBuilder => closeOne()
         case _                   => ()
+
       return
 
     ParserSupport.fenceOpener(residual) match
@@ -465,6 +484,7 @@ final class BlockParser:
           case lvl @ (1 | 2) =>
             val maybeHeading = para.toHeading(lvl, refs)
             openStack.remove(openStack.length - 1)
+
             maybeHeading.let: heading =>
               addToParent(deepest, heading)
             if maybeHeading.present then return

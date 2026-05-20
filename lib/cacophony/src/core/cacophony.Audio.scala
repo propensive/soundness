@@ -149,13 +149,16 @@ extends Formal, Domainal:
     val signed         = format.getEncoding == jss.AudioFormat.Encoding.PCM_SIGNED
 
     var value = 0
+
     if bigEndian then
       var i = 0
+
       while i < bytesPerSample do
         value = (value << 8) | (data(offset + i) & 0xff)
         i += 1
     else
       var i = bytesPerSample - 1
+
       while i >= 0 do
         value = (value << 8) | (data(offset + i) & 0xff)
         i -= 1

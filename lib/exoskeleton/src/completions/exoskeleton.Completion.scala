@@ -150,7 +150,7 @@ extends Cli:
       then flagSuggestions(focusText.starts(t"--"))
       else cursorSuggestions
 
-    val items = interpreter.focus(parameters).lay(items0) { focus => items0.map(focus.wrap(_)) }
+    val items = interpreter.focus(parameters).lay(items0): focus => items0.map(focus.wrap(_))
 
     shell match
       case Shell.Zsh =>
@@ -207,4 +207,4 @@ extends Cli:
                   case description: Teletype => t"$text\t${description.plain}"
 
               if !incomplete then mainLines
-              else mainLines ++ (suggestion.text :: aliases).map(text => t"$text ")
+              else mainLines ++ (suggestion.text :: aliases).map: text => t"$text "

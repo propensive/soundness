@@ -269,7 +269,7 @@ object internal extends protointernal:
         def close: CodlNode =
           key.lay(CodlNode(Unset, extra)):
             case key: Text =>
-              val extra2 = extra.let { m => m.copy(comments = m.comments.reverse) }
+              val extra2 = extra.let: m => m.copy(comments = m.comments.reverse)
 
               val data =
                 Atom
@@ -389,6 +389,7 @@ object internal extends protointernal:
                         if peerIds.has(uniqueId(0)) then
                           val first = peerIds(uniqueId(0))
                           val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
+
                           raise
                             ( ParseError
                                 ( Codl,
@@ -406,6 +407,7 @@ object internal extends protointernal:
                         if peerIds.has(uniqueId(0)) then
                           val first = peerIds(uniqueId(0))
                           val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
+
                           raise
                             ( ParseError
                                 ( Codl,
@@ -433,6 +435,7 @@ object internal extends protointernal:
                           if peerIds.has(uniqueId(0)) then
                             val first = peerIds(uniqueId(0))
                             val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
+
                             raise
                               ( ParseError
                                   ( Codl, Position(line, col, uniqueId(0).length), duplicate ) )
@@ -447,6 +450,7 @@ object internal extends protointernal:
                         raise
                           ( ParseError
                               ( Codl, Position(line, col, word.length), InvalidKey(word, word) ) )
+
                         CodlSchema.Free
 
                     if fschema.unique && peers.exists(_.data.let(_.key) == word)
@@ -587,6 +591,7 @@ object internal extends protointernal:
 
           case Word | Pending(_) =>
             val word = reader.get()
+
             if word == t"\u0000" then CodlToken.Argument
             else CodlToken.Item(word, reader.start()(0), reader.start()(1), false)
 

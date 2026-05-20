@@ -126,9 +126,9 @@ object Diff:
           else if inss.isEmpty then s"${range(left + 1, left + dels.size)}d${right}".tt
           else s"${range(left + 1, left + dels.size)}c${range(right + 1, right + inss.size)}".tt
 
-        val delSeq = dels.map { del => Text("< "+del.value) }
+        val delSeq = dels.map: del => Text("< "+del.value)
         val sep = if inss.size > 0 && dels.size > 0 then List(Text("---")) else List()
-        val insSeq = inss.map { ins => Text("> "+ins.value) }
+        val insSeq = inss.map: ins => Text("> "+ins.value)
 
         command :: delSeq ::: sep ::: insSeq
 
@@ -171,7 +171,7 @@ case class Diff[element](edits: Edit[element]*):
 
       case Region.Changed(dels, inss) =>
         if inss.length == dels.length && inss.length <= subSize
-        then dels.zip(inss).map { (del, ins) => Sub(del.left, ins.right, del.value, ins.value) }
+        then dels.zip(inss).map: (del, ins) => Sub(del.left, ins.right, del.value, ins.value)
         else
           val delsSeq = dels.map(_.value.vouch).to(IndexedSeq)
           val inssSeq = inss.map(_.value).to(IndexedSeq)

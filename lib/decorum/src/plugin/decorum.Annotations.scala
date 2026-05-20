@@ -49,12 +49,25 @@ object Annotations:
     val out = mutable.Set[Int]()
     walk(tree): t =>
       t match
-        case d: untpd.MemberDef =>
+        case d: untpd.MemberDef if d.span.exists =>
+          // A MemberDef's `span.point` is set to the opening keyword (e.g.
+          // `class`, `def`, `val`) — or, for unkeyworded definitions like
+          // parameter `ValDef`s, to the defined identifier. Annotations and
+          // modifiers extend `span.start` *before* the point. We use the
+          // point's line to mean "where the declaration itself begins":
+          // any annotation ending on an earlier line is a candidate for
+          // 551.2, while annotations sharing a line with the declaration
+          // (e.g. `@ident email: Text` in a parameter list) cannot have a
+          // blank line between themselves and what they annotate.
+          val declPoint = d.span.point.max(0).min(source.content.length - 1)
+          val declLine  = source.offsetToLine(declPoint) + 1
           d.mods.annotations.foreach: ann =>
             val sp = ann.span
             if sp.exists then
               val endOffset = (sp.end - 1).max(sp.start).max(0).min(source.content.length - 1)
-              if endOffset >= 0 then out += source.offsetToLine(endOffset) + 1
+              if endOffset >= 0 then
+                val annLine = source.offsetToLine(endOffset) + 1
+                if annLine < declLine then out += annLine
 
         case _ => ()
     out.toSet

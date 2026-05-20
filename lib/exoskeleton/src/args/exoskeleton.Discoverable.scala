@@ -43,7 +43,7 @@ object Discoverable:
 
   given enumerable: [value: {Enumerable, Identifiable}] => value is Discoverable = _ =>
     value.values.to(List)
-    . map { element => value.encode(value.name(element)) }
+    . map: element => value.encode(value.name(element))
     . map(Suggestion(_))
 
 trait Discoverable extends Typeclass:

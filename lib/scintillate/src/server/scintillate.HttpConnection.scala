@@ -97,6 +97,7 @@ object HttpConnection:
 
     def respond(response: Http.Response): Unit raises StreamError =
       var chunked = false
+
       response.textHeaders.each:
         case Http.Header(key, value) =>
           if key.lower == t"transfer-encoding" && value.lower == t"chunked" then chunked = true
@@ -112,6 +113,7 @@ object HttpConnection:
       val responseBody = exchange.getResponseBody.nn
 
       var count: Int = 0
+
       response.body match
         case Http.Body.Fixed(data) =>
           try

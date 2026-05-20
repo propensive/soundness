@@ -122,6 +122,26 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("def f(a: Int , b: Int): Int = a + b\n")
       . assert(_.contains("529.1"))
 
+      test(m"Single line with extra spaces after comma is rejected"):
+        rules("val x = (1,  2)\n")
+      . assert(_.contains("529.2"))
+
+      test(m"Genuinely aligned multi-row commas are accepted"):
+        // Two rows where the second token after each `,` lands at the
+        // same absolute column on both lines — a real alignment run.
+        rules
+         ( "val a = T(1,   t\"H\",  t\"Hydrogen\")\n"
+            +"val b = T(20,  t\"Ne\", t\"Neon\")\n" )
+      . assert(!_.contains("529.2"))
+
+      test(m"Fake alignment (extra spaces but cols don't match) is rejected"):
+        // `val H` vs `val He` shifts the parens column, so the would-be
+        // aligned columns inside don't line up across rows.
+        rules
+         ( "val H = T(1,   t\"H\",  t\"Hydrogen\")\n"
+            +"val He = T(2,   t\"He\", t\"Helium\")\n" )
+      . assert(_.contains("529.2"))
+
       test(m"Space inside parentheses on a single line is rejected"):
         rules("def f( a: Int ): Int = a\n")
       . assert(_.contains("402"))
@@ -137,6 +157,14 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"Annotation followed by blank line is rejected"):
         rules("@deprecated\n\ndef foo(): Int = 1\n")
       . assert(_.contains("551.2"))
+
+      test(m"Param annotation does not arm 551.2 on a following blank line"):
+        rules("case class P(@ident x: Int)\n\ncase class Q(y: Int)\n")
+      . assert(!_.contains("551.2"))
+
+      test(m"Annotation immediately before a decl, then a blank line, is accepted"):
+        rules("@foo\ncase class A(x: Int)\n\ncase class B(y: Int)\n")
+      . assert(!_.contains("551.2"))
 
     suite(m"Phase 2: Operator and method-name spacing"):
 
@@ -167,6 +195,48 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"`=>` at line start (continuation) is accepted"):
         rules("val f =\n  (x: Int) =>\n    x + 1\n")
       . assert(!_.contains("376"))
+
+      test(m"Missing space before `=` is rejected"):
+        rules("val x= 1\n")
+      . assert(_.contains("376.1"))
+
+      test(m"Missing space after `=` is rejected"):
+        rules("val x =1\n")
+      . assert(_.contains("376.1"))
+
+      test(m"Two spaces *after* `=` is rejected"):
+        rules("val x =  1\n")
+      . assert(_.contains("376.1"))
+
+      test(m"Two spaces before `=` (alignment) is accepted"):
+        // Multi-line param blocks often pad before `=` to align the
+        // operators vertically; the rule must allow this.
+        rules("val x  = 1\n")
+      . assert(!_.contains("376.1"))
+
+      test(m"`name_=` setter method declaration is not flagged"):
+        rules("def x_=(value: Int): Unit = ()\n")
+      . assert(!_.contains("376.1"))
+
+      test(m"Single space around `=` is accepted"):
+        rules("val x = 1\n")
+      . assert(!_.contains("376.1"))
+
+      test(m"`=` at line end (multi-line RHS) is accepted"):
+        rules("val x =\n  1\n")
+      . assert(!_.contains("376.1"))
+
+      test(m"Missing space around `+=` is rejected"):
+        rules("var x = 0\nx+=1\n")
+      . assert(_.contains("376.1"))
+
+      test(m"Single space around `+=` is accepted"):
+        rules("var x = 0\nx += 1\n")
+      . assert(!_.contains("376.1"))
+
+      test(m"Default parameter `=` with bad spacing is rejected"):
+        rules("def f(x: Int=5): Int = x\n")
+      . assert(_.contains("376.1"))
 
       test(m"Symbolic operator method without space before parens is rejected"):
         rules("infix def +(right: Int): Int = right\n")
@@ -278,6 +348,44 @@ object Tests extends Suite(m"Decorum Tests"):
             +"    bigBody\n" )
       . assert(!_.contains("315"))
 
+      test(m"Operator-continuation line does not trigger SN-315"):
+        // Dotty may split `t == 1\n|| t == 2` into two `Block.stats` at
+        // the parser level, but inserting a blank line between them
+        // would break the operator continuation. The rule must skip
+        // when `cur.startLine` begins with an infix operator.
+        rules
+         ( "def f(c: Int): Boolean =\n"
+            +"  val t = c\n"
+            +"\n"
+            +"  t == 1\n"
+            +"  || t == 2\n"
+            +"  || t == 3\n" )
+      . assert(!_.contains("315"))
+
+      test(m"Multi-line pattern with trailing `=>` is accepted"):
+        rules
+         ( "def f(x: Any): Any = x match\n"
+            +"  case Foo\n"
+            +"    ( a, b ) =>\n"
+            +"    body\n" )
+      . assert(!_.contains("R33-multiline-pattern-arrow-position"))
+
+      test(m"Multi-line pattern with `=>` alone on its own line is rejected"):
+        rules
+         ( "def f(x: Any): Any = x match\n"
+            +"  case Foo\n"
+            +"    ( a, b )\n"
+            +"  =>\n"
+            +"    body\n" )
+      . assert(_.contains("R33-multiline-pattern-arrow-position"))
+
+      test(m"Multi-line pattern with body on same line as `=>` is rejected"):
+        rules
+         ( "def f(x: Any): Any = x match\n"
+            +"  case Foo\n"
+            +"    ( a, b ) => body\n" )
+      . assert(_.contains("R33-multiline-pattern-body-newline"))
+
     suite(m"Phase 3: Sibling padding and using alignment"):
 
       test(m"Adjacent multi-line defs without blank line is rejected"):
@@ -303,6 +411,32 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"Aligned `using` clause is accepted"):
         rules("def f\n  ( using a: A,\n          b: B )\n:   Int = 0\n")
       . assert(!_.contains("946"))
+
+      test(m"Same-line type-annotation `:` is accepted"):
+        rules("def foo: Int = 1\n")
+      . assert(!_.contains("833.3"))
+
+      test(m"Type-annotation `:` aligned with `def` on its own line is accepted"):
+        rules("def foo\n:   Int =\n  1\n")
+      . assert(!_.contains("833.3"))
+
+      test(m"Mis-indented type-annotation `:` on its own line is rejected"):
+        rules("def foo\n  : Int =\n    1\n")
+      . assert(_.contains("833.3"))
+
+      test(m"`:` inside a parameter list is not flagged by 833.3"):
+        rules("def f\n  ( a: Int )\n:   Int =\n  a\n")
+      . assert(!_.contains("833.3"))
+
+      test(m"Mis-indented `:` after multi-line param list with type params is rejected"):
+        rules
+         ( "def f[a, b]\n  ( x: Int,\n    y: Int )\n        :   Int =\n  0\n" )
+      . assert(_.contains("833.3"))
+
+      test(m"Mis-indented `:` after param list containing a default value is rejected"):
+        rules
+         ( "def f\n  ( x: Int = 0,\n    y: Int = 1 )\n        :   Int =\n  0\n" )
+      . assert(_.contains("833.3"))
 
     suite(m"Phase 5: Keyword sequences (R33)"):
 
@@ -567,3 +701,19 @@ object Tests extends Suite(m"Decorum Tests"):
          ( "val r =\n  for x  <- List(1)\n      if x > 0\n      y  <- List(2)"
             +"\n  yield x + y\n" )
       . assert(_.contains("924.3"))
+
+      test(m"For-comprehension with `if` on same line as `<-` is accepted"):
+        rules("val r =\n  for x <- List(1) if x > 0\n  yield x\n")
+      . assert(r => !r.contains("924.3") && !r.contains("924.4"))
+
+      test(m"For-comprehension with blank line before `if` is rejected"):
+        rules
+         ( "val r =\n  for x  <- List(1)\n\n         if x > 0\n      y  <- List(2)"
+            +"\n  yield x + y\n" )
+      . assert(_.contains("924.4"))
+
+      test(m"For-comprehension aligned `if` filter is exempt from 473.1"):
+        rules
+         ( "val r =\n  for x  <- List(1)\n         if x > 0\n      y  <- List(2)"
+            +"\n  yield x + y\n" )
+      . assert(r => !r.contains("473.1"))

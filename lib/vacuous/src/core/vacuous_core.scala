@@ -88,7 +88,7 @@ extension [value](optional: Optional[value])(using Optionality[optional.type])
   inline def vouch: value = optional.or(panic(m"a value was vouched but was absent"))
 
   inline def mask(predicate: value => Boolean): Optional[value] =
-    optional.let { value => if predicate(value) then Unset else value }
+    optional.let: value => if predicate(value) then Unset else value
 
   def javaOptional: ju.Optional[value] =
     optional.lay(ju.Optional.empty[value].nn)(ju.Optional.of(_).nn)

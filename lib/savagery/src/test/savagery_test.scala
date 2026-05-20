@@ -411,6 +411,7 @@ object Tests extends Suite(m"Savagery tests"):
       .assert:
           case lg: LinearGradient[?] =>
             lg.stops.length == 1 && lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
+
           case _ => false
 
       test(m"Parse short hex #f00"):

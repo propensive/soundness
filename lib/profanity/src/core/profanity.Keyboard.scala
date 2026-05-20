@@ -139,6 +139,7 @@ object Keyboard:
               content.cut(t"/").to(List) match
                 case List(red, green, blue) =>
                   def decimal(hex: Text): Int = Integer.parseInt(hex.s, 16)
+
                   TerminalInfo.BgColor(decimal(red), decimal(green), decimal(blue))
                   #:: process(continuation)
 

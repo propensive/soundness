@@ -58,6 +58,7 @@ extension [value](iterable: Iterable[value])
   inline def minimum(using commensurable: value is Commensurable against value): Optional[value] =
     if iterable.nil then Unset else
       var current = iterable.head
+
       iterable.tail.each: element =>
         if element < current then current = element
 
@@ -66,6 +67,7 @@ extension [value](iterable: Iterable[value])
   inline def maximum(using commensurable: value is Commensurable against value): Optional[value] =
     if iterable.nil then Unset else
       var current = iterable.head
+
       iterable.tail.each: element =>
         if element > current then current = element
 
@@ -91,6 +93,7 @@ extension [value](iterable: Iterable[value])
       else recur(n, left)
 
     val size = iterable.size
+
     if size == 0 then Unset
     else if size%2 == 0 then
       val first = recur((size - 1)/2, iterable.to(List))
@@ -159,6 +162,7 @@ extension (float: Float)
   @targetName("floorModFloat")
   inline infix def %% (right: Float): Float =
     val remainder: Float = float%right
+
     if remainder != 0.0f && (remainder > 0.0f) != (right > 0.0f) then remainder + right
     else remainder
 
@@ -223,6 +227,7 @@ extension (double: Double)
   @targetName("floorModDouble")
   inline infix def %% (right: Double): Double =
     val remainder = double%right
+
     if remainder != 0.0 && (remainder > 0.0) != (right > 0.0) then remainder + right
     else remainder
 
@@ -580,8 +585,10 @@ package arithmeticOptions:
 
       inline def addS64(left: S64, right: S64): S64 raises OverflowError =
         val sum: Long = left.long + right.long
+
         if ((left.long^sum) & (right.long^sum)) < 0L
-        then raise(OverflowError()) yet S64(sum.bits) else S64(sum.bits)
+        then raise(OverflowError()) yet S64(sum.bits)
+        else S64(sum.bits)
 
       inline def addU32(left: U32, right: U32): U32 raises OverflowError =
         val result: B32 = (Int(left.bits) + Int(right.bits)).bits
@@ -592,8 +599,9 @@ package arithmeticOptions:
 
       inline def addS32(left: S32, right: S32): S32 raises OverflowError =
         val sum: Int = left.int + right.int
-        if ((left.int^sum) & (right.int^sum)) < 0
-        then raise(OverflowError()) yet S32(sum.bits) else S32(sum.bits)
+
+        if ((left.int^sum) & (right.int^sum)) < 0 then raise(OverflowError()) yet S32(sum.bits)
+        else S32(sum.bits)
 
       inline def addU16(left: U16, right: U16): U16 raises OverflowError =
         val result: B16 = (Short(left.bits) + Short(right.bits)).toShort.bits
@@ -604,8 +612,9 @@ package arithmeticOptions:
 
       inline def addS16(left: S16, right: S16): S16 raises OverflowError =
         val sum: Short = (left.short + right.short).toShort
-        if ((left.short^sum) & (right.short^sum)) < 0
-        then raise(OverflowError()) yet S16(sum.bits) else S16(sum.bits)
+
+        if ((left.short^sum) & (right.short^sum)) < 0 then raise(OverflowError()) yet S16(sum.bits)
+        else S16(sum.bits)
 
       inline def addU8(left: U8, right: U8): U8 raises OverflowError =
         val result: B8 = (left.short + right.short).toByte.bits
@@ -616,5 +625,6 @@ package arithmeticOptions:
 
       inline def addS8(left: S8, right: S8): S8 raises OverflowError =
         val sum: Byte = (left.short + right.short).toByte
-        if ((left.short^sum) & (right.short^sum)) < 0
-        then raise(OverflowError()) yet S8(sum.bits) else S8(sum.bits)
+
+        if ((left.short^sum) & (right.short^sum)) < 0 then raise(OverflowError()) yet S8(sum.bits)
+        else S8(sum.bits)

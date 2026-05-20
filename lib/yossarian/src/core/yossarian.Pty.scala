@@ -96,6 +96,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
 
       def x_=(x2: Ordinal): Unit =
         pendingWrap = false
+
         val clamped: Ordinal =
           if x2 < Prim then Prim
           else if x2 >= buffer2.width.z then (buffer2.width - 1).z
@@ -105,6 +106,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
 
       def y_=(y2: Ordinal): Unit =
         pendingWrap = false
+
         val clamped: Ordinal =
           if y2 < Prim then Prim
           else if y2 >= buffer2.height.z then (buffer2.height - 1).z
@@ -177,6 +179,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
     def decstbm(top: Ordinal, bottom: Ordinal): Unit =
       val t = if top < Prim then Prim else top
       val b = if bottom >= buffer2.height.z then (buffer2.height - 1).z else bottom
+
       if t < b then
         scrollTop = t
         scrollBottom = b
@@ -219,6 +222,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
           if cursor.x == Prim then Prim
           else
             val left = cursor.x - 1
+
             if buffer2.isWideTrailing(left, cursor.y) && left > Prim then left - 1
             else left
 
@@ -249,6 +253,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
     def rep(n: Int): Unit =
       val count = if n == 0 then 1 else n
       var i = 0
+
       while i < count do
         writeGrapheme(lastGrapheme)
         i += 1
@@ -263,11 +268,15 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
       val width = buffer2.width
       val shift = n.min(width - col)
       var i = width - 1
+
       while i >= col + shift do
         buffer2.set(i.z, row.z, buffer2.grapheme((i - shift).z, row.z),
             buffer2.style((i - shift).z, row.z), buffer2.link((i - shift).z, row.z))
+
         i -= 1
+
       var j = col
+
       while j < col + shift do
         buffer2.set(j.z, row.z, Grapheme(" "), style, link)
         j += 1
@@ -278,11 +287,15 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
       val width = buffer2.width
       val shift = n.min(width - col)
       var i = col
+
       while i < width - shift do
         buffer2.set(i.z, row.z, buffer2.grapheme((i + shift).z, row.z),
             buffer2.style((i + shift).z, row.z), buffer2.link((i + shift).z, row.z))
+
         i += 1
+
       var j = width - shift
+
       while j < width do
         buffer2.set(j.z, row.z, Grapheme(" "), style, link)
         j += 1
@@ -292,6 +305,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
       val col = cursor.x.n0
       val end = (col + n).min(buffer2.width)
       var i = col
+
       while i < end do
         buffer2.set(i.z, row.z, Grapheme(" "), style, link)
         i += 1
@@ -306,42 +320,59 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         val bottom = scrollBottom.n0
         val shift = n.min(bottom - top + 1)
         var r = bottom
+
         while r >= top + shift do
           var c = 0
+
           while c < width do
             buffer2.set(c.z, r.z, buffer2.grapheme(c.z, (r - shift).z),
                 buffer2.style(c.z, (r - shift).z), buffer2.link(c.z, (r - shift).z))
+
             c += 1
+
           r -= 1
+
         var rr = top
+
         while rr < top + shift do
           var c = 0
+
           while c < width do
             buffer2.set(c.z, rr.z, Grapheme(" "), style, link)
             c += 1
+
           rr += 1
 
     def dl(n: Int): Unit =
       val top = cursor.y.n0
+
       if top < scrollTop.n0 || top > scrollBottom.n0 then ()
       else
         val width = buffer2.width
         val bottom = scrollBottom.n0
         val shift = n.min(bottom - top + 1)
         var r = top
+
         while r <= bottom - shift do
           var c = 0
+
           while c < width do
             buffer2.set(c.z, r.z, buffer2.grapheme(c.z, (r + shift).z),
                 buffer2.style(c.z, (r + shift).z), buffer2.link(c.z, (r + shift).z))
+
             c += 1
+
           r += 1
+
         var rr = bottom - shift + 1
+
         while rr <= bottom do
           var c = 0
+
           while c < width do
             buffer2.set(c.z, rr.z, Grapheme(" "), style, link)
             c += 1
+
           rr += 1
 
     def decsc(): Unit =

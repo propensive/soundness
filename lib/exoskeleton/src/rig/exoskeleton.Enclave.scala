@@ -81,6 +81,7 @@ object Enclave:
       block(using tool).also:
         unsafely:
           sh"$path '{admin}' kill".exec[Exit]()
+
           completionScripts.trim.lines.map(_.decode[Path on Linux]).each: item =>
             safely(item.delete())
 

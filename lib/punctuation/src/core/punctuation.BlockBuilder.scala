@@ -125,9 +125,11 @@ final class ListItemBuilder(val line: Ordinal, val indent: Int) extends Containe
     val n = s.length
     var i = 0
     var col = 0
+
     while i < n && col < indent && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do
       if s.charAt(i) == ' ' then col += 1
       else col += 4 - (col & 3)
+
       i += 1
 
     if col < indent then return Unset
@@ -204,14 +206,17 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
   private def extractLinkRefs(refs: LinkRefs): Unit =
     val builder = new StringBuilder
     var first = true
+
     for line <- lines do
       if first then first = false else builder.append('\n')
       builder.append(line.s)
+
     joinedText = builder.toString
 
     val n = joinedText.length
     var pos = 0
     var keepGoing = true
+
     while keepGoing && pos < n do
       InlineSupport.parseLinkRefDefMulti(joinedText, pos, n) match
         case Unset =>
@@ -229,6 +234,7 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
   // definitions discovered later in the document are visible.
   def finish(refs: LinkRefs): Optional[Layout] =
     extractLinkRefs(refs)
+
     if linkRefEnd >= joinedText.length then Unset
     else Layout.Paragraph(line, Prose.Textual(joined))
 
@@ -239,6 +245,7 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
   // definitions (the setext underline has nothing to promote).
   def toHeading(level: 1 | 2 | 3 | 4 | 5 | 6, refs: LinkRefs): Optional[Layout] =
     extractLinkRefs(refs)
+
     if linkRefEnd >= joinedText.length then Unset
     else Layout.Heading(line, level, Prose.Textual(joined))
 
@@ -255,9 +262,11 @@ extends LeafBuilder:
 
   def finish(refs: LinkRefs): Optional[Layout] =
     val builder = new StringBuilder
+
     for line <- content do
       builder.append(line.s)
       builder.append('\n')
+
     Layout.CodeBlock(line, info, Text(builder.toString))
 
 final class IndentedCodeBlockBuilder(val line: Ordinal) extends LeafBuilder:
@@ -270,8 +279,11 @@ final class IndentedCodeBlockBuilder(val line: Ordinal) extends LeafBuilder:
   def finish(refs: LinkRefs): Optional[Layout] =
     while content.nonEmpty && ParserSupport.isBlank(content.last) do
       content.dropRightInPlace(1)
+
     val builder = new StringBuilder
+
     for line <- content do
       builder.append(line.s)
       builder.append('\n')
+
     Layout.CodeBlock(line, Nil, Text(builder.toString))

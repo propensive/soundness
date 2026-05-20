@@ -53,6 +53,7 @@ object Bindable:
 
     def bind(domainSocket: DomainSocket): jnc.ServerSocketChannel =
       val address = jn.UnixDomainSocketAddress.of(domainSocket.address.s)
+
       jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn.tap: channel =>
         channel.configureBlocking(true)
         channel.bind(address)

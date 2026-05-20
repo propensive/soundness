@@ -176,11 +176,14 @@ final class Cursor[data]
   locally:
     initial.let: chunk =>
       val len = addressable.length(chunk)
+
       if len > 0 then
         if len > addressable.storageSize(buffer) then
           buffer = addressable.allocate(len)
+
         addressable.copyChunk(chunk, 0, buffer, 0, len)
         writeEnd = len
+
     if writeEnd == 0 then refill()
 
   // ─── slow path: refill ────────────────────────────────────────────────────
@@ -196,6 +199,7 @@ final class Cursor[data]
       // tail of the buffer.
       val rawKeep = if holdStart >= 0 then holdStart else pos
       val keep = rawKeep.min(writeEnd)
+
       if keep > 0 then
         val live = writeEnd - keep
         if live > 0 then addressable.transfer(buffer, keep, buffer, 0, live)
@@ -206,12 +210,15 @@ final class Cursor[data]
 
       // Pull chunks until we either receive non-empty data or hit EOF.
       var loaded = false
+
       while !loaded && !ended do
         val chunk = load()
+
         if chunk.absent then ended = true
         else
           val data = chunk.vouch
           val len = addressable.length(data)
+
           if len > 0 then
             ensureCapacity(writeEnd + len)
             addressable.copyChunk(data, 0, buffer, writeEnd, len)
@@ -220,6 +227,7 @@ final class Cursor[data]
 
   private def ensureCapacity(needed: Int): Unit =
     val cap = addressable.storageSize(buffer)
+
     if needed > cap then
       var newCap = if cap == 0 then needed.max(16) else cap
       while newCap < needed do newCap *= 2
@@ -239,6 +247,7 @@ final class Cursor[data]
     if lineationActive then
       val operand = addressable.storageAddress(buffer, pos)
       pos += 1
+
       columnNo =
         if !lineation.track(operand) then columnNo.next
         else { lineNo = lineNo.next; Prim }
@@ -250,6 +259,7 @@ final class Cursor[data]
   // `operand` instead of re-loading it from the buffer for lineation tracking.
   inline def unsafeAdvanceWith(operand: addressable.Operand)(using erased Unsafe): Unit =
     pos += 1
+
     if lineationActive then
       columnNo =
         if !lineation.track(operand) then columnNo.next
@@ -312,6 +322,7 @@ final class Cursor[data]
     val tail: data =
       if tailLen <= 0 then addressable.empty
       else addressable.materialize(buffer, pos, tailLen)
+
     pos = writeEnd
     if tailLen > 0 then tail #:: loaderStream else loaderStream
 
@@ -365,9 +376,11 @@ final class Cursor[data]
   inline def seek(target: addressable.Operand): Boolean =
     var found = false
     var continue = true
+
     while continue do
       found = datum(using Unsafe) == target
       continue = !found && next()
+
     found
 
   inline def consume(inline otherwise: => Unit)(inline text: String): Unit =
@@ -386,6 +399,7 @@ final class Cursor[data]
   // when full. Off the hot path's inline budget so `mark()` itself stays small.
   private def recordMark(mark: Long, offset: Long): Unit =
     val cap = marks.length
+
     if marksSize >= cap then
       val newCap = cap*2
       val nm = new Array[Long](newCap)
@@ -394,6 +408,7 @@ final class Cursor[data]
       System.arraycopy(offsets, 0, no, 0, marksSize)
       marks   = nm
       offsets = no
+
     marks(marksSize)   = mark
     offsets(marksSize) = offset
     marksSize += 1
@@ -411,6 +426,7 @@ final class Cursor[data]
 
   inline def cue(mark: Cursor.Mark): Unit =
     pos = (mark.absolute - basePos).toInt
+
     if lineationActive then
       val o = offset(mark)
       lineNo = o.line
@@ -419,6 +435,7 @@ final class Cursor[data]
   inline def hold[result](inline action: Cursor.Held ?=> result): result =
     val wasHeld = holdStart >= 0
     if !wasHeld then holdStart = pos
+
     action(using new Cursor.Held()).also:
       if !wasHeld then
         holdStart = -1
@@ -426,6 +443,7 @@ final class Cursor[data]
 
   inline def grab(start: Cursor.Mark, end: Cursor.Mark): data =
     val len = (end.absolute - start.absolute).toInt
+
     if len <= 0 then addressable.empty
     else addressable.materialize(buffer, (start.absolute - basePos).toInt, len)
 
@@ -442,13 +460,16 @@ final class Cursor[data]
 
   inline def clone(start: Cursor.Mark, end: Cursor.Mark)(target: addressable.Target): Unit =
     val len = (end.absolute - start.absolute).toInt
+
     if len > 0
     then addressable.cloneStorage(buffer, (start.absolute - basePos).toInt, len)(target)
 
   inline def take(inline otherwise: => data)(length: Int): data =
     var count = 0
+
     hold:
       val start = mark
+
       while count < length do
         next()
         count += 1

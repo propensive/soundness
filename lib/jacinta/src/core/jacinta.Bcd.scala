@@ -32,6 +32,7 @@
                                                                                                   */
 package jacinta
 
+import rudiments.*
 import vacuous.*
 
 // `Bcd` is the high-precision-number representation in `Json.Ast`. It encodes a
@@ -69,7 +70,7 @@ object Bcd:
   // matches the in-AST representation a parser would produce for the same
   // textual JSON number.
   def apply(value: BigDecimal): Bcd =
-    val s: String = value.bigDecimal.nn.toPlainString.nn
+    val s: String = value.bigDecimal.toPlainString.nn
     val negative = s.startsWith("-")
     fromString(if negative then s.substring(1).nn else s, negative)
 
@@ -81,21 +82,34 @@ object Bcd:
     var i = 0
     val n = text.length
     var prevWasE = false
-    while i < n do
-      val c = text.charAt(i)
-      (c: @scala.annotation.switch) match
-        case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
-          builder.add(c - '0'); prevWasE = false
 
-        case '.'             => builder.add(0xA); prevWasE = false
-        case 'e' | 'E'       => builder.add(0xB); prevWasE = true
-        case '+' if prevWasE => prevWasE = false
+    while i < n do
+      val char = text.charAt(i)
+
+      (char: @scala.annotation.switch) match
+        case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
+          builder.add(char - '0')
+          prevWasE = false
+
+        case '.' =>
+          builder.add(0xA)
+          prevWasE = false
+
+        case 'e' | 'E' =>
+          builder.add(0xB)
+          prevWasE = true
+
+        case '+' if prevWasE =>
+          prevWasE = false
 
         case '-' if prevWasE =>
-          builder.overwriteLast(0xC); prevWasE = false
+          builder.overwriteLast(0xC)
+          prevWasE = false
 
-        case _ => () // ignore unexpected characters
+        case _ => ()
+
       i += 1
+
     builder.finish(negative)
 
   // Incremental builder used by `JsonParser` to assemble a `Bcd` one nibble
@@ -114,6 +128,7 @@ object Bcd:
       word = (word << 4) | (nibble & 0xFL)
       inWord += 1
       nibbles += 1
+
       if inWord == NibblesPerLong then
         ensureCapacity(wordIdx + 1)
         data(wordIdx) = word
@@ -126,6 +141,7 @@ object Bcd:
     def overwriteLast(nibble: Int): Unit =
       val mask = 0xFL
       val v = nibble & mask
+
       if inWord > 0 then word = (word & ~mask) | v
       else if wordIdx > 0 then data(wordIdx - 1) = (data(wordIdx - 1) & ~mask) | v
 
@@ -133,6 +149,7 @@ object Bcd:
     // builder, so the parser can hand off mid-number without losing state.
     def seedFromLong(content: Long, count: Int): Unit =
       var i = count - 1
+
       while i >= 0 do
         add(((content >>> (i * 4)) & 0xFL).toInt)
         i -= 1
@@ -168,16 +185,21 @@ object Bcd:
       val fullLongs = total/NibblesPerLong
       val partial = total - fullLongs*NibblesPerLong
       var i = 0
+
       while i < fullLongs do
         val w = bcd(1 + i)
         var j = NibblesPerLong - 1
+
         while j >= 0 do
           action(((w >>> (j*4)) & 0xFL).toInt)
           j -= 1
+
         i += 1
+
       if partial > 0 then
         val w = bcd(1 + fullLongs)
         var j = partial - 1
+
         while j >= 0 do
           action(((w >>> (j*4)) & 0xFL).toInt)
           j -= 1
@@ -187,12 +209,14 @@ object Bcd:
     def text: String =
       val sb = new java.lang.StringBuilder(bcd.nibbleCount + 1)
       if bcd.negative then sb.append('-')
+
       bcd.each: nibble =>
         if nibble <= 9 then sb.append(('0' + nibble).toChar)
         else if nibble == 0xA then sb.append('.')
         else if nibble == 0xB then sb.append('e')
         else if nibble == 0xC then sb.append("e-")
-      sb.toString.nn
+
+      sb.toString
 
     def toBigDecimal: BigDecimal = BigDecimal(bcd.text)
     def toDouble:     Double     = java.lang.Double.parseDouble(bcd.text)

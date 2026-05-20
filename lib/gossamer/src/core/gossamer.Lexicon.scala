@@ -71,6 +71,7 @@ object Lexicon:
 
     def search(query: Text, radius: Int): Set[element] =
       val distance = query.proximity(term)
+
       children.collect:
         case (key, tree) if (distance - radius) <= key <= (distance + radius) =>
           tree.search(query, radius)

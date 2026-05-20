@@ -90,7 +90,7 @@ object LaneDagDiagram:
       for r <- 0 until total do
         val current = nodes(r)
         val state = laneState(r)
-        val terminating = state.filter{ (_, lane) => lane.target == current }
+        val terminating = state.filter: (_, lane) => lane.target == current
         val continuing = state -- terminating.keys
         val terminatingCols = terminating.keys.to(Array).sortInPlace()
 
@@ -105,6 +105,7 @@ object LaneDagDiagram:
 
         val nextNode: Optional[node] = if r + 1 < total then nodes(r + 1) else Unset
         val targets: Vector[node] = forward.getOrElse(current, Set.empty).to(Vector).sortBy(rowOf)
+
         val (directs, indirects) = nextNode.lay((Vector.empty[node], targets)): nx =>
           targets.partition(_ == nx)
 
@@ -118,7 +119,7 @@ object LaneDagDiagram:
           Lane(current, target, col)
 
         started(r) = newLanes
-        laneState(r + 1) = continuing ++ newLanes.map{ lane => lane.col -> lane }
+        laneState(r + 1) = continuing ++ newLanes.map: lane => lane.col -> lane
 
       val width: Int =
         val colsUsed = laneState.flatMap(_.keys) ++ nodeCol
@@ -145,13 +146,17 @@ object LaneDagDiagram:
     if !taken(center) then center else
       var i = 1
       var found = -1
+
       while found < 0 do
         val low = center - i
+
         if low >= 0 && !taken(low) then found = low
         else
           val high = center + i
           if !taken(high) then found = high
+
         i += 1
+
       found
 
   private def connectorRow[node]
@@ -176,22 +181,26 @@ object LaneDagDiagram:
         cells(topEntry).top = true
         cells(topEntry).right = true
         var c = topEntry + 1
+
         while c < bottomExit do
           cells(c).left = true
           cells(c).right = true
           cells(c).horizontalPassThrough = true
           c += 1
+
         cells(bottomExit).left = true
         cells(bottomExit).down = true
       else
         cells(topEntry).top = true
         cells(topEntry).left = true
         var c = bottomExit + 1
+
         while c < topEntry do
           cells(c).left = true
           cells(c).right = true
           cells(c).horizontalPassThrough = true
           c += 1
+
         cells(bottomExit).right = true
         cells(bottomExit).down = true
 
@@ -226,8 +235,9 @@ object LaneDagDiagram:
 
   private def keepRow[node](row: (List[DagTile], Optional[node])): Boolean =
     val (tiles, node) = row
+
     if node.present then true else
-      val onlyPassThrough = tiles.forall { tile => tile == Vertical || tile == Space }
+      val onlyPassThrough = tiles.forall: tile => tile == Vertical || tile == Space
       val verticalCount = tiles.count(_ == Vertical)
       !(onlyPassThrough && verticalCount != 1)
 
@@ -247,6 +257,7 @@ object LaneDagDiagram:
     rows.foreach: (tiles, optNode) =>
       if optNode.present then
         val nodeIdx = tiles.indexOf(Node)
+
         if nodeIdx >= 0 then
           val w = style.width(glyph(optNode.vouch))
           if w > widths(nodeIdx) then widths(nodeIdx) = w
@@ -258,7 +269,7 @@ case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
 
   def render[line](label: node => line)(using style: LaneDagStyle[line]): List[line] =
     val widths = LaneDagDiagram.defaultWidths(lines.iterator.map(_(0)))
-    lines.map { (tiles, node) => style.serialize(tiles, Map.empty, widths, node.let(label)) }
+    lines.map: (tiles, node) => style.serialize(tiles, Map.empty, widths, node.let(label))
 
   def render[line](glyph: node => line, label: node => line)(using style: LaneDagStyle[line])
   :   List[line] =

@@ -115,6 +115,7 @@ object internal:
 
       def parse(text: Text): Ipv4 raises IpAddressError =
         val bytes = text.cut(t".")
+
         if bytes.length == 4 then
           mitigate:
             case error@NumberError(text, _, _) =>

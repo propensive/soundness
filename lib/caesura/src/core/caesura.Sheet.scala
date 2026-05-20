@@ -159,17 +159,21 @@ object Sheet:
       val q = quoteChar
       val s = pos
       var p = s
+
       while p < len do
         val ch = str.charAt(p)
+
         if ch == d || ch == q || ch == '\n' || ch == '\r' then
           if p > s then builder.append(str, s, p)
           pos = p + 1
+
           if ch == d then
             closeCell()
             return Unset
           else if ch == q then
             if builder.length > 0 then
               raise(DsvError(format, DsvError.Reason.MisplacedQuote))
+
             state = State.Quoted
             return Unset
           else
@@ -177,7 +181,9 @@ object Sheet:
             else
               closeCell()
               return emitRow()
+
         p += 1
+
       if p > s then builder.append(str, s, p)
       pos = p
       Unset
@@ -192,6 +198,7 @@ object Sheet:
       var p = s
       while p < len && str.charAt(p) != q do p += 1
       if p > s then builder.append(str, s, p)
+
       if p < len then
         pos = p + 1
         state = State.DoubleQuoted
@@ -201,6 +208,7 @@ object Sheet:
     private def handleDoubleQuoted(): Optional[Dsv] =
       val ch = current.charAt(pos)
       pos += 1
+
       if ch == quoteChar then
         builder.append(quoteChar)
         state = State.Quoted
@@ -242,9 +250,11 @@ object Sheet:
           val data = row.data
           val mapBuilder = Map.newBuilder[Text, Int]
           var i = 0
+
           while i < data.length do
             mapBuilder += data(i) -> i
             i += 1
+
           headings = mapBuilder.result()
           next()
         else

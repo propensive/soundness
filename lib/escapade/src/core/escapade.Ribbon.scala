@@ -42,6 +42,7 @@ case class Ribbon(colors: Bg*):
   def fill(parts: Teletype*): Teletype =
     if colors.isEmpty then parts.join(e" ") else
       val array = IArray.from(colors.zip(parts))
+
       array.indices.map: index =>
         val (background, text) = array(index)
 

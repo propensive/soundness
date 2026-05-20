@@ -93,6 +93,7 @@ object Regex:
     def serialize(pattern: Text, index: Int): (Int, Text) =
       if charClass then
         val groupName = (if capture then s"?<g$index>" else "").tt
+
         if quantifier.unitary then (index, s"($groupName[${pattern.s.substring(start, end)}])")
         else
           val chars = pattern.s.substring(start, end)
@@ -100,6 +101,7 @@ object Regex:
       else if singleChar then
         val groupName = (if capture then s"?<g$index>" else "").tt
         val token = pattern.s.substring(start, end)
+
         if quantifier.unitary then (index, s"($groupName$token)")
         else (index, s"($groupName$token${quantifier.serialize}${greed.serialize})")
       else
@@ -162,6 +164,7 @@ object Regex:
 
           case ',' =>
             index += 1
+
             if current() == '}' then Quantifier.AtLeast(n)
             else number(false) match
               case 0 =>
@@ -314,7 +317,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
   lazy val capturePattern: Text =
     Regex.makePattern(pattern, groups, 0, "".tt, pattern.s.length, 0)(1)
 
-  def allGroups: List[Regex.Group] = groups.flatMap { group => group :: group.allGroups }
+  def allGroups: List[Regex.Group] = groups.flatMap: group => group :: group.allGroups
   def captureGroups: List[Regex.Group] = allGroups.filter(_.capture)
 
   private[kaleidoscope] lazy val javaPattern: jur.Pattern =

@@ -76,6 +76,7 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
           [field] => schema =>
             val schema2 = descriptions.at(label).lay(schema.schema()): memo =>
               schema.schema().description = memo.map(_.description).join(t"\n")
+
             (label, schema2)
 
         .to(Map)

@@ -47,8 +47,10 @@ extension [value, monad[_]](using monad: Monad[monad])(value: monad[value])
 extension (text: Text)
   def bind(lambda: Char => Text): Text =
     val builder: StringBuilder = StringBuilder()
+
     text.s.toCharArray.nn.foreach: char =>
       builder.append(lambda(char).s)
+
     builder.toString.tt
 
 extension [monad[_], collection[element] <: Iterable[element],

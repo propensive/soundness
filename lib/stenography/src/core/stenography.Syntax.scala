@@ -359,6 +359,7 @@ object Syntax:
                     Named(false, member, apply(typ)) )
 
           val arrow = if method.isContextual then "?=>" else "=>"
+
           if unnamed && arguments0.length == 1
           then Infix(apply(types.head), arrow, apply(result))
           else Infix(arguments, arrow, apply(result))
@@ -469,8 +470,8 @@ enum Syntax:
           left.text+elements.map(_.text).mkString("[", ", ", "]").tt
 
     case Structural(base, members, defs) =>
-      val members2 = members.map { (name, syntax) => s"type $name = ${syntax.text}".tt }
-      val defs2 = defs.map { (name, syntax) => s"def $name${syntax.text}".tt }
+      val members2 = members.map: (name, syntax) => s"type $name = ${syntax.text}".tt
+      val defs2 = defs.map: (name, syntax) => s"def $name${syntax.text}".tt
       s"${base.text} { ${(members2 ++ defs2).mkString("; ")} }".tt
 
     case Infix(left: Syntax, middle, right: Syntax) =>

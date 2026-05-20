@@ -105,6 +105,7 @@ object internal:
       '{Ansi.Runtime.parse(Ansi.Runtime.initial, ${Expr(firstPart)}.tt)}
 
     var i = 0
+
     while i < insertionExprs.length do
       val head = insertionExprs(i)
       val nextPart = adjustedPart(i + 1)
@@ -121,6 +122,7 @@ object internal:
             rethrow(Ansi.Runtime.parse(checkState, nextPart.tt))
 
             val current = runtimeExpr
+
             runtimeExpr =
               ' {
                   Ansi.Runtime.parse
@@ -150,6 +152,7 @@ object internal:
             rethrow(Ansi.Runtime.parse(checkState, nextPart.tt))
 
             val current = runtimeExpr
+
             runtimeExpr =
               ' {
                   Ansi.Runtime.parse

@@ -54,6 +54,7 @@ object internal:
         val exp: Expr[key is PropertyDef[value]] =
           Expr.summon[key is PropertyDef[value]].getOrElse:
             val typeName = Type.of[value].show
+
             halt
               ( 413,
                 m"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists" )

@@ -53,6 +53,7 @@ object Timeout:
     def process(expiry: juca.AtomicLong): Task[Unit] = task("timeout".tt):
       while jl.System.currentTimeMillis < expiry.get()
       do sleep(expiry.get() - jl.System.currentTimeMillis)
+
       expiry.set(Long.MinValue)
       action
 

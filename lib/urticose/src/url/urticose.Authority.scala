@@ -86,11 +86,13 @@ object Authority:
               Authority(ipv6, userInfo, port)
             else
               val errorOffset: Ordinal = base + afterClose.n0
+
               raise(UrlError(value, errorOffset, Expected(More))) yet
                 Authority(ipv6, userInfo)
 
           case _ =>
             val errorOffset: Ordinal = base + (hostPort.limit.n0 - 1).max(0)
+
             raise(UrlError(value, errorOffset, Expected(More))) yet
               Authority(Ipv6(0L, 0L), userInfo)
       else

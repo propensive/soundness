@@ -64,6 +64,7 @@ object Pem:
 
       case index =>
         val joined: Text = lines.tail.take(index).join
+
         mitigate:
           case SerializationError(_, _) => PemError(PemError.Reason.BadBase64)
 

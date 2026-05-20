@@ -104,6 +104,7 @@ trait Json2:
             val n = root.objectSize
             val values = scm.HashMap.empty[String, Json.Ast]
             var i = 0
+
             while i < n do
               values.update(root.objectKey(i), root.objectValue(i))
               i += 1
@@ -288,10 +289,12 @@ object Json extends Json2, Dynamic:
       val n = keys.length
       val arr = new Array[Any](n*2)
       var i = 0
+
       while i < n do
         arr(i*2) = keys(i)
         arr(i*2 + 1) = values(i)
         i += 1
+
       arr.asInstanceOf[IArray[Any]]
 
     // Build a heterogeneous array node. If the element count is even, a
@@ -299,6 +302,7 @@ object Json extends Json2, Dynamic:
     // odd length, distinguishing it from objects (always even length).
     def arr(elements: IArray[Any]): Ast =
       val n = elements.length
+
       if (n & 1) == 1 then elements
       else
         val padded = new Array[Any](n + 1)
@@ -363,15 +367,19 @@ object Json extends Json2, Dynamic:
       Optic: (origin, lambda) =>
         if origin.root.isArray then
           val n = origin.root.arrayLength
+
           if n <= ordinal.n0 then origin else Json.ast:
             val updated = new Array[Any](n)
             var i = 0
+
             while i < n do
               updated(i) =
                 if i == ordinal.n0
                 then lambda(Json.ast(origin.root.arrayElement(i))).root
                 else origin.root.arrayElement(i)
+
               i += 1
+
             Json.Ast.arr(updated.asInstanceOf[IArray[Any]])
         else
           origin
@@ -459,6 +467,7 @@ object Json extends Json2, Dynamic:
 
     value =>
       val builder = factory.newBuilder
+
       value.root.array.each: json =>
         focus(prior.or(JsonPointer()) / ordinal):
           builder += decodable.decoded(Json.ast(json))
@@ -475,12 +484,15 @@ object Json extends Json2, Dynamic:
       val n = root.objectSize
       var i = 0
       var acc = Map.empty[key, element]
+
       while i < n do
         acc =
           acc.updated
             ( root.objectKey(i).tt.decode,
               decodable.decoded(Json.ast(root.objectValue(i))) )
+
         i += 1
+
       acc
 
 
@@ -565,11 +577,14 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     val n = root.arrayLength
     val updated = new Array[Any](n)
     var i = 0
+
     while i < n do
       updated(i) =
         if i == index then value.encode.root
         else root.arrayElement(i)
+
       i += 1
+
     Json.ast(Json.Ast.arr(updated.asInstanceOf[IArray[Any]]))
 
 
@@ -590,6 +605,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     val arr = root.asInstanceOf[IArray[Any]]
     val len = arr.length
     val n = len/2
+
     root.objectIndexOf(field) match
       case -1 =>
         val out = new Array[Any](len + 2)
@@ -607,6 +623,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
   private[jacinta] def delete(field: String): Json raises JsonError =
     val arr = root.asInstanceOf[IArray[Any]]
     val len = arr.length
+
     root.objectIndexOf(field) match
       case -1 =>
         Json.ast(root)
@@ -614,12 +631,14 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
       case index =>
         val out = new Array[Any](len - 2)
         System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, index*2)
+
         System.arraycopy
           ( arr.asInstanceOf[Array[Any]],
             index*2 + 2,
             out,
             index*2,
             len - index*2 - 2 )
+
         Json.ast(Json.Ast(out.asInstanceOf[IArray[Any]]))
 
   def apply(field: Text): Json raises JsonError =
@@ -643,9 +662,11 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
         val n = value.length
         var acc = n.hashCode
         var i = 0
+
         while i < n do
           acc = acc*31 ^ recur(ast.arrayElement(i))
           i += 1
+
         acc
 
       case value: Array[Long] @unchecked =>
@@ -657,21 +678,26 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
       case value: IArray[Any] @unchecked =>
         // Heterogeneous array or object, distinguished by parity.
         val ast = value.asInstanceOf[Json.Ast]
+
         if ast.isObject then
           val n = ast.objectSize
           var acc = Map.empty[String, Int]
           var i = 0
+
           while i < n do
             acc = acc.updated(ast.objectKey(i), recur(ast.objectValue(i)))
             i += 1
+
           acc.hashCode
         else
           val n = ast.arrayLength
           var acc = n.hashCode
           var i = 0
+
           while i < n do
             acc = acc*31 ^ recur(ast.arrayElement(i))
             i += 1
+
           acc
 
       case _ =>
@@ -684,29 +710,37 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
       def arrayEq(leftAst: Json.Ast, rightAst: Json.Ast): Boolean =
         val rn = rightAst.arrayLength
         val ln = leftAst.arrayLength
+
         rn == ln &&
           { var i = 0
             var eq = true
+
             while i < rn && eq do
               if !recur(leftAst.arrayElement(i), rightAst.arrayElement(i)) then eq = false
               i += 1
+
             eq }
 
       def objectEq(leftAst: Json.Ast, rightAst: Json.Ast): Boolean =
         val rn = rightAst.objectSize
         val ln = leftAst.objectSize
+
         if rn != ln then false
         else
           var leftMap = Map.empty[String, Json.Ast]
           var i = 0
+
           while i < ln do
             leftMap = leftMap.updated(leftAst.objectKey(i), leftAst.objectValue(i))
             i += 1
+
           var rightMap = Map.empty[String, Json.Ast]
           i = 0
+
           while i < rn do
             rightMap = rightMap.updated(rightAst.objectKey(i), rightAst.objectValue(i))
             i += 1
+
           leftMap.keySet == rightMap.keySet && leftMap.keySet.forall: key =>
             recur(leftMap(key), rightMap(key))
 
@@ -740,6 +774,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
         case right: Array[Double] @unchecked =>
           // Unboxed number array.
           val rightAst = right.asInstanceOf[Json.Ast]
+
           left.asMatchable match
             case _: Array[Double] @unchecked =>
               arrayEq(left, rightAst)
@@ -752,6 +787,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
         case right: Array[Long] @unchecked =>
           // High-precision number (`Bcd`).
           val rb = right.asInstanceOf[Bcd]
+
           left.asMatchable match
             case left: Long                   => BigDecimal(left) == rb.toBigDecimal
             case left: Double                 => BigDecimal(left) == rb.toBigDecimal
@@ -765,9 +801,11 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           // Heterogeneous array or object, distinguished by parity.
           val rightAst = right.asInstanceOf[Json.Ast]
           val rightIsObject = rightAst.isObject
+
           left.asMatchable match
             case _: Array[AnyRef] @unchecked =>
               val leftAst = left.asInstanceOf[Json.Ast]
+
               if rightIsObject then
                 if leftAst.isObject then objectEq(leftAst, rightAst) else false
               else if leftAst.isArray then

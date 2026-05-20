@@ -256,6 +256,7 @@ trait protointernal:
     import quotes.reflect.*
 
     val principal = from.dimensionRef.principal
+
     if from == to then Expr(1.0)
     else (from.power(-1).asType, to.power(1).asType).absolve match
       case ('[type from <: Measure; from], '[type to <: Measure; to]) =>

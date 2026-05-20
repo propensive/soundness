@@ -63,6 +63,7 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
 
       processBuilder.inheritIO()
       if processBuilder.start().nn.waitFor() != 0 then abort(TerminalError())
+
     block(using terminal)
 
   finally

@@ -40,6 +40,7 @@ object Pue:
 
     IArray.build[Byte](length): array =>
       var i = 0
+
       while i < length do
         array(i) = (text.s.charAt(i)%0x100).toByte
         i += 1

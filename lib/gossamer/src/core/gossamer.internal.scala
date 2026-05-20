@@ -84,6 +84,7 @@ object internal:
 
     var concatExpr: Expr[String] = Expr(escapedParts.head)
     var i = 0
+
     while i < showedInsertions.length do
       val insertion = showedInsertions(i)
       val nextPart = Expr(escapedParts(i + 1))
@@ -97,7 +98,8 @@ object internal:
 
           anticipation.Text(String.join("\n", array*).nn)
         }
-    else '{anticipation.Text($concatExpr)}
+    else
+      '{anticipation.Text($concatExpr)}
 
 
   def t(context: Expr[StringContext], insertions: Expr[Seq[Any]]): Macro[Text] =
@@ -126,6 +128,7 @@ object internal:
         val s: String = grapheme
         var max = 0
         var i = 0
+
         while i < s.length do
           val cp = Character.codePointAt(s, i)
 
@@ -133,8 +136,10 @@ object internal:
             if Character.charCount(cp) == 2
             then charM.width(s.charAt(i)) + charM.width(s.charAt(i + 1))
             else charM.width(s.charAt(i))
+
           if w > max then max = w
           i += Character.charCount(cp)
+
         max
 
       extension (grapheme: Grapheme)

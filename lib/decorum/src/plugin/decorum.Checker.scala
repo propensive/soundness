@@ -68,6 +68,12 @@ object Checker:
     state.companions         = Companions.extract(untpdTree, source)
     val caseGroups           = Cases.extract(untpdTree, source)
     val forGroups            = Comprehensions.extract(untpdTree, source)
+    state.forFilterLines     = forGroups.iterator.flatMap: gens =>
+                                 gens.iterator.collect:
+                                   case gl if gl.isFilter
+                                         && !gens.exists(o => (o ne gl) && o.line == gl.line) =>
+                                     gl.line
+                               .toSet
     val sequences            = Sequences.extract(untpdTree, source)
     scanRawTabs(file, rawText, out)
     val stmtGroups           = Statements.extract(untpdTree, source)
@@ -76,9 +82,10 @@ object Checker:
     checkPackageRules(file, expectedModule, state.packageInfo, out)
     checkImportRules(file, imports, lines, out)
     checkCaseRules(file, caseGroups, lines, out)
-    checkForRules(file, forGroups, out)
+    checkForRules(file, forGroups, rawText, source, out)
     checkChunkBlanks(file, stmtGroups, rawText, source, out)
     checkLambdaLayout(file, lambdaSites, out)
+    checkDefnAnchors(file, Definitions.extract(untpdTree, source), out)
     var idx = 0
 
     while idx < lines.length do
@@ -131,6 +138,13 @@ object Checker:
     var hasImports:           Boolean                    = false
     var packageInfo:          Option[PackageInfo]        = None
     var annotationEndLines:   Set[Int]                   = Set.empty
+    // Lines that are `if`-filter rows inside a `for`-comprehension and sit
+    // alone on their line (i.e. the filter doesn't share a line with the
+    // generator above it). R34 (924.3) requires these to align vertically
+    // with the comprehension's `<-`/`=` column, which can sit far to the
+    // right of the previous line's indent — so R31 (473.1) must not
+    // additionally complain about that indent jump.
+    var forFilterLines:       Set[Int]                   = Set.empty
     var prevLineWasBlank:     Boolean                    = false
     var prevWasAnnotation:    Boolean                    = false
     var prevLineNum:          Int                        = 0
@@ -139,7 +153,13 @@ object Checker:
     var prevCodeLineLastTok:  String                     = ""
     var openParens:           Int                        = 0
     var usingNameColumn:      Option[Int]                = None
-    var prevLineHadAlignment: Boolean                    = false
+    // Columns of every multi-space-after-comma site on the previous
+    // line. R37 (529.2) uses this to decide whether the current line
+    // genuinely continues a multi-row alignment (one of *its* extra-
+    // space comma columns must match a column from the previous row),
+    // rather than blindly suppressing whenever both lines happen to
+    // have extra padding somewhere.
+    var prevAlignmentCols:    Set[Int]                   = Set.empty
     var pendingR11:           List[Violation]            = Nil
     var companions:           CompanionDecls             = CompanionDecls(Map.empty, Map.empty)
     // Cross-line tracking for R30: each unclosed `(`/`[` records whether it
@@ -186,15 +206,6 @@ object Checker:
     // `=>` continuation line align vertically with the leading modifier or
     // `given` keyword on the first signature line.
     var givenSignatureIndent:     Int                     = -1
-    // Indent of the leftmost modifier/keyword of the most recent
-    // declaration whose signature is still in progress (no top-level `=`
-    // body opener seen yet), or -1 if we are not inside one. Set when a
-    // line begins with a declaration keyword (`val`, `var`, `def`, etc.,
-    // optionally preceded by modifiers) and reset when the body opener
-    // appears. Used by R33 (833.3) to require that a type-annotation `:`
-    // breaking onto its own line align with the declaration's anchor
-    // column.
-    var defAnchorIndent:          Int                     = -1
     // True iff the immediately preceding non-blank code line was a "tight
     // expression" — one whose top-level (depth 0) tokens contain no
     // whitespace between code tokens, with at most one allowed space after
@@ -229,7 +240,6 @@ object Checker:
     checkR4TrailingWs(line, emit)
     checkR31ContinuationIndent(s, lineNum, leadingCols, isBlank, firstReal, emit)
     checkR44BodyIndent(s, lineNum, isBlank, leadingCols, firstReal, emit)
-    checkR33TypeAnchor(s, leadingCols, isBlank, firstReal, emit)
     checkR33HeavyBracketAnchor(s, leadingCols, isBlank, firstReal, emit)
 
     if isBlank then
@@ -302,20 +312,12 @@ object Checker:
       if startsGiven then s.givenSignatureIndent = leadingCols
       else if s.givenSignatureIndent >= 0 && hasTopLevelEq then s.givenSignatureIndent = -1
 
-      // R33.3 anchor: a line that begins any declaration (after any
-      // modifiers) records its leading-cols as the anchor for the
-      // type-annotation `:` continuation. The anchor clears when the
-      // body opener (`=`) appears — including on the same line as the
-      // declaration keyword, since a single-line `def foo = 42` doesn't
-      // open a signature region.
-      val startsDecl =
-        kwIdx < sem.length && sem(kwIdx).kind == Kind.Code
-          && DeclKeywords.contains(sem(kwIdx).text)
-      if startsDecl && !hasTopLevelEq then s.defAnchorIndent = leadingCols
-      else if s.defAnchorIndent >= 0 && hasTopLevelEq then s.defAnchorIndent = -1
-      else if s.givenSignatureIndent >= 0 && !sem.headOption.exists(_.text == "=>") then
-        // Any line that's neither an `=>` continuation nor part of the
-        // initial signature ends the given-signature region.
+      // R32 given-signature termination: any line that's neither an `=>`
+      // continuation nor part of the initial signature ends the
+      // given-signature region. (The R33.3 type-annotation anchor used
+      // to be tracked here too, but is now driven from the untyped tree
+      // — see `Definitions.extract` and `checkDefnAnchors`.)
+      if s.givenSignatureIndent >= 0 && !sem.headOption.exists(_.text == "=>") then
         if !startsWithDecl && !isContinuationOfDecl then s.givenSignatureIndent = -1
 
     if isBlank then
@@ -411,6 +413,7 @@ object Checker:
     else if s.bracketFormality.nonEmpty then ()
     else if s.quoteSpliceBraces.nonEmpty then ()
     else if s.importLineSet.contains(lineNum) then ()
+    else if s.forFilterLines.contains(lineNum) then ()
     else
       val isCommentOnly   = firstReal.exists(_.kind == Kind.Comment)
       val isStringContent = firstReal.exists(_.kind == Kind.Strs)
@@ -533,7 +536,7 @@ object Checker:
                 (i + 1 until arr.length).exists: k =>
                   val t = arr(k)
                   t.kind != Kind.Space && t.kind != Kind.Comment
-                    && t.text != ")" && t.text != "}"
+                    && t.text != ")" && t.text != "}" && t.text != "=>"
               if semanticBefore || badAfter then
                 out +=
                   Violation
@@ -730,36 +733,28 @@ object Checker:
             +"own line; the preceding line contains a top-level operator or "
             +"assignment, so the anchor is mid-line" )
 
-  // R33.3: a type-annotation `:` that breaks onto its own line (the
-  // "heavy-signature" return-type or declared-type) must align with the
-  // first letter of the keyword (or leftmost modifier) that introduces
-  // the definition.
+  // R33.3 (833.3): a type-annotation `:` introducing the declared type
+  // of a `val`/`var`/`def`/`given` must either sit on the same line as
+  // the declaration's leftmost modifier/keyword, or — when broken onto
+  // a fresh line — start at exactly that column.
   //
-  // This extends the anchor-point concept of §5.3 from keyword sequences
-  // to definition signatures: just as `then`/`else` of a broken `if` chain
-  // must sit in the column of `if` (or its leading modifier), the broken
-  // `:` of a `def`/`val`/etc. must sit in the column of `def`/`val`/etc.
-  // (or its leading modifier).
-  private def checkR33TypeAnchor
-    ( s:           State,
-      leadingCols: Int,
-      isBlank:     Boolean,
-      firstReal:   Option[Token],
-      emit:        (Int, String, String) => Unit )
+  // Definition anchors are extracted from the untyped tree (see
+  // `decorum.Definitions`), so the rule does not depend on the token
+  // stream's bracket-nesting heuristics. The parser pairs each `:`
+  // with its containing `ValOrDefDef` for us.
+  private def checkDefnAnchors
+    ( file:    String,
+      anchors: List[DefnAnchor],
+      out:     mutable.ListBuffer[Violation] )
   :   Unit =
 
-    if isBlank then ()
-    else if s.defAnchorIndent < 0 then ()
-    // Skip `:` inside an open multi-line bracket block (parameter `:`,
-    // type-parameter `:`, etc.) — only the top-level return/declared-type
-    // `:` is governed by the anchor rule.
-    else if s.openParens > 0 then ()
-    else if !firstReal.exists{ t => t.kind == Kind.Code && t.text == ":" } then ()
-    else if leadingCols != s.defAnchorIndent then
-      emit
-        ( leadingCols + 1, "833.3",
-          s"type-annotation `:` should align with the definition's anchor at "
-            +s"column ${s.defAnchorIndent + 1} (found ${leadingCols + 1})" )
+    anchors.foreach: a =>
+      if a.colonLine != a.anchorLine && a.colonCol != a.anchorCol then
+        out +=
+          Violation
+            ( file, a.colonLine, a.colonCol, "833.3",
+              s"type-annotation `:` should align with the definition's anchor at "
+                +s"column ${a.anchorCol} (found ${a.colonCol})" )
 
   private def checkLicense
     ( s: State, lineNum: Int, line: IndexedSeq[Token], emit: (Int, String, String) => Unit )
@@ -1006,6 +1001,7 @@ object Checker:
     checkBracketInteriors(s, arr, cols, prevTok, emit)
     checkComments(lineNum, arr, cols, emit)
     checkOperatorSpacing(arr, cols, emit)
+    checkAssignmentSpacing(arr, cols, emit)
     checkSymbolicMethodNames(arr, cols, emit)
 
   private def checkCommas
@@ -1024,8 +1020,8 @@ object Checker:
       cols(k + 1) = cols(k) + arr(k).text.length
       k += 1
 
-    val deferred = mutable.ListBuffer[Violation]()
-    var hasAlignment = false
+    val deferred       = mutable.ListBuffer[Violation]()
+    val alignmentCols  = mutable.Set[Int]()
 
     var i = 0
     while i < arr.length do
@@ -1044,9 +1040,12 @@ object Checker:
                 ( s.file, lineNum, cols(i + 1), "529.2",
                   "exactly one space is required after a comma" )
           else if next.text != " " then
-            // Extra spaces after comma — possibly an alignment-run column.
-            // Defer until we know whether neighbouring lines also have alignment.
-            hasAlignment = true
+            // Extra spaces after comma — possibly part of a multi-row
+            // alignment column. Record the column where the *next* token
+            // begins (i.e. the would-be-aligned column) and defer until
+            // we can confirm the previous line shared that column.
+            val nextTokCol = cols(i + 1) + next.text.length
+            alignmentCols += nextTokCol
             if !next.text.startsWith("\n") then
               deferred +=
                 Violation
@@ -1054,27 +1053,29 @@ object Checker:
                     "exactly one space is required after a comma" )
       i += 1
 
-    // Validate previously deferred (from line N-1) against current line:
-    // if current line also has alignment, the previous run continues — suppress.
-    if hasAlignment then s.pendingR11 = Nil
+    // The current line "continues" an alignment iff one of its
+    // multi-space comma sites lands at a column the previous line also
+    // had. Otherwise the extra spaces are unjustified — fire.
+    val continuesAlignment =
+      alignmentCols.nonEmpty && alignmentCols.exists(s.prevAlignmentCols.contains)
+
+    if continuesAlignment then s.pendingR11 = Nil
     else
       s.pendingR11.foreach(out += _)
       s.pendingR11 = Nil
 
-    // Current candidates: keep if previous line also had alignment (then run is
-    // valid by both directions). Otherwise defer to next line.
-    if s.prevLineHadAlignment && hasAlignment then
-      // Already in a run — current line's deferred violations are part of run.
+    if continuesAlignment then
+      // Both directions confirmed — drop current deferred too.
       ()
-    else if hasAlignment then
-      // Need to confirm with next line.
+    else if alignmentCols.nonEmpty then
+      // Current line has extra-space commas but doesn't continue a known
+      // alignment run; defer in case the *next* line shares a column.
       s.pendingR11 = deferred.toList
     else
-      // No alignment on current — emit any candidates immediately.
       deferred.foreach(out += _)
 
-    if !isBlank then s.prevLineHadAlignment = hasAlignment
-    else s.prevLineHadAlignment = false
+    if !isBlank then s.prevAlignmentCols = alignmentCols.toSet
+    else s.prevAlignmentCols = Set.empty
 
   private def checkBracketInteriors
     ( s:       State,
@@ -1209,6 +1210,7 @@ object Checker:
                 else
                   t == ":" || t == "=" || t == "extends" || t == "derives"
                     || t == ")" || t == "]" || t == "}" || t == ","
+                    || t == "=>"
 
             // Inspect contents at depth 0 (relative to this bracket): if
             // there is no top-level comma but there is at least one binary
@@ -1519,6 +1521,58 @@ object Checker:
 
     while frames.nonEmpty do checkOpFrame(frames.pop(), emit)
 
+  // Assignment and mutation operators (`=`, `+=`, `-=`, etc.) require
+  // *at least* one space before and *exactly* one space after when the
+  // right-hand side appears on the same line. The "at least one
+  // before" lets multi-line parameter blocks align their `=`s
+  // vertically:
+  //
+  //     ( mode:  UnixMode          = UnixMode(),
+  //       user:  UnixUser          = UnixUser(0),
+  //       group: UnixGroup         = UnixGroup(0) )
+  //
+  // The tokenizer keeps each operator as one `Code` token, so we match
+  // by literal text. The check skips when the operator is the last
+  // semantic token on its line (multi-line RHS — `def f =\n  body`).
+  private val AssignOps: Set[String] =
+    Set("=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", ">>>=")
+
+  private def checkAssignmentSpacing
+    ( arr: Array[Token], cols: Array[Int], emit: (Int, String, String) => Unit )
+  :   Unit =
+
+    var lastSemantic = arr.length - 1
+    while lastSemantic >= 0
+          && (arr(lastSemantic).kind == Kind.Space
+              || arr(lastSemantic).kind == Kind.Comment)
+    do lastSemantic -= 1
+
+    var i = 0
+    while i < arr.length do
+      val t = arr(i)
+      if t.kind == Kind.Code && AssignOps.contains(t.text) && i != lastSemantic then
+        // `name_=` setter method-name suffix: skip. `=` follows an
+        // identifier ending in `_` with no intervening space.
+        val isSetterSuffix =
+          t.text == "=" && i > 0 && arr(i - 1).kind == Kind.Code
+            && arr(i - 1).text.endsWith("_")
+        if !isSetterSuffix then
+          val leftHasSpace =
+            i > 0 && arr(i - 1).kind == Kind.Space && arr(i - 1).text.length >= 1
+          val rightExactSpace =
+            i + 1 < arr.length && arr(i + 1).kind == Kind.Space && arr(i + 1).text == " "
+          if !leftHasSpace then
+            emit
+              ( cols(i), "376.1",
+                s"`${t.text}` requires at least one space before it when "
+                  +"the right-hand side is on the same line" )
+          else if !rightExactSpace then
+            emit
+              ( cols(i), "376.1",
+                s"`${t.text}` requires exactly one space after it when "
+                  +"the right-hand side is on the same line" )
+      i += 1
+
   private def checkOpFrame
     ( ops: mutable.ArrayBuffer[OpHit], emit: (Int, String, String) => Unit )
   :   Unit =
@@ -1773,24 +1827,22 @@ object Checker:
       group.foreach: c =>
         // Multi-line pattern: the heavy-pattern shape
         //   case Foo
-        //     ( a, b )
-        //   =>
+        //     ( a, b ) =>
         //     rhs
-        // requires `=>` alone on its own line, aligned with the `c` of
-        // `case`. The body must then start on a fresh line.
-        if c.patternMultiLine then
-          if !c.arrowAloneOnLine then
+        // requires `=>` to trail the last pattern token on the same line.
+        // It must not stand alone on its own line, and the body must
+        // begin on a fresh line after the `=>`.
+        //
+        // Cases whose *guard* spans multiple lines are exempt: the Scala
+        // parser needs the `=>` dedented below the indented guard to end
+        // the guard expression, so a trailing `=>` isn't an option there.
+        if c.patternMultiLine && !c.guardMultiLine then
+          if c.arrowAloneOnLine then
             out +=
               Violation
                 ( file, c.arrowLine, c.arrowCol, "R33-multiline-pattern-arrow-position",
-                  "`=>` of a multi-line case pattern must be alone on its own line "
-                    +s"aligned with `case` at column ${c.caseCol}" )
-          else if c.arrowCol != c.caseCol then
-            out +=
-              Violation
-                ( file, c.arrowLine, c.arrowCol, "R33-multiline-pattern-arrow-align",
-                  s"`=>` of a multi-line case pattern must be aligned with `case` "
-                    +s"at column ${c.caseCol} (found ${c.arrowCol})" )
+                  "`=>` of a multi-line case pattern must trail the last pattern "
+                    +"token on the same line, not stand alone on its own line" )
           else if !c.bodyStartsAfterArrow then
             out +=
               Violation
@@ -1798,8 +1850,11 @@ object Checker:
                   "body of a multi-line case pattern must start on the line "
                     +"after `=>`" )
         // Single-line pattern, multi-line body: keep the original sub-rule
-        // (exactly one space before `=>` on the case-keyword line).
-        else if !c.isSingleLine && c.spacesBeforeArrow != 1 then
+        // (exactly one space before `=>` on the case-keyword line). Only
+        // meaningful when `=>` trails content on a line; if the case has a
+        // multi-line guard that forces `=>` onto its own line, the leading
+        // whitespace isn't a "space before `=>`" in the rule's sense.
+        else if !c.isSingleLine && !c.arrowAloneOnLine && c.spacesBeforeArrow != 1 then
           out +=
             Violation
               ( file, c.arrowLine, c.arrowCol, "R33-multiline-case-arrow-space",
@@ -2057,14 +2112,61 @@ object Checker:
         val prev = stmts(i - 1)
         val cur  = stmts(i)
         if (prev.isMultiLine || cur.isMultiLine)
+        && cur.startLine > prev.endLine
         && !hasBlankLineBetween(prev.endLine, cur.startLine, content, source)
+        && !startsWithContinuationOperator(content, source, cur.startLine)
         then
+          // Emit at `prev.endLine + 1` — the line immediately AFTER the
+          // previous statement's last line. Inserting a blank line there
+          // separates `prev` from `cur` regardless of where dotty's tree
+          // places `cur.startLine` (which can be on a nested-body line
+          // for control-flow constructs like `if cond then\n  body`).
           out +=
             Violation
-              ( file, cur.startLine, 1, "315",
+              ( file, prev.endLine + 1, 1, "315",
                 "a multi-line statement must be separated from its siblings "
                   +"by a blank line" )
         i += 1
+
+  // Lines whose first non-whitespace token is an infix continuation
+  // operator (`||`, `&&`, `+`, `==`, `::`, `.`, `?`, etc.) extend the
+  // previous expression, even though dotty may parse the boundary as
+  // two separate `Block` stats. Inserting a blank line between them
+  // would actually break the operator continuation, so R28 must not
+  // fire on these.
+  private def startsWithContinuationOperator
+    ( content: String, source: SourceFile, line: Int )
+  :   Boolean =
+    // Defensively check the file lines either side of the reported
+    // `line` (dotty's `offsetToLine` / `lineToOffset` indexing in 3.8.3
+    // can drift by ±1 across versions, and the parser may split an
+    // operator-continuation expression so the operator token sits on a
+    // different line from what `Statements.collect` reports). If any of
+    // the three lines starts with an infix operator, the boundary is
+    // inside an operator chain and the rule must skip — inserting a
+    // blank line there would break parsing.
+    (line - 1 to line + 1).exists: l =>
+      lineStartsWithOperator(content, source, l)
+
+  private def lineStartsWithOperator
+    ( content: String, source: SourceFile, line: Int )
+  :   Boolean =
+    if line < 1 then false
+    else
+      val start =
+        try source.lineToOffset(line - 1)
+        catch case _: Throwable => -1
+      if start < 0 || start >= content.length then false
+      else
+        var i = start
+        while i < content.length
+              && content.charAt(i) != '\n'
+              && (content.charAt(i) == ' ' || content.charAt(i) == '\t')
+        do i += 1
+        if i >= content.length then false
+        else
+          val c = content.charAt(i)
+          "|&+-*/<>=!~^%?.:".indexOf(c) >= 0
 
   private def hasBlankLineBetween
     ( endLine: Int, startLine: Int, content: String, source: SourceFile ): Boolean =
@@ -2075,7 +2177,7 @@ object Checker:
     while l < startLine do
       val from = source.lineToOffset(l - 1)
       val to   =
-        if l < content.split('\n').nn.length + 1
+        if l < content.split('\n').length + 1
         then source.lineToOffset(l).min(content.length)
         else content.length
       var i = from
@@ -2134,6 +2236,8 @@ object Checker:
   private def checkForRules
     ( file:    String,
       groups:  List[List[GenLine]],
+      content: String,
+      source:  SourceFile,
       out:     mutable.ListBuffer[Violation] )
   :   Unit =
 
@@ -2143,15 +2247,37 @@ object Checker:
         val anchorLhsCol = anchorGen.startCol
         val anchorOpCol  = anchorGen.opCol
 
-        gens.foreach: gl =>
+        var i = 0
+        while i < gens.length do
+          val gl = gens(i)
           if !(gl.line == anchorGen.line && gl.startCol == anchorGen.startCol) then
             if gl.isFilter then
-              if gl.startCol != anchorOpCol then
-                out +=
-                  Violation
-                    ( file, gl.line, gl.startCol, "924.3",
-                      s"`if` filter should align with `<-`/`=` at column $anchorOpCol "
-                        +s"(found ${gl.startCol})" )
+              // A filter that shares a line with another enumerator
+              // (typically the generator above, e.g. `x <- xs if cond`) is
+              // accepted as-is: the user is laying the filter inline rather
+              // than as a separate enumerator row, and the column-alignment
+              // rule does not apply.
+              val sameLineAsOther =
+                gens.exists(o => (o ne gl) && o.line == gl.line)
+              if !sameLineAsOther then
+                // A separate-line filter must not be separated from the
+                // preceding enumerator by a blank line.
+                if i > 0 then
+                  val prev = gens(i - 1)
+                  if prev.line < gl.line - 1
+                  && hasBlankLineBetween(prev.line, gl.line, content, source)
+                  then
+                    out +=
+                      Violation
+                        ( file, gl.line, gl.startCol, "924.4",
+                          "`if` filter must not be separated from the preceding "
+                            +"enumerator by a blank line" )
+                if gl.startCol != anchorOpCol then
+                  out +=
+                    Violation
+                      ( file, gl.line, gl.startCol, "924.3",
+                        s"`if` filter should align with `<-`/`=` at column $anchorOpCol "
+                          +s"(found ${gl.startCol})" )
             else
               if gl.startCol != anchorLhsCol then
                 out +=
@@ -2165,3 +2291,4 @@ object Checker:
                     ( file, gl.line, gl.opCol, "924.1",
                       s"`<-`/`=` should be vertically aligned at column $anchorOpCol "
                         +s"(found ${gl.opCol})" )
+          i += 1

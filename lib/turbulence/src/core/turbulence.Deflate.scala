@@ -64,6 +64,7 @@ object Deflate:
 
         case _ =>
           deflater.finish()
+
           while !deflater.finished() do
             val count= deflater.deflate(buffer, 0, buffer.length)
             if count > 0 then out.write(buffer, 0, count)

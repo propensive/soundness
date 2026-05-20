@@ -66,6 +66,7 @@ object internal:
       '{Sh.Runtime.parse(Sh.Runtime.initial, ${Expr(parts.head)}.tt)}
 
     var i = 0
+
     while i < insertionExprs.length do
       val head = insertionExprs(i)
       val nextPart = parts(i + 1)
@@ -80,6 +81,7 @@ object internal:
           rethrow(Sh.Runtime.parse(checkState, nextPart.tt))
 
           val current = runtimeExpr
+
           runtimeExpr =
             ' {
                 Sh.Runtime.parse

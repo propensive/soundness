@@ -67,6 +67,7 @@ class ZipStream(stream: () => Stream[Data], filter: (Path on Zip) => Boolean):
     def findMagic(): Boolean =
       var done = false
       var found = false
+
       while !done && !cursor.finished do
         if !cursor.seek(0x50.toByte) then done = true
         else
@@ -80,11 +81,13 @@ class ZipStream(stream: () => Stream[Data], filter: (Path on Zip) => Boolean):
 
             cursor.cue(start)
             ok
+
           if matched then
             found = true
             done = true
           else
             cursor.next()
+
       found
 
     if !findMagic() then Stream() else
@@ -96,8 +99,10 @@ class ZipStream(stream: () => Stream[Data], filter: (Path on Zip) => Boolean):
 
         case entry =>
           import errorDiagnostics.empty
+
           val ref: Path on Zip =
             val name = entry.getName().nn.tt
+
             mitigate:
               case PathError(_, _)    => ZipError(ZipError.Reason.InvalidName(name))
               case NameError(_, _, _) => ZipError(ZipError.Reason.InvalidName(name))

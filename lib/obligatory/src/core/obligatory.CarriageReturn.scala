@@ -45,6 +45,7 @@ object CarriageReturn:
 
     def frame(): Optional[Text] = cursor.hold:
       val start = cursor.mark
+
       if !cursor.finished && cursor.seek(Cr)
       then cursor.grab(start, cursor.mark).also(cursor.next())
       else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)

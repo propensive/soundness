@@ -186,6 +186,7 @@ case class SourceCode
 
   def extract(range: CodeRange): SourceCode =
     val focus = ((range.startLine, range.startColumn), (range.endLine, range.endColumn))
+
     if range.startLine != range.endLine
     then fragment(range.startLine, (range.endLine + 2).min(lastLine), focus)
     else fragment(range.startLine, (range.endLine + 1).min(lastLine), focus)

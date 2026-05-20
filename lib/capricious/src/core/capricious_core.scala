@@ -78,7 +78,7 @@ def random[value: Randomizable](): value =
   given random: Random = Random.global
   value()
 
-def toss()(using Random): Boolean = math.random < 0.5
+def toss()(using Random): Boolean = math.random() < 0.5
 
 package randomDistributions:
   given gaussian: Distribution = Gaussian()

@@ -47,6 +47,7 @@ case class CaseInfo
     endLine:              Int,
     isSingleLine:         Boolean,
     patternMultiLine:     Boolean,
+    guardMultiLine:       Boolean,
     arrowAloneOnLine:     Boolean,
     bodyStartsAfterArrow: Boolean )
 
@@ -122,6 +123,15 @@ object Cases:
         // the heavy-pattern shape: `case Foo\n  ( a, b )\n=> rhs`.
         val patternEndLine = source.offsetToLine((patternEnd - 1).max(psp.start)) + 1
         val patternMultiLine = patternEndLine > caseLine
+        // A guard that spans multiple source lines (typically an indented
+        // `if\n  cond1\n  && cond2`) forces the `=>` to live on its own
+        // line dedented from the guard — the Scala parser needs that
+        // dedent to terminate the indented guard expression. R33's
+        // "trail the last pattern token" rule therefore does not apply
+        // here.
+        val guardMultiLine =
+          gsp.exists
+            && source.offsetToLine((gsp.end - 1).max(gsp.start)) > source.offsetToLine(gsp.start)
         // True when the `=>` is the first non-whitespace token on its line.
         val arrowLineStart = source.startOfLine(arrowOffset)
         var aw = arrowLineStart
@@ -153,5 +163,6 @@ object Cases:
                 endLine           = endLine,
                 isSingleLine         = isSingleLine,
                 patternMultiLine     = patternMultiLine,
+                guardMultiLine       = guardMultiLine,
                 arrowAloneOnLine     = arrowAloneOnLine,
                 bodyStartsAfterArrow = bodyStartsAfterArrow ))

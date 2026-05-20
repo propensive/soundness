@@ -38,6 +38,7 @@ import turbulence.*
 object Console:
   def apply(stdio: Stdio): Console =
     inline def stdio0: Stdio = stdio
+
     new Console:
       val stdio: Stdio = stdio0
 

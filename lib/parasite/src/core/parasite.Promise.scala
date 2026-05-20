@@ -95,6 +95,7 @@ final case class Promise[value]():
   @tailrec
   def await(): value raises AsyncError =
     if Thread.interrupted() then throw new InterruptedException()
+
     state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
       case Incomplete(_)   => jucl.LockSupport.park(this) yet await()
       case Complete(value) => value
@@ -103,6 +104,7 @@ final case class Promise[value]():
   @tailrec
   def attend(): Unit =
     if Thread.interrupted() then throw new InterruptedException()
+
     state.getAndUpdate(enqueue(Thread.currentThread.nn)) match
       case Incomplete(_) => jucl.LockSupport.park(this) yet attend()
       case _             => ()

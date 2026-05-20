@@ -123,6 +123,7 @@ object Contrastable:
 
     given double: Double is Contrastable.Foundation = (left, right) =>
       given Decimalizer(3)
+
       if left == right then Juxtaposition.Same(left.show)
       else
         val difference =
@@ -133,6 +134,7 @@ object Contrastable:
           given Decimalizer
             ( decimalPlaces = (-log10((left - right).abs)).ceiling.double.toInt,
               exponentThreshold = Unset )
+
           (left.show, right.show)
 
         Juxtaposition.Different(left2, right2, difference)
@@ -150,6 +152,7 @@ object Contrastable:
         if left == right then Juxtaposition.Same(left) else
           def decompose(chars: IArray[Char]): IArray[Decomposition] = chars.map: char =>
             Decomposition.Primitive(t"Char", char.show, char)
+
           comparison[Char](t"Text", decompose(left.chars), decompose(right.chars), left, right)
 
   inline def nothing[value]: value is Contrastable = (left, right) =>
@@ -165,6 +168,7 @@ object Contrastable:
 
       case (Decomposition.Product(leftName, left, _), Decomposition.Product(rightName, right, _)) =>
         val name = if leftName == rightName then leftName else t"$leftName/$rightName"
+
         Juxtaposition.Collation
           ( name,
             left.keys.to(List).map: key =>

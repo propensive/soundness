@@ -70,15 +70,18 @@ object Subcompiler:
 
         var outermostInCu: SourcePosition | Null = null
         var cur = diagnostic.pos
+
         while cur.exists do
           if cur.source == cuSource then outermostInCu = cur
           if cur.outer == NoSourcePosition then cur = NoSourcePosition else cur = cur.outer
 
         var position = diagnostic.pos
+
         outermostInCu match
           case bound: SourcePosition =>
             var found: SourcePosition = bound
             var c = diagnostic.pos
+
             while c.exists do
               if
                 c.source == cuSource
@@ -86,7 +89,9 @@ object Subcompiler:
                 && c.end <= bound.end
                 && (c.end - c.start) < (found.end - found.start)
               then found = c
+
               if c.outer == NoSourcePosition then c = NoSourcePosition else c = c.outer
+
             position = found
 
           case _ =>

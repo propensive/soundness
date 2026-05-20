@@ -89,7 +89,7 @@ extends Dynamic:
     case -1    => Unset
     case index => index
 
-  lazy val paramCount: Int = firstVariadic.lay(fieldCount) { f => (f + 1).min(fieldCount) }
+  lazy val paramCount: Int = firstVariadic.lay(fieldCount): field => (field + 1).min(fieldCount)
   private lazy val endlessParams: Boolean = firstVariadic.lay(false)(_ < fieldCount)
 
   def param(index: Int): Optional[Entry] =

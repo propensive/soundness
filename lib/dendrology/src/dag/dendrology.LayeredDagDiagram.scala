@@ -80,11 +80,13 @@ object LayeredDagDiagram:
 
   def apply[node](dag: Dag[node]): LayeredDagDiagram[node] raises DagError =
     val nodes: Vector[node] = dag.sorted.to(Vector)
+
     if nodes.isEmpty then LayeredDagDiagram(Nil) else
       val parents: Map[node, Set[node]] = dag.edgeMap
       val forward: Map[node, Set[node]] = dag.invert.edgeMap
 
       val level: scm.HashMap[node, Int] = scm.HashMap()
+
       for n <- nodes do
         val ps = parents.getOrElse(n, Set.empty)
         level(n) = if ps.isEmpty then 0 else ps.iterator.map(level).max + 1
@@ -102,7 +104,7 @@ object LayeredDagDiagram:
       for l <- 0 to maxLevel do
         val levelNodes = byLevel(l)
 
-        val terminating = state.toMap.filter{ (_, lane) => level(lane.target) == l }
+        val terminating = state.toMap.filter: (_, lane) => level(lane.target) == l
         val continuing = state.toMap -- terminating.keys
 
         val incomingByNode: Map[node, Vector[Int]] =
@@ -178,22 +180,26 @@ object LayeredDagDiagram:
         cells(topEntry).top = true
         cells(topEntry).right = true
         var c = topEntry + 1
+
         while c < bottomExit do
           cells(c).left = true
           cells(c).right = true
           cells(c).horizontalPassThrough = true
           c += 1
+
         cells(bottomExit).left = true
         cells(bottomExit).down = true
       else
         cells(topEntry).top = true
         cells(topEntry).left = true
         var c = bottomExit + 1
+
         while c < topEntry do
           cells(c).left = true
           cells(c).right = true
           cells(c).horizontalPassThrough = true
           c += 1
+
         cells(bottomExit).right = true
         cells(bottomExit).down = true
 
@@ -240,7 +246,7 @@ case class LayeredDagDiagram[node](rows: List[(List[DagTile], Map[Int, node])]):
     val widthsList = widths.to(List)
 
     rows.map: (tiles, nodesAt) =>
-      val glyphs: Map[Int, line] = nodesAt.map{ (col, n) => col -> glyph(n) }
+      val glyphs: Map[Int, line] = nodesAt.map: (col, n) => col -> glyph(n)
       style.serialize(tiles, glyphs, widthsList, Unset)
 
   def tiles: List[List[DagTile]] = rows.map(_(0))

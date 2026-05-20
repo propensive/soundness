@@ -77,6 +77,7 @@ package columnar:
     val n = plain.length
     val arr = new Array[Int](n + 1)
     var i = 0
+
     while i < n do
       arr(i + 1) = arr(i) + summon[Char is Measurable].width(plain.charAt(i))
       i += 1
@@ -95,11 +96,13 @@ package columnar:
       var max = 0
       var lastStart = 0
       var i = 0
+
       while i < n do
         if plain.charAt(i) == ' ' then
           val wordWidth = widths(i) - widths(lastStart)
           if wordWidth > max then max = wordWidth
           lastStart = i + 1
+
         i += 1
 
       val tailWidth = widths(n) - widths(lastStart)
@@ -137,9 +140,11 @@ package columnar:
             if lineStart == position then acc else text.segment(lineStart.z thru position.u) :: acc
           else
             val current = plain.charAt(position)
+
             if current == ' ' then recur(position + 1, lineStart, position, acc)
             else
               val widthSoFar = widths(position + 1) - widths(lineStart)
+
               if widthSoFar > width && lastSpace > lineStart then
                 val segment = text.segment(lineStart.z thru lastSpace.u)
                 recur(lastSpace + 1, lastSpace + 1, lastSpace + 1, segment :: acc)
@@ -163,6 +168,7 @@ package columnar:
     :   IndexedSeq[textual] =
 
       given Char is Measurable = _.toString.tt.metrics
+
       if lines.map(Prose.longestWord(_)).max < width
       then Prose.fit(lines, width, textAlign)
       else
@@ -170,6 +176,7 @@ package columnar:
 
         lines.each: line =>
           val count = (line.length - 1)/width + 1
+
           (0 until count).each: index =>
             result = line.segment((width*index).z span width) :: result
 

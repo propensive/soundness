@@ -30,39 +30,89 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package dendrology
+package decorum
 
-import anticipation.*
-import gossamer.*
-import proscenium.*
-import spectacular.*
+import scala.collection.mutable
 
-import TreeTile.*
+import dotty.tools.dotc.ast.untpd
+import dotty.tools.dotc.util.SourceFile
 
-object TreeDiagram:
-  def apply[node: Expandable](roots: node*): TreeDiagram[node] =
-    by[node](node.children(_))(roots*)
+case class DefnAnchor
+  ( anchorLine: Int,
+    anchorCol:  Int,
+    colonLine:  Int,
+    colonCol:   Int )
 
-  given printable: [node: Showable] => (style: TreeStyle[Text]) => TreeDiagram[node] is Printable =
-    (diagram, termcap) =>
-      (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
+object Definitions:
+  // Walk the untyped tree for every `ValDef`/`DefDef` that carries an
+  // explicit type ascription, and record (a) the column of the leftmost
+  // non-whitespace token on the keyword's line — the "anchor", typically
+  // a leading modifier or the keyword itself (`val`/`var`/`def`/`given`) —
+  // and (b) the position of the `:` that introduces the type. R33.3
+  // (833.3) then requires the `:` to sit either on the anchor line or in
+  // the anchor column on a fresh line.
+  //
+  // This is tree-driven so we don't need to maintain cross-line bracket-
+  // depth state to decide when a `=` ends the signature region. The
+  // parser already pairs each `:` with its containing definition.
+  def extract(tree: untpd.Tree, source: SourceFile): List[DefnAnchor] =
+    val out     = mutable.ListBuffer[DefnAnchor]()
+    val content = String(source.content)
 
-  def by[node](getChildren: node => Seq[node])(roots: node*): TreeDiagram[node] =
-    def recur(level: List[TreeTile], input: Seq[node]): Stream[(List[TreeTile], node)] =
-      val last = input.size - 1
+    walk(tree): t =>
+      t match
+        case d: untpd.ValOrDefDef => recordIfAnnotated(d, source, content, out)
+        case _                    => ()
 
-      input.zipWithIndex.to(Stream).flatMap: (item, index) =>
-        val tiles: List[TreeTile] = ((if index == last then Last else Branch) :: level).reverse
+    out.toList
 
-        (tiles, item)
-        #:: recur((if index == last then Space else Extender) :: level, getChildren(item))
+  private def recordIfAnnotated
+    ( d:       untpd.ValOrDefDef,
+      source:  SourceFile,
+      content: String,
+      out:     mutable.ListBuffer[DefnAnchor] )
+  :   Unit =
 
-    new TreeDiagram(recur(Nil, roots))
+    val tpt = d.tpt
+    if !tpt.span.exists || tpt.span.isZeroExtent then return
+    if !d.span.exists then return
 
-case class TreeDiagram[node](lines: Stream[(List[TreeTile], node)]):
-  def render[line](line: node => line)(using style: TreeStyle[line]): Stream[line] = map[line]:
-    tiles => node => style.serialize(tiles, line(node))
+    // The colon is the last non-whitespace character before the `tpt`'s
+    // start (the only thing the parser could have written there is `:`).
+    var i = tpt.span.start - 1
+    while i >= 0 && i < content.length && content.charAt(i).isWhitespace do i -= 1
+    if i < 0 || i >= content.length || content.charAt(i) != ':' then return
 
-  def map[row](line: List[TreeTile] => node => row): Stream[row] = lines.map(line(_)(_))
-  def nodes: Stream[node] = lines.map(_(1))
-  def tiles: Stream[List[TreeTile]] = lines.map(_(0))
+    val colonOffset = i
+    val colonLine   = source.offsetToLine(colonOffset) + 1
+    val colonCol    = source.column(colonOffset) + 1
+
+    // The keyword line is the line of the definition's `point` (`val`/`def`
+    // for member defs, or the identifier for parameter `ValDef`s). The
+    // anchor column is the leftmost non-whitespace column on that line,
+    // capturing any leading modifiers.
+    val pointOffset = d.span.point.max(0).min(content.length - 1)
+    val anchorLine  = source.offsetToLine(pointOffset) + 1
+    val anchorCol   = leadingColumn(content, source, anchorLine)
+
+    out += DefnAnchor(anchorLine, anchorCol, colonLine, colonCol)
+
+  private def leadingColumn(content: String, source: SourceFile, line: Int): Int =
+    val start = source.lineToOffset(line - 1)
+    var i     = start
+    while i < content.length
+          && content.charAt(i) != '\n'
+          && (content.charAt(i) == ' ' || content.charAt(i) == '\t')
+    do i += 1
+    source.column(i) + 1
+
+  // Generic untyped-tree pre-order traversal driven off `productIterator`,
+  // mirroring the helper in `Annotations` and `Comprehensions`.
+  private def walk(t: untpd.Tree)(visit: untpd.Tree => Unit): Unit =
+    visit(t)
+    t.productIterator.foreach(descend(_, visit))
+
+  private def descend(x: Any, visit: untpd.Tree => Unit): Unit = x match
+    case sub: untpd.Tree  => walk(sub)(visit)
+    case it:  Iterable[?] => it.foreach(descend(_, visit))
+    case _                => ()

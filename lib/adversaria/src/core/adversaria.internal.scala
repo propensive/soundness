@@ -151,6 +151,7 @@ object internal:
       . map: field =>
           val name = '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
           '{($name, (value: entity) => ${'value.asTerm.select(field).asExprOf[value]})}
+
     ' {
         new Dereferenceable:
           type Self = entity

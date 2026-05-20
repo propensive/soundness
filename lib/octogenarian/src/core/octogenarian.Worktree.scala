@@ -229,7 +229,7 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
       case FastForward.Only  => sh"--ff-only"
       case FastForward.Never => sh"--no-ff"
 
-    val msgOpt = message.lay(sh"") { m => sh"-m $m" }
+    val msgOpt = message.lay(sh""): m => sh"-m $m"
 
     sh"$git $repoOptions merge $ffOpt $msgOpt $ref".exec[Exit]() match
       case Exit.Ok => ()
@@ -250,6 +250,7 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   :   Unit logs GitEvent =
 
     val noCommitOpt = if noCommit then sh"-n" else sh""
+
     sh"$git $repoOptions revert --no-edit $noCommitOpt $commit".exec[Exit]() match
       case Exit.Ok => ()
       case failure => abort(GitError(RevertFailed))
@@ -259,7 +260,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
   :   Unit logs GitEvent =
 
-    val reasonOpt = reason.lay(sh"") { r => sh"--reason=$r" }
+    val reasonOpt = reason.lay(sh""): reason => sh"--reason=$reason"
+
     sh"$git $repoOptions worktree lock $reasonOpt $path".exec[Exit]() match
       case Exit.Ok => ()
       case failure => abort(GitError(WorktreeFailed))

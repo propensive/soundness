@@ -69,6 +69,7 @@ object internal:
 
         for index <- 2 until 11 do
           val char = isin.s(index)
+
           if '0' <= char <= '9' || 'A' <= char <= 'Z'
           then result |= ((char.toLong - '0') & 0b111111) << (60 - index*6)
           else raise(IsinError(IsinError.InvalidCharacter(index, char)))

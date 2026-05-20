@@ -109,6 +109,7 @@ object UrlInterpolator:
       '{Runtime.parse(Runtime.initial, ${Expr(parts.head)}.tt)}
 
     var i = 0
+
     while i < insertionExprs.length do
       val head = insertionExprs(i)
       val nextPart = parts(i + 1)
@@ -126,6 +127,7 @@ object UrlInterpolator:
 
                 case _ =>
                   halt(m"expected a literal string label for the substitution")
+
               checkState = rethrow(Runtime.substitute(checkState, label.tt))
 
             case _ =>
@@ -134,6 +136,7 @@ object UrlInterpolator:
           checkState = rethrow(Runtime.parse(checkState, nextPart.tt))
 
           val current = runtimeExpr
+
           runtimeExpr =
             ' {
                 Runtime.parse

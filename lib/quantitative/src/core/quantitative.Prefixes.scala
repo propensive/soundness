@@ -44,6 +44,8 @@ class Prefixes(val prefixes: List[Metric], val minimum: Double) extends Planar:
     if value == 0.0 then NoPrefix else
       val abs = math.abs(value)
       val candidates = (NoPrefix :: prefixes).sortBy(-_.exponent)
+
       val chosen = candidates.find: prefix =>
         abs/math.pow(prefix.base.toDouble, prefix.exponent.toDouble) >= minimum
+
       chosen.getOrElse(candidates.last)
