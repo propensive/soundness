@@ -122,6 +122,26 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("def f(a: Int , b: Int): Int = a + b\n")
       . assert(_.contains("529.1"))
 
+      test(m"Single line with extra spaces after comma is rejected"):
+        rules("val x = (1,  2)\n")
+      . assert(_.contains("529.2"))
+
+      test(m"Genuinely aligned multi-row commas are accepted"):
+        // Two rows where the second token after each `,` lands at the
+        // same absolute column on both lines — a real alignment run.
+        rules
+         ( "val a = T(1,   t\"H\",  t\"Hydrogen\")\n"
+            +"val b = T(20,  t\"Ne\", t\"Neon\")\n" )
+      . assert(!_.contains("529.2"))
+
+      test(m"Fake alignment (extra spaces but cols don't match) is rejected"):
+        // `val H` vs `val He` shifts the parens column, so the would-be
+        // aligned columns inside don't line up across rows.
+        rules
+         ( "val H = T(1,   t\"H\",  t\"Hydrogen\")\n"
+            +"val He = T(2,   t\"He\", t\"Helium\")\n" )
+      . assert(_.contains("529.2"))
+
       test(m"Space inside parentheses on a single line is rejected"):
         rules("def f( a: Int ): Int = a\n")
       . assert(_.contains("402"))

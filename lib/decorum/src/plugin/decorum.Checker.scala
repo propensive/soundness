@@ -153,7 +153,13 @@ object Checker:
     var prevCodeLineLastTok:  String                     = ""
     var openParens:           Int                        = 0
     var usingNameColumn:      Option[Int]                = None
-    var prevLineHadAlignment: Boolean                    = false
+    // Columns of every multi-space-after-comma site on the previous
+    // line. R37 (529.2) uses this to decide whether the current line
+    // genuinely continues a multi-row alignment (one of *its* extra-
+    // space comma columns must match a column from the previous row),
+    // rather than blindly suppressing whenever both lines happen to
+    // have extra padding somewhere.
+    var prevAlignmentCols:    Set[Int]                   = Set.empty
     var pendingR11:           List[Violation]            = Nil
     var companions:           CompanionDecls             = CompanionDecls(Map.empty, Map.empty)
     // Cross-line tracking for R30: each unclosed `(`/`[` records whether it
@@ -1014,8 +1020,8 @@ object Checker:
       cols(k + 1) = cols(k) + arr(k).text.length
       k += 1
 
-    val deferred = mutable.ListBuffer[Violation]()
-    var hasAlignment = false
+    val deferred       = mutable.ListBuffer[Violation]()
+    val alignmentCols  = mutable.Set[Int]()
 
     var i = 0
     while i < arr.length do
@@ -1034,9 +1040,12 @@ object Checker:
                 ( s.file, lineNum, cols(i + 1), "529.2",
                   "exactly one space is required after a comma" )
           else if next.text != " " then
-            // Extra spaces after comma — possibly an alignment-run column.
-            // Defer until we know whether neighbouring lines also have alignment.
-            hasAlignment = true
+            // Extra spaces after comma — possibly part of a multi-row
+            // alignment column. Record the column where the *next* token
+            // begins (i.e. the would-be-aligned column) and defer until
+            // we can confirm the previous line shared that column.
+            val nextTokCol = cols(i + 1) + next.text.length
+            alignmentCols += nextTokCol
             if !next.text.startsWith("\n") then
               deferred +=
                 Violation
@@ -1044,27 +1053,29 @@ object Checker:
                     "exactly one space is required after a comma" )
       i += 1
 
-    // Validate previously deferred (from line N-1) against current line:
-    // if current line also has alignment, the previous run continues — suppress.
-    if hasAlignment then s.pendingR11 = Nil
+    // The current line "continues" an alignment iff one of its
+    // multi-space comma sites lands at a column the previous line also
+    // had. Otherwise the extra spaces are unjustified — fire.
+    val continuesAlignment =
+      alignmentCols.nonEmpty && alignmentCols.exists(s.prevAlignmentCols.contains)
+
+    if continuesAlignment then s.pendingR11 = Nil
     else
       s.pendingR11.foreach(out += _)
       s.pendingR11 = Nil
 
-    // Current candidates: keep if previous line also had alignment (then run is
-    // valid by both directions). Otherwise defer to next line.
-    if s.prevLineHadAlignment && hasAlignment then
-      // Already in a run — current line's deferred violations are part of run.
+    if continuesAlignment then
+      // Both directions confirmed — drop current deferred too.
       ()
-    else if hasAlignment then
-      // Need to confirm with next line.
+    else if alignmentCols.nonEmpty then
+      // Current line has extra-space commas but doesn't continue a known
+      // alignment run; defer in case the *next* line shares a column.
       s.pendingR11 = deferred.toList
     else
-      // No alignment on current — emit any candidates immediately.
       deferred.foreach(out += _)
 
-    if !isBlank then s.prevLineHadAlignment = hasAlignment
-    else s.prevLineHadAlignment = false
+    if !isBlank then s.prevAlignmentCols = alignmentCols.toSet
+    else s.prevAlignmentCols = Set.empty
 
   private def checkBracketInteriors
     ( s:       State,
