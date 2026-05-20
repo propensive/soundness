@@ -162,6 +162,7 @@ extension [textual: Textual](text: textual)
 
   def slices(size: Int): List[textual] =
     val length = text.length
+
     List.tabulate[textual]((length - 1)/size + 1): i =>
       text.segment((i*size).z thru ((i + 1)*size).min(length).u)
 
@@ -188,9 +189,11 @@ extension [textual: Textual](text: textual)
     val n = text.length
     val builder = textual.builder(n)
     var index = n - 1
+
     while index >= 0 do
       builder.append(textual.single(textual.at(text, index.z)))
       index -= 1
+
     builder()
 
   def contains(substring: Text): Boolean = textual.indexOf(text, substring).present
@@ -204,6 +207,7 @@ extension [textual: Textual](text: textual)
 
     if start.n0 >= input.s.length then Stream() else
       val scanner = Scanner(start.n0)
+
       lambda(using scanner).lift(text) match
         case Some(head) => head #:: extract(scanner.nextStart.or(0).z)(lambda)
         case _          => Stream()
@@ -314,6 +318,7 @@ extension [textual: Textual { type Operand = Char }](text: textual)
 
   def erase(chars: Char*): textual =
     val set = chars.to(Set)
+
     textual.builder().build:
       textual.map(text): char =>
         if !set.contains(char) then append(char)
@@ -330,23 +335,29 @@ extension [textual: Textual { type Operand = Char }](text: textual)
 
   def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using Text is Measurable): textual =
     val current = text.plain.metrics
+
     if current >= length then text else
       val padSize = length - current
       val builder = textual.builder(text.length + padSize)
+
       bidi match
         case Ltr =>
           builder.append(text)
           var i = 0
+
           while i < padSize do
             builder.append(char)
             i += 1
 
         case Rtl =>
           var i = 0
+
           while i < padSize do
             builder.append(char)
             i += 1
+
           builder.append(text)
+
       builder()
 
   def center(length: Int, char: Char = ' ')(using Text is Measurable): textual =
@@ -480,9 +491,11 @@ extension (text: Text)
       val matcher = pattern.matcher(text.s).nn
       val builder = jl.StringBuilder()
       var n = 0
+
       while n < count && matcher.find() do
         matcher.appendReplacement(builder, to.s)
         n += 1
+
       matcher.appendTail(builder)
       builder.toString.nn.tt
 

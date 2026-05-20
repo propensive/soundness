@@ -94,7 +94,8 @@ object Media:
     def parseParams(ps: List[Text]): List[(Text, Text)] =
       if ps == List("")
       then raise(MediaTypeError(string, MediaTypeError.Reason.MissingParam))
-      ps.map(_.cut(t"=", 2).to(List)).map { p => p(0).show -> p(1).show }
+
+      ps.map(_.cut(t"=", 2).to(List)).map: p => p(0).show -> p(1).show
 
     def parseSuffixes(suffixes: List[Text]): List[Suffix] =
       suffixes.map(_.lower.capitalize).flatMap: suffix =>

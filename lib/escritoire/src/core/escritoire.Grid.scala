@@ -70,6 +70,7 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
           val lines = (0 until row.height).map: lineNumber =>
             widths.indices.map: index =>
               val cell = row(index)
+
               if cell.minHeight > lineNumber
               then
                 cell.textAlign.pad

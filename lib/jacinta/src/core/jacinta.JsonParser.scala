@@ -204,6 +204,7 @@ private[jacinta] final class JsonParser:
   protected inline def slice(start: Cursor.Mark): String =
     syncTo()
     val end = cursor.mark(using heldToken.nn)
+
     cursor.slice(start, end): (storage, off, len) =>
       val arr = storage.asInstanceOf[Array[Byte]]
       new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
@@ -211,14 +212,17 @@ private[jacinta] final class JsonParser:
   protected inline def appendRegionToBuffer(start: Cursor.Mark): Unit =
     syncTo()
     val end = cursor.mark(using heldToken.nn)
+
     cursor.slice(start, end): (storage, off, len) =>
       if len > 0 then
         val arr = storage.asInstanceOf[Array[Byte]]
         ensureStringSpace(len)
         var i = 0
+
         while i < len do
           chars(stringCursor + i) = (arr(off + i) & 0xFF).toChar
           i += 1
+
         stringCursor += len
 
   // BOM probing runs once per parse, and almost no JSON inputs actually
@@ -241,10 +245,12 @@ private[jacinta] final class JsonParser:
         && { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -65.toByte }
 
       if bom then cursor.next() else cursor.cue(mk)
+
     syncFrom()
 
   protected inline def holding[result](inline action: => result): result =
     syncTo()
+
     cursor.hold:
       heldToken = summon[Cursor.Held]
       try action finally heldToken = null
@@ -256,6 +262,7 @@ private[jacinta] final class JsonParser:
 
   protected inline def ensureStringSpace(n: Int): Unit =
     while stringCursor + n > arraySize do arraySize *= 2
+
     if chars.length < arraySize then
       val newArr = new Array[Char](arraySize)
       System.arraycopy(chars, 0, newArr, 0, stringCursor)
@@ -267,6 +274,7 @@ private[jacinta] final class JsonParser:
       val newArray = new Array[Char](arraySize)
       System.arraycopy(chars, 0, newArray, 0, stringCursor)
       chars = newArray
+
     chars(stringCursor) = char
     stringCursor += 1
 
@@ -274,6 +282,7 @@ private[jacinta] final class JsonParser:
 
   protected inline def getArrayBuffer(): ArrayBuffer[Any] =
     arrayBufferId += 1
+
     if arrayBuffers.length <= arrayBufferId then
       val newBuffer = ArrayBuffer.empty[Any]
       arrayBuffers += newBuffer
@@ -287,6 +296,7 @@ private[jacinta] final class JsonParser:
 
   protected inline def getNumberBuffer(): ArrayBuffer[Double] =
     numberBufferId += 1
+
     if numberBuffers.length <= numberBufferId then
       val newBuffer = ArrayBuffer.empty[Double]
       numberBuffers += newBuffer
@@ -353,9 +363,11 @@ private[jacinta] final class JsonParser:
     appendRegionToBuffer(start)
 
     var continue = true
+
     while continue do
       if !more then errorAt(Issue.PrematureEnd, start)
       val ch = peek
+
       ch match
         case Quote =>
           continue = false
@@ -366,6 +378,7 @@ private[jacinta] final class JsonParser:
         case Backslash =>
           advance()
           if !more then errorAt(Issue.PrematureEnd, start)
+
           (peek: @switch) match
             case Quote     => appendChar('"')
             case Slash     => appendChar('/')
@@ -468,6 +481,7 @@ private[jacinta] final class JsonParser:
 
     while continue && more do
       val ch = peek
+
       (state: @switch) match
         case NumZero =>
           ch match
@@ -560,8 +574,10 @@ private[jacinta] final class JsonParser:
       var inExponent: Boolean = false
 
       var i = nibbles - 1
+
       while i >= 0 do
         val n = ((content >>> (i * 4)) & 0xFL).toInt
+
         if n <= 9 then
           if inExponent then explicitExp = explicitExp*10 + n
           else
@@ -574,6 +590,7 @@ private[jacinta] final class JsonParser:
         else if n == 0xC then
           inExponent = true
           expSign = -1
+
         i -= 1
 
       if !floating then
@@ -613,6 +630,7 @@ private[jacinta] final class JsonParser:
     numberFitsDouble = false
     if !more then errorAt(Issue.PrematureEnd)
     val ch = peek
+
     if (ch & 0xF8) == Num0 || (ch & 0xFE) == 0x38 then
       advance()
       parseNumber(ch & 0x0F, minus)
@@ -659,12 +677,14 @@ private[jacinta] final class JsonParser:
           skip()
 
           val terminator: Byte = must()
+
           terminator match
             case Comma | CloseBracket => ()
             case char                 => errorAt(Issue.ExpectedSomeValue(char.toChar))
 
           if first then
             first = false
+
             if fitsDouble then
               numbersMode = true
               val buf = getNumberBuffer()
@@ -683,9 +703,11 @@ private[jacinta] final class JsonParser:
             val dst = getArrayBuffer()
             val n = src.length
             var i = 0
+
             while i < n do
               dst += unpackToAst(src(i))
               i += 1
+
             relinquishNumberBuffer()
             numItems = null
             numbersMode = false
@@ -733,6 +755,7 @@ private[jacinta] final class JsonParser:
           src.copyToArray(arr)
           arr(n) = Json.Ast.arrayPad
           arr
+
       relinquishArrayBuffer()
       out.asInstanceOf[IArray[Any]]
 
@@ -753,19 +776,23 @@ private[jacinta] final class JsonParser:
   private def parseObject()(using Tactic[ParseError]): IArray[Any] =
     val items: ArrayBuffer[Any] = getArrayBuffer()
     var continue = true
+
     while continue do
       skip()
+
       must() match
         case Quote =>
           advance()
           val string = parseString()
           skip()
+
           must() match
             case Colon =>
               advance()
               skip()
               val value = parseValue()
               skip()
+
               must() match
                 case Comma =>
                   advance()
@@ -786,12 +813,14 @@ private[jacinta] final class JsonParser:
         case 0 if holes =>
           advance()
           skip()
+
           must() match
             case Colon =>
               advance()
               skip()
               val value = parseValue()
               skip()
+
               must() match
                 case Comma =>
                   advance()

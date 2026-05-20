@@ -91,5 +91,6 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
   :   result raises DismissError =
 
     val events = interactivity.eventIterator()
+
     interaction(events, this)(_(_)).lay(abort(DismissError())):
       result => lambda(using Interactivity(events))(result)

@@ -70,7 +70,7 @@ object Svg:
       val parsedSvg: Svg = SvgParser.decodeSvg(svgElement)
 
       val encoding: Encoding =
-        xmlDoc.metadata.encoding.let { name => Encoding.unapply(name).getOrElse(enc"UTF-8") }
+        xmlDoc.metadata.encoding.let: name => Encoding.unapply(name).getOrElse(enc"UTF-8")
         . or(enc"UTF-8")
 
       Document[Svg](parsedSvg, encoding)

@@ -127,6 +127,7 @@ object Ansi extends Ansi2:
     def appendChars(text: Text): Unit =
       var i = 0
       val s = text.s
+
       while i < s.length do
         appendChar(s.charAt(i))
         i += 1
@@ -136,6 +137,7 @@ object Ansi extends Ansi2:
       val n = plain.length
       var i = 0
       val triggerLink = linkArmed
+
       while i < text.plain.length do
         plain.append(text.plain.s.charAt(i))
         var combined = StyleWord.combine(outer, text.styleAt(i))

@@ -69,6 +69,7 @@ class NetworkDevice(user: Text, host: Hostname) extends BenchmarkDevice:
           '$input'
           2> /dev/null
       """
+
     safely(sh"""ssh $user@$host ${command.escape}""".exec[Text]()).lest(BenchError())
 
   def undeploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError =

@@ -142,6 +142,7 @@ package executives:
             val focus = focus1 - (
               if shell == Shell.Zsh || fishMidWordValue then 2 else 1
             )
+
             val position = if shell == Shell.Bash then Unset else position0
             val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position0))
             val equalses = rest.take(focus0).count(_ == t"=")
@@ -162,6 +163,7 @@ package executives:
 
         case t"{admin}" :: command :: Nil =>
           given Stdio = stdio
+
           command match
             case t"pid"     => Out.println(Process().pid.value.show) yet Exit.Ok
             case t"kill"    => java.lang.System.exit(0) yet Exit.Ok

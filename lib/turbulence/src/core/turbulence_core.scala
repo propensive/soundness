@@ -348,6 +348,7 @@ extension (stream: Stream[Data])
 
     override def available(): Int =
       val diff = focus.length - offset
+
       if diff > 0 then diff
       else if current.nil then 0
       else

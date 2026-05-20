@@ -80,6 +80,7 @@ extends DecimalConverter:
 
           if index == point then chars(index) = decimalPoint else
             if carry then digit += 1
+
             if digit == 10 then chars(index) = '0' else
               carry2 = false
               chars(index) = (digit + '0').toChar
@@ -107,6 +108,7 @@ extends DecimalConverter:
 
           if exponentiate then
             var index = 0
+
             while index < exponent.length do
               array(index + fullLength) = exponent.s.charAt(index)
               index += 1
@@ -117,6 +119,7 @@ extends DecimalConverter:
 
             while exp > 0 do
               val digit = exp%10
+
               array(index) = if !superscript then ('0' + digit).toChar else digit match
                 case 1     => '\u00b9'
                 case 2 | 3 => ('\u00b0' + digit).toChar

@@ -112,6 +112,7 @@ object protointernal:
 
   def constant[text <: String: Type](using Quotes): text =
     import quotes.reflect.*
+
     TypeRepr.of[text].asMatchable.absolve match
       case ConstantType(StringConstant(value)) => value.tt.asInstanceOf[text]
 
@@ -143,7 +144,9 @@ object protointernal:
 
             case _ =>
               halt(487, m"Bad type")
+
           val rule = companion[Rule](repr.typeSymbol)
+
           if !rule.check(name, text)
           then halt(789, m"the name is not valid because it ${rule.describe(text)}")
 

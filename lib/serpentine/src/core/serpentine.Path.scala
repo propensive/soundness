@@ -308,5 +308,6 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   transparent inline def + (relative: Relative): Path =
     type Base = Tuple.Reverse[Tuple.Take[Tuple.Reverse[Topic], relative.Limit]]
     type Topic2 = Tuple.Concat[relative.Topic, Base]
+
     Path[Plane, Limit, Topic2]
       ( root, relative.descent ++ descent.drop(relative.ascent) )

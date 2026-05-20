@@ -73,6 +73,7 @@ class Classfile(data: Data):
       val code: jlca.CodeAttribute = codeModel match
         case attr: jlca.CodeAttribute => attr
         case _                        => panic(m"code attribute not present")
+
       val elements = code.elementList.nn.asScala.to(List)
 
       val labels: Map[jlc.Label, Int] =
@@ -95,6 +96,7 @@ class Classfile(data: Data):
           smt.entries.nn.asScala.iterator.map: entry =>
             val frames =
               entry.stack.nn.asScala.toList.map(Bytecode.Frame.fromVerificationType).reverse
+
             entry.target.nn -> frames
 
           . toMap

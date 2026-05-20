@@ -81,7 +81,6 @@ final class InlineNode(var data: InlineData):
   var prev: InlineNode | Null = null
   var next: InlineNode | Null = null
 
-
 final class InlineList:
   var first: InlineNode | Null = null
   var last:  InlineNode | Null = null
@@ -115,7 +114,6 @@ final class InlineList:
       val n = cur.nn
       cur = n.next
       n
-
 
 object EmphasisProcessor:
 
@@ -189,7 +187,9 @@ object EmphasisProcessor:
       if stackBottom == null then list.first else stackBottom.next
 
     val openersBottom = new Array[InlineNode | Null](12)
+
     if stackBottom != null then
+
       var k = 0
       while k < 12 do { openersBottom(k) = stackBottom; k += 1 }
 
@@ -199,7 +199,9 @@ object EmphasisProcessor:
     while current != null do
       val curNode = current
       val curData = curNode.data
+
       curData match
+
         case closer: DelimData if closer.canClose =>
           val floor = floorOf(closer)
           var opener: InlineNode | Null = curNode.prev
@@ -207,7 +209,9 @@ object EmphasisProcessor:
 
           while opener != null && opener != floor && opener != stackBottom && !matched do
             val openerNode = opener
+
             openerNode.data match
+
               case od: DelimData if od.canOpen && od.char == closer.char =>
                 val ruleOf3 =
                   (od.canClose || closer.canOpen)
@@ -221,7 +225,9 @@ object EmphasisProcessor:
                   // Collect children strictly between opener and closer
                   val children = mutable.ListBuffer[InlineNode]()
                   var cursor: InlineNode | Null = openerNode.next
+
                   while cursor != null && cursor != curNode do
+
                     val n = cursor
                     val nx = n.next
                     list.remove(n)
@@ -238,7 +244,9 @@ object EmphasisProcessor:
                   closer.length -= take
 
                   if od.length == 0 then list.remove(openerNode)
+
                   if closer.length == 0 then
+
                     val nxt = curNode.next
                     list.remove(curNode)
                     current = nxt
@@ -269,9 +277,12 @@ object EmphasisProcessor:
   def toProse(list: InlineList): Seq[Prose] =
     val builder = mutable.ListBuffer[Prose]()
     var cur: InlineNode | Null = list.first
+
     while cur != null do
+
       appendProse(cur, builder)
       cur = cur.next
+
     builder.toSeq
 
   private def appendProse(node: InlineNode, builder: mutable.ListBuffer[Prose]): Unit =

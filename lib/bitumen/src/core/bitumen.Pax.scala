@@ -49,7 +49,9 @@ object Pax:
   private def computeLength(payloadLen: Int): Int =
     var n = 1
     var total = payloadLen+1+n
+
     while total.toString.length != n do
       n = total.toString.length
       total = payloadLen+1+n
+
     total

@@ -56,13 +56,16 @@ object HtmlEntities:
 
     val lines = tsv.split("\n").nn
     var i = 0
+
     while i < lines.length do
       val line = lines(i).nn
       val tab = line.indexOf('\t')
+
       if tab > 0 && line.charAt(tab - 1) == ';' then
         val name = line.substring(0, tab - 1).nn
         val value = line.substring(tab + 1).nn
         builder += (name -> value)
+
       i += 1
 
   // Returns the decoded text for a named entity (without `&` or `;`), or

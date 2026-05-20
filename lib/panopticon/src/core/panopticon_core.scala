@@ -38,9 +38,6 @@ extension [value](value: value)
   inline def lens(inline lambdas: (Optic from value onto value => value => value)*): value =
     ${panopticon.internal.fuse[value]('value, 'lambdas)}
 
-  /** The pre-fusion `.lens` definition — preserved for benchmarking the macro's fused
-    * output against the original `foldLeft` semantics. Not part of the public API.
-    */
   private[panopticon] def lensFold
     ( lambdas: (Optic from value onto value => value => value)* )
   :   value =

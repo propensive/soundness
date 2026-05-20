@@ -105,6 +105,7 @@ object internal:
             unitPower.power.toString.tt.tr(_.superscript.or(' '))
 
           val value = '{(($count.asInstanceOf[Long]/${Expr(subdivision)})%(${Expr(max)}))}
+
           recur
             ( tail,
               ' {
@@ -194,6 +195,7 @@ object internal:
       case head :: tail =>
         val value = ratio(head.ref, cascade.head.ref, head.power).valueOrAbort
         val value2 = tail.prim.let(_.ref).let(ratio(_, head.ref, head.power).valueOrAbort + 0.5)
+
         recur
           ( tail,
             Multiplier(head, (value + 0.5).toInt, value2.let(_.toInt).or(Int.MaxValue)) :: units )

@@ -86,7 +86,7 @@ object Git:
     try
       throwErrors[PathError | IoError]:
         val target: Path on Linux = targetPath.generic.decode[Path on Linux]
-        val branchOpt = initialBranch.lay(sh"") { branch => sh"--initial-branch=$branch" }
+        val branchOpt = initialBranch.lay(sh""): branch => sh"--initial-branch=$branch"
         sh"$command init $branchOpt $target".exec[Exit]()
 
         Worktree(GitRepo(target/".git"), target)
@@ -109,7 +109,7 @@ object Git:
     try
       throwErrors[PathError | IoError]:
         val target: Path on Linux = targetPath.generic.decode[Path on Linux]
-        val branchOpt = initialBranch.lay(sh"") { branch => sh"--initial-branch=$branch" }
+        val branchOpt = initialBranch.lay(sh""): branch => sh"--initial-branch=$branch"
         sh"$command init --bare $branchOpt $target".exec[Exit]()
 
         GitRepo(target)
@@ -219,7 +219,7 @@ object Git:
       try targetPath.generic.decode[Path on Linux]
       catch case error: PathError => abort(GitError(InvalidRepoPath))
 
-    val branchOption = branch.lay(sh"") { branch => sh"--branch=$branch" }
+    val branchOption = branch.lay(sh""): branch => sh"--branch=$branch"
     val recursiveOption = if recursive then sh"--recursive" else sh""
 
     val process =
@@ -252,7 +252,7 @@ object Git:
       try targetPath.generic.decode[Path on Linux]
       catch case error: PathError => abort(GitError(InvalidRepoPath))
 
-    val branchOption = branch.lay(sh"") { branch => sh"--branch=$branch" }
+    val branchOption = branch.lay(sh""): branch => sh"--branch=$branch"
 
     val process =
       sh"$git clone --bare --progress $branchOption $source $target"

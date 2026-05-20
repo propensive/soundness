@@ -48,15 +48,18 @@ object Interaction:
 
     def render(old: Optional[SelectMenu[item]], menu: SelectMenu[item]) =
       val cols = terminal.knownColumns.max(1)
+
       Out.print:
         Text.build:
           append(t"\e[J")
           var totalRows = 0
+
           menu.options.each: option =>
             val full = (if option == menu.current then t" > $option" else t"   $option")
             append(full)
             append(t"\e[E")
             totalRows += (full.length - 1)/cols + 1
+
           if totalRows > 0 then append(t"\e[${totalRows}F")
 
     def result(state: SelectMenu[item]): item = state.current

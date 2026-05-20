@@ -112,6 +112,7 @@ object PlatformSupervisor extends Supervisor():
 
   def fork(name: Optional[Text])(block: => Unit): Thread =
     val runnable: Runnable = () => block
+
     new Thread(runnable).tap: thread =>
       name.let(_.s).let(thread.setName(_))
       thread.start()
@@ -135,7 +136,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
   def relentlessness: Double = (jl.System.currentTimeMillis - startTime).toDouble/relents
 
   def delegate(lambda: Monitor -> Unit): Unit = state.updateAndGet: state =>
-    workers.each { child => if child.daemon then child.cancel() else lambda(child) }
+    workers.each: child => if child.daemon then child.cancel() else lambda(child)
     state
 
   def stack: Text =
@@ -239,7 +240,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
           case state                                => state
 
         . match
-          case Cancelled => workers.each { child => if child.daemon then child.cancel() }
+          case Cancelled => workers.each: child => if child.daemon then child.cancel()
           case _         => ()
 
       case error: Throwable =>
@@ -250,6 +251,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
 
       state.updateAndGet: state =>
         parent.remove(this)
+
         state match
           case null                             => Cancelled.also(promise.cancel())
           case Initializing                     => Cancelled.also(promise.cancel())

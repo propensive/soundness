@@ -82,7 +82,7 @@ class Shader(options: List[String]) extends PluginPhase:
         val fqn = segments.mkString(".")
 
         prefixes
-        . filter { (k, _) => fqn == k || fqn.startsWith(k+".") }
+        . filter: (k, _) => fqn == k || fqn.startsWith(k+".")
         . sortBy(_(0).length)
         . lastOption
 

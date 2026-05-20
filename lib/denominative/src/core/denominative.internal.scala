@@ -105,6 +105,7 @@ object internal:
       while i <= end do
         acc = lambda(using acc.aka["state"], i.aka["next"])
         i = i.next
+
       acc
 
 

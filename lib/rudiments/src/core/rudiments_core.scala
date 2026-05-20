@@ -68,6 +68,7 @@ inline def ordinal(using value: Ordinal aka "ordinal"): Ordinal = value()
 
 inline def repeat(count: Int)(inline action: => Unit): Unit =
   var i = 0
+
   while i < count do
     action
     i += 1
@@ -149,6 +150,7 @@ extension [element <: Matchable](array: Array[element])
 extension [value](iterator: Iterator[value])
   transparent inline def each(predicate: Ordinal aka "ordinal" ?=> value => Unit): Unit =
     var ordinal: Ordinal = Prim
+
     iterator.foreach: value =>
       predicate(using ordinal.aka["ordinal"])(value)
       ordinal += 1
@@ -193,6 +195,7 @@ extension [value](iterable: Iterable[value])
 
     if iterable.nil then Unset else
       val arbitrary = iterable.head
+
       iterable.map(_ - arbitrary).total.let: total =>
         arbitrary + total/iterable.size.toDouble
 
@@ -249,6 +252,7 @@ extension [value](iterable: Iterable[value])
 
   transparent inline def each(lambda: Ordinal aka "ordinal" ?=> value => Unit): Unit =
     var ordinal: Ordinal = Prim
+
     iterable.iterator.foreach: value =>
       lambda(using ordinal.aka["ordinal"])(value)
       ordinal += 1
@@ -266,7 +270,7 @@ extension [value](iterable: Iterable[value])
     var state: state = base
 
     while iterator.hasNext
-    do state = lambda(using state.aka["state"], iterator.next.aka["next"])
+    do state = lambda(using state.aka["state"], iterator.next().aka["next"])
 
     state
 
@@ -280,9 +284,10 @@ extension [value](iterable: Iterable[value])
     count
 
   inline def all(predicate: value => Boolean): Boolean = iterable.forall(predicate)
-  transparent inline def bi: Iterable[(value, value)] = iterable.map { x => (x, x) }
+  transparent inline def bi: Iterable[(value, value)] = iterable.map: value => (value, value)
 
-  transparent inline def tri: Iterable[(value, value, value)] = iterable.map { x => (x, x, x) }
+  transparent inline def tri: Iterable[(value, value, value)] =
+    iterable.map: value => (value, value, value)
 
   def indexBy[value2](lambda: value => value2): Map[value2, value] =
     iterable.map: value =>
@@ -356,6 +361,7 @@ extension [element](sequence: Seq[element])
       if todo.nil then (run.reverse :: done).reverse
       else
         val focus = lambda(todo.head)
+
         if current == focus then recur(current, todo.tail, todo.head :: run, done)
         else recur(focus, todo.tail, List(todo.head), run.reverse :: done)
 

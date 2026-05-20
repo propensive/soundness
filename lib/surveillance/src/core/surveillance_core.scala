@@ -40,6 +40,7 @@ import rudiments.*
 extension [path: Abstractable across Paths to Text](path: path)
   def watch[result](lambda: Watch => result): result raises WatchError =
     val watchSet = Watch(List(path))
+
     lambda(watchSet).also:
       watchSet.unregister()
 

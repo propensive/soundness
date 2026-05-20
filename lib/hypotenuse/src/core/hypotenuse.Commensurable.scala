@@ -85,6 +85,7 @@ object Commensurable:
     :   Boolean =
 
       val n = value.compare(left, right)
+
       inline if greater
       then inline if strict then n > 0 else n >= 0
       else inline if strict then n < 0 else n <= 0

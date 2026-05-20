@@ -111,6 +111,7 @@ object ProductDerivation:
 
       provide[ClassTag[result]]:
         val array = new Array[result](valueOf[Tuple.Size[Fields]])
+
           fold[derivation, Fields, Labels, Unit]((), 0): accumulator =>
             [field] => context ?=>
               given (requirement.Optionality[typeclass[field]] aka "contextual") =
@@ -172,6 +173,7 @@ object ProductDerivation:
         val tuple: Fields = Tuple.fromProductTyped(product)
 
         val array = new Array[result](tuple.size)
+
           fold[derivation, Fields, Labels, Unit](tuple, (), 0): unit =>
             [field] => field =>
               given typeclass: (requirement.Optionality[typeclass[field]] aka "contextual") =

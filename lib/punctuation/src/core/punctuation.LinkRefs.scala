@@ -55,8 +55,10 @@ final class LinkRefs:
     var i = 0
     var inSpace = false
     var trimmingLeft = true
+
     while i < n do
       val c = s.charAt(i)
+
       if c == ' ' || c == '\t' || c == '\n' || c == '\r' then
         if !trimmingLeft then inSpace = true
       else

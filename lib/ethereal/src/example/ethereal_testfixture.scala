@@ -87,6 +87,7 @@ def fixture(): Unit = cli:
       execute:
         val cwd: Text = safely(workingDirectory[Path on Local].encode).or:
           jl.System.getProperty("user.dir").nn.tt
+
         Out.print(cwd) yet Exit.Ok
 
     case Argument("cat") :: Nil =>
@@ -99,6 +100,7 @@ def fixture(): Unit = cli:
       execute:
         val id: Text = safely(System.properties.build.id[Text]()).or:
           safely((Classpath/"build.id").read[Text].trim).or(t"unknown")
+
         Out.print(t"v$id") yet Exit.Ok
 
     case Argument("signal") :: Nil =>

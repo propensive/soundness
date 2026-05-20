@@ -50,6 +50,7 @@ object internal:
           ' {
               $checks
               $cursor.next()
+
               $cursor.lay($otherwise): datum =>
                 if datum != ${Expr(char)} then $otherwise
             }

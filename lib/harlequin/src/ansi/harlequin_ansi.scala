@@ -82,12 +82,14 @@ package syntaxHighlighting:
       case ((startLine, startColumn), (endLine, endColumn)) =>
         if startLine != endLine then e"\n" else
           val foreground = Fg(palette.scalaError)
+
           if startColumn == endColumn
           then e"\n${t" "*(startColumn + indent + 2)}$foreground(╱╲)"
           else e"\n${t" "*(startColumn + indent + 3)}$foreground(${t"‾"*(endColumn - startColumn)})"
 
     (source.offset to source.lastLine).map: lineNo =>
       val content = source(lineNo).map(_.teletype).join
+
       source.focus.mask:
         case ((startLine, _), (endLine, _)) =>
           startLine != endLine && lineNo > startLine && lineNo <= endLine + 1

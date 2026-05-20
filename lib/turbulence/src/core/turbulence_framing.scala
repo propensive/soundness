@@ -71,6 +71,7 @@ private[turbulence] def framingImpl
     while taken < n do
       val avail = buf.length - off
       val need = n - taken
+
       if avail >= need then
         jl.System.arraycopy(buf, off, out, taken, need)
         off += need
@@ -79,6 +80,7 @@ private[turbulence] def framingImpl
         if avail > 0 then
           jl.System.arraycopy(buf, off, out, taken, avail)
           taken += avail
+
         rest match
           case head #:: more =>
             buf = head
@@ -93,9 +95,11 @@ private[turbulence] def framingImpl
   def decodeBE(bytes: IArray[Byte]): Long =
     var acc = 0L
     var index = 0
+
     while index < bytes.length do
       acc = (acc << 8) | (bytes(index) & 0xFF)
       index += 1
+
     acc
 
   def loop(buffer: IArray[Byte], offset: Int, tail: Stream[Data], totalSoFar: Long)
@@ -110,12 +114,14 @@ private[turbulence] def framingImpl
     nonEmpty.let: (buf0, off0, rest0) =>
       val (prefix, buf1, off1, rest1) = take(width, buf0, off0, rest0, totalSoFar)
       val length = decodeBE(prefix)
+
       if length == terminator then Stream()
       else if length < 0 || length > Int.MaxValue then
         abort(StreamError((totalSoFar + width).b))
       else
         val (frame, buf2, off2, rest2) =
           take(length.toInt, buf1, off1, rest1, totalSoFar + width)
+
         frame #:: loop(buf2, off2, rest2, totalSoFar + width + length)
 
     . or(Stream())

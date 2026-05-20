@@ -60,6 +60,7 @@ class TeletypeBuilder(size: Optional[Int] = Unset) extends Builder[Teletype]:
   protected def put(text: Teletype): Unit =
     builder.append(text.plain.s)
     var i = 0
+
     while i < text.plain.length do
       styles += text.styleAt(i)
       i += 1

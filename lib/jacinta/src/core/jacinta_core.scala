@@ -98,6 +98,7 @@ extension (json: Json.Ast)
   def arrayElement(index: Int): Json.Ast = (json: @unchecked) match
     case nums: Array[Double] @unchecked =>
       val d = nums(index)
+
       if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
       then Json.Ast(d.toLong)
       else Json.Ast(d)
@@ -119,6 +120,7 @@ extension (json: Json.Ast)
     val arr = json.asInstanceOf[IArray[Any]]
     val len = arr.length
     var i = 0
+
     while i < len do
       if arr(i) == key then return i/2
       i += 2
@@ -132,6 +134,7 @@ extension (json: Json.Ast)
       if isArray then
         val full = json.asInstanceOf[IArray[Json.Ast]]
         val n = Json.Ast.arrayLength(json)
+
         if n == full.length then full
         else IArray.tabulate(n)(full(_))
       else
@@ -182,10 +185,12 @@ extension (json: Json.Ast)
       val keys = new Array[String](n)
       val values = new Array[Json.Ast](n)
       var i = 0
+
       while i < n do
         keys(i) = arr(i*2).asInstanceOf[String]
         values(i) = arr(i*2 + 1).asInstanceOf[Json.Ast]
         i += 1
+
       (keys.asInstanceOf[IArray[String]], values.asInstanceOf[IArray[Json.Ast]])
 
   def number: Long | Double | Bcd raises JsonError =

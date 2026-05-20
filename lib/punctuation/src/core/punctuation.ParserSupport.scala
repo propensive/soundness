@@ -35,6 +35,7 @@ package punctuation
 import anticipation.*
 import denominative.*
 import gossamer.*
+import hypotenuse.*
 import vacuous.*
 
 case class BulletMarker(char: Char, contentIndent: Ordinal, rest: Text)
@@ -102,11 +103,13 @@ object ParserSupport:
     val n = s.length
     var i = 0
     var col = 0
+
     while i < n do
       s.charAt(i) match
         case ' '  => col += 1; i += 1
         case '\t' => col += 4 - (col & 3); i += 1
         case _    => return col
+
     col
 
   // Strip up to `n` columns of indent, expanding tabs as needed. Returns the
@@ -118,6 +121,7 @@ object ParserSupport:
     val len = s.length
     var i = 0
     var col = 0
+
     while i < len && col < n do
       s.charAt(i) match
         case ' ' =>
@@ -125,6 +129,7 @@ object ParserSupport:
 
         case '\t' =>
           val advance = 4 - (col & 3)
+
           if col + advance <= n then { col += advance; i += 1 }
           else
             // Partial tab: replace with leftover spaces
@@ -151,13 +156,16 @@ object ParserSupport:
     var col = startCol
     var i = 0
     val n = rest.length
+
     while i < n && isSpaceTab(rest.charAt(i)) do
       if rest.charAt(i) == ' ' then { sb.append(' '); col += 1 }
       else
         val adv = 4 - (col & 3)
         var k2 = 0
         while k2 < adv do { sb.append(' '); col += 1; k2 += 1 }
+
       i += 1
+
     if i < n then sb.append(rest.substring(i, n))
     sb.toString
 
@@ -168,11 +176,13 @@ object ParserSupport:
     if n == 0 then return Nil
     val result = scala.collection.mutable.ListBuffer[Text]()
     var i = 0
+
     while i < n do
       i = walk(s, i)(isSpaceTab)
       val start = i
       i = walk(s, i){ c => !isSpaceTab(c) }
       if i > start then result += Text(s.substring(start, i).nn)
+
     result.toList
 
   // ─── leaf classifiers ─────────────────────────────────────────────────────
@@ -236,11 +246,15 @@ object ParserSupport:
 
     var count = 0
     var i = indent
+
     while i < n do
       val c = s.charAt(i)
+
       if c == ch then count += 1
       else if !isSpaceTab(c) then return false
+
       i += 1
+
     count >= 3
 
   // Fence opener: ^ {0,3}(`{3,}|~{3,})(.*)$. Backtick fences cannot contain
@@ -279,10 +293,13 @@ object ParserSupport:
   private def postMarkerWhitespace(s: String, markerEnd: Int, markerColEnd: Int): (Int, Int) =
     var j = markerEnd
     var postCol = 0
+
     while j < s.length && isSpaceTab(s.charAt(j)) && postCol < 5 do
       if s.charAt(j) == ' ' then postCol += 1
       else postCol += 4 - ((markerColEnd + postCol) & 3)
+
       j += 1
+
     (j, postCol)
 
   // After parsing a marker, compute the (contentIndent, residual) pair from
@@ -338,7 +355,7 @@ object ParserSupport:
     val indent = leadingIndent(s)
     if indent < 0 || indent >= n then return Unset
 
-    val digitEnd = walkUpTo(s, indent, 9){ c => c >= '0' && c <= '9' }
+    val digitEnd = walkUpTo(s, indent, 9)('0' <= _ <= '9')
     val digitCount = digitEnd - indent
     if digitCount < 1 || digitEnd >= n then return Unset
 

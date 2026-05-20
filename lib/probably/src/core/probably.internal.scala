@@ -173,6 +173,7 @@ object internal:
         case Trial.Throws(err, duration, map) =>
           val exception: Exception = try err() catch case exc: Exception => exc
           if !map.nil then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
+
           if aspirational then Verdict.AspireFail(duration)
           else Verdict.Throws(exception, duration)
 

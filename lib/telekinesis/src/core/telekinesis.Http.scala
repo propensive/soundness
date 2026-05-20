@@ -278,7 +278,7 @@ object Http:
       Url[scheme](origin, target)
 
     private lazy val queryText: Text =
-      target.seek(t"?").lay(t""){ ordinal => target.skip(ordinal.n0 + 1) }
+      target.seek(t"?").lay(t""): ordinal => target.skip(ordinal.n0 + 1)
 
     lazy val query: Query =
       contentType.let(_.base.show) match
@@ -289,7 +289,7 @@ object Http:
           queryText.decode[Query]
 
     lazy val location: Text =
-      target.seek(t"?").lay(target){ ordinal => target.keep(ordinal.n0) }
+      target.seek(t"?").lay(target): ordinal => target.keep(ordinal.n0)
 
     object headers extends Dynamic:
       def selectDynamic(name: Label)
@@ -367,6 +367,7 @@ object Http:
       val code: Int = cursor.hold:
         val start = cursor.mark
         val d1 = cursor.datum(using Unsafe)
+
         if d1 < '1'.toByte || d1 > '5'.toByte then
           cursor.next()
           cursor.next()
@@ -389,6 +390,7 @@ object Http:
         code = code*10 + (d2 - '0'.toByte)
         cursor.next()
         val d3 = cursor.datum(using Unsafe)
+
         if d3 < '0'.toByte || d3 > '9'.toByte then
           abort:
             HttpResponseError
@@ -408,6 +410,7 @@ object Http:
 
       def readHeaders(headers: List[Http.Header]): List[Http.Header] =
         cursor.next()
+
         if cursor.datum(using Unsafe) == '\r'.toByte then
           cursor.next()
           expect('\n')
@@ -420,6 +423,7 @@ object Http:
             Ascii(cursor.grab(start, cursor.mark)).show
 
           cursor.next()
+
           while cursor.datum(using Unsafe) == ' '.toByte || unsafely(cursor.datum) == '\t'.toByte
           do cursor.next()
 

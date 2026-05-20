@@ -54,6 +54,7 @@ object internal:
       val array: Array[Any] = new Array(size)
       var i = 0
       var rest = list
+
       while i < size do
         rest match
           case Nil =>
@@ -82,8 +83,10 @@ object internal:
 
       def add(left: left, right: right): Tensor[result, size] =
         val length = left.data.length
+
         val arr = IArray.build[Any](length): array =>
           var i = 0
+
           while i < length do
             array(i) =
               addable.add(left.data(i).asInstanceOf[value], right.data(i).asInstanceOf[value2])
@@ -118,8 +121,10 @@ object internal:
 
       def subtract(left: left, right: right): Tensor[result, size] =
         val length = left.data.length
+
         val arr = IArray.build[Any](length): array =>
           var i = 0
+
           while i < length do
             array(i) =
               subtractable.subtract
@@ -137,6 +142,7 @@ object internal:
         val items = tensor.list.map(_.show)
         val width = items.maxBy(_.length).length
         val size = valueOf[size]
+
         if size == 1 then t"( ${items(0)} )"
         else
           val top = t"⎛ ${items.head.pad(width, Rtl)} ⎞"
@@ -229,8 +235,10 @@ object internal:
 
     def map[left2](fn: left => left2): Tensor[left2, size] =
       val length = left.data.length
+
       val arr = IArray.build[Any](length): array =>
         var i = 0
+
         while i < length do
           array(i) = fn(left.data(i).asInstanceOf[left])
           i += 1
@@ -247,8 +255,10 @@ object internal:
 
       val magnitude: left = left.norm
       val length = left.data.length
+
       val arr = IArray.build[Any](length): array =>
         var i = 0
+
         while i < length do
           array(i) = left.data(i).asInstanceOf[left]/magnitude
           i += 1

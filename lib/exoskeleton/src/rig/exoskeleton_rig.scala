@@ -61,6 +61,7 @@ extension (shell: Shell)
 
         locally:
           import logging.silent
+
           if sh"which $shellBinary".exec[Exit]() != Exit.Ok
           then abort(TmuxError(TmuxError.Reason.ShellNotInstalled(shellBinary)))
 
@@ -153,6 +154,7 @@ extension (shell: Shell)
             sh"""tmux send-keys -t ${tmux.id} 'echo READY-${tmux.id}' C-m""".exec[Unit]()
             var zshReady = false
             var zshAttempts = 0
+
             while !zshReady && zshAttempts < 666 do
               delay(0.03*Second)
               zshReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").length > 0
@@ -196,6 +198,7 @@ extension (shell: Shell)
             sh"""tmux send-keys -t ${tmux.id} 'echo READY-${tmux.id}' C-m""".exec[Unit]()
             var bashReady = false
             var bashAttempts = 0
+
             while !bashReady && bashAttempts < 666 do
               delay(0.03*Second)
               bashReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").length > 0
@@ -238,6 +241,7 @@ extension (shell: Shell)
             sh"""tmux send-keys -t ${tmux.id} 'echo READY-${tmux.id}' C-m""".exec[Unit]()
             var fishReady = false
             var fishAttempts = 0
+
             while !fishReady && fishAttempts < 666 do
               delay(0.03*Second)
               fishReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").length > 0
@@ -249,6 +253,7 @@ extension (shell: Shell)
           case Shell.Powershell =>
             var psReady = false
             var psAttempts = 0
+
             while !psReady && psAttempts < 666 do
               delay(0.03*Second)
               psReady = Tmux.screenshot().screen.filter(_.starts(t">")).length > 0

@@ -110,6 +110,7 @@ object Dsv:
             val i = row.columns.let(_.at(label)).or(count)
             count += spans(index)
             val row2 = Dsv(row.data.drop(i))
+
             focus(CellRef(rowNumber, label)):
               contextual.decoded(row2))
 

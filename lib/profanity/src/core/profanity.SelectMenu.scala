@@ -62,5 +62,6 @@ extends Question[item]:
   :   result raises DismissError =
 
     val events = interactivity.eventIterator()
+
     interaction(events, this)(_(_)).lay(abort(DismissError())):
       result => lambda(using Interactivity(events))(result)

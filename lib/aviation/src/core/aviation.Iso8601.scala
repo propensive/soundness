@@ -77,11 +77,13 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
     def number(digits: Int, value: Int = focus - '0'): Int = if digits == 1 then value else
       next()
+
       if !digit then fail(Digit) yet 0
       else number(digits - 1, value*10 + (focus - '0'))
 
     def fraction(value: Double = 0.0, part: Double = 0.1): Double =
       next()
+
       if !digit then if part == 0.1 then fail(Digit) yet value else value
       else fraction(value + (focus - '0')*part, part/10.0)
 
@@ -100,6 +102,7 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
     val date: Date = next() match
       case '-' =>
         next()
+
         if focus == 'W' then
           next()
           val week = number(2)
@@ -131,6 +134,7 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
       case d if digit =>
         val month: Month = Month(number(2))
+
         next() match
           case d if digit => Date(year, month, Day(number(2)))
           case _          => fail(Digit) yet 2000-Jan-1
@@ -182,6 +186,7 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
               case d if digit =>
                 val second = number(2)
+
                 next() match
                   case '.' | ',' =>
                     date.at(Clockface(Base24(hour), Base60(minute), Base60(second))).instant

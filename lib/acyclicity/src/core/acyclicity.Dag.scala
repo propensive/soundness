@@ -108,6 +108,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
 
   def reduction: Dag[node] =
     val allEdges = closure.edgeMap
+
     val removals =
       for
         key     <- keys

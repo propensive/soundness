@@ -142,6 +142,7 @@ object internal:
             types ::= TypeRepr.of[Map[Text, Text]]
             iterator.next()
             val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
+
             ' {
                 $expr
                 && { $array(${Expr(index)}) = (${scrutinee}.attributes -- $others).toMap; true }
@@ -224,6 +225,7 @@ object internal:
 
           case TextNode("\u0000") =>
             index += 1
+
             iterator.next() match
               case Xml.Hole.Node(label) =>
                 types ::= TypeRepr.of[Node]
@@ -262,11 +264,13 @@ object internal:
           case pi@ProcessingInstruction(target, data) =>
             if data.contains("\u0000") || target.contains("\u0000")
             then halt(m"only the entire data part of a processing instruction can be matched")
+
             val checked = checkPi(array, pi, '{$scrutinee.asInstanceOf[ProcessingInstruction]})
             '{$expr && $scrutinee.isInstanceOf[ProcessingInstruction] && $checked}
 
           case Element("\u0000", _, _) =>
             index += 1
+
             iterator.next() match
               case Xml.Hole.Element(label) =>
                 types ::= TypeRepr.of[Element]
@@ -296,6 +300,7 @@ object internal:
         ' {
             val extracts = new Array[Any](${Expr(holes.size)})
             val matches: Boolean = ${descend('extracts, xml, scrutinee, '{true})}
+
             $ {
                 if holes.size == 0 then '{matches}
                 else if holes.size == 1
@@ -342,6 +347,7 @@ object internal:
 
             case _ =>
               (0, 0)
+
           recurOrigins[tail](pair :: acc)
 
         case _ =>
@@ -355,6 +361,7 @@ object internal:
     // (\n, \t, \uHHHH, etc.) correctly resolve to the longer source span.
     val sourceFile = Position.ofMacroExpansion.sourceFile
     val macroPos = Position.ofMacroExpansion
+
     val sourceContent: Optional[String] = sourceFile.content match
       case Some(s: String) => s
       case _               => Unset
@@ -366,6 +373,7 @@ object internal:
     val perPart: IndexedSeq[((String, Int), Int => Int)] =
       parts.zip(partOrigins).map: (part, origin) =>
         val (srcStart, _) = origin
+
         val mapping: Int => Int = sourceContent.lay((i: Int) => i): content =>
           if srcStart > 0 && srcStart < content.length then
             // Generous upper bound: each value char is at most 6 source chars
@@ -375,6 +383,7 @@ object internal:
             Interpolation.buildMapping(sourceText, part)
           else
             (i: Int) => i
+
         ((part, srcStart), mapping)
 
       . toIndexedSeq
@@ -382,17 +391,21 @@ object internal:
     def translateOffset(parserOff: Int, len: Int): Position =
       var acc = 0
       var i = 0
+
       while i < perPart.length do
         val ((part, srcStart), mapping) = perPart(i)
         val partLen = part.length
+
         if parserOff < acc + partLen && srcStart > 0 then
           val inPart = parserOff - acc
           val endIn = (inPart + len.max(1)).min(part.length)
           val rawStart = (srcStart + mapping(inPart)).max(srcStart)
           val rawEnd = (srcStart + mapping(endIn)).max(rawStart + 1)
           return Position(sourceFile, rawStart, rawEnd)
+
         acc += partLen + 1
         i += 1
+
       macroPos
 
     val insertions: Seq[Expr[Any]] = insertions0.absolve match

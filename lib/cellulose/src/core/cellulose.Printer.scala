@@ -62,6 +62,7 @@ object Printer:
       case CodlNode(data, extra) =>
         extra.let: extra =>
           for i <- 0 until extra.blank do out.write('\n')
+
           extra.comments.each: comment =>
             for i <- 0 until indent do out.write(' ')
             out.write("#")
@@ -80,6 +81,7 @@ object Printer:
                     case CodlNode(Atom(key, _, layout, _), _) =>
                       out.write("  ")
                       out.write(key.s)
+
                 out.write('\n')
 
               case Struct(_, _) =>
@@ -87,6 +89,7 @@ object Printer:
                   if layout.multiline then layout.params - 1 else layout.params
 
                 var col = indent - doc.margin + key.length
+
                 ps.each: param =>
                   param.absolve match
                     case CodlNode
@@ -122,6 +125,7 @@ object Printer:
                   if children.length >= layout.params then children(layout.params - 1).absolve match
                     case CodlNode(Atom(key, _, _, _), _) =>
                       for i <- 0 until (indent + 4) do out.write(' ')
+
                       for ch <- key.chars do
                         out.write(ch)
                         if ch == '\n' then for i <- 0 until (indent + 4) do out.write(' ')
@@ -131,4 +135,5 @@ object Printer:
 
           case Unset =>
             ()
+
     doc.children.each(recur(_, doc.margin))

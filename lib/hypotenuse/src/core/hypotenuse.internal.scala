@@ -1404,6 +1404,7 @@ object internal:
     def gcd(right: U64): U64 =
       @tailrec
       def recur(left: U64, right: U64): U64 = if right == 0 then left else recur(right, left%right)
+
       recur(u64, right)
 
 
@@ -1460,6 +1461,7 @@ object internal:
     def gcd(right: U32): U32 =
       @tailrec
       def recur(left: U32, right: U32): U32 = if right == 0 then left else recur(right, left%right)
+
       recur(u32, right)
 
 

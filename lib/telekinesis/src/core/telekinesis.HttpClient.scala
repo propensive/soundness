@@ -81,7 +81,7 @@ object HttpClient:
           jnh.HttpRequest.BodyPublishers.ofByteArray(bytes.mutable(using Unsafe))
 
         case stream =>
-          jnh.HttpRequest.BodyPublishers.ofInputStream { () => stream.inputStream }
+          jnh.HttpRequest.BodyPublishers.ofInputStream: () => stream.inputStream
 
       httpRequest.method match
         case Http.Delete  => request.DELETE().nn
@@ -126,7 +126,7 @@ object HttpClient:
         abort(ConnectError(ConnectError.Reason.Unknown))
 
       val headers2: List[Http.Header] = response.headers.nn.map().nn.asScala.to(List).flatMap:
-        (key, values) => values.asScala.map { value => Http.Header(key.tt, value.tt) }
+        (key, values) => values.asScala.map: value => Http.Header(key.tt, value.tt)
 
       status2(headers2, Http.Body.Streaming(unsafely(response.body().nn.stream[Data])))
 

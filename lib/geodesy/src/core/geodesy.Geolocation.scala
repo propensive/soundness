@@ -67,6 +67,7 @@ object Geolocation:
         case r",$more(.*)" => more match
           case r"$altitude0(-?[0-9]+(\.[0-9]+)?)$more(.*)" =>
             val altitude = unsafely(altitude0.decode[Double])
+
             more match
               case t"" =>
                 Geolocation(location, altitude)

@@ -55,12 +55,15 @@ object LarcenyTransformer:
   def isLarceny(path: String): Boolean =
     try
       val file = new File(path)
+
       val pluginClass =
         if file.isDirectory then
           val propsFile = new File(file, "plugin.properties")
+
           if !propsFile.exists then null
           else
             val stream = new FileInputStream(propsFile)
+
             try
               val props = new Properties()
               props.load(stream)
@@ -68,17 +71,21 @@ object LarcenyTransformer:
             finally stream.close()
         else
           val jar = new JarFile(file)
+
           try
             val entry = jar.getEntry("plugin.properties")
+
             if entry == null then null
             else
               val stream = jar.getInputStream(entry).nn
+
               try
                 val props = new Properties()
                 props.load(stream)
                 props.getProperty("pluginClass")
               finally stream.close()
           finally jar.close()
+
       pluginClass == "larceny.LarcenyPlugin"
     catch case NonFatal(_) => false
 
@@ -127,6 +134,7 @@ class LarcenyTransformer() extends PluginPhase:
         case Apply(Ident(name), List(content)) if name.toString == "procrastinate" =>
           val source2 = source.substring(content.span.start, content.span.end)
           val javaClasspath = System.getProperty("java.class.path").nn
+
           Apply
             ( Select
                 ( Select

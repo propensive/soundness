@@ -90,6 +90,7 @@ object InlineParser:
         pending.setLength(0)
 
     var i = 0
+
     while i < end do
       val plainStart = i
       while i < end && !isSpecial(s.charAt(i)) do i += 1
@@ -97,10 +98,12 @@ object InlineParser:
 
       if i < end then
         val c = s.charAt(i)
+
         c match
           case '\\' =>
             if i + 1 < end then
               val nextCh = s.charAt(i + 1)
+
               if nextCh == '\n' then
                 flushPending()
                 list.append(LinebreakData)
@@ -145,11 +148,13 @@ object InlineParser:
             InlineSupport.parseAutolink(s, i, end) match
               case al: AutolinkMatch =>
                 flushPending()
+
                 al.link match
                   case link: Prose.Link =>
                     val child = InlineNode(TextData(link.prose.head match
                       case Prose.Textual(t) => t
                       case _                => link.destination))
+
                     list.append(LinkData(link.destination, link.title, List(child)))
 
                   case _ =>
@@ -171,13 +176,17 @@ object InlineParser:
           case '\n' =>
             var j = pending.length
             var spaces = 0
+
             while j > 0 && pending.charAt(j - 1) == ' ' do
               j -= 1
               spaces += 1
+
             pending.setLength(j)
             flushPending()
+
             if spaces >= 2 then list.append(LinebreakData)
             else list.append(SoftbreakData)
+
             i += 1
             while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
 
@@ -248,6 +257,7 @@ object InlineParser:
 
     // Try to match link/image syntax starting at the character after `]`
     val afterClose = closePos + 1
+
     tryMatchLink(s, afterClose, end, entry, refs) match
       case Unset =>
         // No link match: leave bracket node in place (its data renders as the
@@ -264,6 +274,7 @@ object InlineParser:
         // the end of the list.
         val children = mutable.ListBuffer[InlineNode]()
         var cursor: InlineNode | Null = entry.node.next
+
         while cursor != null do
           val n = cursor
           val nxt = n.next
@@ -273,6 +284,7 @@ object InlineParser:
 
         // Replace bracket node with the link/image wrapper
         list.remove(entry.node)
+
         if entry.isImage then list.append(ImageData(lm.dest, lm.title, children.toList))
         else
           list.append(LinkData(lm.dest, lm.title, children.toList))
@@ -310,6 +322,7 @@ object InlineParser:
         case r: InlineSupport.RefLabelMatch =>
           val label = if r.label.s.isEmpty then bracketContent else r.label
           val resolved = refs.lookup(label)
+
           if resolved.present then
             val ref = resolved.vouch
             return LinkResolution(ref.destination, ref.title, r.end)
@@ -322,6 +335,7 @@ object InlineParser:
 
     // 3. Shortcut reference
     val resolved = refs.lookup(bracketContent)
+
     if resolved.present then
       val ref = resolved.vouch
       LinkResolution(ref.destination, ref.title, after)

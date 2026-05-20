@@ -39,5 +39,5 @@ import vacuous.*
 
 case class SshUrl(user: Optional[Text], hostname: Hostname, path: Text):
   def text: Text =
-    def userText = user.lay(t"") { user => t"$user:" }
+    def userText = user.lay(t""): user => t"$user:"
     t"$userText@$hostname$path"

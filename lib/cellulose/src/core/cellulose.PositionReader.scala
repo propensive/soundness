@@ -87,6 +87,7 @@ class PositionReader(private var in: Stream[Text]):
 
   def next()(using Tactic[ParseError]): Character =
     if finished then throw IllegalStateException("Attempted to read past the end of the stream")
+
     read() match
       case -1 =>
         finished = true

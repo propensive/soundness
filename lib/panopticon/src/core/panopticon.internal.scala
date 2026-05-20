@@ -145,17 +145,20 @@ object internal:
       var cur: Term = t
       val termArgss = scala.collection.mutable.ListBuffer.empty[List[Term]]
       var done = false
+
       while !done do
         cur match
           case Apply(inner, args)  => termArgss.prepend(args); cur = inner
           case TypeApply(inner, _) => cur = inner
           case _                   => done = true
+
       (cur, termArgss.toList)
 
     /** Matches `receiver.applyDynamic("name")(<using lens>)(traversal)(<using optical>)`.
       * Term-arg layout: `[(name)] [(using lens)] [(traversal)] [(using optical)]`. */
     def matchApplyDynamic(t: Term): Option[(Term, String, Term)] =
       val (core, termArgss) = stripApplyLayers(t)
+
       core match
         case Select(receiver, "applyDynamic") if termArgss.length >= 3 =>
           (termArgss(0), termArgss(2)) match
@@ -170,6 +173,7 @@ object internal:
       * write through a traversal (`_.field(Prim) = value`). */
     def matchUpdate(t: Term): Option[(Term, Term, Term)] =
       val (core, termArgss) = stripApplyLayers(t)
+
       core match
         case Select(receiver, "update") if termArgss.nonEmpty =>
           termArgss.head match
@@ -182,6 +186,7 @@ object internal:
       * `_(traversal)` form (one traversal step, no field). */
     def matchOpticApply(t: Term): Option[(Term, Term)] =
       val (core, termArgss) = stripApplyLayers(t)
+
       core match
         case Select(receiver, "apply") if termArgss.nonEmpty =>
           termArgss.head match
@@ -196,6 +201,7 @@ object internal:
       */
     def gatherSteps(body: Term, paramSym: Symbol): Option[List[Step]] =
       val s = strip(body)
+
       s match
         case Ident(_) if s.symbol == paramSym => Some(Nil)
 
@@ -258,14 +264,18 @@ object internal:
       * and the inner Target type is captured.
       */
     sealed trait Resolved
+
     case class FieldR(name: String, lens: Term, target: TypeRepr, children: List[Resolved])
       extends Resolved
+
     case class TravR(operand: Term, optical: Term, target: TypeRepr, children: List[Resolved])
       extends Resolved
+
     case class LeafR(leaf: Term, isCtxFn: Boolean) extends Resolved
 
     def toBranches(parsed: (List[Step], Term, Boolean)): Branch =
       val (steps, leaf, isCtxFn) = parsed
+
       steps.foldRight[Branch](LeafB(leaf, isCtxFn)): (step, child) =>
         StepB(step, List(child))
 
@@ -299,6 +309,7 @@ object internal:
         Refinement
           ( Refinement(TypeRepr.of[Lens], "Self", TypeBounds(nameTpe, nameTpe)),
             "Origin", TypeBounds(originTpe, originTpe) )
+
       refined.asType match
         case '[lensT] => Expr.summon[lensT].map(_.asTerm)
 
@@ -331,6 +342,7 @@ object internal:
              ( TypeRepr.of[Optical], "Self",
                TypeBounds(operandTpe, TypeRepr.of[Any]) ),
             "Origin", TypeBounds(originTpe, originTpe) )
+
       refined.asType match
         case '[opT] => Expr.summon[opT].map(_.asTerm)
 
@@ -391,6 +403,7 @@ object internal:
               Symbol.newVal
                 ( Symbol.spliceOwner, s"v$$$idx", TypeRepr.of[T], Flags.EmptyFlags,
                   Symbol.noSymbol )
+
             defs += ValDef(sym, Some(nextExpr.asTerm.changeOwner(sym)))
             acc = Ref(sym)
           else
@@ -445,9 +458,11 @@ object internal:
               val setFn = setLambda.asExprOf[(T, targetT) => T]
               val rawGet = '{ $getFn($origin) }.asTerm
               val get = Term.betaReduce(rawGet).getOrElse(rawGet)
+
               val set: Term => Term = (newValue: Term) =>
                 val rawSet = '{ $setFn($origin, ${ newValue.asExprOf[targetT] }) }.asTerm
                 Term.betaReduce(rawSet).getOrElse(rawSet)
+
               (Nil, get, set)
 
             case None =>
@@ -459,19 +474,23 @@ object internal:
                 Symbol.newVal
                   ( Symbol.spliceOwner, s"l$$$name", lensTerm.tpe, Flags.EmptyFlags,
                     Symbol.noSymbol )
+
               val lensDef = ValDef(lensSym, Some(lensTerm.changeOwner(lensSym)))
               val lensExpr = Ref(lensSym)
                 . asExprOf[Lens { type Origin = T; type Target = targetT }]
               val getRaw = '{ $lensExpr($origin) }.asTerm
+
               val set: Term => Term = (newValue: Term) =>
                 val newValueExpr = newValue.asExprOf[targetT]
                 '{ $lensExpr.update($origin, $newValueExpr) }.asTerm
+
               (List(lensDef), getRaw, set)
 
           val inSym =
             Symbol.newVal
               ( Symbol.spliceOwner, s"v$$$name", targetTpe, Flags.EmptyFlags,
                 Symbol.noSymbol )
+
           val inDef   = ValDef(inSym, Some(getTerm.changeOwner(inSym)))
           val inRef   = Ref(inSym).asExprOf[targetT]
 
@@ -481,6 +500,7 @@ object internal:
             Symbol.newVal
               ( Symbol.spliceOwner, s"v$$$name'", targetTpe, Flags.EmptyFlags,
                 Symbol.noSymbol )
+
           val outDef  = ValDef(outSym, Some(updated.asTerm.changeOwner(outSym)))
           val outRef  = Ref(outSym)
 
@@ -505,6 +525,7 @@ object internal:
             Symbol.newVal
               ( Symbol.spliceOwner, "o$trav", opticTpe, Flags.EmptyFlags,
                 Symbol.noSymbol )
+
           val opticDef = ValDef(opticSym, Some(opticTerm.changeOwner(opticSym)))
           val opticExpr = Ref(opticSym)
             . asExprOf[Optic { type Origin = T; type Target = targetT }]
@@ -530,6 +551,7 @@ object internal:
         Symbol.newVal
           ( Symbol.spliceOwner, "v$root", TypeRepr.of[value], Flags.EmptyFlags,
             Symbol.noSymbol )
+
       val rootDef  = ValDef(rootSym, Some(valueExpr.asTerm.changeOwner(rootSym)))
       val rootRef  = Ref(rootSym).asExprOf[value]
       val resultEx = emit[value](rootRef, branches)
@@ -550,11 +572,13 @@ object internal:
             if exprs.length == 1 then
               val singleLambda =
                 exprs.head.asExprOf[(Optic from value onto value) => value => value]
+
               '{ $singleLambda(Optic.identity[value])($valueExpr) }
             else
               fallback
           else
             val merged = mergeAdjacent(parsed.flatten.map(toBranches))
+
             resolveAll(merged, TypeRepr.of[value]) match
               case Some(resolved) => emitTop(resolved)
               case None           => fallback

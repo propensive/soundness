@@ -70,6 +70,7 @@ object internal:
           safely(json.method.as[Text]) match
             case Unset =>
               val response = json.as[JsonRpc.Response]
+
               response.id.let: id =>
                 JsonRpc.receive(id.as[Text], response.result)
 
@@ -135,6 +136,7 @@ object internal:
                     case Some(tactic) =>
                       val rhs =
                         '{abort(JsonRpcError(JsonRpcError.Reason.UnknownMethod))(using $tactic)}
+
                       CaseDef(Wildcard(), None, rhs.asTerm)
 
                     case None =>
@@ -178,6 +180,7 @@ object internal:
       DefDef(runSym, {
         case List(params) =>
           given Quotes = runSym.asQuotes
+
           val entries = params.zip(paramSymbols).map: (ident, param) =>
             param.info.asType match
               case '[param] =>
@@ -218,6 +221,7 @@ object internal:
                   if notification then Some:
                     ' {
                         val json = Map(${Varargs(entries)}*).json
+
                         unsafely:
                           JsonRpc.notification($url, $methodName, json)
                             ( using $monitor, $codicil, $online )
@@ -232,6 +236,7 @@ object internal:
                         Some:
                           ' {
                               val json = Map(${Varargs(entries)}*).json
+
                               unsafely:
                                 JsonRpc.request($url, $methodName, json)
                                   ( using $monitor, $codicil, $online )
@@ -298,6 +303,7 @@ object internal:
       DefDef(runSym, {
         case List(params) =>
           given Quotes = runSym.asQuotes
+
           val entries = params.zip(paramSymbols).map: (ident, param) =>
             param.info.asType match
               case '[param] =>
@@ -340,6 +346,7 @@ object internal:
                 Some:
                   ' {
                       val json = Map(${Varargs(entries)}*).json
+
                       unsafely:
                         JsonRpc.request($rpc, $methodName, json)
                         . await()

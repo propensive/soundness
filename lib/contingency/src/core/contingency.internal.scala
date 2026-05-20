@@ -47,6 +47,7 @@ import vacuous.*
 object internal:
   def unwrap(using Quotes)(term: quotes.reflect.Term): quotes.reflect.Term =
     import quotes.reflect.*
+
     term match
       case Inlined(_, _, ast)                                          => unwrap(ast)
       case Block(List(DefDef(_, _, _, Some(Inlined(_, _, block)))), _) => unwrap(block)
@@ -298,6 +299,7 @@ object internal:
     ' {
         boundary[result]: label ?=>
           val tactic: Tactic[Break[result]] = EscapeTactic(label)
+
           $ {
               import quotes.reflect.*
 
@@ -336,6 +338,7 @@ object internal:
 
     ' {
         val ref: juca.AtomicReference[accrual] = juca.AtomicReference(null)
+
         val result = boundary[Option[result]]: label ?=>
           $ {
               import quotes.reflect.*

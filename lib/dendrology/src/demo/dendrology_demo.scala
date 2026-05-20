@@ -37,6 +37,7 @@ import soundness.*
 import dendrology.laneDagStyles.default
 import environments.java
 import stdios.virtualMachine
+import strategies.throwUnsafely
 import termcaps.environment
 
 @main

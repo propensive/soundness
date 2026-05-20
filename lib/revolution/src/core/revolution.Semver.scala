@@ -94,14 +94,20 @@ object Semver:
 
           . within:
               val major2 = major.decode[Long]
+
               if major.starts(t"0") && major2 != 0
               then raise(SemverError(text, SemverError.Reason.LeadingZero))
+
               val minor2 = minor.decode[Long]
+
               if minor.starts(t"0") && minor2 != 0
               then raise(SemverError(text, SemverError.Reason.LeadingZero))
+
               val patch2 = patch.decode[Long]
+
               if patch.starts(t"0") && patch2 != 0
               then raise(SemverError(text, SemverError.Reason.LeadingZero))
+
               Semver(major2, minor2, patch2, prerelease3, build3)
 
         case _ =>
@@ -172,6 +178,7 @@ case class Semver
 
   def next(api: Compatibility): Semver =
     import Compatibility.*
+
     api match
       case Breaking  => if major == 0 then Semver(0, minor + 1, 0) else Semver(major + 1, 0, 0)
       case Additions => Semver(major, minor + 1, 0)

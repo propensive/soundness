@@ -47,8 +47,10 @@ object Tar:
   private def paxRecordsFor(entry: TarEntry): List[(Text, Text)] =
     val builder = List.newBuilder[(Text, Text)]
     if entry.entryName.data.length > 100 then builder += ((t"path", entry.entryName))
+
     entry.link.let: link =>
       if link.data.length > 100 then builder += ((t"linkpath", link))
+
     builder.result()
 
 case class Tar(entries: LazyList[TarEntry]):

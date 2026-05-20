@@ -116,6 +116,7 @@ object InlineSupport:
       val closerStart = i
       while i < end && s.charAt(i) == '`' do i += 1
       val closerLen = i - closerStart
+
       if closerLen == openerLen then
         val raw = s.substring(contentStart, closerStart).nn
         // Replace newlines with spaces (CommonMark §6.1)
@@ -134,14 +135,17 @@ object InlineSupport:
           else noNewlines
 
         return CodeSpanMatch(Text(stripped), i)
+
     Unset
 
   private def existsNonSpace(s: String): Boolean =
     val n = s.length
     var i = 0
+
     while i < n do
       if s.charAt(i) != ' ' then return true
       i += 1
+
     false
 
   // Email autolink pattern from the CommonMark spec (§6.4)
@@ -155,8 +159,10 @@ object InlineSupport:
   def parseAutolink(s: String, start: Int, end: Int): Optional[AutolinkMatch] =
     var i = start + 1
     var keep = true
+
     while keep && i < end do
       val c = s.charAt(i)
+
       if c == '>' || c <= 0x20 || c == '<' then keep = false
       else i += 1
 
@@ -183,22 +189,28 @@ object InlineSupport:
     if n < 3 then return false
     if !isAsciiAlpha(content.charAt(0)) then return false
     var i = 1
+
     while i < n && i <= 32 do
       val c = content.charAt(i)
       val isSchemeChar = isAsciiAlnum(c) || c == '+' || c == '.' || c == '-'
+
       if c == ':' then
         if i < 2 then return false
         return validateUriBody(content, i + 1, n)
+
       if !isSchemeChar then return false
       i += 1
+
     false
 
   private def validateUriBody(content: String, start: Int, end: Int): Boolean =
     var i = start
+
     while i < end do
       val c = content.charAt(i)
       if c <= 0x20 || c == '<' || c == '>' then return false
       i += 1
+
     true
 
   // Parse a single-line link reference definition: `[label]: dest "title"`.
@@ -216,8 +228,10 @@ object InlineSupport:
 
     val labelStart = i
     var labelDone = false
+
     while i < n && !labelDone do
       val c = s.charAt(i)
+
       if c == ']' then labelDone = true
       else if c == '[' then return Unset
       else if c == '\\' && i + 1 < n then i += 2
@@ -243,6 +257,7 @@ object InlineSupport:
     while i < n && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
 
     var title: Optional[Text] = Unset
+
     if i > beforeWs && i < n then
       parseLinkTitle(s, i, n) match
         case Unset =>
@@ -267,11 +282,14 @@ object InlineSupport:
   // CommonMark §6.6 (entity references are recognised in URLs).
   def parseLinkDestination(s: String, start: Int, end: Int): Optional[DestMatch] =
     if start >= end then return Unset
+
     if s.charAt(start) == '<' then
       var i = start + 1
       val buf = new StringBuilder
+
       while i < end do
         val c = s.charAt(i)
+
         if c == '>' then return DestMatch(Text(buf.toString), i + 1)
         else if c == '<' || c == '\n' then return Unset
         else if c == '\\' && i + 1 < end && isAsciiPunctuation(s.charAt(i + 1)) then
@@ -287,13 +305,16 @@ object InlineSupport:
         else
           buf.append(c)
           i += 1
+
       Unset
     else
       var i = start
       var depth = 0
       val buf = new StringBuilder
+
       while i < end do
         val c = s.charAt(i)
+
         if c <= 0x20 then
           if i == start then return Unset
           return DestMatch(Text(buf.toString), i)
@@ -324,6 +345,7 @@ object InlineSupport:
   def parseLinkTitle(s: String, start: Int, end: Int): Optional[TitleMatch] =
     if start >= end then return Unset
     val opener = s.charAt(start)
+
     val closer = opener match
       case '"'  => '"'
       case '\'' => '\''
@@ -332,8 +354,10 @@ object InlineSupport:
 
     var i = start + 1
     val buf = new StringBuilder
+
     while i < end do
       val c = s.charAt(i)
+
       if c == closer then return TitleMatch(buf.toString, i + 1)
       else if c == opener && opener == '(' then return Unset  // unbalanced inner (
       else if c == '\\' && i + 1 < end && isAsciiPunctuation(s.charAt(i + 1)) then
@@ -346,6 +370,7 @@ object InlineSupport:
       else
         buf.append(c)
         i += 1
+
     Unset
 
   // Decode backslash-escapes (ASCII punctuation) and HTML entity references
@@ -355,8 +380,10 @@ object InlineSupport:
     val n = s.length
     val out = new StringBuilder
     var i = 0
+
     while i < n do
       val c = s.charAt(i)
+
       if c == '\\' && i + 1 < n && isAsciiPunctuation(s.charAt(i + 1)) then
         out.append(s.charAt(i + 1))
         i += 2
@@ -370,6 +397,7 @@ object InlineSupport:
       else
         out.append(c)
         i += 1
+
     Text(out.toString)
 
   case class HtmlInlineMatch(html: Text, end: Int)
@@ -398,6 +426,7 @@ object InlineSupport:
     if start + 4 < end && s.charAt(start + 2) == '-' && s.charAt(start + 3) == '-' then
       // HTML comment
       var i = start + 4
+
       while i + 2 < end do
         if s.charAt(i) == '-' && s.charAt(i + 1) == '-' && s.charAt(i + 2) == '>' then
           return i + 3
@@ -405,6 +434,7 @@ object InlineSupport:
       -1
     else if start + 9 < end && s.regionMatches(start + 2, "[CDATA[", 0, 7) then
       var i = start + 9
+
       while i + 2 < end do
         if s.charAt(i) == ']' && s.charAt(i + 1) == ']' && s.charAt(i + 2) == '>' then
           return i + 3
@@ -412,6 +442,7 @@ object InlineSupport:
       -1
     else if start + 2 < end && isAsciiUpper(s.charAt(start + 2)) then
       var i = start + 2
+
       while i < end do
         if s.charAt(i) == '>' then return i + 1
         i += 1
@@ -421,6 +452,7 @@ object InlineSupport:
 
   private def parseHtmlProcessingInstruction(s: String, start: Int, end: Int): Int =
     var i = start + 2
+
     while i + 1 < end do
       if s.charAt(i) == '?' && s.charAt(i + 1) == '>' then return i + 2
       i += 1
@@ -432,8 +464,10 @@ object InlineSupport:
     if i >= end || !isAsciiAlpha(s.charAt(i)) then return -1
     i += 1
     while i < end && (isAsciiAlnum(s.charAt(i)) || s.charAt(i) == '-') do i += 1
+
     while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do
       i += 1
+
     if i < end && s.charAt(i) == '>' then i + 1 else -1
 
   private def parseHtmlOpenTag(s: String, start: Int, end: Int): Int =
@@ -445,8 +479,10 @@ object InlineSupport:
 
     var done = false
     var failed = false
+
     while !done && !failed do
       val before = i
+
       while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do
         i += 1
 
@@ -460,6 +496,7 @@ object InlineSupport:
         if i == before then failed = true
         else
           val attrEnd = parseHtmlAttribute(s, i, end)
+
           if attrEnd < 0 then failed = true
           else i = attrEnd
 
@@ -484,15 +521,19 @@ object InlineSupport:
 
     // Optional value
     val nameEnd = i
+
     while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do
       i += 1
 
     if i < end && s.charAt(i) == '=' then
       i += 1
+
       while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do
         i += 1
+
       if i >= end then return -1
       val q = s.charAt(i)
+
       if q == '"' || q == '\'' then
         i += 1
         while i < end && s.charAt(i) != q do i += 1
@@ -531,6 +572,7 @@ object InlineSupport:
     i = skipLinkWhitespace(s, i, end)
 
     var title: Optional[Text] = Unset
+
     if i > beforeWs && i < end then
       parseLinkTitle(s, i, end) match
         case t: TitleMatch =>
@@ -567,8 +609,10 @@ object InlineSupport:
     val labelStart = i
     var labelDone = false
     var sawContent = false
+
     while i < end && !labelDone do
       val c = s.charAt(i)
+
       if c == ']' then labelDone = true
       else if c == '[' then return Unset
       else if c == '\\' && i + 1 < end then
@@ -616,6 +660,7 @@ object InlineSupport:
       parseLinkTitle(s, tentativeWsEnd, end) match
         case t: TitleMatch =>
           val titleTrailEnd = checkLrdTrailing(s, t.end, end)
+
           if titleTrailEnd >= 0 then
             resultTitle = Text(t.title)
             resultEnd = titleTrailEnd
@@ -647,6 +692,7 @@ object InlineSupport:
 
     while i < end && !done do
       val c = s.charAt(i)
+
       if c == ']' then done = true
       else if c == '[' then return Unset
       else if c == '\\' && i + 1 < end then i += 2
@@ -662,12 +708,15 @@ object InlineSupport:
     var i = start
     var newlines = 0
     var done = false
+
     while i < end && !done do
       val c = s.charAt(i)
+
       if c == ' ' || c == '\t' then i += 1
       else if c == '\n' && newlines < 1 then
         newlines += 1
         i += 1
       else
         done = true
+
     i

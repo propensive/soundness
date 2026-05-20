@@ -355,4 +355,5 @@ object Attributes:
         val v = a(i + 1)
         sb.append(if v == null then Unset.toString else v.toString)
         i += 2
+
       sb.append(")").toString

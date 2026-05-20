@@ -52,6 +52,7 @@ object Serializable:
           else (bytes.length*8 + bits - 1)/bits
 
         val array = new Array[Char](length)
+
           def recur(current: Int = 0, next: Int = 0, index: Int = 0, loaded: Int = 0): Unit =
             if index < length then
               if loaded < bits then
@@ -59,7 +60,7 @@ object Serializable:
                   recur((current << 8) | (bytes(next) & 0xff), next + 1, index, loaded + 8)
                 else
                   array(index) = alphabet((current << (bits - loaded)) & mask)
-                  ((index + 1) until length).each { i => array(i) = alphabet(1 << bits) }
+                  ((index + 1) until length).each: i => array(i) = alphabet(1 << bits)
               else
                 array(index) = alphabet((current >>> (loaded - bits)) & mask)
                 recur(current, next, index + 1, loaded - bits)

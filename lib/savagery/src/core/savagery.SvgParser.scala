@@ -81,14 +81,14 @@ object SvgParser:
     def walk(parent: Element): Unit = parent.children.each:
       case child: Element => child.label match
         case t"defs" => child.children.each:
-          case dd: Element => decodeSvgDef(dd).let { svgDef => defs += svgDef }
+          case dd: Element => decodeSvgDef(dd).let: svgDef => defs += svgDef
           case _           => ()
 
         case t"g" =>
           walk(child)
 
         case _ =>
-          decodeFigure(child).let { figure => figures += figure }
+          decodeFigure(child).let: figure => figures += figure
 
       case _ =>
         ()
@@ -159,7 +159,7 @@ object SvgParser:
 
   private def decodeStop(elem: Element)(using Tactic[SvgError]): Stop[Color in Srgb] =
     val rawOffset = elem.attributes.at(t"offset")
-      . let { text => safely(text.decode[Double]).or(0.0) }
+      . let: text => safely(text.decode[Double]).or(0.0)
       . or(0.0)
 
     val clamped = rawOffset.max(0.0).min(1.0)
@@ -200,8 +200,9 @@ object SvgParser:
       while pos < s.length && {
         val c = s.charAt(pos)
         val prev = if pos > 0 then s.charAt(pos - 1) else ' '
-        (c >= '0' && c <= '9') || c == '.' || c == 'e' || c == 'E' ||
-            ((c == '-' || c == '+') && pos > start && (prev == 'e' || prev == 'E'))
+
+        (c >= '0' && c <= '9') || c == '.' || c == 'e' || c == 'E'
+        || ((c == '-' || c == '+') && pos > start && (prev == 'e' || prev == 'E'))
       }
       do pos += 1
 
@@ -214,6 +215,7 @@ object SvgParser:
     var lastCmd: Char = ' '
 
     skipWs()
+
     while pos < s.length do
       val c = peek
 
@@ -319,6 +321,7 @@ object SvgParser:
 
     while pos < s.length do
       skipWs()
+
       if pos < s.length then
         val nameStart = pos
 

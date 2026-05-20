@@ -89,6 +89,7 @@ object Matrix:
 
       val arr = IArray.build[result](length): array =>
         var i = 0
+
         while i < length do
           array(i) = addable.add(left.elements(i), right.elements(i))
           i += 1
@@ -115,6 +116,7 @@ object Matrix:
 
       val arr = IArray.build[result](length): array =>
         var i = 0
+
         while i < length do
           array(i) = subtractable.subtract(left.elements(i), right.elements(i))
           i += 1
@@ -135,8 +137,10 @@ object Matrix:
 
     val arr = IArray.build[element](size*size): array =>
       var i = 0
+
       while i < size do
         var j = 0
+
         while j < size do
           array(size*i + j) = if i == j then one else zero
           j += 1
@@ -159,6 +163,7 @@ object Matrix:
 
     val arr = IArray.build[element](rowsValue*colsValue): array =>
       var i = 0
+
       while i < rowsValue*colsValue do
         array(i) = zero
         i += 1
@@ -269,6 +274,7 @@ object Matrix:
       val dimension = matrix.rows
       var sum: element = matrix(0, 0)
       var i = 1
+
       while i < dimension do
         sum = sum + matrix(i, i)
         i += 1
@@ -313,6 +319,7 @@ object Matrix:
       val a: Array[element] = matrix.elements.mutable(using Unsafe).clone()
       val b: Array[element] = new Array[element](size)
       var copyIndex = 0
+
       while copyIndex < size do
         b(copyIndex) = rhs.data(copyIndex).asInstanceOf[element]
         copyIndex += 1
@@ -323,6 +330,7 @@ object Matrix:
       while col < size && !singular do
         var pivotRow = -1
         var search = col
+
         while search < size && pivotRow < 0 do
           if a(size*search + col) != zero then pivotRow = search
           search += 1
@@ -331,6 +339,7 @@ object Matrix:
         else
           if pivotRow != col then
             var swap = col
+
             while swap < size do
               val tmp = a(size*col + swap)
               a(size*col + swap) = a(size*pivotRow + swap)
@@ -343,9 +352,11 @@ object Matrix:
 
           val pivotValue = a(size*col + col)
           var rowIdx = col + 1
+
           while rowIdx < size do
             val factor = a(size*rowIdx + col)/pivotValue
             var elim = col
+
             while elim < size do
               a(size*rowIdx + elim) = a(size*rowIdx + elim) - factor*a(size*col + elim)
               elim += 1
@@ -359,9 +370,11 @@ object Matrix:
       else
         val x: Array[element] = new Array[element](size)
         var i = size - 1
+
         while i >= 0 do
           var sum: element = b(i)
           var j = i + 1
+
           while j < size do
             sum = sum - a(size*i + j)*x(j)
             j += 1
@@ -371,6 +384,7 @@ object Matrix:
 
         val tensorData = IArray.build[Any](size): array =>
           var k = 0
+
           while k < size do
             array(k) = x(k)
             k += 1
@@ -473,11 +487,14 @@ object Matrix:
 
       var symmetric = true
       var checkRow = 0
+
       while checkRow < dimension && symmetric do
         var checkCol = checkRow + 1
+
         while checkCol < dimension && symmetric do
           if math.abs(matrix(checkRow, checkCol) - matrix(checkCol, checkRow)) > tolerance
           then symmetric = false
+
           checkCol += 1
 
         checkRow += 1
@@ -487,6 +504,7 @@ object Matrix:
         val mat: Array[Double] = matrix.elements.mutable(using Unsafe).clone()
         val vec: Array[Double] = new Array[Double](dimension*dimension)
         var diagIndex = 0
+
         while diagIndex < dimension do
           vec(dimension*diagIndex + diagIndex) = 1.0
           diagIndex += 1
@@ -499,10 +517,13 @@ object Matrix:
           var p = 0
           var q = 0
           var i = 0
+
           while i < dimension do
             var j = i + 1
+
             while j < dimension do
               val absValue = math.abs(mat(dimension*i + j))
+
               if absValue > maxAbs then
                 maxAbs = absValue
                 p = i
@@ -536,6 +557,7 @@ object Matrix:
             mat(dimension*q + p) = 0.0
 
             var rotateIndex = 0
+
             while rotateIndex < dimension do
               if rotateIndex != p && rotateIndex != q then
                 val mip = mat(dimension*rotateIndex + p)
@@ -550,6 +572,7 @@ object Matrix:
               rotateIndex += 1
 
             var vecIndex = 0
+
             while vecIndex < dimension do
               val vkp = vec(dimension*vecIndex + p)
               val vkq = vec(dimension*vecIndex + q)
@@ -563,12 +586,14 @@ object Matrix:
         else
           val eigvalArr = IArray.build[Any](dimension): array =>
             var i = 0
+
             while i < dimension do
               array(i) = mat(dimension*i + i)
               i += 1
 
           val eigvecArr = IArray.build[Double](dimension*dimension): array =>
             var i = 0
+
             while i < dimension*dimension do
               array(i) = vec(i)
               i += 1
@@ -593,8 +618,10 @@ class Matrix[element, rows <: Int, columns <: Int]
 
   def row(index: Int): Tensor[element, columns] =
     val cols = columns
+
     val arr = IArray.build[Any](cols): array =>
       var i = 0
+
       while i < cols do
         array(i) = elements(cols*index + i)
         i += 1
@@ -605,6 +632,7 @@ class Matrix[element, rows <: Int, columns <: Int]
   def column(index: Int): Tensor[element, rows] =
     val arr = IArray.build[Any](rows): array =>
       var i = 0
+
       while i < rows do
         array(i) = elements(columns*i + index)
         i += 1
@@ -615,8 +643,10 @@ class Matrix[element, rows <: Int, columns <: Int]
   def transpose(using ClassTag[element]): Matrix[element, columns, rows] =
     val arr = IArray.build[element](rows*columns): array =>
       var row = 0
+
       while row < rows do
         var col = 0
+
         while col < columns do
           array(rows*col + row) = elements(columns*row + col)
           col += 1
@@ -634,8 +664,10 @@ class Matrix[element, rows <: Int, columns <: Int]
 
     val arr = IArray.build[element](newRows*newCols): array =>
       var r = 0
+
       while r < newRows do
         var c = 0
+
         while c < newCols do
           val origRow = if r < droppedRow then r else r + 1
           val origCol = if c < droppedColumn then c else c + 1
@@ -657,6 +689,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     val length = elements.length
     var sum: multiplicable.Result = elements(0)*elements(0)
     var i = 1
+
     while i < length do
       sum = addable.add(sum, elements(i)*elements(i))
       i += 1
@@ -682,6 +715,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     while col < c && rankCount < r do
       var pivotRow = -1
       var i = rankCount
+
       while i < r && pivotRow < 0 do
         if a(c*i + col) != zero then pivotRow = i
         i += 1
@@ -689,6 +723,7 @@ class Matrix[element, rows <: Int, columns <: Int]
       if pivotRow >= 0 then
         if pivotRow != rankCount then
           var k = 0
+
           while k < c do
             val tmp = a(c*rankCount + k)
             a(c*rankCount + k) = a(c*pivotRow + k)
@@ -701,6 +736,7 @@ class Matrix[element, rows <: Int, columns <: Int]
         while rowIdx < r do
           val factor = a(c*rowIdx + col)/pivotValue
           var k = col
+
           while k < c do
             a(c*rowIdx + k) = a(c*rowIdx + k) - factor*a(c*rankCount + k)
             k += 1
@@ -764,11 +800,14 @@ class Matrix[element, rows <: Int, columns <: Int]
 
     val elements = IArray.build[multiplication.Result](rows*columns2): array =>
       var row = 0
+
       while row < rows do
         var column = 0
+
         while column < columns2 do
           var sum: multiplication.Result = apply(row, 0)*right(0, column)
           var k = 1
+
           while k < inner do
             sum = sum + apply(row, k)*right(k, column)
             k += 1
@@ -794,11 +833,13 @@ class Matrix[element, rows <: Int, columns <: Int]
 
     val arr = IArray.build[Any](rows): array =>
       var row = 0
+
       while row < rows do
         var sum: multiplication.Result =
           apply(row, 0)*right.data(0).asInstanceOf[right]
 
         var k = 1
+
         while k < inner do
           sum = sum + apply(row, k)*right.data(k).asInstanceOf[right]
           k += 1

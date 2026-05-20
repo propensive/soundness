@@ -82,4 +82,4 @@ extends RequestServable:
     val server = startServer()
     val asyncTask = async(cancel.attend() yet server.stop(1))
 
-    Service{ () => safely(cancel.fulfill(())) }
+    Service: () => safely(cancel.fulfill(()))

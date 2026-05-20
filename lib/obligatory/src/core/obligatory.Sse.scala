@@ -51,6 +51,7 @@ import zephyrine.*
 object Sse:
   given servable: LazyList[Sse] is Servable =
     import charEncoders.utf8
+
     Servable[LazyList[Sse]](_ => media"text/event-stream"): stream =>
       Http.Body.Streaming(stream.map(_.encode.data))
 
@@ -61,6 +62,7 @@ object Sse:
       if !cursor.finished && cursor.seek(Lf) then
         val end = cursor.mark
         cursor.next()
+
         cursor.lay(cursor.grab(start, end)): char =>
           if char == Lf then cursor.next() yet cursor.grab(start, end) else frame(start)
       else if cursor.mark == start then

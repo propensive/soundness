@@ -58,7 +58,7 @@ object internal:
   private lazy val systemMediaTypes: Set[Text] =
     Optional(getClass.getResourceAsStream("/gesticulate/media.types")).lay(Set()): stream =>
       scala.io.Source.fromInputStream(stream)
-      . getLines
+      . getLines()
       . map(Text(_))
       . map(_.cut(t"\t").head.lower)
       . to(Set)
@@ -82,6 +82,7 @@ object internal:
     basic.cut(t"/").to(List).absolve match
       case List(group, subtype) =>
         val groupLower = group.lower
+
         if !validGroups.has(groupLower) then m"$group is not a valid media group"
         else validateSubtype(groupLower, subtype)
 
@@ -113,6 +114,7 @@ object internal:
         if !isStandard then Unset
         else
           val canonical: Text = t"$group/${subtype.lower}"
+
           if systemMediaTypes.nil || systemMediaTypes.has(canonical) then Unset
           else
             val suggestion = systemMediaTypes.minBy(_.proximity(canonical))

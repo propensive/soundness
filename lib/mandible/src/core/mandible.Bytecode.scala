@@ -84,6 +84,7 @@ object Bytecode:
 
     def parseOne(text: Text, cursor: Int): (Frame, Int) =
       val s = text.s
+
       s.charAt(cursor) match
         case 'Z' => (Z, cursor + 1)
         case 'B' => (B, cursor + 1)
@@ -126,6 +127,7 @@ object Bytecode:
 
         case obj: jlca.StackMapFrameInfo.ObjectVerificationTypeInfo =>
           val raw = obj.className.nn.name.nn.stringValue.nn
+
           if raw.startsWith("[") then parseOne(raw.tt, 0)._1
           else L(raw.replace('/', '.').nn.tt)
 
@@ -153,6 +155,7 @@ object Bytecode:
         cursor = next
 
       cursor += 1
+
       val result: Optional[Frame] =
         if s.charAt(cursor) == 'V' then Unset else Frame.parseOne(descriptor, cursor)._1
 
@@ -244,6 +247,7 @@ object Bytecode:
 
       case load: jlci.LoadInstruction =>
         val slot = load.slot
+
         source.opcode.nn.bytecode.absolve match
           case 21 => Iload(slot)
           case 22 => Lload(slot)
@@ -273,6 +277,7 @@ object Bytecode:
 
       case store: jlci.StoreInstruction =>
         val slot = store.slot
+
         source.opcode.nn.bytecode.absolve match
           case 54 => Istore(slot)
           case 55 => Lstore(slot)
@@ -305,12 +310,14 @@ object Bytecode:
 
       case arg: jlci.ConstantInstruction.ArgumentConstantInstruction =>
         val intValue = arg.constantValue.nn.toString.toInt
+
         source.opcode.nn.bytecode.absolve match
           case 16 => Bipush(intValue.toByte)
           case 17 => Sipush(intValue.toShort)
 
       case ldc: jlci.ConstantInstruction.LoadConstantInstruction =>
         val text = ldc.constantValue.nn.toString.tt
+
         source.opcode.nn.bytecode.absolve match
           case 18 => Ldc(text)
           case 19 => LdcW(text)
@@ -318,18 +325,23 @@ object Bytecode:
 
       case tswitch: jlci.TableSwitchInstruction =>
         val default = labels.getOrElse(tswitch.defaultTarget.nn, 0)
+
         val targets = tswitch.cases.nn.asScala.toList.map: c =>
           labels.getOrElse(c.nn.target.nn, 0)
+
         Tableswitch(default, tswitch.lowValue, tswitch.highValue, targets)
 
       case lswitch: jlci.LookupSwitchInstruction =>
         val default = labels.getOrElse(lswitch.defaultTarget.nn, 0)
+
         val cases = lswitch.cases.nn.asScala.toList.map: c =>
           (c.nn.caseValue, labels.getOrElse(c.nn.target.nn, 0))
+
         Lookupswitch(default, cases)
 
       case branch: jlci.BranchInstruction =>
         val target = labels.getOrElse(branch.target.nn, 0)
+
         source.opcode.nn.bytecode.absolve match
           case 153 => Ifeq(target)
           case 154 => Ifne(target)
@@ -1498,6 +1510,7 @@ case class Bytecode
       if owner == t"" then None
       else priorStacks.get(instr.offset).flatMap: pre =>
         val argCount = Bytecode.Descriptor.parse(descriptor).args.size
+
         if pre.size <= argCount then None
         else pre.drop(argCount).head match
           case Bytecode.Frame.L(name) if name == owner => Some(instr.offset)

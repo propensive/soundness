@@ -188,6 +188,7 @@ object Tzdb:
 
       if lines.nil then entries ++ zone else
         val line: Text = lines.head.upto(_ == '#')
+
         line.cut(unsafely(r"\s+")).to(List) match
           case t"Rule" :: tail =>
             recur(lineNo + 1, lines.tail, parseRule(lineNo, tail) :: (zone.to(List) ++ entries))

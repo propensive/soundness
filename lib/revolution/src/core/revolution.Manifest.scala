@@ -81,6 +81,7 @@ case class Manifest(entries: Map[Text, Text]):
 
   def serialize: Data =
     val manifest = juj.Manifest()
+
     entries.each: (key, value) =>
       manifest.getMainAttributes.nn.putValue(key.s, value.s)
 

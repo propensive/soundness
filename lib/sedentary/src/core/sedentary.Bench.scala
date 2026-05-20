@@ -100,6 +100,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
 
           // Run 10 times initially as untimed warmup
           var w = 0
+
           while w < 10 do
             sink.lazySet($body0)
             w += 1
@@ -126,6 +127,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
           // run can't bias the measurement count.
           val rates = new Array[Double](${Expr(warmups2)})
           var c = 0
+
           while c < ${Expr(warmups2)} do
             val t0 = jl.System.nanoTime
             var j = 0L
@@ -134,6 +136,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
             rates(c) = t1.toDouble/count
             count = math.max(1L, ($target2/rates(c)).toLong)
             c += 1
+
           java.util.Arrays.sort(rates)
           count = math.max(1L, ($target2/rates(rates.length/2)).toLong)
 
@@ -173,6 +176,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
     val max = results.max.toDouble/sample
 
     val operationSizeText: Optional[Text] = operationSize.let(_.sizeText)
+
     val operationRateText: Optional[Text] = operationSize.let: os =>
       os.rateText((total.toDouble/count)/1e9)
 

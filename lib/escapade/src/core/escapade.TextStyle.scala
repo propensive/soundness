@@ -68,10 +68,13 @@ case class TextStyle
     if blinkSlow       then s |= StyleWord.BlinkSlow
     if blinkFast       then s |= StyleWord.BlinkFast
     if overline        then s |= StyleWord.Overline
+
     fg.let: c =>
       s = s | (c.underlying.toLong & 0xffffffL) | StyleWord.FgSet
+
     bg.let: c =>
       s = s | ((c.underlying.toLong & 0xffffffL) << 24) | StyleWord.BgSet
+
     s
 
   def addChanges(buffer: StringBuilder, next: TextStyle, colorDepth: ColorDepth): Unit =

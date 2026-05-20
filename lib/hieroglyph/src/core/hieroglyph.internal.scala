@@ -63,6 +63,7 @@ object internal:
     import quotes.reflect.*
 
     val context: StringContext = contextExpr.valueOrAbort
+
     Encoding.unapply(context.parts.head.tt) match
       case None => halt(541, m"the encoding ${context.parts.head.tt} was not available")
 
@@ -73,6 +74,7 @@ object internal:
               "encoding, and may not be universally available")
 
         val name = context.parts.head.toLowerCase.nn
+
         if encoding.charset.canEncode then '{Encoding.codecs(${Expr(name)}.tt)}
         else '{Encoding.decodeOnly(${Expr(name)}.tt)}
 

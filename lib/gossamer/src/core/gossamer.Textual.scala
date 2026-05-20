@@ -103,6 +103,7 @@ trait Textual extends Typeclass, Countable, Segmentable, Zeroic:
       def recur(start: Ordinal, last: Optional[Ordinal]): Optional[Ordinal] =
         indexOf(text, sub, start).lay(last): found =>
           recur(found + 1, found)
+
       recur(Prim, Unset)
 
   def builder(size: Optional[Int] = Unset): Builder[Self]

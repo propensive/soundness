@@ -148,6 +148,7 @@ extension [plane: Filesystem](path: Path on plane)
     else if jnf.Files.isDirectory(javaPath) then Directory
     else
       val mode = jnf.Files.getAttribute(javaPath, "unix:mode", symlinks.options()*)
+
       mode.absolve match
         case mode: Int => (mode & 61440) match
           case  4096 => Fifo
@@ -362,6 +363,7 @@ package filesystemOptions:
 
       def apply[result](path: Path on plane)(operation: => result): result =
         val parent: Optional[Path on plane] = safely(path.parent)
+
         parent.let: parent =>
           import dereferenceSymlinks.disabled
 

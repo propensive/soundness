@@ -97,10 +97,12 @@ object Xml extends Tag.Container
       val array = new Array[Node](count)
 
       var index = 0
+
       for item <- xml do item match
         case Fragment(nodes*) =>
           for node <- nodes do
           array(index) = node
+
           index += 1
 
         case node: Node =>
@@ -157,6 +159,7 @@ object Xml extends Tag.Container
   def emit(document: Document[Xml], flat: Boolean = false)(using Monitor, Codicil): Iterator[Text] =
 
     val emitter = Emitter[Text](4096)
+
     async:
       def recur(node: Xml, indent: Int): Unit =
         node match
@@ -204,6 +207,7 @@ object Xml extends Tag.Container
 
           case TextNode(text) =>
             var position: Int = 0
+
             while position < text.length do
               val amp = text.s.indexOf('&', position)
               val lt = text.s.indexOf('<', position)
@@ -597,36 +601,47 @@ object Xml extends Tag.Container
     // Returns the expansion as a Text; leaves position just after the ';'.
     protected def readEntity()(using Tactic[ParseError]): Text =
       if !more then fail(Issue.ExpectedMore)
+
       if peek == '#' then
         advance()
         if !more then fail(Issue.ExpectedMore)
         var value = 0
+
         if peek == 'x' || peek == 'X' then
           advance()
+
           while more && peek != ';' do
             val c = peek
+
             value =
               if '0' <= c && c <= '9' then 16*value + (c - '0')
               else if 'a' <= c && c <= 'f' then 16*value + (c - 87)
               else if 'A' <= c && c <= 'F' then 16*value + (c - 55)
               else fail(Issue.Unexpected(c))
+
             advance()
         else
           while more && peek != ';' do
             val c = peek
+
             if '0' <= c && c <= '9' then value = 10*value + (c - '0')
             else fail(Issue.Unexpected(c))
+
             advance()
+
         if !more then fail(Issue.ExpectedMore)
         advance()
+
         if value <= 0xffff then String.valueOf(value.toChar).nn.tt
         else String.valueOf(Character.toChars(value).nn).nn.tt
       else
         val nameStart = begin()
+
         while more && peek != ';' do
           val c = peek
           if !isNameChar(c) then fail(Issue.Unexpected(c), nameStart)
           advance()
+
         if !more then fail(Issue.ExpectedMore, nameStart)
         val name = slice(nameStart)
         advance()
@@ -639,15 +654,18 @@ object Xml extends Tag.Container
       val start = begin()
       var hasEntity = false
       var hasHole = false
+
       while more && peek != quote do
         val c = peek
         if c == '<' then fail(Issue.Unexpected('<'), start)
         if c == '&' then hasEntity = true
         if c == '\u0000' then hasHole = true
         advance()
+
       if !more then fail(Issue.ExpectedMore, start)
       val end = begin()
       advance() // consume closing quote
+
       if !hasEntity && !hasHole then slice(start, end)
       else
         // Mixed: entities and/or holes. Walk again with a buffer.
@@ -655,8 +673,10 @@ object Xml extends Tag.Container
         val buf = jl.StringBuilder()
         reset(start)
         var segStart = begin()
+
         while more && peek != quote do
           val c = peek
+
           if c == '&' then
             appendSlice(segStart, buf)
             advance()
@@ -673,6 +693,7 @@ object Xml extends Tag.Container
             segStart = begin()
           else
             advance()
+
         if !more then fail(Issue.ExpectedMore, start)
         appendSlice(segStart, buf)
         advance() // consume closing quote
@@ -706,6 +727,7 @@ object Xml extends Tag.Container
         skipWs()
         if !more then fail(Issue.ExpectedMore)
         val ch = peek
+
         if ch == '>' || ch == '/' || ch == '?' then done = true
         else if ch == '\u0000' then
           callback.let(_(position.z, Hole.Tagbody))
@@ -723,6 +745,7 @@ object Xml extends Tag.Container
 
           if (hashOr | h) == hashOr then
             var dup = 0
+
             while dup < 2*n do
               if attrBuf(dup) == keyStr then fail(Issue.DuplicateAttribute(key), keyStart)
               dup += 2
@@ -745,6 +768,7 @@ object Xml extends Tag.Container
               readAttrValue(tag, q)
             else
               fail(Issue.UnquotedAttribute, keyStart)
+
           ensureCapacity()
           attrBuf(2*n) = keyStr
           attrBuf(2*n + 1) = value.s
@@ -775,6 +799,7 @@ object Xml extends Tag.Container
 
       while more && peek != '<' do
         val c = peek
+
         if c == ']' then bracketCount += 1
         else
           if bracketCount >= 2 && c == '>' then fail(Issue.Unexpected('>'), start)
@@ -803,6 +828,7 @@ object Xml extends Tag.Container
 
     protected def readComment()(using Tactic[ParseError]): Text =
       val start = begin()
+
       while
         if !more then fail(Issue.ExpectedMore, start)
         !(peek == '-')
@@ -828,6 +854,7 @@ object Xml extends Tag.Container
       val end = begin()
       advance()
       if !more then fail(Issue.ExpectedMore, start)
+
       if peek != '-' then readComment_continue(start)
       else
         advance()
@@ -840,19 +867,24 @@ object Xml extends Tag.Container
       val start = begin()
       var done = false
       var endRegion: Region = start
+
       while !done do
         if !more then fail(Issue.ExpectedMore, start)
+
         if peek == ']' then
           val maybeEnd = begin()
           advance()
+
           if more && peek == ']' then
             advance()
+
             if more && peek == '>' then
               endRegion = maybeEnd
               advance()
               done = true
         else
           advance()
+
       slice(start, endRegion)
 
     // Position must be just after '<?'. Reads PI target + data, returning
@@ -889,6 +921,7 @@ object Xml extends Tag.Container
         skipWs()
         var encoding: Optional[Text] = Unset
         var standalone: Optional[Boolean] = Unset
+
         if more && peek == 'e' then
           val key = readName()
           if key != t"encoding" then fail(Issue.Unexpected(key.s.charAt(0)), nameStart)
@@ -901,6 +934,7 @@ object Xml extends Tag.Container
           advance()
           encoding = readAttrValue(target, q2)
           skipWs()
+
         if more && peek == 's' then
           val key = readName()
           if key != t"standalone" then fail(Issue.Unexpected(key.s.charAt(0)), nameStart)
@@ -912,11 +946,14 @@ object Xml extends Tag.Container
           if q2 != '"' && q2 != '\'' then fail(Issue.UnquotedAttribute, nameStart)
           advance()
           val v = readAttrValue(target, q2)
+
           standalone = v.s match
             case "yes" => true
             case "no"  => false
             case _     => fail(Issue.Unexpected(v.s.charAt(0)), nameStart)
+
           skipWs()
+
         if !more then fail(Issue.ExpectedMore, nameStart)
         if peek != '?' then fail(Issue.Unexpected(peek), nameStart)
         advance()
@@ -927,6 +964,7 @@ object Xml extends Tag.Container
       else
         skipWs()
         val dataStart = begin()
+
         while
           if !more then fail(Issue.ExpectedMore, dataStart)
           !(peek == '?')
@@ -952,6 +990,7 @@ object Xml extends Tag.Container
       val dataEnd = begin()
       advance()
       if !more then fail(Issue.ExpectedMore, dataStart)
+
       if peek != '>' then readPiData(dataStart, target)
       else
         advance()
@@ -980,6 +1019,7 @@ object Xml extends Tag.Container
         val name = readName()
         val attrs = readAttributes(name)
         if !more then fail(Issue.ExpectedMore)
+
         if peek == '/' then
           advance()
           if !more then fail(Issue.ExpectedMore)
@@ -995,13 +1035,16 @@ object Xml extends Tag.Container
     protected def readChildren(parentName: Text)(using Tactic[ParseError]): IArray[Node] =
       val children = scala.collection.mutable.ArrayBuffer[Node]()
       var done = false
+
       while !done do
         if !more then fail(Issue.Incomplete(parentName))
         val c = peek
+
         if c == '<' then
           advance()
           if !more then fail(Issue.ExpectedMore)
           val c2 = peek
+
           if c2 == '/' then
             advance()
             val closeStart = begin()
@@ -1014,6 +1057,7 @@ object Xml extends Tag.Container
             done = true
           else if c2 == '!' then
             advance()
+
             if more && peek == '-' then
               advance()
               if !more then fail(Issue.ExpectedMore)
@@ -1035,10 +1079,12 @@ object Xml extends Tag.Container
         else
           val text = readText(parentName)
           if text.length > 0 then children += TextNode(text)
+
       IArray.from(children)
 
     protected def consumeLiteral(literal: String)(using Tactic[ParseError]): Unit =
       var i = 0
+
       while i < literal.length do
         if !more then fail(Issue.ExpectedMore)
         if peek != literal.charAt(i) then fail(Issue.Unexpected(peek))
@@ -1056,6 +1102,7 @@ object Xml extends Tag.Container
       headers = headers0
       skipWs()
       val nodes = scala.collection.mutable.ArrayBuffer[Node]()
+
       while more do
         if peek != '<' then
           val text = readText(t"")
@@ -1064,8 +1111,10 @@ object Xml extends Tag.Container
           advance()
           if !more then fail(Issue.ExpectedMore)
           val c2 = peek
+
           if c2 == '!' then
             advance()
+
             if more && peek == '-' then
               advance()
               if !more then fail(Issue.ExpectedMore)
@@ -1092,6 +1141,7 @@ object Xml extends Tag.Container
             fail(Issue.UnopenedTag(close), closeStart)
           else
             nodes += readElement()
+
         skipWs()
 
       if nodes.length == 1 then nodes(0)
@@ -1099,6 +1149,7 @@ object Xml extends Tag.Container
 
     protected def consumeLiteralCi(literal: String)(using Tactic[ParseError]): Unit =
       var i = 0
+
       while i < literal.length do
         if !more then fail(Issue.ExpectedMore)
         val expected = literal.charAt(i)

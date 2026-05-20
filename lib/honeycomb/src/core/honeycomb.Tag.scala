@@ -146,7 +146,7 @@ object Tag:
 
       val presets2 = if css.classes.nil then presets else
         val cls: Text = valueOf[className]
-        val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
+        val value = presets.at("class").lay(cls): preset => t"$preset $cls"
         presets.updated("class", value)
 
       Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].over[Transport].in[Form]
@@ -185,7 +185,7 @@ object Tag:
 
       val presets2 = if css.classes.nil then presets else
         val cls = css.classes.join(t" ")
-        val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
+        val value = presets.at("class").lay(cls): preset => t"$preset $cls"
         presets.updated("class", value)
 
       val nodes: IArray[Node] = children.compact.nodes

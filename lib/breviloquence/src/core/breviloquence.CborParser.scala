@@ -54,9 +54,11 @@ private[breviloquence] object CborParser:
   private val longCache: Array[AnyRef] =
     val out = new Array[AnyRef](LongCacheSize)
     var index = 0
+
     while index < LongCacheSize do
       out(index) = java.lang.Long.valueOf(index.toLong).nn
       index += 1
+
     out
 
   private inline def boxLong(value: Long): AnyRef =
@@ -66,8 +68,10 @@ private[breviloquence] object CborParser:
   def parse(source: IArray[Byte]): Cbor.Ast raises CborError =
     val parser = new CborParser(source)
     val result = parser.value()
+
     if parser.offset < parser.data.length
     then abort(CborError(Reason.Trailing(parser.offset.toLong)))
+
     result
 
 private[breviloquence] final class CborParser(input: IArray[Byte]):
@@ -167,6 +171,7 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
     while !done do
       expect(1)
       val head = data(offset) & 0xFF
+
       if head == Break then
         offset += 1
         done = true
@@ -185,9 +190,11 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
   private def readIndefiniteTextString(): String raises CborError =
     val buffer = new java.io.ByteArrayOutputStream
     var done = false
+
     while !done do
       expect(1)
       val head = data(offset) & 0xFF
+
       if head == Break then
         offset += 1
         done = true
@@ -313,10 +320,15 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
           // and then re-allocating in `Ast.array`.
           val items = ArrayBuffer.empty[Any]
           var done = false
+
           while !done do
             expect(1)
-            if (data(offset) & 0xFF) == Break then { offset += 1; done = true }
-            else items += value()
+
+            if (data(offset) & 0xFF) == Break then
+              offset += 1
+              done = true
+            else
+              items += value()
 
           val count = items.length
           val padded = (count&1) == 0
@@ -331,6 +343,7 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
           Cbor.Ast(out.asInstanceOf[IArray[Any]])
         else
           val length = readLength(info, headOffset)
+
           if length < 0 || length > Int.MaxValue
           then abort(CborError(Reason.Overflow(headOffset)))
           val count = length.toInt
@@ -375,8 +388,10 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
 
         else
           val length = readLength(info, headOffset)
+
           if length < 0 || length > Int.MaxValue
           then abort(CborError(Reason.Overflow(headOffset)))
+
           val count = length.toInt
           val items = new Array[Any](count*2)
           var index = 0

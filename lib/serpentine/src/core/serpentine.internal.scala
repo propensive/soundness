@@ -47,6 +47,7 @@ import vacuous.*
 object internal:
   def path(context: Expr[StringContext]): Macro[Path] =
     val name: String = context.valueOrAbort.parts.head
+
     safely(name.tt.decode[Path on Posix]).let: path =>
       '{Path[Posix, %.type, Tuple](${Expr(path.root)}, ${Expr.ofList(path.descent.map(Expr(_)))})}
 
@@ -134,11 +135,13 @@ object internal:
                 topic[base].let:
                   case Right(baseDescent) =>
                     val ascent: Int = subjectDescent.length - baseDescent.length
+
                     ConstantType(IntConstant(ascent)).asType.absolve match
                       case '[type limit <: Int; limit] =>
                         topic[target].let:
                           case Right(targetDescent) =>
                             val descent = targetDescent.dropRight(baseDescent.length)
+
                             tuple(descent).asType.absolve match
                               case '[type tuple <: Tuple; tuple] =>
                                 val varargs = Varargs(descent.map(Expr[Text](_)))

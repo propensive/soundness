@@ -88,7 +88,7 @@ case class GitRepo(gitDir: Path on Linux):
     ( using gitError: Tactic[GitError], exec: Tactic[ExecError] )
   :   GitProcess[Unit] logs GitEvent =
 
-    val depthOption = depth.lay(sh"") { depth => sh"--depth=$depth" }
+    val depthOption = depth.lay(sh""): depth => sh"--depth=$depth"
     val command = sh"$git $repoOptions fetch $depthOption --progress $repo $refspec"
     val process = command.fork[Exit]()
 
@@ -131,6 +131,7 @@ case class GitRepo(gitDir: Path on Linux):
   :   Unit logs GitEvent =
 
     val flag = if force then sh"-D" else sh"-d"
+
     sh"$git $repoOptions branch $flag $branch".exec[Exit]() match
       case Exit.Ok => ()
       case failure => abort(GitError(BranchFailed))
@@ -141,6 +142,7 @@ case class GitRepo(gitDir: Path on Linux):
   :   Unit logs GitEvent =
 
     val flag = if force then sh"-M" else sh"-m"
+
     sh"$git $repoOptions branch $flag $from $to".exec[Exit]() match
       case Exit.Ok => ()
       case failure => abort(GitError(BranchFailed))
@@ -261,7 +263,7 @@ case class GitRepo(gitDir: Path on Linux):
     ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
   :   Stream[ReflogEntry] logs GitEvent =
 
-    val refArg = ref.lay(sh"") { ref => sh"$ref" }
+    val refArg = ref.lay(sh""): ref => sh"$ref"
     val format = t"--format=%H %gd %ct %gs"
 
     sh"$git $repoOptions reflog show $format $refArg".exec[Stream[Text]]().collect:
@@ -293,6 +295,7 @@ case class GitRepo(gitDir: Path on Linux):
 
     blocks(lines).flatMap: block =>
       val isBare = block.contains(t"bare")
+
       block.collect:
         case r"worktree $path(.*)" if !isBare =>
           val pathOnLinux = unsafely(path.decode[Path on Linux])
@@ -314,6 +317,7 @@ case class GitRepo(gitDir: Path on Linux):
       catch case error: PathError => abort(GitError(WorktreeFailed))
 
     val detachOpt = if detach then sh"--detach" else sh""
+
     sh"$git $repoOptions worktree add $detachOpt $targetPath $ref".exec[Exit]() match
       case Exit.Ok => Worktree(this, targetPath)
       case failure => abort(GitError(WorktreeFailed))
@@ -324,6 +328,7 @@ case class GitRepo(gitDir: Path on Linux):
   :   Unit logs GitEvent =
 
     val forceOpt = if force then sh"--force" else sh""
+
     sh"$git $repoOptions worktree remove $forceOpt ${worktree.path}".exec[Exit]() match
       case Exit.Ok => ()
       case failure => abort(GitError(WorktreeFailed))

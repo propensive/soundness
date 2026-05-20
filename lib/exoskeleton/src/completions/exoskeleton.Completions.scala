@@ -69,8 +69,9 @@ object Completions:
   private val cache: scm.HashMap[Text, Tab] = scm.HashMap()
 
   def tab(tty: Text, tab0: Tab): Ordinal =
-    cache.at(tty).let { tab => tab.next.unless(_ => tab.zero != tab0) }.or(tab0)
-    . tap { cache(tty) = _ }
+    cache.at(tty).let: tab => tab.next.unless(_ => tab.zero != tab0)
+    . or(tab0)
+    . tap: value => cache(tty) = value
     . count
     . z
 

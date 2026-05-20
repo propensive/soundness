@@ -117,12 +117,14 @@ object internal:
         if count >= bits then value else (count%2).absolve match
           case 0 =>
             val midpoint = (longMin + longMax)/2
+
             if long < midpoint
             then recur(value << 1, latMin, latMax, longMin, midpoint, count + 1)
             else recur((value << 1) | 1L, latMin, latMax, midpoint, longMax, count + 1)
 
           case 1 =>
             val midpoint = (latMin + latMax)/2
+
             if lat < midpoint
             then recur(value << 1, latMin, midpoint, longMin, longMax, count + 1)
             else recur((value << 1) | 1L, midpoint, latMax, longMin, longMax, count + 1)

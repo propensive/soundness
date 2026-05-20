@@ -146,6 +146,7 @@ object Teletype:
   def styled[value: Showable](value: value)(transform: Ansi.Transform): Teletype =
     val text: Text = value.show
     val styled: Long = transform(TextStyle()).styleWord
+
     if text.length == 0 then
       new Teletype(t"", IArray(styled, 0L), Map.empty, TreeMap.empty, IArray(0))
     else
@@ -157,12 +158,14 @@ object Teletype:
   :   (IArray[Long], IArray[Int]) =
 
     val n = plain.length
-    if n == 0 then
-      (IArray(if denseStyles.length > 0 then denseStyles(0) else 0L), IArray.empty[Int])
+
+    if n == 0
+    then (IArray(if denseStyles.length > 0 then denseStyles(0) else 0L), IArray.empty[Int])
     else
       // Count runs
       var runs = 1
       var i = 1
+
       while i < n do
         if denseStyles(i) != denseStyles(i - 1) then runs += 1
         i += 1
@@ -178,12 +181,15 @@ object Teletype:
         newStyles(0) = denseStyles(0)
         var src = 1
         var dst = 1
+
         while src < n do
           if denseStyles(src) != denseStyles(src - 1) then
             newBoundaries(dst) = src
             newStyles(dst) = denseStyles(src)
             dst += 1
+
           src += 1
+
         newStyles(runs) = denseStyles(n)  // trailing
         (IArray.unsafeFromArray(newStyles), IArray.unsafeFromArray(newBoundaries))
 
@@ -212,9 +218,11 @@ case class Teletype
       // Binary search for the run that contains p.
       var lo = 0
       var hi = boundaries.length
+
       while lo + 1 < hi do
         val mid = (lo + hi) >>> 1
         if boundaries(mid) <= p then lo = mid else hi = mid
+
       styles(lo)
 
   // Trailing style (the style after the last char; used for joins).
@@ -231,21 +239,26 @@ case class Teletype
       // Count runs
       var runs = 1
       var i = 1
+
       while i < n do
         if styles(i) != styles(i - 1) then runs += 1
         i += 1
+
       val newStyles = new Array[Long](runs + 1)
       val newBoundaries = new Array[Int](runs)
       newBoundaries(0) = 0
       newStyles(0) = styles(0)
       var src = 1
       var dst = 1
+
       while src < n do
         if styles(src) != styles(src - 1) then
           newBoundaries(dst) = src
           newStyles(dst) = styles(src)
           dst += 1
+
         src += 1
+
       newStyles(runs) = styles(n)
       (IArray.unsafeFromArray(newStyles), IArray.unsafeFromArray(newBoundaries))
 
@@ -262,12 +275,15 @@ case class Teletype
         val newLength = plain.length + text.length + 1
         val arr = new Array[Long](newLength)
         var i = 0
+
         while i < plain.length do
           arr(i) = styles(i)
           i += 1
+
         while i < newLength do
           arr(i) = tail
           i += 1
+
         Teletype
           ( combinedPlain, IArray.unsafeFromArray(arr), hyperlinks, insertions, IArray.empty[Int] )
       else
@@ -290,6 +306,7 @@ case class Teletype
           System.arraycopy(styles.asInstanceOf[Array[Long]], 0, newStyles, 0, k)
           newStyles(k) = tail
           newStyles(k + 1) = tail
+
           Teletype
             ( combinedPlain,
               IArray.unsafeFromArray(newStyles),
@@ -314,8 +331,10 @@ case class Teletype
         val newLength = aN + that.plain.length + 1
         val arr = new Array[Long](newLength)
         System.arraycopy(styles.asInstanceOf[Array[Long]], 0, arr, 0, aN)
+
         System.arraycopy
           ( that.styles.asInstanceOf[Array[Long]], 0, arr, aN, that.styles.length )
+
         Teletype
           ( combinedPlain,
             IArray.unsafeFromArray(arr),
@@ -340,6 +359,7 @@ case class Teletype
         // Copy B's runs (shifted by aN), optionally skipping the first if merging
         var bi = if merge then 1 else 0
         var ni = aK
+
         while bi < bK do
           newBoundariesArr(ni) = bBoundaries(bi) + aN
           newStylesArr(ni) = bStyles(bi)
@@ -347,6 +367,7 @@ case class Teletype
           ni += 1
         // Trailing style is B's trailing
         newStylesArr(newK) = bStyles(bK)
+
         Teletype
           ( combinedPlain,
             IArray.unsafeFromArray(newStylesArr),
@@ -359,6 +380,7 @@ case class Teletype
 
     case Ltr =>
       val keepLength = plain.length - n
+
       if keepLength <= 0 then Teletype.empty
       else if n <= 0 then this
       else
@@ -366,12 +388,15 @@ case class Teletype
 
         val newInsertions =
           insertions.collect { case (k, v) if k >= n => (k - n) -> v }.to(TreeMap)
+
         if isDense then
           val arr = new Array[Long](keepLength + 1)
           var i = 0
+
           while i <= keepLength do
             arr(i) = styles(n + i)
             i += 1
+
           Teletype
             ( plain.skip(n),
               IArray.unsafeFromArray(arr),
@@ -385,9 +410,11 @@ case class Teletype
           // Binary search for the run at position n
           var lo = 0
           var hi = k
+
           while lo + 1 < hi do
             val mid = (lo + hi) >>> 1
             if boundaries(mid) <= n then lo = mid else hi = mid
+
           val firstRun = lo
           val newK = k - firstRun
           val newBoundariesArr = new Array[Int](newK)
@@ -395,11 +422,14 @@ case class Teletype
           newBoundariesArr(0) = 0
           newStylesArr(0) = styles(firstRun)
           var i = 1
+
           while i < newK do
             newBoundariesArr(i) = boundaries(firstRun + i) - n
             newStylesArr(i) = styles(firstRun + i)
             i += 1
-          newStylesArr(newK) = styles(k)  // trailing
+
+          newStylesArr(newK) = styles(k)
+
           Teletype
             ( plain.skip(n),
               IArray.unsafeFromArray(newStylesArr),
@@ -416,13 +446,17 @@ case class Teletype
       else
         val newHyperlinks = hyperlinks.filter: (k, _) => k < n
         val newInsertions = insertions.rangeUntil(n)
+
         if isDense then
           val arr = new Array[Long](n + 1)
           var i = 0
+
           while i < n do
             arr(i) = styles(i)
             i += 1
+
           arr(n) = 0L
+
           Teletype
             ( plain.keep(n),
               IArray.unsafeFromArray(arr),
@@ -435,19 +469,24 @@ case class Teletype
           // Binary search for the last run whose start is < n
           var lo = 0
           var hi = k
+
           while lo + 1 < hi do
             val mid = (lo + hi) >>> 1
             if boundaries(mid) < n then lo = mid else hi = mid
+
           val lastRun = lo
           val newK = lastRun + 1
           val newBoundariesArr = new Array[Int](newK)
           val newStylesArr = new Array[Long](newK + 1)
           var i = 0
+
           while i < newK do
             newBoundariesArr(i) = boundaries(i)
             newStylesArr(i) = styles(i)
             i += 1
-          newStylesArr(newK) = 0L  // trailing reset
+
+          newStylesArr(newK) = 0L
+
           Teletype
             ( plain.keep(n),
               IArray.unsafeFromArray(newStylesArr),
@@ -466,26 +505,32 @@ case class Teletype
       inline def emitText(from: Int, to: Int): Unit =
         if from < to then
           val ins = insertions.range(from, to)
+
           if ins.isEmpty then buffer.add(plain.s.substring(from, to).nn.tt)
           else
             var p = from
+
             ins.each: (k, v) =>
               if p < k then buffer.add(plain.s.substring(p, k).nn.tt)
               buffer.add(v)
               p = k
+
             if p < to then buffer.add(plain.s.substring(p, to).nn.tt)
 
       inline def emitRunStyle(s: Long, from: Int): Unit =
         if s != prev then StyleWord.emitDiff(buffer, prev, s, depth)
+
         if (s & StyleWord.HyperlinkChange) != 0 then
           hyperlinks.get(from) match
             case Some(url) => buffer.add(t"\e]8;;$url\e\\")
             case None      => buffer.add(t"\e]8;;\e\\")
+
         prev = s
 
       if isDense then
         // Dense: walk per char but coalesce consecutive equal styles into one emit.
         var i = 0
+
         while i < n do
           val s = styles(i)
           var j = i + 1
@@ -496,6 +541,7 @@ case class Teletype
       else
         val k = boundaries.length
         var r = 0
+
         while r < k do
           val from = boundaries(r)
           val to = if r + 1 < k then boundaries(r + 1) else n
@@ -506,10 +552,12 @@ case class Teletype
 
       val tail = trailingStyle
       if tail != prev then StyleWord.emitDiff(buffer, prev, tail, depth)
+
       if (tail & StyleWord.HyperlinkChange) != 0 then
         hyperlinks.get(n) match
           case Some(url) => buffer.add(t"\e]8;;$url\e\\")
           case None      => buffer.add(t"\e]8;;\e\\")
+
       insertions.rangeFrom(n).values.each(buffer.add(_))
 
       buffer.text

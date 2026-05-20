@@ -282,12 +282,14 @@ object StackTrace:
 
     if rewritten.s.startsWith("scala.runtime.java8.JFunction") && rewritten.s.endsWith("#sp") then
       val types: String = rewritten.s.drop(29).dropRight(3)
+
       types.indexOf("#mc") match
         case -1 | 0 => rewritten
 
         case index =>
           Text:
             val types2 = types.drop(index + 3).to(List).map(primitive)
+
             if types2.length <= 2 then types2.mkString("(", " => ", ")")
             else types2.init.mkString("((", ", ", s") => ${types2.last})")
 

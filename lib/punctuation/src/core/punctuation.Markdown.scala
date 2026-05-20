@@ -53,6 +53,7 @@ object Markdown:
   // FIXME: This implementation needs to be cleaned up
   private def url(text: Text): Text =
     val builder = StringBuilder()
+
     text.urlDecode.chars.each:
       case char if char >= 128          => builder.append(char.toString.urlEncode)
       case char if char.isLetterOrDigit => builder.append(char)
@@ -91,6 +92,7 @@ object Markdown:
 
     case Prose.Link(destination, title, content*) =>
       val destination2 = url(destination)
+
       title.lay(A(href = destination2)(content.map(phrasing(_))*)): title =>
         A(href = destination2, title = title)(content.map(phrasing(_))*)
 
@@ -127,6 +129,7 @@ object Markdown:
 
           case Layout.Paragraph(_, contents*) :: tail if tight =>
             val content = Fragment(contents.map(phrasing(_))*)
+
             merge
               ( false,
                 tail,
