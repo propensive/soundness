@@ -1521,14 +1521,19 @@ object Checker:
 
     while frames.nonEmpty do checkOpFrame(frames.pop(), emit)
 
-  // Assignment and mutation operators (`=`, `+=`, `-=`, etc.) are
-  // governed by a stricter sub-rule than the symbolic-operator family
-  // checked above: they must always have *exactly* one space on each
-  // side when the right-hand side appears on the same line. The
-  // tokenizer keeps each as one `Code` token (`+=`, `<<=`, ...), so we
-  // can match by literal text. The check skips when the operator is
-  // the last semantic token on its line (the RHS is on a continuation
-  // line — `def f =\n  body`).
+  // Assignment and mutation operators (`=`, `+=`, `-=`, etc.) require
+  // *at least* one space before and *exactly* one space after when the
+  // right-hand side appears on the same line. The "at least one
+  // before" lets multi-line parameter blocks align their `=`s
+  // vertically:
+  //
+  //     ( mode:  UnixMode          = UnixMode(),
+  //       user:  UnixUser          = UnixUser(0),
+  //       group: UnixGroup         = UnixGroup(0) )
+  //
+  // The tokenizer keeps each operator as one `Code` token, so we match
+  // by literal text. The check skips when the operator is the last
+  // semantic token on its line (multi-line RHS — `def f =\n  body`).
   private val AssignOps: Set[String] =
     Set("=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", ">>>=")
 
@@ -1546,15 +1551,26 @@ object Checker:
     while i < arr.length do
       val t = arr(i)
       if t.kind == Kind.Code && AssignOps.contains(t.text) && i != lastSemantic then
-        val leftSpace =
-          i > 0 && arr(i - 1).kind == Kind.Space && arr(i - 1).text == " "
-        val rightSpace =
-          i + 1 < arr.length && arr(i + 1).kind == Kind.Space && arr(i + 1).text == " "
-        if !leftSpace || !rightSpace then
-          emit
-            ( cols(i), "376.1",
-              s"`${t.text}` requires exactly one space on each side when "
-                +"the right-hand side is on the same line" )
+        // `name_=` setter method-name suffix: skip. `=` follows an
+        // identifier ending in `_` with no intervening space.
+        val isSetterSuffix =
+          t.text == "=" && i > 0 && arr(i - 1).kind == Kind.Code
+            && arr(i - 1).text.endsWith("_")
+        if !isSetterSuffix then
+          val leftHasSpace =
+            i > 0 && arr(i - 1).kind == Kind.Space && arr(i - 1).text.length >= 1
+          val rightExactSpace =
+            i + 1 < arr.length && arr(i + 1).kind == Kind.Space && arr(i + 1).text == " "
+          if !leftHasSpace then
+            emit
+              ( cols(i), "376.1",
+                s"`${t.text}` requires at least one space before it when "
+                  +"the right-hand side is on the same line" )
+          else if !rightExactSpace then
+            emit
+              ( cols(i), "376.1",
+                s"`${t.text}` requires exactly one space after it when "
+                  +"the right-hand side is on the same line" )
       i += 1
 
   private def checkOpFrame

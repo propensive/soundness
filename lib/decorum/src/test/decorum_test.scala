@@ -204,9 +204,19 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("val x =1\n")
       . assert(_.contains("376.1"))
 
-      test(m"Two spaces around `=` is rejected"):
-        rules("val x  =  1\n")
+      test(m"Two spaces *after* `=` is rejected"):
+        rules("val x =  1\n")
       . assert(_.contains("376.1"))
+
+      test(m"Two spaces before `=` (alignment) is accepted"):
+        // Multi-line param blocks often pad before `=` to align the
+        // operators vertically; the rule must allow this.
+        rules("val x  = 1\n")
+      . assert(!_.contains("376.1"))
+
+      test(m"`name_=` setter method declaration is not flagged"):
+        rules("def x_=(value: Int): Unit = ()\n")
+      . assert(!_.contains("376.1"))
 
       test(m"Single space around `=` is accepted"):
         rules("val x = 1\n")
