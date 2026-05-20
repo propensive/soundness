@@ -34,9 +34,11 @@ package escapade
 
 import anticipation.*
 import digression.*
+import escritoire.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
+import iridescence.*
 import prepositional.*
 import proscenium.*
 import spectacular.*
@@ -82,87 +84,112 @@ object Teletypeable:
 
         append(e"\n")
 
-  given stackTrace: (Text is Measurable) => StackTrace is Teletypeable = stack =>
-    def heat(level: Int): Chroma = Chroma:
-      level match
-        case 0 => 0xf84020
-        case 1 => 0xd88600
-        case 2 => 0xfefe00
-        case 3 => 0xfeae00
-        case _ => 0xaefe00
+  given stackTrace: (Text is Measurable) => (palette: StackTrace.Palette)
+  =>  StackTrace is Teletypeable = stack =>
 
+    def accent(level: Int): Color in Srgb =
+      palette.selectDynamic(s"accent${(level % 5) + 1}")
 
     def dedup[element](todo: List[element], seen: Set[element] = Set(), done: List[element] = Nil)
     :   List[element] =
 
       todo match
-        case Nil => done
+        case Nil          => done.reverse
 
         case head :: tail =>
           if seen.contains(head) then dedup(tail, seen, done)
           else dedup(tail, seen + head, head :: done)
 
-
-    val packages: Map[Text, Chroma] =
+    val packages: Map[Text, Color in Srgb] =
       dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil)
-      . zipWithIndex.map(_ -> heat(_))
+      . zipWithIndex.map: (prefix, index) =>
+          prefix -> accent(index)
+
       . to(Map)
 
-    val methodWidth = stack.frames.map(_.method.method.length).maxOption.getOrElse(0)
-    val classWidth = stack.frames.map(_.method.className.length).maxOption.getOrElse(0)
-    val fileWidth = stack.frames.map(_.file.length).maxOption.getOrElse(0)
     val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
-    val init = e"${Fg(Chroma(0xffffff))}($fullClass): ${stack.message}"
+    val init = e"${palette.message}($fullClass): ${stack.message}"
 
-    var lastClass: Text = t""
-    var lastFile: Text = t""
+    case class Row(frame: StackTrace.Frame, sameClass: Boolean, sameFile: Boolean)
 
-    val root = stack.frames.foldLeft(init):
-      case (msg, frame) =>
-        val obj = frame.method.cls.starts(t"Ξ")
-        val methodCls = if obj then frame.method.cls.skip(1) else frame.method.cls
-        val file = e"${Fg(Chroma(0x5f9e9f))}(${frame.file.fit(fileWidth, Rtl)})"
-        val dot = if obj then t" . " else t" ⌗ "
+    val rows: List[Row] =
+      stack.frames.foldLeft((List.empty[Row], t"", t"")):
+        case ((acc, lastClass, lastFile), frame) =>
+          val sameClass = frame.method.className == lastClass
+          val sameFile = frame.file == lastFile
+          (Row(frame, sameClass, sameFile) :: acc, frame.method.className, frame.file)
 
-        val sameClass = frame.method.className == lastClass
-        lastClass = frame.method.className
+      . _1.reverse
 
-        val gray = Fg(Chroma(0x808080))
+    def classCell(row: Row): Teletype =
+      val frame = row.frame
+      val obj = frame.method.cls.starts(t"Ξ")
+      val methodCls = if obj then frame.method.cls.skip(1) else frame.method.cls
+      val color = packages(frame.method.prefix)
 
-        val className =
-          val color = packages(frame.method.prefix)
-          if sameClass
-          then
-            e"${Fg(Chroma(0x222222))}(${frame.method.prefix}.$methodCls)"
-            . fit(classWidth, Rtl)
-          else
-            val halfColor = Fg(Chroma(color.underlying/2))
-            e"$halfColor(${frame.method.prefix}.$Bold(${Fg(color)}($methodCls)))"
-            . fit(classWidth, Rtl)
+      if row.sameClass
+      then e"${palette.subdue(color, 0.85)}(${frame.method.prefix}.$methodCls)"
+      else
+        e"${palette.subdue(color, 0.5)}(${frame.method.prefix}.$Bold($color($methodCls)))"
 
-        val method = e"${Fg(Chroma(0xabcfdf))}(${frame.method.method.fit(methodWidth)})"
-        val line = e"${Fg(Chroma(0x47d1cc))}(${frame.line.let(_.show).or(t"")})"
-        val sameFile = frame.file == lastFile
-        lastFile = frame.file
-        val file2 = frame.file.fit(fileWidth, Rtl)
+    def dotCell(row: Row): Teletype =
+      val ch = if row.frame.method.cls.starts(t"Ξ") then t"." else t"⌗"
+      e"${palette.separator}($ch)"
 
-        val foreground = Fg(Chroma(if sameFile then 0x111111 else 0x5faeaf))
-        e"$msg\n  $gray(at) $className$gray($dot)$method $foreground($file2)$gray(:)$line"
+    def methodCell(row: Row): Teletype =
+      e"${palette.method}(${row.frame.method.method})"
+
+    def fileCell(row: Row): Teletype =
+      val color = if row.sameFile then palette.subdue(palette.file, 0.85) else palette.file
+      e"$color(${row.frame.file})"
+
+    def lineCell(row: Row): Teletype =
+      e"${palette.line}(${row.frame.line.let(_.show).or(t"")})"
+
+    val scaffold =
+      Scaffold[Row]
+        ( Column(e"")(_ => e"${palette.separator}(at)"),
+          Column(e"", textAlign = TextAlignment.Right)(classCell),
+          Column(e"")(dotCell),
+          Column(e"")(methodCell),
+          Column(e"", textAlign = TextAlignment.Right)(fileCell),
+          Column(e"")(_ => e"${palette.separator}(:)"),
+          Column(e"", textAlign = TextAlignment.Right)(lineCell) )
+
+    given style: TableStyle =
+      TableStyle
+        ( padding    = 0,
+          topLine    = Unset,
+          bottomLine = Unset,
+          titleLine  = Unset,
+          sideLines  = BoxLine.Blank,
+          innerLines = BoxLine.Blank,
+          charset    = LineCharset.Default )
+
+    given attenuation: Attenuation = columnAttenuation.ignore
+
+    val grid = scaffold.tabulate(rows).grid(200)
+    val dataOnly = grid.copy(sections = grid.sections.tail)
+    val tableLines = dataOnly.render.to(List)
+
+    val root = (init :: tableLines).join(e"\n")
 
     stack.cause.lay(root): cause =>
-      e"$root\n${Fg(Chroma(0xffffff))}(caused by:)\n$cause"
+      e"$root\n${palette.message}(caused by:)\n$cause"
 
-  given frame: (Text is Measurable) => StackTrace.Frame is Teletypeable = frame =>
-    val className = e"${Fg(Chroma(0xc61485))}(${frame.method.className.fit(40, Rtl)})"
-    val method = e"${Fg(Chroma(0xdb6f92))}(${frame.method.method.fit(40)})"
-    val file = e"${Fg(Chroma(0x5f9e9f))}(${frame.file.fit(18, Rtl)})"
-    val line = e"${Fg(Chroma(0x47d1cc))}(${frame.line.let(_.show).or(t"?")})"
-    e"$className${Fg(Chroma(0x808080))}( ⌗ )$method $file${Fg(Chroma(0x808080))}(:)$line"
+  given frame: (Text is Measurable) => (palette: StackTrace.Palette)
+  =>  StackTrace.Frame is Teletypeable = frame =>
 
-  given method: StackTrace.Method is Teletypeable = method =>
-    val className = e"${Fg(Chroma(0xc61485))}(${method.className})"
-    val methodName = e"${Fg(Chroma(0xdb6f92))}(${method.method})"
-    e"$className${Fg(Chroma(0x808080))}( ⌗ )$methodName"
+    val className = e"${palette.method}(${frame.method.className.fit(40, Rtl)})"
+    val method = e"${palette.method}(${frame.method.method.fit(40)})"
+    val file = e"${palette.file}(${frame.file.fit(18, Rtl)})"
+    val line = e"${palette.line}(${frame.line.let(_.show).or(t"?")})"
+    e"$className${palette.separator}( ⌗ )$method $file${palette.separator}(:)$line"
+
+  given method: (palette: StackTrace.Palette) => StackTrace.Method is Teletypeable = method =>
+    val className = e"${palette.method}(${method.className})"
+    val methodName = e"${palette.method}(${method.method})"
+    e"$className${palette.separator}( ⌗ )$methodName"
 
   given double: (decimalizer: Decimalizer) => Double is Teletypeable = double =>
     Teletype.styled(decimalizer.decimalize(double))(_.copy(fg = Chroma(0xffd600)))
