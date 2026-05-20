@@ -176,6 +176,38 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("val f =\n  (x: Int) =>\n    x + 1\n")
       . assert(!_.contains("376"))
 
+      test(m"Missing space before `=` is rejected"):
+        rules("val x= 1\n")
+      . assert(_.contains("376.1"))
+
+      test(m"Missing space after `=` is rejected"):
+        rules("val x =1\n")
+      . assert(_.contains("376.1"))
+
+      test(m"Two spaces around `=` is rejected"):
+        rules("val x  =  1\n")
+      . assert(_.contains("376.1"))
+
+      test(m"Single space around `=` is accepted"):
+        rules("val x = 1\n")
+      . assert(!_.contains("376.1"))
+
+      test(m"`=` at line end (multi-line RHS) is accepted"):
+        rules("val x =\n  1\n")
+      . assert(!_.contains("376.1"))
+
+      test(m"Missing space around `+=` is rejected"):
+        rules("var x = 0\nx+=1\n")
+      . assert(_.contains("376.1"))
+
+      test(m"Single space around `+=` is accepted"):
+        rules("var x = 0\nx += 1\n")
+      . assert(!_.contains("376.1"))
+
+      test(m"Default parameter `=` with bad spacing is rejected"):
+        rules("def f(x: Int=5): Int = x\n")
+      . assert(_.contains("376.1"))
+
       test(m"Symbolic operator method without space before parens is rejected"):
         rules("infix def +(right: Int): Int = right\n")
       . assert(_.contains("013"))
@@ -284,6 +316,20 @@ object Tests extends Suite(m"Decorum Tests"):
             +"\n"
             +"  case Bar =>\n"
             +"    bigBody\n" )
+      . assert(!_.contains("315"))
+
+      test(m"Operator-continuation line does not trigger SN-315"):
+        // Dotty may split `t == 1\n|| t == 2` into two `Block.stats` at
+        // the parser level, but inserting a blank line between them
+        // would break the operator continuation. The rule must skip
+        // when `cur.startLine` begins with an infix operator.
+        rules
+         ( "def f(c: Int): Boolean =\n"
+            +"  val t = c\n"
+            +"\n"
+            +"  t == 1\n"
+            +"  || t == 2\n"
+            +"  || t == 3\n" )
       . assert(!_.contains("315"))
 
       test(m"Multi-line pattern with trailing `=>` is accepted"):

@@ -995,6 +995,7 @@ object Checker:
     checkBracketInteriors(s, arr, cols, prevTok, emit)
     checkComments(lineNum, arr, cols, emit)
     checkOperatorSpacing(arr, cols, emit)
+    checkAssignmentSpacing(arr, cols, emit)
     checkSymbolicMethodNames(arr, cols, emit)
 
   private def checkCommas
@@ -1508,6 +1509,42 @@ object Checker:
       i += 1
 
     while frames.nonEmpty do checkOpFrame(frames.pop(), emit)
+
+  // Assignment and mutation operators (`=`, `+=`, `-=`, etc.) are
+  // governed by a stricter sub-rule than the symbolic-operator family
+  // checked above: they must always have *exactly* one space on each
+  // side when the right-hand side appears on the same line. The
+  // tokenizer keeps each as one `Code` token (`+=`, `<<=`, ...), so we
+  // can match by literal text. The check skips when the operator is
+  // the last semantic token on its line (the RHS is on a continuation
+  // line — `def f =\n  body`).
+  private val AssignOps: Set[String] =
+    Set("=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", ">>>=")
+
+  private def checkAssignmentSpacing
+    ( arr: Array[Token], cols: Array[Int], emit: (Int, String, String) => Unit )
+  :   Unit =
+
+    var lastSemantic = arr.length - 1
+    while lastSemantic >= 0
+          && (arr(lastSemantic).kind == Kind.Space
+              || arr(lastSemantic).kind == Kind.Comment)
+    do lastSemantic -= 1
+
+    var i = 0
+    while i < arr.length do
+      val t = arr(i)
+      if t.kind == Kind.Code && AssignOps.contains(t.text) && i != lastSemantic then
+        val leftSpace =
+          i > 0 && arr(i - 1).kind == Kind.Space && arr(i - 1).text == " "
+        val rightSpace =
+          i + 1 < arr.length && arr(i + 1).kind == Kind.Space && arr(i + 1).text == " "
+        if !leftSpace || !rightSpace then
+          emit
+            ( cols(i), "376.1",
+              s"`${t.text}` requires exactly one space on each side when "
+                +"the right-hand side is on the same line" )
+      i += 1
 
   private def checkOpFrame
     ( ops: mutable.ArrayBuffer[OpHit], emit: (Int, String, String) => Unit )
@@ -2048,14 +2085,61 @@ object Checker:
         val prev = stmts(i - 1)
         val cur  = stmts(i)
         if (prev.isMultiLine || cur.isMultiLine)
+        && cur.startLine > prev.endLine
         && !hasBlankLineBetween(prev.endLine, cur.startLine, content, source)
+        && !startsWithContinuationOperator(content, source, cur.startLine)
         then
+          // Emit at `prev.endLine + 1` — the line immediately AFTER the
+          // previous statement's last line. Inserting a blank line there
+          // separates `prev` from `cur` regardless of where dotty's tree
+          // places `cur.startLine` (which can be on a nested-body line
+          // for control-flow constructs like `if cond then\n  body`).
           out +=
             Violation
-              ( file, cur.startLine, 1, "315",
+              ( file, prev.endLine + 1, 1, "315",
                 "a multi-line statement must be separated from its siblings "
                   +"by a blank line" )
         i += 1
+
+  // Lines whose first non-whitespace token is an infix continuation
+  // operator (`||`, `&&`, `+`, `==`, `::`, `.`, `?`, etc.) extend the
+  // previous expression, even though dotty may parse the boundary as
+  // two separate `Block` stats. Inserting a blank line between them
+  // would actually break the operator continuation, so R28 must not
+  // fire on these.
+  private def startsWithContinuationOperator
+    ( content: String, source: SourceFile, line: Int )
+  :   Boolean =
+    // Defensively check the file lines either side of the reported
+    // `line` (dotty's `offsetToLine` / `lineToOffset` indexing in 3.8.3
+    // can drift by ±1 across versions, and the parser may split an
+    // operator-continuation expression so the operator token sits on a
+    // different line from what `Statements.collect` reports). If any of
+    // the three lines starts with an infix operator, the boundary is
+    // inside an operator chain and the rule must skip — inserting a
+    // blank line there would break parsing.
+    (line - 1 to line + 1).exists: l =>
+      lineStartsWithOperator(content, source, l)
+
+  private def lineStartsWithOperator
+    ( content: String, source: SourceFile, line: Int )
+  :   Boolean =
+    if line < 1 then false
+    else
+      val start =
+        try source.lineToOffset(line - 1)
+        catch case _: Throwable => -1
+      if start < 0 || start >= content.length then false
+      else
+        var i = start
+        while i < content.length
+              && content.charAt(i) != '\n'
+              && (content.charAt(i) == ' ' || content.charAt(i) == '\t')
+        do i += 1
+        if i >= content.length then false
+        else
+          val c = content.charAt(i)
+          "|&+-*/<>=!~^%?.:".indexOf(c) >= 0
 
   private def hasBlankLineBetween
     ( endLine: Int, startLine: Int, content: String, source: SourceFile ): Boolean =
@@ -2066,7 +2150,7 @@ object Checker:
     while l < startLine do
       val from = source.lineToOffset(l - 1)
       val to   =
-        if l < content.split('\n').nn.length + 1
+        if l < content.split('\n').length + 1
         then source.lineToOffset(l).min(content.length)
         else content.length
       var i = from
