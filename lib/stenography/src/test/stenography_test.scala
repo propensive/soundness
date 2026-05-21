@@ -108,6 +108,49 @@ object Tests extends Suite(m"Stenography Tests"):
       Syntax.name[4.2F]
     . assert(_ == t"4.2F")
 
+    test(m"Show constant Boolean true type"):
+      Syntax.name[true]
+    . assert(_ == t"true")
+
+    test(m"Show constant Boolean false type"):
+      Syntax.name[false]
+    . assert(_ == t"false")
+
+    test(m"Show constant Char type"):
+      Syntax.name['a']
+    . assert(_ == t"'a'")
+
+    test(m"Show wildcard type argument"):
+      Syntax.name[List[?]]
+    . assert(_ == t"collection.immutable.List[?]")
+
+    test(m"Show upper-bounded wildcard"):
+      Syntax.name[List[? <: AnyRef]]
+    . assert(_ == t"collection.immutable.List[? <: AnyRef]")
+
+    test(m"Show lower-bounded wildcard"):
+      Syntax.name[List[? >: String]]
+    . assert(_ == t"collection.immutable.List[? >: String]")
+
+    test(m"Show wildcard with both bounds"):
+      Syntax.name[List[? >: String <: AnyRef]]
+    . assert(_ == t"collection.immutable.List[? >: String <: AnyRef]")
+
+    test(m"Show into-annotated type"):
+      Syntax.name[Int @scala.annotation.internal.$into]
+    . assert(_ == t"into Int")
+
+    test(m"Show match type"):
+      Syntax.name[[scrutinee] =>> scrutinee match
+        case String => Char
+        case Int    => Boolean]
+    . assert(_ == t"[scrutinee] =>> scrutinee match { case String => Char; case Int => Boolean }")
+
+    test(m"Show match type with parametric case"):
+      Syntax.name[[scrutinee] =>> scrutinee match
+        case List[item] => item]
+    . assert(_ == t"[scrutinee] =>> scrutinee match { case collection.immutable.List[item] => item }")
+
     test(m"Show singleton type"):
       Syntax.name[None.type]
     . assert(_ == t"None.type")
