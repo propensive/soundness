@@ -42,7 +42,9 @@ import scala.collection.mutable as scm
 import scala.util.control.NonFatal
 
 import dotty.tools.*, dotc.*, util.*, ast.Trees.*, core.*
+
 import Constants.Constant, Contexts.*, Decorators.*, StdNames.*
+
 import plugins.*
 
 object LarcenyTransformer:

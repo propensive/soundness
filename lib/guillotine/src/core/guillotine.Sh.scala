@@ -77,7 +77,7 @@ object Sh:
     def insert(state: State, value: Parameters): State = value.params.to(List) match
       case head :: tail =>
         if state.escape
-        then throw ShError( m"escaping with '\\' is not allowed immediately before a substitution")
+        then throw ShError(m"escaping with '\\' is not allowed immediately before a substitution")
 
         state.absolve match
           case State(Awaiting, false, arguments) =>

@@ -376,7 +376,7 @@ extension [textual: Textual { type Operand = Char }](text: textual)
     recur(text)
 
   inline def tr(from: Char, to: Char): textual =
-    textual.map(text){ char => if char == from then to else char }
+    textual.map(text): char => if char == from then to else char
 
   inline def ossify: textual = text.tr(' ', ' ')
 

@@ -180,7 +180,7 @@ object ParserSupport:
     while i < n do
       i = walk(s, i)(isSpaceTab)
       val start = i
-      i = walk(s, i){ c => !isSpaceTab(c) }
+      i = walk(s, i): c => !isSpaceTab(c)
       if i > start then result += Text(s.substring(start, i).nn)
 
     result.toList

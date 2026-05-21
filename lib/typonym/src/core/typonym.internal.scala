@@ -67,7 +67,7 @@ object internal:
             case '[element] => reify[element]
 
         . reverse
-        . foldLeft('{Nil}) { (list, next) => '{$next :: $list} }
+        . foldLeft('{Nil}): (list, next) => '{$next :: $list}
 
       case '[type map <: Tuple; TypeMap[map]] =>
         val entries =

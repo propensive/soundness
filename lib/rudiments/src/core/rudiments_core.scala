@@ -119,7 +119,7 @@ extension (inline statement: => Unit)
 extension [input, result](inline lambda: input => result)
   inline infix def and (inline input2: => input): result = lambda(input2)
 
-def loop(block: => Unit): Loop = Loop({ () => block })
+def loop(block: => Unit): Loop = Loop{ () => block }
 
 
 export rudiments.internal.&

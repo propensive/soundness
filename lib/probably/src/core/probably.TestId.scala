@@ -49,7 +49,7 @@ case class TestId(name: Message, suite: Optional[Testable], codepoint: Codepoint
 
   import textMetrics.uniform
   lazy val id: Text = (suite.hashCode ^ name.hashCode).hex.pad(6, Rtl, '0').keep(6, Rtl)
-  lazy val ids: List[Text] =  id :: suite.let(_.id.ids).or(Nil)
+  lazy val ids: List[Text] = id :: suite.let(_.id.ids).or(Nil)
 
   def apply[result](context: Harness ?=> result): Test[result] =
     Test[result](this, context(using _))

@@ -189,7 +189,7 @@ private[jacinta] final class JsonParser:
     syncTo()
     val end = cursor.position.n0
     val offset: Optional[Int] = start.let(_.absolute.toInt)
-    val length: Optional[Int] = start.let{ mark => end - mark.absolute.toInt }
+    val length: Optional[Int] = start.let: mark => end - mark.absolute.toInt
     abort(ParseError(Json.Ast, Position(0, end, offset = offset, length = length), issue))
 
   // A `Region` is just a `Cursor.Mark` (an absolute `Long` position). With

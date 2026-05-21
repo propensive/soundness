@@ -551,7 +551,7 @@ object Xml extends Tag.Container
       val col = cursor.column.n1 - (if cursor.more then 0 else 1)
       val end = cursor.position.n0
       val offset: Optional[Int] = start.let(_.absolute.toInt)
-      val length: Optional[Int] = start.let{ mark => end - mark.absolute.toInt }
+      val length: Optional[Int] = start.let: mark => end - mark.absolute.toInt
       Position(cursor.line.n1.u, col.max(1).u, offset = offset, length = length)
 
     // Optional callback invoked when a `\u0000` placeholder is encountered.

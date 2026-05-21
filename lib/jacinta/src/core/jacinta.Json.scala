@@ -114,6 +114,7 @@ trait Json2:
               context =>
                 focus({
                   val base = prior.or(JsonPointer())
+
                   JsonPointer
                     ( base.url,
                       Path[JsonPointer, JsonPointer.type, Tuple]
@@ -148,6 +149,7 @@ trait Json2:
             field =>
               focus({
                 val base = prior.or(JsonPointer())
+
                 JsonPointer
                   ( base.url,
                     Path[JsonPointer, JsonPointer.type, Tuple]
@@ -291,7 +293,7 @@ object Json extends Json2, Dynamic:
 
     def apply
       ( value
-        : JsonString | JsonNumber | JsonBoolean | JsonNull | JsonObject | JsonArray | Unset.type )
+      : JsonString | JsonNumber | JsonBoolean | JsonNull | JsonObject | JsonArray | Unset.type )
     :   Ast =
 
       value
@@ -485,6 +487,7 @@ object Json extends Json2, Dynamic:
       value.root.array.each: json =>
         focus({
           val base = prior.or(JsonPointer())
+
           JsonPointer
             ( base.url,
               Path[JsonPointer, JsonPointer.type, Tuple]

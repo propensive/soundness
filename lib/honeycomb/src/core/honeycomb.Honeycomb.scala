@@ -425,8 +425,8 @@ object Honeycomb:
         case Doctype(_)            => Set()
 
       resultType(html)
-      . map { label => ConstantType(StringConstant(label)) }
-      . foldLeft(TypeRepr.of[Nothing]) { (left, right) => OrType(left, right) }
+      . map: label => ConstantType(StringConstant(label))
+      . foldLeft(TypeRepr.of[Nothing]): (left, right) => OrType(left, right)
       . asType
       . absolve match
         case '[type topic <: Label; topic] =>

@@ -93,7 +93,7 @@ object LocalClasspath:
 
 class LocalClasspath private
   ( val entries
-    : List[ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type],
+  : List[ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type],
     val entrySet: Set[ClasspathEntry] )
 extends Classpath:
   def apply()(using System): Text =

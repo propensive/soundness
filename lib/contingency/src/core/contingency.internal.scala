@@ -302,7 +302,7 @@ object internal:
   /** Macro for `whereas { case … }` — analyses the handler and emits a
    *  `Whereas[lambda]` wrapping the partial function. */
   def whereas(handler: Expr[PartialFunction[Exception, Any]])
-    (using Quotes)
+    ( using Quotes )
   :   Expr[Whereas[?]] =
 
     import quotes.reflect.*
@@ -327,8 +327,8 @@ object internal:
    *  binding the body's per-error context parameters rather than relying on
    *  implicit search. */
   def mitigateBody[context[_]: Type, result: Type]
-    (w: Expr[Whereas[context]], body: Expr[context[result]])
-    (using Quotes)
+    ( w: Expr[Whereas[context]], body: Expr[context[result]] )
+    ( using Quotes )
   :   Expr[result] =
 
     import quotes.reflect.*
@@ -362,8 +362,8 @@ object internal:
    *  through the handler to obtain the recovered result, then breaks the
    *  boundary with it. */
   def recoverBody[context[_]: Type, result: Type]
-    (w: Expr[Whereas[context]], body: Expr[context[result]])
-    (using Quotes)
+    ( w: Expr[Whereas[context]], body: Expr[context[result]] )
+    ( using Quotes )
   :   Expr[result] =
 
     type ContextResult = context[result]
@@ -371,6 +371,7 @@ object internal:
     ' {
         scala.util.boundary[result]: label ?=>
           val tactic: Tactic[Whereas.Escape[result]] = Whereas.EscapeTactic(label)
+
           $ {
               import quotes.reflect.*
 
@@ -413,7 +414,7 @@ object internal:
       body:        Expr[context[result]],
       outer:       Expr[Tactic[accrual]],
       diagnostics: Expr[Diagnostics] )
-    (using Quotes)
+    ( using Quotes )
   :   Expr[result] =
 
     import quotes.reflect.*
@@ -437,11 +438,13 @@ object internal:
             val contextTypeRepr = TypeRepr.of[context[result]]
             val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
             body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
-          }) catch case _: Exception => Left(acc.accumulated)
+          })
+          catch case _: Exception => Left(acc.accumulated)
 
         outcome match
           case Right(value) if !acc.changed => value
-          case _                            =>
+
+          case _ =>
             $outer.record((_: Diagnostics) ?=> acc.accumulated)
             import scala.unsafeExceptions.canThrowAny
             throw acc.accumulated

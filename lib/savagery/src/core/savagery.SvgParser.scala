@@ -67,7 +67,7 @@ object SvgParser:
 
 
   private def numAttr(elem: Element, name: Text, default: Float = 0.0f): Float =
-    elem.attributes.at(name).let { text => safely(text.decode[Double].toFloat).or(default) }
+    elem.attributes.at(name).let: text => safely(text.decode[Double].toFloat).or(default)
     . or(default)
 
 
@@ -340,7 +340,7 @@ object SvgParser:
           skipWs()
 
           while pos < s.length && s.charAt(pos) != ')' do
-            parseNum().let { num => args += num }
+            parseNum().let: num => args += num
             skipWs()
 
           if pos < s.length then pos += 1 // skip )

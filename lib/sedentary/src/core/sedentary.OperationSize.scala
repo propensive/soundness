@@ -43,7 +43,7 @@ object OperationSize:
   // the throughput rate text, so `Bench.apply` itself doesn't need to be
   // generic over the unit or carry a `Decimalizer` of its own.
   inline given conversion: [size <: Measure] => Decimalizer
-    =>  Conversion[Quantity[size], OperationSize] = quantity =>
+  =>  Conversion[Quantity[size], OperationSize] = quantity =>
 
     OperationSize
       ( quantity.express,
