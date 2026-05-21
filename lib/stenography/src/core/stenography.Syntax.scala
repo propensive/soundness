@@ -33,7 +33,6 @@
 package stenography
 
 import scala.collection.immutable.ListMap
-import scala.collection.mutable as scm
 import scala.quoted.*
 
 import anticipation.*
@@ -56,15 +55,27 @@ object Syntax:
   val CloseType: Symbolic = Symbolic("]")
   val Plus: Symbolic = Symbolic("+")
   val Minus: Symbolic = Symbolic("-")
-  private val cache: scm.HashMap[Any, Syntax] = scm.HashMap()
-
-  def clear(): Unit = cache.clear()
 
   def symbolic(name: Text): Symbolic =
     Symbolic(if name.s.startsWith("_$") then name.s.drop(2).tt else name)
 
 
-  def typeBounds(using Quotes)
+  private def candidateName(using Quotes)(rt: quotes.reflect.RecursiveType): Text =
+    import quotes.reflect.*
+
+    def base(repr: TypeRepr): String = repr.absolve match
+      case Refinement(parent, _, _) => base(parent)
+      case AppliedType(tycon, _)    => base(tycon)
+      case TypeRef(_, name)         => name
+      case other                    => other.typeSymbol.name
+
+    val raw = base(rt.underlying)
+
+    if raw.isEmpty then "self".tt
+    else (raw.head.toLower.toString + raw.drop(1)).tt
+
+
+  def typeBounds(using Quotes, Bindings)
     ( sub: Syntax, lower: quotes.reflect.TypeRepr, upper: quotes.reflect.TypeRepr )
   :   Syntax =
 
@@ -78,7 +89,9 @@ object Syntax:
     else Infix(Infix(sub, ">:", apply(lower)), "<:", apply(upper))
 
 
-  def contextBounds(using Quotes)(clauses: List[quotes.reflect.ParamClause]): Map[Text, Syntax] =
+  def contextBounds(using Quotes, Bindings)(clauses: List[quotes.reflect.ParamClause])
+  :   Map[Text, Syntax] =
+
     import quotes.reflect.*
 
     clauses.flatMap:
@@ -105,7 +118,7 @@ object Syntax:
     . to(Map)
 
 
-  def clause(using Quotes)
+  def clause(using Quotes, Bindings)
     ( clause: quotes.reflect.ParamClause, showUsing: Boolean, context: Map[Text, Syntax] )
   :   Syntax =
 
@@ -157,7 +170,7 @@ object Syntax:
         Sequence('[', items)
 
 
-  def signature(using Quotes)(name: Text, repr: quotes.reflect.TypeRepr): Declaration =
+  def signature(using Quotes, Bindings)(name: Text, repr: quotes.reflect.TypeRepr): Declaration =
     import quotes.reflect.*
 
     repr.absolve match
@@ -182,13 +195,16 @@ object Syntax:
       case other =>
         Declaration(true, List(), apply(other))
 
-  def term(using Quotes)(repr: quotes.reflect.TermRef): Typename = apply(repr) match
+  def term(using Quotes, Bindings)(repr: quotes.reflect.TermRef): Typename = apply(repr) match
     case Value(value) => value
     case _            => panic(m"expected a Value")
 
 
-  def apply(using Quotes)(repr: quotes.reflect.TypeRepr, retry: Boolean = true): Syntax =
-    cache.establish(repr):
+  def apply(using Quotes)(using bindings: Bindings = Bindings())
+    ( repr: quotes.reflect.TypeRepr, retry: Boolean = true )
+  :   Syntax =
+
+    bindings.cache.establish(repr):
       import quotes.reflect.*
 
       def isPackage(name: String): Boolean = name.endsWith("$package") || name == "package"
@@ -385,11 +401,12 @@ object Syntax:
             case PolyType(params, _, _)   => symbolic(params(n))
             case other                    => Primitive("ParamRef")
 
-        case RecursiveType(tpe) =>
-          apply(tpe)
+        case rt@RecursiveType(body) =>
+          bindings.nameFor(rt, candidateName(rt))
+          apply(body)
 
-        case RecursiveThis(tpe) =>
-          apply(tpe)
+        case RecursiveThis(binder) =>
+          Symbolic(bindings.nameFor(binder, candidateName(binder)))
 
         case repr =>
           if retry then apply(repr.typeSymbol.typeRef, false) else Primitive("<unknown>")

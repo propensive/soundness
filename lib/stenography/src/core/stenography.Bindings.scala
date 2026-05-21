@@ -32,87 +32,27 @@
                                                                                                   */
 package stenography
 
-import scala.quoted.*
+import java.util.IdentityHashMap
+
+import scala.collection.mutable as scm
 
 import anticipation.*
-import gigantism.*
-import proscenium.*
 
-object internal:
-  import dotty.tools.dotc.*
+final class Bindings:
+  private val names = IdentityHashMap[AnyRef, Text]()
+  private val counters = scm.HashMap[Text, Int]()
+  private[stenography] val cache = scm.HashMap[Any, Syntax]()
 
-  def typename[typename <: AnyKind: Type]: Macro[Text] = Expr(name[typename])
+  def nameFor(binder: Matchable, candidate: => Text): Text =
+    val key = binder.asInstanceOf[AnyRef]
+    val existing = names.get(key)
 
-  def name(using Quotes)(typeRepr: quotes.reflect.TypeRepr): Text =
-    typeRepr.asType.absolve match case '[tpe] => name[tpe]
+    if existing != null then existing
+    else
+      val base = candidate
+      val n = counters.getOrElse(base, 0)
+      counters(base) = n + 1
+      val fresh = if n == 0 then base else s"$base${n + 1}".tt
+      names.put(key, fresh)
 
-  def name[typename <: AnyKind: Type](using Quotes): Text =
-    import quotes.reflect.*
-
-    given Bindings = Bindings()
-
-    val outer: List[Typename] = quotes.absolve match
-      case quotes: runtime.impl.QuotesImpl =>
-        given context: core.Contexts.Context = quotes.ctx
-
-        context.compilationUnit.tpdTree.absolve match
-          case ast.tpd.PackageDef(root, statements) =>
-            Typename(root.show) :: statements.collect:
-              case ast.tpd.Import(name, _) => Typename(name.show)
-
-          case _ =>
-            Nil
-
-      case _ => Nil
-
-    val imports: Set[Typename] = metaprogramming.imports.map(_.term).map(Syntax.term(_)).to(Set)
-
-    // Build the `direct` set by drilling into every wildcard import that's in
-    // scope (including REPL-accumulated imports across earlier lines, captured
-    // by `metaprogramming.imports`) and collecting type aliases carrying the
-    // `Exported` flag. Those aliases' *target* types are reachable via just
-    // their leaf in the current scope, so we render them that way.
-    val direct: Set[Typename] = quotes.absolve match
-      case quotes: runtime.impl.QuotesImpl =>
-        given context: core.Contexts.Context = quotes.ctx
-
-        metaprogramming.imports.filter(_.wildcard).flatMap: imp =>
-          val rootSym = imp.term.asInstanceOf[core.Types.Type].termSymbol(using context)
-
-          if !rootSym.exists then Nil
-          else exportedTargets(rootSym)
-
-        .toSet
-
-      case _ => Set.empty[Typename]
-
-    given Imports =
-      Imports(Set(Typename("scala"), Typename("scala.Predef")) ++ imports ++ outer, direct)
-
-    Syntax(TypeRepr.of[typename]).text
-
-  private def exportedTargets(using Quotes, dotty.tools.dotc.core.Contexts.Context)
-    ( rootSym: dotty.tools.dotc.core.Symbols.Symbol )
-  :   List[Typename] =
-
-    import dotty.tools.dotc.core.{Flags, Types}
-    import quotes.reflect.TypeRepr
-
-    // Top-level definitions in a package are stored inside synthetic
-    // `<filename>$package` classes; export forwarders for types live there.
-    val directDecls = rootSym.info.decls.toList
-    val packageClasses = directDecls.filter(_.name.toString.endsWith("$package"))
-    val nestedDecls = packageClasses.flatMap(_.info.decls.toList)
-
-    (directDecls ++ nestedDecls).filter(_.is(Flags.Exported)).flatMap: decl =>
-      decl.info match
-        case alias: Types.TypeAlias =>
-          Syntax(alias.alias.asInstanceOf[TypeRepr]) match
-            // Add both forms so the same import path can shorten references
-            // to either the type itself or its companion (e.g. `Textual` and
-            // `Textual.foo` both resolve via `import soundness.*`).
-            case Syntax.Simple(typename) => List(typename, typename.companionObject)
-            case _                       => Nil
-
-        case _ =>
-          Nil
+      fresh
