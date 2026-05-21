@@ -272,8 +272,7 @@ object Syntax:
               Primitive("<unknown>")
 
         case AnnotatedType(tpe, annotation) =>
-          // FIXME: We don't have access to `into` information, so this is a hack
-          if annotation.toString.contains("object annotation),into)")
+          if annotation.tpe.typeSymbol == Symbol.classSymbol("scala.annotation.internal.$into")
           then Prefix("into", apply(tpe))
           else apply(tpe)
 
@@ -408,6 +407,22 @@ object Syntax:
         case RecursiveThis(binder) =>
           Symbolic(bindings.nameFor(binder, candidateName(binder)))
 
+        case MatchType(_, scrutinee, cases) =>
+          def renderCase(case0: TypeRepr): Syntax = case0.absolve match
+            case TypeLambda(_, _, body) => renderCase(body)
+            case other                  => apply(other)
+
+          Syntax.Match(apply(scrutinee), cases.map(renderCase))
+
+        case MatchCase(pattern, rhs) =>
+          Prefix("case", Infix(apply(pattern), "=>", apply(rhs)))
+
+        case SuperType(_, _) =>
+          Symbolic("super")
+
+        case NoPrefix() =>
+          Primitive("")
+
         case repr =>
           if retry then apply(repr.typeSymbol.typeRef, false) else Primitive("<unknown>")
 
@@ -427,12 +442,14 @@ enum Syntax:
   case Declaration(method: Boolean, syntaxes: List[Syntax], result: Syntax)
   case Value(typename: Typename)
   case Compound(syntaxes: List[Syntax])
+  case Match(scrutinee: Syntax, cases: List[Syntax])
 
   def precedence: Int = this match
     case Structural(_, _, _)  => 0
     case Prefix(_, _)         => 0
     case Named(_, _, _)       => 0
     case Suffix(_, _)         => 0
+    case Match(_, _)          => 10
     case Infix(_, "<:", _)    => 10
     case Infix(_, ">:", _)    => 10
     case Projection(_, _)     => 9
@@ -474,6 +491,9 @@ enum Syntax:
     case Sequence('{', elements) => s"{${elements.map(_.text).mkString(", ")}}".tt
     case Value(typename)         => s"${typename.text}.type".tt
     case Compound(syntaxes)      => syntaxes.map(_.text).mkString.tt
+
+    case Match(scrutinee, cases) =>
+      s"${scrutinee.text} match { ${cases.map(_.text).mkString("; ")} }".tt
 
     case Declaration(method, syntaxes, result) =>
       s"${syntaxes.map(_.text).mkString}${if method then ": " else ""}${result.text}".tt
