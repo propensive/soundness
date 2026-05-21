@@ -47,7 +47,7 @@ object Radical:
     def decode(text: Text): Drive =
       if text.length >= 3 && text.at(Sec) == ':' && text.at(Ter) == '\\'
       then Drive(text.at(Prim).vouch)
-      else raise(PathError(_.InvalidRoot)) yet Drive('C')
+      else abort(PathError(_.InvalidRoot))
 
     def length(text: Text): Int = 3
     def encode(drive: Drive): Text = t"${drive.letter}:\\"
@@ -58,7 +58,7 @@ object Radical:
     def length(text: Text): Int = 1
 
     def decode(text: Text): %.type =
-      if text.starts(t"/") then % else raise(PathError(_.InvalidRoot)) yet %
+      if text.starts(t"/") then % else abort(PathError(_.InvalidRoot))
 
     def encode(root: %.type): Text = t"/"
 
@@ -68,7 +68,7 @@ object Radical:
     def length(text: Text): Int = 1
 
     def decode(text: Text): %.type =
-      if text.starts(t"/") then % else raise(PathError(_.InvalidRoot)) yet %
+      if text.starts(t"/") then % else abort(PathError(_.InvalidRoot))
 
     def encode(root: %.type): Text = t"/"
 
@@ -78,7 +78,7 @@ object Radical:
     def length(text: Text): Int = 1
 
     def decode(text: Text): %.type =
-      if text.starts(t"/") then % else raise(PathError(_.InvalidRoot)) yet %
+      if text.starts(t"/") then % else abort(PathError(_.InvalidRoot))
 
     def encode(root: %.type): Text = t"/"
 

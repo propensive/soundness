@@ -115,7 +115,7 @@ trait Cbor2:
             val discriminable = infer[derivation is Discriminable in Cbor]
 
             val discriminant: Text =
-              discriminable.discriminate(cbor).or(abort(CborError(Reason.Absent)))
+              discriminable.discriminate(cbor).lest(CborError(Reason.Absent))
 
             delegate(discriminant): [variant <: derivation] =>
               context => context.decoded(cbor)

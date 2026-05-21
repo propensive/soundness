@@ -97,12 +97,12 @@ object Bootstrapper:
   case class UserError(detail: Message)(using Diagnostics) extends Error(detail)
 
   def main(input: IArray[Text]): Unit = application(input):
-    recover:
+    whereas:
       case error: Error =>
         Err.println(error.message)
         Exit.Fail(1)
 
-    . within:
+    . recover:
         val jarfile: Path on Local =
           ClassRef(Class.forName("burdock.Bootstrap").nn).classpathEntry match
             case ClasspathEntry.Jar(file) => file.decode[Path on Local]

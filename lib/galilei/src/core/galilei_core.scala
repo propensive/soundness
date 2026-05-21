@@ -270,7 +270,7 @@ extension [plane <: Posix: Filesystem](path: Path on plane)
       jnf.Files.getAttribute(jnf.Path.of(path.show.s), "unix:nlink", dereferenceSymlinks.options()*)
       . match
         case count: Int => count
-        case _          => raise(IoError(path, Operation.Metadata, Reason.Unsupported)) yet 1
+        case _          => abort(IoError(path, Operation.Metadata, Reason.Unsupported))
 
 package filesystemOptions:
   object readAccess:

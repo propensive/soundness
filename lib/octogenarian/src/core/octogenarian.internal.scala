@@ -53,7 +53,7 @@ object internal:
     def head(n: Int = 0): Refspec = t"HEAD~$n"
 
     def parse(text: Text)(using Tactic[GitRefError]): Text =
-      def fail(reason: GitRefError.Reason): Text = raise(GitRefError(text, reason)) yet text
+      def fail(reason: GitRefError.Reason): Text = abort(GitRefError(text, reason))
 
       text.cut(t"/").each: part =>
         if part.starts(t".") || part.ends(t".") then fail(GitRefError.Reason.LeadingOrTrailingDot)
@@ -88,7 +88,7 @@ object internal:
   object GitHash:
     def apply(text: Text)(using Tactic[GitRefError]): GitHash = text match
       case r"[a-f0-9]{40}" => text
-      case _               => raise(GitRefError(text, GitRefError.Reason.BadHash)) yet text
+      case _               => abort(GitRefError(text, GitRefError.Reason.BadHash))
 
     def unsafe(text: Text): GitHash = text
 

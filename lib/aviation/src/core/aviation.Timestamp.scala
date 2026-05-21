@@ -55,11 +55,11 @@ object Timestamp:
 
   given decodable: Tactic[TimestampError] => Timestamp is Decodable in Text = text => text match
     case r"$year(\d{4})-$month(\d{2})-$day(\d{2})[ T]$hour(\d{2}):$minute(\d{2}):$second(\d{2})" =>
-      mitigate:
+      whereas:
         case NumberError(_, _, _) => TimestampError(text, TimestampError.Reason.BadNumber)
         case TimeError(_)         => TimestampError(text, TimestampError.Reason.BadTime)
 
-      . within:
+      . mitigate:
           Timestamp
             ( Date(year.decode[Year], Month(month.decode[Int]), Day(day.decode[Int])),
               Clockface
@@ -69,7 +69,7 @@ object Timestamp:
 
     case value =>
       val error = TimestampError(value, TimestampError.Reason.BadFormat)
-      raise(error) yet Timestamp(2000-Jan-1, Clockface(0, 0, 0))
+      abort(error)
 
 case class Timestamp(date: Date, time: Clockface):
   def year(using calendar: Calendar): calendar.Annual = date.year

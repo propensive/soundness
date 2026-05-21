@@ -437,14 +437,14 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
           case n if 100 <= n <= 107          => Background(style) = palette(n - 92)
 
           case _ =>
-            raise(PtyEscapeError(BadSgrParameters(params.map(_.show).join(t";")))) yet style
+            abort(PtyEscapeError(BadSgrParameters(params.map(_.show).join(t";"))))
 
         sgr(tail)
 
     def parseInt(text: Text, default: Int): Int =
       if text.nil then default
       else text.s.toIntOption.getOrElse:
-        raise(PtyEscapeError(NonintegerSgrParameter(text))) yet default
+        abort(PtyEscapeError(NonintegerSgrParameter(text)))
 
     def parseInts(text: Text): List[Int] =
       if text.nil then Nil
@@ -541,7 +541,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
         Chroma(r*42 + r/2, g*42 + g/2, b*42 + b/2)
 
       case n =>
-        raise(PtyEscapeError(BadColor(n))) yet Chroma(127, 127, 127)
+        abort(PtyEscapeError(BadColor(n)))
 
     def recur(index: Int, context: Context): Pty =
       inline def proceed(context: Context): Pty =

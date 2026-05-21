@@ -100,7 +100,7 @@ object Media:
     def parseSuffixes(suffixes: List[Text]): List[Suffix] =
       suffixes.map(_.lower.capitalize).flatMap: suffix =>
         try List(Suffix.valueOf(suffix.s)) catch IllegalArgumentException =>
-          raise(MediaTypeError(string, MediaTypeError.Reason.InvalidSuffix(suffix))) yet Nil
+          abort(MediaTypeError(string, MediaTypeError.Reason.InvalidSuffix(suffix)))
 
     def parseInit(string: Text): (Subtype, List[Suffix]) =
       val xs: List[Text] = string.cut(t"+").to(List)
@@ -117,7 +117,7 @@ object Media:
 
     def parseGroup(string: Text): Group =
       try Group.valueOf(string.lower.capitalize.s) catch IllegalArgumentException =>
-        raise(MediaTypeError(string, MediaTypeError.Reason.InvalidGroup)) yet Group.Text
+        abort(MediaTypeError(string, MediaTypeError.Reason.InvalidGroup))
 
     def parseSubtype(string: Text): Subtype =
       def notAllowed(char: Char): Boolean =

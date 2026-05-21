@@ -143,6 +143,7 @@ object Tests extends Suite(m"Soundness tests"):
     vacuous.Tests()
     vicarious.Tests()
     jacinta.RecordsTests()
+    jacinta.ValidationTests()
     // wisteria.Tests() - temporarily disabled
     xylophone.Tests()
     ypsiloid.Tests()

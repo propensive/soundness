@@ -118,12 +118,12 @@ object Completions:
     ( using WorkingDirectory, Diagnostics )
   :   Installation raises InstallError logs CliEvent =
 
-    mitigate:
+    whereas:
       case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
       case NameError(_, _, _) => InstallError(InstallError.Reason.Environment)
       case ExecError(_, _, _) => InstallError(InstallError.Reason.Environment)
 
-    . within:
+    . mitigate:
         val scriptPath: Optional[Path on Local] =
           safely(sh"sh -c 'command -v ${entrypoint.script}'".exec[Path on Local]())
 
@@ -198,13 +198,13 @@ object Completions:
     ( using Diagnostics )
   :   Installation.InstallResult raises InstallError logs CliEvent =
 
-    mitigate:
+    whereas:
       case IoError(_, _, _, _) => InstallError(InstallError.Reason.Io)
       case NameError(_, _, _)  => InstallError(InstallError.Reason.Io)
       case PathError(_, _)     => InstallError(InstallError.Reason.Io)
       case StreamError(_)      => InstallError(InstallError.Reason.Io)
 
-    . within:
+    . mitigate:
         dirs.where { dir => dir.exists() && dir.writable() }.let: dir =>
           val path = dir/scriptName
 

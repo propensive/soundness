@@ -72,7 +72,7 @@ object Streamable:
           case int => int.toChar #:: recur(count + 1.b)
         catch case error: ji.IOException =>
           reader.close()
-          raise(StreamError(count)) yet Stream()
+          abort(StreamError(count))
 
       Stream.defer(recur(0L.b))
 
@@ -87,7 +87,7 @@ object Streamable:
           case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
         catch case error: ji.IOException =>
           reader.close()
-          raise(StreamError(count)) yet Stream()
+          abort(StreamError(count))
 
       Stream.defer(recur(0L.b))
 
@@ -116,7 +116,7 @@ object Streamable:
 
             array.immutable(using Unsafe) #:: recur(total + count)
 
-        catch case e: Exception => Stream(raise(StreamError(total.b)) yet Data())
+        catch case e: Exception => abort(StreamError(total.b))
 
       Stream.defer(recur(0))
 

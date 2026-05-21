@@ -48,10 +48,10 @@ import errorDiagnostics.stackTraces
 
 object Acceptable:
   given multipart: Tactic[MultipartError] => Multipart is Acceptable = request =>
-    mitigate:
+    whereas:
       case _: MediaTypeError => MultipartError(MultipartError.Reason.MediaType)
 
-    . within:
+    . mitigate:
         val contentType = request.headers.contentType.prim.or:
           abort(MultipartError(MultipartError.Reason.MediaType))
 

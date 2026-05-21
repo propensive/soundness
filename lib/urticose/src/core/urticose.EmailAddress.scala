@@ -95,7 +95,7 @@ object EmailAddress:
         quoted(index + 1, false)
 
       case Unset =>
-        raise(EmailAddressError(UnclosedQuote)) yet (LocalPart.Quoted(buffer.text), index)
+        abort(EmailAddressError(UnclosedQuote))
 
     def unquoted(index: Ordinal, dot: Boolean): (LocalPart, Ordinal) =
       text.at(index) match
@@ -121,7 +121,7 @@ object EmailAddress:
           unquoted(index + 1, false)
 
         case Unset =>
-          raise(EmailAddressError(MissingAtSymbol)) yet (LocalPart.Unquoted(buffer.text), index)
+          abort(EmailAddressError(MissingAtSymbol))
 
     val (localPart, index) =
       if text.starts(t"\"") then quoted(Sec, false) else unquoted(Prim, false)

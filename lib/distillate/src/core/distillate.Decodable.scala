@@ -48,38 +48,38 @@ trait Decodable2:
 object Decodable extends Decodable2:
   given int: (number: Tactic[NumberError]) => Int is Decodable in Text = text =>
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Int, NumberError.Reason.Unparseable)) yet 0
+      abort(NumberError(text, Int, NumberError.Reason.Unparseable))
 
   given fqcn: Tactic[FqcnError] => Fqcn is Decodable in Text = Fqcn(_)
   given uuid: Tactic[UuidError] => Uuid is Decodable in Text = Uuid.parse(_)
 
   given byte: Tactic[NumberError] => Byte is Decodable in Text = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Byte, NumberError.Reason.Unparseable)) yet 0
+      abort(NumberError(text, Byte, NumberError.Reason.Unparseable))
 
     if int < Byte.MinValue || int > Byte.MaxValue
-    then raise(NumberError(text, Byte, NumberError.Reason.OutOfRange)) yet 0.toByte
+    then abort(NumberError(text, Byte, NumberError.Reason.OutOfRange))
     else int.toByte
 
   given short: Tactic[NumberError] => Short is Decodable in Text = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Short, NumberError.Reason.Unparseable)) yet 0
+      abort(NumberError(text, Short, NumberError.Reason.Unparseable))
 
     if int < Short.MinValue || int > Short.MaxValue
-    then raise(NumberError(text, Short, NumberError.Reason.OutOfRange)) yet 0.toShort
+    then abort(NumberError(text, Short, NumberError.Reason.OutOfRange))
     else int.toShort
 
   given long: Tactic[NumberError] => Long is Decodable in Text = text =>
     try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Long, NumberError.Reason.Unparseable)) yet 0L
+      abort(NumberError(text, Long, NumberError.Reason.Unparseable))
 
   given double: Tactic[NumberError] => Double is Decodable in Text = text =>
     try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Double, NumberError.Reason.Unparseable)) yet 0.0
+      abort(NumberError(text, Double, NumberError.Reason.Unparseable))
 
   given float: Tactic[NumberError] => Float is Decodable in Text = text =>
     try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Float, NumberError.Reason.Unparseable)) yet 0.0F
+      abort(NumberError(text, Float, NumberError.Reason.Unparseable))
 
   given char: Char is Decodable in Text = _.s(0)
 
@@ -90,7 +90,7 @@ object Decodable extends Decodable2:
 
     enumeration.value(identifiable.decode(value)).or:
       val names = enumeration.values.to(List).map(enumeration.name(_)).map(enumeration.encode(_))
-      raise(VariantError(value, enumeration.name, names)) yet enumeration.value(Prim).vouch
+      abort(VariantError(value, enumeration.name, names))
 
 trait Decodable extends Typeclass, Formal:
   inline def decodable: this.type = this

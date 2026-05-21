@@ -86,8 +86,7 @@ trait Yaml2:
             case s: String => s.tt.decode[value]
 
             case _ =>
-              raise(YamlError(Reason.NotType(Yaml.primitive(yaml.root), YamlPrimitive.Str)))
-              .yet(t"".decode[value])
+              abort(YamlError(Reason.NotType(Yaml.primitive(yaml.root), YamlPrimitive.Str)))
 
     case given Reflection[`value`] =>
       DecodableDerivation.derived
@@ -745,7 +744,7 @@ object Yaml extends Yaml2, Dynamic:
     ( using Tactic[YamlError] )
   :   T =
 
-    raise(YamlError(Reason.NotType(primitive(yaml.root), expected))) yet default
+    abort(YamlError(Reason.NotType(primitive(yaml.root), expected)))
 
   given int: Tactic[YamlError] => Int is Decodable in Yaml = yaml =>
     yaml.root.asMatchable match
@@ -840,8 +839,8 @@ object Yaml extends Yaml2, Dynamic:
               case k: Boolean => k.toString.tt
 
               case other =>
-                raise(YamlError(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
-                                               YamlPrimitive.Str))) yet t""
+                abort(YamlError(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
+                                               YamlPrimitive.Str)))
 
           result = result.updated(keyText, value.decoded(new Yaml(rawValue)))
           i += 1

@@ -105,7 +105,9 @@ object Query extends Dynamic:
         provide[Tactic[QueryError]]:
           summonFrom:
             case default: Default[`value`] =>
-              _().let(_.decode).or(raise(QueryError(QueryError.Reason.Missing)) yet default())
+              _().let(_.decode).or:
+                raise(QueryError(QueryError.Reason.Missing))
+                default()
 
             case _ =>
               _().lest(QueryError(QueryError.Reason.Missing)).decode

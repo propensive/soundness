@@ -51,8 +51,8 @@ object Geolocation:
     text.cut(t";").map: parameter =>
       parameter.cut(t"=") match
         case List(key, value) => (key, value)
-        case Nil | List(_)    => raise(GeolocationError(MissingEquals)) yet Unset
-        case _                => raise(GeolocationError(MultipleEquals)) yet Unset
+        case Nil | List(_)    => abort(GeolocationError(MissingEquals))
+        case _                => abort(GeolocationError(MultipleEquals))
 
     . compact
 

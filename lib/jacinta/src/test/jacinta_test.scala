@@ -1088,3 +1088,5 @@ object Tests extends Suite(m"Jacinta Tests"):
           j"""[$bad*]"""
         . map(_.focus)
       . assert(_ == List("bad"))
+
+    ValidationTests()

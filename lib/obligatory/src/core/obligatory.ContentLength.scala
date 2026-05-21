@@ -80,7 +80,7 @@ object ContentLength:
 
         case t"content-length" =>
           val raw = cursor.hold(value(cursor.mark))
-          frame(safely(raw.decode[Int]).or(abort(FrameError(FrameError.Reason.MalformedLength))))
+          frame(safely(raw.decode[Int]).lest(FrameError(FrameError.Reason.MalformedLength)))
 
         case other =>
           abort(FrameError(FrameError.Reason.UnknownHeader))

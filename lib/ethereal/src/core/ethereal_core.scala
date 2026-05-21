@@ -96,7 +96,7 @@ def cli[bus <: Matchable](using executive: Executive)
   import stdios.virtualMachine
 
   val name: Text =
-    recover:
+    whereas:
       case PropertyError(_) =>
         val jarFile: Path on Linux = System.properties.java.`class`.path[Text]().pipe: jarFile =>
           safely(jarFile.decode[Path on Linux]).or:
@@ -209,7 +209,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
             Exit.Ok.terminate()
 
-    . within(System.properties.ethereal.name[Text]())
+    . recover(System.properties.ethereal.name[Text]())
 
   val userId: Optional[Int] = safely(System.properties.ethereal.user.id[Int]())
   val userName: Optional[Text] = safely(System.properties.ethereal.user.name[Text]())

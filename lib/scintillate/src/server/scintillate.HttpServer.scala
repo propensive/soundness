@@ -55,11 +55,11 @@ extends RequestServable:
       try
         val connection = HttpConnection(exchange.nn)
 
-        recover:
+        whereas:
           case StreamError(length) =>
             Log.warn(HttpServerEvent.BrokenStream(length))
 
-        . within:
+        . recover:
             connection.respond:
               try handler(using connection) catch case throwable: Throwable =>
                 errorPage.handle(throwable, connection)
