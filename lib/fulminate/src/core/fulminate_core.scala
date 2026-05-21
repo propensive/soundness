@@ -166,7 +166,7 @@ def warn(d: Int, reason: Clarification, message: Message, position: Matchable)
 
 extension (inline context: StringContext)
   transparent inline def m[param](inline subs: param = Zero): Message =
-    ${ fulminate.internal.mMacro[param]('context, 'subs) }
+    ${fulminate.internal.mMacro[param]('context, 'subs)}
 
 extension [communicable: Communicable](value: communicable)
   def communicate: Message = communicable.message(value)

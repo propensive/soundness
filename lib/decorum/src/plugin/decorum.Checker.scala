@@ -301,6 +301,15 @@ object Checker:
       s.prevLineIsTight          = isTightExpression(line)
       trackQuoteSpliceBraces(s, line, leadingCols, lineNum, out)
 
+      val inlineArr = line.toArray
+      val inlineCols = scala.Array.ofDim[Int](inlineArr.length + 1)
+      inlineCols(0) = 1
+      var qi = 0
+      while qi < inlineArr.length do
+        inlineCols(qi + 1) = inlineCols(qi) + inlineArr(qi).text.length
+        qi += 1
+      checkInlineQuoteSplice(s.file, inlineArr, inlineCols, lineNum, out)
+
       // R32 anchor: a line that begins a `given` declaration (after any
       // modifiers) records its leading-cols as the anchor for arrow
       // continuation. The anchor clears when the body opener (`=`) appears
@@ -543,6 +552,62 @@ object Checker:
                     ( s.file, lineNum, cols(i), "473.6",
                       "closing `}` of a multi-line quote/splice must be alone on its line "
                         +"(only trailing `)` / `}` permitted)" )
+      i += 1
+
+  // SN-473.7: a quote/splice whose opener and closer sit on the same
+  // source line is "inline"; its contents must not be padded by a space
+  // immediately after the opener or immediately before the closer. Covers
+  // term quotes (`'{…}`), type quotes (`'[…]`), and term splices (`${…}`).
+  // Multi-line quote/splices are handled by 473.2–473.6.
+  private def checkInlineQuoteSplice
+    ( file:    String,
+      arr:     Array[Token],
+      cols:    Array[Int],
+      lineNum: Int,
+      out:     mutable.ListBuffer[Violation] )
+  :   Unit =
+
+    var i = 0
+    while i < arr.length do
+      if arr(i).kind == Kind.Code then
+        val text = arr(i).text
+        if text == "{" || text == "[" then
+          var j = i - 1
+          while j >= 0 && arr(j).kind == Kind.Space do j -= 1
+          val prefix =
+            if j >= 0 && arr(j).kind == Kind.Code then arr(j).text else ""
+          val isQuoteOpener =
+            (text == "{" && (prefix == "'" || prefix == "$"))
+              || (text == "[" && prefix == "'")
+          if isQuoteOpener then
+            val closeText = if text == "{" then "}" else "]"
+            val otherOpen = text
+            var depth = 1
+            var k = i + 1
+            while k < arr.length && depth > 0 do
+              if arr(k).kind == Kind.Code then
+                val t = arr(k).text
+                if t == otherOpen then depth += 1
+                else if t == closeText then depth -= 1
+              if depth > 0 then k += 1
+            if depth == 0 && k < arr.length then
+              val afterOpen = i + 1
+              val beforeClose = k - 1
+              if afterOpen < k && arr(afterOpen).kind == Kind.Space
+                && arr(afterOpen).text.nonEmpty
+              then
+                out += Violation
+                  ( file, lineNum, cols(afterOpen), "473.7",
+                    s"no space is permitted directly after `$prefix$text` "
+                      +"in an inline quote/splice" )
+              if beforeClose > i && beforeClose != afterOpen
+                && arr(beforeClose).kind == Kind.Space
+                && arr(beforeClose).text.nonEmpty
+              then
+                out += Violation
+                  ( file, lineNum, cols(beforeClose), "473.7",
+                    s"no space is permitted directly before `$closeText` "
+                      +"in an inline quote/splice" )
       i += 1
 
   // (c) On lines inside an open multi-line quote/splice — neither the

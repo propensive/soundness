@@ -92,7 +92,7 @@ object internal:
     import quotes.reflect.*
 
     def fallback: Expr[value] =
-      '{ panopticon.internal.applyFold[value]($valueExpr, $lambdasExpr) }
+      '{panopticon.internal.applyFold[value]($valueExpr, $lambdasExpr)}
 
     // ─── parse helpers ────────────────────────────────────────────────────
 
@@ -374,7 +374,7 @@ object internal:
       if isCtxFn then
         // From updateDynamic — leaf is `(T aka "prior") ?=> T`. `aka` is opaque (Tagged),
         // so at runtime tagging is a no-op; we pass `acc` via aka to satisfy the typer.
-        '{ ${ leafTerm.asExprOf[(T `aka` "prior") ?=> T] }(using $acc.aka["prior"]) }
+        '{${leafTerm.asExprOf[(T `aka` "prior") ?=> T]}(using $acc.aka["prior"])}
       else
         // From update(traversal, value) — leaf is a plain `T`; `acc` is unused.
         leafTerm.asExprOf[T]
@@ -458,11 +458,11 @@ object internal:
               // `origin.field`; for any other inline lens to its own get/set body.
               val getFn = getLambda.asExprOf[T => targetT]
               val setFn = setLambda.asExprOf[(T, targetT) => T]
-              val rawGet = '{ $getFn($origin) }.asTerm
+              val rawGet = '{$getFn($origin)}.asTerm
               val get = Term.betaReduce(rawGet).getOrElse(rawGet)
 
               val set: Term => Term = (newValue: Term) =>
-                val rawSet = '{ $setFn($origin, ${ newValue.asExprOf[targetT] }) }.asTerm
+                val rawSet = '{$setFn($origin, ${newValue.asExprOf[targetT]})}.asTerm
                 Term.betaReduce(rawSet).getOrElse(rawSet)
 
               (Nil, get, set)
@@ -480,11 +480,11 @@ object internal:
               val lensDef = ValDef(lensSym, Some(lensTerm.changeOwner(lensSym)))
               val lensExpr = Ref(lensSym)
                 . asExprOf[Lens { type Origin = T; type Target = targetT }]
-              val getRaw = '{ $lensExpr($origin) }.asTerm
+              val getRaw = '{$lensExpr($origin)}.asTerm
 
               val set: Term => Term = (newValue: Term) =>
                 val newValueExpr = newValue.asExprOf[targetT]
-                '{ $lensExpr.update($origin, $newValueExpr) }.asTerm
+                '{$lensExpr.update($origin, $newValueExpr)}.asTerm
 
               (List(lensDef), getRaw, set)
 
@@ -544,7 +544,7 @@ object internal:
                   emit[targetT](innerRef, children).asTerm.changeOwner(lambdaSym) )
 
           val innerLambdaExpr = innerLambda.asExprOf[targetT => targetT]
-          val modifyCall = '{ $opticExpr.modify($origin)($innerLambdaExpr) }.asTerm
+          val modifyCall = '{$opticExpr.modify($origin)($innerLambdaExpr)}.asTerm
 
           Block(List(opticDef), modifyCall).asExprOf[T]
 
@@ -575,7 +575,7 @@ object internal:
               val singleLambda =
                 exprs.head.asExprOf[(Optic from value onto value) => value => value]
 
-              '{ $singleLambda(Optic.identity[value])($valueExpr) }
+              '{$singleLambda(Optic.identity[value])($valueExpr)}
             else
               fallback
           else

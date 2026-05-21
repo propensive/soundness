@@ -698,7 +698,8 @@ Scala 3 macro quote (`'{ … }`, `'[ … ]`) and splice (`${ … }`) syntax
 has two layouts:
 
 - **Inline** — closer on the same source line as the opener. No space
-  between `'` (or `$`) and the opening `{`/`[`:
+  between `'` (or `$`) and the opening `{`/`[`, and no space
+  immediately inside the opening or before the closing bracket:
 
   ```scala
   '{Quantity(left)}

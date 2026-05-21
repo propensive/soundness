@@ -121,7 +121,7 @@ object internal:
       val items: List[String | Expr[Message]] = segments.zipWithIndex.flatMap: (segment, index) =>
         val text = decode(segment)
 
-        if index < segments.size - 1 then List(text, '{ $subListRef(${Expr(startIndex + index)}) })
+        if index < segments.size - 1 then List(text, '{$subListRef(${Expr(startIndex + index)})})
         else List(text)
 
       (items, startIndex + segments.size - 1)
