@@ -73,7 +73,7 @@ object Url:
 
           val (pathStart, auth) =
             if value.after(colon).keep(2) == t"//" then
-              mitigate:
+              whereas:
                 case error@HostnameError(hostname, reason) =>
                   import error.diagnostics
                   UrlError(value, colon + 3, UrlError.Reason.BadHostname(hostname, reason))
@@ -82,7 +82,7 @@ object Url:
                   import error.diagnostics
                   UrlError(value, colon + 3, UrlError.Reason.BadIpv6(reason))
 
-              . within:
+              . mitigate:
                   val authEnd = safely:
                     value.where(c => c == '/' || c == '?' || c == '#', colon + 3)
 

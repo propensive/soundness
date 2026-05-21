@@ -32,6 +32,7 @@
                                                                                                   */
 package contingency
 
+import denominative.*
 import fulminate.*
 import proscenium.*
 import vacuous.*
@@ -49,4 +50,4 @@ object Tracking:
 
 class Tracking[accrual <: Exception, lambda[_], focus]
   ( val initial: accrual,
-    val lambda:  (Optional[focus], accrual) ?=> Exception ~> accrual )
+    val lambda:  (Optional[focus] aka "prior", accrual aka "accrual") ?=> Exception ~> accrual )

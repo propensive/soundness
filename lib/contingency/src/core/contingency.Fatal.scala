@@ -37,4 +37,4 @@ import rudiments.*
 
 trait Fatal extends Typeclass:
   def status(error: Self): Exit
-  def contramap[self2](lambda: self2 => Self): self2 is Fatal = error => status(lambda(error))
+  def contramap[self](lambda: self => Self): self is Fatal = error => status(lambda(error))

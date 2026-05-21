@@ -339,7 +339,7 @@ object Http:
         case Http.Status.Category.Successful => response.body.stream
 
         case _ =>
-          raise(HttpError(response.status, response.textHeaders)) yet response.body.stream
+          abort(HttpError(response.status, response.textHeaders))
 
     private[Http] def response(status: Status, headers: List[Header], body: Body): Response =
       new Response(1.1, status, headers, body)

@@ -44,7 +44,7 @@ import vacuous.*
 
 object Uuid extends Extractor[Text, Uuid]:
   def parse(text: Text): Uuid raises UuidError =
-    extract(text).or(raise(UuidError(text)) yet Uuid(0L, 0L))
+    extract(text).lest(UuidError(text))
 
   def extract(text: Text): Optional[Uuid] = safely:
     ju.UUID.fromString(text.s).nn.pipe: uuid =>

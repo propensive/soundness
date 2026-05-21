@@ -117,21 +117,21 @@ object internal:
         val bytes = text.cut(t".")
 
         if bytes.length == 4 then
-          mitigate:
+          whereas:
             case error@NumberError(text, _, _) =>
               given diagnostics: Diagnostics = error.diagnostics
               IpAddressError(Ipv4ByteNotNumeric(text))
 
-          . within:
+          . mitigate:
               bytes.map(Decodable.int.decoded(_)).pipe: bytes =>
                 for byte <- bytes do
                   if !(0 <= byte <= 255)
-                  then raise(IpAddressError(Ipv4ByteOutOfRange(byte))) yet 0.toByte
+                  then abort(IpAddressError(Ipv4ByteOutOfRange(byte)))
 
                 Ipv4(bytes(0).toByte, bytes(1).toByte, bytes(2).toByte, bytes(3).toByte)
 
         else
-          raise(IpAddressError(Ipv4WrongNumberOfGroups(bytes.length))) yet 0
+          abort(IpAddressError(Ipv4WrongNumberOfGroups(bytes.length)))
 
     object MacAddress:
       import MacAddressError.Reason.*
@@ -158,7 +158,7 @@ object internal:
             then raise(MacAddressError(WrongGroupLength(index, head.length)))
 
             val value = try Integer.parseInt(head.s, 16) catch case error: NumberFormatException =>
-              raise(MacAddressError(NotHex(index, head))) yet 0
+              abort(MacAddressError(NotHex(index, head)))
 
             recur(tail, index + 1, (acc << 8) + value)
 
@@ -186,7 +186,7 @@ object internal:
 
       def apply(value: Int): TcpPort raises PortError =
         if 1 <= value <= 65535 then value.asInstanceOf[TcpPort]
-        else raise(PortError()) yet unsafe(1)
+        else abort(PortError())
 
     object UdpPort:
       inline given underlying: Underlying[UdpPort, Int] = !!
@@ -200,7 +200,7 @@ object internal:
 
       def apply(value: Int): UdpPort raises PortError =
         if 1 <= value <= 65535 then value.asInstanceOf[UdpPort]
-        else raise(PortError()) yet unsafe(1)
+        else abort(PortError())
 
 
     extension (port: TcpPort | UdpPort)
@@ -304,11 +304,11 @@ object internal:
           val groups = whole.cut(t":")
 
           if groups.length != 8
-          then raise(IpAddressError(Ipv6WrongNumberOfGroups(groups.length))) yet zeroes
+          then abort(IpAddressError(Ipv6WrongNumberOfGroups(groups.length)))
           else groups.to(List)
 
         case _ =>
-          raise(IpAddressError(Ipv6MultipleDoubleColons)) yet zeroes
+          abort(IpAddressError(Ipv6MultipleDoubleColons))
 
       Ipv6(pack(groups.take(4).map(parseGroup)), pack(groups.drop(4).map(parseGroup)))
 

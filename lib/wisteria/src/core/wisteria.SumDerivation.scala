@@ -199,7 +199,7 @@ object SumDerivation:
         case _ =>
           inline if fallible
           then provide[Tactic[VariantError]]:
-            raise(VariantError[derivation](inputLabel)) yet Unset
+            abort(VariantError[derivation](inputLabel))
           else panic(m"Should be unreachable")
 
 
@@ -244,7 +244,7 @@ object SumDerivation:
 
         case _ =>
           inline if fallible
-          then provide[Tactic[VariantError]](raise(VariantError[derivation]("".tt)) yet Unset)
+          then provide[Tactic[VariantError]](abort(VariantError[derivation]("".tt)))
           else panic(m"Should be unreachable")
 
 

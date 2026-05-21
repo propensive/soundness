@@ -74,13 +74,12 @@ package strategies:
 def certify[error <: Exception: Tactic](): Unit = error.certify()
 
 
-def raise[success, exception <: Exception: Recoverable to success]
+def raise[exception <: Exception]
   ( error: Diagnostics ?=> exception )
   ( using tactic: Tactic[exception] )
-:   success =
+:   Unit =
 
   tactic.record(error)
-  exception.recover(error(using tactic.diagnostics))
 
 
 def abort[success, exception <: Exception: Tactic](error: Diagnostics ?=> exception): Nothing =
@@ -181,32 +180,21 @@ inline def focus[focus, result](using foci: Foci[focus])
   finally foci.supplement(foci.length - length, prior => transform(using prior.aka["prior"]))
 
 
-transparent inline def mitigate(inline block: Exception ~> Exception): Mitigation[?] =
-  ${contingency.internal.mitigate('block)}
-
-transparent inline def recover[result](inline block: Exception ~> result): Recovery[result, ?] =
-  ${contingency.internal.recover[result]('block)}
+inline def accrual[value](using value: value aka "accrual"): value = value()
 
 
 transparent inline def track[focus](using erased Void)[accrual <: Exception](accrual: accrual)
-  ( inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual )
+  ( inline block: (Optional[focus] aka "prior", accrual aka "accrual") ?=> Exception ~> accrual )
 :   Tracking[accrual, ?, focus] =
 
   ${contingency.internal.track[accrual, focus]('accrual, 'block)}
 
 
 transparent inline def validate[focus](using erased Void)[accrual](accrual: accrual)
-  ( inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual )
+  ( inline block: (Optional[focus] aka "prior", accrual aka "accrual") ?=> Exception ~> accrual )
 :   Any =
 
   ${contingency.internal.validate[accrual, focus]('accrual, 'block)}
-
-
-transparent inline def accrue[accrual <: Exception](accrual: accrual)[result]
-  ( inline block: (accrual: accrual) ?=> Exception ~> accrual )
-:   Any =
-
-  ${contingency.internal.accrue[accrual]('accrual, 'block)}
 
 
 extension [element](sequence: Iterable[element])

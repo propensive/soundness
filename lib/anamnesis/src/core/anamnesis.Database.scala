@@ -82,7 +82,7 @@ class Database(size: Int) extends Findable:
     . asInstanceOf[Ref of left in this.type]
 
   inline def ref[left](left: left): Ref of left in this.type raises DataError =
-    references.at(left).or(abort(DataError(DataError.Reason.UnknownReference)))
+    references.at(left).lest(DataError(DataError.Reason.UnknownReference))
     . asInstanceOf[Ref of left in this.type]
 
 

@@ -51,7 +51,7 @@ object Timezone:
   given decodable: Tactic[TimezoneError] => Timezone is Decodable in Text = name =>
     try jt.ZoneId.of(name.s) yet new Timezone(name)
     catch case _: jt.zone.ZoneRulesException =>
-      raise(TimezoneError(name)) yet new Timezone(ids.head)
+      abort(TimezoneError(name))
 
   given interpolable: Timezone is Interpolable:
     inline def interpolate[parts <: Tuple, origins <: Tuple]

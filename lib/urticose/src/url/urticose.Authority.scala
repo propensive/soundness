@@ -67,10 +67,10 @@ object Authority:
         case port: Int if port >= 0 && port <= 65535 => port
 
         case port: Int =>
-          raise(UrlError(value, offset, Expected(PortRange))) yet 0
+          abort(UrlError(value, offset, Expected(PortRange)))
 
         case _ =>
-          raise(UrlError(value, offset, Expected(Number))) yet 0
+          abort(UrlError(value, offset, Expected(Number)))
 
     def parseHostPort(hostPort: Text, base: Ordinal, userInfo: Optional[Text]): Authority =
       if hostPort.at(Prim) == '[' then
@@ -87,14 +87,12 @@ object Authority:
             else
               val errorOffset: Ordinal = base + afterClose.n0
 
-              raise(UrlError(value, errorOffset, Expected(More))) yet
-                Authority(ipv6, userInfo)
+              abort(UrlError(value, errorOffset, Expected(More)))
 
           case _ =>
             val errorOffset: Ordinal = base + (hostPort.limit.n0 - 1).max(0)
 
-            raise(UrlError(value, errorOffset, Expected(More))) yet
-              Authority(Ipv6(0L, 0L), userInfo)
+            abort(UrlError(value, errorOffset, Expected(More)))
       else
         safely(hostPort.where(_ == ':')).asMatchable match
           case Zerary(colon) =>

@@ -103,11 +103,11 @@ class ZipStream(stream: () => Stream[Data], filter: (Path on Zip) => Boolean):
           val ref: Path on Zip =
             val name = entry.getName().nn.tt
 
-            mitigate:
+            whereas:
               case PathError(_, _)    => ZipError(ZipError.Reason.InvalidName(name))
               case NameError(_, _, _) => ZipError(ZipError.Reason.InvalidName(name))
 
-            . within(name.decode[Path on Zip])
+            . mitigate(name.decode[Path on Zip])
 
           if !filter(ref) then recur() else
             def read(): Stream[Data] =

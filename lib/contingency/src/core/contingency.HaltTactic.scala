@@ -38,8 +38,7 @@ import scala.quoted.*
 
 import fulminate.*
 
-open class HaltTactic[error <: Error, success]()(using Quotes)
-extends Tactic[error]:
+open class HaltTactic[error <: Error, success]()(using Quotes) extends Tactic[error]:
   given diagnostics: Diagnostics = Diagnostics.omit
 
   def record(error: Diagnostics ?=> error): Unit = halt(error.labelled)

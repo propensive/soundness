@@ -59,7 +59,7 @@ object Classpath extends Root(t""):
     def length(text: Text): Int = 1
 
     def decode(text: Text): Classpath.type =
-      if text.starts(t"/") then Classpath else raise(PathError(_.InvalidRoot)) yet Classpath
+      if text.starts(t"/") then Classpath else abort(PathError(_.InvalidRoot))
 
     def encode(root: Classpath.type): Text = t""
 

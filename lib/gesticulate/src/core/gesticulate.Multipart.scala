@@ -154,7 +154,7 @@ object Multipart:
                 else key -> value
 
               case _ =>
-                raise(MultipartError(Reason.BadDisposition)) yet (t"", t"")
+                abort(MultipartError(Reason.BadDisposition))
 
           . to(Map)
 
@@ -164,7 +164,7 @@ object Multipart:
           case t"attachment" => Multipart.Disposition.Attachment
 
           case _ =>
-            raise(MultipartError(Reason.BadDisposition)) yet Multipart.Disposition.FormData
+            abort(MultipartError(Reason.BadDisposition))
 
         val filename = params.at(t"filename")
         val name = params.at(t"name")

@@ -38,6 +38,7 @@ import scala.compiletime.*
 import scala.quoted.*
 
 import anticipation.*
+import denominative.*
 import fulminate.*
 import gigantism.*
 import proscenium.*
@@ -156,27 +157,9 @@ object internal:
       case other                              => List(other)
 
 
-  def mitigate[errors <: Exception: Type](handler: Expr[Exception ~> errors])
-  :   Macro[Mitigation[?]] =
-
-    import quotes.reflect.*
-
-    val errors = mapping(handler.asTerm)
-    val tactics = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
-    val functionType = defn.FunctionClass(errors.size, true).typeRef
-
-    val typeLambda =
-      TypeLambda
-        ( List("result"),
-          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
-          typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)) )
-
-    typeLambda.asType.absolve match
-      case '[type typeLambda[_]; typeLambda] => '{Mitigation[typeLambda]($handler)}
-
-
   def track[accrual <: Exception: Type, focus: Type]
-    ( accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual] )
+    ( accrual: Expr[accrual],
+      handler: Expr[(Optional[focus] aka "prior", accrual aka "accrual") ?=> Exception ~> accrual] )
   :   Macro[Tracking[accrual, ?, focus]] =
 
     import quotes.reflect.*
@@ -195,12 +178,13 @@ object internal:
       case '[type typeLambda[_]; typeLambda] =>
         ' {
             Tracking[accrual, typeLambda, focus]
-              ( $accrual, (focus, accrual) ?=> $handler(using focus, accrual) )
+              ( $accrual, (priorFocus, acc) ?=> $handler(using priorFocus, acc) )
           }
 
 
   def validate[accrual: Type, focus: Type]
-    ( accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual] )
+    ( accrual: Expr[accrual],
+      handler: Expr[(Optional[focus] aka "prior", accrual aka "accrual") ?=> Exception ~> accrual] )
   :   Macro[Any] =
 
     import quotes.reflect.*
@@ -219,165 +203,8 @@ object internal:
       case '[type typeLambda[_]; typeLambda] =>
         ' {
             Validate[accrual, typeLambda, focus]
-              ( $accrual, (focus, accrual) ?=> $handler(using focus, accrual) )
+              ( $accrual, (priorFocus, acc) ?=> $handler(using priorFocus, acc) )
           }
-
-
-  def accrue[accrual <: Exception: Type]
-    ( accrual: Expr[accrual], handler: Expr[accrual ?=> Exception ~> accrual] )
-  :   Macro[Any] =
-
-    import quotes.reflect.*
-
-    val errors = mapping(handler.asTerm)
-    val tactics = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
-    val functionType = defn.FunctionClass(errors.size, true).typeRef
-
-    val typeLambda =
-      TypeLambda
-        ( List("result"),
-          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
-          typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)) )
-
-    typeLambda.asType.absolve match
-      case '[type typeLambda[_]; typeLambda] =>
-        '{Accrue[accrual, typeLambda]($accrual, accrual ?=> $handler(using accrual))}
-
-
-  def recover[result: Type](handler: Expr[Exception ~> result]): Macro[Recovery[result, ?]] =
-    import quotes.reflect.*
-
-    val errors = mapping(handler.asTerm)
-    val tactics = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
-    val functionType = defn.FunctionClass(errors.size, true).typeRef
-
-    val typeLambda =
-      TypeLambda
-        ( List("result"),
-          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
-          typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)) )
-
-    typeLambda.asType.absolve match
-      case '[type typeLambda[_]; typeLambda] => '{Recovery[result, typeLambda]($handler)}
-
-
-  def mitigateWithin[context[_]: Type, result: Type]
-    ( mitigate: Expr[Mitigation[context]], lambda: Expr[context[result]] )
-  :   Macro[result] =
-
-    import quotes.reflect.*
-
-    val tactics = unwrap(mitigate.asTerm) match
-      case Apply(_, List(Inlined(_, _, matches))) =>
-        val partialFunction = matches.asExprOf[Exception ~> Exception]
-
-        mapping(partialFunction.asTerm).values.map: errorType =>
-          errorType.typeRef.asType.absolve match
-            case '[type errorType <: Exception; errorType] =>
-              Expr.summon[Tactic[errorType]] match
-                case Some(errorTactic) =>
-                  '{$errorTactic.contramap($partialFunction(_).asInstanceOf[errorType])}.asTerm
-
-                case None =>
-                  halt
-                    ( 602,
-                      m"There is no available handler for ${TypeRepr.of[errorType].show}" )
-
-      case _ =>
-        halt(648, m"argument to `mitigate` should be a partial function implemented as match cases")
-
-    val method = TypeRepr.of[context[result]].typeSymbol.declaredMethod("apply").head
-    lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
-
-
-  def recoverWithin[context[_]: Type, result: Type]
-    ( recovery: Expr[Recovery[?, context]], lambda: Expr[context[result]] )
-  :   Macro[result] =
-
-    type ContextResult = context[result]
-
-    ' {
-        boundary[result]: label ?=>
-          val tactic: Tactic[Break[result]] = EscapeTactic(label)
-
-          $ {
-              import quotes.reflect.*
-
-              val partialFunction = unwrap(recovery.asTerm) match
-                case Apply(_, List(Inlined(_, _, matches))) => matches
-
-                case _ =>
-                  halt
-                    ( 29,
-                      m"""
-                        argument to `recover` should be a partial function implemented as match
-                        cases
-                      """ )
-
-              val pfExpr = partialFunction.asExprOf[Exception ~> result]
-
-              val tactics = mapping(partialFunction).map: (_, _) =>
-                ' {
-                    tactic.contramap: error => Break[result]($pfExpr(error))
-                  }
-
-                . asTerm
-
-              val method = TypeRepr.of[ContextResult].typeSymbol.declaredMethod("apply").head
-              lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
-            }
-      }
-
-
-  def accrueWithin[accrual <: Exception: Type, context[_]: Type, result: Type]
-    ( accrue:      Expr[Accrue[accrual, context]],
-      lambda:      Expr[context[result]],
-      tactic:      Expr[Tactic[accrual]],
-      diagnostics: Expr[Diagnostics] )
-  :   Macro[result] =
-
-    ' {
-        val ref: juca.AtomicReference[accrual] = juca.AtomicReference(null)
-
-        val result = boundary[Option[result]]: label ?=>
-          $ {
-              import quotes.reflect.*
-
-              val cases = unwrap(accrue.asTerm) match
-                case Apply(_, List(_, Block(List(DefDef(_, _, _, Some(block))), _))) =>
-                  mapping(unwrap(block))
-
-                case other =>
-                  halt
-                    ( 114,
-                      m"""
-                        argument to `accrue` should be a partial function implemented as match cases
-                      """ )
-
-              val tactics = cases.map: (_, _) =>
-                '{AccrueTactic(label, ref, $accrue.initial)($accrue.lambda)(using $diagnostics)}
-                . asTerm
-
-              val contextTypeRepr = TypeRepr.of[context[result]]
-              val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
-              val term = lambda.asTerm.select(method).appliedToArgs(tactics.to(List))
-              val expr = term.asExprOf[result]
-
-              '{Some($expr)}
-            }
-
-        result match
-          case None =>
-            $tactic.abort:
-              ref.get() match
-                case null  => $accrue.initial
-                case error => error
-
-          case Some(value) =>
-            ref.get() match
-              case null        => value
-              case error       => $tactic.abort(error)
-      }
 
 
   def trackWithin[accrual <: Exception: Type, context[_]: Type, result: Type, focus: Type]
@@ -417,11 +244,17 @@ object internal:
             }
 
         result match
-          case None => $tactic.abort(foci.fold[accrual]($track.initial)($track.lambda(using _, _)))
+          case None =>
+            $tactic.abort:
+              foci.fold[accrual]($track.initial): (priorFocus, acc) =>
+                $track.lambda(using priorFocus.aka["prior"], acc.aka["accrual"])
 
           case Some(value) =>
             if foci.success then value
-            else $tactic.abort(foci.fold[accrual]($track.initial)($track.lambda(using _, _)))
+            else
+              $tactic.abort:
+                foci.fold[accrual]($track.initial): (priorFocus, acc) =>
+                  $track.lambda(using priorFocus.aka["prior"], acc.aka["accrual"])
       }
 
 
@@ -460,6 +293,156 @@ object internal:
               term.asExpr
             }
 
-        foci.fold[accrual]($validate.initial)($validate.lambda(using _, _))
+        foci.fold[accrual]($validate.initial): (priorFocus, acc) =>
+          $validate.lambda(using priorFocus.aka["prior"], acc.aka["accrual"])
 
+      }
+
+
+  /** Macro for `whereas { case … }` — analyses the handler and emits a
+   *  `Whereas[lambda]` wrapping the partial function. */
+  def whereas(handler: Expr[PartialFunction[Exception, Any]])
+    (using Quotes)
+  :   Expr[Whereas[?]] =
+
+    import quotes.reflect.*
+
+    val errors = mapping[Exception](handler.asTerm)
+    val tactics = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
+    val functionType = defn.FunctionClass(errors.size, true).typeRef
+
+    val typeLambda =
+      TypeLambda
+        ( List("result"),
+          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+          typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)) )
+
+    typeLambda.asType.absolve match
+      case '[type typeLambda[_]; typeLambda] =>
+        '{Whereas[typeLambda]($handler)}
+
+
+  /** Macro for `whereas { … }.mitigate { body }`. Supplies a contramap'd
+   *  `Tactic[E_i]` for each error type the handler covers, explicitly
+   *  binding the body's per-error context parameters rather than relying on
+   *  implicit search. */
+  def mitigateBody[context[_]: Type, result: Type]
+    (w: Expr[Whereas[context]], body: Expr[context[result]])
+    (using Quotes)
+  :   Expr[result] =
+
+    import quotes.reflect.*
+
+    val tactics = unwrap(w.asTerm) match
+      case Apply(_, List(Inlined(_, _, matches))) =>
+        val partialFunction = matches.asExprOf[PartialFunction[Exception, Any]]
+
+        mapping[Exception](matches).values.map: errorType =>
+          errorType.typeRef.asType.absolve match
+            case '[type errorType <: Exception; errorType] =>
+              Expr.summon[Tactic[errorType]] match
+                case Some(errorTactic) =>
+                  '{$errorTactic.contramap($partialFunction(_).asInstanceOf[errorType])}.asTerm
+
+                case None =>
+                  halt
+                    ( 602,
+                      m"There is no available handler for ${TypeRepr.of[errorType].show}" )
+
+      case _ =>
+        halt(648, m"argument to `whereas` should be a partial function implemented as match cases")
+
+    val method = TypeRepr.of[context[result]].typeSymbol.declaredMethod("apply").head
+    body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
+
+
+  /** Macro for `whereas { … }.recover { body }`. Wraps `body` in a
+   *  `boundary` of the result type. Each per-error tactic supplied to body
+   *  is a `Whereas.EscapeTactic` that, on record, contramaps the raised error
+   *  through the handler to obtain the recovered result, then breaks the
+   *  boundary with it. */
+  def recoverBody[context[_]: Type, result: Type]
+    (w: Expr[Whereas[context]], body: Expr[context[result]])
+    (using Quotes)
+  :   Expr[result] =
+
+    type ContextResult = context[result]
+
+    ' {
+        scala.util.boundary[result]: label ?=>
+          val tactic: Tactic[Whereas.Escape[result]] = Whereas.EscapeTactic(label)
+          $ {
+              import quotes.reflect.*
+
+              val partialFunction = unwrap(w.asTerm) match
+                case Apply(_, List(Inlined(_, _, matches))) => matches
+
+                case _ =>
+                  halt
+                    ( 29,
+                      m"""
+                        argument to `whereas` should be a partial function implemented as match
+                        cases
+                      """ )
+
+              val pfExpr = partialFunction.asExprOf[PartialFunction[Exception, Any]]
+
+              val tactics = mapping[Exception](partialFunction).map: (_, _) =>
+                ' {
+                    tactic.contramap: error =>
+                      Whereas.Escape[result]($pfExpr(error).asInstanceOf[result])
+                  }
+
+                . asTerm
+
+              val method = TypeRepr.of[ContextResult].typeSymbol.declaredMethod("apply").head
+              body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
+            }
+      }
+
+
+  /** Macro for `whereas { … }.accrue(initial)(combine) { body }`. Each
+   *  per-error tactic supplied to body is the same Whereas.AccrueTactic; it
+   *  records raised errors via `combine`. When the body completes (or throws
+   *  after accumulation), accumulated errors are forwarded to the outer
+   *  tactic via `record`. */
+  def accrueBody[accrual <: Exception: Type, context[_]: Type, result: Type]
+    ( w:           Expr[Whereas[context]],
+      initial:     Expr[accrual],
+      combine:     Expr[(accrual, Exception) => accrual],
+      body:        Expr[context[result]],
+      outer:       Expr[Tactic[accrual]],
+      diagnostics: Expr[Diagnostics] )
+    (using Quotes)
+  :   Expr[result] =
+
+    import quotes.reflect.*
+
+    val cases = unwrap(w.asTerm) match
+      case Apply(_, List(Inlined(_, _, matches))) =>
+        mapping[Exception](matches)
+
+      case _ =>
+        halt(114, m"argument to `whereas` should be a partial function implemented as match cases")
+
+    ' {
+        val acc: Whereas.AccrueTactic[Exception, accrual] =
+          Whereas.AccrueTactic[Exception, accrual]($initial, $combine)(using $diagnostics)
+
+        val outcome: Either[accrual, result] =
+          try Right($ {
+            val tactics = cases.map: (_, _) =>
+              '{acc}.asTerm
+
+            val contextTypeRepr = TypeRepr.of[context[result]]
+            val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
+            body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
+          }) catch case _: Exception => Left(acc.accumulated)
+
+        outcome match
+          case Right(value) if !acc.changed => value
+          case _                            =>
+            $outer.record((_: Diagnostics) ?=> acc.accumulated)
+            import scala.unsafeExceptions.canThrowAny
+            throw acc.accumulated
       }

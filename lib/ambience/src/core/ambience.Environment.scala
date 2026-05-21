@@ -48,7 +48,7 @@ object Environment extends Dynamic:
   :   variable raises EnvironmentError =
 
     environment.variable(variable).let(reader.read).or:
-      raise(EnvironmentError(variable)) yet reader.read("".tt)
+      abort(EnvironmentError(variable))
 
 
   inline def selectDynamic[variable](key: String)
@@ -58,7 +58,7 @@ object Environment extends Dynamic:
   :   variable =
 
     environment.variable(reader.defaultName).let(reader.read(_)).or:
-      raise(EnvironmentError(reader.defaultName)) yet reader.read(Text(""))
+      abort(EnvironmentError(reader.defaultName))
 
 trait Environment extends Findable:
   def variable(name: Text): Optional[Text]

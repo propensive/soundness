@@ -36,8 +36,7 @@ import language.experimental.pureFunctions
 
 import fulminate.*
 
-class ThrowTactic[error <: Exception, success]()(using error: CanThrow[error])
-extends Tactic[error]:
+class ThrowTactic[error <: Exception, success]()(using CanThrow[error]) extends Tactic[error]:
   def diagnostics: Diagnostics = Diagnostics.capture
   def record(error: Diagnostics ?=> error): Unit = throw error(using diagnostics)
   def abort(error: Diagnostics ?=> error): Nothing = throw error(using diagnostics)

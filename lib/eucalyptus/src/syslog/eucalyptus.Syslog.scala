@@ -45,11 +45,11 @@ object Syslog:
   given writable: Monitor => Syslog is Writable by Text = (syslog, stream) =>
     import workingDirectories.system
 
-    recover:
+    whereas:
       case StreamError(_)     => ()
       case ExecError(_, _, _) => ()
 
-    . within:
+    . recover:
         syslog.tag match
           case tag: Text => mute[ExecEvent](stream.writeTo(sh"logger -t $tag".fork[Unit]()))
           case _         => mute[ExecEvent](stream.writeTo(sh"logger".fork[Unit]()))

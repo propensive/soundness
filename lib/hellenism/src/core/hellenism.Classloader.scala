@@ -68,4 +68,4 @@ class Classloader(val java: ClassLoader) extends Findable:
     Optional(java.getResourceAsStream(path.s)).let(_.readAllBytes().nn.immutable(using Unsafe))
 
   private[hellenism] def inputStream(path: Text)(using Tactic[ClasspathError]): ji.InputStream =
-    Optional(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))
+    Optional(java.getResourceAsStream(path.s)).lest(ClasspathError(path))

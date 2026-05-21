@@ -168,7 +168,7 @@ object internal:
           builder.result()
 
       case other =>
-        raise(PojoError()) yet factory.newBuilder.result()
+        abort(PojoError())
 
 
     extension (pojo: Pojo)

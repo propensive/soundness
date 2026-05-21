@@ -71,7 +71,7 @@ package charEncoders:
 
 package textSanitizers:
   given strict: Tactic[CharDecodeError] => TextSanitizer = (position, encoding) =>
-    raise(CharDecodeError(position, encoding)) yet '?'
+    abort(CharDecodeError(position, encoding))
 
   given skip: TextSanitizer = (position, encoding) => Unset
   given substitute: TextSanitizer = (position, encoding) => '?'
