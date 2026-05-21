@@ -400,3 +400,11 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           test(m"fish incomplete suggestion emits LCP duplicate"):
             sh"$tool '{completions}' fish 3 0 /dev/null -- abcd tree --at ".exec[Text]()
           .check(_.cut(t"\n").count(_.starts(t"src/")) >= 2)
+
+          // Regression check for #1109: with focus0 = 0 and position0 = 0 the
+          // completions executive previously hit a `.get` on an empty Option in
+          // `Completion.focusText` and dumped the stack trace to stdout (which
+          // fish then displayed as completion candidates).
+          test(m"fish focus=0 does not throw NoSuchElementException"):
+            sh"$tool '{completions}' fish 0 0 /dev/null -- abcd".exec[Text]()
+          .check(!_.contains(t"NoSuchElementException"))

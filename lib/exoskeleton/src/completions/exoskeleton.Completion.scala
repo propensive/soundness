@@ -142,7 +142,8 @@ extends Cli:
         List(Suggestion(Flag.serialize(flag.name), flag.description, aliases =
           flag.aliases.map(Flag.serialize(_))))
 
-  def focusText: Text = arguments.find(_.position == currentArgument).get.value
+  def focusText: Text =
+    arguments.find(_.position == currentArgument).fold(t"")(_.value)
 
   def serialize: List[Text] =
     val items0 =
