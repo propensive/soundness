@@ -51,6 +51,7 @@ import panopticon.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import serpentine.*
 import spectacular.*
 import symbolism.*
 import turbulence.*
@@ -111,7 +112,13 @@ trait Json2:
 
             build: [field] =>
               context =>
-                focus(prior.or(JsonPointer()) / label):
+                focus({
+                  val base = prior.or(JsonPointer())
+                  JsonPointer
+                    ( base.url,
+                      Path[JsonPointer, JsonPointer.type, Tuple]
+                        ( base.path.root, base.path.descent :+ label ) )
+                }):
                   values.get(label.s) match
                     case Some(value) => context.decoded(new Json(value))
                     case None        => default.or(context.decoded(new Json(Json.Ast(Unset))))
@@ -138,11 +145,18 @@ trait Json2:
           val values: scm.ArrayBuffer[Json.Ast] = scm.ArrayBuffer()
 
           fields(value): [field] =>
-            field => focus(prior.or(JsonPointer()) / label):
-              contextual.encode(field).root.tap: encoded =>
-                if !encoded.isAbsent then
-                  labels += label.s
-                  values += encoded
+            field =>
+              focus({
+                val base = prior.or(JsonPointer())
+                JsonPointer
+                  ( base.url,
+                    Path[JsonPointer, JsonPointer.type, Tuple]
+                      ( base.path.root, base.path.descent :+ label ) )
+              }):
+                contextual.encode(field).root.tap: encoded =>
+                  if !encoded.isAbsent then
+                    labels += label.s
+                    values += encoded
 
           Json.ast
             ( Json.Ast.obj
@@ -469,7 +483,13 @@ object Json extends Json2, Dynamic:
       val builder = factory.newBuilder
 
       value.root.array.each: json =>
-        focus(prior.or(JsonPointer()) / ordinal):
+        focus({
+          val base = prior.or(JsonPointer())
+          JsonPointer
+            ( base.url,
+              Path[JsonPointer, JsonPointer.type, Tuple]
+                ( base.path.root, base.path.descent :+ ordinal.n0.toString.tt ) )
+        }):
           builder += decodable.decoded(Json.ast(json))
 
       builder.result()

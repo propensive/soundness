@@ -71,7 +71,9 @@ object JsonPointer extends Root(""):
     val separator: Text = "/"
 
   given JsonPointer is Encodable in Text = pointer =>
-    t"${pointer.url.let(_.encode).or(t"")}#${pointer.path}"
+    val url = pointer.url.let(_.encode).or(t"")
+    if pointer.path.descent.length == 0 then t"$url#"
+    else t"$url#/${pointer.path}"
 
   given divisible: JsonPointer is Divisible by Text to JsonPointer =
     (pointer, segment) => JsonPointer(pointer.url, pointer.path / segment)

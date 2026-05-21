@@ -82,7 +82,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
       test(m"Pointers identify the missing fields"):
         val json = t"""{"name": "Alice"}""".read[Json]
         validateJson(json)(_.as[VPerson]).items.map(_(0).s).to(Set)
-      . assert(_ == Set("#age", "#email"))
+      . assert(_ == Set("#/age", "#/email"))
 
       test(m"Each missing-field error has reason Absent"):
         val json = t"""{"name": "Alice"}""".read[Json]
@@ -104,7 +104,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
       test(m"Pointers identify the wrong-type fields"):
         val json = t"""{"name": 42, "age": "thirty", "email": "x@y"}""".read[Json]
         validateJson(json)(_.as[VPerson]).items.map(_(0).s).to(Set)
-      . assert(_ == Set("#name", "#age"))
+      . assert(_ == Set("#/name", "#/age"))
 
       test(m"Wrong-type errors have reason NotType"):
         val json = t"""{"name": 42, "age": "thirty", "email": "x@y"}""".read[Json]
@@ -123,35 +123,26 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
       test(m"One wrong-type + two missing: three errors at the right pointers"):
         val json = t"""{"name": 42}""".read[Json]
         validateJson(json)(_.as[VPerson]).items.map(_(0).s).to(Set)
-      . assert(_ == Set("#name", "#age", "#email"))
+      . assert(_ == Set("#/name", "#/age", "#/email"))
 
-    // The encoder for a nested JsonPointer currently emits the segments
-    // leaf-first rather than root-first (e.g. "#city/address" rather than
-    // "#address/city"). This appears to be a pre-existing pre-encoding bug
-    // in jacinta's DecodableDerivation: nested `focus(prior / label)`
-    // supplements run leaf-first, and `prior / "outer"` appends "outer"
-    // at the leaf instead of prepending it. The tracking machinery itself
-    // works — every nested error is accrued with a pointer; the segment
-    // order is just reversed. The assertions below match the current
-    // behaviour.
     suite(m"Nested case-class errors"):
       test(m"Nested object's missing field reports both segments"):
         val json = t"""{"person": {"name": "X", "age": 1, "email": "y@z"},
                         "address": {"street": "S"}}""".read[Json]
         validateJson(json)(_.as[VContact]).items.map(_(0).s).to(Set)
-      . assert(_ == Set("#city/address", "#zip/address"))
+      . assert(_ == Set("#/address/city", "#/address/zip"))
 
       test(m"Nested wrong-type field reports both segments"):
         val json = t"""{"person": {"name": "C", "age": 25, "email": "c@x"},
                         "address": {"street": "X", "city": 999, "zip": "Z"}}""".read[Json]
         validateJson(json)(_.as[VContact]).items.map(_(0).s).to(Set)
-      . assert(_ == Set("#city/address"))
+      . assert(_ == Set("#/address/city"))
 
       test(m"Mixed errors at different depths accrue together"):
         val json = t"""{"person": {"name": "D"},
                         "address": {"street": "X", "city": "Y", "zip": "Z"}}""".read[Json]
         validateJson(json)(_.as[VContact]).items.map(_(0).s).to(Set)
-      . assert(_ == Set("#age/person", "#email/person"))
+      . assert(_ == Set("#/person/age", "#/person/email"))
 
       test(m"Errors accumulate across both nested objects"):
         val json = t"""{"person": {"name": 1, "age": "x", "email": false},
