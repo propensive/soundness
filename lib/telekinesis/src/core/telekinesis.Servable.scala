@@ -63,8 +63,8 @@ object Servable:
       Http.Body.Streaming(response.generic(value)(1))
 
 
-  given data: Data is Servable = Servable[Data](_ => media"application/octet-stream"):
-    Http.Body.Fixed(_)
+  given data: Data is Servable =
+    Servable[Data](_ => media"application/octet-stream")(Http.Body.Fixed(_))
 
   inline given media: [media: Media] => media is Servable = compiletime.summonFrom:
     case encodable: (`media` is Encodable in Data) =>

@@ -769,7 +769,7 @@ class Report(using Environment)(using palette: TestPalette):
           val were = if active.size == 1 then e"was" else e"were"
 
           val tests =
-            active.to(List).map { test => e"$Bold(${test.name})" }
+            active.to(List).map: test => e"$Bold(${test.name})"
             . join(e"", e", ", e" and ", e"")
 
           e"A fatal error occurred while $tests $were running."

@@ -59,7 +59,7 @@ object ScanAll:
       case None    => all.toList
 
     filtered.foreach: v =>
-      val short = v.file.split("/lib/").nn match
+      val short = v.file.split("/lib/").nn.map(_.nn) match
         case parts if parts.length >= 2 => "lib/"+parts(1)
         case _                          => v.file
 

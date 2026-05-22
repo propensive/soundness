@@ -55,7 +55,7 @@ object InlineParser:
   // batched as plain text.
   private val Specials: Array[Boolean] =
     val arr = new Array[Boolean](128)
-    "\\&`<\n*_[!]".foreach{ c => arr(c.toInt) = true }
+    "\\&`<\n*_[!]".foreach: c => arr(c.toInt) = true
     arr
 
   private inline def isSpecial(inline c: Char): Boolean =
@@ -290,7 +290,7 @@ object InlineParser:
           list.append(LinkData(lm.dest, lm.title, children.toList))
           // Deactivate any earlier `[` link markers (no nested links). Image
           // markers stay active — images can contain links.
-          brackets.foreach{ b => if !b.isImage then b.active = false }
+          brackets.foreach: b => if !b.isImage then b.active = false
 
         lm.end
 

@@ -560,7 +560,8 @@ object internal:
         val sb = new StringBuilder
         serializeTree(m, 0, sb)
         '{frontier.Sentinel.missing[target](${Expr(text)}, ${Expr(sb.toString)})}
-      else report.errorAndAbort(text)
+      else
+        report.errorAndAbort(text)
 
     seek(TypeRepr.of[target], Nil, 1).absolve match
       case Found(_, expr) =>

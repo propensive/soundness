@@ -51,7 +51,7 @@ object settings:
     "-preview",
     //"-explain",
     "-deprecation",
-    "-Wunused:imports,privates",
+    "-Wunused:imports",
     "-Wimplausible-patterns",
     // "-Wsafe-init",
     "-Xmax-inlines", "32",
@@ -1034,4 +1034,3 @@ val allLibraries: Seq[Library] = Seq(
   ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, wisteria, xylophone,
   yossarian, ypsiloid, zephyrine, zeppelin, ziggurat
 )
-

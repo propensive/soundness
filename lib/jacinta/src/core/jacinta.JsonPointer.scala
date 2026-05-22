@@ -72,6 +72,7 @@ object JsonPointer extends Root(""):
 
   given JsonPointer is Encodable in Text = pointer =>
     val url = pointer.url.let(_.encode).or(t"")
+
     if pointer.path.descent.length == 0 then t"$url#"
     else t"$url#/${pointer.path}"
 

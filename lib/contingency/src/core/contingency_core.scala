@@ -200,7 +200,7 @@ transparent inline def validate[focus](using erased Void)[accrual](accrual: accr
 extension [element](sequence: Iterable[element])
   transparent inline def survive[result](using erased Void)[error <: Exception]
     ( lambda
-      : (OptionalTactic[error, result], Diagnostics, CanThrow[Exception]) ?=> element => result )
+    : (OptionalTactic[error, result], Diagnostics, CanThrow[Exception]) ?=> element => result )
   :   Iterable[result] =
 
     sequence.map { element => safely(lambda(element)) }.compact
@@ -213,7 +213,7 @@ extension [value](optional: Optional[value])
 
   def dare[error <: Exception](using erased Void)[success]
     ( block
-      : (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=> value => success )
+    : (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=> value => success )
   :   Optional[success] =
 
     try boundary: label ?=>

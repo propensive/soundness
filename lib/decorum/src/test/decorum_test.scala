@@ -717,3 +717,31 @@ object Tests extends Suite(m"Decorum Tests"):
          ( "val r =\n  for x  <- List(1)\n         if x > 0\n      y  <- List(2)"
             +"\n  yield x + y\n" )
       . assert(r => !r.contains("473.1"))
+
+      test(m"Inline term quote with inside space is rejected"):
+        rules("val q = '{ x }\n")
+      . assert(_.contains("473.7"))
+
+      test(m"Inline term splice with inside space is rejected"):
+        rules("val s = ${ x }\n")
+      . assert(_.contains("473.7"))
+
+      test(m"Inline type quote with inside space is rejected"):
+        rules("val t = '[ Int ]\n")
+      . assert(_.contains("473.7"))
+
+      test(m"Tight inline quote is accepted"):
+        rules("val q = '{x}\n")
+      . assert(r => !r.contains("473.7"))
+
+      test(m"Tight inline splice is accepted"):
+        rules("val s = ${x}\n")
+      . assert(r => !r.contains("473.7"))
+
+      test(m"Tight inline type quote is accepted"):
+        rules("val t = '[Int]\n")
+      . assert(r => !r.contains("473.7"))
+
+      test(m"Multi-line quote opener is not flagged as inline"):
+        rules("val q =\n  ' {\n    body\n  }\n")
+      . assert(r => !r.contains("473.7"))

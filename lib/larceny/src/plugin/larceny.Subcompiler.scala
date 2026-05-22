@@ -94,7 +94,7 @@ object Subcompiler:
 
             position = found
 
-          case _ =>
+          case null =>
             while position.outer != NoSourcePosition do position = position.outer
 
         val content = context.compilationUnit.source.content
