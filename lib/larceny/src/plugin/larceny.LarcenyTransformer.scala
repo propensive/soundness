@@ -41,7 +41,7 @@ import java.util.jar.JarFile
 import scala.collection.mutable as scm
 import scala.util.control.NonFatal
 
-import dotty.tools.*, dotc.*, util.*, ast.Trees.*, ast.tpd, core.*
+import dotty.tools.*, dotc.*, util.*, ast.Trees.*, core.*
 import Constants.Constant, Contexts.*, Decorators.*, StdNames.*
 import plugins.*
 
@@ -90,17 +90,29 @@ object LarcenyTransformer:
     catch case NonFatal(_) => false
 
 class LarcenyTransformer() extends PluginPhase:
-  import tpd.*
-
   val phaseName = "errorcap"
   override val runsAfter = Set("parser")
   override val runsBefore = Set("typer")
 
-  override def transformUnit(tree: Tree)(using context: Context): Tree =
+  // The default MiniPhase.run wraps this phase in a singleton MegaPhase whose run does
+  // `tpdTree = atPhase(this.next)(transformUnit(tpdTree))`. At pretyper position tpdTree
+  // is EmptyTree, but the MegaPhase machinery still walks it with the per-node
+  // transformXxx pipeline under a typer-phase context, and re-assigns the result. In
+  // combination with macro expansion in a class body, that interferes with the namer and
+  // produces spurious "X is already defined as class X" errors on code that doesn't even
+  // call demilitarize. We do all our work in runOn instead — see issue #452.
+  override def run(using Context): Unit = ()
+
+  override def runOn(units: List[CompilationUnit])(using Context): List[CompilationUnit] =
+    val processed = super.runOn(units)
+    processed.foreach(transformCompilationUnit)
+    processed
+
+  private def transformCompilationUnit(unit: CompilationUnit)(using Context): Unit =
     import ast.untpd.*
 
-    val classpath = context.settings.classpath.value
-    val language = context.settings.language.value
+    val classpath = ctx.settings.classpath.value
+    val language = ctx.settings.language.value
 
     object collector extends UntypedTreeMap:
       val regions: scm.ListBuffer[(Int, Int)] = scm.ListBuffer()
@@ -113,9 +125,9 @@ class LarcenyTransformer() extends PluginPhase:
         case _ =>
           super.transform(tree)
 
-    collector.transform(context.compilationUnit.untpdTree)
+    collector.transform(unit.untpdTree)
     val regions = collector.regions.to(Set)
-    val source = String(context.compilationUnit.source.content)
+    val source = String(unit.source.content)
 
     // Propagate the outer compilation's `-Xplugin` flags to the
     // sub-compilation, except for larceny itself — otherwise every
@@ -124,7 +136,7 @@ class LarcenyTransformer() extends PluginPhase:
     // `plugin.properties` manifest entry of each plugin path (jar or
     // directory) and matching `pluginClass=larceny.LarcenyPlugin`.
     val plugins: List[String] =
-      context.settings.plugin.value.filterNot(LarcenyTransformer.isLarceny)
+      ctx.settings.plugin.value.filterNot(LarcenyTransformer.isLarceny)
 
     val errors: List[CompileError] =
       Subcompiler.compile(language, classpath, source, regions, plugins)
@@ -142,7 +154,7 @@ class LarcenyTransformer() extends PluginPhase:
                       "Subcompiler".toTermName ),
                   "compile".toTermName ),
               List
-                ( Literal(Constant(javaClasspath+":"+context.settings.classpath.value)),
+                ( Literal(Constant(javaClasspath+":"+ctx.settings.classpath.value)),
                   Literal(Constant(source2)) ) )
 
         case Apply(Ident(name), List(content)) if name.toString == "demilitarize" =>
@@ -170,5 +182,4 @@ class LarcenyTransformer() extends PluginPhase:
         case _ =>
           super.transform(tree)
 
-    context.compilationUnit.untpdTree = transformer.transform(context.compilationUnit.untpdTree)
-    super.transformUnit(tree)
+    unit.untpdTree = transformer.transform(unit.untpdTree)
