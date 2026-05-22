@@ -808,7 +808,9 @@ object prepositional extends Library:
   object test extends Tests(core)
 
 object proscenium extends Library:
-  object core extends Component
+  object core extends Component:
+    override def scalacOptions = Task:
+      super.scalacOptions() :+ "-Yno-predef"
   object test extends Tests(core)
 
 object probably extends Library:
