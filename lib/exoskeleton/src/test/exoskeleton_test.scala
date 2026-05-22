@@ -383,14 +383,12 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             sh"$tool '{completions}' fish 1 0 /dev/null -- abcd ''".exec[Text]()
           .check(_.contains(t"alpha"))
 
-          // Regression check for #1086 part (1): mid-word completion in fish. With the
-          // buggy off-by-one focus calculation, `gentoo` was dropped from the suggestions
-          // and the executive fell back to flag-only output (which here is empty, since
-          // `distribution` has no flags). Position arguments mimic fish's
-          // `count (commandline --tokenize --cut-at-cursor)` (3 — includes partial token
-          // at cursor) and `commandline -C -t` (1 — non-zero indicates mid-word).
+          // Regression check for #1086 / #1116: mid-word completion in fish. Position
+          // arguments match what fish 4.6 actually sends: `count (commandline --tokenize
+          // --cut-at-cursor)` returns 2 (fish cuts *before* the partial — the partial is
+          // not counted) and `commandline -C -t` returns 1 (non-zero indicates mid-word).
           test(m"fish mid-word completion suggests focused subcommand"):
-            sh"$tool '{completions}' fish 3 1 /dev/null -- abcd distribution g".exec[Text]()
+            sh"$tool '{completions}' fish 2 1 /dev/null -- abcd distribution g".exec[Text]()
           .check(_.contains(t"gentoo"))
 
           // Regression check for #1086 part (2): `Suggestion.incomplete` on fish branch.
