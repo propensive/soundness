@@ -43,7 +43,7 @@ export Predef
     shortWrapper, byteWrapper, valueOf, doubleWrapper, floatWrapper, locally, is,
     refArrayOps, genericArrayOps, byteArrayOps, shortArrayOps, intArrayOps, longArrayOps,
     floatArrayOps, doubleArrayOps, charArrayOps, booleanArrayOps, unitArrayOps,
-    augmentString, `???`, println, print, classOf }
+    augmentString, `???`, println, print, classOf, assert }
 
 export scala.util.control.NonFatal
 

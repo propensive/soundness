@@ -913,8 +913,6 @@ object kaleidoscope extends Library:
 
 object larceny extends Library:
   object plugin extends Component():
-    override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object test extends Tests:
@@ -1230,8 +1228,6 @@ object ulysses extends Library:
 
 object umbrageous extends Library:
   object plugin extends Component():
-    override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object test extends Tests(plugin)
