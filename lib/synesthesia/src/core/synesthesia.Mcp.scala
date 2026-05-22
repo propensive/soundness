@@ -376,9 +376,11 @@ object Mcp:
   object Reference:
     import dynamicJsonAccess.enabled
 
+    private val typeTag = Json.discriminatedUnion[Reference](t"type")
+
     given encodable: Reference is Encodable in Json =
-      case ref: PromptReference           => unsafely(ref.json.`type` = "ref/prompt")
-      case ref: ResourceTemplateReference => unsafely(ref.json.`type` = "ref/resource")
+      case ref: PromptReference           => typeTag.rewrite(t"ref/prompt", ref.json)
+      case ref: ResourceTemplateReference => typeTag.rewrite(t"ref/resource", ref.json)
 
     given decodable: Tactic[JsonError] => Reference is Decodable in Json = json =>
       json.`type`.as[Text] match
@@ -445,12 +447,14 @@ object Mcp:
   object SamplingMessageContentBlock:
     import dynamicJsonAccess.enabled
 
+    private val typeTag = Json.discriminatedUnion[SamplingMessageContentBlock](t"type")
+
     given encodable: SamplingMessageContentBlock is Encodable in Json =
-      case content: TextContent       => unsafely(content.json.`type` = "text")
-      case content: ImageContent      => unsafely(content.json.`type` = "image")
-      case content: AudioContent      => unsafely(content.json.`type` = "audio")
-      case content: ToolUseContent    => unsafely(content.json.`type` = "tool_use")
-      case content: ToolResultContent => unsafely(content.json.`type` = "tool_result")
+      case content: TextContent       => typeTag.rewrite(t"text",        content.json)
+      case content: ImageContent      => typeTag.rewrite(t"image",       content.json)
+      case content: AudioContent      => typeTag.rewrite(t"audio",       content.json)
+      case content: ToolUseContent    => typeTag.rewrite(t"tool_use",    content.json)
+      case content: ToolResultContent => typeTag.rewrite(t"tool_result", content.json)
 
     given decodable: Tactic[JsonError] => SamplingMessageContentBlock is Decodable in Json = json =>
       json.`type`.as[Text] match
@@ -474,12 +478,14 @@ object Mcp:
   object ContentBlock:
     import dynamicJsonAccess.enabled
 
+    private val typeTag = Json.discriminatedUnion[ContentBlock](t"type")
+
     given encodable: ContentBlock is Encodable in Json =
-      case content: TextContent      => unsafely(content.json.`type` = "text")
-      case content: ImageContent     => unsafely(content.json.`type` = "image")
-      case content: AudioContent     => unsafely(content.json.`type` = "audio")
-      case content: ResourceLink     => unsafely(content.json.`type` = "resource_link")
-      case content: EmbeddedResource => unsafely(content.json.`type` = "resource")
+      case content: TextContent      => typeTag.rewrite(t"text",          content.json)
+      case content: ImageContent     => typeTag.rewrite(t"image",         content.json)
+      case content: AudioContent     => typeTag.rewrite(t"audio",         content.json)
+      case content: ResourceLink     => typeTag.rewrite(t"resource_link", content.json)
+      case content: EmbeddedResource => typeTag.rewrite(t"resource",      content.json)
 
     given decodable: Tactic[JsonError] => ContentBlock is Decodable in Json = json =>
       json.`type`.as[Text] match
