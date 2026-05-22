@@ -64,7 +64,14 @@ object internal extends Hellenism2:
     val path = safely(name.tt.decode[Path on Classpath]).or:
       halt(m"the path $name is not a valid classpath path")
 
-    Optional(classOf[hellenism.internal.type].getResourceAsStream(name)).or:
+    val relativeName = if name.startsWith("/") then name.substring(1) else name
+    val contextLoader = Thread.currentThread.nn.getContextClassLoader()
+
+    val stream =
+      if contextLoader != null then contextLoader.getResourceAsStream(relativeName)
+      else classOf[hellenism.internal.type].getResourceAsStream(name)
+
+    Optional(stream).or:
       halt(m"the path $name is not on the classpath")
 
     ' {
