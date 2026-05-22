@@ -53,7 +53,7 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
 
   protected def makeConnection
     ( request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse )
-  :   HttpConnection raises StreamError =
+  :   HttpConnection raises StreamError raises HostnameError =
 
     val uri = request.getRequestURI.nn.tt
     val query = Optional(request.getQueryString).let(_.tt)
@@ -70,7 +70,7 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
       Http.Request
         ( method      = request.getMethod.nn.show.decode[Http.Method],
           version     = Http.Version.parse(request.getProtocol.nn.tt),
-          host        = unsafely(request.getServerName.nn.tt.decode[Hostname]),
+          host        = request.getServerName.nn.tt.decode[Hostname],
           target      = target,
           body        = () => streamBody(request),
           textHeaders = headers )
@@ -102,9 +102,17 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
 
 
   def handle(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
-    unsafely:
-      val connection = makeConnection(request, response)
-      connection.respond(handle(using connection))
+    whereas:
+      case error @ StreamError(_) =>
+        error.printStackTrace(System.out)
+
+      case error @ HostnameError(_, _) =>
+        error.printStackTrace(System.out)
+        try response.setStatus(400) catch case NonFatal(_) => ()
+
+    . recover:
+        val connection = makeConnection(request, response)
+        connection.respond(handle(using connection))
 
 
   override def service

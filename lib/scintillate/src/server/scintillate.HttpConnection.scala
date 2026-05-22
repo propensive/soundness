@@ -50,7 +50,9 @@ import urticose.*
 import vacuous.*
 
 object HttpConnection:
-  def apply(exchange: csnh.HttpExchange): HttpConnection logs HttpServerEvent =
+  def apply(exchange: csnh.HttpExchange)
+  :   HttpConnection logs HttpServerEvent raises HostnameError =
+
     val uri = exchange.getRequestURI.nn
     val query = Optional(uri.getQuery)
     val target = uri.getPath.nn.tt+query.let(t"?"+_.tt).or(t"")
@@ -66,7 +68,7 @@ object HttpConnection:
 
     val version: Http.Version = Http.Version.parse(exchange.getProtocol.nn.tt)
 
-    val host = unsafely:
+    val host =
       Optional(uri.getHost).let(_.tt).or:
         exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName.nn.tt
 
