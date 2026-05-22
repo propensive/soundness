@@ -400,3 +400,15 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           test(m"fish incomplete suggestion emits LCP duplicate"):
             sh"$tool '{completions}' fish 3 0 /dev/null -- abcd tree --at ".exec[Text]()
           .check(_.cut(t"\n").count(_.starts(t"src/")) >= 2)
+
+          // Regression check for #1109: with focus0 = 0 and position0 = 0 the
+          // completions executive previously hit a `.get` on an empty Option in
+          // `Completion.focusText`. With the `stackTrace` backstop in user
+          // deployments that dumped the Java stack trace to stdout (which fish
+          // then displayed as completion candidates); under the test suite's
+          // `silent` backstop the daemon exits non-zero instead. Either way,
+          // the focusText call should not throw, so the daemon should exit
+          // cleanly.
+          test(m"fish focus=0 exits cleanly"):
+            sh"$tool '{completions}' fish 0 0 /dev/null -- abcd".exec[Exit]()
+          .assert(_ == Exit.Ok)
