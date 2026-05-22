@@ -37,7 +37,6 @@ import scala.quoted.*
 import fulminate.*
 import gigantism.*
 import prepositional.*
-import proscenium.*
 
 object internal:
   def check[value: Type]: Macro[Optionality[value]] =
