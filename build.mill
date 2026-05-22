@@ -123,7 +123,7 @@ extends BaseScalaModule, SonatypeCentralPublishModule:
   def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def sources = Task.Sources(moduleDir)
-  override def moduleDeps = beneficence.core +: dependencies
+  override def moduleDeps = beneficence.core +: proscenium.core +: dependencies
 
   override def scalacOptions = Task:
     settings.scalaOptions
@@ -137,7 +137,7 @@ trait Tests(dependencies: PublishModule*) extends BaseScalaModule:
   def finalMainClass = (moduleDir / ".." / "..").last + ".Tests"
   def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
-  def moduleDeps: Seq[PublishModule] = probably.cli +: dependencies
+  def moduleDeps: Seq[PublishModule] = probably.cli +: proscenium.core +: dependencies
   def sources = Task.Sources(moduleDir)
   def consoleScalacOptions = scalacOptions()
 
@@ -809,6 +809,7 @@ object prepositional extends Library:
 
 object proscenium extends Library:
   object core extends Component:
+    override def moduleDeps = Seq(beneficence.core)
     override def scalacOptions = Task:
       super.scalacOptions() :+ "-Yno-predef"
   object test extends Tests(core)
