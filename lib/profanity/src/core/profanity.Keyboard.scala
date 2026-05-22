@@ -39,10 +39,10 @@ import gossamer.*
 import hypotenuse.*
 import parasite.*
 import proscenium.*
+import quantitative.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
-
-import abstractables.durationIsAbstractable
 
 object Keyboard:
   import Keypress.*
@@ -82,7 +82,7 @@ object Keyboard:
 
     def process(stream: Stream[Char]): Stream[Keypress] = stream match
       case '\u001b' #:: rest =>
-        safely(async(rest.head).await(30L)) match
+        safely(async(rest.head).await(30.0*Milli(Second))) match
           case Unset => Keypress.Escape #:: process(rest)
 
           case _ => rest match

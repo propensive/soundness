@@ -41,10 +41,10 @@ import denominative.*
 import gossamer.*
 import parasite.*
 import profanity.*
+import quantitative.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
-
-import abstractables.durationIsAbstractable
 
 object Cli:
   private var messages: List[Text] = Nil
@@ -56,7 +56,7 @@ object Cli:
 
   def done(): Unit = trigger.offer(())
   def log(input: Text): Unit = messages ::= input
-  def await(): List[Text] = safely(trigger.await(10000L)) yet messages.reverse
+  def await(): List[Text] = safely(trigger.await(10.0*Second)) yet messages.reverse
 
 
   def arguments

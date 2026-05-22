@@ -507,7 +507,7 @@ object escritoire extends Library:
     override def enabled = false
 
 object ethereal extends Library:
-  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core):
+  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, quantitative.units):
     val rustTargets: Seq[(String, String, String)] = Seq(
       ("x86_64-pc-windows-gnu",       "windows-x64",   "runner.exe"),
       ("x86_64-unknown-linux-gnu",    "linux-x64",     "runner"),
@@ -588,7 +588,7 @@ object exegesis extends Library:
   object test extends Tests(core)
 
 object exoskeleton extends Library:
-  object args extends Component(escapade.core, profanity.core, ambience.core)
+  object args extends Component(escapade.core, profanity.core, ambience.core, quantitative.units)
   object core extends Component(args, galilei.core)
   object completions extends Component(core)
 
@@ -820,7 +820,7 @@ object probably extends Library:
   object test extends Tests(cli)
 
 object profanity extends Library:
-  object core extends Component(eucalyptus.core, diuretic.core, iridescence.core)
+  object core extends Component(eucalyptus.core, diuretic.core, iridescence.core, quantitative.units)
   object test extends Tests(core, exoskeleton.rig)
 
 object punctuation extends Library:

@@ -62,6 +62,7 @@ import parasite.*
 import prepositional.*
 import profanity.*
 import proscenium.*
+import quantitative.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
@@ -70,7 +71,6 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import anticipation.abstractables.durationIsAbstractable
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
@@ -228,7 +228,7 @@ def cli[bus <: Matchable](using executive: Executive)
   val socketFile: Path on Local = baseDir/name/"socket"
   val clients: scc.TrieMap[Pid, Client of bus] = scc.TrieMap()
   val terminatePid: Promise[Pid] = Promise()
-  val idleTimeout: Long = 6L*60L*60L*1_000_000_000L
+  val idleTimeout = 6.0*Hour
 
   def client(pid: Pid): Client of bus = clients.getOrElseUpdate(pid, Client[bus](pid))
 
@@ -316,7 +316,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
           val response: SignalResponse =
             safely:
-              val invocation = client(pid).invocation.await(250L*1_000_000L)
+              val invocation = client(pid).invocation.await(250.0*Milli(Second))
               invocation.dispatchSignal(signal)
 
             . or(SignalResponse.Reject)
