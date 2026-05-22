@@ -36,7 +36,6 @@ import scala.annotation.targetName
 import scala.compiletime.*
 
 import anticipation.*
-import proscenium.*
 import symbolism.*
 
 object Message:
