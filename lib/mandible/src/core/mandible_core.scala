@@ -51,6 +51,7 @@ import serpentine.*
 import turbulence.*
 import vacuous.*
 
+import errorDiagnostics.stackTraces
 import filesystemOptions.createNonexistent.disabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
@@ -60,7 +61,7 @@ import interfaces.paths.pathOnLinux
 
 def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using TemporaryDirectory)
   ( using classloader: Classloader )
-:   Bytecode =
+:   Bytecode raises BytecodeError =
 
   val uuid = Uuid()
   val out: Path on Linux = unsafely(temporaryDirectory/uuid)
@@ -71,12 +72,16 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
 
   given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
 
-  unsafely:
-    val file: Path on Linux = out/"Generated$$Code$$From$$Quoted.class"
-    val code: Quotes ?=> Expr[Unit] = '{def _code(): Unit = $code0}
-    staging.run(code)
-    val classfile: Classfile = new Classfile(file.open(_.read[Data]))
-    classfile.methods.find(_.name == t"_code$$1").map(_.bytecode).get.vouch.embed(codepoint)
+  whereas:
+    case IoError(_, _, _, _) => BytecodeError(BytecodeError.Reason.ClassfileMissing)
+    case StreamError(_)      => BytecodeError(BytecodeError.Reason.ClassfileUnreadable)
+
+  . mitigate:
+      val file: Path on Linux = out/"Generated$$Code$$From$$Quoted.class"
+      val code: Quotes ?=> Expr[Unit] = '{def _code(): Unit = $code0}
+      staging.run(code)
+      val classfile: Classfile = new Classfile(file.open(_.read[Data]))
+      classfile.methods.find(_.name == t"_code$$1").map(_.bytecode).get.vouch.embed(codepoint)
 
 
 type BytecodePalette = Palette:
@@ -87,3 +92,15 @@ type BytecodePalette = Palette:
 
 case class ClassfileError()(using Diagnostics)
 extends Error(293, 0)(m"there was an error reading the classfile")
+
+object BytecodeError:
+  enum Reason(val number: Int) extends Clarification:
+    case ClassfileMissing    extends Reason(1)
+    case ClassfileUnreadable extends Reason(2)
+
+  given communicable: Reason is Communicable =
+    case Reason.ClassfileMissing    => m"the generated classfile could not be opened"
+    case Reason.ClassfileUnreadable => m"the generated classfile could not be read"
+
+case class BytecodeError(reason: BytecodeError.Reason)(using Diagnostics)
+extends Error(295, reason.number)(m"the bytecode could not be extracted because $reason")
