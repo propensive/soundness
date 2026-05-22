@@ -37,17 +37,16 @@ import language.experimental.pureFunctions
 import java.io as ji
 import java.nio.channels as jnc
 
-import anticipation.*
 import contingency.*
 import exoskeleton.*
 import guillotine.*
 import parasite.*
 import prepositional.*
 import proscenium.*
+import quantitative.*
 import rudiments.*
+import symbolism.*
 import turbulence.*
-
-import anticipation.abstractables.durationIsAbstractable
 
 object Client:
   @targetName("make")
@@ -68,4 +67,4 @@ case class Client(pid: Pid) extends Topical:
 
   val socket: Promise[jnc.SocketChannel] = Promise()
 
-  def close(): Unit = safely(socket.await(1000L).close())
+  def close(): Unit = safely(socket.await(1.0*Second).close())

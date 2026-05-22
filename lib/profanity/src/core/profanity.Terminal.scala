@@ -37,11 +37,11 @@ import contingency.*
 import gossamer.*
 import iridescence.*
 import parasite.*
+import quantitative.*
 import rudiments.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
-
-import abstractables.durationIsAbstractable
 
 object Terminal:
   def reportBackground: Text = t"\e]11;?\e\\"
@@ -64,8 +64,8 @@ extends Interactivity[TerminalEvent]:
   var rows: Optional[Int] = Unset
   var columns: Optional[Int] = Unset
 
-  def knownColumns: Int = columns.or(safely(columns0.await(50L))).or(80)
-  def knownRows: Int = rows.or(safely(rows0.await(50L))).or(80)
+  def knownColumns: Int = columns.or(safely(columns0.await(50.0*Milli(Second)))).or(80)
+  def knownRows: Int = rows.or(safely(rows0.await(50.0*Milli(Second)))).or(80)
 
   val cap: Termcap = new Termcap:
     def ansi: Boolean = true
