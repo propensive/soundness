@@ -38,6 +38,7 @@ import ambience.*, environments.java, systems.java
 import anticipation.*
 import contingency.*
 import denominative.*
+import digression.idempotent
 import distillate.*
 import fulminate.*
 import galilei.*
@@ -111,7 +112,17 @@ object Completions:
   def ensure(force: Boolean = false)(using Entrypoint, WorkingDirectory, Diagnostics)
   :   List[Text] logs CliEvent =
 
-    safely(effectful(install(force))).let(_.paths).or(Nil)
+    if force then safely(effectful(install(force))).let(_.paths).or(Nil)
+    else
+      // The non-force path is meant to be a fire-and-forget "install if not
+      // already installed" check at startup. Each invocation otherwise spawns
+      // 5–7 subprocesses (including a `zsh -c 'source ~/.zshrc'`) — measured
+      // ~300 ms per call on macOS, dominating the launch time of any
+      // daemon-backed CLI that calls this on every invocation. Use
+      // `idempotent` so the work runs once per JVM lifetime; subsequent
+      // calls are a no-op.
+      idempotent(safely(effectful(install())))
+      Nil
 
 
   def install(force: Boolean = false)(using entrypoint: Entrypoint)(using erased Effectful)
