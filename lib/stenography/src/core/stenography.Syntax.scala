@@ -252,7 +252,7 @@ object Syntax:
         case termRef@TermRef(prefix, name) =>
           apply(prefix) match
             case value@Value(typename) =>
-              if repr.toString.contains("inline") then println(name)
+              if repr.toString.contains("inline") then System.out.nn.println(name)
               if isPackage(name) then value else Value(Typename.Term(typename, name))
 
             case simple@Simple(typename) =>
