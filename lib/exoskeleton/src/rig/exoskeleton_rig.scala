@@ -45,6 +45,8 @@ extension (shell: Shell)
     whereas:
       case ExecError(_, _, _)   => TmuxError(TmuxError.Reason.ExecFailed)
       case NumberError(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
+      case IoError(_, _, _, _)  => TmuxError(TmuxError.Reason.ExecFailed)
+      case StreamError(_)       => TmuxError(TmuxError.Reason.ExecFailed)
 
     . mitigate:
         given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)
@@ -130,7 +132,7 @@ extension (shell: Shell)
             import charEncoders.utf8
 
             val file: Path on Linux = unsafely(temporaryDirectory/t"exoskeleton-${Uuid()}.ps1")
-            unsafely(file.open(psScript.tt.writeTo(_)))
+            file.open(psScript.tt.writeTo(_))
             psFile = file
             t"POWERSHELL_UPDATECHECK=Off pwsh -NoLogo -NoExit -File ${file.encode}"
 

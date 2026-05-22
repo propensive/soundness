@@ -52,6 +52,7 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
+import zephyrine.*
 
 
 object JsonRpc:
@@ -95,8 +96,15 @@ object JsonRpc:
     val request = Request("2.0", method, payload, uuid.json).json
 
     async:
-      unsafely:
-        promise.fulfill(target.submit(Http.Post)(request).receive[Json])
+      whereas:
+        case MediaTypeError(_, _)   => promise.cancel()
+        case ConnectError(_)        => promise.cancel()
+        case ParseError(_, _, _)    => promise.cancel()
+        case HttpError(_, _)        => promise.cancel()
+        case AsyncError(_)          => promise.cancel()
+
+      . recover:
+          promise.fulfill(target.submit(Http.Post)(request).receive[Json])
 
     promise
 
@@ -111,8 +119,14 @@ object JsonRpc:
 
     val request = Request("2.0", method, payload, Unset).json
 
-    unsafely:
-      target.submit(Http.Post)(request).receive[Text]
+    whereas:
+      case MediaTypeError(_, _) => ()
+      case ConnectError(_)      => ()
+      case HttpError(_, _)      => ()
+
+    . recover:
+        target.submit(Http.Post)(request).receive[Text]
+        ()
 
     Promise[Unit]().tap(_.offer(()))
 

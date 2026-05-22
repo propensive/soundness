@@ -221,11 +221,13 @@ object internal:
                     ' {
                         val json = Map(${Varargs(entries)}*).json
 
-                        unsafely:
+                        safely[AsyncError]:
                           JsonRpc.notification($url, $methodName, json)
                             ( using $monitor, $codicil, $online )
 
                           . await()
+
+                        . yet (())
                       }
 
                     . asTerm
