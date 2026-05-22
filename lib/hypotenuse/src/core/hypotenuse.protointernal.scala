@@ -41,8 +41,6 @@ import scala.quoted.*
 import anticipation.*
 import fulminate.*
 import gigantism.*
-import proscenium.*
-import rudiments.*
 
 object protointernal:
   def bin(expr: Expr[StringContext]): Macro[AnyVal] =
@@ -65,7 +63,7 @@ object protointernal:
         halt(118, m"a binary value can only contain characters '0' or '1'", position)
 
     val bits2 = bits.filter(_ != ' ')
-    val long: Long = bits2.fuse(0L)((state << 1) + (if next == '1' then 1 else 0))
+    val long: Long = java.lang.Long.parseLong(bits2, 2)
 
     bits2.length match
       case 8  => Expr[Byte](long.toByte)

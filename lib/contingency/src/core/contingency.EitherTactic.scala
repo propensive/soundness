@@ -35,7 +35,6 @@ package contingency
 import language.experimental.pureFunctions
 
 import fulminate.*
-import proscenium.*
 
 class EitherTactic[error <: Exception, success](label: boundary.Label[Either[error, success]])
   ( using Diagnostics )

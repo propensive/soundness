@@ -35,7 +35,6 @@ package contingency
 import language.experimental.pureFunctions
 
 import fulminate.*
-import proscenium.*
 import vacuous.*
 
 class OptionalTactic[error <: Exception, success](label: boundary.Label[Optional[success]])

@@ -39,7 +39,6 @@ import scala.quoted.*
 import anticipation.*
 import contingency.*
 import gigantism.*
-import proscenium.*
 
 object internal:
   def location: Macro[Codepoint] =

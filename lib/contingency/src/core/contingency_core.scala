@@ -39,7 +39,6 @@ import scala.quoted.*
 import denominative.*
 import fulminate.*
 import prepositional.*
-import proscenium.*
 import vacuous.*
 
 package strategies:

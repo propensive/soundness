@@ -36,7 +36,6 @@ import anticipation.*
 import fulminate.*
 import iridescence.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
@@ -288,7 +287,7 @@ object StackTrace:
 
         case index =>
           Text:
-            val types2 = types.drop(index + 3).to(List).map(primitive)
+            val types2 = types.drop(index + 3).iterator.to(List).map(primitive)
 
             if types2.length <= 2 then types2.mkString("(", " => ", ")")
             else types2.init.mkString("((", ", ", s") => ${types2.last})")

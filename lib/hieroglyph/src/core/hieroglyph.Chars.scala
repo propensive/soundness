@@ -32,7 +32,6 @@
                                                                                                   */
 package hieroglyph
 
-import proscenium.*
 
 object Chars:
   val superscript: Char ~> Char =

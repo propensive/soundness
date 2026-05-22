@@ -36,7 +36,6 @@ import java.nio as jn, jn.charset as jnc
 
 import anticipation.*
 import beneficence.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

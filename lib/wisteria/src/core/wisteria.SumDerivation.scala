@@ -39,7 +39,6 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import fulminate.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

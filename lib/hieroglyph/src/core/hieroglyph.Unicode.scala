@@ -41,7 +41,6 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import kaleidoscope.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 
@@ -110,7 +109,7 @@ object Unicode:
 
       . or(panic(m"could not find hieroglyph/UnicodeData.txt on the classpath"))
 
-    scala.io.Source.fromInputStream(in).getLines().map(_.split(";").nn.to(List)).flatMap:
+    scala.io.Source.fromInputStream(in).getLines().map(_.split(";").nn.iterator.to(List)).flatMap:
       case hex :: name :: _ if !name.nn.startsWith("<") =>
         val hexInt = Integer.parseInt(hex, 16)
 
@@ -123,7 +122,7 @@ object Unicode:
     . to(Map)
 
   lazy val unicodeNames: Map[Char | Text, Text] = unicodeData.map: (key, value) =>
-    value -> key.s.split(" ").nn.map(_.nn.toLowerCase.nn.capitalize).mkString(" ").tt
+    value -> key.s.split(" ").nn.iterator.map(_.nn.toLowerCase.nn.capitalize).mkString(" ").tt
 
   lazy val eastAsianWidths: TreeMap[CharRange, EaWidth] =
     extension (map: TreeMap[CharRange, EaWidth])

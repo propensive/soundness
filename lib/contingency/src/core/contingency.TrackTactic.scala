@@ -35,7 +35,6 @@ package contingency
 import language.experimental.pureFunctions
 
 import fulminate.*
-import proscenium.*
 
 class TrackTactic[error <: Exception, accrual, result, supplement]
   ( label: boundary.Label[Option[result]], initial: accrual, foci: Foci[supplement] )

@@ -37,7 +37,6 @@ import scala.quoted.*
 import anticipation.*
 import fulminate.*
 import gigantism.*
-import proscenium.*
 
 object internal:
   def enumerable[enumeration <: reflect.Enum: Type]: Macro[enumeration is Enumerable] =

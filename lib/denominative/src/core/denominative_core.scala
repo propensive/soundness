@@ -33,7 +33,6 @@
 package denominative
 
 import anticipation.*
-import proscenium.*
 import symbolism.*
 
 final val Prim: Ordinal = Ordinal.zerary(0)

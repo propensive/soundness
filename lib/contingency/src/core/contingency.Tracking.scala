@@ -34,7 +34,6 @@ package contingency
 
 import denominative.*
 import fulminate.*
-import proscenium.*
 import vacuous.*
 
 object Tracking:

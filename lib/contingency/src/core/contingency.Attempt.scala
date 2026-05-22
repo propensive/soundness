@@ -34,7 +34,6 @@ package contingency
 
 import language.experimental.pureFunctions
 
-import proscenium.*
 
 enum Attempt[+success, +error <: Exception]:
   case Success(value: success)

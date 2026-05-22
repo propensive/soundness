@@ -41,7 +41,6 @@ import anticipation.*
 import denominative.*
 import fulminate.*
 import gigantism.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

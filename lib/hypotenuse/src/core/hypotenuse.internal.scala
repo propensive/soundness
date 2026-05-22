@@ -1265,13 +1265,13 @@ object internal:
     inline def rawBits: B64 = JDouble.doubleToRawLongBits(double)
 
     @targetName("finiteF64")
-    inline def finite: Boolean = double.isFinite
+    inline def finite: Boolean = java.lang.Double.isFinite(double)
 
     @targetName("infiniteF64")
-    inline def infinite: Boolean = double.isInfinite
+    inline def infinite: Boolean = java.lang.Double.isInfinite(double)
 
     @targetName("nanF64")
-    inline def nan: Boolean = double.isNaN
+    inline def nan: Boolean = java.lang.Double.isNaN(double)
 
     @targetName("successorF64")
     inline def successor: F64 = Math.nextUp(double)
@@ -1348,13 +1348,13 @@ object internal:
     inline def rawBits: Long = JFloat.floatToRawIntBits(float)
 
     @targetName("finiteF32")
-    inline def finite: Boolean = float.isFinite
+    inline def finite: Boolean = java.lang.Float.isFinite(float)
 
     @targetName("infiniteF32")
-    inline def infinite: Boolean = float.isInfinite
+    inline def infinite: Boolean = java.lang.Float.isInfinite(float)
 
     @targetName("nanF32")
-    inline def nan: Boolean = float.isNaN
+    inline def nan: Boolean = java.lang.Float.isNaN(float)
 
     @targetName("successorF32")
     inline def successor: F32 = Math.nextUp(float)

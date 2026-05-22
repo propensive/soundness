@@ -35,7 +35,6 @@ package contingency
 import language.experimental.pureFunctions
 
 import fulminate.*
-import proscenium.*
 
 class AmalgamateTactic[error <: Exception, success]
   ( label: boundary.Label[success | error] )

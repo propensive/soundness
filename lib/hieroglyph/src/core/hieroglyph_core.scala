@@ -37,7 +37,6 @@ import language.experimental.pureFunctions
 import anticipation.*
 import contingency.*
 import fulminate.*
-import rudiments.*
 import vacuous.*
 
 extension (char: Char)
