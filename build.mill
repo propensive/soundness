@@ -631,6 +631,8 @@ object gesticulate extends Library:
 object gigantism extends Library:
   object core extends Component():
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
 
   object test extends Tests(core):
     override def enabled = false
