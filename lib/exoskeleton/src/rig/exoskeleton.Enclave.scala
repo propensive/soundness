@@ -73,17 +73,18 @@ object Enclave:
       safely(promise.await())
 
   case class Launcher(path: Path on Linux):
-    def sandbox[result](block: (tool: Tool) ?=> result): result =
-      val completionScripts = unsafely(sh"$path '{admin}' install".exec[Text]())
-      val pid = Pid(unsafely(sh"$path '{admin}' pid".exec[Text]().trim.decode[Int]))
+    def sandbox[result](block: (tool: Tool) ?=> result)
+    :   result raises ExecError raises NumberError raises PathError =
+
+      val completionScripts = sh"$path '{admin}' install".exec[Text]()
+      val pid = Pid(sh"$path '{admin}' pid".exec[Text]().trim.decode[Int])
       val tool = Tool(path, pid)
 
       block(using tool).also:
-        unsafely:
-          sh"$path '{admin}' kill".exec[Exit]()
+        sh"$path '{admin}' kill".exec[Exit]()
 
-          completionScripts.trim.lines.map(_.decode[Path on Linux]).each: item =>
-            safely(item.delete())
+        completionScripts.trim.lines.map(_.decode[Path on Linux]).each: item =>
+          safely(item.delete())
 
 
 case class Enclave(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment)
