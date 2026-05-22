@@ -39,6 +39,7 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
+import gossamer.*
 import inimitable.*
 import jacinta.*
 import obligatory.*
@@ -69,10 +70,15 @@ trait McpServer():
   def serve(using this.type is McpSpecification, Monitor, Codicil, Online, Http.Request)
   :   Http.Response =
 
-    unsafely:
-      val sessionId = request.headers.mcpSessionId.prim.or(Uuid().encode)
-      val interface: Mcp.Interface = Mcp.Interface(sessionId, this)
-      Mcp.send(sessionId, this, interface)(JsonRpc.serve(interface))
+    whereas:
+      case error @ JsonRpcError(_) =>
+        import hieroglyph.charEncoders.utf8
+        Http.Response(Unfulfilled(t"JSON-RPC error: ${error.message.text}"))
+
+    . recover:
+        val sessionId = request.headers.mcpSessionId.prim.or(Uuid().encode)
+        val interface: Mcp.Interface = Mcp.Interface(sessionId, this)
+        Mcp.send(sessionId, this, interface)(JsonRpc.serve(interface))
 
 
   def name: Text

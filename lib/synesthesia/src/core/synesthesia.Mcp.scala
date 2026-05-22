@@ -773,7 +773,7 @@ object Mcp:
 
     def `resources/unsubscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
 
-    def `tools/call`(name: Text, arguments: Json, _meta: Optional[Json]): CallTool = unsafely:
+    def `tools/call`(name: Text, arguments: Json, _meta: Optional[Json]): CallTool =
       val result = spec.invokeTool(server, client, name, arguments)
 
       import jsonPrinters.minimal
