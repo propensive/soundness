@@ -125,23 +125,7 @@ package executives:
 
             val rest2 = read(rest.to(List), false, Nil)
 
-            // Fish's `count (commandline --tokenize --cut-at-cursor)` includes the
-            // partial token at the cursor when mid-word, but drops the empty token
-            // at a trailing-space cursor. `position0` (fish's `commandline -C -t`)
-            // is 0 only when the cursor is at the start of an empty token, non-zero
-            // mid-word. For mid-word completion of a *value* (not a flag prefix),
-            // we need `-2` like zsh to point `focus` at the partial. For mid-word
-            // typing of a flag prefix (`-` or `--`) we keep the original `-1` so
-            // the existing flag-completion fallback (which expects focus on the
-            // phantom past the prefix) continues to emit both long and short
-            // aliases.
-            val fishMidWordValue =
-              shell == Shell.Fish && position0 > 0
-              && rest.lastOption.exists(!_.starts(t"-"))
-
-            val focus = focus1 - (
-              if shell == Shell.Zsh || fishMidWordValue then 2 else 1
-            )
+            val focus = focus1 - (if shell == Shell.Zsh then 2 else 1)
 
             val position = if shell == Shell.Bash then Unset else position0
             val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position0))
