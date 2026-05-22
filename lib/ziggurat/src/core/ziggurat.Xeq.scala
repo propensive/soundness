@@ -174,7 +174,7 @@ object Xeq:
 
 
   def main(args: Array[String]): Unit =
-    args.toList match
+    args.iterator.toList match
       case "installer" :: output :: staging :: Nil =>
         installerMain(output.tt, staging.tt)
 

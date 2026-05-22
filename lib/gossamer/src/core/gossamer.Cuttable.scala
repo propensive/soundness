@@ -76,10 +76,10 @@ object Cuttable:
       recur(Prim, Nil).reverse
 
   given textText: Text is Cuttable by Text = (text, delimiter, limit) =>
-    text.s.split(Pattern.quote(delimiter.s), limit).nn.map(_.nn.tt).to(List)
+    text.s.split(Pattern.quote(delimiter.s), limit).nn.iterator.map(_.nn.tt).to(List)
 
   given textRegex: Text is Cuttable by Regex = (text, regex, limit) =>
-    text.s.split(regex.pattern.s, limit).nn.map(_.nn.tt).to(List)
+    text.s.split(regex.pattern.s, limit).nn.iterator.map(_.nn.tt).to(List)
 
 
   given textualText: [textual] => (cuttable: textual is Cuttable by Text)

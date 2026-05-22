@@ -52,10 +52,10 @@ object Coverage:
 
     if !dirFile.exists() then Coverage(dir, IArray(), Set(), Set())
     else
-      val otherFiles = Option(dirFile.listFiles).map(_.nn).map(_.to(List).map(_.nn)).getOrElse(Nil)
+      val otherFiles = Option(dirFile.listFiles).map(_.nn).map(_.iterator.map(_.nn).toList).getOrElse(Nil)
       val measurementFiles = otherFiles.filter(_.getName.nn.startsWith("scoverage.measurements"))
 
-      val allHits: Set[Int] = measurementFiles.flatMap(measurements(_)).to(Set)
+      val allHits: Set[Int] = measurementFiles.iterator.flatMap(measurements(_)).to(Set)
       val oldHits: Set[Int] = allHits -- hits
 
       Coverage(dir, spec(dir), oldHits, hits)

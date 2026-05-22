@@ -68,37 +68,37 @@ object internal:
     given int: Int is Encodable:
       type Form = Pojo
 
-      inline def encoded(value: Int): Pojo = value
+      inline def encoded(value: Int): Pojo = java.lang.Integer.valueOf(value).nn
 
     given long: Long is Encodable:
       type Form = Pojo
 
-      inline def encoded(value: Long): Pojo = value
+      inline def encoded(value: Long): Pojo = java.lang.Long.valueOf(value).nn
 
     given float: Float is Encodable:
       type Form = Pojo
 
-      inline def encoded(value: Float): Pojo = value
+      inline def encoded(value: Float): Pojo = java.lang.Float.valueOf(value).nn
 
     given double: Double is Encodable:
       type Form = Pojo
 
-      inline def encoded(value: Double): Pojo = value
+      inline def encoded(value: Double): Pojo = java.lang.Double.valueOf(value).nn
 
     given char: Char is Encodable:
       type Form = Pojo
 
-      inline def encoded(value: Char): Pojo = value
+      inline def encoded(value: Char): Pojo = java.lang.Character.valueOf(value).nn
 
     given boolean: Boolean is Encodable:
       type Form = Pojo
 
-      inline def encoded(value: Boolean): Pojo = value
+      inline def encoded(value: Boolean): Pojo = java.lang.Boolean.valueOf(value).nn
 
     given byte: Byte is Encodable:
       type Form = Pojo
 
-      inline def encoded(value: Byte): Pojo = value
+      inline def encoded(value: Byte): Pojo = java.lang.Byte.valueOf(value).nn
 
     // Check whether these should be kept, or the `inline given` below
     // given list: [list <: List, element: Encodable in Pojo]

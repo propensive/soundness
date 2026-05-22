@@ -63,7 +63,7 @@ object Permutation:
 
       seen(element) = true
 
-    Permutation(Factoradic(array.to(List)))
+    Permutation(Factoradic(array.iterator.to(List)))
 
 case class Permutation(factoradic: Factoradic):
   lazy val lehmer: List[Int] = factoradic.expand
@@ -111,6 +111,6 @@ case class Permutation(factoradic: Factoradic):
         recur(index + 1, tail)
 
       case Nil =>
-        unsafely(Permutation(IArray.from(array)))
+        unsafely(Permutation(IArray.from(array.iterator)))
 
     recur(0, expansion)

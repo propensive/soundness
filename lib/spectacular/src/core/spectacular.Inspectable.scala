@@ -131,7 +131,7 @@ object Inspectable extends Inspectable2:
   =>  Array[element] is Inspectable =
 
     array =>
-      array.zipWithIndex.map: (value, index) =>
+      array.iterator.zipWithIndex.map: (value, index) =>
         val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
         (subscript+inspectable.text(value).s).tt
 
