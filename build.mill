@@ -884,7 +884,9 @@ object rudiments extends Library:
       anticipation.path,
       vacuous.core,
       denominative.core
-    )
+    ):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
 
   object test extends Tests(core, abacist.core, quantitative.units)
 

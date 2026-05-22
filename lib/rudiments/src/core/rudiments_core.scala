@@ -45,7 +45,6 @@ import scala.quoted.*
 import anticipation.*
 import denominative.*
 import prepositional.*
-import proscenium.*
 import symbolism.*
 import vacuous.*
 

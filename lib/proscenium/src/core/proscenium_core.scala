@@ -41,7 +41,7 @@ export scala.collection.concurrent.TrieMap
 export Predef
 . { nn, identity, summon, charWrapper, $conforms, ArrowAssoc, intWrapper, longWrapper,
     shortWrapper, byteWrapper, valueOf, doubleWrapper, floatWrapper, locally, is,
-    refArrayOps, genericArrayOps, copyArrayToImmutableIndexedSeq, augmentString }
+    refArrayOps, genericArrayOps, augmentString, `???` }
 
 export scala.util.control.NonFatal
 
