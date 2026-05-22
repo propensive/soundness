@@ -65,4 +65,4 @@ object Glob:
     recur(0, Nil)
 
 case class Glob(tokens: GlobToken*):
-  def regex: Text = Text(tokens.flatMap(_.regex).mkString)
+  def regex: Text = Text(tokens.map(_.regex).mkString)

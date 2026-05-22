@@ -34,7 +34,6 @@ package probably
 
 import hypotenuse.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 
 object Checkable:

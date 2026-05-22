@@ -39,7 +39,6 @@ import scala.quoted.*
 
 import anticipation.*
 import gigantism.*
-import proscenium.*
 
 object internal:
   opaque type Diagnostics = Boolean
@@ -100,7 +99,7 @@ object internal:
 
       loop(0, "")
 
-    val groups: List[String] = parts.mkString("\u0000").split("`", -1).nn.map(_.nn).toList
+    val groups: List[String] = parts.mkString("\u0000").split("`", -1).nn.map(_.nn).iterator.toList
 
     if groups.size%2 == 0
     then report.errorAndAbort("the m\"\" interpolator has an unmatched backtick")
@@ -116,7 +115,7 @@ object internal:
     def sequence(group: String, startIndex: Int, subListRef: Expr[List[Message]])
     :   (List[String | Expr[Message]], Int) =
 
-      val segments = group.split("\u0000", -1).nn.map(_.nn).toList
+      val segments = group.split("\u0000", -1).nn.map(_.nn).iterator.toList
 
       val items: List[String | Expr[Message]] = segments.zipWithIndex.flatMap: (segment, index) =>
         val text = decode(segment)

@@ -41,7 +41,6 @@ import inimitable.*
 import kaleidoscope.*
 import polyvinyl.*
 import prepositional.*
-import proscenium.*
 import symbolism.*
 import urticose.*
 import vacuous.*

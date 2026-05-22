@@ -35,7 +35,6 @@ package contingency
 import language.experimental.pureFunctions
 
 import fulminate.*
-import proscenium.*
 
 class AttemptTactic[error <: Exception, success](label: boundary.Label[Attempt[success, error]])
   ( using Diagnostics )

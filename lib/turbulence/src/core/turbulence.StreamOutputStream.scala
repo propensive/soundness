@@ -38,7 +38,6 @@ import scala.collection.mutable as scm
 
 import anticipation.*
 import denominative.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

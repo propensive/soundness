@@ -34,7 +34,6 @@ package gossamer
 
 import anticipation.*
 import hypotenuse.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

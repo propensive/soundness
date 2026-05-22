@@ -36,7 +36,6 @@ import anticipation.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
-import proscenium.*
 
 object Transmissible:
   given bytes: [bytes <: Data] => bytes is Transmissible = Stream(_)

@@ -36,7 +36,6 @@ import anticipation.*
 import contingency.*
 import digression.*
 import prepositional.*
-import proscenium.*
 
 object DecodableManifest:
   given mainClass: Tactic[FqcnError] => ("Main-Class" is DecodableManifest of Fqcn) = Fqcn(_)

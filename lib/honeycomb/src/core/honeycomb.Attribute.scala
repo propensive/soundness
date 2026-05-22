@@ -33,7 +33,6 @@
 package honeycomb
 
 import anticipation.*
-import proscenium.*
 
 case class Attribute(label: Text, elements: Set[Text], global: Boolean):
   type Self <: Label

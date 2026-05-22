@@ -38,7 +38,6 @@ import anticipation.*
 import contextual.*
 import fulminate.*
 import gossamer.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 

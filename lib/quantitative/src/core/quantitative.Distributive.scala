@@ -35,7 +35,6 @@ package quantitative
 import anticipation.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 
 object Distributive:
   def apply[measure <: Measure](units: Text): Quantity[measure] is Distributive by Double =

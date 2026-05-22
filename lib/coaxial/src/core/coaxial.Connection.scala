@@ -36,7 +36,6 @@ import java.io as ji
 
 import anticipation.*
 import contingency.*
-import proscenium.*
 import turbulence.*
 
 case class Connection

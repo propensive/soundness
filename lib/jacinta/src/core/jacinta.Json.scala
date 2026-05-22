@@ -49,7 +49,6 @@ import gossamer.*
 import hieroglyph.*
 import panopticon.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import serpentine.*
 import spectacular.*

@@ -40,7 +40,6 @@ import gossamer.*
 import hypotenuse.*
 import iridescence.*
 import prepositional.*
-import proscenium.*
 import symbolism.*
 
 given decimalizer: Decimalizer = Decimalizer(4)

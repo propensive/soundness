@@ -40,7 +40,6 @@ import denominative.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

@@ -33,7 +33,6 @@
 package caduceus
 
 import anticipation.*
-import proscenium.*
 import turbulence.*
 import urticose.*
 

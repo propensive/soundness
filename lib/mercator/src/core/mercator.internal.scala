@@ -38,7 +38,6 @@ import scala.quoted.*
 import anticipation.*
 import fulminate.*
 import gigantism.*
-import proscenium.*
 
 object internal:
   def point[typeConstructor[_]: Type]: Macro[Identity[typeConstructor]] =

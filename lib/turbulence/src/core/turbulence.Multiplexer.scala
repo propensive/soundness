@@ -39,7 +39,6 @@ import java.util.concurrent as juc
 import anticipation.*
 import denominative.*
 import parasite.*
-import proscenium.*
 import rudiments.*
 
 import codicils.await

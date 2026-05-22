@@ -36,7 +36,6 @@ import scala.annotation.targetName
 import scala.compiletime.*
 
 import anticipation.*
-import proscenium.*
 import symbolism.*
 
 object Message:
@@ -113,4 +112,4 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
 
         recur(tail)
 
-    recur(string.split("\n").nn.map(_.nn).to(List))
+    recur(string.split("\n").nn.map(_.nn).iterator.to(List))

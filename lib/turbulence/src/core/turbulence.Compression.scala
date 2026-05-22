@@ -33,7 +33,6 @@
 package turbulence
 
 import anticipation.*
-import proscenium.*
 
 trait Compression:
   type Self <: Compressor

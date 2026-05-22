@@ -36,7 +36,6 @@ package savagery
 import anticipation.*
 import cardinality.*
 import gossamer.*
-import proscenium.*
 import spectacular.*
 import xylophone.*
 

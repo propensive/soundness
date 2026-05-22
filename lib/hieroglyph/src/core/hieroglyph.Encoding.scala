@@ -38,7 +38,6 @@ import scala.jdk.CollectionConverters.SetHasAsScala
 
 import anticipation.*
 import fulminate.*
-import proscenium.*
 
 object Encoding:
   given textualizable: Encoding is Textualizable = _.name

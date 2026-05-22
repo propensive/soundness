@@ -36,7 +36,6 @@ import anticipation.*
 import denominative.*
 import hieroglyph.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import symbolism.*
 

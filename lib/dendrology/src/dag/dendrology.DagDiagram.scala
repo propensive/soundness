@@ -60,8 +60,8 @@ object DagDiagram:
         layout(si)(i) |= 4
 
     DagDiagram:
-      layout.to(List).map: row =>
-        val tiles = row.to(List).map(DagTile.fromOrdinal)
+      layout.iterator.to(List).map: row =>
+        val tiles = row.iterator.to(List).map(DagTile.fromOrdinal)
         (tiles, nodes(row.length))
 
   given printable: [node: Showable] => (style: DagStyle[Text]) => DagDiagram[node] is Printable =

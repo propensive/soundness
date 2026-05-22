@@ -51,7 +51,7 @@ object internal:
     val parts = recur[parts](Nil)
     if parts.length != 1 then halt(m"a node literal cannot have substitutions")
 
-    val pieces: List[String] = parts.head.split(":", -1).nn.toList.map(_.nn)
+    val pieces: List[String] = parts.head.split(":", -1).nn.iterator.map(_.nn).toList
 
     pieces match
       case List(id) =>

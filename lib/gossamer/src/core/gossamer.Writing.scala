@@ -39,7 +39,6 @@ import scala.reflect.*
 import anticipation.*
 import denominative.*
 import hieroglyph.*
-import proscenium.*
 import spectacular.*
 import symbolism.*
 import vacuous.*

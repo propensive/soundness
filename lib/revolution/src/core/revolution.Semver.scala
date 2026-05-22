@@ -41,7 +41,6 @@ import fulminate.*
 import gossamer.*
 import kaleidoscope.*
 import prepositional.*
-import proscenium.*
 import spectacular.*
 import symbolism.*
 import vacuous.*

@@ -35,7 +35,6 @@ package fulminate
 import scala.quoted.*
 
 import anticipation.*
-import proscenium.*
 
 export fulminate.internal.Diagnostics
 

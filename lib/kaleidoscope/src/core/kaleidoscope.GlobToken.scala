@@ -33,7 +33,7 @@
 package kaleidoscope
 
 object GlobToken:
-  private val needsEscaping: Set[Char] = "\\.[]{}()<>*+-=!?^$|".to(Set)
+  private val needsEscaping: Set[Char] = "\\.[]{}()<>*+-=!?^$|".iterator.toSet
 
 enum GlobToken:
   case Star, Globstar, OneChar

@@ -33,7 +33,6 @@
 package quantitative
 
 import anticipation.*
-import proscenium.*
 import rudiments.*
 
 object NauticalMiles:

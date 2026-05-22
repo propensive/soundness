@@ -39,7 +39,6 @@ import cardinality.*
 import gastronomy.*
 import hypotenuse.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 
@@ -64,7 +63,7 @@ case class BloomFilter[element: Digestible, algorithm <: Algorithm]
     def recur(count: Int = 0, data: List[Array[Byte]] = Nil): BigInt =
       if data.map(_.length).sum*8 < requiredEntropyBits
       then recur(count + 1, (count, value).digest[algorithm].data.mutable(using Unsafe) :: data)
-      else BigInt(data.to(Array).flatten).abs
+      else BigInt(data.iterator.flatMap(_.iterator).toArray).abs
 
     recur()
 

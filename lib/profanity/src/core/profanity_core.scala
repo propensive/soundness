@@ -35,7 +35,6 @@ package profanity
 import anticipation.*
 import contingency.*
 import parasite.*
-import proscenium.*
 import turbulence.*
 
 given stdio: (terminal: Terminal) => Stdio = terminal.stdio

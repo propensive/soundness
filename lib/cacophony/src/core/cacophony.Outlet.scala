@@ -42,7 +42,7 @@ import vacuous.*
 
 object Outlet:
   def list: List[Outlet] =
-    jss.AudioSystem.getMixerInfo.nn.toList.flatMap: info0 =>
+    jss.AudioSystem.getMixerInfo.nn.iterator.toList.flatMap: info0 =>
       val info = info0.nn
       val mixer = jss.AudioSystem.getMixer(info).nn
 
@@ -60,9 +60,9 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info):
   def configurations: List[Configuration] =
     val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
 
-    mixer.getSourceLineInfo.nn.toList.flatMap:
+    mixer.getSourceLineInfo.nn.iterator.toList.flatMap:
       case dli: jss.DataLine.Info if dli.getLineClass == classOf[jss.SourceDataLine] =>
-        dli.getFormats.nn.toList.map: f0 =>
+        dli.getFormats.nn.iterator.toList.map: f0 =>
           val f = f0.nn
 
           val encoding =

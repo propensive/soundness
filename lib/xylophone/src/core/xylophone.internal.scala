@@ -44,7 +44,6 @@ import fulminate.*
 import gigantism.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import stenography.*

@@ -41,7 +41,6 @@ import java.util.concurrent.locks as jucl
 import anticipation.*
 import contingency.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

@@ -34,7 +34,6 @@ package dendrology
 
 import anticipation.*
 import gossamer.*
-import proscenium.*
 import spectacular.*
 
 import TreeTile.*

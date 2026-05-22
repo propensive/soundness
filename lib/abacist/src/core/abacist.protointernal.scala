@@ -37,7 +37,6 @@ import scala.compiletime.*, ops.int.*
 import anticipation.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import quantitative.*
 import rudiments.*
 import spectacular.*

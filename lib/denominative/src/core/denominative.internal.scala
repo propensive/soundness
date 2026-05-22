@@ -35,7 +35,6 @@ package denominative
 import scala.annotation.targetName
 
 import prepositional.*
-import proscenium.*
 import symbolism.*
 
 object internal:

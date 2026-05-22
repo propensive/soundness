@@ -36,7 +36,6 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import prepositional.*
-import proscenium.*
 
 object internal:
   opaque type Name[plane] <: anticipation.Text = anticipation.Text

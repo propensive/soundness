@@ -48,7 +48,6 @@ import gossamer.*
 import jacinta.Bcd
 import panopticon.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import symbolism.*
 import turbulence.*

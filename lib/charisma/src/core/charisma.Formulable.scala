@@ -32,7 +32,6 @@
                                                                                                   */
 package charisma
 
-import proscenium.*
 import rudiments.*
 
 trait Formulable:

@@ -48,7 +48,6 @@ import hieroglyph.*
 import hypotenuse.*
 import kaleidoscope.*
 import prepositional.*
-import proscenium.*
 import quantitative.*
 import rudiments.*
 import spectacular.*

@@ -34,7 +34,6 @@ package escritoire
 
 import anticipation.*
 import gossamer.*
-import proscenium.*
 
 object Scaffold:
   @targetName("make")

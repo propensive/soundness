@@ -40,7 +40,6 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import gossamer.*
-import proscenium.*
 import spectacular.*
 import symbolism.*
 

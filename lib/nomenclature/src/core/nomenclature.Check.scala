@@ -32,6 +32,5 @@
                                                                                                   */
 package nomenclature
 
-import proscenium.*
 
 trait Check[param <: Label]

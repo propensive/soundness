@@ -39,7 +39,6 @@ import anticipation.*
 import contingency.*
 import hieroglyph.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import symbolism.*
 import vacuous.*

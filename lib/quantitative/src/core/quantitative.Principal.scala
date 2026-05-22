@@ -32,7 +32,6 @@
                                                                                                   */
 package quantitative
 
-import proscenium.*
 
 object Principal:
   given distance: Principal[Distance, Metres]()

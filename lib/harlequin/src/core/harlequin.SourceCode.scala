@@ -40,7 +40,6 @@ import anthology.*
 import anticipation.*
 import denominative.*
 import gossamer.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

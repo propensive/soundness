@@ -33,6 +33,5 @@
 package synesthesia
 
 import anticipation.*
-import proscenium.*
 
 case class ui(uri: Text) extends StaticAnnotation

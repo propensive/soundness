@@ -37,7 +37,6 @@ import language.dynamics
 import anticipation.*
 import distillate.*
 import prepositional.*
-import proscenium.*
 
 trait Protovariable:
   given generic: [label <: Label] => Variable[label, Text] = identity(_)

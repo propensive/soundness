@@ -157,7 +157,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
 
           if jl.System.nanoTime < 0L then jl.System.err.nn.println(sink.get)
 
-          result.to(List)
+          result.iterator.to(List)
         }
 
     val results0 = dispatch(body)

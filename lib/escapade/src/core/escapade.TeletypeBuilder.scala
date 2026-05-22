@@ -36,7 +36,6 @@ import scala.collection.mutable as scm
 
 import anticipation.*
 import gossamer.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

@@ -40,7 +40,6 @@ import anticipation.*
 import exoskeleton.*
 import guillotine.*
 import prepositional.*
-import proscenium.*
 import serpentine.*
 
 case class DaemonService[bus <: Matchable]

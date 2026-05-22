@@ -34,7 +34,6 @@ package acyclicity
 
 import scala.collection.mutable as scm
 
-import proscenium.*
 
 object Poset:
   def apply[element: PartiallyOrdered](elements: element*): Poset[element] =

@@ -35,7 +35,6 @@ package caesura
 import anticipation.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 
 package dsvFormats:
   given csv: DsvFormat = DsvFormat(false, ',', '"', '"')

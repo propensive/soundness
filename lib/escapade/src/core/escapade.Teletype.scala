@@ -41,7 +41,6 @@ import denominative.*
 import gossamer.*
 import mercator.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

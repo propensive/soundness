@@ -37,7 +37,6 @@ import scala.collection.mutable as scm
 import anticipation.*
 import denominative.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 import wisteria.*
@@ -131,7 +130,7 @@ object Inspectable extends Inspectable2:
   =>  Array[element] is Inspectable =
 
     array =>
-      array.zipWithIndex.map: (value, index) =>
+      array.iterator.zipWithIndex.map: (value, index) =>
         val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
         (subscript+inspectable.text(value).s).tt
 

@@ -33,7 +33,6 @@
 package cacophony
 
 import prepositional.*
-import proscenium.*
 
 trait Recording extends Domainal:
   def active: Boolean

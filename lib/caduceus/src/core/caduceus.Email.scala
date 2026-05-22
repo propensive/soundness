@@ -35,7 +35,6 @@ package caduceus
 import anticipation.*
 import denominative.*
 import gesticulate.*
-import proscenium.*
 import turbulence.*
 import vacuous.*
 

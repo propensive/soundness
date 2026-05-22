@@ -42,7 +42,6 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import gigantism.*
-import proscenium.*
 import vacuous.*
 
 object internal:
@@ -81,7 +80,7 @@ object internal:
       halt(RegexError(exception.getIndex, RegexError.Reason.InvalidPattern).labelled)
 
     if types.length == 0 then '{NoExtraction(${Expr(parts.head)})}
-    else tupleType.asType.runtimeChecked match
+    else tupleType.asType.absolve match
       case '[resultType] => '{RExtractor[Option[resultType]](${Expr(parts)})}
 
   class NoExtraction(pattern: String):

@@ -37,7 +37,6 @@ import javax.sound.sampled as jss
 import anticipation.*
 import contingency.*
 import prepositional.*
-import proscenium.*
 import quantitative.*
 import symbolism.*
 import turbulence.*
@@ -45,7 +44,7 @@ import vacuous.*
 
 object Feed:
   def list: List[Feed] =
-    jss.AudioSystem.getMixerInfo.nn.toList.flatMap: info0 =>
+    jss.AudioSystem.getMixerInfo.nn.iterator.toList.flatMap: info0 =>
       val info = info0.nn
       val mixer = jss.AudioSystem.getMixer(info).nn
 
@@ -63,9 +62,9 @@ case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
   def configurations: List[Configuration] =
     val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
 
-    mixer.getTargetLineInfo.nn.toList.flatMap:
+    mixer.getTargetLineInfo.nn.iterator.toList.flatMap:
       case dli: jss.DataLine.Info if dli.getLineClass == classOf[jss.TargetDataLine] =>
-        dli.getFormats.nn.toList.map: f0 =>
+        dli.getFormats.nn.iterator.toList.map: f0 =>
           val f = f0.nn
 
           val encoding =

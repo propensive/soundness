@@ -34,7 +34,6 @@ package urticose
 
 import iridescence.*
 import prepositional.*
-import proscenium.*
 
 extension (inline context: StringContext)
   transparent inline def url(inline parts: Any*): Url[Label] =

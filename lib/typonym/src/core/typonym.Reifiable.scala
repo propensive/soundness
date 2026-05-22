@@ -33,7 +33,6 @@
 package typonym
 
 import prepositional.*
-import proscenium.*
 
 object Reifiable:
   transparent inline given listUnion: [phantom, value] => phantom is Reifiable to List[value] =

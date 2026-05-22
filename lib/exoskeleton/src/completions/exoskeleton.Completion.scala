@@ -42,7 +42,6 @@ import gossamer.*
 import guillotine.*
 import hieroglyph.*, textMetrics.uniform
 import hypotenuse.*
-import proscenium.*
 import spectacular.*
 import symbolism.*
 import turbulence.*

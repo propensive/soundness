@@ -32,7 +32,6 @@
                                                                                                   */
 package cosmopolite
 
-import proscenium.*
 
 case class Polyglot[+value, language](values: Map[Language, value]):
   @targetName("or")

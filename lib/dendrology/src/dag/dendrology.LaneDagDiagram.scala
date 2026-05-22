@@ -92,7 +92,8 @@ object LaneDagDiagram:
         val state = laneState(r)
         val terminating = state.filter: (_, lane) => lane.target == current
         val continuing = state -- terminating.keys
-        val terminatingCols = terminating.keys.to(Array).sortInPlace()
+        val terminatingCols = terminating.keys.iterator.toArray
+        java.util.Arrays.sort(terminatingCols)
 
         val chosenCol: Int =
           if terminatingCols.length > 0 then terminatingCols(terminatingCols.length / 2)
@@ -123,7 +124,7 @@ object LaneDagDiagram:
 
       val width: Int =
         val colsUsed = laneState.flatMap(_.keys) ++ nodeCol
-        if colsUsed.isEmpty then 1 else colsUsed.max + 1
+        if colsUsed.isEmpty then 1 else colsUsed.iterator.max + 1
 
       val rows = scm.ListBuffer[(List[DagTile], Optional[node])]()
 
@@ -262,7 +263,7 @@ object LaneDagDiagram:
           val w = style.width(glyph(optNode.vouch))
           if w > widths(nodeIdx) then widths(nodeIdx) = w
 
-    widths.to(List)
+    widths.iterator.to(List)
 
 case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
   val size: Int = lines.length

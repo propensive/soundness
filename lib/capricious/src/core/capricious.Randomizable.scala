@@ -36,7 +36,6 @@ import language.experimental.genericNumberLiterals
 
 import hypotenuse.*
 import prepositional.*
-import proscenium.*
 import wisteria.*
 
 object Randomizable extends Derivation[[derivation] =>> derivation is Randomizable]:

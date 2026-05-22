@@ -33,6 +33,5 @@
 package synesthesia
 
 import anticipation.*
-import proscenium.*
 
 case class about(text: Text) extends StaticAnnotation

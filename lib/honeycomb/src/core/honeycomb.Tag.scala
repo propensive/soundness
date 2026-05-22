@@ -40,7 +40,6 @@ import fulminate.*
 import gossamer.*
 import panopticon.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import typonym.*
 import vacuous.*

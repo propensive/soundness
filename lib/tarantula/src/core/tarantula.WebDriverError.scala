@@ -34,7 +34,6 @@ package tarantula
 
 import anticipation.*
 import fulminate.*
-import proscenium.*
 
 object WebDriverError:
   enum Reason(val number: Int) extends Clarification:

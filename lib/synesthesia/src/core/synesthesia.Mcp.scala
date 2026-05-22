@@ -44,7 +44,6 @@ import jacinta.*
 import obligatory.*
 import parasite.*
 import prepositional.*
-import proscenium.*
 import revolution.*
 import rudiments.*
 import spectacular.*

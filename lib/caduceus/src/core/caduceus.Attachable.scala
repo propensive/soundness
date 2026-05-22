@@ -35,7 +35,6 @@ package caduceus
 import anticipation.*
 import gesticulate.*
 import prepositional.*
-import proscenium.*
 import turbulence.*
 
 object Attachable:

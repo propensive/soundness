@@ -38,7 +38,6 @@ import anticipation.*
 import cataclysm.{Float as _, *}
 import geodesy.*
 import gossamer.*
-import proscenium.*
 import spectacular.*
 import vacuous.*
 import xylophone.*

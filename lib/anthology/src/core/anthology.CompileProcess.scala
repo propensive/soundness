@@ -35,7 +35,6 @@ package anthology
 import anticipation.*
 import contingency.*
 import parasite.*
-import proscenium.*
 import turbulence.*
 import vacuous.*
 

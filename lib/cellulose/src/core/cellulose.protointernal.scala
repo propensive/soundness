@@ -36,7 +36,6 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 import wisteria.*

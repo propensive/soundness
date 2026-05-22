@@ -43,7 +43,7 @@ object Fqcn:
     || char == '_' || char == '$'
 
   def apply(name: Text): Fqcn raises FqcnError =
-    val parts = IArray.from(name.s.split("\\.").nn.map(_.nn))
+    val parts = IArray.from(name.s.split("\\.").nn.iterator.map(_.nn))
 
     parts.foreach: part =>
       if part.length == 0 then raise(FqcnError(name, FqcnError.Reason.EmptyName))

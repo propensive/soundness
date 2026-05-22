@@ -43,7 +43,6 @@ import anticipation.*
 import coaxial.*
 import contingency.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*

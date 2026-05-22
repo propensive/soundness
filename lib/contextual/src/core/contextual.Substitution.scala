@@ -32,7 +32,6 @@
                                                                                                   */
 package contextual
 
-import proscenium.*
 
 trait Substitution[input, -value, substitution <: Label]
 extends Insertion[input, value]

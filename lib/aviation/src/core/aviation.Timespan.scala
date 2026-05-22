@@ -34,7 +34,6 @@ package aviation
 
 import anticipation.*
 import prepositional.*
-import proscenium.*
 import symbolism.*
 
 object Timespan:

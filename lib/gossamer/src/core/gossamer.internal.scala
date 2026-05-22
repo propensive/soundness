@@ -39,7 +39,6 @@ import denominative.*
 import fulminate.*
 import gigantism.*
 import hieroglyph.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

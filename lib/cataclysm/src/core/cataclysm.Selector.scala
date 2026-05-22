@@ -36,7 +36,6 @@ import language.dynamics
 
 import anticipation.*
 import gossamer.*
-import proscenium.*
 
 object Selector:
   // given childSelector: [selector: Selectable, selector2: Selectable]

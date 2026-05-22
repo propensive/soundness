@@ -41,7 +41,6 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import prepositional.*
-import proscenium.*
 import vacuous.*
 
 object Property:

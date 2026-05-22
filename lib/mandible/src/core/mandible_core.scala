@@ -47,7 +47,6 @@ import inimitable.*
 import iridescence.*
 import nomenclature.*
 import prepositional.*
-import proscenium.*
 import serpentine.*
 import turbulence.*
 import vacuous.*

@@ -45,7 +45,6 @@ import denominative.*
 import hypotenuse.*
 import parasite.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import symbolism.*
 import vacuous.*

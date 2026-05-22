@@ -39,7 +39,6 @@ import fulminate.*
 import gigantism.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import spectacular.*
 import urticose.*
 import vacuous.*

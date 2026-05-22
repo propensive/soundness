@@ -32,7 +32,6 @@
                                                                                                   */
 package octogenarian
 
-import proscenium.*
 
 class GitProcess[+result](val progress: Stream[Progress])(closure: => result):
   lazy val result: result = closure

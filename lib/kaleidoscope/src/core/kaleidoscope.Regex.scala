@@ -40,7 +40,6 @@ import java.util.regex as jur
 import anticipation.*
 import contingency.*
 import denominative.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 
@@ -367,12 +366,12 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
                 if group.quantifier.unitary then matchedText.head :: matches
                 else if group.quantifier == Regex.Quantifier.Between(0, 1)
                 then matchedText.headOption.getOrElse(Unset) :: matches
-                else matchedText.toCharArray.nn.to(List) :: matches
+                else matchedText.toCharArray.nn.iterator.to(List) :: matches
               else
 
               if group.quantifier.unitary then matcher.group(s"g$index").nn.tt  :: matches
               else
-                if group.charClass then matchedText.toCharArray.nn.to(List) :: matches else
+                if group.charClass then matchedText.toCharArray.nn.iterator.to(List) :: matches else
                   val subpattern = pattern.s.substring(group.start, group.end).nn
 
                   val compiled =

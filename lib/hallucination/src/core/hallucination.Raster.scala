@@ -39,7 +39,6 @@ import javax.imageio as ji
 import anticipation.*
 import contingency.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import turbulence.*
 

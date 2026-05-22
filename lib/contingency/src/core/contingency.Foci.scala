@@ -35,7 +35,6 @@ package contingency
 import scala.collection.mutable as scm
 
 import beneficence.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

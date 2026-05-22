@@ -39,7 +39,6 @@ import contingency.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
-import proscenium.*
 import spectacular.*
 import turbulence.*
 import vacuous.*

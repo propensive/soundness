@@ -36,7 +36,6 @@ import scala.compiletime.*
 
 import anticipation.*
 import denominative.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

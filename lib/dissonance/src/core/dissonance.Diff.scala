@@ -36,7 +36,6 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
@@ -90,14 +89,14 @@ object Diff:
 
           else
             def unpair(string: String): (Int, Int) =
-              try string.split(",").nn.to(List) match
+              try string.split(",").nn.iterator.to(List) match
                 case List(start, end) => (start.nn.toInt - 1, end.nn.toInt)
                 case List(start)      => (start.nn.toInt - 1, start.nn.toInt)
                 case _                => abort(DiffError(line, head))
               catch case error: NumberFormatException => abort(DiffError(line, head))
 
             val pairs =
-              head.s.split("[acd]").nn.to(List) match
+              head.s.split("[acd]").nn.iterator.to(List) match
                 case List(left, right) => Some((unpair(left.nn), unpair(right.nn)))
                 case _                 => None
 

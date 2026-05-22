@@ -61,7 +61,6 @@ import nomenclature.*
 import parasite.*
 import prepositional.*
 import profanity.*
-import proscenium.*
 import quantitative.*
 import rudiments.*
 import serpentine.*
@@ -194,7 +193,7 @@ def cli[bus <: Matchable](using executive: Executive)
             while buf.hasRemaining do buf.put(0.toByte)
 
             path.open: file =>
-              Stream(IArray.from(patched): IArray[Byte]).writeTo(file)
+              Stream(IArray.from(patched.iterator): IArray[Byte]).writeTo(file)
 
             if platformLabel.starts(t"macos") then
               if !isWindows then path.executable() = true

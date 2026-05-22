@@ -39,7 +39,6 @@ import scala.util.NotGiven
 import anticipation.*
 import contextual.*
 import prepositional.*
-import proscenium.*
 
 extension [renderable: Renderable](value: renderable)
   def html: Html of renderable.Form = renderable.render(value)

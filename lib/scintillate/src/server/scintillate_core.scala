@@ -41,7 +41,6 @@ import hellenism.*
 import hieroglyph.*
 import parasite.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import serpentine.*
 import spectacular.*

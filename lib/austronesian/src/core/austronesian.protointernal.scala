@@ -42,7 +42,6 @@ import gigantism.*
 import gossamer.*
 import hellenism.*
 import prepositional.*
-import proscenium.*
 import wisteria.*
 
 object protointernal:

@@ -42,7 +42,6 @@ import denominative.*
 import distillate.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*

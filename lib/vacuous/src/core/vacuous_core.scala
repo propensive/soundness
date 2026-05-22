@@ -38,7 +38,6 @@ import scala.compiletime.*
 
 import anticipation.*
 import fulminate.*
-import proscenium.*
 
 import errorDiagnostics.stackTraces
 

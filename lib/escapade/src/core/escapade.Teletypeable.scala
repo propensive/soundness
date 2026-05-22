@@ -40,7 +40,6 @@ import gossamer.*
 import hieroglyph.*
 import iridescence.*
 import prepositional.*
-import proscenium.*
 import spectacular.*
 import vacuous.*
 

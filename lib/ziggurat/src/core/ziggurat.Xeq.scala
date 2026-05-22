@@ -41,7 +41,6 @@ import hellenism.*
 import hieroglyph.*
 import monotonous.*, alphabets.base64.standard
 import prepositional.*
-import proscenium.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
@@ -174,7 +173,7 @@ object Xeq:
 
 
   def main(args: Array[String]): Unit =
-    args.toList match
+    args.iterator.toList match
       case "installer" :: output :: staging :: Nil =>
         installerMain(output.tt, staging.tt)
 

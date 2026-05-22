@@ -33,7 +33,6 @@
 package punctuation
 
 import anticipation.*
-import proscenium.*
 import vacuous.*
 
 enum Prose extends Markdown.Node:

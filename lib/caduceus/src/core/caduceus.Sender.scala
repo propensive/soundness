@@ -32,7 +32,6 @@
                                                                                                   */
 package caduceus
 
-import proscenium.*
 import urticose.*
 
 case class Sender(email: EmailAddress)

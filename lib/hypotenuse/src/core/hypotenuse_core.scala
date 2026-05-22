@@ -142,13 +142,13 @@ extension (float: Float)
   inline def rawBits: Long = JFloat.floatToRawIntBits(float)
 
   @targetName("finiteFloat")
-  inline def finite: Boolean = float.isFinite
+  inline def finite: Boolean = java.lang.Float.isFinite(float)
 
   @targetName("infiniteFloat")
-  inline def infinite: Boolean = float.isInfinite
+  inline def infinite: Boolean = java.lang.Float.isInfinite(float)
 
   @targetName("nanFloat")
-  inline def nan: Boolean = float.isNaN
+  inline def nan: Boolean = java.lang.Float.isNaN(float)
 
   @targetName("successorFloat")
   inline def successor: Float = Math.nextUp(float)
@@ -207,13 +207,13 @@ extension (double: Double)
   inline def rawBits: B64 = JDouble.doubleToRawLongBits(double).bits
 
   @targetName("finiteDouble")
-  inline def finite: Boolean = double.isFinite
+  inline def finite: Boolean = java.lang.Double.isFinite(double)
 
   @targetName("infiniteDouble")
-  inline def infinite: Boolean = double.isInfinite
+  inline def infinite: Boolean = java.lang.Double.isInfinite(double)
 
   @targetName("nanDouble")
-  inline def nan: Boolean = double.isNaN
+  inline def nan: Boolean = java.lang.Double.isNaN(double)
 
   @targetName("successorDouble")
   inline def successor: Double = Math.nextUp(double)

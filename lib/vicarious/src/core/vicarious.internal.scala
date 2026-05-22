@@ -36,7 +36,6 @@ import scala.compiletime.*
 import scala.quoted.*
 
 import gigantism.*
-import proscenium.*
 import rudiments.*
 
 object internal:

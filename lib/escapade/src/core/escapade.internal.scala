@@ -42,7 +42,6 @@ import denominative.*
 import fulminate.*
 import gossamer.*
 import hypotenuse.*
-import proscenium.*
 import rudiments.*
 import symbolism.*
 import vacuous.*

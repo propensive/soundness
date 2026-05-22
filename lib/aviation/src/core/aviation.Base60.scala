@@ -32,7 +32,6 @@
                                                                                                   */
 package aviation
 
-import proscenium.*
 
 object Base60:
   def apply(int: Int): Base60 =

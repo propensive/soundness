@@ -45,7 +45,6 @@ import fulminate.*
 import gigantism.*
 import gossamer.*
 import harlequin.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

@@ -36,7 +36,6 @@ import scala.annotation.*
 
 import anticipation.*
 import prepositional.*
-import proscenium.*
 import urticose.*
 import vacuous.*
 

@@ -36,7 +36,6 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

@@ -43,7 +43,6 @@ import denominative.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

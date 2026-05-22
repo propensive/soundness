@@ -38,7 +38,6 @@ import anticipation.*
 import fulminate.*
 import gigantism.*
 import prepositional.*
-import proscenium.*
 
 trait Specification extends Original:
   type Origin

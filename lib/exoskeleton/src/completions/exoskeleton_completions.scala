@@ -41,7 +41,6 @@ import eucalyptus.*
 import fulminate.*
 import gossamer.*
 import guillotine.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*

@@ -37,7 +37,6 @@ import java.lang as jl
 import anticipation.*
 import contingency.*
 import hypotenuse.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

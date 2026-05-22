@@ -41,7 +41,6 @@ import hieroglyph.*
 import jacinta.*
 import monotonous.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import telekinesis.*
 import turbulence.*

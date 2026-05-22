@@ -38,7 +38,6 @@ import doms.html.whatwg.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import spectacular.*
 import vacuous.*
 

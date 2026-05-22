@@ -34,7 +34,6 @@ package ulysses
 
 import anticipation.*
 import gossamer.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 
@@ -56,7 +55,7 @@ case class Palimpsest(data: Data, length: Int):
     def xor(data: Data, offset: Int): Unit =
       data.indices.each: index => array(index + offset) = (array(index + offset)^data(index)).toByte
 
-    def complete(matched: List[Data]): Unit = if array.all(_ == 0) then break(matched.reverse)
+    def complete(matched: List[Data]): Unit = if array.iterator.all(_ == 0) then break(matched.reverse)
 
     def recur(item: Int, matched: List[Data]): Unit =
       if item == length then complete(matched) else bibliography(array(item)).each: hash =>

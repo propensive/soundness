@@ -39,7 +39,6 @@ import java.util.concurrent.atomic as juca
 import scala.util.boundary
 
 import fulminate.*
-import proscenium.*
 
 
 /** Capture an `X raises Y` expression without applying it. The body is held

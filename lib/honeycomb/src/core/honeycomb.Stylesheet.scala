@@ -36,7 +36,6 @@ import anticipation.*
 import beneficence.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import symbolism.*
 import typonym.*
 

@@ -177,7 +177,7 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
     array.place(t"ustar\u0000".data, 257.z)
     array.place(t"00".data, 263.z)
 
-    val total = array.map(_.bits.u8.u32).reduce(_ + _)
+    val total = array.iterator.map(_.bits.u8.u32).reduce(_ + _)
     array.place(format(total, 8), 148.z)
 
   def serialize: LazyList[Data] = header #:: dataBlocks

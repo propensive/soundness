@@ -34,7 +34,6 @@ package telekinesis
 
 import anticipation.*
 import fulminate.*
-import proscenium.*
 import urticose.*
 
 object HttpEvent:

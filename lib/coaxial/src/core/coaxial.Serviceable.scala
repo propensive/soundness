@@ -39,7 +39,6 @@ import java.nio.file as jnf
 
 import anticipation.*
 import contingency.*
-import proscenium.*
 import rudiments.*
 import turbulence.*
 import urticose.*

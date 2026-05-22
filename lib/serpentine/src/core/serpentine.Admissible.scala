@@ -37,7 +37,6 @@ import contingency.*
 import inimitable.*
 import nomenclature.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 
 object Admissible:

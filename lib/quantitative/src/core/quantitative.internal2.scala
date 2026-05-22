@@ -35,7 +35,6 @@ package quantitative
 import anticipation.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import symbolism.*
 
 object internal2:

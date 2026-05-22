@@ -37,7 +37,7 @@ import prepositional.*
 
 object Measurable:
   given general: (measurable: Char is Measurable) => Text is Measurable =
-    _.s.toCharArray.nn.map(measurable.width(_)).sum
+    _.s.toCharArray.nn.iterator.map(measurable.width(_)).sum
 
 trait Measurable extends Typeclass:
   def width(text: Self): Int

@@ -40,7 +40,6 @@ import hypotenuse.*
 import monotonous.*
 import parasite.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import symbolism.*
 import telekinesis.*

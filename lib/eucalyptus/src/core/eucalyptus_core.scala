@@ -42,7 +42,6 @@ import fulminate.*
 import gossamer.*
 import parasite.*, codicils.cancel
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*

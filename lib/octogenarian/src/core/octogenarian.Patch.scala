@@ -36,7 +36,6 @@ import anticipation.*
 import dissonance.*
 import gossamer.*
 import kaleidoscope.*
-import proscenium.*
 import vacuous.*
 
 object Patch:

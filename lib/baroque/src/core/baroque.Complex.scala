@@ -38,7 +38,6 @@ import geodesy.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
-import proscenium.*
 import quantitative.*
 import spectacular.*
 import symbolism.*

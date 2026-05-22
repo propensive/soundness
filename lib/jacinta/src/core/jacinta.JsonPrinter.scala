@@ -36,7 +36,6 @@ import scala.compiletime.*
 
 import anticipation.*
 import gossamer.*
-import proscenium.*
 import rudiments.*
 
 object JsonPrinter:
@@ -44,7 +43,7 @@ object JsonPrinter:
     def appendString(string: String): Unit =
       append('"')
 
-      string.each:
+      string.iterator.each:
         case '\"' => append(t"\\\"")
         case '\t' => append(t"\\t")
         case '\n' => append(t"\\n")

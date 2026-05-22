@@ -50,7 +50,6 @@ import hieroglyph.*
 import hypotenuse.*
 import parasite.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*

@@ -38,7 +38,6 @@ import contingency.*
 import gossamer.*
 import guillotine.*
 import prepositional.*
-import proscenium.*
 import vacuous.*
 
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):

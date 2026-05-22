@@ -32,7 +32,6 @@
                                                                                                   */
 package vicarious
 
-import proscenium.*
 import beneficence.Findable
 
 object Proxy:

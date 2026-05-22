@@ -34,7 +34,6 @@ package phoenicia
 
 import anticipation.*
 import gossamer.*
-import proscenium.*
 import quantitative.*
 
 object Ems:

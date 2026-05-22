@@ -38,7 +38,6 @@ import anticipation.*
 import distillate.*
 import legerdemain.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import urticose.*
 import vacuous.*

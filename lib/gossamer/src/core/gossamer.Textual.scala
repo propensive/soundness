@@ -35,7 +35,6 @@ package gossamer
 import anticipation.*
 import denominative.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import symbolism.*
 import vacuous.*

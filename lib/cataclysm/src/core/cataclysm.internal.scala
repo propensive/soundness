@@ -38,7 +38,6 @@ import anticipation.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
-import proscenium.*
 import spectacular.*
 
 object internal:

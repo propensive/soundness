@@ -40,7 +40,6 @@ import gossamer.*
 import jacinta.*
 import obligatory.*
 import prepositional.*
-import proscenium.*
 import vacuous.*
 
 trait McpClient extends Findable:

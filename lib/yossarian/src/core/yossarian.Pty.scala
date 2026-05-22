@@ -40,7 +40,6 @@ import gossamer.*
 import hieroglyph.*, textMetrics.wideCharacterWidth
 import hypotenuse.*
 import kaleidoscope.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

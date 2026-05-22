@@ -34,7 +34,6 @@ package cataclysm
 
 import anticipation.*
 import prepositional.*
-import proscenium.*
 
 object Selectable:
   given ident: Selector is Selectable = identity(_)

@@ -40,7 +40,6 @@ import digression.*
 import fulminate.*
 import inimitable.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

@@ -34,7 +34,6 @@ package serpentine
 
 import gossamer.*
 import prepositional.*
-import proscenium.*
 
 object Drive:
   def apply(letter: Char): Drive = new Drive(letter)

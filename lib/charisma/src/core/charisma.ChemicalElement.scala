@@ -33,7 +33,6 @@
 package charisma
 
 import anticipation.*
-import proscenium.*
 import spectacular.*
 
 object ChemicalElement:

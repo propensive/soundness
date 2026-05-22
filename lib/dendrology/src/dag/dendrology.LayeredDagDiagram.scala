@@ -243,7 +243,7 @@ case class LayeredDagDiagram[node](rows: List[(List[DagTile], Map[Int, node])]):
         val w = style.width(glyph(n))
         if w > widths(col) then widths(col) = w
 
-    val widthsList = widths.to(List)
+    val widthsList = widths.iterator.to(List)
 
     rows.map: (tiles, nodesAt) =>
       val glyphs: Map[Int, line] = nodesAt.map: (col, n) => col -> glyph(n)
