@@ -34,7 +34,6 @@ package urticose
 
 import anticipation.*
 import gossamer.*
-import proscenium.*
 import spectacular.*
 
 object Scheme:

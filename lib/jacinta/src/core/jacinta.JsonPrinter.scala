@@ -36,7 +36,6 @@ import scala.compiletime.*
 
 import anticipation.*
 import gossamer.*
-import proscenium.*
 import rudiments.*
 
 object JsonPrinter:

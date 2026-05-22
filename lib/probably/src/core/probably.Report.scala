@@ -46,7 +46,6 @@ import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import iridescence.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

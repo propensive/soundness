@@ -36,7 +36,6 @@ import anticipation.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
-import proscenium.*
 
 package alphabets:
   package binary:

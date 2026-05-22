@@ -39,7 +39,6 @@ import anticipation.*
 import contingency.*
 import hypotenuse.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import turbulence.*
 import urticose.*

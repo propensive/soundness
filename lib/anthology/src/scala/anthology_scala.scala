@@ -38,7 +38,6 @@ import dotty.tools.dotc.reporting.*
 
 import anticipation.*
 import gossamer.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*

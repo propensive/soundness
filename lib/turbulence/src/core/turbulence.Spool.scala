@@ -34,7 +34,6 @@ package turbulence
 
 import java.util.concurrent as juc
 
-import proscenium.*
 
 object Spool:
   private object Termination

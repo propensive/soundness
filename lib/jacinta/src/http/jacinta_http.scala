@@ -36,7 +36,6 @@ import anticipation.*
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*
-import proscenium.*
 import spectacular.*
 import telekinesis.*
 

@@ -36,7 +36,6 @@ import anticipation.*
 import honeycomb.*
 import parasite.*
 import prepositional.*
-import proscenium.*
 import turbulence.*
 
 object Sendable:

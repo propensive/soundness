@@ -41,7 +41,6 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

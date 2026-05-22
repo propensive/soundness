@@ -32,7 +32,6 @@
                                                                                                   */
 package quantitative
 
-import proscenium.*
 
 trait Units[power <: Nat, dimension <: Dimension] extends Measure
 

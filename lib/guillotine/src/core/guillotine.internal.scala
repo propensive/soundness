@@ -39,7 +39,6 @@ import scala.quoted.*
 import anticipation.*
 import contextual.*
 import fulminate.*
-import proscenium.*
 
 object internal:
   def sh(context: Expr[StringContext], insertions: Expr[Seq[Any]])(using Quotes)

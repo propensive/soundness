@@ -33,7 +33,6 @@
 package aviation
 
 import anticipation.*
-import proscenium.*
 import symbolism.*
 
 import abstractables.instantIsAbstractable

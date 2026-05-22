@@ -38,7 +38,6 @@ import anticipation.*
 import distillate.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import vacuous.*
 
 object Variable extends Protovariable:

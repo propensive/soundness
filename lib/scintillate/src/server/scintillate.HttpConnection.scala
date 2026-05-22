@@ -41,7 +41,6 @@ import beneficence.*
 import contingency.*
 import distillate.*
 import gossamer.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

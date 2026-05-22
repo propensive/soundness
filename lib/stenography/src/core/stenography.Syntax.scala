@@ -38,7 +38,6 @@ import scala.quoted.*
 import anticipation.*
 import denominative.*
 import fulminate.*
-import proscenium.*
 import rudiments.*
 import symbolism.*
 import vacuous.*

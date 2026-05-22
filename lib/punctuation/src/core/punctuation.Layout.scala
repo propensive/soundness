@@ -34,7 +34,6 @@ package punctuation
 
 import anticipation.*
 import denominative.*
-import proscenium.*
 import vacuous.*
 
 enum Layout extends Markdown.Node:

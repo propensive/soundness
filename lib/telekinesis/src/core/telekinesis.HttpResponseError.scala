@@ -34,7 +34,6 @@ package telekinesis
 
 import anticipation.*
 import fulminate.*
-import proscenium.*
 
 object HttpResponseError:
   enum Reason(val number: Int) extends Clarification:

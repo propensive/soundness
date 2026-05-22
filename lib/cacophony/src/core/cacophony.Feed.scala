@@ -37,7 +37,6 @@ import javax.sound.sampled as jss
 import anticipation.*
 import contingency.*
 import prepositional.*
-import proscenium.*
 import quantitative.*
 import symbolism.*
 import turbulence.*

@@ -41,7 +41,6 @@ import scala.runtime.coverage.*
 import anticipation.*
 import distillate.*
 import gossamer.*
-import proscenium.*
 import rudiments.*
 
 object Coverage:

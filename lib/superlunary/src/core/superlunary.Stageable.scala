@@ -39,7 +39,6 @@ import distillate.*
 import fulminate.*
 import jacinta.*
 import prepositional.*
-import proscenium.*
 
 import errorDiagnostics.stackTraces
 import strategies.mitigation

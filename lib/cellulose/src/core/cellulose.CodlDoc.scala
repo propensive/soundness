@@ -42,7 +42,6 @@ import contingency.*
 import dissonance.*
 import distillate.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*

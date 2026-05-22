@@ -34,7 +34,6 @@ package gesticulate
 
 import anticipation.*
 import prepositional.*
-import proscenium.*
 import turbulence.*
 
 object Asset:

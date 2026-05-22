@@ -42,7 +42,6 @@ import geodesy.*
 import gossamer.*
 import iridescence.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 import xylophone.*

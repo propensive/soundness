@@ -40,7 +40,6 @@ import gossamer.*
 import kaleidoscope.*
 import larceny.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*

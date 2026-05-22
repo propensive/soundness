@@ -41,7 +41,6 @@ import gossamer.*
 import hypotenuse.*
 import prepositional.*
 import probably.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

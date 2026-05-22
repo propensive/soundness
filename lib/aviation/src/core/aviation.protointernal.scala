@@ -38,7 +38,6 @@ import anticipation.*
 import contingency.*
 import hypotenuse.*
 import prepositional.*
-import proscenium.*
 import quantitative.*
 import rudiments.*
 import symbolism.*

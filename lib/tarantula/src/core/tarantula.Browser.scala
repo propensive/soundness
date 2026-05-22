@@ -36,7 +36,6 @@ import ambience.*
 import anticipation.*
 import guillotine.*
 import parasite.*
-import proscenium.*
 import telekinesis.*
 
 trait Browser(name: Text):

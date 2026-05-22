@@ -39,7 +39,6 @@ import fulminate.*
 import gigantism.*
 import gossamer.*
 import hellenism.*
-import proscenium.*
 import symbolism.*
 import vacuous.*
 

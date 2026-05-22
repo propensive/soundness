@@ -43,7 +43,6 @@ import com.sun.management as csm
 
 import anticipation.*
 import denominative.*
-import proscenium.*
 import rudiments.*
 import symbolism.*
 

@@ -35,7 +35,6 @@ package typonym
 import scala.quoted.*
 
 import gigantism.*
-import proscenium.*
 
 object internal:
   private def untuple[tuple <: Tuple: Type](using Quotes): List[quotes.reflect.TypeRepr] =

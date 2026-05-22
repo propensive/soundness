@@ -38,7 +38,6 @@ import scala.collection.mutable.BitSet
 import anticipation.*
 import contingency.*
 import denominative.*
-import proscenium.*
 import rudiments.*
 
 object Permutation:

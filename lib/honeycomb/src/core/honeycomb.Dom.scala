@@ -39,7 +39,6 @@ import scala.collection.mutable as scm
 import anticipation.*
 import beneficence.*
 import gossamer.*
-import proscenium.*
 import vacuous.*
 
 object Dom:

@@ -38,7 +38,6 @@ import distillate.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*

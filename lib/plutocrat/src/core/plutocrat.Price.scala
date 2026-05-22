@@ -33,7 +33,6 @@
 package plutocrat
 
 import prepositional.*
-import proscenium.*
 import symbolism.*
 
 object Price:

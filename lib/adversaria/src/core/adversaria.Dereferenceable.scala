@@ -36,7 +36,6 @@ import scala.quoted.*
 
 import anticipation.*
 import prepositional.*
-import proscenium.*
 
 object Dereferenceable:
   inline given [entity, value] => entity is Dereferenceable to value =

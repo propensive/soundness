@@ -33,7 +33,6 @@
 package aviation
 
 import hypotenuse.*
-import proscenium.*
 import symbolism.*
 import vacuous.*
 

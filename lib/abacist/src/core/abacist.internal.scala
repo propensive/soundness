@@ -40,7 +40,6 @@ import fulminate.*
 import gigantism.*
 import gossamer.{where as _, *}
 import hieroglyph.*
-import proscenium.*
 import quantitative.*
 import rudiments.*
 import symbolism.*

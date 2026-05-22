@@ -41,7 +41,6 @@ import escritoire.*, tableStyles.minimal, columnAttenuation.ignore
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import iridescence.*
-import proscenium.*
 import spectacular.*
 import vacuous.*
 

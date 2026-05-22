@@ -38,7 +38,6 @@ import anticipation.*
 import gigantism.*
 import hellenism.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import wisteria.*
 

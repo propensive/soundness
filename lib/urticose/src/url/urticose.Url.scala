@@ -42,7 +42,6 @@ import escapade.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import serpentine.*
 import spectacular.*

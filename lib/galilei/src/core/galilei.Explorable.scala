@@ -38,7 +38,6 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import prepositional.*
-import proscenium.*
 import serpentine.*
 import spectacular.*
 

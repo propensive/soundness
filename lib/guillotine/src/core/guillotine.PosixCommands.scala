@@ -34,7 +34,6 @@ package guillotine
 
 import anticipation.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 
 trait PosixCommands:

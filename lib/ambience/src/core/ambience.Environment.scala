@@ -37,7 +37,6 @@ import language.dynamics
 import anticipation.*
 import beneficence.*
 import contingency.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

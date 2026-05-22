@@ -35,7 +35,6 @@ package cataclysm
 import anticipation.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import quantitative.*
 import spectacular.*
 

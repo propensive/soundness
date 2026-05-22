@@ -43,7 +43,6 @@ import anticipation.*
 import denominative.*
 import kaleidoscope.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import symbolism.*
 import vacuous.*

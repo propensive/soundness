@@ -37,7 +37,6 @@ import contingency.*
 import gesticulate.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import spectacular.*
 import turbulence.*
 

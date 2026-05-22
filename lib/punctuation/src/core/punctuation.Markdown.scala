@@ -38,7 +38,6 @@ import frontier.*
 import gossamer.*
 import honeycomb.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

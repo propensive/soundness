@@ -35,7 +35,6 @@ package scintillate
 import anticipation.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import telekinesis.*
 
 object Redirect:

@@ -35,7 +35,6 @@ package dissonance
 import anticipation.*
 import denominative.*
 import fulminate.*
-import proscenium.*
 import symbolism.*
 import vacuous.*
 

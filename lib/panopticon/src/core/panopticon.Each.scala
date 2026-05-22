@@ -33,7 +33,6 @@
 package panopticon
 
 import prepositional.*
-import proscenium.*
 
 object Each:
   given optical: [element] => Each.type is Optical from List[element] onto element =

@@ -34,7 +34,6 @@ package ulysses
 
 import anticipation.*
 import beneficence.*
-import proscenium.*
 
 object Bibliography:
   def apply(data: Iterable[Data]): Bibliography =

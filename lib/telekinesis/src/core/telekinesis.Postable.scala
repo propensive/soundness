@@ -44,7 +44,6 @@ import hieroglyph.*
 import legerdemain.*
 import monotonous.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*

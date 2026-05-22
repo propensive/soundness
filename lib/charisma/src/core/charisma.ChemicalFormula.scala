@@ -34,7 +34,6 @@ package charisma
 
 import anticipation.*
 import gossamer.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

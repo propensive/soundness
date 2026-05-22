@@ -38,7 +38,6 @@ import anticipation.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
-import proscenium.*
 
 object CssStylesheet:
   given abstractable: (charEncoder: CharEncoder)

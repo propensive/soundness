@@ -32,7 +32,6 @@
                                                                                                   */
 package vicarious
 
-import proscenium.*
 
 inline def catalog[key](key: key)[value](inline lambda: [field] => (field: field) => value)
   ( using classTag: ClassTag[value] )

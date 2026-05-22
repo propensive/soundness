@@ -34,7 +34,6 @@ package nomenclature
 
 import anticipation.*
 import fulminate.*
-import proscenium.*
 
 object MustNotMatch extends Rule
   ( { text => m"must not match $text" }, { (text, param) => !text.s.matches(param.s) } )

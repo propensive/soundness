@@ -34,7 +34,6 @@ package zephyrine
 
 import denominative.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

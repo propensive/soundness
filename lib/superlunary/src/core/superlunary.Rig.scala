@@ -48,7 +48,6 @@ import distillate.*
 import hellenism.*
 import inimitable.*
 import prepositional.*
-import proscenium.*
 import serpentine.*
 
 import interfaces.paths.pathOnLinux

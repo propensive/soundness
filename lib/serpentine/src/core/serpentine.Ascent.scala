@@ -35,7 +35,6 @@ package serpentine
 import scala.compiletime.*, ops.int.*
 
 import prepositional.*
-import proscenium.*
 
 class Ascent(val ascent0: Int) extends Relative(ascent0):
   type Topic = EmptyTuple

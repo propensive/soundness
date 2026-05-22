@@ -34,7 +34,6 @@ package parasite
 
 import java.lang.management as jlm
 
-import proscenium.*
 import rudiments.*
 
 object Heap:

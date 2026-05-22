@@ -41,7 +41,6 @@ import denominative.*
 import fulminate.*
 import gigantism.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

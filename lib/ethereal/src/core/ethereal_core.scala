@@ -61,7 +61,6 @@ import nomenclature.*
 import parasite.*
 import prepositional.*
 import profanity.*
-import proscenium.*
 import quantitative.*
 import rudiments.*
 import serpentine.*

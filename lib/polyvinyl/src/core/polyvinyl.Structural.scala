@@ -33,7 +33,6 @@
 package polyvinyl
 
 import prepositional.*
-import proscenium.*
 
 trait Structural[constructor[_]] extends Original, Formal:
   type Self <: Label

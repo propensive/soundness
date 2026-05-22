@@ -35,7 +35,6 @@ package turbulence
 import language.experimental.captureChecking
 
 import prepositional.*
-import proscenium.*
 
 trait Loadable extends Typeclass:
   type Self <: Documentary

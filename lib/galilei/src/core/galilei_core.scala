@@ -41,7 +41,6 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import serpentine.*
 import spectacular.*

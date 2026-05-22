@@ -35,7 +35,6 @@ package honeycomb
 import anticipation.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import vacuous.*
 
 object Unattributive:

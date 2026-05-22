@@ -48,7 +48,6 @@ import hieroglyph.*
 import monotonous.*
 import parasite.*
 import prepositional.*
-import proscenium.*
 import revolution.*
 import rudiments.*
 import serpentine.*

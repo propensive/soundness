@@ -34,7 +34,6 @@ package turbulence
 
 import java.util.concurrent.atomic as juca
 
-import proscenium.*
 
 object Tap:
   enum Regulation:

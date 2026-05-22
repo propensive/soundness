@@ -39,7 +39,6 @@ import cardinality.*
 import gastronomy.*
 import hypotenuse.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

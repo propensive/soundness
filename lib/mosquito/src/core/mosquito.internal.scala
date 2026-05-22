@@ -39,7 +39,6 @@ import anticipation.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

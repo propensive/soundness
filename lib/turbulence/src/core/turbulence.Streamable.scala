@@ -38,7 +38,6 @@ import java.nio as jn
 import anticipation.*
 import contingency.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import symbolism.*
 import vacuous.*

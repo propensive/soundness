@@ -41,7 +41,6 @@ import galilei.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import serpentine.*
 import turbulence.*

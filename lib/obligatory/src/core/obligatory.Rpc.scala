@@ -32,6 +32,5 @@
                                                                                                   */
 package obligatory
 
-import proscenium.*
 
 case class rpc() extends StaticAnnotation

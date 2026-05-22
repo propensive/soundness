@@ -35,7 +35,6 @@ package galilei
 import anticipation.*
 import contingency.*
 import prepositional.*
-import proscenium.*
 import turbulence.*
 
 object Handle:

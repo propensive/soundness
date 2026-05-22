@@ -36,7 +36,6 @@ import language.dynamics
 
 import anticipation.*
 import prepositional.*
-import proscenium.*
 import typonym.*
 
 object Tag:

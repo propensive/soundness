@@ -42,7 +42,6 @@ import fulminate.*
 import gigantism.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*

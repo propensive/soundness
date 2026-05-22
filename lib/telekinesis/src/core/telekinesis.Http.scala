@@ -44,7 +44,6 @@ import gossamer.*
 import hieroglyph.*
 import legerdemain.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import serpentine.*
 import spectacular.*

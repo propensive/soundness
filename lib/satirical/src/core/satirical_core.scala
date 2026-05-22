@@ -36,7 +36,6 @@ import anticipation.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import turbulence.*
 import vacuous.*
 

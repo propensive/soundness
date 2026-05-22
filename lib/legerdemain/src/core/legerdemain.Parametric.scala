@@ -33,7 +33,6 @@
 package legerdemain
 
 import prepositional.*
-import proscenium.*
 
 trait Parametric extends Resultant:
   type Self <: Label

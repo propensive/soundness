@@ -35,7 +35,6 @@ package phoenicia
 import anticipation.*
 import contingency.*
 import gossamer.*
-import proscenium.*
 import vacuous.*
 
 sealed trait TableTag:

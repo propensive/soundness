@@ -39,7 +39,6 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import gigantism.*
-import proscenium.*
 import rudiments.*
 
 object protointernal:

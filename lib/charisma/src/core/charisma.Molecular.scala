@@ -32,7 +32,6 @@
                                                                                                   */
 package charisma
 
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

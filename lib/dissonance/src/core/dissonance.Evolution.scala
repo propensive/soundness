@@ -33,7 +33,6 @@
 package dissonance
 
 import denominative.*
-import proscenium.*
 
 object Evolution:
   case class Atom[element](value: element, presence: Set[Ordinal]):

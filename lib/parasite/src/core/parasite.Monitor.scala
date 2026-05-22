@@ -45,7 +45,6 @@ import contingency.*
 import digression.*
 import fulminate.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import symbolism.*
 import vacuous.*

@@ -33,7 +33,6 @@
 package revolution
 
 import anticipation.*
-import proscenium.*
 
 abstract class ManifestAttribute[label <: Label: ValueOf]():
   val key: Text = valueOf[label].tt

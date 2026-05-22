@@ -38,7 +38,6 @@ import escritoire.*, tableStyles.default, columnAttenuation.ignore
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import iridescence.*
-import proscenium.*
 
 object TastySymbol:
   given teletypeable: (palette: TastyPalette) => TastySymbol is Teletypeable =

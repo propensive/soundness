@@ -43,7 +43,6 @@ import fulminate.*
 import galilei.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import serpentine.*
 import vacuous.*

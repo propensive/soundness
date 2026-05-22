@@ -43,7 +43,6 @@ import gossamer.*
 import hellenism.*
 import hieroglyph.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import turbulence.*
 import typonym.*

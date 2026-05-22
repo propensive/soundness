@@ -34,7 +34,6 @@ package nomenclature
 
 import anticipation.*
 import fulminate.*
-import proscenium.*
 
 object MustNotEqual
 extends Rule

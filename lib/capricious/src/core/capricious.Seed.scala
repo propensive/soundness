@@ -36,7 +36,6 @@ import language.experimental.genericNumberLiterals
 
 import anticipation.*
 import hypotenuse.*
-import proscenium.*
 
 object Seed:
   def apply(long: Long): Seed = Seed(long.bits.bytes)

@@ -38,7 +38,6 @@ import scala.quoted.*
 
 import denominative.*
 import prepositional.*
-import proscenium.*
 
 object Optic:
   transparent inline given deref: [name <: Label, product <: Product] => name is Lens from product =

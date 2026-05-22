@@ -34,7 +34,6 @@ package cellulose
 
 import anticipation.*
 import gossamer.*
-import proscenium.*
 import spectacular.*, affirmations.trueFalse
 import zephyrine.*
 

@@ -33,7 +33,6 @@
 package guillotine
 
 import prepositional.*
-import proscenium.*
 
 object Intelligible extends PosixCommands
 

@@ -37,7 +37,6 @@ import language.experimental.pureFunctions
 import anticipation.*
 import distillate.*
 import prepositional.*
-import proscenium.*
 import vacuous.*
 
 object Interpretable:

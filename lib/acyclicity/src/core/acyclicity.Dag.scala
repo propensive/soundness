@@ -37,7 +37,6 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import denominative.*
-import proscenium.*
 import rudiments.*
 
 object Dag:

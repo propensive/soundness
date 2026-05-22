@@ -36,7 +36,6 @@ import scala.quoted.*
 
 import anticipation.*
 import prepositional.*
-import proscenium.*
 
 object Annotated:
   transparent inline given annotations: [topic <: StaticAnnotation, self, plane, limit]

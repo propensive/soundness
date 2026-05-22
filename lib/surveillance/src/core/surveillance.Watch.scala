@@ -41,7 +41,6 @@ import contingency.*
 import denominative.*
 import parasite.*, threading.platform
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*

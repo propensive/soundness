@@ -32,7 +32,6 @@
                                                                                                   */
 package quantitative
 
-import proscenium.*
 import rudiments.*
 
 object SiderealDays:

@@ -164,7 +164,7 @@ object internal:
 
       case array: Array[Pojo @unchecked] =>
         factory.newBuilder.pipe: builder =>
-          array.each(builder += _.decode)
+          array.iterator.each(builder += _.decode)
           builder.result()
 
       case other =>

@@ -32,6 +32,5 @@
                                                                                                   */
 package synesthesia
 
-import proscenium.*
 
 case class prompt() extends StaticAnnotation

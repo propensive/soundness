@@ -38,7 +38,6 @@ import distillate.*
 import gossamer.*
 import hypotenuse.*
 import parasite.*
-import proscenium.*
 import quantitative.*
 import spectacular.*
 import symbolism.*

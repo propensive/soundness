@@ -34,7 +34,6 @@ package polyvinyl
 
 import anticipation.*
 import prepositional.*
-import proscenium.*
 
 trait Intensional extends Typeclass, Resultant, Original, Formal:
   type Self <: Label

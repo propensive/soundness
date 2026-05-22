@@ -35,7 +35,6 @@ package quantitative
 import language.implicitConversions
 
 import anticipation.*
-import proscenium.*
 import rudiments.*
 
 object Amount:

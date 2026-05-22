@@ -34,7 +34,6 @@ package caduceus
 
 import anticipation.*
 import fulminate.*
-import proscenium.*
 import urticose.*
 
 case class CourierError(from: EmailAddress, to: EmailAddress, subject: Text)(using Diagnostics)

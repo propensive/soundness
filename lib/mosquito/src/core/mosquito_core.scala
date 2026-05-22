@@ -32,7 +32,6 @@
                                                                                                   */
 package mosquito
 
-import proscenium.*
 import vacuous.*
 
 export mosquito.internal.Tensor

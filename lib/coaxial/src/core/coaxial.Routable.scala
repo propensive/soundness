@@ -36,7 +36,6 @@ import java.net as jn
 
 import anticipation.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import urticose.*
 import vacuous.*

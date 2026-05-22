@@ -35,7 +35,6 @@ package obligatory
 import anticipation.*
 import contingency.*
 import prepositional.*
-import proscenium.*
 import spectacular.*
 import turbulence.*
 import vacuous.*

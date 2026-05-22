@@ -36,7 +36,6 @@ import anticipation.*
 import geodesy.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
 import spectacular.*
 import vacuous.*
 

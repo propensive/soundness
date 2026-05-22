@@ -42,7 +42,6 @@ import exoskeleton.*
 import guillotine.*
 import parasite.*
 import prepositional.*
-import proscenium.*
 import quantitative.*
 import rudiments.*
 import symbolism.*

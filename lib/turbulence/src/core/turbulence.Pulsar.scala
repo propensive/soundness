@@ -35,7 +35,6 @@ package turbulence
 import anticipation.*
 import parasite.*
 import prepositional.*
-import proscenium.*
 
 class Pulsar[duration: Abstractable across Durations to Long](duration: duration):
   private var continue: Boolean = true

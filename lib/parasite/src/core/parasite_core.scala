@@ -43,7 +43,6 @@ import denominative.*
 import digression.*
 import fulminate.*
 import prepositional.*
-import proscenium.*
 import symbolism.*
 import vacuous.*
 

@@ -34,7 +34,6 @@ package ulysses
 
 import anticipation.*
 import gossamer.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

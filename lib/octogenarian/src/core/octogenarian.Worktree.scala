@@ -43,7 +43,6 @@ import guillotine.*
 import kaleidoscope.*
 import nomenclature.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import serpentine.*
 import urticose.*

@@ -34,7 +34,6 @@ package acyclicity
 
 import contextual.*
 import denominative.*
-import proscenium.*
 import rudiments.*
 import spectacular.*
 

@@ -32,7 +32,6 @@
                                                                                                   */
 package probably
 
-import proscenium.*
 
 object Test:
   extension [test](test: Test[test])

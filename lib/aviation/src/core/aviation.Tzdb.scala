@@ -40,7 +40,6 @@ import denominative.*
 import distillate.*
 import gossamer.*
 import kaleidoscope.*
-import proscenium.*
 import spectacular.*
 import symbolism.*
 import vacuous.*

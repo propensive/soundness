@@ -37,7 +37,6 @@ import java.util.zip as juz
 
 import anticipation.*
 import contingency.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

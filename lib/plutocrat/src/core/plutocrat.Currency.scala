@@ -34,7 +34,6 @@ package plutocrat
 
 import anticipation.*
 import prepositional.*
-import proscenium.*
 
 object Currency:
   def apply

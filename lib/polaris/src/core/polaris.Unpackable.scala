@@ -33,7 +33,6 @@
 package polaris
 
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 

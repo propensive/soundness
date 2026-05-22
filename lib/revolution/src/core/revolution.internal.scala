@@ -39,7 +39,6 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import gigantism.*
-import proscenium.*
 import vacuous.*
 
 object internal:

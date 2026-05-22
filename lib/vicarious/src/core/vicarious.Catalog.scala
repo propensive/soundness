@@ -35,7 +35,6 @@ package vicarious
 import language.dynamics
 
 import beneficence.*
-import proscenium.*
 import vacuous.*
 
 object Catalog:
