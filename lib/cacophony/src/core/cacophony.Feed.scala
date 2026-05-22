@@ -64,7 +64,7 @@ case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
 
     mixer.getTargetLineInfo.nn.iterator.toList.flatMap:
       case dli: jss.DataLine.Info if dli.getLineClass == classOf[jss.TargetDataLine] =>
-        dli.getFormats.nn.toList.map: f0 =>
+        dli.getFormats.nn.iterator.toList.map: f0 =>
           val f = f0.nn
 
           val encoding =

@@ -62,7 +62,7 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info):
 
     mixer.getSourceLineInfo.nn.iterator.toList.flatMap:
       case dli: jss.DataLine.Info if dli.getLineClass == classOf[jss.SourceDataLine] =>
-        dli.getFormats.nn.toList.map: f0 =>
+        dli.getFormats.nn.iterator.toList.map: f0 =>
           val f = f0.nn
 
           val encoding =

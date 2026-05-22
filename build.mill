@@ -1114,7 +1114,9 @@ object satirical extends Library:
 
 object savagery extends Library:
   object core extends Component(cataclysm.core, xylophone.core, geodesy.core, iridescence.core,
-    mosquito.core)
+    mosquito.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
 
 object scintillate extends Library:

@@ -389,7 +389,7 @@ object SvgParser:
         abort(SvgError(SvgError.Reason.MalformedColor(c)))
     else if s.startsWith("rgb(") && s.endsWith(")") then
       val inner = s.substring(4, s.length - 1).nn
-      val parts = inner.split(",").nn.toList.map(_.nn.trim.nn)
+      val parts = inner.split(",").nn.iterator.map(_.nn.trim.nn).toList
 
       def parseChannel(part: String): Double =
         if part.endsWith("%") then part.substring(0, part.length - 1).nn.toDouble/100.0

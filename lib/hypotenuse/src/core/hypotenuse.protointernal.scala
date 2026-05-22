@@ -63,7 +63,7 @@ object protointernal:
         halt(118, m"a binary value can only contain characters '0' or '1'", position)
 
     val bits2 = bits.filter(_ != ' ')
-    val long: Long = java.lang.Long.parseLong(bits2, 2)
+    val long: Long = java.lang.Long.parseUnsignedLong(bits2, 2)
 
     bits2.length match
       case 8  => Expr[Byte](long.toByte)
