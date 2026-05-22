@@ -145,17 +145,21 @@ object internal:
     def translateOffset(parserOff: Int, len: Int): Position =
       var acc = 0
       var i = 0
+
       while i < perPart.length do
         val ((parserPart, effectiveStart, _), mapping) = perPart(i)
         val partLen = parserPart.length
+
         if parserOff < acc + partLen && effectiveStart > 0 then
           val inPart = parserOff - acc
           val endIn = (inPart + len.max(1)).min(parserPart.length)
           val rawStart = (effectiveStart + mapping(inPart)).max(effectiveStart)
           val rawEnd = (effectiveStart + mapping(endIn)).max(rawStart + 1)
           return Position(sourceFile, rawStart, rawEnd)
+
         acc += partLen + MarkerString.length
         i += 1
+
       macroPos
 
     val ast: Yaml.Ast =
@@ -209,7 +213,7 @@ object internal:
               case Some('{$enc: Encodable}) =>
                 ' {
                     $value.asInstanceOf[Iterable[t]].iterator
-                    . map(item => Yaml.unseal($enc.encode(item)))
+                    . map: item => Yaml.unseal($enc.encode(item))
                     . to(Iterable)
                   }
 
@@ -248,11 +252,13 @@ object internal:
           val parts: Array[String | Null] = s.split(MarkerString, -1).nn
           var resultExpr: Expr[String] = Expr(parts(0).nn)
           var i = 1
+
           while i < parts.length do
             val fragment = encodeText(consumeHole())
             val partExpr = Expr(parts(i).nn)
             resultExpr = '{$resultExpr + $fragment + $partExpr}
             i += 1
+
           '{Yaml.Ast(${resultExpr})}
 
       def serializeArray(elements: IArray[Any]): Expr[Yaml.Ast] =

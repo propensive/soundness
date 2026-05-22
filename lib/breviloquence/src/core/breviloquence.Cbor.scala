@@ -162,9 +162,11 @@ object Cbor extends Cbor2, Dynamic:
   type CborNull      = Null
   type CborUndefined = vacuous.Unset.type
 
-  opaque type Ast =
+  type CborTypes =
     CborInteger | CborFloat | CborText | CborBytes | CborArray | CborMap | CborBoolean | CborNull
     | CborUndefined | Tag
+
+  opaque type Ast = CborTypes
 
   object Ast:
     val Sentinel: AnyRef = new Object
@@ -176,13 +178,7 @@ object Cbor extends Cbor2, Dynamic:
     private[breviloquence] inline def fromRef(value: AnyRef): Ast =
       value.asInstanceOf[Ast]
 
-    def apply
-      ( value
-        : CborInteger | CborFloat | CborText | CborBytes | CborArray | CborMap | CborBoolean
-        | CborNull | CborUndefined | Tag )
-    :   Ast =
-
-      value
+    def apply(value: CborTypes): Ast = value
 
     def map(keys: IArray[Any], values: IArray[Any]): Ast =
       val count = keys.length
@@ -482,6 +478,7 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
             !recur(left.key(index), right.key(index))
             || !recur(left.value(index), right.value(index))
           then equal = false
+
           index += 1
 
         equal

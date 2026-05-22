@@ -45,25 +45,21 @@ object CborPrinter:
 
   private def head(out: ArrayBuffer[Byte], major: Int, value: Long): Unit =
     val majorBits = major << 5
+
     if value < 0 then
       out += (majorBits | 27).toByte
       u64(out, value)
-
     else if value < 24 then
       out += (majorBits | value.toInt).toByte
-
     else if value < (1 << 8) then
       out += (majorBits | 24).toByte
       out += value.toByte
-
     else if value < (1 << 16) then
       out += (majorBits | 25).toByte
       u16(out, value.toInt)
-
     else if value < (1L << 32) then
       out += (majorBits | 26).toByte
       u32(out, value)
-
     else
       out += (majorBits | 27).toByte
       u64(out, value)
@@ -91,6 +87,7 @@ object CborPrinter:
   private def write(out: ArrayBuffer[Byte], cbor: Cbor.Ast): Unit =
     if cbor.isInteger then
       val long = cbor.asInstanceOf[Long]
+
       if long >= 0 then head(out, 0, long)
       else head(out, 1, -1L - long)
 

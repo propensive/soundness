@@ -168,6 +168,7 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
   private def readIndefiniteByteString(): IArray[Byte] raises CborError =
     val buffer = new java.io.ByteArrayOutputStream
     var done = false
+
     while !done do
       expect(1)
       val head = data(offset) & 0xFF
@@ -259,6 +260,7 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
     //   head 0x00–0x17 : major 0, info 0–23  → value is head itself
     //   head 0x20–0x37 : major 1, info 0–23  → value is -1 - (head & 0x1F)
     if head < 0x18 then return Cbor.Ast.fromRef(boxLong(head.toLong))
+
     if head >= 0x20 && head < 0x38 then
       return Cbor.Ast.fromRef(boxLong(-1L - (head & 0x1F).toLong))
 
