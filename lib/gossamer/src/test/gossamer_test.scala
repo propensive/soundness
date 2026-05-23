@@ -1150,7 +1150,7 @@ object Tests extends Suite(m"Gossamer Tests"):
 
     suite(m"Regex extract"):
       test(m"single case with capture extracts all groups"):
-        t"a=1; b=22; c=333".extract(Prim):
+        t"a=1; b=22; c=333".extract():
           case r"$key([a-z])=$value([0-9]+)" => (key, value)
 
         . to(List)
@@ -1158,7 +1158,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == List((t"a", t"1"), (t"b", t"22"), (t"c", t"333")))
 
       test(m"single case finds no matches"):
-        t"hello world".extract(Prim):
+        t"hello world".extract():
           case r"$digit([0-9])" => digit
 
         . to(List)
@@ -1174,7 +1174,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == Nil)
 
       test(m"multi-case picks earliest match across cases"):
-        t"bar foo bar foo".extract(Prim):
+        t"bar foo bar foo".extract():
           case r"$f(foo)" => 1
           case r"$b(bar)" => 2
 
@@ -1183,7 +1183,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == List(2, 1, 2, 1))
 
       test(m"multi-case where one case never matches"):
-        t"abc 123 def 456".extract(Prim):
+        t"abc 123 def 456".extract():
           case r"$d([0-9]+)" => d.length
           case r"$x(zzz)"    => -1
 
@@ -1192,7 +1192,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == List(3, 3))
 
       test(m"multi-case returns interleaved results"):
-        t"a1b2c3".extract(Prim):
+        t"a1b2c3".extract():
           case r"$l([a-z])" => Right(l)
           case r"$n([0-9])" => Left(n)
 
@@ -1201,7 +1201,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == List(Right(t"a"), Left(t"1"), Right(t"b"), Left(t"2"), Right(t"c"), Left(t"3")))
 
       test(m"no-capture pattern advances past match end"):
-        t"foo foo foo".extract(Prim):
+        t"foo foo foo".extract():
           case r"foo" => 1
 
         . to(List)
@@ -1209,7 +1209,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == List(1, 1, 1))
 
       test(m"no-capture multi-case picks earliest match"):
-        t"bar foo bar foo".extract(Prim):
+        t"bar foo bar foo".extract():
           case r"foo" => 1
           case r"bar" => 2
 
@@ -1218,7 +1218,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == List(2, 1, 2, 1))
 
       test(m"empty input returns empty stream"):
-        t"".extract(Prim):
+        t"".extract():
           case r"$any(.)" => any
 
         . to(List)

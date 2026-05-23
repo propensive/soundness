@@ -200,7 +200,7 @@ extension [textual: Textual](text: textual)
   def search(regex: Regex, overlap: Boolean = false): Stream[textual] =
     regex.search(textual.text(text), overlap = overlap).map(text.segment(_))
 
-  inline def extract[value](inline start: Ordinal)
+  inline def extract[value](inline start: Ordinal = Prim)
     ( inline lambda: Scanner ?=> textual ~> value )
   :   Stream[value] =
 
