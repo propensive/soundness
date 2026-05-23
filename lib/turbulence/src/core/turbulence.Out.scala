@@ -36,6 +36,8 @@ import anticipation.*
 import rudiments.*
 
 object Out:
+  private val mutex: Mutex = Mutex()
+
   def write(bytes: Data)(using stdio: Stdio): Unit = stdio.write(bytes)
 
   def print[textual: Printable as printable](text: Termcap ?=> textual)(using stdio: Stdio): Unit =
@@ -45,7 +47,7 @@ object Out:
 
   def println[textual: Printable](lines: Termcap ?=> textual*)(using stdio: Stdio): Unit =
     lines.map(_(using stdio.termcap)).pipe: lines =>
-      stdio.out.synchronized:
+      mutex:
         lines.foreach: line =>
           print(line)
           println()
