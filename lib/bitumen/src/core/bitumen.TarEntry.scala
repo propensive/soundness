@@ -72,18 +72,37 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
       user:  UnixUser,
       group: UnixGroup,
       mtime: U32,
-      data:  LazyList[Data] )
+      data:  LazyList[Data],
+      pax:   Map[Text, Text] = Map.empty )
   extends TarEntry(path, mode, user, group, mtime)
 
-  case Directory(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32)
+  case Directory
+    ( path:  TarRef,
+      mode:  UnixMode,
+      user:  UnixUser,
+      group: UnixGroup,
+      mtime: U32,
+      pax:   Map[Text, Text] = Map.empty )
   extends TarEntry(path, mode, user, group, mtime)
 
   case Link
-    ( path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, target: Text )
+    ( path:   TarRef,
+      mode:   UnixMode,
+      user:   UnixUser,
+      group:  UnixGroup,
+      mtime:  U32,
+      target: Text,
+      pax:    Map[Text, Text] = Map.empty )
   extends TarEntry(path, mode, user, group, mtime)
 
   case Symlink
-    ( path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, target: Text )
+    ( path:   TarRef,
+      mode:   UnixMode,
+      user:   UnixUser,
+      group:  UnixGroup,
+      mtime:  U32,
+      target: Text,
+      pax:    Map[Text, Text] = Map.empty )
   extends TarEntry(path, mode, user, group, mtime)
 
   case CharSpecial
@@ -92,7 +111,8 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
       user:   UnixUser,
       group:  UnixGroup,
       mtime:  U32,
-      device: (U32, U32) )
+      device: (U32, U32),
+      pax:    Map[Text, Text] = Map.empty )
   extends TarEntry(path, mode, user, group, mtime)
 
   case BlockSpecial
@@ -101,10 +121,17 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
       user:   UnixUser,
       group:  UnixGroup,
       mtime:  U32,
-      device: (U32, U32) )
+      device: (U32, U32),
+      pax:    Map[Text, Text] = Map.empty )
   extends TarEntry(path, mode, user, group, mtime)
 
-  case Fifo(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32)
+  case Fifo
+    ( path:  TarRef,
+      mode:  UnixMode,
+      user:  UnixUser,
+      group: UnixGroup,
+      mtime: U32,
+      pax:   Map[Text, Text] = Map.empty )
   extends TarEntry(path, mode, user, group, mtime)
 
   case Pax(records: Data)

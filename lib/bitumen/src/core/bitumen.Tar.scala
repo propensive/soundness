@@ -106,8 +106,12 @@ object Tar:
               val linkText = resolveLink(header, paxOverlay, globalOverlay, longLink)
               val path = decodePath(nameText)
 
+              val extras: Map[Text, Text] =
+                (globalOverlay ++ paxOverlay).filter((k, _) => !structuralPaxKeys.contains(k))
+
               val (entry, rest) =
-                buildEntry(flag, path, mode, user, group, mtime, size, linkText, header, tail)
+                buildEntry(flag, path, mode, user, group, mtime, size, linkText, extras, header,
+                  tail)
 
               entry #:: readEntries(rest, Map.empty, globalOverlay, Unset, Unset)
 
@@ -124,6 +128,7 @@ object Tar:
       mtime:  U32,
       size:   Int,
       link:   Text,
+      extras: Map[Text, Text],
       header: TarHeader,
       blocks: Stream[Data] )
   :   (TarEntry, Stream[Data]) raises TarError =
@@ -131,33 +136,33 @@ object Tar:
     flag match
       case 0 | '0' | '7' =>
         val (data, rest) = takeData(blocks, size)
-        (TarEntry.File(path, mode, user, group, mtime, Stream(data)), rest)
+        (TarEntry.File(path, mode, user, group, mtime, Stream(data), extras), rest)
 
       case '5' =>
-        (TarEntry.Directory(path, mode, user, group, mtime), blocks)
+        (TarEntry.Directory(path, mode, user, group, mtime, extras), blocks)
 
       case '1' =>
-        (TarEntry.Link(path, mode, user, group, mtime, link), blocks)
+        (TarEntry.Link(path, mode, user, group, mtime, link, extras), blocks)
 
       case '2' =>
-        (TarEntry.Symlink(path, mode, user, group, mtime, link), blocks)
+        (TarEntry.Symlink(path, mode, user, group, mtime, link, extras), blocks)
 
       case '3' =>
         val major = TarHeader.decodeOctal(header.devMajor, t"devmajor")
         val minor = TarHeader.decodeOctal(header.devMinor, t"devminor")
-        (TarEntry.CharSpecial(path, mode, user, group, mtime, (major, minor)), blocks)
+        (TarEntry.CharSpecial(path, mode, user, group, mtime, (major, minor), extras), blocks)
 
       case '4' =>
         val major = TarHeader.decodeOctal(header.devMajor, t"devmajor")
         val minor = TarHeader.decodeOctal(header.devMinor, t"devminor")
-        (TarEntry.BlockSpecial(path, mode, user, group, mtime, (major, minor)), blocks)
+        (TarEntry.BlockSpecial(path, mode, user, group, mtime, (major, minor), extras), blocks)
 
       case '6' =>
-        (TarEntry.Fifo(path, mode, user, group, mtime), blocks)
+        (TarEntry.Fifo(path, mode, user, group, mtime, extras), blocks)
 
       case other =>
         raise(TarError(TarError.Reason.UnknownTypeFlag(other.toByte)))
-        (TarEntry.Directory(path, mode, user, group, mtime), blocks)
+        (TarEntry.Directory(path, mode, user, group, mtime, extras), blocks)
 
   private def takeData(blocks: Stream[Data], size: Int): (Data, Stream[Data]) =
     val nBlocks = (size + 511)/512
@@ -204,6 +209,8 @@ object Tar:
 
     . mitigate(text.decode[Relative on Posix])
 
+  private val structuralPaxKeys: Set[Text] = Set(t"path", t"linkpath", t"uname", t"gname")
+
   private def paxRecordsFor(entry: TarEntry): List[(Text, Text)] =
     val builder = List.newBuilder[(Text, Text)]
     if entry.entryName.data.length > 100 then builder += ((t"path", entry.entryName))
@@ -219,6 +226,9 @@ object Tar:
     group.name.let: name =>
       if name.data.length > 32 then builder += ((t"gname", name))
 
+    paxOf(entry).foreach: (k, v) =>
+      if !structuralPaxKeys.contains(k) then builder += ((k, v))
+
     builder.result()
 
   private def userAndGroup(entry: TarEntry): (UnixUser, UnixGroup) = entry match
@@ -230,6 +240,16 @@ object Tar:
     case b: TarEntry.BlockSpecial => (b.user, b.group)
     case f: TarEntry.Fifo         => (f.user, f.group)
     case _: TarEntry.Pax          => (UnixUser(0), UnixGroup(0))
+
+  private def paxOf(entry: TarEntry): Map[Text, Text] = entry match
+    case f: TarEntry.File         => f.pax
+    case d: TarEntry.Directory    => d.pax
+    case l: TarEntry.Link         => l.pax
+    case s: TarEntry.Symlink      => s.pax
+    case c: TarEntry.CharSpecial  => c.pax
+    case b: TarEntry.BlockSpecial => b.pax
+    case f: TarEntry.Fifo         => f.pax
+    case _: TarEntry.Pax          => Map.empty
 
 case class Tar(entries: LazyList[TarEntry]):
   def serialize: LazyList[Data] =
