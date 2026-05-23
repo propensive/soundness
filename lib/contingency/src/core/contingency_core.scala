@@ -157,6 +157,16 @@ def abortive[error <: Error](using Quotes)[success]
 
 infix type raises [success, error <: Exception] = Tactic[error] ?=> success
 
+// `raising` cannot replace `raises` until a Scala 3 compiler bug is fixed: when this match type
+// appears in a method's return type and reduces to a context function, PostTyper attaches
+// `@ContextResultCount` (see `ContextFunctionResults.annotateContextResults`), but TASTy stores
+// the unreduced `AppliedType`. At a cross-module use site, erasure runs
+// `ContextFunctionResults.integrateContextResults` (lines ~70-78) whose `tp.dealias match` has
+// no default case. `dealias` does not reduce match types during erasure because
+// `TypeApplications.appliedTo` short-circuits with `if (args.isEmpty || ctx.erasedTypes) self`,
+// so the unreduced `AppliedType` falls through every case and crashes with a `MatchError`.
+// Fix candidates: give the match a default case, or use `tryNormalize`/`superTypeNormalized`
+// in place of `dealias`.
 infix type raising[success, errors] = errors match
   case EmptyTuple.type => success
   case left *: right   => Tactic[left] ?=> raising[success, right]
