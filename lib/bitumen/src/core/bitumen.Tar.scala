@@ -73,8 +73,10 @@ object Tar:
           val mode = UnixMode.from(TarHeader.decodeOctal(header.mode, t"mode").long.toInt)
           val uid = TarHeader.decodeOctal(header.uid, t"uid").long.toInt
           val gid = TarHeader.decodeOctal(header.gid, t"gid").long.toInt
-          val unameText = TarHeader.decodeNulText(header.uname)
-          val gnameText = TarHeader.decodeNulText(header.gname)
+          val unameText = paxOverlay.get("uname".tt).orElse(globalOverlay.get("uname".tt))
+                            .getOrElse(TarHeader.decodeNulText(header.uname))
+          val gnameText = paxOverlay.get("gname".tt).orElse(globalOverlay.get("gname".tt))
+                            .getOrElse(TarHeader.decodeNulText(header.gname))
           val user = UnixUser(uid, if unameText.s.isEmpty then Unset else unameText)
           val group = UnixGroup(gid, if gnameText.s.isEmpty then Unset else gnameText)
 
@@ -209,7 +211,25 @@ object Tar:
     entry.link.let: link =>
       if link.data.length > 100 then builder += ((t"linkpath", link))
 
+    val (user, group) = userAndGroup(entry)
+
+    user.name.let: name =>
+      if name.data.length > 32 then builder += ((t"uname", name))
+
+    group.name.let: name =>
+      if name.data.length > 32 then builder += ((t"gname", name))
+
     builder.result()
+
+  private def userAndGroup(entry: TarEntry): (UnixUser, UnixGroup) = entry match
+    case f: TarEntry.File         => (f.user, f.group)
+    case d: TarEntry.Directory    => (d.user, d.group)
+    case l: TarEntry.Link         => (l.user, l.group)
+    case s: TarEntry.Symlink      => (s.user, s.group)
+    case c: TarEntry.CharSpecial  => (c.user, c.group)
+    case b: TarEntry.BlockSpecial => (b.user, b.group)
+    case f: TarEntry.Fifo         => (f.user, f.group)
+    case _: TarEntry.Pax          => (UnixUser(0), UnixGroup(0))
 
 case class Tar(entries: LazyList[TarEntry]):
   def serialize: LazyList[Data] =
