@@ -427,7 +427,7 @@ object beneficence extends Library:
   object test extends Tests(core, plugin)
 
 object bitumen extends Library:
-  object core extends Component(serpentine.core, turbulence.core):
+  object core extends Component(serpentine.core, turbulence.core, galilei.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, galilei.core, guillotine.core)
