@@ -58,6 +58,7 @@ class Database(size: Int) extends Findable:
   type AllRelations = Tuple.Union[Topic]
   type Has[relation <: Relation[?, ?]] = relation <:< AllRelations
 
+  private val mutex: Mutex = Mutex()
   private var references: Map[Any, Ref] = Map()
   private var dereferences: Map[Ref, Any] = Map()
 
@@ -75,7 +76,7 @@ class Database(size: Int) extends Findable:
   inline def store[left](left: left): Ref of left in this.type =
     references.at(left).or:
       allocate[left]().tap: ref =>
-        this.synchronized:
+        mutex:
           references = references.updated(left, ref)
           dereferences = dereferences.updated(ref, left)
 
