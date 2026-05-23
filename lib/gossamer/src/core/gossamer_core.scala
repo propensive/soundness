@@ -465,7 +465,9 @@ package proximities:
 
 
   given normalizedLevenshteinDistance: CaseSensitivity => Proximity by Double =
-    (left, right) => levenshteinDistance.distance(left, right)/left.length.max(right.length)
+    (left, right) =>
+      val span = left.length.max(right.length)
+      if span == 0 then 0.0 else levenshteinDistance.distance(left, right).toDouble/span
 
 extension (text: Text)
   inline def has(substring: Text): Boolean = text.contains(substring)
@@ -501,6 +503,19 @@ extension (text: Text)
   inline def punycode: Text = java.net.IDN.toASCII(text.s).nn.tt
   inline def data(using encoder: CharEncoder): IArray[Byte] = encoder.encode(text)
   inline def sysData: IArray[Byte] = CharEncoder.system.encode(text)
+
+  inline def fuzzy[result]
+    ( inline threshold: Double = Double.PositiveInfinity )
+    ( inline cases: Text ~> result )
+  :   result =
+
+    $ {
+        gossamer.internal.fuzzyMacro[result]
+          ( 'text,
+            'threshold,
+            'cases,
+            '{compiletime.summonInline[Proximity { type Operand = Double }]} )
+      }
 
   def proximity(other: Text)(using proximity: Proximity): proximity.Operand =
     proximity.distance(text, other)

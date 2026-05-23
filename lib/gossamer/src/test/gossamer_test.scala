@@ -1224,3 +1224,102 @@ object Tests extends Suite(m"Gossamer Tests"):
         . to(List)
 
       . assert(_ == Nil)
+
+    suite(m"Fuzzy match"):
+      import proximities.normalizedLevenshteinDistance
+
+      test(m"exact match returns that case's RHS"):
+        t"hello".fuzzy():
+          case "hello" => 1
+          case "world" => 2
+
+      . assert(_ == 1)
+
+      test(m"typo picks the nearest pattern"):
+        t"hlelo".fuzzy():
+          case t"hello"   => 1
+          case t"bonjour" => 2
+
+      . assert(_ == 1)
+
+      test(m"mixed String and Text literal patterns"):
+        t"world".fuzzy():
+          case "hello"  => 1
+          case t"world" => 2
+
+      . assert(_ == 2)
+
+      test(m"tie goes to the earlier source-order case"):
+        t"abc".fuzzy():
+          case "abd" => 1
+          case "abe" => 2
+
+      . assert(_ == 1)
+
+      test(m"single-case PF returns that case's RHS"):
+        t"anything".fuzzy():
+          case "only-option" => 42
+
+      . assert(_ == 42)
+
+      test(m"match within threshold returns that case's RHS"):
+        t"hlelo".fuzzy(0.5):
+          case t"hello"   => 1
+          case t"bonjour" => 2
+          case _          => 0
+
+      . assert(_ == 1)
+
+      test(m"all distances above threshold returns wildcard"):
+        t"xyzxyz".fuzzy(0.3):
+          case t"hello"   => 1
+          case t"bonjour" => 2
+          case _          => -1
+
+      . assert(_ == -1)
+
+      test(m"all above threshold without wildcard throws MatchError"):
+        try
+          t"xyzxyz".fuzzy(0.3):
+            case t"hello"   => 1
+            case t"bonjour" => 2
+          false
+        catch case _: MatchError => true
+
+      . assert(_ == true)
+
+      test(m"wildcard binds the scrutinee"):
+        t"unknown".fuzzy(0.1):
+          case t"hello"     => t"english"
+          case t"bonjour"   => t"french"
+          case other        => other
+
+      . assert(_ == t"unknown")
+
+      test(m"multiple cases within threshold — closest wins"):
+        t"hlelo".fuzzy(0.5):
+          case t"hello" => 1
+          case t"helxo" => 2
+          case _        => 0
+
+      . assert(_ == 1)
+
+    suite(m"Fuzzy compile errors"):
+      test(m"unsupported pattern shape errors"):
+        demilitarize:
+          t"hello".fuzzy():
+            case r"foo" => 1
+
+        . map(_.message)
+
+      . assert(!_.nil)
+
+      test(m"mid-list wildcard errors"):
+        demilitarize:
+          t"hello".fuzzy():
+            case _      => 0
+            case "good" => 1
+
+        . map(_.message)
+
+      . assert(!_.nil)
