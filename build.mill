@@ -430,7 +430,7 @@ object bitumen extends Library:
   object core extends Component(serpentine.core, turbulence.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+  object test extends Tests(core, galilei.core, guillotine.core)
 
 object breviloquence extends Library:
   object core extends Component(urticose.url, panopticon.core, turbulence.core):
