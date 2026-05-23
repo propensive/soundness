@@ -146,6 +146,39 @@ object Tests extends Suite(m"Contingency"):
               "clean"
       . assert(_ == "clean")
 
+      test(m"whereas.recover inside `inline def` fails to compile (see #534)"):
+        demilitarize:
+          inline def inlineRecover: String =
+            whereas:
+              case ErrorA(n) => s"recovered:$n"
+            . recover(failA(7))
+          inlineRecover
+      . assert(_.nonEmpty)
+
+      test(m"whereas.mitigate inside `inline def` fails to compile (see #534)"):
+        demilitarize:
+          inline def inlineMitigate: Int =
+            whereas:
+              case ErrorB(n) => n
+            . recover:
+                whereas:
+                  case ErrorA(n) => ErrorB(n + 100)
+                . mitigate:
+                    raise(ErrorA(5))
+                    0
+          inlineMitigate
+      . assert(_.nonEmpty)
+
+      test(m"whereas.recover works inside `inline def` via a non-inline helper"):
+        def helperRecover: String =
+          whereas:
+            case ErrorA(n) => s"recovered:$n"
+          . recover(failA(7))
+
+        inline def inlineRecover: String = helperRecover
+        inlineRecover
+      . assert(_ == "recovered:7")
+
     suite(m"raise / abort / raises type"):
       test(m"Method with raises is callable under an in-scope Tactic"):
         whereas:
