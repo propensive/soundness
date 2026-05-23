@@ -49,6 +49,7 @@ object Runner:
   private[probably] val harnessThreadLocal: ThreadLocal[Option[Harness]] = ThreadLocal()
 
 class Runner[report]()(using reporter: Reporter[report]) extends Findable:
+  private val mutex: Mutex = Mutex()
   private var active: List[TestId] = Nil
   private val silent: Boolean = Ci.claudeCode || Ci()
 
@@ -69,7 +70,7 @@ class Runner[report]()(using reporter: Reporter[report]) extends Findable:
 
 
   def run[result](test: Test[result]): Trial[result] =
-    synchronized:
+    mutex:
       val size = active.size
       active ::= test.id
       redraw(size)
@@ -84,7 +85,7 @@ class Runner[report]()(using reporter: Reporter[report]) extends Findable:
       val ns: Long = System.nanoTime - ns0
 
       Trial.Returns(result, ns, context.captured.to(Map)).also:
-        synchronized:
+        mutex:
           val size = active.size
           active = active.filter(_ != test.id)
           redraw(size)
@@ -97,7 +98,7 @@ class Runner[report]()(using reporter: Reporter[report]) extends Findable:
         throw error
 
       Trial.Throws(lazyException, ns, context.captured.to(Map)).also:
-        synchronized:
+        mutex:
           val size = active.size
           active = active.filter(_ != test.id)
           redraw(size)
@@ -107,7 +108,7 @@ class Runner[report]()(using reporter: Reporter[report]) extends Findable:
 
   def suite(suite: Testable, block: Testable ?=> Unit): Unit =
     if !skip(suite.id) then
-      synchronized:
+      mutex:
         val size = active.size
         active ::= suite.id
         redraw(size)
@@ -115,12 +116,12 @@ class Runner[report]()(using reporter: Reporter[report]) extends Findable:
       reporter.declare(report, suite)
       block(using suite)
 
-      synchronized:
+      mutex:
         val size = active.size
         active = active.filter(_ != suite.id)
         redraw(size)
 
-  def terminate(error: Throwable): Unit = synchronized:
+  def terminate(error: Throwable): Unit = mutex:
     reporter.fail(report, error, active.to(Set))
     reporter.complete(report)
 
