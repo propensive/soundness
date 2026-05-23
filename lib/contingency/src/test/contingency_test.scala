@@ -146,16 +146,16 @@ object Tests extends Suite(m"Contingency"):
               "clean"
       . assert(_ == "clean")
 
-      test(m"whereas.recover inside `inline def` fails to compile (see #534)"):
+      test(m"whereas.recover should compile inside `inline def` (see #534)"):
         demilitarize:
           inline def inlineRecover: String =
             whereas:
               case ErrorA(n) => s"recovered:$n"
             . recover(failA(7))
           inlineRecover
-      . assert(_.nonEmpty)
+      . aspire(_.isEmpty)
 
-      test(m"whereas.mitigate inside `inline def` fails to compile (see #534)"):
+      test(m"whereas.mitigate should compile inside `inline def` (see #534)"):
         demilitarize:
           inline def inlineMitigate: Int =
             whereas:
@@ -167,7 +167,7 @@ object Tests extends Suite(m"Contingency"):
                     raise(ErrorA(5))
                     0
           inlineMitigate
-      . assert(_.nonEmpty)
+      . aspire(_.isEmpty)
 
       test(m"whereas.recover works inside `inline def` via a non-inline helper"):
         def helperRecover: String =
