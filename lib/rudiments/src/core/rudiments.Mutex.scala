@@ -30,14 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package rudiments
 
-export
-  rudiments
-  . { !!, &, all, also, and, annex, at, b, bi, Bijection, bijection, Bytes, bytes, collate, Counter,
-      DecimalConverter, Defaulting, Defaulting2, Digit, each, establish, Exit, fixpoint, fuse, gib,
-      give, has, immutable, Indexable, indexBy, intercalate, javaInputStream, kib, longestTrain,
-      Loop, loop, matchable, mean, mib, mutable, Mutex, next, occupied, ordinal, pipe, place, plus,
-      prim, prior, probe, product, reflectClass, repeat, runs, runsBy, sec, segment, Segmentable,
-      sift, snapshot, state, std, sumBy, tap, ter, that, tib, to, total, tri, triple, tuple, twin,
-      typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet }
+import java.util.concurrent.locks as juclo
+
+class Mutex():
+  private val lock: juclo.ReentrantLock = juclo.ReentrantLock()
+
+  inline def apply[result](inline block: => result): result =
+    lock.lock()
+    try block finally lock.unlock()

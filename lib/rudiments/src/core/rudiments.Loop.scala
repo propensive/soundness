@@ -37,13 +37,14 @@ object Loop:
     case Active, Stopping, Finished
 
 class Loop(iteration: () => Unit):
+  private val mutex: Mutex = Mutex()
   private var state: Loop.State = Loop.State.Active
 
-  def stop(): Unit = synchronized:
+  def stop(): Unit = mutex:
     if state == Loop.State.Active then state = Loop.State.Stopping
 
   def run(): Unit =
     while state == Loop.State.Active do iteration()
 
-    synchronized:
+    mutex:
       state = Loop.State.Finished
