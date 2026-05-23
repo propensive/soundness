@@ -35,23 +35,25 @@ package obligatory
 import anticipation.*
 import contingency.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
 
 class SseSource(capacity: Int):
+  private val mutex: Mutex = Mutex()
   private val buffer: Array[Sse] = new Array(capacity)
 
   private var current: Int = 0
   private var spool: Spool[Sse] = Spool()
 
-  def put[entity: Encodable in Sse](value: entity): Unit = synchronized:
+  def put[entity: Encodable in Sse](value: entity): Unit = mutex:
     val sse = value.encode.copy(id = current.show)
     buffer(current%capacity) = sse
     spool.put(sse)
     current += 1
 
-  def stream(start: Optional[Int] = Unset): Stream[Sse] raises SseError = synchronized:
+  def stream(start: Optional[Int] = Unset): Stream[Sse] raises SseError = mutex:
     start.let: start =>
       spool.stop()
       spool = Spool()

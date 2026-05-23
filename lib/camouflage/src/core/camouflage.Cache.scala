@@ -50,10 +50,11 @@ object Cache:
   def apply[value](): Cache[value] = new Cache(Unset)
 
 class Cache[value](lifetime: Optional[Long]):
+  private val mutex: Mutex = Mutex()
   private var expiry: Long = Long.MaxValue
   private var value: Promise[value] = Promise()
 
-  def establish(block: => value): value = value.synchronized:
+  def establish(block: => value): value = mutex:
     if expiry < jl.System.currentTimeMillis then value = Promise()
 
     if value.ready then value().vouch else block.tap: result =>

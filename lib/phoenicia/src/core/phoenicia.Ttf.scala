@@ -160,9 +160,10 @@ case class Ttf(data: Data):
     case class GlyphEncoding(platformId: Int, encodingId: Int, offset: Int):
       val formatId: Int = B16(data, offset).u16.int
 
+      private val mutex: Mutex = Mutex()
       private var formatMemo: Optional[Format] = Unset
 
-      def format: Format raises FontError = synchronized:
+      def format: Format raises FontError = mutex:
         formatMemo.or:
           val format = formatId match
             case 0 =>

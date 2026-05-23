@@ -93,15 +93,16 @@ class Report(using Environment)(using palette: TestPalette):
   def passed: Boolean = failure.absent && pass
 
   class TestsMap():
+    private val mutex: Mutex = Mutex()
     private var tests: ListMap[TestId, ReportLine] = ListMap()
 
-    def list: List[(TestId, ReportLine)] = synchronized(tests.to(List))
-    def apply(testId: TestId): ReportLine = synchronized(tests(testId))
+    def list: List[(TestId, ReportLine)] = mutex(tests.to(List))
+    def apply(testId: TestId): ReportLine = mutex(tests(testId))
 
-    def update(testId: TestId, reportLine: ReportLine) = synchronized:
+    def update(testId: TestId, reportLine: ReportLine) = mutex:
       tests = tests.updated(testId, reportLine)
 
-    def getOrElseUpdate(testId: TestId, reportLine: => ReportLine): ReportLine = synchronized:
+    def getOrElseUpdate(testId: TestId, reportLine: => ReportLine): ReportLine = mutex:
       if !tests.has(testId) then tests = tests.updated(testId, reportLine)
       tests(testId)
 

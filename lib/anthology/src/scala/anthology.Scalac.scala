@@ -58,9 +58,10 @@ object Scalac:
 
   case class Option[-version <: Versions](flags: Text*)
 
+  private val mutex: Mutex = Mutex()
   private var Scala3: dtd.Compiler = new dtd.Compiler()
 
-  def refresh(): Unit = synchronized { Scala3 = new dtd.Compiler() }
+  def refresh(): Unit = mutex { Scala3 = new dtd.Compiler() }
   def compiler(): dtd.Compiler = Scala3
 
 case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[version]]):

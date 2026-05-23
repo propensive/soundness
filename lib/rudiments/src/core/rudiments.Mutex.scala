@@ -30,101 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package probably
+package rudiments
 
-import java.lang as jl
+import java.util.concurrent.locks as juclo
 
-import ambience.{System as _, *}, environments.java
-import escapade.*
-import iridescence.*
-import rudiments.*
-import turbulence.*
-import vacuous.*
+class Mutex():
+  private val lock: juclo.ReentrantLock = juclo.ReentrantLock()
 
-import stdios.virtualMachine
-import termcaps.environment
-import beneficence.*
-
-object Runner:
-  private[probably] val harnessThreadLocal: ThreadLocal[Option[Harness]] = ThreadLocal()
-
-class Runner[report]()(using reporter: Reporter[report]) extends Findable:
-  private val mutex: Mutex = Mutex()
-  private var active: List[TestId] = Nil
-  private val silent: Boolean = Ci.claudeCode || Ci()
-
-  def skip(id: TestId): Boolean = false
-
-  val report: report = reporter.report()
-
-  def maybeRun[result](test: Test[result]): Optional[Trial[result]] =
-    if skip(test.id) then Unset else run[result](test)
-
-  def redraw(size: Int): Unit = if !silent then
-    if size > 0 then Out.print(e"\e[${size}A\r\e[2K")
-
-    active.reverse.each: test =>
-      Out.println(e"> ${WebColors.CadetBlue}(${test.id})${" "*(test.depth*2)}${test.name}\e[K")
-
-    Out.print(e"\e[J")
-
-
-  def run[result](test: Test[result]): Trial[result] =
-    mutex:
-      val size = active.size
-      active ::= test.id
-      redraw(size)
-
-    val context = Harness()
-    Runner.harnessThreadLocal.set(Some(context))
-    val ns0 = System.nanoTime
-
-    try
-      val ns0: Long = System.nanoTime
-      val result: result = test.action(context)
-      val ns: Long = System.nanoTime - ns0
-
-      Trial.Returns(result, ns, context.captured.to(Map)).also:
-        mutex:
-          val size = active.size
-          active = active.filter(_ != test.id)
-          redraw(size)
-
-    catch case error: Exception =>
-      val ns: Long = System.nanoTime - ns0
-
-      def lazyException(): Nothing =
-        given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
-        throw error
-
-      Trial.Throws(lazyException, ns, context.captured.to(Map)).also:
-        mutex:
-          val size = active.size
-          active = active.filter(_ != test.id)
-          redraw(size)
-
-    finally
-      Runner.harnessThreadLocal.set(None)
-
-  def suite(suite: Testable, block: Testable ?=> Unit): Unit =
-    if !skip(suite.id) then
-      mutex:
-        val size = active.size
-        active ::= suite.id
-        redraw(size)
-
-      reporter.declare(report, suite)
-      block(using suite)
-
-      mutex:
-        val size = active.size
-        active = active.filter(_ != suite.id)
-        redraw(size)
-
-  def terminate(error: Throwable): Unit = mutex:
-    reporter.fail(report, error, active.to(Set))
-    reporter.complete(report)
-
-  def complete(): Unit =
-    redraw(0)
-    reporter.complete(report)
+  inline def apply[result](inline block: => result): result =
+    lock.lock()
+    try block finally lock.unlock()
