@@ -137,16 +137,22 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
   case Pax(records: Data)
   extends TarEntry(TarEntry.paxRef, UnixMode(), UnixUser(0), UnixGroup(0), 0.bits.u32)
 
+  case GnuLong(override val typeFlag: TypeFlag, content: Text)
+  extends TarEntry(TarEntry.paxRef, UnixMode(), UnixUser(0), UnixGroup(0), 0.bits.u32)
+
 
   def size: U32 = this match
-    case file: File => file.data.sumBy(_.length).bits.u32
-    case pax: Pax   => pax.records.length.bits.u32
-    case _          => 0
+    case file: File    => file.data.sumBy(_.length).bits.u32
+    case pax: Pax      => pax.records.length.bits.u32
+    case long: GnuLong => (long.content.data.length + 1).bits.u32
+    case _             => 0
 
   def dataBlocks: LazyList[Data] = this match
-    case file: File => file.data.chunked(512, zeroPadding = true)
-    case pax: Pax   => LazyList(pax.records).chunked(512, zeroPadding = true)
-    case directory  => LazyList()
+    case file: File    => file.data.chunked(512, zeroPadding = true)
+    case pax: Pax      => LazyList(pax.records).chunked(512, zeroPadding = true)
+    case long: GnuLong =>
+      LazyList(long.content.data ++ IArray.fill[Byte](1)(0)).chunked(512, zeroPadding = true)
+    case _             => LazyList()
 
   def typeFlag: TypeFlag = this match
     case _: File         => TypeFlag.File
@@ -157,10 +163,12 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
     case _: Directory    => TypeFlag.Directory
     case _: Fifo         => TypeFlag.Fifo
     case _: Pax          => TypeFlag.NextFile
+    case long: GnuLong   => long.typeFlag
 
   def entryName: Text = this match
     case directory: Directory => t"${directory.path}/"
     case _: Pax               => t"PaxHeaders/0"
+    case _: GnuLong           => t"././@LongLink"
     case other                => this.path.show
 
   def link: Optional[Text] = this.only:

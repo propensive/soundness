@@ -44,6 +44,10 @@ import serpentine.*
 import turbulence.*
 import vacuous.*
 
+enum LongNameFormat:
+  case Pax
+  case Gnu
+
 object Tar:
   val zeroBlock: Data = IArray.fill[Byte](512)(0)
 
@@ -240,6 +244,7 @@ object Tar:
     case b: TarEntry.BlockSpecial => (b.user, b.group)
     case f: TarEntry.Fifo         => (f.user, f.group)
     case _: TarEntry.Pax          => (UnixUser(0), UnixGroup(0))
+    case _: TarEntry.GnuLong      => (UnixUser(0), UnixGroup(0))
 
   private def paxOf(entry: TarEntry): Map[Text, Text] = entry match
     case f: TarEntry.File         => f.pax
@@ -250,12 +255,36 @@ object Tar:
     case b: TarEntry.BlockSpecial => b.pax
     case f: TarEntry.Fifo         => f.pax
     case _: TarEntry.Pax          => Map.empty
+    case _: TarEntry.GnuLong      => Map.empty
 
-case class Tar(entries: LazyList[TarEntry]):
+case class Tar(entries: LazyList[TarEntry], longNameFormat: LongNameFormat = LongNameFormat.Pax):
   def serialize: LazyList[Data] =
     entries.flatMap(emitEntry) #::: LazyList(Tar.zeroBlock, Tar.zeroBlock)
 
   private def emitEntry(entry: TarEntry): LazyList[Data] =
-    Tar.paxRecordsFor(entry) match
-      case Nil     => entry.serialize
-      case records => TarEntry.Pax(Pax.records(records)).serialize #::: entry.serialize
+    val longNamePart: LazyList[Data] = longNameFormat match
+      case LongNameFormat.Pax => LazyList()
+      case LongNameFormat.Gnu =>
+        val nameBlocks =
+          if entry.entryName.data.length > 100
+          then TarEntry.GnuLong(TypeFlag.LongName, entry.entryName).serialize
+          else LazyList()
+
+        val linkBlocks = entry.link.let: l =>
+          if l.data.length > 100 then TarEntry.GnuLong(TypeFlag.LongLink, l).serialize
+          else LazyList()
+
+        . or(LazyList())
+
+        nameBlocks #::: linkBlocks
+
+    val records = Tar.paxRecordsFor(entry).filter: (key, _) =>
+      longNameFormat match
+        case LongNameFormat.Pax => true
+        case LongNameFormat.Gnu => key != t"path" && key != t"linkpath"
+
+    val paxPart: LazyList[Data] =
+      if records.isEmpty then LazyList()
+      else TarEntry.Pax(Pax.records(records)).serialize
+
+    longNamePart #::: paxPart #::: entry.serialize

@@ -32,5 +32,5 @@
                                                                                                   */
 package soundness
 
-export bitumen.{Pax, Tar, TarEntry, TarError, TarHeader, TarRef, TypeFlag, UnixGroup, UnixMode,
-  UnixUser}
+export bitumen.{LongNameFormat, Pax, Tar, TarEntry, TarError, TarHeader, TarRef, TypeFlag,
+  UnixGroup, UnixMode, UnixUser}
