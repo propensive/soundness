@@ -504,6 +504,19 @@ extension (text: Text)
   inline def data(using encoder: CharEncoder): IArray[Byte] = encoder.encode(text)
   inline def sysData: IArray[Byte] = CharEncoder.system.encode(text)
 
+  inline def fuzzy[result]
+    ( inline threshold: Double = Double.PositiveInfinity )
+    ( inline cases: Text ~> result )
+  :   result =
+
+    $ {
+        gossamer.internal.fuzzyMacro[result]
+          ( 'text,
+            'threshold,
+            'cases,
+            '{compiletime.summonInline[Proximity { type Operand = Double }]} )
+      }
+
   def proximity(other: Text)(using proximity: Proximity): proximity.Operand =
     proximity.distance(text, other)
 

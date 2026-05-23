@@ -36,8 +36,8 @@ export
   gossamer
   . { add, after, append, appendln, Ascii, ascii, AsciiBuilder, before, Bidi, blank, BoundsError,
       broken, build, Builder, builder, camel, capitalize, CaseSensitivity, center, chars, contains,
-      count, cut, Cuttable, data, Decimalizer, Dictionary, ends, erase, fill, fit, from, Grapheme,
-      init, join, Joinable, kebab, keep, length, Lexicon, lines, lower,
+      count, cut, Cuttable, data, Decimalizer, Dictionary, ends, erase, extract, fill, fit, from,
+      fuzzy, Grapheme, init, join, Joinable, kebab, keep, length, Lexicon, lines, lower,
       Ltr, Numerous, ossify, pad, pascal, plain, Proximity, proximity, Pue, pue, punycode,
       RangeError, reverse, Rtl, search, seek, SimpleTExtractor, skip, slices, snake, snip, spaced,
       starts, strip, sub, subscripts, superscripts, sysData, t, tail, text, TextBuilder, Textual,

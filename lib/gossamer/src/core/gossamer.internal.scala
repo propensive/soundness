@@ -325,3 +325,116 @@ object internal:
 
             step($start.n0)
           }
+
+
+  def fuzzyMacro[result: Type]
+    ( text:      Expr[Text],
+      threshold: Expr[Double],
+      cases:     Expr[Text ~> result],
+      proximity: Expr[Proximity { type Operand = Double }] )
+    ( using Quotes )
+  :   Expr[result] =
+
+    import quotes.reflect.*
+
+    def unwrap(term: Term): Term = term match
+      case Inlined(_, _, inner) => unwrap(inner)
+      case other                => other
+
+    val caseDefs: List[CaseDef] = unwrap(cases.asTerm) match
+      case Block(List(DefDef(_, _, _, Some(Match(_, cs)))), _) =>
+        cs
+
+      case _ =>
+        halt(m"fuzzy requires a partial-function literal")
+
+    def isWildcard(pattern: Tree): Boolean = pattern match
+      case Wildcard()          => true
+      case Bind(_, Wildcard()) => true
+      case _                   => false
+
+    // Find the first String literal anywhere in the pattern tree.
+    // Works for both `case "foo"` (Literal(StringConstant)) and `case t"foo"`
+    // (Unapply on a SimpleTExtractor built from the literal).
+    def findLiteral(tree: Tree): Option[String] =
+      var found: Option[String] = None
+
+      val finder = new TreeAccumulator[Unit]:
+        def foldTree(unit: Unit, t: Tree)(owner: Symbol): Unit =
+          if found.isDefined then () else t match
+            case Literal(StringConstant(s)) => found = Some(s)
+            case _                          => foldOverTree(unit, t)(owner)
+
+      finder.foldTree((), tree)(Symbol.spliceOwner)
+      found
+
+    val (nonWildcard, wildcard) =
+      if caseDefs.nonEmpty && isWildcard(caseDefs.last.pattern)
+      then (caseDefs.init, Some(caseDefs.last))
+      else (caseDefs, None)
+
+    nonWildcard.foreach: cd =>
+      if isWildcard(cd.pattern)
+      then halt(m"the wildcard case in a fuzzy match must be the last case")
+
+    val patternExprs: List[Expr[Text]] = nonWildcard.map: cd =>
+      findLiteral(cd.pattern) match
+        case Some(s) => '{Text(${Expr(s)})}
+        case None    => halt(m"fuzzy case patterns must be a string literal or `t\"…\"` literal")
+
+    val nonWildcardThunks: List[Expr[() => result]] = nonWildcard.map: cd =>
+      '{() => ${cd.rhs.asExprOf[result]}}
+
+    val wildcardThunk: Option[Expr[() => result]] = wildcard.map: cd =>
+      val matchTerm = Match(text.asTerm, List(cd))
+      '{() => ${matchTerm.asExprOf[result]}}
+
+    val patternsExpr = Expr.ofList(patternExprs)
+    val thunksExpr = Expr.ofList(nonWildcardThunks)
+
+    wildcardThunk match
+      case Some(wcThunk) =>
+        ' {
+            val scrutinee = $text
+            val limit = $threshold
+            val measure = $proximity
+            val patterns = $patternsExpr
+            val thunks = $thunksExpr
+            var bestIdx = -1
+            var bestDist = Double.PositiveInfinity
+            var i = 0
+
+            while i < patterns.length && bestDist > 0.0 do
+              val d = measure.distance(scrutinee, patterns(i))
+
+              if d <= limit && d < bestDist then
+                bestDist = d
+                bestIdx = i
+
+              i += 1
+
+            if bestIdx >= 0 then thunks(bestIdx)() else $wcThunk()
+          }
+
+      case None =>
+        ' {
+            val scrutinee = $text
+            val limit = $threshold
+            val measure = $proximity
+            val patterns = $patternsExpr
+            val thunks = $thunksExpr
+            var bestIdx = -1
+            var bestDist = Double.PositiveInfinity
+            var i = 0
+
+            while i < patterns.length && bestDist > 0.0 do
+              val d = measure.distance(scrutinee, patterns(i))
+
+              if d <= limit && d < bestDist then
+                bestDist = d
+                bestIdx = i
+
+              i += 1
+
+            if bestIdx >= 0 then thunks(bestIdx)() else throw new MatchError(scrutinee)
+          }
