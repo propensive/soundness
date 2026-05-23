@@ -39,6 +39,7 @@ import denominative.*
 import fulminate.*
 import gigantism.*
 import hieroglyph.*
+import kaleidoscope.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -206,3 +207,121 @@ object internal:
         case Nil          => expr
 
     recur(staticParts.tail.to(List), dynamicParts, staticParts.head)
+
+
+  def extractMacro[textual: Type, value: Type]
+    ( text:    Expr[textual],
+      start:   Expr[Ordinal],
+      lambda:  Expr[Scanner ?=> textual ~> value],
+      textual: Expr[textual is Textual] )
+    ( using Quotes )
+  :   Expr[Stream[value]] =
+
+    import quotes.reflect.*
+
+    def unwrap(term: Term): Term = term match
+      case Inlined(_, _, inner) => unwrap(inner)
+      case other                => other
+
+    val outer = unwrap(lambda.asTerm)
+
+    val decomposed: Option[(Symbol, List[CaseDef])] = outer match
+      case Block(List(DefDef(_, List(TermParamClause(List(scannerVal))), _, Some(body))), _) =>
+        val scannerSym = scannerVal.symbol
+
+        unwrap(body) match
+          case Block(List(DefDef(_, _, _, Some(Match(_, caseDefs)))), _) =>
+            Some((scannerSym, caseDefs))
+
+          case _ =>
+            None
+
+      case _ =>
+        None
+
+    decomposed match
+      case None =>
+        // Cannot decompose — fall back to a runtime driver that advances by matchEnd.
+        ' {
+            val input = $textual.text($text)
+
+            def step(from: Int): Stream[value] =
+              if from >= input.s.length then Stream() else
+                val scanner = Scanner(from)
+
+                $lambda(using scanner).lift($text) match
+                  case Some(head) =>
+                    head #:: step(scanner.matchEnd.or(input.s.length).max(from + 1))
+
+                  case _ =>
+                    Stream()
+
+            step($start.n0)
+          }
+
+      case Some((scannerSym, caseDefs)) =>
+        // Build one (Int, textual) => Option[(matchStart, matchEnd, value)] closure per case,
+        // substituting the outer scanner param with a fresh local in each.
+        val closures: List[Expr[(Int, textual) => Option[(Int, Int, value)]]] =
+          caseDefs.map: caseDef =>
+            '{ (from: Int, input: textual) =>
+                val scanner = Scanner(from)
+
+                $ {
+                    val scannerRef = 'scanner.asTerm
+                    val inputRef = 'input.asTerm
+
+                    object Subst extends TreeMap:
+                      override def transformTerm(tree: Term)(owner: Symbol): Term =
+                        tree match
+                          case Ident(_) if tree.symbol == scannerSym =>
+                            scannerRef
+
+                          case _ =>
+                            super.transformTerm(tree)(owner)
+
+                    val substituted = Subst.transformCaseDef(caseDef)(Symbol.spliceOwner)
+
+                    val rhsWrapped =
+                      ' {
+                          Some
+                            ( ( scanner.nextStart.or(Int.MaxValue),
+                                scanner.matchEnd.or(Int.MaxValue),
+                                ${substituted.rhs.asExprOf[value]} ) )
+                        }
+
+                      . asTerm
+
+                    val matchedCase = CaseDef(substituted.pattern, substituted.guard, rhsWrapped)
+                    val wildcard = CaseDef(Wildcard(), None, '{None}.asTerm)
+                    val matchTerm = Match(inputRef, List(matchedCase, wildcard))
+                    matchTerm.asExprOf[Option[(Int, Int, value)]]
+                  }
+              }
+
+        ' {
+            val input = $textual.text($text)
+            val length = input.s.length
+            val cases = ${Expr.ofList(closures)}
+
+            def step(from: Int): Stream[value] =
+              if from >= length then Stream() else
+                var best: Optional[(Int, Int, value)] = Unset
+                val it = cases.iterator
+
+                while it.hasNext do
+                  it.next()(from, $text) match
+                    case Some(candidate) =>
+                      best.let: existing =>
+                        if candidate(0) < existing(0) then best = candidate
+
+                      . or:
+                        best = candidate
+
+                    case _ =>
+
+                best.lay(Stream()): triple =>
+                  triple(2) #:: step(triple(1).max(from + 1))
+
+            step($start.n0)
+          }
