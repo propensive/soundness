@@ -65,7 +65,16 @@ class Whereas[lambda[_]](val handler: PartialFunction[Exception, Any])
 
 /** Capture a partial function describing how to handle errors. Returns a
  *  `Whereas` whose type lambda encodes the per-error `Tactic` parameters the
- *  body of a subsequent `.mitigate`/`.recover`/`.accrue` must accept. */
+ *  body of a subsequent `.mitigate`/`.recover`/`.accrue` must accept.
+ *
+ *  Note: this is a `transparent inline` whose declared return type
+ *  `Whereas[?]` is refined to a precise `Whereas[lambda]` by the macro, and
+ *  the `.mitigate`/`.recover`/`.accrue` extension methods depend on that
+ *  refinement to bind `lambda`. An enclosing `inline def` is expanded before
+ *  this refinement happens, so `whereas { … }.mitigate { … }` (and the
+ *  `.recover` / `.accrue` siblings) cannot appear directly in the body of an
+ *  `inline def`. Extract the call into a regular (non-inline) helper method.
+ *  See issue propensive/soundness#534. */
 transparent inline def whereas(inline handler: PartialFunction[Exception, Any])
 :   Whereas[?] =
   ${ contingency.internal.whereas('handler) }
