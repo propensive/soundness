@@ -33,51 +33,103 @@
 package bitumen
 
 import anticipation.*
+import contingency.*
 import gossamer.*
-import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
-import hypotenuse.*, arithmeticOptions.overflow.unchecked
-import vacuous.*
+import hypotenuse.*
 
-object UnixMode:
-  def from(int: Int): UnixMode = UnixMode
-                                  ( setUid     = (int & 2048) != 0,
-                                    setGid     = (int & 1024) != 0,
-                                    ownerRead  = (int &  256) != 0,
-                                    ownerWrite = (int &  128) != 0,
-                                    ownerExec  = (int &   64) != 0,
-                                    groupRead  = (int &   32) != 0,
-                                    groupWrite = (int &   16) != 0,
-                                    groupExec  = (int &    8) != 0,
-                                    otherRead  = (int &    4) != 0,
-                                    otherWrite = (int &    2) != 0,
-                                    otherExec  = (int &    1) != 0 )
+object TarHeader:
+  val blockSize: Int = 512
+  val checksumOffset: Int = 148
+  val checksumLength: Int = 8
 
-case class UnixMode
-  ( setUid:     Boolean = false,
-    setGid:     Boolean = false,
-    ownerRead:  Boolean = true,
-    ownerWrite: Boolean = true,
-    ownerExec:  Boolean = false,
-    groupRead:  Boolean = true,
-    groupWrite: Boolean = false,
-    groupExec:  Boolean = false,
-    otherRead:  Boolean = true,
-    otherWrite: Boolean = false,
-    otherExec:  Boolean = false ):
+  def parse(block: Data): TarHeader raises TarError =
+    if block.length < blockSize
+    then raise(TarError(TarError.Reason.TruncatedStream(blockSize, block.length)))
 
-  def int: Int =
-    var sum: Int = 0
-    if setUid then sum += 2048
-    if setGid then sum += 1024
-    if ownerRead then sum += 256
-    if ownerWrite then sum += 128
-    if ownerExec then sum += 64
-    if groupRead then sum += 32
-    if groupWrite then sum += 16
-    if groupExec then sum += 8
-    if otherRead then sum += 4
-    if otherWrite then sum += 2
-    if otherExec then sum += 1
-    sum
+    TarHeader
+      ( name     = block.slice(0, 100),
+        mode     = block.slice(100, 108),
+        uid      = block.slice(108, 116),
+        gid      = block.slice(116, 124),
+        size     = block.slice(124, 136),
+        mtime    = block.slice(136, 148),
+        checksum = block.slice(148, 156),
+        typeFlag = block(156),
+        linkName = block.slice(157, 257),
+        magic    = block.slice(257, 263),
+        version  = block.slice(263, 265),
+        uname    = block.slice(265, 297),
+        gname    = block.slice(297, 329),
+        devMajor = block.slice(329, 337),
+        devMinor = block.slice(337, 345),
+        prefix   = block.slice(345, 500) )
 
-  def bytes: Data = int.octal.pad(7, Rtl, '0').data
+  def verifyChecksum(block: Data, recorded: U32): Unit raises TarError =
+    var sum: Long = 0L
+    var i = 0
+
+    while i < blockSize do
+      val byte: Int =
+        if i >= checksumOffset && i < checksumOffset + checksumLength then 0x20
+        else block(i) & 0xff
+
+      sum = sum + byte
+      i = i + 1
+
+    val actual: U32 = sum.toInt.bits.u32
+
+    if actual != recorded
+    then raise(TarError(TarError.Reason.BadChecksum(recorded, actual)))
+
+  def decodeOctal(data: Data, field: Text): U32 raises TarError =
+    var i = 0
+    while i < data.length && data(i) == ' '.toByte do i = i + 1
+
+    var sawDigit = false
+    var n: Long = 0L
+    var done = false
+
+    while !done && i < data.length do
+      val byte: Byte = data(i)
+
+      if byte == 0 || byte == ' '.toByte then done = true
+      else if byte >= '0'.toByte && byte <= '7'.toByte then
+        n = n*8L + (byte - '0'.toByte).toLong
+        sawDigit = true
+        i = i + 1
+      else
+        raise(TarError(TarError.Reason.BadOctal(field, data)))
+        done = true
+
+    if !sawDigit then raise(TarError(TarError.Reason.BadOctal(field, data)))
+
+    n.toInt.bits.u32
+
+  def decodeNulText(data: Data): Text =
+    var i = 0
+    while i < data.length && data(i) != 0 do i = i + 1
+    data.slice(0, i).utf8
+
+  def isZeroBlock(block: Data): Boolean =
+    var i = 0
+    val n = block.length.min(blockSize)
+    while i < n && block(i) == 0.toByte do i = i + 1
+    i == n
+
+case class TarHeader
+  ( name:     Data,
+    mode:     Data,
+    uid:      Data,
+    gid:      Data,
+    size:     Data,
+    mtime:    Data,
+    checksum: Data,
+    typeFlag: Byte,
+    linkName: Data,
+    magic:    Data,
+    version:  Data,
+    uname:    Data,
+    gname:    Data,
+    devMajor: Data,
+    devMinor: Data,
+    prefix:   Data )
