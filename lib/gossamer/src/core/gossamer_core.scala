@@ -465,7 +465,9 @@ package proximities:
 
 
   given normalizedLevenshteinDistance: CaseSensitivity => Proximity by Double =
-    (left, right) => levenshteinDistance.distance(left, right)/left.length.max(right.length)
+    (left, right) =>
+      val span = left.length.max(right.length)
+      if span == 0 then 0.0 else levenshteinDistance.distance(left, right).toDouble/span
 
 extension (text: Text)
   inline def has(substring: Text): Boolean = text.contains(substring)
