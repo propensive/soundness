@@ -54,10 +54,12 @@ object Watch:
 
     val async: Optional[Task[Unit]] = safely(supervise(task("surveillance".tt)(pollLoop.run())))
 
+  private val serviceMutex: Mutex = Mutex()
+  private val watchesMutex: Mutex = Mutex()
   private var serviceValue: Optional[WatchService] = Unset
 
   private def service: WatchService = serviceValue.or:
-    synchronized:
+    serviceMutex:
       jnf.FileSystems.getDefault.nn.newWatchService().nn.pipe: watchService =>
         WatchService(watchService, pollLoop(watchService)).tap: service =>
           serviceValue = service
@@ -71,7 +73,7 @@ object Watch:
     service.take().nn match
       case key: jnf.WatchKey =>
         key.pollEvents().nn.iterator.nn.asScala.each: event =>
-          watches.synchronized(watches(key)).each(_.put(event))
+          watchesMutex(watches(key)).each(_.put(event))
 
         key.reset()
 
@@ -90,6 +92,7 @@ object Watch:
       . to(Map)
 
 class Watch():
+  private val mutex: Mutex = Mutex()
   private val spool: Spool[WatchEvent] = Spool()
   private val watches: scm.HashSet[PathWatch] = scm.HashSet[PathWatch]()
 
@@ -134,13 +137,13 @@ class Watch():
           path.register(Watch.service.watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
 
         new PathWatch(key, path, spool, filter).tap: watch =>
-          Watch.watches.synchronized:
+          Watch.watchesMutex:
             Watch.watches(key) = Watch.watches.at(key).or(Set()) + watch
 
-    synchronized(watches ++= watches2)
+    mutex(watches ++= watches2)
 
   def unregister(): Unit =
-    Watch.watches.synchronized:
+    Watch.watchesMutex:
       watches.each: watch =>
         Watch.watches(watch.key) = Watch.watches.at(watch.key).or(Set()) - watch
 
@@ -148,7 +151,7 @@ class Watch():
           watch.key.cancel()
           Watch.watches.remove(watch.key)
 
-        if Watch.watches.nil then synchronized:
+        if Watch.watches.nil then mutex:
           Watch.serviceValue.let: service =>
             service.stop()
             Watch.serviceValue = Unset
