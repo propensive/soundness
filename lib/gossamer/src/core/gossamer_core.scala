@@ -200,16 +200,14 @@ extension [textual: Textual](text: textual)
   def search(regex: Regex, overlap: Boolean = false): Stream[textual] =
     regex.search(textual.text(text), overlap = overlap).map(text.segment(_))
 
-  def extract[value](start: Ordinal)(lambda: Scanner ?=> textual ~> value): Stream[value] =
+  inline def extract[value](inline start: Ordinal)
+    ( inline lambda: Scanner ?=> textual ~> value )
+  :   Stream[value] =
 
-    val input = textual.text(text)
-
-    if start.n0 >= input.s.length then Stream() else
-      val scanner = Scanner(start.n0)
-
-      lambda(using scanner).lift(text) match
-        case Some(head) => head #:: extract(scanner.nextStart.or(0).z)(lambda)
-        case _          => Stream()
+    $ {
+        gossamer.internal.extractMacro[textual, value]
+          ( 'text, 'start, 'lambda, '{compiletime.summonInline[textual is Textual]} )
+      }
 
   def seek(regex: Regex): Optional[textual] = regex.seek(textual.text(text)).let(text.segment(_))
 
