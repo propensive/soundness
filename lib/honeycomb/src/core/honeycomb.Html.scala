@@ -641,23 +641,22 @@ object Html extends Tag.Container
         case char                            => fail(OnlyWhitespace(char))
 
       @tailrec
-      def tagname(mark: Mark, dictionary: Dictionary[Tag]): Tag =
+      def tagname(mark: Mark, node: Int): Tag =
         lay(fail(ExpectedMore, mark)):
-          case char if asciiLetter(char) || asciiDigit(char) => dictionary(asciiLower(char)) match
-            case Dictionary.Empty =>
+          case char if asciiLetter(char) || asciiDigit(char) =>
+            val step = dom.compactElements.step(node, asciiLower(char))
+
+            if step < 0 then
               advance()
               val end = begin()
               val name = slice(mark, end)
               reset(mark) yet fail(InvalidTagStart(name.lower), mark, end)
+            else next() yet tagname(mark, step)
 
-            case other =>
-              next() yet tagname(mark, other)
+          case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' =>
+            val tag = dom.compactElements.value(node)
 
-          case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => dictionary match
-            case just: Dictionary.Just[Tag] if just.tailEmpty => just.value
-            case Dictionary.Branch(tag: Tag, _)               => tag
-
-            case other =>
+            if tag != null then tag.nn else
               val end = begin()
               val name = slice(mark, end)
               reset(mark) yet fail(InvalidTag(name), mark, end)
@@ -676,14 +675,16 @@ object Html extends Tag.Container
         case char                                        => fail(Unexpected(char), mark)
 
       @tailrec
-      def key(mark: Mark, dictionary: Dictionary[Attribute]): Attribute =
+      def key(mark: Mark, node: Int): Attribute =
         lay(fail(ExpectedMore, mark)):
-          case char if asciiLetter(char) || char == '-' => dictionary(asciiLower(char)) match
-            case Dictionary.Empty => fail(UnknownAttributeStart(slice(mark, begin())), mark)
-            case dictionary       => next() yet key(mark, dictionary)
+          case char if asciiLetter(char) || char == '-' =>
+            val step = dom.compactAttributes.step(node, asciiLower(char))
+            if step < 0 then fail(UnknownAttributeStart(slice(mark, begin())), mark)
+            else next() yet key(mark, step)
 
           case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>
-            dictionary.element.or:
+            val attr = dom.compactAttributes.value(node)
+            if attr != null then attr.nn else
               val end = begin()
               val name = slice(mark, end)
               reset(mark)
@@ -787,7 +788,7 @@ object Html extends Tag.Container
 
             case _ =>
               val key2 = if foreign then foreignKey(begin()) else
-                key(begin(), dom.attributes).tap: key =>
+                key(begin(), 0).tap: key =>
                   if !key.targets(tag) then fail(InvalidAttributeUse(key.label, tag))
 
                 . label
@@ -833,7 +834,7 @@ object Html extends Tag.Container
 
       def entity(mark: Mark): Optional[Text] = lay(fail(ExpectedMore, mark)):
         case '#'   => next() yet numericEntity(mark)
-        case other => textEntity(mark, dom.entities)
+        case other => textEntity(mark, 0)
 
       def numericEntity(mark: Mark): Optional[Text] =
         lay(fail(ExpectedMore, mark)):
@@ -865,15 +866,19 @@ object Html extends Tag.Container
         case char                       => Unset
 
       @tailrec
-      def textEntity(mark: Mark, dictionary: Dictionary[Text]): Optional[Text] =
+      def textEntity(mark: Mark, node: Int): Optional[Text] =
         lay(fail(ExpectedMore, mark)):
           case char if asciiLetter(char) || asciiDigit(char) =>
-            dictionary(char) match
-              case Dictionary.Empty => Unset
-              case dictionary       => advance() yet textEntity(mark, dictionary)
+            val step = dom.compactEntities.step(node, char)
+            if step < 0 then Unset
+            else advance() yet textEntity(mark, step)
 
           case ';' =>
-            advance() yet dictionary(';').element
+            advance()
+            val step = dom.compactEntities.step(node, ';')
+            if step < 0 then Unset else
+              val v = dom.compactEntities.value(step)
+              if v == null then Unset else v.nn
 
           case '=' =>
             Unset
@@ -882,7 +887,8 @@ object Html extends Tag.Container
             fail(BadInsertion, mark)
 
           case char =>
-            dictionary.element
+            val v = dom.compactEntities.value(node)
+            if v == null then Unset else v.nn
 
 
       // Slow path: an entity reference or RCDATA close-tag check forced us to
@@ -1061,7 +1067,7 @@ object Html extends Tag.Container
 
           if foreign then content = foreignTag(begin())
           else
-            val tagDef = tagname(begin(), dom.elements)
+            val tagDef = tagname(begin(), 0)
             content = tagDef.label
             // Stash the resolved closing tag so `read`'s `Token.Close` arm
             // can compare `openTag eq parent` (reference equality on the
@@ -1079,7 +1085,7 @@ object Html extends Tag.Container
               content = foreignTag(begin())
               true
             else
-              val tagDef = tagname(begin(), dom.elements)
+              val tagDef = tagname(begin(), 0)
               content = tagDef.label
               openTag = tagDef
               tagDef.foreign

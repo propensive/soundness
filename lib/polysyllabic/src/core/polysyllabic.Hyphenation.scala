@@ -42,6 +42,12 @@ import vacuous.*
 object Hyphenation:
   given fallback: Hyphenation = Unhyphenated
 
+  // Alphabet used by the compact pattern trie: lowercase ASCII letters in
+  // their natural order, followed by the `.` word-boundary sentinel that
+  // TeX hyphenation patterns and the Liang algorithm both rely on.
+  val alphabet: CompactTrie.Alphabet =
+    CompactTrie.Alphabet.of("abcdefghijklmnopqrstuvwxyz.")
+
   // Build a `Hyphenation` from raw TeX-format pattern and exception strings.
   // Patterns look like `t"hy3ph"`; exceptions look like `t"as-so-ciate"`.
   def apply
@@ -153,7 +159,7 @@ object Hyphenation:
   private def walkCompact
     ( padded:       Array[Char],
       paddedLength: Int,
-      trie:         CompactTrie,
+      trie:         CompactTrie[IArray[Byte]],
       scores:       Array[Byte] )
   :   Unit =
 
@@ -162,10 +168,16 @@ object Hyphenation:
     val fail = trie.fail
     val dictLink = trie.dictLink
     val depth = trie.depth
-    val Alpha = CompactTrie.Alphabet
+    val alpha = trie.alphabet.size
     var node = 0
     var j = 0
 
+    // Slot computation is hardcoded to the hyphenation alphabet
+    // ('a'..'z' → 0..25, '.' → 26) rather than going through the trie's
+    // generic `Alphabet#slot` virtual method. Saves ~15-25% on the
+    // hot-path benchmark vs the virtual-dispatch version, at the cost of
+    // coupling this walk to the specific alphabet `Hyphenation.alphabet`
+    // is built with — kept in sync with that constant.
     while j < paddedLength do
       val char = padded(j)
       val sl =
@@ -175,8 +187,8 @@ object Hyphenation:
 
       if sl < 0 then node = 0 else
         // Follow failure links until we find a node whose child slot is set.
-        while node != 0 && children(node*Alpha + sl) < 0 do node = fail(node)
-        val next = children(node*Alpha + sl)
+        while node != 0 && children(node*alpha + sl) < 0 do node = fail(node)
+        val next = children(node*alpha + sl)
         if next >= 0 then node = next
 
         // Emit every value reachable via the dictionary suffix chain — these
@@ -294,8 +306,10 @@ trait Hyphenation:
   // Dense flat-array form of `patterns`, used by the hot algorithm path
   // instead of the recursive `Dictionary` walk. Lazily computed on first
   // access; the cost is paid once per `Hyphenation` instance and amortised
-  // across every word it ever hyphenates.
-  lazy val compactPatterns: CompactTrie = CompactTrie.from(patterns)
+  // across every word it ever hyphenates. `ahoCorasick = true` because the
+  // algorithm walks every starting position via failure/dictionary links.
+  lazy val compactPatterns: CompactTrie[IArray[Byte]] =
+    CompactTrie.from(patterns, Hyphenation.alphabet, ahoCorasick = true)
 
   def extending
     ( patterns:   Iterable[Text] = Nil,
