@@ -93,6 +93,7 @@ trait PosixCommands:
   inline given mesg: ("mesg" is Intelligible to Text) = !!
   inline given mkdir: ("mkdir" is Intelligible to Exit) = !!
   inline given mkfifo: ("mkfifo" is Intelligible to Exit) = !!
+  inline given mknod: ("mknod" is Intelligible to Exit) = !!
   inline given mv: ("mv" is Intelligible to Exit) = !!
   inline given newgrp: ("newgrp" is Intelligible to Exit) = !!
   inline given od: ("od" is Intelligible to Text) = !!

@@ -33,8 +33,11 @@
 package bitumen
 
 import anticipation.*
+import contingency.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8
+import rudiments.*
+import vacuous.*
 
 object Pax:
   def record(key: Text, value: Text): Data =
@@ -45,6 +48,46 @@ object Pax:
 
   def records(pairs: Iterable[(Text, Text)]): Data =
     pairs.foldLeft(IArray.empty[Byte]): (acc, pair) => acc ++ record(pair(0), pair(1))
+
+  def parse(data: Data): Map[Text, Text] raises TarError =
+    val builder = Map.newBuilder[Text, Text]
+    var pos = 0
+
+    while pos < data.length do
+      var lengthEnd = pos
+
+      while lengthEnd < data.length
+        && data(lengthEnd) >= '0'.toByte
+        && data(lengthEnd) <= '9'.toByte
+      do lengthEnd += 1
+
+      if lengthEnd == pos
+        || lengthEnd >= data.length
+        || data(lengthEnd) != ' '.toByte
+      then
+        raise(TarError(TarError.Reason.BadPaxRecord(data)))
+        pos = data.length
+      else
+        val lengthBytes = new String(data.slice(pos, lengthEnd).mutable(using Unsafe), "ASCII").nn
+        val length = lengthBytes.toInt
+
+        if length < 1 || pos + length > data.length || data(pos + length - 1) != '\n'.toByte
+        then
+          raise(TarError(TarError.Reason.BadPaxRecord(data)))
+          pos = data.length
+        else
+          val contentBytes = data.slice(lengthEnd + 1, pos + length - 1).mutable(using Unsafe)
+          val content: String = new String(contentBytes, "UTF-8").nn
+          val eqIdx: Int = content.indexOf('=')
+
+          if eqIdx < 0 then
+            raise(TarError(TarError.Reason.BadPaxRecord(data)))
+            pos = data.length
+          else
+            builder += ((content.substring(0, eqIdx).nn.tt, content.substring(eqIdx + 1).nn.tt))
+            pos = pos + length
+
+    builder.result()
 
   private def computeLength(payloadLen: Int): Int =
     var n = 1

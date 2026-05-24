@@ -30,7 +30,51 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package galilei
 
-export bitumen.{LongNameFormat, Pax, SparseSegment, Tar, TarEntry, TarError, TarHeader, TarRef,
-  TypeFlag, UnixGroup, UnixMode, UnixUser}
+import language.experimental.pureFunctions
+
+import ambience.*
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import guillotine.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
+import spectacular.*
+
+object Device:
+  enum Kind:
+    case Block
+    case Char
+
+    def flag: Text = this match
+      case Block => t"b"
+      case Char  => t"c"
+
+  def create[plane <: Posix: Filesystem]
+            ( path: Path on plane, kind: Kind, major: Int, minor: Int )
+            ( using createNonexistentParents: CreateNonexistentParents on plane,
+                    overwritePreexisting:     OverwritePreexisting on plane,
+                    working:                  WorkingDirectory,
+                    loggable:                 ExecEvent is Loggable )
+  :   Path on plane raises IoError =
+
+    createNonexistentParents(path):
+      overwritePreexisting(path):
+        whereas:
+          case ExecError(_, _, _) =>
+            import errorDiagnostics.stackTraces
+            IoError(path, IoError.Operation.Create, IoError.Reason.Unsupported)
+
+        . mitigate:
+            sh"mknod $path ${kind.flag} $major $minor"() match
+              case Exit.Ok => ()
+
+              case _ =>
+                raise
+                  ( IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied) )
+
+    path

@@ -57,6 +57,9 @@ enum TypeFlag:
   case Contiguous
   case NextFile
   case GlobalExtension
+  case LongLink
+  case LongName
+  case Sparse
 
   def id: Char = this match
     case File            => '0'
@@ -69,3 +72,6 @@ enum TypeFlag:
     case Contiguous      => '7'
     case NextFile        => 'x'
     case GlobalExtension => 'g'
+    case LongLink        => 'K'
+    case LongName        => 'L'
+    case Sparse          => 'S'

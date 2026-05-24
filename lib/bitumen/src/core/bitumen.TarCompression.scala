@@ -30,7 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package bitumen
 
-export bitumen.{LongNameFormat, Pax, SparseSegment, Tar, TarEntry, TarError, TarHeader, TarRef,
-  TypeFlag, UnixGroup, UnixMode, UnixUser}
+import anticipation.*
+import contingency.*
+import turbulence.*
+
+object TarCompression
+
+extension (tar: Tar)
+  def gzip: Stream[Data] = tar.serialize.compress[Gzip]
+  def zlib: Stream[Data] = tar.serialize.compress[Zlib]
+  def deflate: Stream[Data] = tar.serialize.compress[Deflate]
+
+extension (tarType: Tar.type)
+  def fromGzip(stream: Stream[Data]): Stream[TarEntry] raises TarError =
+    Tar.read(stream.decompress[Gzip])
+
+  def fromZlib(stream: Stream[Data]): Stream[TarEntry] raises TarError =
+    Tar.read(stream.decompress[Zlib])
+
+  def fromDeflate(stream: Stream[Data]): Stream[TarEntry] raises TarError =
+    Tar.read(stream.decompress[Deflate])
