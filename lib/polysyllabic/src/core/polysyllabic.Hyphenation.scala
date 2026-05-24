@@ -55,11 +55,11 @@ object Hyphenation:
       val (key, scores) = TexPatterns.parsePattern(raw)
       d.add(key, scores, 0)
 
-    val excMap = exceptions.foldLeft(Map.empty[Text, IArray[Int]]): (m, raw) =>
+    val excDict = exceptions.foldLeft(Dictionary.Empty: Dictionary[IArray[Int]]): (d, raw) =>
       val (word, offsets) = TexPatterns.parseException(raw)
-      m.updated(word, offsets)
+      d.add(word, offsets, 0)
 
-    make(dict, excMap, leftMin, rightMin)
+    make(dict, excDict, leftMin, rightMin)
 
   // Parse a full TeX hyphenation pattern file (the format used by CTAN
   // `hyph-utf8`): finds the `\patterns{…}` and `\hyphenation{…}` blocks plus
@@ -70,7 +70,7 @@ object Hyphenation:
 
   private[polysyllabic] def make
     ( patterns0:   Dictionary[IArray[Byte]],
-      exceptions0: Map[Text, IArray[Int]],
+      exceptions0: Dictionary[IArray[Int]],
       leftMin0:    Int,
       rightMin0:   Int )
   :   Hyphenation =
@@ -95,90 +95,138 @@ object Hyphenation:
   def breakPoints(word: Text, hyphenation: Hyphenation, leftMin: Int, rightMin: Int)
   :   IArray[Int] =
 
-    val source = word.s
-    val length = source.length
-    val lowered = new Array[Char](length)
+    breakPoints(word.s, 0, word.s.length, hyphenation, leftMin, rightMin)
+
+  // Slice variant: operate on `source[offset, offset + length)` without
+  // allocating a substring. Callers iterating words inside a larger text
+  // (e.g. `text.hyphenate`) hit this path one allocation cheaper per word.
+  def breakPoints
+    ( source:       String,
+      offset:       Int,
+      length:       Int,
+      hyphenation:  Hyphenation,
+      leftMin:      Int,
+      rightMin:     Int )
+  :   IArray[Int] =
+
+    // Single Char buffer: `.` at the boundaries and lowercased word chars in
+    // between. Used by both the exception lookup (via `lookupAscii` on slots
+    // `[1, length)`) and the trie walk that follows.
+    val paddedLength = length + 2
+    val padded = new Array[Char](paddedLength)
+    padded(0) = '.'
+    padded(paddedLength - 1) = '.'
     var i = 0
 
     while i < length do
-      val c = source.charAt(i)
-      lowered(i) = if c >= 'A' && c <= 'Z' then (c + 32).toChar else c
+      val c = source.charAt(offset + i)
+      padded(i + 1) = if c >= 'A' && c <= 'Z' then (c + 32).toChar else c
       i += 1
 
-    val loweredText = new String(lowered).nn.tt
+    val exception = hyphenation.exceptions.lookupAscii(padded, 1, length)
 
-    hyphenation.exceptions.get(loweredText) match
-      case Some(offsets) =>
-        // Re-apply the leftMin/rightMin envelope to honoured exceptions too —
-        // a user-tightened minimum should suppress otherwise-listed breaks.
-        val filtered = ArrayBuilder.make[Int]
-        var k = 0
+    if exception.absent then trieWalk(padded, paddedLength, length, hyphenation, leftMin, rightMin)
+    else
+      // Re-apply the leftMin/rightMin envelope to honoured exceptions too — a
+      // user-tightened minimum should suppress otherwise-listed breaks.
+      val offsets: IArray[Int] = exception.vouch
+      val filtered = ArrayBuilder.make[Int]
+      var k = 0
 
-        while k < offsets.length do
-          val p = offsets(k)
-          if p >= leftMin && p <= length - rightMin then filtered += p
-          k += 1
+      while k < offsets.length do
+        val p = offsets(k)
+        if p >= leftMin && p <= length - rightMin then filtered += p
+        k += 1
 
-        filtered.result().immutable(using Unsafe)
+      filtered.result().immutable(using Unsafe)
 
-      case None =>
-        // Pad the word with `.` boundary sentinels matching the convention
-        // used inside the TeX patterns themselves.
-        val paddedLength = length + 2
-        val padded = new Array[Char](paddedLength)
-        padded(0) = '.'
-        i = 0
+  private inline def mergePattern
+    ( scores: Array[Byte], base: Int, pattern: IArray[Byte] )
+  :   Unit =
 
-        while i < length do
-          padded(i + 1) = lowered(i)
-          i += 1
+    var k = 0
+    val n = pattern.length
 
-        padded(paddedLength - 1) = '.'
+    while k < n do
+      val v = pattern(k)
+      if v > scores(base + k) then scores(base + k) = v
+      k += 1
 
-        // `scores(g)` is the running maximum for the gap immediately before
-        // `padded(g)` (or after the last character when `g == paddedLength`).
-        val scores = new Array[Byte](paddedLength + 1)
-        var startPos = 0
+  private def trieWalk
+    ( padded:       Array[Char],
+      paddedLength: Int,
+      length:       Int,
+      hyphenation:  Hyphenation,
+      leftMin:      Int,
+      rightMin:     Int )
+  :   IArray[Int] =
 
-        while startPos < paddedLength do
-          var node: Dictionary[IArray[Byte]] = hyphenation.patterns
-          var j = startPos
-          var live = true
+    // `scores(g)` is the running maximum for the gap immediately before
+    // `padded(g)` (or after the last character when `g == paddedLength`).
+    val scores = new Array[Byte](paddedLength + 1)
+    var startPos = 0
 
-          while live && j < paddedLength do
-            val next = node(padded(j))
+    while startPos < paddedLength do
+      // We always walk from a Branch node (the root is a Branch). When we
+      // step into a `Just` we match its entire stored tail in one
+      // comparison loop and stop — avoiding the per-character `Just`
+      // allocations the previous version paid inside `Dictionary#apply`.
+      var node: Dictionary[IArray[Byte]] = hyphenation.patterns
+      var j = startPos
+      var live = true
 
-            if next eq Dictionary.Empty then live = false else
-              node = next
+      while live && j < paddedLength do
+        node match
+          case branch: Dictionary.Branch[IArray[Byte]] @unchecked =>
+            val char = padded(j)
 
-              next.element.let: patternScores =>
-                var k = 0
-                val max = patternScores.length
+            branch.map.at(char) match
+              case nextBranch: Dictionary.Branch[IArray[Byte]] @unchecked =>
+                nextBranch.value.let(mergePattern(scores, startPos, _))
+                node = nextBranch
+                j += 1
 
-                while k < max do
-                  val value = patternScores(k)
-                  if value > scores(startPos + k) then scores(startPos + k) = value
-                  k += 1
+              case nextJust: Dictionary.Just[IArray[Byte]] @unchecked =>
+                // The first char of the Just's text matched (it was the map
+                // key); the remaining tail is `text[offset, text.length)`.
+                val text = nextJust.text.s
+                val tailOffset = nextJust.offset
+                val tailRemaining = text.length - tailOffset
+                j += 1
 
-              j += 1
+                if j + tailRemaining > paddedLength then live = false else
+                  var k = 0
 
-          startPos += 1
+                  while k < tailRemaining && padded(j + k) == text.charAt(tailOffset + k)
+                  do k += 1
 
-        // Break position `p` in the original word corresponds to padded gap
-        // `p + 1` (the leading `.` shifts the indices by one).
-        val breaks = ArrayBuilder.make[Int]
-        var p = if leftMin > 1 then leftMin else 1
-        val lastBreak = length - (if rightMin > 1 then rightMin else 1)
+                  if k == tailRemaining then mergePattern(scores, startPos, nextJust.value)
 
-        while p <= lastBreak do
-          if (scores(p + 1) & 1) == 1 then breaks += p
-          p += 1
+                  live = false
 
-        breaks.result().immutable(using Unsafe)
+              case _ =>
+                live = false
+
+          case _ =>
+            live = false
+
+      startPos += 1
+
+    // Break position `p` in the original word corresponds to padded gap
+    // `p + 1` (the leading `.` shifts the indices by one).
+    val breaks = ArrayBuilder.make[Int]
+    var p = if leftMin > 1 then leftMin else 1
+    val lastBreak = length - (if rightMin > 1 then rightMin else 1)
+
+    while p <= lastBreak do
+      if (scores(p + 1) & 1) == 1 then breaks += p
+      p += 1
+
+    breaks.result().immutable(using Unsafe)
 
 trait Hyphenation:
   def patterns: Dictionary[IArray[Byte]]
-  def exceptions: Map[Text, IArray[Int]]
+  def exceptions: Dictionary[IArray[Int]]
   def leftMin: Int
   def rightMin: Int
 
@@ -193,9 +241,9 @@ trait Hyphenation:
       val (key, scores) = TexPatterns.parsePattern(raw)
       dict.add(key, scores, 0)
 
-    val newExceptions = exceptions.foldLeft(this.exceptions): (map, raw) =>
+    val newExceptions = exceptions.foldLeft(this.exceptions): (dict, raw) =>
       val (word, offsets) = TexPatterns.parseException(raw)
-      map.updated(word, offsets)
+      dict.add(word, offsets, 0)
 
     val effectiveLeft = leftMin.or(this.leftMin)
     val effectiveRight = rightMin.or(this.rightMin)
@@ -203,6 +251,6 @@ trait Hyphenation:
 
 private[polysyllabic] object Unhyphenated extends Hyphenation:
   val patterns: Dictionary[IArray[Byte]] = Dictionary.Empty
-  val exceptions: Map[Text, IArray[Int]] = Map.empty
+  val exceptions: Dictionary[IArray[Int]] = Dictionary.Empty
   val leftMin: Int = Int.MaxValue
   val rightMin: Int = Int.MaxValue

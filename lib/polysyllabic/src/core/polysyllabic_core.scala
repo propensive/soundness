@@ -69,21 +69,23 @@ extension (text: Text)
       if Character.isLetter(c) then
         var end = i
         while end < length && Character.isLetter(source.charAt(end)) do end += 1
-        val word = source.substring(i, end).nn
+        val wordOffset = i
+        val wordLength = end - i
 
         val breaks =
-          Hyphenation.breakPoints(word.tt, hyphenation, effectiveLeft, effectiveRight)
+          Hyphenation.breakPoints
+            ( source, wordOffset, wordLength, hyphenation, effectiveLeft, effectiveRight )
 
         var prev = 0
         var k = 0
 
         while k < breaks.length do
-          out.append(word, prev, breaks(k))
+          out.append(source, wordOffset + prev, wordOffset + breaks(k))
           out.append(hyphen)
           prev = breaks(k)
           k += 1
 
-        out.append(word, prev, word.length)
+        out.append(source, wordOffset + prev, end)
         i = end
       else
         out.append(c)
