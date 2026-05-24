@@ -169,9 +169,9 @@ object soundness extends ScalaModule:
     denominative.core, digression.core, diuretic.core, fulminate.core,
     hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core, gossamer.core,
     inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
-    parasite.core, rudiments.core, spectacular.core, symbolism.core, prepositional.core,
-    vacuous.core, wisteria.core, vicarious.core, serpentine.core, typonym.core, zephyrine.core,
-    frontier.core)
+    parasite.core, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
+    prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
+    typonym.core, zephyrine.core, frontier.core)
 
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi,
