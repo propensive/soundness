@@ -65,6 +65,31 @@ object TarEntry:
     import strategies.throwUnsafely
     t"PaxHeaders/0".decode[Relative on Posix]
 
+  private[bitumen] def sparseExtensionBlocks(segments: List[SparseSegment]): LazyList[Data] =
+    if segments.isEmpty then LazyList()
+    else
+      val (batch, rest) = segments.splitAt(21)
+
+      val block: Data = Data.build(512): array =>
+        var pos = 0
+
+        batch.foreach: seg =>
+          array.place(formatLongOctal(seg.offset, 12), pos.z)
+          pos = pos + 12
+          array.place(formatLongOctal(seg.length, 12), pos.z)
+          pos = pos + 12
+
+        if rest.nonEmpty then array(504) = 1.toByte
+
+      block #:: sparseExtensionBlocks(rest)
+
+  private[bitumen] def formatLongOctal(number: Long, width: Int): Data =
+    val str: String = java.lang.Long.toOctalString(number).nn
+    val pad: Int = (width - 1 - str.length).max(0)
+    (("0"*pad) + str).tt.data
+
+case class SparseSegment(offset: Long, length: Long)
+
 enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
   case File
     ( path:  TarRef,
@@ -140,19 +165,33 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
   case GnuLong(override val typeFlag: TypeFlag, content: Text)
   extends TarEntry(TarEntry.paxRef, UnixMode(), UnixUser(0), UnixGroup(0), 0.bits.u32)
 
+  case Sparse
+    ( path:     TarRef,
+      mode:     UnixMode,
+      user:     UnixUser,
+      group:    UnixGroup,
+      mtime:    U32,
+      realSize: Long,
+      segments: List[SparseSegment],
+      data:     LazyList[Data],
+      pax:      Map[Text, Text] = Map.empty )
+  extends TarEntry(path, mode, user, group, mtime)
+
 
   def size: U32 = this match
-    case file: File    => file.data.sumBy(_.length).bits.u32
-    case pax: Pax      => pax.records.length.bits.u32
-    case long: GnuLong => (long.content.data.length + 1).bits.u32
-    case _             => 0
+    case file: File      => file.data.sumBy(_.length).bits.u32
+    case pax: Pax        => pax.records.length.bits.u32
+    case long: GnuLong   => (long.content.data.length + 1).bits.u32
+    case sparse: Sparse  => sparse.segments.map(_.length).sum.toInt.bits.u32
+    case _               => 0
 
   def dataBlocks: LazyList[Data] = this match
-    case file: File    => file.data.chunked(512, zeroPadding = true)
-    case pax: Pax      => LazyList(pax.records).chunked(512, zeroPadding = true)
-    case long: GnuLong =>
+    case file: File      => file.data.chunked(512, zeroPadding = true)
+    case pax: Pax        => LazyList(pax.records).chunked(512, zeroPadding = true)
+    case long: GnuLong   =>
       LazyList(long.content.data ++ IArray.fill[Byte](1)(0)).chunked(512, zeroPadding = true)
-    case _             => LazyList()
+    case sparse: Sparse  => sparse.data.chunked(512, zeroPadding = true)
+    case _               => LazyList()
 
   def typeFlag: TypeFlag = this match
     case _: File         => TypeFlag.File
@@ -164,6 +203,7 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
     case _: Fifo         => TypeFlag.Fifo
     case _: Pax          => TypeFlag.NextFile
     case long: GnuLong   => long.typeFlag
+    case _: Sparse       => TypeFlag.Sparse
 
   def entryName: Text = this match
     case directory: Directory => t"${directory.path}/"
@@ -181,6 +221,11 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
 
   def format(number: U32, width: Int): Data =
     number.octal.pad(width - 1).data
+
+  def formatLong(number: Long, width: Int): Data =
+    val str: String = java.lang.Long.toOctalString(number).nn
+    val pad: Int = (width - 1 - str.length).max(0)
+    (("0"*pad) + str).tt.data
 
   def header: Data = Data.build(512): array =>
     val nameData = entryName.data
@@ -212,7 +257,25 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
     array.place(t"ustar\u0000".data, 257.z)
     array.place(t"00".data, 263.z)
 
+    this.only:
+      case sparse: Sparse =>
+        val inline = sparse.segments.take(4)
+        var pos = 386
+
+        inline.foreach: seg =>
+          array.place(formatLong(seg.offset, 12), pos.z)
+          pos = pos + 12
+          array.place(formatLong(seg.length, 12), pos.z)
+          pos = pos + 12
+
+        if sparse.segments.length > 4 then array(482) = 1.toByte
+        array.place(formatLong(sparse.realSize, 12), 483.z)
+
     val total = array.iterator.map(_.bits.u8.u32).reduce(_ + _)
     array.place(format(total, 8), 148.z)
 
-  def serialize: LazyList[Data] = header #:: dataBlocks
+  def serialize: LazyList[Data] = this match
+    case sparse: Sparse if sparse.segments.length > 4 =>
+      header #:: TarEntry.sparseExtensionBlocks(sparse.segments.drop(4)) #::: dataBlocks
+    case _ =>
+      header #:: dataBlocks

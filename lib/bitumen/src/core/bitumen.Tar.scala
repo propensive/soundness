@@ -105,6 +105,27 @@ object Tar:
               val link = TarHeader.decodeNulText(data)
               readEntries(rest, paxOverlay, globalOverlay, longName, link)
 
+            case 'S' =>
+              val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
+              val path = decodePath(nameText)
+
+              val inlineSegments: List[SparseSegment] = readInlineSparseMap(head)
+              val isExtended: Boolean = head(482) != 0.toByte
+              val realSize: Long = TarHeader.decodeOctal(head.slice(483, 495), t"realsize").long
+              val (extSegments, afterExt) = readSparseExtensions(tail, isExtended)
+              val (data, rest) = takeData(afterExt, size)
+
+              val allSegments = (inlineSegments ++ extSegments).filter(_.length > 0)
+
+              val extras: Map[Text, Text] =
+                (globalOverlay ++ paxOverlay).filter((k, _) => !structuralPaxKeys.contains(k))
+
+              val entry = TarEntry.Sparse
+                            ( path, mode, user, group, mtime, realSize, allSegments,
+                              Stream(data), extras )
+
+              entry #:: readEntries(rest, Map.empty, globalOverlay, Unset, Unset)
+
             case flag =>
               val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
               val linkText = resolveLink(header, paxOverlay, globalOverlay, longLink)
@@ -173,6 +194,56 @@ object Tar:
     val (taken, rest) = blocks.splitAt(nBlocks)
     val concatenated: Data = taken.foldLeft(IArray.empty[Byte])(_ ++ _).slice(0, size)
     (concatenated, rest)
+
+  private def decodeSparseField(data: Data): Long raises TarError =
+    var allZero = true
+    var i = 0
+
+    while i < data.length && allZero do
+      if data(i) != 0.toByte then allZero = false
+      i = i + 1
+
+    if allZero then 0L else TarHeader.decodeOctal(data, t"sparse.field").long
+
+  private def readInlineSparseMap(headerBlock: Data): List[SparseSegment] raises TarError =
+    val builder = List.newBuilder[SparseSegment]
+    var pos = 386
+    var i = 0
+
+    while i < 4 do
+      val offset = decodeSparseField(headerBlock.slice(pos, pos + 12))
+      val length = decodeSparseField(headerBlock.slice(pos + 12, pos + 24))
+
+      if length > 0 then builder += SparseSegment(offset, length)
+      pos = pos + 24
+      i = i + 1
+
+    builder.result()
+
+  private def readSparseExtensions(blocks: Stream[Data], hasMore: Boolean)
+  :   (List[SparseSegment], Stream[Data]) raises TarError =
+
+    if !hasMore then (Nil, blocks) else blocks match
+      case head #:: tail =>
+        val builder = List.newBuilder[SparseSegment]
+        var pos = 0
+        var i = 0
+
+        while i < 21 do
+          val offset = decodeSparseField(head.slice(pos, pos + 12))
+          val length = decodeSparseField(head.slice(pos + 12, pos + 24))
+
+          if length > 0 then builder += SparseSegment(offset, length)
+          pos = pos + 24
+          i = i + 1
+
+        val moreExtended = head(504) != 0.toByte
+        val (rest, afterRest) = readSparseExtensions(tail, moreExtended)
+        (builder.result() ++ rest, afterRest)
+
+      case _ =>
+        raise(TarError(TarError.Reason.TruncatedStream(512, 0)))
+        (Nil, blocks)
 
   private def resolveName
     ( header:        TarHeader,
@@ -243,6 +314,7 @@ object Tar:
     case c: TarEntry.CharSpecial  => (c.user, c.group)
     case b: TarEntry.BlockSpecial => (b.user, b.group)
     case f: TarEntry.Fifo         => (f.user, f.group)
+    case sp: TarEntry.Sparse      => (sp.user, sp.group)
     case _: TarEntry.Pax          => (UnixUser(0), UnixGroup(0))
     case _: TarEntry.GnuLong      => (UnixUser(0), UnixGroup(0))
 
@@ -254,6 +326,7 @@ object Tar:
     case c: TarEntry.CharSpecial  => c.pax
     case b: TarEntry.BlockSpecial => b.pax
     case f: TarEntry.Fifo         => f.pax
+    case sp: TarEntry.Sparse      => sp.pax
     case _: TarEntry.Pax          => Map.empty
     case _: TarEntry.GnuLong      => Map.empty
 
