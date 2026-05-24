@@ -82,16 +82,14 @@ object Hyphenation:
       val rightMin = rightMin0
 
   // Liang's hyphenation algorithm. Pads the lowercased word with `.` sentinels,
-  // walks the pattern dictionary from every starting position, merges each
-  // matched pattern's per-gap scores into a buffer via `max`, then reports the
-  // positions whose final score is odd — subject to the `leftMin`/`rightMin`
-  // envelope. Exact exception-list hits short-circuit the trie walk.
+  // walks the `CompactTrie` form of the pattern dictionary via Aho-Corasick in
+  // a single forward pass, merging each matched pattern's per-gap scores into
+  // a buffer via `max`, then reports the positions whose final score is odd —
+  // subject to the `leftMin`/`rightMin` envelope. Exact exception-list hits
+  // short-circuit the trie walk.
   //
   // Returns positions in the original (un-padded) word at which a hyphen may
   // be inserted: position `p` means "insert before letter `p`".
-  //
-  // TODO: swap for an Aho–Corasick automaton once profiling shows wrapping
-  // dominated by hyphenation. Same public interface, much smaller constant.
   def breakPoints(word: Text, hyphenation: Hyphenation, leftMin: Int, rightMin: Int)
   :   IArray[Int] =
 
