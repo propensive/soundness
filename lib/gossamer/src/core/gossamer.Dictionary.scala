@@ -32,188 +32,383 @@
                                                                                                   */
 package gossamer
 
-import scala.annotation.tailrec
+import scala.collection.mutable.{ArrayBuffer, HashMap as MutMap, LinkedHashSet}
 
 import anticipation.*
-import rudiments.*
 import vacuous.*
 
+// Dense flat-array trie keyed on chars from an `Alphabet`. Each node owns a
+// contiguous slot of `alphabet.size` `Int` entries in `children` indexed by
+// `alphabet.slot(char)`; `-1` means "no child". `values(i)` is the value
+// associated with the pattern that terminates at node `i`, or `null` if no
+// pattern terminates here.
+//
+// Each character step is a single int-array index; each value access is a
+// single null check. Both are substantially cheaper than walking a
+// case-class trie with `Map.at(char)` HashMap lookups, at the cost of
+// materialising the trie into a dense form up-front.
+//
+// `value` is expected to be a reference type at runtime; the internal
+// storage allocates `new Array[value](n)` via `ClassTag` and re-views it
+// as `Array[value | Null]` so callers can null-check at access sites.
+// Storing a primitive `value` (e.g. `Int`) would box at runtime — fine
+// for occasional access, wasteful in hot loops.
+//
+// `Dictionary.aho` populates `depth`, `fail`, and `dictLink` for an
+// Aho-Corasick walk; the default builders leave them empty so callers
+// that only do exact-key lookups don't pay the BFS build cost.
 object Dictionary:
-  def apply[element](pairs: (Text, element)*): Dictionary[element] =
-    pairs.foldLeft(Dictionary.Empty): (dictionary, next) =>
-      dictionary.add(next(0), next(1), 0)
+  // A small alphabet for `Dictionary`: a fixed mapping from char to a
+  // dense slot index in `[0, size)`. Chars not in the alphabet return
+  // `-1`. Callers supply different alphabets for different uses (a-z + `.`
+  // for hyphenation, a-z + 0-9 + `-` for HTML attributes, etc.). The
+  // default builders (`Dictionary(pairs*)`, `Dictionary.empty`,
+  // `Dictionary.aho(pairs*)`) auto-derive an alphabet from the keys'
+  // distinct characters, so most callers never construct one explicitly.
+  trait Alphabet:
+    def slot(char: Char): Int
+    def char(slot: Int): Char
+    def size: Int
 
-  // Build a `Just` whose suffix begins at the given offset of `text`. Avoids
-  // allocating a fresh substring at construction time; the offset is consumed
-  // virtually as the dictionary is walked.
-  private[gossamer] inline def just[element](text: Text, offset: Int, value: element)
-  :   Just[element] =
+  object Alphabet:
+    // Build an Alphabet from a string of supported chars. Slot index of
+    // each char is its position in the string. Unsupported chars return
+    // `-1`. Restricted to ASCII (char codes 0..127); higher code points
+    // return `-1`.
+    def of(chars: String): Alphabet = new Alphabet:
+      private val table = Array.fill[Int](128)(-1)
+      private val charTable: Array[Char] = chars.toCharArray.nn
+      private val n = chars.length
 
-    Just(text, offset, value)
+      locally:
+        var i = 0
 
-  extension [element](just: Just[element])
-    // Number of characters remaining in the virtual suffix.
-    inline def tailLength: Int = just.text.length - just.offset
+        while i < n do
+          val c = chars.charAt(i).toInt
+          if c < 128 then table(c) = i
+          i += 1
 
-    // True if the virtual suffix has been fully consumed.
-    inline def tailEmpty: Boolean = just.offset >= just.text.length
+      def size = n
 
-    // First character of the virtual suffix, if any.
-    inline def head: Optional[Char] =
-      if just.offset < just.text.length then just.text.s.charAt(just.offset) else Unset
+      def slot(char: Char): Int =
+        val c = char.toInt
+        if c < 128 then table(c) else -1
 
-    // Materialize the virtual suffix as a `Text`. Allocates only when called.
-    def tail: Text =
-      if just.offset == 0 then just.text
-      else just.text.s.substring(just.offset).nn.tt
+      def char(slot: Int): Char = charTable(slot)
 
-// `Just(text, offset, value)` represents a unique remaining suffix `text[offset:]`
-// in the trie. Walking one character forward returns a sibling `Just` with the
-// same shared `text` and `offset + 1` — no `String.substring` allocation per
-// step. The `tail`, `head`, `tailLength` and `tailEmpty` accessors expose the
-// virtual suffix without forcing materialization.
-enum Dictionary[+element]:
-  case Empty
-  case Just(text: Text, offset: Int, value: element)
-  case Branch(value: Optional[element], map: Map[Char, Dictionary[element]])
+    // An empty alphabet — no chars are recognised. Used by the empty
+    // dictionary.
+    val empty: Alphabet = new Alphabet:
+      def size = 0
+      def slot(char: Char): Int = -1
+      def char(slot: Int): Char = throw IndexOutOfBoundsException(slot.toString)
 
-  def size: Int = this match
-    case Empty              => 0
-    case Just(_, _, _)      => 1
-    case Branch(Unset, map) => map.sumBy(_(1).size)
-    case Branch(_, map)     => map.sumBy(_(1).size) + 1
+  // An empty Dictionary with no entries and an empty alphabet. Adds via
+  // `+`/`++` rebuild the trie with an alphabet derived from the keys.
+  def empty[value: ClassTag]: Dictionary[value] =
+    val emptyInts = new Array[Int](0)
+    val emptyValues: Array[AnyRef | Null] =
+      new Array[AnyRef](0).asInstanceOf[Array[AnyRef | Null]]
+    new Dictionary[value]
+      ( emptyInts, emptyValues, emptyInts, emptyInts, emptyInts, Alphabet.empty, summon )
 
-  def branches: Set[Char] = this match
-    case Empty                  => Set()
-    case just: Just[element]    => just.head.let(Set(_)).or(Set())
-    case Branch(_, map)         => map.keySet
+  // Build a Dictionary from `(key -> value)` pairs. The alphabet is
+  // auto-derived from the distinct characters appearing in the keys, in
+  // first-encountered order.
+  def apply[value: ClassTag](pairs: (Text, value)*): Dictionary[value] =
+    build(pairs, autoAlphabet(pairs), ahoCorasick = false)
 
-  def iterator: Iterable[element] = this match
-    case Empty             => Nil
-    case Just(_, _, value) => List(value)
+  // Build a Dictionary from pairs with an explicit alphabet. Keys
+  // containing characters not in the alphabet are silently dropped from
+  // the trie (they would be unreachable via `step` regardless).
+  def withAlphabet[value: ClassTag]
+    ( alphabet: Alphabet, pairs: (Text, value)* )
+  :   Dictionary[value] =
 
-    case Branch(value, map) =>
-      val values = map.values.flatMap(_.iterator)
-      value.lay(values): value => Iterable(value) ++ values
+    build(pairs, alphabet, ahoCorasick = false)
 
-  def element: Optional[element] = this match
-    case Empty                                       => Unset
-    case just: Just[element] if just.tailEmpty       => just.value
-    case Branch(value, _)                            => value
-    case _: Just[element]                            => Unset
+  // Build a Dictionary configured for an Aho-Corasick walk. The trie
+  // additionally carries `depth`, `fail`, and `dictLink` arrays so a
+  // single forward pass through input chars can find every key that
+  // terminates at each position.
+  def aho[value: ClassTag]
+    ( alphabet: Alphabet, pairs: (Text, value)* )
+  :   Dictionary[value] =
 
-  def add[element2 >: element](entry: Text, value: element2, offset: Int): Dictionary[element2] =
-    this match
-      case Empty => Just(entry, offset, value)
+    build(pairs, alphabet, ahoCorasick = true)
 
-      case just: Just[element] =>
-        if matchesEntry(just.text, just.offset, entry, offset) then Just(entry, offset, value) else
-          if entry.length == offset
-          then Branch(value, Map(just.head.vouch -> child(just)))
-          else
-            val next: Char = entry.s.charAt(offset)
-            val tailLen: Int = just.tailLength
+  // Internal: derive an alphabet from the union of chars in the supplied
+  // keys. Insertion order is preserved so the slot mapping is stable
+  // across runs with the same input.
+  private def autoAlphabet[value](pairs: Iterable[(Text, value)]): Alphabet =
+    val chars = LinkedHashSet[Char]()
 
-            if tailLen == 0 then Branch(just.value, Map(next -> Just(entry, offset + 1, value)))
-            else if just.head.vouch == next
-            then Branch(Unset, Map(next -> child(just).add(entry, value, offset + 1)))
-            else Branch
-              ( Unset,
-                Map( next             -> Just(entry, offset + 1, value),
-                     just.head.vouch  -> child(just) ) )
-
-      case Branch(value0, map) =>
-        if entry.length == offset then Branch(value, map) else
-          val next = entry.s.charAt(offset)
-
-          val child =
-            if map.has(next) then map(next).add(entry, value, offset + 1)
-            else Just(entry, offset + 1, value)
-
-          Branch(value0, map.updated(next, child))
-
-  private def child(just: Just[element]): Just[element] =
-    Just(just.text, just.offset + 1, just.value)
-
-  // Compares the virtual suffix `justText[justOffset:]` against `entry[entryOffset:]`
-  // for full equality without materializing either substring.
-  private def matchesEntry(justText: Text, justOffset: Int, entry: Text, entryOffset: Int)
-  :   Boolean =
-
-    val justLen: Int = justText.length - justOffset
-    val entryLen: Int = entry.length - entryOffset
-
-    if justLen != entryLen then false
-    else
-      var ok = true
+    pairs.foreach: (key, _) =>
+      val s = key.s
       var i = 0
 
-      while ok && i < justLen do
-        ok = justText.s.charAt(justOffset + i) == entry.s.charAt(entryOffset + i)
+      while i < s.length do
+        chars += s.charAt(i)
         i += 1
 
-      ok
+    Alphabet.of(chars.mkString)
 
-  protected def lookup(entry: Text, offset: Int): Optional[element] = this match
-    case Empty                  => Unset
+  // Internal: assemble flat children/values arrays from a sequence of
+  // (key, value) pairs, then (optionally) compute Aho-Corasick failure
+  // and dictionary-suffix links via BFS.
+  private def build[value: ClassTag]
+    ( pairs:       Iterable[(Text, value)],
+      alphabet:    Alphabet,
+      ahoCorasick: Boolean )
+  :   Dictionary[value] =
 
-    case just: Just[element] =>
-      if matchesEntry(just.text, just.offset, entry, offset) then just.value else Unset
+    // Temporary mutable tree, flattened once the structure is known.
+    // `value` is held as `AnyRef | Null` even when the user's `value` type
+    // is a primitive — Scala auto-boxes on assignment, which lets the same
+    // mutable cell carry either reference or primitive values.
+    final class NodeBuilder:
+      val children = MutMap[Char, NodeBuilder]()
+      var value: AnyRef | Null = null
 
-    case Branch(value, map) =>
-      if entry.length > offset then map.at(entry.s.charAt(offset)).let(_.lookup(entry, offset + 1))
-      else if entry.length == offset then value
-      else Unset
+    val root = new NodeBuilder
+    val alpha = alphabet.size
 
-  inline def apply(entry: Text): Optional[element] = lookup(entry, 0)
+    pairs.foreach: (key, v) =>
+      var node = root
+      val s = key.s
+      var i = 0
+      var live = true
 
-  // Case-insensitive (ASCII-folded) lookup over a slice of an existing char
-  // buffer. Performs the entire trie traversal without allocating: the input is
-  // not materialized into a `Text`, and the `Just` arm is walked by tracking an
-  // extra offset against the existing node rather than constructing fresh
-  // dictionary nodes per character. Designed for hot-path callers (e.g. HTML
-  // tag/attribute name lookups) where the input is already in a `char[]`.
-  def lookupAscii(buffer: Array[Char], offset: Int, length: Int): Optional[element] =
-    val stop: Int = offset + length
+      while live && i < s.length do
+        val c = s.charAt(i)
 
-    @tailrec
-    def step(node: Dictionary[element], extra: Int, position: Int): Optional[element] =
-      if position >= stop then node match
-        case Empty                  => Unset
+        if alphabet.slot(c) < 0 then live = false
+        else
+          node = node.children.getOrElseUpdate(c, new NodeBuilder)
+          i += 1
 
-        case just: Just[element] =>
-          if just.offset + extra == just.text.length then just.value else Unset
+      if live then node.value = v.asInstanceOf[AnyRef]
 
-        case Branch(value, _)       => value
-      else
-        val raw: Char = buffer(position)
-        val char: Char = if raw >= 'A' && raw <= 'Z' then (raw + 32).toChar else raw
+    // BFS assignment of node ids gives root = 0, then nodes at depth 1,
+    // then depth 2, etc. — convenient when the AC build needs to access
+    // failure links of shallower nodes from deeper ones.
+    val nodeList = ArrayBuffer[NodeBuilder](root)
+    var head = 0
 
-        node match
-          case Empty                  => Unset
+    while head < nodeList.length do
+      val n = nodeList(head)
+      head += 1
+      var sl = 0
 
-          case Branch(_, map) => map.at(char) match
-            case next: Dictionary[element] @unchecked => step(next, 0, position + 1)
-            case _                                    => Unset
+      while sl < alpha do
+        val c = alphabet.char(sl)
+        n.children.get(c).foreach(nodeList += _)
+        sl += 1
 
-          case just: Just[element] =>
-            val pos: Int = just.offset + extra
+    val nodeCount = nodeList.length
+    val ids = MutMap[NodeBuilder, Int]()
+    var i = 0
 
-            if pos < just.text.length && just.text.s.charAt(pos) == char
-            then step(just, extra + 1, position + 1)
-            else Unset
+    while i < nodeCount do
+      ids(nodeList(i)) = i
+      i += 1
 
-    step(this, 0, offset)
+    val childrenArr = Array.fill[Int](nodeCount*alpha)(-1)
+    val valuesArr: Array[AnyRef | Null] = new Array[AnyRef](nodeCount).asInstanceOf[Array[AnyRef | Null]]
+    i = 0
 
-  // Walk one character forward in the trie. For `Just`, this avoids the
-  // historical `String.substring` allocation by reusing the existing `text`
-  // reference and advancing the virtual `offset` by one — only the wrapping
-  // `Just` is allocated, not its underlying tail.
-  def apply(char: Char): Dictionary[element] = this match
-    case Empty               => Empty
-    case Branch(_, map)      => map.at(char).or(Empty)
+    while i < nodeCount do
+      val n = nodeList(i)
+      valuesArr(i) = n.value
+      var sl = 0
 
-    case just: Just[element] =>
-      if just.offset < just.text.length && just.text.s.charAt(just.offset) == char
-      then Just(just.text, just.offset + 1, just.value)
-      else Empty
+      while sl < alpha do
+        val c = alphabet.char(sl)
+        n.children.get(c).foreach: child =>
+          childrenArr(i*alpha + sl) = ids(child)
+
+        sl += 1
+
+      i += 1
+
+    if !ahoCorasick then
+      val emptyInts = new Array[Int](0)
+
+      new Dictionary[value]
+        ( childrenArr, valuesArr, emptyInts, emptyInts, emptyInts, alphabet, summon )
+    else
+      // Aho-Corasick failure / dictionary-suffix links via BFS. Depth-1
+      // nodes get fail = 0; deeper nodes get the longest proper suffix
+      // of their path that is itself a path from root. `dictLink` skips
+      // fail-chain ancestors that have no value.
+      val depthArr    = new Array[Int](nodeCount)
+      val failArr     = new Array[Int](nodeCount)
+      val dictLinkArr = new Array[Int](nodeCount)
+      val queue       = new Array[Int](nodeCount)
+      var qHead = 0
+      var qTail = 0
+      var c = 0
+
+      while c < alpha do
+        val child = childrenArr(c)
+
+        if child >= 0 then
+          depthArr(child) = 1
+          failArr(child) = 0
+          dictLinkArr(child) = 0
+          queue(qTail) = child
+          qTail += 1
+
+        c += 1
+
+      while qHead < qTail do
+        val node = queue(qHead)
+        qHead += 1
+        val nd = depthArr(node)
+        val nf = failArr(node)
+        var sl = 0
+
+        while sl < alpha do
+          val child = childrenArr(node*alpha + sl)
+
+          if child >= 0 then
+            depthArr(child) = nd + 1
+            var f = nf
+            while f != 0 && childrenArr(f*alpha + sl) < 0 do f = failArr(f)
+            val fChild = childrenArr(f*alpha + sl)
+            failArr(child) = if fChild >= 0 && fChild != child then fChild else 0
+            val fl = failArr(child)
+            dictLinkArr(child) = if valuesArr(fl) != null then fl else dictLinkArr(fl)
+            queue(qTail) = child
+            qTail += 1
+
+          sl += 1
+
+      new Dictionary[value]
+        ( childrenArr, valuesArr, depthArr, failArr, dictLinkArr, alphabet, summon )
+
+import scala.annotation.unchecked.uncheckedVariance
+
+final class Dictionary[+value]
+  ( val children: Array[Int],
+    val values:   Array[AnyRef | Null],
+    val depth:    Array[Int],
+    val fail:     Array[Int],
+    val dictLink: Array[Int],
+    val alphabet: Dictionary.Alphabet,
+    classTag$:    ClassTag[value @uncheckedVariance] ):
+
+  // The exposed `values` array is `Array[AnyRef | Null]` rather than
+  // `Array[value | Null]` because Array is invariant and the JVM checks
+  // the runtime array type on every field access — exposing a typed view
+  // would cost a `ClassCastException` on the first reference. Callers
+  // who want the typed view use `value(node)`, which casts at the access
+  // site (which the JIT typically elides).
+
+  // Re-expose the `ClassTag` to the rebuild path so `+`/`++` can allocate
+  // their fresh values array without the caller having to summon one.
+  private[gossamer] given valueTag: ClassTag[value @uncheckedVariance] = classTag$
+
+  inline def root: Int = 0
+
+  // Walk one character. Returns the next node id or `-1` if the alphabet
+  // doesn't include `char` or no key in the trie continues with that
+  // character at `node`.
+  def step(node: Int, char: Char): Int =
+    val sl = alphabet.slot(char)
+    if sl < 0 then -1 else children(node*alphabet.size + sl)
+
+  // Value at `node`, or `null` if no key terminates here.
+  inline def value(node: Int): value | Null = values(node).asInstanceOf[value | Null]
+
+  // Exact lookup of a full key. `Unset` if the key is not in the trie.
+  def apply(key: Text): Optional[value] =
+    val s = key.s
+    val n = s.length
+    var node = 0
+    var i = 0
+
+    while i < n && node >= 0 do
+      node = step(node, s.charAt(i))
+      i += 1
+
+    if node < 0 then Unset else
+      val v = values(node)
+      if v == null then Unset else v.asInstanceOf[value]
+
+  // Slice variant: lookup against `buffer[offset, offset + length)`
+  // without allocating a `Text`. Useful in hot loops that already hold a
+  // char buffer (e.g. parser word boundaries).
+  def apply(buffer: Array[Char], offset: Int, length: Int): Optional[value] =
+    var node = 0
+    var i = 0
+
+    while i < length && node >= 0 do
+      node = step(node, buffer(offset + i))
+      i += 1
+
+    if node < 0 then Unset else
+      val v = values(node)
+      if v == null then Unset else v.asInstanceOf[value]
+
+  // Number of stored entries (nodes whose value is non-null).
+  def size: Int =
+    var count = 0
+    var i = 0
+
+    while i < values.length do
+      if values(i) != null then count += 1
+      i += 1
+
+    count
+
+  // Iterate over stored values.
+  def iterator: Iterable[value] =
+    val buffer = ArrayBuffer[value]()
+    var i = 0
+
+    while i < values.length do
+      val v = values(i)
+      if v != null then buffer += v.asInstanceOf[value]
+      i += 1
+
+    buffer
+
+  // Iterate over `(key, value)` pairs by walking the trie in alphabet
+  // order. Allocates an `ArrayBuffer` and a `StringBuilder` shared
+  // across recursive descents.
+  def entries: Iterable[(Text, value)] =
+    val buffer = ArrayBuffer[(Text, value)]()
+    val key = new java.lang.StringBuilder
+    val alpha = alphabet.size
+
+    def walk(node: Int): Unit =
+      val v = values(node)
+      if v != null then buffer += ((key.toString.nn.tt, v.asInstanceOf[value]))
+      var sl = 0
+
+      while sl < alpha do
+        val child = children(node*alpha + sl)
+
+        if child >= 0 then
+          key.append(alphabet.char(sl))
+          walk(child)
+          key.setLength(key.length - 1)
+
+        sl += 1
+
+    if values.length > 0 then walk(0)
+    buffer
+
+  // Add an entry, returning a new Dictionary. Widens the value type to
+  // include the new entry's value type via the standard `[v2 >: value]`
+  // bound (`+`/`++` follow the same pattern).
+  def add[value2 >: value: ClassTag](key: Text, value: value2): Dictionary[value2] =
+    this + (key -> value)
+
+  def + [value2 >: value: ClassTag](entry: (Text, value2)): Dictionary[value2] =
+    this ++ Seq(entry)
+
+  def ++ [value2 >: value: ClassTag](extras: Iterable[(Text, value2)]): Dictionary[value2] =
+    val combined = entries.asInstanceOf[Iterable[(Text, value2)]] ++ extras
+    Dictionary[value2](combined.toSeq*)

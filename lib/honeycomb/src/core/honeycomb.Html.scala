@@ -644,7 +644,7 @@ object Html extends Tag.Container
       def tagname(mark: Mark, node: Int): Tag =
         lay(fail(ExpectedMore, mark)):
           case char if asciiLetter(char) || asciiDigit(char) =>
-            val step = dom.compactElements.step(node, asciiLower(char))
+            val step = dom.elements.step(node, asciiLower(char))
 
             if step < 0 then
               advance()
@@ -654,7 +654,7 @@ object Html extends Tag.Container
             else next() yet tagname(mark, step)
 
           case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' =>
-            val tag = dom.compactElements.value(node)
+            val tag = dom.elements.value(node)
 
             if tag != null then tag.nn else
               val end = begin()
@@ -678,12 +678,12 @@ object Html extends Tag.Container
       def key(mark: Mark, node: Int): Attribute =
         lay(fail(ExpectedMore, mark)):
           case char if asciiLetter(char) || char == '-' =>
-            val step = dom.compactAttributes.step(node, asciiLower(char))
+            val step = dom.attributes.step(node, asciiLower(char))
             if step < 0 then fail(UnknownAttributeStart(slice(mark, begin())), mark)
             else next() yet key(mark, step)
 
           case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>
-            val attr = dom.compactAttributes.value(node)
+            val attr = dom.attributes.value(node)
             if attr != null then attr.nn else
               val end = begin()
               val name = slice(mark, end)
@@ -869,15 +869,15 @@ object Html extends Tag.Container
       def textEntity(mark: Mark, node: Int): Optional[Text] =
         lay(fail(ExpectedMore, mark)):
           case char if asciiLetter(char) || asciiDigit(char) =>
-            val step = dom.compactEntities.step(node, char)
+            val step = dom.entities.step(node, char)
             if step < 0 then Unset
             else advance() yet textEntity(mark, step)
 
           case ';' =>
             advance()
-            val step = dom.compactEntities.step(node, ';')
+            val step = dom.entities.step(node, ';')
             if step < 0 then Unset else
-              val v = dom.compactEntities.value(step)
+              val v = dom.entities.value(step)
               if v == null then Unset else v.nn
 
           case '=' =>
@@ -887,7 +887,7 @@ object Html extends Tag.Container
             fail(BadInsertion, mark)
 
           case char =>
-            val v = dom.compactEntities.value(node)
+            val v = dom.entities.value(node)
             if v == null then Unset else v.nn
 
 

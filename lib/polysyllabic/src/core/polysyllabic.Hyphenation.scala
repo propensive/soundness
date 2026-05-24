@@ -42,11 +42,11 @@ import vacuous.*
 object Hyphenation:
   given fallback: Hyphenation = Unhyphenated
 
-  // Alphabet used by the compact pattern trie: lowercase ASCII letters in
-  // their natural order, followed by the `.` word-boundary sentinel that
-  // TeX hyphenation patterns and the Liang algorithm both rely on.
-  val alphabet: CompactTrie.Alphabet =
-    CompactTrie.Alphabet.of("abcdefghijklmnopqrstuvwxyz.")
+  // Alphabet used by the pattern trie: lowercase ASCII letters in their
+  // natural order, followed by the `.` word-boundary sentinel that TeX
+  // hyphenation patterns and the Liang algorithm both rely on.
+  val alphabet: Dictionary.Alphabet =
+    Dictionary.Alphabet.of("abcdefghijklmnopqrstuvwxyz.")
 
   // Build a `Hyphenation` from raw TeX-format pattern and exception strings.
   // Patterns look like `t"hy3ph"`; exceptions look like `t"as-so-ciate"`.
@@ -57,15 +57,12 @@ object Hyphenation:
       rightMin:   Int            = 3 )
   :   Hyphenation =
 
-    val dict = patterns.foldLeft(Dictionary.Empty: Dictionary[IArray[Byte]]): (d, raw) =>
-      val (key, scores) = TexPatterns.parsePattern(raw)
-      d.add(key, scores, 0)
+    val patternPairs    = patterns.map(TexPatterns.parsePattern).toSeq
+    val exceptionPairs  = exceptions.map(TexPatterns.parseException).toSeq
+    val patternDict     = Dictionary.aho(alphabet, patternPairs*)
+    val exceptionDict   = Dictionary(exceptionPairs*)
 
-    val excDict = exceptions.foldLeft(Dictionary.Empty: Dictionary[IArray[Int]]): (d, raw) =>
-      val (word, offsets) = TexPatterns.parseException(raw)
-      d.add(word, offsets, 0)
-
-    make(dict, excDict, leftMin, rightMin)
+    make(patternDict, exceptionDict, leftMin, rightMin)
 
   // Parse a full TeX hyphenation pattern file (the format used by CTAN
   // `hyph-utf8`): finds the `\patterns{…}` and `\hyphenation{…}` blocks plus
@@ -125,7 +122,7 @@ object Hyphenation:
       padded(i + 1) = if c >= 'A' && c <= 'Z' then (c + 32).toChar else c
       i += 1
 
-    val exception = hyphenation.exceptions.lookupAscii(padded, 1, length)
+    val exception = hyphenation.exceptions(padded, 1, length)
 
     if !exception.absent then
       val offsets: IArray[Int] = exception.vouch
@@ -140,7 +137,7 @@ object Hyphenation:
       filtered.result().immutable(using Unsafe)
     else
       val scores = new Array[Byte](paddedLength + 1)
-      walkCompact(padded, paddedLength, hyphenation.compactPatterns, scores)
+      walkCompact(padded, paddedLength, hyphenation.patterns, scores)
       val breaks = ArrayBuilder.make[Int]
       var p = if leftMin > 1 then leftMin else 1
       val lastBreak = length - (if rightMin > 1 then rightMin else 1)
@@ -159,7 +156,7 @@ object Hyphenation:
   private def walkCompact
     ( padded:       Array[Char],
       paddedLength: Int,
-      trie:         CompactTrie[IArray[Byte]],
+      trie:         Dictionary[IArray[Byte]],
       scores:       Array[Byte] )
   :   Unit =
 
@@ -193,11 +190,14 @@ object Hyphenation:
 
         // Emit every value reachable via the dictionary suffix chain — these
         // are all patterns that terminate at position `j`. The pattern of
-        // depth `d` starts at gap `j - d + 1`.
+        // depth `d` starts at gap `j - d + 1`. Values in `Dictionary` are
+        // stored as `Array[AnyRef | Null]` and cast at access; the JIT
+        // typically folds the checkcast away.
         var emit = node
         while emit > 0 do
           val v = values(emit)
-          if v != null then mergePattern(scores, j - depth(emit) + 1, v.nn)
+          if v != null then
+            mergePattern(scores, j - depth(emit) + 1, v.asInstanceOf[IArray[Byte]])
           emit = dictLink(emit)
 
       j += 1
@@ -234,7 +234,7 @@ object Hyphenation:
       padded(i + 1) = if c >= 'A' && c <= 'Z' then (c + 32).toChar else c
       i += 1
 
-    val exception = hyphenation.exceptions.lookupAscii(padded, 1, length)
+    val exception = hyphenation.exceptions(padded, 1, length)
 
     if !exception.absent then
       val offsets: IArray[Int] = exception.vouch
@@ -281,7 +281,7 @@ object Hyphenation:
     // `scores(g)` is the running maximum for the gap immediately before
     // `padded(g)` (or after the last character when `g == paddedLength`).
     // The caller has zeroed `scores[0, paddedLength + 1)`.
-    walkCompact(padded, paddedLength, hyphenation.compactPatterns, scores)
+    walkCompact(padded, paddedLength, hyphenation.patterns, scores)
 
     // Break position `p` in the original word corresponds to padded gap
     // `p + 1` (the leading `.` shifts the indices by one).
@@ -298,18 +298,12 @@ object Hyphenation:
     count
 
 trait Hyphenation:
+  // `patterns` is built via `Dictionary.aho(alphabet, …)` so the algorithm's
+  // single-pass walk has the failure and dictionary-suffix links it needs.
   def patterns: Dictionary[IArray[Byte]]
   def exceptions: Dictionary[IArray[Int]]
   def leftMin: Int
   def rightMin: Int
-
-  // Dense flat-array form of `patterns`, used by the hot algorithm path
-  // instead of the recursive `Dictionary` walk. Lazily computed on first
-  // access; the cost is paid once per `Hyphenation` instance and amortised
-  // across every word it ever hyphenates. `ahoCorasick = true` because the
-  // algorithm walks every starting position via failure/dictionary links.
-  lazy val compactPatterns: CompactTrie[IArray[Byte]] =
-    CompactTrie.from(patterns, Hyphenation.alphabet, ahoCorasick = true)
 
   def extending
     ( patterns:   Iterable[Text] = Nil,
@@ -318,20 +312,21 @@ trait Hyphenation:
       rightMin:   Optional[Int]  = Unset )
   :   Hyphenation =
 
-    val newPatterns = patterns.foldLeft(this.patterns): (dict, raw) =>
-      val (key, scores) = TexPatterns.parsePattern(raw)
-      dict.add(key, scores, 0)
+    val newPatternPairs = patterns.map(TexPatterns.parsePattern).toSeq
+    val newExceptionPairs = exceptions.map(TexPatterns.parseException).toSeq
+    val newPatterns =
+      Dictionary.aho(Hyphenation.alphabet, (this.patterns.entries.toSeq ++ newPatternPairs)*)
 
-    val newExceptions = exceptions.foldLeft(this.exceptions): (dict, raw) =>
-      val (word, offsets) = TexPatterns.parseException(raw)
-      dict.add(word, offsets, 0)
-
+    val newExceptions = this.exceptions ++ newExceptionPairs
     val effectiveLeft = leftMin.or(this.leftMin)
     val effectiveRight = rightMin.or(this.rightMin)
     Hyphenation.make(newPatterns, newExceptions, effectiveLeft, effectiveRight)
 
 private[polysyllabic] object Unhyphenated extends Hyphenation:
-  val patterns: Dictionary[IArray[Byte]] = Dictionary.Empty
-  val exceptions: Dictionary[IArray[Int]] = Dictionary.Empty
+  // Empty dictionaries, but built with the hyphenation alphabet so the
+  // algorithm's hardcoded slot indexing finds a 27-wide children array
+  // (all `-1`) instead of an empty one.
+  val patterns: Dictionary[IArray[Byte]] = Dictionary.aho[IArray[Byte]](Hyphenation.alphabet)
+  val exceptions: Dictionary[IArray[Int]] = Dictionary.withAlphabet[IArray[Int]](Hyphenation.alphabet)
   val leftMin: Int = Int.MaxValue
   val rightMin: Int = Int.MaxValue

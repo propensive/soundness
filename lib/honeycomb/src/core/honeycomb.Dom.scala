@@ -46,35 +46,10 @@ object Dom:
   private[honeycomb] val attributes: scm.HashMap[Dom, Dictionary[Attribute]] = scm.HashMap()
   private[honeycomb] val entities: scm.HashMap[Dom, Dictionary[Text]] = scm.HashMap()
 
-  // Alphabets for the compact tries the parser walks. The parser lowercases
-  // every char before stepping `compactElements` and `compactAttributes`, so
-  // those alphabets carry only lowercase letters; entity names are
-  // case-sensitive so `compactEntities` covers both cases plus `;`.
-  val tagAlphabet: CompactTrie.Alphabet =
-    CompactTrie.Alphabet.of("abcdefghijklmnopqrstuvwxyz0123456789")
-
-  val attributeAlphabet: CompactTrie.Alphabet =
-    CompactTrie.Alphabet.of("abcdefghijklmnopqrstuvwxyz-")
-
-  val entityAlphabet: CompactTrie.Alphabet =
-    CompactTrie.Alphabet.of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;")
-
 trait Dom extends Findable:
   val elements: Dictionary[Tag]
   val attributes: Dictionary[Attribute]
   val entities: Dictionary[Text]
-
-  // Dense flat-array forms used by the HTML parser's hot lookup loops. Each
-  // is computed once per `Dom` instance (`lazy val`), so the materialisation
-  // cost is paid the first time the parser encounters this DOM and amortised
-  // across every parse afterwards. The original `Dictionary` fields remain
-  // the source of truth and stay available for callers (e.g. macros) that
-  // iterate over the full vocabulary.
-  lazy val compactElements:   CompactTrie[Tag]       = CompactTrie.from(elements, Dom.tagAlphabet)
-  lazy val compactAttributes: CompactTrie[Attribute] =
-    CompactTrie.from(attributes, Dom.attributeAlphabet)
-  lazy val compactEntities:   CompactTrie[Text]      =
-    CompactTrie.from(entities, Dom.entityAlphabet)
 
   def doctype: Doctype
   def infer(parent: Tag, child: Tag): Optional[Tag]
