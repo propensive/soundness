@@ -136,70 +136,51 @@ object Hyphenation:
       filtered.result().immutable(using Unsafe)
     else
       val scores = new Array[Byte](paddedLength + 1)
+      walkCompact(padded, paddedLength, hyphenation.compactPatterns, scores)
       val breaks = ArrayBuilder.make[Int]
-      trieWalkBuilder
-        (padded, paddedLength, length, hyphenation, leftMin, rightMin, scores, breaks)
+      var p = if leftMin > 1 then leftMin else 1
+      val lastBreak = length - (if rightMin > 1 then rightMin else 1)
+
+      while p <= lastBreak do
+        if (scores(p + 1) & 1) == 1 then breaks += p
+        p += 1
+
       breaks.result().immutable(using Unsafe)
 
-  private def trieWalkBuilder
+  // Walk the compact pattern trie from every starting position in `padded`,
+  // merging each matched pattern's score array into `scores` via `max`.
+  private def walkCompact
     ( padded:       Array[Char],
       paddedLength: Int,
-      length:       Int,
-      hyphenation:  Hyphenation,
-      leftMin:      Int,
-      rightMin:     Int,
-      scores:       Array[Byte],
-      breaks:       ArrayBuilder[Int] )
+      trie:         CompactTrie,
+      scores:       Array[Byte] )
   :   Unit =
 
+    val children = trie.children
+    val values = trie.values
     var startPos = 0
 
     while startPos < paddedLength do
-      var node: Dictionary[IArray[Byte]] = hyphenation.patterns
+      var node = 0
       var j = startPos
       var live = true
 
       while live && j < paddedLength do
-        node match
-          case branch: Dictionary.Branch[IArray[Byte]] @unchecked =>
-            val char = padded(j)
+        val char = padded(j)
+        val sl =
+          if char >= 'a' && char <= 'z' then char - 'a'
+          else if char == '.' then 26
+          else -1
 
-            branch.map.at(char) match
-              case nextBranch: Dictionary.Branch[IArray[Byte]] @unchecked =>
-                nextBranch.value.let(mergePattern(scores, startPos, _))
-                node = nextBranch
-                j += 1
-
-              case nextJust: Dictionary.Just[IArray[Byte]] @unchecked =>
-                val text = nextJust.text.s
-                val tailOffset = nextJust.offset
-                val tailRemaining = text.length - tailOffset
-                j += 1
-
-                if j + tailRemaining > paddedLength then live = false else
-                  var k = 0
-
-                  while k < tailRemaining && padded(j + k) == text.charAt(tailOffset + k)
-                  do k += 1
-
-                  if k == tailRemaining then mergePattern(scores, startPos, nextJust.value)
-
-                  live = false
-
-              case _ =>
-                live = false
-
-          case _ =>
-            live = false
+        if sl < 0 then live = false else
+          val next = children(node*CompactTrie.Alphabet + sl)
+          if next < 0 then live = false else
+            node = next
+            val v = values(node)
+            if v != null then mergePattern(scores, startPos, v.nn)
+            j += 1
 
       startPos += 1
-
-    var p = if leftMin > 1 then leftMin else 1
-    val lastBreak = length - (if rightMin > 1 then rightMin else 1)
-
-    while p <= lastBreak do
-      if (scores(p + 1) & 1) == 1 then breaks += p
-      p += 1
 
   // Buffer-reusing variant. Writes break offsets into `breaks` and returns
   // the count of breaks written. `padded`/`scores` are scratch space that
@@ -280,53 +261,7 @@ object Hyphenation:
     // `scores(g)` is the running maximum for the gap immediately before
     // `padded(g)` (or after the last character when `g == paddedLength`).
     // The caller has zeroed `scores[0, paddedLength + 1)`.
-    var startPos = 0
-
-    while startPos < paddedLength do
-      // We always walk from a Branch node (the root is a Branch). When we
-      // step into a `Just` we match its entire stored tail in one
-      // comparison loop and stop — avoiding the per-character `Just`
-      // allocations the previous version paid inside `Dictionary#apply`.
-      var node: Dictionary[IArray[Byte]] = hyphenation.patterns
-      var j = startPos
-      var live = true
-
-      while live && j < paddedLength do
-        node match
-          case branch: Dictionary.Branch[IArray[Byte]] @unchecked =>
-            val char = padded(j)
-
-            branch.map.at(char) match
-              case nextBranch: Dictionary.Branch[IArray[Byte]] @unchecked =>
-                nextBranch.value.let(mergePattern(scores, startPos, _))
-                node = nextBranch
-                j += 1
-
-              case nextJust: Dictionary.Just[IArray[Byte]] @unchecked =>
-                // The first char of the Just's text matched (it was the map
-                // key); the remaining tail is `text[offset, text.length)`.
-                val text = nextJust.text.s
-                val tailOffset = nextJust.offset
-                val tailRemaining = text.length - tailOffset
-                j += 1
-
-                if j + tailRemaining > paddedLength then live = false else
-                  var k = 0
-
-                  while k < tailRemaining && padded(j + k) == text.charAt(tailOffset + k)
-                  do k += 1
-
-                  if k == tailRemaining then mergePattern(scores, startPos, nextJust.value)
-
-                  live = false
-
-              case _ =>
-                live = false
-
-          case _ =>
-            live = false
-
-      startPos += 1
+    walkCompact(padded, paddedLength, hyphenation.compactPatterns, scores)
 
     // Break position `p` in the original word corresponds to padded gap
     // `p + 1` (the leading `.` shifts the indices by one).
@@ -347,6 +282,12 @@ trait Hyphenation:
   def exceptions: Dictionary[IArray[Int]]
   def leftMin: Int
   def rightMin: Int
+
+  // Dense flat-array form of `patterns`, used by the hot algorithm path
+  // instead of the recursive `Dictionary` walk. Lazily computed on first
+  // access; the cost is paid once per `Hyphenation` instance and amortised
+  // across every word it ever hyphenates.
+  lazy val compactPatterns: CompactTrie = CompactTrie.from(patterns)
 
   def extending
     ( patterns:   Iterable[Text] = Nil,
