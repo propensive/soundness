@@ -625,6 +625,7 @@ object polysyllabic extends Library:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
+  object bench extends Benchmarks(core, escritoire.core, hellenism.core, quantitative.units)
 
 object ethereal extends Library:
   object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, quantitative.units):
