@@ -30,102 +30,129 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package escritoire
+package polysyllabic
 
-import language.experimental.pureFunctions
-
-import scala.collection.immutable as sci
+import scala.collection.mutable.ArrayBuilder
 
 import anticipation.*
-import fulminate.*
-import gossamer.*
-import hieroglyph.*
 import rudiments.*
 import vacuous.*
 
-object Tabulation:
-  given printable: [text: {Textual as textual, Printable as printable}]
-  =>  ( Text is Measurable, TableStyle, Attenuation, polysyllabic.Hyphenation )
-  =>  Tabulation[text] is Printable =
+private[polysyllabic] object TexPatterns:
+  case class File
+    ( patterns:   IArray[Text],
+      exceptions: IArray[Text],
+      leftMin:    Int,
+      rightMin:   Int )
 
-    (tabulation, termcap) =>
-      tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join(t"\n")
+  // Decode one TeX hyphenation pattern. `hy3ph` ↦ (`hyph`, [0,0,3,0,0]). Digits
+  // sit between letters; missing digits are 0. The score array has one slot per
+  // inter-letter gap including the before-first and after-last positions, so it
+  // is always one longer than the letter count. `.`-anchored patterns keep the
+  // `.` as a sentinel letter in the key (the algorithm pads its input the same
+  // way).
+  def parsePattern(raw: Text): (Text, IArray[Byte]) =
+    val s = raw.s
+    val n = s.length
+    var letterCount = 0
+    var i = 0
 
+    while i < n do
+      if !Character.isDigit(s.charAt(i)) then letterCount += 1
+      i += 1
 
-abstract class Tabulation[text: ClassTag]():
-  type Row
+    val scores = new Array[Byte](letterCount + 1)
+    val letters = new java.lang.StringBuilder(letterCount)
+    var letterIndex = 0
+    i = 0
 
-  def columns: IArray[Column[Row, text]]
-  def titles: Seq[IArray[IArray[text]]]
-  def rows: Seq[IArray[IArray[text]]]
-  def dataLength: Int
+    while i < n do
+      val c = s.charAt(i)
 
+      if Character.isDigit(c) then scores(letterIndex) = (c - '0').toByte
+      else
+        letters.append(c)
+        letterIndex += 1
 
-  def grid(width: Int)
-    ( using style: TableStyle, metrics: Text is Measurable, textual: text is Textual )
-    ( using attenuation: Attenuation, hyphenation: polysyllabic.Hyphenation )
-  :   Grid[text] =
+      i += 1
 
-    case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):
-      lazy val include: sci.BitSet = indices.to(sci.BitSet)
+    (letters.toString.tt, scores.immutable(using Unsafe))
 
-      lazy val columnWidths: IArray[(Int, Column[Row, text], Int)] = IArray.from:
-        indices.indices.map: index =>
-          val columnIndex = indices(index)
-          (columnIndex, columns(columnIndex), widths(index))
+  // Decode one TeX exception entry. `as-so-ciate` ↦ (`associate`, [2, 4]).
+  // The break offsets count letter positions in the dehyphenated word.
+  def parseException(raw: Text): (Text, IArray[Int]) =
+    val s = raw.s
+    val n = s.length
+    val letters = new java.lang.StringBuilder(n)
+    val breaks = ArrayBuilder.make[Int]
+    var i = 0
 
-    def bisect(include: Int => Boolean): (Layout, Layout) =
-      def shrink(slack: Double): Layout =
-        val widths: IndexedSeq[Optional[Int]] =
-          columns.indices.map: index =>
-            val dataMax =
-              if !include(index) then 0 else rows.map: cells =>
-                columns(index).sizing.width[text](cells(index), width, slack).or(0)
+    while i < n do
+      val c = s.charAt(i)
+      if c == '-' then breaks += letters.length else letters.append(c)
+      i += 1
 
-              . maxOption.getOrElse(0)
+    (letters.toString.tt, breaks.result().immutable(using Unsafe))
 
-            val titleMax =
-              if !include(index) then 0 else titles.map: cells =>
-                columns(index).sizing.width[text](cells(index), width, slack).or(0)
+  // Strip `%`-to-end-of-line comments from a TeX file. Backslash-escaped
+  // percents are not used in hyphenation pattern files, so a naive scan
+  // suffices.
+  private def stripComments(text: Text): String =
+    val s = text.s
+    val out = new java.lang.StringBuilder(s.length)
+    var i = 0
 
-              . maxOption.getOrElse(0)
+    while i < s.length do
+      val c = s.charAt(i)
 
-            dataMax.max(titleMax).puncture(0)
+      if c == '%' then
+        while i < s.length && s.charAt(i) != '\n' do i += 1
+      else
+        out.append(c)
+        i += 1
 
-        val indices: IndexedSeq[Int] =
-          widths.indices.map { index => widths(index).let(index.waive) }.compact
+    out.toString
 
-        val totalWidth = widths.sumBy(_.or(0)) + style.cost(indices.size)
+  // Find `\directive{ … }` and return the whitespace-separated tokens of its
+  // body. Returns an empty array if the directive is absent.
+  private def block(content: String, directive: String): IArray[Text] =
+    val marker = directive + "{"
+    val start = content.indexOf(marker)
 
-        Layout(slack, IArray.from(indices), IArray.from(widths.compact), totalWidth)
+    if start < 0 then IArray.empty[Text] else
+      val bodyStart = start + marker.length
+      val bodyEnd = content.indexOf('}', bodyStart)
 
-      def recur(min: Layout, max: Layout, gas: Int = 8): (Layout, Layout) =
-        if gas == 0 || max.totalWidth - min.totalWidth <= 1 then (min, max)
-        else
-          val point = shrink((min.slack + max.slack)/2)
+      if bodyEnd < 0 then IArray.empty[Text] else
+        val body = content.substring(bodyStart, bodyEnd).nn
+        val tokens = body.split("\\s+").nn.iterator.map(_.nn).filter(_.length > 0).map(_.tt)
+        IArray.from(tokens)
 
-          if point.totalWidth == width then (point, point)
-          else if point.totalWidth > width then recur(min, point, gas - 1)
-          else recur(point, max, gas - 1)
+  // Look for `\directive=N` or `\directive N`, returning N if found.
+  private def intValue(content: String, directive: String): Optional[Int] =
+    val idx = content.indexOf(directive)
 
-      recur(shrink(0), shrink(1), 8)
+    if idx < 0 then Unset else
+      var i = idx + directive.length
+      while i < content.length && (content.charAt(i) == ' ' || content.charAt(i) == '=') do i += 1
+      val start = i
+      while i < content.length && Character.isDigit(content.charAt(i)) do i += 1
 
-    val rowLayout = bisect(_ => true)(0)
-    val rowLayout2 = bisect(rowLayout.include(_))(0)
+      if i == start then Unset
+      else
+        try content.substring(start, i).nn.toInt
+        catch case _: NumberFormatException => Unset
 
-    // We may be able to increase the slack in some of the remaining columns
-    if rowLayout2.totalWidth > width then attenuation(rowLayout2.totalWidth, width)
+  // Parse a hyphenation pattern file in the TeX wire format. Recognises
+  // `\patterns{…}`, `\hyphenation{…}`, and optional `\lefthyphenmin`/
+  // `\righthyphenmin` directives. Falls back to English minima (2/3) when the
+  // file has no directives — the convention for hyph-utf8 files that embed the
+  // minima in YAML comments instead.
+  def parseFile(content: Text): File =
+    val stripped = stripComments(content)
 
-    def lines(data: Seq[IArray[IArray[text]]]): Stream[TableRow[text]] =
-      data.to(Stream).map: cells =>
-        val tableCells = rowLayout2.columnWidths.map: (index, column, width) =>
-          val lines = column.sizing.fit(cells(index), width, column.textAlign)
-          TableCell(width, 1, lines, lines.length, column.textAlign)
-
-        val height = tableCells.maxBy(_.minHeight).minHeight
-
-        TableRow(tableCells, false, height)
-
-    val widths = rowLayout2.columnWidths.map(_(2))
-
-    Grid(List(TableSection(widths, lines(titles)), TableSection(widths, lines(rows))), style)
+    File
+      ( patterns   = block(stripped, "\\patterns"),
+        exceptions = block(stripped, "\\hyphenation"),
+        leftMin    = intValue(stripped, "\\lefthyphenmin").or(2),
+        rightMin   = intValue(stripped, "\\righthyphenmin").or(3) )

@@ -30,102 +30,136 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package escritoire
+package polysyllabic
 
-import language.experimental.pureFunctions
-
-import scala.collection.immutable as sci
+import scala.collection.mutable.ArrayBuffer
 
 import anticipation.*
 import fulminate.*
-import gossamer.*
-import hieroglyph.*
-import rudiments.*
 import vacuous.*
 
-object Tabulation:
-  given printable: [text: {Textual as textual, Printable as printable}]
-  =>  ( Text is Measurable, TableStyle, Attenuation, polysyllabic.Hyphenation )
-  =>  Tabulation[text] is Printable =
+extension (text: Text)
+  // Hyphen-insertion offsets for a single word: position `p` means a hyphen
+  // may be inserted between letters `p - 1` and `p`. Uses the ambient
+  // `Hyphenation`'s default `leftMin` / `rightMin`.
+  def breakPoints(using hyphenation: Hyphenation): IArray[Int] =
+    Hyphenation.breakPoints(text, hyphenation, hyphenation.leftMin, hyphenation.rightMin)
 
-    (tabulation, termcap) =>
-      tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join(t"\n")
+  // Insert `hyphen` (default: U+00AD SOFT HYPHEN) at every admissible break
+  // in every letter-run of `text`. Non-letter characters pass through
+  // unchanged, so `t"hello, world!".hyphenate(hyphen='-')` does not break at
+  // the space or punctuation.
+  def hyphenate
+    ( hyphen:   Char          = '­',
+      leftMin:  Optional[Int] = Unset,
+      rightMin: Optional[Int] = Unset )
+    ( using hyphenation: Hyphenation )
+  :   Text =
 
+    val source = text.s
+    val length = source.length
+    val effectiveLeft = leftMin.or(hyphenation.leftMin)
+    val effectiveRight = rightMin.or(hyphenation.rightMin)
+    val out = new java.lang.StringBuilder(length + (length >> 3))
 
-abstract class Tabulation[text: ClassTag]():
-  type Row
+    // Reusable scratch buffers, grown lazily by doubling. Many words share
+    // the same allocation across the entire `text.hyphenate` call.
+    var padded = new Array[Char](32)
+    var scores = new Array[Byte](33)
+    var breaks = new Array[Int](32)
+    var i = 0
 
-  def columns: IArray[Column[Row, text]]
-  def titles: Seq[IArray[IArray[text]]]
-  def rows: Seq[IArray[IArray[text]]]
-  def dataLength: Int
+    while i < length do
+      val c = source.charAt(i)
 
+      if Character.isLetter(c) then
+        var end = i
+        while end < length && Character.isLetter(source.charAt(end)) do end += 1
+        val wordOffset = i
+        val wordLength = end - i
 
-  def grid(width: Int)
-    ( using style: TableStyle, metrics: Text is Measurable, textual: text is Textual )
-    ( using attenuation: Attenuation, hyphenation: polysyllabic.Hyphenation )
-  :   Grid[text] =
+        if wordLength + 2 > padded.length then
+          var newSize = padded.length
+          while newSize < wordLength + 2 do newSize *= 2
+          padded = new Array[Char](newSize)
+          scores = new Array[Byte](newSize + 1)
+          breaks = new Array[Int](newSize)
 
-    case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):
-      lazy val include: sci.BitSet = indices.to(sci.BitSet)
+        val nBreaks = Hyphenation.breakPointsInto
+                       ( source, wordOffset, wordLength, hyphenation, effectiveLeft,
+                         effectiveRight, padded, scores, breaks )
 
-      lazy val columnWidths: IArray[(Int, Column[Row, text], Int)] = IArray.from:
-        indices.indices.map: index =>
-          val columnIndex = indices(index)
-          (columnIndex, columns(columnIndex), widths(index))
+        var prev = 0
+        var k = 0
 
-    def bisect(include: Int => Boolean): (Layout, Layout) =
-      def shrink(slack: Double): Layout =
-        val widths: IndexedSeq[Optional[Int]] =
-          columns.indices.map: index =>
-            val dataMax =
-              if !include(index) then 0 else rows.map: cells =>
-                columns(index).sizing.width[text](cells(index), width, slack).or(0)
+        while k < nBreaks do
+          out.append(source, wordOffset + prev, wordOffset + breaks(k))
+          out.append(hyphen)
+          prev = breaks(k)
+          k += 1
 
-              . maxOption.getOrElse(0)
+        out.append(source, wordOffset + prev, end)
+        i = end
+      else
+        out.append(c)
+        i += 1
 
-            val titleMax =
-              if !include(index) then 0 else titles.map: cells =>
-                columns(index).sizing.width[text](cells(index), width, slack).or(0)
+    out.toString.tt
 
-              . maxOption.getOrElse(0)
+  // Split a single word at every admissible break point. For multi-word
+  // input, non-letter regions and letter regions are treated as opaque
+  // segments — only letter regions are split into syllables.
+  def syllables(using hyphenation: Hyphenation): IndexedSeq[Text] =
+    val source = text.s
+    val length = source.length
+    val parts = new ArrayBuffer[Text]
+    var i = 0
 
-            dataMax.max(titleMax).puncture(0)
+    while i < length do
+      val c = source.charAt(i)
 
-        val indices: IndexedSeq[Int] =
-          widths.indices.map { index => widths(index).let(index.waive) }.compact
+      if Character.isLetter(c) then
+        var end = i
+        while end < length && Character.isLetter(source.charAt(end)) do end += 1
+        val word = source.substring(i, end).nn.tt
 
-        val totalWidth = widths.sumBy(_.or(0)) + style.cost(indices.size)
+        val breaks =
+          Hyphenation.breakPoints(word, hyphenation, hyphenation.leftMin, hyphenation.rightMin)
 
-        Layout(slack, IArray.from(indices), IArray.from(widths.compact), totalWidth)
-
-      def recur(min: Layout, max: Layout, gas: Int = 8): (Layout, Layout) =
-        if gas == 0 || max.totalWidth - min.totalWidth <= 1 then (min, max)
+        if breaks.length == 0 then parts += word
         else
-          val point = shrink((min.slack + max.slack)/2)
+          var prev = 0
+          var k = 0
 
-          if point.totalWidth == width then (point, point)
-          else if point.totalWidth > width then recur(min, point, gas - 1)
-          else recur(point, max, gas - 1)
+          while k < breaks.length do
+            parts += word.s.substring(prev, breaks(k)).nn.tt
+            prev = breaks(k)
+            k += 1
 
-      recur(shrink(0), shrink(1), 8)
+          parts += word.s.substring(prev).nn.tt
 
-    val rowLayout = bisect(_ => true)(0)
-    val rowLayout2 = bisect(rowLayout.include(_))(0)
+        i = end
+      else
+        var end = i
+        while end < length && !Character.isLetter(source.charAt(end)) do end += 1
+        parts += source.substring(i, end).nn.tt
+        i = end
 
-    // We may be able to increase the slack in some of the remaining columns
-    if rowLayout2.totalWidth > width then attenuation(rowLayout2.totalWidth, width)
+    parts.toIndexedSeq
 
-    def lines(data: Seq[IArray[IArray[text]]]): Stream[TableRow[text]] =
-      data.to(Stream).map: cells =>
-        val tableCells = rowLayout2.columnWidths.map: (index, column, width) =>
-          val lines = column.sizing.fit(cells(index), width, column.textAlign)
-          TableCell(width, 1, lines, lines.length, column.textAlign)
+package hyphenations:
+  // The CTAN hyph-utf8 American-English pattern file. Lazy: the patterns are
+  // parsed the first time this given is referenced. The pattern file is
+  // bundled at `polysyllabic/hyph-en-us.tex` on the classpath and is
+  // redistributed verbatim under the FSF all-permissive licence shown in its
+  // comment header.
+  given englishHyphenation: Hyphenation =
+    val resource = "/polysyllabic/hyph-en-us.tex"
+    val stream = Hyphenation.getClass.getResourceAsStream(resource)
 
-        val height = tableCells.maxBy(_.minHeight).minHeight
+    if stream == null then panic(m"could not find $resource on the classpath")
+    else
+      val safe = stream.nn
 
-        TableRow(tableCells, false, height)
-
-    val widths = rowLayout2.columnWidths.map(_(2))
-
-    Grid(List(TableSection(widths, lines(titles)), TableSection(widths, lines(rows))), style)
+      try Hyphenation.fromTex(scala.io.Source.fromInputStream(safe, "UTF-8").mkString.nn.tt)
+      finally safe.close()

@@ -30,102 +30,67 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package escritoire
+package polysyllabic
 
-import language.experimental.pureFunctions
+import scala.quoted.*
 
-import scala.collection.immutable as sci
-
+import ambience.*, environments.java, systems.java
 import anticipation.*
+import contingency.*, strategies.throwUnsafely
+import escritoire.*
+import escritoire.columnar.Prose
 import fulminate.*
 import gossamer.*
-import hieroglyph.*
-import rudiments.*
+import hellenism.*, classloaders.threadContext
+import hieroglyph.*, charDecoders.utf8, textMetrics.uniform, textSanitizers.strict
+import probably.*
+import proscenium.*
+import quantitative.*
+import sedentary.*
+import symbolism.*
+import temporaryDirectories.system
+import turbulence.*
 import vacuous.*
 
-object Tabulation:
-  given printable: [text: {Textual as textual, Printable as printable}]
-  =>  ( Text is Measurable, TableStyle, Attenuation, polysyllabic.Hyphenation )
-  =>  Tabulation[text] is Printable =
+import hyphenations.englishHyphenation
 
-    (tabulation, termcap) =>
-      tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join(t"\n")
+object Benchmarks extends Suite(m"Polysyllabic benchmarks"):
+  sealed trait Information extends Dimension
+  sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
+  val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
 
+  given byteDesignation: Designation[Bytes[1]] = () => t"B"
+  given decimalizer:     Decimalizer            = Decimalizer(2)
+  given device:          BenchmarkDevice        = LocalhostDevice
+  given prefixes:        Prefixes               = Prefixes(List(Kilo, Mega, Giga, Tera))
 
-abstract class Tabulation[text: ClassTag]():
-  type Row
+  // The full text of `War and Peace` (Project Gutenberg #2600), with the
+  // header/footer stripped and every run of whitespace collapsed to a single
+  // space. `lazy val` so the I/O cost is paid once and the same `Text` is
+  // reused across iterations — neither GC nor the read contaminates the
+  // timing.
+  lazy val warAndPeace: Text = cp"/polysyllabic/warandpeace.txt".read[Text]
 
-  def columns: IArray[Column[Row, text]]
-  def titles: Seq[IArray[IArray[text]]]
-  def rows: Seq[IArray[IArray[text]]]
-  def dataLength: Int
+  // Wrap the whole text to 80 columns with English hyphenation in scope. The
+  // returned line count keeps the JIT honest — anything dead-coded would
+  // collapse this to zero.
+  def wrapAt80(text: Text): Int = Prose.fit[Text](IArray(text), 80, TextAlignment.Left).length
 
+  // Insert soft-hyphens at every admissible break point in every word. Exercises
+  // the Liang algorithm on every word, regardless of column width — a tighter
+  // signal for changes to the algorithm or its data structure than the wrap-
+  // at-width benchmark, which only triggers hyphenation on overflow words.
+  def hyphenateAll(text: Text): Int = text.hyphenate(hyphen = '-').s.length
 
-  def grid(width: Int)
-    ( using style: TableStyle, metrics: Text is Measurable, textual: text is Textual )
-    ( using attenuation: Attenuation, hyphenation: polysyllabic.Hyphenation )
-  :   Grid[text] =
+  def run(): Unit =
+    val bench = Bench()
+    val size: Quantity[Bytes[1]] = warAndPeace.s.getBytes("UTF-8").nn.length*Byte
 
-    case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):
-      lazy val include: sci.BitSet = indices.to(sci.BitSet)
+    suite(m"Hyphenation throughput"):
+      bench(m"wrap War and Peace at 80 cols with English hyphenation")
+        ( target = 5*Second, operationSize = size ):
+        '{ polysyllabic.Benchmarks.wrapAt80(polysyllabic.Benchmarks.warAndPeace) }
 
-      lazy val columnWidths: IArray[(Int, Column[Row, text], Int)] = IArray.from:
-        indices.indices.map: index =>
-          val columnIndex = indices(index)
-          (columnIndex, columns(columnIndex), widths(index))
-
-    def bisect(include: Int => Boolean): (Layout, Layout) =
-      def shrink(slack: Double): Layout =
-        val widths: IndexedSeq[Optional[Int]] =
-          columns.indices.map: index =>
-            val dataMax =
-              if !include(index) then 0 else rows.map: cells =>
-                columns(index).sizing.width[text](cells(index), width, slack).or(0)
-
-              . maxOption.getOrElse(0)
-
-            val titleMax =
-              if !include(index) then 0 else titles.map: cells =>
-                columns(index).sizing.width[text](cells(index), width, slack).or(0)
-
-              . maxOption.getOrElse(0)
-
-            dataMax.max(titleMax).puncture(0)
-
-        val indices: IndexedSeq[Int] =
-          widths.indices.map { index => widths(index).let(index.waive) }.compact
-
-        val totalWidth = widths.sumBy(_.or(0)) + style.cost(indices.size)
-
-        Layout(slack, IArray.from(indices), IArray.from(widths.compact), totalWidth)
-
-      def recur(min: Layout, max: Layout, gas: Int = 8): (Layout, Layout) =
-        if gas == 0 || max.totalWidth - min.totalWidth <= 1 then (min, max)
-        else
-          val point = shrink((min.slack + max.slack)/2)
-
-          if point.totalWidth == width then (point, point)
-          else if point.totalWidth > width then recur(min, point, gas - 1)
-          else recur(point, max, gas - 1)
-
-      recur(shrink(0), shrink(1), 8)
-
-    val rowLayout = bisect(_ => true)(0)
-    val rowLayout2 = bisect(rowLayout.include(_))(0)
-
-    // We may be able to increase the slack in some of the remaining columns
-    if rowLayout2.totalWidth > width then attenuation(rowLayout2.totalWidth, width)
-
-    def lines(data: Seq[IArray[IArray[text]]]): Stream[TableRow[text]] =
-      data.to(Stream).map: cells =>
-        val tableCells = rowLayout2.columnWidths.map: (index, column, width) =>
-          val lines = column.sizing.fit(cells(index), width, column.textAlign)
-          TableCell(width, 1, lines, lines.length, column.textAlign)
-
-        val height = tableCells.maxBy(_.minHeight).minHeight
-
-        TableRow(tableCells, false, height)
-
-    val widths = rowLayout2.columnWidths.map(_(2))
-
-    Grid(List(TableSection(widths, lines(titles)), TableSection(widths, lines(rows))), style)
+      bench(m"hyphenate every word in War and Peace")
+        ( target = 5*Second, operationSize = size ):
+        '{ polysyllabic.Benchmarks.hyphenateAll(polysyllabic.Benchmarks.warAndPeace) }

@@ -35,6 +35,7 @@ package escritoire
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
+import polysyllabic.*
 import vacuous.*
 
 trait Columnar:
@@ -43,5 +44,5 @@ trait Columnar:
   :   Optional[Int]
 
   def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
-    ( using Text is Measurable )
+    ( using Text is Measurable, Hyphenation )
   :   IndexedSeq[text]
