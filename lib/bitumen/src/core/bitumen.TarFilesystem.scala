@@ -51,7 +51,7 @@ import vacuous.*
 
 extension (tarType: Tar.type)
   def from
-              [plane <: Posix: Filesystem as filesystem]
+              [plane <: Posix: Filesystem]
               (root: Path on plane)
               ( using DereferenceSymlinks,
                       TraversalOrder,
@@ -67,7 +67,7 @@ extension (tarType: Tar.type)
 
 extension (tar: Tar)
   def extractTo
-              [plane <: Posix: Filesystem as filesystem]
+              [plane <: Posix: Filesystem]
               (root: Path on plane)
               ( using CreateNonexistentParents on plane,
                       OverwritePreexisting on plane,
