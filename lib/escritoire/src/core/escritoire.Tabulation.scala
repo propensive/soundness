@@ -45,7 +45,7 @@ import vacuous.*
 
 object Tabulation:
   given printable: [text: {Textual as textual, Printable as printable}]
-  =>  ( Text is Measurable, TableStyle, Attenuation )
+  =>  ( Text is Measurable, TableStyle, Attenuation, polysyllabic.Hyphenation )
   =>  Tabulation[text] is Printable =
 
     (tabulation, termcap) =>
@@ -63,7 +63,7 @@ abstract class Tabulation[text: ClassTag]():
 
   def grid(width: Int)
     ( using style: TableStyle, metrics: Text is Measurable, textual: text is Textual )
-    ( using attenuation: Attenuation )
+    ( using attenuation: Attenuation, hyphenation: polysyllabic.Hyphenation )
   :   Grid[text] =
 
     case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):

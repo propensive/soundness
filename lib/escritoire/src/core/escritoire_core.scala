@@ -38,6 +38,7 @@ import denominative.*
 import gossamer.*
 import gossamer.Textual.concatenable
 import hieroglyph.*
+import polysyllabic.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
@@ -121,18 +122,46 @@ package columnar:
 
 
     def fit[textual: Textual](lines: IArray[textual], width: Int, textAlign: TextAlignment)
-      ( using Text is Measurable )
+      ( using Text is Measurable, Hyphenation )
     :   IndexedSeq[textual] =
 
       given measurable: Char is Measurable = _.toString.tt.metrics
+      val hyphen = textual(t"-")
+      val hyphenWidth = displayWidth(hyphen)
 
       def format(text: textual): List[textual] =
         val plain = text.plain.s
         val widths = prefixWidths(text)
         val n = plain.length
 
+        // Find the natural end of the word that contains `position` (the first
+        // following space, or `n` if the word runs to the end of the input).
+        def wordEnd(position: Int): Int =
+          var end = position
+          while end < n && plain.charAt(end) != ' ' do end += 1
+          end
+
+        // Try to break the current word at the latest hyphenation point that
+        // still fits in `width` from `lineStart`. Returns the absolute position
+        // (in `plain`) at which to break, or `-1` if no break fits.
+        def hyphenationBreak(lineStart: Int, wordStart: Int, wordEnd0: Int): Int =
+          val word = plain.substring(wordStart, wordEnd0).nn.tt
+          val breaks = word.breakPoints
+          var best = -1
+          var index = 0
+
+          while index < breaks.length do
+            val candidate = wordStart + breaks(index)
+            val w = widths(candidate) - widths(lineStart) + hyphenWidth
+            if w <= width then best = candidate
+            index += 1
+
+          best
+
         // Walk char positions; accumulate display width since `lineStart`.
-        // Break at `lastSpace` once the next char would overflow `width`.
+        // When the next character would overflow `width`, prefer a hyphenation
+        // break within the current word; otherwise fall back to wrapping at
+        // the most recent space; otherwise let the over-long word run on.
         def recur(position: Int, lineStart: Int, lastSpace: Int, acc: List[textual])
         :   List[textual] =
 
@@ -145,9 +174,19 @@ package columnar:
             else
               val widthSoFar = widths(position + 1) - widths(lineStart)
 
-              if widthSoFar > width && lastSpace > lineStart then
-                val segment = text.segment(lineStart.z thru lastSpace.u)
-                recur(lastSpace + 1, lastSpace + 1, lastSpace + 1, segment :: acc)
+              if widthSoFar > width then
+                val wordStart = if lastSpace > lineStart then lastSpace + 1 else lineStart
+                val wordEnd0 = wordEnd(position)
+                val breakAt = hyphenationBreak(lineStart, wordStart, wordEnd0)
+
+                if breakAt > lineStart then
+                  val segment = text.segment(lineStart.z thru (breakAt - 1).u) + hyphen
+                  recur(breakAt, breakAt, breakAt, segment :: acc)
+                else if lastSpace > lineStart then
+                  val segment = text.segment(lineStart.z thru lastSpace.u)
+                  recur(lastSpace + 1, lastSpace + 1, lastSpace + 1, segment :: acc)
+                else
+                  recur(position + 1, lineStart, lastSpace, acc)
               else
                 recur(position + 1, lineStart, lastSpace, acc)
 
@@ -164,7 +203,7 @@ package columnar:
 
 
     def fit[textual: Textual](lines: IArray[textual], width: Int, textAlign: TextAlignment)
-      ( using Text is Measurable )
+      ( using Text is Measurable, Hyphenation )
     :   IndexedSeq[textual] =
 
       given Char is Measurable = _.toString.tt.metrics
@@ -189,7 +228,7 @@ package columnar:
 
 
     def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
-      ( using Text is Measurable )
+      ( using Text is Measurable, Hyphenation )
     :   IndexedSeq[text] =
 
       lines.to(IndexedSeq).map: line =>
@@ -206,7 +245,7 @@ package columnar:
 
 
     def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
-      ( using Text is Measurable )
+      ( using Text is Measurable, Hyphenation )
     :   IndexedSeq[text] =
 
       lines.to(IndexedSeq).map: line =>
@@ -222,7 +261,7 @@ package columnar:
 
 
     def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
-      ( using Text is Measurable )
+      ( using Text is Measurable, Hyphenation )
     :   IndexedSeq[text] =
 
       lines.to(IndexedSeq)
