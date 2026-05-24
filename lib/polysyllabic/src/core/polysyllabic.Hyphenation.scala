@@ -98,8 +98,9 @@ object Hyphenation:
     breakPoints(word.s, 0, word.s.length, hyphenation, leftMin, rightMin)
 
   // Slice variant: operate on `source[offset, offset + length)` without
-  // allocating a substring. Callers iterating words inside a larger text
-  // (e.g. `text.hyphenate`) hit this path one allocation cheaper per word.
+  // allocating a substring. Allocates fresh scratch buffers internally; hot
+  // callers iterating many words should prefer `breakPointsInto`, which
+  // takes pre-allocated buffers and reuses them across calls.
   def breakPoints
     ( source:       String,
       offset:       Int,
@@ -109,9 +110,6 @@ object Hyphenation:
       rightMin:     Int )
   :   IArray[Int] =
 
-    // Single Char buffer: `.` at the boundaries and lowercased word chars in
-    // between. Used by both the exception lookup (via `lookupAscii` on slots
-    // `[1, length)`) and the trie walk that follows.
     val paddedLength = length + 2
     val padded = new Array[Char](paddedLength)
     padded(0) = '.'
@@ -125,10 +123,7 @@ object Hyphenation:
 
     val exception = hyphenation.exceptions.lookupAscii(padded, 1, length)
 
-    if exception.absent then trieWalk(padded, paddedLength, length, hyphenation, leftMin, rightMin)
-    else
-      // Re-apply the leftMin/rightMin envelope to honoured exceptions too — a
-      // user-tightened minimum should suppress otherwise-listed breaks.
+    if !exception.absent then
       val offsets: IArray[Int] = exception.vouch
       val filtered = ArrayBuilder.make[Int]
       var k = 0
@@ -139,6 +134,125 @@ object Hyphenation:
         k += 1
 
       filtered.result().immutable(using Unsafe)
+    else
+      val scores = new Array[Byte](paddedLength + 1)
+      val breaks = ArrayBuilder.make[Int]
+      trieWalkBuilder
+        (padded, paddedLength, length, hyphenation, leftMin, rightMin, scores, breaks)
+      breaks.result().immutable(using Unsafe)
+
+  private def trieWalkBuilder
+    ( padded:       Array[Char],
+      paddedLength: Int,
+      length:       Int,
+      hyphenation:  Hyphenation,
+      leftMin:      Int,
+      rightMin:     Int,
+      scores:       Array[Byte],
+      breaks:       ArrayBuilder[Int] )
+  :   Unit =
+
+    var startPos = 0
+
+    while startPos < paddedLength do
+      var node: Dictionary[IArray[Byte]] = hyphenation.patterns
+      var j = startPos
+      var live = true
+
+      while live && j < paddedLength do
+        node match
+          case branch: Dictionary.Branch[IArray[Byte]] @unchecked =>
+            val char = padded(j)
+
+            branch.map.at(char) match
+              case nextBranch: Dictionary.Branch[IArray[Byte]] @unchecked =>
+                nextBranch.value.let(mergePattern(scores, startPos, _))
+                node = nextBranch
+                j += 1
+
+              case nextJust: Dictionary.Just[IArray[Byte]] @unchecked =>
+                val text = nextJust.text.s
+                val tailOffset = nextJust.offset
+                val tailRemaining = text.length - tailOffset
+                j += 1
+
+                if j + tailRemaining > paddedLength then live = false else
+                  var k = 0
+
+                  while k < tailRemaining && padded(j + k) == text.charAt(tailOffset + k)
+                  do k += 1
+
+                  if k == tailRemaining then mergePattern(scores, startPos, nextJust.value)
+
+                  live = false
+
+              case _ =>
+                live = false
+
+          case _ =>
+            live = false
+
+      startPos += 1
+
+    var p = if leftMin > 1 then leftMin else 1
+    val lastBreak = length - (if rightMin > 1 then rightMin else 1)
+
+    while p <= lastBreak do
+      if (scores(p + 1) & 1) == 1 then breaks += p
+      p += 1
+
+  // Buffer-reusing variant. Writes break offsets into `breaks` and returns
+  // the count of breaks written. `padded`/`scores` are scratch space that
+  // can grow over the lifetime of a `text.hyphenate` call so per-word
+  // allocations collapse to zero.
+  //
+  // Required sizes:
+  //   padded.length >= length + 2
+  //   scores.length >= length + 3
+  //   breaks.length >= length
+  def breakPointsInto
+    ( source:       String,
+      offset:       Int,
+      length:       Int,
+      hyphenation:  Hyphenation,
+      leftMin:      Int,
+      rightMin:     Int,
+      padded:       Array[Char],
+      scores:       Array[Byte],
+      breaks:       Array[Int] )
+  :   Int =
+
+    // Fill `padded` with `.` sentinels + lowercased word chars.
+    val paddedLength = length + 2
+    padded(0) = '.'
+    padded(paddedLength - 1) = '.'
+    var i = 0
+
+    while i < length do
+      val c = source.charAt(offset + i)
+      padded(i + 1) = if c >= 'A' && c <= 'Z' then (c + 32).toChar else c
+      i += 1
+
+    val exception = hyphenation.exceptions.lookupAscii(padded, 1, length)
+
+    if !exception.absent then
+      val offsets: IArray[Int] = exception.vouch
+      var count = 0
+      var k = 0
+
+      while k < offsets.length do
+        val p = offsets(k)
+        if p >= leftMin && p <= length - rightMin then
+          breaks(count) = p
+          count += 1
+        k += 1
+
+      count
+    else
+      // Zero the active prefix of the scores buffer so the running maxima
+      // start from 0 each call. `Arrays.fill` is a JIT intrinsic.
+      java.util.Arrays.fill(scores, 0, paddedLength + 1, 0.toByte)
+      trieWalkInto(padded, paddedLength, length, hyphenation, leftMin, rightMin, scores, breaks)
 
   private inline def mergePattern
     ( scores: Array[Byte], base: Int, pattern: IArray[Byte] )
@@ -152,18 +266,20 @@ object Hyphenation:
       if v > scores(base + k) then scores(base + k) = v
       k += 1
 
-  private def trieWalk
+  private def trieWalkInto
     ( padded:       Array[Char],
       paddedLength: Int,
       length:       Int,
       hyphenation:  Hyphenation,
       leftMin:      Int,
-      rightMin:     Int )
-  :   IArray[Int] =
+      rightMin:     Int,
+      scores:       Array[Byte],
+      breaks:       Array[Int] )
+  :   Int =
 
     // `scores(g)` is the running maximum for the gap immediately before
     // `padded(g)` (or after the last character when `g == paddedLength`).
-    val scores = new Array[Byte](paddedLength + 1)
+    // The caller has zeroed `scores[0, paddedLength + 1)`.
     var startPos = 0
 
     while startPos < paddedLength do
@@ -214,15 +330,17 @@ object Hyphenation:
 
     // Break position `p` in the original word corresponds to padded gap
     // `p + 1` (the leading `.` shifts the indices by one).
-    val breaks = ArrayBuilder.make[Int]
+    var count = 0
     var p = if leftMin > 1 then leftMin else 1
     val lastBreak = length - (if rightMin > 1 then rightMin else 1)
 
     while p <= lastBreak do
-      if (scores(p + 1) & 1) == 1 then breaks += p
+      if (scores(p + 1) & 1) == 1 then
+        breaks(count) = p
+        count += 1
       p += 1
 
-    breaks.result().immutable(using Unsafe)
+    count
 
 trait Hyphenation:
   def patterns: Dictionary[IArray[Byte]]

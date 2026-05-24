@@ -61,6 +61,12 @@ extension (text: Text)
     val effectiveLeft = leftMin.or(hyphenation.leftMin)
     val effectiveRight = rightMin.or(hyphenation.rightMin)
     val out = new java.lang.StringBuilder(length + (length >> 3))
+
+    // Reusable scratch buffers, grown lazily by doubling. Many words share
+    // the same allocation across the entire `text.hyphenate` call.
+    var padded = new Array[Char](32)
+    var scores = new Array[Byte](33)
+    var breaks = new Array[Int](32)
     var i = 0
 
     while i < length do
@@ -72,14 +78,21 @@ extension (text: Text)
         val wordOffset = i
         val wordLength = end - i
 
-        val breaks =
-          Hyphenation.breakPoints
-            ( source, wordOffset, wordLength, hyphenation, effectiveLeft, effectiveRight )
+        if wordLength + 2 > padded.length then
+          var newSize = padded.length
+          while newSize < wordLength + 2 do newSize *= 2
+          padded = new Array[Char](newSize)
+          scores = new Array[Byte](newSize + 1)
+          breaks = new Array[Int](newSize)
+
+        val nBreaks = Hyphenation.breakPointsInto
+                       ( source, wordOffset, wordLength, hyphenation, effectiveLeft,
+                         effectiveRight, padded, scores, breaks )
 
         var prev = 0
         var k = 0
 
-        while k < breaks.length do
+        while k < nBreaks do
           out.append(source, wordOffset + prev, wordOffset + breaks(k))
           out.append(hyphen)
           prev = breaks(k)
