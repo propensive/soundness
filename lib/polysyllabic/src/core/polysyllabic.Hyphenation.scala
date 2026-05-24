@@ -148,7 +148,10 @@ object Hyphenation:
       breaks.result().immutable(using Unsafe)
 
   // Walk the compact pattern trie from every starting position in `padded`,
-  // merging each matched pattern's score array into `scores` via `max`.
+  // merging each matched pattern's score array into `scores` via `max`. Uses
+  // Aho-Corasick: a single forward pass through `padded` with failure-link
+  // and dictionary-suffix-link traversal at each step. The outer loop visits
+  // each padded character exactly once instead of `paddedLength` times.
   private def walkCompact
     ( padded:       Array[Char],
       paddedLength: Int,
@@ -158,29 +161,36 @@ object Hyphenation:
 
     val children = trie.children
     val values = trie.values
-    var startPos = 0
+    val fail = trie.fail
+    val dictLink = trie.dictLink
+    val depth = trie.depth
+    val Alpha = CompactTrie.Alphabet
+    var node = 0
+    var j = 0
 
-    while startPos < paddedLength do
-      var node = 0
-      var j = startPos
-      var live = true
+    while j < paddedLength do
+      val char = padded(j)
+      val sl =
+        if char >= 'a' && char <= 'z' then char - 'a'
+        else if char == '.' then 26
+        else -1
 
-      while live && j < paddedLength do
-        val char = padded(j)
-        val sl =
-          if char >= 'a' && char <= 'z' then char - 'a'
-          else if char == '.' then 26
-          else -1
+      if sl < 0 then node = 0 else
+        // Follow failure links until we find a node whose child slot is set.
+        while node != 0 && children(node*Alpha + sl) < 0 do node = fail(node)
+        val next = children(node*Alpha + sl)
+        if next >= 0 then node = next
 
-        if sl < 0 then live = false else
-          val next = children(node*CompactTrie.Alphabet + sl)
-          if next < 0 then live = false else
-            node = next
-            val v = values(node)
-            if v != null then mergePattern(scores, startPos, v.nn)
-            j += 1
+        // Emit every value reachable via the dictionary suffix chain — these
+        // are all patterns that terminate at position `j`. The pattern of
+        // depth `d` starts at gap `j - d + 1`.
+        var emit = node
+        while emit > 0 do
+          val v = values(emit)
+          if v != null then mergePattern(scores, j - depth(emit) + 1, v.nn)
+          emit = dictLink(emit)
 
-      startPos += 1
+      j += 1
 
   // Buffer-reusing variant. Writes break offsets into `breaks` and returns
   // the count of breaks written. `padded`/`scores` are scratch space that

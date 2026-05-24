@@ -52,7 +52,10 @@ import vacuous.*
 // English-only patterns it ships with).
 private[polysyllabic] final class CompactTrie
     ( val children: Array[Int],
-      val values:   Array[IArray[Byte] | Null] )
+      val values:   Array[IArray[Byte] | Null],
+      val depth:    Array[Int],
+      val fail:     Array[Int],
+      val dictLink: Array[Int] )
 
 private[polysyllabic] object CompactTrie:
   inline val Alphabet: 27 = 27
@@ -137,4 +140,53 @@ private[polysyllabic] object CompactTrie:
       valuesArr(i) = valuesBuf(i)
       i += 1
 
-    new CompactTrie(childrenArr, valuesArr)
+    // Build Aho-Corasick failure and dictionary-suffix links via BFS from
+    // the root. `depth(n)` is the path length from root to `n`; `fail(n)`
+    // is the longest proper suffix of `n`'s path that is itself a path
+    // from root; `dictLink(n)` is the nearest ancestor along the fail
+    // chain that carries a value (or 0 if none).
+    val depthArr    = new Array[Int](nodeCount)
+    val failArr     = new Array[Int](nodeCount)
+    val dictLinkArr = new Array[Int](nodeCount)
+    val queue       = new Array[Int](nodeCount)
+    var qHead = 0
+    var qTail = 0
+
+    // Depth-1 nodes have failure link = root (0).
+    var c = 0
+    while c < Alphabet do
+      val child = childrenArr(c)
+      if child >= 0 then
+        depthArr(child) = 1
+        failArr(child) = 0
+        dictLinkArr(child) = 0
+        queue(qTail) = child
+        qTail += 1
+      c += 1
+
+    while qHead < qTail do
+      val n = queue(qHead)
+      qHead += 1
+      val nd = depthArr(n)
+      val nf = failArr(n)
+
+      var sl = 0
+      while sl < Alphabet do
+        val child = childrenArr(n*Alphabet + sl)
+        if child >= 0 then
+          depthArr(child) = nd + 1
+          // Find fail target: follow fail chain from nf until a node has
+          // child via this slot, or we reach root.
+          var f = nf
+          while f != 0 && childrenArr(f*Alphabet + sl) < 0 do f = failArr(f)
+          val fChild = childrenArr(f*Alphabet + sl)
+          failArr(child) =
+            if fChild >= 0 && fChild != child then fChild else 0
+          // Dictionary suffix link: closest fail-chain ancestor with value.
+          val fl = failArr(child)
+          dictLinkArr(child) = if valuesArr(fl) != null then fl else dictLinkArr(fl)
+          queue(qTail) = child
+          qTail += 1
+        sl += 1
+
+    new CompactTrie(childrenArr, valuesArr, depthArr, failArr, dictLinkArr)
