@@ -128,6 +128,9 @@ package columnar:
       given measurable: Char is Measurable = _.toString.tt.metrics
       val hyphen = textual(t"-")
       val hyphenWidth = displayWidth(hyphen)
+      val hyphenation = summon[Hyphenation]
+      val leftMin = hyphenation.leftMin
+      val rightMin = hyphenation.rightMin
 
       def format(text: textual): List[textual] =
         val plain = text.plain.s
@@ -145,8 +148,10 @@ package columnar:
         // still fits in `width` from `lineStart`. Returns the absolute position
         // (in `plain`) at which to break, or `-1` if no break fits.
         def hyphenationBreak(lineStart: Int, wordStart: Int, wordEnd0: Int): Int =
-          val word = plain.substring(wordStart, wordEnd0).nn.tt
-          val breaks = word.breakPoints
+          val breaks =
+            Hyphenation.breakPoints
+              ( plain, wordStart, wordEnd0 - wordStart, hyphenation, leftMin, rightMin )
+
           var best = -1
           var index = 0
 
