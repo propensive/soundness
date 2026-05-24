@@ -115,6 +115,7 @@ object Tests extends Suite(m"Soundness tests"):
     phoenicia.Tests()
     polaris.Tests()
     plutocrat.Tests()
+    polysyllabic.Tests()
     polyvinyl.Tests()
     prepositional.Tests()
     probably.Tests()
