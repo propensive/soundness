@@ -45,16 +45,16 @@ import vacuous.*
 //   0xC     : exponent marker `e-` (negative exponent — single nibble)
 //
 // Storage is an `Array[Double]` whose first element is a header word and
-// whose remaining elements pack 13 nibbles each into the Double's raw
-// bit pattern. Each storage Double encodes nibbles in its mantissa (bits
-// 0–51) with the exponent (bits 52–62) pinned to the IEEE-754 bias
-// (`0x3FF`); the resulting bit pattern always represents a finite
-// double in `[1.0, 2.0)` (or `(-2.0, -1.0]` if the sign bit is set),
-// never a NaN — so `Double.doubleToRawLongBits ∘ Double.longBitsToDouble`
-// round-trips bit-for-bit on any JVM, regardless of how it handles NaN
-// payloads. The trailing data Double may be partially filled with K < 13
-// nibbles right-justified in bits 0..K*4-1; the count in the header
-// tells readers where the partial fill ends.
+// whose remaining elements pack 16 nibbles each into the Double's raw
+// bit pattern. Each data word uses the full 64-bit Long-bit view of the
+// Double — we round-trip via `Double.doubleToRawLongBits` and
+// `Double.longBitsToDouble`, never doing any arithmetic on the doubles,
+// so the Double's IEEE-754 interpretation is irrelevant. Safety comes
+// from the BCD alphabet: nibbles are 0x0–0xC (digits, decimal point,
+// `e`, `e-`), so the nibble at bits 52–55 of any data word is ≤ 0xC and
+// therefore not 0xF, which means bits 52–62 can never all be 1 —
+// no data word is ever a NaN bit pattern, regardless of platform or JIT
+// NaN-payload handling.
 //
 // `Array[Double]` (`[D` at runtime) keeps `Bcd` distinct from the
 // number-array variants `Array[Int]` (`[I`, arrays of single-Int small
@@ -62,22 +62,18 @@ import vacuous.*
 //
 // Header word layout (raw bits):
 //   bit 63        : sign (0 = non-negative, 1 = negative)
-//   bits 52–62    : fixed = 0x3FF
+//   bits 52–62    : zero (so the header is a small denormal — also not NaN)
 //   bits 0–51     : total nibble count
 // Data word layout (raw bits):
-//   bit 63        : unused (zero)
-//   bits 52–62    : fixed = 0x3FF
-//   bits 0–51     : 13 nibbles, oldest at bits 48–51, newest at bits 0–3
+//   bits 0–63     : 16 nibbles, oldest at bits 60–63, newest at bits 0–3,
+//                   matching the parser's `(content << 4) | n` accumulator.
 opaque type Bcd = Array[Double]
 
 object Bcd:
-  // Mantissa & sign masks for the raw-bits layout. We pin the exponent
-  // to the IEEE-754 bias so every word stored in a `Bcd` is a finite
-  // double — no NaN bit-payload edge cases to worry about.
+  // Header masks for the raw-bits layout. Data words use all 64 bits.
   private inline val SignBit      = 0x8000_0000_0000_0000L  // bit 63
-  private inline val ExponentBias = 0x3FF0_0000_0000_0000L  // bits 52–62
   private inline val MantissaMask = 0x000F_FFFF_FFFF_FFFFL  // bits 0–51
-  inline val NibblesPerDouble = 13
+  inline val NibblesPerDouble = 16
 
   private inline def toRawBits(d: Double): Long =
     java.lang.Double.doubleToRawLongBits(d)
@@ -85,17 +81,16 @@ object Bcd:
   private inline def fromRawBits(l: Long): Double =
     java.lang.Double.longBitsToDouble(l)
 
-  // Encode up to 13 nibbles (raw, right-justified in `nibbles`) as a
-  // storage word. The exponent is pinned so the result is always a
-  // finite double in [1.0, 2.0).
-  private inline def packDataDouble(nibbles: Long): Double =
-    fromRawBits((nibbles & MantissaMask) | ExponentBias)
+  // Encode 16 nibbles (already packed in `nibbles`) as a storage word.
+  // BCD nibbles ≤ 0xC guarantee the bit pattern is never NaN, so the
+  // raw 64-bit value is stored verbatim.
+  private inline def packDataDouble(nibbles: Long): Double = fromRawBits(nibbles)
 
   // Encode the Bcd header. Sign goes to bit 63 (the double's own sign
   // bit); count lands in the mantissa (low 52 bits, plenty).
   private inline def packHeaderDouble(negative: Boolean, count: Int): Double =
     val sign = if negative then SignBit else 0L
-    fromRawBits(sign | ExponentBias | (count.toLong & MantissaMask))
+    fromRawBits(sign | (count.toLong & MantissaMask))
 
   // Internal: wrap a freshly-built header+data array as a `Bcd`.
   private[jacinta] inline def wrap(arr: Array[Double]): Bcd = arr
@@ -131,13 +126,20 @@ object Bcd:
   inline def bcdLongNegative(value: Long): Boolean = value < 0L
 
   // Decode a single-Long BCD value to its canonical JSON-number text. The
-  // walk mirrors `Bcd.each` but operates on a single Long.
+  // walk mirrors `Bcd.each` but operates on a single Long. The parser
+  // omits the redundant leading "0" for "0.xxx" inputs, so this re-
+  // inserts a "0" when the oldest nibble is "." (`0xA`) to keep the
+  // output a valid JSON number.
   def bcdLongText(value: Long): String =
     val count = bcdLongNibbleCount(value)
     if count == 0 then "0"
     else
-      val sb = new java.lang.StringBuilder(count + 1)
+      val sb = new java.lang.StringBuilder(count + 2)
       if bcdLongNegative(value) then sb.append('-')
+
+      val firstNibble = ((value >>> ((count - 1)*4)) & 0xFL).toInt
+      if firstNibble == 0xA then sb.append('0')
+
       var j = count - 1
 
       while j >= 0 do
@@ -183,8 +185,12 @@ object Bcd:
     val count = bcdIntNibbleCount(value)
     if count == 0 then "0"
     else
-      val sb = new java.lang.StringBuilder(count + 1)
+      val sb = new java.lang.StringBuilder(count + 2)
       if bcdIntNegative(value) then sb.append('-')
+
+      val firstNibble = (value >>> ((count - 1)*4)) & 0xF
+      if firstNibble == 0xA then sb.append('0')
+
       var j = count - 1
 
       while j >= 0 do
@@ -230,9 +236,11 @@ object Bcd:
   // Public construction from a positive-magnitude JSON-number string. The
   // caller is responsible for stripping any leading `-`. The string may
   // contain digits, a single `.`, and an optional `e[+-]?\d+` suffix.
+  // Skips a leading `0` if it's followed by `.` — matches the parser's
+  // convention (the printer reinserts the `0` on emit).
   def fromString(text: String, negative: Boolean): Bcd =
     val builder = new Builder
-    var i = 0
+    var i = if text.length >= 2 && text.charAt(0) == '0' && text.charAt(1) == '.' then 1 else 0
     val n = text.length
     var prevWasE = false
 
@@ -297,7 +305,7 @@ object Bcd:
 
       if inWord > 0 then word = (word & ~mask) | v
       else if wordIdx > 0 then
-        val prev = toRawBits(data(wordIdx - 1)) & MantissaMask
+        val prev = toRawBits(data(wordIdx - 1))
         data(wordIdx - 1) = packDataDouble((prev & ~mask) | v)
 
     // Snapshot the in-Long fast-path accumulator (15 nibbles) into the
@@ -342,7 +350,7 @@ object Bcd:
       var i = 0
 
       while i < fullDoubles do
-        val w = toRawBits(bcd(1 + i)) & MantissaMask
+        val w = toRawBits(bcd(1 + i))
         var j = NibblesPerDouble - 1
 
         while j >= 0 do
@@ -352,7 +360,7 @@ object Bcd:
         i += 1
 
       if partial > 0 then
-        val w = toRawBits(bcd(1 + fullDoubles)) & MantissaMask
+        val w = toRawBits(bcd(1 + fullDoubles))
         var j = partial - 1
 
         while j >= 0 do
@@ -360,18 +368,27 @@ object Bcd:
           j -= 1
 
     // Render as a JSON number string (canonical form: digits, optional `.`
-    // and fraction, optional `e[-]?\d+`).
+    // and fraction, optional `e[-]?\d+`). Re-inserts a leading "0" when
+    // the oldest nibble is "." — the parser and `fromString` omit it for
+    // "0.xxx" inputs, but JSON requires it.
     def text: String =
-      val sb = new java.lang.StringBuilder(bcd.nibbleCount + 1)
-      if bcd.negative then sb.append('-')
+      if bcd.nibbleCount == 0 then "0"
+      else
+        val sb = new java.lang.StringBuilder(bcd.nibbleCount + 2)
+        if bcd.negative then sb.append('-')
+        var first = true
 
-      bcd.each: nibble =>
-        if nibble <= 9 then sb.append(('0' + nibble).toChar)
-        else if nibble == 0xA then sb.append('.')
-        else if nibble == 0xB then sb.append('e')
-        else if nibble == 0xC then sb.append("e-")
+        bcd.each: nibble =>
+          if first then
+            first = false
+            if nibble == 0xA then sb.append('0')
 
-      sb.toString
+          if nibble <= 9 then sb.append(('0' + nibble).toChar)
+          else if nibble == 0xA then sb.append('.')
+          else if nibble == 0xB then sb.append('e')
+          else if nibble == 0xC then sb.append("e-")
+
+        sb.toString
 
     def toBigDecimal: BigDecimal = BigDecimal(bcd.text)
     def toDouble:     Double     = java.lang.Double.parseDouble(bcd.text)
