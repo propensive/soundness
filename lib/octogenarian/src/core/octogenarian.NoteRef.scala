@@ -30,13 +30,42 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package octogenarian
 
-export
-  octogenarian
-  . { ChangeKind, Commit, FastForward, FileDiff, Git, GitBranch, GitCommand, GitError, GitEvent,
-      GitHash, GitPathStatus, GitProcess, GitRefError, GitRefs, GitRepo, GitStatus, GitTag, Hunk,
-      Note, NoteRef, Patch, Progress, ReflogEntry, Refspec, Remote, ResetMode, SshUrl, Worktree }
+import ambience.*
+import anticipation.*
+import contingency.*
+import distillate.*
+import guillotine.*
+import prepositional.*
+import serpentine.*
+import symbolism.*
 
-package gitCommands:
-  export octogenarian.gitCommands.environmentDefault
+import GitError.Reason.*
+
+// A `NoteRef` names a specific git note: the commit it is attached to, plus
+// the ref path (e.g. `refs/notes/ci-attestation`) it lives under. The repo
+// is supplied implicitly at `.read` time.
+//
+// Constructed via Symbolism's `/` operator: `commit / t"foo"` lifts a
+// `GitHash` into a `NoteRef` (given lives on `GitHash`'s companion in
+// `octogenarian.internal`), and further chaining (`noteRef / t"bar"`)
+// extends the namespace path via the given below.
+object NoteRef:
+  given continuation: Tactic[GitRefError]
+  =>  NoteRef is Divisible by Text to NoteRef =
+
+    Divisible: (noteRef, segment) =>
+      GitRefs.validateSegment(segment)
+      NoteRef(noteRef.target, noteRef.ref / segment)
+
+case class NoteRef(target: GitHash, ref: Path on GitRefs):
+  def read[value: Decodable in Text]
+    ( using repo:    GitRepo,
+            command: GitCommand,
+            wd:      WorkingDirectory,
+            errors:  Tactic[GitError],
+            exec:    Tactic[ExecError] )
+  :   value logs GitEvent =
+
+    repo.notes.show(target, ref).lest(GitError(NoteNotFound)).decode[value]
