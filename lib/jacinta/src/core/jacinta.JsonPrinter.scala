@@ -129,9 +129,25 @@ object JsonPrinter:
 
       append(']')
 
+    def printBcdLongArray(bcds: Array[Long]): Unit =
+      val n = bcds.length
+      append('[')
+      val last = n - 1
+      var index = 0
+
+      while index < n do
+        append(Bcd.bcdLongText(bcds(index)).tt)
+        if index < last then append(',')
+        index += 1
+
+      append(']')
+
     def recur(json: Json.Ast, indent: Int): Unit = json.asMatchable match
       case nums: Array[Double] @unchecked =>
         printNumberArray(nums)
+
+      case bcds: Array[Long] @unchecked =>
+        printBcdLongArray(bcds)
 
       case bcd: Array[Int] @unchecked =>
         // High-precision number — emit the canonical JSON-number text from

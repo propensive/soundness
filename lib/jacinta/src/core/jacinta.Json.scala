@@ -175,7 +175,7 @@ object Json extends Json2, Dynamic:
   type JsonBoolean = Boolean
   type JsonNull    = Null
   type JsonObject  = IArray[Any]
-  type JsonArray   = IArray[Any] | Array[Double]
+  type JsonArray   = IArray[Any] | Array[Double] | Array[Long]
 
   opaque type Ast =
     JsonString | JsonNumber | JsonBoolean | JsonNull | JsonObject | JsonArray | Unset.type
@@ -333,10 +333,17 @@ object Json extends Json2, Dynamic:
     // `[Ljava/lang/Object;` (`IArray[Any]`), so no wrapping is needed.
     def numArr(values: Array[Double]): Ast = values
 
+    // Build a number-only array node using the single-Long BCD encoding
+    // (see `Bcd.packBcdLong`). Distinct runtime class from `Array[Double]`
+    // (`[J` vs `[D`), letting the parser keep each number in its compact
+    // BCD-packed form and skip the per-number `Double` conversion.
+    def bcdArr(values: Array[Long]): Ast = values
+
     // The number of user-visible elements in an array node (excludes the
     // sentinel pad of a parity-padded heterogeneous array, if present).
     def arrayLength(json: Ast): Int = (json: @unchecked) match
       case nums: Array[Double] @unchecked => nums.length
+      case bcds: Array[Long] @unchecked   => bcds.length
 
       case _ =>
         val arr = json.asInstanceOf[Array[?]]
@@ -691,6 +698,21 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
         acc
 
+      case value: Array[Long] @unchecked =>
+        // BCD-packed number array — same recursion as `Array[Double]` so
+        // arrays of equal values hash identically regardless of which
+        // backing representation the parser picked.
+        val ast = value.asInstanceOf[Json.Ast]
+        val n = value.length
+        var acc = n.hashCode
+        var i = 0
+
+        while i < n do
+          acc = acc*31 ^ recur(ast.arrayElement(i))
+          i += 1
+
+        acc
+
       case value: Array[Int] @unchecked =>
         // High-precision number (`Bcd`) — hash via the BigDecimal
         // projection so a Bcd whose value equals a BigDecimal literal has
@@ -801,6 +823,25 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
             case _: Array[Double] @unchecked =>
               arrayEq(left, rightAst)
 
+            case _: Array[Long] @unchecked =>
+              arrayEq(left, rightAst)
+
+            case _: Array[AnyRef] @unchecked if left.asInstanceOf[Json.Ast].isArray =>
+              arrayEq(left, rightAst)
+
+            case _ => false
+
+        case right: Array[Long] @unchecked =>
+          // BCD-packed number array.
+          val rightAst = right.asInstanceOf[Json.Ast]
+
+          left.asMatchable match
+            case _: Array[Long] @unchecked =>
+              arrayEq(left, rightAst)
+
+            case _: Array[Double] @unchecked =>
+              arrayEq(left, rightAst)
+
             case _: Array[AnyRef] @unchecked if left.asInstanceOf[Json.Ast].isArray =>
               arrayEq(left, rightAst)
 
@@ -836,6 +877,9 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
                 false
 
             case _: Array[Double] @unchecked if !rightIsObject =>
+              arrayEq(left, rightAst)
+
+            case _: Array[Long] @unchecked if !rightIsObject =>
               arrayEq(left, rightAst)
 
             case _ => false

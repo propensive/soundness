@@ -77,11 +77,16 @@ extension (json: Json.Ast)
 
   inline def isArray: Boolean =
     json.isInstanceOf[Array[Double]]
+    || json.isInstanceOf[Array[Long]]
     || (json.isInstanceOf[Array[AnyRef]]
         && (json.asInstanceOf[Array[?]].length & 1) == 1)
 
-  // True when the array is in the unboxed number-only form.
-  inline def isNumberArray: Boolean = json.isInstanceOf[Array[Double]]
+  // True when the array is in either unboxed number-only form.
+  inline def isNumberArray: Boolean =
+    json.isInstanceOf[Array[Double]] || json.isInstanceOf[Array[Long]]
+
+  // True when the array is in the BCD-packed Long form.
+  inline def isBcdLongArray: Boolean = json.isInstanceOf[Array[Long]]
 
   private def expected(jsonPrimitive: JsonPrimitive): Unit raises JsonError =
     raise(JsonError(if isAbsent then Reason.Absent else Reason.NotType(primitive, jsonPrimitive)))
@@ -90,11 +95,16 @@ extension (json: Json.Ast)
   // sentinel pad if present).
   inline def arrayLength: Int = Json.Ast.arrayLength(json)
 
-  // Materialise an array element as a `Json.Ast` node. For a parity-padded
-  // heterogeneous array this is a direct indexed lookup; for the unboxed
-  // `Array[Double]` form, the raw double is recovered as a `Long` for
-  // whole values in Long range (preserving the type the parser would have
-  // assigned outside the array context) and as a `Double` otherwise.
+  // Materialise an array element as a `Json.Ast` node. Three cases:
+  //   - `Array[Double]`: raw double; recovered as `Long` for whole values
+  //     in Long range so an array element matches the type the parser
+  //     would have assigned for the same number outside an array context.
+  //   - `Array[Long]`: a single-Long BCD-packed number — decoded back to
+  //     `Long` if it represents an exact integer that fits, else to
+  //     `Double` via the canonical text form. (Bcd-shaped output is also
+  //     a valid choice but a Long/Double keeps the per-element accessor
+  //     allocation-free for the common short-number case.)
+  //   - boxed `IArray[Any]`: direct indexed lookup.
   def arrayElement(index: Int): Json.Ast = (json: @unchecked) match
     case nums: Array[Double] @unchecked =>
       val d = nums(index)
@@ -102,6 +112,15 @@ extension (json: Json.Ast)
       if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
       then Json.Ast(d.toLong)
       else Json.Ast(d)
+
+    case bcds: Array[Long] @unchecked =>
+      val v = bcds(index)
+      // Cheap fast path: a non-floating, non-exponent BCD-Long has nibbles
+      // only in 0–9. Fall through to the text path if any nibble is `.`,
+      // `e` or `e-` (≥ 0xA).
+      val text = Bcd.bcdLongText(v)
+      try Json.Ast(java.lang.Long.parseLong(text))
+      catch case _: NumberFormatException => Json.Ast(java.lang.Double.parseDouble(text))
 
     case _ =>
       json.asInstanceOf[IArray[Json.Ast]](index)
@@ -129,6 +148,9 @@ extension (json: Json.Ast)
   def array: IArray[Json.Ast] raises JsonError = (json: @unchecked) match
     case nums: Array[Double] @unchecked =>
       IArray.tabulate(nums.length)(json.arrayElement(_))
+
+    case bcds: Array[Long] @unchecked =>
+      IArray.tabulate(bcds.length)(json.arrayElement(_))
 
     case _ =>
       if isArray then

@@ -65,6 +65,60 @@ object Bcd:
   // Internal: wrap a freshly-built header+data array as a `Bcd`.
   private[jacinta] inline def wrap(arr: Array[Int]): Bcd = arr
 
+  // Single-Long BCD encoding for arrays of numbers — see `Array[Long]` as
+  // a `Json.Ast` array variant. One number per Long:
+  //   bit 63        : sign (0 = non-negative, 1 = negative)
+  //   bits 56–62    : nibble count (7 bits; max 14)
+  //   bits 0–55     : up to 14 nibbles, oldest at the highest used position
+  //                   (bit 52–55 when count = 14), newest at bits 0–3 —
+  //                   matching the parser's `(content << 4) | n` order.
+  // A value of `0L` is reserved for "uninitialised slot" since a valid
+  // BCD-Long always has count >= 1 (the digit `0` is encoded as count = 1,
+  // sign = 0, nibble 0x0 → header byte 0x01).
+  inline val MaxBcdLongNibbles = 14
+  private inline val BcdLongSignBit    = 0x8000_0000_0000_0000L
+  private inline val BcdLongCountMask  = 0x7F00_0000_0000_0000L   // bits 56–62
+  private inline val BcdLongNibbleMask = 0x00FF_FFFF_FFFF_FFFFL   // bits 0–55
+
+  // Pack the parser's in-Long fast-path accumulator (`content` with
+  // `nibbles` digits, plus sign) into the single-Long BCD format. The
+  // caller is responsible for checking `nibbles <= MaxBcdLongNibbles`.
+  inline def packBcdLong(content: Long, nibbles: Int, negative: Boolean): Long =
+    val sign  = if negative then BcdLongSignBit else 0L
+    val count = (nibbles.toLong & 0x7FL) << 56
+    sign | count | (content & BcdLongNibbleMask)
+
+  // Decode a single-Long BCD value's nibble count (1..14 for valid values).
+  inline def bcdLongNibbleCount(value: Long): Int =
+    ((value >>> 56) & 0x7FL).toInt
+
+  // Decode a single-Long BCD value's sign.
+  inline def bcdLongNegative(value: Long): Boolean = value < 0L
+
+  // Decode a single-Long BCD value to its canonical JSON-number text. The
+  // walk mirrors `Bcd.each` but operates on a single Long.
+  def bcdLongText(value: Long): String =
+    val count = bcdLongNibbleCount(value)
+    if count == 0 then "0"
+    else
+      val sb = new java.lang.StringBuilder(count + 1)
+      if bcdLongNegative(value) then sb.append('-')
+      var j = count - 1
+
+      while j >= 0 do
+        val n = ((value >>> (j*4)) & 0xFL).toInt
+        if      n <= 9     then sb.append(('0' + n).toChar)
+        else if n == 0xA   then sb.append('.')
+        else if n == 0xB   then sb.append('e')
+        else if n == 0xC   then sb.append("e-")
+        j -= 1
+
+      sb.toString
+
+  // Convert a single-Long BCD value to `Double` via its text form.
+  inline def bcdLongToDouble(value: Long): Double =
+    java.lang.Double.parseDouble(bcdLongText(value))
+
   // Build a `Bcd` from a `BigDecimal`. Goes via `toPlainString` so the result
   // matches the in-AST representation a parser would produce for the same
   // textual JSON number.
