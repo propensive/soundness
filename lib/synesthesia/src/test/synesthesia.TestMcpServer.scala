@@ -38,7 +38,7 @@ object TestMcpServer extends McpServer():
   class Session() extends McpSession
   import Mcp.*
 
-  def initialize(): Session = Session()
+  def initialize(): Session = new Session()
 
   def name: Text = "Pyrus"
   def description: Text = "A simple server"
