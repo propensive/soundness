@@ -32,25 +32,29 @@
                                                                                                   */
 package jacinta
 
-import anticipation.*
-import contingency.*
-import prepositional.*
-import turbulence.*
-import zephyrine.*
+object NumberMode:
+  given default: NumberMode = Full
 
-extension (json: Json.Ast.type)
-  def parse(source: Data)(using mode: NumberMode): Json.Ast raises ParseError =
-    Json.Ast(JsonParser.parse(source, mode))
+// Selects how `JsonParser` handles JSON numbers that exceed the in-Long
+// 15-nibble fast path. Numbers that fit the fast path are unaffected and
+// continue to be emitted as a numerically-decoded `Long` (integers) or
+// `Double` (floats); the mode only changes the >15-nibble path.
+enum NumberMode:
+  // For >15-nibble inputs, accumulate digits in a `Bcd.Builder` and emit a
+  // `Bcd` (`Array[Long]`). Preserves full precision via a per-number heap
+  // allocation. This is the current behavior and the default.
+  case Full
 
-  def parse(source: Data, holes: Boolean)(using mode: NumberMode): Json.Ast raises ParseError =
-    Json.Ast(JsonParser.parse(source, holes, mode))
+  // For >15-nibble inputs, drop the overflowing digits and emit the
+  // truncated 15-nibble BCD accumulator as a raw `Long`. No heap
+  // allocation; throughput-prioritised. The returned `Long` carries the
+  // BCD-packed nibbles, not the numerically-decoded integer value, so
+  // consumers under this mode should treat it as opaque.
+  case Bcd
 
-  def parse(input: Iterator[Data])(using mode: NumberMode): Json.Ast raises ParseError =
-    Json.Ast(JsonParser.parse(input, mode))
-
-  def parse(input: Iterator[Data], holes: Boolean)(using mode: NumberMode)
-  :   Json.Ast raises ParseError =
-    Json.Ast(JsonParser.parse(input, holes, mode))
-
-given parserAggregable: Tactic[ParseError] => Json.Ast is Aggregable by Data =
-  source => Json.Ast.parse(source.iterator)
+  // For >15-nibble inputs, drop the overflowing digits and emit an
+  // IEEE-754 `Double` computed from the first 15 nibbles. No heap
+  // allocation. Matches the default precision behavior of Jawn, Circe,
+  // Jsoniter, and Jackson — useful for like-for-like throughput
+  // comparisons.
+  case Double

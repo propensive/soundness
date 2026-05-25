@@ -66,28 +66,32 @@ private[jacinta] object JsonParser:
   private val pool: ThreadLocal[JsonParser] =
     ThreadLocal.withInitial{ () => new JsonParser }.nn
 
-  def parse(source: Data): Raw raises ParseError =
+  def parse(source: Data, mode: NumberMode = NumberMode.Full): Raw raises ParseError =
     val parser = pool.get.nn
     parser.resetData(source)
     parser.holes = false
+    parser.numberMode = mode
     parser.parse()
 
-  def parse(source: Data, holes: Boolean): Raw raises ParseError =
+  def parse(source: Data, holes: Boolean, mode: NumberMode): Raw raises ParseError =
     val parser = pool.get.nn
     parser.resetData(source)
     parser.holes = holes
+    parser.numberMode = mode
     parser.parse()
 
-  def parse(input: Iterator[Data]): Raw raises ParseError =
+  def parse(input: Iterator[Data], mode: NumberMode): Raw raises ParseError =
     val parser = pool.get.nn
     parser.resetIterator(input)
     parser.holes = false
+    parser.numberMode = mode
     parser.parse()
 
-  def parse(input: Iterator[Data], holes: Boolean): Raw raises ParseError =
+  def parse(input: Iterator[Data], holes: Boolean, mode: NumberMode): Raw raises ParseError =
     val parser = pool.get.nn
     parser.resetIterator(input)
     parser.holes = holes
+    parser.numberMode = mode
     parser.parse()
 
 private[jacinta] final class JsonParser:
@@ -119,6 +123,10 @@ private[jacinta] final class JsonParser:
   private var bufEnd: Int = 0
 
   protected[jacinta] var holes: Boolean = false
+
+  // Storage shape `parseNumber` uses for each parsed JSON number. See
+  // `NumberMode` for semantics. Reset before each `parse()` call.
+  protected[jacinta] var numberMode: NumberMode = NumberMode.Full
 
   protected var arraySize:           Int = 16
   protected var chars:               Array[Char] = new Array(arraySize)
@@ -456,15 +464,23 @@ private[jacinta] final class JsonParser:
     var bcdBuilder: Bcd.Builder | Null = null
 
     // When the in-Long fast path overflows (the 16th nibble is about to be
-    // appended), seed a `Bcd.Builder` with the existing 15 nibbles plus the
-    // overflowing one and continue accumulation there instead of degrading
-    // to a `StringBuilder` + `Double.parseDouble` pipeline.
+    // appended), behavior depends on `numberMode`:
+    //   - Full   : seed a `Bcd.Builder` with the existing 15 nibbles plus the
+    //              overflowing one and continue accumulation there. Preserves
+    //              full precision; one heap allocation per overflowing number.
+    //   - Bcd    : drop the overflowing nibble and continue scanning the
+    //              number's remaining digits without recording them. The
+    //              accumulator stays the truncated first 15 nibbles. No
+    //              heap allocation.
+    //   - Double : same drop-on-overflow behavior as `Bcd`; the construction
+    //              site then derives a `Double` from the truncated nibbles.
     inline def fallback(extraNibble: Int): Unit =
-      val b = new Bcd.Builder
-      b.seedFromLong(content, nibbles)
-      b.add(extraNibble)
-      bcdBuilder = b
-      bcdValid = false
+      if numberMode == NumberMode.Full then
+        val b = new Bcd.Builder
+        b.seedFromLong(content, nibbles)
+        b.add(extraNibble)
+        bcdBuilder = b
+        bcdValid = false
 
     inline def appendNibble(n: Int): Unit =
       if bcdValid then
@@ -566,62 +582,68 @@ private[jacinta] final class JsonParser:
       case _ => ()
 
     if bcdValid then
-      var mantissa: Long = 0L
-      var decimalDigits: Int = 0
-      var explicitExp: Int = 0
-      var expSign: Int = 1
-      var inFraction: Boolean = false
-      var inExponent: Boolean = false
-
-      var i = nibbles - 1
-
-      while i >= 0 do
-        val n = ((content >>> (i * 4)) & 0xFL).toInt
-
-        if n <= 9 then
-          if inExponent then explicitExp = explicitExp*10 + n
-          else
-            mantissa = mantissa*10 + n
-            if inFraction then decimalDigits += 1
-        else if n == 0xA then
-          inFraction = true
-        else if n == 0xB then
-          inExponent = true
-        else if n == 0xC then
-          inExponent = true
-          expSign = -1
-
-        i -= 1
-
-      if !floating then
-        val signed: Long = if negative then -mantissa else mantissa
-        // All bcdValid mantissas fit in 15 nibbles (≤ 10^15 - 1 < 2^50),
-        // so casting to Double is exact.
-        numberAsDouble = signed.toDouble
-        numberFitsDouble = true
-        signed
+      if numberMode == NumberMode.Bcd then
+        // BCD mode: skip the decode loop and hand back the raw in-Long BCD
+        // accumulator. Sign and numeric value aren't recoverable from this
+        // Long — consumers under this mode treat it as opaque.
+        numberAsDouble = 0.0
+        numberFitsDouble = false
+        content: Long
       else
-        val totalExp = expSign * explicitExp - decimalDigits
+        var mantissa: Long = 0L
+        var decimalDigits: Int = 0
+        var explicitExp: Int = 0
+        var expSign: Int = 1
+        var inFraction: Boolean = false
+        var inExponent: Boolean = false
 
-        val mag =
-          if mantissa == 0L then 0.0
-          else if mantissa < (1L << 53) && totalExp >= 0 && totalExp <= 22 then
-            mantissa.toDouble * TenPow(totalExp)
-          else if mantissa < (1L << 53) && totalExp < 0 && totalExp >= -22 then
-            mantissa.toDouble / TenPow(-totalExp)
-          else
-            java.math.BigDecimal.valueOf(mantissa).nn.scaleByPowerOfTen(totalExp).nn.doubleValue
+        var i = nibbles - 1
 
-        val signed: Double = if negative then -mag else mag
-        numberAsDouble = signed
-        numberFitsDouble = true
-        signed
+        while i >= 0 do
+          val n = ((content >>> (i * 4)) & 0xFL).toInt
+
+          if n <= 9 then
+            if inExponent then explicitExp = explicitExp*10 + n
+            else
+              mantissa = mantissa*10 + n
+              if inFraction then decimalDigits += 1
+          else if n == 0xA then
+            inFraction = true
+          else if n == 0xB then
+            inExponent = true
+          else if n == 0xC then
+            inExponent = true
+            expSign = -1
+
+          i -= 1
+
+        if !floating then
+          val signed: Long = if negative then -mantissa else mantissa
+          // All bcdValid mantissas fit in 15 nibbles (≤ 10^15 - 1 < 2^50),
+          // so casting to Double is exact.
+          numberAsDouble = signed.toDouble
+          numberFitsDouble = true
+          if numberMode == NumberMode.Double then signed.toDouble else signed
+        else
+          val totalExp = expSign * explicitExp - decimalDigits
+
+          val mag =
+            if mantissa == 0L then 0.0
+            else if mantissa < (1L << 53) && totalExp >= 0 && totalExp <= 22 then
+              mantissa.toDouble * TenPow(totalExp)
+            else if mantissa < (1L << 53) && totalExp < 0 && totalExp >= -22 then
+              mantissa.toDouble / TenPow(-totalExp)
+            else
+              java.math.BigDecimal.valueOf(mantissa).nn.scaleByPowerOfTen(totalExp).nn.doubleValue
+
+          val signed: Double = if negative then -mag else mag
+          numberAsDouble = signed
+          numberFitsDouble = true
+          signed
     else
-      // High-precision path: hand back the `Bcd` directly. Consumers can
-      // narrow to `Long`, `Double`, or `BigDecimal` via `Bcd`'s extension
-      // methods if they want; the parser preserves full precision either
-      // way. The number doesn't fit a Double exactly, so an enclosing
-      // number-only array will migrate to the boxed `JsonArray` form.
+      // High-precision path: hand back the `Bcd` directly. Reached only in
+      // `NumberMode.Full`; `Bcd` and `Double` modes leave `bcdValid` true
+      // and truncate on overflow rather than allocating a `Bcd.Builder`.
       bcdBuilder.nn.finish(negative): Bcd
 
   private def parseValue(minus: Boolean = false)(using Tactic[ParseError]): Raw =
