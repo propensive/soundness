@@ -44,32 +44,61 @@ import vacuous.*
 //   0xB     : exponent marker `e`
 //   0xC     : exponent marker `e-` (negative exponent — single nibble)
 //
-// Storage is an `Array[Short]` whose first element is a header word and
-// whose remaining elements pack 4 nibbles each. Nibbles within a `Short`
-// are LSB-first / least-recent-at-the-bottom — i.e., for a fully-packed
-// `Short` the oldest nibble is at bits 12–15 and the newest is at bits
-// 0–3, matching the `(content << 4) | n` accumulator in the parser. The
-// trailing data `Short` may be partially filled with K < 4 nibbles
-// right-justified in bits 0..K*4-1; the count in the header tells
-// readers where the partial fill ends.
+// Storage is an `Array[Double]` whose first element is a header word and
+// whose remaining elements pack 13 nibbles each into the Double's raw
+// bit pattern. Each storage Double encodes nibbles in its mantissa (bits
+// 0–51) with the exponent (bits 52–62) pinned to the IEEE-754 bias
+// (`0x3FF`); the resulting bit pattern always represents a finite
+// double in `[1.0, 2.0)` (or `(-2.0, -1.0]` if the sign bit is set),
+// never a NaN — so `Double.doubleToRawLongBits ∘ Double.longBitsToDouble`
+// round-trips bit-for-bit on any JVM, regardless of how it handles NaN
+// payloads. The trailing data Double may be partially filled with K < 13
+// nibbles right-justified in bits 0..K*4-1; the count in the header
+// tells readers where the partial fill ends.
 //
-// `Array[Short]` (`[S` at runtime) keeps `Bcd` distinct from the
+// `Array[Double]` (`[D` at runtime) keeps `Bcd` distinct from the
 // number-array variants `Array[Int]` (`[I`, arrays of single-Int small
-// BCDs), `Array[Long]` (`[J`, arrays of single-Long larger BCDs), and
-// `Array[Double]` (`[D`, double-valued arrays).
+// BCDs) and `Array[Long]` (`[J`, arrays of single-Long larger BCDs).
 //
-// Header word layout:
-//   bit 15        : sign (0 = non-negative, 1 = negative)
-//   bits 0–14     : total nibble count (up to 32767)
-opaque type Bcd = Array[Short]
+// Header word layout (raw bits):
+//   bit 63        : sign (0 = non-negative, 1 = negative)
+//   bits 52–62    : fixed = 0x3FF
+//   bits 0–51     : total nibble count
+// Data word layout (raw bits):
+//   bit 63        : unused (zero)
+//   bits 52–62    : fixed = 0x3FF
+//   bits 0–51     : 13 nibbles, oldest at bits 48–51, newest at bits 0–3
+opaque type Bcd = Array[Double]
 
 object Bcd:
-  private inline val SignBit   = 0x8000
-  private inline val CountMask = 0x7FFF
-  inline val NibblesPerShort = 4
+  // Mantissa & sign masks for the raw-bits layout. We pin the exponent
+  // to the IEEE-754 bias so every word stored in a `Bcd` is a finite
+  // double — no NaN bit-payload edge cases to worry about.
+  private inline val SignBit      = 0x8000_0000_0000_0000L  // bit 63
+  private inline val ExponentBias = 0x3FF0_0000_0000_0000L  // bits 52–62
+  private inline val MantissaMask = 0x000F_FFFF_FFFF_FFFFL  // bits 0–51
+  inline val NibblesPerDouble = 13
+
+  private inline def toRawBits(d: Double): Long =
+    java.lang.Double.doubleToRawLongBits(d)
+
+  private inline def fromRawBits(l: Long): Double =
+    java.lang.Double.longBitsToDouble(l)
+
+  // Encode up to 13 nibbles (raw, right-justified in `nibbles`) as a
+  // storage word. The exponent is pinned so the result is always a
+  // finite double in [1.0, 2.0).
+  private inline def packDataDouble(nibbles: Long): Double =
+    fromRawBits((nibbles & MantissaMask) | ExponentBias)
+
+  // Encode the Bcd header. Sign goes to bit 63 (the double's own sign
+  // bit); count lands in the mantissa (low 52 bits, plenty).
+  private inline def packHeaderDouble(negative: Boolean, count: Int): Double =
+    val sign = if negative then SignBit else 0L
+    fromRawBits(sign | ExponentBias | (count.toLong & MantissaMask))
 
   // Internal: wrap a freshly-built header+data array as a `Bcd`.
-  private[jacinta] inline def wrap(arr: Array[Short]): Bcd = arr
+  private[jacinta] inline def wrap(arr: Array[Double]): Bcd = arr
 
   // Single-Long BCD encoding for arrays of numbers — see `Array[Long]` as
   // a `Json.Ast` array variant. One number per Long:
@@ -171,6 +200,25 @@ object Bcd:
   inline def bcdIntToDouble(value: Int): Double =
     java.lang.Double.parseDouble(bcdIntText(value))
 
+  // Re-encode a single-Int small-BCD value into the single-Long BCD form.
+  // Used by the array parser's `bcdInt` → `bcdLong` migration step.
+  inline def repackBcdIntAsLong(value: Int): Long =
+    val sign     = if value < 0 then BcdLongSignBit else 0L
+    val count    = (((value >>> 28) & 0x7).toLong) << 56
+    val nibbles  = (value & 0x0FFF_FFFF).toLong
+    sign | count | nibbles
+
+  // Re-encode a single-Long BCD value as a single-Int small BCD. The
+  // caller is responsible for ensuring the value has ≤ 7 nibbles (so the
+  // nibble bits fit in the low 28 bits of the Int). Cheap bit-shuffle —
+  // sign moves from bit 63 to bit 31; count moves from bits 56–62 to
+  // bits 28–30; nibbles in bits 0–27 are unchanged.
+  inline def packBcdIntFromLong(value: Long): Int =
+    val sign     = if (value & BcdLongSignBit) != 0L then BcdIntSignBit else 0
+    val count    = (((value >>> 56) & 0x7L).toInt) << 28
+    val nibbles  = (value & 0x0FFF_FFFFL).toInt
+    sign | count | nibbles
+
   // Build a `Bcd` from a `BigDecimal`. Goes via `toPlainString` so the result
   // matches the in-AST representation a parser would produce for the same
   // textual JSON number.
@@ -219,38 +267,38 @@ object Bcd:
 
   // Incremental builder used by `JsonParser` to assemble a `Bcd` one nibble
   // at a time as it overflows the in-Long fast path. Keeps a growing
-  // `Array[Short]` of completed words and a current word being filled in.
+  // `Array[Double]` of completed words and a current 52-bit nibble buffer.
   final class Builder:
-    private var data: Array[Short] = new Array[Short](2)
+    private var data: Array[Double] = new Array[Double](2)
     private var wordIdx: Int = 0
-    private var word: Int = 0   // intermediate; final word stored as Short
+    private var word: Long = 0L   // raw nibble buffer; packed into a Double on commit
     private var inWord: Int = 0
     private var nibbles: Int = 0
 
     // Append one nibble (0x0–0xC) to the in-progress word. When the word
-    // fills (4 nibbles), it is committed to the `data` array.
+    // fills (13 nibbles), it is committed to the `data` array.
     def add(nibble: Int): Unit =
-      word = ((word << 4) | (nibble & 0xF)) & 0xFFFF
+      word = (word << 4) | (nibble & 0xFL)
       inWord += 1
       nibbles += 1
 
-      if inWord == NibblesPerShort then
+      if inWord == NibblesPerDouble then
         ensureCapacity(wordIdx + 1)
-        data(wordIdx) = word.toShort
+        data(wordIdx) = packDataDouble(word)
         wordIdx += 1
-        word = 0
+        word = 0L
         inWord = 0
 
     // Replace the most recently-added nibble. Used by the parser to rewrite
     // an emitted `e` (0xB) as `e-` (0xC) when a `-` follows.
     def overwriteLast(nibble: Int): Unit =
-      val mask = 0xF
+      val mask = 0xFL
       val v = nibble & mask
 
       if inWord > 0 then word = (word & ~mask) | v
       else if wordIdx > 0 then
-        val prev = data(wordIdx - 1).toInt & 0xFFFF
-        data(wordIdx - 1) = ((prev & ~mask) | v).toShort
+        val prev = toRawBits(data(wordIdx - 1)) & MantissaMask
+        data(wordIdx - 1) = packDataDouble((prev & ~mask) | v)
 
     // Snapshot the in-Long fast-path accumulator (15 nibbles) into the
     // builder, so the parser can hand off mid-number without losing state.
@@ -266,49 +314,49 @@ object Bcd:
     // Produce the final `Bcd`. The trailing partial word (if any) is
     // committed right-justified in its data slot.
     def finish(negative: Boolean): Bcd =
-      val totalDataShorts = if inWord > 0 then wordIdx + 1 else wordIdx
-      val arr = new Array[Short](1 + totalDataShorts)
-      arr(0) = ((if negative then SignBit else 0) | (nibbles & CountMask)).toShort
+      val totalDataDoubles = if inWord > 0 then wordIdx + 1 else wordIdx
+      val arr = new Array[Double](1 + totalDataDoubles)
+      arr(0) = packHeaderDouble(negative, nibbles)
       System.arraycopy(data, 0, arr, 1, wordIdx)
-      if inWord > 0 then arr(1 + wordIdx) = word.toShort
+      if inWord > 0 then arr(1 + wordIdx) = packDataDouble(word)
       arr
 
     private def ensureCapacity(needed: Int): Unit =
       if needed > data.length then
         val newSize = (data.length * 2).max(needed)
-        val newData = new Array[Short](newSize)
+        val newData = new Array[Double](newSize)
         System.arraycopy(data, 0, newData, 0, wordIdx)
         data = newData
 
   extension (bcd: Bcd)
-    def negative:    Boolean = (bcd(0).toInt & SignBit) != 0
-    def nibbleCount: Int     = bcd(0).toInt & CountMask
+    def negative:    Boolean = (toRawBits(bcd(0)) & SignBit) != 0L
+    def nibbleCount: Int     = (toRawBits(bcd(0)) & MantissaMask).toInt
 
     // Iterate nibbles in left-to-right (oldest-first) order, invoking the
     // action for each. Used by the printer to emit a JSON-number string and
     // by conversion routines (`toBigDecimal`, `toDouble`, `toLong`).
     inline def each(inline action: Int => Unit): Unit =
       val total = bcd.nibbleCount
-      val fullShorts = total/NibblesPerShort
-      val partial = total - fullShorts*NibblesPerShort
+      val fullDoubles = total/NibblesPerDouble
+      val partial = total - fullDoubles*NibblesPerDouble
       var i = 0
 
-      while i < fullShorts do
-        val w = bcd(1 + i).toInt & 0xFFFF
-        var j = NibblesPerShort - 1
+      while i < fullDoubles do
+        val w = toRawBits(bcd(1 + i)) & MantissaMask
+        var j = NibblesPerDouble - 1
 
         while j >= 0 do
-          action((w >>> (j*4)) & 0xF)
+          action(((w >>> (j*4)) & 0xFL).toInt)
           j -= 1
 
         i += 1
 
       if partial > 0 then
-        val w = bcd(1 + fullShorts).toInt & 0xFFFF
+        val w = toRawBits(bcd(1 + fullDoubles)) & MantissaMask
         var j = partial - 1
 
         while j >= 0 do
-          action((w >>> (j*4)) & 0xF)
+          action(((w >>> (j*4)) & 0xFL).toInt)
           j -= 1
 
     // Render as a JSON number string (canonical form: digits, optional `.`

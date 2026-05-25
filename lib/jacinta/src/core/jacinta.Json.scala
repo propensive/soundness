@@ -175,7 +175,7 @@ object Json extends Json2, Dynamic:
   type JsonBoolean = Boolean
   type JsonNull    = Null
   type JsonObject  = IArray[Any]
-  type JsonArray   = IArray[Any] | Array[Double] | Array[Long] | Array[Int]
+  type JsonArray   = IArray[Any] | Array[Long] | Array[Int]
 
   opaque type Ast =
     JsonString | JsonNumber | JsonBoolean | JsonNull | JsonObject | JsonArray | Unset.type
@@ -325,17 +325,10 @@ object Json extends Json2, Dynamic:
         padded(n) = arrayPad
         padded.asInstanceOf[IArray[Any]]
 
-    // Build a number-only array node. Each element is the parsed `Double`
-    // value. `Array[Double]` is `[D` at runtime — distinct from `[J`
-    // (Array[Long]) and `[I` (Array[Int]) number arrays, from `[S`
-    // (`Bcd`), and from `[Ljava/lang/Object;` (`IArray[Any]`), so no
-    // wrapping is needed.
-    def numArr(values: Array[Double]): Ast = values
-
     // Build a number-only array node using the single-Long BCD encoding
-    // (see `Bcd.packBcdLong`). Distinct runtime class (`[J`), letting the
-    // parser keep each number in its compact BCD-packed form and skip
-    // the per-number `Double` conversion.
+    // (see `Bcd.packBcdLong`). Each `Long` element carries one number's
+    // sign + count + nibbles inline — no per-element `Double` materialisation
+    // and no per-element heap allocation.
     def bcdArr(values: Array[Long]): Ast = values
 
     // Build a number-only array node using the single-Int small-BCD
@@ -346,7 +339,6 @@ object Json extends Json2, Dynamic:
     // The number of user-visible elements in an array node (excludes the
     // sentinel pad of a parity-padded heterogeneous array, if present).
     def arrayLength(json: Ast): Int = (json: @unchecked) match
-      case nums: Array[Double] @unchecked => nums.length
       case bcds: Array[Long] @unchecked   => bcds.length
       case smalls: Array[Int] @unchecked  => smalls.length
 
@@ -693,21 +685,6 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
         // it stays consistent with the `Bcd` / `Long` / `Double` paths.
         BigDecimal(Bcd.bcdIntText(value)).hashCode
 
-      case value: Array[Double] @unchecked =>
-        // Number-only array — hash each element through the same recursion
-        // path so cross-form equality with the boxed array stays
-        // consistent.
-        val ast = value.asInstanceOf[Json.Ast]
-        val n = value.length
-        var acc = n.hashCode
-        var i = 0
-
-        while i < n do
-          acc = acc*31 ^ recur(ast.arrayElement(i))
-          i += 1
-
-        acc
-
       case value: Array[Long] @unchecked =>
         // BCD-packed number array — same recursion as `Array[Double]` so
         // arrays of equal values hash identically regardless of which
@@ -723,7 +700,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
         acc
 
-      case value: Array[Short] @unchecked =>
+      case value: Array[Double] @unchecked =>
         // High-precision number (`Bcd`) — hash via the BigDecimal
         // projection so a Bcd whose value equals a BigDecimal literal has
         // a consistent hash.
@@ -814,22 +791,34 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
       def recur(left: Json.Ast, right: Json.Ast): Boolean = right.asMatchable match
         case right: Long => left.asMatchable match
-          case left: Long                   => left == right
-          case left: Double                 => left == right
+          case left: Long                    => left == right
+          case left: Int                     => left == right.toInt && left.toLong == right
+          case left: Double                  => left == right
 
-          case left: Array[Short] @unchecked =>
+          case left: Array[Double] @unchecked =>
             left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(right)
 
-          case _                            => false
+          case _                             => false
+
+        case right: Int => left.asMatchable match
+          case left: Int                     => left == right
+          case left: Long                    => BigDecimal(Bcd.bcdIntText(right)) == BigDecimal(left)
+          case left: Double                  => BigDecimal(Bcd.bcdIntText(right)) == BigDecimal(left)
+
+          case left: Array[Double] @unchecked =>
+            left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(Bcd.bcdIntText(right))
+
+          case _                             => false
 
         case right: Double => left.asMatchable match
-          case left: Long                   => left == right
-          case left: Double                 => left == right
+          case left: Long                    => left == right
+          case left: Int                     => BigDecimal(Bcd.bcdIntText(left)) == BigDecimal(right)
+          case left: Double                  => left == right
 
-          case left: Array[Short] @unchecked =>
+          case left: Array[Double] @unchecked =>
             left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(right)
 
-          case _                            => false
+          case _                             => false
 
         case right: String => left.asMatchable match
           case left: String => left == right
@@ -839,43 +828,29 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           case left: Boolean => left == right
           case _             => false
 
-        case right: Array[Double] @unchecked =>
-          // Unboxed Double-valued number array.
-          val rightAst = right.asInstanceOf[Json.Ast]
-
-          left.asMatchable match
-            case _: Array[Double] @unchecked => arrayEq(left, rightAst)
-            case _: Array[Long] @unchecked   => arrayEq(left, rightAst)
-            case _: Array[Int] @unchecked    => arrayEq(left, rightAst)
-
-            case _: Array[AnyRef] @unchecked if left.asInstanceOf[Json.Ast].isArray =>
-              arrayEq(left, rightAst)
-
-            case _ => false
-
         case right: Array[Long] @unchecked =>
           // BCD-Long-packed number array.
           val rightAst = right.asInstanceOf[Json.Ast]
 
           left.asMatchable match
-            case _: Array[Long] @unchecked   => arrayEq(left, rightAst)
-            case _: Array[Double] @unchecked => arrayEq(left, rightAst)
-            case _: Array[Int] @unchecked    => arrayEq(left, rightAst)
+            case _: Array[Long] @unchecked => arrayEq(left, rightAst)
+            case _: Array[Int] @unchecked  => arrayEq(left, rightAst)
 
             case _: Array[AnyRef] @unchecked if left.asInstanceOf[Json.Ast].isArray =>
               arrayEq(left, rightAst)
 
             case _ => false
 
-        case right: Array[Short] @unchecked =>
+        case right: Array[Double] @unchecked =>
           // High-precision number (`Bcd`).
           val rb = right.asInstanceOf[Bcd]
 
           left.asMatchable match
             case left: Long                    => BigDecimal(left) == rb.toBigDecimal
+            case left: Int                     => BigDecimal(Bcd.bcdIntText(left)) == rb.toBigDecimal
             case left: Double                  => BigDecimal(left) == rb.toBigDecimal
 
-            case left: Array[Short] @unchecked =>
+            case left: Array[Double] @unchecked =>
               left.asInstanceOf[Bcd].toBigDecimal == rb.toBigDecimal
 
             case _                             => false
@@ -885,9 +860,8 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           val rightAst = right.asInstanceOf[Json.Ast]
 
           left.asMatchable match
-            case _: Array[Int] @unchecked     => arrayEq(left, rightAst)
-            case _: Array[Long] @unchecked    => arrayEq(left, rightAst)
-            case _: Array[Double] @unchecked  => arrayEq(left, rightAst)
+            case _: Array[Int] @unchecked  => arrayEq(left, rightAst)
+            case _: Array[Long] @unchecked => arrayEq(left, rightAst)
 
             case _: Array[AnyRef] @unchecked if left.asInstanceOf[Json.Ast].isArray =>
               arrayEq(left, rightAst)
@@ -909,9 +883,6 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
                 arrayEq(leftAst, rightAst)
               else
                 false
-
-            case _: Array[Double] @unchecked if !rightIsObject =>
-              arrayEq(left, rightAst)
 
             case _: Array[Long] @unchecked if !rightIsObject =>
               arrayEq(left, rightAst)

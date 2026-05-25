@@ -47,7 +47,9 @@ import Json.Ast.{Issue, Position}
 
 private[jacinta] object JsonParser:
   private[jacinta] type Raw =
-    Long | Double | Bcd | String | IArray[Any] | Array[Double] | Boolean | Null | Unset.type
+    Long | Int | Double | Bcd | String | IArray[Any]
+    | Array[Long] | Array[Int]
+    | Boolean | Null | Unset.type
 
   private inline val NumZero       = 0
   private inline val NumInt        = 1
@@ -56,6 +58,12 @@ private[jacinta] object JsonParser:
   private inline val NumAfterE     = 4
   private inline val NumAfterESign = 5
   private inline val NumExp        = 6
+
+  // `parseArray` number-container modes (see comment on `parseArray`).
+  private[jacinta] inline val ModeUndecided = 0
+  private[jacinta] inline val ModeBoxed     = 1
+  private[jacinta] inline val ModeBcdLong   = 2
+  private[jacinta] inline val ModeBcdInt    = 3
 
   // ASCII bytes of the JSON keyword literals, packed little-endian: byte at
   // offset i goes into bits (i*8)..(i*8+7). Four-byte literals (`true`,
@@ -146,18 +154,11 @@ private[jacinta] final class JsonParser:
   protected var chars:               Array[Char] = new Array(arraySize)
   protected var stringCursor:        Int = 0
   protected var arrayBufferId:       Int = -1
-  protected val arrayBuffers:        ArrayBuffer[ArrayBuffer[Any]] = ArrayBuffer.empty
-  protected var numberBufferId:      Int = -1
-  protected val numberBuffers:       ArrayBuffer[ArrayBuffer[Double]] = ArrayBuffer.empty
-
-  // Side-channel between `parseNumber` and `parseArray`: when the parsed
-  // number stays in the in-Long fast path (≤ 15 nibbles, no Bcd fallback),
-  // `numberAsDouble` carries the parsed value and `numberFitsDouble` is
-  // true. Cleared at the top of `parseValue`. Numbers that overflow into
-  // `Bcd` clear the flag, forcing the enclosing array to migrate from the
-  // unboxed `Array[Double]` form to the boxed `JsonArray`.
-  protected var numberAsDouble:   Double  = 0.0
-  protected var numberFitsDouble: Boolean = false
+  protected val arrayBuffers:        ArrayBuffer[ArrayBuffer[Any]]  = ArrayBuffer.empty
+  protected var bcdLongBufferId:     Int = -1
+  protected val bcdLongBuffers:      ArrayBuffer[ArrayBuffer[Long]] = ArrayBuffer.empty
+  protected var bcdIntBufferId:      Int = -1
+  protected val bcdIntBuffers:       ArrayBuffer[ArrayBuffer[Int]]  = ArrayBuffer.empty
 
   // Small open-addressed cache of recently-seen object keys. Index is
   // `hash & (KeyCacheSize - 1)`; on a hash collision the existing entry is
@@ -185,7 +186,8 @@ private[jacinta] final class JsonParser:
     syncFrom()
     stringCursor = 0
     arrayBufferId = -1
-    numberBufferId = -1
+    bcdLongBufferId = -1
+    bcdIntBufferId = -1
     heldToken = null
 
   def resetIterator(input: Iterator[Data]): Unit =
@@ -193,7 +195,8 @@ private[jacinta] final class JsonParser:
     syncFrom()
     stringCursor = 0
     arrayBufferId = -1
-    numberBufferId = -1
+    bcdLongBufferId = -1
+    bcdIntBufferId = -1
     heldToken = null
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -337,19 +340,33 @@ private[jacinta] final class JsonParser:
 
   protected inline def relinquishArrayBuffer(): Unit = arrayBufferId -= 1
 
-  protected inline def getNumberBuffer(): ArrayBuffer[Double] =
-    numberBufferId += 1
+  protected inline def getBcdLongBuffer(): ArrayBuffer[Long] =
+    bcdLongBufferId += 1
 
-    if numberBuffers.length <= numberBufferId then
-      val newBuffer = ArrayBuffer.empty[Double]
-      numberBuffers += newBuffer
+    if bcdLongBuffers.length <= bcdLongBufferId then
+      val newBuffer = ArrayBuffer.empty[Long]
+      bcdLongBuffers += newBuffer
       newBuffer
     else
-      val buffer = numberBuffers(numberBufferId)
+      val buffer = bcdLongBuffers(bcdLongBufferId)
       buffer.clear()
       buffer
 
-  protected inline def relinquishNumberBuffer(): Unit = numberBufferId -= 1
+  protected inline def relinquishBcdLongBuffer(): Unit = bcdLongBufferId -= 1
+
+  protected inline def getBcdIntBuffer(): ArrayBuffer[Int] =
+    bcdIntBufferId += 1
+
+    if bcdIntBuffers.length <= bcdIntBufferId then
+      val newBuffer = ArrayBuffer.empty[Int]
+      bcdIntBuffers += newBuffer
+      newBuffer
+    else
+      val buffer = bcdIntBuffers(bcdIntBufferId)
+      buffer.clear()
+      buffer
+
+  protected inline def relinquishBcdIntBuffer(): Unit = bcdIntBufferId -= 1
 
   // ──────────────────────────────────────────────────────────────────────────
   // Parser body (unchanged from the previous abstract base).
@@ -591,7 +608,7 @@ private[jacinta] final class JsonParser:
       advance()
       null
 
-  private def parseNumber(first: Int, negative: Boolean)
+  private def parseNumber(first: Int, negative: Boolean, bcdOnly: Boolean = false)
   :   Double | Long | Bcd raises ParseError =
 
     var content: Long = first.toLong
@@ -614,7 +631,7 @@ private[jacinta] final class JsonParser:
     //   - Double : same drop-on-overflow behavior as `Bcd`; the construction
     //              site then derives a `Double` from the truncated nibbles.
     inline def fallback(extraNibble: Int): Unit =
-      if numberMode == NumberMode.Full then
+      if bcdOnly || numberMode == NumberMode.Full then
         val b = new Bcd.Builder
         b.seedFromLong(content, nibbles)
         b.add(extraNibble)
@@ -720,13 +737,26 @@ private[jacinta] final class JsonParser:
 
       case _ => ()
 
-    if bcdValid then
+    if bcdOnly then
+      // Array-element fast path: skip the decode loop and the `Double`
+      // materialisation. Return a single-Long BCD value if it fits the
+      // 14-nibble cap, otherwise allocate a `Bcd` from whatever buffer
+      // the state machine already built (Builder if it overflowed; an
+      // ad-hoc seed if it stayed in the in-Long fast path with 15 nibbles).
+      if bcdValid then
+        if nibbles <= Bcd.MaxBcdLongNibbles then
+          Bcd.packBcdLong(content, nibbles, negative)
+        else
+          val b = new Bcd.Builder
+          b.seedFromLong(content, nibbles)
+          b.finish(negative): Bcd
+      else
+        bcdBuilder.nn.finish(negative): Bcd
+    else if bcdValid then
       if numberMode == NumberMode.Bcd then
         // BCD mode: skip the decode loop and hand back the raw in-Long BCD
         // accumulator. Sign and numeric value aren't recoverable from this
         // Long — consumers under this mode treat it as opaque.
-        numberAsDouble = 0.0
-        numberFitsDouble = false
         content: Long
       else
         var mantissa: Long = 0L
@@ -758,10 +788,6 @@ private[jacinta] final class JsonParser:
 
         if !floating then
           val signed: Long = if negative then -mantissa else mantissa
-          // All bcdValid mantissas fit in 15 nibbles (≤ 10^15 - 1 < 2^50),
-          // so casting to Double is exact.
-          numberAsDouble = signed.toDouble
-          numberFitsDouble = true
           if numberMode == NumberMode.Double then signed.toDouble else signed
         else
           val totalExp = expSign * explicitExp - decimalDigits
@@ -775,26 +801,25 @@ private[jacinta] final class JsonParser:
             else
               java.math.BigDecimal.valueOf(mantissa).nn.scaleByPowerOfTen(totalExp).nn.doubleValue
 
-          val signed: Double = if negative then -mag else mag
-          numberAsDouble = signed
-          numberFitsDouble = true
-          signed
+          if negative then -mag else mag
     else
       // High-precision path: hand back the `Bcd` directly. Reached only in
       // `NumberMode.Full`; `Bcd` and `Double` modes leave `bcdValid` true
       // and truncate on overflow rather than allocating a `Bcd.Builder`.
       bcdBuilder.nn.finish(negative): Bcd
 
-  private def parseValue(minus: Boolean = false)(using Tactic[ParseError]): Raw =
-    // Clear the parseNumber side channel so a non-number value doesn't leave
-    // stale state visible to the caller.
-    numberFitsDouble = false
+  // `bcdOnly` propagates through the `Minus` recursion so that `-3.14`
+  // parsed from an array context still short-circuits the Double path.
+  // The flag has no effect on non-number values, so we don't need to
+  // propagate it to `parseObject` / `parseArray` / `parseString`.
+  private def parseValue(minus: Boolean = false, bcdOnly: Boolean = false)
+                        (using Tactic[ParseError]): Raw =
     if !more then errorAt(Issue.PrematureEnd)
     val ch = peek
 
     if (ch & 0xF8) == Num0 || (ch & 0xFE) == 0x38 then
       advance()
-      parseNumber(ch & 0x0F, minus)
+      parseNumber(ch & 0x0F, minus, bcdOnly)
     else if minus then
       errorAt(Issue.ExpectedDigit(ch.toChar))
     else if holes && ch == 0 then
@@ -803,7 +828,7 @@ private[jacinta] final class JsonParser:
     else
       (ch: @switch) match
         case Quote       => advance() yet parseString()
-        case Minus       => advance() yet parseValue(true)
+        case Minus       => advance() yet parseValue(true, bcdOnly)
         case OpenBracket => advance() yet parseArray()
         case LowerF      => parseFalse()
         case LowerN      => parseNull()
@@ -812,16 +837,80 @@ private[jacinta] final class JsonParser:
         case other       => errorAt(Issue.ExpectedSomeValue(other.toChar))
 
   private def parseArray()(using Tactic[ParseError]): Raw =
-    // The array starts in "undecided" mode: on the first element we pick
-    // either the unboxed Double buffer (if the value fits a Double, i.e.
-    // came from the in-Long fast path) or the boxed Any buffer. Subsequent
-    // non-fitting elements while in numbers mode trigger a one-time
-    // migration into the boxed buffer.
-    var numbersMode = false
-    var numItems: ArrayBuffer[Double] | Null = null
-    var anyItems: ArrayBuffer[Any]    | Null = null
+    // The array starts in "undecided" mode. Each element is parsed with
+    // `bcdOnly = true`, so a number comes back as either a single-Long
+    // BCD packing (count + sign + nibbles encoded in the Long itself) or
+    // a heap-allocated `Bcd` if it overflows the 14-nibble cap. The mode
+    // is decided from the first element and tightens / widens as we go:
+    //
+    //   `Array[Int]`  if every element fits 7 nibbles  (4 bytes / element)
+    //   `Array[Long]` if every element fits 14 nibbles (8 bytes / element)
+    //   `IArray[Any]` otherwise                        (boxed)
+    //
+    // Subsequent elements either fit the current container (cheap append)
+    // or trigger a one-step migration to the next-wider form, with the
+    // existing elements re-packed in place. We never widen past the
+    // boxed form; once boxed we stay boxed.
+    var mode: Int = ModeUndecided
+    var intItems:  ArrayBuffer[Int]  | Null = null
+    var longItems: ArrayBuffer[Long] | Null = null
+    var anyItems:  ArrayBuffer[Any]  | Null = null
     var first    = true
     var continue = true
+
+    inline def migrateIntToLong(): Unit =
+      val src = intItems.nn
+      val dst = getBcdLongBuffer()
+      val n = src.length
+      var i = 0
+
+      while i < n do
+        dst += Bcd.repackBcdIntAsLong(src(i))
+        i += 1
+
+      relinquishBcdIntBuffer()
+      intItems = null
+      longItems = dst
+      mode = ModeBcdLong
+
+    inline def migrateIntToBoxed(): Unit =
+      val src = intItems.nn
+      val dst = getArrayBuffer()
+      val n = src.length
+      var i = 0
+
+      // Each Int *is* a small-BCD `JsonNumber` variant — append directly.
+      while i < n do
+        dst += src(i)
+        i += 1
+
+      relinquishBcdIntBuffer()
+      intItems = null
+      anyItems = dst
+      mode = ModeBoxed
+
+    inline def migrateLongToBoxed(): Unit =
+      val src = longItems.nn
+      val dst = getArrayBuffer()
+      val n = src.length
+      var i = 0
+
+      // Decode each BCD-Long to its scalar JsonNumber form. Long if the
+      // value is an exact integer that fits Long, else Double.
+      while i < n do
+        val v = src(i)
+        val text = Bcd.bcdLongText(v)
+        val ast: Any =
+          try java.lang.Long.parseLong(text)
+          catch case _: NumberFormatException => java.lang.Double.parseDouble(text)
+
+        dst += ast
+        i += 1
+
+      relinquishBcdLongBuffer()
+      longItems = null
+      anyItems = dst
+      mode = ModeBoxed
 
     while continue do
       skip()
@@ -832,9 +921,7 @@ private[jacinta] final class JsonParser:
           continue = false
 
         case _ =>
-          val value      = parseValue()
-          val asDouble   = numberAsDouble
-          val fitsDouble = numberFitsDouble
+          val value = parseValue(bcdOnly = true)
           skip()
 
           val terminator: Byte = must()
@@ -843,48 +930,71 @@ private[jacinta] final class JsonParser:
             case Comma | CloseBracket => ()
             case char                 => errorAt(Issue.ExpectedSomeValue(char.toChar))
 
-          if first then
-            first = false
+          // Classify the parsed value:
+          //   bcdLong:    a Long return — parseNumber's bcdOnly fast path
+          //               packed sign+count+nibbles into a single Long.
+          //   nonNumber:  anything else (Bcd, String, Boolean, Null,
+          //               IArray[Any], etc.) — goes to boxed mode.
+          value match
+            case bcdLong: Long =>
+              val nibbles = ((bcdLong >>> 56) & 0x7FL).toInt
 
-            if fitsDouble then
-              numbersMode = true
-              val buf = getNumberBuffer()
-              numItems = buf
-              buf += asDouble
-            else
-              val buf = getArrayBuffer()
-              anyItems = buf
-              buf += value
-          else if numbersMode && fitsDouble then
-            numItems.nn += asDouble
-          else if numbersMode then
-            // Migrate from the unboxed Double buffer to a boxed Any buffer
-            // and continue in mixed mode for the rest of the array.
-            val src = numItems.nn
-            val dst = getArrayBuffer()
-            val n = src.length
-            var i = 0
+              if first then
+                first = false
+                if nibbles <= Bcd.MaxBcdIntNibbles then
+                  mode = ModeBcdInt
+                  val buf = getBcdIntBuffer()
+                  intItems = buf
+                  buf += Bcd.packBcdIntFromLong(bcdLong)
+                else
+                  mode = ModeBcdLong
+                  val buf = getBcdLongBuffer()
+                  longItems = buf
+                  buf += bcdLong
+              else
+                (mode: @switch) match
+                  case ModeBcdInt =>
+                    if nibbles <= Bcd.MaxBcdIntNibbles then
+                      intItems.nn += Bcd.packBcdIntFromLong(bcdLong)
+                    else
+                      migrateIntToLong()
+                      longItems.nn += bcdLong
 
-            while i < n do
-              dst += unpackToAst(src(i))
-              i += 1
+                  case ModeBcdLong =>
+                    longItems.nn += bcdLong
 
-            relinquishNumberBuffer()
-            numItems = null
-            numbersMode = false
-            anyItems = dst
-            dst += value
-          else
-            anyItems.nn += value
+                  case _ =>
+                    // Boxed mode — surface the value as a JsonNumber.
+                    // For ≤7 nibbles, the small-BCD `Int` is the right
+                    // shape; otherwise the BCD-Long itself is fine.
+                    if nibbles <= Bcd.MaxBcdIntNibbles then
+                      anyItems.nn += Bcd.packBcdIntFromLong(bcdLong)
+                    else
+                      anyItems.nn += bcdLong
+
+            case _ =>
+              if first then
+                first = false
+                mode = ModeBoxed
+                val buf = getArrayBuffer()
+                anyItems = buf
+                buf += value
+              else
+                (mode: @switch) match
+                  case ModeBcdInt =>
+                    migrateIntToBoxed()
+                    anyItems.nn += value
+
+                  case ModeBcdLong =>
+                    migrateLongToBoxed()
+                    anyItems.nn += value
+
+                  case _ =>
+                    anyItems.nn += value
 
           if terminator == CloseBracket then continue = false
 
       advance()
-
-    // The parseNumber side channel may have been left set by a number
-    // parsed inside the array; the array itself doesn't fit a Double, so
-    // clear before returning.
-    numberFitsDouble = false
 
     if first then
       // Empty array — no buffer was ever allocated. The empty case has
@@ -893,43 +1003,42 @@ private[jacinta] final class JsonParser:
       val out = new Array[Any](1)
       out(0) = Json.Ast.arrayPad
       out.asInstanceOf[IArray[Any]]
-    else if numbersMode then
-      val src = numItems.nn
-      val out = new Array[Double](src.length)
-      src.copyToArray(out)
-      relinquishNumberBuffer()
-      out
     else
-      // Mixed/boxed array — stored as `IArray[Any]` and parity-padded
-      // when the element count is even, so arrays always have odd length
-      // and can be distinguished from objects (always even).
-      val src = anyItems.nn
-      val n = src.length
+      (mode: @switch) match
+        case ModeBcdInt =>
+          val src = intItems.nn
+          val out = new Array[Int](src.length)
+          src.copyToArray(out)
+          relinquishBcdIntBuffer()
+          out
 
-      val out =
-        if (n & 1) == 1 then
-          val arr = new Array[Any](n)
-          src.copyToArray(arr)
-          arr
-        else
-          val arr = new Array[Any](n + 1)
-          src.copyToArray(arr)
-          arr(n) = Json.Ast.arrayPad
-          arr
+        case ModeBcdLong =>
+          val src = longItems.nn
+          val out = new Array[Long](src.length)
+          src.copyToArray(out)
+          relinquishBcdLongBuffer()
+          out
 
-      relinquishArrayBuffer()
-      out.asInstanceOf[IArray[Any]]
+        case _ =>
+          // Mixed/boxed array — stored as `IArray[Any]` and parity-padded
+          // when the element count is even, so arrays always have odd
+          // length and can be distinguished from objects (always even).
+          val src = anyItems.nn
+          val n = src.length
 
-  // Decode a single Double back into the boxed AST node form. Used during
-  // migration when a number-only array sees a non-fitting element. We
-  // recover `Long` for whole-valued numbers in the Long range so that
-  // `t"[1, 2, "x"]"` and `t"1"` both yield `Long(1)` for the first
-  // element, preserving the type the parser would have assigned outside
-  // the array context.
-  private def unpackToAst(double: Double): Long | Double =
-    if double.isWhole && double >= Long.MinValue.toDouble && double <= Long.MaxValue.toDouble
-    then double.toLong
-    else double
+          val out =
+            if (n & 1) == 1 then
+              val arr = new Array[Any](n)
+              src.copyToArray(arr)
+              arr
+            else
+              val arr = new Array[Any](n + 1)
+              src.copyToArray(arr)
+              arr(n) = Json.Ast.arrayPad
+              arr
+
+          relinquishArrayBuffer()
+          out.asInstanceOf[IArray[Any]]
 
   // Parse an object directly into the flat alternating-key/value layout. The
   // buffer always grows in pairs, so its length stays even, which is the
@@ -1022,9 +1131,6 @@ private[jacinta] final class JsonParser:
     val out = new Array[Any](items.length)
     items.copyToArray(out)
     relinquishArrayBuffer()
-    // The parseNumber side channel may have been left set by a value
-    // inside the object; the object itself doesn't fit a Double.
-    numberFitsDouble = false
     out.asInstanceOf[IArray[Any]]
 
   def parse()(using Tactic[ParseError]): Raw =
