@@ -126,13 +126,20 @@ object Bcd:
   inline def bcdLongNegative(value: Long): Boolean = value < 0L
 
   // Decode a single-Long BCD value to its canonical JSON-number text. The
-  // walk mirrors `Bcd.each` but operates on a single Long.
+  // walk mirrors `Bcd.each` but operates on a single Long. The parser
+  // omits the redundant leading "0" for "0.xxx" inputs, so this re-
+  // inserts a "0" when the oldest nibble is "." (`0xA`) to keep the
+  // output a valid JSON number.
   def bcdLongText(value: Long): String =
     val count = bcdLongNibbleCount(value)
     if count == 0 then "0"
     else
-      val sb = new java.lang.StringBuilder(count + 1)
+      val sb = new java.lang.StringBuilder(count + 2)
       if bcdLongNegative(value) then sb.append('-')
+
+      val firstNibble = ((value >>> ((count - 1)*4)) & 0xFL).toInt
+      if firstNibble == 0xA then sb.append('0')
+
       var j = count - 1
 
       while j >= 0 do
@@ -178,8 +185,12 @@ object Bcd:
     val count = bcdIntNibbleCount(value)
     if count == 0 then "0"
     else
-      val sb = new java.lang.StringBuilder(count + 1)
+      val sb = new java.lang.StringBuilder(count + 2)
       if bcdIntNegative(value) then sb.append('-')
+
+      val firstNibble = (value >>> ((count - 1)*4)) & 0xF
+      if firstNibble == 0xA then sb.append('0')
+
       var j = count - 1
 
       while j >= 0 do
@@ -225,9 +236,11 @@ object Bcd:
   // Public construction from a positive-magnitude JSON-number string. The
   // caller is responsible for stripping any leading `-`. The string may
   // contain digits, a single `.`, and an optional `e[+-]?\d+` suffix.
+  // Skips a leading `0` if it's followed by `.` — matches the parser's
+  // convention (the printer reinserts the `0` on emit).
   def fromString(text: String, negative: Boolean): Bcd =
     val builder = new Builder
-    var i = 0
+    var i = if text.length >= 2 && text.charAt(0) == '0' && text.charAt(1) == '.' then 1 else 0
     val n = text.length
     var prevWasE = false
 
@@ -355,18 +368,27 @@ object Bcd:
           j -= 1
 
     // Render as a JSON number string (canonical form: digits, optional `.`
-    // and fraction, optional `e[-]?\d+`).
+    // and fraction, optional `e[-]?\d+`). Re-inserts a leading "0" when
+    // the oldest nibble is "." — the parser and `fromString` omit it for
+    // "0.xxx" inputs, but JSON requires it.
     def text: String =
-      val sb = new java.lang.StringBuilder(bcd.nibbleCount + 1)
-      if bcd.negative then sb.append('-')
+      if bcd.nibbleCount == 0 then "0"
+      else
+        val sb = new java.lang.StringBuilder(bcd.nibbleCount + 2)
+        if bcd.negative then sb.append('-')
+        var first = true
 
-      bcd.each: nibble =>
-        if nibble <= 9 then sb.append(('0' + nibble).toChar)
-        else if nibble == 0xA then sb.append('.')
-        else if nibble == 0xB then sb.append('e')
-        else if nibble == 0xC then sb.append("e-")
+        bcd.each: nibble =>
+          if first then
+            first = false
+            if nibble == 0xA then sb.append('0')
 
-      sb.toString
+          if nibble <= 9 then sb.append(('0' + nibble).toChar)
+          else if nibble == 0xA then sb.append('.')
+          else if nibble == 0xB then sb.append('e')
+          else if nibble == 0xC then sb.append("e-")
+
+        sb.toString
 
     def toBigDecimal: BigDecimal = BigDecimal(bcd.text)
     def toDouble:     Double     = java.lang.Double.parseDouble(bcd.text)
