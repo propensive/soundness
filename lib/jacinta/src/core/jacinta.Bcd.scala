@@ -225,6 +225,17 @@ object Bcd:
     val nibbles  = (value & 0x0FFF_FFFFL).toInt
     sign | count | nibbles
 
+  // Build a `Bcd` directly from the parser's in-Long fast-path
+  // accumulator when it filled to capacity (15 nibbles) and the caller
+  // wants a `Bcd` instead of a single-Long packing. Skips the
+  // `Bcd.Builder` allocation and the `seedFromLong` re-walk; the layout
+  // is fixed (1 header + 1 data word).
+  private[jacinta] inline def fromContent15(content: Long, negative: Boolean): Bcd =
+    val arr = new Array[Double](2)
+    arr(0) = packHeaderDouble(negative, 15)
+    arr(1) = packDataDouble(content)
+    arr
+
   // Build a `Bcd` from a `BigDecimal`. Goes via `toPlainString` so the result
   // matches the in-AST representation a parser would produce for the same
   // textual JSON number.
