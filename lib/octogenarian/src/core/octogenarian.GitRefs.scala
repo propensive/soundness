@@ -34,65 +34,69 @@ package octogenarian
 
 import anticipation.*
 import contingency.*
-import denominative.*
-import distillate.*
 import gossamer.*
-import guillotine.*
-import kaleidoscope.*
 import prepositional.*
-import rudiments.*
-import spectacular.*
+import serpentine.*
 
-object internal:
-  opaque type Refspec = anticipation.Text
-  opaque type GitTag <: Refspec = anticipation.Text
-  opaque type GitBranch <: Refspec = anticipation.Text
-  opaque type GitHash <: Refspec = anticipation.Text
+// `GitRefs` is the Serpentine path scheme for Git references. Every fully-
+// qualified reference (`refs/heads/main`, `refs/notes/commits`, …) is rooted
+// at `refs/` and is slash-separated, so it maps cleanly onto a Serpentine
+// path. Component-level validation reproduces the rules `git check-ref-format`
+// enforces, expressed as an `Admissible` typeclass.
+object GitRefs extends Root(t"refs/"):
+  type Plane = GitRefs
 
-  object Refspec:
-    def head(n: Int = 0): Refspec = t"HEAD~$n"
+  // Construct a notes-namespace ref path of the form `refs/notes/<namespace>`.
+  // The namespace is validated against `git check-ref-format`'s per-segment
+  // rules; an invalid namespace raises `GitRefError`.
+  def notes(namespace: Text)(using Tactic[GitRefError]): Path on GitRefs =
+    validateSegment(namespace)
+    GitRefs / t"notes" / namespace
 
-    def unsafe(text: Text): Refspec = text
+  // Construct a branch ref path of the form `refs/heads/<branch>`.
+  def heads(branch: Text)(using Tactic[GitRefError]): Path on GitRefs =
+    validateSegment(branch)
+    GitRefs / t"heads" / branch
 
-    def parse(text: Text)(using Tactic[GitRefError]): Text =
-      def fail(reason: GitRefError.Reason): Text = abort(GitRefError(text, reason))
+  // Construct a tag ref path of the form `refs/tags/<tag>`.
+  def tags(tag: Text)(using Tactic[GitRefError]): Path on GitRefs =
+    validateSegment(tag)
+    GitRefs / t"tags" / tag
 
-      text.cut(t"/").each: part =>
-        if part.starts(t".") || part.ends(t".") then fail(GitRefError.Reason.LeadingOrTrailingDot)
-        if part.ends(t".lock")                  then fail(GitRefError.Reason.ReservedSuffix)
-        if part.contains(t"@{")                 then fail(GitRefError.Reason.ReservedSequence)
-        if part.contains(t"..")                 then fail(GitRefError.Reason.DoubleDot)
-        if part.length == 0                     then fail(GitRefError.Reason.EmptySegment)
+  // The default notes namespace used by `git notes` when no `--ref` is given.
+  val defaultNotes: Path on GitRefs = unsafely(GitRefs.notes(t"commits"))
 
-        for char <- List('*', '[', '\\', ' ', '^', '~', ':', '?')
-        do if part.contains(char) then fail(GitRefError.Reason.InvalidCharacter)
+  // Serpentine's `/` operator does not invoke an `Admissible`'s `check` at
+  // construction time, so the per-segment rules live here and are invoked
+  // explicitly from the typed constructors above.
+  def validateSegment(segment: Text)(using Tactic[GitRefError]): Unit =
+    def fail(reason: GitRefError.Reason) = abort(GitRefError(segment, reason))
+    if segment.length == 0     then fail(GitRefError.Reason.EmptySegment)
+    if segment.starts(t".")    then fail(GitRefError.Reason.LeadingOrTrailingDot)
+    if segment.ends(t".")      then fail(GitRefError.Reason.LeadingOrTrailingDot)
+    if segment.ends(t".lock")  then fail(GitRefError.Reason.ReservedSuffix)
+    if segment.contains(t"@{") then fail(GitRefError.Reason.ReservedSequence)
+    if segment.contains(t"..") then fail(GitRefError.Reason.DoubleDot)
 
-      text
+    for ch <- List('*', '[', '\\', ' ', '^', '~', ':', '?', '/')
+    do if segment.contains(ch) then fail(GitRefError.Reason.InvalidCharacter)
 
-    given encodable: Refspec is Encodable in Text = identity(_)
-    given parameterizable: Refspec is Parameterizable = identity(_)
-    given showable: Refspec is Showable = identity(_)
+  // The default `text is Admissible on filesystem` from Serpentine already
+  // satisfies the typeclass slot for any plane; the marker here is for the
+  // benefit of `summonFrom` in Path's `/` operator, which treats the absence
+  // of an `Admissible` as evidence that the result should be unplatformed.
+  given admissible: [text <: Text] => text is Admissible on GitRefs = _ => ()
 
-  object GitTag:
-    def unsafe(text: Text): GitTag = text
-    def apply(text: Text)(using Tactic[GitRefError]): GitTag = Refspec.parse(text)
+  given filesystem: GitRefs is Filesystem:
+    val name: Text = t"GitRefs"
+    val separator: Text = t"/"
+    val self: Text = t"@"
+    val parent: Text = t".."
 
-    given decoder: Tactic[GitRefError] => GitTag is Decodable in Text = apply(_)
-    given showable: GitTag is Showable = identity(_)
+  // A validated `Path on GitRefs` already satisfies every rule git enforces,
+  // so it is safe to expose it as an opaque `Refspec` for any operation that
+  // accepts one.
+  given pathIsRefspec: Conversion[Path on GitRefs, Refspec] =
+    path => Refspec.unsafe(path.encode)
 
-  object GitBranch:
-    def unsafe(text: Text): GitBranch = text
-    def apply(text: Text)(using Tactic[GitRefError]): GitBranch = Refspec.parse(text)
-
-    given decoder: Tactic[GitRefError] => GitBranch is Decodable in Text = apply(_)
-    given showable: GitBranch is Showable = identity(_)
-
-  object GitHash:
-    def apply(text: Text)(using Tactic[GitRefError]): GitHash = text match
-      case r"[a-f0-9]{40}" => text
-      case _               => abort(GitRefError(text, GitRefError.Reason.BadHash))
-
-    def unsafe(text: Text): GitHash = text
-
-    given decoder: Tactic[GitRefError] => GitHash is Decodable in Text = apply(_)
-    given showable: GitHash is Showable = identity(_)
+trait GitRefs
