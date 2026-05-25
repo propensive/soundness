@@ -41,7 +41,7 @@ object NumberMode:
 // `Double` (floats); the mode only changes the >15-nibble path.
 enum NumberMode:
   // For >15-nibble inputs, accumulate digits in a `Bcd.Builder` and emit a
-  // `Bcd` (`Array[Int]`). Preserves full precision via a per-number heap
+  // `Bcd` (`Array[Short]`). Preserves full precision via a per-number heap
   // allocation. This is the current behavior and the default.
   case Full
 

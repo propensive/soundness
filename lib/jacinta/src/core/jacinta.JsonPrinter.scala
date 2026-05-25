@@ -142,6 +142,19 @@ object JsonPrinter:
 
       append(']')
 
+    def printSmallBcdArray(smalls: Array[Int]): Unit =
+      val n = smalls.length
+      append('[')
+      val last = n - 1
+      var index = 0
+
+      while index < n do
+        append(Bcd.bcdIntText(smalls(index)).tt)
+        if index < last then append(',')
+        index += 1
+
+      append(']')
+
     def recur(json: Json.Ast, indent: Int): Unit = json.asMatchable match
       case nums: Array[Double] @unchecked =>
         printNumberArray(nums)
@@ -149,7 +162,10 @@ object JsonPrinter:
       case bcds: Array[Long] @unchecked =>
         printBcdLongArray(bcds)
 
-      case bcd: Array[Int] @unchecked =>
+      case smalls: Array[Int] @unchecked =>
+        printSmallBcdArray(smalls)
+
+      case bcd: Array[Short] @unchecked =>
         // High-precision number — emit the canonical JSON-number text from
         // the BCD nibble stream directly; this preserves all digits the
         // parser saw, in contrast to a `Double.toString` round-trip.

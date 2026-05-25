@@ -62,11 +62,11 @@ extension (json: Json.Ast)
   // the type test reliably separates the two.
   inline def isSmallBcd: Boolean = json.isInstanceOf[Int]
 
-  // High-precision number node. `Bcd` is `Array[Int]` (`[I`) at runtime
-  // — distinct from `Array[Double]` (`[D`, the number-array node) and
-  // `Array[AnyRef]` (`[Ljava/lang/Object;`, used for objects and
-  // parity-padded heterogeneous arrays).
-  inline def isBcd: Boolean = json.isInstanceOf[Array[Int]]
+  // High-precision number node. `Bcd` is `Array[Short]` (`[S`) at
+  // runtime — distinct from `Array[Int]` (`[I`, arrays of small BCDs),
+  // `Array[Long]` (`[J`, arrays of larger BCDs), `Array[Double]` (`[D`,
+  // number-only arrays), and `Array[AnyRef]` (`[Ljava/lang/Object;`).
+  inline def isBcd: Boolean = json.isInstanceOf[Array[Short]]
   inline def isString: Boolean = json.isInstanceOf[String]
   inline def isBoolean: Boolean = json.isInstanceOf[Boolean]
   inline def isNull: Boolean = json.asInstanceOf[AnyRef | Null] == null
@@ -84,14 +84,20 @@ extension (json: Json.Ast)
   inline def isArray: Boolean =
     json.isInstanceOf[Array[Double]]
     || json.isInstanceOf[Array[Long]]
+    || json.isInstanceOf[Array[Int]]
     || (json.isInstanceOf[Array[AnyRef]]
         && (json.asInstanceOf[Array[?]].length & 1) == 1)
 
-  // True when the array is in either unboxed number-only form.
+  // True when the array is in any of the unboxed number-only forms.
   inline def isNumberArray: Boolean =
-    json.isInstanceOf[Array[Double]] || json.isInstanceOf[Array[Long]]
+    json.isInstanceOf[Array[Double]]
+    || json.isInstanceOf[Array[Long]]
+    || json.isInstanceOf[Array[Int]]
 
-  // True when the array is in the BCD-packed Long form.
+  // True when the array is in the small-BCD `Array[Int]` form.
+  inline def isBcdIntArray:  Boolean = json.isInstanceOf[Array[Int]]
+
+  // True when the array is in the larger-BCD `Array[Long]` form.
   inline def isBcdLongArray: Boolean = json.isInstanceOf[Array[Long]]
 
   private def expected(jsonPrimitive: JsonPrimitive): Unit raises JsonError =
@@ -101,15 +107,15 @@ extension (json: Json.Ast)
   // sentinel pad if present).
   inline def arrayLength: Int = Json.Ast.arrayLength(json)
 
-  // Materialise an array element as a `Json.Ast` node. Three cases:
+  // Materialise an array element as a `Json.Ast` node. Four cases:
   //   - `Array[Double]`: raw double; recovered as `Long` for whole values
   //     in Long range so an array element matches the type the parser
   //     would have assigned for the same number outside an array context.
   //   - `Array[Long]`: a single-Long BCD-packed number — decoded back to
   //     `Long` if it represents an exact integer that fits, else to
-  //     `Double` via the canonical text form. (Bcd-shaped output is also
-  //     a valid choice but a Long/Double keeps the per-element accessor
-  //     allocation-free for the common short-number case.)
+  //     `Double` via the canonical text form.
+  //   - `Array[Int]`: a single-Int small BCD — the raw `Int` *is* a
+  //     small-BCD `JsonNumber`, so it surfaces directly via `Json.Ast(_)`.
   //   - boxed `IArray[Any]`: direct indexed lookup.
   def arrayElement(index: Int): Json.Ast = (json: @unchecked) match
     case nums: Array[Double] @unchecked =>
@@ -121,12 +127,12 @@ extension (json: Json.Ast)
 
     case bcds: Array[Long] @unchecked =>
       val v = bcds(index)
-      // Cheap fast path: a non-floating, non-exponent BCD-Long has nibbles
-      // only in 0–9. Fall through to the text path if any nibble is `.`,
-      // `e` or `e-` (≥ 0xA).
       val text = Bcd.bcdLongText(v)
       try Json.Ast(java.lang.Long.parseLong(text))
       catch case _: NumberFormatException => Json.Ast(java.lang.Double.parseDouble(text))
+
+    case smalls: Array[Int] @unchecked =>
+      Json.Ast(smalls(index))
 
     case _ =>
       json.asInstanceOf[IArray[Json.Ast]](index)
@@ -158,6 +164,9 @@ extension (json: Json.Ast)
     case bcds: Array[Long] @unchecked =>
       IArray.tabulate(bcds.length)(json.arrayElement(_))
 
+    case smalls: Array[Int] @unchecked =>
+      IArray.tabulate(smalls.length)(json.arrayElement(_))
+
     case _ =>
       if isArray then
         val full = json.asInstanceOf[IArray[Json.Ast]]
@@ -169,25 +178,25 @@ extension (json: Json.Ast)
         expected(JsonPrimitive.Array) yet IArray[Json.Ast]()
 
   def double: Double raises JsonError = json.asMatchable match
-    case value: Double                => value
-    case value: Long                  => value.toDouble
-    case value: Int                   => Bcd.bcdIntToDouble(value)
-    case value: Array[Int] @unchecked => value.asInstanceOf[Bcd].toDouble
-    case _                            => expected(JsonPrimitive.Number) yet 0.0
+    case value: Double                  => value
+    case value: Long                    => value.toDouble
+    case value: Int                     => Bcd.bcdIntToDouble(value)
+    case value: Array[Short] @unchecked => value.asInstanceOf[Bcd].toDouble
+    case _                              => expected(JsonPrimitive.Number) yet 0.0
 
   def bcd: Bcd raises JsonError = json.asMatchable match
-    case value: Array[Int] @unchecked => value.asInstanceOf[Bcd]
-    case value: Long                  => Bcd(BigDecimal(value))
-    case value: Double                => Bcd(BigDecimal(value))
-    case value: Int                   => Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)
-    case _                            => expected(JsonPrimitive.Number) yet Bcd(BigDecimal(0L))
+    case value: Array[Short] @unchecked => value.asInstanceOf[Bcd]
+    case value: Long                    => Bcd(BigDecimal(value))
+    case value: Double                  => Bcd(BigDecimal(value))
+    case value: Int                     => Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)
+    case _                              => expected(JsonPrimitive.Number) yet Bcd(BigDecimal(0L))
 
   def long: Long raises JsonError = json.asMatchable match
-    case value: Long                  => value
-    case value: Double                => value.toLong
-    case value: Int                   => Bcd.bcdIntToDouble(value).toLong
-    case value: Array[Int] @unchecked => value.asInstanceOf[Bcd].toLong.or(0L)
-    case _                            => expected(JsonPrimitive.Number) yet 0L
+    case value: Long                    => value
+    case value: Double                  => value.toLong
+    case value: Int                     => Bcd.bcdIntToDouble(value).toLong
+    case value: Array[Short] @unchecked => value.asInstanceOf[Bcd].toLong.or(0L)
+    case _                              => expected(JsonPrimitive.Number) yet 0L
 
   def primitive: JsonPrimitive =
     if isNumber then JsonPrimitive.Number

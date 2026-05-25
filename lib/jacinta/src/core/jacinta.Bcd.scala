@@ -44,26 +44,32 @@ import vacuous.*
 //   0xB     : exponent marker `e`
 //   0xC     : exponent marker `e-` (negative exponent — single nibble)
 //
-// Storage is an `Array[Int]` whose first element is a header word and whose
-// remaining elements pack 8 nibbles each. Nibbles within an `Int` are
-// LSB-first / least-recent-at-the-bottom — i.e., for a fully-packed `Int` the
-// oldest nibble is at bits 28–31 and the newest is at bits 0–3, matching the
-// `(content << 4) | n` accumulator in the parser. The trailing data `Int` may
-// be partially filled with K < 8 nibbles right-justified in bits 0..K*4-1;
-// the count in the header tells readers where the partial fill ends.
+// Storage is an `Array[Short]` whose first element is a header word and
+// whose remaining elements pack 4 nibbles each. Nibbles within a `Short`
+// are LSB-first / least-recent-at-the-bottom — i.e., for a fully-packed
+// `Short` the oldest nibble is at bits 12–15 and the newest is at bits
+// 0–3, matching the `(content << 4) | n` accumulator in the parser. The
+// trailing data `Short` may be partially filled with K < 4 nibbles
+// right-justified in bits 0..K*4-1; the count in the header tells
+// readers where the partial fill ends.
+//
+// `Array[Short]` (`[S` at runtime) keeps `Bcd` distinct from the
+// number-array variants `Array[Int]` (`[I`, arrays of single-Int small
+// BCDs), `Array[Long]` (`[J`, arrays of single-Long larger BCDs), and
+// `Array[Double]` (`[D`, double-valued arrays).
 //
 // Header word layout:
-//   bit 31        : sign (0 = non-negative, 1 = negative)
-//   bits 0–30     : total nibble count (up to ~2.1 billion)
-opaque type Bcd = Array[Int]
+//   bit 15        : sign (0 = non-negative, 1 = negative)
+//   bits 0–14     : total nibble count (up to 32767)
+opaque type Bcd = Array[Short]
 
 object Bcd:
-  private inline val SignBit   = 0x80000000
-  private inline val CountMask = 0x7FFFFFFF
-  inline val NibblesPerInt = 8
+  private inline val SignBit   = 0x8000
+  private inline val CountMask = 0x7FFF
+  inline val NibblesPerShort = 4
 
   // Internal: wrap a freshly-built header+data array as a `Bcd`.
-  private[jacinta] inline def wrap(arr: Array[Int]): Bcd = arr
+  private[jacinta] inline def wrap(arr: Array[Short]): Bcd = arr
 
   // Single-Long BCD encoding for arrays of numbers — see `Array[Long]` as
   // a `Json.Ast` array variant. One number per Long:
@@ -213,24 +219,24 @@ object Bcd:
 
   // Incremental builder used by `JsonParser` to assemble a `Bcd` one nibble
   // at a time as it overflows the in-Long fast path. Keeps a growing
-  // `Array[Int]` of completed words and a current word being filled in.
+  // `Array[Short]` of completed words and a current word being filled in.
   final class Builder:
-    private var data: Array[Int] = new Array[Int](2)
+    private var data: Array[Short] = new Array[Short](2)
     private var wordIdx: Int = 0
-    private var word: Int = 0
+    private var word: Int = 0   // intermediate; final word stored as Short
     private var inWord: Int = 0
     private var nibbles: Int = 0
 
     // Append one nibble (0x0–0xC) to the in-progress word. When the word
-    // fills (8 nibbles), it is committed to the `data` array.
+    // fills (4 nibbles), it is committed to the `data` array.
     def add(nibble: Int): Unit =
-      word = (word << 4) | (nibble & 0xF)
+      word = ((word << 4) | (nibble & 0xF)) & 0xFFFF
       inWord += 1
       nibbles += 1
 
-      if inWord == NibblesPerInt then
+      if inWord == NibblesPerShort then
         ensureCapacity(wordIdx + 1)
-        data(wordIdx) = word
+        data(wordIdx) = word.toShort
         wordIdx += 1
         word = 0
         inWord = 0
@@ -242,7 +248,9 @@ object Bcd:
       val v = nibble & mask
 
       if inWord > 0 then word = (word & ~mask) | v
-      else if wordIdx > 0 then data(wordIdx - 1) = (data(wordIdx - 1) & ~mask) | v
+      else if wordIdx > 0 then
+        val prev = data(wordIdx - 1).toInt & 0xFFFF
+        data(wordIdx - 1) = ((prev & ~mask) | v).toShort
 
     // Snapshot the in-Long fast-path accumulator (15 nibbles) into the
     // builder, so the parser can hand off mid-number without losing state.
@@ -258,36 +266,36 @@ object Bcd:
     // Produce the final `Bcd`. The trailing partial word (if any) is
     // committed right-justified in its data slot.
     def finish(negative: Boolean): Bcd =
-      val totalDataInts = if inWord > 0 then wordIdx + 1 else wordIdx
-      val arr = new Array[Int](1 + totalDataInts)
-      arr(0) = (if negative then SignBit else 0) | (nibbles & CountMask)
+      val totalDataShorts = if inWord > 0 then wordIdx + 1 else wordIdx
+      val arr = new Array[Short](1 + totalDataShorts)
+      arr(0) = ((if negative then SignBit else 0) | (nibbles & CountMask)).toShort
       System.arraycopy(data, 0, arr, 1, wordIdx)
-      if inWord > 0 then arr(1 + wordIdx) = word
+      if inWord > 0 then arr(1 + wordIdx) = word.toShort
       arr
 
     private def ensureCapacity(needed: Int): Unit =
       if needed > data.length then
         val newSize = (data.length * 2).max(needed)
-        val newData = new Array[Int](newSize)
+        val newData = new Array[Short](newSize)
         System.arraycopy(data, 0, newData, 0, wordIdx)
         data = newData
 
   extension (bcd: Bcd)
-    def negative:    Boolean = (bcd(0) & SignBit) != 0
-    def nibbleCount: Int     = bcd(0) & CountMask
+    def negative:    Boolean = (bcd(0).toInt & SignBit) != 0
+    def nibbleCount: Int     = bcd(0).toInt & CountMask
 
     // Iterate nibbles in left-to-right (oldest-first) order, invoking the
     // action for each. Used by the printer to emit a JSON-number string and
     // by conversion routines (`toBigDecimal`, `toDouble`, `toLong`).
     inline def each(inline action: Int => Unit): Unit =
       val total = bcd.nibbleCount
-      val fullInts = total/NibblesPerInt
-      val partial = total - fullInts*NibblesPerInt
+      val fullShorts = total/NibblesPerShort
+      val partial = total - fullShorts*NibblesPerShort
       var i = 0
 
-      while i < fullInts do
-        val w = bcd(1 + i)
-        var j = NibblesPerInt - 1
+      while i < fullShorts do
+        val w = bcd(1 + i).toInt & 0xFFFF
+        var j = NibblesPerShort - 1
 
         while j >= 0 do
           action((w >>> (j*4)) & 0xF)
@@ -296,7 +304,7 @@ object Bcd:
         i += 1
 
       if partial > 0 then
-        val w = bcd(1 + fullInts)
+        val w = bcd(1 + fullShorts).toInt & 0xFFFF
         var j = partial - 1
 
         while j >= 0 do
