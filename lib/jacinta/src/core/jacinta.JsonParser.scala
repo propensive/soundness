@@ -145,6 +145,27 @@ private[jacinta] final class JsonParser:
   protected var numberAsDouble:   Double  = 0.0
   protected var numberFitsDouble: Boolean = false
 
+  // Small open-addressed cache of recently-seen object keys. Index is
+  // `hash & (KeyCacheSize - 1)`; on a hash collision the existing entry is
+  // overwritten. Persisted across parses (per-thread, since the parser
+  // pool is `ThreadLocal`) so repeating JSON shapes hit the cache from
+  // the first key onward. Only consulted on the fast ASCII path with no
+  // escapes — escaped keys still go through `parseString`'s slow tail.
+  // Small open-addressed object-key cache. Keys of up to 16 ASCII bytes are
+  // packed losslessly into a pair of Longs (low = bytes 0–7, high = bytes
+  // 8–15, both LSB-first, with trailing positions zero) — and since JSON
+  // object keys can't contain `\0` (the parser fast-path rejects bytes
+  // < 32), every distinct ASCII key produces a distinct (low, high) pair.
+  // Lookup is then a pair of Long equality checks — *no* byte-by-byte
+  // comparison, and *no* hash-collision false positives. Keys longer than
+  // 16 bytes (rare for typical record-shape JSON) bypass the cache and
+  // allocate normally.
+  private inline val KeyCacheSize = 256
+  private inline val KeyCacheMaxBytes = 16
+  private val keyCache:    Array[String | Null] = new Array(KeyCacheSize)
+  private val keyCacheLow:  Array[Long]         = new Array(KeyCacheSize)
+  private val keyCacheHigh: Array[Long]         = new Array(KeyCacheSize)
+
   def resetData(input: Data): Unit =
     cursor = Cursor[Data](input)
     syncFrom()
@@ -365,6 +386,73 @@ private[jacinta] final class JsonParser:
 
     if peek == Quote then slice(region).also(advance())
     else tail(region)
+
+  // Like `parseString`, but routes the no-escape result through `keyCache`.
+  // The key's bytes are packed losslessly into a `(packedLow, packedHigh)`
+  // Long pair *after* the scan, inside the `cursor.slice` callback where
+  // the byte array is directly addressable — this keeps the per-byte
+  // inner loop identical to `parseString` (no hash/packing overhead per
+  // byte) and confines the cache work to a single per-key step.
+  //
+  // Every distinct ≤16-byte ASCII key produces a distinct (low, high)
+  // pair (JSON keys can't contain `\0`, so trailing-zero padding can't
+  // alias another key), so the lookup needs only two Long equality
+  // checks — no byte-by-byte comparison and no hash-collision false
+  // positives. Keys longer than 16 bytes bypass the cache.
+  private def parseObjectKey()(using Tactic[ParseError]): String = holding:
+    val region = begin()
+
+    while
+      more && {
+        val b = peek
+        b >= 32 && b != Quote && b != Backslash
+      }
+    do advance()
+
+    if !more then errorAt(Issue.PrematureEnd, region)
+
+    if peek != Quote then tail(region)
+    else
+      syncTo()
+      val end = cursor.mark(using heldToken.nn)
+
+      val out = cursor.slice(region, end): (storage, off, len) =>
+        val arr = storage.asInstanceOf[Array[Byte]]
+
+        if len > KeyCacheMaxBytes then
+          new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
+        else
+          val packedLow  = packBytes(arr, off,     math.min(len, 8))
+          val packedHigh = if len > 8 then packBytes(arr, off + 8, len - 8) else 0L
+          val idx        = ((packedLow.toInt ^ (packedLow >>> 32).toInt) ^
+                            (packedHigh.toInt ^ (packedHigh >>> 32).toInt)) & (KeyCacheSize - 1)
+          val cached     = keyCache(idx)
+
+          if cached != null && keyCacheLow(idx) == packedLow
+             && keyCacheHigh(idx) == packedHigh
+          then cached
+          else
+            val fresh = new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
+            keyCache(idx)     = fresh
+            keyCacheLow(idx)  = packedLow
+            keyCacheHigh(idx) = packedHigh
+            fresh
+
+      advance()
+      out
+
+  // Pack up to 8 bytes from `arr[off..off+n)` into a Long, LSB-first
+  // (byte at offset `i` goes to bit position `i*8`). Bytes beyond `n` are
+  // zero — combined with the fact that JSON keys can't contain `\0`,
+  // this means two distinct byte sequences of length ≤ 8 always pack to
+  // distinct Longs.
+  private inline def packBytes(arr: Array[Byte], off: Int, n: Int): Long =
+    var out: Long = 0L
+    var i = 0
+    while i < n do
+      out = out | ((arr(off + i) & 0xFFL) << (i << 3))
+      i += 1
+    out
 
   private def tail(start: Region): String raises ParseError =
     resetString()
@@ -805,7 +893,7 @@ private[jacinta] final class JsonParser:
       must() match
         case Quote =>
           advance()
-          val string = parseString()
+          val string = parseObjectKey()
           skip()
 
           must() match
