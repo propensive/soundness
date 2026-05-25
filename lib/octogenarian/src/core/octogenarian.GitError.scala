@@ -60,6 +60,8 @@ object GitError:
     case RemoteFailed       extends Reason(22)
     case CheckoutFailed     extends Reason(23)
     case PushFailed         extends Reason(24)
+    case NotesFailed        extends Reason(25)
+    case NoteNotFound       extends Reason(26)
 
   import Reason.*
 
@@ -88,6 +90,8 @@ object GitError:
     case RemoteFailed       => m"the remote operation failed"
     case CheckoutFailed     => m"the checkout could not be completed"
     case PushFailed         => m"the push operation failed"
+    case NotesFailed        => m"the notes operation failed"
+    case NoteNotFound       => m"no note was attached to the given object"
 
 case class GitError(reason: GitError.Reason)(using Diagnostics)
 extends Error(685, reason.number)

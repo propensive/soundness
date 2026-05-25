@@ -276,6 +276,90 @@ case class GitRepo(gitDir: Path on Linux):
     GitHash.unsafe(sh"$git $repoOptions rev-parse $refspec".exec[Text]().trim)
 
 
+  object notes:
+    def show(target: GitHash, ref: Path on GitRefs = GitRefs.defaultNotes)
+      ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
+    :   Optional[Text] logs GitEvent =
+
+      val refArg = sh"--ref=${ref.encode}"
+
+      sh"$git $repoOptions notes $refArg show $target".exec[Exit]() match
+        case Exit.Ok =>
+          // `git notes show` appends a trailing newline to its output that is
+          // not part of the stored note; strip it to round-trip cleanly with
+          // bodies passed in to `add` / `append`.
+          val raw = sh"$git $repoOptions notes $refArg show $target".exec[Text]()
+          if raw.ends(t"\n") then raw.skip(1, Rtl) else raw
+
+        case _ =>
+          Unset
+
+
+    def add
+      ( target: GitHash, body: Text, force: Boolean = false,
+        ref:    Path on GitRefs = GitRefs.defaultNotes )
+      ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+    :   Unit logs GitEvent =
+
+      val refArg   = sh"--ref=${ref.encode}"
+      val forceOpt = if force then sh"-f" else sh""
+
+      sh"$git $repoOptions notes $refArg add $forceOpt -m $body $target".exec[Exit]() match
+        case Exit.Ok => ()
+        case _       => abort(GitError(NotesFailed))
+
+
+    def append
+      ( target: GitHash, body: Text, ref: Path on GitRefs = GitRefs.defaultNotes )
+      ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+    :   Unit logs GitEvent =
+
+      val refArg = sh"--ref=${ref.encode}"
+
+      sh"$git $repoOptions notes $refArg append -m $body $target".exec[Exit]() match
+        case Exit.Ok => ()
+        case _       => abort(GitError(NotesFailed))
+
+
+    def remove
+      ( target: GitHash, ignoreMissing: Boolean = false,
+        ref:    Path on GitRefs = GitRefs.defaultNotes )
+      ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+    :   Unit logs GitEvent =
+
+      val refArg     = sh"--ref=${ref.encode}"
+      val missingOpt = if ignoreMissing then sh"--ignore-missing" else sh""
+
+      sh"$git $repoOptions notes $refArg remove $missingOpt $target".exec[Exit]() match
+        case Exit.Ok => ()
+        case _       => abort(GitError(NotesFailed))
+
+
+    def list(ref: Path on GitRefs = GitRefs.defaultNotes)
+      ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
+    :   Stream[(GitHash, GitHash)] logs GitEvent =
+
+      val refArg = sh"--ref=${ref.encode}"
+
+      sh"$git $repoOptions notes $refArg list".exec[Stream[Text]]().collect:
+        case r"$noteHash([a-f0-9]{40}) $target([a-f0-9]{40})" =>
+          (GitHash.unsafe(noteHash), GitHash.unsafe(target))
+
+
+    def copy
+      ( from: GitHash, to: GitHash, force: Boolean = false,
+        ref:  Path on GitRefs = GitRefs.defaultNotes )
+      ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
+    :   Unit logs GitEvent =
+
+      val refArg   = sh"--ref=${ref.encode}"
+      val forceOpt = if force then sh"-f" else sh""
+
+      sh"$git $repoOptions notes $refArg copy $forceOpt $from $to".exec[Exit]() match
+        case Exit.Ok => ()
+        case _       => abort(GitError(NotesFailed))
+
+
   // Lists every non-bare worktree attached to this object database.
   def worktrees()(using GitCommand, WorkingDirectory, Tactic[ExecError])
   :   List[Worktree] logs GitEvent raises GitError =

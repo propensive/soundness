@@ -42,6 +42,7 @@ import kaleidoscope.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 
 object internal:
   opaque type Refspec = anticipation.Text
@@ -51,6 +52,8 @@ object internal:
 
   object Refspec:
     def head(n: Int = 0): Refspec = t"HEAD~$n"
+
+    def unsafe(text: Text): Refspec = text
 
     def parse(text: Text)(using Tactic[GitRefError]): Text =
       def fail(reason: GitRefError.Reason): Text = abort(GitRefError(text, reason))
@@ -94,3 +97,13 @@ object internal:
 
     given decoder: Tactic[GitRefError] => GitHash is Decodable in Text = apply(_)
     given showable: GitHash is Showable = identity(_)
+
+    // `commit / t"namespace"` lifts a `GitHash` into a `NoteRef` at the
+    // ref path `refs/notes/<namespace>`. Lives here (rather than on
+    // `NoteRef`'s companion) so that Symbolism's `/` implicit search,
+    // which visits the dividend type's companion, can find it.
+    given noteRefDivisible: Tactic[GitRefError]
+    =>  GitHash is Divisible by Text to NoteRef =
+
+      Divisible: (commit, namespace) =>
+        NoteRef(commit, GitRefs.notes(namespace))

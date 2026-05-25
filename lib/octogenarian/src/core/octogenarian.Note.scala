@@ -30,13 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package octogenarian
 
-export
-  octogenarian
-  . { ChangeKind, Commit, FastForward, FileDiff, Git, GitBranch, GitCommand, GitError, GitEvent,
-      GitHash, GitPathStatus, GitProcess, GitRefError, GitRefs, GitRepo, GitStatus, GitTag, Hunk,
-      Note, NoteRef, Patch, Progress, ReflogEntry, Refspec, Remote, ResetMode, SshUrl, Worktree }
+import anticipation.*
+import prepositional.*
+import serpentine.*
 
-package gitCommands:
-  export octogenarian.gitCommands.environmentDefault
+case class Note(target: GitHash, body: Text, ref: Path on GitRefs)

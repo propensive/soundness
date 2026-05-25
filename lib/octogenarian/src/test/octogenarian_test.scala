@@ -991,3 +991,191 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val cloned = Git.clone(bareDir, targetPath).complete()
         cloned.repo.log().to(List).length
       .assert(_ == 1)
+
+    // ----- GitRefs (Serpentine ref paths) ---------------------------------
+
+    suite(m"GitRefs (Serpentine ref paths)"):
+
+      test(m"a branch ref path encodes as refs/heads/<name>"):
+        (GitRefs / t"heads" / t"main").encode
+      .assert(_ == t"refs/heads/main")
+
+      test(m"a notes ref path encodes as refs/notes/<namespace>"):
+        GitRefs.notes(t"ci-attestation").encode
+      .assert(_ == t"refs/notes/ci-attestation")
+
+      test(m"GitRefs.heads(name) matches manual construction"):
+        GitRefs.heads(t"main").encode
+      .assert(_ == t"refs/heads/main")
+
+      test(m"GitRefs.tags(name) encodes as refs/tags/<name>"):
+        GitRefs.tags(t"v1").encode
+      .assert(_ == t"refs/tags/v1")
+
+      test(m"the default notes ref is refs/notes/commits"):
+        GitRefs.defaultNotes.encode
+      .assert(_ == t"refs/notes/commits")
+
+      test(m"GitRefs.heads rejects a segment containing .."):
+        safely(GitRefs.heads(t"foo..bar")).let(_.encode)
+      .assert(_.absent)
+
+      test(m"GitRefs.heads rejects a segment ending in .lock"):
+        safely(GitRefs.heads(t"main.lock")).let(_.encode)
+      .assert(_.absent)
+
+      test(m"GitRefs.heads rejects a segment containing a space"):
+        safely(GitRefs.heads(t"two words")).let(_.encode)
+      .assert(_.absent)
+
+      test(m"GitRefs.heads rejects a segment containing a colon"):
+        safely(GitRefs.heads(t"a:b")).let(_.encode)
+      .assert(_.absent)
+
+      test(m"GitRefs.heads rejects an empty segment"):
+        safely(GitRefs.heads(t"")).let(_.encode)
+      .assert(_.absent)
+
+      test(m"GitRefs.notes rejects a segment containing @{"):
+        safely(GitRefs.notes(t"name@{0}")).let(_.encode)
+      .assert(_.absent)
+
+      test(m"a GitRefs path is usable as a Refspec via implicit conversion"):
+        val ref: Refspec = GitRefs.heads(t"main")
+        ref.show
+      .assert(_ == t"refs/heads/main")
+
+    // ----- git notes ------------------------------------------------------
+
+    suite(m"git notes"):
+
+      test(m"add then show a note in the default namespace"):
+        val worktree = freshWorktree()
+        val hash = commitFile(worktree, t"a", t"a\n", t"first")
+        worktree.repo.notes.add(hash, t"a note body")
+        worktree.repo.notes.show(hash)
+      .assert(_ == t"a note body")
+
+      test(m"show on a commit with no note returns Unset"):
+        val worktree = freshWorktree()
+        val hash = commitFile(worktree, t"a", t"a\n", t"first")
+        worktree.repo.notes.show(hash)
+      .assert(_.absent)
+
+      test(m"add then show in a custom namespace"):
+        val worktree = freshWorktree()
+        val hash = commitFile(worktree, t"a", t"a\n", t"first")
+        val ref  = GitRefs.notes(t"ci-attestation")
+        worktree.repo.notes.add(hash, t"signed envelope", ref = ref)
+        worktree.repo.notes.show(hash, ref = ref)
+      .assert(_ == t"signed envelope")
+
+      test(m"custom namespace and default namespace are independent"):
+        val worktree = freshWorktree()
+        val hash = commitFile(worktree, t"a", t"a\n", t"first")
+        worktree.repo.notes.add(hash, t"default note")
+        worktree.repo.notes.add(hash, t"custom note", ref = GitRefs.notes(t"alt"))
+        (worktree.repo.notes.show(hash), worktree.repo.notes.show(hash, GitRefs.notes(t"alt")))
+      .assert(_ == ((t"default note", t"custom note")))
+
+      test(m"add without force on an existing note aborts NotesFailed"):
+        val worktree = freshWorktree()
+        val hash = commitFile(worktree, t"a", t"a\n", t"first")
+        worktree.repo.notes.add(hash, t"first body")
+        capture[GitError](worktree.repo.notes.add(hash, t"second body")).reason
+      .assert(_ == GitError.Reason.NotesFailed)
+
+      test(m"add with force overwrites an existing note"):
+        val worktree = freshWorktree()
+        val hash = commitFile(worktree, t"a", t"a\n", t"first")
+        worktree.repo.notes.add(hash, t"first body")
+        worktree.repo.notes.add(hash, t"second body", force = true)
+        worktree.repo.notes.show(hash)
+      .assert(_ == t"second body")
+
+      test(m"append concatenates to an existing note"):
+        val worktree = freshWorktree()
+        val hash = commitFile(worktree, t"a", t"a\n", t"first")
+        worktree.repo.notes.add(hash, t"line one")
+        worktree.repo.notes.append(hash, t"line two")
+        val body = worktree.repo.notes.show(hash)
+        body.let(b => b.contains(t"line one") && b.contains(t"line two")).or(false)
+      .assert(_ == true)
+
+      test(m"remove deletes a note"):
+        val worktree = freshWorktree()
+        val hash = commitFile(worktree, t"a", t"a\n", t"first")
+        worktree.repo.notes.add(hash, t"a body")
+        worktree.repo.notes.remove(hash)
+        worktree.repo.notes.show(hash)
+      .assert(_.absent)
+
+      test(m"list on an empty namespace returns an empty stream"):
+        val worktree = freshWorktree()
+        commitFile(worktree, t"a", t"a\n", t"first")
+        worktree.repo.notes.list().to(List)
+      .assert(_.isEmpty)
+
+      test(m"list yields one entry per annotated commit"):
+        val worktree = freshWorktree()
+        val first  = commitFile(worktree, t"a", t"a\n", t"first")
+        val second = commitFile(worktree, t"b", t"b\n", t"second")
+        worktree.repo.notes.add(first, t"note one")
+        worktree.repo.notes.add(second, t"note two")
+        worktree.repo.notes.list().to(List).map(_._2).to(Set) == Set(first, second)
+      .assert(_ == true)
+
+      test(m"copy duplicates a note onto another commit"):
+        val worktree = freshWorktree()
+        val first  = commitFile(worktree, t"a", t"a\n", t"first")
+        val second = commitFile(worktree, t"b", t"b\n", t"second")
+        worktree.repo.notes.add(first, t"shared body")
+        worktree.repo.notes.copy(first, second)
+        worktree.repo.notes.show(second)
+      .assert(_ == t"shared body")
+
+      test(m"a Path on GitRefs is usable as a Refspec for revParse"):
+        val worktree = freshWorktree()
+        val hash = commitFile(worktree, t"a", t"a\n", t"first")
+        worktree.repo.notes.add(hash, t"body", ref = GitRefs.notes(t"custom"))
+        // refs/notes/custom now exists; revParse via the path resolves to a hash.
+        val noteRefHash = worktree.repo.revParse(GitRefs.notes(t"custom"))
+        noteRefHash.show.length
+      .assert(_ == 40)
+
+    // ----- commit-rooted note access -------------------------------------
+
+    suite(m"commit-rooted note access"):
+
+      test(m"commit / namespace builds a NoteRef at refs/notes/<namespace>"):
+        val worktree = freshWorktree()
+        val hash = commitFile(worktree, t"a", t"a\n", t"first")
+        (hash / t"foo").ref.encode
+      .assert(_ == t"refs/notes/foo")
+
+      test(m"chaining / extends the namespace path"):
+        val worktree = freshWorktree()
+        val hash = commitFile(worktree, t"a", t"a\n", t"first")
+        (hash / t"foo" / t"bar").ref.encode
+      .assert(_ == t"refs/notes/foo/bar")
+
+      test(m"(commit / namespace).read[Text] returns the note body"):
+        val worktree = freshWorktree()
+        given GitRepo = worktree.repo
+        val hash = commitFile(worktree, t"a", t"a\n", t"first")
+        worktree.repo.notes.add(hash, t"hello", ref = GitRefs.notes(t"greeting"))
+        (hash / t"greeting").read[Text]
+      .assert(_ == t"hello")
+
+      test(m"read aborts NoteNotFound when no note exists"):
+        val worktree = freshWorktree()
+        given GitRepo = worktree.repo
+        val hash = commitFile(worktree, t"a", t"a\n", t"first")
+        capture[GitError]((hash / t"missing").read[Text]).reason
+      .assert(_ == GitError.Reason.NoteNotFound)
+
+      test(m"continuation / on NoteRef rejects an invalid segment"):
+        val worktree = freshWorktree()
+        val hash = commitFile(worktree, t"a", t"a\n", t"first")
+        safely(hash / t"foo" / t"bad..segment").let(_.ref.encode)
+      .assert(_.absent)
