@@ -57,6 +57,20 @@ private[jacinta] object JsonParser:
   private inline val NumAfterESign = 5
   private inline val NumExp        = 6
 
+  // ASCII bytes of the JSON keyword literals, packed little-endian: byte at
+  // offset i goes into bits (i*8)..(i*8+7). Four-byte literals (`true`,
+  // `null`) fit an `Int`; `false` spans 5 bytes and uses a `Long` whose
+  // top 24 bits are unused (the parser reads exactly 5 bytes, so those
+  // bits aren't loaded). Allows the keyword check to collapse from a
+  // four-or-five-step `expect` chain into a single integer compare.
+  //
+  //   't' 'r' 'u' 'e'  → 0x65_75_72_74  (read LSB-first)
+  //   'n' 'u' 'l' 'l'  → 0x6C_6C_75_6E
+  //   'f' 'a' 'l' 's' 'e' (low 40 bits) → 0x0000_0065_736C_6166
+  private inline val TrueWord  = 0x6575_7274
+  private inline val NullWord  = 0x6C6C_756E
+  private inline val FalseWord = 0x0000_0065_736C_6166L
+
   private val TenPow: Array[Double] = Array.tabulate(23): i =>
     var p = 1.0
     var n = i
@@ -519,26 +533,63 @@ private[jacinta] final class JsonParser:
     if next() != byte then errorAt(issue)
 
   private def parseFalse(): false raises ParseError =
-    expect(LowerA, Issue.ExpectedFalse)
-    expect(LowerL, Issue.ExpectedFalse)
-    expect(LowerS, Issue.ExpectedFalse)
-    expect(LowerE, Issue.ExpectedFalse)
-    advance()
-    false
+    // Fast path: 5 bytes available in the local buffer. Pack them into a
+    // Long and compare against `FalseWord` in one step. Falls back to the
+    // byte-by-byte `expect` chain only at a buffer boundary.
+    if pos + 5 <= bufEnd then
+      val word: Long =
+        (bytes(pos)     & 0xFFL)         |
+        ((bytes(pos + 1) & 0xFFL) <<  8) |
+        ((bytes(pos + 2) & 0xFFL) << 16) |
+        ((bytes(pos + 3) & 0xFFL) << 24) |
+        ((bytes(pos + 4) & 0xFFL) << 32)
+
+      if word != FalseWord then errorAt(Issue.ExpectedFalse)
+      pos += 5
+      false
+    else
+      expect(LowerA, Issue.ExpectedFalse)
+      expect(LowerL, Issue.ExpectedFalse)
+      expect(LowerS, Issue.ExpectedFalse)
+      expect(LowerE, Issue.ExpectedFalse)
+      advance()
+      false
 
   private def parseTrue(): true raises ParseError =
-    expect(LowerR, Issue.ExpectedTrue)
-    expect(LowerU, Issue.ExpectedTrue)
-    expect(LowerE, Issue.ExpectedTrue)
-    advance()
-    true
+    if pos + 4 <= bufEnd then
+      val word: Int =
+        (bytes(pos)     & 0xFF)         |
+        ((bytes(pos + 1) & 0xFF) <<  8) |
+        ((bytes(pos + 2) & 0xFF) << 16) |
+        ((bytes(pos + 3) & 0xFF) << 24)
+
+      if word != TrueWord then errorAt(Issue.ExpectedTrue)
+      pos += 4
+      true
+    else
+      expect(LowerR, Issue.ExpectedTrue)
+      expect(LowerU, Issue.ExpectedTrue)
+      expect(LowerE, Issue.ExpectedTrue)
+      advance()
+      true
 
   private def parseNull(): Null raises ParseError =
-    expect(LowerU, Issue.ExpectedNull)
-    expect(LowerL, Issue.ExpectedNull)
-    expect(LowerL, Issue.ExpectedNull)
-    advance()
-    null
+    if pos + 4 <= bufEnd then
+      val word: Int =
+        (bytes(pos)     & 0xFF)         |
+        ((bytes(pos + 1) & 0xFF) <<  8) |
+        ((bytes(pos + 2) & 0xFF) << 16) |
+        ((bytes(pos + 3) & 0xFF) << 24)
+
+      if word != NullWord then errorAt(Issue.ExpectedNull)
+      pos += 4
+      null
+    else
+      expect(LowerU, Issue.ExpectedNull)
+      expect(LowerL, Issue.ExpectedNull)
+      expect(LowerL, Issue.ExpectedNull)
+      advance()
+      null
 
   private def parseNumber(first: Int, negative: Boolean)
   :   Double | Long | Bcd raises ParseError =
