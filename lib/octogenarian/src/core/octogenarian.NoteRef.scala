@@ -51,6 +51,11 @@ import GitError.Reason.*
 // `GitHash` into a `NoteRef` (given lives on `GitHash`'s companion in
 // `octogenarian.internal`), and further chaining (`noteRef / t"bar"`)
 // extends the namespace path via the given below.
+//
+// NB: this currently uses a `Divisible` instance for the entry-point lift
+// rather than a Serpentine-style `Conversion[GitHash, Path]`, because
+// Symbolism's generic `/` extension shadows any Conversion at method-
+// resolution time.  Revisit when Serpentine grows a first-class lift.
 object NoteRef:
   given continuation: Tactic[GitRefError]
   =>  NoteRef is Divisible by Text to NoteRef =
