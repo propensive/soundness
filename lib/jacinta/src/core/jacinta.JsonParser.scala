@@ -87,15 +87,19 @@ private[jacinta] object JsonParser:
 
   // Byte-class table for `parseString`'s fast-scan loop. Entry `i` is
   // 1 when byte `i` keeps the scan going (printable ASCII other than
-  // `"` and `\`), 0 when it ends it (`"`, `\`, any control byte or
-  // UTF-8 lead byte). Single load + compare per byte beats the
-  // three-compare chain `b >= 32 && b != Quote && b != Backslash`.
+  // `"` and `\`), 0 when it ends it (`"`, `\`, any control byte, or
+  // any byte ≥ 128 — UTF-8 continuation or lead). Single load + compare
+  // per byte beats the three-compare chain
+  // `b >= 32 && b != Quote && b != Backslash`. The 128–255 range stops
+  // for the same reason the original signed-Byte `b >= 32` test did:
+  // those bytes appear as negative when read as signed and need the
+  // multi-byte UTF-8 decoder in `tail`, not the fast slice path.
   private val StringScanContinue: Array[Byte] =
     val arr = new Array[Byte](256)
     var i = 0
     while i < 256 do
       arr(i) =
-        if i >= 32 && i != 0x22 /* `"` */ && i != 0x5C /* `\` */
+        if i >= 32 && i < 128 && i != 0x22 /* `"` */ && i != 0x5C /* `\` */
         then 1.toByte else 0.toByte
       i += 1
     arr
