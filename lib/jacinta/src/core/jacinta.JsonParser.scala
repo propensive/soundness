@@ -658,6 +658,12 @@ private[jacinta] final class JsonParser:
         case NumZero =>
           ch match
             case Period =>
+              // Drop the leading "0" — it's redundant for "0.xxx" and the
+              // BCD printer reinserts it on emit. Saves one nibble per such
+              // input, which can shift a value from `Array[Long]` to the
+              // tighter `Array[Int]` shape when it lands right at the
+              // 7-nibble boundary.
+              nibbles = 0
               appendNibble(0xA); floating = true; state = NumAfterDot; advance()
 
             case UpperE | LowerE =>
