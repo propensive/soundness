@@ -56,11 +56,11 @@ extension (json: Json.Ast)
   inline def isLong: Boolean = json.isInstanceOf[Long]
   inline def isDouble: Boolean = json.isInstanceOf[Double]
 
-  // High-precision number node. `Bcd` is `Array[Long]` (`[J`) at runtime
+  // High-precision number node. `Bcd` is `Array[Int]` (`[I`) at runtime
   // — distinct from `Array[Double]` (`[D`, the number-array node) and
   // `Array[AnyRef]` (`[Ljava/lang/Object;`, used for objects and
   // parity-padded heterogeneous arrays).
-  inline def isBcd: Boolean = json.isInstanceOf[Array[Long]]
+  inline def isBcd: Boolean = json.isInstanceOf[Array[Int]]
   inline def isString: Boolean = json.isInstanceOf[String]
   inline def isBoolean: Boolean = json.isInstanceOf[Boolean]
   inline def isNull: Boolean = json.asInstanceOf[AnyRef | Null] == null
@@ -141,22 +141,22 @@ extension (json: Json.Ast)
         expected(JsonPrimitive.Array) yet IArray[Json.Ast]()
 
   def double: Double raises JsonError = json.asMatchable match
-    case value: Double                 => value
-    case value: Long                   => value.toDouble
-    case value: Array[Long] @unchecked => value.asInstanceOf[Bcd].toDouble
-    case _                             => expected(JsonPrimitive.Number) yet 0.0
+    case value: Double                => value
+    case value: Long                  => value.toDouble
+    case value: Array[Int] @unchecked => value.asInstanceOf[Bcd].toDouble
+    case _                            => expected(JsonPrimitive.Number) yet 0.0
 
   def bcd: Bcd raises JsonError = json.asMatchable match
-    case value: Array[Long] @unchecked => value.asInstanceOf[Bcd]
-    case value: Long                   => Bcd(BigDecimal(value))
-    case value: Double                 => Bcd(BigDecimal(value))
-    case _                             => expected(JsonPrimitive.Number) yet Bcd(BigDecimal(0L))
+    case value: Array[Int] @unchecked => value.asInstanceOf[Bcd]
+    case value: Long                  => Bcd(BigDecimal(value))
+    case value: Double                => Bcd(BigDecimal(value))
+    case _                            => expected(JsonPrimitive.Number) yet Bcd(BigDecimal(0L))
 
   def long: Long raises JsonError = json.asMatchable match
-    case value: Long                   => value
-    case value: Double                 => value.toLong
-    case value: Array[Long] @unchecked => value.asInstanceOf[Bcd].toLong.or(0L)
-    case _                             => expected(JsonPrimitive.Number) yet 0L
+    case value: Long                  => value
+    case value: Double                => value.toLong
+    case value: Array[Int] @unchecked => value.asInstanceOf[Bcd].toLong.or(0L)
+    case _                            => expected(JsonPrimitive.Number) yet 0L
 
   def primitive: JsonPrimitive =
     if isNumber then JsonPrimitive.Number

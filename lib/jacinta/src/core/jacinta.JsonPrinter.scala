@@ -133,7 +133,7 @@ object JsonPrinter:
       case nums: Array[Double] @unchecked =>
         printNumberArray(nums)
 
-      case bcd: Array[Long] @unchecked =>
+      case bcd: Array[Int] @unchecked =>
         // High-precision number — emit the canonical JSON-number text from
         // the BCD nibble stream directly; this preserves all digits the
         // parser saw, in contrast to a `Double.toString` round-trip.

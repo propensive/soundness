@@ -44,27 +44,26 @@ import vacuous.*
 //   0xB     : exponent marker `e`
 //   0xC     : exponent marker `e-` (negative exponent — single nibble)
 //
-// Storage is an `Array[Long]` whose first element is a header word and whose
-// remaining elements pack 16 nibbles each. Nibbles within a Long are
-// LSB-first / least-recent-at-the-bottom — i.e., for a fully-packed Long the
-// oldest nibble is at bits 60–63 and the newest is at bits 0–3, matching the
-// `(content << 4) | n` accumulator in the parser. The trailing data Long may
-// be partially filled with K < 16 nibbles right-justified in bits 0..K*4-1;
+// Storage is an `Array[Int]` whose first element is a header word and whose
+// remaining elements pack 8 nibbles each. Nibbles within an `Int` are
+// LSB-first / least-recent-at-the-bottom — i.e., for a fully-packed `Int` the
+// oldest nibble is at bits 28–31 and the newest is at bits 0–3, matching the
+// `(content << 4) | n` accumulator in the parser. The trailing data `Int` may
+// be partially filled with K < 8 nibbles right-justified in bits 0..K*4-1;
 // the count in the header tells readers where the partial fill ends.
 //
 // Header word layout:
-//   bit 63        : sign (0 = non-negative, 1 = negative)
-//   bits 0–31     : total nibble count
-//   bits 32–62    : reserved (always 0)
-opaque type Bcd = Array[Long]
+//   bit 31        : sign (0 = non-negative, 1 = negative)
+//   bits 0–30     : total nibble count (up to ~2.1 billion)
+opaque type Bcd = Array[Int]
 
 object Bcd:
-  private inline val SignBit       = 0x8000000000000000L
-  private inline val CountMask     = 0xFFFFFFFFL
-  inline val NibblesPerLong = 16
+  private inline val SignBit   = 0x80000000
+  private inline val CountMask = 0x7FFFFFFF
+  inline val NibblesPerInt = 8
 
   // Internal: wrap a freshly-built header+data array as a `Bcd`.
-  private[jacinta] inline def wrap(arr: Array[Long]): Bcd = arr
+  private[jacinta] inline def wrap(arr: Array[Int]): Bcd = arr
 
   // Build a `Bcd` from a `BigDecimal`. Goes via `toPlainString` so the result
   // matches the in-AST representation a parser would produce for the same
@@ -114,32 +113,32 @@ object Bcd:
 
   // Incremental builder used by `JsonParser` to assemble a `Bcd` one nibble
   // at a time as it overflows the in-Long fast path. Keeps a growing
-  // `Array[Long]` of completed words and a current word being filled in.
+  // `Array[Int]` of completed words and a current word being filled in.
   final class Builder:
-    private var data: Array[Long] = new Array[Long](2)
+    private var data: Array[Int] = new Array[Int](2)
     private var wordIdx: Int = 0
-    private var word: Long = 0L
+    private var word: Int = 0
     private var inWord: Int = 0
     private var nibbles: Int = 0
 
     // Append one nibble (0x0–0xC) to the in-progress word. When the word
-    // fills (16 nibbles), it is committed to the `data` array.
+    // fills (8 nibbles), it is committed to the `data` array.
     def add(nibble: Int): Unit =
-      word = (word << 4) | (nibble & 0xFL)
+      word = (word << 4) | (nibble & 0xF)
       inWord += 1
       nibbles += 1
 
-      if inWord == NibblesPerLong then
+      if inWord == NibblesPerInt then
         ensureCapacity(wordIdx + 1)
         data(wordIdx) = word
         wordIdx += 1
-        word = 0L
+        word = 0
         inWord = 0
 
     // Replace the most recently-added nibble. Used by the parser to rewrite
     // an emitted `e` (0xB) as `e-` (0xC) when a `-` follows.
     def overwriteLast(nibble: Int): Unit =
-      val mask = 0xFL
+      val mask = 0xF
       val v = nibble & mask
 
       if inWord > 0 then word = (word & ~mask) | v
@@ -159,9 +158,9 @@ object Bcd:
     // Produce the final `Bcd`. The trailing partial word (if any) is
     // committed right-justified in its data slot.
     def finish(negative: Boolean): Bcd =
-      val totalDataLongs = if inWord > 0 then wordIdx + 1 else wordIdx
-      val arr = new Array[Long](1 + totalDataLongs)
-      arr(0) = (if negative then SignBit else 0L) | (nibbles.toLong & CountMask)
+      val totalDataInts = if inWord > 0 then wordIdx + 1 else wordIdx
+      val arr = new Array[Int](1 + totalDataInts)
+      arr(0) = (if negative then SignBit else 0) | (nibbles & CountMask)
       System.arraycopy(data, 0, arr, 1, wordIdx)
       if inWord > 0 then arr(1 + wordIdx) = word
       arr
@@ -169,39 +168,39 @@ object Bcd:
     private def ensureCapacity(needed: Int): Unit =
       if needed > data.length then
         val newSize = (data.length * 2).max(needed)
-        val newData = new Array[Long](newSize)
+        val newData = new Array[Int](newSize)
         System.arraycopy(data, 0, newData, 0, wordIdx)
         data = newData
 
   extension (bcd: Bcd)
-    def negative:    Boolean = (bcd(0) & SignBit) != 0L
-    def nibbleCount: Int     = (bcd(0) & CountMask).toInt
+    def negative:    Boolean = (bcd(0) & SignBit) != 0
+    def nibbleCount: Int     = bcd(0) & CountMask
 
     // Iterate nibbles in left-to-right (oldest-first) order, invoking the
     // action for each. Used by the printer to emit a JSON-number string and
     // by conversion routines (`toBigDecimal`, `toDouble`, `toLong`).
     inline def each(inline action: Int => Unit): Unit =
       val total = bcd.nibbleCount
-      val fullLongs = total/NibblesPerLong
-      val partial = total - fullLongs*NibblesPerLong
+      val fullInts = total/NibblesPerInt
+      val partial = total - fullInts*NibblesPerInt
       var i = 0
 
-      while i < fullLongs do
+      while i < fullInts do
         val w = bcd(1 + i)
-        var j = NibblesPerLong - 1
+        var j = NibblesPerInt - 1
 
         while j >= 0 do
-          action(((w >>> (j*4)) & 0xFL).toInt)
+          action((w >>> (j*4)) & 0xF)
           j -= 1
 
         i += 1
 
       if partial > 0 then
-        val w = bcd(1 + fullLongs)
+        val w = bcd(1 + fullInts)
         var j = partial - 1
 
         while j >= 0 do
-          action(((w >>> (j*4)) & 0xFL).toInt)
+          action((w >>> (j*4)) & 0xF)
           j -= 1
 
     // Render as a JSON number string (canonical form: digits, optional `.`

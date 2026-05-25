@@ -329,7 +329,7 @@ object Json extends Json2, Dynamic:
     // value. Used by the parser when every element of a JSON array fits the
     // in-Long fast path (≤ 15 nibbles); a number that overflows to `Bcd`
     // forces a fallback to the boxed (parity-padded) form. `Array[Double]`
-    // is `[D` at runtime — distinct from `[J` (`Bcd`) and
+    // is `[D` at runtime — distinct from `[I` (`Bcd`) and
     // `[Ljava/lang/Object;` (`IArray[Any]`), so no wrapping is needed.
     def numArr(values: Array[Double]): Ast = values
 
@@ -691,7 +691,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
         acc
 
-      case value: Array[Long] @unchecked =>
+      case value: Array[Int] @unchecked =>
         // High-precision number (`Bcd`) — hash via the BigDecimal
         // projection so a Bcd whose value equals a BigDecimal literal has
         // a consistent hash.
@@ -771,7 +771,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           case left: Long                   => left == right
           case left: Double                 => left == right
 
-          case left: Array[Long] @unchecked =>
+          case left: Array[Int] @unchecked =>
             left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(right)
 
           case _                            => false
@@ -780,7 +780,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           case left: Long                   => left == right
           case left: Double                 => left == right
 
-          case left: Array[Long] @unchecked =>
+          case left: Array[Int] @unchecked =>
             left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(right)
 
           case _                            => false
@@ -806,18 +806,18 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
             case _ => false
 
-        case right: Array[Long] @unchecked =>
+        case right: Array[Int] @unchecked =>
           // High-precision number (`Bcd`).
           val rb = right.asInstanceOf[Bcd]
 
           left.asMatchable match
-            case left: Long                   => BigDecimal(left) == rb.toBigDecimal
-            case left: Double                 => BigDecimal(left) == rb.toBigDecimal
+            case left: Long                  => BigDecimal(left) == rb.toBigDecimal
+            case left: Double                => BigDecimal(left) == rb.toBigDecimal
 
-            case left: Array[Long] @unchecked =>
+            case left: Array[Int] @unchecked =>
               left.asInstanceOf[Bcd].toBigDecimal == rb.toBigDecimal
 
-            case _                            => false
+            case _                           => false
 
         case right: IArray[Any] @unchecked =>
           // Heterogeneous array or object, distinguished by parity.
