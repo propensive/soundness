@@ -110,34 +110,48 @@ object JsonPrinter:
 
       append(']')
 
-    def printNumberArray(nums: Array[Double]): Unit =
-      val n = nums.length
+    def printBcdLongArray(bcds: Array[Long]): Unit =
+      val n = bcds.length
       append('[')
       val last = n - 1
       var index = 0
 
       while index < n do
-        val d = nums(index)
-        // Render whole-valued numbers without a trailing `.0` so that
-        // `[1, 2, 3]` round-trips through parse + print unchanged.
-        if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
-        then append(d.toLong.toString)
-        else append(d.toString)
+        append(Bcd.bcdLongText(bcds(index)).tt)
+        if index < last then append(',')
+        index += 1
 
+      append(']')
+
+    def printSmallBcdArray(smalls: Array[Int]): Unit =
+      val n = smalls.length
+      append('[')
+      val last = n - 1
+      var index = 0
+
+      while index < n do
+        append(Bcd.bcdIntText(smalls(index)).tt)
         if index < last then append(',')
         index += 1
 
       append(']')
 
     def recur(json: Json.Ast, indent: Int): Unit = json.asMatchable match
-      case nums: Array[Double] @unchecked =>
-        printNumberArray(nums)
+      case bcds: Array[Long] @unchecked =>
+        printBcdLongArray(bcds)
 
-      case bcd: Array[Long] @unchecked =>
+      case smalls: Array[Int] @unchecked =>
+        printSmallBcdArray(smalls)
+
+      case bcd: Array[Double] @unchecked =>
         // High-precision number — emit the canonical JSON-number text from
         // the BCD nibble stream directly; this preserves all digits the
         // parser saw, in contrast to a `Double.toString` round-trip.
         append(bcd.asInstanceOf[Bcd].text.tt)
+
+      case smallBcd: Int =>
+        // Small-BCD number — at most 7 nibbles packed into one Int.
+        append(Bcd.bcdIntText(smallBcd).tt)
 
       case arr: IArray[Any] @unchecked =>
         // Heterogeneous array or object, distinguished by length parity:

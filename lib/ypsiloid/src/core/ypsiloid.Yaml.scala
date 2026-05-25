@@ -573,7 +573,7 @@ object Yaml extends Yaml2, Dynamic:
     // value that overflowed `Long`/`Double` precision during parsing.
     object BcdValue:
       def unapply(ast: Yaml.Ast): Option[Bcd] = ast match
-        case b: Array[Long] @unchecked => Some(b.asInstanceOf[Bcd])
+        case b: Array[Double] @unchecked => Some(b.asInstanceOf[Bcd])
         case _                         => None
   
     object Str:
@@ -622,19 +622,19 @@ object Yaml extends Yaml2, Dynamic:
         // Cross-shape numeric comparisons: a `Bcd` may be equal in value
         // to a `Long`, `Double`, or another `Bcd`, when their canonical
         // BigDecimal projections compare equal.
-        case (a: Array[Long] @unchecked, b: Array[Long] @unchecked) =>
+        case (a: Array[Double] @unchecked, b: Array[Double] @unchecked) =>
           a.asInstanceOf[Bcd].toBigDecimal == b.asInstanceOf[Bcd].toBigDecimal
 
-        case (a: Array[Long] @unchecked, b: Long) =>
+        case (a: Array[Double] @unchecked, b: Long) =>
           a.asInstanceOf[Bcd].toBigDecimal == BigDecimal(b)
 
-        case (a: Array[Long] @unchecked, b: Double) =>
+        case (a: Array[Double] @unchecked, b: Double) =>
           a.asInstanceOf[Bcd].toBigDecimal == BigDecimal(b)
 
-        case (a: Long, b: Array[Long] @unchecked) =>
+        case (a: Long, b: Array[Double] @unchecked) =>
           BigDecimal(a) == b.asInstanceOf[Bcd].toBigDecimal
 
-        case (a: Double, b: Array[Long] @unchecked) =>
+        case (a: Double, b: Array[Double] @unchecked) =>
           BigDecimal(a) == b.asInstanceOf[Bcd].toBigDecimal
   
         case (a: Array[AnyRef] @unchecked, b: Array[AnyRef] @unchecked) =>
@@ -660,7 +660,7 @@ object Yaml extends Yaml2, Dynamic:
       case d: Double    => d.hashCode
       case s: String    => s.hashCode
   
-      case b: Array[Long] @unchecked =>
+      case b: Array[Double] @unchecked =>
         // Hash via the BigDecimal projection so a `Bcd` whose value equals
         // a numeric `Long`/`Double` literal has a consistent hash.
         b.asInstanceOf[Bcd].toBigDecimal.hashCode
@@ -1007,7 +1007,7 @@ object Yaml extends Yaml2, Dynamic:
       case _: Double                  => YamlPrimitive.Decimal
       // High-precision BCD numbers report as `Decimal`. The AST-level
       // distinction (`isBcd`) remains available for callers that care.
-      case _: Array[Long] @unchecked  => YamlPrimitive.Decimal
+      case _: Array[Double] @unchecked  => YamlPrimitive.Decimal
       case _: String                  => YamlPrimitive.Str
 
       case xs: Array[AnyRef] @unchecked =>

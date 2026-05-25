@@ -193,7 +193,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       // Three Merino rows exercising each `NumberMode` to visualise the
       // precision-vs-throughput trade-off on inputs that overflow the
       // in-Long fast path (every wei/gas value here is >15 nibbles).
-      bench(m"Parse file with Merino (Full / Bcd Array[Long])")
+      bench(m"Parse file with Merino (Full / Bcd Array[Double])")
         ( target = 1*Second, operationSize = size6, baseline = Baseline(compare = Min) ):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes6)(using jacinta.NumberMode.Full) }
 
