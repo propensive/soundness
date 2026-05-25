@@ -85,6 +85,25 @@ private[jacinta] object JsonParser:
     while n > 0 do { p *= 10.0; n -= 1 }
     p
 
+  // Byte-class table for `parseString`'s fast-scan loop. Entry `i` is
+  // 1 when byte `i` keeps the scan going (printable ASCII other than
+  // `"` and `\`), 0 when it ends it (`"`, `\`, any control byte, or
+  // any byte ≥ 128 — UTF-8 continuation or lead). Single load + compare
+  // per byte beats the three-compare chain
+  // `b >= 32 && b != Quote && b != Backslash`. The 128–255 range stops
+  // for the same reason the original signed-Byte `b >= 32` test did:
+  // those bytes appear as negative when read as signed and need the
+  // multi-byte UTF-8 decoder in `tail`, not the fast slice path.
+  private val StringScanContinue: Array[Byte] =
+    val arr = new Array[Byte](256)
+    var i = 0
+    while i < 256 do
+      arr(i) =
+        if i >= 32 && i < 128 && i != 0x22 /* `"` */ && i != 0x5C /* `\` */
+        then 1.toByte else 0.toByte
+      i += 1
+    arr
+
   private val pool: ThreadLocal[JsonParser] =
     ThreadLocal.withInitial{ () => new JsonParser }.nn
 
@@ -402,16 +421,10 @@ private[jacinta] final class JsonParser:
   private def parseString()(using Tactic[ParseError]): String = holding:
     val region = begin()
 
-    // Fast scan for plain printable ASCII that needs no escape handling. A
-    // signed Byte is >= 32 only when it's printable ASCII (32..127); negative
-    // bytes (0x80..0xFF) come out as -128..-1 < 32, so this single comparison
-    // rejects both control characters and UTF-8 lead bytes.
-    while
-      more && {
-        val b = peek
-        b >= 32 && b != Quote && b != Backslash
-      }
-    do advance()
+    // Fast scan for plain printable ASCII that needs no escape handling.
+    // The 256-entry `StringScanContinue` table collapses the three
+    // comparisons (`>= 32`, `!= "`, `!= \`) into a single load + compare.
+    while more && StringScanContinue(peek & 0xFF) != 0 do advance()
 
     if !more then errorAt(Issue.PrematureEnd, region)
 
@@ -433,12 +446,7 @@ private[jacinta] final class JsonParser:
   private def parseObjectKey()(using Tactic[ParseError]): String = holding:
     val region = begin()
 
-    while
-      more && {
-        val b = peek
-        b >= 32 && b != Quote && b != Backslash
-      }
-    do advance()
+    while more && StringScanContinue(peek & 0xFF) != 0 do advance()
 
     if !more then errorAt(Issue.PrematureEnd, region)
 
@@ -746,16 +754,14 @@ private[jacinta] final class JsonParser:
     if bcdOnly then
       // Array-element fast path: skip the decode loop and the `Double`
       // materialisation. Return a single-Long BCD value if it fits the
-      // 14-nibble cap, otherwise allocate a `Bcd` from whatever buffer
-      // the state machine already built (Builder if it overflowed; an
-      // ad-hoc seed if it stayed in the in-Long fast path with 15 nibbles).
+      // 14-nibble cap, allocate a 2-word `Bcd` directly for the 15-nibble
+      // boundary case, and use the Builder only when the in-Long path
+      // already overflowed.
       if bcdValid then
         if nibbles <= Bcd.MaxBcdLongNibbles then
           Bcd.packBcdLong(content, nibbles, negative)
         else
-          val b = new Bcd.Builder
-          b.seedFromLong(content, nibbles)
-          b.finish(negative): Bcd
+          Bcd.fromContent15(content, negative)
       else
         bcdBuilder.nn.finish(negative): Bcd
     else if bcdValid then
