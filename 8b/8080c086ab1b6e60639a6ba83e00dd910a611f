@@ -1,0 +1,29 @@
+{
+  "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAZcAAAAHc3NoLXJzYQAAAAMBAAEAAAGBANKeZiOgGy2ygR1XnKHjPk\nGD1dnDP8rPMDkaTfybosrPoQPXc6dnx28ZedTB+gQmW1RbBeFO4xOUWdP6MbJZbmQHko3e\n+OQAnqn8RD3zmJ4HYqG+OF1n9dS89tEG0yrlJaoMfWSm5uMK/iGeBVIAHPPPejKY41X0AP\nU/4G5o7+3Yv2JKcK/nB5vd1A0XBOnGJCOQGzOxxFAIX1t3btuEPyL04540eAOAtm6OxuMX\ntpy057iBQr89StE3OoQxU9Nxd8Qd0+6G1bqVjjdhhy+BU5D8Md3jkEyQP6Uan+nmcxA+TD\nG1m0ZNkusZqWtojXjgxqTCZqSiNO87JyyKtOpWLEeRlm9+hA7Xa8HPu8hsR+e0JhotXpLe\nxJvCBVK60ZTdzfmhCujT8GrXiRjMDMF7rHPyBaLIbUl5EuoU1yJyfu4pZdJgpxe1zHQX5I\nGGy8MXuOsJ9J2IqX9izuZINS5AsycfFX+Y1YvInzALxhAhEKjrsvyi/u3Kte/4hcoLvrbF\nwQAAAAxzb3VuZG5lc3MtY2kAAAAAAAAABnNoYTUxMgAAAZQAAAAMcnNhLXNoYTItNTEyAA\nABgMPXhLvyu24Qgmu+0HD+BifQmTDJNiTyy7bp21Bh+vi/xFk+uKeUZa0N2ljQd7ygR5e5\nyHFfbVuYpyfSAEp9GSrdKnIo+FPjUV9nhYLw56WdlOp92gdziHO4wuAf1YLDeM6jWZGUMI\nMS2cI0BO3KGBop7Tm/r709bL5tvnR91sivzQRwdcS3gICLAj9ko+9u77maPw4DZ4RSIoR6\n5H/MT+jVmwfgM/FzU/zD5Bt9nMgXDZA1U597f6WNB25ujU+WCx9NKqnVQsrwnUApMqlZID\nsqBDIM7owrIUzXj6HLf0M5+aufSAmtS/llLkT98oNZ9sg54+QqGle2qtMr+harV05XWfl3\n83JvZZA1ArCrLYDt/ES6M6Si30TuW2k2kkqXWzxWujtK4izMEAeHoEyHBf/0i4V7dlXV2A\nfVWrg9fNDf7Ta1cAagrzTz2YnlgppFV6feLijSJYKA+o28AbUWWbqzxZUBsCDp8OVHXwT7\n44plmKiw8nBLpWA+2XKGUw0ohQ==\n-----END SSH SIGNATURE-----\n",
+  "statement": {
+    "_type": "https://in-toto.io/Statement/v1",
+    "predicate": {
+      "commands": [
+        "./mill --ticker false --silent soundness.all.compile",
+        "./mill --ticker false --silent test.assembly",
+        "make ci"
+      ],
+      "commit": "8b8080c086ab1b6e60639a6ba83e00dd910a611f",
+      "ranAt": "2026-05-25T21:13:13Z",
+      "ranBy": "jon.pretty@propensive.com",
+      "result": "pass",
+      "tooling": {
+        "mill": "1.1.5"
+      }
+    },
+    "predicateType": "https://soundness.dev/local-ci/v1",
+    "subject": [
+      {
+        "digest": {
+          "sha256": "a258bbd08765a9d3a2f4a7c99b6c2a59870e09f9edb110be9ca798a8fec3b9e1"
+        },
+        "name": "soundness-ci-inputs"
+      }
+    ]
+  }
+}
