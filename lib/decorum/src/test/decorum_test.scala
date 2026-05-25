@@ -59,7 +59,7 @@ object Tests extends Suite(m"Decorum Tests"):
       . assert(_.contains("135"))
 
       test(m"Line longer than 100 columns is rejected"):
-        rules("val x = "+("a"*120)+"\n")
+        rules("val x = "+"a".repeat(120)+"\n")
       . assert(_.contains("230"))
 
       test(m"Odd indent is rejected"):
