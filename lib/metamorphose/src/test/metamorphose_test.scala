@@ -32,12 +32,11 @@
                                                                                                   */
 package metamorphose
 
-import contingency.*, strategies.throwUnsafely
 import language.experimental.genericNumberLiterals
-import probably.*
-import fulminate.*
-import rudiments.*
 
+import soundness.*
+
+import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
 
 object Tests extends Suite(m"Metamorphose tests"):

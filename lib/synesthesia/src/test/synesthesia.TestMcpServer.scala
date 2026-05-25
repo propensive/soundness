@@ -32,12 +32,7 @@
                                                                                                   */
 package synesthesia
 
-import anticipation.*
-import honeycomb.*
-import gossamer.*
-import revolution.*
-import turbulence.*
-import vacuous.*
+import soundness.*
 
 object TestMcpServer extends McpServer():
   class Session() extends McpSession

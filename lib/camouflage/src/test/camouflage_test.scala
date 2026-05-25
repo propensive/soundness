@@ -32,10 +32,7 @@
                                                                                                   */
 package camouflage
 
-import anticipation.*
-import fulminate.*
-import gossamer.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Camouflage tests"):
   def run(): Unit =

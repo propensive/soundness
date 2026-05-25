@@ -32,21 +32,9 @@
                                                                                                   */
 package gesticulate
 
-import anticipation.*
-import contingency.*
-import distillate.*
-import fulminate.*
-import gossamer.*
-import hieroglyph.*
-import probably.*
-import proscenium.*
-import rudiments.*
-import symbolism.*
-import turbulence.*
-import vacuous.*
+import soundness.*
 
 import charEncoders.utf8
-
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
 

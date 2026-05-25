@@ -32,13 +32,7 @@
                                                                                                   */
 package baroque
 
-import abacist.*
-import fulminate.*
-import gossamer.*
-import probably.*
-import quantitative.*
-import spectacular.*
-import symbolism.*
+import soundness.*
 
 given Decimalizer = Decimalizer(3)
 

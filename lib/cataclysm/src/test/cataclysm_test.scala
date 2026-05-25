@@ -32,8 +32,7 @@
                                                                                                   */
 package cataclysm
 
-import fulminate.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Cataclysm Tests"):
   def run(): Unit =

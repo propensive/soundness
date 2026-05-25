@@ -35,18 +35,7 @@ package parasite
 import java.util.concurrent as juc
 import juc.atomic as juca
 
-import anticipation.*
-import contingency.*
-import denominative.*
-import digression.*
-import fulminate.*
-import gossamer.*
-import probably.*
-import proscenium.*
-import quantitative.*
-import rudiments.*
-import symbolism.*
-import vacuous.*
+import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.empty

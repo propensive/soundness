@@ -32,8 +32,7 @@
                                                                                                   */
 package decorum
 
-import fulminate.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Decorum Tests"):
   def stub(body: String): String =

@@ -32,8 +32,7 @@
                                                                                                   */
 package contextual
 
-import fulminate.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Contextual Tests"):
   def run(): Unit =

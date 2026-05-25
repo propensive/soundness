@@ -32,16 +32,8 @@
                                                                                                   */
 package mosquito
 
-import fulminate.*
-import gossamer.*
-import hieroglyph.*, textMetrics.uniform
-import larceny.*
-import probably.*
-import proscenium.*
-import quantitative.*
-import spectacular.*
-import symbolism.*
-import vacuous.*
+import soundness.*
+import textMetrics.uniform
 
 given Decimalizer(4)
 

@@ -32,16 +32,9 @@
                                                                                                   */
 package caesura
 
-import anticipation.*
-import contingency.*, strategies.throwUnsafely
-import fulminate.*
-import gossamer.*
-import probably.*
-import proscenium.*
-import rudiments.*
-import spectacular.*
-import turbulence.*
+import soundness.*
 
+import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
 
 given decimalizer: Decimalizer = Decimalizer(1)

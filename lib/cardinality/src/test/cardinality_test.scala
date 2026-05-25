@@ -32,9 +32,7 @@
                                                                                                   */
 package cardinality
 
-import fulminate.*
-import larceny.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Cardinality tests"):
   def run(): Unit =

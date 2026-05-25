@@ -16,12 +16,9 @@
 
 package jacinta
 
-import contingency.*
-import gossamer.*
-import hieroglyph.*, charEncoders.utf8
-import polyvinyl.*
-import turbulence.*
+import soundness.*
 
+import charEncoders.utf8
 import strategies.throwUnsafely
 
 object RecordsExampleSchema extends RecordSchema(t"""{

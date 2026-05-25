@@ -32,7 +32,7 @@
                                                                                                   */
 package embarcadero
 
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Embarcadero Tests"):
   def run(): Unit = ()

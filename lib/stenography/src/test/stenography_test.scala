@@ -34,13 +34,7 @@ package stenography
 
 import language.experimental.pureFunctions
 
-import anticipation.*
-import fulminate.*
-import gossamer.*
-import prepositional.*
-import probably.*
-import spectacular.*
-import symbolism.*
+import soundness.*
 
 object Tests extends Suite(m"Stenography Tests"):
   def run(): Unit =
