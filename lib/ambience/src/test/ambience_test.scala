@@ -32,8 +32,7 @@
                                                                                                   */
 package ambience
 
-import fulminate.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Ambience Tests"):
   def run(): Unit =

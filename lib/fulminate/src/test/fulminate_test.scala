@@ -32,9 +32,7 @@
                                                                                                   */
 package fulminate
 
-import gossamer.*
-import larceny.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Fulminate Tests"):
   def run(): Unit =

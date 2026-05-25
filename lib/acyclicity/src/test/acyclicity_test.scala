@@ -32,8 +32,7 @@
                                                                                                   */
 package acyclicity
 
-import fulminate.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Acyclicity Tests"):
   def run(): Unit =

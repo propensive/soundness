@@ -32,25 +32,11 @@
                                                                                                   */
 package guillotine
 
-import ambience.*
-import ambience.workingDirectories.default
-import anticipation.*
-import anticipation.abstractables.durationIsAbstractable
-import contingency.*, strategies.throwUnsafely
-import distillate.*
-import fulminate.*
-import gossamer.*
-import nomenclature.*
-import parasite.*
-import prepositional.*
-import probably.*
-import proscenium.*
-import rudiments.*
-import serpentine.*
-import spectacular.*
-import turbulence.*
-import vacuous.*
+import soundness.*
 
+import workingDirectories.default
+import abstractables.durationIsAbstractable
+import strategies.throwUnsafely
 import errorDiagnostics.empty
 
 given silentExecEvent: ExecEvent is Loggable =

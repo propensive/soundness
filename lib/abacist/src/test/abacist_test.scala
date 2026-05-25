@@ -32,15 +32,7 @@
                                                                                                   */
 package abacist
 
-import anticipation.*
-import fulminate.*
-import gossamer.{t, Decimalizer}
-import larceny.*
-import probably.*
-import quantitative.*
-import rudiments.*
-import spectacular.*
-import symbolism.*
+import soundness.*
 
 given decimalizer: Decimalizer = Decimalizer(3)
 

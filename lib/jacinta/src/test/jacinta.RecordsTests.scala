@@ -16,17 +16,9 @@
 
 package jacinta
 
-import contingency.*
-import fulminate.*
-import gossamer.*
-import hieroglyph.*, charEncoders.utf8
-import kaleidoscope.*
-import polyvinyl.*
-import probably.*
-import turbulence.*
-import urticose.*
-import vacuous.*
+import soundness.*
 
+import charEncoders.utf8
 import errorDiagnostics.stackTraces
 import strategies.throwUnsafely
 

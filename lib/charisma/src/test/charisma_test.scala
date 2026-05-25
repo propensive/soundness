@@ -32,8 +32,7 @@
                                                                                                   */
 package charisma
 
-import fulminate.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Charisma Tests"):
   def run(): Unit =

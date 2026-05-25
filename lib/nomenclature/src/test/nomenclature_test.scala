@@ -32,13 +32,10 @@
                                                                                                   */
 package nomenclature
 
-import contingency.*, strategies.throwUnsafely
-import fulminate.*, errorDiagnostics.stackTraces
-import gossamer.*
-import prepositional.*
-import probably.*
-import rudiments.*
-import spectacular.*
+import soundness.*
+
+import strategies.throwUnsafely
+import errorDiagnostics.stackTraces
 
 sealed trait Id
 sealed trait Id2

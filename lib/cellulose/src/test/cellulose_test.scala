@@ -32,28 +32,15 @@
                                                                                                   */
 package cellulose
 
-import anticipation.*
-import contingency.*
-import distillate.*
-import fulminate.*
-import gossamer.*
-import parasite.*, threading.virtual
-import prepositional.*
-import probably.*
-import proscenium.*
-import rudiments.*
-import spectacular.*
-import turbulence.*
-import vacuous.*
-import zephyrine.*
+import soundness.*
 
+import threading.virtual
 import errorDiagnostics.stackTraces
+import strategies.throwUnsafely
 
 import Codl.Issue.*
 
 import java.io as ji
-
-import strategies.throwUnsafely
 
 case class User(id: Int, email: Text, privilege: List[Privilege])
 case class Privilege(name: Text, grant: Boolean)

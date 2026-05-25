@@ -32,13 +32,7 @@
                                                                                                   */
 package inimitable
 
-import anticipation.*
-import contingency.*
-import digression.*
-import fulminate.*
-import gossamer.*
-import larceny.*
-import probably.*
+import soundness.*
 
 import errorDiagnostics.stackTraces
 import autopsies.contrastExpectations

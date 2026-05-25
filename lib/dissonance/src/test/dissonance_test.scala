@@ -32,18 +32,10 @@
                                                                                                   */
 package dissonance
 
-import anticipation.*
-import contingency.*
-import denominative.*
-import fulminate.*
-import gossamer.*
-import probably.*
-import proscenium.*
-import turbulence.*
+import soundness.*
 
 import proximities.levenshteinDistance
 import caseSensitivity.sensitive
-
 import strategies.throwUnsafely
 
 object Tests extends Suite(m"Dissonance tests"):

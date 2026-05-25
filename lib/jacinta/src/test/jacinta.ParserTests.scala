@@ -32,25 +32,15 @@
                                                                                                   */
 package jacinta
 
-import ambience.*
-import anticipation.*, interfaces.paths.pathOnLinux
-import contingency.*, strategies.throwUnsafely
-import eucalyptus.*, logging.silent
-import fulminate.*
-import galilei.*
-import gossamer.*
-import hieroglyph.*, charEncoders.utf8
-import nomenclature.*
-import octogenarian.*, gitCommands.environmentDefault
-import prepositional.*
-import probably.*
-import proscenium.*
-import rudiments.*, workingDirectories.system
-import serpentine.*
-import turbulence.*
-import urticose.*, internetAccess.enabled
-import vacuous.*
-import zephyrine.*
+import soundness.*
+
+import interfaces.paths.pathOnLinux
+import strategies.throwUnsafely
+import logging.silent
+import charEncoders.utf8
+import gitCommands.environmentDefault
+import workingDirectories.system
+import internetAccess.enabled
 import errorDiagnostics.stackTraces
 
 import scala.compiletime.*

@@ -32,21 +32,11 @@
                                                                                                   */
 package parasite
 
+import java.lang as jl
 import java.util.concurrent as juc
 import juc.atomic as juca
 
-import anticipation.*
-import contingency.*
-import denominative.*
-import digression.*
-import fulminate.*
-import gossamer.*
-import probably.*
-import proscenium.*
-import quantitative.*
-import rudiments.*
-import symbolism.*
-import vacuous.*
+import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.empty
@@ -762,12 +752,12 @@ object Tests extends Suite(m"Parasite tests"):
         test(m"Retry with fixed tenacity actually delays between attempts"):
           given tenacity: Tenacity = Tenacity.fixed(40.0*Milli(Second)).limit(3)
           val attempts = juca.AtomicInteger(0)
-          val start = System.currentTimeMillis
+          val start = jl.System.currentTimeMillis
           val result = capture[RetryError]:
             retry: (surrender, persevere) ?=>
               attempts.incrementAndGet()
               persevere()
-          val elapsed = System.currentTimeMillis - start
+          val elapsed = jl.System.currentTimeMillis - start
           (attempts.get(), elapsed >= 80L)
         . assert: (n, ok) =>
             n >= 3 && n <= 4 && ok
@@ -798,9 +788,9 @@ object Tests extends Suite(m"Parasite tests"):
         test(m"Await on pre-fulfilled promise returns immediately, no waiters"):
           val promise = Promise[Int]()
           promise.fulfill(99)
-          val before = System.currentTimeMillis
+          val before = jl.System.currentTimeMillis
           val result = promise.await()
-          val elapsed = System.currentTimeMillis - before
+          val elapsed = jl.System.currentTimeMillis - before
           (result, elapsed < 100L)
         . assert(_ == (99, true))
 
@@ -1064,9 +1054,9 @@ object Tests extends Suite(m"Parasite tests"):
         test(m"Snooze sleeps for approximately the given duration"):
           val gate = Promise[Long]()
           val task = async:
-            val start = System.currentTimeMillis
+            val start = jl.System.currentTimeMillis
             snooze(50.0*Milli(Second))
-            gate.fulfill(System.currentTimeMillis - start)
+            gate.fulfill(jl.System.currentTimeMillis - start)
           task.await()
           gate.apply().or(0L) >= 40L
         . assert(_ == true)
@@ -1074,9 +1064,9 @@ object Tests extends Suite(m"Parasite tests"):
         test(m"Delay sleeps for relative duration"):
           val gate = Promise[Long]()
           val task = async:
-            val start = System.currentTimeMillis
+            val start = jl.System.currentTimeMillis
             delay(50.0*Milli(Second))
-            gate.fulfill(System.currentTimeMillis - start)
+            gate.fulfill(jl.System.currentTimeMillis - start)
           task.await()
           gate.apply().or(0L) >= 40L
         . assert(_ == true)
@@ -1421,12 +1411,12 @@ object Tests extends Suite(m"Parasite tests"):
         test(m"Retry exponential delays grow"):
           given tenacity: Tenacity = Tenacity.exponential(10.0*Milli(Second), 2.0).limit(4)
           val attempts = juca.AtomicInteger(0)
-          val start = System.currentTimeMillis
+          val start = jl.System.currentTimeMillis
           val result = capture[RetryError]:
             retry: (surrender, persevere) ?=>
               attempts.incrementAndGet()
               persevere()
-          val elapsed = System.currentTimeMillis - start
+          val elapsed = jl.System.currentTimeMillis - start
           // 4 attempts: delays 0, 10, 20, 40 = 70ms total minimum
           (attempts.get(), elapsed >= 60L)
         . assert: (n, ok) =>

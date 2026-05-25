@@ -32,18 +32,15 @@
                                                                                                   */
 package zeppelin
 
-import ambience.*, environments.virtualMachine, systems.virtualMachine
-import anticipation.*, interfaces.paths.javaIoFile
-import contingency.*, strategies.throwUnsafely
-import fulminate.*
-import gossamer.*
-import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, textSanitizers.skip
-import imperial.*
-import probably.*
-import proscenium.*
-import rudiments.*
-import serpentine.*
-import turbulence.*
+import soundness.*
+
+import environments.virtualMachine
+import systems.virtualMachine
+import interfaces.paths.javaIoFile
+import strategies.throwUnsafely
+import charEncoders.utf8
+import charDecoders.utf8
+import textSanitizers.skip
 
 import java.io.File
 
