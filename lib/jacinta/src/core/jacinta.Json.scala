@@ -171,7 +171,7 @@ trait Json2:
 
 object Json extends Json2, Dynamic:
   type JsonString  = String
-  type JsonNumber  = Long | Double | Bcd
+  type JsonNumber  = Long | Double | Bcd | Int
   type JsonBoolean = Boolean
   type JsonNull    = Null
   type JsonObject  = IArray[Any]
@@ -682,6 +682,11 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
       case value: Double     => value.hashCode
       case value: String     => value.hashCode
       case value: Boolean    => value.hashCode
+
+      case value: Int        =>
+        // Small-BCD number — hash through the BigDecimal projection so
+        // it stays consistent with the `Bcd` / `Long` / `Double` paths.
+        BigDecimal(Bcd.bcdIntText(value)).hashCode
 
       case value: Array[Double] @unchecked =>
         // Number-only array — hash each element through the same recursion

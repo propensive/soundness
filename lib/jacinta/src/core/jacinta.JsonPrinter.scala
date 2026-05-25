@@ -155,6 +155,10 @@ object JsonPrinter:
         // parser saw, in contrast to a `Double.toString` round-trip.
         append(bcd.asInstanceOf[Bcd].text.tt)
 
+      case smallBcd: Int =>
+        // Small-BCD number — at most 7 nibbles packed into one Int.
+        append(Bcd.bcdIntText(smallBcd).tt)
+
       case arr: IArray[Any] @unchecked =>
         // Heterogeneous array or object, distinguished by length parity:
         // even = object (alternating key/value); odd = array (with

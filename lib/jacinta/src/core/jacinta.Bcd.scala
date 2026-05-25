@@ -119,6 +119,52 @@ object Bcd:
   inline def bcdLongToDouble(value: Long): Double =
     java.lang.Double.parseDouble(bcdLongText(value))
 
+  // Single-Int BCD encoding for small numbers — a JSON number with up to
+  // 7 nibbles fits in a single `Int`, with the same per-Long bit-layout
+  // pattern but compressed:
+  //   bit 31        : sign (0 = non-negative, 1 = negative)
+  //   bits 28–30    : nibble count (3 bits; max 7)
+  //   bits 0–27     : up to 7 nibbles, oldest at the highest used position
+  //                   (bit 24–27 when count = 7), newest at bits 0–3.
+  // Stored as the `Int` variant of `JsonNumber` for numbers that fit; the
+  // boxed `Integer` runtime class is distinct from `Long` (`Long`) so the
+  // pattern match in `Json.Ast` extensions can distinguish them.
+  inline val MaxBcdIntNibbles = 7
+  private inline val BcdIntSignBit    = 0x8000_0000
+  private inline val BcdIntCountMask  = 0x7000_0000   // bits 28–30
+  private inline val BcdIntNibbleMask = 0x0FFF_FFFF   // bits 0–27
+
+  // Pack the parser's in-Long fast-path accumulator into the single-Int
+  // BCD format. The caller is responsible for `nibbles <= MaxBcdIntNibbles`.
+  inline def packBcdInt(content: Long, nibbles: Int, negative: Boolean): Int =
+    val sign  = if negative then BcdIntSignBit else 0
+    val count = (nibbles & 0x7) << 28
+    sign | count | (content.toInt & BcdIntNibbleMask)
+
+  inline def bcdIntNibbleCount(value: Int): Int = (value >>> 28) & 0x7
+  inline def bcdIntNegative(value: Int): Boolean = value < 0
+
+  def bcdIntText(value: Int): String =
+    val count = bcdIntNibbleCount(value)
+    if count == 0 then "0"
+    else
+      val sb = new java.lang.StringBuilder(count + 1)
+      if bcdIntNegative(value) then sb.append('-')
+      var j = count - 1
+
+      while j >= 0 do
+        val n = (value >>> (j*4)) & 0xF
+        if      n <= 9     then sb.append(('0' + n).toChar)
+        else if n == 0xA   then sb.append('.')
+        else if n == 0xB   then sb.append('e')
+        else if n == 0xC   then sb.append("e-")
+        j -= 1
+
+      sb.toString
+
+  inline def bcdIntToDouble(value: Int): Double =
+    java.lang.Double.parseDouble(bcdIntText(value))
+
   // Build a `Bcd` from a `BigDecimal`. Goes via `toPlainString` so the result
   // matches the in-AST representation a parser would produce for the same
   // textual JSON number.
