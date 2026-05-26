@@ -35,6 +35,7 @@ package stratiform
 import anticipation.*
 import contingency.*
 import fulminate.*
+import rudiments.*
 import vacuous.*
 
 import TelError.Reason
@@ -54,11 +55,51 @@ import TelSchema.*
 
 object TelTypeAssignment:
 
+  // Type-assign without running scalar / struct validators (per §21.4,
+  // when no Registry is supplied no E310 is raised).
   def assign(document: Tel.Document, schema: TelSchema)
   :     TelElement raises TelError =
     val compounds: IArray[Tel.Compound] = document.children.flatMap(_.compounds)
     val rootChildren = assignChildren(compounds, schema.document, schema)
     TelElement.Node(keywordIndex = Unset, elementType = schema.document, children = rootChildren)
+
+  // Type-assign AND validate. The Registry is invoked per §21:
+  // every Scalar value's validators list is applied to the assigned
+  // text; every Struct's validators list is applied to the assigned
+  // Node. An Invalid response raises E310.
+  def assign
+       (document:   Tel.Document,
+        schema:     TelSchema,
+        validators: TelValidator.Registry)
+  :     TelElement raises TelError =
+    val element = assign(document, schema)
+    validateElement(element, validators)
+    element
+
+  // Walk the type-assigned tree post-order, invoking validators for
+  // every Scalar value and Struct node.
+  private def validateElement
+       (element: TelElement, registry: TelValidator.Registry)
+  :     Unit raises TelError =
+    element match
+      case TelElement.Value(_, scalarType, text) =>
+        scalarType.validators.each: name =>
+          registry(TelValidator.Request.Scalar(name, text)) match
+            case TelValidator.Response.Valid      => ()
+            case TelValidator.Response.Invalid(_) => abort(TelError(Reason.ValidatorRejected))
+
+      case TelElement.Node(_, elementType, children) =>
+        children.each(validateElement(_, registry))
+        elementType match
+          case s: Struct =>
+            s.validators.each: name =>
+              registry(TelValidator.Request.Struct
+                       (name, element.asInstanceOf[TelElement.Node]))
+              match
+                case TelValidator.Response.Valid      => ()
+                case TelValidator.Response.Invalid(_) => abort(TelError(Reason.ValidatorRejected))
+
+          case _ => ()
 
   // Resolve a Reference to its concrete Type within the schema. Returns
   // the input type unchanged if not a Reference. Single-step (per
@@ -77,9 +118,15 @@ object TelTypeAssignment:
       case other => other
 
   // Walk the parent struct's members and produce a flat keyword order:
-  // a list of (keyword, member-index, fieldType). For Field members
-  // this is a single entry; SelectRef and Exclude are deferred.
-  private case class KeywordEntry(memberIndex: Int, fieldType: Type, member: Member)
+  // a list of (keyword, member-index, type). For Field members this is
+  // a single entry; for SelectRef members one entry per variant (all
+  // share the member index but carry the variant's Type and a back-
+  // reference to the variant keyword for atom-phase matching).
+  private case class KeywordEntry
+     ( memberIndex: Int,
+       entryType:   Type,
+       member:      Member,
+       variant:     Optional[Variant] = Unset )
 
   private def keywordMap(parent: Struct, schema: TelSchema)
   :     Map[Text, KeywordEntry] raises TelError =
@@ -87,9 +134,22 @@ object TelTypeAssignment:
     var idx = 0
     while idx < parent.members.length do
       parent.members(idx) match
-        case f: Field      => builder(f.keyword) = KeywordEntry(idx, f.fieldType, f)
-        case _: SelectRef  => () // SelectRef handling deferred
-        case _: Exclude    => () // Exclude is layer-only
+        case f: Field => builder(f.keyword) = KeywordEntry(idx, f.fieldType, f)
+        case s: SelectRef =>
+          // Resolve the referenced SelectDefinition and expand its
+          // variants into one keyword entry per variant.
+          val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
+            abort(TelError(Reason.UnresolvedReference))
+
+          var v = 0
+          while v < selectDef.variants.length do
+            val variant = selectDef.variants(v)
+            builder(variant.keyword) =
+              KeywordEntry(idx, variant.variantType, s, Optional(variant))
+
+            v += 1
+
+        case _: Exclude => () // Exclude is layer-only
 
       idx += 1
 
@@ -104,7 +164,18 @@ object TelTypeAssignment:
           case Flag      => true
           case _         => false
 
-      case _ => false
+      case s: SelectRef =>
+        // SelectRef is atom-assignable iff every variant of the
+        // referenced SelectDefinition resolves to Flag (§20).
+        val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
+          abort(TelError(Reason.UnresolvedReference))
+
+        selectDef.variants.forall: v =>
+          resolveType(v.variantType, schema) match
+            case Flag => true
+            case _    => false
+
+      case _: Exclude => false
 
   // The atom phase of §20.2: walk the parent compound's atoms in order,
   // advancing through the member list and assigning each atom to the
@@ -145,6 +216,19 @@ object TelTypeAssignment:
               else abort(TelError(Reason.AtomFlagKeywordMismatch))
 
             case _ => abort(TelError(Reason.AtomAtNonAssignablePos))
+
+        case s: SelectRef =>
+          // All-Flag SelectRef: atom text must match one of the
+          // referenced SelectDefinition's variant keywords.
+          val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
+            abort(TelError(Reason.UnresolvedReference))
+
+          selectDef.variants.find(_.keyword == atomText) match
+            case Some(_) =>
+              results += TelElement.Node(pos, Flag, IArray.empty)
+              if s.repeatable != Polarity.Loose then pos += 1
+
+            case None => abort(TelError(Reason.AtomVariantUnmatched))
 
         case _ => abort(TelError(Reason.AtomAtNonAssignablePos))
 
@@ -204,7 +288,7 @@ object TelTypeAssignment:
         entry:    KeywordEntry,
         schema:   TelSchema)
   :     TelElement raises TelError =
-    val resolved = resolveType(entry.fieldType, schema)
+    val resolved = resolveType(entry.entryType, schema)
 
     resolved match
       case s: Struct =>

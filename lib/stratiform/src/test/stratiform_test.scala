@@ -182,6 +182,40 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[TelError](TelTypeAssignment.assign(doc, personSchema)).reason
       . assert(_ == TelError.Reason.RequiredMemberAbsent)
 
+      // A schema with a Status SelectRef whose variants are all Flag,
+      // exercising sum-type handling.
+      val statusSchema = TelSchema(
+        name     = Text("status"),
+        document = TelSchema.Struct(
+          members = IArray(TelSchema.SelectRef
+           ( required   = TelSchema.Polarity.Implicit,
+             repeatable = TelSchema.Polarity.Implicit,
+             reference  = Text("Status") )),
+          validators = IArray.empty),
+        layers   = IArray.empty,
+        sigil    = Unset,
+        records  = IArray.empty,
+        scalars  = IArray.empty,
+        selects  = IArray(TelSchema.SelectDefinition(
+          name     = Text("Status"),
+          variants = IArray(
+            TelSchema.Variant(Text("active"),   TelSchema.Flag),
+            TelSchema.Variant(Text("archived"), TelSchema.Flag)),
+          validators = IArray.empty)))
+
+      test(m"SelectRef variant matches compound child"):
+        val doc = Tel.parseDocument(IArray.from("active\n".getBytes("UTF-8")))
+        val root = TelTypeAssignment.assign(doc, statusSchema)
+        root match
+          case TelElement.Node(_, _, children) => children.length
+          case _                               => -1
+      . assert(_ == 1)
+
+      test(m"unknown SelectRef variant raises E306"):
+        val doc = Tel.parseDocument(IArray.from("unknown\n".getBytes("UTF-8")))
+        capture[TelError](TelTypeAssignment.assign(doc, statusSchema)).reason
+      . assert(_ == TelError.Reason.UnknownKeyword)
+
     suite(m"Validators"):
       val reg = TelValidator.Registry.builtins
 
@@ -218,6 +252,26 @@ object Tests extends Suite(m"Stratiform Tests"):
           case TelValidator.Response.Invalid(_) => true
           case _                                => false
       . assert(identity)
+
+      test(m"type assignment with identifier validator rejects bad identifier"):
+        val schemaWithValidator = TelSchema(
+          name     = Text("ident"),
+          document = TelSchema.Struct(
+            members = IArray(TelSchema.Field
+             ( TelSchema.Polarity.Implicit, TelSchema.Polarity.Implicit, Text("name"),
+               TelSchema.Scalar(IArray(Text("identifier"))), Unset )),
+            validators = IArray.empty),
+          layers  = IArray.empty,
+          sigil   = Unset,
+          records = IArray.empty,
+          scalars = IArray.empty,
+          selects = IArray.empty)
+
+        val doc = Tel.parseDocument(IArray.from("name -bad\n".getBytes("UTF-8")))
+        capture[TelError]:
+          TelTypeAssignment.assign(doc, schemaWithValidator, TelValidator.Registry.builtins)
+        .reason
+      . assert(_ == TelError.Reason.ValidatorRejected)
 
     suite(m"Layer composition"):
       test(m"a layer adding a field extends the document Struct"):
