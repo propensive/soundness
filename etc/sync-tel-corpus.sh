@@ -41,6 +41,12 @@ UPSTREAM_SHA=$(git rev-parse HEAD)
 cd - > /dev/null
 echo "$UPSTREAM_SHA" > "$TARGET/UPSTREAM_SHA"
 
-pos_count=$(ls "$TARGET/pos/"*.tel | wc -l | tr -d ' ')
-neg_count=$(ls "$TARGET/neg/"*.tel | wc -l | tr -d ' ')
+# Index files list the corpus case stems (without extension). Used by the
+# Scala test loader to enumerate cases via ClassLoader.getResourceAsStream
+# without filesystem walking.
+ls "$TARGET/pos/"*.tel | xargs -n1 basename | sed 's/\.tel$//' | sort > "$TARGET/pos.index"
+ls "$TARGET/neg/"*.tel | xargs -n1 basename | sed 's/\.tel$//' | sort > "$TARGET/neg.index"
+
+pos_count=$(wc -l < "$TARGET/pos.index" | tr -d ' ')
+neg_count=$(wc -l < "$TARGET/neg.index" | tr -d ' ')
 echo "Synced: $pos_count positive + $neg_count negative cases at $UPSTREAM_SHA"
