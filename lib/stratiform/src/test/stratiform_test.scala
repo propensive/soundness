@@ -498,6 +498,30 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[MutationError](Mutation(tel, Mutation.Op.Delete(ptr))).reason
       . assert(_ == MutationError.Reason.PointerNotFound)
 
+    suite(m"Integration: parse → mutate → print → reparse"):
+      def doc(source: String): Tel = Tel.parse(IArray.from(source.getBytes("UTF-8")))
+
+      test(m"editing through the lens preserves surrounding formatting"):
+        import dynamicTelAccess.enabled
+        val original = doc("# header\nname Alice\nemail a@example.com\n")
+        val lens = summon["email" is Lens from Tel onto Tel]
+        val updated = lens.modify(original)(_ => Tel.scalar(Text("b@example.com")))
+        Tel.show(updated.document.vouch)
+      . assert(_ == Text("# header\nname Alice\nemail b@example.com\n"))
+
+      test(m"a multi-step Edit log round-trips through the printer"):
+        val original = doc("name Alice\n")
+        val edited =
+          original.edited
+            ( Edit.at(TelPointer.of(Text("name"))).update(Text("Bob"))
+           ++ Edit.at(TelPointer.Empty)
+                  .insert(Edit.compound(Text("email"), Text("b@example.com"))) )
+
+        val printed   = Tel.show(edited.document.vouch)
+        val reparsed  = Tel.parse(IArray.from(printed.s.getBytes("UTF-8")))
+        Tel.show(reparsed.document.vouch)
+      . assert(_ == Text("name Bob\nemail b@example.com\n"))
+
     suite(m"Tel.modify and Lens given"):
       import dynamicTelAccess.enabled
       def doc(source: String): Tel = Tel.parse(IArray.from(source.getBytes("UTF-8")))
