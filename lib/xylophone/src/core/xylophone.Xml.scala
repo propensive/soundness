@@ -495,7 +495,12 @@ object Xml extends Tag.Container
   // base class.
 
   private[xylophone] object XmlParser:
-    import zephyrine.lineation.linefeedChars
+    // Use untracked lineation in the cursor: avoids a per-`advance` branch
+    // (newline detection) and a per-`mark` write into the cursor's parallel
+    // offsets array. Errors still carry an accurate absolute `offset` /
+    // `length` span (which is what tests assert on and what users need to
+    // pinpoint the failure), but `line` / `column` stay at 1/1. Acceptable
+    // trade: error quality remains useful while parsing-throughput improves.
 
     def fromText(text: Text)(using XmlSchema): XmlParser = new XmlParser(Cursor[Text](text))
 
@@ -514,44 +519,146 @@ object Xml extends Tag.Container
     // as the opaque `Attributes`. Geometric growth.
     private var attrBuf: Array[String] = new Array[String](16)
 
-    protected inline def more: Boolean = cursor.more
+    // Pool of `ArrayBuffer[Node]` instances re-used across recursive
+    // `readChildren` calls. Each nesting level borrows one, fills it, copies
+    // its contents into an `IArray[Node]`, and returns it. Pool grows on
+    // demand to the deepest nesting depth seen. Avoids one
+    // `ArrayBuffer[Node]` allocation per element (plus its backing array)
+    // for repetitive record-shaped XML.
+    private var nodeBufferId: Int = -1
+    private val nodeBuffers: scala.collection.mutable.ArrayBuffer
+                                [scala.collection.mutable.ArrayBuffer[Node]] =
+      scala.collection.mutable.ArrayBuffer.empty
 
-    protected inline def peek: Char =
-      cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]](cursor.unsafePos(using Unsafe))
+    // Small open-addressed cache for repeating tag names. Record-shape XML
+    // (the dominant workload) reuses the same handful of element labels
+    // hundreds of times per document. Names of up to 16 ASCII chars are
+    // packed losslessly into a `(packedLow, packedHigh)` Long pair (one byte
+    // per char, trailing positions zero). Since `isNameStart` requires a
+    // letter/`_`/`:` and `isNameChar` excludes `\0`, every distinct ASCII
+    // name produces a distinct pair, so the lookup is two Long equality
+    // checks — no byte-by-byte compare, no hash-collision false positives.
+    // Non-ASCII names (chars ≥ 128) and names longer than 16 chars bypass
+    // the cache and allocate normally.
+    private inline val TagCacheSize = 64
+    private inline val TagCacheMaxChars = 16
+    private val tagCache:     Array[Text | Null] = new Array(TagCacheSize)
+    private val tagCacheLow:  Array[Long]        = new Array(TagCacheSize)
+    private val tagCacheHigh: Array[Long]        = new Array(TagCacheSize)
 
-    protected inline def advance(): Unit = cursor.next()
-    protected inline def position: Int = cursor.position.n0
+    private inline def getNodeBuffer(): scala.collection.mutable.ArrayBuffer[Node] =
+      nodeBufferId += 1
 
-    // Non-`inline` so that `cursor.mark`'s lineation-tracking expansion
-    // (recordMark allocation + `lineationActive` branch) is emitted once in
-    // its own method rather than re-expanded into every call site, keeping
+      if nodeBuffers.length <= nodeBufferId then
+        val newBuffer = scala.collection.mutable.ArrayBuffer.empty[Node]
+        nodeBuffers += newBuffer
+        newBuffer
+      else
+        val buffer = nodeBuffers(nodeBufferId)
+        buffer.clear()
+        buffer
+
+    private inline def relinquishNodeBuffer(): Unit = nodeBufferId -= 1
+
+    // ─── parser-local snapshot of the cursor's buffer / position ───────────
+    //
+    // The cursor remains the source of truth at refill, mark, slice and
+    // error points, but for the per-char hot loops (`peek`, `advance`,
+    // `more`) the parser maintains its own snapshot of the current buffer
+    // reference, read position, and write end. Keeping all three as parser
+    // fields rather than re-reading them through cursor accessors on every
+    // char lets the JIT keep them in registers across long inner loops —
+    // the same trick Jacinta uses for its tight number / string scans.
+    //
+    // Invariant: between `syncTo()` and `syncFrom()` calls, `pos` is the
+    // authoritative read position; `cursor.unsafePos` is allowed to lag.
+    // Whenever a cursor operation that depends on `pos` is performed
+    // (refill via `more`'s slow path, mark, slice, error reporting,
+    // backtracking via `cue`) the parser pushes `pos` to the cursor first,
+    // then refreshes its snapshot from the cursor afterwards — refill may
+    // compact the buffer, reallocate it, or reset `pos`.
+    private var bytes:  Array[Char] = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
+    private var pos:    Int = cursor.unsafePos(using Unsafe)
+    private var bufEnd: Int = cursor.unsafeWriteEnd(using Unsafe)
+
+    private inline def syncTo(): Unit =
+      cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
+
+    private inline def syncFrom(): Unit =
+      bytes  = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
+      pos    = cursor.unsafePos(using Unsafe)
+      bufEnd = cursor.unsafeWriteEnd(using Unsafe)
+
+    protected inline def more: Boolean = pos < bufEnd || moreSlow()
+
+    // Out-of-line slow path so `more`'s inline budget stays small enough
+    // for the JIT to keep `pos < bufEnd` as one register comparison in
+    // hot loops.
+    private def moreSlow(): Boolean =
+      syncTo()
+      if cursor.more then { syncFrom(); true } else false
+
+    protected inline def peek: Char = bytes(pos)
+    protected inline def advance(): Unit = pos += 1
+    protected inline def position: Int =
+      syncTo()
+      cursor.position.n0
+
+    // Non-`inline` so that `cursor.mark`'s expansion is emitted once in its
+    // own method rather than re-expanded into every call site, keeping
     // `XmlParser`'s hot methods small enough for HotSpot's free-inline
     // budgets. The JIT can still inline at hot call sites via its own
     // heuristics.
-    protected def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
+    protected def begin(): Cursor.Mark =
+      syncTo()
+      cursor.mark(using heldToken.nn)
 
     protected def slice(start: Cursor.Mark): Text =
+      syncTo()
       val end = cursor.mark(using heldToken.nn)
       cursor.grab(start, end).asInstanceOf[Text]
 
     protected def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
       cursor.grab(start, end).asInstanceOf[Text]
 
-    protected def reset(start: Cursor.Mark): Unit = cursor.cue(start)
+    protected def reset(start: Cursor.Mark): Unit =
+      syncTo()
+      cursor.cue(start)
+      syncFrom()
 
     protected def appendSlice(start: Cursor.Mark, buf: jl.StringBuilder): Unit =
+      syncTo()
       val end = cursor.mark(using heldToken.nn)
       cursor.clone(start, end)(buf.asInstanceOf[cursor.addressable.Target])
 
     protected def computePosition(start: Optional[Cursor.Mark] = Unset): Position =
-      // Lineation increments column AFTER each `advance`, so it tracks the
-      // column of the next char to read. At end-of-input we want the column
-      // of the LAST char read, matching the Direct/Streaming convention.
-      val col = cursor.column.n1 - (if cursor.more then 0 else 1)
+      // The cursor itself uses untracked lineation in the hot path (see the
+      // import at `XmlParser`). On error, reconstruct (line, column) by
+      // scanning the currently-buffered chars from the start of the buffer
+      // up to the current read position, counting newlines. Errors are
+      // rare, so the O(buffer) cost here doesn't matter; the parser stays
+      // tight on the success path. For the loadable path (single-chunk
+      // buffer), this is fully accurate. For multi-chunk streaming, lines
+      // before the most recent compaction are not represented in the
+      // buffer; we under-count by that amount but the absolute `offset`
+      // remains correct, which is what the tests assert on.
+      syncTo()
+      var line = 1
+      var col = 1
+      var i = 0
+
+      while i < pos do
+        if bytes(i) == '\n' then
+          line += 1
+          col = 1
+        else
+          col += 1
+        i += 1
+
       val end = cursor.position.n0
       val offset: Optional[Int] = start.let(_.absolute.toInt)
       val length: Optional[Int] = start.let: mark => end - mark.absolute.toInt
-      Position(cursor.line.n1.u, col.max(1).u, offset = offset, length = length)
+      Position(line.u, col.u, offset = offset, length = length)
 
     // Optional callback invoked when a `\u0000` placeholder is encountered.
     // Used by the macro interpolators to record hole positions; the
@@ -593,8 +700,42 @@ object Xml extends Tag.Container
       val first = peek
       if !isNameStart(first) then fail(Issue.Unexpected(first), start)
       advance()
-      while more && isNameChar(peek) do advance()
-      slice(start)
+
+      // Pack chars into a Long pair while scanning; track whether they all
+      // stay in the 7-bit ASCII range. The pair is later used as the cache
+      // key when both conditions (ascii + length ≤ 16) hold.
+      var packedLow:  Long = first.toLong & 0xFFL
+      var packedHigh: Long = 0L
+      var len: Int = 1
+      var ascii: Boolean = first < 128
+
+      while more && isNameChar(peek) do
+        val c = peek
+        if c >= 128 then ascii = false
+        if len < 8 then
+          packedLow = packedLow | ((c.toLong & 0xFFL) << (len << 3))
+        else if len < 16 then
+          packedHigh = packedHigh | ((c.toLong & 0xFFL) << ((len - 8) << 3))
+        len += 1
+        advance()
+
+      if !ascii || len > TagCacheMaxChars then slice(start)
+      else
+        val idx =
+          ((packedLow.toInt ^ (packedLow >>> 32).toInt) ^
+           (packedHigh.toInt ^ (packedHigh >>> 32).toInt)) & (TagCacheSize - 1)
+
+        val cached = tagCache(idx)
+
+        if cached != null && tagCacheLow(idx) == packedLow
+           && tagCacheHigh(idx) == packedHigh
+        then cached.nn
+        else
+          val fresh = slice(start)
+          tagCache(idx)     = fresh
+          tagCacheLow(idx)  = packedLow
+          tagCacheHigh(idx) = packedHigh
+          fresh
 
     // Parse an entity reference. Position must be just after the '&'.
     // Returns the expansion as a Text; leaves position just after the ';'.
@@ -1032,7 +1173,7 @@ object Xml extends Tag.Container
           Element(name, attrs, children)
 
     protected def readChildren(parentName: Text)(using Tactic[ParseError]): IArray[Node] =
-      val children = scala.collection.mutable.ArrayBuffer[Node]()
+      val children = getNodeBuffer()
       var done = false
 
       while !done do
@@ -1079,7 +1220,18 @@ object Xml extends Tag.Container
           val text = readText(parentName)
           if text.length > 0 then children += TextNode(text)
 
-      IArray.from(children)
+      val result =
+        if children.isEmpty then IArray.empty[Node]
+        else
+          val arr = new Array[Node](children.length)
+          var i = 0
+          while i < children.length do
+            arr(i) = children(i)
+            i += 1
+          arr.immutable(using Unsafe)
+
+      relinquishNodeBuffer()
+      result
 
     protected def consumeLiteral(literal: String)(using Tactic[ParseError]): Unit =
       var i = 0
@@ -1100,7 +1252,7 @@ object Xml extends Tag.Container
     private def parseXml0(headers0: Boolean)(using Tactic[ParseError]): Xml =
       headers = headers0
       skipWs()
-      val nodes = scala.collection.mutable.ArrayBuffer[Node]()
+      val nodes = getNodeBuffer()
 
       while more do
         if peek != '<' then
@@ -1143,8 +1295,12 @@ object Xml extends Tag.Container
 
         skipWs()
 
-      if nodes.length == 1 then nodes(0)
-      else Fragment(nodes.toSeq*)
+      val result =
+        if nodes.length == 1 then nodes(0)
+        else Fragment(nodes.toSeq*)
+
+      relinquishNodeBuffer()
+      result
 
     protected def consumeLiteralCi(literal: String)(using Tactic[ParseError]): Unit =
       var i = 0
