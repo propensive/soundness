@@ -182,6 +182,43 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[TelError](TelTypeAssignment.assign(doc, personSchema)).reason
       . assert(_ == TelError.Reason.RequiredMemberAbsent)
 
+    suite(m"Validators"):
+      val reg = TelValidator.Registry.builtins
+
+      test(m"string validator accepts any text"):
+        reg(TelValidator.Request.Scalar(Text("string"), Text("anything")))
+      . assert(_ == TelValidator.Response.Valid)
+
+      test(m"identifier accepts kebab-case"):
+        reg(TelValidator.Request.Scalar(Text("identifier"), Text("first-name")))
+      . assert(_ == TelValidator.Response.Valid)
+
+      test(m"identifier rejects leading hyphen"):
+        reg(TelValidator.Request.Scalar(Text("identifier"), Text("-leading"))) match
+          case TelValidator.Response.Invalid(_) => true
+          case _                                => false
+      . assert(identity)
+
+      test(m"type-name accepts PascalCase"):
+        reg(TelValidator.Request.Scalar(Text("type-name"), Text("PhoneNumber")))
+      . assert(_ == TelValidator.Response.Valid)
+
+      test(m"type-name rejects leading lowercase"):
+        reg(TelValidator.Request.Scalar(Text("type-name"), Text("phoneNumber"))) match
+          case TelValidator.Response.Invalid(_) => true
+          case _                                => false
+      . assert(identity)
+
+      test(m"sigil accepts a permitted symbol"):
+        reg(TelValidator.Request.Scalar(Text("sigil"), Text("#")))
+      . assert(_ == TelValidator.Response.Valid)
+
+      test(m"sigil rejects letters"):
+        reg(TelValidator.Request.Scalar(Text("sigil"), Text("a"))) match
+          case TelValidator.Response.Invalid(_) => true
+          case _                                => false
+      . assert(identity)
+
     suite(m"Layer composition"):
       test(m"a layer adding a field extends the document Struct"):
         val base = TelSchema(
