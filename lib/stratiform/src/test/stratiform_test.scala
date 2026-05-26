@@ -406,6 +406,106 @@ object Tests extends Suite(m"Stratiform Tests"):
         cc.firstName.as[Text]
       . assert(_ == Text("Alice"))
 
+    suite(m"Mutation primitives"):
+      def doc(source: String): Tel = Tel.parse(IArray.from(source.getBytes("UTF-8")))
+
+      test(m"UpdateAtom rewrites the targeted inline atom"):
+        val tel    = doc("name Alice\n")
+        val ptr    = TelPointer.of(Text("name"))
+        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, Text("Bob")))
+        Tel.show(result.document.vouch)
+      . assert(_ == Text("name Bob\n"))
+
+      test(m"AttachRemark adds a remark to the targeted compound"):
+        val tel    = doc("name Alice\n")
+        val ptr    = TelPointer.of(Text("name"))
+        val result = Mutation(tel, Mutation.Op.AttachRemark(ptr, Text("primary contact")))
+        Tel.show(result.document.vouch)
+      . assert(_ == Text("name Alice  # primary contact\n"))
+
+      test(m"RemoveRemark drops a previously attached remark"):
+        val tel    = doc("name Alice  # noted\n")
+        val ptr    = TelPointer.of(Text("name"))
+        val result = Mutation(tel, Mutation.Op.RemoveRemark(ptr))
+        Tel.show(result.document.vouch)
+      . assert(_ == Text("name Alice\n"))
+
+      test(m"Insert appends a child compound to the parent"):
+        val tel    = doc("contact\n  name Alice\n")
+        val newCompound = Tel.Compound
+                          (Text("email"),
+                           IArray(Tel.Atom.Inline(Text("alice@example.com"), 1)),
+                           Unset, IArray.empty)
+        val ptr    = TelPointer.of(Text("contact"))
+        val result = Mutation(tel, Mutation.Op.Insert(ptr, newCompound))
+        Tel.show(result.document.vouch)
+      . assert(_ == Text("contact\n  name Alice\n  email alice@example.com\n"))
+
+      test(m"Delete removes the addressed compound"):
+        val tel    = doc("name Alice\nemail alice@example.com\n")
+        val ptr    = TelPointer.of(Text("email"))
+        val result = Mutation(tel, Mutation.Op.Delete(ptr))
+        Tel.show(result.document.vouch)
+      . assert(_ == Text("name Alice\n"))
+
+      test(m"InsertBefore places a new sibling before the target"):
+        val tel    = doc("b two\n")
+        val a      = Tel.Compound
+                      (Text("a"), IArray(Tel.Atom.Inline(Text("one"), 1)), Unset, IArray.empty)
+        val ptr    = TelPointer.of(Text("b"))
+        val result = Mutation(tel, Mutation.Op.InsertBefore(ptr, a))
+        Tel.show(result.document.vouch)
+      . assert(_ == Text("a one\nb two\n"))
+
+      test(m"InsertAfter places a new sibling after the target"):
+        val tel    = doc("a one\n")
+        val b      = Tel.Compound
+                      (Text("b"), IArray(Tel.Atom.Inline(Text("two"), 1)), Unset, IArray.empty)
+        val ptr    = TelPointer.of(Text("a"))
+        val result = Mutation(tel, Mutation.Op.InsertAfter(ptr, b))
+        Tel.show(result.document.vouch)
+      . assert(_ == Text("a one\nb two\n"))
+
+      test(m"Replace swaps a compound for a new one"):
+        val tel    = doc("name Alice\n")
+        val replacement = Tel.Compound
+                           (Text("name"), IArray(Tel.Atom.Inline(Text("Charlie"), 1)),
+                            Unset, IArray.empty)
+        val ptr    = TelPointer.of(Text("name"))
+        val result = Mutation(tel, Mutation.Op.Replace(ptr, replacement))
+        Tel.show(result.document.vouch)
+      . assert(_ == Text("name Charlie\n"))
+
+      test(m"SetFlag attaches a flag-typed child compound"):
+        val tel    = doc("opt\n")
+        val ptr    = TelPointer.of(Text("opt"))
+        val result = Mutation(tel, Mutation.Op.SetFlag(ptr, Text("enabled")))
+        Tel.show(result.document.vouch)
+      . assert(_ == Text("opt\n  enabled\n"))
+
+      test(m"UnsetFlag removes a previously set flag"):
+        val tel    = doc("opt\n  enabled\n")
+        val ptr    = TelPointer.of(Text("opt"))
+        val result = Mutation(tel, Mutation.Op.UnsetFlag(ptr, Text("enabled")))
+        Tel.show(result.document.vouch)
+      . assert(_ == Text("opt\n"))
+
+      test(m"sequenced ops apply in order"):
+        val tel    = doc("name Alice\n")
+        val ptr    = TelPointer.of(Text("name"))
+        val ops    = Seq
+                      ( Mutation.Op.UpdateAtom(ptr, 0, Text("Bob")),
+                        Mutation.Op.AttachRemark(ptr, Text("note")) )
+        val result = Mutation(tel, ops)
+        Tel.show(result.document.vouch)
+      . assert(_ == Text("name Bob  # note\n"))
+
+      test(m"pointer with no match raises PointerNotFound"):
+        val tel = doc("name Alice\n")
+        val ptr = TelPointer.of(Text("missing"))
+        capture[MutationError](Mutation(tel, Mutation.Op.Delete(ptr))).reason
+      . assert(_ == MutationError.Reason.PointerNotFound)
+
     suite(m"Negative corpus (E1xx parsing)"):
       CorpusLoader.negative.each: testcase =>
         CorpusLoader.expectedCode(testcase.stem).let: code =>
