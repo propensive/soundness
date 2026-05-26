@@ -47,33 +47,59 @@ form `line_0 LF line_1 LF … LF line_{n-1} LF`".
 
 ## Phase status
 
-Phase 1 (presentation parser + printer + round-trip) and most of phase 2
-are landed on the `stratiform/initial` branch:
+Phases 1 and 2 fully landed; phase 3 (schema) substantially progressed.
 
-- `Tel` value class wrapping a `Subtree` (Document or Compound) with
-  `as[T]` typed access
+**Phase 1 — presentation parser + printer:** all 117 positive corpus
+cases parse and round-trip; 10 of 23 negative E1xx cases detect the
+expected E-code.
+
+**Phase 2 — typed access surface:**
+- `Tel` value class wrapping `Subtree` (Document | Compound)
 - `Encodable in Tel` / `Decodable in Tel` typeclasses with Wisteria
-  product / sum derivation
-- Primitive instances for Text, String, Int, Long, Double, Boolean, Tel,
-  Optional[T]
-- Dynamic field access (`tel.firstName`) gated by `DynamicTelEnabler`,
-  with camelCase ↔ kebab-case keyword mapping applied symmetrically by
-  the encoder, decoder and dynamic accessor
-- `tel"…"` interpolator macro: compile-time parse + typed holes via
-  `Encodable in Tel` (atom-position holes only; spread holes deferred)
+  product / sum derivation; primitive instances for Text, String, Int,
+  Long, Double, Boolean, Tel, Optional[T]
+- Dynamic field access with camelCase ↔ kebab-case keyword mapping
+- `tel"…"` interpolator macro (compile-time parse + typed
+  `Encodable in Tel` holes)
+- `tel"…"` extractor macro (compile-time pattern match + atom-text
+  capture)
 
-Still to land in later commits:
+**Phase 3 — schema component (in progress):**
+- `stratiform.schema` sub-component declared
+- `TelSchema` data model per §20
+- `TelElement` semantic model per §18.2
+- E201–E218 and E301–E311 in `TelError.Reason`
+- Hand-encoded `tel-schema` axiom per §20.5
+- Type assignment algorithm per §20.2 (Field with Struct / Scalar /
+  Flag; Reference resolution; required-member and non-repeatable
+  checks)
+- Layer composition per §20.3 (MergeStruct / MergeRecord /
+  MergeScalar / MergeSelect / MergePolarity)
+- Validator infrastructure per §21 (Registry, Diagnostic, the four
+  built-in scalar validators)
 
-- Panopticon `Lens` given (requires the §22 `modify` mutation primitive
-  — deferred until phase 4 mutations are in place)
-- `tel"…"` extractor macro for pattern matching: ~150–200 lines of
-  compile-time-quoted code analogous to jacinta's `extractor`; binds
-  atom-text capture positions and returns `Boolean | Option[Tuple |
-  Tel]` per `contextual.Extrapolation`
+Phase 3 follow-ups (in priority order):
 
-The (deferred) extractor is ~200 lines of compile-time-quoted macro code
-modelled on `lib/jacinta/src/core/jacinta.internal.scala`'s extractor; it
-warrants its own focused commit after the encode/decode surface is stable.
+- SelectRef handling in type assignment (sum types — E303, E304)
+- Wiring `TelValidator.Registry` into `TelTypeAssignment` so
+  validators run during type assignment and raise E310 on Invalid
+- Full `Exclude(K)` data-model encoding for layer SelectDefinition
+  bodies (currently the `variant` form rejects additions but
+  `exclude` operations need their own Member-kind encoding)
+- Schema-aware `tel.as[T]` decoder that consults a `TelSchema` for
+  keyword indices and types
+- The §20.5 self-consistency test: parse `tel-schema.tel` against
+  the axiom, walk the resulting `TelElement` tree to reconstruct a
+  `TelSchema` value, and assert structural equality with
+  `TelSchemaAxiom.telSchema` — the phase-3 merge blocker
+
+Phase 4+ deferred items:
+
+- Panopticon `Lens` given (requires §22 `modify` mutation primitive)
+- `tel"…"` extractor multi-marker patterns within a single atom text
+- Mutation operations (§22)
+- BinTEL binary format (§7 of bintel.md)
+- BASE-256 codec
 
 ## Resolved
 
