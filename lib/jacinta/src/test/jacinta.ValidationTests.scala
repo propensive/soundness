@@ -50,10 +50,10 @@ extends Error(m"${items.length} validation issues"):
 
 object ValidationTests extends Suite(m"Jacinta validation tests"):
 
-  private def validateJson[result](json: Json)(decode: Json => result raises JsonError tracks JsonPointer)
+  private def validateJson[result](json: Json)(decode: Json => result raises JsonError tracks Json.Focus)
   :   Issues =
-    validate[JsonPointer](Issues()):
-      case error: JsonError => accrual + (prior.let(_.encode).or(t"#"), error)
+    validate[Json.Focus](Issues()):
+      case error: JsonError => accrual + (prior.let(_.pointer.encode).or(t"#"), error)
     . within(decode(json))
 
   def run(): Unit =
@@ -149,3 +149,48 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
                         "address": {"street": 2, "city": 3, "zip": 4}}""".read[Json]
         validateJson(json)(_.as[VContact]).items.length
       . assert(_ == 6)
+
+    suite(m"Position-aware focus (tracked Json)"):
+      // `withPosition` resolves the focus's pointer against the tracked
+      // Json's position index. Costs nothing on the success path because
+      // `Json.Focus` is constructed (and `withPosition` invoked) only
+      // for errors registered inside the surrounding `focus` block.
+      def validateWithPositions[result](json: Json)
+                                       (decode: Json => result raises JsonError tracks Json.Focus)
+      :   List[(Text, Optional[Int], Optional[Int])] =
+        case class Tagged(items: List[(Text, Optional[Int], Optional[Int])] = Nil)
+                         (using Diagnostics)
+        extends Error(m"${items.length} validation issues"):
+          def +(focus: Text, line: Optional[Int], column: Optional[Int]): Tagged =
+            Tagged(items :+ (focus, line, column))
+
+        validate[Json.Focus](Tagged()):
+          case error: JsonError =>
+            val focus = prior.let(_.withPosition(json))
+            val position = focus.let(_.position)
+            accrual + ( focus.let(_.pointer.encode).or(t"#"),
+                        position.let(_.line),
+                        position.let(_.column) )
+        . within(decode(json)).items
+
+      test(m"Missing field reports a position on a tracked Json"):
+        val source = t"""{"name": "Alice"}"""
+        val json = Json.parseTracked(source)
+        val results = validateWithPositions(json)(_.as[VPerson])
+        results.map(_(0).s).to(Set)
+      . assert(_ == Set("#/age", "#/email"))
+
+      test(m"Wrong-type field reports the value's line/column"):
+        val source = t"{\n  \"name\": 42,\n  \"age\": 30,\n  \"email\": \"x@y\"\n}"
+        val json = Json.parseTracked(source)
+        val results = validateWithPositions(json)(_.as[VPerson])
+        // `name` value 42 is on line 2; column points at the `4` of `42`.
+        results.find(_(0) == t"#/name").map((_, line, col) => (line, col))
+      . assert(_ == Some((2, 11)))
+
+      test(m"Non-tracking Json has Unset positions"):
+        val source = t"""{"name": "Alice"}"""
+        val json = source.read[Json]
+        val results = validateWithPositions(json)(_.as[VPerson])
+        results.forall((_, line, _) => line == Unset)
+      . assert(identity)

@@ -1090,3 +1090,4 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == List("bad"))
 
     ValidationTests()
+    PositionTests()

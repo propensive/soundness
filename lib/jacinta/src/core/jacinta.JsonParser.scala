@@ -109,6 +109,7 @@ private[jacinta] object JsonParser:
 
   def parse(source: Data, mode: NumberMode = NumberMode.Full): Raw raises ParseError =
     val parser = pool.get.nn
+    parser.tracking = false
     parser.resetData(source)
     parser.holes = false
     parser.numberMode = mode
@@ -116,6 +117,7 @@ private[jacinta] object JsonParser:
 
   def parse(source: Data, holes: Boolean, mode: NumberMode): Raw raises ParseError =
     val parser = pool.get.nn
+    parser.tracking = false
     parser.resetData(source)
     parser.holes = holes
     parser.numberMode = mode
@@ -123,6 +125,7 @@ private[jacinta] object JsonParser:
 
   def parse(input: Iterator[Data], mode: NumberMode): Raw raises ParseError =
     val parser = pool.get.nn
+    parser.tracking = false
     parser.resetIterator(input)
     parser.holes = false
     parser.numberMode = mode
@@ -130,14 +133,34 @@ private[jacinta] object JsonParser:
 
   def parse(input: Iterator[Data], holes: Boolean, mode: NumberMode): Raw raises ParseError =
     val parser = pool.get.nn
+    parser.tracking = false
     parser.resetIterator(input)
     parser.holes = holes
     parser.numberMode = mode
     parser.parse()
 
+  def parseTracked(source: Data, mode: NumberMode = NumberMode.Full)
+  :   (Raw, IArray[Int]) raises ParseError =
+    val parser = pool.get.nn
+    parser.tracking = true
+    parser.resetData(source)
+    parser.holes = false
+    parser.numberMode = mode
+    val raw = parser.parse()
+    (raw, parser.rootIndex.nn)
+
+  def parseTracked(input: Iterator[Data], mode: NumberMode)
+  :   (Raw, IArray[Int]) raises ParseError =
+    val parser = pool.get.nn
+    parser.tracking = true
+    parser.resetIterator(input)
+    parser.holes = false
+    parser.numberMode = mode
+    val raw = parser.parse()
+    (raw, parser.rootIndex.nn)
+
 private[jacinta] final class JsonParser:
   import JsonParser.*
-  import Lineation.untrackedData
 
   // The cursor remains the source of truth at refill, mark, slice and error
   // points, but for the per-byte hot loops (`peek`, `advance`, `more`) the
@@ -165,6 +188,11 @@ private[jacinta] final class JsonParser:
 
   protected[jacinta] var holes: Boolean = false
 
+  // When true, the cursor is built with a line-feed-tracking `Lineation` so
+  // `cursor.line` / `cursor.column` reflect real source coordinates, and the
+  // parser emits a parallel `PositionIndex`.
+  protected[jacinta] var tracking: Boolean = false
+
   // Storage shape `parseNumber` uses for each parsed JSON number. See
   // `NumberMode` for semantics. Reset before each `parse()` call.
   protected[jacinta] var numberMode: NumberMode = NumberMode.Full
@@ -178,6 +206,20 @@ private[jacinta] final class JsonParser:
   protected val bcdLongBuffers:      ArrayBuffer[ArrayBuffer[Long]] = ArrayBuffer.empty
   protected var bcdIntBufferId:      Int = -1
   protected val bcdIntBuffers:       ArrayBuffer[ArrayBuffer[Int]]  = ArrayBuffer.empty
+  protected var indexBufferId:       Int = -1
+  protected val indexBuffers:        ArrayBuffer[ArrayBuffer[Int]]  = ArrayBuffer.empty
+
+  // Finalised root-level position index produced by the previous `parse()`
+  // call when `tracking` was on. Reset to `null` at the start of every parse.
+  protected[jacinta] var rootIndex: IArray[Int] | Null = null
+
+  // Local-buffer offset up to which `cursor.lineNo` / `cursor.columnNo`
+  // have been brought up to date. The hot-loop `syncTo()` bypasses the
+  // cursor's lineation tracking via `unsafeAdvanceBy`, so the parser
+  // keeps track of how far ahead `cursor.pos` has been pushed and
+  // catches lineation up here only at tracking-mode capture points and
+  // before any refill discards consumed bytes.
+  private var lineationPos: Int = 0
 
   // Small open-addressed cache of recently-seen object keys. Index is
   // `hash & (KeyCacheSize - 1)`; on a hash collision the existing entry is
@@ -201,47 +243,111 @@ private[jacinta] final class JsonParser:
   private val keyCacheHigh: Array[Long]         = new Array(KeyCacheSize)
 
   def resetData(input: Data): Unit =
-    cursor = Cursor[Data](input)
+    cursor = makeCursor(input)
     syncFrom()
     stringCursor = 0
     arrayBufferId = -1
     bcdLongBufferId = -1
     bcdIntBufferId = -1
+    indexBufferId = -1
+    rootIndex = null
     heldToken = null
 
   def resetIterator(input: Iterator[Data]): Unit =
-    cursor = Cursor[Data](input)
+    cursor = makeCursor(input)
     syncFrom()
     stringCursor = 0
     arrayBufferId = -1
     bcdLongBufferId = -1
     bcdIntBufferId = -1
+    indexBufferId = -1
+    rootIndex = null
     heldToken = null
+
+  private def makeCursor(input: Data): Cursor[Data] =
+    if tracking then
+      import zephyrine.lineation.linefeedByte
+      Cursor[Data](input)
+    else
+      import Lineation.untrackedData
+      Cursor[Data](input)
+
+  private def makeCursor(input: Iterator[Data]): Cursor[Data] =
+    if tracking then
+      import zephyrine.lineation.linefeedByte
+      Cursor[Data](input)
+    else
+      import Lineation.untrackedData
+      Cursor[Data](input)
 
   // ──────────────────────────────────────────────────────────────────────────
   // Substrate.
 
   // Push the parser's local `pos` back to the cursor. Required before any
   // cursor operation that consults `pos` (mark, slice, refill, position).
+  // This must stay zero-branch on the hot path; tracking-mode callers
+  // separately invoke `reconcileLineation()` when they need accurate
+  // `cursor.line` / `cursor.column`.
   private inline def syncTo(): Unit =
     cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
+
+  // Walk the buffer bytes between the last lineation-reconciled position
+  // and `cursor.unsafePos`, bumping `cursor.lineNo` / `cursor.columnNo`
+  // accordingly. Called at tracking-mode capture points (`parseValue`,
+  // `parseObject`) and before any refill in `moreSlow()` so that
+  // consumed bytes are accounted for before they're discarded.
+  private def reconcileLineation(): Unit =
+    val end = cursor.unsafePos(using Unsafe)
+    if lineationPos < end then
+      var i = lineationPos
+      var newlines = 0
+      var lastNewlineAt = -1
+      while i < end do
+        if bytes(i) == Newline then
+          newlines += 1
+          lastNewlineAt = i
+        i += 1
+
+      if newlines > 0 then
+        cursor.unsafeBumpLine(newlines)(using Unsafe)
+        cursor.unsafeSetColumn(end - lastNewlineAt - 1)(using Unsafe)
+      else
+        cursor.unsafeBumpColumn(end - lineationPos)(using Unsafe)
+
+      lineationPos = end
 
   // Refresh the parser's snapshot from the cursor. Required after any
   // cursor operation that may have changed the buffer reference, the read
   // position, or the write end (refill, cue).
+  //
+  // `lineationPos` is re-anchored to the cursor's current position because
+  // refill compacts the buffer (bytes 0..old-pos are discarded; subsequent
+  // walks would read different data).
   private inline def syncFrom(): Unit =
     bytes  = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
     pos    = cursor.unsafePos(using Unsafe)
     bufEnd = cursor.unsafeWriteEnd(using Unsafe)
+    lineationPos = pos
 
   protected inline def more: Boolean = pos < bufEnd || moreSlow()
 
   // Out-of-line slow path so the inline budget for `more` stays small enough
   // for the JIT to keep `pos < bufEnd` as a single register comparison in
   // hot loops.
+  //
+  // In tracking mode the parser later reads `cursor.position` to compute
+  // descriptor lengths; if `cursor.refill()` compacts the buffer here we
+  // must re-anchor the parser's local `pos` against the new buffer scale
+  // even when there's no more data, otherwise subsequent `syncTo()` calls
+  // would advance the cursor by a now-stale delta. Lineation also needs
+  // to be reconciled before compaction discards the consumed bytes.
   private def moreSlow(): Boolean =
     syncTo()
-    if cursor.more then { syncFrom(); true } else false
+    if tracking then reconcileLineation()
+    if cursor.more then { syncFrom(); true }
+    else
+      if tracking then syncFrom()
+      false
 
   protected inline def peek: Byte = bytes(pos)
 
@@ -386,6 +492,56 @@ private[jacinta] final class JsonParser:
       buffer
 
   protected inline def relinquishBcdIntBuffer(): Unit = bcdIntBufferId -= 1
+
+  protected inline def getIndexBuffer(): ArrayBuffer[Int] =
+    indexBufferId += 1
+
+    if indexBuffers.length <= indexBufferId then
+      val newBuffer = ArrayBuffer.empty[Int]
+      indexBuffers += newBuffer
+      newBuffer
+    else
+      val buffer = indexBuffers(indexBufferId)
+      buffer.clear()
+      buffer
+
+  protected inline def relinquishIndexBuffer(): Unit = indexBufferId -= 1
+
+  // Assemble a composite (array or object) descriptor in `indexOut`. `scratch`
+  // holds the concatenated entry descriptors back-to-back (an entry is a
+  // child for arrays, or `[keyLine, keyColumn, keyLength, value descriptor]`
+  // for objects). `ends(i)` is the position in `scratch` immediately after
+  // the i-th entry, so the i-th entry's size is `ends(i) - ends(i-1)`.
+  protected def emitCompositeDescriptor
+    ( indexOut:    ArrayBuffer[Int],
+      scratch:     ArrayBuffer[Int],
+      ends:        ArrayBuffer[Int],
+      startLine:   Int,
+      startColumn: Int,
+      startMark:   Long )
+  :   Unit =
+
+    syncTo()
+    val n = ends.length
+    val sourceLength = (cursor.position.n0 - startMark).toInt
+    val sizeSlot = indexOut.length
+
+    indexOut += 0
+    indexOut += startLine
+    indexOut += startColumn
+    indexOut += sourceLength
+    indexOut += n
+
+    val headerSize = 5 + n
+    var i = 0
+
+    while i < n do
+      val childStart = if i == 0 then 0 else ends(i - 1)
+      indexOut += headerSize + childStart
+      i += 1
+
+    indexOut ++= scratch
+    indexOut(sizeSlot) = indexOut.length - sizeSlot
 
   // ──────────────────────────────────────────────────────────────────────────
   // Parser body (unchanged from the previous abstract base).
@@ -848,6 +1004,62 @@ private[jacinta] final class JsonParser:
         case OpenBrace   => advance() yet parseObject()
         case other       => errorAt(Issue.ExpectedSomeValue(other.toChar))
 
+  // Tracked-mode `parseValue`. Captures source position before dispatch,
+  // delegates composite cases to the `*Tracked` variants (so they emit
+  // their own descriptors into `indexOut`), and writes a 4-int primitive
+  // descriptor afterwards for everything else. The `Minus` recursion
+  // routes to the untracked variant since the outer call already owns
+  // the descriptor for the full `-N` span.
+  private def parseValueTracked
+    ( indexOut: ArrayBuffer[Int],
+      minus:    Boolean = false,
+      bcdOnly:  Boolean = false )
+    ( using Tactic[ParseError] )
+  :   Raw =
+    if !more then errorAt(Issue.PrematureEnd)
+
+    syncTo()
+    reconcileLineation()
+    val startLine   = cursor.line.n1
+    val startColumn = cursor.column.n1
+    val startMark   = cursor.position.n0.toLong
+
+    val ch = peek
+
+    val result: Raw =
+      if (ch & 0xF8) == Num0 || (ch & 0xFE) == 0x38 then
+        advance()
+        parseNumber(ch & 0x0F, minus, bcdOnly)
+      else if minus then
+        errorAt(Issue.ExpectedDigit(ch.toChar))
+      else if holes && ch == 0 then
+        advance()
+        Unset
+      else
+        (ch: @switch) match
+          case Quote       => advance() yet parseString()
+          case Minus       => advance() yet parseValue(true, bcdOnly)
+          case OpenBracket =>
+            advance()
+            parseArrayTracked(indexOut, startLine, startColumn, startMark)
+          case LowerF      => parseFalse()
+          case LowerN      => parseNull()
+          case LowerT      => parseTrue()
+          case OpenBrace   =>
+            advance()
+            parseObjectTracked(indexOut, startLine, startColumn, startMark)
+          case other       => errorAt(Issue.ExpectedSomeValue(other.toChar))
+
+    if ch != OpenBracket && ch != OpenBrace then
+      syncTo()
+      val length = (cursor.position.n0 - startMark).toInt
+      indexOut += 4
+      indexOut += startLine
+      indexOut += startColumn
+      indexOut += length
+
+    result
+
   private def parseArray()(using Tactic[ParseError]): Raw =
     // The array starts in "undecided" mode. Each element is parsed with
     // `bcdOnly = true`, so a number comes back as either a single-Long
@@ -1052,6 +1264,200 @@ private[jacinta] final class JsonParser:
           relinquishArrayBuffer()
           out.asInstanceOf[IArray[Any]]
 
+  // Tracked-mode `parseArray`. Mirrors `parseArray` exactly but uses
+  // `parseValueTracked` for children and emits a composite descriptor
+  // into `indexOut` at close.
+  private def parseArrayTracked
+    ( indexOut:    ArrayBuffer[Int],
+      startLine:   Int,
+      startColumn: Int,
+      startMark:   Long )
+    ( using Tactic[ParseError] )
+  :   Raw =
+    var mode: Int = ModeUndecided
+    var intItems:  ArrayBuffer[Int]  | Null = null
+    var longItems: ArrayBuffer[Long] | Null = null
+    var anyItems:  ArrayBuffer[Any]  | Null = null
+    var first    = true
+    var continue = true
+
+    val indexScratch = getIndexBuffer()
+    val indexEnds    = getIndexBuffer()
+
+    inline def migrateIntToLong(): Unit =
+      val src = intItems.nn
+      val dst = getBcdLongBuffer()
+      val n = src.length
+      var i = 0
+
+      while i < n do
+        dst += Bcd.repackBcdIntAsLong(src(i))
+        i += 1
+
+      relinquishBcdIntBuffer()
+      intItems = null
+      longItems = dst
+      mode = ModeBcdLong
+
+    inline def migrateIntToBoxed(): Unit =
+      val src = intItems.nn
+      val dst = getArrayBuffer()
+      val n = src.length
+      var i = 0
+
+      while i < n do
+        dst += src(i)
+        i += 1
+
+      relinquishBcdIntBuffer()
+      intItems = null
+      anyItems = dst
+      mode = ModeBoxed
+
+    inline def migrateLongToBoxed(): Unit =
+      val src = longItems.nn
+      val dst = getArrayBuffer()
+      val n = src.length
+      var i = 0
+
+      while i < n do
+        val v = src(i)
+        val text = Bcd.bcdLongText(v)
+        val ast: Any =
+          try java.lang.Long.parseLong(text)
+          catch case _: NumberFormatException => java.lang.Double.parseDouble(text)
+
+        dst += ast
+        i += 1
+
+      relinquishBcdLongBuffer()
+      longItems = null
+      anyItems = dst
+      mode = ModeBoxed
+
+    while continue do
+      skip()
+
+      must() match
+        case CloseBracket =>
+          if !first then errorAt(Issue.ExpectedSomeValue(']'))
+          continue = false
+
+        case _ =>
+          val value = parseValueTracked(indexScratch, bcdOnly = true)
+          indexEnds += indexScratch.length
+          skip()
+
+          val terminator: Byte = must()
+
+          terminator match
+            case Comma | CloseBracket => ()
+            case char                 => errorAt(Issue.ExpectedSomeValue(char.toChar))
+
+          value match
+            case bcdLong: Long =>
+              val nibbles = ((bcdLong >>> 56) & 0x7FL).toInt
+
+              if first then
+                first = false
+                if nibbles <= Bcd.MaxBcdIntNibbles then
+                  mode = ModeBcdInt
+                  val buf = getBcdIntBuffer()
+                  intItems = buf
+                  buf += Bcd.packBcdIntFromLong(bcdLong)
+                else
+                  mode = ModeBcdLong
+                  val buf = getBcdLongBuffer()
+                  longItems = buf
+                  buf += bcdLong
+              else
+                (mode: @switch) match
+                  case ModeBcdInt =>
+                    if nibbles <= Bcd.MaxBcdIntNibbles then
+                      intItems.nn += Bcd.packBcdIntFromLong(bcdLong)
+                    else
+                      migrateIntToLong()
+                      longItems.nn += bcdLong
+
+                  case ModeBcdLong =>
+                    longItems.nn += bcdLong
+
+                  case _ =>
+                    if nibbles <= Bcd.MaxBcdIntNibbles then
+                      anyItems.nn += Bcd.packBcdIntFromLong(bcdLong)
+                    else
+                      anyItems.nn += bcdLong
+
+            case _ =>
+              if first then
+                first = false
+                mode = ModeBoxed
+                val buf = getArrayBuffer()
+                anyItems = buf
+                buf += value
+              else
+                (mode: @switch) match
+                  case ModeBcdInt =>
+                    migrateIntToBoxed()
+                    anyItems.nn += value
+
+                  case ModeBcdLong =>
+                    migrateLongToBoxed()
+                    anyItems.nn += value
+
+                  case _ =>
+                    anyItems.nn += value
+
+          if terminator == CloseBracket then continue = false
+
+      advance()
+
+    val astValue: Raw =
+      if first then
+        val out = new Array[Any](1)
+        out(0) = Json.Ast.arrayPad
+        out.asInstanceOf[IArray[Any]]
+      else
+        (mode: @switch) match
+          case ModeBcdInt =>
+            val src = intItems.nn
+            val out = new Array[Int](src.length)
+            src.copyToArray(out)
+            relinquishBcdIntBuffer()
+            out
+
+          case ModeBcdLong =>
+            val src = longItems.nn
+            val out = new Array[Long](src.length)
+            src.copyToArray(out)
+            relinquishBcdLongBuffer()
+            out
+
+          case _ =>
+            val src = anyItems.nn
+            val n = src.length
+
+            val out =
+              if (n & 1) == 1 then
+                val arr = new Array[Any](n)
+                src.copyToArray(arr)
+                arr
+              else
+                val arr = new Array[Any](n + 1)
+                src.copyToArray(arr)
+                arr(n) = Json.Ast.arrayPad
+                arr
+
+            relinquishArrayBuffer()
+            out.asInstanceOf[IArray[Any]]
+
+    emitCompositeDescriptor
+     ( indexOut, indexScratch, indexEnds, startLine, startColumn, startMark )
+    relinquishIndexBuffer()
+    relinquishIndexBuffer()
+
+    astValue
+
   // Parse an object directly into the flat alternating-key/value layout. The
   // buffer always grows in pairs, so its length stays even, which is the
   // object/array parity invariant.
@@ -1145,11 +1551,172 @@ private[jacinta] final class JsonParser:
     relinquishArrayBuffer()
     out.asInstanceOf[IArray[Any]]
 
+  // Tracked-mode `parseObject`. Mirrors `parseObject` exactly but captures
+  // key positions, runs values through `parseValueTracked`, and emits a
+  // composite descriptor into `indexOut` at close.
+  private def parseObjectTracked
+    ( indexOut:    ArrayBuffer[Int],
+      startLine:   Int,
+      startColumn: Int,
+      startMark:   Long )
+    ( using Tactic[ParseError] )
+  :   IArray[Any] =
+
+    val items: ArrayBuffer[Any] = getArrayBuffer()
+    var continue = true
+
+    val indexScratch = getIndexBuffer()
+    val indexEnds    = getIndexBuffer()
+
+    var keyLine:   Int  = 0
+    var keyColumn: Int  = 0
+    var keyMark:   Long = 0L
+
+    while continue do
+      skip()
+      syncTo()
+      reconcileLineation()
+      keyLine   = cursor.line.n1
+      keyColumn = cursor.column.n1
+      keyMark   = cursor.position.n0.toLong
+
+      must() match
+        case Quote =>
+          advance()
+          val string = parseObjectKey()
+          syncTo()
+          val keyLength = (cursor.position.n0 - keyMark).toInt
+          skip()
+
+          must() match
+            case Colon =>
+              advance()
+              skip()
+              indexScratch += keyLine
+              indexScratch += keyColumn
+              indexScratch += keyLength
+              val value = parseValueTracked(indexScratch)
+              indexEnds += indexScratch.length
+              skip()
+
+              must() match
+                case Comma =>
+                  advance()
+                  items += string
+                  items += value
+                  skip()
+
+                case CloseBrace =>
+                  advance()
+                  items += string
+                  items += value
+                  continue = false
+
+                case ch  => errorAt(Issue.UnexpectedChar(ch.toChar))
+
+            case ch => errorAt(Issue.ExpectedColon(ch.toChar))
+
+        case 0 if holes =>
+          advance()
+          val keyLength = 1
+          skip()
+
+          must() match
+            case Colon =>
+              advance()
+              skip()
+              indexScratch += keyLine
+              indexScratch += keyColumn
+              indexScratch += keyLength
+              val value = parseValueTracked(indexScratch)
+              indexEnds += indexScratch.length
+              skip()
+
+              must() match
+                case Comma =>
+                  advance()
+                  items += " "
+                  items += value
+                  skip()
+
+                case CloseBrace =>
+                  advance()
+                  items += " "
+                  items += value
+                  continue = false
+
+                case ch => errorAt(Issue.UnexpectedChar(ch.toChar))
+
+            case Comma =>
+              syncTo()
+              reconcileLineation()
+              val unsetLine   = cursor.line.n1
+              val unsetColumn = cursor.column.n1
+              indexScratch += keyLine
+              indexScratch += keyColumn
+              indexScratch += keyLength
+              indexScratch += 4
+              indexScratch += unsetLine
+              indexScratch += unsetColumn
+              indexScratch += 0
+              indexEnds += indexScratch.length
+              advance()
+              items += " "
+              items += Unset
+              skip()
+
+            case CloseBrace =>
+              syncTo()
+              reconcileLineation()
+              val unsetLine   = cursor.line.n1
+              val unsetColumn = cursor.column.n1
+              indexScratch += keyLine
+              indexScratch += keyColumn
+              indexScratch += keyLength
+              indexScratch += 4
+              indexScratch += unsetLine
+              indexScratch += unsetColumn
+              indexScratch += 0
+              indexEnds += indexScratch.length
+              advance()
+              items += " "
+              items += Unset
+              continue = false
+
+            case ch => errorAt(Issue.UnexpectedChar(ch.toChar))
+
+        case CloseBrace =>
+          if !items.nil then errorAt(Issue.ExpectedSomeValue('}'))
+          advance()
+          continue = false
+
+        case ch =>
+          errorAt(Issue.ExpectedString(ch.toChar))
+
+    val out = new Array[Any](items.length)
+    items.copyToArray(out)
+    relinquishArrayBuffer()
+
+    emitCompositeDescriptor
+     ( indexOut, indexScratch, indexEnds, startLine, startColumn, startMark )
+    relinquishIndexBuffer()
+    relinquishIndexBuffer()
+
+    out.asInstanceOf[IArray[Any]]
+
   def parse()(using Tactic[ParseError]): Raw =
     bom()
     skip()
     if !more then abort(ParseError(Json.Ast, Position(0, 0), Issue.EmptyInput))
-    val result = parseValue()
+
+    val result =
+      if tracking then
+        val rootBuf = getIndexBuffer()
+        val r = parseValueTracked(rootBuf)
+        rootIndex = IArray.from(rootBuf)
+        relinquishIndexBuffer()
+        r
+      else parseValue()
 
     while more do
       peek match
