@@ -155,6 +155,9 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
       // Json's position index. Costs nothing on the success path because
       // `Json.Focus` is constructed (and `withPosition` invoked) only
       // for errors registered inside the surrounding `focus` block.
+      // `as[T]` runs the Decodable's `position` method (which delegates
+      // to `Json.Focus.withPosition`) over the accumulated foci once
+      // after decoding, so accruals don't need to call `withPosition`.
       def validateWithPositions[result](json: Json)
                                        (decode: Json => result raises JsonError tracks Json.Focus)
       :   List[(Text, Optional[Int], Optional[Int])] =
@@ -166,9 +169,8 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
 
         validate[Json.Focus](Tagged()):
           case error: JsonError =>
-            val focus = prior.let(_.withPosition(json))
-            val position = focus.let(_.position)
-            accrual + ( focus.let(_.pointer.encode).or(t"#"),
+            val position = prior.let(_.position)
+            accrual + ( prior.let(_.pointer.encode).or(t"#"),
                         position.let(_.line),
                         position.let(_.column) )
         . within(decode(json)).items

@@ -66,3 +66,6 @@ infix type against [refined <: { type Contrast }, contrast] = refined { type Con
 
 // Limited
 infix type under [refined <: { type Limit }, limit] = refined { type Limit = limit }
+
+// Locatable
+infix type at [refined <: { type Locus }, locus] = refined { type Locus = locus }
