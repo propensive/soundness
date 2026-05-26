@@ -39,120 +39,123 @@ import TelSchema.*
 import TelSchema.Polarity.*
 
 // Hand-encoded `tel-schema` axiom per §20.5 of the TEL specification.
-// This is the bootstrap: a TelSchema value describing the structure of
-// schema documents themselves. When the runtime parses a `.tel-schema`
-// document, the document is type-assigned against this axiom and the
-// result is constructed into a TelSchema runtime value.
+// This Scala literal MIRRORS the canonical `tel-schema.tel` document
+// (saved at `res/test/stratiform/corpus/tel-schema.tel`) verbatim.
 //
-// IMPORTANT: this axiom is the AUTHORITATIVE definition of the schema
-// language for stratiform. The self-consistency property — parsing the
-// canonical `tel-schema.tel` document and comparing against this Scala
-// literal — is the merge blocker for phase 3.
-//
-// Phase-3.x scope: this commit lays down the foundation (the keyword
-// vocabulary at the top level). Construction of the full vocabulary
-// (the recursive shape of `record`, `scalar`, `select`, `field`,
-// `variant`, `layer`, ...) is incremental and tracked in the schema
-// integration tests as they expand.
+// AUTHORITATIVE: this is the source-of-truth schema-of-schemas for the
+// stratiform parser. The self-consistency property — parsing the
+// canonical document under this axiom and reconstructing a TelSchema
+// value equal by structural equality — is the phase-3 merge blocker.
 
 object TelSchemaAxiom:
 
-  // Quick-reference factories that keep the literal compact below.
+  private inline def kebab(s: String): Text = Text(s)
+
   private inline def field
-       ( required:   Polarity,
-         repeatable: Polarity,
-         keyword:    String,
+       ( keyword:    String,
          fieldType:  Type,
+         required:   Polarity = Implicit,
+         repeatable: Polarity = Implicit,
          default:    Optional[Text] = Unset )
   :     Field =
-    Field(required, repeatable, Text(keyword), fieldType, default)
+    Field(required, repeatable, kebab(keyword), fieldType, default)
 
-  private inline def selectRef(required: Polarity, repeatable: Polarity, name: String)
+  private inline def selectRef
+       ( reference:  String,
+         required:   Polarity = Implicit,
+         repeatable: Polarity = Implicit )
   :     SelectRef =
-    SelectRef(required, repeatable, Text(name))
+    SelectRef(required, repeatable, kebab(reference))
 
   private inline def variant(keyword: String, variantType: Type): Variant =
-    Variant(Text(keyword), variantType)
+    Variant(kebab(keyword), variantType)
 
   private inline def record(name: String, members: Member*): RecordDefinition =
-    RecordDefinition(Text(name), IArray.from(members), IArray.empty)
+    RecordDefinition(kebab(name), IArray.from(members), IArray.empty)
 
   private inline def scalar(name: String, validators: String*): ScalarDefinition =
-    ScalarDefinition(Text(name), IArray.from(validators.map(Text(_))))
+    ScalarDefinition(kebab(name), IArray.from(validators.map(kebab)))
 
   private inline def select(name: String, variants: Variant*): SelectDefinition =
-    SelectDefinition(Text(name), IArray.from(variants), IArray.empty)
+    SelectDefinition(kebab(name), IArray.from(variants), IArray.empty)
 
-  private val flagType:       Type = Flag
-  private val identifierRef:  Type = Scalar(IArray(Text("identifier")))
-  private val typeNameRef:    Type = Scalar(IArray(Text("type-name")))
-  private val sigilRef:       Type = Scalar(IArray(Text("sigil")))
-  private val stringRef:      Type = Scalar(IArray(Text("string")))
+  // Built-in scalar types referenced from member declarations.
+  private val identifierRef: Type = Reference(kebab("Identifier"))
+  private val typeNameRef:   Type = Reference(kebab("TypeName"))
+  private val sigilRef:      Type = Reference(kebab("Sigil"))
+  private val stringRef:     Type = Reference(kebab("String"))
 
-  // The schema's root document is a Struct whose members are the
-  // top-level keywords used to write a schema document. The full
-  // recursive shape (record body, layer body, select body, field
-  // body, etc.) is captured by the Definitions below.
+  // The schema's root struct, mirroring the `document` block in the
+  // canonical tel-schema.tel.
   private val documentStruct: Struct = Struct(
     members = IArray(
-      field(Implicit, Implicit, "name",     identifierRef),
-      field(Implicit, Implicit, "sigil",    sigilRef,           Unset),
-      field(Implicit, Implicit, "document", Reference(Text("Struct"))),
-      field(Loose,   Loose,   "layer",    Reference(Text("Layer"))),
-      field(Loose,   Loose,   "record",   Reference(Text("RecordDef"))),
-      field(Loose,   Loose,   "scalar",   Reference(Text("ScalarDef"))),
-      field(Loose,   Loose,   "select",   Reference(Text("SelectDef")))),
+      field("name",     identifierRef),
+      field("sigil",    sigilRef,                              required = Loose),
+      field("record",   Reference(kebab("Record")), required = Loose, repeatable = Loose),
+      field("scalar",   Reference(kebab("Scalar")), required = Loose, repeatable = Loose),
+      field("select",   Reference(kebab("Select")), required = Loose, repeatable = Loose),
+      field("document", Reference(kebab("Body"))),
+      field("layer",    Reference(kebab("Layer")),  required = Loose, repeatable = Loose)),
     validators = IArray.empty)
 
   val telSchema: TelSchema = TelSchema(
-    name     = Text("tel-schema"),
+    name     = kebab("tel-schema"),
     document = documentStruct,
     layers   = IArray.empty,
     sigil    = Unset,
     records  = IArray(
-      record("Struct",
-        field(Loose, Loose, "field",  Reference(Text("Field"))),
-        field(Loose, Loose, "select", Reference(Text("SelectDef"))),
-        field(Loose, Loose, "validate", identifierRef)),
-
       record("Field",
-        field(Implicit, Implicit, "keyword", identifierRef),
-        field(Implicit, Implicit, "type",    typeNameRef),
-        field(Loose,   Implicit, "optional",     flagType),
-        field(Loose,   Implicit, "required",     flagType),
-        field(Loose,   Implicit, "repeatable",   flagType),
-        field(Loose,   Implicit, "irrepeatable", flagType),
-        field(Loose,   Implicit, "default",      stringRef)),
+        field("keyword",      identifierRef),
+        field("type",         typeNameRef),
+        field("optional",     Flag,       required = Loose),
+        field("required",     Flag,       required = Loose),
+        field("repeatable",   Flag,       required = Loose),
+        field("irrepeatable", Flag,       required = Loose),
+        field("default",      stringRef,  required = Loose)),
 
-      record("Layer",
-        field(Implicit, Implicit, "name",    identifierRef),
-        field(Loose,   Implicit, "overlay", Reference(Text("Struct"))),
-        field(Loose,   Loose,   "record",  Reference(Text("RecordDef"))),
-        field(Loose,   Loose,   "scalar",  Reference(Text("ScalarDef"))),
-        field(Loose,   Loose,   "select",  Reference(Text("SelectDef")))),
-
-      record("RecordDef",
-        field(Implicit, Implicit, "name",     typeNameRef),
-        field(Loose,   Loose,   "field",    Reference(Text("Field"))),
-        field(Loose,   Loose,   "select",   Reference(Text("SelectDef"))),
-        field(Loose,   Loose,   "validate", identifierRef)),
-
-      record("ScalarDef",
-        field(Implicit, Implicit, "name",     typeNameRef),
-        field(Loose,   Loose,   "validate", identifierRef)),
-
-      record("SelectDef",
-        field(Implicit, Implicit, "name",     typeNameRef),
-        field(Loose,   Loose,   "variant",  Reference(Text("Variant"))),
-        field(Loose,   Loose,   "exclude",  identifierRef),
-        field(Loose,   Loose,   "validate", identifierRef)),
+      record("SelectRef",
+        field("reference",    typeNameRef),
+        field("optional",     Flag, required = Loose),
+        field("required",     Flag, required = Loose),
+        field("repeatable",   Flag, required = Loose),
+        field("irrepeatable", Flag, required = Loose)),
 
       record("Variant",
-        field(Implicit, Implicit, "keyword", identifierRef),
-        field(Implicit, Implicit, "type",    typeNameRef))),
+        field("keyword", identifierRef),
+        field("type",    typeNameRef)),
+
+      record("Record",
+        field("name", typeNameRef),
+        selectRef("Member", required = Loose, repeatable = Loose)),
+
+      record("Scalar",
+        field("name",     typeNameRef),
+        field("validate", identifierRef, repeatable = Loose)),
+
+      record("Select",
+        field("name", typeNameRef),
+        selectRef("SelectChild", repeatable = Loose)),
+
+      record("Body",
+        selectRef("Member", required = Loose, repeatable = Loose)),
+
+      record("Layer",
+        field("name",    identifierRef),
+        field("record",  Reference(kebab("Record")), required = Loose, repeatable = Loose),
+        field("scalar",  Reference(kebab("Scalar")), required = Loose, repeatable = Loose),
+        field("select",  Reference(kebab("Select")), required = Loose, repeatable = Loose),
+        field("overlay", Reference(kebab("Body")),   required = Loose))),
     scalars  = IArray(
       scalar("Identifier", "identifier"),
       scalar("TypeName",   "type-name"),
       scalar("Sigil",      "sigil"),
       scalar("String",     "string")),
-    selects  = IArray.empty)
+    selects  = IArray(
+      select("Member",
+        variant("field",    Reference(kebab("Field"))),
+        variant("select",   Reference(kebab("SelectRef"))),
+        variant("validate", identifierRef)),
+      select("SelectChild",
+        variant("variant",  Reference(kebab("Variant"))),
+        variant("exclude",  identifierRef),
+        variant("validate", identifierRef))))
