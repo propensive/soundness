@@ -47,6 +47,7 @@ import Tel.given
 
 object Tests extends Suite(m"Stratiform Tests"):
   case class Person(name: Text, age: Int) derives CanEqual
+  case class PersonAge(name: Text, age: Int) derives CanEqual
 
 
   def run(): Unit =
@@ -298,6 +299,35 @@ object Tests extends Suite(m"Stratiform Tests"):
         val composed = TelSchemaLayers.compose(base)
         composed.document.members.length
       . assert(_ == 2)
+
+      test(m"plain as[Person] decodes a conforming document"):
+        val tel = Tel.parse(IArray.from("name Alice\nage 30\n".getBytes("UTF-8")))
+        tel.as[Tests.PersonAge]
+      . assert(_ == Tests.PersonAge(Text("Alice"), 30))
+
+      test(m"asValidated validates and decodes a conforming document"):
+        val schema = TelSchema(
+          name     = Text("person"),
+          document = TelSchema.Struct(
+            members = IArray(
+              TelSchema.Field
+               ( TelSchema.Polarity.Implicit, TelSchema.Polarity.Implicit, Text("name"),
+                 TelSchema.Scalar(IArray(Text("string"))), Unset ),
+              TelSchema.Field
+               ( TelSchema.Polarity.Implicit, TelSchema.Polarity.Implicit, Text("age"),
+                 TelSchema.Scalar(IArray(Text("string"))), Unset )),
+            validators = IArray.empty),
+          layers  = IArray.empty,
+          sigil   = Unset,
+          records = IArray.empty,
+          scalars = IArray.empty,
+          selects = IArray.empty)
+
+        given TelSchema = schema
+        import TelSchemaDecoder.asValidated
+        val tel = Tel.parse(IArray.from("name Alice\nage 30\n".getBytes("UTF-8")))
+        tel.asValidated[Tests.PersonAge]
+      . assert(_ == Tests.PersonAge(Text("Alice"), 30))
 
       test(m"duplicate layer name raises E205"):
         val layer = TelSchema.Layer
