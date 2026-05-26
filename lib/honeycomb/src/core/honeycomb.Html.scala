@@ -444,26 +444,59 @@ object Html extends Tag.Container
 
     type Region = Cursor.Mark
 
-    protected inline def more: Boolean = cursor.more
+    // ─── parser-local snapshot of the cursor's buffer / position ───────────
+    //
+    // The cursor remains the source of truth at refill, mark, slice and
+    // error points, but for the per-char hot loops (`peek`, `advance`,
+    // `more`) the parser maintains its own snapshot of the current buffer
+    // reference, read position, and write end. Keeping all three as parser
+    // fields rather than re-reading them through cursor accessors on every
+    // char lets the JIT keep them in registers across the parser's many
+    // tight `@tailrec` scans (tagname, key, value, unquoted, comment,
+    // cdata, doctype) and across `lay` / `let` peeks.
+    //
+    // Invariant: between `syncTo()` and `syncFrom()` calls, `pos` is the
+    // authoritative read position; `cursor.unsafePos` is allowed to lag.
+    // Whenever a cursor operation that depends on `pos` is performed
+    // (refill via `more`'s slow path, mark, slice, error reporting,
+    // backtracking via `cue`) the parser pushes `pos` to the cursor
+    // first, then refreshes its snapshot from the cursor afterwards —
+    // refill may compact the buffer, reallocate it, or reset `pos`.
+    private var bytes:  Array[Char] = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
+    private var pos:    Int = cursor.unsafePos(using Unsafe)
+    private var bufEnd: Int = cursor.unsafeWriteEnd(using Unsafe)
 
-    protected inline def peek: Char =
-      cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]](cursor.unsafePos(using Unsafe))
+    private inline def syncTo(): Unit =
+      cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
-    // Use `cursor.advance()` rather than `cursor.next()`: the latter performs
-    // an additional `cursor.more` check to return its boolean result, which
-    // every caller here discards. Refill on streaming input still happens via
-    // the parser's later `lay`/`let`/`peek` calls (each of which goes through
-    // `cursor.more`), so skipping the redundant check is safe.
-    protected inline def advance(): Unit = cursor.advance()
-    protected inline def position: Int = cursor.position.n0
+    private inline def syncFrom(): Unit =
+      bytes  = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
+      pos    = cursor.unsafePos(using Unsafe)
+      bufEnd = cursor.unsafeWriteEnd(using Unsafe)
 
-    // Non-`inline` so that `cursor.mark`'s lineation-tracking expansion
-    // (recordMark allocation + `lineationActive` branch) is emitted once in
-    // its own method rather than re-expanded into every call site, keeping
-    // `read`/`tag`/`tagname` small enough for the JIT to pick up. The body
-    // is still simple enough for the JIT to inline at hot call sites via
-    // its own inlining heuristics.
-    protected def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
+    protected inline def more: Boolean = pos < bufEnd || moreSlow()
+
+    // Out-of-line slow path so `more`'s inline budget stays small enough
+    // for the JIT to keep `pos < bufEnd` as one register comparison in
+    // hot loops.
+    private def moreSlow(): Boolean =
+      syncTo()
+      if cursor.more then { syncFrom(); true } else false
+
+    protected inline def peek: Char = bytes(pos)
+    protected inline def advance(): Unit = pos += 1
+    protected inline def position: Int =
+      syncTo()
+      cursor.position.n0
+
+    // Non-`inline` so that `cursor.mark`'s expansion is emitted once in
+    // its own method rather than re-expanded into every call site,
+    // keeping `read` / `tag` / `tagname` small enough for the JIT to
+    // pick up. The body is still simple enough for the JIT to inline at
+    // hot call sites via its own inlining heuristics.
+    protected def begin(): Cursor.Mark =
+      syncTo()
+      cursor.mark(using heldToken.nn)
 
     protected def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
       cursor.grab(start, end).asInstanceOf[Text]
@@ -482,7 +515,10 @@ object Html extends Tag.Container
     protected inline def asciiLower(char: Char): Char =
       if char >= 'A' && char <= 'Z' then (char + 32).toChar else char
 
-    protected def reset(start: Cursor.Mark): Unit = cursor.cue(start)
+    protected def reset(start: Cursor.Mark): Unit =
+      syncTo()
+      cursor.cue(start)
+      syncFrom()
 
     protected def cloneTo
       ( start: Cursor.Mark, end: Cursor.Mark )
@@ -504,14 +540,13 @@ object Html extends Tag.Container
       // recent compaction aren't represented in the buffer; we under-
       // count by that amount but absolute `offset` and `length` remain
       // correct, which is what tests assert on.
-      val buf = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
-      val cur = cursor.unsafePos(using Unsafe)
+      syncTo()
       var line = 1
       var col = 0  // counts chars seen on the current line
       var i = 0
 
-      while i < cur do
-        if buf(i) == '\n' then
+      while i < pos do
+        if bytes(i) == '\n' then
           line += 1
           col = 0
         else
@@ -963,43 +998,42 @@ object Html extends Tag.Container
           case char =>
             advance() yet textualSlow(mark, close, entities)
 
-      // Fast path: snapshot the starting block and offset; while scanning stays
-      // inside the same block, hits no entity reference, and `close` is absent
-      // (no RCDATA close-tag check needed), build the result via
-      // `String.substring` (a JVM intrinsic) without round-tripping through
-      // `buffer`. Falls back to `textualSlow` for the harder cases.
+      // Fast path: scan the parser-local buffer with a register-resident
+      // `var p`. While the scan stays inside the loaded buffer, hits no
+      // entity reference, and `close` is absent (no RCDATA close-tag check
+      // needed), the result comes from a single `String.substring` slice
+      // without round-tripping through `buffer`. Falls back to
+      // `textualSlow` for the harder cases.
       //
-      // The inner loop is a tight `while` over the cursor's `Array[Char]`
-      // buffer with a register-resident `var p`. With cursor lineation
-      // untracked, the per-character path is just a delimiter check + pos
-      // increment — no per-`\n` bookkeeping, no post-scan reconciliation.
+      // Uses the parser-level snapshot (`bytes` / `pos` / `bufEnd`)
+      // rather than re-snapshotting from the cursor on each `fast()`
+      // call, so the JIT can keep all three in registers across the
+      // whole text-node walk. After scanning, `pos` already holds the
+      // new position — no `cursor.unsafeBumpPos` reconciliation needed.
       def textual(mark: Mark, close: Optional[Text], entities: Boolean): Text =
         if close.present then textualSlow(mark, close, entities) else
           @tailrec
           def fast(): Text =
-            if !cursor.more then slice(mark, begin())
+            if !more then slice(mark, begin())
             else
-              val buf = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
-              val limit = cursor.unsafeWriteEnd(using Unsafe)
-              val startPos = cursor.unsafePos(using Unsafe)
-              var p = startPos
+              var p = pos
+              val limit = bufEnd
               var hit: Char = 1.toChar // sentinel: "no delimiter found"
 
               while p < limit && hit == 1.toChar do
-                val c = buf(p)
+                val c = bytes(p)
 
                 if c == '<' || c == 0.toChar then hit = c
                 else if c == '&' && entities then hit = c
                 else p += 1
 
-              val consumed = p - startPos
-              if consumed > 0 then cursor.unsafeBumpPos(consumed)(using Unsafe)
+              pos = p
 
               if hit == '&' then textualSlow(mark, close, entities)
               else if hit != 1.toChar then
                 slice(mark, begin())
               else
-                fast() // buffer exhausted; outer @tailrec re-fetches buf via cursor.more
+                fast() // buffer exhausted; outer @tailrec re-checks via `more`
 
           fast()
 
