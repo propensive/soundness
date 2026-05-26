@@ -45,5 +45,33 @@ form `line_0 LF line_1 LF … LF line_{n-1} LF`".
 
 **Spec resolution:** open.
 
+## Phase status
+
+Phase 1 (presentation parser + printer + round-trip) and the encode/decode
+core of phase 2 are landed on the `stratiform/initial` branch:
+
+- `Tel` value class wrapping a `Subtree` (Document or Compound) with
+  `as[T]` typed access
+- `Encodable in Tel` / `Decodable in Tel` typeclasses with Wisteria
+  product / sum derivation
+- Primitive instances for Text, String, Int, Long, Double, Boolean, Tel,
+  Optional[T]
+- Dynamic field access (`tel.firstName`) gated by `DynamicTelEnabler`,
+  with camelCase ↔ kebab-case keyword mapping applied symmetrically by
+  the encoder, decoder and dynamic accessor
+
+Still to land in later commits:
+
+- Panopticon `Lens` given (requires the §22 `modify` mutation primitive
+  — deferred until phase 4 mutations are in place)
+- `tel"…"` interpolator macro (compile-time parse + typed holes via
+  `Encodable in Tel`, source-position-aware errors)
+- `tel"…"` extractor macro (pattern matching with destructuring)
+
+The interpolator and extractor are each ~200 lines of compile-time-quoted
+macro code modelled on `lib/jacinta/src/core/jacinta.internal.scala`; they
+warrant their own focused commits after the core encode/decode surface is
+stable.
+
 ## Resolved
 *(none yet)*
