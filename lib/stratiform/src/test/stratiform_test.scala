@@ -154,15 +154,8 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ > 0)
 
       test(m"canonical tel-schema.tel type-assigns against the axiom"):
-        // The full self-consistency property requires the type-assigned
-        // tree of the canonical tel-schema.tel to round-trip back to a
-        // TelSchema value structurally equal to TelSchemaAxiom.telSchema.
-        // Phase-3 status: the axiom is shape-aligned with the canonical
-        // document and the parse step succeeds, but type assignment
-        // currently raises RequiredMemberAbsent somewhere in the recursive
-        // descent — the axiom needs further alignment with the canonical
-        // document's exact polarity expectations. Tracked in
-        // doc/spec-notes.md as the phase-3 merge blocker.
+        // §20.5 self-consistency: the canonical document must type-assign
+        // cleanly under the hand-encoded axiom.
         val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
         val bytes  =
           val arr = stream.readAllBytes().nn
@@ -174,10 +167,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           TelTypeAssignment.assign(doc, TelSchemaAxiom.telSchema)
           "ok"
         catch case e: TelError => s"failed-with-${e.reason}"
-      . assert: result =>
-          // Document the current state — passes either when the axiom is
-          // aligned (returns "ok") or with the documented gap.
-          result == "ok" || result.startsWith("failed-with-")
+      . assert(_ == "ok")
 
     suite(m"Schema axiom"):
       test(m"tel-schema axiom has the documented name"):

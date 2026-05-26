@@ -61,7 +61,10 @@ object TelTypeAssignment:
   :     TelElement raises TelError =
     val compounds: IArray[Tel.Compound] = document.children.flatMap(_.compounds)
     val rootChildren = assignChildren(compounds, schema.document, schema)
-    TelElement.Node(keywordIndex = Unset, elementType = schema.document, children = rootChildren)
+    val rootElements = applyConstraints
+                        (schema.document, IArray.empty[TelElement], rootChildren, schema)
+
+    TelElement.Node(keywordIndex = Unset, elementType = schema.document, children = rootElements)
 
   // Type-assign AND validate. The Registry is invoked per §21:
   // every Scalar value's validators list is applied to the assigned
@@ -190,48 +193,55 @@ object TelTypeAssignment:
     var i = 0
 
     while i < atoms.length do
-      // Advance past non-atom-assignable members.
-      while pos < parent.members.length && !atomAssignable(parent.members(pos), schema)
-      do pos += 1
-
-      if pos >= parent.members.length then abort(TelError(Reason.TooManyAtoms))
-
-      val member = parent.members(pos)
       val atomText = atoms(i) match
         case Tel.Atom.Inline(t, _)  => t
         case Tel.Atom.Source(t)     => t
         case Tel.Atom.Literal(_, t) => t
 
-      member match
-        case f: Field =>
-          resolveType(f.fieldType, schema) match
-            case s: Scalar =>
-              results += TelElement.Value(pos, s, atomText)
-              if f.repeatable != Polarity.Loose then pos += 1
+      // Find the next atom-assignable member that can accept this atom.
+      // Scalar Fields accept any atom positionally. Flag Fields and
+      // SelectRef variants only accept atoms whose text matches the
+      // declared keyword — non-matching Flag positions are skipped per
+      // §20.2 (Flag fields are switch-like and may be omitted), so the
+      // search proceeds to the next position.
+      var consumed = false
+      while !consumed && pos < parent.members.length do
+        if !atomAssignable(parent.members(pos), schema) then pos += 1
+        else parent.members(pos) match
+          case f: Field =>
+            resolveType(f.fieldType, schema) match
+              case s: Scalar =>
+                results += TelElement.Value(pos, s, atomText)
+                if f.repeatable != Polarity.Loose then pos += 1
+                consumed = true
 
-            case Flag =>
-              if atomText == f.keyword then
+              case Flag =>
+                if atomText == f.keyword then
+                  results += TelElement.Node(pos, Flag, IArray.empty)
+                  pos += 1
+                  consumed = true
+                else pos += 1
+
+              case _ => abort(TelError(Reason.AtomAtNonAssignablePos))
+
+          case s: SelectRef =>
+            // All-Flag SelectRef: atom text must match one of the
+            // referenced SelectDefinition's variant keywords. A no-match
+            // skips the SelectRef position and continues searching.
+            val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
+              abort(TelError(Reason.UnresolvedReference))
+
+            selectDef.variants.find(_.keyword == atomText) match
+              case Some(_) =>
                 results += TelElement.Node(pos, Flag, IArray.empty)
-                pos += 1
-              else abort(TelError(Reason.AtomFlagKeywordMismatch))
+                if s.repeatable != Polarity.Loose then pos += 1
+                consumed = true
 
-            case _ => abort(TelError(Reason.AtomAtNonAssignablePos))
+              case None => pos += 1
 
-        case s: SelectRef =>
-          // All-Flag SelectRef: atom text must match one of the
-          // referenced SelectDefinition's variant keywords.
-          val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
-            abort(TelError(Reason.UnresolvedReference))
+          case _ => pos += 1
 
-          selectDef.variants.find(_.keyword == atomText) match
-            case Some(_) =>
-              results += TelElement.Node(pos, Flag, IArray.empty)
-              if s.repeatable != Polarity.Loose then pos += 1
-
-            case None => abort(TelError(Reason.AtomVariantUnmatched))
-
-        case _ => abort(TelError(Reason.AtomAtNonAssignablePos))
-
+      if !consumed then abort(TelError(Reason.AtomFlagKeywordMismatch))
       i += 1
 
     IArray.from(results)
@@ -256,9 +266,22 @@ object TelTypeAssignment:
       results += assignCompound(compound, entry, schema)
       i += 1
 
-    // Constraint check: every required member must have at least one
-    // assigned child (or a default value on a Scalar Field). Defaults
-    // are realised as synthetic Value elements at the member's position.
+    IArray.from(results)
+
+  // Constraint check per §20.2: required members must be filled either
+  // by an atom-assigned Value, a compound-assigned Node, or — for Scalar
+  // Fields only — a default value. Both atom-phase and child-phase
+  // contribute candidates; the check runs after the two are combined.
+  private def applyConstraints
+       ( parent:        Struct,
+         atomElements:  IArray[TelElement],
+         childElements: IArray[TelElement],
+         schema:        TelSchema )
+  :     IArray[TelElement] raises TelError =
+    val results = scala.collection.mutable.ArrayBuffer.empty[TelElement]
+    results ++= atomElements
+    results ++= childElements
+
     var memberIdx = 0
     while memberIdx < parent.members.length do
       parent.members(memberIdx) match
@@ -268,10 +291,9 @@ object TelTypeAssignment:
             case TelElement.Value(idx, _, _) => idx == memberIdx
 
           if !filled then resolveType(f.fieldType, schema) match
-            case s: Scalar =>
-              f.default match
-                case t: Text             => results += TelElement.Value(memberIdx, s, t)
-                case unset: Unset.type   => abort(TelError(Reason.RequiredMemberAbsent))
+            case s: Scalar => f.default match
+              case t: Text           => results += TelElement.Value(memberIdx, s, t)
+              case unset: Unset.type => abort(TelError(Reason.RequiredMemberAbsent))
 
             case _ => abort(TelError(Reason.RequiredMemberAbsent))
 
@@ -295,7 +317,8 @@ object TelTypeAssignment:
         val atomElements = assignAtoms(compound.atoms, s, schema)
         val childCompounds: IArray[Tel.Compound] = compound.children.flatMap(_.compounds)
         val childElements = assignChildren(childCompounds, s, schema)
-        TelElement.Node(entry.memberIndex, s, atomElements ++ childElements)
+        val allElements = applyConstraints(s, atomElements, childElements, schema)
+        TelElement.Node(entry.memberIndex, s, allElements)
 
       case s: Scalar =>
         val text = compound.atoms.headOption.map:

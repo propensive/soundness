@@ -47,7 +47,7 @@ form `line_0 LF line_1 LF … LF line_{n-1} LF`".
 
 ## Phase status
 
-Phases 1 and 2 fully landed; phase 3 (schema) substantially progressed.
+Phases 1, 2 and 3 fully landed; phase 4 partially landed.
 
 **Phase 1 — presentation parser + printer:** all 117 positive corpus
 cases parse and round-trip; 10 of 23 negative E1xx cases detect the
@@ -64,7 +64,7 @@ expected E-code.
 - `tel"…"` extractor macro (compile-time pattern match + atom-text
   capture)
 
-**Phase 3 — schema component (substantially complete):**
+**Phase 3 — schema component:**
 - `stratiform.schema` sub-component
 - `TelSchema` data model per §20
 - `TelElement` semantic model per §18.2
@@ -73,8 +73,8 @@ expected E-code.
   canonical `tel-schema.tel` document
 - Type assignment algorithm per §20.2 — Field with Struct / Scalar /
   Flag types, SelectRef with variant-keyword matching, Reference
-  resolution, required-member / non-repeatable / E303 / E304 / E306 /
-  E311 checks
+  resolution, atom-phase skip-non-matching-Flag rule, post-combined
+  required-member / non-repeatable / E303 / E304 / E306 / E311 checks
 - Layer composition per §20.3 (MergeStruct / MergeRecord /
   MergeScalar / MergeSelect / MergePolarity)
 - Validator infrastructure per §21 (Registry, Diagnostic, the four
@@ -82,27 +82,33 @@ expected E-code.
   (E310 on Invalid responses)
 - `TelSchemaDecoder.validate` and `asValidated[T]` extension methods
   routing a schema-validated decode through type assignment first
-- Canonical `tel-schema.tel` saved to the corpus and asserted to parse
+- Canonical `tel-schema.tel` saved to the corpus, parsed, **and**
+  asserted to type-assign cleanly against the axiom (§20.5
+  self-consistency)
 
-**Phase 3 merge blocker (still open):**
-- Full §20.5 self-consistency: the canonical tel-schema.tel currently
-  parses cleanly under the axiom but type assignment raises E307
-  somewhere in the recursive descent. The axiom is shape-aligned but
-  needs further tuning to match the canonical document's exact
-  polarity expectations and possibly the validator binding for the
-  built-in scalar references. The test in `tel-schema self-consistency`
-  records the current state — passing when type assignment is "ok",
-  passing with a documented "failed-with-…" reason otherwise.
+**Phase 4 — mutations + edit DSL (partial):**
+- Primitive `Mutation.Op` enum per §22.2 — UpdateAtom, Insert,
+  InsertBefore, InsertAfter, Delete, Replace, AttachRemark,
+  RemoveRemark, SetFlag, UnsetFlag — with a presentation-preserving
+  interpreter
+- `TelPointer` keyword/index path with `Empty`, `of(...)`, `/`
+- `Edit` DSL with `Edit.at(pointer).<op>` cursor, `++` composition,
+  `tel.edited(edit)` extension, and `Edit.compound(...)` helper
+
+**Phase 4 outstanding:**
 - A reconstruction pass that walks the type-assigned `TelElement` tree
   to produce a `TelSchema` value comparable with the axiom by
-  structural equality (not yet started; can only be built once the
-  type-assignment step succeeds).
+  structural equality (the type-assignment step now succeeds, so this
+  is unblocked)
+- Polyvinyl records integration (structurally-typed records over a
+  schema document)
+- Panopticon `Lens` given (requires a `Tel.modify(field, transform)`
+  primitive)
 
-Phase 4+ deferred items:
+Phase 5+ deferred items:
 
-- Panopticon `Lens` given (requires §22 `modify` mutation primitive)
 - `tel"…"` extractor multi-marker patterns within a single atom text
-- Mutation operations (§22)
+- Reorder/ResizeTabulation/Construct mutation operations
 - BinTEL binary format (§7 of bintel.md)
 - BASE-256 codec
 
