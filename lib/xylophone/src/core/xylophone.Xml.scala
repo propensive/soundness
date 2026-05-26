@@ -155,6 +155,24 @@ object Xml extends Tag.Container
   given streamable: (Monitor, Codicil) => Document[Xml] is Streamable by Text =
     emit(_).to(Stream)
 
+  // Tracking-mode parse entry points. Build the parser with a line-feed
+  // tracking `Lineation` in its cursor, parse, then bundle the resulting
+  // `Xml` with the position index the parser emitted along the way.
+  // `positionIndex` is `Unset` if the input contains no root element.
+  def parseTracked(text: Text)(using schema: XmlSchema, tactic: Tactic[ParseError]): Tracked =
+    val parser = XmlParser.fromTextTracked(text)
+    val xml = parser.parseXml(headers0 = false)
+    val index = parser.rootIndex
+    Tracked(xml, PositionIndex(if index == null then IArray.empty[Int] else index))
+
+  def parseTracked
+    (input: Iterator[Text])(using schema: XmlSchema, tactic: Tactic[ParseError])
+  :   Tracked =
+    val parser = XmlParser.fromIteratorTracked(input)
+    val xml = parser.parseXml(headers0 = false)
+    val index = parser.rootIndex
+    Tracked(xml, PositionIndex(if index == null then IArray.empty[Int] else index))
+
   def emit(document: Document[Xml], flat: Boolean = false)(using Monitor, Codicil): Iterator[Text] =
 
     val emitter = Emitter[Text](4096)
@@ -465,6 +483,153 @@ object Xml extends Tag.Container
   extends Format.Position:
     def describe: Text = t"line ${line.n1}, column ${column.n1}"
 
+  // All internal references in a `PositionIndex` are stored as offsets
+  // relative to the start of the containing element descriptor, so any
+  // slice extracted at a descriptor boundary is itself a valid
+  // `PositionIndex`. See `XmlParser` (tracking mode) for the layout and
+  // `Xml.Tracked#locate` for the navigation algorithm.
+  opaque type PositionIndex = IArray[Int]
+
+  object PositionIndex:
+    private[xylophone] def apply(data: IArray[Int]): PositionIndex = data
+
+  extension (positionIndex: PositionIndex)
+    private[xylophone] def ints: IArray[Int] = positionIndex
+
+  // Focus value tracked by Xylophone's path-aware decoders / encoders.
+  // `path` is the XPath to the current node; `position` is the source
+  // line/column/length, populated when the root `Xml` was produced by
+  // `parseTracked` and `Unset` otherwise.
+  case class Focus(path: XPath, position: Optional[Xml.Position] = Unset)
+  derives CanEqual:
+
+    def withPosition(tracked: Tracked): Focus =
+      copy(position = tracked.locate(path))
+
+  // Wraps a parsed `Xml` with a parallel position index produced by
+  // `parseTracked`. Untracked parses keep returning bare `Xml`.
+  //
+  // Element descriptor layout:
+  //
+  //   [ size, line, column, sourceLength,
+  //     attrCount, elemCount,
+  //     attrOff_0, …, attrOff_{a-1},
+  //     elemOff_0, …, elemOff_{e-1},
+  //     <attribute descriptors>,
+  //     <child element descriptors> ]
+  //
+  // Attribute descriptor layout: [ size=4, line, column, length ].
+  // All offsets are relative to the start of the containing element
+  // descriptor; any slice at a descriptor boundary is itself a valid
+  // `PositionIndex`.
+  case class Tracked(value: Xml, positionIndex: PositionIndex):
+    def locate(path: XPath): Optional[Xml.Position] =
+      Tracked.walk(value, positionIndex.ints, 0, path.path.descent.toIndexedSeq, 0)
+
+  object Tracked:
+    // `XPath.path.descent` is stored leaf-first (Serpentine's `/`
+    // prepends), so the walker iterates it in reverse to descend
+    // root-to-leaf. The XPath convention is `/foo/bar/@attr`, so the
+    // first element step names the *root* element itself (no descent
+    // into children) and subsequent steps descend.
+    private def walk
+                 ( xml:      Xml,
+                   data:     IArray[Int],
+                   offset:   Int,
+                   segments: IndexedSeq[Text],
+                   i:        Int )
+    :   Optional[Position] =
+
+      if i >= segments.length then
+        Position(data(offset + 1).z, data(offset + 2).z, length = data(offset + 3))
+      else
+        val segment = segments(segments.length - 1 - i)
+
+        XPath.parseStep(segment) match
+          case Unset => Unset
+
+          case Left(attrName) =>
+            xml match
+              case element: Element => attrPosition(element, data, offset, attrName)
+              case _                => Unset
+
+          case Right((name, ordinal)) =>
+            xml match
+              case element: Element if i == 0 =>
+                // First step names the document's root element.
+                if element.label == name && ordinal == 1 then
+                  walk(element, data, offset, segments, i + 1)
+                else Unset
+
+              case element: Element =>
+                descend(element, name, ordinal).let: childElementIndex =>
+                  val attrCount = data(offset + 4)
+                  val offSlot = offset + 6 + attrCount + childElementIndex
+                  val childOff = data(offSlot)
+                  val child = descendAst(element, name, ordinal).vouch
+                  walk(child, data, offset + childOff, segments, i + 1)
+
+              case _ =>
+                Unset
+
+    private def attrPosition
+                 ( element:  Element,
+                   data:     IArray[Int],
+                   offset:   Int,
+                   attrName: Text )
+    :   Optional[Position] =
+
+      val keys: Vector[Text] = element.attributes.keys.toVector
+      val i = keys.indexOf(attrName)
+
+      if i < 0 then Unset
+      else
+        val attrOff = data(offset + 6 + i)
+        val base = offset + attrOff
+        Position(data(base + 1).z, data(base + 2).z, length = data(base + 3))
+
+    // Find the position of the n-th (1-indexed) child element with the
+    // given name among the child *elements only* (ignoring text, comment,
+    // CDATA, PI and Doctype children). Returns the element-index used to
+    // look up the offset in the element descriptor's offset table.
+    private def descend(element: Element, name: Text, ordinal: Int): Optional[Int] =
+      val children = element.children
+      var i = 0
+      var elementIndex = 0
+      var seen = 0
+      var found: Optional[Int] = Unset
+
+      while i < children.length && found == Unset do
+        children(i) match
+          case child: Element =>
+            if child.label == name then
+              seen += 1
+              if seen == ordinal then found = elementIndex
+            elementIndex += 1
+
+          case _ => ()
+
+        i += 1
+
+      found
+
+    private def descendAst(element: Element, name: Text, ordinal: Int): Optional[Element] =
+      val children = element.children
+      var i = 0
+      var seen = 0
+      var found: Optional[Element] = Unset
+
+      while i < children.length && found == Unset do
+        children(i) match
+          case child: Element if child.label == name =>
+            seen += 1
+            if seen == ordinal then found = child
+          case _ => ()
+
+        i += 1
+
+      found
+
   enum Hole:
     case Text, Tagbody, Comment
     case Element(tag: Text)
@@ -502,12 +667,30 @@ object Xml extends Tag.Container
     // pinpoint the failure), but `line` / `column` stay at 1/1. Acceptable
     // trade: error quality remains useful while parsing-throughput improves.
 
-    def fromText(text: Text)(using XmlSchema): XmlParser = new XmlParser(Cursor[Text](text))
+    def fromText(text: Text)(using XmlSchema): XmlParser =
+      new XmlParser(Cursor[Text](text), tracking = false)
 
     def fromIterator(input: Iterator[Text])(using XmlSchema): XmlParser =
-      new XmlParser(Cursor[Text](input))
+      new XmlParser(Cursor[Text](input), tracking = false)
 
-  private[xylophone] final class XmlParser(cursor: Cursor[Text])(using schema: XmlSchema):
+    // Tracking-mode constructors build the cursor with a `\n`-aware
+    // `Lineation` so `cursor.line` / `cursor.column` reflect real source
+    // coordinates as soon as `XmlParser.reconcileLineation()` is called.
+    // The parser's hot loop still bypasses lineation via `unsafeAdvanceBy`;
+    // reconciliation happens only at element / attribute capture points
+    // and before any refill in `moreSlow`.
+    def fromTextTracked(text: Text)(using XmlSchema): XmlParser =
+      import zephyrine.lineation.linefeedChars
+      new XmlParser(Cursor[Text](text), tracking = true)
+
+    def fromIteratorTracked(input: Iterator[Text])(using XmlSchema): XmlParser =
+      import zephyrine.lineation.linefeedChars
+      new XmlParser(Cursor[Text](input), tracking = true)
+
+  private[xylophone] final class XmlParser
+                                  (cursor:                   Cursor[Text],
+                                   protected[xylophone] val tracking: Boolean)
+                                  (using schema: XmlSchema):
     type Region = Cursor.Mark
 
     private var heldToken: Cursor.Held | Null = null
@@ -560,6 +743,115 @@ object Xml extends Tag.Container
 
     private inline def relinquishNodeBuffer(): Unit = nodeBufferId -= 1
 
+    // ─── tracking-mode bookkeeping ─────────────────────────────────────────
+    //
+    // Per-nesting-level pool of `ArrayBuffer[Int]` index buffers, mirroring
+    // `nodeBuffers`. Each `readElementTracked` call acquires up to three
+    // scratch buffers: one for attribute descriptors, one for child
+    // element descriptors back-to-back, and one for child end positions
+    // within the scratch. The buffer pool grows to the deepest nesting
+    // depth seen and is reused across parses on the same `XmlParser`.
+    private var indexBufferId: Int = -1
+    private val indexBuffers: scala.collection.mutable.ArrayBuffer
+                                [scala.collection.mutable.ArrayBuffer[Int]] =
+      scala.collection.mutable.ArrayBuffer.empty
+
+    private inline def getIndexBuffer(): scala.collection.mutable.ArrayBuffer[Int] =
+      indexBufferId += 1
+      if indexBuffers.length <= indexBufferId then
+        val nu = scala.collection.mutable.ArrayBuffer.empty[Int]
+        indexBuffers += nu
+        nu
+      else
+        val buf = indexBuffers(indexBufferId)
+        buf.clear()
+        buf
+
+    private inline def relinquishIndexBuffer(): Unit = indexBufferId -= 1
+
+    // Finalised root-level position index produced by the previous
+    // tracking-mode parse. Reset on every parse entry. Read by the
+    // `XmlParser.fromText/Iterator(Tracked)` callers.
+    protected[xylophone] var rootIndex: IArray[Int] | Null = null
+
+    // Local-buffer offset up to which `cursor.line` / `cursor.column` have
+    // been brought up to date. The hot-loop `syncTo()` bypasses the
+    // cursor's lineation tracking via `unsafeAdvanceBy`, so the parser
+    // catches lineation up at tracking-mode capture points and before
+    // any refill that would discard consumed bytes.
+    private var lineationPos: Int = cursor.unsafePos(using Unsafe)
+
+    private def reconcileLineation(): Unit =
+      val end = cursor.unsafePos(using Unsafe)
+      if lineationPos < end then
+        var i = lineationPos
+        var newlines = 0
+        var lastNewlineAt = -1
+        while i < end do
+          if bytes(i) == '\n' then
+            newlines += 1
+            lastNewlineAt = i
+          i += 1
+
+        if newlines > 0 then
+          cursor.unsafeBumpLine(newlines)(using Unsafe)
+          cursor.unsafeSetColumn(end - lastNewlineAt - 1)(using Unsafe)
+        else
+          cursor.unsafeBumpColumn(end - lineationPos)(using Unsafe)
+
+        lineationPos = end
+
+    // Assemble an element descriptor in `out`. `attrDescs` and `attrEnds`
+    // hold attribute descriptors back-to-back and their end positions
+    // within `attrDescs`. `childDescs` and `childEnds` hold child element
+    // descriptors / their end positions the same way. See the layout
+    // comment on `Xml.Tracked`.
+    private def emitElementDescriptor
+                 ( out:         scala.collection.mutable.ArrayBuffer[Int],
+                   attrDescs:   scala.collection.mutable.ArrayBuffer[Int],
+                   attrEnds:    scala.collection.mutable.ArrayBuffer[Int],
+                   childDescs:  scala.collection.mutable.ArrayBuffer[Int],
+                   childEnds:   scala.collection.mutable.ArrayBuffer[Int],
+                   startLine:   Int,
+                   startColumn: Int,
+                   startMark:   Long )
+    :   Unit =
+
+      syncTo()
+      val attrCount = attrEnds.length
+      val elemCount = childEnds.length
+      val sourceLength = (cursor.position.n0 - startMark).toInt
+      val sizeSlot = out.length
+
+      out += 0
+      out += startLine
+      out += startColumn
+      out += sourceLength
+      out += attrCount
+      out += elemCount
+
+      val headerSize = 6 + attrCount + elemCount
+
+      // Attribute offsets first, then element offsets.
+      var i = 0
+      var prevEnd = 0
+      while i < attrCount do
+        out += headerSize + prevEnd
+        prevEnd = attrEnds(i)
+        i += 1
+
+      i = 0
+      prevEnd = attrEnds.lastOption.getOrElse(0)
+      val attrsTotal = attrEnds.lastOption.getOrElse(0)
+      while i < elemCount do
+        out += headerSize + attrsTotal + prevEnd
+        prevEnd = childEnds(i)
+        i += 1
+
+      out ++= attrDescs
+      out ++= childDescs
+      out(sizeSlot) = out.length - sizeSlot
+
     // ─── parser-local snapshot of the cursor's buffer / position ───────────
     //
     // The cursor remains the source of truth at refill, mark, slice and
@@ -588,15 +880,22 @@ object Xml extends Tag.Container
       bytes  = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
       pos    = cursor.unsafePos(using Unsafe)
       bufEnd = cursor.unsafeWriteEnd(using Unsafe)
+      lineationPos = pos
 
     protected inline def more: Boolean = pos < bufEnd || moreSlow()
 
     // Out-of-line slow path so `more`'s inline budget stays small enough
     // for the JIT to keep `pos < bufEnd` as one register comparison in
-    // hot loops.
+    // hot loops. In tracking mode, lineation is reconciled and the
+    // parser-local `pos` is re-anchored even on EOF so that the next
+    // `cursor.position` read reflects the compacted buffer's basePos.
     private def moreSlow(): Boolean =
       syncTo()
-      if cursor.more then { syncFrom(); true } else false
+      if tracking then reconcileLineation()
+      if cursor.more then { syncFrom(); true }
+      else
+        if tracking then syncFrom()
+        false
 
     protected inline def peek: Char = bytes(pos)
     protected inline def advance(): Unit = pos += 1
@@ -1247,7 +1546,305 @@ object Xml extends Tag.Container
     def parseXml(headers0: Boolean)(using Tactic[ParseError]): Xml =
       cursor.hold:
         heldToken = summon[Cursor.Held]
-        try parseXml0(headers0) finally heldToken = null
+        try
+          if tracking then parseXmlTracked0(headers0) else parseXml0(headers0)
+        finally heldToken = null
+
+    // Tracked variants of `readElement` / `readAttributes` / `readChildren`,
+    // building a parallel `IArray[Int]` position index as they parse. The
+    // structural logic mirrors the untracked variants byte-for-byte; only
+    // the position bookkeeping differs. Splitting keeps the untracked
+    // hot path free of any tracking-related branches.
+
+    private def parseXmlTracked0(headers0: Boolean)(using Tactic[ParseError]): Xml =
+      headers = headers0
+      skipWs()
+      val nodes = getNodeBuffer()
+      val rootBuf = getIndexBuffer()
+
+      while more do
+        if peek != '<' then
+          val text = readText(t"")
+          if text.length > 0 then nodes += TextNode(text)
+        else
+          syncTo()
+          reconcileLineation()
+          val startLine = cursor.line.n0
+          val startColumn = cursor.column.n0
+          val startMark = cursor.position.n0.toLong
+
+          advance()
+          if !more then fail(Issue.ExpectedMore)
+          val c2 = peek
+
+          if c2 == '!' then
+            advance()
+
+            if more && peek == '-' then
+              advance()
+              if !more then fail(Issue.ExpectedMore)
+              if peek != '-' then fail(Issue.Unexpected(peek))
+              advance()
+              nodes += Comment(readComment())
+            else if more && (peek == 'D' || peek == 'd') then
+              consumeLiteralCi("DOCTYPE")
+              nodes += Doctype(readDoctype())
+            else if more && peek == '[' then
+              advance()
+              consumeLiteral("CDATA[")
+              nodes += Cdata(readCdata())
+            else
+              if !more then fail(Issue.ExpectedMore)
+              fail(Issue.Unexpected(peek))
+          else if c2 == '?' then
+            advance()
+            nodes += readProcessingInstruction()
+          else if c2 == '/' then
+            advance()
+            val closeStart = begin()
+            val close = readName()
+            fail(Issue.UnopenedTag(close), closeStart)
+          else
+            nodes += readElementTracked(rootBuf, startLine, startColumn, startMark)
+
+        skipWs()
+
+      val result =
+        if nodes.length == 1 then nodes(0)
+        else Fragment(nodes.toSeq*)
+
+      relinquishNodeBuffer()
+      rootIndex = IArray.from(rootBuf)
+      relinquishIndexBuffer()
+      result
+
+    // Read a tracked element starting just after '<'. `startLine`,
+    // `startColumn`, `startMark` were captured by the caller at the `<`.
+    // `out` is the parent's index buffer; the element's descriptor is
+    // appended to it.
+    private def readElementTracked
+                 ( out:         scala.collection.mutable.ArrayBuffer[Int],
+                   startLine:   Int,
+                   startColumn: Int,
+                   startMark:   Long )
+                 ( using Tactic[ParseError] )
+    :   Element =
+
+      // Macro element holes can't carry meaningful positions; emit an empty
+      // attribute / child set and a zero-length descriptor.
+      if more && peek == ' ' then
+        callback.let(_(position.z, Hole.Element(t"")))
+        advance()
+        if !more then fail(Issue.ExpectedMore)
+        if peek != '>' then fail(Issue.Unexpected(peek))
+        advance()
+        val attrDescs = getIndexBuffer()
+        val attrEnds  = getIndexBuffer()
+        val childDescs = getIndexBuffer()
+        val childEnds  = getIndexBuffer()
+        emitElementDescriptor
+          (out, attrDescs, attrEnds, childDescs, childEnds, startLine, startColumn, startMark)
+        relinquishIndexBuffer()
+        relinquishIndexBuffer()
+        relinquishIndexBuffer()
+        relinquishIndexBuffer()
+        Element(t" ", Attributes.empty, IArray.empty[Node])
+      else
+        val attrDescs = getIndexBuffer()
+        val attrEnds  = getIndexBuffer()
+        val childDescs = getIndexBuffer()
+        val childEnds  = getIndexBuffer()
+
+        val name = readName()
+        val attrs = readAttributesTracked(name, attrDescs, attrEnds)
+        if !more then fail(Issue.ExpectedMore)
+
+        val result =
+          if peek == '/' then
+            advance()
+            if !more then fail(Issue.ExpectedMore)
+            if peek != '>' then fail(Issue.Unexpected(peek))
+            advance()
+            Element(name, attrs, IArray.empty[Node])
+          else
+            if peek != '>' then fail(Issue.Unexpected(peek))
+            advance()
+            val children = readChildrenTracked(name, childDescs, childEnds)
+            Element(name, attrs, children)
+
+        emitElementDescriptor
+          (out, attrDescs, attrEnds, childDescs, childEnds, startLine, startColumn, startMark)
+        relinquishIndexBuffer()
+        relinquishIndexBuffer()
+        relinquishIndexBuffer()
+        relinquishIndexBuffer()
+        result
+
+    private def readAttributesTracked
+                 ( tag:       Text,
+                   attrDescs: scala.collection.mutable.ArrayBuffer[Int],
+                   attrEnds:  scala.collection.mutable.ArrayBuffer[Int] )
+                 ( using Tactic[ParseError] )
+    :   Attributes =
+
+      var n = 0
+      var done = false
+      var hashOr = 0
+
+      inline def ensureCapacity(): Unit =
+        if 2*n >= attrBuf.length then
+          val nu = new Array[String](attrBuf.length*2)
+          jl.System.arraycopy(attrBuf, 0, nu, 0, 2*n)
+          attrBuf = nu
+
+      while !done do
+        skipWs()
+        if !more then fail(Issue.ExpectedMore)
+        val ch = peek
+
+        if ch == '>' || ch == '/' || ch == '?' then done = true
+        else if ch == ' ' then
+          callback.let(_(position.z, Hole.Tagbody))
+          advance()
+          skipWs()
+          ensureCapacity()
+          attrBuf(2*n) = " "
+          attrBuf(2*n + 1) = ""
+          n += 1
+        else
+          // Capture attribute start position before reading the name.
+          syncTo()
+          reconcileLineation()
+          val attrLine = cursor.line.n0
+          val attrColumn = cursor.column.n0
+          val attrStartMark = cursor.position.n0.toLong
+
+          val keyStart = begin()
+          val key = readName()
+          val keyStr: String = key.s
+          val h: Int = keyStr.hashCode
+
+          if (hashOr | h) == hashOr then
+            var dup = 0
+            while dup < 2*n do
+              if attrBuf(dup) == keyStr then fail(Issue.DuplicateAttribute(key), keyStart)
+              dup += 2
+
+          hashOr |= h
+
+          skipWs()
+          expectChar('=')
+          skipWs()
+          if !more then fail(Issue.ExpectedMore, keyStart)
+          val q = peek
+
+          val value =
+            if q == ' ' then
+              callback.let(_(position.z, Hole.Attribute(tag, key)))
+              advance()
+              t" "
+            else if q == '"' || q == '\'' then
+              advance()
+              readAttrValue(tag, q)
+            else
+              fail(Issue.UnquotedAttribute, keyStart)
+
+          ensureCapacity()
+          attrBuf(2*n) = keyStr
+          attrBuf(2*n + 1) = value.s
+          n += 1
+
+          // Emit attribute descriptor [size=4, line, column, length].
+          syncTo()
+          val attrLength = (cursor.position.n0 - attrStartMark).toInt
+          attrDescs += 4
+          attrDescs += attrLine
+          attrDescs += attrColumn
+          attrDescs += attrLength
+          attrEnds  += attrDescs.length
+
+      if n == 0 then Attributes.empty
+      else
+        val arr = new Array[String](2*n)
+        jl.System.arraycopy(attrBuf, 0, arr, 0, 2*n)
+        Attributes.fromInterleaved(arr.immutable(using Unsafe))
+
+    private def readChildrenTracked
+                 ( parentName: Text,
+                   childDescs: scala.collection.mutable.ArrayBuffer[Int],
+                   childEnds:  scala.collection.mutable.ArrayBuffer[Int] )
+                 ( using Tactic[ParseError] )
+    :   IArray[Node] =
+
+      val children = getNodeBuffer()
+      var done = false
+
+      while !done do
+        if !more then fail(Issue.Incomplete(parentName))
+        val c = peek
+
+        if c == '<' then
+          // Capture the `<` position now in case this turns out to be a
+          // child element. Non-element branches (comment, CDATA, PI, close)
+          // simply ignore the captured values.
+          syncTo()
+          reconcileLineation()
+          val childLine = cursor.line.n0
+          val childColumn = cursor.column.n0
+          val childStartMark = cursor.position.n0.toLong
+
+          advance()
+          if !more then fail(Issue.ExpectedMore)
+          val c2 = peek
+
+          if c2 == '/' then
+            advance()
+            val closeStart = begin()
+            val close = readName()
+            skipWs()
+            if !more then fail(Issue.ExpectedMore, closeStart)
+            if peek != '>' then fail(Issue.Unexpected(peek), closeStart)
+            advance()
+            if close != parentName then fail(Issue.MismatchedTag(parentName, close), closeStart)
+            done = true
+          else if c2 == '!' then
+            advance()
+
+            if more && peek == '-' then
+              advance()
+              if !more then fail(Issue.ExpectedMore)
+              if peek != '-' then fail(Issue.Unexpected(peek))
+              advance()
+              children += Comment(readComment())
+            else if more && peek == '[' then
+              advance()
+              consumeLiteral("CDATA[")
+              children += Cdata(readCdata())
+            else
+              if !more then fail(Issue.ExpectedMore)
+              fail(Issue.Unexpected(peek))
+          else if c2 == '?' then
+            advance()
+            children += readProcessingInstruction()
+          else
+            children += readElementTracked(childDescs, childLine, childColumn, childStartMark)
+            childEnds += childDescs.length
+        else
+          val text = readText(parentName)
+          if text.length > 0 then children += TextNode(text)
+
+      val result =
+        if children.isEmpty then IArray.empty[Node]
+        else
+          val arr = new Array[Node](children.length)
+          var i = 0
+          while i < children.length do
+            arr(i) = children(i)
+            i += 1
+          arr.immutable(using Unsafe)
+
+      relinquishNodeBuffer()
+      result
 
     private def parseXml0(headers0: Boolean)(using Tactic[ParseError]): Xml =
       headers = headers0
