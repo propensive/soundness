@@ -898,3 +898,4 @@ object Tests extends Suite(m"Xylophone tests"):
             Header(t"1.0", Unset, Unset))
 
     PositionTests()
+    DecoderTests()
