@@ -32,6 +32,8 @@
                                                                                                   */
 package stratiform
 
+import scala.language.unsafeNulls
+
 import anticipation.*
 import contingency.*
 import fulminate.*
@@ -47,10 +49,18 @@ object Tests extends Suite(m"Stratiform Tests"):
     suite(m"Positive corpus"):
       CorpusLoader.positive.each: testcase =>
         test(m"parses ${testcase.stem}"):
-          val expected = CheckFormat.parse(testcase.check).tree
           val parsed = Tel.parse(testcase.source)
           TelCheckTree.of(parsed)
         . assert(_ == CheckFormat.parse(testcase.check).tree)
+
+    suite(m"Round-trip print → parse"):
+      CorpusLoader.positive.each: testcase =>
+        test(m"round-trip ${testcase.stem}"):
+          val first = Tel.parse(testcase.source)
+          val printed = Tel.show(first)
+          val reparsed = Tel.parse(IArray.from(printed.s.getBytes("UTF-8")))
+          TelCheckTree.of(reparsed)
+        . assert(_ == TelCheckTree.of(Tel.parse(testcase.source)))
 
     suite(m"Negative corpus (E1xx parsing)"):
       CorpusLoader.negative.each: testcase =>
