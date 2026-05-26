@@ -39,6 +39,8 @@ import java.lang as jl
 import anticipation.*
 import contingency.*
 import fulminate.*
+import panopticon.*
+import prepositional.*
 import probably.*
 import rudiments.*
 import vacuous.*
@@ -495,6 +497,35 @@ object Tests extends Suite(m"Stratiform Tests"):
         val ptr = TelPointer.of(Text("missing"))
         capture[MutationError](Mutation(tel, Mutation.Op.Delete(ptr))).reason
       . assert(_ == MutationError.Reason.PointerNotFound)
+
+    suite(m"Tel.modify and Lens given"):
+      import dynamicTelAccess.enabled
+      def doc(source: String): Tel = Tel.parse(IArray.from(source.getBytes("UTF-8")))
+
+      test(m"modify replaces an existing field's compound"):
+        val tel = doc("name Alice\n")
+        val updated = tel.modify("name", Tel.scalar(Text("Bob")))
+        updated.selectDynamic("name").primaryAtom
+      . assert(_ == Text("Bob"))
+
+      test(m"modify appends when the field is absent"):
+        val tel = doc("name Alice\n")
+        val updated = tel.modify("email", Tel.scalar(Text("a@b.c")))
+        updated.selectDynamic("email").primaryAtom
+      . assert(_ == Text("a@b.c"))
+
+      test(m"Lens by field name reads the current value"):
+        val tel = doc("name Alice\n")
+        val lens = summon["name" is Lens from Tel onto Tel]
+        lens(tel).primaryAtom
+      . assert(_ == Text("Alice"))
+
+      test(m"Lens.modify updates the field through the transform"):
+        val tel = doc("name Alice\n")
+        val lens = summon["name" is Lens from Tel onto Tel]
+        val updated = lens.modify(tel)(_ => Tel.scalar(Text("Carol")))
+        updated.selectDynamic("name").primaryAtom
+      . assert(_ == Text("Carol"))
 
     suite(m"Edit DSL"):
       def doc(source: String): Tel = Tel.parse(IArray.from(source.getBytes("UTF-8")))

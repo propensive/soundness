@@ -38,6 +38,7 @@ import anticipation.*
 import contextual.*
 import contingency.*
 import distillate.*
+import panopticon.*
 import prepositional.*
 import vacuous.*
 import wisteria.*
@@ -53,6 +54,15 @@ import wisteria.*
 // Decoding inverts these mappings.
 
 trait Tel2:
+  // Field-keyed lens: a name `<: Label` resolves to a Lens from `Tel`
+  // onto `Tel`. The getter delegates to `selectDynamic`; the setter
+  // routes through `Tel.modify`, which replaces an existing child
+  // compound with the same kebab-case keyword in place or appends a
+  // new one. Mirrors jacinta's lens given.
+  given lens: [name <: Label: ValueOf] => (erased DynamicTelEnabler) => Tactic[TelError]
+  =>  name is Lens from Tel onto Tel =
+    Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))
+
   // `tel"…"` interpolator: parses at compile time and substitutes typed
   // holes via Encodable in Tel.
   inline given interpolator: Tel is Interpolable:

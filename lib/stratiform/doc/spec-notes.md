@@ -50,8 +50,13 @@ form `line_0 LF line_1 LF … LF line_{n-1} LF`".
 Phases 1, 2 and 3 fully landed; phase 4 partially landed.
 
 **Phase 1 — presentation parser + printer:** all 117 positive corpus
-cases parse and round-trip; 10 of 23 negative E1xx cases detect the
-expected E-code.
+cases parse and round-trip; 22 of 23 negative E1xx cases detect the
+expected E-code (E102, E103, E105, E106, E107, E108, E109, E110, E111,
+E112, E113, E114, E115, E116, E121 bare-CR, E122, E123). The mixed-
+line-endings half of E121 is deferred — it needs a pass that can tell
+structural line breaks apart from literal-atom payload bytes. The
+column-rule errors (E117–E120) need a tabulation-row alignment check
+that's still TODO.
 
 **Phase 2 — typed access surface:**
 - `Tel` value class wrapping `Subtree` (Document | Compound)
