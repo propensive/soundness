@@ -137,7 +137,6 @@ private[jacinta] object JsonParser:
 
 private[jacinta] final class JsonParser:
   import JsonParser.*
-  import Lineation.untrackedData
 
   // The cursor remains the source of truth at refill, mark, slice and error
   // points, but for the per-byte hot loops (`peek`, `advance`, `more`) the
@@ -164,6 +163,11 @@ private[jacinta] final class JsonParser:
   private var bufEnd: Int = 0
 
   protected[jacinta] var holes: Boolean = false
+
+  // When true, the cursor is built with a line-feed-tracking `Lineation` so
+  // `cursor.line` / `cursor.column` reflect real source coordinates, and the
+  // parser emits a parallel `PositionIndex`.
+  protected[jacinta] var tracking: Boolean = false
 
   // Storage shape `parseNumber` uses for each parsed JSON number. See
   // `NumberMode` for semantics. Reset before each `parse()` call.
@@ -201,7 +205,7 @@ private[jacinta] final class JsonParser:
   private val keyCacheHigh: Array[Long]         = new Array(KeyCacheSize)
 
   def resetData(input: Data): Unit =
-    cursor = Cursor[Data](input)
+    cursor = makeCursor(input)
     syncFrom()
     stringCursor = 0
     arrayBufferId = -1
@@ -210,13 +214,29 @@ private[jacinta] final class JsonParser:
     heldToken = null
 
   def resetIterator(input: Iterator[Data]): Unit =
-    cursor = Cursor[Data](input)
+    cursor = makeCursor(input)
     syncFrom()
     stringCursor = 0
     arrayBufferId = -1
     bcdLongBufferId = -1
     bcdIntBufferId = -1
     heldToken = null
+
+  private def makeCursor(input: Data): Cursor[Data] =
+    if tracking then
+      import zephyrine.lineation.linefeedByte
+      Cursor[Data](input)
+    else
+      import Lineation.untrackedData
+      Cursor[Data](input)
+
+  private def makeCursor(input: Iterator[Data]): Cursor[Data] =
+    if tracking then
+      import zephyrine.lineation.linefeedByte
+      Cursor[Data](input)
+    else
+      import Lineation.untrackedData
+      Cursor[Data](input)
 
   // ──────────────────────────────────────────────────────────────────────────
   // Substrate.
