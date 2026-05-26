@@ -182,6 +182,48 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[TelError](TelTypeAssignment.assign(doc, personSchema)).reason
       . assert(_ == TelError.Reason.RequiredMemberAbsent)
 
+    suite(m"Layer composition"):
+      test(m"a layer adding a field extends the document Struct"):
+        val base = TelSchema(
+          name     = Text("base"),
+          document = TelSchema.Struct(
+            members = IArray(TelSchema.Field
+             ( TelSchema.Polarity.Implicit, TelSchema.Polarity.Implicit, Text("name"),
+               TelSchema.Scalar(IArray(Text("string"))), Unset )),
+            validators = IArray.empty),
+          layers = IArray(TelSchema.Layer(
+            name     = Text("extra"),
+            overlay  = TelSchema.Struct(
+              members = IArray(TelSchema.Field
+               ( TelSchema.Polarity.Loose, TelSchema.Polarity.Implicit, Text("email"),
+                 TelSchema.Scalar(IArray(Text("string"))), Unset )),
+              validators = IArray.empty),
+            records = IArray.empty, scalars = IArray.empty, selects = IArray.empty)),
+          sigil    = Unset,
+          records  = IArray.empty,
+          scalars  = IArray.empty,
+          selects  = IArray.empty)
+
+        val composed = TelSchemaLayers.compose(base)
+        composed.document.members.length
+      . assert(_ == 2)
+
+      test(m"duplicate layer name raises E205"):
+        val layer = TelSchema.Layer
+         ( name    = Text("dup"),
+           overlay = TelSchema.Struct(IArray.empty, IArray.empty),
+           records = IArray.empty, scalars = IArray.empty, selects = IArray.empty )
+
+        val base = TelSchema(
+          name = Text("base"),
+          document = TelSchema.Struct(IArray.empty, IArray.empty),
+          layers = IArray(layer, layer),
+          sigil = Unset,
+          records = IArray.empty, scalars = IArray.empty, selects = IArray.empty)
+
+        capture[TelError](TelSchemaLayers.compose(base)).reason
+      . assert(_ == TelError.Reason.DuplicateLayerName)
+
     suite(m"Dynamic access"):
       import dynamicTelAccess.enabled
 
