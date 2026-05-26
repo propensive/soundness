@@ -34,6 +34,13 @@ package octogenarian
 
 import soundness.*
 
+// `/` is now Path's own `def /` (Method on the Path class) so no
+// Octogenarian-side extension import is needed.  `read`/`namespace`/
+// `target` are still package-level extensions on `NoteRef`; bring them in
+// explicitly so they win on specificity against Turbulence's generic `read`
+// brought in via `soundness.*`.
+import octogenarian.{read, namespace, target}
+
 import systems.java
 import temporaryDirectories.system
 import workingDirectories.default
@@ -1147,17 +1154,23 @@ object Tests extends Suite(m"Octogenarian Tests"):
 
     suite(m"commit-rooted note access"):
 
-      test(m"commit / namespace builds a NoteRef at refs/notes/<namespace>"):
+      test(m"commit / namespace builds a NoteRef whose namespace is refs/notes/<namespace>"):
         val worktree = freshWorktree()
         val hash = commitFile(worktree, t"a", t"a\n", t"first")
-        (hash / t"foo").ref.encode
+        (hash / t"foo").namespace.encode
       .assert(_ == t"refs/notes/foo")
 
       test(m"chaining / extends the namespace path"):
         val worktree = freshWorktree()
         val hash = commitFile(worktree, t"a", t"a\n", t"first")
-        (hash / t"foo" / t"bar").ref.encode
+        (hash / t"foo" / t"bar").namespace.encode
       .assert(_ == t"refs/notes/foo/bar")
+
+      test(m"a NoteRef's target round-trips through the path root"):
+        val worktree = freshWorktree()
+        val hash = commitFile(worktree, t"a", t"a\n", t"first")
+        (hash / t"foo").target == hash
+      .assert(_ == true)
 
       test(m"(commit / namespace).read[Text] returns the note body"):
         val worktree = freshWorktree()
@@ -1174,8 +1187,10 @@ object Tests extends Suite(m"Octogenarian Tests"):
         capture[GitError]((hash / t"missing").read[Text]).reason
       .assert(_ == GitError.Reason.NoteNotFound)
 
-      test(m"continuation / on NoteRef rejects an invalid segment"):
+      test(m"namespace validation rejects an invalid segment"):
         val worktree = freshWorktree()
         val hash = commitFile(worktree, t"a", t"a\n", t"first")
-        safely(hash / t"foo" / t"bad..segment").let(_.ref.encode)
+        // Construction is unchecked; validation runs when the namespace path
+        // is materialised for use against git.
+        safely((hash / t"foo" / t"bad..segment").namespace).let(_.encode)
       .assert(_.absent)

@@ -35,7 +35,9 @@ package octogenarian
 import ambience.*
 import anticipation.*
 import contingency.*
+import distillate.*
 import galilei.*
+import gossamer.*
 import guillotine.*
 import nomenclature.*
 import prepositional.*
@@ -50,5 +52,41 @@ package gitCommands:
     GitCommand(path.encode)
 
 export octogenarian.internal.{GitTag, GitBranch, GitHash, Refspec}
+
+// A `NoteRef` is just a `Path on Notes under GitHash`: the commit hash sits
+// at the root (it IS a `Root`, since `GitHash extends Root`), the namespace
+// segments sit in the descent.  Because `GitHash` and `NoteRef` are both
+// `Path` subtypes, `commit / t"foo"` and `noteRef / t"bar"` both go straight
+// to Serpentine's own `Path.def /` — Octogenarian defines no `/` of its own.
+type NoteRef = Path on Notes under GitHash
+
+extension (noteRef: NoteRef)
+  // Extract the commit hash from the path's root (encoded as `<hash>/`).
+  def target: GitHash = GitHash.unsafe(noteRef.root.keep(40))
+
+  // The fully-qualified git ref path (e.g. `refs/notes/foo/bar`) that names
+  // the namespace; each descent segment is validated here.
+  def namespace(using Tactic[GitRefError]): Path on GitRefs =
+    val initial: Path on GitRefs = GitRefs / t"notes"
+
+    noteRef.descent.reverse.foldLeft(initial): (path, segment) =>
+      GitRefs.validateSegment(segment)
+      path / segment
+
+  // Fetch the note body via `git notes show` on the implicit `GitRepo` and
+  // decode it as `value`.  Aborts with `GitError(NoteNotFound)` if no note
+  // is attached.
+  def read[value: Decodable in Text]
+    ( using repo:    GitRepo,
+            command: GitCommand,
+            wd:      WorkingDirectory,
+            gitErr:  Tactic[GitError],
+            refErr:  Tactic[GitRefError],
+            exec:    Tactic[ExecError] )
+  :   value logs GitEvent =
+
+    repo.notes.show(noteRef.target, noteRef.namespace)
+    . lest(GitError(GitError.Reason.NoteNotFound))
+    . decode[value]
 
 private[octogenarian] inline def git(using command: GitCommand): GitCommand = command

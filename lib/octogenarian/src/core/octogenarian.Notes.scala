@@ -32,45 +32,49 @@
                                                                                                   */
 package octogenarian
 
-import ambience.*
 import anticipation.*
 import contingency.*
-import distillate.*
-import guillotine.*
+import gossamer.*
+import kaleidoscope.*
 import prepositional.*
 import serpentine.*
-import symbolism.*
+import spectacular.*
 
-import GitError.Reason.*
-
-// A `NoteRef` names a specific git note: the commit it is attached to, plus
-// the ref path (e.g. `refs/notes/ci-attestation`) it lives under. The repo
-// is supplied implicitly at `.read` time.
+// `Notes` is the Serpentine path plane for git notes.  Each path on this
+// plane is rooted at the commit hash being annotated (which IS the `Root`
+// — `GitHash` extends `Root` directly) and its descent is the namespace
+// under `refs/notes/`.
 //
-// Constructed via Symbolism's `/` operator: `commit / t"foo"` lifts a
-// `GitHash` into a `NoteRef` (given lives on `GitHash`'s companion in
-// `octogenarian.internal`), and further chaining (`noteRef / t"bar"`)
-// extends the namespace path via the given below.
-//
-// NB: this currently uses a `Divisible` instance for the entry-point lift
-// rather than a Serpentine-style `Conversion[GitHash, Path]`, because
-// Symbolism's generic `/` extension shadows any Conversion at method-
-// resolution time.  Revisit when Serpentine grows a first-class lift.
-object NoteRef:
-  given continuation: Tactic[GitRefError]
-  =>  NoteRef is Divisible by Text to NoteRef =
+// Modelling notes as Serpentine paths lets `commit / t"foo" / t"bar"` reuse
+// Path's own `def /` (which preserves singleton tracking, runs the
+// Admissibility check, and produces a refined `Path of (...)` type), rather
+// than going through a custom `Divisible` instance or a Conversion lift.
+object Notes:
+  type Plane = Notes
 
-    Divisible: (noteRef, segment) =>
-      GitRefs.validateSegment(segment)
-      NoteRef(noteRef.target, noteRef.ref / segment)
+  given filesystem: Notes is Filesystem:
+    val name: Text = t"Notes"
+    val separator: Text = t"/"
+    val self: Text = t"@"
+    val parent: Text = t".."
 
-case class NoteRef(target: GitHash, ref: Path on GitRefs):
-  def read[value: Decodable in Text]
-    ( using repo:    GitRepo,
-            command: GitCommand,
-            wd:      WorkingDirectory,
-            errors:  Tactic[GitError],
-            exec:    Tactic[ExecError] )
-  :   value logs GitEvent =
+  // Serpentine's `/` consults `Admissible` only to decide platformed-vs-
+  // unplatformed; it does not invoke `check` at construction time.  Per-
+  // segment validation runs lazily in `NoteRef.namespace` (which materialises
+  // the canonical `Path on GitRefs` for the underlying git operation).
+  given admissible: [text <: Text] => text is Admissible on Notes = _ => ()
 
-    repo.notes.show(target, ref).lest(GitError(NoteNotFound)).decode[value]
+  // `GitHash` is the root of a notes path.  Encoded form is `<hash>/`
+  // (40 hex chars + separator), so an empty-descent path encodes as
+  // `<hash>/` and `commit / t"foo"` encodes as `<hash>/foo`.
+  given radical: Tactic[PathError] => GitHash is Radical:
+    type Plane = Notes
+    def length(text: Text): Int = 41
+
+    def decode(text: Text): GitHash = text match
+      case r"$hash([a-f0-9]{40})/.*" => GitHash.unsafe(hash)
+      case _                         => abort(PathError(_.InvalidRoot))
+
+    def encode(hash: GitHash): Text = t"${hash.text}/"
+
+trait Notes
