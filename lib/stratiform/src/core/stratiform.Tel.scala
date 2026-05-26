@@ -32,12 +32,12 @@
                                                                                                   */
 package stratiform
 
+import scala.language.dynamics
+
 import anticipation.*
 import contingency.*
 import distillate.*
-import gossamer.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 
 // Presentation model from §17 of the TEL specification. The Scala AST is
@@ -50,8 +50,26 @@ import vacuous.*
 // IArray[Block]` field, so flat traversal logic can address either form
 // without case analysis.
 
-class Tel private[stratiform](private[stratiform] val subtree: Tel.Subtree):
+class Tel private[stratiform](private[stratiform] val subtree: Tel.Subtree)
+extends scala.Dynamic:
   inline def as[value: Decodable in Tel]: value raises TelError = value.decoded(this)
+
+  // Dynamic field access: `tel.firstName` becomes a lookup for the kebab-
+  // case keyword "first-name". Gated by DynamicTelEnabler so opting in is
+  // explicit.
+  def selectDynamic(field: String)(using erased DynamicTelEnabler)
+  :     Tel raises TelError =
+    val match0 = childCompounds.find(_.keyword == Tel.camelToKebab(field))
+    if match0.isEmpty then Tel.empty else Tel(match0.get)
+
+  // Chained access: `tel.contacts(0)` after the field lookup. Phase-2
+  // returns the n-th child compound (any keyword), matching list-style
+  // access.
+  def applyDynamic(field: String)(index: Int)(using erased DynamicTelEnabler)
+  :     Tel raises TelError =
+    val parent = selectDynamic(field)
+    val cs = parent.childCompounds
+    if index < 0 || index >= cs.length then Tel.empty else Tel(cs(index))
 
   // Keyword of this node — empty for the document root, otherwise the
   // compound's keyword text.
@@ -142,3 +160,20 @@ object Tel extends Tel2:
   def show(tel: Tel): Text = tel.document.lay(Text(""))(TelPrinter.print)
 
   def show(document: Document): Text = TelPrinter.print(document)
+
+  // camelCase → kebab-case: insert `-` before each interior uppercase
+  // letter and lowercase it. `firstName` → `first-name`. Used by the
+  // dynamic accessor to map Scala identifier names to TEL keywords.
+  private[stratiform] def camelToKebab(s: String): Text =
+    val sb = StringBuilder()
+    var i = 0
+    while i < s.length do
+      val c = s.charAt(i)
+      if c >= 'A' && c <= 'Z' then
+        if i > 0 then sb.append('-')
+        sb.append((c - 'A' + 'a').toChar)
+      else sb.append(c)
+
+      i += 1
+
+    Text(sb.toString)

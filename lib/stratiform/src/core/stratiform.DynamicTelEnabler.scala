@@ -32,83 +32,14 @@
                                                                                                   */
 package stratiform
 
-import scala.language.unsafeNulls
-
-import anticipation.*
-import contingency.*
-import fulminate.*
-import probably.*
 import rudiments.*
-import vacuous.*
 
-import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
-import Tel.given
+// Phantom-typed gate for `tel.selectDynamic("…")` and friends. Importing
+// `dynamicTelAccess.enabled` brings the given into scope and unlocks the
+// dynamic syntax; without that import the dynamic methods are
+// inaccessible, mirroring jacinta's DynamicJsonEnabler pattern.
 
-object Tests extends Suite(m"Stratiform Tests"):
-  case class Person(name: Text, age: Int) derives CanEqual
+sealed trait DynamicTelEnabler
 
-
-  def run(): Unit =
-    suite(m"Positive corpus"):
-      CorpusLoader.positive.each: testcase =>
-        test(m"parses ${testcase.stem}"):
-          val parsed = Tel.parse(testcase.source)
-          TelCheckTree.of(parsed)
-        . assert(_ == CheckFormat.parse(testcase.check).tree)
-
-    suite(m"Round-trip print → parse"):
-      CorpusLoader.positive.each: testcase =>
-        test(m"round-trip ${testcase.stem}"):
-          val first = Tel.parse(testcase.source)
-          val printed = Tel.show(first)
-          val reparsed = Tel.parse(IArray.from(printed.s.getBytes("UTF-8")))
-          TelCheckTree.of(reparsed)
-        . assert(_ == TelCheckTree.of(Tel.parse(testcase.source)))
-
-    suite(m"Encode/decode primitives"):
-      test(m"Text round-trip"):
-        Text("hello").encode.as[Text]
-      . assert(_ == Text("hello"))
-
-      test(m"Int round-trip"):
-        42.encode.as[Int]
-      . assert(_ == 42)
-
-      test(m"Boolean round-trip"):
-        true.encode.as[Boolean]
-      . assert(identity)
-
-      test(m"Long round-trip"):
-        1234567890123L.encode.as[Long]
-      . assert(_ == 1234567890123L)
-
-    suite(m"Wisteria derivation"):
-      test(m"case class round-trip"):
-        Tests.Person(Text("Alice"), 30).encode.as[Tests.Person]
-      . assert(_ == Tests.Person(Text("Alice"), 30))
-
-    suite(m"Dynamic access"):
-      import dynamicTelAccess.enabled
-
-      test(m"select-dynamic on encoded case class"):
-        val tel = Tests.Person(Text("Alice"), 30).encode
-        tel.name.as[Text]
-      . assert(_ == Text("Alice"))
-
-      test(m"camelCase → kebab-case keyword lookup"):
-        case class CamelCase(firstName: Text, lastName: Text) derives CanEqual
-        val cc = CamelCase(Text("Alice"), Text("Anderson")).encode
-        cc.firstName.as[Text]
-      . assert(_ == Text("Alice"))
-
-    suite(m"Negative corpus (E1xx parsing)"):
-      CorpusLoader.negative.each: testcase =>
-        CorpusLoader.expectedCode(testcase.stem).let: code =>
-          // Phase 1 covers E1xx parsing errors only. E2xx (schema validity)
-          // and E3xx (validation) require the schema component shipped in
-          // phase 3.
-          if code < 200 then
-            test(m"raises E$code on ${testcase.stem}"):
-              capture[TelError](Tel.parse(testcase.source)).reason.number
-            . assert(_ == code)
+object dynamicTelAccess:
+  inline given enabled: DynamicTelEnabler = !!

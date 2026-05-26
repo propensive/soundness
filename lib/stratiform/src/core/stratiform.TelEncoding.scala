@@ -37,9 +37,7 @@ import scala.compiletime.*
 import anticipation.*
 import contingency.*
 import distillate.*
-import gossamer.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 import wisteria.*
 
@@ -73,7 +71,7 @@ trait Tel2:
         provide[Tactic[TelError]]:
           build: [field] =>
             ctx =>
-              val match0 = tel.field(label)
+              val match0 = tel.field(Tel.camelToKebab(label.s))
               if match0.absent then default.or(ctx.decoded(Tel.empty))
               else ctx.decoded(match0.vouch)
 
@@ -92,9 +90,10 @@ trait Tel2:
       fields(value): [field] =>
         fieldValue =>
           val encoded = contextual.encode(fieldValue)
+          val keyword = Tel.camelToKebab(label.s)
           encoded.subtree match
             case c: Tel.Compound =>
-              compounds += c.copy(keyword = label)
+              compounds += c.copy(keyword = keyword)
 
             case d: Tel.Document =>
               compounds ++= d.children.flatMap(_.compounds)
