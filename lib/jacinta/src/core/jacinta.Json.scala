@@ -60,7 +60,30 @@ import zephyrine.*
 
 import JsonError.Reason
 
+// Base mixin for Jacinta's `Decodable in Json` instances. Fixes the focus
+// type to `Json.Focus` and provides the position-enrichment hook that
+// `Json#as[T]` runs over the accumulated `Foci[Json.Focus]` after decoding.
+private[jacinta] trait JsonDecodable[T] extends Decodable:
+  type Self = T
+  type Form = Json
+  type Locus = Json.Focus
+  override def position(value: Json, focus: Json.Focus): Json.Focus =
+    focus.withPosition(value)
+
 trait Json2:
+  // Lower-priority adapter that lifts any `Decodable in Json` into one
+  // carrying `type Locus = Json.Focus`. Used by `as[T]` so it can call
+  // `.position` (delegating to `Json.Focus.withPosition`) over the
+  // accumulated `Foci[Json.Focus]` after decoding. Specific `Decodable in
+  // Json` givens stay unchanged; the wrapping happens only at the
+  // `at Json.Focus` boundary.
+  inline given decodableAtFocus: [value]
+  =>  (inner: value is Decodable in Json)
+  =>  value is Decodable in Json at Json.Focus =
+
+    new JsonDecodable[value]:
+      def decoded(json: Json): value = inner.decoded(json)
+
   given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( encodable: inner is Encodable in Json )
   =>  value is Encodable in Json =
@@ -954,5 +977,11 @@ extends Dynamic derives CanEqual:
     case _ =>
       false
 
-  def as[value: Decodable in Json]: value raises JsonError tracks Json.Focus =
-    value.decoded(this)
+  def as[value: Decodable in Json at Json.Focus]
+  :   value raises JsonError tracks Json.Focus =
+
+    val decodable = summon[value is Decodable in Json at Json.Focus]
+    val result = decodable.decoded(this)
+    val foci = summon[Foci[Json.Focus]]
+    foci.supplement(foci.length, _.let(decodable.position(this, _)).vouch)
+    result
