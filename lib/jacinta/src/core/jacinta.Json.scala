@@ -98,7 +98,7 @@ trait Json2:
     :   derivation is Decodable in Json =
 
       json =>
-        provide[Foci[JsonPointer]]:
+        provide[Foci[Json.Focus]]:
           provide[Tactic[JsonError]]:
             val root = json.root
             val n = root.objectSize
@@ -112,12 +112,15 @@ trait Json2:
             build: [field] =>
               context =>
                 focus({
-                  val base = prior.or(JsonPointer())
+                  val base = prior.let(_.pointer).or(JsonPointer())
 
-                  JsonPointer
-                    ( base.url,
-                      Path[JsonPointer, JsonPointer.type, Tuple]
-                        ( base.path.root, base.path.descent :+ label ) )
+                  val newPointer =
+                    JsonPointer
+                      ( base.url,
+                        Path[JsonPointer, JsonPointer.type, Tuple]
+                          ( base.path.root, base.path.descent :+ label ) )
+
+                  Json.Focus(newPointer)
                 }):
                   values.get(label.s) match
                     case Some(value) => context.decoded(new Json(value))
@@ -130,7 +133,7 @@ trait Json2:
             val discriminable = infer[derivation is Discriminable in Json]
 
             val discriminant: Text = discriminable.discriminate(json).or:
-              focus(prior.or(JsonPointer()))(abort(JsonError(Reason.Absent)))
+              focus(prior.or(Json.Focus(JsonPointer())))(abort(JsonError(Reason.Absent)))
 
             delegate(discriminant): [variant <: derivation] =>
               context => context.decoded(json)
@@ -140,19 +143,22 @@ trait Json2:
     :   derivation is Encodable in Json =
 
       value =>
-        provide[Foci[JsonPointer]]:
+        provide[Foci[Json.Focus]]:
           val labels: scm.ArrayBuffer[String] = scm.ArrayBuffer()
           val values: scm.ArrayBuffer[Json.Ast] = scm.ArrayBuffer()
 
           fields(value): [field] =>
             field =>
               focus({
-                val base = prior.or(JsonPointer())
+                val base = prior.let(_.pointer).or(JsonPointer())
 
-                JsonPointer
-                  ( base.url,
-                    Path[JsonPointer, JsonPointer.type, Tuple]
-                      ( base.path.root, base.path.descent :+ label ) )
+                val newPointer =
+                  JsonPointer
+                    ( base.url,
+                      Path[JsonPointer, JsonPointer.type, Tuple]
+                        ( base.path.root, base.path.descent :+ label ) )
+
+                Json.Focus(newPointer)
               }):
                 contextual.encode(field).root.tap: encoded =>
                   if !encoded.isAbsent then
@@ -187,6 +193,19 @@ object Json extends Json2, Dynamic:
 
   extension (positionIndex: PositionIndex)
     private[jacinta] def ints: IArray[Int] = positionIndex
+
+  // Focus value tracked by Jacinta's decoders / encoders. `pointer` is the
+  // JSON-pointer path to the current node. `position` is initially `Unset`
+  // and filled in by `withPosition(json)` against the root `Json` that
+  // produced the focus — typically at error-render time so the success
+  // path pays nothing for `locate` lookups. Constructed lazily inside
+  // `Foci.supplement`, only for actually-registered errors.
+  case class Focus
+                ( pointer:  JsonPointer,
+                  position: Optional[Json.Ast.Position] = Unset )
+  derives CanEqual:
+
+    def withPosition(json: Json): Focus = copy(position = json.locate(pointer))
 
   opaque type Ast =
     JsonString | JsonNumber | JsonBoolean | JsonNull | JsonObject | JsonArray | Unset.type
@@ -510,7 +529,7 @@ object Json extends Json2, Dynamic:
   given array: [collection <: Iterable, element]
   =>  ( factory: Factory[element, collection[element]],
         tactic:  Tactic[JsonError],
-        foci:    Foci[JsonPointer] )
+        foci:    Foci[Json.Focus] )
   =>  ( decodable: => element is Decodable in Json )
   =>  collection[element] is Decodable in Json =
 
@@ -519,12 +538,15 @@ object Json extends Json2, Dynamic:
 
       value.root.array.each: json =>
         focus({
-          val base = prior.or(JsonPointer())
+          val base = prior.let(_.pointer).or(JsonPointer())
 
-          JsonPointer
-            ( base.url,
-              Path[JsonPointer, JsonPointer.type, Tuple]
-                ( base.path.root, base.path.descent :+ ordinal.n0.toString.tt ) )
+          val newPointer =
+            JsonPointer
+              ( base.url,
+                Path[JsonPointer, JsonPointer.type, Tuple]
+                  ( base.path.root, base.path.descent :+ ordinal.n0.toString.tt ) )
+
+          Json.Focus(newPointer)
         }):
           builder += decodable.decoded(Json.ast(json))
 
@@ -932,5 +954,5 @@ extends Dynamic derives CanEqual:
     case _ =>
       false
 
-  def as[value: Decodable in Json]: value raises JsonError tracks JsonPointer =
+  def as[value: Decodable in Json]: value raises JsonError tracks Json.Focus =
     value.decoded(this)
