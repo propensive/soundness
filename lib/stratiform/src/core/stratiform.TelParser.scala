@@ -71,6 +71,19 @@ private final class TelParser(input: Data):
     if firstLf > 0 && source.charAt(firstLf - 1) == '\r' then Tel.LineEndings.Crlf
     else Tel.LineEndings.Lf
 
+  // Detect line-ending violations per §17 / E121. A CR that is not part
+  // of a CR LF pair is a bare CR and raises E121. The mixed-line-endings
+  // variant of E121 (a document with both CR LF and bare LF in
+  // *structural* positions) is left for a later pass that can tell apart
+  // structural line breaks from literal-atom payload bytes.
+  private def checkLineEndings(): Unit raises TelError =
+    var i = 0
+    while i < source.length do
+      val c = source.charAt(i)
+      if c == '\r' && (i + 1 >= source.length || source.charAt(i + 1) != '\n')
+      then abort(TelError(Reason.BadLineEnding))
+      i += 1
+
   // Pre-split lines retaining leading-space count and blank flag. CR before
   // LF is stripped in CRLF mode. The final stretch of content after the
   // last LF is included only if it has content; an empty stretch after a
@@ -110,6 +123,7 @@ private final class TelParser(input: Data):
 
   def parseDocument(): Tel.Document raises TelError =
     checkBom()
+    checkLineEndings()
     val directive = parseInterpreterDirective()
     val pragma = parsePragma()
 
@@ -134,7 +148,7 @@ private final class TelParser(input: Data):
 
   private def parsePragma(): Optional[Tel.Pragma] raises TelError =
     val firstNonBlank = peekNextNonBlankLine()
-    firstNonBlank.let: idx =>
+    val result = firstNonBlank.let: idx =>
       val line = lines(idx)
       val content = line.content.substring(line.leadingSpaces)
       if content.startsWith("tel ") || content == "tel" then
@@ -143,6 +157,20 @@ private final class TelParser(input: Data):
       else Unset
     .or(Unset)
 
+    // Detect a pragma-shaped line that occurs after the first non-blank
+    // line — that's E102 (PragmaNotFirst) per §8 of the TEL spec.
+    if result.absent then
+      var j = firstNonBlank.or(0) + 1
+      while j < lines.length do
+        val ln = lines(j)
+        if !ln.blank && ln.leadingSpaces == 0 then
+          val c = ln.content
+          if c == "tel" || c.startsWith("tel ") then abort(TelError(Reason.PragmaNotFirst))
+
+        j += 1
+
+    result
+
   private def parsePragmaContent(content: String): Tel.Pragma raises TelError =
     val parts = splitPhrases(content)
     if parts.head != "tel" then abort(TelError(Reason.PragmaNotFirst))
@@ -150,12 +178,35 @@ private final class TelParser(input: Data):
       if parts.length >= 2 then parseVersion(parts(1))
       else (1, 0)
 
+    // §8: the pragma carries exactly tel + version + optional schema +
+    // optional sigil. Anything beyond that — including a remark
+    // introducer — is E123. Check up front so a stray remark doesn't
+    // first hit the schema-identifier validator.
+    if parts.length > 4 then abort(TelError(Reason.ExtraPragmaContent))
+
     val schema: Optional[Text] =
-      if parts.length >= 3 then Text(parts(2)): Optional[Text] else Unset
+      if parts.length >= 3 then
+        // §8.2: the schema atom must be either a URL (containing "://")
+        // or a BASE-256 schema signature. Plain identifier-style strings
+        // are E122. The BASE-256 signature is either a 64-character hex
+        // hash or a string of non-ASCII BASE-256 encoded bytes; a string
+        // of only ASCII characters that lacks "://" fails both forms.
+        val s = parts(2)
+        val isUrl = s.indexOf("://") >= 0
+        val isHexHash = s.length == 64 && s.forall: c =>
+          (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
+        val isBase256 = s.exists(_.toInt > 127)
+        if !isUrl && !isHexHash && !isBase256
+        then abort(TelError(Reason.BadSchemaIdentifier))
+        Text(s): Optional[Text]
+      else Unset
 
     val pragmaSigil: Optional[Char] =
       if parts.length >= 4 && parts(3).length == 1 then
         val c = parts(3).charAt(0)
+        // Per §8.3 the sigil must be a symbolic character — not a digit,
+        // not a letter, not whitespace, not the keyword-class character.
+        if c.isLetterOrDigit then abort(TelError(Reason.BadSigil))
         sigil = c
         c: Optional[Char]
       else Unset
