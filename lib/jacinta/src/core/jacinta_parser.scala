@@ -52,5 +52,24 @@ extension (json: Json.Ast.type)
   :   Json.Ast raises ParseError =
     Json.Ast(JsonParser.parse(input, holes, mode))
 
+  def parseTracked(source: Data)(using mode: NumberMode)
+  :   (Json.Ast, Json.PositionIndex) raises ParseError =
+    val (raw, ints) = JsonParser.parseTracked(source, mode)
+    (Json.Ast(raw), Json.PositionIndex(ints))
+
+  def parseTracked(input: Iterator[Data])(using mode: NumberMode)
+  :   (Json.Ast, Json.PositionIndex) raises ParseError =
+    val (raw, ints) = JsonParser.parseTracked(input, mode)
+    (Json.Ast(raw), Json.PositionIndex(ints))
+
+extension (json: Json.type)
+  def parseTracked(source: Data)(using NumberMode): Json raises ParseError =
+    val (ast, index) = Json.Ast.parseTracked(source)
+    new Json(ast, index)
+
+  def parseTracked(input: Iterator[Data])(using NumberMode): Json raises ParseError =
+    val (ast, index) = Json.Ast.parseTracked(input)
+    new Json(ast, index)
+
 given parserAggregable: Tactic[ParseError] => Json.Ast is Aggregable by Data =
   source => Json.Ast.parse(source.iterator)
