@@ -177,6 +177,17 @@ object Json extends Json2, Dynamic:
   type JsonObject  = IArray[Any]
   type JsonArray   = IArray[Any] | Array[Long] | Array[Int]
 
+  // All internal references in a `PositionIndex` are stored as offsets
+  // relative to the start of the containing node descriptor, so any slice
+  // extracted at a descriptor boundary is itself a valid `PositionIndex`.
+  opaque type PositionIndex = IArray[Int]
+
+  object PositionIndex:
+    private[jacinta] def apply(data: IArray[Int]): PositionIndex = data
+
+  extension (positionIndex: PositionIndex)
+    private[jacinta] def ints: IArray[Int] = positionIndex
+
   opaque type Ast =
     JsonString | JsonNumber | JsonBoolean | JsonNull | JsonObject | JsonArray | Unset.type
 
@@ -351,6 +362,11 @@ object Json extends Json2, Dynamic:
     def objectSize(json: Ast): Int = json.asInstanceOf[IArray[Any]].length/2
 
   def ast(value: Json.Ast): Json = new Json(value)
+
+  // `object Json` extends `Dynamic`, which suppresses the universal-apply
+  // synthesis for `Json(...)`; these forward to the constructor manually.
+  def apply(value: Any): Json = new Json(value)
+  def apply(value: Any, positions: Optional[Json.PositionIndex]): Json = new Json(value, positions)
 
   // Canonical external accessor for the underlying AST. The `root`
   // method on `class Json` is package-private so that breaking through
@@ -582,8 +598,10 @@ object Json extends Json2, Dynamic:
     def discriminate(json: Json): Optional[Text] = safely(json.selectDynamic(key).as[Text])
     def variant(json: Json): Json = unsafely(json.updateDynamic(key)(Unset))
 
-class Json(rootValue: Any) extends Dynamic derives CanEqual:
+class Json(rootValue: Any, positions: Optional[Json.PositionIndex] = Unset)
+extends Dynamic derives CanEqual:
   private[jacinta] def root: Json.Ast = rootValue.asInstanceOf[Json.Ast]
+  def positionIndex: Optional[Json.PositionIndex] = positions
   def apply(index: Int): Json raises JsonError = Json(root.array(index))
 
   def selectDynamic(field: String)(using erased DynamicJsonEnabler): Json raises JsonError =
