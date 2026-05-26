@@ -229,16 +229,34 @@ private final class TelParser(input: Data):
 
     IArray.from(builder)
 
-  // Parses a single block: a contiguous run of compounds at the given
-  // indent with no blank lines between them, followed by zero or more
-  // trailing blank lines.
+  // Parses a single block: optional leading comments at the given indent,
+  // followed by a contiguous run of compounds at the same indent, followed
+  // by zero or more trailing blank lines. Blanks between the comment-group
+  // and the compound-group are "interior" (not counted as trailing).
   private def parseBlock(indent: Int): Tel.Block raises TelError =
+    val comments = scala.collection.mutable.ArrayBuffer.empty[Tel.Comment]
+
+    while atCommentLine(indent) do
+      comments += parseCommentLine(lines(cursor))
+      cursor += 1
+
+    // If comments are followed by blanks then a compound at the same indent,
+    // consume the blanks as interior whitespace (do not count them anywhere).
+    if comments.nonEmpty && cursor < lines.length && lines(cursor).blank then
+      val saved = cursor
+      var probe = cursor
+      while probe < lines.length && lines(probe).blank do probe += 1
+      if probe < lines.length && indentOf(lines(probe)) == indent
+        && !isCommentLine(lines(probe), indent)
+      then cursor = probe
+
     val compounds = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
 
     while
       cursor < lines.length
       && !lines(cursor).blank
       && indentOf(lines(cursor)) == indent
+      && !isCommentLine(lines(cursor), indent)
     do
       val line = lines(cursor)
       cursor += 1
@@ -246,17 +264,73 @@ private final class TelParser(input: Data):
       val children = parseChildren(indent)
       compounds += parsed.copy(children = children)
 
-    val trailingBlankLines = consumeTrailingBlanks()
+    val trailingBlankLines = consumeTrailingBlanksFor(indent)
 
-    Tel.Block(IArray.empty, Unset, IArray.from(compounds), trailingBlankLines)
+    Tel.Block(IArray.from(comments), Unset, IArray.from(compounds), trailingBlankLines)
 
-  private def consumeTrailingBlanks(): Int =
+  // Counts blank lines that "belong" to a block at the given indent: the
+  // run of blanks immediately following the block, *stopping* when the next
+  // non-blank line is at a shallower indent (those blanks belong to the
+  // parent block).
+  private def consumeTrailingBlanksFor(indent: Int): Int =
     var count = 0
-    while cursor < lines.length && lines(cursor).blank do
+    while
+      cursor < lines.length && lines(cursor).blank
+      && nextNonBlankIsAtOrBelow(indent)
+    do
       count += 1
       cursor += 1
 
     count
+
+  private def nextNonBlankIsAtOrBelow(indent: Int): Boolean =
+    var probe = cursor
+    while probe < lines.length && lines(probe).blank do probe += 1
+    if probe >= lines.length then true
+    else indentOf(lines(probe)) <= indent
+
+  // A line is a comment if, after its leading indentation, its first
+  // non-space character is the sigil and that sigil is either at end of
+  // line or followed by exactly one soft space; the `#foo` form (sigil
+  // concatenated with content) is NOT a comment. Tabulation lines are
+  // distinguished by a second sigil preceded by a hard space (deferred for
+  // phase 1; for now any sigil-prefixed line that does not have a tabulation
+  // marker is a comment).
+  private def atCommentLine(indent: Int): Boolean =
+    cursor < lines.length && isCommentLine(lines(cursor), indent)
+
+  private def isCommentLine(line: Line, indent: Int): Boolean =
+    if line.blank || indentOf(line) != indent then false
+    else
+      val start = line.leadingSpaces
+      if start >= line.content.length || line.content.charAt(start) != sigil then false
+      else
+        val next = start + 1
+        if next >= line.content.length then true  // bare sigil
+        else if line.content.charAt(next) == ' ' then !hasTabulationMarker(line, start)
+        else false  // `#foo` — not a comment
+
+  private def hasTabulationMarker(line: Line, fromIdx: Int): Boolean =
+    var i = fromIdx + 1
+    val content = line.content
+    while i < content.length - 1 do
+      if content.charAt(i) == ' ' && content.charAt(i + 1) == ' ' then
+        var j = i
+        while j < content.length && content.charAt(j) == ' ' do j += 1
+        if j < content.length && content.charAt(j) == sigil then return true
+        i = j
+      else i += 1
+
+    false
+
+  private def parseCommentLine(line: Line): Tel.Comment =
+    val start = line.leadingSpaces + 1
+    val payload =
+      if start >= line.content.length then ""
+      else if line.content.charAt(start) == ' ' then line.content.substring(start + 1)
+      else line.content.substring(start)
+
+    Tel.Comment(Text(payload))
 
   private def parseCompoundLine(line: Line, indent: Int): Tel.Compound raises TelError =
     val content = line.content.substring(line.leadingSpaces)
