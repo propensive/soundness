@@ -120,6 +120,11 @@ private final class TelParser(input: Data):
   private var cursor: Int = 0
   private var margin: Int = 0
   private var sigil: Char = '#'
+  // The highest line index consumed by the prologue (interpreter
+  // directive or pragma). The E109 check treats anything at or before
+  // this line as equivalent to "start of file" — comments immediately
+  // after the prologue are valid.
+  private var prologueEndLine: Int = -1
 
   def parseDocument(): Tel.Document raises TelError =
     checkBom()
@@ -142,6 +147,7 @@ private final class TelParser(input: Data):
     if cursor >= lines.length then Unset
     else if lines(cursor).content.startsWith("#!") then
       val payload = lines(cursor).content.substring(2)
+      prologueEndLine = cursor
       cursor += 1
       Text(payload)
     else Unset
@@ -152,6 +158,12 @@ private final class TelParser(input: Data):
       val line = lines(idx)
       val content = line.content.substring(line.leadingSpaces)
       if content.startsWith("tel ") || content == "tel" then
+        // §8: the pragma must be entirely within the first 4096 bytes of
+        // the document. A pragma-shaped line that begins at or after
+        // byte 4096 — or extends past it — is E103.
+        if line.start >= 4096 || line.end > 4096
+        then abort(TelError(Reason.PragmaTooLong))
+        prologueEndLine = idx
         cursor = idx + 1
         Optional(parsePragmaContent(content))
       else Unset
@@ -293,6 +305,32 @@ private final class TelParser(input: Data):
       cursor = peekNextNonBlankLine().vouch
       builder += parseBlock(expected)
 
+    // After consuming children at `expected`, a remaining non-blank line
+    // more indented than `expected` is an error. The kind of error
+    // depends on the last block's shape:
+    //   - tabulation present, no rows: E116, a tabulated row at the
+    //     wrong indent
+    //   - tabulation present, rows present: E112, a child of a
+    //     tabulated row (rows cannot themselves have children)
+    //   - no tabulation, no compounds (comment-only): E112, the
+    //     orphaned line is a child of a non-compound
+    //   - otherwise: E111, the line over-indents past the last
+    //     compound's child level
+    val rest = peekNextNonBlankLine()
+    rest.let: idx =>
+      val di = indentOf(lines(idx))
+      if di > expected then builder.lastOption match
+        case Some(last) if last.tabulation.present && last.compounds.isEmpty =>
+          abort(TelError(Reason.RowWrongIndent))
+
+        case Some(last) if last.tabulation.present =>
+          abort(TelError(Reason.ChildOfNonCompound))
+
+        case Some(last) if last.compounds.isEmpty =>
+          abort(TelError(Reason.ChildOfNonCompound))
+
+        case _ => abort(TelError(Reason.OverIndentation))
+
     IArray.from(builder)
 
   // Parses a single block: optional leading comments at the given indent,
@@ -303,6 +341,16 @@ private final class TelParser(input: Data):
     val comments = scala.collection.mutable.ArrayBuffer.empty[Tel.Comment]
 
     while atCommentLine(indent) do
+      // §9 E109: a comment must be preceded by start of file, the
+      // prologue (directive / pragma), a blank line, another comment,
+      // or a line at lesser indent. A non-blank non-comment line at
+      // the same or greater indent immediately before violates the
+      // rule.
+      if cursor > 0 && cursor - 1 > prologueEndLine then
+        val prev = lines(cursor - 1)
+        if !prev.blank && !isCommentLine(prev, indent) && prev.leadingSpaces >= margin + indent * 2
+        then abort(TelError(Reason.CommentNotPreceded))
+
       comments += parseCommentLine(lines(cursor))
       cursor += 1
 
@@ -483,9 +531,23 @@ private final class TelParser(input: Data):
       val line = lines(cursor)
       val sourceIndent = compoundLeadingSpaces + 4
       val literalIndent = compoundLeadingSpaces + 6
-      if line.leadingSpaces == literalIndent then Optional(parseLiteralAtom(literalIndent))
-      else if line.leadingSpaces == sourceIndent then Optional(parseSourceAtom(sourceIndent))
-      else Unset
+      val first =
+        if line.leadingSpaces == literalIndent then Optional(parseLiteralAtom(literalIndent))
+        else if line.leadingSpaces == sourceIndent then Optional(parseSourceAtom(sourceIndent))
+        else Unset
+
+      // §10.4 / §11.1: a compound may carry at most one source or literal
+      // atom. The error code names the *second* atom's kind: E113 if a
+      // source follows an existing source/literal, E114 if a literal
+      // follows an existing source/literal.
+      if first.present && cursor < lines.length && !lines(cursor).blank then
+        val nextLine = lines(cursor)
+        if nextLine.leadingSpaces == literalIndent
+        then abort(TelError(Reason.DuplicateLiteral))
+        else if nextLine.leadingSpaces == sourceIndent
+        then abort(TelError(Reason.DuplicateSource))
+
+      first
 
   // Source atom: captures lines whose leading-spaces ≥ sourceIndent (or
   // are blank, when followed by more source content or EOF), strips
