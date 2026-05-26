@@ -18,6 +18,18 @@ Implementation-discovered ambiguities, inconsistencies, and inadequacies in the 
 
 **Spec resolution:** acceptable as a bootstrap mechanism; flagged here only as a concern for implementers.
 
+### §15 literal-atom CR/LF normalisation
+**Issue:** §15 states that literal-atom payloads preserve every byte between the opening LF and
+the closing-delimiter LF, "including any CR, bare LF, or CR LF sequence". The Rust reference
+implementation, however, normalises CRLF to LF inside the payload — the
+`pos/literal-atom-cr-in-payload` fixture has a `hello\r\nworld` payload that produces text
+`"hello\nworld"` (CR stripped), not `"hello\r\nworld"`.
+
+**Stratiform decision:** Match the reference (strip CR adjacent to LF in literal-atom payloads).
+The spec text should be amended to reflect the normalisation.
+
+**Spec resolution:** open.
+
 ### §14 source-atom trailing LF
 **Issue:** §14 reads "The captured lines are joined with a single LF between each pair into a
 single text string. **The trailing LF of the last captured line is NOT included in text.** The

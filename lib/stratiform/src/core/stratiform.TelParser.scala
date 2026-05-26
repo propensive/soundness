@@ -246,12 +246,22 @@ private final class TelParser(input: Data):
     // If comments are followed by blanks then a compound at the same indent,
     // consume the blanks as interior whitespace (do not count them anywhere).
     if comments.nonEmpty && cursor < lines.length && lines(cursor).blank then
-      val saved = cursor
       var probe = cursor
       while probe < lines.length && lines(probe).blank do probe += 1
       if probe < lines.length && indentOf(lines(probe)) == indent
         && !isCommentLine(lines(probe), indent)
       then cursor = probe
+
+    // A tabulation line at this indent introduces a tabulated block: rows
+    // follow as ordinary compound lines (the column-alignment rules of §16
+    // are not enforced in phase 1; the row's keyword + inline atoms are
+    // captured verbatim per the phrase-separation rule).
+    val tabulation: Optional[Tel.Tabulation] =
+      if cursor < lines.length && isTabulationLineAt(lines(cursor), indent) then
+        val line = lines(cursor)
+        cursor += 1
+        Optional(parseTabulationLine(line))
+      else Unset
 
     val compounds = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
 
@@ -260,44 +270,110 @@ private final class TelParser(input: Data):
       && !lines(cursor).blank
       && indentOf(lines(cursor)) == indent
       && !isCommentLine(lines(cursor), indent)
+      && !isTabulationLineAt(lines(cursor), indent)
     do
       val line = lines(cursor)
       cursor += 1
       val parsed = parseCompoundLine(line, indent)
-      val extraAtom = parseSourceOrLiteralAtom(line.leadingSpaces)
+      val extraAtom =
+        if tabulation.absent then parseSourceOrLiteralAtom(line.leadingSpaces)
+        else Unset
+
       val children =
-        if extraAtom.absent then parseChildren(indent)
+        if extraAtom.absent && tabulation.absent then parseChildren(indent)
         else IArray.empty[Tel.Block]
 
-      val withAtom = extraAtom.lay(parsed)(atom =>
-        parsed.copy(atoms = parsed.atoms :+ atom))
+      val withAtom = extraAtom.lay(parsed): atom =>
+        parsed.copy(atoms = parsed.atoms :+ atom)
 
       compounds += withAtom.copy(children = children)
 
     val trailingBlankLines = consumeTrailingBlanksFor(indent)
 
-    Tel.Block(IArray.from(comments), Unset, IArray.from(compounds), trailingBlankLines)
+    Tel.Block(IArray.from(comments), tabulation, IArray.from(compounds), trailingBlankLines)
+
+  private def isTabulationLineAt(line: Line, indent: Int): Boolean =
+    if line.blank || indentOf(line) != indent then false
+    else
+      val start = line.leadingSpaces
+      start < line.content.length
+      && line.content.charAt(start) == sigil
+      && hasTabulationMarker(line, start)
+
+  // Extracts marker offsets and headings from a tabulation line. The first
+  // marker is at the first non-space position; subsequent markers are
+  // sigil characters immediately preceded by a hard space. Headings are
+  // the text between a marker and the next hard-space-marker boundary
+  // (or end of line for the final column), with the introducer space
+  // consumed per §16.1.
+  private def parseTabulationLine(line: Line): Tel.Tabulation =
+    val content = line.content
+    val markers = scala.collection.mutable.ArrayBuffer.empty[Int]
+
+    val first = line.leadingSpaces
+    markers += first
+    var i = first + 1
+    while i < content.length do
+      if content.charAt(i) == ' ' then
+        var j = i
+        while j < content.length && content.charAt(j) == ' ' do j += 1
+        val runLen = j - i
+        if runLen >= 2 && j < content.length && content.charAt(j) == sigil then
+          markers += j
+          i = j + 1
+        else i = j
+      else i += 1
+
+    val headings = scala.collection.mutable.ArrayBuffer.empty[Text]
+    var m = 0
+    while m < markers.length do
+      val markerPos = markers(m)
+      val nextLimit = if m + 1 < markers.length then markers(m + 1) else content.length
+      headings += extractHeading(content, markerPos + 1, nextLimit)
+      m += 1
+
+    Tel.Tabulation(IArray.from(markers), IArray.from(headings))
+
+  // After a marker (which sits at the sigil's index, so `start` is index+1),
+  // an optional soft space introduces the heading text; the heading ends at
+  // the next hard space or at `limit` (the position of the next marker, or
+  // end of line for the final column).
+  private def extractHeading(content: String, start: Int, limit: Int): Text =
+    if start >= limit then Text("")
+    else if content.charAt(start) != ' ' then Text("")  // malformed; E120 territory
+    else if start + 1 < limit && content.charAt(start + 1) == ' ' then Text("")
+    else
+      var i = start + 1
+      var stop = limit
+      while i < limit - 1 do
+        if content.charAt(i) == ' ' && content.charAt(i + 1) == ' ' then
+          stop = i
+          i = limit
+        else i += 1
+
+      Text(content.substring(start + 1, stop))
 
   // Counts blank lines that "belong" to a block at the given indent: the
   // run of blanks immediately following the block, *stopping* when the next
-  // non-blank line is at a shallower indent (those blanks belong to the
-  // parent block).
+  // non-blank line is at a different indent. Blanks preceding a shallower
+  // line belong to the enclosing block; blanks preceding a deeper line
+  // would indicate over-indentation (handled elsewhere).
   private def consumeTrailingBlanksFor(indent: Int): Int =
     var count = 0
     while
       cursor < lines.length && lines(cursor).blank
-      && nextNonBlankIsAtOrBelow(indent)
+      && nextNonBlankMatches(indent)
     do
       count += 1
       cursor += 1
 
     count
 
-  private def nextNonBlankIsAtOrBelow(indent: Int): Boolean =
+  private def nextNonBlankMatches(indent: Int): Boolean =
     var probe = cursor
     while probe < lines.length && lines(probe).blank do probe += 1
     if probe >= lines.length then true
-    else indentOf(lines(probe)) <= indent
+    else indentOf(lines(probe)) == indent
 
   // A line is a comment if, after its leading indentation, its first
   // non-space character is the sigil and that sigil is either at end of
@@ -399,7 +475,13 @@ private final class TelParser(input: Data):
     val closeIdx = source.indexOf(pattern, payloadStart - 1)
     if closeIdx < 0 then abort(TelError(Reason.UnclosedLiteral))
 
-    val payload = source.substring(payloadStart, closeIdx)
+    // Strip \r\n → \n inside the literal payload. The TEL spec (§15) states
+    // payload bytes are preserved literally, including any CR. The Rust
+    // reference implementation, however, normalises CRLF to LF inside the
+    // payload; the upstream `pos/literal-atom-cr-in-payload.check` fixture
+    // pins this normalisation. Recorded in doc/spec-notes.md.
+    val rawPayload = source.substring(payloadStart, closeIdx)
+    val payload = rawPayload.replace("\r\n", "\n")
     val afterClose = closeIdx + pattern.length
 
     // Advance cursor past the closing delimiter line: the line whose start
@@ -417,37 +499,34 @@ private final class TelParser(input: Data):
 
     Tel.Comment(Text(payload))
 
+  // Splits the post-indent content of an ordinary line into a keyword (the
+  // first phrase), subsequent inline atoms with their preceding-space
+  // counts, and an optional remark per §10.3 / §11.2. Source and literal
+  // atoms are added in a separate pass.
   private def parseCompoundLine(line: Line, indent: Int): Tel.Compound raises TelError =
     val content = line.content.substring(line.leadingSpaces)
-    val (atoms, remark) = parseInlineAtomsAndRemark(content)
-    val keyword =
-      if atoms.isEmpty then Text("")
-      else atoms.head match
-        case Tel.Atom.Inline(text, _) => text
-        case _                        => Text("")
 
-    val rest = atoms.tail.map:
-      case Tel.Atom.Inline(text, ps) => Tel.Atom.Inline(text, ps)
-      case other                     => other
+    // First phrase = keyword (precedingSpaces = 0, never a remark).
+    var i = 0
+    val keywordBuilder = StringBuilder()
+    while i < content.length && content.charAt(i) != ' ' do
+      keywordBuilder.append(content.charAt(i))
+      i += 1
 
-    Tel.Compound(keyword, IArray.from(rest), remark, IArray.empty)
+    val keyword = Text(keywordBuilder.toString)
 
-  // Splits the post-indent content of an ordinary line into the keyword
-  // (first inline atom with precedingSpaces = 0), subsequent inline atoms
-  // with their preceding-space counts, and an optional remark. Source and
-  // literal atoms are not handled here.
-  private def parseInlineAtomsAndRemark(content: String): (List[Tel.Atom], Optional[Text]) =
     val atoms = scala.collection.mutable.ListBuffer.empty[Tel.Atom]
     val builder = StringBuilder()
     var precedingSpaces = 0
-    var i = 0
     var hardSpaceMode = false
+    var atomOpen = false
     var remark: Optional[Text] = Unset
 
     inline def commit(): Unit =
-      if builder.nonEmpty then
+      if atomOpen then
         atoms += Tel.Atom.Inline(Text(builder.toString), precedingSpaces)
         builder.clear()
+        atomOpen = false
 
     while i < content.length && remark.absent do
       val ch = content.charAt(i)
@@ -455,42 +534,45 @@ private final class TelParser(input: Data):
         var j = i
         while j < content.length && content.charAt(j) == ' ' do j += 1
         val run = j - i
-        if !hardSpaceMode && run == 1 then
-          // soft space; phrase terminator
-          commit()
-          precedingSpaces = 1
-          i = j
-        else
-          // hard space; switches into hard-space mode
-          commit()
-          precedingSpaces = run
-          hardSpaceMode = true
-          i = j
 
-      else if ch == sigil && builder.isEmpty && atoms.nonEmpty
-        && precedingSpaces == 1 && !hardSpaceMode
-        && (i + 1 < content.length && content.charAt(i + 1) == ' ' || i + 1 == content.length)
-      then
-        // Remark: sigil at phrase boundary followed by exactly one soft space
-        if i + 1 < content.length && content.charAt(i + 1) == ' ' then
-          remark = Text(content.substring(i + 2))
+        if hardSpaceMode then
+          if run >= 2 then
+            commit()
+            precedingSpaces = run
+            i = j
+          else
+            builder.append(' ')
+            atomOpen = true
+            i = j
         else
-          remark = Text("")
-        i = content.length
+          if run == 1 then
+            commit()
+            precedingSpaces = 1
+            i = j
+          else
+            commit()
+            precedingSpaces = run
+            hardSpaceMode = true
+            i = j
+      else if ch == sigil && !atomOpen then
+        val afterSigil = i + 1
+        val softSpaceAfter =
+          afterSigil < content.length
+          && content.charAt(afterSigil) == ' '
+          && (afterSigil + 1 >= content.length || content.charAt(afterSigil + 1) != ' ')
 
+        if softSpaceAfter then
+          remark = Text(content.substring(afterSigil + 1))
+          i = content.length
+        else
+          builder.append(ch)
+          atomOpen = true
+          i += 1
       else
         builder.append(ch)
+        atomOpen = true
         i += 1
 
     commit()
 
-    // The "keyword" is the first phrase with precedingSpaces=0; later
-    // inline atoms record the actual run length. The caller reassigns
-    // precedingSpaces=1 for the first atom in keyword-only contexts.
-    val first = atoms.headOption
-    val rest = atoms.drop(1).toList
-    val fixedFirst = first match
-      case Some(Tel.Atom.Inline(text, _)) => List(Tel.Atom.Inline(text, 0))
-      case _                              => Nil
-
-    (fixedFirst ::: rest, remark)
+    Tel.Compound(keyword, IArray.from(atoms), remark, IArray.empty)
