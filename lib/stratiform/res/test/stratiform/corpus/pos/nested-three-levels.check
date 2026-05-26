@@ -1,0 +1,48 @@
+Document {
+    interpreter_directive: None,
+    pragma: None,
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "grandparent",
+                    atoms: [],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "parent",
+                                    atoms: [],
+                                    remark: None,
+                                    children: [
+                                        Block {
+                                            comments: [],
+                                            tabulation: None,
+                                            compounds: [
+                                                Compound {
+                                                    keyword: "child",
+                                                    atoms: [],
+                                                    remark: None,
+                                                    children: [],
+                                                },
+                                            ],
+                                            trailing_blank_lines: 1,
+                                        },
+                                    ],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 0,
+        },
+    ],
+}

@@ -1,0 +1,60 @@
+Document {
+    interpreter_directive: None,
+    pragma: None,
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "first",
+                    atoms: [],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "child1",
+                                    atoms: [],
+                                    remark: None,
+                                    children: [
+                                        Block {
+                                            comments: [],
+                                            tabulation: None,
+                                            compounds: [
+                                                Compound {
+                                                    keyword: "grandchild",
+                                                    atoms: [],
+                                                    remark: None,
+                                                    children: [],
+                                                },
+                                            ],
+                                            trailing_blank_lines: 0,
+                                        },
+                                    ],
+                                },
+                                Compound {
+                                    keyword: "child2",
+                                    atoms: [],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+                Compound {
+                    keyword: "second",
+                    atoms: [],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}

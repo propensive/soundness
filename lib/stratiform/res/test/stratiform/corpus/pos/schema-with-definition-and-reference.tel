@@ -1,0 +1,11 @@
+tel 1.0 https://tel-lang.org/schema/tel-schema
+
+name address-schema
+
+record Address
+  field street String
+  field city String
+
+document
+  field home Address
+  field work Address

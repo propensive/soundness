@@ -1,0 +1,11 @@
+tel 1.0 https://tel-lang.org/schema/tel-schema
+
+name e207-test
+
+document
+  field foo string
+
+layer
+  name extension
+  overlay
+    field foo identifier

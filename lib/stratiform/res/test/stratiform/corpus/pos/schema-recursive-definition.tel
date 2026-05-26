@@ -1,0 +1,10 @@
+tel 1.0 https://tel-lang.org/schema/tel-schema
+
+name tree-schema
+
+record Node
+  field value String
+  field child Node
+
+document
+  field root Node

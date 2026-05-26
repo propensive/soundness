@@ -1,0 +1,62 @@
+Document {
+    interpreter_directive: None,
+    pragma: Some(
+        Pragma {
+            version: (
+                1,
+                0,
+            ),
+            schema: Some(
+                "https://example.org/contact-schema",
+            ),
+            sigil: None,
+        },
+    ),
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [
+                Comment {
+                    text: "Negative test: document is validated against contact-schema.tel (which",
+                },
+                Comment {
+                    text: "the test pipeline locates via the URL tail). The contact schema requires",
+                },
+                Comment {
+                    text: "a `name` field, which this document omits — expect E307.",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "email",
+                    atoms: [
+                        Inline {
+                            text: "alice@example.org",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "active",
+                    atoms: [],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}
+errors:
+  E306 [0,0): Compound keyword is not recognized for its parent type: unrecognized keyword `active` for the document root
+  E307 [0,0): Required member absent and no default available: required member `name` is absent and has no default

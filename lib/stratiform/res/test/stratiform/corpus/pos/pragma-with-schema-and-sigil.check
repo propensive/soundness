@@ -1,0 +1,37 @@
+Document {
+    interpreter_directive: None,
+    pragma: Some(
+        Pragma {
+            version: (
+                1,
+                0,
+            ),
+            schema: Some(
+                "https://example.com/schema",
+            ),
+            sigil: Some(
+                '@',
+            ),
+        },
+    ),
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [
+                Comment {
+                    text: "This is a comment with @ sigil",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "hello",
+                    atoms: [],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}

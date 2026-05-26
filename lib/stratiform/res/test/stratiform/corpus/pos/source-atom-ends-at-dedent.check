@@ -1,0 +1,30 @@
+Document {
+    interpreter_directive: None,
+    pragma: None,
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "code",
+                    atoms: [
+                        Source {
+                            text: "source line\n",
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+                Compound {
+                    keyword: "sibling",
+                    atoms: [],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}

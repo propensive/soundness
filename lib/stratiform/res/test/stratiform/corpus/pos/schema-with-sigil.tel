@@ -1,0 +1,7 @@
+tel 1.0 https://tel-lang.org/schema/tel-schema
+
+name custom-sigil-schema
+sigil @
+
+document
+  field name String

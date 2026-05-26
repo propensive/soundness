@@ -1,0 +1,37 @@
+Document {
+    interpreter_directive: None,
+    pragma: None,
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "hello",
+                    atoms: [],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [
+                Comment {
+                    text: "A comment after a blank line",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "world",
+                    atoms: [],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}

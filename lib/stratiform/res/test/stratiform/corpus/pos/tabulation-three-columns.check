@@ -1,0 +1,57 @@
+Document {
+    interpreter_directive: None,
+    pragma: None,
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: Some(
+                Tabulation {
+                    marker_offsets: [
+                        0,
+                        6,
+                        14,
+                    ],
+                    headings: [
+                        "ID",
+                        "Name",
+                        "Age",
+                    ],
+                },
+            ),
+            compounds: [
+                Compound {
+                    keyword: "Alice",
+                    atoms: [
+                        Inline {
+                            text: "30",
+                            preceding_spaces: 1,
+                        },
+                        Inline {
+                            text: "hello",
+                            preceding_spaces: 6,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+                Compound {
+                    keyword: "Bob",
+                    atoms: [
+                        Inline {
+                            text: "25",
+                            preceding_spaces: 3,
+                        },
+                        Inline {
+                            text: "world",
+                            preceding_spaces: 6,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}

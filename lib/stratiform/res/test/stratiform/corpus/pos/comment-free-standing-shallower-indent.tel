@@ -1,0 +1,5 @@
+parent
+  child
+
+# Free-standing at root (shallower than child)
+other

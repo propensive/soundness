@@ -1,0 +1,1167 @@
+Document {
+    interpreter_directive: None,
+    pragma: Some(
+        Pragma {
+            version: (
+                1,
+                0,
+            ),
+            schema: None,
+            sigil: None,
+        },
+    ),
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [
+                Comment {
+                    text: "The TEL schema-for-schemas (v1.0). Self-describing: parsing this document",
+                },
+                Comment {
+                    text: "under the schema it defines yields a valid semantic model. The vocabulary",
+                },
+                Comment {
+                    text: "and surface conventions are specified in §20.5 of the TEL Specification.",
+                },
+                Comment {
+                    text: "",
+                },
+                Comment {
+                    text: "Naming. Every Definition is a PascalCase TypeName; every variant or field",
+                },
+                Comment {
+                    text: "keyword is kebab-case. The two grammars are disjoint by leading letter case",
+                },
+                Comment {
+                    text: "(§20.7).",
+                },
+                Comment {
+                    text: "",
+                },
+                Comment {
+                    text: "Polarity. The default for every Field and SelectRef is required and",
+                },
+                Comment {
+                    text: "irrepeatable. `optional`/`repeatable` (Flag fields) loosen on the base side;",
+                },
+                Comment {
+                    text: "`required`/`irrepeatable` re-tighten on the layer side (§20 surface",
+                },
+                Comment {
+                    text: "syntax).",
+                },
+                Comment {
+                    text: "",
+                },
+                Comment {
+                    text: "Type references. Every `field type` and `variant type` atom, and every",
+                },
+                Comment {
+                    text: "SelectRef's first inline atom, is a TypeName that resolves through the",
+                },
+                Comment {
+                    text: "composed Definition namespace to a record, scalar, select, or built-in",
+                },
+                Comment {
+                    text: "(`Flag`, `String`, `Identifier`, `Sigil`).",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "name",
+                    atoms: [
+                        Inline {
+                            text: "tel-schema",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [
+                Comment {
+                    text: "---------------------------------------------------------------------------",
+                },
+                Comment {
+                    text: "Record definitions",
+                },
+                Comment {
+                    text: "---------------------------------------------------------------------------",
+                },
+            ],
+            tabulation: None,
+            compounds: [],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [
+                Comment {
+                    text: "A `field` declaration at a member position. The four loosen/tighten flags",
+                },
+                Comment {
+                    text: "yield the per-axis Polarity (§20). `default` is permitted only on required",
+                },
+                Comment {
+                    text: "Scalar-typed fields (E204).",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "record",
+                    atoms: [
+                        Inline {
+                            text: "Field",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "keyword",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Identifier",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "type",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "TypeName",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Flag",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "required",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Flag",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "repeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Flag",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "irrepeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Flag",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "default",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "String",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [
+                Comment {
+                    text: "A `select` declaration at a member position — a SelectRef. The first inline",
+                },
+                Comment {
+                    text: "atom names a top-level SelectDefinition; polarity lives at the use site.",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "record",
+                    atoms: [
+                        Inline {
+                            text: "SelectRef",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "reference",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "TypeName",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Flag",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "required",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Flag",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "repeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Flag",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "irrepeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Flag",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [
+                Comment {
+                    text: "A `variant` declaration inside a Select body.",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "record",
+                    atoms: [
+                        Inline {
+                            text: "Variant",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "keyword",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Identifier",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "type",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "TypeName",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [
+                Comment {
+                    text: "A `record` declaration: a named struct definition.",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "record",
+                    atoms: [
+                        Inline {
+                            text: "Record",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "name",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "TypeName",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "select",
+                                    atoms: [
+                                        Inline {
+                                            text: "Member",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "repeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [
+                Comment {
+                    text: "A `scalar` declaration: a named scalar definition (one or more validators).",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "record",
+                    atoms: [
+                        Inline {
+                            text: "Scalar",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "name",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "TypeName",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "validate",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Identifier",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "repeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [
+                Comment {
+                    text: "A top-level `select` declaration. `exclude` children are permitted",
+                },
+                Comment {
+                    text: "lexically but only valid inside a layer's select body; appearing in a",
+                },
+                Comment {
+                    text: "base-schema select body raises E217 during construction.",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "record",
+                    atoms: [
+                        Inline {
+                            text: "Select",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "name",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "TypeName",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "select",
+                                    atoms: [
+                                        Inline {
+                                            text: "SelectChild",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "repeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [
+                Comment {
+                    text: "The shared struct-shape used by `document` (Schema.document) and `overlay`",
+                },
+                Comment {
+                    text: "(Layer.overlay): a sequence of member declarations.",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "record",
+                    atoms: [
+                        Inline {
+                            text: "Body",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "select",
+                                    atoms: [
+                                        Inline {
+                                            text: "Member",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "repeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [
+                Comment {
+                    text: "A `layer` declaration: per-layer Definitions and an optional overlay.",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "record",
+                    atoms: [
+                        Inline {
+                            text: "Layer",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "name",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Identifier",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "record",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Record",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "repeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "scalar",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Scalar",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "repeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "select",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Select",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "repeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "overlay",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Body",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [
+                Comment {
+                    text: "---------------------------------------------------------------------------",
+                },
+                Comment {
+                    text: "Select definitions",
+                },
+                Comment {
+                    text: "---------------------------------------------------------------------------",
+                },
+            ],
+            tabulation: None,
+            compounds: [],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [
+                Comment {
+                    text: "Members admissible inside a struct-shaped Body, Record body, or Overlay.",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "select",
+                    atoms: [
+                        Inline {
+                            text: "Member",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "variant",
+                                    atoms: [
+                                        Inline {
+                                            text: "field",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Field",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "variant",
+                                    atoms: [
+                                        Inline {
+                                            text: "select",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "SelectRef",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "variant",
+                                    atoms: [
+                                        Inline {
+                                            text: "validate",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Identifier",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [
+                Comment {
+                    text: "Children admissible inside a Select body. `exclude` is layer-only (E217 in",
+                },
+                Comment {
+                    text: "a base) but is lexically permitted here.",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "select",
+                    atoms: [
+                        Inline {
+                            text: "SelectChild",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "variant",
+                                    atoms: [
+                                        Inline {
+                                            text: "variant",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Variant",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "variant",
+                                    atoms: [
+                                        Inline {
+                                            text: "exclude",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Identifier",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "variant",
+                                    atoms: [
+                                        Inline {
+                                            text: "validate",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Identifier",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [
+                Comment {
+                    text: "---------------------------------------------------------------------------",
+                },
+                Comment {
+                    text: "Schema document root",
+                },
+                Comment {
+                    text: "---------------------------------------------------------------------------",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "document",
+                    atoms: [],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "name",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Identifier",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "sigil",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Sigil",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "record",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Record",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "repeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "scalar",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Scalar",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "repeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "select",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Select",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "repeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "document",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Body",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "layer",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Layer",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "repeatable",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 1,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 0,
+        },
+    ],
+}

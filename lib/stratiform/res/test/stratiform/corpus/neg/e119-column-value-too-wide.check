@@ -1,0 +1,45 @@
+Document {
+    interpreter_directive: None,
+    pragma: None,
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: Some(
+                Tabulation {
+                    marker_offsets: [
+                        0,
+                        7,
+                        12,
+                    ],
+                    headings: [
+                        "Key",
+                        "N",
+                        "Age",
+                    ],
+                },
+            ),
+            compounds: [
+                Compound {
+                    keyword: "foo",
+                    atoms: [
+                        Inline {
+                            text: "ABCD",
+                            preceding_spaces: 4,
+                        },
+                        Inline {
+                            text: "30",
+                            preceding_spaces: 2,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}
+errors:
+  E117 [29,31): Hard space does not end at a column boundary
+  E119 [25,29): Column value exceeds maximum width

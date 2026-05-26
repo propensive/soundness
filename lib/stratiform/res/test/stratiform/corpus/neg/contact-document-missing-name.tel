@@ -1,0 +1,9 @@
+tel 1.0 https://example.org/contact-schema
+
+# Negative test: document is validated against contact-schema.tel (which
+# the test pipeline locates via the URL tail). The contact schema requires
+# a `name` field, which this document omits — expect E307.
+
+email alice@example.org
+
+active

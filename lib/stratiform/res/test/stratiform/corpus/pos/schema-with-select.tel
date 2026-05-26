@@ -1,0 +1,12 @@
+tel 1.0 https://tel-lang.org/schema/tel-schema
+
+name select-example
+
+select Status
+  variant active Flag
+  variant inactive Flag
+  variant unknown Flag
+
+document
+  field name String
+  select Status

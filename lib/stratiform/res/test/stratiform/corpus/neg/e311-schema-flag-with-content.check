@@ -1,0 +1,90 @@
+Document {
+    interpreter_directive: None,
+    pragma: Some(
+        Pragma {
+            version: (
+                1,
+                0,
+            ),
+            schema: Some(
+                "https://tel-lang.org/schema/tel-schema",
+            ),
+            sigil: None,
+        },
+    ),
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "name",
+                    atoms: [
+                        Inline {
+                            text: "flag-test",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "document",
+                    atoms: [],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "field",
+                                    atoms: [
+                                        Inline {
+                                            text: "foo",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [
+                                        Block {
+                                            comments: [],
+                                            tabulation: None,
+                                            compounds: [
+                                                Compound {
+                                                    keyword: "flag",
+                                                    atoms: [
+                                                        Inline {
+                                                            text: "unexpected-content",
+                                                            preceding_spaces: 1,
+                                                        },
+                                                    ],
+                                                    remark: None,
+                                                    children: [],
+                                                },
+                                            ],
+                                            trailing_blank_lines: 1,
+                                        },
+                                    ],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 0,
+        },
+    ],
+}
+errors:
+  E306 [0,0): Compound keyword is not recognized for its parent type: unrecognized keyword `flag` in `field`
+  E307 [0,0): Required member absent and no default available: required member `type` is absent and has no default

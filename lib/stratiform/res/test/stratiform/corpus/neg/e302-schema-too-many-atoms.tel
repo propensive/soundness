@@ -1,0 +1,6 @@
+tel 1.0 https://tel-lang.org/schema/tel-schema
+
+name test-schema extra-atom-here
+
+document
+  field foo string

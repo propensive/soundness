@@ -1,0 +1,32 @@
+Document {
+    interpreter_directive: None,
+    pragma: None,
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [
+                Comment {
+                    text: "This comment follows a peer compound directly",
+                },
+            ],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "hello",
+                    atoms: [],
+                    remark: None,
+                    children: [],
+                },
+                Compound {
+                    keyword: "world",
+                    atoms: [],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}
+errors:
+  E109 [6,6): Comment must follow a blank line, another comment, or start of document

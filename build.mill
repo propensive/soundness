@@ -182,7 +182,7 @@ object soundness extends ScalaModule:
     gastronomy.core, chiaroscuro.core, jacinta.core, monotonous.core,
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
-    vexillology.core)
+    stratiform.core, stratiform.schema, vexillology.core)
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
     charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
@@ -1166,6 +1166,15 @@ object stenography extends Library:
 
   object test extends Tests(core)
 
+object stratiform extends Library:
+  object core extends Component(zephyrine.core, turbulence.core, panopticon.core, gossamer.core, contingency.core, anticipation.codec, distillate.core, wisteria.core, prepositional.core, contextual.core, gigantism.core, fulminate.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object schema extends Component(core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core, schema, eucalyptus.core)
+
 object superlunary extends Library:
   object core extends Component(jacinta.core, gastronomy.core, anthology.scala, austronesian.core):
     override def scalacOptions = Task:
@@ -1350,7 +1359,7 @@ val allLibraries: Seq[Library] = Seq(
   mosquito, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
   phoenicia, plutocrat, polaris, polysyllabic, polyvinyl, prepositional, probably, profanity,
   proscenium, punctuation, quantitative, revolution, rudiments, satirical, savagery,
-  scintillate, sedentary, serpentine, spectacular, stenography, superlunary,
+  scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
   surveillance, symbolism, synesthesia, tarantula, telekinesis, turbulence, typonym,
   ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, wisteria, xylophone,
   yossarian, ypsiloid, zephyrine, zeppelin, ziggurat

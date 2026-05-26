@@ -1,0 +1,9 @@
+tel 1.0 https://tel-lang.org/schema/tel-schema
+
+name e204-test
+
+document
+  field foo optional
+    scalar
+      validate string
+      default default-val

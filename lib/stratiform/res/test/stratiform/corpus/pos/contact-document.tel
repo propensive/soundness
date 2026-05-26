@@ -1,0 +1,32 @@
+tel 1.0 https://example.org/contact-schema
+
+# A document conforming to test/pos/contact-schema.tel.
+# The test pipeline locates the schema by extracting the URL tail from
+# the pragma and looking for a sibling `contact-schema.tel`.
+#
+# Multi-token Scalar values (like a full name) use hard-space mode: a
+# hard space after the keyword puts the line into hard-space mode, so
+# subsequent soft spaces become part of the value.
+
+name  Alice Anderson
+email alice@example.org
+
+phone
+  country-code 44
+  number 020-7946-0100
+
+phone
+  country-code 1
+  number 415-555-0123
+
+home
+  street  221B Baker Street
+  city London
+  country UK
+
+work
+  street  1 Acme Way
+  city  San Francisco
+  country US
+
+active

@@ -1,0 +1,65 @@
+Document {
+    interpreter_directive: None,
+    pragma: None,
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: Some(
+                Tabulation {
+                    marker_offsets: [
+                        0,
+                        8,
+                    ],
+                    headings: [
+                        "Name",
+                        "Age",
+                    ],
+                },
+            ),
+            compounds: [
+                Compound {
+                    keyword: "Alice",
+                    atoms: [
+                        Inline {
+                            text: "30",
+                            preceding_spaces: 3,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 0,
+        },
+        Block {
+            comments: [],
+            tabulation: Some(
+                Tabulation {
+                    marker_offsets: [
+                        0,
+                        5,
+                    ],
+                    headings: [
+                        "X",
+                        "Y",
+                    ],
+                },
+            ),
+            compounds: [
+                Compound {
+                    keyword: "foo",
+                    atoms: [
+                        Inline {
+                            text: "bar",
+                            preceding_spaces: 2,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}

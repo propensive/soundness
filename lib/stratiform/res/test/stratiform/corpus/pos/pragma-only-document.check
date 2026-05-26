@@ -1,0 +1,15 @@
+Document {
+    interpreter_directive: None,
+    pragma: Some(
+        Pragma {
+            version: (
+                1,
+                0,
+            ),
+            schema: None,
+            sigil: None,
+        },
+    ),
+    line_endings: LF,
+    children: [],
+}
