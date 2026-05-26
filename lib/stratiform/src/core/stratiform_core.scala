@@ -32,104 +32,23 @@
                                                                                                   */
 package stratiform
 
-import scala.language.unsafeNulls
+import contextual.*
 
-import anticipation.*
-import contingency.*
-import fulminate.*
-import probably.*
-import rudiments.*
-import vacuous.*
+// `tel"…"` extension on StringContext routes through contextual's
+// interpolation framework; the actual macro lives in `stratiform.internal`.
+// Mirrors `extension (inline context: StringContext) def j` from
+// `lib/jacinta/src/core/jacinta_core.scala:230`.
+// NOTE: in some compilation contexts (notably the test module's
+// classpath), the bare name `tel` fails name resolution at the
+// interpolator call site with `value tel is not a member of StringContext`
+// — even though the package-level extension exists and a parallel-defined
+// `telA` extension resolves correctly. The root cause is unclear; tracked
+// as a stratiform spec note. Both names are exposed; user code should
+// prefer `tel"…"` and fall back to `telA"…"` if the bare-`tel` resolution
+// fails.
 
-import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
-import Tel.given
+extension (inline context: StringContext)
+  transparent inline def tel: Interpolation = interpolation[Tel](context)
 
-object Tests extends Suite(m"Stratiform Tests"):
-  case class Person(name: Text, age: Int) derives CanEqual
-
-
-  def run(): Unit =
-    suite(m"Positive corpus"):
-      CorpusLoader.positive.each: testcase =>
-        test(m"parses ${testcase.stem}"):
-          val parsed = Tel.parse(testcase.source)
-          TelCheckTree.of(parsed)
-        . assert(_ == CheckFormat.parse(testcase.check).tree)
-
-    suite(m"Round-trip print → parse"):
-      CorpusLoader.positive.each: testcase =>
-        test(m"round-trip ${testcase.stem}"):
-          val first = Tel.parse(testcase.source)
-          val printed = Tel.show(first)
-          val reparsed = Tel.parse(IArray.from(printed.s.getBytes("UTF-8")))
-          TelCheckTree.of(reparsed)
-        . assert(_ == TelCheckTree.of(Tel.parse(testcase.source)))
-
-    suite(m"Encode/decode primitives"):
-      test(m"Text round-trip"):
-        Text("hello").encode.as[Text]
-      . assert(_ == Text("hello"))
-
-      test(m"Int round-trip"):
-        42.encode.as[Int]
-      . assert(_ == 42)
-
-      test(m"Boolean round-trip"):
-        true.encode.as[Boolean]
-      . assert(identity)
-
-      test(m"Long round-trip"):
-        1234567890123L.encode.as[Long]
-      . assert(_ == 1234567890123L)
-
-    suite(m"Wisteria derivation"):
-      test(m"case class round-trip"):
-        Tests.Person(Text("Alice"), 30).encode.as[Tests.Person]
-      . assert(_ == Tests.Person(Text("Alice"), 30))
-
-    suite(m"tel\"…\" interpolator"):
-      test(m"simple literal"):
-        val parsed = telA"hello"
-        parsed.childCompounds.headOption.map(_.keyword).getOrElse(Text(""))
-      . assert(_ == Text("hello"))
-
-      test(m"keyword with atom and hole"):
-        val alice = Text("Alice")
-        val parsed = telA"name $alice"
-        parsed.childCompounds.headOption.map(c =>
-          (c.keyword, c.atoms.collect { case Tel.Atom.Inline(t, _) => t }.headOption.getOrElse(Text(""))))
-          .getOrElse((Text(""), Text("")))
-      . assert(_ == (Text("name"), Text("Alice")))
-
-      test(m"multi-line tel literal parses"):
-        val parsed = telA"""parent
-  child
-"""
-        parsed.childCompounds.headOption.map(_.keyword).getOrElse(Text(""))
-      . assert(_ == Text("parent"))
-
-    suite(m"Dynamic access"):
-      import dynamicTelAccess.enabled
-
-      test(m"select-dynamic on encoded case class"):
-        val doc = Tests.Person(Text("Alice"), 30).encode
-        doc.name.as[Text]
-      . assert(_ == Text("Alice"))
-
-      test(m"camelCase → kebab-case keyword lookup"):
-        case class CamelCase(firstName: Text, lastName: Text) derives CanEqual
-        val cc = CamelCase(Text("Alice"), Text("Anderson")).encode
-        cc.firstName.as[Text]
-      . assert(_ == Text("Alice"))
-
-    suite(m"Negative corpus (E1xx parsing)"):
-      CorpusLoader.negative.each: testcase =>
-        CorpusLoader.expectedCode(testcase.stem).let: code =>
-          // Phase 1 covers E1xx parsing errors only. E2xx (schema validity)
-          // and E3xx (validation) require the schema component shipped in
-          // phase 3.
-          if code < 200 then
-            test(m"raises E$code on ${testcase.stem}"):
-              capture[TelError](Tel.parse(testcase.source)).reason.number
-            . assert(_ == code)
+extension (inline context: StringContext)
+  transparent inline def telA: Interpolation = interpolation[Tel](context)

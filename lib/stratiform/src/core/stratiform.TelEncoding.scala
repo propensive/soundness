@@ -35,6 +35,7 @@ package stratiform
 import scala.compiletime.*
 
 import anticipation.*
+import contextual.*
 import contingency.*
 import distillate.*
 import prepositional.*
@@ -52,6 +53,17 @@ import wisteria.*
 // Decoding inverts these mappings.
 
 trait Tel2:
+  // `tel"…"` interpolator: parses at compile time and substitutes typed
+  // holes via Encodable in Tel.
+  inline given interpolator: Tel is Interpolable:
+    type Result = Tel
+
+    transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+         (inline insertions: Any*)
+    :     Tel =
+
+      ${stratiform.internal.interpolator[parts, origins]('insertions)}
+
   inline given decodable: [value] => value is Decodable in Tel = summonFrom:
     case given (`value` is Decodable in Text) =>
       provide[Tactic[TelError]](_.primaryAtom.decode[value])
@@ -67,21 +79,21 @@ trait Tel2:
   object DecodableDerivation extends Derivable[Decodable in Tel]:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Tel =
-      tel =>
+      telVal =>
         provide[Tactic[TelError]]:
           build: [field] =>
             ctx =>
-              val match0 = tel.field(Tel.camelToKebab(label.s))
+              val match0 = telVal.field(Tel.camelToKebab(label.s))
               if match0.absent then default.or(ctx.decoded(Tel.empty))
               else ctx.decoded(match0.vouch)
 
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Tel =
-      tel =>
+      telVal =>
         provide[Tactic[TelError]]:
           provide[Tactic[VariantError]]:
-            val variantKeyword = tel.primaryAtom
+            val variantKeyword = telVal.primaryAtom
             delegate(variantKeyword): [variant <: derivation] =>
-              ctx => ctx.decoded(tel)
+              ctx => ctx.decoded(telVal)
 
   object EncodableDerivation extends Derivable[Encodable in Tel]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -114,20 +126,20 @@ trait Tel2:
   given stringDecodable: Tactic[TelError] => String is Decodable in Tel =
     _.primaryAtom.s
 
-  given intDecodable: Tactic[TelError] => Int is Decodable in Tel = tel =>
-    try tel.primaryAtom.s.toInt
+  given intDecodable: Tactic[TelError] => Int is Decodable in Tel = telVal =>
+    try telVal.primaryAtom.s.toInt
     catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
 
-  given longDecodable: Tactic[TelError] => Long is Decodable in Tel = tel =>
-    try tel.primaryAtom.s.toLong
+  given longDecodable: Tactic[TelError] => Long is Decodable in Tel = telVal =>
+    try telVal.primaryAtom.s.toLong
     catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
 
-  given doubleDecodable: Tactic[TelError] => Double is Decodable in Tel = tel =>
-    try tel.primaryAtom.s.toDouble
+  given doubleDecodable: Tactic[TelError] => Double is Decodable in Tel = telVal =>
+    try telVal.primaryAtom.s.toDouble
     catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
 
-  given booleanDecodable: Tactic[TelError] => Boolean is Decodable in Tel = tel =>
-    tel.primaryAtom.s match
+  given booleanDecodable: Tactic[TelError] => Boolean is Decodable in Tel = telVal =>
+    telVal.primaryAtom.s match
       case "true"  => true
       case "false" => false
       case _       => abort(TelError(TelError.Reason.BadVersion))
@@ -151,8 +163,8 @@ trait Tel2:
     opt => opt.lay(Tel.empty)(v => v.encode)
 
   given optionalDecodable: [value: Decodable in Tel] => Tactic[TelError]
-  =>  Optional[value] is Decodable in Tel = tel =>
-    if tel.childCompounds.isEmpty && tel.atomTexts.isEmpty then Unset else value.decoded(tel)
+  =>  Optional[value] is Decodable in Tel = telVal =>
+    if telVal.childCompounds.isEmpty && telVal.atomTexts.isEmpty then Unset else value.decoded(telVal)
 
   // Helpers used by encoders to construct Tel values.
 

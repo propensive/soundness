@@ -161,6 +161,11 @@ object Tel extends Tel2:
 
   def show(document: Document): Text = TelPrinter.print(document)
 
+  // Macro-friendly factory: bypasses the private constructor so generated
+  // code from the `tel"…"` interpolator can produce Tel values without
+  // tripping the inline-private-constructor restriction.
+  def make(subtree: Subtree): Tel = new Tel(subtree)
+
   // camelCase → kebab-case: insert `-` before each interior uppercase
   // letter and lowercase it. `firstName` → `first-name`. Used by the
   // dynamic accessor to map Scala identifier names to TEL keywords.

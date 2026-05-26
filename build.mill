@@ -1167,7 +1167,7 @@ object stenography extends Library:
   object test extends Tests(core)
 
 object stratiform extends Library:
-  object core extends Component(zephyrine.core, turbulence.core, panopticon.core, gossamer.core, contingency.core, anticipation.codec, distillate.core, wisteria.core, prepositional.core):
+  object core extends Component(zephyrine.core, turbulence.core, panopticon.core, gossamer.core, contingency.core, anticipation.codec, distillate.core, wisteria.core, prepositional.core, contextual.core, gigantism.core, fulminate.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, eucalyptus.core)
