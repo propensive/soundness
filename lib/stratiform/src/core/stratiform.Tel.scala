@@ -99,6 +99,12 @@ extends scala.Dynamic:
     val matched = childCompounds.find(_.keyword == target)
     if matched.isEmpty then Unset else Tel(matched.get)
 
+  // All child compounds whose keyword matches `target`. Useful for
+  // schema-repeatable fields that produce multiple compounds with the
+  // same keyword in the presentation tree.
+  def fields(target: Text): IArray[Tel] =
+    childCompounds.filter(_.keyword == target).map(c => Tel(c))
+
   // Document accessor for downstream operations (printing, mutation). Only
   // meaningful when this Tel wraps a Document.
   private[stratiform] def document: Optional[Tel.Document] = subtree match

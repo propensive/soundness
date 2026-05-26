@@ -513,6 +513,17 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[MutationError](Mutation(tel, Mutation.Op.Delete(ptr))).reason
       . assert(_ == MutationError.Reason.PointerNotFound)
 
+    suite(m"Tel.fields repeated-keyword accessor"):
+      test(m"fields returns all matching children in order"):
+        val tel = Tel.parse(Text("item 1\nitem 2\nitem 3\n"))
+        tel.fields(Text("item")).map(_.primaryAtom).toList
+      . assert(_ == List(Text("1"), Text("2"), Text("3")))
+
+      test(m"fields returns empty array when none match"):
+        val tel = Tel.parse(Text("other 1\n"))
+        tel.fields(Text("item")).length
+      . assert(_ == 0)
+
     suite(m"Tel.parse Text overload"):
       test(m"parse(Text) accepts a Gossamer Text directly"):
         val tel = Tel.parse(Text("name Alice\n"))
