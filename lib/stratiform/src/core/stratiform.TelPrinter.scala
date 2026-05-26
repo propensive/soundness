@@ -35,7 +35,6 @@ package stratiform
 import scala.language.unsafeNulls
 
 import anticipation.*
-import gossamer.*
 import rudiments.*
 import vacuous.*
 

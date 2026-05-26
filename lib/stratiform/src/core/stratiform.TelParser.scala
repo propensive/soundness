@@ -37,7 +37,6 @@ import scala.language.unsafeNulls
 import anticipation.*
 import contingency.*
 import fulminate.*
-import gossamer.*
 import vacuous.*
 
 import TelError.Reason
