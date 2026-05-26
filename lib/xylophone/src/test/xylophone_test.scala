@@ -896,3 +896,5 @@ object Tests extends Suite(m"Xylophone tests"):
           doc == Document(
             elem(t"root", elem(t"child")),
             Header(t"1.0", Unset, Unset))
+
+    PositionTests()
