@@ -172,6 +172,13 @@ object Tel extends Tel2:
   // contract: untyped, presentation model only.
   def parse(bytes: Data): Tel raises TelError = Tel(TelParser.parse(bytes))
 
+  // Convenience overload: parse a Text by UTF-8 encoding it first. The
+  // bytes-based overload remains the canonical entry point for parsing
+  // from arbitrary byte sources (files, streams, network buffers).
+  def parse(text: Text): Tel raises TelError =
+    val arr: Array[Byte] = text.s.getBytes("UTF-8").nn
+    parse(IArray.unsafeFromArray(arr))
+
   // Lower-level parse returning the raw Document — used by code that
   // needs the presentation AST directly (e.g. the round-trip printer).
   def parseDocument(bytes: Data): Document raises TelError = TelParser.parse(bytes)

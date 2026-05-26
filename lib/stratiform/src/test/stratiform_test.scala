@@ -498,6 +498,12 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[MutationError](Mutation(tel, Mutation.Op.Delete(ptr))).reason
       . assert(_ == MutationError.Reason.PointerNotFound)
 
+    suite(m"Tel.parse Text overload"):
+      test(m"parse(Text) accepts a Gossamer Text directly"):
+        val tel = Tel.parse(Text("name Alice\n"))
+        tel.childCompounds.headOption.map(_.keyword).getOrElse(Text(""))
+      . assert(_ == Text("name"))
+
     suite(m"Integration: parse → mutate → print → reparse"):
       def doc(source: String): Tel = Tel.parse(IArray.from(source.getBytes("UTF-8")))
 
