@@ -417,7 +417,7 @@ private final class TelParser(input: Data):
   // the text between a marker and the next hard-space-marker boundary
   // (or end of line for the final column), with the introducer space
   // consumed per §16.1.
-  private def parseTabulationLine(line: Line): Tel.Tabulation =
+  private def parseTabulationLine(line: Line): Tel.Tabulation raises TelError =
     val content = line.content
     val markers = scala.collection.mutable.ArrayBuffer.empty[Int]
 
@@ -448,11 +448,19 @@ private final class TelParser(input: Data):
   // After a marker (which sits at the sigil's index, so `start` is index+1),
   // an optional soft space introduces the heading text; the heading ends at
   // the next hard space or at `limit` (the position of the next marker, or
-  // end of line for the final column).
-  private def extractHeading(content: String, start: Int, limit: Int): Text =
+  // end of line for the final column). §16 / E120 forbids: non-space
+  // immediately after the marker, more than one space before heading
+  // content, or a sigil character inside the heading text.
+  private def extractHeading(content: String, start: Int, limit: Int): Text raises TelError =
     if start >= limit then Text("")
-    else if content.charAt(start) != ' ' then Text("")  // malformed; E120 territory
-    else if start + 1 < limit && content.charAt(start + 1) == ' ' then Text("")
+    else if content.charAt(start) != ' ' then abort(TelError(Reason.BadTabulationHeading))
+    else if start + 1 < limit && content.charAt(start + 1) == ' ' then
+      // Two consecutive spaces immediately after the marker: either an
+      // empty heading (introducer + single terminator space = exactly
+      // two spaces between markers) or malformed (a real heading
+      // starting after extra leading spaces, which is E120).
+      if limit - start <= 2 then Text("")
+      else abort(TelError(Reason.BadTabulationHeading))
     else
       var i = start + 1
       var stop = limit
@@ -460,7 +468,9 @@ private final class TelParser(input: Data):
         if content.charAt(i) == ' ' && content.charAt(i + 1) == ' ' then
           stop = i
           i = limit
-        else i += 1
+        else
+          if content.charAt(i) == sigil then abort(TelError(Reason.BadTabulationHeading))
+          i += 1
 
       Text(content.substring(start + 1, stop))
 
