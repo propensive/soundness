@@ -30,6 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package punctuation
 
-export punctuation.{Formattable, Layout, Markdown, Parser, Prose, Serializer, Translator, source}
+import anticipation.*
+import prepositional.*
+
+extension (markdown: Markdown of Layout)
+  def source: Text = Serializer(markdown)
+
+extension (markdown: Markdown of Prose)
+  @scala.annotation.targetName("sourceProse")
+  def source: Text = Serializer(markdown)

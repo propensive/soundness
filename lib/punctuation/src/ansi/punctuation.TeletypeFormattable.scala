@@ -30,6 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package punctuation
 
-export punctuation.{Formattable, Layout, Markdown, Parser, Prose, Serializer, Translator, source}
+import anticipation.*
+import escapade.*
+import vacuous.*
+
+// Terminal counterpart of `punctuation.Formattable`. Returns `Unset` when the
+// formattable does not handle the code block's language so the renderer can
+// fall back to a plain (`Faint`-styled) presentation.
+trait TeletypeFormattable:
+  type Self
+
+  def format(language: List[Text], content: Text): Optional[Teletype]

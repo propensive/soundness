@@ -30,6 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package punctuation
 
-export punctuation.{Formattable, Layout, Markdown, Parser, Prose, Serializer, Translator, source}
+import anticipation.*
+
+object MarkdownPalette:
+  given default: MarkdownPalette = MarkdownPalette()
+
+// Terminal colours for the markdown renderer. Each field is a 24-bit `Chroma`
+// (RGB packed into an `Int`); the values below are chosen to read well on
+// both light and dark backgrounds in a true-colour terminal.
+case class MarkdownPalette
+  ( heading:  Chroma = Chroma(0x82, 0xaa, 0xff),
+    link:     Chroma = Chroma(0x80, 0xcb, 0xc4),
+    code:     Chroma = Chroma(0xff, 0xcb, 0x6b),
+    codeBg:   Chroma = Chroma(0x2a, 0x2a, 0x2a),
+    quoteBar: Chroma = Chroma(0x82, 0xaa, 0xff),
+    rule:     Chroma = Chroma(0x60, 0x60, 0x60),
+    subdued:  Chroma = Chroma(0x80, 0x80, 0x80) )

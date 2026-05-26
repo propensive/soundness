@@ -30,6 +30,61 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package punctuation
 
-export punctuation.{Formattable, Layout, Markdown, Parser, Prose, Serializer, Translator, source}
+import anticipation.*
+import escapade.*
+import frontier.*
+import gossamer.*
+import harlequin.*
+import polysyllabic.*
+import prepositional.*
+import rudiments.*
+import vacuous.*
+
+// Code-block formattables for the terminal renderer. Each one tries to match
+// the info-string against its claimed language and, on success, runs the
+// content through Harlequin's highlighter and out via the `unnumbered` token
+// stream. Callers supply a `ScalaSyntaxPalette` to colour the tokens.
+package teletypeFormattables:
+  given scala: (palette: ScalaSyntaxPalette)
+              => ("scala" is TeletypeFormattable) = new TeletypeFormattable:
+    type Self = "scala"
+
+    def format(meta: List[Text], content: Text): Optional[Teletype] =
+      if meta.prim != t"scala" then Unset
+      else
+        import syntaxHighlighting.unnumbered
+        Scala.highlight(content).teletype
+
+  given java: (palette: ScalaSyntaxPalette)
+            => ("java" is TeletypeFormattable) = new TeletypeFormattable:
+    type Self = "java"
+
+    def format(meta: List[Text], content: Text): Optional[Teletype] =
+      if meta.prim != t"java" then Unset
+      else
+        import syntaxHighlighting.unnumbered
+        Java.highlight(content).teletype
+
+extension (markdown: Markdown of Layout)
+  def terminal
+    ( width: Int = 80 )
+    ( using hyphenation: Hyphenation,
+            formattables: Every[TeletypeFormattable],
+            palette: MarkdownPalette )
+  :   Teletype =
+
+    Renderer.render(markdown, width)
+
+// Drives the markdown renderer from a `Termcap`. Reads the column width from
+// `termcap.width` (defaulting to 80 when no width is supplied — the built-in
+// `termcapDefinitions` leave the default `Int.MaxValue`, which would otherwise
+// produce mile-wide thematic-break rules), renders to a `Teletype`, then
+// emits ANSI escapes through the existing `Teletype is Printable` given.
+given (Hyphenation, Every[TeletypeFormattable], MarkdownPalette)
+   => (Markdown of Layout) is Printable =
+
+  (markdown, termcap) =>
+    val width = if termcap.width >= Int.MaxValue then 80 else termcap.width
+    Renderer.render(markdown, width).render(termcap)

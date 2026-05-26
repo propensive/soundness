@@ -32,4 +32,7 @@
                                                                                                   */
 package soundness
 
-export punctuation.{Formattable, Layout, Markdown, Parser, Prose, Serializer, Translator, source}
+export punctuation.{MarkdownPalette, Renderer, TeletypeFormattable, terminal}
+
+package teletypeFormattables:
+  export punctuation.teletypeFormattables.{scala, java}
