@@ -34,7 +34,9 @@ package stratiform
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import gossamer.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 
@@ -49,6 +51,8 @@ import vacuous.*
 // without case analysis.
 
 class Tel private[stratiform](private[stratiform] val subtree: Tel.Subtree):
+  inline def as[value: Decodable in Tel]: value raises TelError = value.decoded(this)
+
   // Keyword of this node — empty for the document root, otherwise the
   // compound's keyword text.
   def keyword: Text = subtree match
@@ -83,7 +87,7 @@ class Tel private[stratiform](private[stratiform] val subtree: Tel.Subtree):
     case d: Tel.Document => d
     case _               => Unset
 
-object Tel:
+object Tel extends Tel2:
 
   enum LineEndings:
     case Lf, Crlf

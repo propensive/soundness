@@ -43,8 +43,12 @@ import vacuous.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
+import Tel.given
 
 object Tests extends Suite(m"Stratiform Tests"):
+  case class Person(name: Text, age: Int) derives CanEqual
+
+
   def run(): Unit =
     suite(m"Positive corpus"):
       CorpusLoader.positive.each: testcase =>
@@ -61,6 +65,28 @@ object Tests extends Suite(m"Stratiform Tests"):
           val reparsed = Tel.parse(IArray.from(printed.s.getBytes("UTF-8")))
           TelCheckTree.of(reparsed)
         . assert(_ == TelCheckTree.of(Tel.parse(testcase.source)))
+
+    suite(m"Encode/decode primitives"):
+      test(m"Text round-trip"):
+        Text("hello").encode.as[Text]
+      . assert(_ == Text("hello"))
+
+      test(m"Int round-trip"):
+        42.encode.as[Int]
+      . assert(_ == 42)
+
+      test(m"Boolean round-trip"):
+        true.encode.as[Boolean]
+      . assert(identity)
+
+      test(m"Long round-trip"):
+        1234567890123L.encode.as[Long]
+      . assert(_ == 1234567890123L)
+
+    suite(m"Wisteria derivation"):
+      test(m"case class round-trip"):
+        Tests.Person(Text("Alice"), 30).encode.as[Tests.Person]
+      . assert(_ == Tests.Person(Text("Alice"), 30))
 
     suite(m"Negative corpus (E1xx parsing)"):
       CorpusLoader.negative.each: testcase =>
