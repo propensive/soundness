@@ -1,0 +1,12 @@
+tel 1.0 https://tel-lang.org/schema/tel-schema
+
+name example
+
+record first-type
+  field x string
+
+document
+  field name string
+
+record second-type
+  field y string

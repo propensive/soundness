@@ -1,0 +1,50 @@
+Document {
+    interpreter_directive: None,
+    pragma: None,
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "parent",
+                    atoms: [],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: Some(
+                                Tabulation {
+                                    marker_offsets: [
+                                        2,
+                                        7,
+                                    ],
+                                    headings: [
+                                        "K",
+                                        "Val",
+                                    ],
+                                },
+                            ),
+                            compounds: [
+                                Compound {
+                                    keyword: "a",
+                                    atoms: [
+                                        Inline {
+                                            text: "this is a very long value that exceeds any reasonable column width but is valid because it is the final column",
+                                            preceding_spaces: 4,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 1,
+                        },
+                    ],
+                },
+            ],
+            trailing_blank_lines: 0,
+        },
+    ],
+}

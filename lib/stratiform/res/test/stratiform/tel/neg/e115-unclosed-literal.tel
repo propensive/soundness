@@ -1,0 +1,3 @@
+code
+      EOF
+this literal is never closed

@@ -1,0 +1,29 @@
+Document {
+    interpreter_directive: None,
+    pragma: None,
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "hello",
+                    atoms: [
+                        Inline {
+                            text: "wo#rld",
+                            preceding_spaces: 2,
+                        },
+                        Inline {
+                            text: "foo",
+                            preceding_spaces: 2,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}

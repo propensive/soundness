@@ -1,0 +1,25 @@
+Document {
+    interpreter_directive: None,
+    pragma: None,
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "code",
+                    atoms: [
+                        Literal {
+                            delimiter: "END",
+                            text: "this END is not the closing delimiter\nbecause it's not on its own line",
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}

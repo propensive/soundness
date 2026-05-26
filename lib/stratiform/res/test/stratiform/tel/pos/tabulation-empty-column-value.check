@@ -1,0 +1,7 @@
+line-endings: LF
+tabulation: offsets=[0, 8] headings=["Name", "Age"]
+compound: "Alice" inline(7,30)
+trailing-blanks: 1
+
+errors:
+  E117 [19,26): Hard space not at column boundary

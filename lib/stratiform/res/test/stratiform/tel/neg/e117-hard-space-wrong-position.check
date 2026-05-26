@@ -1,0 +1,38 @@
+Document {
+    interpreter_directive: None,
+    pragma: None,
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: Some(
+                Tabulation {
+                    marker_offsets: [
+                        0,
+                        8,
+                    ],
+                    headings: [
+                        "Name",
+                        "Age",
+                    ],
+                },
+            ),
+            compounds: [
+                Compound {
+                    keyword: "Al",
+                    atoms: [
+                        Inline {
+                            text: "ice 30",
+                            preceding_spaces: 2,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}
+errors:
+  E117 [16,18): Hard space does not end at a column boundary

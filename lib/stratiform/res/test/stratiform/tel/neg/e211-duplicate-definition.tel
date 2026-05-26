@@ -1,0 +1,12 @@
+tel 1.0 https://tel-lang.org/schema/tel-schema
+
+name e213-test
+
+record dup-name
+  field x string
+
+record dup-name
+  field y string
+
+document
+  field foo dup-name

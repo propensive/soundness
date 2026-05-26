@@ -1,0 +1,26 @@
+Document {
+    interpreter_directive: None,
+    pragma: None,
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: Some(
+                Tabulation {
+                    marker_offsets: [
+                        0,
+                        7,
+                    ],
+                    headings: [
+                        "foo",
+                        "# bar",
+                    ],
+                },
+            ),
+            compounds: [],
+            trailing_blank_lines: 0,
+        },
+    ],
+}
+errors:
+  E120 [7,14): Malformed tabulation heading: heading contains sigil

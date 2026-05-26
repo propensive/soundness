@@ -238,7 +238,7 @@ object groupCheck extends Module:
 
     "bitumen.core", "breviloquence.core", "distillate.core", "exegesis.core",
     "gigantism.core", "proscenium.core", "satirical.core", "stenography.core",
-    "ypsiloid.core"
+    "stratiform.core", "ypsiloid.core"
   )
 
   def validate(): Command[Unit] = Task.Command:
@@ -1166,6 +1166,12 @@ object stenography extends Library:
 
   object test extends Tests(core)
 
+object stratiform extends Library:
+  object core extends Component(zephyrine.core, turbulence.core, panopticon.core, gossamer.core, contingency.core, anticipation.codec):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core, eucalyptus.core)
+
 object superlunary extends Library:
   object core extends Component(jacinta.core, gastronomy.core, anthology.scala, austronesian.core):
     override def scalacOptions = Task:
@@ -1350,7 +1356,7 @@ val allLibraries: Seq[Library] = Seq(
   mosquito, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
   phoenicia, plutocrat, polaris, polysyllabic, polyvinyl, prepositional, probably, profanity,
   proscenium, punctuation, quantitative, revolution, rudiments, satirical, savagery,
-  scintillate, sedentary, serpentine, spectacular, stenography, superlunary,
+  scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
   surveillance, symbolism, synesthesia, tarantula, telekinesis, turbulence, typonym,
   ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, wisteria, xylophone,
   yossarian, ypsiloid, zephyrine, zeppelin, ziggurat

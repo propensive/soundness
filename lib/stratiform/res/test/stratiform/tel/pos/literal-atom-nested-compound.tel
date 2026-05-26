@@ -1,0 +1,7 @@
+parent
+  code
+        EOF
+hello
+world
+EOF
+  other

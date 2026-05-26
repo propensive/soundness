@@ -1,0 +1,33 @@
+Document {
+    interpreter_directive: None,
+    pragma: None,
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "record",
+                    atoms: [
+                        Inline {
+                            text: "Alice",
+                            preceding_spaces: 1,
+                        },
+                        Inline {
+                            text: "30",
+                            preceding_spaces: 1,
+                        },
+                        Inline {
+                            text: "London",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}
