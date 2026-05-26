@@ -1080,7 +1080,8 @@ object punctuation extends Library:
   object html extends Component(core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object ansi extends Component(core, harlequin.core):
+  object ansi extends Component(core, harlequin.core, harlequin.ansi, escapade.core,
+      polysyllabic.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
