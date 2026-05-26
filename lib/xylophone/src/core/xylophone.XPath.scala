@@ -57,9 +57,11 @@ object XPath extends Root("/"):
     val self: Text = "."
     val separator: Text = "/"
 
+  // The underlying serpentine `Path` already encodes with the leading `/`
+  // separator (Path.encode = root + descent.reverse.join(sep)). Re-using
+  // it directly avoids the double-slash that `t"/${path.path}"` produced.
   given XPath is Encodable in Text = path =>
-    if path.path.descent.length == 0 then t"/"
-    else t"/${path.path}"
+    if path.path.descent.length == 0 then t"/" else path.path.encode
 
   // Parse a stored descent segment back into an addressable step. Returns
   // `Right(name, ordinal)` for an element step, `Left(name)` for an
@@ -86,3 +88,12 @@ case class XPath(path: Path on XPath = XPath):
 
   def attribute(name: Text): XPath =
     XPath(path / XPath.attributeStep(name))
+
+  // Prepend `name[ordinal]` at the root end of the path, leaving the rest
+  // of the descent intact. Used by `Xml`'s Wisteria derivation: each outer
+  // `focus` block runs *after* the inner one, and needs to push its label
+  // to the front of the accumulated XPath (so `/parent[1]/child[1]` lands
+  // root-first), not append at the leaf end like `element` does.
+  private[xylophone] def prepend(name: Text, ordinal: Int = 1): XPath =
+    val step = XPath.elementStep(name, ordinal)
+    XPath(Path[XPath, XPath.type, Tuple]("/", path.descent :+ step))

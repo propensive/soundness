@@ -37,6 +37,8 @@ import language.dynamics
 import java.lang as jl
 import java.util as ju
 
+import scala.collection.mutable as scm
+import scala.compiletime.*
 import scala.quoted.*
 
 import anticipation.*
@@ -55,6 +57,7 @@ import spectacular.*
 import turbulence.*
 import typonym.*
 import vacuous.*
+import wisteria.*
 import zephyrine.*
 
 object Xml extends Tag.Container
@@ -66,10 +69,110 @@ object Xml extends Tag.Container
   sealed trait Decimal
   sealed trait Id
 
-  given textDecodable: [value: Decodable in Text] => Tactic[XmlError] => value is Decodable in Xml =
-    case TextNode(text)                        => value.decoded(text)
-    case Element(_, _, IArray(TextNode(text))) => value.decoded(text)
-    case _                                     => abort(XmlError())
+  // Default sum-type discriminator for XML: the element's label is the
+  // variant tag. A sealed trait with case classes `Book` and `Magazine` is
+  // therefore decoded from `<book .../>` and `<magazine .../>` respectively
+  // without any explicit discriminator field — the XML-idiomatic choice.
+  given xmlDiscriminable: [value] => value is Discriminable in Xml = new Discriminable:
+    type Form = Xml
+    type Self = value
+
+    def discriminate(xml: Xml): Optional[Text] = xml match
+      case Element(label, _, _)           => label
+      case Fragment(Element(label, _, _)) => label
+      case _                              => Unset
+
+    def rewrite(kind: Text, xml: Xml): Xml = xml match
+      case Element(_, attrs, children)           => Element(kind, attrs, children)
+      case Fragment(Element(_, attrs, children)) => Element(kind, attrs, children)
+      case other                                 => other
+
+    def variant(xml: Xml): Xml = xml
+
+  // Single entry-point for resolving `Decodable in Xml`. Prefers a textual
+  // decoder when one exists (so primitives like `Int`, `Text`, `Boolean`
+  // continue to extract from element text content). Otherwise falls back to
+  // Wisteria-derived case-class / sealed-trait decoding via
+  // `DecodableDerivation`.
+  inline given decodable: [value] => value is Decodable in Xml = summonFrom:
+    case given (`value` is Decodable in Text) =>
+      xml =>
+        provide[Tactic[XmlError]]:
+          val text: Text = xml match
+            case TextNode(text)                        => text
+            case Element(_, _, IArray(TextNode(text))) => text
+            case Element(_, _, IArray())               => t""
+            case Fragment(node: Node)                  => node match
+              case TextNode(text)                        => text
+              case Element(_, _, IArray(TextNode(text))) => text
+              case Element(_, _, IArray())               => t""
+              case _                                     => abort(XmlError())
+            case _                                     => abort(XmlError())
+
+          summon[`value` is Decodable in Text].decoded(text)
+
+    case given Reflection[`value`] =>
+      DecodableDerivation.derived
+
+  // Wisteria-based derivation for case classes (conjunction) and sealed
+  // traits / enums (disjunction). Each field is decoded from the first
+  // child element whose label matches the field name; sum-type variants
+  // are picked from the element's own label via the `Discriminable`
+  // default.
+  //
+  // `wisteria.label[Text]` is used in place of the bare `label` identifier
+  // because `Tag.Container`'s `label = "xml"` constructor argument shadows
+  // Wisteria's `label aka "label"` parameter inside this object.
+  object DecodableDerivation extends Derivable[Decodable in Xml]:
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   derivation is Decodable in Xml =
+
+      xml =>
+        provide[Foci[Xml.Focus]]:
+          provide[Tactic[XmlError]]:
+            val element: Element = xml match
+              case e: Element           => e
+              case Fragment(e: Element) => e
+              case _                    => abort(XmlError())
+
+            val children: scm.HashMap[String, Element] = scm.HashMap.empty
+            var i = 0
+            while i < element.children.length do
+              element.children(i) match
+                case child: Element =>
+                  val childLabel = child.label.s
+                  if !children.contains(childLabel) then
+                    children.update(childLabel, child)
+                case _ => ()
+              i += 1
+
+            build: [field] =>
+              context =>
+                val fieldLabel: Text = wisteria.label[Text]
+                focus({
+                  // Each outer `focus` runs *after* the inner one, so
+                  // we extend `prior` at the root side (`/outer/inner`),
+                  // not the leaf side that `XPath#element` would use.
+                  val base = prior.let(_.path).or(XPath())
+                  Xml.Focus(base.prepend(fieldLabel, 1))
+                }):
+                  children.get(fieldLabel.s) match
+                    case Some(child) => context.decoded(child)
+                    case None        => default.or(abort(XmlError()))
+
+    inline def disjunction[derivation: SumReflection]
+    :   derivation is Decodable in Xml =
+
+      xml =>
+        provide[Tactic[XmlError]]:
+          provide[Tactic[VariantError]]:
+            val discriminable = infer[derivation is Discriminable in Xml]
+
+            val discriminant: Text = discriminable.discriminate(xml).or:
+              focus(prior.or(Xml.Focus(XPath())))(abort(XmlError()))
+
+            delegate(discriminant): [variant <: derivation] =>
+              context => context.decoded(xml)
 
   case class attribute() extends StaticAnnotation
 
@@ -525,6 +628,20 @@ object Xml extends Tag.Container
   case class Tracked(value: Xml, positionIndex: PositionIndex):
     def locate(path: XPath): Optional[Xml.Position] =
       Tracked.walk(value, positionIndex.ints, 0, path.path.descent.toIndexedSeq, 0)
+
+    // Decode like `Xml#as` but also populate `position` on every
+    // accumulated `Xml.Focus` by looking up its XPath against this
+    // tracked root's position index. Outside `validate[Xml.Focus]` the
+    // ambient `Foci` is a no-op and `supplement` does nothing, so this
+    // call stays cost-free.
+    def as[result: Decodable in Xml]: result tracks Xml.Focus =
+      val decoded = value match
+        case Fragment(inner) => result.decoded(inner)
+        case xml: Xml        => result.decoded(xml)
+      val foci = summon[Foci[Xml.Focus]]
+      val tracked = this
+      foci.supplement(foci.length, _.let(_.withPosition(tracked)).vouch)
+      decoded
 
   object Tracked:
     // `XPath.path.descent` is stored leaf-first (Serpentine's `/`
@@ -1946,7 +2063,13 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
   private[xylophone] def over[transport <: Label]: this.type over transport =
     asInstanceOf[this.type over transport]
 
-  def as[result: Decodable in Xml]: result = this match
+  // Decode this `Xml` to a `result` value. `Decodable in Xml` is resolved
+  // via the `decodable` summonFrom (textual decoder, else Wisteria
+  // derivation). Errors registered inside the decoder carry `Xml.Focus`
+  // values describing the XPath of the failing field. Position information
+  // stays `Unset`; use `Xml.Tracked#as` against a `parseTracked` root if
+  // you also want source line / column.
+  def as[result: Decodable in Xml]: result tracks Xml.Focus = this match
     case Fragment(value) => result.decoded(value)
     case xml: Xml        => result.decoded(xml)
 
