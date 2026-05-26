@@ -62,3 +62,98 @@ object Tests extends Suite(m"Punctuation tests"):
                 test(m"Commonmark test case ${testcase.example}"):
                   Parser.parse(testcase.markdown).html.show
                 . assert(_ == html.show)
+
+    suite(m"Serializer round-trip"):
+      def roundTrip(markdown: Text): Markdown of Layout =
+        Parser.parse(Parser.parse(markdown).source)
+
+      test(m"simple heading"):
+        roundTrip(t"# Title\n").children.head
+      . assert:
+          case Layout.Heading(_, 1, Prose.Textual(t"Title")) => true
+          case _                                             => false
+
+      test(m"emphasis and strong"):
+        roundTrip(t"Hello **bold** and *em* here.\n").children.head
+      . assert:
+          case Layout.Paragraph(_, prose*) =>
+            prose.exists:
+              case Prose.Strong(_*) => true
+              case _                => false
+            && prose.exists:
+              case Prose.Emphasis(_*) => true
+              case _                  => false
+
+          case _ => false
+
+      test(m"fenced code block preserves content"):
+        val src = t"```scala\nval x = 1\n```\n"
+        val first = Parser.parse(src).children.head
+        val again = Parser.parse(Parser.parse(src).source).children.head
+
+        (first, again).match
+          case (Layout.CodeBlock(_, a, b), Layout.CodeBlock(_, c, d)) => (a, b) == (c, d)
+          case _                                                     => false
+      . assert(_ == true)
+
+      test(m"link with title"):
+        val src = t"See [docs](https://example.org \"Docs\") here.\n"
+        Parser.parse(Parser.parse(src).source).children.head
+      . assert:
+          case Layout.Paragraph(_, _, Prose.Link(t"https://example.org", t"Docs", _*), _*) => true
+          case _                                                                          => false
+
+      test(m"blockquote nests paragraph"):
+        val src = t"> hello\n"
+        Parser.parse(Parser.parse(src).source).children.head
+      . assert:
+          case Layout.BlockQuote(_, Layout.Paragraph(_, Prose.Textual(t"hello"))) => true
+          case _                                                                  => false
+
+      test(m"bullet list with two items"):
+        val src = t"- one\n- two\n"
+        Parser.parse(Parser.parse(src).source).children.head
+      . assert:
+          case Layout.BulletList(_, true, items*) if items.size == 2 => true
+          case _                                                     => false
+
+      test(m"ordered list with two items"):
+        val src = t"1. one\n2. two\n"
+        Parser.parse(Parser.parse(src).source).children.head
+      . assert:
+          case Layout.OrderedList(_, 1, true, _, items*) if items.size == 2 => true
+          case _                                                            => false
+
+    suite(m"Terminal renderer"):
+      import hyphenations.englishHyphenation
+      import termcapDefinitions.xtermTrueColor
+
+      test(m"heading is styled and followed by a rule"):
+        val md = Parser.parse(t"# Hello\n")
+        md.terminal(width = 20).plain
+      . assert(_.s.contains("Hello"))
+
+      test(m"link content carries an OSC 8 escape"):
+        val md = Parser.parse(t"See [home](https://example.org/) here.\n")
+        md.terminal(width = 60).render(xtermTrueColor).s
+      . assert(_.contains("]8;;https://example.org/"))
+
+      test(m"long word hyphenates at width 20"):
+        val md = Parser.parse(t"supercalifragilisticexpialidocious is a word.\n")
+        md.terminal(width = 20).plain.s
+      . assert(_.contains("‐"))
+
+      test(m"thematic break is a horizontal rule of the requested width"):
+        val md = Parser.parse(t"---\n")
+        md.terminal(width = 10).plain.s
+      . assert(_.contains("──────────"))
+
+      test(m"Printable reads width from Termcap"):
+        given Termcap:
+          def ansi = false
+          def color = ColorDepth.NoColor
+          override def width = 12
+
+        val md = Parser.parse(t"---\n")
+        summon[(Markdown of Layout) is Printable].print(md, summon[Termcap]).s
+      . assert(_.contains("────────────"))
