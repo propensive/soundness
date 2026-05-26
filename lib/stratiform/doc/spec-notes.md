@@ -101,14 +101,16 @@ that's still TODO.
   `tel.edited(edit)` extension, and `Edit.compound(...)` helper
 
 **Phase 4 outstanding:**
-- A reconstruction pass that walks the type-assigned `TelElement` tree
-  to produce a `TelSchema` value comparable with the axiom by
-  structural equality (the type-assignment step now succeeds, so this
-  is unblocked)
 - Polyvinyl records integration (structurally-typed records over a
   schema document)
-- Panopticon `Lens` given (requires a `Tel.modify(field, transform)`
-  primitive)
+
+**Recently landed:**
+- §20.5 full structural-equality self-consistency: `TelSchemaReconstructor`
+  walks a parsed canonical document and rebuilds a `TelSchema`; the
+  reconstruction equals the hand-encoded axiom (modulo the built-in
+  scalars `Identifier`, `TypeName`, `Sigil`, `String`, which the
+  reconstructor injects to match the axiom's explicit declarations).
+- Panopticon `Lens` given over field names via `Tel.modify`.
 
 Phase 5+ deferred items:
 

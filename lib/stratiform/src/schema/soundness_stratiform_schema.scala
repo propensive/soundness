@@ -35,4 +35,4 @@ package soundness
 export
   stratiform
   . { TelElement, TelSchema, TelSchemaAxiom, TelSchemaDecoder, TelSchemaLayers,
-      TelTypeAssignment, TelValidator }
+      TelSchemaReconstructor, TelTypeAssignment, TelValidator }

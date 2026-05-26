@@ -171,6 +171,21 @@ object Tests extends Suite(m"Stratiform Tests"):
         catch case e: TelError => s"failed-with-${e.reason}"
       . assert(_ == "ok")
 
+      test(m"canonical tel-schema.tel reconstructs structurally equal to the axiom"):
+        // The strongest §20.5 property: reconstruct a TelSchema from the
+        // canonical document and assert it is structurally identical to
+        // the hand-encoded axiom.
+        val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+        val bytes  =
+          val arr = stream.readAllBytes().nn
+          stream.close()
+          IArray.from(arr)
+
+        val doc = Tel.parseDocument(bytes)
+        val reconstructed = TelSchemaReconstructor.fromDocument(doc)
+        TelSchemaReconstructor.equivalent(reconstructed, TelSchemaAxiom.telSchema)
+      . assert(identity)
+
     suite(m"Schema axiom"):
       test(m"tel-schema axiom has the documented name"):
         TelSchemaAxiom.telSchema.name
