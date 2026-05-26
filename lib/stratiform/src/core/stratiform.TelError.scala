@@ -56,6 +56,7 @@ object TelError:
     case CollapseLineEndings
     case IgnoreSchemaId
     case IgnoreExtraPragmaAtoms
+    case IgnoreErroneousNode
 
   object Reason:
     given communicable: Reason is Communicable =
@@ -113,6 +114,43 @@ object TelError:
       case ExtraPragmaContent =>
         m"the pragma line has extra atoms or a remark"
 
+      case DuplicateKeywordInStruct => m"the same keyword appears more than once in a struct"
+      case EmptySelectVariants      => m"the SelectDefinition has an empty variants list"
+      case RootRequiredAtom         => m"the root struct has a required atom-assignable member"
+      case DefaultOnOptional        => m"a non-required member must not specify a default"
+      case DuplicateLayerName       => m"two or more layers share the same name"
+      case LayerKeywordCollision    => m"the layer introduces a keyword colliding with the base"
+      case LayerFieldTypeMismatch   => m"a layer Field's declared type conflicts with the base"
+      case BadSchemaSigil           => m"the schema sigil is not a permitted symbolic character"
+      case TelKeywordReserved       => m"the keyword `tel` is reserved in user schemas"
+      case UnresolvedReference      => m"a Reference or SelectRef names an undeclared TypeName"
+      case DuplicateDefinition      => m"two or more Definitions share the same name"
+      case ExcludeMissingVariant    => m"Exclude names a variant absent from the base"
+      case ExcludeEmptiesRequired   => m"Exclude would empty a SelectDefinition that a "+
+                                       m"required SelectRef references"
+
+      case LayerVariantAddition     =>
+        m"a layer SelectDefinition introduces a variant absent from the base"
+
+      case LayerLoosenRequired      => m"a layer cannot loosen the `required` axis"
+      case LayerLoosenRepeatable    => m"a layer cannot loosen the `repeatable` axis"
+      case ExcludeOutsideSelect     => m"Exclude appears outside a SelectDefinition body"
+
+      case ReferenceKindMismatch    =>
+        m"a Reference / SelectRef resolves to a Definition of the wrong kind"
+
+      case NonStructCompound        => m"the compound's type is not a Struct"
+      case TooManyAtoms             => m"more atoms than assignable member positions"
+      case AtomAtNonAssignablePos   => m"the atom is at a non-atom-assignable member position"
+      case AtomVariantUnmatched     => m"the atom text matches no variant keyword of the SelectRef"
+      case AtomFlagKeywordMismatch  => m"the atom text does not match the Flag member's keyword"
+      case UnknownKeyword           => m"the compound keyword is not recognised for the parent"
+      case RequiredMemberAbsent     => m"a required member is absent and has no default"
+      case NonRepeatableTooMany     => m"a non-repeatable member is filled more than once"
+      case MembersNonContiguous     => m"compound children of the same member are not contiguous"
+      case ValidatorRejected        => m"a scalar value or struct failed a named validator"
+      case FlagWithContent          => m"the Flag-typed compound has atoms or compound children"
+
     def recoveryOf(reason: Reason): Recovery = reason match
       case BomPresent               => Recovery.SkipBom
       case PragmaNotFirst           => Recovery.RestartFromPragma
@@ -138,6 +176,21 @@ object TelError:
       case BadSchemaIdentifier      => Recovery.IgnoreSchemaId
       case ExtraPragmaContent       => Recovery.IgnoreExtraPragmaAtoms
 
+      // E2xx and E3xx recoveries: discard the offending node and
+      // continue validation; the document is reported as invalid but
+      // remaining nodes are still inspected.
+      case DuplicateKeywordInStruct | EmptySelectVariants | RootRequiredAtom
+         | DefaultOnOptional | DuplicateLayerName | LayerKeywordCollision
+         | LayerFieldTypeMismatch | BadSchemaSigil | TelKeywordReserved
+         | UnresolvedReference | DuplicateDefinition | ExcludeMissingVariant
+         | ExcludeEmptiesRequired | LayerVariantAddition | LayerLoosenRequired
+         | LayerLoosenRepeatable | ExcludeOutsideSelect | ReferenceKindMismatch
+         | NonStructCompound | TooManyAtoms | AtomAtNonAssignablePos
+         | AtomVariantUnmatched | AtomFlagKeywordMismatch | UnknownKeyword
+         | RequiredMemberAbsent | NonRepeatableTooMany | MembersNonContiguous
+         | ValidatorRejected | FlagWithContent =>
+        Recovery.IgnoreErroneousNode
+
   enum Reason(val number: Int) extends Clarification:
     case BomPresent              extends Reason(101)
     case PragmaNotFirst          extends Reason(102)
@@ -162,6 +215,39 @@ object TelError:
     case BadLineEnding           extends Reason(121)
     case BadSchemaIdentifier     extends Reason(122)
     case ExtraPragmaContent      extends Reason(123)
+
+    // E2xx — schema validity errors per §20.1.
+    case DuplicateKeywordInStruct extends Reason(201)
+    case EmptySelectVariants     extends Reason(202)
+    case RootRequiredAtom        extends Reason(203)
+    case DefaultOnOptional       extends Reason(204)
+    case DuplicateLayerName      extends Reason(205)
+    case LayerKeywordCollision   extends Reason(206)
+    case LayerFieldTypeMismatch  extends Reason(207)
+    case BadSchemaSigil          extends Reason(208)
+    case TelKeywordReserved      extends Reason(209)
+    case UnresolvedReference     extends Reason(210)
+    case DuplicateDefinition     extends Reason(211)
+    case ExcludeMissingVariant   extends Reason(212)
+    case ExcludeEmptiesRequired  extends Reason(213)
+    case LayerVariantAddition    extends Reason(214)
+    case LayerLoosenRequired     extends Reason(215)
+    case LayerLoosenRepeatable   extends Reason(216)
+    case ExcludeOutsideSelect    extends Reason(217)
+    case ReferenceKindMismatch   extends Reason(218)
+
+    // E3xx — validation errors per §19.3 / §21.
+    case NonStructCompound       extends Reason(301)
+    case TooManyAtoms            extends Reason(302)
+    case AtomAtNonAssignablePos  extends Reason(303)
+    case AtomVariantUnmatched    extends Reason(304)
+    case AtomFlagKeywordMismatch extends Reason(305)
+    case UnknownKeyword          extends Reason(306)
+    case RequiredMemberAbsent    extends Reason(307)
+    case NonRepeatableTooMany    extends Reason(308)
+    case MembersNonContiguous    extends Reason(309)
+    case ValidatorRejected       extends Reason(310)
+    case FlagWithContent         extends Reason(311)
 
 case class TelError(reason: TelError.Reason)(using Diagnostics)
 extends Error(605, reason.number)(m"the TEL document is invalid because $reason")

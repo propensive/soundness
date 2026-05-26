@@ -238,7 +238,7 @@ object groupCheck extends Module:
 
     "bitumen.core", "breviloquence.core", "distillate.core", "exegesis.core",
     "gigantism.core", "proscenium.core", "satirical.core", "stenography.core",
-    "stratiform.core", "ypsiloid.core"
+    "stratiform.core", "stratiform.schema", "ypsiloid.core"
   )
 
   def validate(): Command[Unit] = Task.Command:
@@ -1170,7 +1170,10 @@ object stratiform extends Library:
   object core extends Component(zephyrine.core, turbulence.core, panopticon.core, gossamer.core, contingency.core, anticipation.codec, distillate.core, wisteria.core, prepositional.core, contextual.core, gigantism.core, fulminate.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, eucalyptus.core)
+  object schema extends Component(core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core, schema, eucalyptus.core)
 
 object superlunary extends Library:
   object core extends Component(jacinta.core, gastronomy.core, anthology.scala, austronesian.core):

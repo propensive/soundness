@@ -131,6 +131,20 @@ object Tests extends Suite(m"Stratiform Tests"):
           case _               => Text("")
       . assert(_ == Text("Alice"))
 
+    suite(m"Schema axiom"):
+      test(m"tel-schema axiom has the documented name"):
+        TelSchemaAxiom.telSchema.name
+      . assert(_ == Text("tel-schema"))
+
+      test(m"axiom declares the Field record"):
+        TelSchemaAxiom.telSchema.records.exists(_.name == Text("Field"))
+      . assert(identity)
+
+      test(m"axiom declares the four built-in scalars"):
+        TelSchemaAxiom.telSchema.scalars.map(_.name).toSet
+      . assert: scalars =>
+          scalars == Set(Text("Identifier"), Text("TypeName"), Text("Sigil"), Text("String"))
+
     suite(m"Dynamic access"):
       import dynamicTelAccess.enabled
 
