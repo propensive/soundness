@@ -514,6 +514,47 @@ object Xml extends Tag.Container
     // as the opaque `Attributes`. Geometric growth.
     private var attrBuf: Array[String] = new Array[String](16)
 
+    // Pool of `ArrayBuffer[Node]` instances re-used across recursive
+    // `readChildren` calls. Each nesting level borrows one, fills it, copies
+    // its contents into an `IArray[Node]`, and returns it. Pool grows on
+    // demand to the deepest nesting depth seen. Avoids one
+    // `ArrayBuffer[Node]` allocation per element (plus its backing array)
+    // for repetitive record-shaped XML.
+    private var nodeBufferId: Int = -1
+    private val nodeBuffers: scala.collection.mutable.ArrayBuffer
+                                [scala.collection.mutable.ArrayBuffer[Node]] =
+      scala.collection.mutable.ArrayBuffer.empty
+
+    // Small open-addressed cache for repeating tag names. Record-shape XML
+    // (the dominant workload) reuses the same handful of element labels
+    // hundreds of times per document. Names of up to 16 ASCII chars are
+    // packed losslessly into a `(packedLow, packedHigh)` Long pair (one byte
+    // per char, trailing positions zero). Since `isNameStart` requires a
+    // letter/`_`/`:` and `isNameChar` excludes `\0`, every distinct ASCII
+    // name produces a distinct pair, so the lookup is two Long equality
+    // checks — no byte-by-byte compare, no hash-collision false positives.
+    // Non-ASCII names (chars ≥ 128) and names longer than 16 chars bypass
+    // the cache and allocate normally.
+    private inline val TagCacheSize = 64
+    private inline val TagCacheMaxChars = 16
+    private val tagCache:     Array[Text | Null] = new Array(TagCacheSize)
+    private val tagCacheLow:  Array[Long]        = new Array(TagCacheSize)
+    private val tagCacheHigh: Array[Long]        = new Array(TagCacheSize)
+
+    private inline def getNodeBuffer(): scala.collection.mutable.ArrayBuffer[Node] =
+      nodeBufferId += 1
+
+      if nodeBuffers.length <= nodeBufferId then
+        val newBuffer = scala.collection.mutable.ArrayBuffer.empty[Node]
+        nodeBuffers += newBuffer
+        newBuffer
+      else
+        val buffer = nodeBuffers(nodeBufferId)
+        buffer.clear()
+        buffer
+
+    private inline def relinquishNodeBuffer(): Unit = nodeBufferId -= 1
+
     protected inline def more: Boolean = cursor.more
 
     protected inline def peek: Char =
@@ -593,8 +634,42 @@ object Xml extends Tag.Container
       val first = peek
       if !isNameStart(first) then fail(Issue.Unexpected(first), start)
       advance()
-      while more && isNameChar(peek) do advance()
-      slice(start)
+
+      // Pack chars into a Long pair while scanning; track whether they all
+      // stay in the 7-bit ASCII range. The pair is later used as the cache
+      // key when both conditions (ascii + length ≤ 16) hold.
+      var packedLow:  Long = first.toLong & 0xFFL
+      var packedHigh: Long = 0L
+      var len: Int = 1
+      var ascii: Boolean = first < 128
+
+      while more && isNameChar(peek) do
+        val c = peek
+        if c >= 128 then ascii = false
+        if len < 8 then
+          packedLow = packedLow | ((c.toLong & 0xFFL) << (len << 3))
+        else if len < 16 then
+          packedHigh = packedHigh | ((c.toLong & 0xFFL) << ((len - 8) << 3))
+        len += 1
+        advance()
+
+      if !ascii || len > TagCacheMaxChars then slice(start)
+      else
+        val idx =
+          ((packedLow.toInt ^ (packedLow >>> 32).toInt) ^
+           (packedHigh.toInt ^ (packedHigh >>> 32).toInt)) & (TagCacheSize - 1)
+
+        val cached = tagCache(idx)
+
+        if cached != null && tagCacheLow(idx) == packedLow
+           && tagCacheHigh(idx) == packedHigh
+        then cached.nn
+        else
+          val fresh = slice(start)
+          tagCache(idx)     = fresh
+          tagCacheLow(idx)  = packedLow
+          tagCacheHigh(idx) = packedHigh
+          fresh
 
     // Parse an entity reference. Position must be just after the '&'.
     // Returns the expansion as a Text; leaves position just after the ';'.
@@ -1032,7 +1107,7 @@ object Xml extends Tag.Container
           Element(name, attrs, children)
 
     protected def readChildren(parentName: Text)(using Tactic[ParseError]): IArray[Node] =
-      val children = scala.collection.mutable.ArrayBuffer[Node]()
+      val children = getNodeBuffer()
       var done = false
 
       while !done do
@@ -1079,7 +1154,18 @@ object Xml extends Tag.Container
           val text = readText(parentName)
           if text.length > 0 then children += TextNode(text)
 
-      IArray.from(children)
+      val result =
+        if children.isEmpty then IArray.empty[Node]
+        else
+          val arr = new Array[Node](children.length)
+          var i = 0
+          while i < children.length do
+            arr(i) = children(i)
+            i += 1
+          arr.immutable(using Unsafe)
+
+      relinquishNodeBuffer()
+      result
 
     protected def consumeLiteral(literal: String)(using Tactic[ParseError]): Unit =
       var i = 0
@@ -1100,7 +1186,7 @@ object Xml extends Tag.Container
     private def parseXml0(headers0: Boolean)(using Tactic[ParseError]): Xml =
       headers = headers0
       skipWs()
-      val nodes = scala.collection.mutable.ArrayBuffer[Node]()
+      val nodes = getNodeBuffer()
 
       while more do
         if peek != '<' then
@@ -1143,8 +1229,12 @@ object Xml extends Tag.Container
 
         skipWs()
 
-      if nodes.length == 1 then nodes(0)
-      else Fragment(nodes.toSeq*)
+      val result =
+        if nodes.length == 1 then nodes(0)
+        else Fragment(nodes.toSeq*)
+
+      relinquishNodeBuffer()
+      result
 
     protected def consumeLiteralCi(literal: String)(using Tactic[ParseError]): Unit =
       var i = 0
