@@ -47,8 +47,8 @@ form `line_0 LF line_1 LF … LF line_{n-1} LF`".
 
 ## Phase status
 
-Phase 1 (presentation parser + printer + round-trip) and the encode/decode
-core of phase 2 are landed on the `stratiform/initial` branch:
+Phase 1 (presentation parser + printer + round-trip) and most of phase 2
+are landed on the `stratiform/initial` branch:
 
 - `Tel` value class wrapping a `Subtree` (Document or Compound) with
   `as[T]` typed access
@@ -59,17 +59,25 @@ core of phase 2 are landed on the `stratiform/initial` branch:
 - Dynamic field access (`tel.firstName`) gated by `DynamicTelEnabler`,
   with camelCase ↔ kebab-case keyword mapping applied symmetrically by
   the encoder, decoder and dynamic accessor
+- `tel"…"` interpolator macro: compile-time parse + typed holes via
+  `Encodable in Tel` (atom-position holes only; spread holes deferred)
 
 Still to land in later commits:
 
 - Panopticon `Lens` given (requires the §22 `modify` mutation primitive
   — deferred until phase 4 mutations are in place)
-- `tel"…"` interpolator macro (compile-time parse + typed holes via
-  `Encodable in Tel`, source-position-aware errors)
-- `tel"…"` extractor macro (pattern matching with destructuring)
+- `tel"…"` extractor macro for pattern matching: ~150–200 lines of
+  compile-time-quoted code analogous to jacinta's `extractor`; binds
+  atom-text capture positions and returns `Boolean | Option[Tuple |
+  Tel]` per `contextual.Extrapolation`
+- Investigate the `tel"…"` ↔ `telA"…"` name-resolution mystery: a
+  parallel `telA` extension resolves at the call site, but the
+  canonically-named `tel` extension does not, even with no apparent
+  shadowing symbol. Users should currently prefer `telA"…"` until the
+  root cause is found
 
-The interpolator and extractor are each ~200 lines of compile-time-quoted
-macro code modelled on `lib/jacinta/src/core/jacinta.internal.scala`; they
+The interpolator and (deferred) extractor are each ~200 lines of compile-
+time-quoted macro code modelled on `lib/jacinta/src/core/jacinta.internal.scala`; they
 warrant their own focused commits after the core encode/decode surface is
 stable.
 
