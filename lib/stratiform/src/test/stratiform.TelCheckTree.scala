@@ -45,6 +45,9 @@ import CheckFormat.CheckTree
 
 object TelCheckTree:
 
+  def of(tel: Tel): CheckTree = tel.document.lay(CheckTree.Variant(t"<no-doc>", Unset)): doc =>
+    of(doc)
+
   def of(document: Tel.Document): CheckTree =
     CheckTree.Struct
       ( t"Document",

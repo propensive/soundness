@@ -34,12 +34,54 @@ package stratiform
 
 import anticipation.*
 import contingency.*
+import gossamer.*
+import rudiments.*
 import vacuous.*
 
-// Presentation model defined in §17 of the TEL specification. The Scala AST
-// is structurally identical to the reference implementation's AST so that
+// Presentation model from §17 of the TEL specification. The Scala AST is
+// structurally identical to the reference implementation's AST so that
 // upstream `.check` fixtures round-trip through a cross-language CheckTree
-// representation (see stratiform.CheckFormat for the comparison reader).
+// (see stratiform.CheckFormat).
+//
+// `Tel` itself is a thin wrapper around a `Subtree` (either the document
+// root or a single compound). Both Subtree variants share a `children:
+// IArray[Block]` field, so flat traversal logic can address either form
+// without case analysis.
+
+class Tel private[stratiform](private[stratiform] val subtree: Tel.Subtree):
+  // Keyword of this node — empty for the document root, otherwise the
+  // compound's keyword text.
+  def keyword: Text = subtree match
+    case c: Tel.Compound  => c.keyword
+    case _: Tel.Document  => Text("")
+
+  // Flat list of inline atom texts attached to this node. For the document
+  // root this is always empty since the root has no atoms.
+  def atomTexts: IArray[Text] = subtree match
+    case c: Tel.Compound => c.atoms.collect { case Tel.Atom.Inline(text, _) => text }
+    case _: Tel.Document => IArray.empty
+
+  // First inline atom text or empty string if none. Used by primitive
+  // Decodable instances which interpret a compound's first atom as its
+  // scalar value.
+  def primaryAtom: Text =
+    if atomTexts.isEmpty then Text("") else atomTexts(0)
+
+  // All child compounds, flattened across the node's blocks (presentation-
+  // level comments and tabulations are dropped from this view).
+  def childCompounds: IArray[Tel.Compound] =
+    subtree.children.flatMap(_.compounds)
+
+  // First child compound whose keyword matches `target`, if any.
+  def field(target: Text): Optional[Tel] =
+    val matched = childCompounds.find(_.keyword == target)
+    if matched.isEmpty then Unset else Tel(matched.get)
+
+  // Document accessor for downstream operations (printing, mutation). Only
+  // meaningful when this Tel wraps a Document.
+  private[stratiform] def document: Optional[Tel.Document] = subtree match
+    case d: Tel.Document => d
+    case _               => Unset
 
 object Tel:
 
@@ -49,11 +91,15 @@ object Tel:
   case class Pragma
     ( version: (Int, Int), schema: Optional[Text], sigil: Optional[Char] )
 
+  sealed trait Subtree:
+    def children: IArray[Block]
+
   case class Document
     ( interpreterDirective: Optional[Text],
       pragma:               Optional[Pragma],
       lineEndings:          LineEndings,
       children:             IArray[Block] )
+  extends Subtree
 
   case class Block
     ( comments:           IArray[Comment],
@@ -70,6 +116,7 @@ object Tel:
       atoms:    IArray[Atom],
       remark:   Optional[Text],
       children: IArray[Block] )
+  extends Subtree
 
   object Atom:
     case class Inline(text: Text, precedingSpaces: Int) extends Atom
@@ -78,14 +125,16 @@ object Tel:
 
   sealed trait Atom
 
-  // The entry point. Phase-1 contract: parse an untyped document, returning
-  // only the presentation model. Schema-driven type assignment is added in
-  // phase 3; the resulting `Document` is unchanged when no schema is in
-  // scope.
-  def parse(bytes: Data): Document raises TelError = TelParser.parse(bytes)
+  // Parse a byte stream into a Tel value wrapping the document. Phase-1
+  // contract: untyped, presentation model only.
+  def parse(bytes: Data): Tel raises TelError = Tel(TelParser.parse(bytes))
 
-  // For symmetry with parse; phase 1 prints the presentation model only.
-  // `show` mirrors the jacinta naming convention (`json.show`) but is a
-  // standalone helper rather than a `Showable` instance to avoid coupling
-  // the AST to spectacular for now.
+  // Lower-level parse returning the raw Document — used by code that
+  // needs the presentation AST directly (e.g. the round-trip printer).
+  def parseDocument(bytes: Data): Document raises TelError = TelParser.parse(bytes)
+
+  // Print the document presentation (presentation-preserving when given a
+  // Tel produced by `parse`).
+  def show(tel: Tel): Text = tel.document.lay(Text(""))(TelPrinter.print)
+
   def show(document: Document): Text = TelPrinter.print(document)
