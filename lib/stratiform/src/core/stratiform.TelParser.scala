@@ -53,7 +53,9 @@ object TelParser:
   private final class Line
      ( val content:       String,
        val leadingSpaces: Int,
-       val blank:         Boolean )
+       val blank:         Boolean,
+       val start:         Int,
+       val end:           Int )
 
 private final class TelParser(input: Data):
   import TelParser.Line
@@ -77,30 +79,31 @@ private final class TelParser(input: Data):
   // bookkeeping.
   private val lines: IArray[Line] =
     val builder = scala.collection.mutable.ArrayBuffer.empty[Line]
-    var start = 0
+    var lineStart = 0
     var index = 0
     while index < source.length do
       if source.charAt(index) == '\n' then
-        val end =
+        val contentEnd =
           if index > 0 && source.charAt(index - 1) == '\r' then index - 1
           else index
 
-        builder += makeLine(source.substring(start, end))
-        start = index + 1
+        builder += makeLine(source.substring(lineStart, contentEnd), lineStart, contentEnd)
+        lineStart = index + 1
 
       index += 1
 
-    if start < source.length then builder += makeLine(source.substring(start))
+    if lineStart < source.length then
+      builder += makeLine(source.substring(lineStart), lineStart, source.length)
     else if source.length > 0 && source.charAt(source.length - 1) == '\n' then
-      builder += makeLine("")
+      builder += makeLine("", source.length, source.length)
 
     IArray.from(builder)
 
-  private def makeLine(content: String): Line =
+  private def makeLine(content: String, start: Int, end: Int): Line =
     var spaces = 0
     while spaces < content.length && content.charAt(spaces) == ' ' do spaces += 1
     val blank = content.forall(_ == ' ')
-    Line(content, spaces, blank)
+    Line(content, spaces, blank, start, end)
 
   private var cursor: Int = 0
   private var margin: Int = 0
@@ -261,8 +264,15 @@ private final class TelParser(input: Data):
       val line = lines(cursor)
       cursor += 1
       val parsed = parseCompoundLine(line, indent)
-      val children = parseChildren(indent)
-      compounds += parsed.copy(children = children)
+      val extraAtom = parseSourceOrLiteralAtom(line.leadingSpaces)
+      val children =
+        if extraAtom.absent then parseChildren(indent)
+        else IArray.empty[Tel.Block]
+
+      val withAtom = extraAtom.lay(parsed)(atom =>
+        parsed.copy(atoms = parsed.atoms :+ atom))
+
+      compounds += withAtom.copy(children = children)
 
     val trailingBlankLines = consumeTrailingBlanksFor(indent)
 
@@ -322,6 +332,81 @@ private final class TelParser(input: Data):
       else i += 1
 
     false
+
+  // After a compound line, optionally consume a source atom (§14, indent
+  // = compound + 2 levels, 4 spaces deeper) or literal atom (§15, indent
+  // = compound + 3 levels, 6 spaces deeper). Returns the atom if one was
+  // consumed; otherwise Unset and parsing falls through to parseChildren.
+  private def parseSourceOrLiteralAtom(compoundLeadingSpaces: Int)
+  : Optional[Tel.Atom] raises TelError =
+    if cursor >= lines.length || lines(cursor).blank then Unset
+    else
+      val line = lines(cursor)
+      val sourceIndent = compoundLeadingSpaces + 4
+      val literalIndent = compoundLeadingSpaces + 6
+      if line.leadingSpaces == literalIndent then Optional(parseLiteralAtom(literalIndent))
+      else if line.leadingSpaces == sourceIndent then Optional(parseSourceAtom(sourceIndent))
+      else Unset
+
+  // Source atom: captures lines whose leading-spaces ≥ sourceIndent (or
+  // are blank, when followed by more source content or EOF), strips
+  // exactly sourceIndent spaces from each non-blank line, trims trailing
+  // spaces, and joins with `\n` per captured line (each line, including
+  // the last, contributes one terminating `\n`).
+  private def parseSourceAtom(sourceIndent: Int): Tel.Atom.Source =
+    val captured = scala.collection.mutable.ListBuffer.empty[String]
+
+    var done = false
+    while !done && cursor < lines.length do
+      val line = lines(cursor)
+      if line.blank then
+        var probe = cursor
+        while probe < lines.length && lines(probe).blank do probe += 1
+        val keep =
+          probe >= lines.length
+          || lines(probe).leadingSpaces >= sourceIndent
+
+        if keep then
+          while cursor < probe do
+            captured += ""
+            cursor += 1
+        else done = true
+      else if line.leadingSpaces >= sourceIndent then
+        val rest = line.content.substring(sourceIndent)
+        var endIdx = rest.length
+        while endIdx > 0 && rest.charAt(endIdx - 1) == ' ' do endIdx -= 1
+        captured += rest.substring(0, endIdx)
+        cursor += 1
+      else done = true
+
+    val sb = StringBuilder()
+    captured.foreach: c =>
+      sb.append(c)
+      sb.append('\n')
+
+    Tel.Atom.Source(Text(sb.toString))
+
+  // Literal atom: the opening line's content (after literalIndent spaces)
+  // is the delimiter. Payload is everything between the LF terminating the
+  // opening line and the next bare `\n<delim>\n` match in the *raw* byte
+  // stream. The closing delimiter line is flush left (column 0).
+  private def parseLiteralAtom(literalIndent: Int): Tel.Atom.Literal raises TelError =
+    val openingLine = lines(cursor)
+    val delimiter = openingLine.content.substring(literalIndent)
+    cursor += 1
+    val payloadStart = openingLine.end + (if lineEndings == Tel.LineEndings.Crlf then 2 else 1)
+    val pattern = "\n" + delimiter + "\n"
+    val closeIdx = source.indexOf(pattern, payloadStart - 1)
+    if closeIdx < 0 then abort(TelError(Reason.UnclosedLiteral))
+
+    val payload = source.substring(payloadStart, closeIdx)
+    val afterClose = closeIdx + pattern.length
+
+    // Advance cursor past the closing delimiter line: the line whose start
+    // is exactly afterClose.
+    while cursor < lines.length && lines(cursor).start < afterClose do cursor += 1
+
+    Tel.Atom.Literal(Text(delimiter), Text(payload))
 
   private def parseCommentLine(line: Line): Tel.Comment =
     val start = line.leadingSpaces + 1

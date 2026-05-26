@@ -18,5 +18,20 @@ Implementation-discovered ambiguities, inconsistencies, and inadequacies in the 
 
 **Spec resolution:** acceptable as a bootstrap mechanism; flagged here only as a concern for implementers.
 
+### §14 source-atom trailing LF
+**Issue:** §14 reads "The captured lines are joined with a single LF between each pair into a
+single text string. **The trailing LF of the last captured line is NOT included in text.** The
+array of captured lines therefore yields a text field of the form `line_0 LF line_1 LF … LF
+line_{n-1}`." The upstream reference implementation, however, emits a trailing LF for every
+captured line — including the last one. Across all the `pos/source-atom-*` fixtures, an
+n-captured-line atom has exactly n LFs in the payload (e.g. `code\n    source line\n` produces
+`"source line\n\n"` — two LFs, not one).
+
+**Stratiform decision:** Follow the reference implementation, not the literal text — emit one
+LF per captured line. The text of §14 should be updated to read "yields a text field of the
+form `line_0 LF line_1 LF … LF line_{n-1} LF`".
+
+**Spec resolution:** open.
+
 ## Resolved
 *(none yet)*
