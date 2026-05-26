@@ -213,6 +213,14 @@ private[jacinta] final class JsonParser:
   // call when `tracking` was on. Reset to `null` at the start of every parse.
   protected[jacinta] var rootIndex: IArray[Int] | Null = null
 
+  // Local-buffer offset up to which `cursor.lineNo` / `cursor.columnNo`
+  // have been brought up to date. The hot-loop `syncTo()` bypasses the
+  // cursor's lineation tracking via `unsafeAdvanceBy`, so the parser
+  // keeps track of how far ahead `cursor.pos` has been pushed and
+  // catches lineation up here only at tracking-mode capture points and
+  // before any refill discards consumed bytes.
+  private var lineationPos: Int = 0
+
   // Small open-addressed cache of recently-seen object keys. Index is
   // `hash & (KeyCacheSize - 1)`; on a hash collision the existing entry is
   // overwritten. Persisted across parses (per-thread, since the parser
@@ -277,22 +285,24 @@ private[jacinta] final class JsonParser:
 
   // Push the parser's local `pos` back to the cursor. Required before any
   // cursor operation that consults `pos` (mark, slice, refill, position).
-  //
-  // `unsafeAdvanceBy` bypasses the cursor's lineation tracking, so in
-  // tracking mode the bypassed bytes are walked here to keep
-  // `cursor.line` / `cursor.column` accurate.
+  // This must stay zero-branch on the hot path; tracking-mode callers
+  // separately invoke `reconcileLineation()` when they need accurate
+  // `cursor.line` / `cursor.column`.
   private inline def syncTo(): Unit =
-    if tracking then syncToTracked()
-    else cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
+    cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
-  private def syncToTracked(): Unit =
-    val oldPos = cursor.unsafePos(using Unsafe)
-    val delta = pos - oldPos
-    if delta > 0 then
-      var i = oldPos
+  // Walk the buffer bytes between the last lineation-reconciled position
+  // and `cursor.unsafePos`, bumping `cursor.lineNo` / `cursor.columnNo`
+  // accordingly. Called at tracking-mode capture points (`parseValue`,
+  // `parseObject`) and before any refill in `moreSlow()` so that
+  // consumed bytes are accounted for before they're discarded.
+  private def reconcileLineation(): Unit =
+    val end = cursor.unsafePos(using Unsafe)
+    if lineationPos < end then
+      var i = lineationPos
       var newlines = 0
       var lastNewlineAt = -1
-      while i < pos do
+      while i < end do
         if bytes(i) == Newline then
           newlines += 1
           lastNewlineAt = i
@@ -300,19 +310,24 @@ private[jacinta] final class JsonParser:
 
       if newlines > 0 then
         cursor.unsafeBumpLine(newlines)(using Unsafe)
-        cursor.unsafeSetColumn(pos - lastNewlineAt - 1)(using Unsafe)
+        cursor.unsafeSetColumn(end - lastNewlineAt - 1)(using Unsafe)
       else
-        cursor.unsafeBumpColumn(delta)(using Unsafe)
+        cursor.unsafeBumpColumn(end - lineationPos)(using Unsafe)
 
-      cursor.unsafeAdvanceBy(delta)(using Unsafe)
+      lineationPos = end
 
   // Refresh the parser's snapshot from the cursor. Required after any
   // cursor operation that may have changed the buffer reference, the read
   // position, or the write end (refill, cue).
+  //
+  // `lineationPos` is re-anchored to the cursor's current position because
+  // refill compacts the buffer (bytes 0..old-pos are discarded; subsequent
+  // walks would read different data).
   private inline def syncFrom(): Unit =
     bytes  = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
     pos    = cursor.unsafePos(using Unsafe)
     bufEnd = cursor.unsafeWriteEnd(using Unsafe)
+    lineationPos = pos
 
   protected inline def more: Boolean = pos < bufEnd || moreSlow()
 
@@ -324,9 +339,11 @@ private[jacinta] final class JsonParser:
   // descriptor lengths; if `cursor.refill()` compacts the buffer here we
   // must re-anchor the parser's local `pos` against the new buffer scale
   // even when there's no more data, otherwise subsequent `syncTo()` calls
-  // would advance the cursor by a now-stale delta.
+  // would advance the cursor by a now-stale delta. Lineation also needs
+  // to be reconciled before compaction discards the consumed bytes.
   private def moreSlow(): Boolean =
     syncTo()
+    if tracking then reconcileLineation()
     if cursor.more then { syncFrom(); true }
     else
       if tracking then syncFrom()
@@ -963,30 +980,49 @@ private[jacinta] final class JsonParser:
   // parsed from an array context still short-circuits the Double path.
   // The flag has no effect on non-number values, so we don't need to
   // propagate it to `parseObject` / `parseArray` / `parseString`.
-  //
-  // `indexOut` is the destination position-index buffer for the surrounding
-  // composite (or `null` outside tracking mode). For primitives the outer
-  // call writes a 4-int descriptor; for composites `parseArray` /
-  // `parseObject` write their own composite descriptor. The recursive
-  // `Minus` call passes `null` so the descriptor is emitted once, by the
-  // outer call, with the leading `-` included in its source length.
-  private def parseValue
-    ( minus:    Boolean = false,
-      bcdOnly:  Boolean = false,
-      indexOut: ArrayBuffer[Int] | Null = null )
+  private def parseValue(minus: Boolean = false, bcdOnly: Boolean = false)
+                        (using Tactic[ParseError]): Raw =
+    if !more then errorAt(Issue.PrematureEnd)
+    val ch = peek
+
+    if (ch & 0xF8) == Num0 || (ch & 0xFE) == 0x38 then
+      advance()
+      parseNumber(ch & 0x0F, minus, bcdOnly)
+    else if minus then
+      errorAt(Issue.ExpectedDigit(ch.toChar))
+    else if holes && ch == 0 then
+      advance()
+      Unset
+    else
+      (ch: @switch) match
+        case Quote       => advance() yet parseString()
+        case Minus       => advance() yet parseValue(true, bcdOnly)
+        case OpenBracket => advance() yet parseArray()
+        case LowerF      => parseFalse()
+        case LowerN      => parseNull()
+        case LowerT      => parseTrue()
+        case OpenBrace   => advance() yet parseObject()
+        case other       => errorAt(Issue.ExpectedSomeValue(other.toChar))
+
+  // Tracked-mode `parseValue`. Captures source position before dispatch,
+  // delegates composite cases to the `*Tracked` variants (so they emit
+  // their own descriptors into `indexOut`), and writes a 4-int primitive
+  // descriptor afterwards for everything else. The `Minus` recursion
+  // routes to the untracked variant since the outer call already owns
+  // the descriptor for the full `-N` span.
+  private def parseValueTracked
+    ( indexOut: ArrayBuffer[Int],
+      minus:    Boolean = false,
+      bcdOnly:  Boolean = false )
     ( using Tactic[ParseError] )
   :   Raw =
     if !more then errorAt(Issue.PrematureEnd)
 
-    var startLine:   Int  = 0
-    var startColumn: Int  = 0
-    var startMark:   Long = 0L
-
-    if indexOut != null then
-      syncTo()
-      startLine   = cursor.line.n1
-      startColumn = cursor.column.n1
-      startMark   = cursor.position.n0.toLong
+    syncTo()
+    reconcileLineation()
+    val startLine   = cursor.line.n1
+    val startColumn = cursor.column.n1
+    val startMark   = cursor.position.n0.toLong
 
     val ch = peek
 
@@ -1002,21 +1038,19 @@ private[jacinta] final class JsonParser:
       else
         (ch: @switch) match
           case Quote       => advance() yet parseString()
-          case Minus       => advance() yet parseValue(true, bcdOnly, null)
+          case Minus       => advance() yet parseValue(true, bcdOnly)
           case OpenBracket =>
             advance()
-            parseArray(indexOut, startLine, startColumn, startMark)
+            parseArrayTracked(indexOut, startLine, startColumn, startMark)
           case LowerF      => parseFalse()
           case LowerN      => parseNull()
           case LowerT      => parseTrue()
           case OpenBrace   =>
             advance()
-            parseObject(indexOut, startLine, startColumn, startMark)
+            parseObjectTracked(indexOut, startLine, startColumn, startMark)
           case other       => errorAt(Issue.ExpectedSomeValue(other.toChar))
 
-    // Composites have already written their descriptor; for everything else
-    // emit a 4-int primitive descriptor here.
-    if indexOut != null && ch != OpenBracket && ch != OpenBrace then
+    if ch != OpenBracket && ch != OpenBrace then
       syncTo()
       val length = (cursor.position.n0 - startMark).toInt
       indexOut += 4
@@ -1026,13 +1060,7 @@ private[jacinta] final class JsonParser:
 
     result
 
-  private def parseArray
-    ( indexOut:    ArrayBuffer[Int] | Null,
-      startLine:   Int,
-      startColumn: Int,
-      startMark:   Long )
-    ( using Tactic[ParseError] )
-  :   Raw =
+  private def parseArray()(using Tactic[ParseError]): Raw =
     // The array starts in "undecided" mode. Each element is parsed with
     // `bcdOnly = true`, so a number comes back as either a single-Long
     // BCD packing (count + sign + nibbles encoded in the Long itself) or
@@ -1053,14 +1081,6 @@ private[jacinta] final class JsonParser:
     var anyItems:  ArrayBuffer[Any]  | Null = null
     var first    = true
     var continue = true
-
-    // Tracking-mode scratch: `indexScratch` accumulates child descriptors
-    // back-to-back, `indexEnds` records each child's end position within
-    // `indexScratch` so offsets can be reconstructed at close.
-    val indexScratch: ArrayBuffer[Int] | Null =
-      if indexOut != null then getIndexBuffer() else null
-    val indexEnds:    ArrayBuffer[Int] | Null =
-      if indexOut != null then getIndexBuffer() else null
 
     inline def migrateIntToLong(): Unit =
       val src = intItems.nn
@@ -1125,8 +1145,7 @@ private[jacinta] final class JsonParser:
           continue = false
 
         case _ =>
-          val value = parseValue(bcdOnly = true, indexOut = indexScratch)
-          if indexScratch != null then indexEnds.nn += indexScratch.length
+          val value = parseValue(bcdOnly = true)
           skip()
 
           val terminator: Byte = must()
@@ -1201,11 +1220,200 @@ private[jacinta] final class JsonParser:
 
       advance()
 
+    if first then
+      // Empty array — no buffer was ever allocated. The empty case has
+      // even (zero) length so the sentinel pad is required to keep arrays
+      // distinguishable from objects.
+      val out = new Array[Any](1)
+      out(0) = Json.Ast.arrayPad
+      out.asInstanceOf[IArray[Any]]
+    else
+      (mode: @switch) match
+        case ModeBcdInt =>
+          val src = intItems.nn
+          val out = new Array[Int](src.length)
+          src.copyToArray(out)
+          relinquishBcdIntBuffer()
+          out
+
+        case ModeBcdLong =>
+          val src = longItems.nn
+          val out = new Array[Long](src.length)
+          src.copyToArray(out)
+          relinquishBcdLongBuffer()
+          out
+
+        case _ =>
+          // Mixed/boxed array — stored as `IArray[Any]` and parity-padded
+          // when the element count is even, so arrays always have odd
+          // length and can be distinguished from objects (always even).
+          val src = anyItems.nn
+          val n = src.length
+
+          val out =
+            if (n & 1) == 1 then
+              val arr = new Array[Any](n)
+              src.copyToArray(arr)
+              arr
+            else
+              val arr = new Array[Any](n + 1)
+              src.copyToArray(arr)
+              arr(n) = Json.Ast.arrayPad
+              arr
+
+          relinquishArrayBuffer()
+          out.asInstanceOf[IArray[Any]]
+
+  // Tracked-mode `parseArray`. Mirrors `parseArray` exactly but uses
+  // `parseValueTracked` for children and emits a composite descriptor
+  // into `indexOut` at close.
+  private def parseArrayTracked
+    ( indexOut:    ArrayBuffer[Int],
+      startLine:   Int,
+      startColumn: Int,
+      startMark:   Long )
+    ( using Tactic[ParseError] )
+  :   Raw =
+    var mode: Int = ModeUndecided
+    var intItems:  ArrayBuffer[Int]  | Null = null
+    var longItems: ArrayBuffer[Long] | Null = null
+    var anyItems:  ArrayBuffer[Any]  | Null = null
+    var first    = true
+    var continue = true
+
+    val indexScratch = getIndexBuffer()
+    val indexEnds    = getIndexBuffer()
+
+    inline def migrateIntToLong(): Unit =
+      val src = intItems.nn
+      val dst = getBcdLongBuffer()
+      val n = src.length
+      var i = 0
+
+      while i < n do
+        dst += Bcd.repackBcdIntAsLong(src(i))
+        i += 1
+
+      relinquishBcdIntBuffer()
+      intItems = null
+      longItems = dst
+      mode = ModeBcdLong
+
+    inline def migrateIntToBoxed(): Unit =
+      val src = intItems.nn
+      val dst = getArrayBuffer()
+      val n = src.length
+      var i = 0
+
+      while i < n do
+        dst += src(i)
+        i += 1
+
+      relinquishBcdIntBuffer()
+      intItems = null
+      anyItems = dst
+      mode = ModeBoxed
+
+    inline def migrateLongToBoxed(): Unit =
+      val src = longItems.nn
+      val dst = getArrayBuffer()
+      val n = src.length
+      var i = 0
+
+      while i < n do
+        val v = src(i)
+        val text = Bcd.bcdLongText(v)
+        val ast: Any =
+          try java.lang.Long.parseLong(text)
+          catch case _: NumberFormatException => java.lang.Double.parseDouble(text)
+
+        dst += ast
+        i += 1
+
+      relinquishBcdLongBuffer()
+      longItems = null
+      anyItems = dst
+      mode = ModeBoxed
+
+    while continue do
+      skip()
+
+      must() match
+        case CloseBracket =>
+          if !first then errorAt(Issue.ExpectedSomeValue(']'))
+          continue = false
+
+        case _ =>
+          val value = parseValueTracked(indexScratch, bcdOnly = true)
+          indexEnds += indexScratch.length
+          skip()
+
+          val terminator: Byte = must()
+
+          terminator match
+            case Comma | CloseBracket => ()
+            case char                 => errorAt(Issue.ExpectedSomeValue(char.toChar))
+
+          value match
+            case bcdLong: Long =>
+              val nibbles = ((bcdLong >>> 56) & 0x7FL).toInt
+
+              if first then
+                first = false
+                if nibbles <= Bcd.MaxBcdIntNibbles then
+                  mode = ModeBcdInt
+                  val buf = getBcdIntBuffer()
+                  intItems = buf
+                  buf += Bcd.packBcdIntFromLong(bcdLong)
+                else
+                  mode = ModeBcdLong
+                  val buf = getBcdLongBuffer()
+                  longItems = buf
+                  buf += bcdLong
+              else
+                (mode: @switch) match
+                  case ModeBcdInt =>
+                    if nibbles <= Bcd.MaxBcdIntNibbles then
+                      intItems.nn += Bcd.packBcdIntFromLong(bcdLong)
+                    else
+                      migrateIntToLong()
+                      longItems.nn += bcdLong
+
+                  case ModeBcdLong =>
+                    longItems.nn += bcdLong
+
+                  case _ =>
+                    if nibbles <= Bcd.MaxBcdIntNibbles then
+                      anyItems.nn += Bcd.packBcdIntFromLong(bcdLong)
+                    else
+                      anyItems.nn += bcdLong
+
+            case _ =>
+              if first then
+                first = false
+                mode = ModeBoxed
+                val buf = getArrayBuffer()
+                anyItems = buf
+                buf += value
+              else
+                (mode: @switch) match
+                  case ModeBcdInt =>
+                    migrateIntToBoxed()
+                    anyItems.nn += value
+
+                  case ModeBcdLong =>
+                    migrateLongToBoxed()
+                    anyItems.nn += value
+
+                  case _ =>
+                    anyItems.nn += value
+
+          if terminator == CloseBracket then continue = false
+
+      advance()
+
     val astValue: Raw =
       if first then
-        // Empty array — no buffer was ever allocated. The empty case has
-        // even (zero) length so the sentinel pad is required to keep arrays
-        // distinguishable from objects.
         val out = new Array[Any](1)
         out(0) = Json.Ast.arrayPad
         out.asInstanceOf[IArray[Any]]
@@ -1226,9 +1434,6 @@ private[jacinta] final class JsonParser:
             out
 
           case _ =>
-            // Mixed/boxed array — stored as `IArray[Any]` and parity-padded
-            // when the element count is even, so arrays always have odd
-            // length and can be distinguished from objects (always even).
             val src = anyItems.nn
             val n = src.length
 
@@ -1246,20 +1451,111 @@ private[jacinta] final class JsonParser:
             relinquishArrayBuffer()
             out.asInstanceOf[IArray[Any]]
 
-    if indexOut != null then
-      emitCompositeDescriptor
-       ( indexOut, indexScratch.nn, indexEnds.nn,
-         startLine, startColumn, startMark )
-      relinquishIndexBuffer()
-      relinquishIndexBuffer()
+    emitCompositeDescriptor
+     ( indexOut, indexScratch, indexEnds, startLine, startColumn, startMark )
+    relinquishIndexBuffer()
+    relinquishIndexBuffer()
 
     astValue
 
   // Parse an object directly into the flat alternating-key/value layout. The
   // buffer always grows in pairs, so its length stays even, which is the
   // object/array parity invariant.
-  private def parseObject
-    ( indexOut:    ArrayBuffer[Int] | Null,
+  private def parseObject()(using Tactic[ParseError]): IArray[Any] =
+    val items: ArrayBuffer[Any] = getArrayBuffer()
+    var continue = true
+
+    while continue do
+      skip()
+
+      must() match
+        case Quote =>
+          advance()
+          val string = parseObjectKey()
+          skip()
+
+          must() match
+            case Colon =>
+              advance()
+              skip()
+              val value = parseValue()
+              skip()
+
+              must() match
+                case Comma =>
+                  advance()
+                  items += string
+                  items += value
+                  skip()
+
+                case CloseBrace =>
+                  advance()
+                  items += string
+                  items += value
+                  continue = false
+
+                case ch  => errorAt(Issue.UnexpectedChar(ch.toChar))
+
+            case ch => errorAt(Issue.ExpectedColon(ch.toChar))
+
+        case 0 if holes =>
+          advance()
+          skip()
+
+          must() match
+            case Colon =>
+              advance()
+              skip()
+              val value = parseValue()
+              skip()
+
+              must() match
+                case Comma =>
+                  advance()
+                  items += " "
+                  items += value
+                  skip()
+
+                case CloseBrace =>
+                  advance()
+                  items += " "
+                  items += value
+                  continue = false
+
+                case ch => errorAt(Issue.UnexpectedChar(ch.toChar))
+
+            case Comma =>
+              advance()
+              items += " "
+              items += Unset
+              skip()
+
+            case CloseBrace =>
+              advance()
+              items += " "
+              items += Unset
+              continue = false
+
+            case ch => errorAt(Issue.UnexpectedChar(ch.toChar))
+
+        case CloseBrace =>
+          if !items.nil then errorAt(Issue.ExpectedSomeValue('}'))
+          advance()
+          continue = false
+
+        case ch =>
+          errorAt(Issue.ExpectedString(ch.toChar))
+
+    val out = new Array[Any](items.length)
+    items.copyToArray(out)
+    relinquishArrayBuffer()
+    out.asInstanceOf[IArray[Any]]
+
+  // Tracked-mode `parseObject`. Mirrors `parseObject` exactly but captures
+  // key positions, runs values through `parseValueTracked`, and emits a
+  // composite descriptor into `indexOut` at close.
+  private def parseObjectTracked
+    ( indexOut:    ArrayBuffer[Int],
       startLine:   Int,
       startColumn: Int,
       startMark:   Long )
@@ -1269,10 +1565,8 @@ private[jacinta] final class JsonParser:
     val items: ArrayBuffer[Any] = getArrayBuffer()
     var continue = true
 
-    val indexScratch: ArrayBuffer[Int] | Null =
-      if indexOut != null then getIndexBuffer() else null
-    val indexEnds:    ArrayBuffer[Int] | Null =
-      if indexOut != null then getIndexBuffer() else null
+    val indexScratch = getIndexBuffer()
+    val indexEnds    = getIndexBuffer()
 
     var keyLine:   Int  = 0
     var keyColumn: Int  = 0
@@ -1280,34 +1574,29 @@ private[jacinta] final class JsonParser:
 
     while continue do
       skip()
-
-      if indexOut != null then
-        syncTo()
-        keyLine   = cursor.line.n1
-        keyColumn = cursor.column.n1
-        keyMark   = cursor.position.n0.toLong
+      syncTo()
+      reconcileLineation()
+      keyLine   = cursor.line.n1
+      keyColumn = cursor.column.n1
+      keyMark   = cursor.position.n0.toLong
 
       must() match
         case Quote =>
           advance()
           val string = parseObjectKey()
-          val keyLength =
-            if indexOut != null then
-              syncTo()
-              (cursor.position.n0 - keyMark).toInt
-            else 0
+          syncTo()
+          val keyLength = (cursor.position.n0 - keyMark).toInt
           skip()
 
           must() match
             case Colon =>
               advance()
               skip()
-              if indexScratch != null then
-                indexScratch += keyLine
-                indexScratch += keyColumn
-                indexScratch += keyLength
-              val value = parseValue(indexOut = indexScratch)
-              if indexEnds != null then indexEnds += indexScratch.nn.length
+              indexScratch += keyLine
+              indexScratch += keyColumn
+              indexScratch += keyLength
+              val value = parseValueTracked(indexScratch)
+              indexEnds += indexScratch.length
               skip()
 
               must() match
@@ -1336,12 +1625,11 @@ private[jacinta] final class JsonParser:
             case Colon =>
               advance()
               skip()
-              if indexScratch != null then
-                indexScratch += keyLine
-                indexScratch += keyColumn
-                indexScratch += keyLength
-              val value = parseValue(indexOut = indexScratch)
-              if indexEnds != null then indexEnds += indexScratch.nn.length
+              indexScratch += keyLine
+              indexScratch += keyColumn
+              indexScratch += keyLength
+              val value = parseValueTracked(indexScratch)
+              indexEnds += indexScratch.length
               skip()
 
               must() match
@@ -1360,36 +1648,36 @@ private[jacinta] final class JsonParser:
                 case ch => errorAt(Issue.UnexpectedChar(ch.toChar))
 
             case Comma =>
-              if indexScratch != null then
-                syncTo()
-                val unsetLine   = cursor.line.n1
-                val unsetColumn = cursor.column.n1
-                indexScratch += keyLine
-                indexScratch += keyColumn
-                indexScratch += keyLength
-                indexScratch += 4
-                indexScratch += unsetLine
-                indexScratch += unsetColumn
-                indexScratch += 0
-                indexEnds.nn += indexScratch.length
+              syncTo()
+              reconcileLineation()
+              val unsetLine   = cursor.line.n1
+              val unsetColumn = cursor.column.n1
+              indexScratch += keyLine
+              indexScratch += keyColumn
+              indexScratch += keyLength
+              indexScratch += 4
+              indexScratch += unsetLine
+              indexScratch += unsetColumn
+              indexScratch += 0
+              indexEnds += indexScratch.length
               advance()
               items += " "
               items += Unset
               skip()
 
             case CloseBrace =>
-              if indexScratch != null then
-                syncTo()
-                val unsetLine   = cursor.line.n1
-                val unsetColumn = cursor.column.n1
-                indexScratch += keyLine
-                indexScratch += keyColumn
-                indexScratch += keyLength
-                indexScratch += 4
-                indexScratch += unsetLine
-                indexScratch += unsetColumn
-                indexScratch += 0
-                indexEnds.nn += indexScratch.length
+              syncTo()
+              reconcileLineation()
+              val unsetLine   = cursor.line.n1
+              val unsetColumn = cursor.column.n1
+              indexScratch += keyLine
+              indexScratch += keyColumn
+              indexScratch += keyLength
+              indexScratch += 4
+              indexScratch += unsetLine
+              indexScratch += unsetColumn
+              indexScratch += 0
+              indexEnds += indexScratch.length
               advance()
               items += " "
               items += Unset
@@ -1409,12 +1697,10 @@ private[jacinta] final class JsonParser:
     items.copyToArray(out)
     relinquishArrayBuffer()
 
-    if indexOut != null then
-      emitCompositeDescriptor
-       ( indexOut, indexScratch.nn, indexEnds.nn,
-         startLine, startColumn, startMark )
-      relinquishIndexBuffer()
-      relinquishIndexBuffer()
+    emitCompositeDescriptor
+     ( indexOut, indexScratch, indexEnds, startLine, startColumn, startMark )
+    relinquishIndexBuffer()
+    relinquishIndexBuffer()
 
     out.asInstanceOf[IArray[Any]]
 
@@ -1423,17 +1709,18 @@ private[jacinta] final class JsonParser:
     skip()
     if !more then abort(ParseError(Json.Ast, Position(0, 0), Issue.EmptyInput))
 
-    val rootBuf: ArrayBuffer[Int] | Null =
-      if tracking then getIndexBuffer() else null
-    val result = parseValue(indexOut = rootBuf)
+    val result =
+      if tracking then
+        val rootBuf = getIndexBuffer()
+        val r = parseValueTracked(rootBuf)
+        rootIndex = IArray.from(rootBuf)
+        relinquishIndexBuffer()
+        r
+      else parseValue()
 
     while more do
       peek match
         case Tab | Return | Newline | Space => advance()
         case char                           => errorAt(Issue.SpuriousContent(char.toChar))
-
-    if rootBuf != null then
-      rootIndex = IArray.from(rootBuf)
-      relinquishIndexBuffer()
 
     result
