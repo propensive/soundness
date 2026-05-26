@@ -132,6 +132,25 @@ object Tests extends Suite(m"Stratiform Tests"):
           case _               => Text("")
       . assert(_ == Text("Alice"))
 
+    suite(m"tel-schema self-consistency"):
+      // Phase-3 partial: parse the canonical tel-schema.tel and verify
+      // it produces a valid presentation AST. Full self-consistency
+      // (type-assign against the axiom and reconstruct a TelSchema
+      // value equal to TelSchemaAxiom.telSchema) is the phase-3 merge
+      // blocker — it requires the axiom's Definition shapes to match
+      // the canonical document's vocabulary verbatim, including the
+      // `Body` record indirection and the `Member` / `SelectChild`
+      // top-level Selects.
+      test(m"canonical tel-schema.tel parses without error"):
+        val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+        val bytes  =
+          val arr = stream.readAllBytes().nn
+          stream.close()
+          IArray.from(arr)
+
+        Tel.parse(bytes).childCompounds.length
+      . assert(_ > 0)
+
     suite(m"Schema axiom"):
       test(m"tel-schema axiom has the documented name"):
         TelSchemaAxiom.telSchema.name
