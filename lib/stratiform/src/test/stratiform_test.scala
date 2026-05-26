@@ -145,6 +145,43 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert: scalars =>
           scalars == Set(Text("Identifier"), Text("TypeName"), Text("Sigil"), Text("String"))
 
+    suite(m"Type assignment"):
+      // A small hand-built schema for a `person` document with required
+      // name (Scalar String) and optional age (Scalar Identifier).
+      val personSchema = TelSchema(
+        name     = Text("person"),
+        document = TelSchema.Struct(
+          members = IArray(
+            TelSchema.Field
+             ( TelSchema.Polarity.Implicit, TelSchema.Polarity.Implicit,
+               Text("name"), TelSchema.Scalar(IArray(Text("string"))), Unset ),
+            TelSchema.Field
+             ( TelSchema.Polarity.Loose, TelSchema.Polarity.Implicit,
+               Text("age"), TelSchema.Scalar(IArray(Text("identifier"))), Unset )),
+          validators = IArray.empty),
+        layers   = IArray.empty,
+        sigil    = Unset,
+        records  = IArray.empty,
+        scalars  = IArray.empty,
+        selects  = IArray.empty)
+
+      test(m"assigns Value for present scalar field"):
+        val doc = Tel.parseDocument(IArray.from("name Alice\nage 30\n".getBytes("UTF-8")))
+        val root = TelTypeAssignment.assign(doc, personSchema)
+        root match
+          case TelElement.Node(_, _, children) =>
+            children.collect:
+              case TelElement.Value(_, _, t) => t
+            .toList
+
+          case _ => Nil
+      . assert(_ == List(Text("Alice"), Text("30")))
+
+      test(m"raises E307 when required scalar field is missing"):
+        val doc = Tel.parseDocument(IArray.from("age 30\n".getBytes("UTF-8")))
+        capture[TelError](TelTypeAssignment.assign(doc, personSchema)).reason
+      . assert(_ == TelError.Reason.RequiredMemberAbsent)
+
     suite(m"Dynamic access"):
       import dynamicTelAccess.enabled
 
