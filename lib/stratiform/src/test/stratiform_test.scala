@@ -506,6 +506,41 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[MutationError](Mutation(tel, Mutation.Op.Delete(ptr))).reason
       . assert(_ == MutationError.Reason.PointerNotFound)
 
+    suite(m"Edit DSL"):
+      def doc(source: String): Tel = Tel.parse(IArray.from(source.getBytes("UTF-8")))
+
+      test(m"single-op edit changes one atom"):
+        val tel  = doc("name Alice\n")
+        val edit = Edit.at(TelPointer.of(Text("name"))).update(Text("Bob"))
+        Tel.show(tel.edited(edit).document.vouch)
+      . assert(_ == Text("name Bob\n"))
+
+      test(m"chained edits apply in order"):
+        val tel = doc("name Alice\n")
+        val edit = Edit.at(TelPointer.of(Text("name"))).update(Text("Bob"))
+                ++ Edit.at(TelPointer.of(Text("name"))).attachRemark(Text("note"))
+
+        Tel.show(tel.edited(edit).document.vouch)
+      . assert(_ == Text("name Bob  # note\n"))
+
+      test(m"Edit.compound helper builds an inline-atom compound"):
+        val c = Edit.compound(Text("email"), Text("a@b.c"))
+        c.keyword
+      . assert(_ == Text("email"))
+
+      test(m"inserting via Edit composes with deletion"):
+        val tel  = doc("a 1\nb 2\n")
+        val edit = Edit.at(TelPointer.of(Text("b"))).delete
+                ++ Edit.at(TelPointer.of(Text("a"))).insertAfter(Edit.compound(Text("c"), Text("3")))
+
+        Tel.show(tel.edited(edit).document.vouch)
+      . assert(_ == Text("a 1\nc 3\n"))
+
+      test(m"noop edit returns the document unchanged"):
+        val tel = doc("name Alice\n")
+        Tel.show(tel.edited(Edit.noop).document.vouch)
+      . assert(_ == Text("name Alice\n"))
+
     suite(m"Negative corpus (E1xx parsing)"):
       CorpusLoader.negative.each: testcase =>
         CorpusLoader.expectedCode(testcase.stem).let: code =>
