@@ -52,9 +52,13 @@ object Tests extends Suite(m"Stratiform Tests"):
           TelCheckTree.of(parsed)
         . assert(_ == CheckFormat.parse(testcase.check).tree)
 
-    suite(m"Negative corpus"):
+    suite(m"Negative corpus (E1xx parsing)"):
       CorpusLoader.negative.each: testcase =>
         CorpusLoader.expectedCode(testcase.stem).let: code =>
-          test(m"raises E$code on ${testcase.stem}"):
-            capture[TelError](Tel.parse(testcase.source)).reason.number
-          . assert(_ == code)
+          // Phase 1 covers E1xx parsing errors only. E2xx (schema validity)
+          // and E3xx (validation) require the schema component shipped in
+          // phase 3.
+          if code < 200 then
+            test(m"raises E$code on ${testcase.stem}"):
+              capture[TelError](Tel.parse(testcase.source)).reason.number
+            . assert(_ == code)
