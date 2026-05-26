@@ -90,20 +90,20 @@ object Tests extends Suite(m"Stratiform Tests"):
 
     suite(m"tel\"…\" interpolator"):
       test(m"simple literal"):
-        val parsed = telA"hello"
+        val parsed = tel"hello"
         parsed.childCompounds.headOption.map(_.keyword).getOrElse(Text(""))
       . assert(_ == Text("hello"))
 
       test(m"keyword with atom and hole"):
         val alice = Text("Alice")
-        val parsed = telA"name $alice"
+        val parsed = tel"name $alice"
         parsed.childCompounds.headOption.map(c =>
           (c.keyword, c.atoms.collect { case Tel.Atom.Inline(t, _) => t }.headOption.getOrElse(Text(""))))
           .getOrElse((Text(""), Text("")))
       . assert(_ == (Text("name"), Text("Alice")))
 
       test(m"multi-line tel literal parses"):
-        val parsed = telA"""parent
+        val parsed = tel"""parent
   child
 """
         parsed.childCompounds.headOption.map(_.keyword).getOrElse(Text(""))

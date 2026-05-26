@@ -70,16 +70,25 @@ Still to land in later commits:
   compile-time-quoted code analogous to jacinta's `extractor`; binds
   atom-text capture positions and returns `Boolean | Option[Tuple |
   Tel]` per `contextual.Extrapolation`
-- Investigate the `tel"…"` ↔ `telA"…"` name-resolution mystery: a
-  parallel `telA` extension resolves at the call site, but the
-  canonically-named `tel` extension does not, even with no apparent
-  shadowing symbol. Users should currently prefer `telA"…"` until the
-  root cause is found
 
-The interpolator and (deferred) extractor are each ~200 lines of compile-
-time-quoted macro code modelled on `lib/jacinta/src/core/jacinta.internal.scala`; they
-warrant their own focused commits after the core encode/decode surface is
-stable.
+The (deferred) extractor is ~200 lines of compile-time-quoted macro code
+modelled on `lib/jacinta/src/core/jacinta.internal.scala`'s extractor; it
+warrants its own focused commit after the encode/decode surface is stable.
 
 ## Resolved
-*(none yet)*
+
+### `tel"…"` resource-path package shadowing
+**Issue:** The test corpus was originally stored at
+`lib/stratiform/res/test/stratiform/tel/`. Mill adds test resources to
+the compile classpath; the Scala compiler then interpreted the directory
+at `stratiform/tel/` as a package and shadowed the `tel"…"` extension
+method on `StringContext`, producing `value tel is not a member of
+StringContext` at every call site.
+
+**Stratiform decision:** Moved the corpus to
+`lib/stratiform/res/test/stratiform/corpus/`. Sync script and
+`CorpusLoader` updated. The general rule for resource layout: avoid
+sub-directories under `stratiform/` whose names collide with public API
+identifiers.
+
+**Spec resolution:** local fix; no spec change needed.

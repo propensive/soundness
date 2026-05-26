@@ -39,7 +39,7 @@ import gossamer.*
 import vacuous.*
 
 // Loads upstream TEL test corpus from classpath resources. The corpus is
-// laid out under /stratiform/tel/{pos,neg}/ with paired <stem>.tel input
+// laid out under /stratiform/corpus/{pos,neg}/ with paired <stem>.tel input
 // files and <stem>.check fixture files. The pos.index / neg.index files
 // list one stem per line; tests iterate the index to enumerate cases.
 
@@ -52,8 +52,8 @@ object CorpusLoader:
 
   private def load(category: Text): List[Case] =
     readIndex(category).filterNot(_.s.startsWith("_")).map: stem =>
-      val source = readResource(t"/stratiform/tel/$category/$stem.tel")
-      val check = readResourceText(t"/stratiform/tel/$category/$stem.check")
+      val source = readResource(t"/stratiform/corpus/$category/$stem.tel")
+      val check = readResourceText(t"/stratiform/corpus/$category/$stem.check")
       Case(stem, IArray.from(source), check)
 
   // Extract the expected E-code from a negative case's stem name. Filenames
@@ -72,7 +72,7 @@ object CorpusLoader:
     else Unset
 
   private def readIndex(category: Text): List[Text] =
-    val text = readResourceText(t"/stratiform/tel/$category.index")
+    val text = readResourceText(t"/stratiform/corpus/$category.index")
     text.s.split('\n').toList.map(_.trim).filter(_.nonEmpty).map(Text(_))
 
   private def readResource(path: Text): Array[Byte] =

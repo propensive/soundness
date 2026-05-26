@@ -38,17 +38,5 @@ import contextual.*
 // interpolation framework; the actual macro lives in `stratiform.internal`.
 // Mirrors `extension (inline context: StringContext) def j` from
 // `lib/jacinta/src/core/jacinta_core.scala:230`.
-// NOTE: in some compilation contexts (notably the test module's
-// classpath), the bare name `tel` fails name resolution at the
-// interpolator call site with `value tel is not a member of StringContext`
-// — even though the package-level extension exists and a parallel-defined
-// `telA` extension resolves correctly. The root cause is unclear; tracked
-// as a stratiform spec note. Both names are exposed; user code should
-// prefer `tel"…"` and fall back to `telA"…"` if the bare-`tel` resolution
-// fails.
-
 extension (inline context: StringContext)
   transparent inline def tel: Interpolation = interpolation[Tel](context)
-
-extension (inline context: StringContext)
-  transparent inline def telA: Interpolation = interpolation[Tel](context)

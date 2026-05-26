@@ -16,7 +16,11 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
 TEL_REF="${TEL_REF:-main}"
-TARGET="lib/stratiform/res/test/stratiform/tel"
+# NOTE: the resource path deliberately avoids `stratiform/tel/` because
+# Mill puts test resources on the compiler classpath, and a directory at
+# `stratiform/tel/` is interpreted as a package, shadowing the `tel"…"`
+# StringContext extension. The corpus lives under `stratiform/corpus/`.
+TARGET="lib/stratiform/res/test/stratiform/corpus"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
