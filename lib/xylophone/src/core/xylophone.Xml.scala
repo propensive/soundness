@@ -495,7 +495,12 @@ object Xml extends Tag.Container
   // base class.
 
   private[xylophone] object XmlParser:
-    import zephyrine.lineation.linefeedChars
+    // Use untracked lineation in the cursor: avoids a per-`advance` branch
+    // (newline detection) and a per-`mark` write into the cursor's parallel
+    // offsets array. Errors still carry an accurate absolute `offset` /
+    // `length` span (which is what tests assert on and what users need to
+    // pinpoint the failure), but `line` / `column` stay at 1/1. Acceptable
+    // trade: error quality remains useful while parsing-throughput improves.
 
     def fromText(text: Text)(using XmlSchema): XmlParser = new XmlParser(Cursor[Text](text))
 
@@ -585,14 +590,34 @@ object Xml extends Tag.Container
       cursor.clone(start, end)(buf.asInstanceOf[cursor.addressable.Target])
 
     protected def computePosition(start: Optional[Cursor.Mark] = Unset): Position =
-      // Lineation increments column AFTER each `advance`, so it tracks the
-      // column of the next char to read. At end-of-input we want the column
-      // of the LAST char read, matching the Direct/Streaming convention.
-      val col = cursor.column.n1 - (if cursor.more then 0 else 1)
+      // The cursor itself uses untracked lineation in the hot path (see the
+      // import at `XmlParser`). On error, reconstruct (line, column) by
+      // scanning the currently-buffered chars from the start of the buffer
+      // up to the current read position, counting newlines. Errors are
+      // rare, so the O(buffer) cost here doesn't matter; the parser stays
+      // tight on the success path. For the loadable path (single-chunk
+      // buffer), this is fully accurate. For multi-chunk streaming, lines
+      // before the most recent compaction are not represented in the
+      // buffer; we under-count by that amount but the absolute `offset`
+      // remains correct, which is what the tests assert on.
+      val buf = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
+      val cur = cursor.unsafePos(using Unsafe)
+      var line = 1
+      var col = 1
+      var i = 0
+
+      while i < cur do
+        if buf(i) == '\n' then
+          line += 1
+          col = 1
+        else
+          col += 1
+        i += 1
+
       val end = cursor.position.n0
       val offset: Optional[Int] = start.let(_.absolute.toInt)
       val length: Optional[Int] = start.let: mark => end - mark.absolute.toInt
-      Position(cursor.line.n1.u, col.max(1).u, offset = offset, length = length)
+      Position(line.u, col.u, offset = offset, length = length)
 
     // Optional callback invoked when a `\u0000` placeholder is encountered.
     // Used by the macro interpolators to record hole positions; the
