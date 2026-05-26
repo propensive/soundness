@@ -32,35 +32,61 @@
                                                                                                   */
 package jacinta
 
+import vacuous.*
 import anticipation.*
-import contingency.*
-import prepositional.*
-import turbulence.*
-import zephyrine.*
 
-extension (json: Json.Ast.type)
-  def parse(source: Data)(using mode: NumberMode): Json.Ast raises ParseError =
-    Json.Ast(JsonParser.parse(source, mode))
+extension (json: Json)
+  def locate(pointer: JsonPointer): Optional[Json.Ast.Position] =
+    json.positionIndex.let: posIndex =>
+      walkIndex(json.root, posIndex.ints, 0, pointer.path.descent.toIndexedSeq, 0, false)
 
-  def parse(source: Data, holes: Boolean)(using mode: NumberMode): Json.Ast raises ParseError =
-    Json.Ast(JsonParser.parse(source, holes, mode))
+  def locateKey(pointer: JsonPointer): Optional[Json.Ast.Position] =
+    json.positionIndex.let: posIndex =>
+      walkIndex(json.root, posIndex.ints, 0, pointer.path.descent.toIndexedSeq, 0, true)
 
-  def parse(input: Iterator[Data])(using mode: NumberMode): Json.Ast raises ParseError =
-    Json.Ast(JsonParser.parse(input, mode))
+private def walkIndex
+  ( ast:      Json.Ast,
+    data:     IArray[Int],
+    offset:   Int,
+    segments: IndexedSeq[Text],
+    i:        Int,
+    keyMode:  Boolean )
+:   Optional[Json.Ast.Position] =
 
-  def parse(input: Iterator[Data], holes: Boolean)(using mode: NumberMode)
-  :   Json.Ast raises ParseError =
-    Json.Ast(JsonParser.parse(input, holes, mode))
+  if i >= segments.length then
+    if keyMode then Unset
+    else Json.Ast.Position
+     ( line   = data(offset + 1),
+       column = data(offset + 2),
+       length = data(offset + 3) )
+  else
+    // `JsonPointer.path.descent` is stored leaf-first (Serpentine's `/`
+    // prepends), so iterate it in reverse to walk root-to-leaf.
+    val seg = segments(segments.length - 1 - i).s
 
-  def parseTracked(source: Data)(using mode: NumberMode)
-  :   (Json.Ast, Json.PositionIndex) raises ParseError =
-    val (raw, ints) = JsonParser.parseTracked(source, mode)
-    (Json.Ast(raw), Json.PositionIndex(ints))
+    if ast.isObject then
+      val k = ast.objectIndexOf(seg)
 
-  def parseTracked(input: Iterator[Data])(using mode: NumberMode)
-  :   (Json.Ast, Json.PositionIndex) raises ParseError =
-    val (raw, ints) = JsonParser.parseTracked(input, mode)
-    (Json.Ast(raw), Json.PositionIndex(ints))
+      if k < 0 then Unset
+      else
+        val entryOff = data(offset + 5 + k)
+        val isLast = i == segments.length - 1
 
-given parserAggregable: Tactic[ParseError] => Json.Ast is Aggregable by Data =
-  source => Json.Ast.parse(source.iterator)
+        if isLast && keyMode then
+          Json.Ast.Position
+           ( line   = data(offset + entryOff),
+             column = data(offset + entryOff + 1),
+             length = data(offset + entryOff + 2) )
+        else
+          walkIndex
+           ( ast.objectValue(k), data, offset + entryOff + 3, segments, i + 1, keyMode )
+    else if ast.isArray then
+      try
+        val k = Integer.parseInt(seg)
+        if k < 0 || k >= ast.arrayLength then Unset
+        else
+          val childOff = data(offset + 5 + k)
+          walkIndex
+           ( ast.arrayElement(k), data, offset + childOff, segments, i + 1, keyMode )
+      catch case _: NumberFormatException => Unset
+    else Unset

@@ -368,6 +368,20 @@ object Json extends Json2, Dynamic:
   def apply(value: Any): Json = new Json(value)
   def apply(value: Any, positions: Optional[Json.PositionIndex]): Json = new Json(value, positions)
 
+  // Defined on the companion directly (not as a `Json.type` extension) because
+  // the companion's `Dynamic` parentage intercepts `Json.parseTracked(...)`
+  // before extension-method resolution gets a chance.
+  def parseTracked(source: Data)(using NumberMode): Json raises ParseError =
+    val (ast, index) = Json.Ast.parseTracked(source)
+    new Json(ast, index)
+
+  def parseTracked(input: Iterator[Data])(using NumberMode): Json raises ParseError =
+    val (ast, index) = Json.Ast.parseTracked(input)
+    new Json(ast, index)
+
+  def parseTracked(source: Text)(using NumberMode, CharEncoder): Json raises ParseError =
+    parseTracked(source.data)
+
   // Canonical external accessor for the underlying AST. The `root`
   // method on `class Json` is package-private so that breaking through
   // the `Json` abstraction is a deliberate, named action.

@@ -277,8 +277,34 @@ private[jacinta] final class JsonParser:
 
   // Push the parser's local `pos` back to the cursor. Required before any
   // cursor operation that consults `pos` (mark, slice, refill, position).
+  //
+  // `unsafeAdvanceBy` bypasses the cursor's lineation tracking, so in
+  // tracking mode the bypassed bytes are walked here to keep
+  // `cursor.line` / `cursor.column` accurate.
   private inline def syncTo(): Unit =
-    cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
+    if tracking then syncToTracked()
+    else cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
+
+  private def syncToTracked(): Unit =
+    val oldPos = cursor.unsafePos(using Unsafe)
+    val delta = pos - oldPos
+    if delta > 0 then
+      var i = oldPos
+      var newlines = 0
+      var lastNewlineAt = -1
+      while i < pos do
+        if bytes(i) == Newline then
+          newlines += 1
+          lastNewlineAt = i
+        i += 1
+
+      if newlines > 0 then
+        cursor.unsafeBumpLine(newlines)(using Unsafe)
+        cursor.unsafeSetColumn(pos - lastNewlineAt - 1)(using Unsafe)
+      else
+        cursor.unsafeBumpColumn(delta)(using Unsafe)
+
+      cursor.unsafeAdvanceBy(delta)(using Unsafe)
 
   // Refresh the parser's snapshot from the cursor. Required after any
   // cursor operation that may have changed the buffer reference, the read
@@ -293,9 +319,18 @@ private[jacinta] final class JsonParser:
   // Out-of-line slow path so the inline budget for `more` stays small enough
   // for the JIT to keep `pos < bufEnd` as a single register comparison in
   // hot loops.
+  //
+  // In tracking mode the parser later reads `cursor.position` to compute
+  // descriptor lengths; if `cursor.refill()` compacts the buffer here we
+  // must re-anchor the parser's local `pos` against the new buffer scale
+  // even when there's no more data, otherwise subsequent `syncTo()` calls
+  // would advance the cursor by a now-stale delta.
   private def moreSlow(): Boolean =
     syncTo()
-    if cursor.more then { syncFrom(); true } else false
+    if cursor.more then { syncFrom(); true }
+    else
+      if tracking then syncFrom()
+      false
 
   protected inline def peek: Byte = bytes(pos)
 
@@ -469,6 +504,7 @@ private[jacinta] final class JsonParser:
       startMark:   Long )
   :   Unit =
 
+    syncTo()
     val n = ends.length
     val sourceLength = (cursor.position.n0 - startMark).toInt
     val sizeSlot = indexOut.length
@@ -948,8 +984,8 @@ private[jacinta] final class JsonParser:
 
     if indexOut != null then
       syncTo()
-      startLine   = cursor.line.n0
-      startColumn = cursor.column.n0
+      startLine   = cursor.line.n1
+      startColumn = cursor.column.n1
       startMark   = cursor.position.n0.toLong
 
     val ch = peek
@@ -981,6 +1017,7 @@ private[jacinta] final class JsonParser:
     // Composites have already written their descriptor; for everything else
     // emit a 4-int primitive descriptor here.
     if indexOut != null && ch != OpenBracket && ch != OpenBrace then
+      syncTo()
       val length = (cursor.position.n0 - startMark).toInt
       indexOut += 4
       indexOut += startLine
@@ -1246,8 +1283,8 @@ private[jacinta] final class JsonParser:
 
       if indexOut != null then
         syncTo()
-        keyLine   = cursor.line.n0
-        keyColumn = cursor.column.n0
+        keyLine   = cursor.line.n1
+        keyColumn = cursor.column.n1
         keyMark   = cursor.position.n0.toLong
 
       must() match
@@ -1255,7 +1292,10 @@ private[jacinta] final class JsonParser:
           advance()
           val string = parseObjectKey()
           val keyLength =
-            if indexOut != null then (cursor.position.n0 - keyMark).toInt else 0
+            if indexOut != null then
+              syncTo()
+              (cursor.position.n0 - keyMark).toInt
+            else 0
           skip()
 
           must() match
@@ -1322,8 +1362,8 @@ private[jacinta] final class JsonParser:
             case Comma =>
               if indexScratch != null then
                 syncTo()
-                val unsetLine   = cursor.line.n0
-                val unsetColumn = cursor.column.n0
+                val unsetLine   = cursor.line.n1
+                val unsetColumn = cursor.column.n1
                 indexScratch += keyLine
                 indexScratch += keyColumn
                 indexScratch += keyLength
@@ -1340,8 +1380,8 @@ private[jacinta] final class JsonParser:
             case CloseBrace =>
               if indexScratch != null then
                 syncTo()
-                val unsetLine   = cursor.line.n0
-                val unsetColumn = cursor.column.n0
+                val unsetLine   = cursor.line.n1
+                val unsetColumn = cursor.column.n1
                 indexScratch += keyLine
                 indexScratch += keyColumn
                 indexScratch += keyLength
