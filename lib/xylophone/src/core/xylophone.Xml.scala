@@ -560,32 +560,74 @@ object Xml extends Tag.Container
 
     private inline def relinquishNodeBuffer(): Unit = nodeBufferId -= 1
 
-    protected inline def more: Boolean = cursor.more
+    // ─── parser-local snapshot of the cursor's buffer / position ───────────
+    //
+    // The cursor remains the source of truth at refill, mark, slice and
+    // error points, but for the per-char hot loops (`peek`, `advance`,
+    // `more`) the parser maintains its own snapshot of the current buffer
+    // reference, read position, and write end. Keeping all three as parser
+    // fields rather than re-reading them through cursor accessors on every
+    // char lets the JIT keep them in registers across long inner loops —
+    // the same trick Jacinta uses for its tight number / string scans.
+    //
+    // Invariant: between `syncTo()` and `syncFrom()` calls, `pos` is the
+    // authoritative read position; `cursor.unsafePos` is allowed to lag.
+    // Whenever a cursor operation that depends on `pos` is performed
+    // (refill via `more`'s slow path, mark, slice, error reporting,
+    // backtracking via `cue`) the parser pushes `pos` to the cursor first,
+    // then refreshes its snapshot from the cursor afterwards — refill may
+    // compact the buffer, reallocate it, or reset `pos`.
+    private var bytes:  Array[Char] = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
+    private var pos:    Int = cursor.unsafePos(using Unsafe)
+    private var bufEnd: Int = cursor.unsafeWriteEnd(using Unsafe)
 
-    protected inline def peek: Char =
-      cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]](cursor.unsafePos(using Unsafe))
+    private inline def syncTo(): Unit =
+      cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
-    protected inline def advance(): Unit = cursor.next()
-    protected inline def position: Int = cursor.position.n0
+    private inline def syncFrom(): Unit =
+      bytes  = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
+      pos    = cursor.unsafePos(using Unsafe)
+      bufEnd = cursor.unsafeWriteEnd(using Unsafe)
 
-    // Non-`inline` so that `cursor.mark`'s lineation-tracking expansion
-    // (recordMark allocation + `lineationActive` branch) is emitted once in
-    // its own method rather than re-expanded into every call site, keeping
+    protected inline def more: Boolean = pos < bufEnd || moreSlow()
+
+    // Out-of-line slow path so `more`'s inline budget stays small enough
+    // for the JIT to keep `pos < bufEnd` as one register comparison in
+    // hot loops.
+    private def moreSlow(): Boolean =
+      syncTo()
+      if cursor.more then { syncFrom(); true } else false
+
+    protected inline def peek: Char = bytes(pos)
+    protected inline def advance(): Unit = pos += 1
+    protected inline def position: Int =
+      syncTo()
+      cursor.position.n0
+
+    // Non-`inline` so that `cursor.mark`'s expansion is emitted once in its
+    // own method rather than re-expanded into every call site, keeping
     // `XmlParser`'s hot methods small enough for HotSpot's free-inline
     // budgets. The JIT can still inline at hot call sites via its own
     // heuristics.
-    protected def begin(): Cursor.Mark = cursor.mark(using heldToken.nn)
+    protected def begin(): Cursor.Mark =
+      syncTo()
+      cursor.mark(using heldToken.nn)
 
     protected def slice(start: Cursor.Mark): Text =
+      syncTo()
       val end = cursor.mark(using heldToken.nn)
       cursor.grab(start, end).asInstanceOf[Text]
 
     protected def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
       cursor.grab(start, end).asInstanceOf[Text]
 
-    protected def reset(start: Cursor.Mark): Unit = cursor.cue(start)
+    protected def reset(start: Cursor.Mark): Unit =
+      syncTo()
+      cursor.cue(start)
+      syncFrom()
 
     protected def appendSlice(start: Cursor.Mark, buf: jl.StringBuilder): Unit =
+      syncTo()
       val end = cursor.mark(using heldToken.nn)
       cursor.clone(start, end)(buf.asInstanceOf[cursor.addressable.Target])
 
@@ -600,14 +642,13 @@ object Xml extends Tag.Container
       // before the most recent compaction are not represented in the
       // buffer; we under-count by that amount but the absolute `offset`
       // remains correct, which is what the tests assert on.
-      val buf = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
-      val cur = cursor.unsafePos(using Unsafe)
+      syncTo()
       var line = 1
       var col = 1
       var i = 0
 
-      while i < cur do
-        if buf(i) == '\n' then
+      while i < pos do
+        if bytes(i) == '\n' then
           line += 1
           col = 1
         else
