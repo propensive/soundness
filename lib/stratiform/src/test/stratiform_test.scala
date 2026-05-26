@@ -109,6 +109,28 @@ object Tests extends Suite(m"Stratiform Tests"):
         parsed.childCompounds.headOption.map(_.keyword).getOrElse(Text(""))
       . assert(_ == Text("parent"))
 
+    suite(m"tel\"…\" extractor"):
+      test(m"literal pattern matches"):
+        val input = tel"hello"
+        input match
+          case tel"hello" => true
+          case _          => false
+      . assert(identity)
+
+      test(m"literal pattern non-match"):
+        val input = tel"hello"
+        input match
+          case tel"goodbye" => true
+          case _            => false
+      . assert(!_)
+
+      test(m"single capture binds atom text"):
+        val input = tel"name Alice"
+        input match
+          case tel"name $name" => name.primaryAtom
+          case _               => Text("")
+      . assert(_ == Text("Alice"))
+
     suite(m"Dynamic access"):
       import dynamicTelAccess.enabled
 

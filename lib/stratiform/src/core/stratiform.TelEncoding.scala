@@ -64,6 +64,14 @@ trait Tel2:
 
       ${stratiform.internal.interpolator[parts, origins]('insertions)}
 
+  // `tel"…"` extractor: parses the pattern at compile time and produces
+  // a structural matcher that binds atom-text captures.
+  inline given extrapolator: Tel is Extrapolable:
+    transparent inline def extrapolate[parts <: Tuple, origins <: Tuple](scrutinee: Tel)
+    :     Boolean | Option[Tuple | Tel] =
+
+      ${stratiform.internal.extractor[parts, origins]('scrutinee)}
+
   inline given decodable: [value] => value is Decodable in Tel = summonFrom:
     case given (`value` is Decodable in Text) =>
       provide[Tactic[TelError]](_.primaryAtom.decode[value])

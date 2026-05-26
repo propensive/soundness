@@ -217,3 +217,168 @@ object internal:
       val childrenExpr = emitBlocks(document.children)
 
       '{ Tel.make(Tel.Document($directiveExpr, $pragmaExpr, $lineEndingsExpr, $childrenExpr)) }
+
+  // The extractor counterpart to `interpolator`. Parses the pattern at
+  // compile time and produces a function that matches a runtime Tel
+  // value against the structural shape, binding marker-containing atom
+  // texts to the corresponding hole positions.
+  //
+  // Returns per contextual.Extrapolation[Tel]:
+  //   - Boolean        for 0 holes
+  //   - Option[Tel]    for 1 hole (the captured atom-as-scalar Tel)
+  //   - Option[Tuple]  for 2+ holes (tuple of captured scalar Tels)
+  def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
+       (scrutinee: Expr[Tel])
+  :     Macro[Boolean | Option[Tuple | Tel]] =
+    import quotes.reflect.*
+
+    def collectParts[tuple: Type](acc: List[String]): List[String] = Type.of[tuple] match
+      case '[head *: tail] => collectParts[tail](TypeRepr.of[head].literal[String].vouch :: acc)
+      case _               => acc
+
+    val parts = collectParts[parts](Nil)
+    val source: String = parts.mkString(MarkerString)
+    val holeCount = parts.length - 1
+
+    // Parse the pattern at compile time to validate syntax (and to halt
+    // the macro with a clean source-positioned error if it's malformed).
+    locally:
+      given Diagnostics = Diagnostics.omit
+      given HaltTactic[TelError, Tel.Document] = new HaltTactic[TelError, Tel.Document]:
+        override def abort(error: Diagnostics ?=> TelError): Nothing =
+          halt(m"the tel\"…\" pattern is invalid: ${error.message}")
+
+      TelParser.parse(IArray.from(source.getBytes("UTF-8").nn.iterator))
+
+    // At runtime the matcher re-parses the assembled pattern source from
+    // an embedded byte literal. We could emit the pre-parsed AST as an
+    // Expr but that's a substantial amount of code; re-parsing once per
+    // match-site invocation is cheap enough for the macro's purpose.
+    val patternBytesExpr: Expr[Data] =
+      '{ ${Expr(source.getBytes("UTF-8").nn.toSeq)}.toArray.asInstanceOf[IArray[Byte]] }
+
+    val markerExpr: Expr[Char] = '{ ${Expr(Marker)} }
+
+    val matchResult: Expr[Option[List[Tel]]] = '{
+      val pattern: Tel.Document =
+        contingency.unsafely(TelParser.parse($patternBytesExpr))
+
+      stratiform.internal.matchDocument(pattern, $scrutinee, $markerExpr)
+    }
+
+    if holeCount == 0 then '{ $matchResult.isDefined: Boolean }
+    else if holeCount == 1 then '{ $matchResult.map(_.head): Option[Tel] }
+    else '{ $matchResult.map { captures =>
+            val arr: Array[Object] = captures.toArray.asInstanceOf[Array[Object]]
+            scala.runtime.Tuples.fromArray(arr)
+          }: Option[Tuple] }
+
+  // Runtime matcher: returns Some(captures) if input structurally matches
+  // pattern (allowing marker characters in pattern atom-texts as capture
+  // sites), None otherwise. Captures are emitted in document order.
+  def matchDocument
+       (pattern: Tel.Document, input: Tel, marker: Char)
+  :     Option[List[Tel]] =
+    val captures = scala.collection.mutable.ListBuffer.empty[Tel]
+    if matchBlocks(pattern.children, input.subtree.children, marker, captures)
+    then Some(captures.toList) else None
+
+  private def matchBlocks
+       (pattern: IArray[Tel.Block],
+        input:   IArray[Tel.Block],
+        marker:  Char,
+        out:     scala.collection.mutable.ListBuffer[Tel])
+  :     Boolean =
+    if pattern.length != input.length then false
+    else
+      var i = 0
+      while i < pattern.length do
+        if !matchBlock(pattern(i), input(i), marker, out) then return false
+        i += 1
+
+      true
+
+  private def matchBlock
+       (pattern: Tel.Block,
+        input:   Tel.Block,
+        marker:  Char,
+        out:     scala.collection.mutable.ListBuffer[Tel])
+  :     Boolean =
+    if pattern.compounds.length != input.compounds.length then false
+    else
+      var i = 0
+      while i < pattern.compounds.length do
+        if !matchCompound(pattern.compounds(i), input.compounds(i), marker, out) then
+          return false
+
+        i += 1
+
+      true
+
+  private def matchCompound
+       (pattern: Tel.Compound,
+        input:   Tel.Compound,
+        marker:  Char,
+        out:     scala.collection.mutable.ListBuffer[Tel])
+  :     Boolean =
+    if pattern.keyword != input.keyword then false
+    else if pattern.atoms.length != input.atoms.length then false
+    else
+      var i = 0
+      while i < pattern.atoms.length do
+        if !matchAtom(pattern.atoms(i), input.atoms(i), marker, out) then return false
+        i += 1
+
+      matchBlocks(pattern.children, input.children, marker, out)
+
+  private def matchAtom
+       (pattern: Tel.Atom,
+        input:   Tel.Atom,
+        marker:  Char,
+        out:     scala.collection.mutable.ListBuffer[Tel])
+  :     Boolean = pattern match
+    case Tel.Atom.Inline(patText, _) =>
+      input match
+        case Tel.Atom.Inline(inText, _) => matchAtomText(patText, inText, marker, out)
+        case _                          => false
+
+    case Tel.Atom.Source(patText) =>
+      input match
+        case Tel.Atom.Source(inText) => matchAtomText(patText, inText, marker, out)
+        case _                       => false
+
+    case Tel.Atom.Literal(patDelim, patText) =>
+      input match
+        case Tel.Atom.Literal(inDelim, inText) if patDelim == inDelim =>
+          matchAtomText(patText, inText, marker, out)
+
+        case _ => false
+
+  // Match a pattern atom text against an input atom text. The pattern may
+  // contain a single marker character: the surrounding literal segments
+  // must form a prefix/suffix of the input, and the middle substring is
+  // captured as a Tel scalar into `out`. Patterns with multiple markers
+  // in one atom text are not supported in this minimal extractor.
+  private def matchAtomText
+       (pattern: Text,
+        input:   Text,
+        marker:  Char,
+        out:     scala.collection.mutable.ListBuffer[Tel])
+  :     Boolean =
+    import scala.language.unsafeNulls
+    val p: String = pattern.s
+    val s: String = input.s
+    val markerIdx = p.indexOf(marker.toInt)
+    if markerIdx < 0 then p == s
+    else if p.indexOf(marker.toInt, markerIdx + 1) < 0 then
+      val prefix: String = p.substring(0, markerIdx)
+      val suffix: String = p.substring(markerIdx + 1)
+      if s.startsWith(prefix) && s.endsWith(suffix)
+        && s.length >= prefix.length + suffix.length
+      then
+        val captured: String = s.substring(prefix.length, s.length - suffix.length)
+        out += Tel.scalar(Text(captured))
+        true
+      else false
+    else
+      p == s
