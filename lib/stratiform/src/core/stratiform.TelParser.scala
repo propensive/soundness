@@ -110,6 +110,7 @@ private final class TelParser(input: Data):
   private var sigil: Char = '#'
 
   def parseDocument(): Tel.Document raises TelError =
+    checkBom()
     val directive = parseInterpreterDirective()
     val pragma = parsePragma()
 
@@ -119,6 +120,10 @@ private final class TelParser(input: Data):
     val children = parseChildren(parentIndent = -1)
 
     Tel.Document(directive, pragma, lineEndings, children)
+
+  private def checkBom(): Unit raises TelError =
+    if source.length >= 1 && source.charAt(0) == '﻿' then
+      abort(TelError(Reason.BomPresent))
 
   private def parseInterpreterDirective(): Optional[Text] =
     if cursor >= lines.length then Unset
@@ -209,12 +214,20 @@ private final class TelParser(input: Data):
     while i < lines.length && lines(i).blank do i += 1
     if i < lines.length then i else Unset
 
-  // Returns a non-negative indent for a line, or -1 if leading spaces are
-  // less than the margin (which is an E106 condition; deferred for phase 1).
-  private def indentOf(line: Line): Int =
+  // Returns the indent in levels (units of two spaces beyond the margin).
+  // Raises E106 if leading spaces fall short of the margin, E107 if the
+  // post-margin offset is odd. Phase-1 recovery is to bail on first error;
+  // a future phase will adopt §19.5's accumulating recovery.
+  private def indentOf(line: Line): Int raises TelError =
     val relative = line.leadingSpaces - margin
-    if relative < 0 then -1
+    if relative < 0 then abort(TelError(Reason.LessThanMargin))
+    else if relative % 2 != 0 then abort(TelError(Reason.OddIndentation))
     else relative / 2
+
+  private def checkTrailingSpaces(line: Line): Unit raises TelError =
+    if line.content.length > 0 && line.content.charAt(line.content.length - 1) == ' '
+      && !line.blank
+    then abort(TelError(Reason.TrailingSpaces))
 
   // Recursively parses the child blocks of a node at parentIndent. The
   // children themselves are at parentIndent + 1, except at top-level where
@@ -292,7 +305,7 @@ private final class TelParser(input: Data):
 
     Tel.Block(IArray.from(comments), tabulation, IArray.from(compounds), trailingBlankLines)
 
-  private def isTabulationLineAt(line: Line, indent: Int): Boolean =
+  private def isTabulationLineAt(line: Line, indent: Int): Boolean raises TelError =
     if line.blank || indentOf(line) != indent then false
     else
       val start = line.leadingSpaces
@@ -358,7 +371,7 @@ private final class TelParser(input: Data):
   // non-blank line is at a different indent. Blanks preceding a shallower
   // line belong to the enclosing block; blanks preceding a deeper line
   // would indicate over-indentation (handled elsewhere).
-  private def consumeTrailingBlanksFor(indent: Int): Int =
+  private def consumeTrailingBlanksFor(indent: Int): Int raises TelError =
     var count = 0
     while
       cursor < lines.length && lines(cursor).blank
@@ -369,7 +382,7 @@ private final class TelParser(input: Data):
 
     count
 
-  private def nextNonBlankMatches(indent: Int): Boolean =
+  private def nextNonBlankMatches(indent: Int): Boolean raises TelError =
     var probe = cursor
     while probe < lines.length && lines(probe).blank do probe += 1
     if probe >= lines.length then true
@@ -382,10 +395,10 @@ private final class TelParser(input: Data):
   // distinguished by a second sigil preceded by a hard space (deferred for
   // phase 1; for now any sigil-prefixed line that does not have a tabulation
   // marker is a comment).
-  private def atCommentLine(indent: Int): Boolean =
+  private def atCommentLine(indent: Int): Boolean raises TelError =
     cursor < lines.length && isCommentLine(lines(cursor), indent)
 
-  private def isCommentLine(line: Line, indent: Int): Boolean =
+  private def isCommentLine(line: Line, indent: Int): Boolean raises TelError =
     if line.blank || indentOf(line) != indent then false
     else
       val start = line.leadingSpaces
@@ -471,18 +484,28 @@ private final class TelParser(input: Data):
     val delimiter = openingLine.content.substring(literalIndent)
     cursor += 1
     val payloadStart = openingLine.end + (if lineEndings == Tel.LineEndings.Crlf then 2 else 1)
-    val pattern = "\n" + delimiter + "\n"
-    val closeIdx = source.indexOf(pattern, payloadStart - 1)
-    if closeIdx < 0 then abort(TelError(Reason.UnclosedLiteral))
+    val emptyPattern = delimiter + "\n"
+
+    // An empty payload (§15: "An empty literal payload (a LF immediately
+    // followed by the delimiter and a LF) is permitted") shares the
+    // opening line's terminating LF with the closing pattern's leading
+    // LF; the search-from-payloadStart path can't match because there's
+    // no leading LF to find at payloadStart. Handle that case explicitly.
+    val (rawPayload, afterClose) =
+      if source.startsWith(emptyPattern, payloadStart) then
+        ("", payloadStart + emptyPattern.length)
+      else
+        val pattern = "\n" + delimiter + "\n"
+        val closeIdx = source.indexOf(pattern, payloadStart)
+        if closeIdx < 0 then abort(TelError(Reason.UnclosedLiteral))
+        (source.substring(payloadStart, closeIdx), closeIdx + pattern.length)
 
     // Strip \r\n → \n inside the literal payload. The TEL spec (§15) states
     // payload bytes are preserved literally, including any CR. The Rust
     // reference implementation, however, normalises CRLF to LF inside the
     // payload; the upstream `pos/literal-atom-cr-in-payload.check` fixture
     // pins this normalisation. Recorded in doc/spec-notes.md.
-    val rawPayload = source.substring(payloadStart, closeIdx)
     val payload = rawPayload.replace("\r\n", "\n")
-    val afterClose = closeIdx + pattern.length
 
     // Advance cursor past the closing delimiter line: the line whose start
     // is exactly afterClose.
@@ -504,6 +527,7 @@ private final class TelParser(input: Data):
   // counts, and an optional remark per §10.3 / §11.2. Source and literal
   // atoms are added in a separate pass.
   private def parseCompoundLine(line: Line, indent: Int): Tel.Compound raises TelError =
+    checkTrailingSpaces(line)
     val content = line.content.substring(line.leadingSpaces)
 
     // First phrase = keyword (precedingSpaces = 0, never a remark).
