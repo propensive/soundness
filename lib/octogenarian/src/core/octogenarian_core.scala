@@ -54,9 +54,10 @@ package gitCommands:
 export octogenarian.internal.{GitTag, GitBranch, GitHash, Refspec}
 
 // A `NoteRef` is just a `Path on Notes under GitHash`: the commit hash sits
-// at the root (via `GitHash is Radical on Notes`), the namespace segments
-// sit in the descent.  Because it IS a `Path`, `noteRef / t"deeper"` uses
-// Serpentine's own `Path.def /` directly — no `Divisible` bridge needed.
+// at the root (it IS a `Root`, since `GitHash extends Root`), the namespace
+// segments sit in the descent.  Because `GitHash` and `NoteRef` are both
+// `Path` subtypes, `commit / t"foo"` and `noteRef / t"bar"` both go straight
+// to Serpentine's own `Path.def /` — Octogenarian defines no `/` of its own.
 type NoteRef = Path on Notes under GitHash
 
 extension (noteRef: NoteRef)
@@ -87,18 +88,5 @@ extension (noteRef: NoteRef)
     repo.notes.show(noteRef.target, noteRef.namespace)
     . lest(GitError(GitError.Reason.NoteNotFound))
     . decode[value]
-
-// Symbolism's generic `extension [dividend](left: dividend) def /` would
-// fire for `hash / segment` and demand a `Divisible[GitHash, Text]`, which
-// we deliberately do not provide.  Scala does not fall back to trying a
-// `Conversion[GitHash, Path]` when the generic extension's `using` clause
-// fails, so we need a more-specific extension here.  Its body does the
-// minimum possible: it triggers the `Conversion[GitHash, ...]` from
-// `Notes` and then delegates to Serpentine's own `Path.def /` for the
-// actual segment append (and from there, every subsequent `/` is also
-// Path's own `def /` — there is no further Octogenarian-defined `/`).
-extension (hash: GitHash)
-  transparent inline def / (segment: Text) =
-    (hash: CommitRoot) / segment
 
 private[octogenarian] inline def git(using command: GitCommand): GitCommand = command

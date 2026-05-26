@@ -34,25 +34,27 @@ package octogenarian
 
 import anticipation.*
 import contingency.*
-import denominative.*
 import distillate.*
 import gossamer.*
 import guillotine.*
 import kaleidoscope.*
 import prepositional.*
 import rudiments.*
+import serpentine.*
 import spectacular.*
 
 object internal:
-  opaque type Refspec = anticipation.Text
-  opaque type GitTag <: Refspec = anticipation.Text
-  opaque type GitBranch <: Refspec = anticipation.Text
-  opaque type GitHash <: Refspec = anticipation.Text
 
+  // `Refspec` is the umbrella type for anything that can be passed to git
+  // as a revision argument: branch names, tag names, commit hashes,
+  // `HEAD~N`, `master..feature`, …  It used to be `opaque type Refspec =
+  // Text`; making it a trait lets `GitHash` extend Serpentine's `Root`
+  // (and therefore `Path`) while still flowing into every
+  // `repo.foo(refspec: Refspec)` call site that previously accepted
+  // opaque-typed hashes.
   object Refspec:
-    def head(n: Int = 0): Refspec = t"HEAD~$n"
-
-    def unsafe(text: Text): Refspec = text
+    def head(n: Int = 0): Refspec = unsafe(t"HEAD~$n")
+    def unsafe(text: Text): Refspec = RawRef(text)
 
     def parse(text: Text)(using Tactic[GitRefError]): Text =
       def fail(reason: GitRefError.Reason): Text = abort(GitRefError(text, reason))
@@ -69,30 +71,55 @@ object internal:
 
       text
 
-    given encodable: Refspec is Encodable in Text = identity(_)
-    given parameterizable: Refspec is Parameterizable = identity(_)
-    given showable: Refspec is Showable = identity(_)
+    given encodable: Refspec is Encodable in Text = _.text
+    given parameterizable: Refspec is Parameterizable = _.text
+    given showable: Refspec is Showable = _.text
+
+  trait Refspec:
+    def text: Text
+
+  // Concrete `Refspec` for revision specifiers that aren't named refs:
+  // `HEAD~N`, `master..feature`, raw revspecs decoded from text, etc.
+  private case class RawRef(text: Text) extends Refspec
 
   object GitTag:
-    def unsafe(text: Text): GitTag = text
-    def apply(text: Text)(using Tactic[GitRefError]): GitTag = Refspec.parse(text)
+    def unsafe(text: Text): GitTag = new GitTag(text)
+    def parse(text: Text)(using Tactic[GitRefError]): GitTag = new GitTag(Refspec.parse(text))
 
-    given decoder: Tactic[GitRefError] => GitTag is Decodable in Text = apply(_)
-    given showable: GitTag is Showable = identity(_)
+    given decoder: Tactic[GitRefError] => GitTag is Decodable in Text = parse(_)
+    given showable: GitTag is Showable = _.text
+
+  case class GitTag(text: Text) extends Refspec
 
   object GitBranch:
-    def unsafe(text: Text): GitBranch = text
-    def apply(text: Text)(using Tactic[GitRefError]): GitBranch = Refspec.parse(text)
+    def unsafe(text: Text): GitBranch = new GitBranch(text)
+    def parse(text: Text)(using Tactic[GitRefError]): GitBranch = new GitBranch(Refspec.parse(text))
 
-    given decoder: Tactic[GitRefError] => GitBranch is Decodable in Text = apply(_)
-    given showable: GitBranch is Showable = identity(_)
+    given decoder: Tactic[GitRefError] => GitBranch is Decodable in Text = parse(_)
+    given showable: GitBranch is Showable = _.text
 
+  case class GitBranch(text: Text) extends Refspec
+
+  // `GitHash` extends Serpentine's `Root` (and therefore `Path`), so a hash
+  // IS a notes-plane path root: `hash / t"foo" / t"bar"` invokes Serpentine's
+  // own `Path.def /` directly, with no Conversion or entry-point extension
+  // needed.  Equality is by hash (Drive-style override).
   object GitHash:
     def apply(text: Text)(using Tactic[GitRefError]): GitHash = text match
-      case r"[a-f0-9]{40}" => text
+      case r"[a-f0-9]{40}" => new GitHash(text)
       case _               => abort(GitRefError(text, GitRefError.Reason.BadHash))
 
-    def unsafe(text: Text): GitHash = text
+    def unsafe(text: Text): GitHash = new GitHash(text)
 
     given decoder: Tactic[GitRefError] => GitHash is Decodable in Text = apply(_)
-    given showable: GitHash is Showable = identity(_)
+    given showable: GitHash is Showable = _.text
+
+  class GitHash(val text: Text) extends Root(t"$text/"), Refspec:
+    type Plane = Notes
+    type Limit = GitHash
+
+    override def hashCode: Int = text.hashCode
+
+    override def equals(any: Any): Boolean = any match
+      case other: GitHash => text == other.text
+      case _              => false

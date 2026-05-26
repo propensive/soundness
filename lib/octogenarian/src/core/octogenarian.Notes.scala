@@ -41,16 +41,14 @@ import serpentine.*
 import spectacular.*
 
 // `Notes` is the Serpentine path plane for git notes.  Each path on this
-// plane is rooted at the commit hash being annotated (via `GitHash is
-// Radical`) and its descent is the namespace under `refs/notes/`.
+// plane is rooted at the commit hash being annotated (which IS the `Root`
+// — `GitHash` extends `Root` directly) and its descent is the namespace
+// under `refs/notes/`.
 //
 // Modelling notes as Serpentine paths lets `commit / t"foo" / t"bar"` reuse
 // Path's own `def /` (which preserves singleton tracking, runs the
 // Admissibility check, and produces a refined `Path of (...)` type), rather
-// than going through a custom `Divisible` instance.  The implicit
-// `Conversion[GitHash, Path on Notes under GitHash]` lifts a hash into a
-// path, and the `extension (hash: GitHash) def /` below intercepts
-// Symbolism's generic `/` so the conversion fires before path arithmetic.
+// than going through a custom `Divisible` instance or a Conversion lift.
 object Notes:
   type Plane = Notes
 
@@ -66,7 +64,7 @@ object Notes:
   // the canonical `Path on GitRefs` for the underlying git operation).
   given admissible: [text <: Text] => text is Admissible on Notes = _ => ()
 
-  // A `GitHash` is the root of a notes path.  Encoded form is `<hash>/`
+  // `GitHash` is the root of a notes path.  Encoded form is `<hash>/`
   // (40 hex chars + separator), so an empty-descent path encodes as
   // `<hash>/` and `commit / t"foo"` encodes as `<hash>/foo`.
   given radical: Tactic[PathError] => GitHash is Radical:
@@ -77,29 +75,6 @@ object Notes:
       case r"$hash([a-f0-9]{40})/.*" => GitHash.unsafe(hash)
       case _                         => abort(PathError(_.InvalidRoot))
 
-    def encode(hash: GitHash): Text = t"${hash.show}/"
+    def encode(hash: GitHash): Text = t"${hash.text}/"
 
 trait Notes
-
-// `CommitRoot` makes the per-commit root of a notes path a first-class
-// Serpentine `Root` (and therefore a `Path`): the root text is the encoded
-// commit hash, the plane is `Notes`, and the limit is `GitHash` so that
-// `Path of (...) under GitHash` (i.e. `NoteRef`) is the natural type of
-// any further `/` chaining.  Equality is by hash, so two `CommitRoot`s for
-// the same commit are equal — paths sharing a target then compare equal.
-object CommitRoot:
-  // Implicit lift of a commit hash into a `CommitRoot` (a Serpentine `Root`
-  // extending `Path`).  Lives on `CommitRoot`'s companion so implicit
-  // search finds it for `(hash: CommitRoot)` via the destination type's
-  // companion.
-  given hashToPath: Conversion[GitHash, CommitRoot] = CommitRoot(_)
-
-class CommitRoot(val hash: GitHash) extends Root(t"${hash.show}/"):
-  type Plane = Notes
-  type Limit = GitHash
-
-  override def hashCode: Int = hash.hashCode
-
-  override def equals(any: Any): Boolean = any match
-    case other: CommitRoot => hash == other.hash
-    case _                 => false

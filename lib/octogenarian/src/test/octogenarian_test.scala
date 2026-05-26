@@ -34,7 +34,12 @@ package octogenarian
 
 import soundness.*
 
-import octogenarian.{`/`, read, namespace, target}
+// `/` is now Path's own `def /` (Method on the Path class) so no
+// Octogenarian-side extension import is needed.  `read`/`namespace`/
+// `target` are still package-level extensions on `NoteRef`; bring them in
+// explicitly so they win on specificity against Turbulence's generic `read`
+// brought in via `soundness.*`.
+import octogenarian.{read, namespace, target}
 
 import systems.java
 import temporaryDirectories.system
