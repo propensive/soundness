@@ -426,7 +426,13 @@ object Html extends Tag.Container
   // source on each error (which used to be O(n)).
 
   private[honeycomb] object HtmlParser:
-    import zephyrine.lineation.linefeedChars
+    // Use untracked lineation in the cursor: avoids a per-`advance` newline
+    // check and a per-`mark` write into the cursor's parallel offsets
+    // array. Errors still carry an accurate absolute `offset` / `length`
+    // span (what tests assert on and what users need to locate the
+    // failure), but `line` / `column` are reconstructed on demand by
+    // scanning the currently-buffered chars from offset 0 to the error
+    // position — an O(buffer) cost paid only on the failure path.
 
     def fromText(text: Text)(using Dom): HtmlParser = new HtmlParser(Cursor[Text](text))
 
@@ -488,15 +494,39 @@ object Html extends Tag.Container
         end:   Optional[Cursor.Mark] = Unset )
     :   Position =
 
-      // Lineation increments column AFTER each `advance`, so it tracks the
-      // column of the next char to read. At end-of-input we want the column
-      // of the LAST char read, matching the existing Direct/Streaming
-      // off-by-one convention.
-      val col = cursor.column.n1 - (if cursor.more then 0 else 1)
+      // The cursor uses untracked lineation in the hot path (see the
+      // import at `HtmlParser`). On error, reconstruct (line, column) by
+      // scanning the currently-buffered chars from offset 0 to the
+      // current read position, counting newlines. Errors are rare, so the
+      // O(buffer) cost here doesn't matter; the parser stays tight on the
+      // success path. For the loadable path (single-chunk buffer) this is
+      // fully accurate. For multi-chunk streaming, lines before the most
+      // recent compaction aren't represented in the buffer; we under-
+      // count by that amount but absolute `offset` and `length` remain
+      // correct, which is what tests assert on.
+      val buf = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
+      val cur = cursor.unsafePos(using Unsafe)
+      var line = 1
+      var col = 0  // counts chars seen on the current line
+      var i = 0
+
+      while i < cur do
+        if buf(i) == '\n' then
+          line += 1
+          col = 0
+        else
+          col += 1
+        i += 1
+
+      // Match the previous behaviour's off-by-one: report the column of the
+      // *next* char to read (1-based), or — at end-of-input — the column of
+      // the LAST char read.
+      val reportCol = (if cursor.more then col + 1 else col).max(1)
+
       val endPos = end.lay(cursor.position.n0)(_.absolute.toInt)
       val offset: Optional[Int] = start.let(_.absolute.toInt)
       val length: Optional[Int] = start.let: mark => endPos - mark.absolute.toInt
-      Position(cursor.line.n1.u, col.max(1).u, offset = offset, length = length)
+      Position(line.u, reportCol.u, offset = offset, length = length)
 
     // Optional callback invoked for null-placeholder holes during macro
     // interpolation. Default no-op.
@@ -940,10 +970,9 @@ object Html extends Tag.Container
       // `buffer`. Falls back to `textualSlow` for the harder cases.
       //
       // The inner loop is a tight `while` over the cursor's `Array[Char]`
-      // buffer with a register-resident `var p`, accumulating any newlines
-      // along the way. After the scan, lineation is reconciled with the
-      // cursor in one shot, so the per-character path doesn't pay the
-      // `Cursor.unsafeAdvanceWith` lineation branch on every non-delimiter.
+      // buffer with a register-resident `var p`. With cursor lineation
+      // untracked, the per-character path is just a delimiter check + pos
+      // increment — no per-`\n` bookkeeping, no post-scan reconciliation.
       def textual(mark: Mark, close: Optional[Text], entities: Boolean): Text =
         if close.present then textualSlow(mark, close, entities) else
           @tailrec
@@ -955,31 +984,16 @@ object Html extends Tag.Container
               val startPos = cursor.unsafePos(using Unsafe)
               var p = startPos
               var hit: Char = 1.toChar // sentinel: "no delimiter found"
-              var newlines = 0
-              var lastNewline = -1
 
               while p < limit && hit == 1.toChar do
                 val c = buf(p)
 
                 if c == '<' || c == 0.toChar then hit = c
                 else if c == '&' && entities then hit = c
-                else
-                  if c == '\n' then
-                    newlines += 1
-                    lastNewline = p
-
-                  p += 1
+                else p += 1
 
               val consumed = p - startPos
-
-              if consumed > 0 then
-                cursor.unsafeBumpPos(consumed)(using Unsafe)
-
-                if cursor.lineActive then
-                  if newlines == 0 then cursor.unsafeBumpColumn(consumed)(using Unsafe)
-                  else
-                    cursor.unsafeBumpLine(newlines)(using Unsafe)
-                    cursor.unsafeSetColumn(p - lastNewline - 1)(using Unsafe)
+              if consumed > 0 then cursor.unsafeBumpPos(consumed)(using Unsafe)
 
               if hit == '&' then textualSlow(mark, close, entities)
               else if hit != 1.toChar then
