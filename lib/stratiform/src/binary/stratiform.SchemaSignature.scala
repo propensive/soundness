@@ -36,6 +36,9 @@ import scala.language.unsafeNulls
 
 import anticipation.*
 import contingency.*
+import gastronomy.*
+import prepositional.*
+import vacuous.*
 
 // §8.2 of the BinTEL spec — palimpsest schema-signature construction
 // at byte cadence k = 2. Given n 32-byte component hashes, the signature
@@ -47,6 +50,89 @@ object SchemaSignature:
 
   // The constant component-hash size in bytes (SHA-256 width).
   final val HashSize: Int = 32
+
+  // §8.1 construction. Given a schema document parsable under `axiom`
+  // (typically `Tels.Axiom.tels`), compute the full schema signature
+  // as the §8.2 palimpsest of:
+  //
+  //   - h₀ — value hash of the base schema (the document with all
+  //     `layer` compounds removed), encoded against `axiom.document`.
+  //   - h_i — value hash of each `layer` compound in source order,
+  //     where each layer's children are encoded as a virtual root
+  //     under the `Layer` Definition's keyword order.
+  //
+  // The resulting bytes are the same `30 + 2n` form returned by
+  // `encode`, suitable for use as the schema signature in a §6
+  // BinTEL document header or as the textual schema identifier on a
+  // TEL pragma after BASE-256 encoding.
+  def fromDocument(doc: Tel, axiom: Tels): Data raises BintelError raises TelError =
+    val root = Tel.Type.assign(doc, axiom).asInstanceOf[TelElement.Node]
+
+    // Resolve the flat keyword index of "layer" and the Layer
+    // RecordDefinition's struct from the axiom. If either is missing
+    // the axiom does not describe schemas-with-layers; we still
+    // proceed by treating the whole document as the base schema.
+    val layerIdx: Optional[Int] = layerKeywordIndex(axiom.document, axiom)
+
+    val baseChildren = root.children.filter: child =>
+      keywordIndexOf(child) != layerIdx
+
+    val baseElement = TelElement.Node(Unset, axiom.document, baseChildren)
+    val baseHash    = baseElement.bintel.digest[Sha2[256]].data
+
+    val layerChildren = root.children.filter: child =>
+      keywordIndexOf(child) == layerIdx
+
+    val layerStruct: Optional[Tels.Struct] =
+      axiom.records.find(_.name == Text("Layer")) match
+        case Some(rec) => Tels.Struct(rec.members, rec.validators)
+        case None      => Unset
+
+    val layerHashes: List[Data] =
+      layerStruct.let: ls =>
+        layerChildren.toList.map: layer =>
+          val layerRoot = TelElement.Node
+                           (Unset, ls, layer.asInstanceOf[TelElement.Node].children)
+          layerRoot.bintel.digest[Sha2[256]].data
+      .or(Nil)
+
+    encode(baseHash :: layerHashes)
+
+  private def keywordIndexOf(element: TelElement): Optional[Int] = element match
+    case TelElement.Node(idx, _, _)  => idx
+    case TelElement.Value(idx, _, _) => idx
+
+  // Flat-keyword-index lookup for the `layer` keyword inside the
+  // given struct, walking parent.members in declaration order and
+  // expanding SelectRef variants per §5.
+  private def layerKeywordIndex(struct: Tels.Struct, schema: Tels): Optional[Int] =
+    var idx   = 0
+    var i     = 0
+    var found = -1
+
+    while i < struct.members.length && found < 0 do
+      struct.members(i) match
+        case f: Tels.Field =>
+          if f.keyword == Text("layer") then found = idx else idx += 1
+
+        case s: Tels.SelectRef =>
+          schema.selects.find(_.name == s.reference) match
+            case Some(sd) =>
+              var v = 0
+
+              while v < sd.variants.length && found < 0 do
+                if sd.variants(v).keyword == Text("layer") then found = idx + v
+                v += 1
+
+              if found < 0 then idx += sd.variants.length
+
+            case None => ()
+
+        case _: Tels.Exclude => ()
+
+      i += 1
+
+    if found < 0 then Unset else found
 
   // §8.2 encoding. Given an ordered sequence of n component hashes
   // (each `HashSize` bytes), compute S = 0 then for each h_i in order
