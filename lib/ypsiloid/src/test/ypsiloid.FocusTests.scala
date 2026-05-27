@@ -32,75 +32,103 @@
                                                                                                   */
 package ypsiloid
 
-import scala.collection.mutable as scm
+import soundness.*
 
-import anticipation.*
-import beneficence.*
-import contingency.*
-import denominative.*
-import gossamer.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import symbolism.*
-import urticose.*
-import vacuous.*
+import strategies.throwUnsafely
+import errorDiagnostics.stackTraces
 
-// A YAML Path identifies a node within a YAML document. Modelled on
-// `jacinta.JsonPointer` and using the same RFC 6901 escaping (`~0`
-// for `~`, `~1` for `/`) so paths interoperate cleanly with JSON
-// Pointers when YAML is treated as JSON. Non-string mapping keys are
-// not addressable; attempting to navigate through one is undefined.
-object YamlPath extends Root(""):
-  type Plane = YamlPath
+case class FPerson(name: Text, age: Int, email: Text) derives CanEqual
+case class FAddress(street: Text, city: Text, zip: Text) derives CanEqual
+case class FContact(person: FPerson, address: FAddress) derives CanEqual
 
-  trait Registry extends Findable:
-    private val documents: scm.HashMap[HttpUrl, Yaml] = scm.HashMap()
+object FocusTests extends Suite(m"Ypsiloid focus + position tests"):
 
-    def update(url: HttpUrl, document: Yaml): Unit = documents(url) = document
-    def apply(url: HttpUrl): Optional[Yaml] = documents.at(url).or(lookup(url))
-    protected def lookup(url: HttpUrl): Optional[Yaml]
+  case class Captured
+    ( items: List[(Text, Optional[Int], Optional[Int])] = Nil )
+    ( using Diagnostics )
+  extends Error(m"${items.length} validation issues"):
+    def +(focus: Text, line: Optional[Int], column: Optional[Int]): Captured =
+      Captured(items :+ (focus, line, column))
 
-  given navigable: [ordinal <: Ordinal] => ordinal is Navigable on YamlPath = _.n0.toString.tt
-  given admissible: [ordinal <: Ordinal] => ordinal is Admissible on YamlPath = _ => ()
-  given admissible2: [text <: Text] => text is Admissible on YamlPath = _ => ()
+  private def captureFoci[result](yaml: Yaml)
+                                 (decode: Yaml => result raises YamlError tracks Yaml.Focus)
+  :   List[(Text, Optional[Int], Optional[Int])] =
+    validate[Yaml.Focus](Captured()):
+      case error: YamlError =>
+        val position = prior.let(_.position)
+        accrual + ( prior.let(_.pointer.encode).or(t"#"),
+                    position.let(_.line),
+                    position.let(_.column) )
+    . within(decode(yaml)).items
 
-  given filesystem: YamlPath is Filesystem:
-    override def escape(text: Text): Text = text.sub("~", "~0").sub("/", "~1")
-    override def unescape(text: Text): Text = text.sub("~1", "/").sub("~0", "~")
+  def run(): Unit =
+    suite(m"Pointer-only focus (untracked Yaml)"):
+      test(m"Missing field reports the focus pointer (no position)"):
+        val yaml = t"name: Alice\nage: 30".read[Yaml]
+        captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to(Set)
+      . assert(_ == Set("#/email"))
 
-    val name: Text = "YAML"
-    val parent: Text = ".."
-    val self: Text = "#"
-    val separator: Text = "/"
+      test(m"Wrong-type field reports the focus pointer (no position)"):
+        val yaml = t"name: Alice\nage: thirty\nemail: a@b".read[Yaml]
+        captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to(Set)
+      . assert(_ == Set("#/age"))
 
-  given YamlPath is Encodable in Text = path =>
-    t"${path.url.let(_.encode).or(t"")}#${path.path}"
+      test(m"Nested case-class missing field reports root-first path"):
+        val yaml = t"""
+person:
+  name: X
+  age: 1
+  email: x@y
+address:
+  street: S
+""".read[Yaml]
+        // address is missing `city` (and zip); decoding aborts on the
+        // first missing, registering one error at #/address/city.
+        captureFoci(yaml)(_.as[FContact]).map(_(0).s).to(Set)
+      . assert(_ == Set("#/address/city"))
 
-  given divisible: YamlPath is Divisible by Text to YamlPath =
-    (path, segment) => YamlPath(path.url, path.path / segment)
+      test(m"Untracked roots leave the focus position Unset"):
+        val yaml = t"name: Alice\nage: 30".read[Yaml]
+        captureFoci(yaml)(_.as[FPerson]).forall((_, line, _) => line == Unset)
+      . assert(identity)
 
-  given divisible2: YamlPath is Divisible by Ordinal to YamlPath =
-    (path, segment) => YamlPath(path.url, path.path / segment)
+    suite(m"Position-aware focus (tracked Yaml)"):
+      given Yaml.Tracking = Yaml.Tracking.On
 
-case class YamlPath(url: Optional[HttpUrl] = Unset, path: Path on YamlPath = YamlPath):
-  def apply(using registry: YamlPath.Registry)(document: Yaml): Yaml raises YamlPathError =
-    url.let(registry(_).lest(YamlPathError(YamlPathError.Reason.UnknownDocument)))
-    . or(document)
+      test(m"Tracked root: focus pointers are still correct"):
+        // The decoder still aborts on first error (raise+yet is a PR 3
+        // change), so position population via `as[T]`'s Foci.supplement
+        // doesn't fire when an error short-circuits the decode. The
+        // focus *path* is registered by the focus block's try/finally
+        // either way, so we verify that path here and exercise the
+        // `withPosition` plumbing in a separate direct test below.
+        val yaml = t"name: Alice\nage: 30".read[Yaml]
+        captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to(Set)
+      . assert(_ == Set("#/email"))
 
-  def apply(ordinal: Ordinal): YamlPath = YamlPath(url, path / ordinal)
-  def apply(text: Text): YamlPath = YamlPath(url, path / text)
+      test(m"Nested missing field reports root-first path on a tracked root"):
+        val source = t"""person:
+  name: C
+  age: 25
+  email: c@x
+address:
+  street: X
+"""
+        captureFoci(source.read[Yaml])(_.as[FContact]).map(_(0).s).to(Set)
+      . assert(_ == Set("#/address/city"))
 
-  // Append `segment` at the root end of the path, leaving the rest of
-  // the descent intact. Used by `Yaml`'s Wisteria derivation: each
-  // outer `focus` block runs *after* the inner one (contingency's
-  // try/finally order), and needs to push its label to the root side
-  // of the accumulated path so `/parent/child` lands root-first. The
-  // `apply(text)` / `apply(ordinal)` methods above go through
-  // Serpentine's `/`, which adds at the leaf side — the wrong
-  // direction for focus supplementing.
-  private[ypsiloid] def prepend(segment: Text): YamlPath =
-    YamlPath(url, Path[YamlPath, YamlPath.type, Tuple]("/", path.descent :+ segment))
+      test(m"withPosition on a tracked Yaml resolves the pointer to a real position"):
+        // Direct exercise of `Yaml.Focus#withPosition`. Even though the
+        // current decoder aborts before `as[T]`'s `Foci.supplement` can
+        // run, the plumbing is wired correctly — once primitive
+        // decoders gain raise+yet sentinels in PR 3, wrong-type errors
+        // will land with `position` populated through this same path.
+        val source = t"name: Alice\nage: 30\nemail: a@b\n"
+        val yaml = source.read[Yaml]
+        Yaml.Focus(YamlPath()(t"age")).withPosition(yaml).position.let(_.line)
+      . assert(_ == 2)
 
-  private[ypsiloid] def prepend(ordinal: Ordinal): YamlPath =
-    YamlPath(url, Path[YamlPath, YamlPath.type, Tuple]("/", path.descent :+ ordinal.n0.toString.tt))
+      test(m"withPosition leaves position Unset when the pointer doesn't resolve"):
+        val yaml = t"name: Alice".read[Yaml]
+        Yaml.Focus(YamlPath()(t"missing")).withPosition(yaml).position
+      . assert(_ == Unset)
