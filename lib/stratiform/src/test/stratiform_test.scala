@@ -529,10 +529,26 @@ object Tests extends Suite(m"Stratiform Tests"):
         tel.fields(t"item").length
       . assert(_ == 0)
 
-    suite(m"Tel.parse Text overload"):
-      test(m"parse(Text) accepts a Gossamer Text directly"):
+    suite(m".read[Tel] from Text"):
+      test(m"reading a Text value gives a Tel"):
         val tel = t"name Alice\n".read[Tel]
         tel.childCompounds.headOption.map(_.keyword).getOrElse(t"")
+      . assert(_ == t"name")
+
+    suite(m".load[Tel] returns Document[Tel] with metadata"):
+      test(m"prologue-free document has empty metadata"):
+        val doc = t"name Alice\n".load[Tel]
+        (doc.metadata.interpreterDirective.absent, doc.metadata.pragma.absent)
+      . assert(_ == (true, true))
+
+      test(m"pragma is captured in Document metadata"):
+        val doc = t"tel 1.0\nname Alice\n".load[Tel]
+        doc.metadata.pragma.let(_.version).or((0, 0))
+      . assert(_ == (1, 0))
+
+      test(m"Document[Tel].root parses the content"):
+        val doc = t"name Alice\n".load[Tel]
+        doc.root.childCompounds.headOption.map(_.keyword).getOrElse(t"")
       . assert(_ == t"name")
 
     suite(m"Integration: parse → mutate → print → reparse"):
