@@ -174,7 +174,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       // Phase-3 partial: parse the canonical tel-schema.tel and verify
       // it produces a valid presentation AST. Full self-consistency
       // (type-assign against the axiom and reconstruct a Tels
-      // value equal to TelsAxiom.tels) is the phase-3 merge
+      // value equal to Tels.Axiom.tels) is the phase-3 merge
       // blocker — it requires the axiom's Definition shapes to match
       // the canonical document's vocabulary verbatim, including the
       // `Body` record indirection and the `Member` / `SelectChild`
@@ -200,7 +200,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         val doc = bytes.read[Tel]
         try
-          Tel.Type.assign(doc, TelsAxiom.tels)
+          Tel.Type.assign(doc, Tels.Axiom.tels)
           "ok"
         catch case e: TelError => s"failed-with-${e.reason}"
       . assert(_ == "ok")
@@ -216,21 +216,21 @@ object Tests extends Suite(m"Stratiform Tests"):
           IArray.from(arr)
 
         val doc = bytes.read[Tel]
-        val reconstructed = TelsReconstructor.fromTel(doc)
-        TelsReconstructor.equivalent(reconstructed, TelsAxiom.tels)
+        val reconstructed = Tels.Reconstructor.fromTel(doc)
+        Tels.Reconstructor.equivalent(reconstructed, Tels.Axiom.tels)
       . assert(identity)
 
     suite(m"Schema axiom"):
       test(m"tel-schema axiom has the documented name"):
-        TelsAxiom.tels.name
+        Tels.Axiom.tels.name
       . assert(_ == t"tel-schema")
 
       test(m"axiom declares the Field record"):
-        TelsAxiom.tels.records.exists(_.name == t"Field")
+        Tels.Axiom.tels.records.exists(_.name == t"Field")
       . assert(identity)
 
       test(m"axiom declares the four built-in scalars"):
-        TelsAxiom.tels.scalars.map(_.name).toSet
+        Tels.Axiom.tels.scalars.map(_.name).toSet
       . assert: scalars =>
           scalars == Set(t"Identifier", t"TypeName", t"Sigil", t"String")
 
@@ -458,7 +458,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           scalars  = IArray.empty,
           selects  = IArray.empty)
 
-        val composed = TelsLayers.compose(base)
+        val composed = Tels.Layers.compose(base)
         composed.document.members.length
       . assert(_ == 2)
 
@@ -486,7 +486,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           selects = IArray.empty)
 
         given Tels = schema
-        import TelsDecoder.asValidated
+        import Tels.Decoder.asValidated
         val tel = t"name Alice\nage 30\n".read[Tel]
         tel.asValidated[Tests.PersonAge]
       . assert(_ == Tests.PersonAge(t"Alice", 30))
@@ -504,7 +504,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           sigil = Unset,
           records = IArray.empty, scalars = IArray.empty, selects = IArray.empty)
 
-        capture[TelError](TelsLayers.compose(base)).reason
+        capture[TelError](Tels.Layers.compose(base)).reason
       . assert(_ == TelError.Reason.DuplicateLayerName)
 
     suite(m"Dynamic access"):
@@ -1308,7 +1308,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           stream.close()
           IArray.from(arr)
 
-        val sig = SchemaSignature.fromDocument(source.read[Tel], TelsAxiom.tels)
+        val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
         sig.length
       . assert(_ == 32)
 
@@ -1319,8 +1319,8 @@ object Tests extends Suite(m"Stratiform Tests"):
           stream.close()
           IArray.from(arr)
 
-        val sig = SchemaSignature.fromDocument(source.read[Tel], TelsAxiom.tels)
-        val hash = Tel.Type.assign(source.read[Tel], TelsAxiom.tels).valueHash.data
+        val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
+        val hash = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash.data
         sig.toSeq == hash.toSeq
       . assert(_ == true)
 
@@ -1338,7 +1338,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                     |layer ext
                     |  scalar Number identifier
                     |""".stripMargin.tt
-        val sig = SchemaSignature.fromDocument(src.read[Tel], TelsAxiom.tels)
+        val sig = SchemaSignature.fromDocument(src.read[Tel], Tels.Axiom.tels)
         sig.length
       . assert(_ == 34)
 
@@ -1359,7 +1359,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                     |layer ext2
                     |  scalar Symbol identifier
                     |""".stripMargin.tt
-        val sig = SchemaSignature.fromDocument(src.read[Tel], TelsAxiom.tels)
+        val sig = SchemaSignature.fromDocument(src.read[Tel], Tels.Axiom.tels)
         sig.length
       . assert(_ == 36)
 
@@ -1388,7 +1388,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           stream.close()
           IArray.from(arr)
 
-        val element = Tel.Type.assign(source.read[Tel], TelsAxiom.tels)
+        val element = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels)
         element.valueHash.data.toSeq
       . assert
        (_ == hexBytes("9033cf054ed14fc460cfd04502a2b69e1ac840cd1035f213492b74af7df2a8dd"))
@@ -1407,7 +1407,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           String(arr, "UTF-8").trim
 
         val refBytes = hexBytes(refHex)
-        val element  = Tel.Type.assign(telBytes.read[Tel], TelsAxiom.tels)
+        val element  = Tel.Type.assign(telBytes.read[Tel], Tels.Axiom.tels)
         element.bintel.toSeq == refBytes
       . assert(_ == true)
 

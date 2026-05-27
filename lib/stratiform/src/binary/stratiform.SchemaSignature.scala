@@ -66,7 +66,7 @@ object SchemaSignature:
   // BinTEL document header or as the textual schema identifier on a
   // TEL pragma after BASE-256 encoding.
   def fromDocument(doc: Tel, axiom: Tels): Data raises BintelError raises TelError =
-    val root = Tel.Type.assign(doc, axiom).asInstanceOf[TelElement.Node]
+    val root = Tel.Type.assign(doc, axiom).asInstanceOf[Tel.Element.Node]
 
     // Resolve the flat keyword index of "layer" and the Layer
     // RecordDefinition's struct from the axiom. If either is missing
@@ -77,7 +77,7 @@ object SchemaSignature:
     val baseChildren = root.children.filter: child =>
       keywordIndexOf(child) != layerIdx
 
-    val baseElement = TelElement.Node(Unset, axiom.document, baseChildren)
+    val baseElement = Tel.Element.Node(Unset, axiom.document, baseChildren)
     val baseHash    = baseElement.bintel.digest[Sha2[256]].data
 
     val layerChildren = root.children.filter: child =>
@@ -91,16 +91,16 @@ object SchemaSignature:
     val layerHashes: List[Data] =
       layerStruct.let: ls =>
         layerChildren.toList.map: layer =>
-          val layerRoot = TelElement.Node
-                           (Unset, ls, layer.asInstanceOf[TelElement.Node].children)
+          val layerRoot = Tel.Element.Node
+                           (Unset, ls, layer.asInstanceOf[Tel.Element.Node].children)
           layerRoot.bintel.digest[Sha2[256]].data
       .or(Nil)
 
     encode(baseHash :: layerHashes)
 
-  private def keywordIndexOf(element: TelElement): Optional[Int] = element match
-    case TelElement.Node(idx, _, _)  => idx
-    case TelElement.Value(idx, _, _) => idx
+  private def keywordIndexOf(element: Tel.Element): Optional[Int] = element match
+    case Tel.Element.Node(idx, _, _)  => idx
+    case Tel.Element.Value(idx, _, _) => idx
 
   // Flat-keyword-index lookup for the `layer` keyword inside the
   // given struct, walking parent.members in declaration order and
