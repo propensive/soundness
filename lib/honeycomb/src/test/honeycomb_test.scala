@@ -928,6 +928,82 @@ object Tests extends Suite(m"Honeycombd Tests"):
           Div(H1("title")) +^ (P("body") + P("more"))
         . assert(_ == h"<div><h1>title</h1><p>body</p><p>more</p></div>")
 
+      suite(m"Permissive parsing"):
+        given Html.Recovery = Html.Recovery.Permissive
+
+        given lenient: Tactic[ParseError]:
+          given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
+
+          def diagnostics: Diagnostics = errorDiagnostics.stackTraces
+
+          def record(error: Diagnostics ?=> ParseError): Unit = ()
+
+          def abort(error: Diagnostics ?=> ParseError): Nothing =
+            throw error(using diagnostics)
+
+          def certify(): Unit = ()
+
+        test(m"unknown attribute is accepted"):
+          t"""<div bogus="x"></div>""".read[Html of "div"]
+        . assert:
+            case Element("div", _, _, _) => true
+            case _                       => false
+
+        test(m"unknown attribute on void tag is accepted"):
+          t"""<img mystery="y">""".read[Html of "img"]
+        . assert:
+            case Element("img", _, _, _) => true
+            case _                       => false
+
+        test(m"duplicate attribute keeps first value"):
+          t"""<img alt="first" alt="second">""".read[Html of "img"]
+        . assert(_ == Img(alt = "first"))
+
+        test(m"valid attribute used on wrong tag is accepted"):
+          t"""<div alt="caption"></div>""".read[Html of "div"]
+        . assert:
+            case Element("div", _, _, _) => true
+            case _                       => false
+
+        test(m"forbidden char in unquoted value is absorbed (per WHATWG)"):
+          t"""<img alt=a"b>""".read[Html of "img"]
+        . assert(_ == Img(alt = """a"b"""))
+
+        test(m"CDATA outside foreign content becomes a comment"):
+          t"""<div><![CDATA[xyz]]></div>""".read[Html of "div"]
+        . assert(_ == Div(Comment("[CDATA[xyz]]")))
+
+        test(m"permissive mode still aborts on unrecoverable structural errors"):
+          try t"""<ul><li>First item""".read[Html of Flow]
+          catch case exception: Exception => exception
+        . assert:
+            case ParseError(_, _, Html.Issue.Incomplete("ul")) => true
+            case _                                             => false
+
+        test(m"warnings are emitted into the Tactic"):
+          val errors = scala.collection.mutable.ListBuffer[ParseError]()
+
+          locally:
+            given Tactic[ParseError]:
+              given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
+
+              def diagnostics: Diagnostics = errorDiagnostics.stackTraces
+
+              def record(error: Diagnostics ?=> ParseError): Unit =
+                errors += error(using diagnostics)
+
+              def abort(error: Diagnostics ?=> ParseError): Nothing =
+                throw error(using diagnostics)
+
+              def certify(): Unit = ()
+
+            t"""<img alt="a" alt="b">""".read[Html of "img"]
+
+          errors.toList.map(_.issue)
+        . assert:
+            case List(Html.Issue.DuplicateAttribute(name)) => name == t"alt"
+            case _                                         => false
+
     Html4Tests()
 
 object Html4Tests extends Suite(m"HTML4 parsing tests"):

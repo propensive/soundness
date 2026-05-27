@@ -131,22 +131,31 @@ object Html extends Tag.Container
       Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
 
 
+  private inline def permissive(using recovery: Html.Recovery): Boolean =
+    recovery eq Html.Recovery.Permissive
+
   given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
-  =>  Tactic[ParseError]
+  =>  ( Tactic[ParseError], Html.Recovery )
   =>  (Html of content) is Aggregable by Text =
 
     input =>
       val root = Tag.root(content.reify.map(_.tt).to(Set))
-      HtmlParser.fromIterator(input.iterator).parseHtml(root).of[content]
+      HtmlParser.fromIterator(input.iterator, permissive).parseHtml(root).of[content]
 
-  given aggregable2: (dom: Dom) => Tactic[ParseError] => Html is Aggregable by Text =
+  given aggregable2: (dom: Dom)
+  =>  ( Tactic[ParseError], Html.Recovery )
+  =>  Html is Aggregable by Text =
     input =>
-      HtmlParser.fromIterator(input.iterator).parseHtml(dom.generic, doctypes = false)
+      HtmlParser.fromIterator(input.iterator, permissive)
+      . parseHtml(dom.generic, doctypes = false)
 
-  given loadable: (dom: Dom) => Tactic[ParseError] => Html is Loadable by Text = stream =>
+  given loadable: (dom: Dom)
+  =>  ( Tactic[ParseError], Html.Recovery )
+  =>  Html is Loadable by Text = stream =>
     val root = Tag.root(Set(t"html"))
 
-    HtmlParser.fromIterator(stream.iterator).parseHtml(root, doctypes = true) match
+    HtmlParser.fromIterator(stream.iterator, permissive)
+    . parseHtml(root, doctypes = true) match
       case Fragment(Doctype(doctype), content) => Document(content, dom)
       case html@Element("html", _, _, _)       => Document(html, dom)
 
@@ -401,6 +410,12 @@ object Html extends Tag.Container
   enum Mode:
     case Raw, Rcdata, Whitespace, Normal
 
+  object Recovery:
+    given default: Recovery = Strict
+
+  enum Recovery:
+    case Strict, Permissive
+
   enum Hole:
     case Text, Tagbody, Comment
     case Element(tag: Text)
@@ -434,12 +449,16 @@ object Html extends Tag.Container
     // scanning the currently-buffered chars from offset 0 to the error
     // position — an O(buffer) cost paid only on the failure path.
 
-    def fromText(text: Text)(using Dom): HtmlParser = new HtmlParser(Cursor[Text](text))
+    def fromText(text: Text, permissive: Boolean = false)(using Dom): HtmlParser =
+      new HtmlParser(Cursor[Text](text), permissive)
 
-    def fromIterator(input: Iterator[Text])(using Dom): HtmlParser =
-      new HtmlParser(Cursor[Text](input))
+    def fromIterator(input: Iterator[Text], permissive: Boolean = false)(using Dom): HtmlParser =
+      new HtmlParser(Cursor[Text](input), permissive)
 
-  private[honeycomb] final class HtmlParser(cursor: Cursor[Text])(using dom: Dom):
+  private[honeycomb] final class HtmlParser
+    ( cursor:        Cursor[Text],
+      val permissive: Boolean      = false )
+    ( using dom: Dom ):
     private var heldToken: Cursor.Held | Null = null
 
     type Region = Cursor.Mark
@@ -739,24 +758,50 @@ object Html extends Tag.Container
         case '\u0000'                                    => fail(BadInsertion, mark)
         case char                                        => fail(Unexpected(char), mark)
 
+      // Permissive recovery for `key`: drain the remaining attribute-name
+      // characters (letters, digits, hyphens) so the cursor lands on the
+      // terminator, then return a synthetic Attribute that targets every
+      // tag — keeping the InvalidAttributeUse check happy.
+      @tailrec
+      def keyTail(mark: Mark): Attribute =
+        lay(Attribute(slice(mark, begin()), Set(), true)):
+          case char if asciiLetter(char) || asciiDigit(char) || char == '-' =>
+            advance() yet keyTail(mark)
+          case _ =>
+            Attribute(slice(mark, begin()), Set(), true)
+
       @tailrec
       def key(mark: Mark, node: Int): Attribute =
         lay(fail(ExpectedMore, mark)):
           case char if asciiLetter(char) || char == '-' =>
             val step = dom.attributes.step(node, asciiLower(char))
-            if step < 0 then fail(UnknownAttributeStart(slice(mark, begin())), mark)
-            else next() yet key(mark, step)
+            if step < 0 then
+              if permissive then
+                warn(UnknownAttributeStart(slice(mark, begin())))
+                keyTail(mark)
+              else
+                fail(UnknownAttributeStart(slice(mark, begin())), mark)
+            else
+              next() yet key(mark, step)
 
           case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>
             val attr = dom.attributes.value(node)
             if attr != null then attr.nn else
               val end = begin()
               val name = slice(mark, end)
-              reset(mark)
-              fail(UnknownAttribute(name), mark, end)
+              if permissive then
+                warn(UnknownAttribute(name))
+                Attribute(name, Set(), true)
+              else
+                reset(mark)
+                fail(UnknownAttribute(name), mark, end)
 
           case char =>
-            fail(Unexpected(char), mark)
+            if permissive then
+              warn(Unexpected(char))
+              keyTail(mark)
+            else
+              fail(Unexpected(char), mark)
 
       @tailrec
       def foreignKey(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
@@ -796,7 +841,10 @@ object Html extends Tag.Container
       @tailrec
       def unquoted(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
         case '>' | ' ' | '\f' | '\n' | '\r' | '\t' => slice(mark, begin())
-        case char@('"' | '\'' | '<' | '=' | '`')   => fail(ForbiddenUnquoted(char), mark)
+        case char@('"' | '\'' | '<' | '=' | '`')   =>
+          if permissive then warn(ForbiddenUnquoted(char)) yet next() yet unquoted(mark)
+          else fail(ForbiddenUnquoted(char), mark)
+
         case '\u0000'                              => fail(BadInsertion, mark)
         case char                                  => next() yet unquoted(mark)
 
@@ -854,7 +902,9 @@ object Html extends Tag.Container
             case _ =>
               val key2 = if foreign then foreignKey(begin()) else
                 key(begin(), 0).tap: key =>
-                  if !key.targets(tag) then fail(InvalidAttributeUse(key.label, tag))
+                  if !key.targets(tag) then
+                    if permissive then warn(InvalidAttributeUse(key.label, tag))
+                    else fail(InvalidAttributeUse(key.label, tag))
 
                 . label
 
@@ -864,12 +914,21 @@ object Html extends Tag.Container
               // Bloom-style fast-skip; only fall back to a linear scan when
               // the new hashcode's bits are entirely within the accumulated
               // envelope (i.e. it might match a prior key).
+              var isDuplicate = false
+
               if (hashOr | h) == hashOr then
                 var dup = 0
 
                 while dup < 2*n do
-                  if attrInterleaved(dup) == key2Str then fail(DuplicateAttribute(key2))
-                  dup += 2
+                  if attrInterleaved(dup) == key2Str then
+                    if permissive then
+                      warn(DuplicateAttribute(key2))
+                      isDuplicate = true
+                      dup = 2*n
+                    else
+                      fail(DuplicateAttribute(key2))
+                  else
+                    dup += 2
 
               hashOr |= h
 
@@ -885,10 +944,11 @@ object Html extends Tag.Container
                   case _ =>
                     unquoted(begin()) // FIXME: Only alphanumeric characters
 
-              ensureCapacity()
-              attrInterleaved(2*n) = key2Str
-              attrInterleaved(2*n + 1) = assignment.lay(null: String | Null)(_.s)
-              n += 1
+              if !isDuplicate then
+                ensureCapacity()
+                attrInterleaved(2*n) = key2Str
+                attrInterleaved(2*n + 1) = assignment.lay(null: String | Null)(_.s)
+                n += 1
 
         if n == 0 then Attributes.empty
         else
@@ -1226,9 +1286,12 @@ object Html extends Tag.Container
 
                 case Token.Cdata =>
                   current =
-                    if parent.foreign then TextNode(content) else
-                      fail(InvalidCdata, mark)
+                    if parent.foreign then TextNode(content)
+                    else if permissive then
+                      warn(InvalidCdata)
                       Comment(t"[CDATA[${content}]]")
+                    else
+                      fail(InvalidCdata, mark)
 
                 case Token.Empty =>
                   if admit(content) then empty() else infer:
@@ -1479,10 +1542,10 @@ object Html extends Tag.Container
       callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
       fastforward: Int                               = 0,
       doctypes:    Boolean                           = false )
-    ( using dom: Dom )
+    ( using dom: Dom, recovery: Html.Recovery )
   :   Html raises ParseError =
 
-    val parser = HtmlParser.fromIterator(input)
+    val parser = HtmlParser.fromIterator(input, permissive)
     parser.callback = callback
     parser.parseHtml(root, doctypes)
 
