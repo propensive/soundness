@@ -205,6 +205,80 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert: scalars =>
           scalars == Set(t"Identifier", t"TypeName", t"Sigil", t"String")
 
+    suite(m"E107 schema-aware recovery (§19.5)"):
+      // A schema where a root-level `parent` field references a
+      // `Parent` record, and the `Parent` record contains a field
+      // `child`. The keyword `child` is admissible inside Parent but
+      // NOT at the document root, so an odd-indented `child` line
+      // following a `parent` line must be recovered to the deeper
+      // candidate.
+      val recoverSchema = Tels(
+        name     = t"recover",
+        document = Tels.Struct(
+          members = IArray(
+            Tels.Field
+             ( Tels.Polarity.Implicit, Tels.Polarity.Loose,
+               t"parent",
+               Tels.Reference(t"Parent"),
+               Unset )),
+          validators = IArray.empty),
+        layers   = IArray.empty,
+        sigil    = Unset,
+        records  = IArray(Tels.RecordDefinition(
+          t"Parent",
+          IArray(Tels.Field
+                 ( Tels.Polarity.Loose, Tels.Polarity.Loose,
+                   t"child", Tels.Scalar(IArray(t"string")), Unset )),
+          IArray.empty)),
+        scalars  = IArray.empty,
+        selects  = IArray.empty)
+
+      test(m"picks deeper when only deeper is valid"):
+        // `child` at one space of indent (=odd) is invalid as a root
+        // sibling but valid as a child of `parent`; the parser
+        // recovers to the deeper interpretation, and the printer
+        // re-emits at the canonical two-space indent.
+        val src = summon[CharEncoder].encoded(t"parent\n child Alice\n")
+        val tel = Tel.parse(src, recoverSchema)
+        Tel.show(tel.document.vouch)
+      . assert(_ == t"parent\n  child Alice\n")
+
+      test(m"prefers shallower on tie"):
+        // A `thing` keyword admissible at both depths via a
+        // self-referential record; shallower must win.
+        val tieSchema = Tels(
+          name     = t"tie",
+          document = Tels.Struct(
+            members = IArray(Tels.Field
+                            ( Tels.Polarity.Loose, Tels.Polarity.Loose,
+                              t"thing", Tels.Reference(t"Thing"), Unset )),
+            validators = IArray.empty),
+          layers   = IArray.empty,
+          sigil    = Unset,
+          records  = IArray(Tels.RecordDefinition(
+            t"Thing",
+            IArray(Tels.Field
+                   ( Tels.Polarity.Loose, Tels.Polarity.Loose,
+                     t"thing", Tels.Reference(t"Thing"), Unset )),
+            IArray.empty)),
+          scalars  = IArray.empty,
+          selects  = IArray.empty)
+
+        // Open one level (`thing`), then an odd-indented `thing`.
+        // Both depths admit `thing`; shallower wins per the
+        // tie-breaker.
+        val src = summon[CharEncoder].encoded(t"thing\n thing\n")
+        val tel = Tel.parse(src, tieSchema)
+        // The output's child compound is the shallower interpretation
+        // (sibling at root) — its keyword is "thing".
+        tel.childCompounds.length
+      . assert(_ == 2)
+
+      test(m"without schema, original shallower-wins still raises E107"):
+        // The schema-independent parse path still aborts on odd indent.
+        capture[TelError](t"parent\n child Alice\n".read[Tel]).reason
+      . assert(_ == TelError.Reason.OddIndentation)
+
     suite(m"Type assignment"):
       // A small hand-built schema for a `person` document with required
       // name (Scalar String) and optional age (Scalar Identifier).
