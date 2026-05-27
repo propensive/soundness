@@ -210,64 +210,91 @@ object Xml extends Tag.Container
       xml =>
         provide[Foci[Xml.Focus]]:
           provide[Tactic[XmlError]]:
-            // A non-Element root (including the `Absent` sentinel passed
-            // by an outer conjunction for a missing nested case-class
-            // field) raises an error at the *current* focus and then
-            // continues with an empty children map. `build` then sees
-            // every field as missing and accrues per-field errors at
-            // `/parent/child` paths.
-            val element: Optional[Element] = xml match
-              case e: Element           => e
-              case Fragment(e: Element) => e
-              case _                    => raise(XmlError()) yet Unset
+            xml match
+              case e: Element           => buildWith(e)
+              case Fragment(e: Element) => buildWith(e)
+              case _                    =>
+                // Wrong-shape input (including the `Absent` sentinel an
+                // outer conjunction passes in for a missing nested case-
+                // class field). If the user supplied `Default[derivation]`
+                // we register one error at the current focus and continue
+                // with the sentinel — a missing nested case class lands
+                // as a single error rather than expanding per sub-field.
+                // Without a `Default`, we fall back to running `build`
+                // against an empty children map so each sub-field accrues
+                // its own missing-field error.
+                summonFrom:
+                  case derivationDefault: Default[`derivation`] =>
+                    raise(XmlError()) yet derivationDefault()
+                  case _                                        =>
+                    raise(XmlError())
+                    buildWith(Element(t"", Attributes.empty, IArray.empty))
 
-            val children: scm.HashMap[String, Element] = scm.HashMap.empty
-            element.let: el =>
-              var i = 0
-              while i < el.children.length do
-                el.children(i) match
-                  case child: Element =>
-                    val childLabel = child.label.s
-                    if !children.contains(childLabel) then
-                      children.update(childLabel, child)
-                  case _ => ()
-                i += 1
+    private inline def buildWith[derivation <: Product: ProductReflection]
+      ( element: Element )
+      ( using Foci[Xml.Focus], Tactic[XmlError] )
+    :   derivation =
 
-            build: [field] =>
-              context =>
-                val fieldLabel: Text = wisteria.label[Text]
-                focus({
-                  // Each outer `focus` runs *after* the inner one, so
-                  // we extend `prior` at the root side (`/outer/inner`),
-                  // not the leaf side that `XPath#element` would use.
-                  val base = prior.let(_.path).or(XPath())
-                  Xml.Focus(base.prepend(fieldLabel, 1))
-                }):
-                  children.get(fieldLabel.s) match
-                    case Some(child) => context.decoded(child)
-                    // Missing field: hand the `Absent` sentinel to the
-                    // field's decoder. Primitives and nested conjunctions
-                    // each detect it and `raise + continue` so the
-                    // surrounding `build` keeps iterating.
-                    case None        => default.or(context.decoded(Absent))
+      val children: scm.HashMap[String, Element] = scm.HashMap.empty
+      var i = 0
+      while i < element.children.length do
+        element.children(i) match
+          case child: Element =>
+            val childLabel = child.label.s
+            if !children.contains(childLabel) then
+              children.update(childLabel, child)
+          case _ => ()
+        i += 1
 
-    // Sealed-trait disjunction stays in single-error mode: a missing or
-    // unrecognised discriminant has no obvious sentinel variant to
-    // continue with, so it `abort`s. Same-level multi-error accrual
-    // applies inside the chosen variant via its product decoder.
+      build: [field] =>
+        context =>
+          val fieldLabel: Text = wisteria.label[Text]
+          focus({
+            // Each outer `focus` runs *after* the inner one, so we
+            // extend `prior` at the root side (`/outer/inner`), not the
+            // leaf side that `XPath#element` would use.
+            val base = prior.let(_.path).or(XPath())
+            Xml.Focus(base.prepend(fieldLabel, 1))
+          }):
+            children.get(fieldLabel.s) match
+              case Some(child) => context.decoded(child)
+              // Missing field: fall back to the case-class declared
+              // default (Wisteria's `default`); if absent, hand the
+              // `Absent` sentinel to the field's decoder. Primitives
+              // detect it and `raise + continue`; nested conjunctions
+              // detect it and may further short-circuit via a
+              // user-supplied `Default[Nested]`.
+              case None        => default.or(context.decoded(Absent))
+
+    // Sealed-trait disjunction picks a variant by element label. We screen
+    // the discriminator against `variantLabels` *before* `delegate`-ing so
+    // an unrecognised label doesn't punch through as `VariantError` — it
+    // gets the same `Default[derivation]`-or-abort treatment as a missing
+    // discriminator. When the user supplies `Default[derivation]` we
+    // register one error at the current focus and continue with the
+    // sentinel; without one we abort.
     inline def disjunction[derivation: SumReflection]
     :   derivation is Decodable in Xml =
 
       xml =>
-        provide[Tactic[XmlError]]:
-          provide[Tactic[VariantError]]:
-            val discriminable = infer[derivation is Discriminable in Xml]
+        provide[Foci[Xml.Focus]]:
+          provide[Tactic[XmlError]]:
+            provide[Tactic[VariantError]]:
+              val discriminable = infer[derivation is Discriminable in Xml]
+              val labels: List[Text]    = variantLabels[derivation]
+              val resolved: Optional[Text] =
+                discriminable.discriminate(xml).let: discriminant =>
+                  if labels.contains(discriminant) then discriminant else Unset
 
-            val discriminant: Text = discriminable.discriminate(xml).or:
-              focus(prior.or(Xml.Focus(XPath())))(abort(XmlError()))
-
-            delegate(discriminant): [variant <: derivation] =>
-              context => context.decoded(xml)
+              resolved.let: discriminant =>
+                delegate(discriminant): [variant <: derivation] =>
+                  context => context.decoded(xml)
+              . or:
+                  summonFrom:
+                    case derivationDefault: Default[`derivation`] =>
+                      raise(XmlError()) yet derivationDefault()
+                    case _ =>
+                      abort(XmlError())
 
   case class attribute() extends StaticAnnotation
 
