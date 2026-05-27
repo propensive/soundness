@@ -30,6 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package stratiform
 
-export stratiform.{Bintel, BintelError, Varint, VarintError, bintel, valueHash}
+import anticipation.*
+import fulminate.*
+
+object BintelError:
+
+  object Reason:
+    given communicable: Reason is Communicable =
+      case BadKeywordIndex     => m"a keyword index exceeds the parent's flat-keyword count"
+      case ValueTruncated      => m"a Scalar value's byte length extends beyond end of input"
+      case BadUtf8             => m"a Scalar value's bytes are not valid UTF-8"
+      case TrailingBytes       => m"the document root completed with input bytes remaining"
+      case UnexpectedEoi       => m"the decoder requested bytes beyond end of input"
+      case VarintError         => m"a variable-length integer in the stream is invalid"
+      case ReferenceUnresolved => m"a Reference type in the schema does not resolve"
+
+  enum Reason(val number: Int) extends Clarification:
+    case BadKeywordIndex     extends Reason(5)
+    case ValueTruncated      extends Reason(6)
+    case BadUtf8             extends Reason(7)
+    case TrailingBytes       extends Reason(8)
+    case UnexpectedEoi       extends Reason(9)
+    case VarintError         extends Reason(2)
+    case ReferenceUnresolved extends Reason(10)
+
+case class BintelError(reason: BintelError.Reason)(using Diagnostics)
+extends Error(609, reason.number)(m"the BinTEL stream is invalid because $reason")

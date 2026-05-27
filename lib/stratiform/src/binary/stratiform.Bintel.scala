@@ -38,6 +38,7 @@ import scala.language.unsafeNulls
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import gastronomy.*
 import prepositional.*
 import vacuous.*
@@ -90,6 +91,118 @@ object Bintel:
     val out = new ByteArrayOutputStream
     encodeRoot(out, element)
     out.toByteArray.asInstanceOf[IArray[Byte]]
+
+  // §7.8 decoder. Read BinTEL body bytes (no magic, no signature —
+  // exactly what `encode` emits) under `schema`, recovering the
+  // semantic-model `TelElement` tree. The schema must be the same
+  // composed schema used at encode time. Any framing or schema
+  // mismatch raises `BintelError`.
+  def decode(data: Data, schema: Tels): TelElement raises BintelError =
+    val cursor = Cursor(data, 0)
+    val root = decodeStructBody(cursor, schema.document, schema, keywordIndex = Unset)
+    if cursor.offset != data.length then abort(BintelError(BintelError.Reason.TrailingBytes))
+    root
+
+  private def decodeStructBody
+       (cursor: Cursor, struct: Tels.Struct, schema: Tels,
+        keywordIndex: Optional[Int])
+  :     TelElement raises BintelError =
+    val flat = flattenKeywords(struct, schema)
+    val childCount = readVarint(cursor)
+    val children = new Array[TelElement](childCount.toInt)
+    var i = 0
+
+    while i < childCount.toInt do
+      children(i) = decodeElement(cursor, flat, schema)
+      i += 1
+
+    TelElement.Node(keywordIndex, struct, children.asInstanceOf[IArray[TelElement]])
+
+  private def decodeElement
+       (cursor: Cursor, flat: IArray[(Text, Tels.Type)], schema: Tels)
+  :     TelElement raises BintelError =
+    val kidx = readVarint(cursor)
+    if kidx < 0 || kidx >= flat.length then abort(BintelError(BintelError.Reason.BadKeywordIndex))
+    val (_, memberType) = flat(kidx.toInt)
+    val resolved = resolveType(memberType, schema)
+
+    resolved match
+      case s: Tels.Struct =>
+        decodeStructBody(cursor, s, schema, keywordIndex = kidx.toInt)
+
+      case s: Tels.Scalar =>
+        val len = readVarint(cursor)
+        if cursor.offset + len > cursor.data.length
+        then abort(BintelError(BintelError.Reason.ValueTruncated))
+        val bytes = new Array[Byte](len.toInt)
+        var j = 0
+
+        while j < len.toInt do
+          bytes(j) = cursor.data(cursor.offset + j)
+          j += 1
+
+        cursor.offset += len.toInt
+        val text =
+          try Text(new String(bytes, "UTF-8"))
+          catch case _: Exception => abort(BintelError(BintelError.Reason.BadUtf8))
+        TelElement.Value(kidx.toInt, s, text)
+
+      case Tels.Flag =>
+        TelElement.Node(kidx.toInt, Tels.Flag, IArray.empty)
+
+      case _: Tels.Reference =>
+        abort(BintelError(BintelError.Reason.ReferenceUnresolved))
+
+  private def readVarint(cursor: Cursor): Long raises BintelError =
+    import errorDiagnostics.empty
+    if cursor.offset >= cursor.data.length
+    then abort(BintelError(BintelError.Reason.UnexpectedEoi))
+
+    whereas:
+      case _: VarintError => BintelError(BintelError.Reason.VarintError)
+    . mitigate:
+        val decoded = Varint.decode(cursor.data, cursor.offset)
+        cursor.offset = decoded.next
+        decoded.value
+
+  // Flatten a Struct's members into a parallel keyword/type sequence
+  // per §5. Fields contribute one entry; SelectRefs contribute one
+  // entry per variant in the referenced SelectDefinition. Excludes
+  // contribute none.
+  private def flattenKeywords(struct: Tels.Struct, schema: Tels)
+  :     IArray[(Text, Tels.Type)] =
+    val buf = scala.collection.mutable.ArrayBuffer.empty[(Text, Tels.Type)]
+    var i = 0
+
+    while i < struct.members.length do
+      struct.members(i) match
+        case f: Tels.Field =>
+          buf += ((f.keyword, f.fieldType))
+
+        case s: Tels.SelectRef =>
+          schema.selects.find(_.name == s.reference).foreach: selectDef =>
+            var v = 0
+            while v < selectDef.variants.length do
+              val variant = selectDef.variants(v)
+              buf += ((variant.keyword, variant.variantType))
+              v += 1
+
+        case _: Tels.Exclude =>
+          ()
+
+      i += 1
+
+    IArray.from(buf)
+
+  private def resolveType(t: Tels.Type, schema: Tels): Tels.Type = t match
+    case Tels.Reference(name) =>
+      schema.records.find(_.name == name) match
+        case Some(rec) => Tels.Struct(rec.members, rec.validators)
+        case None      => t
+
+    case other => other
+
+  private final class Cursor(val data: Data, var offset: Int)
 
   private def encodeRoot(out: ByteArrayOutputStream, element: TelElement): Unit = element match
     case TelElement.Node(_, _, children) =>
