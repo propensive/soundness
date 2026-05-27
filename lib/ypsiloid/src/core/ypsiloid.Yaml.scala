@@ -1165,6 +1165,24 @@ object Yaml extends Yaml2, Dynamic:
         case Yaml.Tracking.Off =>
           Yaml(YamlParser.parse(text))
 
+  // `source.read[Foo over Yaml]` shorthand for
+  // `source.read[Yaml].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
+  // for `value over Json`. The `Transport` type-tag is added by an
+  // `asInstanceOf` cast — `value over Yaml` is just `value { type
+  // Transport = Yaml }` so the cast is a no-op at runtime.
+  given aggregableOver: [value: Decodable in Yaml]
+  =>  (Tactic[ParseError], Tactic[YamlError], Yaml.Tracking)
+  =>  (value over Yaml) is Aggregable by Text =
+
+    summon[Text is Aggregable by Text].map: text =>
+      val yaml = summon[Yaml.Tracking] match
+        case Yaml.Tracking.On =>
+          val (ast, ints) = YamlParser.parseTracked(text)
+          new Yaml(ast, Yaml.PositionIndex(ints))
+        case Yaml.Tracking.Off =>
+          Yaml(YamlParser.parse(text))
+      yaml.as[value].asInstanceOf[value over Yaml]
+
   def primitive(ast: Yaml.Ast): YamlPrimitive =
     if ast.asInstanceOf[AnyRef] == null then YamlPrimitive.Null
     else ast.asMatchable match
