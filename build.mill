@@ -182,7 +182,7 @@ object soundness extends ScalaModule:
     gastronomy.core, chiaroscuro.core, jacinta.core, monotonous.core,
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
-    stratiform.core, stratiform.schema, vexillology.core)
+    stratiform.core, stratiform.schema, stratiform.time, vexillology.core)
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
     charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
@@ -200,7 +200,7 @@ object soundness extends ScalaModule:
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
     telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, /*perihelion.core,*/
     legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http, jacinta.schema,
-    obligatory.core, synesthesia.core)
+    stratiform.http, obligatory.core, synesthesia.core)
 
   object all extends Bundle(base, cli, data, sci, test, tool, web)
 
@@ -1173,7 +1173,13 @@ object stratiform extends Library:
   object schema extends Component(core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, schema, eucalyptus.core)
+  object time extends Component(core, aviation.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object http extends Component(core, telekinesis.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core, schema, time, http, eucalyptus.core)
 
 object superlunary extends Library:
   object core extends Component(jacinta.core, gastronomy.core, anthology.scala, austronesian.core):

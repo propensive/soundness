@@ -14,7 +14,7 @@ Implementation-discovered ambiguities, inconsistencies, and inadequacies in the 
 ### `tel-schema` self-validation circularity
 **Issue:** §20.5 specifies `tel-schema` as itself a TEL document conforming to `tel-schema`. A parser bootstrapping its first run has no `tel-schema` to validate the `tel-schema.tel` document against.
 
-**Stratiform decision:** A hand-encoded `TelSchema` Scala value will be the axiom in phase 3. A self-consistency test parses `tel-schema.tel` with the axiom and asserts structural equality — a check that the axiom matches the canonical document.
+**Stratiform decision:** A hand-encoded `Tels` Scala value will be the axiom in phase 3. A self-consistency test parses `tel-schema.tel` with the axiom and asserts structural equality — a check that the axiom matches the canonical document.
 
 **Spec resolution:** acceptable as a bootstrap mechanism; flagged here only as a concern for implementers.
 
@@ -71,7 +71,7 @@ that's still TODO.
 
 **Phase 3 — schema component:**
 - `stratiform.schema` sub-component
-- `TelSchema` data model per §20
+- `Tels` data model per §20
 - `TelElement` semantic model per §18.2
 - E201–E218 and E301–E311 in `TelError.Reason`
 - Hand-encoded `tel-schema` axiom per §20.5, shape-aligned with the
@@ -85,7 +85,7 @@ that's still TODO.
 - Validator infrastructure per §21 (Registry, Diagnostic, the four
   built-in scalar validators) plus integration with type assignment
   (E310 on Invalid responses)
-- `TelSchemaDecoder.validate` and `asValidated[T]` extension methods
+- `TelsDecoder.validate` and `asValidated[T]` extension methods
   routing a schema-validated decode through type assignment first
 - Canonical `tel-schema.tel` saved to the corpus, parsed, **and**
   asserted to type-assign cleanly against the axiom (§20.5
@@ -105,8 +105,8 @@ that's still TODO.
   schema document)
 
 **Recently landed:**
-- §20.5 full structural-equality self-consistency: `TelSchemaReconstructor`
-  walks a parsed canonical document and rebuilds a `TelSchema`; the
+- §20.5 full structural-equality self-consistency: `TelsReconstructor`
+  walks a parsed canonical document and rebuilds a `Tels`; the
   reconstruction equals the hand-encoded axiom (modulo the built-in
   scalars `Identifier`, `TypeName`, `Sigil`, `String`, which the
   reconstructor injects to match the axiom's explicit declarations).

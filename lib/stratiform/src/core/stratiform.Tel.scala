@@ -37,7 +37,10 @@ import scala.language.dynamics
 import anticipation.*
 import contingency.*
 import distillate.*
+import gossamer.*
+import hieroglyph.*
 import prepositional.*
+import turbulence.*
 import vacuous.*
 
 // Presentation model from §17 of the TEL specification. The Scala AST is
@@ -51,7 +54,10 @@ import vacuous.*
 // without case analysis.
 
 class Tel private[stratiform](private[stratiform] val subtree: Tel.Subtree)
-extends scala.Dynamic:
+extends scala.Dynamic, Documentary:
+  type Self = Tel
+  type Metadata = Tel.Metadata
+
   inline def as[value: Decodable in Tel]: value raises TelError = value.decoded(this)
 
   // Dynamic field access: `tel.firstName` becomes a lookup for the kebab-
@@ -75,7 +81,7 @@ extends scala.Dynamic:
   // compound's keyword text.
   def keyword: Text = subtree match
     case c: Tel.Compound  => c.keyword
-    case _: Tel.Document  => Text("")
+    case _: Tel.Document  => t""
 
   // Flat list of inline atom texts attached to this node. For the document
   // root this is always empty since the root has no atoms.
@@ -87,7 +93,7 @@ extends scala.Dynamic:
   // Decodable instances which interpret a compound's first atom as its
   // scalar value.
   def primaryAtom: Text =
-    if atomTexts.isEmpty then Text("") else atomTexts(0)
+    if atomTexts.isEmpty then t"" else atomTexts(0)
 
   // All child compounds, flattened across the node's blocks (presentation-
   // level comments and tabulations are dropped from this view).
@@ -140,6 +146,15 @@ object Tel extends Tel2:
   case class Pragma
     ( version: (Int, Int), schema: Optional[Text], sigil: Optional[Char] )
 
+  // Document-level prologue carried alongside a `Tel` value when it is
+  // loaded via `text.load[Tel]`. The `Document[Tel]` pair lets callers
+  // read the schema identifier, interpreter directive, and chosen line
+  // endings without inspecting the presentation AST directly.
+  case class Metadata
+       ( interpreterDirective: Optional[Text],
+         pragma:               Optional[Pragma],
+         lineEndings:          LineEndings )
+
   sealed trait Subtree:
     def children: IArray[Block]
 
@@ -174,16 +189,42 @@ object Tel extends Tel2:
 
   sealed trait Atom
 
-  // Parse a byte stream into a Tel value wrapping the document. Phase-1
-  // contract: untyped, presentation model only.
-  def parse(bytes: Data): Tel raises TelError = Tel(TelParser.parse(bytes))
+  // Parse a byte stream into a Tel value wrapping the document. Used
+  // internally by the Aggregable and Loadable typeclasses; user code
+  // should prefer `bytes.read[Tel]` or `text.load[Tel]`.
+  private[stratiform] def parse(bytes: Data): Tel raises TelError =
+    Tel(TelParser.parse(bytes))
 
-  // Convenience overload: parse a Text by UTF-8 encoding it first. The
-  // bytes-based overload remains the canonical entry point for parsing
-  // from arbitrary byte sources (files, streams, network buffers).
-  def parse(text: Text): Tel raises TelError =
-    val arr: Array[Byte] = text.s.getBytes("UTF-8").nn
-    parse(IArray.unsafeFromArray(arr))
+  // `bytes.read[Tel]` for any Stream[Data] source: concatenates the
+  // chunks and parses the result. The metadata (interpreter directive,
+  // pragma, line-endings) is *not* surfaced — use `.load[Tel]` to
+  // recover those alongside the value.
+  given aggregable: Tactic[TelError] => Tel is Aggregable by Data = source =>
+    import denominative.nil
+    var acc    = IArray.empty[Byte]
+    var stream = source
+    while !stream.nil do
+      acc = acc ++ stream.head
+      stream = stream.tail
+
+    parse(acc)
+
+  // `text.load[Tel]` for any Stream[Text] source: concatenates the
+  // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
+  // `Tel.Metadata` carrying the document's prologue.
+  given loadable: Tactic[TelError] => Tel is Loadable by Text = stream =>
+    import denominative.nil
+    val builder = new StringBuilder()
+    var s = stream
+    while !s.nil do
+      builder.append(s.head.s)
+      s = s.tail
+
+    val text = builder.toString
+    val bytes = text.getBytes("UTF-8").nn
+    val doc = TelParser.parse(IArray.unsafeFromArray(bytes))
+    val meta = Tel.Metadata(doc.interpreterDirective, doc.pragma, doc.lineEndings)
+    turbulence.Document(Tel(doc): Tel, meta)
 
   // Lower-level parse returning the raw Document — used by code that
   // needs the presentation AST directly (e.g. the round-trip printer).
@@ -191,7 +232,7 @@ object Tel extends Tel2:
 
   // Print the document presentation (presentation-preserving when given a
   // Tel produced by `parse`).
-  def show(tel: Tel): Text = tel.document.lay(Text(""))(TelPrinter.print)
+  def show(tel: Tel): Text = tel.document.lay(t"")(TelPrinter.print)
 
   def show(document: Document): Text = TelPrinter.print(document)
 

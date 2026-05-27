@@ -37,6 +37,7 @@ import scala.language.unsafeNulls
 import anticipation.*
 import contingency.*
 import fulminate.*
+import gossamer.*
 import vacuous.*
 
 import TelError.Reason
@@ -452,14 +453,14 @@ private final class TelParser(input: Data):
   // immediately after the marker, more than one space before heading
   // content, or a sigil character inside the heading text.
   private def extractHeading(content: String, start: Int, limit: Int): Text raises TelError =
-    if start >= limit then Text("")
+    if start >= limit then t""
     else if content.charAt(start) != ' ' then abort(TelError(Reason.BadTabulationHeading))
     else if start + 1 < limit && content.charAt(start + 1) == ' ' then
       // Two consecutive spaces immediately after the marker: either an
       // empty heading (introducer + single terminator space = exactly
       // two spaces between markers) or malformed (a real heading
       // starting after extra leading spaces, which is E120).
-      if limit - start <= 2 then Text("")
+      if limit - start <= 2 then t""
       else abort(TelError(Reason.BadTabulationHeading))
     else
       var i = start + 1

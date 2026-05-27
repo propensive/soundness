@@ -34,27 +34,28 @@ package stratiform
 
 import anticipation.*
 import contingency.*
+import gossamer.*
 import rudiments.*
 import vacuous.*
 
 import TelError.Reason
-import TelSchema.*
+import Tels.*
 
 // Inverse of the §20.5 schema-of-schemas: given a Tel.Document whose
 // surface matches the canonical tel-schema vocabulary (record / scalar /
 // select / document / layer at the top level, with the per-Definition
-// bodies described in §20.5), reconstruct a TelSchema value. The §20.5
+// bodies described in §20.5), reconstruct a Tels value. The §20.5
 // self-consistency test parses the canonical document with the axiom
 // then reconstructs and asserts structural equality with the axiom.
 
-object TelSchemaReconstructor:
+object TelsReconstructor:
 
-  // Deep structural equality for TelSchema values. The case classes
+  // Deep structural equality for Tels values. The case classes
   // ship with a default `equals` that compares IArray fields by Array
   // identity rather than by element-wise content; this method recurses
   // and compares IArrays via `sameElements`, giving the structural
   // equivalence expected by the §20.5 self-consistency test.
-  def equivalent(a: TelSchema, b: TelSchema): Boolean =
+  def equivalent(a: Tels, b: Tels): Boolean =
     a.name == b.name
       && a.sigil == b.sigil
       && structEq(a.document, b.document)
@@ -110,8 +111,8 @@ object TelSchemaReconstructor:
       && seqEq(a.scalars, b.scalars, scalarEq)
       && seqEq(a.selects, b.selects, selectEq)
 
-  def fromDocument(doc: Tel.Document): TelSchema raises TelError =
-    val compounds: IArray[Tel.Compound] = doc.children.flatMap(_.compounds)
+  def fromTel(tel: Tel): Tels raises TelError =
+    val compounds: IArray[Tel.Compound] = tel.subtree.children.flatMap(_.compounds)
 
     var name: Optional[Text] = Unset
     var sigil: Optional[Char] = Unset
@@ -144,12 +145,12 @@ object TelSchemaReconstructor:
     // surface syntax. The reconstructor injects them so the result
     // matches a hand-encoded axiom that includes them explicitly.
     val builtinScalars = IArray
-     ( ScalarDefinition(Text("Identifier"), IArray(Text("identifier"))),
-       ScalarDefinition(Text("TypeName"),   IArray(Text("type-name"))),
-       ScalarDefinition(Text("Sigil"),      IArray(Text("sigil"))),
-       ScalarDefinition(Text("String"),     IArray(Text("string"))) )
+     ( ScalarDefinition(t"Identifier", IArray(t"identifier")),
+       ScalarDefinition(t"TypeName",   IArray(t"type-name")),
+       ScalarDefinition(t"Sigil",      IArray(t"sigil")),
+       ScalarDefinition(t"String",     IArray(t"string")) )
 
-    TelSchema
+    Tels
      ( name     = name.or(abort(TelError(Reason.RequiredMemberAbsent))),
        document = documentStruct.or(abort(TelError(Reason.RequiredMemberAbsent))),
        layers   = IArray.from(layers),
@@ -175,7 +176,7 @@ object TelSchemaReconstructor:
   // types never appear inline in the canonical — they're indirect via
   // Definition references.
   private def parseType(name: Text): Type =
-    if name == Text("Flag") then Flag else Reference(name)
+    if name == t"Flag" then Flag else Reference(name)
 
   // `record Foo` body: a sequence of Member declarations and optional
   // `validate <name>` validators.
@@ -188,7 +189,7 @@ object TelSchemaReconstructor:
   private def parseScalar(c: Tel.Compound): ScalarDefinition raises TelError =
     val scName = firstAtomText(c).or(abort(TelError(Reason.RequiredMemberAbsent)))
     val validators = childCompounds(c).flatMap: cc =>
-      if cc.keyword == Text("validate") then atomTexts(cc) else IArray.empty[Text]
+      if cc.keyword == t"validate" then atomTexts(cc) else IArray.empty[Text]
 
     ScalarDefinition(scName, validators)
 
