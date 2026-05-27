@@ -39,21 +39,25 @@ object BintelError:
 
   object Reason:
     given communicable: Reason is Communicable =
+      case BadMagic            => m"the magic number is missing or does not match B2 C4 B5 BB"
+      case VarintError         => m"a variable-length integer in the stream is invalid"
+      case BadSignatureLength  => m"the schema signature length is not 30 + 2n for any n ≥ 1"
       case BadKeywordIndex     => m"a keyword index exceeds the parent's flat-keyword count"
       case ValueTruncated      => m"a Scalar value's byte length extends beyond end of input"
       case BadUtf8             => m"a Scalar value's bytes are not valid UTF-8"
       case TrailingBytes       => m"the document root completed with input bytes remaining"
       case UnexpectedEoi       => m"the decoder requested bytes beyond end of input"
-      case VarintError         => m"a variable-length integer in the stream is invalid"
       case ReferenceUnresolved => m"a Reference type in the schema does not resolve"
 
   enum Reason(val number: Int) extends Clarification:
+    case BadMagic            extends Reason(1)
+    case VarintError         extends Reason(2)
+    case BadSignatureLength  extends Reason(3)
     case BadKeywordIndex     extends Reason(5)
     case ValueTruncated      extends Reason(6)
     case BadUtf8             extends Reason(7)
     case TrailingBytes       extends Reason(8)
     case UnexpectedEoi       extends Reason(9)
-    case VarintError         extends Reason(2)
     case ReferenceUnresolved extends Reason(10)
 
 case class BintelError(reason: BintelError.Reason)(using Diagnostics)

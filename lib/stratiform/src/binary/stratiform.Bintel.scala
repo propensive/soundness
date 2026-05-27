@@ -75,6 +75,14 @@ extension (tel: Tel)
   def valueHash(schema: Tels): Digest in Sha2[256] raises TelError =
     tel.bintel(schema).digest[Sha2[256]]
 
+  // Encode this document as a complete §6 BinTEL byte sequence —
+  // magic + signature length + signature + body. The signature must
+  // satisfy `length ≥ 32` and `(length − 30) mod 2 == 0`; otherwise
+  // raises `BintelError(BadSignatureLength)`.
+  def bintelDocument(schema: Tels, signature: Data)
+  :     Data raises TelError raises BintelError =
+    Bintel.frame(tel.bintel(schema), signature)
+
 extension (element: TelElement)
   // Encode a pre-assigned semantic-model element to BinTEL body bytes.
   def bintel: Data = Bintel.encode(element)
@@ -84,6 +92,21 @@ extension (element: TelElement)
 
 object Bintel:
 
+  // §6 magic number: the 4 bytes that prefix every BinTEL document.
+  // When viewed as BASE-256 text these are the four Greek letters
+  // `β τ ε λ` — visually evocative of "binary TEL".
+  val magic: Data =
+    Array[Byte](0xb2.toByte, 0xc4.toByte, 0xb5.toByte, 0xbb.toByte)
+      .asInstanceOf[IArray[Byte]]
+
+  // The result of unframing a complete §6 file: the carried schema
+  // signature bytes and the document-root body bytes.
+  case class Framed(signature: Data, body: Data)
+
+  // A fully decoded BinTEL document: the carried schema signature
+  // bytes and the recovered semantic-model `TelElement` root.
+  case class Document(signature: Data, root: TelElement)
+
   // Encode a `TelElement` tree to its BinTEL body bytes. The element is
   // expected to be the document root (a Node with `keywordIndex = Unset`
   // and `elementType = Tels.Struct`), as produced by `Tel.Type.assign`.
@@ -91,6 +114,85 @@ object Bintel:
     val out = new ByteArrayOutputStream
     encodeRoot(out, element)
     out.toByteArray.asInstanceOf[IArray[Byte]]
+
+  // §6 framing. Wrap a body byte sequence with the magic number, the
+  // signature length (varint), and the signature bytes. The signature
+  // length MUST be `30 + 2n` for some `n ≥ 1` — i.e. `≥ 32` and
+  // congruent to 30 mod 2 — per §6 field 2.
+  def frame(body: Data, signature: Data): Data raises BintelError =
+    if signature.length < 32 || (signature.length - 30) % 2 != 0
+    then abort(BintelError(BintelError.Reason.BadSignatureLength))
+
+    val out = new ByteArrayOutputStream(magic.length + 10 + signature.length + body.length)
+    out.write(magic.asInstanceOf[Array[Byte]])
+    val sigLen = new ByteArrayOutputStream(10)
+    var n = signature.length.toLong
+
+    while n >= 0x80L do
+      sigLen.write(((n & 0x7fL) | 0x80L).toInt)
+      n >>>= 7
+
+    sigLen.write(n.toInt)
+    out.write(sigLen.toByteArray)
+    out.write(signature.asInstanceOf[Array[Byte]])
+    out.write(body.asInstanceOf[Array[Byte]])
+    out.toByteArray.asInstanceOf[IArray[Byte]]
+
+  // §6 unframing. Parse a complete BinTEL byte sequence into its
+  // signature bytes and body bytes. Validates the magic number (B01),
+  // the signature length pattern (B03), and leaves trailing-byte (B08)
+  // detection to the caller (typically `Bintel.decode` over the body).
+  def unframe(data: Data): Framed raises BintelError =
+    if data.length < magic.length
+    then abort(BintelError(BintelError.Reason.BadMagic))
+
+    var i = 0
+
+    while i < magic.length do
+      if data(i) != magic(i) then abort(BintelError(BintelError.Reason.BadMagic))
+      i += 1
+
+    val sigLenDecoded =
+      import errorDiagnostics.empty
+      whereas:
+        case _: VarintError => BintelError(BintelError.Reason.VarintError)
+      . mitigate(Varint.decode(data, magic.length))
+
+    val sigLength = sigLenDecoded.value.toInt
+    if sigLength < 32 || (sigLength - 30) % 2 != 0
+    then abort(BintelError(BintelError.Reason.BadSignatureLength))
+
+    val sigStart = sigLenDecoded.next
+    val sigEnd   = sigStart + sigLength
+
+    if sigEnd > data.length then abort(BintelError(BintelError.Reason.UnexpectedEoi))
+
+    val sigBytes = new Array[Byte](sigLength)
+    System.arraycopy(data.asInstanceOf[Array[Byte]], sigStart, sigBytes, 0, sigLength)
+    val bodyBytes = new Array[Byte](data.length - sigEnd)
+    System.arraycopy(data.asInstanceOf[Array[Byte]], sigEnd, bodyBytes, 0, bodyBytes.length)
+
+    Framed(sigBytes.asInstanceOf[IArray[Byte]], bodyBytes.asInstanceOf[IArray[Byte]])
+
+  // §6 + §7.8 — decode a complete BinTEL document (magic + signature
+  // + body) into a `Document` carrying the signature bytes and the
+  // semantic-model `TelElement` tree under `schema`. This layer does
+  // not verify the signature against the schema (§8.2 palimpsest
+  // decoding is a follow-up).
+  def decodeDocument(data: Data, schema: Tels): Document raises BintelError =
+    val framed = unframe(data)
+    Document(framed.signature, decode(framed.body, schema))
+
+  // §9 textual encoding. The text form is one BASE-256 character per
+  // byte of the underlying BinTEL document; round-trips losslessly
+  // via `Base256.decode`. The text begins with `βτελ` — the four
+  // BASE-256 characters for the magic bytes.
+  def text(data: Data): Text = Base256.encode(data)
+
+  // §9 textual decoding. Permissively maps each character's code-point
+  // mod 256 back to a byte. Use `Base256.decodeStrict` first if the
+  // input may have come from an untrusted source.
+  def fromText(input: Text): Data = Base256.decode(input)
 
   // §7.8 decoder. Read BinTEL body bytes (no magic, no signature —
   // exactly what `encode` emits) under `schema`, recovering the

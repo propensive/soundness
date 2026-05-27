@@ -1139,6 +1139,101 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[BintelError](Bintel.decode(bytes, nameSchema)).reason
       . assert(_ == BintelError.Reason.BadKeywordIndex)
 
+    suite(m"BinTEL §6 file framing"):
+      val sig32: Data = Array.fill[Byte](32)(0x55.toByte).asInstanceOf[IArray[Byte]]
+      val sig34: Data = Array.fill[Byte](34)(0xAA.toByte).asInstanceOf[IArray[Byte]]
+
+      test(m"magic number bytes are B2 C4 B5 BB"):
+        hex(Bintel.magic)
+      . assert(_ == "B2 C4 B5 BB")
+
+      test(m"frame prepends magic, signature-length varint, signature"):
+        val body: Data = Array[Byte](0x01, 0x02).asInstanceOf[IArray[Byte]]
+        val framed = Bintel.frame(body, sig32)
+        // magic (4) + sigLen varint (1: 0x20) + signature (32) + body (2) = 39
+        framed.length
+      . assert(_ == 39)
+
+      test(m"frame writes signature length immediately after magic"):
+        val body: Data = Array[Byte](0x01).asInstanceOf[IArray[Byte]]
+        val framed = Bintel.frame(body, sig32)
+        framed.slice(0, 5).toSeq
+      . assert(_ == Seq(0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte, 0x20.toByte))
+
+      test(m"frame rejects too-short signature"):
+        val tooShort: Data = Array.fill[Byte](30)(0).asInstanceOf[IArray[Byte]]
+        val body: Data     = IArray.empty[Byte]
+        capture[BintelError](Bintel.frame(body, tooShort)).reason
+      . assert(_ == BintelError.Reason.BadSignatureLength)
+
+      test(m"frame rejects odd-length signature beyond 30"):
+        val odd: Data = Array.fill[Byte](33)(0).asInstanceOf[IArray[Byte]]
+        val body: Data = IArray.empty[Byte]
+        capture[BintelError](Bintel.frame(body, odd)).reason
+      . assert(_ == BintelError.Reason.BadSignatureLength)
+
+      test(m"unframe recovers signature and body"):
+        val body: Data = Array[Byte](0x01, 0x02, 0x03).asInstanceOf[IArray[Byte]]
+        val framed = Bintel.frame(body, sig32)
+        val Bintel.Framed(sig, recovered) = Bintel.unframe(framed)
+        (sig.toSeq, recovered.toSeq)
+      . assert(_ == (sig32.toSeq, Seq[Byte](0x01, 0x02, 0x03)))
+
+      test(m"unframe rejects bad magic"):
+        val bytes: Data = Array.fill[Byte](40)(0).asInstanceOf[IArray[Byte]]
+        capture[BintelError](Bintel.unframe(bytes)).reason
+      . assert(_ == BintelError.Reason.BadMagic)
+
+      test(m"unframe rejects truncated input"):
+        val bytes: Data =
+          Array[Byte](0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte, 0x20.toByte)
+            .asInstanceOf[IArray[Byte]]
+        capture[BintelError](Bintel.unframe(bytes)).reason
+      . assert(_ == BintelError.Reason.UnexpectedEoi)
+
+      test(m"larger signatures of permitted lengths are accepted"):
+        val body: Data = Array[Byte](0x01).asInstanceOf[IArray[Byte]]
+        val framed = Bintel.frame(body, sig34)
+        Bintel.unframe(framed).signature.length
+      . assert(_ == 34)
+
+      test(m"frame ↔ unframe round-trip for non-trivial body"):
+        val original: Data = (0 to 99).map(_.toByte).toArray.asInstanceOf[IArray[Byte]]
+        val framed = Bintel.frame(original, sig32)
+        val recovered = Bintel.unframe(framed).body.toSeq
+        recovered == original.toSeq
+      . assert(_ == true)
+
+      test(m"tel.bintelDocument produces a file beginning with magic"):
+        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        bytes.slice(0, 4).toSeq
+      . assert(_ == Seq(0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte))
+
+      test(m"decodeDocument round-trips through frame + decode"):
+        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val doc = Bintel.decodeDocument(bytes, nameSchema)
+        doc.root match
+          case Tel.Element.Node(_, _, children) =>
+            children.toList.collect:
+              case Tel.Element.Value(_, _, t) => t
+          case _ => Nil
+      . assert(_ == List(t"Alice"))
+
+    suite(m"BinTEL §9 textual encoding"):
+      val sig32: Data = Array.fill[Byte](32)(0x55.toByte).asInstanceOf[IArray[Byte]]
+
+      test(m"text begins with βτελ (the four BASE-256 chars for the magic bytes)"):
+        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        Bintel.text(bytes).s.substring(0, 4)
+      . assert(_ == "βτελ")
+
+      test(m"text/fromText round-trip"):
+        val source = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val text = Bintel.text(source)
+        val recovered = Bintel.fromText(text)
+        recovered.toSeq == source.toSeq
+      . assert(_ == true)
+
     suite(m"BinTEL §3 value hash"):
       test(m"valueHash is deterministic"):
         val tel = t"name Alice\n".read[Tel]
