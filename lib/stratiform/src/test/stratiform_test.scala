@@ -744,11 +744,14 @@ object Tests extends Suite(m"Stratiform Tests"):
 
     suite(m"Negative corpus (E1xx parsing)"):
       CorpusLoader.negative.each: testcase =>
-        CorpusLoader.expectedCode(testcase.stem).let: code =>
-          // Phase 1 covers E1xx parsing errors only. E2xx (schema validity)
-          // and E3xx (validation) require the schema component shipped in
-          // phase 3.
-          if code < 200 then
-            test(m"raises E$code on ${testcase.stem}"):
-              capture[TelError](testcase.source.read[Tel]).reason.number
-            . assert(_ == code)
+        val codes = CorpusLoader.expectedCodes(testcase)
+        // Phase 1 covers E1xx parsing errors only. E2xx (schema validity)
+        // and E3xx (validation) require the schema component shipped in
+        // phase 3. We use the .check file's reported error codes when
+        // present; the captured error must be one of them, since fixture
+        // filenames sometimes describe a scenario while the reference
+        // parser surfaces a different code first (e.g. e118 → E117).
+        if codes.nonEmpty && codes.forall(_ < 200) then
+          test(m"raises an expected E1xx error on ${testcase.stem}"):
+            codes.contains(capture[TelError](testcase.source.read[Tel]).reason.number)
+          . assert(_ == true)
