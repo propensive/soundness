@@ -1,0 +1,54 @@
+menu
+  header SVG Viewer
+  items
+    id Open
+  items
+    id OpenNew
+    label Open New
+  items
+  items
+    id ZoomIn
+    label Zoom In
+  items
+    id ZoomOut
+    label Zoom Out
+  items
+    id OriginalView
+    label Original View
+  items
+  items
+    id Quality
+  items
+    id Pause
+  items
+    id Mute
+  items
+  items
+    id Find
+    label Find...
+  items
+    id FindAgain
+    label Find Again
+  items
+    id Copy
+  items
+    id CopyAgain
+    label Copy Again
+  items
+    id CopySVG
+    label Copy SVG
+  items
+    id ViewSVG
+    label View SVG
+  items
+    id ViewSource
+    label View Source
+  items
+    id SaveAs
+    label Save As
+  items
+  items
+    id Help
+  items
+    id About
+    label About Adobe CVG Viewer...

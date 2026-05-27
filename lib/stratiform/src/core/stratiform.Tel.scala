@@ -643,7 +643,7 @@ object Tel extends Tel2:
   // Parse a byte stream into a Tel value wrapping the document. Used
   // internally by the Aggregable and Loadable typeclasses; user code
   // should prefer `bytes.read[Tel]` or `text.load[Tel]`.
-  private[stratiform] def parse(bytes: Data): Tel raises TelError =
+  def parse(bytes: Data): Tel raises TelError =
     Tel(TelParser.parse(bytes))
 
   // Schema-aware parse: the parser uses the §19.5 schema-aware E107

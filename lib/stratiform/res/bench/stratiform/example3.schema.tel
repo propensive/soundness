@@ -1,0 +1,12 @@
+name example3
+
+record Items
+  field id String optional
+  field label String optional
+
+record Menu
+  field header String optional
+  field items Items optional repeatable
+
+document
+  field menu Menu optional

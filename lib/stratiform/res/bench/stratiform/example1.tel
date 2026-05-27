@@ -1,0 +1,88 @@
+web-app
+  servlet
+    servlet-name cofaxCDS
+    servlet-class org.cofax.cds.CDSServlet
+    init-param
+      config-glossary-installation-at Philadelphia, PA
+      config-glossary-admin-email ksm@pobox.com
+      config-glossary-powered-by Cofax
+      config-glossary-powered-by-icon /images/cofax.gif
+      config-glossary-static-path /content/static
+      template-processor-class org.cofax.WysiwygTemplate
+      template-loader-class org.cofax.FilesTemplateLoader
+      template-path templates
+      template-override-path
+          
+      default-list-template listTemplate.htm
+      default-file-template articleTemplate.htm
+      use-jsp false
+      jsp-list-template listTemplate.jsp
+      jsp-file-template articleTemplate.jsp
+      cache-package-tags-track 200
+      cache-package-tags-store 200
+      cache-package-tags-refresh 60
+      cache-templates-track 100
+      cache-templates-store 50
+      cache-templates-refresh 15
+      cache-pages-track 200
+      cache-pages-store 100
+      cache-pages-refresh 10
+      cache-pages-dirty-read 10
+      search-engine-list-template forSearchEnginesList.htm
+      search-engine-file-template forSearchEngines.htm
+      search-engine-robots-db WEB-INF/robots.db
+      use-data-store true
+      data-store-class org.cofax.SqlDataStore
+      redirection-class org.cofax.SqlRedirection
+      data-store-name cofax
+      data-store-driver com.microsoft.jdbc.sqlserver.SQLServerDriver
+      data-store-url jdbc:microsoft:sqlserver://LOCALHOST:1433;DatabaseName=goon
+      data-store-user sa
+      data-store-password dataStoreTestQuery
+      data-store-test-query SET NOCOUNT ON;select test='test';
+      data-store-log-file /usr/local/tomcat/logs/datastore.log
+      data-store-init-conns 10
+      data-store-max-conns 100
+      data-store-conn-usage-limit 100
+      data-store-log-level debug
+      max-url-length 500
+  servlet
+    servlet-name cofaxEmail
+    servlet-class org.cofax.cds.EmailServlet
+    init-param
+      mail-host mail1
+      mail-host-override mail2
+  servlet
+    servlet-name cofaxAdmin
+    servlet-class org.cofax.cds.AdminServlet
+  servlet
+    servlet-name fileServlet
+    servlet-class org.cofax.cds.FileServlet
+  servlet
+    servlet-name cofaxTools
+    servlet-class org.cofax.cms.CofaxToolsServlet
+    init-param
+      template-path toolstemplates/
+      log 1
+      log-location /usr/local/tomcat/logs/CofaxTools.log
+      log-max-size
+          
+      data-log 1
+      data-log-location /usr/local/tomcat/logs/dataLog.log
+      data-log-max-size
+          
+      remove-page-cache /content/admin/remove?cache=pages&id=
+      remove-template-cache /content/admin/remove?cache=templates&id=
+      file-transfer-folder /usr/local/tomcat/webapps/content/fileTransferFolder
+      look-in-context 1
+      admin-group-id 4
+      beta-server true
+  servlet-mapping
+    cofax-cds /
+    cofax-email /cofaxutil/aemail/*
+    cofax-admin /admin/*
+    file-servlet /static/*
+    cofax-tools /tools/*
+  taglib
+    taglib-uri cofax.tld
+    taglib-location /WEB-INF/tlds/cofax.tld

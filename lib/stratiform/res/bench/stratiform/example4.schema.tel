@@ -1,0 +1,11 @@
+name example4
+
+record Users
+  field id String optional
+  field username String optional
+  field email String optional
+  field active String optional
+  field role String optional
+
+document
+  field users Users optional repeatable
