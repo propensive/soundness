@@ -870,3 +870,96 @@ object Tests extends Suite(m"Stratiform Tests"):
           false
         catch case _: IllegalArgumentException => true
       . assert(identity)
+
+    suite(m"BinTEL §7 node encoder"):
+      def hex(data: Data): String =
+        val sb = new java.lang.StringBuilder
+        var i = 0
+        while i < data.length do
+          sb.append(f"${data(i) & 0xff}%02X")
+          if i + 1 < data.length then sb.append(' ')
+          i += 1
+        sb.toString
+
+      val nameSchema = Tels(
+        name     = t"contact",
+        document = Tels.Struct(
+          members = IArray(Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"name", Tels.Scalar(IArray(t"string")), Unset )),
+          validators = IArray.empty),
+        layers   = IArray.empty,
+        sigil    = Unset,
+        records  = IArray.empty,
+        scalars  = IArray.empty,
+        selects  = IArray.empty)
+
+      test(m"empty struct encodes as a single 00 child-count"):
+        val root = Tel.Element.Node(Unset, nameSchema.document, IArray.empty)
+        hex(root.bintel)
+      . assert(_ == "00")
+
+      test(m"single scalar child via tel.bintel(schema)"):
+        hex(t"name Alice\n".read[Tel].bintel(nameSchema))
+      . assert(_ == "01 00 05 41 6C 69 63 65")
+
+      test(m"empty scalar value encodes as zero-length"):
+        val scalar = Tels.Scalar(IArray.empty)
+        val value = Tel.Element.Value(0, scalar, t"")
+        val root = Tel.Element.Node(Unset, nameSchema.document, IArray(value))
+        hex(root.bintel)
+      . assert(_ == "01 00 00")
+
+      test(m"UTF-8 byte length is encoded, not character count"):
+        // "café" = 0x63 0x61 0x66 0xC3 0xA9 = 5 bytes, 4 chars
+        val scalar = Tels.Scalar(IArray.empty)
+        val value = Tel.Element.Value(0, scalar, t"café")
+        val root = Tel.Element.Node(Unset, nameSchema.document, IArray(value))
+        hex(root.bintel)
+      . assert(_ == "01 00 05 63 61 66 C3 A9")
+
+      test(m"flag node encodes as just its keyword index"):
+        val flagNode = Tel.Element.Node(0, Tels.Flag, IArray.empty)
+        val flagSchema = Tels(
+          name     = t"feature",
+          document = Tels.Struct(
+            members = IArray(Tels.Field
+             ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
+               t"enabled", Tels.Flag, Unset )),
+            validators = IArray.empty),
+          layers   = IArray.empty,
+          sigil    = Unset,
+          records  = IArray.empty,
+          scalars  = IArray.empty,
+          selects  = IArray.empty)
+        val root = Tel.Element.Node(Unset, flagSchema.document, IArray(flagNode))
+        hex(root.bintel)
+      . assert(_ == "01 00")
+
+      test(m"nested struct emits kidx + count + children recursively"):
+        val innerScalar = Tels.Scalar(IArray.empty)
+        val innerStruct = Tels.Struct(
+          members = IArray(Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"host", innerScalar, Unset )),
+          validators = IArray.empty)
+        val outerStruct = Tels.Struct(
+          members = IArray(Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"config", innerStruct, Unset )),
+          validators = IArray.empty)
+
+        val configNode = Tel.Element.Node(
+          0, innerStruct,
+          IArray(Tel.Element.Value(0, innerScalar, t"example.com")))
+
+        val root = Tel.Element.Node(Unset, outerStruct, IArray(configNode))
+        hex(root.bintel)
+      . assert(_ == "01 00 01 00 0B 65 78 61 6D 70 6C 65 2E 63 6F 6D")
+
+      test(m"large keyword index uses multi-byte varint"):
+        val scalar = Tels.Scalar(IArray.empty)
+        val value = Tel.Element.Value(128, scalar, t"x")
+        val root = Tel.Element.Node(Unset, nameSchema.document, IArray(value))
+        hex(root.bintel)
+      . assert(_ == "01 80 01 01 78")
