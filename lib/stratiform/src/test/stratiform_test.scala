@@ -812,3 +812,61 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[Base256Error](Base256.decodeStrict(t"A B")).reason match
           case Base256Error.Reason.NotInAlphabet(pos, ch) => (pos, ch)
       . assert(_ == (1, ' '))
+
+    suite(m"BinTEL §4 varint"):
+      def hex(data: Data): String =
+        val sb = new java.lang.StringBuilder
+        var i = 0
+        while i < data.length do
+          sb.append(f"${data(i) & 0xff}%02X")
+          if i + 1 < data.length then sb.append(' ')
+          i += 1
+        sb.toString
+
+      val vectors: List[(Long, String)] = List(
+        0L     -> "00",
+        1L     -> "01",
+        127L   -> "7F",
+        128L   -> "80 01",
+        255L   -> "FF 01",
+        16383L -> "FF 7F",
+        16384L -> "80 80 01"
+      )
+
+      vectors.foreach: (value, expected) =>
+        test(m"encodes $value as $expected"):
+          hex(Varint.encode(value))
+        . assert(_ == expected)
+
+        test(m"decodes $expected back to $value"):
+          val parts = expected.split(" ").map(java.lang.Integer.parseInt(_, 16).toByte)
+          Varint.decode(parts.asInstanceOf[IArray[Byte]], 0).value
+        . assert(_ == value)
+
+      test(m"round-trips every value in 0..1023"):
+        (0L to 1023L).forall: n =>
+          Varint.decode(Varint.encode(n), 0).value == n
+      . assert(identity)
+
+      test(m"round-trips powers of two up to 2^62"):
+        (0 to 62).map(_.toLong).forall: i =>
+          val n = 1L << i
+          Varint.decode(Varint.encode(n), 0).value == n
+      . assert(identity)
+
+      test(m"decode returns next offset"):
+        val data: Data = Array[Byte](0x80.toByte, 0x01, 0x42).asInstanceOf[IArray[Byte]]
+        Varint.decode(data, 0).next
+      . assert(_ == 2)
+
+      test(m"decode raises on truncated continuation"):
+        val data: Data = Array[Byte](0x80.toByte).asInstanceOf[IArray[Byte]]
+        capture[VarintError](Varint.decode(data, 0)).reason
+      . assert(_ == VarintError.Reason.Truncated)
+
+      test(m"encode rejects negative input"):
+        try
+          Varint.encode(-1L)
+          false
+        catch case _: IllegalArgumentException => true
+      . assert(identity)
