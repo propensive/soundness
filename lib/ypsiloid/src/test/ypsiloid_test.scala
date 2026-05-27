@@ -971,3 +971,4 @@ object Tests extends Suite(m"Ypsiloid Tests"):
     PositionTests()
     FocusTests()
     AccrualTests()
+    DefaultTests()
