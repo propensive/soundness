@@ -98,6 +98,11 @@ object Tests extends Suite(m"Stratiform Tests"):
         Tests.Person(t"Alice", 30).encode.as[Tests.Person]
       . assert(_ == Tests.Person(t"Alice", 30))
 
+    suite(m"`over Tel` decoder shorthand"):
+      test(m"`read[T over Tel]` resolves a value directly from text"):
+        t"name Alice\nage 30\n".read[Tests.Person over Tel]
+      . assert(_ == Tests.Person(t"Alice", 30))
+
     suite(m"tel\"…\" interpolator"):
       test(m"simple literal"):
         val parsed = tel"hello"
