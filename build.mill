@@ -1176,13 +1176,16 @@ object stratiform extends Library:
   object binary extends Component(core, base256, gastronomy.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object records extends Component(core, polyvinyl.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object time extends Component(core, aviation.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object http extends Component(core, telekinesis.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, base256, binary, time, http, eucalyptus.core)
+  object test extends Tests(core, base256, binary, records, time, http, eucalyptus.core)
 
 object superlunary extends Library:
   object core extends Component(jacinta.core, gastronomy.core, anthology.scala, austronesian.core):

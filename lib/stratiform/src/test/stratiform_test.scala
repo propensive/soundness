@@ -1410,3 +1410,5 @@ object Tests extends Suite(m"Stratiform Tests"):
         val element  = Tel.Type.assign(telBytes.read[Tel], TelsAxiom.tels)
         element.bintel.toSeq == refBytes
       . assert(_ == true)
+
+    RecordsTests()
