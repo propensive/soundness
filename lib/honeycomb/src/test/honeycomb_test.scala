@@ -929,19 +929,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
         . assert(_ == h"<div><h1>title</h1><p>body</p><p>more</p></div>")
 
       suite(m"Permissive parsing"):
-        given Html.Recovery = Html.Recovery.Permissive
-
-        given lenient: Tactic[ParseError]:
-          given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
-
-          def diagnostics: Diagnostics = errorDiagnostics.stackTraces
-
-          def record(error: Diagnostics ?=> ParseError): Unit = ()
-
-          def abort(error: Diagnostics ?=> ParseError): Nothing =
-            throw error(using diagnostics)
-
-          def certify(): Unit = ()
+        import recoveries.permissive
 
         test(m"unknown attribute is accepted"):
           t"""<div bogus="x"></div>""".read[Html of "div"]
@@ -980,7 +968,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
             case ParseError(_, _, Html.Issue.Incomplete("ul")) => true
             case _                                             => false
 
-        test(m"warnings are emitted into the Tactic"):
+        test(m"parser emits warnings via raise() when a Tactic is in scope"):
           val errors = scala.collection.mutable.ListBuffer[ParseError]()
 
           locally:
@@ -997,7 +985,9 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
               def certify(): Unit = ()
 
-            t"""<img alt="a" alt="b">""".read[Html of "img"]
+            Html.HtmlParser.fromIterator
+             (Iterator(t"""<img alt="a" alt="b">"""), permissive = true)
+            . parseHtml(Tag.root(Set(t"img")))
 
           errors.toList.map(_.issue)
         . assert:

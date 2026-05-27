@@ -60,3 +60,6 @@ package stylesheets:
 
     new Stylesheet(Set(valueOf[classname])):
       type Topic = classname
+
+package recoveries:
+  given permissive: Html.Recovery.Permissive = new Html.Recovery.Permissive
