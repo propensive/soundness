@@ -129,8 +129,14 @@ trait Yaml2:
                 Yaml.Focus(base.prepend(label))
               }):
                 if found != null then context.decoded(new Yaml(found))
-                else
-                  default.or(context.decoded(new Yaml(Yaml.Ast.Null)))
+                // Missing field: try the case-class declared default
+                // (Wisteria's `default`); if absent, hand the
+                // `Yaml.Ast(Unset)` sentinel to the field's decoder.
+                // Primitives detect it (via `isAbsent`) and `raise +
+                // continue` with a zero/empty sentinel, so sibling
+                // fields' errors accrue rather than the decode bailing
+                // on the first missing field.
+                else default.or(context.decoded(new Yaml(Yaml.Ast(Unset))))
 
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Yaml = yaml =>
       provide[Foci[Yaml.Focus]]:
@@ -798,6 +804,12 @@ object Yaml extends Yaml2, Dynamic:
       else
         origin
 
+  // Single-error abort variant retained for non-primitive accessors
+  // (`yaml(t"foo")`, `yaml(0)`, etc.) that need to short-circuit on
+  // wrong-shape access. Primitive `Decodable in Yaml` instances no
+  // longer route through this — they use the raise+yet helper below
+  // so multi-error accrual can register each malformed field
+  // independently.
   private inline def typeMismatch[T]
     ( yaml: Yaml, expected: YamlPrimitive, default: T )
     ( using Tactic[YamlError] )
@@ -805,53 +817,69 @@ object Yaml extends Yaml2, Dynamic:
 
     abort(YamlError(Reason.NotType(primitive(yaml.root), expected)))
 
+  // Register a wrong-type / absent error and continue with `sentinel`
+  // instead of aborting — the raise+yet pattern that lets sibling
+  // fields in a case-class decode accrue their own errors rather than
+  // bailing on the first failure. Absent inputs (the `Yaml.Ast(Unset)`
+  // sentinel handed to a primitive decoder by `DecodableDerivation.
+  // conjunction` for a missing case-class field) raise `Reason.Absent`
+  // so error reports distinguish "field missing" from "field had the
+  // wrong shape".
+  private inline def primitiveFault[T]
+    ( yaml: Yaml, expected: YamlPrimitive, sentinel: T )
+    ( using Tactic[YamlError] )
+  :   T =
+
+    if yaml.root.isAbsent then raise(YamlError(Reason.Absent)) yet sentinel
+    else raise(YamlError(Reason.NotType(primitive(yaml.root), expected))) yet sentinel
+
   given int: Tactic[YamlError] => Int is Decodable in Yaml = yaml =>
     yaml.root.asMatchable match
       case n: Long   => n.toInt
       case d: Double => d.toInt
-      case _         => typeMismatch(yaml, YamlPrimitive.Integer, 0)
+      case _         => primitiveFault(yaml, YamlPrimitive.Integer, 0)
 
   given long: Tactic[YamlError] => Long is Decodable in Yaml = yaml =>
     yaml.root.asMatchable match
       case n: Long   => n
       case d: Double => d.toLong
-      case _         => typeMismatch(yaml, YamlPrimitive.Integer, 0L)
+      case _         => primitiveFault(yaml, YamlPrimitive.Integer, 0L)
 
   given double: Tactic[YamlError] => Double is Decodable in Yaml = yaml =>
     yaml.root.asMatchable match
       case d: Double => d
       case n: Long   => n.toDouble
-      case _         => typeMismatch(yaml, YamlPrimitive.Decimal, 0.0)
+      case _         => primitiveFault(yaml, YamlPrimitive.Decimal, 0.0)
 
   given float: Tactic[YamlError] => Float is Decodable in Yaml = yaml =>
     yaml.root.asMatchable match
       case d: Double => d.toFloat
       case n: Long   => n.toFloat
-      case _         => typeMismatch(yaml, YamlPrimitive.Decimal, 0.0f)
+      case _         => primitiveFault(yaml, YamlPrimitive.Decimal, 0.0f)
 
   given boolean: Tactic[YamlError] => Boolean is Decodable in Yaml = yaml =>
     yaml.root.asMatchable match
       case b: Boolean => b
-      case _          => typeMismatch(yaml, YamlPrimitive.Bool, false)
+      case _          => primitiveFault(yaml, YamlPrimitive.Bool, false)
 
   given text: Tactic[YamlError] => Text is Decodable in Yaml = yaml =>
     yaml.root.asMatchable match
       case s: String => s.tt
-      case _         => typeMismatch(yaml, YamlPrimitive.Str, t"")
+      case _         => primitiveFault(yaml, YamlPrimitive.Str, t"")
 
   given string: Tactic[YamlError] => String is Decodable in Yaml = yaml =>
     yaml.root.asMatchable match
       case s: String => s
-      case _         => typeMismatch(yaml, YamlPrimitive.Str, "")
+      case _         => primitiveFault(yaml, YamlPrimitive.Str, "")
 
   given unit: Tactic[YamlError] => Unit is Decodable in Yaml = yaml =>
     if yaml.root.asInstanceOf[AnyRef] == null then ()
-    else typeMismatch(yaml, YamlPrimitive.Null, ())
+    else primitiveFault(yaml, YamlPrimitive.Null, ())
 
   given iterable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
         tactic:    Tactic[YamlError],
-        foci:      Foci[YamlPath] )
+        foci:      Foci[Yaml.Focus] )
   =>  ( decodable: => element is Decodable in Yaml )
   =>  collection[element] is Decodable in Yaml = yaml =>
     yaml.root.asMatchable match
@@ -867,7 +895,10 @@ object Yaml extends Yaml2, Dynamic:
         var i = 0
         while i < effective do
           val ordinal = denominative.Ordinal.zerary(i)
-          focus(prior.or(YamlPath()) / ordinal):
+          focus({
+            val base = prior.let(_.pointer).or(YamlPath())
+            Yaml.Focus(base.prepend(ordinal))
+          }):
             builder += decodable.decoded(new Yaml(xs(i).asInstanceOf[Yaml.Ast]))
           i += 1
         builder.result()
