@@ -81,15 +81,21 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     else Tel.LineEndings.Lf
 
   // Detect line-ending violations per §17 / E121. A CR that is not part
-  // of a CR LF pair is a bare CR and raises E121. The mixed-line-endings
-  // variant of E121 (a document with both CR LF and bare LF in
-  // *structural* positions) is left for a later pass that can tell apart
-  // structural line breaks from literal-atom payload bytes.
+  // of a CR LF pair is a bare CR and raises E121. In CRLF mode, a bare
+  // LF (one not preceded by CR) outside of literal-atom payloads also
+  // raises E121. We approximate "outside literal payload" structurally
+  // here by walking the byte stream; the literal-atom payload exception
+  // is handled correctly because the structural line break terminating
+  // a literal-atom opening line is itself a valid CRLF in CRLF-mode
+  // documents.
   private def checkLineEndings(): Unit raises TelError =
     var i = 0
+    val crlfMode = lineEndings == Tel.LineEndings.Crlf
     while i < source.length do
       val c = source.charAt(i)
       if c == '\r' && (i + 1 >= source.length || source.charAt(i + 1) != '\n')
+      then abort(TelError(Reason.BadLineEnding))
+      else if crlfMode && c == '\n' && (i == 0 || source.charAt(i - 1) != '\r')
       then abort(TelError(Reason.BadLineEnding))
       i += 1
 
@@ -550,6 +556,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       val line = lines(cursor)
       cursor += 1
       val parsed = parseCompoundLine(line, indent)
+      tabulation.let(validateTabulatedRow(line, _))
       val extraAtom =
         if tabulation.absent then parseSourceOrLiteralAtom(line.leadingSpaces)
         else Unset
@@ -568,6 +575,60 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     val trailingBlankLines = consumeTrailingBlanksFor(indent)
 
     Tel.Block(IArray.from(comments), tabulation, IArray.from(compounds), trailingBlankLines)
+
+  // §16.2 column-rule validation for tabulated rows. Walks the row left-
+  // to-right. Each contiguous run of ≥2 spaces is a hard-space and MUST
+  // end exactly at one of the column marker positions M_k (k ≥ 1)
+  // declared on the tabulation line (**E117**). Each non-final column
+  // value's width MUST NOT exceed M_{k+1} − M_k − 2 (**E119**). A 2+
+  // space run that isn't a column separator is implicitly **E118**
+  // (consecutive spaces within a value), but the spec lets the parser
+  // report either E117 or E118 in that case — we report E117, matching
+  // the reference parser's behaviour. Remarks (hard-space + sigil +
+  // soft-space introducer) are exempt and end the validation walk.
+  private def validateTabulatedRow(line: Line, tabulation: Tel.Tabulation)
+  :     Unit raises TelError =
+    val content = line.content
+    val markers = tabulation.markerOffsets
+    val n = content.length
+
+    var i = line.leadingSpaces
+    var columnIdx = 0
+    var phraseStart = i
+
+    while i < n do
+      if content.charAt(i) == ' ' then
+        var j = i
+        while j < n && content.charAt(j) == ' ' do j += 1
+        val runLen = j - i
+
+        if runLen >= 2 then
+          val isRemark =
+            j < n
+            && content.charAt(j) == sigil
+            && (j + 1 >= n || (content.charAt(j + 1) == ' '
+                               && (j + 2 >= n || content.charAt(j + 2) != ' ')))
+
+          if isRemark then i = n
+          else
+            if columnIdx >= 1 && columnIdx < markers.length - 1 then
+              val phraseWidth = i - phraseStart
+              val colMax = markers(columnIdx + 1) - markers(columnIdx) - 2
+              if phraseWidth > colMax then abort(TelError(Reason.ColumnValueTooWide))
+
+            var foundIdx = -1
+            var k = 1
+            while k < markers.length && foundIdx < 0 do
+              if markers(k) == j then foundIdx = k
+              k += 1
+
+            if foundIdx < 0 then abort(TelError(Reason.HardSpaceWrongPosition))
+
+            columnIdx = foundIdx
+            phraseStart = j
+            i = j
+        else i = j
+      else i += 1
 
   private def isTabulationLineAt(line: Line, indent: Int): Boolean raises TelError =
     if line.blank || indentOf(line) != indent then false

@@ -141,6 +141,35 @@ object Tests extends Suite(m"Stratiform Tests"):
           case _               => t""
       . assert(_ == t"Alice")
 
+      test(m"two captures across separate atoms"):
+        val input = tel"contact Alice alice@example.com"
+        input match
+          case tel"contact $name $email" => (name.primaryAtom, email.primaryAtom)
+          case _                          => (t"", t"")
+      . assert(_ == (t"Alice", t"alice@example.com"))
+
+      test(m"multiple captures within a single atom — split on hyphen"):
+        val input = tel"item foo-bar"
+        input match
+          case tel"item $prefix-$suffix" => (prefix.primaryAtom, suffix.primaryAtom)
+          case _                          => (t"", t"")
+      . assert(_ == (t"foo", t"bar"))
+
+      test(m"three captures within a single atom — split on dots"):
+        val input = tel"version 1.2.3"
+        input match
+          case tel"version $major.$minor.$patch" =>
+            (major.primaryAtom, minor.primaryAtom, patch.primaryAtom)
+          case _ => (t"", t"", t"")
+      . assert(_ == (t"1", t"2", t"3"))
+
+      test(m"multi-marker non-match falls through"):
+        val input = tel"item foo"  // no hyphen, no second capture site
+        input match
+          case tel"item $prefix-$suffix" => true
+          case _                          => false
+      . assert(!_)
+
     suite(m"tel-schema self-consistency"):
       // Phase-3 partial: parse the canonical tel-schema.tel and verify
       // it produces a valid presentation AST. Full self-consistency
@@ -715,11 +744,14 @@ object Tests extends Suite(m"Stratiform Tests"):
 
     suite(m"Negative corpus (E1xx parsing)"):
       CorpusLoader.negative.each: testcase =>
-        CorpusLoader.expectedCode(testcase.stem).let: code =>
-          // Phase 1 covers E1xx parsing errors only. E2xx (schema validity)
-          // and E3xx (validation) require the schema component shipped in
-          // phase 3.
-          if code < 200 then
-            test(m"raises E$code on ${testcase.stem}"):
-              capture[TelError](testcase.source.read[Tel]).reason.number
-            . assert(_ == code)
+        val codes = CorpusLoader.expectedCodes(testcase)
+        // Phase 1 covers E1xx parsing errors only. E2xx (schema validity)
+        // and E3xx (validation) require the schema component shipped in
+        // phase 3. We use the .check file's reported error codes when
+        // present; the captured error must be one of them, since fixture
+        // filenames sometimes describe a scenario while the reference
+        // parser surfaces a different code first (e.g. e118 → E117).
+        if codes.nonEmpty && codes.forall(_ < 200) then
+          test(m"raises an expected E1xx error on ${testcase.stem}"):
+            codes.contains(capture[TelError](testcase.source.read[Tel]).reason.number)
+          . assert(_ == true)
