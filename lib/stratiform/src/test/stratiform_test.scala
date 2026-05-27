@@ -1008,6 +1008,137 @@ object Tests extends Suite(m"Stratiform Tests"):
         hex(root.bintel)
       . assert(_ == "02 00 05 66 69 72 73 74 00 06 73 65 63 6F 6E 64")
 
+    suite(m"BinTEL §7.8 decoder"):
+      test(m"empty struct round-trips"):
+        val root = Tel.Element.Node(Unset, nameSchema.document, IArray.empty)
+        val bytes = root.bintel
+        val decoded = Bintel.decode(bytes, nameSchema)
+        decoded match
+          case Tel.Element.Node(_, _, c) => c.length
+          case _                          => -1
+      . assert(_ == 0)
+
+      test(m"single scalar value round-trips"):
+        val original = t"name Alice\n".read[Tel]
+        val bytes = original.bintel(nameSchema)
+        val decoded = Bintel.decode(bytes, nameSchema)
+        decoded match
+          case Tel.Element.Node(_, _, children) =>
+            children.toList.collect:
+              case Tel.Element.Value(_, _, t) => t
+          case _ => Nil
+      . assert(_ == List(t"Alice"))
+
+      test(m"empty scalar value round-trips"):
+        val scalar = Tels.Scalar(IArray.empty)
+        val root = Tel.Element.Node
+                    (Unset, nameSchema.document, IArray(Tel.Element.Value(0, scalar, t"")))
+        val bytes = root.bintel
+        val decoded = Bintel.decode(bytes, nameSchema)
+        decoded match
+          case Tel.Element.Node(_, _, children) =>
+            children.toList.collect:
+              case Tel.Element.Value(_, _, t) => t
+          case _ => Nil
+      . assert(_ == List(t""))
+
+      test(m"UTF-8 multi-byte scalar round-trips"):
+        val scalar = Tels.Scalar(IArray.empty)
+        val root = Tel.Element.Node
+                    (Unset, nameSchema.document, IArray(Tel.Element.Value(0, scalar, t"café")))
+        val bytes = root.bintel
+        val decoded = Bintel.decode(bytes, nameSchema)
+        decoded match
+          case Tel.Element.Node(_, _, children) =>
+            children.toList.collect:
+              case Tel.Element.Value(_, _, t) => t
+          case _ => Nil
+      . assert(_ == List(t"café"))
+
+      test(m"flag element round-trips"):
+        val flagSchema = Tels(
+          name     = t"feature",
+          document = Tels.Struct(
+            members = IArray(Tels.Field
+             ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
+               t"enabled", Tels.Flag, Unset )),
+            validators = IArray.empty),
+          layers   = IArray.empty,
+          sigil    = Unset,
+          records  = IArray.empty,
+          scalars  = IArray.empty,
+          selects  = IArray.empty)
+        val root = Tel.Element.Node
+                    (Unset, flagSchema.document, IArray(Tel.Element.Node(0, Tels.Flag, IArray.empty)))
+        val bytes = root.bintel
+        val decoded = Bintel.decode(bytes, flagSchema)
+        decoded match
+          case Tel.Element.Node(_, _, IArray(Tel.Element.Node(_, Tels.Flag, _))) => true
+          case _                                                                  => false
+      . assert(identity)
+
+      test(m"nested struct round-trips"):
+        val innerScalar = Tels.Scalar(IArray.empty)
+        val innerStruct = Tels.Struct(
+          members = IArray(Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"host", innerScalar, Unset )),
+          validators = IArray.empty)
+        val outerStruct = Tels.Struct(
+          members = IArray(Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"config", innerStruct, Unset )),
+          validators = IArray.empty)
+        val outerSchema = Tels(
+          name = t"app", document = outerStruct, layers = IArray.empty,
+          sigil = Unset, records = IArray.empty, scalars = IArray.empty,
+          selects = IArray.empty)
+
+        val configNode = Tel.Element.Node(
+          0, innerStruct,
+          IArray(Tel.Element.Value(0, innerScalar, t"example.com")))
+        val root = Tel.Element.Node(Unset, outerStruct, IArray(configNode))
+
+        val bytes = root.bintel
+        val decoded = Bintel.decode(bytes, outerSchema)
+        decoded match
+          case Tel.Element.Node(_, _, IArray(Tel.Element.Node(_, _, inner))) =>
+            inner.toList.collect:
+              case Tel.Element.Value(_, _, t) => t
+          case _ => Nil
+      . assert(_ == List(t"example.com"))
+
+      test(m"trailing bytes after document root raise BintelError"):
+        val original = t"name Alice\n".read[Tel]
+        val bytes = original.bintel(nameSchema)
+        val padded = (bytes.toList :+ 0xff.toByte).toArray.asInstanceOf[IArray[Byte]]
+        capture[BintelError](Bintel.decode(padded, nameSchema)).reason
+      . assert(_ == BintelError.Reason.TrailingBytes)
+
+      test(m"truncated input raises BintelError"):
+        val original = t"name Alice\n".read[Tel]
+        val bytes = original.bintel(nameSchema)
+        val truncated = bytes.slice(0, bytes.length - 1)
+        // Either UnexpectedEoi or ValueTruncated depending on where the
+        // truncation lands; both are valid framing errors.
+        val reason = capture[BintelError](Bintel.decode(truncated, nameSchema)).reason
+        reason == BintelError.Reason.UnexpectedEoi ||
+          reason == BintelError.Reason.ValueTruncated
+      . assert(identity)
+
+      test(m"out-of-range keyword index raises BintelError"):
+        // Manually craft a body with one child whose keyword index is
+        // out of range for the schema. nameSchema has 1 flat-keyword
+        // entry (index 0); we use index 5.
+        val bytes: Data =
+          Array[Byte](
+            0x01,                   // child-count 1
+            0x05,                   // keyword index 5 (out of range)
+            0x00                    // scalar length 0
+          ).asInstanceOf[IArray[Byte]]
+        capture[BintelError](Bintel.decode(bytes, nameSchema)).reason
+      . assert(_ == BintelError.Reason.BadKeywordIndex)
+
     suite(m"BinTEL §3 value hash"):
       test(m"valueHash is deterministic"):
         val tel = t"name Alice\n".read[Tel]
