@@ -97,7 +97,7 @@ trait Yaml2:
   object DecodableDerivation extends Derivable[Decodable in Yaml]:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Yaml = yaml =>
-      provide[Foci[YamlPath]]:
+      provide[Foci[Yaml.Focus]]:
         provide[Tactic[YamlError]]:
           val arr: IArray[Any] | Null = yaml.root.asMatchable match
             case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
@@ -118,19 +118,28 @@ trait Yaml2:
                     case s: String if s == target => found = arr(i + 1).asInstanceOf[Yaml.Ast]
                     case _                        => ()
                   i += 2
-              focus(prior.or(YamlPath()) / label):
+              // Each outer `focus` runs *after* the inner one
+              // (contingency's try/finally order), so we extend
+              // `prior` at the root side via `prepend` so a nested
+              // case-class error lands at `/outer/inner` rather than
+              // `/inner/outer`. See `feedback-xml-decoder-split-design`
+              // lesson 4.
+              focus({
+                val base = prior.let(_.pointer).or(YamlPath())
+                Yaml.Focus(base.prepend(label))
+              }):
                 if found != null then context.decoded(new Yaml(found))
                 else
                   default.or(context.decoded(new Yaml(Yaml.Ast.Null)))
 
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Yaml = yaml =>
-      provide[Foci[YamlPath]]:
+      provide[Foci[Yaml.Focus]]:
         provide[Tactic[YamlError]]:
           provide[Tactic[VariantError]]:
             val discriminable = infer[derivation is Discriminable in Yaml]
 
             val discriminant: Text = discriminable.discriminate(yaml).or:
-              focus(prior.or(YamlPath()))(abort(YamlError(Reason.Absent)))
+              focus(prior.or(Yaml.Focus(YamlPath())))(abort(YamlError(Reason.Absent)))
 
             delegate(discriminant): [variant <: derivation] =>
               context => context.decoded(discriminable.variant(yaml))
@@ -138,14 +147,18 @@ trait Yaml2:
   object EncodableDerivation extends Derivable[Encodable in Yaml]:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Yaml = value =>
-      provide[Foci[YamlPath]]:
+      provide[Foci[Yaml.Focus]]:
         val entries = scm.ArrayBuffer.empty[Any]
         fields(value): [field] =>
-          field => focus(prior.or(YamlPath()) / label):
-            val encoded = contextual.encode(field).root
-            if !(encoded.asInstanceOf[AnyRef] eq Unset) then
-              entries += Yaml.Ast.Str(label).asInstanceOf[Any]
-              entries += encoded.asInstanceOf[Any]
+          field =>
+            focus({
+              val base = prior.let(_.pointer).or(YamlPath())
+              Yaml.Focus(base.prepend(label))
+            }):
+              val encoded = contextual.encode(field).root
+              if !(encoded.asInstanceOf[AnyRef] eq Unset) then
+                entries += Yaml.Ast.Str(label).asInstanceOf[Any]
+                entries += encoded.asInstanceOf[Any]
         Yaml.ast(Yaml.Ast.mapFromAnyArray(entries.toArray))
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Yaml = value =>
@@ -204,6 +217,20 @@ object Yaml extends Yaml2, Dynamic:
 
   extension (positionIndex: PositionIndex)
     private[ypsiloid] def ints: IArray[Int] = positionIndex
+
+  // The focus carried by `Yaml#as[T]` — a YAML-pointer path plus an
+  // optional source position. The position is populated lazily by
+  // `withPosition(yaml)`, which delegates to `yaml.locate(pointer)`,
+  // so an untracked root (no `positionIndex`) leaves `position` Unset.
+  // Costs nothing on the success path because `Focus` instances are
+  // constructed inside `Foci.supplement` only for errors actually
+  // registered in a surrounding `focus` block.
+  case class Focus
+    ( pointer:  YamlPath,
+      position: Optional[Yaml.Ast.Position] = Unset )
+  derives CanEqual:
+
+    def withPosition(yaml: Yaml): Focus = copy(position = yaml.locate(pointer))
 
   object Ast extends Format:
     def name: Text = "YAML"
@@ -1081,8 +1108,19 @@ extends Dynamic derives CanEqual:
   // and for any `Yaml` built from a decoded/computed value.
   def positionIndex: Optional[Yaml.PositionIndex] = positions
 
-  def as[value: Decodable in Yaml]: value raises YamlError tracks YamlPath =
-    value.decoded(this)
+  def as[value: Decodable in Yaml]: value raises YamlError tracks Yaml.Focus =
+    val result = value.decoded(this)
+    // Auto-populate the source position on every accumulated focus so
+    // error handlers can read both `.pointer` and `.position` without
+    // calling `withPosition` themselves. `withPosition` on a `Yaml`
+    // without a `positionIndex` leaves the position `Unset`, so this
+    // costs nothing for untracked roots and only one `locate` per
+    // registered error for tracked roots. Mirrors xylophone
+    // `Tracked#as` (PR #1151).
+    val foci = summon[Foci[Yaml.Focus]]
+    val yaml = this
+    foci.supplement(foci.length, _.let(_.withPosition(yaml)).vouch)
+    result
 
   // Sequence indexing: `yaml(0)` returns the first element of a sequence,
   // raising `YamlError` (with `Reason.NotType`) if the root is not a

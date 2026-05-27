@@ -969,3 +969,4 @@ object Tests extends Suite(m"Ypsiloid Tests"):
     ConformanceTests.all()
 
     PositionTests()
+    FocusTests()
