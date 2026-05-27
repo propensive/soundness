@@ -755,3 +755,60 @@ object Tests extends Suite(m"Stratiform Tests"):
           test(m"raises an expected E1xx error on ${testcase.stem}"):
             codes.contains(capture[TelError](testcase.source.read[Tel]).reason.number)
           . assert(_ == true)
+
+    suite(m"BASE-256 codec"):
+      test(m"alphabet has 256 entries"):
+        Base256.alphabet.length
+      . assert(_ == 256)
+
+      test(m"alphabet satisfies codepoint ≡ index (mod 256)"):
+        (0 until 256).forall(i => Base256.alphabet(i).toInt % 256 == i)
+      . assert(_ == true)
+
+      test(m"alphabet entries are pairwise distinct"):
+        Base256.alphabet.toSet.size
+      . assert(_ == 256)
+
+      test(m"ASCII digits encode to themselves"):
+        (0x30 to 0x39).forall(b => Base256.alphabet(b) == b.toChar)
+      . assert(_ == true)
+
+      test(m"ASCII uppercase letters encode to themselves"):
+        (0x41 to 0x5A).forall(b => Base256.alphabet(b) == b.toChar)
+      . assert(_ == true)
+
+      test(m"ASCII lowercase letters encode to themselves"):
+        (0x61 to 0x7A).forall(b => Base256.alphabet(b) == b.toChar)
+      . assert(_ == true)
+
+      test(m"round-trip all 256 byte values"):
+        val data: Data = (0 to 255).map(_.toByte).toArray.asInstanceOf[IArray[Byte]]
+        Base256.decode(Base256.encode(data)).toSeq
+      . assert(_ == (0 to 255).map(_.toByte))
+
+      test(m"empty bytes round-trip to empty text"):
+        Base256.encode(IArray.empty[Byte])
+      . assert(_ == t"")
+
+      test(m"empty text round-trips to empty bytes"):
+        Base256.decode(t"").length
+      . assert(_ == 0)
+
+      test(m"encoded length in characters equals input length in bytes"):
+        val data: Data = (0 to 255).map(_.toByte).toArray.asInstanceOf[IArray[Byte]]
+        Base256.encode(data).s.length
+      . assert(_ == 256)
+
+      test(m"permissive decode accepts non-alphabet chars by residue"):
+        Base256.decode(t"A ").toSeq
+      . assert(_ == Seq(0x41.toByte, 0x20.toByte))
+
+      test(m"strict decode accepts the alphabet"):
+        val data: Data = (0 to 255).map(_.toByte).toArray.asInstanceOf[IArray[Byte]]
+        Base256.decodeStrict(Base256.encode(data)).toSeq
+      . assert(_ == (0 to 255).map(_.toByte))
+
+      test(m"strict decode rejects a non-alphabet char"):
+        capture[Base256Error](Base256.decodeStrict(t"A B")).reason match
+          case Base256Error.Reason.NotInAlphabet(pos, ch) => (pos, ch)
+      . assert(_ == (1, ' '))
