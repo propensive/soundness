@@ -89,25 +89,105 @@ object Xml extends Tag.Container
 
     def variant(xml: Xml): Xml = xml
 
+  // Identity-checked sentinel used by `DecodableDerivation.conjunction` to
+  // signal "this field was absent from the XML". The textual decoder and
+  // the primitive `Decodable in Xml` instances detect it by reference
+  // equality and `raise` an `XmlError` while continuing with a zero / empty
+  // sentinel, so multi-error accrual can register every missing field in
+  // one decode rather than aborting at the first.
+  private[xylophone] val Absent: Xml = new Fragment()
+
+  // Extract the textual content of a leaf-shaped Xml node. Returns `Unset`
+  // for non-text shapes (other Elements, Comments, the `Absent` sentinel,
+  // etc.). Used by the primitive decoders so they can decide whether to
+  // parse the content or `raise` for a missing / wrong-shape input.
+  private def textOf(xml: Xml): Optional[Text] = xml match
+    case _ if xml eq Absent                    => Unset
+    case TextNode(text)                        => text
+    case Element(_, _, IArray(TextNode(text))) => text
+    case Element(_, _, IArray())               => t""
+    case Fragment(node: Node)                  => textOf(node)
+    case _                                     => Unset
+
+  // Explicit `Decodable in Xml` for the common primitive scalars. These
+  // *raise + continue* (record an `XmlError` on the ambient `Foci` and
+  // return a zero / false sentinel) rather than `abort`ing, so a case
+  // class with multiple bad fields accrues one error per field instead of
+  // bailing at the first.
+  //
+  // Specific givens here shadow the generic `decodable` summonFrom below
+  // for these types — that branch's `summon[Decodable in Text]` for
+  // `Int` would otherwise `abort` with `NumberError` and break accrual.
+  given int: Tactic[XmlError] => Int is Decodable in Xml = xml =>
+    textOf(xml).let: text =>
+      try Integer.parseInt(text.s).nn
+      catch case _: NumberFormatException => raise(XmlError()) yet 0
+    . or:
+        raise(XmlError()) yet 0
+
+  given long: Tactic[XmlError] => Long is Decodable in Xml = xml =>
+    textOf(xml).let: text =>
+      try jl.Long.parseLong(text.s).nn
+      catch case _: NumberFormatException => raise(XmlError()) yet 0L
+    . or:
+        raise(XmlError()) yet 0L
+
+  given short: Tactic[XmlError] => Short is Decodable in Xml = xml =>
+    textOf(xml).let: text =>
+      try jl.Short.parseShort(text.s).nn
+      catch case _: NumberFormatException => raise(XmlError()) yet 0.toShort
+    . or:
+        raise(XmlError()) yet 0.toShort
+
+  given byte: Tactic[XmlError] => Byte is Decodable in Xml = xml =>
+    textOf(xml).let: text =>
+      try jl.Byte.parseByte(text.s).nn
+      catch case _: NumberFormatException => raise(XmlError()) yet 0.toByte
+    . or:
+        raise(XmlError()) yet 0.toByte
+
+  given double: Tactic[XmlError] => Double is Decodable in Xml = xml =>
+    textOf(xml).let: text =>
+      try jl.Double.parseDouble(text.s).nn
+      catch case _: NumberFormatException => raise(XmlError()) yet 0.0
+    . or:
+        raise(XmlError()) yet 0.0
+
+  given float: Tactic[XmlError] => Float is Decodable in Xml = xml =>
+    textOf(xml).let: text =>
+      try jl.Float.parseFloat(text.s).nn
+      catch case _: NumberFormatException => raise(XmlError()) yet 0.0f
+    . or:
+        raise(XmlError()) yet 0.0f
+
+  given boolean: Tactic[XmlError] => Boolean is Decodable in Xml = xml =>
+    textOf(xml).let: text =>
+      text.s match
+        case "true"  => true
+        case "false" => false
+        case _       => raise(XmlError()) yet false
+    . or:
+        raise(XmlError()) yet false
+
   // Single entry-point for resolving `Decodable in Xml`. Prefers a textual
-  // decoder when one exists (so primitives like `Int`, `Text`, `Boolean`
-  // continue to extract from element text content). Otherwise falls back to
-  // Wisteria-derived case-class / sealed-trait decoding via
-  // `DecodableDerivation`.
+  // decoder when one exists (so any `Decodable in Text` value works as a
+  // field type); otherwise falls back to Wisteria-derived case-class /
+  // sealed-trait decoding via `DecodableDerivation`.
+  //
+  // The textual branch raises `XmlError` (and continues with `""`) on the
+  // `Absent` sentinel and on wrong-shape input. The inner
+  // `Decodable in Text` is then called with that sentinel `""`; primitive
+  // numerics have explicit `Decodable in Xml` givens above that pre-empt
+  // this branch entirely, so the surviving callers here are types whose
+  // textual decoders accept the empty string (e.g., `Text` itself,
+  // user-defined identifiers).
   inline given decodable: [value] => value is Decodable in Xml = summonFrom:
     case given (`value` is Decodable in Text) =>
       xml =>
         provide[Tactic[XmlError]]:
-          val text: Text = xml match
-            case TextNode(text)                        => text
-            case Element(_, _, IArray(TextNode(text))) => text
-            case Element(_, _, IArray())               => t""
-            case Fragment(node: Node)                  => node match
-              case TextNode(text)                        => text
-              case Element(_, _, IArray(TextNode(text))) => text
-              case Element(_, _, IArray())               => t""
-              case _                                     => abort(XmlError())
-            case _                                     => abort(XmlError())
+          val text: Text =
+            if xml eq Absent then raise(XmlError()) yet t""
+            else textOf(xml).or(raise(XmlError()) yet t"")
 
           summon[`value` is Decodable in Text].decoded(text)
 
@@ -130,21 +210,28 @@ object Xml extends Tag.Container
       xml =>
         provide[Foci[Xml.Focus]]:
           provide[Tactic[XmlError]]:
-            val element: Element = xml match
+            // A non-Element root (including the `Absent` sentinel passed
+            // by an outer conjunction for a missing nested case-class
+            // field) raises an error at the *current* focus and then
+            // continues with an empty children map. `build` then sees
+            // every field as missing and accrues per-field errors at
+            // `/parent/child` paths.
+            val element: Optional[Element] = xml match
               case e: Element           => e
               case Fragment(e: Element) => e
-              case _                    => abort(XmlError())
+              case _                    => raise(XmlError()) yet Unset
 
             val children: scm.HashMap[String, Element] = scm.HashMap.empty
-            var i = 0
-            while i < element.children.length do
-              element.children(i) match
-                case child: Element =>
-                  val childLabel = child.label.s
-                  if !children.contains(childLabel) then
-                    children.update(childLabel, child)
-                case _ => ()
-              i += 1
+            element.let: el =>
+              var i = 0
+              while i < el.children.length do
+                el.children(i) match
+                  case child: Element =>
+                    val childLabel = child.label.s
+                    if !children.contains(childLabel) then
+                      children.update(childLabel, child)
+                  case _ => ()
+                i += 1
 
             build: [field] =>
               context =>
@@ -158,8 +245,16 @@ object Xml extends Tag.Container
                 }):
                   children.get(fieldLabel.s) match
                     case Some(child) => context.decoded(child)
-                    case None        => default.or(abort(XmlError()))
+                    // Missing field: hand the `Absent` sentinel to the
+                    // field's decoder. Primitives and nested conjunctions
+                    // each detect it and `raise + continue` so the
+                    // surrounding `build` keeps iterating.
+                    case None        => default.or(context.decoded(Absent))
 
+    // Sealed-trait disjunction stays in single-error mode: a missing or
+    // unrecognised discriminant has no obvious sentinel variant to
+    // continue with, so it `abort`s. Same-level multi-error accrual
+    // applies inside the chosen variant via its product decoder.
     inline def disjunction[derivation: SumReflection]
     :   derivation is Decodable in Xml =
 

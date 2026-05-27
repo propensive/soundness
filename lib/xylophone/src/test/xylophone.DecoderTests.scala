@@ -87,10 +87,6 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
       . assert(_ == DShape.Square(4))
 
     suite(m"Validation accrual"):
-      // The conjunction aborts on the first missing field, so only the
-      // first accrued error is registered. Multi-error accumulation
-      // would need primitive decoders that `raise` (record + continue)
-      // rather than `abort` — a future refinement.
       test(m"Fully-valid input accrues zero errors"):
         val xml = x"<root><name>Alice</name><age>30</age><email>a@b.c</email></root>"
         validateXml(xml)(_.as[DPerson]).items.length
@@ -106,13 +102,52 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
         validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to(Set)
       . assert(_ == Set("/email[1]"))
 
-      test(m"Nested missing field reports both segments"):
+      test(m"Two missing primitive fields accrue two errors"):
+        val xml = x"<root><name>Alice</name></root>"
+        validateXml(xml)(_.as[DPerson]).items.length
+      . assert(_ == 2)
+
+      test(m"Pointers identify both missing primitive fields"):
+        val xml = x"<root><name>Alice</name></root>"
+        validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to(Set)
+      . assert(_ == Set("/age[1]", "/email[1]"))
+
+      test(m"Wrong-type primitive field accrues an error"):
+        val xml = x"<root><name>Alice</name><age>oldish</age><email>a@b.c</email></root>"
+        validateXml(xml)(_.as[DPerson]).items.length
+      . assert(_ == 1)
+
+      test(m"Wrong-type primitive field reports the field's path"):
+        val xml = x"<root><name>Alice</name><age>oldish</age><email>a@b.c</email></root>"
+        validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to(Set)
+      . assert(_ == Set("/age[1]"))
+
+      test(m"Wrong-type and missing-field errors mix"):
+        val xml = x"<root><name>Alice</name><age>oldish</age></root>"
+        validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to(Set)
+      . assert(_ == Set("/age[1]", "/email[1]"))
+
+      test(m"Nested missing primitive field reports both segments"):
         val xml = x"""<root>
                        <person><name>Dave</name><age>22</age></person>
                        <company>Acme</company>
                      </root>"""
         validateXml(xml)(_.as[DContact]).items.map(_(0).s).to(Set)
       . assert(_ == Set("/person[1]/email[1]"))
+
+      test(m"Missing nested case-class field expands per sub-field"):
+        // A missing `person` triggers the nested conjunction's
+        // raise+continue at `/person[1]` and then every sub-field's
+        // missing-field raise at `/person[1]/<field>[1]` — the same
+        // accrual rule that handles same-level missing fields.
+        val xml = x"<root><company>Acme</company></root>"
+        validateXml(xml)(_.as[DContact]).items.map(_(0).s).to(Set)
+      . assert: paths =>
+          paths == Set
+            ( "/person[1]",
+              "/person[1]/name[1]",
+              "/person[1]/age[1]",
+              "/person[1]/email[1]" )
 
     suite(m"Position-aware focus (tracked Xml)"):
       def validateWithPositions[result]
