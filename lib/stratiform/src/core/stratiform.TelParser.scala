@@ -34,6 +34,8 @@ package stratiform
 
 import scala.language.unsafeNulls
 
+import java.nio.charset.StandardCharsets
+
 import anticipation.*
 import contingency.*
 import fulminate.*
@@ -49,15 +51,25 @@ import TelError.Reason
 // Hot-path optimisations (see `lib/jacinta/src/core/jacinta.JsonParser.scala`
 // for the JSON analogue):
 //
-//   - `Line` carries only `(start, end, leadingSpaces, blank)` offsets into
-//     a single `source: String`. No per-line substring is materialised at
-//     line-split time; character access goes through `lineCharAt(line, i)`.
-//   - `parseCompoundLine` walks `source` directly without slicing off the
-//     leading indent; the keyword is interned through a 256-slot two-Long-
-//     packed cache so repeated keywords (typical for schema-shaped data)
-//     reuse the same `Text` value.
-//   - `makeLine` computes the blank flag during the leading-space scan
-//     rather than re-scanning the content for spaces.
+//   - The source is read as raw `Array[Byte]`; no upfront `String(bytes,
+//     "UTF-8")` decode happens. ASCII syntax characters (LF, CR, space,
+//     `#`, …) are byte-compared directly; multi-byte UTF-8 sequences
+//     within keywords and atoms are decoded once at materialisation time
+//     by `bytesSubstring`.
+//   - `Line` carries only `(start, end, leadingSpaces, blank)` byte
+//     offsets into the source.  Per-line substring allocations are
+//     avoided.
+//   - `parseCompoundLine` tracks an inclusive byte range per inline atom
+//     and decodes it as UTF-8 only at commit time — no `StringBuilder` is
+//     ever allocated for the atom-building loop.
+//   - Keywords are interned through a 64-slot open-addressed cache keyed
+//     by two-Long packed bytes (≤16-byte keywords; for ASCII this is up
+//     to a 16-character keyword) so repeated keywords reuse the same
+//     `Text` instance.
+//   - The compound-loop indent check is hoisted above `isCommentLine` /
+//     `isTabulationLineAt` via body-only variants (`isCommentBody` /
+//     `isTabulationBody`).
+//   - Ancestor stack push/pop is skipped entirely in no-schema mode.
 
 object TelParser:
 
@@ -77,53 +89,117 @@ object TelParser:
        val start:         Int,
        val end:           Int )
 
+  // Byte literals for ASCII syntax characters, factored out so the hot
+  // loops compare against named constants rather than magic numbers.
+  private inline val ByteLf       = 0x0A
+  private inline val ByteCr       = 0x0D
+  private inline val ByteSpace    = 0x20
+  private inline val ByteHash     = 0x23  // default sigil
+  private inline val ByteSlash    = 0x2F
+  private inline val ByteColon    = 0x3A
+  private inline val ByteBang     = 0x21
+  private inline val ByteDot      = 0x2E
+  private inline val ByteT        = 0x74  // 't'
+  private inline val ByteE        = 0x65  // 'e'
+  private inline val ByteL        = 0x6C  // 'l'
+  // UTF-8 BOM: EF BB BF.
+  private inline val ByteBom0 = 0xEF
+  private inline val ByteBom1 = 0xBB
+  private inline val ByteBom2 = 0xBF
+
 private final class TelParser(input: Data, schema: Optional[Tels]):
-  import TelParser.Line
+  import TelParser.*
 
-  private val source: String =
-    val arr = input.asInstanceOf[IArray[Byte]]
-    val bytes = new Array[Byte](arr.length)
-    var i = 0
-    while i < arr.length do { bytes(i) = arr(i); i += 1 }
-    String(bytes, "UTF-8")
+  // The raw input bytes. We use the input's underlying `IArray[Byte]`
+  // (cast to `Array[Byte]`) directly — no defensive copy, no upfront
+  // `String` decode. The cost of `String(bytes, "UTF-8")` is two
+  // memory-bandwidth passes (a Latin-1 detection scan plus an internal
+  // copy); we eliminate both and decode UTF-8 lazily only at the points
+  // where the parser actually materialises a `Text`.
+  private val bytes: Array[Byte] = input.asInstanceOf[IArray[Byte]].asInstanceOf[Array[Byte]]
 
-  // Inline accessors for line content backed by `source`. The `start`/`end`
-  // offsets are absolute byte/char positions into `source`; `end` excludes
-  // a CR preceding LF in CRLF mode so the visible content length is
-  // simply `end - start`.
+  // Unsigned byte read. Java arrays return signed bytes; we mask with
+  // 0xFF so comparisons against ASCII byte constants behave as expected
+  // for the full 0..255 range (multi-byte UTF-8 lead bytes are ≥0x80
+  // and would compare as negative if left signed).
+  private inline def byteAt(i: Int): Int = bytes(i) & 0xFF
+
+  // Materialise the byte range `[from, until)` as a UTF-8 `String`. This
+  // is the only path that does UTF-8 decoding in the parser; everything
+  // else operates on raw bytes.
+  private inline def bytesSubstring(from: Int, until: Int): String =
+    new String(bytes, from, until - from, StandardCharsets.UTF_8)
+
+  // Inline accessors for line content backed by `bytes`. The `start`/
+  // `end` offsets are absolute byte positions into `bytes`; `end`
+  // excludes a CR preceding LF in CRLF mode so the visible content
+  // length is simply `end - start`.
   private inline def lineLen(line: Line): Int = line.end - line.start
-  private inline def lineCharAt(line: Line, i: Int): Char = source.charAt(line.start + i)
+  private inline def lineByteAt(line: Line, i: Int): Int = bytes(line.start + i) & 0xFF
 
   private inline def lineSub(line: Line, from: Int, until: Int): String =
-    source.substring(line.start + from, line.start + until)
+    bytesSubstring(line.start + from, line.start + until)
 
   private inline def lineSubFrom(line: Line, from: Int): String =
-    source.substring(line.start + from, line.end)
+    bytesSubstring(line.start + from, line.end)
 
-  private inline def lineStartsWith(line: Line, prefix: String): Boolean =
-    source.regionMatches(line.start, prefix, 0, prefix.length)
+  // Byte-level prefix check at an absolute offset into `bytes`. Returns
+  // true if `prefix` matches the bytes starting at `from`. The prefix
+  // is encoded as UTF-8; this works for any prefix string but is only
+  // used here with ASCII literals.
+  private def bytesStartsWithAt(prefix: Array[Byte], from: Int): Boolean =
+    if from < 0 || from + prefix.length > bytes.length then false
+    else
+      var i = 0
+      while i < prefix.length && bytes(from + i) == prefix(i) do i += 1
+      i == prefix.length
+
+  private inline def lineStartsWith(line: Line, prefix: Array[Byte]): Boolean =
+    bytesStartsWithAt(prefix, line.start)
+
+  // Find the first occurrence of `needle` in `bytes` at or after
+  // `from`, or -1 if not found. Used by literal-atom closing-delimiter
+  // search.
+  private def bytesIndexOf(needle: Array[Byte], from: Int): Int =
+    val n = needle.length
+    if n == 0 then return from
+    val maxStart = bytes.length - n
+    val first = needle(0)
+    var i = from
+    while i <= maxStart do
+      if bytes(i) == first then
+        var j = 1
+        while j < n && bytes(i + j) == needle(j) do j += 1
+        if j == n then return i
+      i += 1
+    -1
+
+  // Pre-encoded byte sequences for the few ASCII literals that the
+  // parser searches for. Defined once so we don't re-encode them on
+  // every call.
+  private val ShebangBytes:    Array[Byte] = Array(ByteHash.toByte, ByteBang.toByte)
+  private val TelKeywordBytes: Array[Byte] =
+    Array(ByteT.toByte, ByteE.toByte, ByteL.toByte, ByteSpace.toByte)
 
   private val lineEndings: Tel.LineEndings =
-    val firstLf = source.indexOf('\n')
-    if firstLf > 0 && source.charAt(firstLf - 1) == '\r' then Tel.LineEndings.Crlf
+    var i = 0
+    while i < bytes.length && (bytes(i) & 0xFF) != ByteLf do i += 1
+    if i > 0 && i < bytes.length && (bytes(i - 1) & 0xFF) == ByteCr then Tel.LineEndings.Crlf
     else Tel.LineEndings.Lf
 
   // Detect line-ending violations per §17 / E121. A CR that is not part
   // of a CR LF pair is a bare CR and raises E121. In CRLF mode, a bare
   // LF (one not preceded by CR) outside of literal-atom payloads also
-  // raises E121. We approximate "outside literal payload" structurally
-  // here by walking the byte stream; the literal-atom payload exception
-  // is handled correctly because the structural line break terminating
-  // a literal-atom opening line is itself a valid CRLF in CRLF-mode
-  // documents.
+  // raises E121.
   private def checkLineEndings(): Unit raises TelError =
     var i = 0
     val crlfMode = lineEndings == Tel.LineEndings.Crlf
-    while i < source.length do
-      val c = source.charAt(i)
-      if c == '\r' && (i + 1 >= source.length || source.charAt(i + 1) != '\n')
+    val n = bytes.length
+    while i < n do
+      val c = bytes(i) & 0xFF
+      if c == ByteCr && (i + 1 >= n || (bytes(i + 1) & 0xFF) != ByteLf)
       then errorAtOffset(Reason.BadLineEnding, i)
-      else if crlfMode && c == '\n' && (i == 0 || source.charAt(i - 1) != '\r')
+      else if crlfMode && c == ByteLf && (i == 0 || (bytes(i - 1) & 0xFF) != ByteCr)
       then errorAtOffset(Reason.BadLineEnding, i)
       i += 1
 
@@ -134,12 +210,13 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
   // bookkeeping.
   private val lines: IArray[Line] =
     val builder = scala.collection.mutable.ArrayBuffer.empty[Line]
+    val n = bytes.length
     var lineStart = 0
     var index = 0
-    while index < source.length do
-      if source.charAt(index) == '\n' then
+    while index < n do
+      if (bytes(index) & 0xFF) == ByteLf then
         val contentEnd =
-          if index > 0 && source.charAt(index - 1) == '\r' then index - 1
+          if index > 0 && (bytes(index - 1) & 0xFF) == ByteCr then index - 1
           else index
 
         builder += makeLine(lineStart, contentEnd)
@@ -147,22 +224,28 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
       index += 1
 
-    if lineStart < source.length then
-      builder += makeLine(lineStart, source.length)
-    else if source.length > 0 && source.charAt(source.length - 1) == '\n' then
-      builder += makeLine(source.length, source.length)
+    if lineStart < n then
+      builder += makeLine(lineStart, n)
+    else if n > 0 && (bytes(n - 1) & 0xFF) == ByteLf then
+      builder += makeLine(n, n)
 
     IArray.from(builder)
 
   private def makeLine(start: Int, end: Int): Line =
     var spaces = 0
-    while start + spaces < end && source.charAt(start + spaces) == ' ' do spaces += 1
+    while start + spaces < end && (bytes(start + spaces) & 0xFF) == ByteSpace do spaces += 1
     val blank = start + spaces == end
     Line(spaces, blank, start, end)
 
   private var cursor: Int = 0
   private var margin: Int = 0
-  private var sigil: Char = '#'
+  // Sigil byte. Restricted to a single-byte (ASCII) character by the
+  // pragma parser; supporting multi-byte sigils would require a slower
+  // byte-sequence compare in the inner loops. -1 means uninitialised
+  // (still defaulting to '#').
+  private var sigilByte: Int = ByteHash
+  private var sigilChar: Char = '#'
+
   // The highest line index consumed by the prologue (interpreter
   // directive or pragma). The E109 check treats anything at or before
   // this line as equivalent to "start of file" — comments immediately
@@ -170,31 +253,17 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
   private var prologueEndLine: Int = -1
 
   // Ancestor stack of Struct types known for each open compound, used
-  // by the schema-aware E107 recovery rule of §19.5. The element at
-  // index `i` is the schema struct corresponding to the compound at
-  // depth `i+1` (so the document root at depth 0 is implicit and
-  // refers to `schema.document`). `Unset` entries mark compounds
-  // whose schema position couldn't be resolved (e.g. an unknown
-  // keyword in a permissive layer), in which case both shallower and
-  // deeper recovery treat that ancestor as "schema-blind".
+  // by the schema-aware E107 recovery rule of §19.5.
   private val ancestors =
     scala.collection.mutable.ArrayBuffer.empty[Optional[Tels.Struct]]
 
   // Build a `TelError.Position` for a given line index (0-based internally;
-  // converted to the 1-indexed line numbers callers expect). Column
-  // defaults to `1` meaning "first character of the line"; pass an
-  // explicit `column` for mid-line errors. Returns `(1, 1)` for an
-  // out-of-range index so a buggy caller can't crash the parser
-  // mid-error.
+  // converted to the 1-indexed line numbers callers expect).
   private inline def positionAt(lineIdx: Int, column: Int = 1): TelError.Position =
     if lineIdx < 0 || lineIdx >= lines.length then TelError.Position(1, 1)
     else TelError.Position(lineIdx + 1, column)
 
-  // Compute a position from an absolute byte offset into the original
-  // `source`. Used by `checkBom` / `checkLineEndings`, which walk the
-  // raw bytes before any cursor advance, so they don't have a line
-  // index to hand to `positionAt`. Linear scan is fine — these helpers
-  // run at most a handful of times per parse.
+  // Compute a position from an absolute byte offset into `bytes`.
   private def positionAtOffset(byteOffset: Int): TelError.Position =
     var lineIdx = 0
     while lineIdx < lines.length && lines(lineIdx).end <= byteOffset do lineIdx += 1
@@ -205,9 +274,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       val line = lines(lineIdx)
       TelError.Position(lineIdx + 1, byteOffset - line.start + 1)
 
-  // Abort with a positional `TelError`. The convenience helpers
-  // `errorAt(reason, lineIdx)` and `errorAtOffset(reason, offset)`
-  // construct the position before delegating here.
   private def errorAt(reason: Reason, lineIdx: Int, column: Int = 1)
                      (using Tactic[TelError])
   :   Nothing =
@@ -220,13 +286,8 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
     abort(TelError(reason, positionAtOffset(byteOffset)))
 
-  // Reverse-lookup of a `Line` instance's index in the pre-split
-  // `lines` array. The comparison uses object identity (`ne`) so it
-  // stays O(1) per slot — only the error path hits this, never the
-  // hot parse path, so the linear scan is fine. Returns `-1` if the
-  // line isn't part of this parser's `lines` (e.g. a synthetic
-  // line constructed mid-parse), which `positionAt` then maps to the
-  // sentinel position `(1, 1)`.
+  // Reverse-lookup of a `Line` instance's index in `lines`. Only the
+  // error path hits this, so the linear scan is fine.
   private def lineIndexOf(line: Line): Int =
     var i = 0
     while i < lines.length && (lines(i) ne line) do i += 1
@@ -238,38 +299,34 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
     errorAt(reason, lineIndexOf(line), column)
 
-  // Keyword interning cache. Keywords of length ≤8 are packed into two
-  // Longs (4 16-bit chars each) so a hash + linear-probe lookup is
-  // allocation-free on cache hits. Longer keywords skip the cache.
-  // The cache is bounded by linear-probe count (4) rather than load
-  // factor — fixed-cost lookup with a small chance of falling through
-  // to a direct substring allocation on full collision. Size of 64
-  // is enough for typical TEL schemas (<30 unique keywords) and keeps
-  // the per-parse zeroing cost down for small documents.
+  // Keyword interning cache. Keywords of length ≤16 bytes are packed
+  // into two Longs (8 bytes per Long); a hash + linear-probe lookup
+  // returns the same `Text` for every occurrence of the same keyword
+  // bytes. Longer keywords skip the cache.
   private val keyCache:     Array[String] = new Array[String](64)
   private val keyCacheLow:  Array[Long]   = new Array[Long](64)
   private val keyCacheHigh: Array[Long]   = new Array[Long](64)
 
-  // Look up or insert the substring `source[from, until)` in the keyword
+  // Look up or insert the byte range `bytes[from, until)` in the keyword
   // cache. Returns a `Text` whose underlying String is shared across
-  // every line that names the same keyword. For TEL keywords (no NUL
-  // characters per §6) the (low, high) pair is injective on ≤8-char
-  // strings, so direct (low, high) equality is sufficient — no need
-  // to fall back to a string comparison on hits.
+  // every line that names the same keyword. Two ≤16-byte byte sequences
+  // collide in the (low, high) packing only if they have identical
+  // bytes, so direct equality is sufficient — no fallback string compare
+  // needed.
   private def internKeyword(from: Int, until: Int): Text =
     val len = until - from
     if len <= 0 then Text("")
-    else if len > 8 then Text(source.substring(from, until))
+    else if len > 16 then Text(bytesSubstring(from, until))
     else
       var low:  Long = 0L
       var high: Long = 0L
       var idx = 0
-      while idx < len && idx < 4 do
-        low |= source.charAt(from + idx).toLong << (idx * 16)
+      while idx < len && idx < 8 do
+        low |= (bytes(from + idx).toLong & 0xFF) << (idx * 8)
         idx += 1
 
       while idx < len do
-        high |= source.charAt(from + idx).toLong << ((idx - 4) * 16)
+        high |= (bytes(from + idx).toLong & 0xFF) << ((idx - 8) * 8)
         idx += 1
 
       val hash = ((low ^ (low >>> 32)) ^ (high ^ (high >>> 17))).toInt
@@ -278,7 +335,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       while probes < 4 do
         val existing = keyCache(slot)
         if existing == null then
-          val str = source.substring(from, until)
+          val str = bytesSubstring(from, until)
           keyCache(slot) = str
           keyCacheLow(slot) = low
           keyCacheHigh(slot) = high
@@ -288,13 +345,9 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
         slot = (slot + 1) & 0x3F
         probes += 1
 
-      Text(source.substring(from, until))
+      Text(bytesSubstring(from, until))
 
   // Push a child compound's resolved struct onto the ancestor stack.
-  // The compound is at depth `parentDepth + 1`; `parentDepth` is the
-  // length of the current ancestor stack (0 = document root). If we
-  // can resolve the compound's keyword to a Struct type inside the
-  // parent's schema struct, push it; otherwise push Unset.
   private def pushAncestor(keyword: Text): Unit raises TelError =
     schema.let: s =>
       val parent: Optional[Tels.Struct] =
@@ -305,17 +358,11 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
       ancestors += resolved
     .or:
-      // Without a schema we still keep the depth alignment so pop
-      // works symmetrically, but the entries are always Unset.
       ancestors += Unset
 
   private def popAncestor(): Unit =
     if ancestors.nonEmpty then ancestors.remove(ancestors.length - 1)
 
-  // Resolve `keyword` against `parent`'s direct Field / SelectRef
-  // members. Returns the Struct type if the keyword names a child
-  // whose resolved type is a Struct, or Unset otherwise (Scalar /
-  // Flag / unknown keyword / Reference to a non-struct).
   private def resolveKeywordStruct(parent: Tels.Struct, keyword: Text, schema: Tels)
   :     Optional[Tels.Struct] raises TelError =
     val matched: Optional[Tels.Type] =
@@ -327,7 +374,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
             if f.keyword == keyword then found = f.fieldType
 
           case s: Tels.SelectRef =>
-            // Expand the SelectRef's variants.
             schema.selects.find(_.name == s.reference).foreach: selectDef =>
               selectDef.variants.find(_.keyword == keyword).foreach: variant =>
                 found = variant.variantType
@@ -342,8 +388,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       resolveTypeToStruct(t, schema)
     .or(Unset)
 
-  // Resolve a Type to a Struct (following one level of Reference) or
-  // Unset if it doesn't resolve to a Struct.
   private def resolveTypeToStruct(t: Tels.Type, schema: Tels)
   :     Optional[Tels.Struct] =
     t match
@@ -358,8 +402,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       case _ =>
         Unset
 
-  // Does `parent` contain `keyword` in its direct Field/SelectRef
-  // keyword set?
   private def keywordAdmissible(parent: Tels.Struct, keyword: Text, schema: Tels): Boolean =
     var i = 0
     while i < parent.members.length do
@@ -378,16 +420,14 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     false
 
   // Extract the keyword phrase from a non-blank, non-comment,
-  // non-tabulation line — used by the schema-aware E107 recovery to
-  // probe the schema. Falls back to the empty string if the line has
-  // no leading keyword.
+  // non-tabulation line — used by the schema-aware E107 recovery.
   private def extractKeyword(line: Line): Text =
     val len = lineLen(line)
     val start = line.leadingSpaces
     var end = start
     while end < len
-      && lineCharAt(line, end) != ' '
-      && lineCharAt(line, end) != sigil
+      && lineByteAt(line, end) != ByteSpace
+      && lineByteAt(line, end) != sigilByte
     do end += 1
 
     internKeyword(line.start + start, line.start + end)
@@ -406,12 +446,15 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     Tel.Document(directive, pragma, lineEndings, children)
 
   private def checkBom(): Unit raises TelError =
-    if source.length >= 1 && source.charAt(0) == '﻿' then
-      errorAtOffset(Reason.BomPresent, 0)
+    if bytes.length >= 3
+       && (bytes(0) & 0xFF) == ByteBom0
+       && (bytes(1) & 0xFF) == ByteBom1
+       && (bytes(2) & 0xFF) == ByteBom2
+    then errorAtOffset(Reason.BomPresent, 0)
 
   private def parseInterpreterDirective(): Optional[Text] =
     if cursor >= lines.length then Unset
-    else if lineStartsWith(lines(cursor), "#!") then
+    else if lineStartsWith(lines(cursor), ShebangBytes) then
       val payload = lineSubFrom(lines(cursor), 2)
       prologueEndLine = cursor
       cursor += 1
@@ -422,30 +465,40 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     val firstNonBlank = peekNextNonBlankLine()
     val result = firstNonBlank.let: idx =>
       val line = lines(idx)
-      val content = lineSubFrom(line, line.leadingSpaces)
-      if content.startsWith("tel ") || content == "tel" then
-        // §8: the pragma must be entirely within the first 4096 bytes of
-        // the document. A pragma-shaped line that begins at or after
-        // byte 4096 — or extends past it — is E103.
+      // A pragma-shaped line is either exactly "tel" or starts with
+      // "tel " (after leading indentation). Detect this at the byte
+      // level so we don't materialise a String per non-pragma line.
+      val ls = line.leadingSpaces
+      val len = lineLen(line)
+      val isExactTel =
+        len - ls == 3
+        && lineByteAt(line, ls) == ByteT
+        && lineByteAt(line, ls + 1) == ByteE
+        && lineByteAt(line, ls + 2) == ByteL
+      val hasTelPrefix =
+        len - ls >= 4
+        && lineByteAt(line, ls) == ByteT
+        && lineByteAt(line, ls + 1) == ByteE
+        && lineByteAt(line, ls + 2) == ByteL
+        && lineByteAt(line, ls + 3) == ByteSpace
+      if isExactTel || hasTelPrefix then
         if line.start >= 4096 || line.end > 4096
         then errorAt(Reason.PragmaTooLong, idx)
         prologueEndLine = idx
         cursor = idx + 1
-        Optional(parsePragmaContent(content, idx))
+        Optional(parsePragmaContent(lineSubFrom(line, ls), idx))
       else Unset
     .or(Unset)
 
-    // Detect a pragma-shaped line that occurs after the first non-blank
-    // line — that's E102 (PragmaNotFirst) per §8 of the TEL spec.
     if result.absent then
       var j = firstNonBlank.or(0) + 1
       while j < lines.length do
         val ln = lines(j)
         if !ln.blank && ln.leadingSpaces == 0 then
-          if lineLen(ln) == 3 && lineCharAt(ln, 0) == 't' && lineCharAt(ln, 1) == 'e'
-            && lineCharAt(ln, 2) == 'l'
+          if lineLen(ln) == 3 && lineByteAt(ln, 0) == ByteT && lineByteAt(ln, 1) == ByteE
+            && lineByteAt(ln, 2) == ByteL
           then errorAt(Reason.PragmaNotFirst, j)
-          else if lineStartsWith(ln, "tel ") then errorAt(Reason.PragmaNotFirst, j)
+          else if lineStartsWith(ln, TelKeywordBytes) then errorAt(Reason.PragmaNotFirst, j)
 
         j += 1
 
@@ -458,19 +511,10 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       if parts.length >= 2 then parseVersion(parts(1), lineIdx)
       else (1, 0)
 
-    // §8: the pragma carries exactly tel + version + optional schema +
-    // optional sigil. Anything beyond that — including a remark
-    // introducer — is E123. Check up front so a stray remark doesn't
-    // first hit the schema-identifier validator.
     if parts.length > 4 then errorAt(Reason.ExtraPragmaContent, lineIdx)
 
     val schema: Optional[Text] =
       if parts.length >= 3 then
-        // §8.2: the schema atom must be either a URL (containing "://")
-        // or a BASE-256 schema signature. Plain identifier-style strings
-        // are E122. The BASE-256 signature is either a 64-character hex
-        // hash or a string of non-ASCII BASE-256 encoded bytes; a string
-        // of only ASCII characters that lacks "://" fails both forms.
         val s = parts(2)
         val isUrl = s.indexOf("://") >= 0
         val isHexHash = s.length == 64 && s.forall: c =>
@@ -484,10 +528,12 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     val pragmaSigil: Optional[Char] =
       if parts.length >= 4 && parts(3).length == 1 then
         val c = parts(3).charAt(0)
-        // Per §8.3 the sigil must be a symbolic character — not a digit,
-        // not a letter, not whitespace, not the keyword-class character.
-        if c.isLetterOrDigit then errorAt(Reason.BadSigil, lineIdx)
-        sigil = c
+        // §8.3: must be a symbolic character. We additionally require
+        // it be a single byte (i.e. ASCII) so the byte-level inner-loop
+        // sigil compare works without a multi-byte fallback.
+        if c.isLetterOrDigit || c.toInt > 127 then errorAt(Reason.BadSigil, lineIdx)
+        sigilChar = c
+        sigilByte = c.toInt
         c: Optional[Char]
       else Unset
 
@@ -503,10 +549,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       (major, minor)
     catch case _: NumberFormatException => errorAt(Reason.BadVersion, lineIdx)
 
-  // Inline atoms are separated by single soft spaces until the first hard
-  // space; from that point onward only hard spaces separate them. The
-  // current pragma parsing path is a simplified subset (no remark, no hard
-  // spaces in atom positions per the spec).
   private def splitPhrases(content: String): List[String] =
     val parts = scala.collection.mutable.ListBuffer.empty[String]
     val builder = StringBuilder()
@@ -515,7 +557,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     while i < content.length do
       val ch = content.charAt(i)
       if ch == ' ' then
-        // Count consecutive spaces
         var j = i
         while j < content.length && content.charAt(j) == ' ' do j += 1
         val runLength = j - i
@@ -523,7 +564,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
           if builder.nonEmpty then { parts += builder.toString; builder.clear() }
           i += 1
         else
-          // hard space; switches into hard-space mode and ends the phrase
           if !hardSpaceMode then hardSpaceMode = true
           if builder.nonEmpty then { parts += builder.toString; builder.clear() }
           i = j
@@ -544,34 +584,12 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     while i < lines.length && lines(i).blank do i += 1
     if i < lines.length then i else Unset
 
-  // Returns the indent in levels (units of two spaces beyond the
-  // margin). Raises E106 if leading spaces fall short of the margin.
-  // Odd post-margin offsets go through E107 recovery: schema-aware
-  // when a schema is in scope (§19.5), schema-independent shallower-
-  // wins otherwise.
   private def indentOf(line: Line): Int raises TelError =
     val relative = line.leadingSpaces - margin
     if relative < 0 then errorAtLine(Reason.LessThanMargin, line)
     else if relative % 2 == 0 then relative / 2
     else recoverOddIndent(line, relative)
 
-  // §19.5 E107 recovery. When no schema is in scope, return the
-  // shallower depth (the original v1.0 rule). When a schema is in
-  // scope, compute admissibility at both candidate depths via the
-  // current ancestor stack, then:
-  //   - both invalid or both valid → shallower (tie-break favours
-  //     the shallower interpretation; type assignment can later
-  //     report E306 against the chosen parent).
-  //   - only one valid → that one.
-  // Edge cases tracked in §19.5:
-  //   1. shallower over-dedents past the ancestor stack → shallower
-  //      invalid; deeper's parent doesn't exist either, so we fall
-  //      back to shallower (graceful degradation).
-  //   2. deeper's parent doesn't exist (no open compound at depth
-  //      `shallower`) → deeper invalid.
-  //   3. deeper's parent resolved to a non-Struct (Scalar/Flag) → it
-  //      wasn't pushed onto the ancestor stack at all, so deeperParent
-  //      is Unset → deeper invalid.
   private def recoverOddIndent(line: Line, relative: Int): Int raises TelError =
     schema.let: s =>
       val shallower = relative / 2
@@ -599,19 +617,12 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
   private def checkTrailingSpaces(line: Line): Unit raises TelError =
     val len = lineLen(line)
-    if len > 0 && lineCharAt(line, len - 1) == ' ' && !line.blank
+    if len > 0 && lineByteAt(line, len - 1) == ByteSpace && !line.blank
     then errorAtLine(Reason.TrailingSpaces, line, len)
 
-  // Recursively parses the child blocks of a node at parentIndent. The
-  // children themselves are at parentIndent + 1, except at top-level where
-  // parentIndent = -1 means children are at indent 0.
   private def parseChildren(parentIndent: Int): IArray[Tel.Block] raises TelError =
     val expected = parentIndent + 1
 
-    // Fast path: if there's no next non-blank line, or it's at a shallower
-    // indent than expected, there are no children — skip the ArrayBuffer
-    // allocation entirely. This path fires once per leaf compound, so for
-    // schema-shaped data it's a huge fraction of all parseChildren calls.
     val firstIdx = peekNextNonBlankLine()
     if firstIdx.absent then return IArray.empty[Tel.Block]
     val firstResolved = firstIdx.vouch
@@ -632,17 +643,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     do
       builder += parseBlock(expected)
 
-    // After consuming children at `expected`, a remaining non-blank line
-    // more indented than `expected` is an error. The kind of error
-    // depends on the last block's shape:
-    //   - tabulation present, no rows: E116, a tabulated row at the
-    //     wrong indent
-    //   - tabulation present, rows present: E112, a child of a
-    //     tabulated row (rows cannot themselves have children)
-    //   - no tabulation, no compounds (comment-only): E112, the
-    //     orphaned line is a child of a non-compound
-    //   - otherwise: E111, the line over-indents past the last
-    //     compound's child level
     val rest = peekNextNonBlankLine()
     rest.let: idx =>
       val di = indentOf(lines(idx))
@@ -660,19 +660,10 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
     IArray.from(builder)
 
-  // Parses a single block: optional leading comments at the given indent,
-  // followed by a contiguous run of compounds at the same indent, followed
-  // by zero or more trailing blank lines. Blanks between the comment-group
-  // and the compound-group are "interior" (not counted as trailing).
   private def parseBlock(indent: Int): Tel.Block raises TelError =
     val comments = scala.collection.mutable.ArrayBuffer.empty[Tel.Comment]
 
     while atCommentLine(indent) do
-      // §9 E109: a comment must be preceded by start of file, the
-      // prologue (directive / pragma), a blank line, another comment,
-      // or a line at lesser indent. A non-blank non-comment line at
-      // the same or greater indent immediately before violates the
-      // rule.
       if cursor > 0 && cursor - 1 > prologueEndLine then
         val prev = lines(cursor - 1)
         if !prev.blank && !isCommentLine(prev, indent) && prev.leadingSpaces >= margin + indent * 2
@@ -681,8 +672,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       comments += parseCommentLine(lines(cursor))
       cursor += 1
 
-    // If comments are followed by blanks then a compound at the same indent,
-    // consume the blanks as interior whitespace (do not count them anywhere).
     if comments.nonEmpty && cursor < lines.length && lines(cursor).blank then
       var probe = cursor
       while probe < lines.length && lines(probe).blank do probe += 1
@@ -690,10 +679,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
         && !isCommentLine(lines(probe), indent)
       then cursor = probe
 
-    // A tabulation line at this indent introduces a tabulated block: rows
-    // follow as ordinary compound lines (the column-alignment rules of §16
-    // are not enforced in phase 1; the row's keyword + inline atoms are
-    // captured verbatim per the phrase-separation rule).
     val tabulation: Optional[Tel.Tabulation] =
       if cursor < lines.length && isTabulationLineAt(lines(cursor), indent) then
         val line = lines(cursor)
@@ -703,12 +688,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
     val compounds = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
 
-    // Hoisted compound-loop condition: a compound line at `indent` is a
-    // non-blank line at exactly `indent` whose first non-space character
-    // is NOT the sigil immediately followed by a soft space or end-of-
-    // line (comment) and is not a tabulation line. We do the indent
-    // check once here; the body-shape predicates `isCommentBody` and
-    // `isTabulationBody` skip their own redundant indent re-check.
     var continueLoop = true
     while continueLoop && cursor < lines.length do
       val line = lines(cursor)
@@ -724,10 +703,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
         val children =
           if extraAtom.absent && tabulation.absent then
-            // Ancestor bookkeeping is only consulted by the §19.5
-            // schema-aware E107 recovery path. Skip the push/pop pair
-            // entirely in no-schema mode — for documents with deep
-            // nesting this is a meaningful saving.
             if schema.present then
               pushAncestor(parsed.keyword)
               try parseChildren(indent) finally popAncestor()
@@ -743,16 +718,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
     Tel.Block(IArray.from(comments), tabulation, IArray.from(compounds), trailingBlankLines)
 
-  // §16.2 column-rule validation for tabulated rows. Walks the row left-
-  // to-right. Each contiguous run of ≥2 spaces is a hard-space and MUST
-  // end exactly at one of the column marker positions M_k (k ≥ 1)
-  // declared on the tabulation line (**E117**). Each non-final column
-  // value's width MUST NOT exceed M_{k+1} − M_k − 2 (**E119**). A 2+
-  // space run that isn't a column separator is implicitly **E118**
-  // (consecutive spaces within a value), but the spec lets the parser
-  // report either E117 or E118 in that case — we report E117, matching
-  // the reference parser's behaviour. Remarks (hard-space + sigil +
-  // soft-space introducer) are exempt and end the validation walk.
   private def validateTabulatedRow(line: Line, tabulation: Tel.Tabulation)
   :     Unit raises TelError =
     val markers = tabulation.markerOffsets
@@ -763,17 +728,17 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     var phraseStart = i
 
     while i < n do
-      if lineCharAt(line, i) == ' ' then
+      if lineByteAt(line, i) == ByteSpace then
         var j = i
-        while j < n && lineCharAt(line, j) == ' ' do j += 1
+        while j < n && lineByteAt(line, j) == ByteSpace do j += 1
         val runLen = j - i
 
         if runLen >= 2 then
           val isRemark =
             j < n
-            && lineCharAt(line, j) == sigil
-            && (j + 1 >= n || (lineCharAt(line, j + 1) == ' '
-                               && (j + 2 >= n || lineCharAt(line, j + 2) != ' ')))
+            && lineByteAt(line, j) == sigilByte
+            && (j + 1 >= n || (lineByteAt(line, j + 1) == ByteSpace
+                               && (j + 2 >= n || lineByteAt(line, j + 2) != ByteSpace)))
 
           if isRemark then i = n
           else
@@ -801,33 +766,22 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     if line.blank || indentOf(line) != indent then false
     else isTabulationBody(line)
 
-  // Body-only variant: assumes the caller has already verified the line
-  // is non-blank and at the desired indent. Used in the inner compound
-  // loop to avoid a redundant `indentOf` pass per iteration.
   private inline def isTabulationBody(line: Line): Boolean =
     val start = line.leadingSpaces
     start < lineLen(line)
-    && lineCharAt(line, start) == sigil
+    && lineByteAt(line, start) == sigilByte
     && hasTabulationMarker(line, start)
 
-  // Body-only variant of `isCommentLine` — same assumption as
-  // `isTabulationBody`.
   private inline def isCommentBody(line: Line): Boolean =
     val len = lineLen(line)
     val start = line.leadingSpaces
-    if start >= len || lineCharAt(line, start) != sigil then false
+    if start >= len || lineByteAt(line, start) != sigilByte then false
     else
       val next = start + 1
-      if next >= len then true  // bare sigil
-      else if lineCharAt(line, next) == ' ' then !hasTabulationMarker(line, start)
-      else false  // `#foo` — not a comment
+      if next >= len then true
+      else if lineByteAt(line, next) == ByteSpace then !hasTabulationMarker(line, start)
+      else false
 
-  // Extracts marker offsets and headings from a tabulation line. The first
-  // marker is at the first non-space position; subsequent markers are
-  // sigil characters immediately preceded by a hard space. Headings are
-  // the text between a marker and the next hard-space-marker boundary
-  // (or end of line for the final column), with the introducer space
-  // consumed per §16.1.
   private def parseTabulationLine(line: Line): Tel.Tabulation raises TelError =
     val n = lineLen(line)
     val markers = scala.collection.mutable.ArrayBuffer.empty[Int]
@@ -836,11 +790,11 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     markers += first
     var i = first + 1
     while i < n do
-      if lineCharAt(line, i) == ' ' then
+      if lineByteAt(line, i) == ByteSpace then
         var j = i
-        while j < n && lineCharAt(line, j) == ' ' do j += 1
+        while j < n && lineByteAt(line, j) == ByteSpace do j += 1
         val runLen = j - i
-        if runLen >= 2 && j < n && lineCharAt(line, j) == sigil then
+        if runLen >= 2 && j < n && lineByteAt(line, j) == sigilByte then
           markers += j
           i = j + 1
         else i = j
@@ -856,42 +810,27 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
     Tel.Tabulation(IArray.from(markers), IArray.from(headings))
 
-  // After a marker (which sits at the sigil's index, so `start` is index+1),
-  // an optional soft space introduces the heading text; the heading ends at
-  // the next hard space or at `limit` (the position of the next marker, or
-  // end of line for the final column). §16 / E120 forbids: non-space
-  // immediately after the marker, more than one space before heading
-  // content, or a sigil character inside the heading text.
   private def extractHeading(line: Line, start: Int, limit: Int): Text raises TelError =
     if start >= limit then t""
-    else if lineCharAt(line, start) != ' ' then
+    else if lineByteAt(line, start) != ByteSpace then
       errorAtLine(Reason.BadTabulationHeading, line, start + 1)
-    else if start + 1 < limit && lineCharAt(line, start + 1) == ' ' then
-      // Two consecutive spaces immediately after the marker: either an
-      // empty heading (introducer + single terminator space = exactly
-      // two spaces between markers) or malformed (a real heading
-      // starting after extra leading spaces, which is E120).
+    else if start + 1 < limit && lineByteAt(line, start + 1) == ByteSpace then
       if limit - start <= 2 then t""
       else errorAtLine(Reason.BadTabulationHeading, line, start + 1)
     else
       var i = start + 1
       var stop = limit
       while i < limit - 1 do
-        if lineCharAt(line, i) == ' ' && lineCharAt(line, i + 1) == ' ' then
+        if lineByteAt(line, i) == ByteSpace && lineByteAt(line, i + 1) == ByteSpace then
           stop = i
           i = limit
         else
-          if lineCharAt(line, i) == sigil then
+          if lineByteAt(line, i) == sigilByte then
             errorAtLine(Reason.BadTabulationHeading, line, i + 1)
           i += 1
 
       Text(lineSub(line, start + 1, stop))
 
-  // Counts blank lines that "belong" to a block at the given indent: the
-  // run of blanks immediately following the block, *stopping* when the next
-  // non-blank line is at a different indent. Blanks preceding a shallower
-  // line belong to the enclosing block; blanks preceding a deeper line
-  // would indicate over-indentation (handled elsewhere).
   private def consumeTrailingBlanksFor(indent: Int): Int raises TelError =
     var count = 0
     while
@@ -909,45 +848,26 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     if probe >= lines.length then true
     else indentOf(lines(probe)) == indent
 
-  // A line is a comment if, after its leading indentation, its first
-  // non-space character is the sigil and that sigil is either at end of
-  // line or followed by exactly one soft space; the `#foo` form (sigil
-  // concatenated with content) is NOT a comment. Tabulation lines are
-  // distinguished by a second sigil preceded by a hard space (deferred for
-  // phase 1; for now any sigil-prefixed line that does not have a tabulation
-  // marker is a comment).
   private def atCommentLine(indent: Int): Boolean raises TelError =
     cursor < lines.length && isCommentLine(lines(cursor), indent)
 
   private def isCommentLine(line: Line, indent: Int): Boolean raises TelError =
     if line.blank || indentOf(line) != indent then false
-    else
-      val len = lineLen(line)
-      val start = line.leadingSpaces
-      if start >= len || lineCharAt(line, start) != sigil then false
-      else
-        val next = start + 1
-        if next >= len then true  // bare sigil
-        else if lineCharAt(line, next) == ' ' then !hasTabulationMarker(line, start)
-        else false  // `#foo` — not a comment
+    else isCommentBody(line)
 
   private def hasTabulationMarker(line: Line, fromIdx: Int): Boolean =
     val n = lineLen(line)
     var i = fromIdx + 1
     while i < n - 1 do
-      if lineCharAt(line, i) == ' ' && lineCharAt(line, i + 1) == ' ' then
+      if lineByteAt(line, i) == ByteSpace && lineByteAt(line, i + 1) == ByteSpace then
         var j = i
-        while j < n && lineCharAt(line, j) == ' ' do j += 1
-        if j < n && lineCharAt(line, j) == sigil then return true
+        while j < n && lineByteAt(line, j) == ByteSpace do j += 1
+        if j < n && lineByteAt(line, j) == sigilByte then return true
         i = j
       else i += 1
 
     false
 
-  // After a compound line, optionally consume a source atom (§14, indent
-  // = compound + 2 levels, 4 spaces deeper) or literal atom (§15, indent
-  // = compound + 3 levels, 6 spaces deeper). Returns the atom if one was
-  // consumed; otherwise Unset and parsing falls through to parseChildren.
   private def parseSourceOrLiteralAtom(compoundLeadingSpaces: Int)
   : Optional[Tel.Atom] raises TelError =
     if cursor >= lines.length || lines(cursor).blank then Unset
@@ -960,10 +880,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
         else if line.leadingSpaces == sourceIndent then Optional(parseSourceAtom(sourceIndent))
         else Unset
 
-      // §10.4 / §11.1: a compound may carry at most one source or literal
-      // atom. The error code names the *second* atom's kind: E113 if a
-      // source follows an existing source/literal, E114 if a literal
-      // follows an existing source/literal.
       if first.present && cursor < lines.length && !lines(cursor).blank then
         val nextLine = lines(cursor)
         if nextLine.leadingSpaces == literalIndent
@@ -973,11 +889,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
       first
 
-  // Source atom: captures lines whose leading-spaces ≥ sourceIndent (or
-  // are blank, when followed by more source content or EOF), strips
-  // exactly sourceIndent spaces from each non-blank line, trims trailing
-  // spaces, and joins with `\n` per captured line (each line, including
-  // the last, contributes one terminating `\n`).
   private def parseSourceAtom(sourceIndent: Int): Tel.Atom.Source =
     val captured = scala.collection.mutable.ListBuffer.empty[String]
 
@@ -999,7 +910,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       else if line.leadingSpaces >= sourceIndent then
         val len = lineLen(line)
         var endIdx = len
-        while endIdx > sourceIndent && lineCharAt(line, endIdx - 1) == ' ' do endIdx -= 1
+        while endIdx > sourceIndent && lineByteAt(line, endIdx - 1) == ByteSpace do endIdx -= 1
         captured += lineSub(line, sourceIndent, endIdx)
         cursor += 1
       else done = true
@@ -1011,40 +922,40 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
     Tel.Atom.Source(Text(sb.toString))
 
-  // Literal atom: the opening line's content (after literalIndent spaces)
-  // is the delimiter. Payload is everything between the LF terminating the
-  // opening line and the next bare `\n<delim>\n` match in the *raw* byte
-  // stream. The closing delimiter line is flush left (column 0).
   private def parseLiteralAtom(literalIndent: Int): Tel.Atom.Literal raises TelError =
     val openingLine = lines(cursor)
     val delimiter = lineSubFrom(openingLine, literalIndent)
+    val delimiterBytes = delimiter.getBytes(StandardCharsets.UTF_8)
     cursor += 1
     val payloadStart = openingLine.end + (if lineEndings == Tel.LineEndings.Crlf then 2 else 1)
-    val emptyPattern = delimiter + "\n"
 
-    // An empty payload (§15: "An empty literal payload (a LF immediately
-    // followed by the delimiter and a LF) is permitted") shares the
-    // opening line's terminating LF with the closing pattern's leading
-    // LF; the search-from-payloadStart path can't match because there's
-    // no leading LF to find at payloadStart. Handle that case explicitly.
+    // Empty payload (§15): the opening line's terminating LF is also
+    // the closing pattern's leading LF, so the search-from-payloadStart
+    // path can't match — handle it explicitly.
+    val emptyPatternLen = delimiterBytes.length + 1
+    val isEmpty =
+      payloadStart + emptyPatternLen <= bytes.length
+      && {
+        var i = 0
+        while i < delimiterBytes.length && bytes(payloadStart + i) == delimiterBytes(i) do i += 1
+        i == delimiterBytes.length
+          && (bytes(payloadStart + delimiterBytes.length) & 0xFF) == ByteLf
+      }
+
     val (rawPayload, afterClose) =
-      if source.startsWith(emptyPattern, payloadStart) then
-        ("", payloadStart + emptyPattern.length)
+      if isEmpty then ("", payloadStart + emptyPatternLen)
       else
-        val pattern = "\n" + delimiter + "\n"
-        val closeIdx = source.indexOf(pattern, payloadStart)
+        // Search for `\n<delimiter>\n`.
+        val pattern = new Array[Byte](delimiterBytes.length + 2)
+        pattern(0) = ByteLf.toByte
+        System.arraycopy(delimiterBytes, 0, pattern, 1, delimiterBytes.length)
+        pattern(pattern.length - 1) = ByteLf.toByte
+        val closeIdx = bytesIndexOf(pattern, payloadStart)
         if closeIdx < 0 then errorAtLine(Reason.UnclosedLiteral, openingLine)
-        (source.substring(payloadStart, closeIdx), closeIdx + pattern.length)
+        (bytesSubstring(payloadStart, closeIdx), closeIdx + pattern.length)
 
-    // Strip \r\n → \n inside the literal payload. The TEL spec (§15) states
-    // payload bytes are preserved literally, including any CR. The Rust
-    // reference implementation, however, normalises CRLF to LF inside the
-    // payload; the upstream `pos/literal-atom-cr-in-payload.check` fixture
-    // pins this normalisation. Recorded in doc/spec-notes.md.
     val payload = rawPayload.replace("\r\n", "\n")
 
-    // Advance cursor past the closing delimiter line: the line whose start
-    // is exactly afterClose.
     while cursor < lines.length && lines(cursor).start < afterClose do cursor += 1
 
     Tel.Atom.Literal(Text(delimiter), Text(payload))
@@ -1054,7 +965,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     val start = line.leadingSpaces + 1
     val payload =
       if start >= len then ""
-      else if lineCharAt(line, start) == ' ' then lineSubFrom(line, start + 1)
+      else if lineByteAt(line, start) == ByteSpace then lineSubFrom(line, start + 1)
       else lineSubFrom(line, start)
 
     Tel.Comment(Text(payload))
@@ -1063,75 +974,80 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
   // first phrase), subsequent inline atoms with their preceding-space
   // counts, and an optional remark per §10.3 / §11.2. Source and literal
   // atoms are added in a separate pass.
+  //
+  // Atoms are accumulated as byte ranges into `bytes` (no `StringBuilder`)
+  // and decoded as UTF-8 only at commit time. Embedded soft-spaces in
+  // hard-space mode are naturally included in the range because we
+  // don't skip them.
   private def parseCompoundLine(line: Line, indent: Int): Tel.Compound raises TelError =
     checkTrailingSpaces(line)
     val len = lineLen(line)
     val ls = line.leadingSpaces
+    val base = line.start
 
     // First phrase = keyword (precedingSpaces = 0, never a remark).
     var i = ls
     val keywordStart = i
-    while i < len && lineCharAt(line, i) != ' ' do i += 1
-    val keyword = internKeyword(line.start + keywordStart, line.start + i)
+    while i < len && lineByteAt(line, i) != ByteSpace do i += 1
+    val keyword = internKeyword(base + keywordStart, base + i)
 
     val atoms = scala.collection.mutable.ArrayBuffer.empty[Tel.Atom]
-    val builder = StringBuilder()
+    // Byte-range marker for the current open atom. -1 ≡ no atom open.
+    var atomStart = -1
     var precedingSpaces = 0
     var hardSpaceMode = false
-    var atomOpen = false
     var remark: Optional[Text] = Unset
 
-    inline def commit(): Unit =
-      if atomOpen then
-        atoms += Tel.Atom.Inline(Text(builder.toString), precedingSpaces)
-        builder.clear()
-        atomOpen = false
+    inline def commit(endPos: Int): Unit =
+      if atomStart >= 0 then
+        val text = Text(bytesSubstring(base + atomStart, base + endPos))
+        atoms += Tel.Atom.Inline(text, precedingSpaces)
+        atomStart = -1
 
     while i < len && remark.absent do
-      val ch = lineCharAt(line, i)
-      if ch == ' ' then
+      val b = lineByteAt(line, i)
+      if b == ByteSpace then
         var j = i
-        while j < len && lineCharAt(line, j) == ' ' do j += 1
+        while j < len && lineByteAt(line, j) == ByteSpace do j += 1
         val run = j - i
 
         if hardSpaceMode then
           if run >= 2 then
-            commit()
+            commit(i)
             precedingSpaces = run
             i = j
           else
-            builder.append(' ')
-            atomOpen = true
+            // Single soft space in hard-space mode: extends the current
+            // atom (or opens one starting at this space).
+            if atomStart < 0 then atomStart = i
             i = j
         else
           if run == 1 then
-            commit()
+            commit(i)
             precedingSpaces = 1
             i = j
           else
-            commit()
+            commit(i)
             precedingSpaces = run
             hardSpaceMode = true
             i = j
-      else if ch == sigil && !atomOpen then
+      else if b == sigilByte && atomStart < 0 then
         val afterSigil = i + 1
         val softSpaceAfter =
           afterSigil < len
-          && lineCharAt(line, afterSigil) == ' '
-          && (afterSigil + 1 >= len || lineCharAt(line, afterSigil + 1) != ' ')
+          && lineByteAt(line, afterSigil) == ByteSpace
+          && (afterSigil + 1 >= len || lineByteAt(line, afterSigil + 1) != ByteSpace)
 
         if softSpaceAfter then
           remark = Text(lineSubFrom(line, afterSigil + 1))
           i = len
         else
-          builder.append(ch)
-          atomOpen = true
+          atomStart = i
           i += 1
       else
-        builder.append(ch)
-        atomOpen = true
+        if atomStart < 0 then atomStart = i
         i += 1
 
-    commit()
+    commit(i)
 
     Tel.Compound(keyword, IArray.from(atoms), remark, IArray.empty)
