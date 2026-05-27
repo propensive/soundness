@@ -92,6 +92,29 @@ object Edit:
     def unsetFlag(keyword: Text): Edit =
       Edit.single(Mutation.Op.UnsetFlag(pointer, keyword))
 
+    // §22.2 `reorder-within-group` — pointer addresses the parent;
+    // move the `oldIndex`-th occurrence of `keyword` to `newIndex`.
+    def reorderWithinGroup(keyword: Text, oldIndex: Int, newIndex: Int): Edit =
+      Edit.single(Mutation.Op.ReorderWithinGroup(pointer, keyword, oldIndex, newIndex))
+
+    // §22.2 `reorder-groups` — pointer addresses the parent; swap
+    // the relative order of all compounds with `firstKeyword` and
+    // all compounds with `secondKeyword`.
+    def reorderGroups(firstKeyword: Text, secondKeyword: Text): Edit =
+      Edit.single(Mutation.Op.ReorderGroups(pointer, firstKeyword, secondKeyword))
+
+    // §22.2 `resize-tabulation` — pointer addresses the parent;
+    // recompute marker offsets for the tabulation in `blockIndex`-th
+    // child block via the minimal-offsets algorithm.
+    def resizeTabulation(blockIndex: Int): Edit =
+      Edit.single(Mutation.Op.ResizeTabulation(pointer, blockIndex))
+
+  // §22.2 `construct` — build a fresh compound from a keyword and a
+  // sequence of scalar atom texts, picking inline / source / literal
+  // atom forms via the §22.3 escalation algorithm.
+  def construct(keyword: Text, atoms: Text*): Tel.Compound =
+    Mutation.construct(keyword, atoms*)
+
   private def single(op: Mutation.Op): Edit = new Edit(IArray(op))
 
 case class Edit private[stratiform] (ops: IArray[Mutation.Op]):

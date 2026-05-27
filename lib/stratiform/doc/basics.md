@@ -66,8 +66,8 @@ contact match
 The `Edit` DSL builds presentation-preserving rewrites:
 ```scala
 val updated = tel.edited
-                ( Edit.at(TelPointer.of(t"name")).update(t"Bob")
-               ++ Edit.at(TelPointer.of(t"name")).attachRemark(t"primary") )
+                ( Edit.at(Tel.Pointer.of(t"name")).update(t"Bob")
+               ++ Edit.at(Tel.Pointer.of(t"name")).attachRemark(t"primary") )
 ```
 
 Surrounding atoms, comments, and unrelated children stay untouched.
@@ -77,5 +77,5 @@ Surrounding atoms, comments, and unrelated children stay untouched.
 A `Tels` describes the structural shape of a TEL document family. Schemas declare records,
 scalars and selects, with field- and selectRef-level polarity for required/optional and
 repeatable/irrepeatable axes. Layers refine a base schema; type-assignment of a document
-against the composed schema produces a semantic `TelElement` tree and reports E2xx/E3xx
+against the composed schema produces a semantic `Tel.Element` tree and reports E2xx/E3xx
 violations on mismatch.
