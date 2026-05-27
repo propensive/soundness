@@ -48,6 +48,39 @@ case class XmlIssues(items: List[(Text, XmlError)] = Nil)(using Diagnostics)
 extends Error(m"${items.length} XML decoding issues"):
   def +(focus: Text, error: XmlError): XmlIssues = XmlIssues(items :+ (focus, error))
 
+// Wrapped in an object so the `given Default[DPerson]` is in lexical scope
+// *at the conjunction call site* — the `summonFrom` inside the inlined
+// `Xml.DecodableDerivation.conjunction` body resolves against the call
+// site's implicit context.
+object DefaultPersonScope:
+  given XmlSchema = XmlSchema.Freeform
+  given Default[DPerson] = () => DPerson(t"", 0, t"")
+
+  def run(): Set[String] =
+    val xml = x"<root><company>Acme</company></root>"
+    validate[Xml.Focus](XmlIssues()):
+      case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error)
+    . within(xml.as[DContact]).items.map(_(0).s).to(Set)
+
+case class DDrawing(shape: DShape, label: Text) derives CanEqual
+
+// Sealed-trait Default test: when the discriminator doesn't match any
+// variant, `Default[DShape]` lets the decode return a sentinel rather
+// than aborting. The error registered carries whatever focus the
+// enclosing scope set — here at the top level it's `Unset`, so the
+// `or(t"#")` fallback fires for the path.
+object DefaultShapeScope:
+  given XmlSchema = XmlSchema.Freeform
+  given Default[DShape] = () => DShape.Circle(-1)
+
+  def run(): (Set[String], Int) =
+    val xml = x"<Triangle><foo>bar</foo></Triangle>"
+    val accrued = validate[Xml.Focus](XmlIssues()):
+      case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error)
+    . within(xml.as[DShape])
+
+    (accrued.items.map(_(0).s).to(Set), accrued.items.length)
+
 
 object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
 
@@ -140,6 +173,41 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
         // raise+continue at `/person[1]` and then every sub-field's
         // missing-field raise at `/person[1]/<field>[1]` — the same
         // accrual rule that handles same-level missing fields.
+        val xml = x"<root><company>Acme</company></root>"
+        validateXml(xml)(_.as[DContact]).items.map(_(0).s).to(Set)
+      . assert: paths =>
+          paths == Set
+            ( "/person[1]",
+              "/person[1]/name[1]",
+              "/person[1]/age[1]",
+              "/person[1]/email[1]" )
+
+    suite(m"Default-driven sentinels"):
+      // A user-supplied `Default[T]` short-circuits the conjunction's
+      // wrong-shape fallback and the disjunction's unknown-discriminator
+      // fallback: instead of running `build` against an empty children
+      // map (and accruing sub-field errors), or aborting, the focus
+      // raises the error once and continues with the supplied default.
+
+      test(m"Default[DPerson] collapses a missing nested into one error"):
+        DefaultPersonScope.run()
+      . assert(_ == Set("/person[1]"))
+
+      test(m"Default[DShape] handles an unknown discriminator at the top level"):
+        DefaultShapeScope.run()
+      . assert((paths, count) => count == 1 && paths == Set("#"))
+
+      test(m"Without Default[DShape], unknown discriminator aborts"):
+        // Outside a `Default[DShape]`, the disjunction calls `abort`,
+        // which the surrounding `validate` captures and reports as one
+        // accrual entry. No `VariantError` punches through.
+        val xml = x"<UnknownVariant><foo>bar</foo></UnknownVariant>"
+        validateXml(xml)(_.as[DShape]).items.length
+      . assert(_ == 1)
+
+      test(m"Without Default[DPerson], a missing nested still expands"):
+        // Confirms the existing (no-Default) accrual semantics from the
+        // previous PR are unchanged for users who don't opt in.
         val xml = x"<root><company>Acme</company></root>"
         validateXml(xml)(_.as[DContact]).items.map(_(0).s).to(Set)
       . assert: paths =>
