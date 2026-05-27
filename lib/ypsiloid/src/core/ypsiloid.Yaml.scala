@@ -105,50 +105,101 @@ trait Yaml2:
 
             case _ => null
 
-          build: [field] =>
-            context =>
-              val target = label.s
-              var found: Yaml.Ast | Null = null
-              if arr != null then
-                val n = arr.length
-                var i = 0
-                while i < n && found == null do
-                  val key = arr(i).asInstanceOf[Yaml.Ast]
-                  key.asMatchable match
-                    case s: String if s == target => found = arr(i + 1).asInstanceOf[Yaml.Ast]
-                    case _                        => ()
-                  i += 2
-              // Each outer `focus` runs *after* the inner one
-              // (contingency's try/finally order), so we extend
-              // `prior` at the root side via `prepend` so a nested
-              // case-class error lands at `/outer/inner` rather than
-              // `/inner/outer`. See `feedback-xml-decoder-split-design`
-              // lesson 4.
-              focus({
-                val base = prior.let(_.pointer).or(YamlPath())
-                Yaml.Focus(base.prepend(label))
-              }):
-                if found != null then context.decoded(new Yaml(found))
-                // Missing field: try the case-class declared default
-                // (Wisteria's `default`); if absent, hand the
-                // `Yaml.Ast(Unset)` sentinel to the field's decoder.
-                // Primitives detect it (via `isAbsent`) and `raise +
-                // continue` with a zero/empty sentinel, so sibling
-                // fields' errors accrue rather than the decode bailing
-                // on the first missing field.
-                else default.or(context.decoded(new Yaml(Yaml.Ast(Unset))))
+          if arr != null then buildWith(arr)
+          else
+            // Wrong-shape input (including the `Yaml.Ast(Unset)`
+            // sentinel an outer conjunction passes in for a missing
+            // nested case-class field). If the user supplied
+            // `Default[derivation]` we register one error at the
+            // current focus and continue with the sentinel — a
+            // missing nested case class lands as a single error
+            // rather than expanding per sub-field.
+            //
+            // Without a `Default`, we fall back to running `build`
+            // against a null mapping so each sub-field accrues its
+            // own missing-field error (the PR-3 behaviour).
+            //
+            // The `Default[derivation]` summon must reference the
+            // *outer* conjunction parameter `derivation` (concrete at
+            // the inlining site). Pushing it into Wisteria's per-
+            // field polymorphic lambda doesn't resolve reliably; see
+            // xylophone #1157.
+            summonFrom:
+              case derivationDefault: Default[`derivation`] =>
+                val reason =
+                  if yaml.root.isAbsent then Reason.Absent
+                  else Reason.NotType(primitive(yaml.root), YamlPrimitive.Mapping)
+                raise(YamlError(reason)) yet derivationDefault()
+              case _ =>
+                buildWith(null)
 
+    private inline def buildWith[derivation <: Product: ProductReflection]
+      ( arr: IArray[Any] | Null )
+      ( using Foci[Yaml.Focus], Tactic[YamlError] )
+    :   derivation =
+
+      build: [field] =>
+        context =>
+          val target = label.s
+          var found: Yaml.Ast | Null = null
+          if arr != null then
+            val n = arr.length
+            var i = 0
+            while i < n && found == null do
+              val key = arr(i).asInstanceOf[Yaml.Ast]
+              key.asMatchable match
+                case s: String if s == target => found = arr(i + 1).asInstanceOf[Yaml.Ast]
+                case _                        => ()
+              i += 2
+          // Each outer `focus` runs *after* the inner one
+          // (contingency's try/finally order), so we extend
+          // `prior` at the root side via `prepend` so a nested
+          // case-class error lands at `/outer/inner` rather than
+          // `/inner/outer`. See `feedback-xml-decoder-split-design`
+          // lesson 4.
+          focus({
+            val base = prior.let(_.pointer).or(YamlPath())
+            Yaml.Focus(base.prepend(label))
+          }):
+            if found != null then context.decoded(new Yaml(found))
+            // Missing field: try the case-class declared default
+            // (Wisteria's `default`); if absent, hand the
+            // `Yaml.Ast(Unset)` sentinel to the field's decoder.
+            // Primitives detect it (via `isAbsent`) and `raise +
+            // continue` with a zero/empty sentinel; nested
+            // conjunctions detect wrong-shape and may further
+            // short-circuit via a user-supplied `Default[Nested]`.
+            else default.or(context.decoded(new Yaml(Yaml.Ast(Unset))))
+
+    // Sealed-trait disjunction picks a variant by mapping discriminator
+    // (`type:` key). We screen the discriminator against
+    // `variantLabels` *before* `delegate`-ing so an unrecognised label
+    // doesn't punch through as `VariantError` (which `validate
+    // [Yaml.Focus]` doesn't catch) — it gets the same
+    // `Default[derivation]`-or-abort treatment as a missing
+    // discriminator. When the user supplies `Default[derivation]` we
+    // register one error at the current focus and continue with the
+    // sentinel; without one we abort.
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Yaml = yaml =>
       provide[Foci[Yaml.Focus]]:
         provide[Tactic[YamlError]]:
           provide[Tactic[VariantError]]:
             val discriminable = infer[derivation is Discriminable in Yaml]
+            val labels: List[Text] = variantLabels[derivation]
+            val resolved: Optional[Text] =
+              discriminable.discriminate(yaml).let: discriminant =>
+                if labels.contains(discriminant) then discriminant else Unset
 
-            val discriminant: Text = discriminable.discriminate(yaml).or:
-              focus(prior.or(Yaml.Focus(YamlPath())))(abort(YamlError(Reason.Absent)))
-
-            delegate(discriminant): [variant <: derivation] =>
-              context => context.decoded(discriminable.variant(yaml))
+            resolved.let: discriminant =>
+              delegate(discriminant): [variant <: derivation] =>
+                context => context.decoded(discriminable.variant(yaml))
+            . or:
+                focus(prior.or(Yaml.Focus(YamlPath()))):
+                  summonFrom:
+                    case derivationDefault: Default[`derivation`] =>
+                      raise(YamlError(Reason.Absent)) yet derivationDefault()
+                    case _ =>
+                      abort(YamlError(Reason.Absent))
 
   object EncodableDerivation extends Derivable[Encodable in Yaml]:
     inline def conjunction[derivation <: Product: ProductReflection]
