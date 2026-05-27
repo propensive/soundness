@@ -141,9 +141,12 @@ extends scala.Dynamic, Documentary:
 object Tel extends Tel2:
 
   // Consolidated names for the schema-related types. The underlying
-  // top-level objects (TelElement, TelValidator, TelPointer,
+  // top-level objects (TelError, TelElement, TelValidator, TelPointer,
   // TelTypeAssignment) are referenced from inside other files; users
   // see the consistent `Tel.X` surface.
+  type Error = TelError
+  val Error: TelError.type = TelError
+
   type Element = TelElement
   val Element: TelElement.type = TelElement
 
