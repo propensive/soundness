@@ -300,7 +300,10 @@ object Bintel:
     case Tels.Reference(name) =>
       schema.records.find(_.name == name) match
         case Some(rec) => Tels.Struct(rec.members, rec.validators)
-        case None      => t
+        case None =>
+          schema.scalars.find(_.name == name) match
+            case Some(sc) => Tels.Scalar(sc.validators)
+            case None     => t
 
     case other => other
 

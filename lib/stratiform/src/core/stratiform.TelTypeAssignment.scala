@@ -102,24 +102,38 @@ object TelTypeAssignment:
        member:      Member,
        variant:     Optional[Variant] = Unset )
 
+  // Builds a map from keyword Text → KeywordEntry where `memberIndex`
+  // is the **flat keyword index** per BinTEL §5: each Field contributes
+  // 1 entry, each SelectRef contributes 1 entry per variant in the
+  // referenced SelectDefinition. The flat index identifies the unique
+  // keyword position in the parent's flat-keyword sequence — used as
+  // the `keywordIndex` of every TelElement produced from this parent.
   private def keywordMap(parent: Struct, schema: Tels)
   :     Map[Text, KeywordEntry] raises TelError =
     val builder = scala.collection.mutable.LinkedHashMap.empty[Text, KeywordEntry]
     var idx = 0
+    var flatIdx = 0
+
     while idx < parent.members.length do
       parent.members(idx) match
-        case f: Field => builder(f.keyword) = KeywordEntry(idx, f.fieldType, f)
+        case f: Field =>
+          builder(f.keyword) = KeywordEntry(flatIdx, f.fieldType, f)
+          flatIdx += 1
+
         case s: SelectRef =>
           val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
             abort(TelError(Reason.UnresolvedReference))
 
           var v = 0
+
           while v < selectDef.variants.length do
             val variant = selectDef.variants(v)
             builder(variant.keyword) =
-              KeywordEntry(idx, variant.variantType, s, Optional(variant))
+              KeywordEntry(flatIdx + v, variant.variantType, s, Optional(variant))
 
             v += 1
+
+          flatIdx += selectDef.variants.length
 
         case _: Exclude => ()
 
@@ -146,6 +160,9 @@ object TelTypeAssignment:
 
       case _: Exclude => false
 
+  // Track both the member position (`pos` in parent.members) and the
+  // running flat keyword index (`flatPos`) — TelElement.keywordIndex
+  // uses flat positions per BinTEL §5.
   private def assignAtoms
        (atoms:  IArray[Tel.Atom],
         parent: Struct,
@@ -153,7 +170,16 @@ object TelTypeAssignment:
   :     IArray[TelElement] raises TelError =
     val results = scala.collection.mutable.ArrayBuffer.empty[TelElement]
     var pos = 0
+    var flatPos = 0
     var i = 0
+
+    def flatWidthOf(member: Member): Int = member match
+      case _: Field    => 1
+      case _: Exclude  => 0
+      case s: SelectRef =>
+        schema.selects.find(_.name == s.reference) match
+          case Some(selectDef) => selectDef.variants.length
+          case None            => 0
 
     while i < atoms.length do
       val atomText = atoms(i) match
@@ -162,22 +188,30 @@ object TelTypeAssignment:
         case Tel.Atom.Literal(_, t) => t
 
       var consumed = false
+
       while !consumed && pos < parent.members.length do
-        if !atomAssignable(parent.members(pos), schema) then pos += 1
+        if !atomAssignable(parent.members(pos), schema) then
+          flatPos += flatWidthOf(parent.members(pos))
+          pos += 1
         else parent.members(pos) match
           case f: Field =>
             resolveType(f.fieldType, schema) match
               case s: Scalar =>
-                results += TelElement.Value(pos, s, atomText)
-                if f.repeatable != Polarity.Loose then pos += 1
+                results += TelElement.Value(flatPos, s, atomText)
+                if f.repeatable != Polarity.Loose then
+                  flatPos += 1
+                  pos += 1
                 consumed = true
 
               case Flag =>
                 if atomText == f.keyword then
-                  results += TelElement.Node(pos, Flag, IArray.empty)
+                  results += TelElement.Node(flatPos, Flag, IArray.empty)
+                  flatPos += 1
                   pos += 1
                   consumed = true
-                else pos += 1
+                else
+                  flatPos += 1
+                  pos += 1
 
               case _ => abort(TelError(Reason.AtomAtNonAssignablePos))
 
@@ -185,15 +219,21 @@ object TelTypeAssignment:
             val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
               abort(TelError(Reason.UnresolvedReference))
 
-            selectDef.variants.find(_.keyword == atomText) match
-              case Some(_) =>
-                results += TelElement.Node(pos, Flag, IArray.empty)
-                if s.repeatable != Polarity.Loose then pos += 1
+            selectDef.variants.zipWithIndex.find(_._1.keyword == atomText) match
+              case Some((_, variantOffset)) =>
+                results += TelElement.Node(flatPos + variantOffset, Flag, IArray.empty)
+                if s.repeatable != Polarity.Loose then
+                  flatPos += selectDef.variants.length
+                  pos += 1
                 consumed = true
 
-              case None => pos += 1
+              case None =>
+                flatPos += selectDef.variants.length
+                pos += 1
 
-          case _ => pos += 1
+          case _ =>
+            flatPos += flatWidthOf(parent.members(pos))
+            pos += 1
 
       if !consumed then abort(TelError(Reason.AtomFlagKeywordMismatch))
       i += 1
@@ -229,23 +269,36 @@ object TelTypeAssignment:
     results ++= atomElements
     results ++= childElements
 
+    def flatWidth(member: Member): Int = member match
+      case _: Field   => 1
+      case _: Exclude => 0
+      case s: SelectRef =>
+        schema.selects.find(_.name == s.reference) match
+          case Some(sd) => sd.variants.length
+          case None     => 0
+
     var memberIdx = 0
+    var flatStart = 0
+
     while memberIdx < parent.members.length do
+      val width = flatWidth(parent.members(memberIdx))
+
       parent.members(memberIdx) match
         case f: Field if f.required != Polarity.Loose =>
           val filled = results.exists:
-            case TelElement.Node(idx, _, _)  => idx == Optional(memberIdx)
-            case TelElement.Value(idx, _, _) => idx == memberIdx
+            case TelElement.Node(idx, _, _)  => idx == Optional(flatStart)
+            case TelElement.Value(idx, _, _) => idx == flatStart
 
           if !filled then resolveType(f.fieldType, schema) match
             case s: Scalar => f.default match
-              case t: Text           => results += TelElement.Value(memberIdx, s, t)
+              case t: Text           => results += TelElement.Value(flatStart, s, t)
               case unset: Unset.type => abort(TelError(Reason.RequiredMemberAbsent))
 
             case _ => abort(TelError(Reason.RequiredMemberAbsent))
 
         case _ => ()
 
+      flatStart += width
       memberIdx += 1
 
     IArray.from(results)

@@ -1318,12 +1318,6 @@ object Tests extends Suite(m"Stratiform Tests"):
         t"name Alice\n".read[Tel].valueHash(nameSchema).data.length
       . assert(_ == 32)
 
-      // §3 normative test vector — full byte-equality with the reference
-      // parser requires several subtle BinTEL §7 behaviours (default
-      // value synthesis, atom-derived elements at correct positions,
-      // canonical order across atom + compound children) that haven't
-      // been fully audited against the spec yet. The test is marked
-      // aspirational while we iterate; see doc/spec-notes.md.
       test(m"§3 normative test vector — canonical tel-schema.tel value hash"):
         val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
         val source =
@@ -1333,5 +1327,23 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         val element = Tel.Type.assign(source.read[Tel], TelsAxiom.tels)
         element.valueHash.data.toSeq
-      . aspire
+      . assert
        (_ == hexBytes("9033cf054ed14fc460cfd04502a2b69e1ac840cd1035f213492b74af7df2a8dd"))
+
+      test(m"§3 — canonical tel-schema.tel encodes byte-for-byte against reference"):
+        val telStream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+        val telBytes  =
+          val arr = telStream.readAllBytes().nn
+          telStream.close()
+          IArray.from(arr)
+
+        val refStream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.bintel.hex").nn
+        val refHex    =
+          val arr = refStream.readAllBytes().nn
+          refStream.close()
+          String(arr, "UTF-8").trim
+
+        val refBytes = hexBytes(refHex)
+        val element  = Tel.Type.assign(telBytes.read[Tel], TelsAxiom.tels)
+        element.bintel.toSeq == refBytes
+      . assert(_ == true)
