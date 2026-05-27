@@ -871,28 +871,37 @@ object Tests extends Suite(m"Stratiform Tests"):
         catch case _: IllegalArgumentException => true
       . assert(identity)
 
-    suite(m"BinTEL §7 node encoder"):
-      def hex(data: Data): String =
-        val sb = new java.lang.StringBuilder
-        var i = 0
-        while i < data.length do
-          sb.append(f"${data(i) & 0xff}%02X")
-          if i + 1 < data.length then sb.append(' ')
-          i += 1
-        sb.toString
+    val nameSchema = Tels(
+      name     = t"contact",
+      document = Tels.Struct(
+        members = IArray(Tels.Field
+         ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+           t"name", Tels.Scalar(IArray(t"string")), Unset )),
+        validators = IArray.empty),
+      layers   = IArray.empty,
+      sigil    = Unset,
+      records  = IArray.empty,
+      scalars  = IArray.empty,
+      selects  = IArray.empty)
 
-      val nameSchema = Tels(
-        name     = t"contact",
-        document = Tels.Struct(
-          members = IArray(Tels.Field
-           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"name", Tels.Scalar(IArray(t"string")), Unset )),
-          validators = IArray.empty),
-        layers   = IArray.empty,
-        sigil    = Unset,
-        records  = IArray.empty,
-        scalars  = IArray.empty,
-        selects  = IArray.empty)
+    def hex(data: Data): String =
+      val sb = new java.lang.StringBuilder
+      var i = 0
+      while i < data.length do
+        sb.append(f"${data(i) & 0xff}%02X")
+        if i + 1 < data.length then sb.append(' ')
+        i += 1
+      sb.toString
+
+    def hexBytes(s: String): Seq[Byte] =
+      val arr = new Array[Byte](s.length / 2)
+      var i = 0
+      while i < arr.length do
+        arr(i) = jl.Integer.parseInt(s.substring(i * 2, i * 2 + 2), 16).toByte
+        i += 1
+      arr.toSeq
+
+    suite(m"BinTEL §7 node encoder"):
 
       test(m"empty struct encodes as a single 00 child-count"):
         val root = Tel.Element.Node(Unset, nameSchema.document, IArray.empty)
@@ -963,3 +972,74 @@ object Tests extends Suite(m"Stratiform Tests"):
         val root = Tel.Element.Node(Unset, nameSchema.document, IArray(value))
         hex(root.bintel)
       . assert(_ == "01 80 01 01 78")
+
+      test(m"§7.2 canonical order — children reordered by member index"):
+        // Build a root whose children appear in reverse member order in
+        // source. The encoder must emit them in member order so that
+        // independent member groups produce identical bytes regardless
+        // of source ordering.
+        val scalar = Tels.Scalar(IArray.empty)
+        val struct = Tels.Struct(
+          members = IArray(
+            Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+                       t"first",  scalar, Unset),
+            Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+                       t"second", scalar, Unset)),
+          validators = IArray.empty)
+        val children = IArray(
+          Tel.Element.Value(1, scalar, t"B"),
+          Tel.Element.Value(0, scalar, t"A"))
+        val root = Tel.Element.Node(Unset, struct, children)
+        hex(root.bintel)
+      . assert(_ == "02 00 01 41 01 01 42")
+
+      test(m"§7.2 canonical order is stable within a member"):
+        // Two values at the same member index must stay in source order.
+        val scalar = Tels.Scalar(IArray.empty)
+        val struct = Tels.Struct(
+          members = IArray(Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Loose,
+                                       t"item", scalar, Unset)),
+          validators = IArray.empty)
+        val children = IArray(
+          Tel.Element.Value(0, scalar, t"first"),
+          Tel.Element.Value(0, scalar, t"second"))
+        val root = Tel.Element.Node(Unset, struct, children)
+        // 2 children, then two Value(0, len, text)s.
+        hex(root.bintel)
+      . assert(_ == "02 00 05 66 69 72 73 74 00 06 73 65 63 6F 6E 64")
+
+    suite(m"BinTEL §3 value hash"):
+      test(m"valueHash is deterministic"):
+        val tel = t"name Alice\n".read[Tel]
+        val a = tel.valueHash(nameSchema).data.toSeq
+        val b = tel.valueHash(nameSchema).data.toSeq
+        a == b
+      . assert(_ == true)
+
+      test(m"valueHash differs when value differs"):
+        val a = t"name Alice\n".read[Tel].valueHash(nameSchema).data.toSeq
+        val b = t"name Bob\n".read[Tel].valueHash(nameSchema).data.toSeq
+        a == b
+      . assert(_ == false)
+
+      test(m"valueHash output is 32 bytes"):
+        t"name Alice\n".read[Tel].valueHash(nameSchema).data.length
+      . assert(_ == 32)
+
+      // §3 normative test vector — full byte-equality with the reference
+      // parser requires several subtle BinTEL §7 behaviours (default
+      // value synthesis, atom-derived elements at correct positions,
+      // canonical order across atom + compound children) that haven't
+      // been fully audited against the spec yet. The test is marked
+      // aspirational while we iterate; see doc/spec-notes.md.
+      test(m"§3 normative test vector — canonical tel-schema.tel value hash"):
+        val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+        val source =
+          val arr = stream.readAllBytes().nn
+          stream.close()
+          IArray.from(arr)
+
+        val element = Tel.Type.assign(source.read[Tel], TelsAxiom.tels)
+        element.valueHash.data.toSeq
+      . aspire
+       (_ == hexBytes("9033cf054ed14fc460cfd04502a2b69e1ac840cd1035f213492b74af7df2a8dd"))
