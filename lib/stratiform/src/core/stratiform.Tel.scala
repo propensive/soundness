@@ -667,6 +667,23 @@ object Tel extends Tel2:
 
     parse(acc)
 
+  // `source.read[Foo over Tel]` shorthand for
+  // `source.read[Tel].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
+  // for `value over Json`. The `Transport` type-tag is added by an
+  // `asInstanceOf` cast — `value over Tel` is just
+  // `value { type Transport = Tel }` so the cast is a no-op at runtime.
+  given aggregableOver: [value: Decodable in Tel] => Tactic[TelError]
+  =>  (value over Tel) is Aggregable by Data =
+    source =>
+      import denominative.nil
+      var acc    = IArray.empty[Byte]
+      var stream = source
+      while !stream.nil do
+        acc = acc ++ stream.head
+        stream = stream.tail
+
+      parse(acc).as[value].asInstanceOf[value over Tel]
+
   // `text.load[Tel]` for any Stream[Text] source: concatenates the
   // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
   // `Tel.Metadata` carrying the document's prologue.

@@ -260,6 +260,19 @@ object Tests extends Suite(m"Breviloquence Tests"):
         Cbor.ast(Stream(bytes).read[Cbor.Ast]).as[Wrapper]
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
 
+    suite(m"`over Cbor` decoder shorthand"):
+      test(m"`read[T over Cbor]` resolves a value directly from bytes"):
+        val original = Point(3, 4)
+        val bytes = CborPrinter.encode(Cbor.unseal(original.cbor))
+        Stream(bytes).read[Point over Cbor]
+      . assert(_ == Point(3, 4))
+
+      test(m"`read[T over Cbor]` works for nested case classes"):
+        val original = Wrapper(List(1, 2, 3), t"hi")
+        val bytes = CborPrinter.encode(Cbor.unseal(original.cbor))
+        Stream(bytes).read[Wrapper over Cbor]
+      . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
+
     suite(m"Relabelling"):
       test(m"Encode renames fields to wire keys"):
         val cbor = Renamed(List(1L, 2L), List(3L)).cbor

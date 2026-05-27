@@ -230,6 +230,15 @@ object Cbor extends Cbor2, Dynamic:
   given aggregable: Tactic[CborError] => Cbor is Aggregable by Data =
     bytes => Cbor.ast(bytes.read[Cbor.Ast])
 
+  // `source.read[Foo over Cbor]` shorthand for
+  // `source.read[Cbor].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
+  // for `value over Json`. The `Transport` type-tag is added by an
+  // `asInstanceOf` cast — `value over Cbor` is just
+  // `value { type Transport = Cbor }` so the cast is a no-op at runtime.
+  given aggregableOver: [value: Decodable in Cbor] => Tactic[CborError]
+  =>  (value over Cbor) is Aggregable by Data =
+    bytes => Cbor.ast(bytes.read[Cbor.Ast]).as[value].asInstanceOf[value over Cbor]
+
   given unit: Tactic[CborError] => Unit is Decodable in Cbor =
     value =>
       if !value.root.nullary then
