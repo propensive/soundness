@@ -43,23 +43,23 @@ import gastronomy.*
 import prepositional.*
 import vacuous.*
 
-// BinTEL §7 node encoding. Serialises a typed `TelElement` tree into
+// BinTEL §7 node encoding. Serialises a typed `Tel.Element` tree into
 // the binary form defined by `spec/bintel.md` — no magic number, no
 // schema signature; the output is exactly the document-root body
 // described in §7.1, suitable for §3 value-hashing.
 //
 // §7.1 forms:
-//   - Document root (TelElement.Node with keywordIndex = Unset):
+//   - Document root (Tel.Element.Node with keywordIndex = Unset):
 //       child-count : varint, then each child in canonical order.
 //   - Struct node (Node with elementType = Tels.Struct):
 //       keyword-index : varint, child-count : varint, recursive children.
 //   - Flag node (Node with elementType = Tels.Flag):
 //       keyword-index : varint.
-//   - Scalar node (TelElement.Value):
+//   - Scalar node (Tel.Element.Value):
 //       keyword-index : varint, byte-length : varint, UTF-8 value bytes.
 //
 // Reference types do not appear: the type-assignment phase resolves
-// them to Struct / Scalar / Flag before producing TelElement.
+// them to Struct / Scalar / Flag before producing Tel.Element.
 
 extension (tel: Tel)
   // Encode this document's semantic model to BinTEL body bytes (no
@@ -83,7 +83,7 @@ extension (tel: Tel)
   :     Data raises TelError raises BintelError =
     Bintel.frame(tel.bintel(schema), signature)
 
-extension (element: TelElement)
+extension (element: Tel.Element)
   // Encode a pre-assigned semantic-model element to BinTEL body bytes.
   def bintel: Data = Bintel.encode(element)
 
@@ -104,13 +104,13 @@ object Bintel:
   case class Framed(signature: Data, body: Data)
 
   // A fully decoded BinTEL document: the carried schema signature
-  // bytes and the recovered semantic-model `TelElement` root.
-  case class Document(signature: Data, root: TelElement)
+  // bytes and the recovered semantic-model `Tel.Element` root.
+  case class Document(signature: Data, root: Tel.Element)
 
-  // Encode a `TelElement` tree to its BinTEL body bytes. The element is
+  // Encode a `Tel.Element` tree to its BinTEL body bytes. The element is
   // expected to be the document root (a Node with `keywordIndex = Unset`
   // and `elementType = Tels.Struct`), as produced by `Tel.Type.assign`.
-  def encode(element: TelElement): Data =
+  def encode(element: Tel.Element): Data =
     val out = new ByteArrayOutputStream
     encodeRoot(out, element)
     out.toByteArray.asInstanceOf[IArray[Byte]]
@@ -176,7 +176,7 @@ object Bintel:
 
   // §6 + §7.8 — decode a complete BinTEL document (magic + signature
   // + body) into a `Document` carrying the signature bytes and the
-  // semantic-model `TelElement` tree under `schema`. This layer does
+  // semantic-model `Tel.Element` tree under `schema`. This layer does
   // not verify the signature against the schema (§8.2 palimpsest
   // decoding is a follow-up).
   def decodeDocument(data: Data, schema: Tels): Document raises BintelError =
@@ -196,10 +196,10 @@ object Bintel:
 
   // §7.8 decoder. Read BinTEL body bytes (no magic, no signature —
   // exactly what `encode` emits) under `schema`, recovering the
-  // semantic-model `TelElement` tree. The schema must be the same
+  // semantic-model `Tel.Element` tree. The schema must be the same
   // composed schema used at encode time. Any framing or schema
   // mismatch raises `BintelError`.
-  def decode(data: Data, schema: Tels): TelElement raises BintelError =
+  def decode(data: Data, schema: Tels): Tel.Element raises BintelError =
     val cursor = Cursor(data, 0)
     val root = decodeStructBody(cursor, schema.document, schema, keywordIndex = Unset)
     if cursor.offset != data.length then abort(BintelError(BintelError.Reason.TrailingBytes))
@@ -208,21 +208,21 @@ object Bintel:
   private def decodeStructBody
        (cursor: Cursor, struct: Tels.Struct, schema: Tels,
         keywordIndex: Optional[Int])
-  :     TelElement raises BintelError =
+  :     Tel.Element raises BintelError =
     val flat = flattenKeywords(struct, schema)
     val childCount = readVarint(cursor)
-    val children = new Array[TelElement](childCount.toInt)
+    val children = new Array[Tel.Element](childCount.toInt)
     var i = 0
 
     while i < childCount.toInt do
       children(i) = decodeElement(cursor, flat, schema)
       i += 1
 
-    TelElement.Node(keywordIndex, struct, children.asInstanceOf[IArray[TelElement]])
+    Tel.Element.Node(keywordIndex, struct, children.asInstanceOf[IArray[Tel.Element]])
 
   private def decodeElement
        (cursor: Cursor, flat: IArray[(Text, Tels.Type)], schema: Tels)
-  :     TelElement raises BintelError =
+  :     Tel.Element raises BintelError =
     val kidx = readVarint(cursor)
     if kidx < 0 || kidx >= flat.length then abort(BintelError(BintelError.Reason.BadKeywordIndex))
     val (_, memberType) = flat(kidx.toInt)
@@ -247,10 +247,10 @@ object Bintel:
         val text =
           try Text(new String(bytes, "UTF-8"))
           catch case _: Exception => abort(BintelError(BintelError.Reason.BadUtf8))
-        TelElement.Value(kidx.toInt, s, text)
+        Tel.Element.Value(kidx.toInt, s, text)
 
       case Tels.Flag =>
-        TelElement.Node(kidx.toInt, Tels.Flag, IArray.empty)
+        Tel.Element.Node(kidx.toInt, Tels.Flag, IArray.empty)
 
       case _: Tels.Reference =>
         abort(BintelError(BintelError.Reason.ReferenceUnresolved))
@@ -309,8 +309,8 @@ object Bintel:
 
   private final class Cursor(val data: Data, var offset: Int)
 
-  private def encodeRoot(out: ByteArrayOutputStream, element: TelElement): Unit = element match
-    case TelElement.Node(_, _, children) =>
+  private def encodeRoot(out: ByteArrayOutputStream, element: Tel.Element): Unit = element match
+    case Tel.Element.Node(_, _, children) =>
       val ordered = canonicalOrder(children)
       writeVarint(out, ordered.length.toLong)
       var i = 0
@@ -319,16 +319,16 @@ object Bintel:
         encodeElement(out, ordered(i))
         i += 1
 
-    case _: TelElement.Value =>
+    case _: Tel.Element.Value =>
       writeVarint(out, 1L)
       encodeElement(out, element)
 
-  private def encodeElement(out: ByteArrayOutputStream, element: TelElement): Unit =
+  private def encodeElement(out: ByteArrayOutputStream, element: Tel.Element): Unit =
     element match
-      case node: TelElement.Node   => encodeNode(out, node)
-      case value: TelElement.Value => encodeValue(out, value)
+      case node: Tel.Element.Node   => encodeNode(out, node)
+      case value: Tel.Element.Value => encodeValue(out, value)
 
-  private def encodeNode(out: ByteArrayOutputStream, node: TelElement.Node): Unit =
+  private def encodeNode(out: ByteArrayOutputStream, node: Tel.Element.Node): Unit =
     val kidx = node.keywordIndex.or(0).toLong
     writeVarint(out, kidx)
 
@@ -347,12 +347,12 @@ object Bintel:
         ()
 
       case _: Tels.Scalar | _: Tels.Reference =>
-        // Should not appear in a well-formed TelElement.Node after type
-        // assignment — scalars are TelElement.Value and references are
+        // Should not appear in a well-formed Tel.Element.Node after type
+        // assignment — scalars are Tel.Element.Value and references are
         // resolved during assignment. Encode no further bytes.
         ()
 
-  private def encodeValue(out: ByteArrayOutputStream, value: TelElement.Value): Unit =
+  private def encodeValue(out: ByteArrayOutputStream, value: Tel.Element.Value): Unit =
     writeVarint(out, value.keywordIndex.toLong)
     val bytes = value.text.s.getBytes("UTF-8")
     writeVarint(out, bytes.length.toLong)
@@ -371,10 +371,10 @@ object Bintel:
   // are emitted in member declaration order while preserving source
   // order within a single (repeatable) member. This makes the encoding
   // independent of the source ordering of independent member groups.
-  private def canonicalOrder(children: IArray[TelElement]): IArray[TelElement] =
+  private def canonicalOrder(children: IArray[Tel.Element]): IArray[Tel.Element] =
     if children.length <= 1 then children
     else
-      val arr = new Array[TelElement](children.length)
+      val arr = new Array[Tel.Element](children.length)
       var i = 0
       while i < children.length do
         arr(i) = children(i)
@@ -384,10 +384,10 @@ object Bintel:
       // source order within equal-key groups.
       java.util.Arrays.sort
        ( arr.asInstanceOf[Array[AnyRef]],
-         (a: AnyRef, b: AnyRef) => Integer.compare(kidxOf(a.asInstanceOf[TelElement]),
-                                                    kidxOf(b.asInstanceOf[TelElement])) )
-      arr.asInstanceOf[IArray[TelElement]]
+         (a: AnyRef, b: AnyRef) => Integer.compare(kidxOf(a.asInstanceOf[Tel.Element]),
+                                                    kidxOf(b.asInstanceOf[Tel.Element])) )
+      arr.asInstanceOf[IArray[Tel.Element]]
 
-  private def kidxOf(element: TelElement): Int = element match
-    case TelElement.Node(idx, _, _)  => idx.or(0)
-    case TelElement.Value(idx, _, _) => idx
+  private def kidxOf(element: Tel.Element): Int = element match
+    case Tel.Element.Node(idx, _, _)  => idx.or(0)
+    case Tel.Element.Value(idx, _, _) => idx

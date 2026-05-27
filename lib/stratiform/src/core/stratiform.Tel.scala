@@ -40,6 +40,7 @@ import distillate.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
+import rudiments.*
 import turbulence.*
 import vacuous.*
 
@@ -140,22 +141,455 @@ extends scala.Dynamic, Documentary:
 
 object Tel extends Tel2:
 
-  // Consolidated names for the schema-related types. The underlying
-  // top-level objects (TelError, TelElement, TelValidator, TelPointer,
-  // TelTypeAssignment) are referenced from inside other files; users
-  // see the consistent `Tel.X` surface.
+  // Consolidated names for the schema-related types. `TelError` lives
+  // at the top level by design (the other types are defined inline in
+  // `object Tel` below as their canonical location).
   type Error = TelError
   val Error: TelError.type = TelError
 
-  type Element = TelElement
-  val Element: TelElement.type = TelElement
+  // Type assignment algorithm per §20.2 of the TEL specification.
+  object Type:
+    import TelError.Reason
+    import Tels.*
 
-  type Pointer = TelPointer
-  val Pointer: TelPointer.type = TelPointer
+    def assign(tel: Tel, schema: Tels): Tel.Element raises TelError =
+      val compounds: IArray[Tel.Compound] = tel.subtree.children.flatMap(_.compounds)
+      val rootChildren = assignChildren(compounds, schema.document, schema)
+      val rootElements = applyConstraints
+                          (schema.document, IArray.empty[Tel.Element], rootChildren, schema)
 
-  val Validator: TelValidator.type = TelValidator
+      Tel.Element.Node
+       (keywordIndex = Unset, elementType = schema.document, children = rootElements)
 
-  val Type: TelTypeAssignment.type = TelTypeAssignment
+    def assign(tel: Tel, schema: Tels, validators: Tel.Validator.Registry)
+    :     Tel.Element raises TelError =
+      val element = assign(tel, schema)
+      validateElement(element, validators)
+      element
+
+    private def validateElement
+         (element: Tel.Element, registry: Tel.Validator.Registry)
+    :     Unit raises TelError =
+      element match
+        case Tel.Element.Value(_, scalarType, text) =>
+          scalarType.validators.each: name =>
+            registry(Tel.Validator.Request.Scalar(name, text)) match
+              case Tel.Validator.Response.Valid      => ()
+              case Tel.Validator.Response.Invalid(_) =>
+                abort(TelError(Reason.ValidatorRejected))
+
+        case Tel.Element.Node(_, elementType, children) =>
+          children.each(validateElement(_, registry))
+          elementType match
+            case s: Struct =>
+              s.validators.each: name =>
+                registry(Tel.Validator.Request.Struct
+                         (name, element.asInstanceOf[Tel.Element.Node]))
+                match
+                  case Tel.Validator.Response.Valid      => ()
+                  case Tel.Validator.Response.Invalid(_) =>
+                    abort(TelError(Reason.ValidatorRejected))
+
+            case _ => ()
+
+    private def resolveType(t: Type, schema: Tels): Type raises TelError =
+      t match
+        case Reference(name) =>
+          schema.records.find(_.name == name) match
+            case Some(record) => Struct(record.members, record.validators)
+            case None         => schema.scalars.find(_.name == name) match
+              case Some(scalarDef) => Scalar(scalarDef.validators)
+              case None            => schema.selects.find(_.name == name) match
+                case Some(_) => abort(TelError(Reason.ReferenceKindMismatch))
+                case None    => abort(TelError(Reason.UnresolvedReference))
+
+        case other => other
+
+    private case class KeywordEntry
+       ( memberIndex: Int,
+         entryType:   Type,
+         member:      Member,
+         variant:     Optional[Variant] = Unset )
+
+    // Builds a map from keyword Text → KeywordEntry where `memberIndex`
+    // is the **flat keyword index** per BinTEL §5: each Field
+    // contributes 1 entry, each SelectRef contributes 1 entry per
+    // variant in the referenced SelectDefinition. The flat index
+    // identifies the unique keyword position in the parent's flat-
+    // keyword sequence — used as the `keywordIndex` of every
+    // Tel.Element produced from this parent.
+    private def keywordMap(parent: Struct, schema: Tels)
+    :     Map[Text, KeywordEntry] raises TelError =
+      val builder = scala.collection.mutable.LinkedHashMap.empty[Text, KeywordEntry]
+      var idx = 0
+      var flatIdx = 0
+
+      while idx < parent.members.length do
+        parent.members(idx) match
+          case f: Field =>
+            builder(f.keyword) = KeywordEntry(flatIdx, f.fieldType, f)
+            flatIdx += 1
+
+          case s: SelectRef =>
+            val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
+              abort(TelError(Reason.UnresolvedReference))
+
+            var v = 0
+
+            while v < selectDef.variants.length do
+              val variant = selectDef.variants(v)
+              builder(variant.keyword) =
+                KeywordEntry(flatIdx + v, variant.variantType, s, Optional(variant))
+
+              v += 1
+
+            flatIdx += selectDef.variants.length
+
+          case _: Exclude => ()
+
+        idx += 1
+
+      builder.toMap
+
+    private def atomAssignable(member: Member, schema: Tels): Boolean raises TelError =
+      member match
+        case f: Field =>
+          resolveType(f.fieldType, schema) match
+            case _: Scalar => true
+            case Flag      => true
+            case _         => false
+
+        case s: SelectRef =>
+          val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
+            abort(TelError(Reason.UnresolvedReference))
+
+          selectDef.variants.forall: v =>
+            resolveType(v.variantType, schema) match
+              case Flag => true
+              case _    => false
+
+        case _: Exclude => false
+
+    // Track both the member position (`pos` in parent.members) and the
+    // running flat keyword index (`flatPos`) — Tel.Element.keywordIndex
+    // uses flat positions per BinTEL §5.
+    private def assignAtoms
+         (atoms:  IArray[Tel.Atom],
+          parent: Struct,
+          schema: Tels)
+    :     IArray[Tel.Element] raises TelError =
+      val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      var pos = 0
+      var flatPos = 0
+      var i = 0
+
+      def flatWidthOf(member: Member): Int = member match
+        case _: Field    => 1
+        case _: Exclude  => 0
+        case s: SelectRef =>
+          schema.selects.find(_.name == s.reference) match
+            case Some(selectDef) => selectDef.variants.length
+            case None            => 0
+
+      while i < atoms.length do
+        val atomText = atoms(i) match
+          case Tel.Atom.Inline(t, _)  => t
+          case Tel.Atom.Source(t)     => t
+          case Tel.Atom.Literal(_, t) => t
+
+        var consumed = false
+
+        while !consumed && pos < parent.members.length do
+          if !atomAssignable(parent.members(pos), schema) then
+            flatPos += flatWidthOf(parent.members(pos))
+            pos += 1
+          else parent.members(pos) match
+            case f: Field =>
+              resolveType(f.fieldType, schema) match
+                case s: Scalar =>
+                  results += Tel.Element.Value(flatPos, s, atomText)
+                  if f.repeatable != Polarity.Loose then
+                    flatPos += 1
+                    pos += 1
+                  consumed = true
+
+                case Flag =>
+                  if atomText == f.keyword then
+                    results += Tel.Element.Node(flatPos, Flag, IArray.empty)
+                    flatPos += 1
+                    pos += 1
+                    consumed = true
+                  else
+                    flatPos += 1
+                    pos += 1
+
+                case _ => abort(TelError(Reason.AtomAtNonAssignablePos))
+
+            case s: SelectRef =>
+              val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
+                abort(TelError(Reason.UnresolvedReference))
+
+              selectDef.variants.zipWithIndex.find(_._1.keyword == atomText) match
+                case Some((_, variantOffset)) =>
+                  results += Tel.Element.Node(flatPos + variantOffset, Flag, IArray.empty)
+                  if s.repeatable != Polarity.Loose then
+                    flatPos += selectDef.variants.length
+                    pos += 1
+                  consumed = true
+
+                case None =>
+                  flatPos += selectDef.variants.length
+                  pos += 1
+
+            case _ =>
+              flatPos += flatWidthOf(parent.members(pos))
+              pos += 1
+
+        if !consumed then abort(TelError(Reason.AtomFlagKeywordMismatch))
+        i += 1
+
+      IArray.from(results)
+
+    private def assignChildren
+         (compounds: IArray[Tel.Compound],
+          parent:    Struct,
+          schema:    Tels)
+    :     IArray[Tel.Element] raises TelError =
+      val km = keywordMap(parent, schema)
+      val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      var i = 0
+
+      while i < compounds.length do
+        val compound = compounds(i)
+        val entry = km.get(compound.keyword).getOrElse:
+          abort(TelError(Reason.UnknownKeyword))
+
+        results += assignCompound(compound, entry, schema)
+        i += 1
+
+      IArray.from(results)
+
+    private def applyConstraints
+         ( parent:        Struct,
+           atomElements:  IArray[Tel.Element],
+           childElements: IArray[Tel.Element],
+           schema:        Tels )
+    :     IArray[Tel.Element] raises TelError =
+      val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      results ++= atomElements
+      results ++= childElements
+
+      def flatWidth(member: Member): Int = member match
+        case _: Field   => 1
+        case _: Exclude => 0
+        case s: SelectRef =>
+          schema.selects.find(_.name == s.reference) match
+            case Some(sd) => sd.variants.length
+            case None     => 0
+
+      var memberIdx = 0
+      var flatStart = 0
+
+      while memberIdx < parent.members.length do
+        val width = flatWidth(parent.members(memberIdx))
+
+        parent.members(memberIdx) match
+          case f: Field if f.required != Polarity.Loose =>
+            val filled = results.exists:
+              case Tel.Element.Node(idx, _, _)  => idx == Optional(flatStart)
+              case Tel.Element.Value(idx, _, _) => idx == flatStart
+
+            if !filled then resolveType(f.fieldType, schema) match
+              case s: Scalar => f.default match
+                case t: Text           => results += Tel.Element.Value(flatStart, s, t)
+                case unset: Unset.type => abort(TelError(Reason.RequiredMemberAbsent))
+
+              case _ => abort(TelError(Reason.RequiredMemberAbsent))
+
+          case _ => ()
+
+        flatStart += width
+        memberIdx += 1
+
+      IArray.from(results)
+
+    private def assignCompound
+         (compound: Tel.Compound,
+          entry:    KeywordEntry,
+          schema:   Tels)
+    :     Tel.Element raises TelError =
+      val resolved = resolveType(entry.entryType, schema)
+
+      resolved match
+        case s: Struct =>
+          val atomElements = assignAtoms(compound.atoms, s, schema)
+          val childCompounds: IArray[Tel.Compound] = compound.children.flatMap(_.compounds)
+          val childElements = assignChildren(childCompounds, s, schema)
+          val allElements = applyConstraints(s, atomElements, childElements, schema)
+          Tel.Element.Node(entry.memberIndex, s, allElements)
+
+        case s: Scalar =>
+          val text = compound.atoms.headOption.map:
+            case Tel.Atom.Inline(t, _)  => t
+            case Tel.Atom.Source(t)     => t
+            case Tel.Atom.Literal(_, t) => t
+
+          .getOrElse(t"")
+
+          Tel.Element.Value(entry.memberIndex, s, text)
+
+        case Flag =>
+          if compound.atoms.nonEmpty || compound.children.nonEmpty then
+            abort(TelError(Reason.FlagWithContent))
+
+          Tel.Element.Node(entry.memberIndex, Flag, IArray.empty)
+
+        case _: Reference =>
+          abort(TelError(Reason.UnresolvedReference))
+
+  // Validator infrastructure per §21 of the TEL specification.
+  object Validator:
+
+    enum Request:
+      case Scalar(method: Text, value: Text)
+      case Struct(method: Text, element: Tel.Element.Node)
+
+    enum Diagnostic:
+      case Scalar
+         ( message: Text,
+           span:    Optional[(Int, Int)] = Unset )
+
+      case Struct
+         ( message: Text,
+           fields:  Map[Text, Diagnostic] = Map.empty )
+
+    enum Response:
+      case Valid
+      case Invalid(diagnostic: Diagnostic)
+
+    trait Registry:
+      def apply(request: Request): Response
+
+    object Registry:
+      val builtins: Registry = new Registry:
+        override def apply(request: Request): Response = request match
+          case Request.Scalar(method, value) => method.s match
+            case "string"     => Response.Valid
+            case "identifier" => identifier(value)
+            case "type-name"  => typeName(value)
+            case "sigil"      => sigilCheck(value)
+            case _            => unknown(method)
+
+          case Request.Struct(method, _) =>
+            Response.Invalid(Diagnostic.Struct(
+              t"validator '${method}' not applicable to struct values"))
+
+      def withFallback(custom: Registry): Registry = new Registry:
+        override def apply(request: Request): Response =
+          custom(request) match
+            case Response.Valid                                       => Response.Valid
+            case Response.Invalid(d) if isUnknown(d)                  => builtins(request)
+            case other                                                => other
+
+      private def isUnknown(d: Diagnostic): Boolean = d match
+        case Diagnostic.Scalar(m, _) => m.s.startsWith("unknown validator")
+        case _                       => false
+
+      private def identifier(value: Text): Response =
+        val s = value.s
+        if s.isEmpty then fail(t"the identifier must not be empty", (0, 0))
+        else if s.startsWith("-") then fail(t"the identifier must not begin with a hyphen", (0, 1))
+        else if s.endsWith("-") then fail(t"the identifier must not end with a hyphen",
+          (s.length - 1, s.length))
+        else if s.contains("--") then fail(t"the identifier must not contain consecutive hyphens",
+          (s.indexOf("--"), s.indexOf("--") + 2))
+        else
+          var i = 0
+          while i < s.length do
+            val c = s.charAt(i)
+            if !(c == '-' || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) then
+              return fail(t"identifier character '$c' must be lowercase ASCII letter, digit, or hyphen",
+                (i, i + 1))
+
+            i += 1
+
+          Response.Valid
+
+      private def typeName(value: Text): Response =
+        val s = value.s
+        if s.isEmpty then fail(t"the type name must not be empty", (0, 0))
+        else
+          val first = s.charAt(0)
+          if !(first >= 'A' && first <= 'Z') then
+            fail(t"the type name must start with an uppercase ASCII letter", (0, 1))
+          else
+            var i = 1
+            while i < s.length do
+              val c = s.charAt(i)
+              if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) then
+                return fail(t"type-name character '$c' must be ASCII alphanumeric", (i, i + 1))
+
+              i += 1
+
+            Response.Valid
+
+      private def sigilCheck(value: Text): Response =
+        val s = value.s
+        if s.length != 1 then fail(t"the sigil must be a single character", (0, s.length))
+        else
+          val c = s.charAt(0)
+          if c == ' ' || c == '\n' || c == '\r' || c == '\t' then
+            fail(t"the sigil must not be whitespace", (0, 1))
+          else if (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') then
+            fail(t"the sigil must not be a letter or digit", (0, 1))
+          else if "()[]{}<>".indexOf(c.toInt) >= 0 then
+            fail(t"the sigil must not be a parenthetical symbol", (0, 1))
+          else Response.Valid
+
+      private def unknown(method: Text): Response =
+        Response.Invalid(Diagnostic.Scalar(t"unknown validator '${method}'"))
+
+      private def fail(message: Text, span: (Int, Int)): Response =
+        Response.Invalid(Diagnostic.Scalar(message, span))
+
+  // Semantic model from §18.2 of the TEL specification — the result
+  // of applying type assignment (§20.2) to the presentation model.
+  sealed trait Element
+
+  object Element:
+    case class Node
+       ( keywordIndex: Optional[Int],
+         elementType:  Tels.Type,
+         children:     IArray[Element] )
+    extends Element
+
+    case class Value
+       ( keywordIndex: Int,
+         scalarType:   Tels.Scalar,
+         text:         Text )
+    extends Element
+
+  // Logical address into a Tel document. A pointer is an ordered
+  // sequence of `Step`s; each step selects a child compound from the
+  // current node by keyword. When several siblings share a keyword
+  // the optional `index` disambiguates them — `Unset` means "the
+  // first" (index 0).
+  case class Pointer(steps: IArray[Pointer.Step]):
+    def /(keyword: Text): Pointer =
+      Pointer(steps :+ Pointer.Step(keyword, Unset))
+
+    def /(keyword: Text, index: Int): Pointer =
+      Pointer(steps :+ Pointer.Step(keyword, index))
+
+    def isEmpty: Boolean = steps.length == 0
+
+  object Pointer:
+    case class Step(keyword: Text, index: Optional[Int])
+
+    val Empty: Pointer = Pointer(IArray.empty)
+
+    def of(keywords: Text*): Pointer =
+      Pointer(IArray.from(keywords.map(Step(_, Unset))))
 
   enum LineEndings:
     case Lf, Crlf
