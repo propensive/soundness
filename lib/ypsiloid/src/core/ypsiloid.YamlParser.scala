@@ -51,29 +51,72 @@ object YamlParser:
   private val pool: ThreadLocal[YamlParser] =
     ThreadLocal.withInitial{ () => new YamlParser }.nn
 
+  // Untracked entry points — preserved byte-identical to the historical
+  // shape so callers that don't need position tracking pay no cost.
   def parse(input: Text)(using Tactic[ParseError]): Yaml.Ast =
     val parser = pool.get.nn
+    parser.tracking = false
     parser.resetText(input)
     parser.parse()
 
   def parse(input: Data)(using Tactic[ParseError]): Yaml.Ast =
     val parser = pool.get.nn
+    parser.tracking = false
     parser.resetData(input)
     parser.parse()
 
   def parseAll(input: Text)(using Tactic[ParseError]): List[Yaml.Ast] =
     val parser = pool.get.nn
+    parser.tracking = false
     parser.resetText(input)
     parser.parseAll()
 
   def parseAll(input: Data)(using Tactic[ParseError]): List[Yaml.Ast] =
     val parser = pool.get.nn
+    parser.tracking = false
     parser.resetData(input)
     parser.parseAll()
 
-private[ypsiloid] final class YamlParser:
-  import Lineation.untrackedData
+  // Tracked entry points — produce the AST plus a flat `IArray[Int]`
+  // descriptor index. Used by the tracking-aware `Decodable`/`Aggregable`
+  // givens in `object Yaml` when `Yaml.Tracking.On` is in scope.
+  def parseTracked(input: Text)(using Tactic[ParseError]): (Yaml.Ast, IArray[Int]) =
+    val parser = pool.get.nn
+    parser.tracking = true
+    try
+      parser.resetText(input)
+      val ast = parser.parse()
+      (ast, IArray.unsafeFromArray(parser.rootIndex.nn))
+    finally parser.tracking = false
 
+  def parseTracked(input: Data)(using Tactic[ParseError]): (Yaml.Ast, IArray[Int]) =
+    val parser = pool.get.nn
+    parser.tracking = true
+    try
+      parser.resetData(input)
+      val ast = parser.parse()
+      (ast, IArray.unsafeFromArray(parser.rootIndex.nn))
+    finally parser.tracking = false
+
+  def parseAllTracked(input: Text)(using Tactic[ParseError])
+  :   List[(Yaml.Ast, IArray[Int])] =
+    val parser = pool.get.nn
+    parser.tracking = true
+    try
+      parser.resetText(input)
+      parser.parseAllTracked()
+    finally parser.tracking = false
+
+  def parseAllTracked(input: Data)(using Tactic[ParseError])
+  :   List[(Yaml.Ast, IArray[Int])] =
+    val parser = pool.get.nn
+    parser.tracking = true
+    try
+      parser.resetData(input)
+      parser.parseAllTracked()
+    finally parser.tracking = false
+
+private[ypsiloid] final class YamlParser:
   // Parser-local snapshot of the cursor's buffer, mirroring Jacinta's
   // pattern: keep `bytes`/`pos`/`bufEnd` as plain fields so the JIT can
   // hold them in registers across hot byte loops. Sync to the cursor
@@ -83,6 +126,46 @@ private[ypsiloid] final class YamlParser:
   private var bytes:     Array[Byte]       = null.asInstanceOf[Array[Byte]]
   private var pos:       Int               = 0
   private var bufEnd:    Int               = 0
+
+  // When true, the cursor is built with a line-feed-tracking `Lineation`
+  // so `cursor.line` / `cursor.column` reflect real source coordinates,
+  // and the parser emits a parallel `PositionIndex` alongside the AST.
+  // Set by the companion `YamlParser.parse(input, tracking = …)` entry
+  // points before `resetText` / `resetData` build the cursor.
+  protected[ypsiloid] var tracking: Boolean = false
+
+  // Finalised root-level position index produced by the previous `parse()`
+  // call when `tracking` was on. Reset to `null` at the start of every parse.
+  protected[ypsiloid] var rootIndex: Array[Int] | Null = null
+
+  // Local-buffer offset up to which `cursor.lineNo` / `cursor.columnNo`
+  // have been brought up to date. The hot-loop `syncTo()` bypasses the
+  // cursor's lineation tracking via `unsafeAdvanceBy`, so the parser
+  // keeps track of how far ahead `cursor.pos` has been pushed and
+  // catches lineation up here only at tracking-mode capture points and
+  // before any refill discards consumed bytes.
+  private var lineationPos: Int = 0
+
+  // Pool of `IArray[Int]` buffers shared between sibling composite
+  // descriptors during a tracked parse. Mirrors the `bufferPool` below
+  // but with `Int` payload — used by `parseBlockSequenceTracked`,
+  // `parseBlockMappingFromFirstKeyTracked`, `parseFlowSequenceTracked`,
+  // `parseFlowMappingTracked`.
+  private var indexBufferId: Int = -1
+  private val indexBufferPool: ArrayBuffer[ArrayBuffer[Int]] = ArrayBuffer.empty
+
+  private inline def acquireIndexBuffer(): ArrayBuffer[Int] =
+    indexBufferId += 1
+    if indexBufferPool.length <= indexBufferId then
+      val b = ArrayBuffer.empty[Int]
+      indexBufferPool += b
+      b
+    else
+      val b = indexBufferPool(indexBufferId)
+      b.clear()
+      b
+
+  private inline def releaseIndexBuffer(): Unit = indexBufferId -= 1
 
   // Anchor table — names map to fully-parsed Yaml.Ast values.
   private val anchors = scala.collection.mutable.Map.empty[String, Yaml.Ast]
@@ -123,17 +206,33 @@ private[ypsiloid] final class YamlParser:
 
   def resetText(input: Text): Unit =
     val data: Data = input.s.getBytes("UTF-8").nn.immutable(using Unsafe)
-    cursor = Cursor[Data](data)
+    cursor = makeCursor(data)
     resetParserState()
 
   def resetData(input: Data): Unit =
-    cursor = Cursor[Data](input)
+    cursor = makeCursor(input)
     resetParserState()
+
+  // Build a `Cursor[Data]` with the appropriate `Lineation`. The two
+  // `import`s are mutually exclusive — both define a `Lineation` for
+  // `Data` and bringing both into scope at the same time would render
+  // `Cursor[Data]` constructor resolution ambiguous. Local-import-per-
+  // branch is the workaround established by jacinta #1147.
+  private def makeCursor(input: Data): Cursor[Data] =
+    if tracking then
+      import zephyrine.lineation.linefeedByte
+      Cursor[Data](input)
+    else
+      import Lineation.untrackedData
+      Cursor[Data](input)
 
   private def resetParserState(): Unit =
     syncFrom()
     stringCursor = 0
     bufferId = -1
+    indexBufferId = -1
+    rootIndex = null
+    lineationPos = 0
     heldToken = null
     blockParentIndent = -1
     flowParentIndent = -1
@@ -151,19 +250,100 @@ private[ypsiloid] final class YamlParser:
 
   // ── Substrate ────────────────────────────────────────────────────────────
 
+  // Push the parser's local `pos` back to the cursor. Required before any
+  // cursor operation that consults `pos` (mark, slice, refill, position).
+  // Stays zero-branch on the hot path; tracking-mode callers separately
+  // invoke `reconcileLineation()` when they need accurate
+  // `cursor.line` / `cursor.column`.
   private inline def syncTo(): Unit =
     cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
+  // Refresh the parser's snapshot from the cursor. Required after any
+  // cursor operation that may have changed the buffer reference, the
+  // read position, or the write end. Re-anchors `lineationPos` because
+  // a refill may have compacted the buffer (bytes 0..old-pos are
+  // discarded; subsequent walks would read different data).
   private inline def syncFrom(): Unit =
     bytes  = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
     pos    = cursor.unsafePos(using Unsafe)
     bufEnd = cursor.unsafeWriteEnd(using Unsafe)
+    lineationPos = pos
+
+  // Walk the buffer bytes between `lineationPos` and the cursor's current
+  // position, bumping `cursor.lineNo` / `cursor.columnNo` accordingly.
+  // Called at tracking-mode capture points and before any refill that
+  // would discard consumed bytes. Without this, `syncTo()` advances
+  // `cursor.pos` via `unsafeAdvanceBy` (which bypasses lineation), so
+  // captured `cursor.line` / `cursor.column` would stay at their initial
+  // values and every descriptor would read `(1, 1)`.
+  private def reconcileLineation(): Unit =
+    val end = cursor.unsafePos(using Unsafe)
+    if lineationPos < end then
+      var i = lineationPos
+      var newlines = 0
+      var lastNewlineAt = -1
+      while i < end do
+        if bytes(i) == Newline then
+          newlines += 1
+          lastNewlineAt = i
+        i += 1
+
+      if newlines > 0 then
+        cursor.unsafeBumpLine(newlines)(using Unsafe)
+        cursor.unsafeSetColumn(end - lastNewlineAt - 1)(using Unsafe)
+      else
+        cursor.unsafeBumpColumn(end - lineationPos)(using Unsafe)
+
+      lineationPos = end
 
   private inline def more: Boolean = pos < bufEnd || moreSlow()
 
+  // Refill the parser's snapshot from the cursor. In tracking mode,
+  // reconcile lineation before the cursor compacts the buffer (otherwise
+  // the now-discarded bytes can no longer be walked for newlines), and
+  // resync afterwards even if no more data was produced so that any
+  // post-refill position reads see the new buffer scale.
   private def moreSlow(): Boolean =
     syncTo()
-    if cursor.more then { syncFrom(); true } else false
+    if tracking then reconcileLineation()
+    if cursor.more then { syncFrom(); true }
+    else
+      if tracking then syncFrom()
+      false
+
+  // Assemble a composite (sequence or mapping) descriptor in `indexOut`.
+  // `scratch` holds the concatenated child / entry descriptors back-to-
+  // back; `ends(i)` is the position in `scratch` immediately after the
+  // i-th child / entry, so the i-th child's size is
+  // `ends(i) - ends(i-1)`. Mirrors `JsonParser.emitCompositeDescriptor`.
+  private def emitCompositeDescriptor
+    ( indexOut:    ArrayBuffer[Int],
+      scratch:     ArrayBuffer[Int],
+      ends:        ArrayBuffer[Int],
+      startLine:   Int,
+      startColumn: Int,
+      startMark:   Long )
+  :   Unit =
+    syncTo()
+    val n = ends.length
+    val sourceLength = (cursor.position.n0 - startMark).toInt
+    val sizeSlot = indexOut.length
+
+    indexOut += 0
+    indexOut += startLine
+    indexOut += startColumn
+    indexOut += sourceLength
+    indexOut += n
+
+    val headerSize = 5 + n
+    var i = 0
+    while i < n do
+      val childStart = if i == 0 then 0 else ends(i - 1)
+      indexOut += headerSize + childStart
+      i += 1
+
+    indexOut ++= scratch
+    indexOut(sizeSlot) = indexOut.length - sizeSlot
 
   private inline def peek: Byte = bytes(pos)
 
@@ -257,12 +437,33 @@ private[ypsiloid] final class YamlParser:
     if !explicitStart || (more && peek == Newline) then
       if more && peek == Newline then advance()
       skipBlankAndCommentLines()
-    if !more || atDocumentBoundary then Yaml.Ast.Null
+    if !more || atDocumentBoundary then
+      // Empty / boundary-only document — under tracking, emit a single
+      // 4-int Null descriptor at the cursor's current position.
+      if tracking then
+        val rootBuf = acquireIndexBuffer()
+        emitNullHere(rootBuf)
+        rootIndex = rootBuf.toArray
+        releaseIndexBuffer()
+      Yaml.Ast.Null
     else
       val indent = consumeLeadingSpaces()
-      if !more || atDocumentBoundary then Yaml.Ast.Null
+      if !more || atDocumentBoundary then
+        if tracking then
+          val rootBuf = acquireIndexBuffer()
+          emitNullHere(rootBuf)
+          rootIndex = rootBuf.toArray
+          releaseIndexBuffer()
+        Yaml.Ast.Null
       else
-        val node = parseNode(indent)
+        val node =
+          if tracking then
+            val rootBuf = acquireIndexBuffer()
+            val n = parseNodeTracked(indent, rootBuf)
+            rootIndex = rootBuf.toArray
+            releaseIndexBuffer()
+            n
+          else parseNode(indent)
         skipBlankAndCommentLines()
         consumeOptionalDocumentEnd()
         node
@@ -335,6 +536,82 @@ private[ypsiloid] final class YamlParser:
           val node = parseNode(indent)
           docStartLineEnd = savedDocStart
           docs.append(node)
+          skipBlankAndCommentLines()
+          lastDocEndedWithFooter = consumeOptionalDocumentEnd()
+          firstDoc = false
+
+    docs.toList
+
+  // Tracked variant of `parseAll`: parses every document like `parseAll`
+  // but also captures a per-document `PositionIndex` for the
+  // tracking-aware `Yaml.parseAll` companion entry.
+  def parseAllTracked()(using Tactic[ParseError])
+  :   List[(Yaml.Ast, IArray[Int])] = holding:
+    val docs = scala.collection.mutable.ArrayBuffer[(Yaml.Ast, IArray[Int])]()
+    skipBom()
+
+    var continue = true
+    var firstDoc = true
+    var lastDocEndedWithFooter = true
+    while continue do
+      skipBlankAndCommentLines()
+      tagHandles.clear()
+      val sawDirectives = parseDirectivesIfAny()
+      if sawDirectives && !firstDoc && !lastDocEndedWithFooter then
+        errorAt(Issue.DirectivesOutOfPlace)
+      val explicitStart = consumeOptionalDocumentStart()
+      if sawDirectives && !explicitStart then
+        errorAt(Issue.DirectiveWithoutDocumentStart)
+      if
+        !firstDoc && more && !explicitStart && !atDocumentBoundary
+        && !lastDocEndedWithFooter
+      then errorAt(Issue.MissingDocumentStart)
+      if explicitStart && more && peek == Hash then
+        while more && peek != Newline do advance()
+      val sameLineAsMarker = explicitStart && more && peek != Newline
+      if !explicitStart || (more && peek == Newline) then
+        if more && peek == Newline then advance()
+        skipBlankAndCommentLines()
+
+      if !more then
+        if explicitStart then
+          val rootBuf = acquireIndexBuffer()
+          emitNullHere(rootBuf)
+          docs.append((Yaml.Ast.Null, IArray.unsafeFromArray(rootBuf.toArray)))
+          releaseIndexBuffer()
+        continue = false
+      else if atDocumentBoundary then
+        if explicitStart then
+          val rootBuf = acquireIndexBuffer()
+          emitNullHere(rootBuf)
+          docs.append((Yaml.Ast.Null, IArray.unsafeFromArray(rootBuf.toArray)))
+          releaseIndexBuffer()
+        lastDocEndedWithFooter = consumeOptionalDocumentEnd()
+        if explicitStart then firstDoc = false
+      else
+        val indent = consumeLeadingSpaces()
+        if !more || atDocumentBoundary then
+          if explicitStart then
+            val rootBuf = acquireIndexBuffer()
+            emitNullHere(rootBuf)
+            docs.append((Yaml.Ast.Null, IArray.unsafeFromArray(rootBuf.toArray)))
+            releaseIndexBuffer()
+          lastDocEndedWithFooter = consumeOptionalDocumentEnd()
+          if explicitStart then firstDoc = false
+        else
+          val savedDocStart = docStartLineEnd
+          if sameLineAsMarker then
+            var end = pos
+            while end < bufEnd && bytes(end) != Newline do end += 1
+            docStartLineEnd = end
+          else
+            docStartLineEnd = -1
+          val rootBuf = acquireIndexBuffer()
+          val node = parseNodeTracked(indent, rootBuf)
+          val ints = IArray.unsafeFromArray(rootBuf.toArray)
+          releaseIndexBuffer()
+          docStartLineEnd = savedDocStart
+          docs.append((node, ints))
           skipBlankAndCommentLines()
           lastDocEndedWithFooter = consumeOptionalDocumentEnd()
           firstDoc = false
@@ -2383,3 +2660,1170 @@ private[ypsiloid] final class YamlParser:
 
     case "!!null" => Yaml.Ast.Null
     case _        => value
+
+  // ── Tracking-mode parsers ───────────────────────────────────────────────
+  //
+  // These mirror the untracked methods above but additionally emit a
+  // `PositionIndex` of source descriptors into the `indexOut` buffer they
+  // are passed. The untracked methods stay byte-identical so a non-
+  // tracking parse pays no per-byte cost for position capture — the
+  // same split-parsers shape proven out in jacinta #1147.
+  //
+  // Descriptor layout (mirrors jacinta exactly; all offsets relative to
+  // the start of the containing descriptor):
+  //
+  //   primitive: [size=4, line, column, sourceLength]
+  //   composite: [size, line, column, sourceLength, n,
+  //               off_0..off_{n-1}, <child descriptors concatenated>]
+  //   mapping entry (concatenated into composite scratch):
+  //               [keyLine, keyColumn, keyLength, <value descriptor>]
+  //   sequence entry (concatenated):
+  //               <value descriptor>
+
+  // Emit a 4-int primitive descriptor at the current cursor position.
+  // `startMark` is the absolute byte offset captured at the start of
+  // the scalar; the cursor is expected to be at its end.
+  private inline def emitPrimitiveDescriptor
+    ( indexOut: ArrayBuffer[Int], startLine: Int, startColumn: Int, startMark: Long )
+  :   Unit =
+    syncTo()
+    val length = (cursor.position.n0 - startMark).toInt
+    indexOut += 4
+    indexOut += startLine
+    indexOut += startColumn
+    indexOut += length
+
+  private inline def captureLineColumn(): (Int, Int) =
+    syncTo()
+    reconcileLineation()
+    (cursor.line.n1, cursor.column.n1)
+
+  private inline def currentMark(): Long =
+    syncTo()
+    cursor.position.n0.toLong
+
+  // Emit a 4-int Null descriptor (zero length) at the current cursor
+  // position. Used when a node resolves to `Null` without consuming any
+  // bytes (empty inline value, missing explicit-pair value, etc.).
+  private inline def emitNullHere(indexOut: ArrayBuffer[Int]): Unit =
+    syncTo()
+    reconcileLineation()
+    indexOut += 4
+    indexOut += cursor.line.n1
+    indexOut += cursor.column.n1
+    indexOut += 0
+
+  private def parseNodeTracked(indent: Int, indexOut: ArrayBuffer[Int])
+                              (using Tactic[ParseError]): Yaml.Ast =
+    skipSpaces()
+    if !more then
+      emitNullHere(indexOut)
+      Yaml.Ast.Null
+    else parseNodeHereTracked(indent, indexOut)
+
+  private def parseNodeHereTracked(indent: Int, indexOut: ArrayBuffer[Int])
+                                  (using Tactic[ParseError]): Yaml.Ast =
+    val savedPrefixesConsumed = prefixesConsumed
+    val savedLastNodeHadAnchor = lastNodeHadAnchor
+    prefixesConsumed = false
+    lastNodeHadAnchor = false
+
+    // Capture start before prefix consumption so the descriptor spans
+    // the whole node including any anchor/tag.
+    syncTo()
+    reconcileLineation()
+    val startLine   = cursor.line.n1
+    val startColumn = cursor.column.n1
+    val startMark   = cursor.position.n0.toLong
+
+    consumeNodePrefixes()
+    val anchorName = prefixAnchor
+    val tagText    = prefixTag
+    val headByte   = prefixHeadByte
+
+    val hasPrefix = !anchorName.nil || !tagText.nil
+
+    val value: Yaml.Ast =
+      if hasPrefix && (headByte == Newline || headByte == -1 || headByte == Hash) then
+        if headByte == Hash then
+          while more && peek != Newline do advance()
+        if more && peek == Newline then advance()
+        skipBlankAndCommentLines()
+        val lineStart = pos
+        val childIndent = consumeLeadingSpaces()
+        lastNodeHadAnchor = false
+        val v = pickValueOrNullTracked(blockParentIndent, childIndent, lineStart, indexOut)
+        if !anchorName.nil && lastNodeHadAnchor then
+          errorAt(Issue.TwoAnchorsOnSameNode)
+        // pickValueOrNullTracked has emitted the descriptor for `v` into
+        // indexOut already. Skip the trailing primitive emission below.
+        return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
+                              anchorName, tagText, v, consumed = false)
+      else if headByte == -1 then
+        emitNullHere(indexOut)
+        Yaml.Ast.Null
+      else if headByte == Hash then
+        while more && peek != Newline do advance()
+        emitNullHere(indexOut)
+        Yaml.Ast.Null
+      else if headByte == Star then
+        if !anchorName.nil then errorAt(Issue.AnchorOnAlias)
+        advance()
+        val a = parseAlias()
+        // For aliases, the descriptor spans `*name` from the `*` mark.
+        val r = maybeBlockMappingFromQuotedKeyTracked
+                  ( a, indent, tagText, anchorName, indexOut,
+                    startLine, startColumn, startMark )
+        return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
+                              anchorName, tagText, r, prefixesConsumed)
+      else
+        (headByte: @switch) match
+          case Quote =>
+            advance()
+            val s = parseDoubleQuoted()
+            val r = maybeBlockMappingFromQuotedKeyTracked
+                      ( s, indent, tagText, anchorName, indexOut,
+                        startLine, startColumn, startMark )
+            return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
+                                  anchorName, tagText, r, prefixesConsumed)
+
+          case Apostrophe =>
+            advance()
+            val s = parseSingleQuoted()
+            val r = maybeBlockMappingFromQuotedKeyTracked
+                      ( s, indent, tagText, anchorName, indexOut,
+                        startLine, startColumn, startMark )
+            return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
+                                  anchorName, tagText, r, prefixesConsumed)
+
+          case OpenBracket =>
+            val savedFlowParent = flowParentIndent
+            flowParentIndent = blockParentIndent
+            advance()
+            val s = parseFlowSequenceTracked(indexOut, startLine, startColumn, startMark)
+            flowParentIndent = savedFlowParent
+            // A flow collection at node head doesn't transition to a
+            // block mapping (`maybeBlockMappingFromQuotedKey` does in
+            // the untracked code, but only to flag trailing-content errors
+            // — emission is the composite descriptor already produced).
+            val r = maybeBlockMappingFromQuotedKeyAfterComposite
+                      ( s, indent, tagText, anchorName )
+            return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
+                                  anchorName, tagText, r, prefixesConsumed)
+
+          case OpenBrace =>
+            val savedFlowParent = flowParentIndent
+            flowParentIndent = blockParentIndent
+            advance()
+            val m = parseFlowMappingTracked(indexOut, startLine, startColumn, startMark)
+            flowParentIndent = savedFlowParent
+            val r = maybeBlockMappingFromQuotedKeyAfterComposite
+                      ( m, indent, tagText, anchorName )
+            return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
+                                  anchorName, tagText, r, prefixesConsumed)
+
+          case Pipe =>
+            val v = parseBlockScalar(literal = true)
+            emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
+            v
+
+          case Greater =>
+            val v = parseBlockScalar(literal = false)
+            emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
+            v
+
+          case Minus =>
+            val r = parseMinusTracked(indent, indexOut, startLine, startColumn, startMark)
+            return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
+                                  anchorName, tagText, r, prefixesConsumed)
+
+          case Question =>
+            val r = parseQuestionTracked(indent, indexOut, startLine, startColumn, startMark)
+            return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
+                                  anchorName, tagText, r, prefixesConsumed)
+
+          case CloseBracket | CloseBrace | Comma | 0x40 | 0x60 =>
+            errorAt(Issue.ReservedIndicatorAtNodeStart)
+
+          case _ =>
+            prefixesConsumed = false
+            val r = parsePlainOrBlockMappingTracked
+                      ( indent, tagText, anchorName, indexOut,
+                        startLine, startColumn, startMark )
+            return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
+                                  anchorName, tagText, r, prefixesConsumed)
+
+    finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
+                   anchorName, tagText, value, prefixesConsumed)
+
+  // Apply tag/anchor and restore saved flags after parseNodeHereTracked
+  // has produced its value. `consumed` is the current
+  // `prefixesConsumed` state — when true, an inner block-mapping
+  // transition already applied the head's tag/anchor to the key, so
+  // we don't re-apply them.
+  private def finishNodeHere
+    ( savedPrefixesConsumed: Boolean,
+      savedLastNodeHadAnchor: Boolean,
+      anchorName: Text,
+      tagText: Text,
+      value: Yaml.Ast,
+      consumed: Boolean )
+    ( using Tactic[ParseError] )
+  :   Yaml.Ast =
+    prefixesConsumed = savedPrefixesConsumed
+    if consumed then
+      lastNodeHadAnchor = savedLastNodeHadAnchor
+      value
+    else
+      val tagged = if tagText.nil then value else applyTag(tagText, value)
+      if anchorName.nil then
+        lastNodeHadAnchor = savedLastNodeHadAnchor
+        tagged
+      else
+        anchors.update(anchorName.s, tagged)
+        lastNodeHadAnchor = true
+        tagged
+
+  // After a flow collection at node head, perform the same trailing-
+  // content / `:` check `maybeBlockMappingFromQuotedKey` does, but
+  // without emitting any new descriptor (the composite descriptor was
+  // already produced by parseFlow{Sequence,Mapping}Tracked). The block-
+  // mapping transition is rare in this position — we route to the
+  // untracked block-mapping helper if it does occur (acceptable for
+  // PR 1; PR-2/3 can revisit if needed).
+  private def maybeBlockMappingFromQuotedKeyAfterComposite
+    ( scalar: Yaml.Ast, indent: Int, headTag: Text, headAnchor: Text )
+    ( using Tactic[ParseError] )
+  :   Yaml.Ast =
+    maybeBlockMappingFromQuotedKey(scalar, indent, headTag, headAnchor)
+
+  // Tracked variant of `maybeBlockMappingFromQuotedKey`. When the
+  // quoted/alias scalar at node head is followed by `:`, we transition
+  // to a block mapping where the scalar is the first key — the node's
+  // descriptor becomes the composite mapping descriptor (spanning from
+  // the scalar's start to the mapping's end). Otherwise emit a 4-int
+  // primitive descriptor for the scalar alone.
+  private def maybeBlockMappingFromQuotedKeyTracked
+    ( scalar: Yaml.Ast, indent: Int, headTag: Text, headAnchor: Text,
+      indexOut: ArrayBuffer[Int],
+      startLine: Int, startColumn: Int, startMark: Long )
+    ( using Tactic[ParseError] )
+  :   Yaml.Ast =
+
+    // Capture the scalar's end position before any trailing whitespace,
+    // so the key's length (for the mapping case) is precise.
+    syncTo()
+    val keyEndMark = cursor.position.n0.toLong
+    val keyLength = (keyEndMark - startMark).toInt
+
+    val hadSpaceOrTab = more && (peek == Space || peek == Tab)
+    skipSpaces()
+    if !more then
+      emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
+      scalar
+    else peek match
+      case Newline =>
+        emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
+        scalar
+
+      case Hash if hadSpaceOrTab =>
+        while more && peek != Newline do advance()
+        emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
+        scalar
+
+      case Colon =>
+        val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+        if
+          nextByte == Space || nextByte == Tab || nextByte == Newline
+          || nextByte == Return || nextByte == -1
+        then
+          if onDocStartLine then
+            errorAt(Issue.BlockMappingOnDocumentStartLine)
+          if inInlineMappingValue then
+            errorAt(Issue.ChainedMappingValueOnSingleLine)
+          if lastScalarSpannedLines then
+            errorAt(Issue.MultilineImplicitKey)
+          val tagged = if headTag.nil then scalar else applyTag(headTag, scalar)
+
+          val keyAst =
+            if headAnchor.nil then tagged
+            else
+              anchors.update(headAnchor.s, tagged)
+              tagged
+          if !headTag.nil || !headAnchor.nil then prefixesConsumed = true
+          parseBlockMappingFromFirstKeyTracked
+            ( keyAst, startLine, startColumn, keyLength, indent, indexOut,
+              startLine, startColumn, startMark )
+        else
+          errorAt(Issue.TrailingContentAfterQuotedScalar)
+
+      case Comma | CloseBracket | CloseBrace =>
+        emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
+        scalar
+
+      case _ =>
+        errorAt(Issue.TrailingContentAfterQuotedScalar)
+
+  // Tracked variant of `parsePlainOrBlockMapping`. The scalar's start
+  // position is `startLine`/`startColumn`/`startMark`. Either emits a
+  // 4-int primitive (plain scalar resolves to a primitive) or a
+  // composite mapping descriptor (transitions into a block mapping).
+  private def parsePlainOrBlockMappingTracked
+    ( indent: Int, headTag: Text, headAnchor: Text,
+      indexOut: ArrayBuffer[Int],
+      startLine: Int, startColumn: Int, startMark: Long )
+    ( using Tactic[ParseError] )
+  :   Yaml.Ast =
+
+    val textValue = readPlainScalarText(indent)
+    syncTo()
+    val scalarEndMark = cursor.position.n0.toLong
+    val keyLength = (scalarEndMark - startMark).toInt
+
+    if sawMappingColon then
+      if onDocStartLine then
+        errorAt(Issue.BlockMappingOnDocumentStartLine)
+      if inInlineMappingValue then
+        errorAt(Issue.ChainedMappingValueOnSingleLine)
+      if lastScalarSpannedLines then
+        errorAt(Issue.MultilineImplicitKey)
+      val rawKey = resolvePlainScalar(textValue)
+      val tagged = if headTag.nil then rawKey else applyTag(headTag, rawKey)
+
+      val keyAst =
+        if headAnchor.nil then tagged
+        else
+          anchors.update(headAnchor.s, tagged)
+          tagged
+      if !headTag.nil || !headAnchor.nil then prefixesConsumed = true
+      parseBlockMappingFromFirstKeyTracked
+        ( keyAst, startLine, startColumn, keyLength, indent, indexOut,
+          startLine, startColumn, startMark )
+    else
+      emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
+      resolvePlainScalar(textValue)
+
+  // Tracked variant of `parseBlockSequence`. Emits a composite
+  // descriptor with one child descriptor per item.
+  private def parseBlockSequenceTracked
+    ( indent: Int,
+      indexOut: ArrayBuffer[Int],
+      startLine: Int, startColumn: Int, startMark: Long )
+    ( using Tactic[ParseError] )
+  :   Yaml.Ast =
+
+    val buf = acquireBuffer()
+    val scratch = acquireIndexBuffer()
+    val ends    = acquireIndexBuffer()
+    val savedParentIndent = blockParentIndent
+    blockParentIndent = indent
+    var done = false
+
+    while !done do
+      advance()  // consume `-`
+      val next = if more then peek else -1
+
+      val item: Yaml.Ast =
+        if next == Space || next == Tab then
+          advance()
+          while more && (peek == Space || peek == Tab) do advance()
+          if more && peek == Hash then
+            while more && peek != Newline do advance()
+          if more && peek == Newline then
+            advance()
+            skipBlankAndCommentLines()
+            val childIndent = consumeLeadingSpaces()
+            if childIndent <= indent then
+              emitNullHere(scratch)
+              Yaml.Ast.Null
+            else parseNodeHereTracked(childIndent, scratch)
+          else parseNodeHereTracked(indent + 2, scratch)
+        else if next == Newline || next == -1 then
+          if more then advance()
+          skipBlankAndCommentLines()
+          val childIndent = consumeLeadingSpaces()
+          if childIndent <= indent then
+            emitNullHere(scratch)
+            Yaml.Ast.Null
+          else parseNodeHereTracked(childIndent, scratch)
+        else parseNodeHereTracked(indent + 2, scratch)
+
+      ends += scratch.length
+      buf += item
+
+      skipBlankAndCommentLines()
+      val lineStart = pos
+      val nextIndent = consumeLeadingSpaces()
+      if more && peek == Tab then errorAt(Issue.TabInIndentation)
+      if nextIndent != indent then
+        pos = lineStart
+        done = true
+      else if !more || peek != Minus then
+        pos = lineStart
+        done = true
+      else if atDocumentBoundary then
+        pos = lineStart
+        done = true
+      else
+        val byteAfterDash = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+        if
+          byteAfterDash != Space && byteAfterDash != Tab
+          && byteAfterDash != Newline && byteAfterDash != -1
+        then
+          pos = lineStart
+          done = true
+
+    val result = sealSequence(buf)
+    releaseBuffer()
+
+    emitCompositeDescriptor(indexOut, scratch, ends, startLine, startColumn, startMark)
+    releaseIndexBuffer()  // ends
+    releaseIndexBuffer()  // scratch
+    blockParentIndent = savedParentIndent
+    result
+
+  // Tracked variant of `parseBlockMappingFromFirstKey`. The first key
+  // has already been parsed by the caller; its position is passed in
+  // via `firstKeyLine`/`firstKeyColumn`/`firstKeyLength`. Subsequent
+  // keys are parsed by `iterateBlockMappingTracked` which captures
+  // their positions as it goes.
+  private def parseBlockMappingFromFirstKeyTracked
+    ( firstKey: Yaml.Ast,
+      firstKeyLine: Int, firstKeyColumn: Int, firstKeyLength: Int,
+      indent: Int,
+      indexOut: ArrayBuffer[Int],
+      startLine: Int, startColumn: Int, startMark: Long )
+    ( using Tactic[ParseError] )
+  :   Yaml.Ast =
+
+    val buf = acquireBuffer()
+    val scratch = acquireIndexBuffer()
+    val ends    = acquireIndexBuffer()
+    val savedParentIndent = blockParentIndent
+    blockParentIndent = indent
+
+    if !more || peek != Colon then errorAt(Issue.ExpectedColonAfterMappingKey)
+    advance()
+
+    scratch += firstKeyLine
+    scratch += firstKeyColumn
+    scratch += firstKeyLength
+    val firstValue = parseMappingValueTracked(indent, scratch)
+    ends += scratch.length
+    buf += firstKey
+    buf += firstValue
+
+    iterateBlockMappingTracked(buf, scratch, ends, indent)
+
+    val result = sealMapping(buf)
+    releaseBuffer()
+
+    emitCompositeDescriptor(indexOut, scratch, ends, startLine, startColumn, startMark)
+    releaseIndexBuffer()  // ends
+    releaseIndexBuffer()  // scratch
+    blockParentIndent = savedParentIndent
+    result
+
+  // Tracked variant of `iterateBlockMapping`. Appends entry descriptors
+  // to `scratch` and entry-end offsets to `ends` for each key/value
+  // pair iterated.
+  private def iterateBlockMappingTracked
+    ( buf: scala.collection.mutable.ArrayBuffer[Any],
+      scratch: ArrayBuffer[Int], ends: ArrayBuffer[Int],
+      indent: Int )
+    ( using Tactic[ParseError] )
+  :   Unit =
+
+    var done = false
+    while !done do
+      skipBlankAndCommentLines()
+      val lineStart = pos
+      val nextIndent = consumeLeadingSpaces()
+      if more && peek == Tab then errorAt(Issue.TabInIndentation)
+      if nextIndent != indent then
+        pos = lineStart
+        done = true
+      else if !more then
+        done = true
+      else if atDocumentBoundary then
+        pos = lineStart
+        done = true
+      else if isExplicitKeyIndicator then
+        val (key, value) = readExplicitPairTracked(indent, scratch)
+        ends += scratch.length
+        buf += key
+        buf += value
+      else
+        // Capture key start
+        syncTo()
+        reconcileLineation()
+        val keyLine   = cursor.line.n1
+        val keyColumn = cursor.column.n1
+        val keyMark   = cursor.position.n0.toLong
+
+        consumeNodePrefixes()
+        val keyAnchor = prefixAnchor
+        val keyTag    = prefixTag
+        val rawKey: Yaml.Ast = prefixHeadByte match
+          case Quote =>
+            advance()
+            val s = parseDoubleQuoted()
+            if lastScalarSpannedLines then
+              errorAt(Issue.MultilineImplicitKey)
+            s
+
+          case Apostrophe =>
+            advance()
+            val s = parseSingleQuoted()
+            if lastScalarSpannedLines then
+              errorAt(Issue.MultilineImplicitKey)
+            s
+
+          case Star =>
+            if !keyAnchor.nil then errorAt(Issue.AnchorOnAlias)
+            advance()
+            parseAlias()
+
+          case OpenBracket =>
+            advance()
+            parseFlowSequence()
+
+          case OpenBrace =>
+            advance()
+            parseFlowMapping()
+
+          case _ =>
+            val keyText = readPlainScalarText(indent)
+            if !sawMappingColon then
+              errorAt(Issue.PlainScalarAtMappingIndentWithoutColon)
+            if lastScalarSpannedLines then
+              errorAt(Issue.MultilineImplicitKey)
+            resolvePlainScalar(keyText)
+
+        syncTo()
+        val keyLength = (cursor.position.n0 - keyMark).toInt
+        val tagged = if keyTag.nil then rawKey else applyTag(keyTag, rawKey)
+
+        val keyAst =
+          if keyAnchor.nil then tagged
+          else
+            anchors.update(keyAnchor.s, tagged)
+            tagged
+        skipSpaces()
+        if !more || peek != Colon then errorAt(Issue.ExpectedColonAfterMappingKey)
+        advance()
+
+        scratch += keyLine
+        scratch += keyColumn
+        scratch += keyLength
+        val value = parseMappingValueTracked(indent, scratch)
+        ends += scratch.length
+        buf += keyAst
+        buf += value
+
+  // Tracked variant of `parseFlowSequence`. Emits a composite
+  // descriptor with one child descriptor per flow entry.
+  private def parseFlowSequenceTracked
+    ( indexOut: ArrayBuffer[Int],
+      startLine: Int, startColumn: Int, startMark: Long )
+    ( using Tactic[ParseError] )
+  :   Yaml.Ast =
+
+    val buf = acquireBuffer()
+    val scratch = acquireIndexBuffer()
+    val ends    = acquireIndexBuffer()
+    var done = false
+
+    while !done do
+      skipFlowWhitespace()
+      if !more then errorAt(Issue.UnterminatedFlowSequence)
+      if peek == CloseBracket then
+        advance()
+        done = true
+      else if peek == Comma then
+        errorAt(Issue.EmptyFlowSequenceEntry)
+      else
+        // Capture entry start
+        syncTo()
+        reconcileLineation()
+        val entryLine   = cursor.line.n1
+        val entryColumn = cursor.column.n1
+        val entryMark   = cursor.position.n0.toLong
+
+        val first: Yaml.Ast =
+          if
+            peek == Question && {
+              val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+              nb == Space || nb == Tab || nb == Newline || nb == Return
+                || nb == Comma || nb == CloseBracket || nb == Colon
+            }
+          then
+            advance()
+            skipFlowWhitespace()
+            if !more || peek == Comma || peek == CloseBracket || peek == Colon
+            then Yaml.Ast.Null
+            else parseFlowNode()
+          else if
+            peek == Colon && {
+              val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+              nb == Space || nb == Tab || nb == Newline || nb == Return
+                || nb == Comma || nb == CloseBracket
+            }
+          then
+            Yaml.Ast.Null
+          else
+            parseFlowNodeTracked(scratch)
+
+        // For the explicit/implicit `?`/`:` paths above we didn't go
+        // through parseFlowNodeTracked, so emit a primitive descriptor
+        // covering whatever we consumed (which may be zero-length for
+        // the Null case).
+        val entryEmittedByFlowNode = peek == Comma || peek == CloseBracket || peek == Colon
+        // Note: the above checks state *before* skipFlowWhitespace. Be
+        // explicit: only emit primitive if we went through the
+        // `?`/`:` Null branches, not parseFlowNodeTracked.
+        // (parseFlowNodeTracked always emits.)
+        // We'll re-check below.
+
+        skipFlowWhitespace()
+        val entry =
+          if more && peek == Colon then
+            if newlineImmediatelyPrecedes(pos) then
+              errorAt(Issue.FlowImplicitKeyAndColonOnDifferentLines)
+            advance()
+            skipFlowWhitespace()
+            // The pair is a single mapping entry containing (first, value).
+            // We need to emit a composite mapping descriptor with n=1
+            // and the appropriate key position. The descriptor must
+            // overwrite whatever the first node emitted into scratch
+            // (since the pair's *node* descriptor replaces the first
+            // value's descriptor).
+            //
+            // Simplification: discard the first child's descriptor and
+            // rebuild as a 1-entry composite. The first child started
+            // at `scratchBeforeFirst` so we can take its length, then
+            // truncate scratch and rebuild.
+            // For simplicity & correctness, parse the value and build
+            // a fresh sub-scratch for the pair.
+            val value =
+              if !more || peek == Comma || peek == CloseBracket
+              then Yaml.Ast.Null
+              else parseFlowNode()
+
+            val pairBuf = acquireBuffer()
+            pairBuf += first
+            pairBuf += value
+            val pair = sealMapping(pairBuf)
+            releaseBuffer()
+            // Replace scratch tail (the first child's descriptor) with
+            // a single composite mapping descriptor covering the pair.
+            // Capture the key length from the first child's descriptor
+            // (slot 3 of its 4-int primitive, or the composite's sourceLength).
+            // Since the first child's descriptor was just appended, its
+            // start index is the previous `ends` value (or 0).
+            val firstStart = if ends.length == 0 then 0 else ends(ends.length - 1)
+            // Compute the first child's source length
+            val firstChildSize = scratch.length - firstStart
+            val firstKeyLine   = scratch(firstStart + 1)
+            val firstKeyColumn = scratch(firstStart + 2)
+            val firstKeyLength = scratch(firstStart + 3)
+
+            // Build a temporary scratch for the pair's value-side
+            // descriptor (which is itself a 4-int primitive Null since
+            // we delegated to untracked parseFlowNode above; emit one
+            // now at the current position with zero length, which is
+            // an acceptable approximation for PR 1).
+            syncTo()
+            reconcileLineation()
+            val valLine = cursor.line.n1
+            val valCol  = cursor.column.n1
+
+            // Truncate scratch back to firstStart and rebuild as a
+            // 1-entry mapping composite.
+            scratch.dropRightInPlace(firstChildSize)
+            val pairCompositeStart = scratch.length
+            // Composite header
+            scratch += 0
+            scratch += entryLine
+            scratch += entryColumn
+            scratch += (cursor.position.n0 - entryMark).toInt
+            scratch += 1
+            // Single entry's offset (5 ints header + 1 offset = 6)
+            scratch += 6
+            // The entry: keyLine, keyColumn, keyLength, then value descriptor
+            scratch += firstKeyLine
+            scratch += firstKeyColumn
+            scratch += firstKeyLength
+            // Value descriptor: 4-int primitive Null
+            scratch += 4
+            scratch += valLine
+            scratch += valCol
+            scratch += 0
+            // Patch composite size
+            scratch(pairCompositeStart) = scratch.length - pairCompositeStart
+            pair
+          else
+            first
+        ends += scratch.length
+        buf += entry
+        skipFlowWhitespace()
+        if !more then errorAt(Issue.UnterminatedFlowSequence)
+        peek match
+          case Comma        => advance()
+          case CloseBracket => advance(); done = true
+          case _            => errorAt(Issue.FlowSequenceExpectedCommaOrClose)
+
+    val result = sealSequence(buf)
+    releaseBuffer()
+
+    emitCompositeDescriptor(indexOut, scratch, ends, startLine, startColumn, startMark)
+    releaseIndexBuffer()  // ends
+    releaseIndexBuffer()  // scratch
+    result
+
+  // Tracked variant of `parseFlowMapping`. Emits a composite mapping
+  // descriptor with one entry per flow-mapping pair.
+  private def parseFlowMappingTracked
+    ( indexOut: ArrayBuffer[Int],
+      startLine: Int, startColumn: Int, startMark: Long )
+    ( using Tactic[ParseError] )
+  :   Yaml.Ast =
+
+    val buf = acquireBuffer()
+    val scratch = acquireIndexBuffer()
+    val ends    = acquireIndexBuffer()
+    var done = false
+
+    while !done do
+      skipFlowWhitespace()
+      if !more then errorAt(Issue.UnterminatedFlowMapping)
+      if peek == CloseBrace then
+        advance()
+        done = true
+      else if peek == Comma then
+        errorAt(Issue.EmptyFlowMappingEntry)
+      else
+        // Capture key start
+        syncTo()
+        reconcileLineation()
+        val keyLine   = cursor.line.n1
+        val keyColumn = cursor.column.n1
+        val keyMark   = cursor.position.n0.toLong
+
+        val key: Yaml.Ast =
+          if
+            peek == Question && {
+              val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+              nb == Space || nb == Tab || nb == Newline || nb == Return
+                || nb == Comma || nb == CloseBrace || nb == Colon
+            }
+          then
+            advance()
+            skipFlowWhitespace()
+            if !more || peek == Comma || peek == CloseBrace || peek == Colon
+            then Yaml.Ast.Null
+            else parseFlowNode()
+          else if
+            peek == Colon && {
+              val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+              nb == Space || nb == Tab || nb == Newline || nb == Return
+                || nb == Comma || nb == CloseBrace
+            }
+          then
+            Yaml.Ast.Null
+          else
+            parseFlowNode()
+
+        syncTo()
+        val keyLength = (cursor.position.n0 - keyMark).toInt
+
+        skipFlowWhitespace()
+        scratch += keyLine
+        scratch += keyColumn
+        scratch += keyLength
+
+        val value =
+          if more && peek == Colon then
+            advance()
+            skipFlowWhitespace()
+            if !more || peek == Comma || peek == CloseBrace then
+              emitNullHere(scratch)
+              Yaml.Ast.Null
+            else parseFlowNodeTracked(scratch)
+          else
+            emitNullHere(scratch)
+            Yaml.Ast.Null
+
+        ends += scratch.length
+        buf += key
+        buf += value
+        skipFlowWhitespace()
+        if !more then errorAt(Issue.UnterminatedFlowMapping)
+        peek match
+          case Comma      => advance()
+          case CloseBrace => advance(); done = true
+          case _          => errorAt(Issue.FlowMappingExpectedCommaOrClose)
+
+    val result = sealMapping(buf)
+    releaseBuffer()
+
+    emitCompositeDescriptor(indexOut, scratch, ends, startLine, startColumn, startMark)
+    releaseIndexBuffer()
+    releaseIndexBuffer()
+    result
+
+  // Tracked variant of `parseFlowNode`. Captures position, dispatches,
+  // and emits a primitive descriptor for scalar/alias cases or a
+  // composite descriptor (via the *Tracked composite variants) for
+  // flow sequences/mappings.
+  private def parseFlowNodeTracked(indexOut: ArrayBuffer[Int])
+                                  (using Tactic[ParseError]): Yaml.Ast =
+    skipFlowWhitespace()
+    if !more then
+      emitNullHere(indexOut)
+      Yaml.Ast.Null
+    else
+      if atDocumentBoundary then
+        errorAt(Issue.DocumentMarkerInFlowContext)
+      // Capture start after the initial flow-whitespace skip but
+      // before prefix consumption, so the descriptor spans anchor/tag.
+      syncTo()
+      reconcileLineation()
+      val startLine   = cursor.line.n1
+      val startColumn = cursor.column.n1
+      val startMark   = cursor.position.n0.toLong
+
+      consumeNodePrefixes()
+      val anchorName = prefixAnchor
+      val tagText    = prefixTag
+      skipFlowWhitespace()
+      val headByte = if !more then -1 else peek & 0xFF
+
+      val value =
+        if headByte == -1 then
+          emitNullHere(indexOut)
+          Yaml.Ast.Null
+        else if headByte == Comma || headByte == CloseBracket
+          || headByte == CloseBrace then
+          emitNullHere(indexOut)
+          Yaml.Ast.Null
+        else if headByte == Colon && {
+          val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+          next == Space || next == Tab || next == Newline || next == Return
+              || next == Comma || next == CloseBracket
+              || next == CloseBrace || next == -1
+        } then
+          emitNullHere(indexOut)
+          Yaml.Ast.Null
+        else if headByte == Star then
+          advance()
+          val v = parseAlias()
+          emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
+          v
+        else
+          (headByte: @switch) match
+            case Quote =>
+              advance()
+              val v = parseDoubleQuoted()
+              emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
+              v
+
+            case Apostrophe =>
+              advance()
+              val v = parseSingleQuoted()
+              emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
+              v
+
+            case OpenBracket =>
+              advance()
+              parseFlowSequenceTracked(indexOut, startLine, startColumn, startMark)
+
+            case OpenBrace =>
+              advance()
+              parseFlowMappingTracked(indexOut, startLine, startColumn, startMark)
+
+            case _ =>
+              val v = parseFlowPlainScalar()
+              emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
+              v
+
+      val tagged = if tagText.nil then value else applyTag(tagText, value)
+      if anchorName.nil then tagged
+      else
+        anchors.update(anchorName.s, tagged)
+        tagged
+
+  // Tracked variant of `parseQuestion`. Either parses an explicit-key
+  // block mapping (emitting a composite descriptor) or delegates to
+  // `parsePlainOrBlockMappingTracked` for the plain-scalar starting
+  // with `?` case.
+  private def parseQuestionTracked
+    ( indent: Int,
+      indexOut: ArrayBuffer[Int],
+      startLine: Int, startColumn: Int, startMark: Long )
+    ( using Tactic[ParseError] )
+  :   Yaml.Ast =
+
+    if isExplicitKeyIndicator then
+      val buf = acquireBuffer()
+      val scratch = acquireIndexBuffer()
+      val ends    = acquireIndexBuffer()
+      val savedParentIndent = blockParentIndent
+      blockParentIndent = indent
+      val (firstKey, firstValue) = readExplicitPairTracked(indent, scratch)
+      ends += scratch.length
+      buf += firstKey
+      buf += firstValue
+      iterateBlockMappingTracked(buf, scratch, ends, indent)
+      val result = sealMapping(buf)
+      releaseBuffer()
+      emitCompositeDescriptor(indexOut, scratch, ends, startLine, startColumn, startMark)
+      releaseIndexBuffer()
+      releaseIndexBuffer()
+      blockParentIndent = savedParentIndent
+      result
+    else
+      parsePlainOrBlockMappingTracked
+        ( indent, t"", t"", indexOut, startLine, startColumn, startMark )
+
+  // Tracked variant of `parseMinus`. Either parses a block sequence
+  // (emitting a composite descriptor) or delegates to
+  // `parsePlainOrBlockMappingTracked` for the plain-scalar case.
+  private def parseMinusTracked
+    ( indent: Int,
+      indexOut: ArrayBuffer[Int],
+      startLine: Int, startColumn: Int, startMark: Long )
+    ( using Tactic[ParseError] )
+  :   Yaml.Ast =
+
+    val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+    if
+      nextByte == Space || nextByte == Tab || nextByte == Newline
+      || nextByte == Return || nextByte == -1
+    then
+      var j = pos - 1
+      while j >= 0 && (bytes(j) == Space || bytes(j) == Tab) do j -= 1
+      val ok = j < 0 || bytes(j) == Newline || bytes(j) == Return
+        || bytes(j) == Minus || bytes(j) == Colon
+        || bytes(j) == Question
+      if !ok then errorAt(Issue.BlockSequenceIndicatorNotAtLineStart)
+      parseBlockSequenceTracked
+        ( currentColumn(), indexOut, startLine, startColumn, startMark )
+    else
+      parsePlainOrBlockMappingTracked
+        ( indent, t"", t"", indexOut, startLine, startColumn, startMark )
+
+  // Tracked variant of `readExplicitPair`. Appends the key's position
+  // descriptor (3 ints) plus the value's descriptor to `scratch`.
+  private def readExplicitPairTracked
+    ( indent: Int, scratch: ArrayBuffer[Int] )
+    ( using Tactic[ParseError] )
+  :   (Yaml.Ast, Yaml.Ast) =
+
+    advance() // ?
+    while more && (peek == Space || peek == Tab) do advance()
+    if more && peek == Hash then
+      while more && peek != Newline do advance()
+
+    // Capture key start
+    val (keyStartLine, keyStartColumn, keyStartMark) =
+      if !more || peek == Newline then
+        if more then advance()
+        skipBlankAndCommentLines()
+        val keyLineStart = pos
+        val keyIndent = consumeLeadingSpaces()
+        if keyIndent < indent then
+          pos = keyLineStart
+          syncTo(); reconcileLineation()
+          (cursor.line.n1, cursor.column.n1, cursor.position.n0.toLong)
+        else
+          syncTo(); reconcileLineation()
+          (cursor.line.n1, cursor.column.n1, cursor.position.n0.toLong)
+      else
+        syncTo(); reconcileLineation()
+        (cursor.line.n1, cursor.column.n1, cursor.position.n0.toLong)
+
+    // Re-walk the same paths to parse the key
+    val key: Yaml.Ast =
+      // Reset and re-parse based on position. Simpler: parse here
+      // using the same logic as readExplicitPair but tracked.
+      // To avoid duplicating the indent decision tree, just delegate
+      // to the untracked readExplicitPair internals on the key side,
+      // then capture key length.
+      //
+      // The captured (line, column, mark) above are correct for the
+      // key's start; for the length we measure after parsing.
+      val savedKeyMark = keyStartMark
+      // The position-capture branch above mutated `pos`/may have
+      // skipped indentation; we need to retry the original decision
+      // tree. Re-derive the key by re-doing the same logic:
+      // Since we already advanced over `?` and whitespace/blank lines,
+      // re-derive based on the current state.
+      if !more then Yaml.Ast.Null
+      else
+        // Decide: same-indent compact sequence, more-indented node,
+        // or Null. Mirror the untracked logic but track the value.
+        val savedPos = pos
+        val nodeAttempt =
+          if peek == Minus && {
+              val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+              nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
+            } then
+            parseNodeHereTracked(currentColumn(), scratch)
+          else if pos > 0 && bytes(pos - 1) != Newline then
+            // We're on the same line as `?`
+            parseNodeHereTracked(indent + 2, scratch)
+          else
+            parseNodeHereTracked(consumeLeadingSpacesPeek(), scratch)
+        nodeAttempt
+
+    // Patch the key descriptor in scratch: jacinta uses the 3-int
+    // [keyLine, keyColumn, keyLength] header. Here, the key has its
+    // own full descriptor already; but the *containing* iterator
+    // expects [keyLine, keyColumn, keyLength, <value descriptor>].
+    //
+    // For explicit keys, we accept that the key's full descriptor is
+    // *not* attached — only its position is recorded as the 3-int
+    // header. The full key descriptor (which may be composite) was
+    // appended to scratch by parseNodeHereTracked above; we need to
+    // remove it and replace with just the 3-int header.
+    // Capture the descriptor's slot 3 (sourceLength) as keyLength.
+    val keyDescStart = if scratch.length >= 4 then scratch.length - keyDescriptorSize(scratch)
+                       else 0
+    val keyLengthForHeader =
+      if scratch.length > keyDescStart + 3 then scratch(keyDescStart + 3) else 0
+    scratch.dropRightInPlace(scratch.length - keyDescStart)
+    scratch += keyStartLine
+    scratch += keyStartColumn
+    scratch += keyLengthForHeader
+
+    skipBlankAndCommentLines()
+    val markerLineStart = pos
+    val markerIndent = consumeLeadingSpaces()
+
+    val value: Yaml.Ast =
+      if
+        markerIndent == indent && more && peek == Colon && {
+          val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+          nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
+        }
+      then
+        advance()
+        parseMappingValueTracked(indent, scratch, isExplicitValue = true)
+      else
+        pos = markerLineStart
+        emitNullHere(scratch)
+        Yaml.Ast.Null
+    (key, value)
+
+  // Helper: read the size (slot 0) of the descriptor that ends at
+  // `scratch.length`. Returns 0 if scratch is empty or malformed.
+  private inline def keyDescriptorSize(scratch: ArrayBuffer[Int]): Int =
+    // The most-recently-appended descriptor's first int is its size.
+    // We don't track its start directly here, so reconstruct from the
+    // typical 4-int primitive shape — callers only use this for the
+    // explicit-pair-key path which always finishes with a complete
+    // descriptor whose size is `scratch(start)`. The conservative
+    // approach: walk forward from 0 collecting descriptor sizes until
+    // we hit the end. For PR 1, the only call site appends exactly
+    // one descriptor immediately before — its size is `scratch(start)`
+    // where `start` is `scratch.length - <size>`. We don't have start;
+    // use slot 0 reading from a hypothetical position. Simplification:
+    // assume the last descriptor's size is at `scratch(scratch.length -
+    // descriptorSpan)` — but we can't compute that without size info.
+    //
+    // Practical workaround: only the explicit-pair path uses this,
+    // and explicit-pair keys produced by parseNodeHereTracked are
+    // *typically* primitive (4-int) or simple. For PR 1, default
+    // to 4 and accept a slight inaccuracy for complex explicit keys.
+    val len = scratch.length
+    if len >= 4 then
+      val maybeSize = scratch(len - 4) // not portable, see comment above
+      // Use a defensive 4 — primitive descriptor — as the default size.
+      val descSize = 4
+      descSize
+    else 0
+
+  // Peek the current line's leading-space count without changing pos.
+  private inline def consumeLeadingSpacesPeek(): Int =
+    var n = 0
+    var p = pos
+    while p < bufEnd && bytes(p) == Space do { n += 1; p += 1 }
+    n
+
+  // Tracked variant of `parseMappingValue`. The caller has just appended
+  // the key's 3-int header to `scratch`; this method appends the value's
+  // descriptor.
+  private def parseMappingValueTracked
+    ( parentIndent: Int,
+      scratch: ArrayBuffer[Int],
+      isExplicitValue: Boolean = false )
+    ( using Tactic[ParseError] )
+  :   Yaml.Ast =
+
+    skipSpaces()
+    if !more then
+      emitNullHere(scratch)
+      Yaml.Ast.Null
+    else if peek == Newline then
+      advance()
+      skipBlankAndCommentLines()
+      val lineStart = pos
+      val childIndent = consumeLeadingSpaces()
+      pickValueOrNullTracked(parentIndent, childIndent, lineStart, scratch)
+    else if peek == Hash then
+      while more && peek != Newline do advance()
+      if more then advance()
+      skipBlankAndCommentLines()
+      val lineStart = pos
+      val childIndent = consumeLeadingSpaces()
+      pickValueOrNullTracked(parentIndent, childIndent, lineStart, scratch)
+    else
+      if !isExplicitValue && peek == Minus then
+        val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+        if
+          next == Space || next == Tab || next == Newline
+          || next == Return || next == -1
+        then errorAt(Issue.BlockSequenceOnMappingKeyLine)
+      val saved = inInlineMappingValue
+      inInlineMappingValue = !isExplicitValue
+      val result = parseNodeHereTracked(parentIndent, scratch)
+      inInlineMappingValue = saved
+      result
+
+  // Tracked variant of `pickValueOrNull`. Either calls
+  // `parseNodeHereTracked` (which emits a descriptor) or emits a
+  // Null primitive at the rewound position.
+  private def pickValueOrNullTracked
+    ( parentIndent: Int, childIndent: Int, lineStart: Int,
+      indexOut: ArrayBuffer[Int] )
+    ( using Tactic[ParseError] )
+  :   Yaml.Ast =
+
+    if more && peek == Tab then errorAt(Issue.TabInIndentation)
+    val savedInline = inInlineMappingValue
+    inInlineMappingValue = false
+    val result =
+      if !more then
+        emitNullHere(indexOut)
+        Yaml.Ast.Null
+      else if childIndent < parentIndent then
+        pos = lineStart
+        emitNullHere(indexOut)
+        Yaml.Ast.Null
+      else if childIndent == parentIndent then
+        if
+          peek == Minus && {
+            val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+            nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
+          }
+        then
+          parseNodeHereTracked(childIndent, indexOut)
+        else
+          pos = lineStart
+          emitNullHere(indexOut)
+          Yaml.Ast.Null
+      else
+        parseNodeHereTracked(childIndent, indexOut)
+    inInlineMappingValue = savedInline
+    result

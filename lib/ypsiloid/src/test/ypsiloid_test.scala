@@ -967,3 +967,5 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == List(99, 20, 30))
 
     ConformanceTests.all()
+
+    PositionTests()
