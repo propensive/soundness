@@ -11,39 +11,7 @@ Implementation-discovered ambiguities, inconsistencies, and inadequacies in the 
 
 **Stratiform implementation:** the schema-aware rule is implemented when the consumer calls `Tel.parse(bytes, schema)`; `bytes.read[Tel]` / `text.load[Tel]` (no schema in scope) continue to use shallower-wins (raising E107 in the absence of recovery). The parser maintains an `ancestors` stack of resolved struct types alongside the open-compound chain to enable the lookup.
 
-### `tel-schema` self-validation circularity
-**Issue:** §20.5 specifies `tel-schema` as itself a TEL document conforming to `tel-schema`. A parser bootstrapping its first run has no `tel-schema` to validate the `tel-schema.tel` document against.
-
-**Stratiform decision:** A hand-encoded `Tels` Scala value will be the axiom in phase 3. A self-consistency test parses `tel-schema.tel` with the axiom and asserts structural equality — a check that the axiom matches the canonical document.
-
-**Spec resolution:** acceptable as a bootstrap mechanism; flagged here only as a concern for implementers.
-
-### §15 literal-atom CR/LF normalisation
-**Issue:** §15 states that literal-atom payloads preserve every byte between the opening LF and
-the closing-delimiter LF, "including any CR, bare LF, or CR LF sequence". The Rust reference
-implementation, however, normalises CRLF to LF inside the payload — the
-`pos/literal-atom-cr-in-payload` fixture has a `hello\r\nworld` payload that produces text
-`"hello\nworld"` (CR stripped), not `"hello\r\nworld"`.
-
-**Stratiform decision:** Match the reference (strip CR adjacent to LF in literal-atom payloads).
-The spec text should be amended to reflect the normalisation.
-
-**Spec resolution:** open.
-
-### §14 source-atom trailing LF
-**Issue:** §14 reads "The captured lines are joined with a single LF between each pair into a
-single text string. **The trailing LF of the last captured line is NOT included in text.** The
-array of captured lines therefore yields a text field of the form `line_0 LF line_1 LF … LF
-line_{n-1}`." The upstream reference implementation, however, emits a trailing LF for every
-captured line — including the last one. Across all the `pos/source-atom-*` fixtures, an
-n-captured-line atom has exactly n LFs in the payload (e.g. `code\n    source line\n` produces
-`"source line\n\n"` — two LFs, not one).
-
-**Stratiform decision:** Follow the reference implementation, not the literal text — emit one
-LF per captured line. The text of §14 should be updated to read "yields a text field of the
-form `line_0 LF line_1 LF … LF line_{n-1} LF`".
-
-**Spec resolution:** open.
+_(No remaining open issues — see Resolved below.)_
 
 ## Phase status
 
@@ -120,6 +88,27 @@ Phase 5+ deferred items:
 - BASE-256 codec
 
 ## Resolved
+
+### §14 source-atom trailing LF
+**Issue:** §14 originally read "The captured lines are joined with a single LF between each pair into a single text string. **The trailing LF of the last captured line is NOT included in text.**" The Rust reference implementation, however, emits a trailing LF for every captured line — including the last one.
+
+**Stratiform behaviour:** follows the reference — emits one LF per captured line. Across the `pos/source-atom-*` fixtures an n-line atom has exactly n LFs in the payload.
+
+**Spec resolution:** **upstream** — §14 text amended to read "yields a text field of the form `line_0 LF line_1 LF … LF line_{n-1} LF`". Stratiform's behaviour already matches; no implementation change needed.
+
+### §15 literal-atom CR/LF normalisation
+**Issue:** §15 originally stated that literal-atom payloads preserve every byte between the opening LF and the closing-delimiter LF, "including any CR, bare LF, or CR LF sequence". The Rust reference implementation, however, normalises CRLF to LF inside the payload — the `pos/literal-atom-cr-in-payload` fixture has a `hello\r\nworld` payload that produces text `"hello\nworld"`.
+
+**Stratiform behaviour:** strips CR adjacent to LF in literal-atom payloads, matching the reference.
+
+**Spec resolution:** **upstream** — §15 text amended to describe the CRLF → LF normalisation. Stratiform's behaviour already matches; no implementation change needed.
+
+### `tel-schema` self-validation circularity
+**Issue:** §20.5 specifies `tel-schema` as itself a TEL document conforming to `tel-schema`. A parser bootstrapping its first run has no `tel-schema` to validate the canonical `tel-schema.tel` document against.
+
+**Stratiform behaviour:** a hand-encoded `Tels` Scala value (`TelsAxiom.tels`) is the bootstrap axiom. The §20.5 self-consistency test parses `tel-schema.tel` with the axiom, type-assigns successfully, AND reconstructs an equivalent `Tels` via `TelsReconstructor.fromTel` to verify the axiom matches the canonical document.
+
+**Spec resolution:** **disregard** — flagged only as an implementer concern; stratiform's hand-encoded-axiom + self-consistency-test approach is adequate verification.
 
 ### `tel"…"` resource-path package shadowing
 **Issue:** The test corpus was originally stored at
