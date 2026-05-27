@@ -621,6 +621,66 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[MutationError](Mutation(tel, Mutation.Op.Delete(ptr))).reason
       . assert(_ == MutationError.Reason.PointerNotFound)
 
+      test(m"ReorderWithinGroup moves a same-keyword sibling"):
+        val tel = doc("item a\nitem b\nitem c\n")
+        val op  = Mutation.Op.ReorderWithinGroup(Tel.Pointer.Empty, t"item", 0, 2)
+        Tel.show(Mutation(tel, op).document.vouch)
+      . assert(_ == t"item b\nitem c\nitem a\n")
+
+      test(m"ReorderWithinGroup with same old and new is a no-op"):
+        val tel = doc("item a\nitem b\n")
+        val op  = Mutation.Op.ReorderWithinGroup(Tel.Pointer.Empty, t"item", 1, 1)
+        Tel.show(Mutation(tel, op).document.vouch)
+      . assert(_ == t"item a\nitem b\n")
+
+      test(m"ReorderWithinGroup with out-of-range index raises"):
+        val tel = doc("item a\nitem b\n")
+        val op  = Mutation.Op.ReorderWithinGroup(Tel.Pointer.Empty, t"item", 0, 5)
+        capture[MutationError](Mutation(tel, op)).reason
+      . assert(_ == MutationError.Reason.PointerNotFound)
+
+      test(m"ReorderGroups swaps contiguous member groups"):
+        val tel = doc("name Alice\nname Bob\nage 30\nage 31\n")
+        val op  = Mutation.Op.ReorderGroups(Tel.Pointer.Empty, t"name", t"age")
+        Tel.show(Mutation(tel, op).document.vouch)
+      . assert(_ == t"age 30\nage 31\nname Alice\nname Bob\n")
+
+      test(m"ReorderGroups raises when a group is missing"):
+        val tel = doc("name Alice\n")
+        val op  = Mutation.Op.ReorderGroups(Tel.Pointer.Empty, t"name", t"age")
+        capture[MutationError](Mutation(tel, op)).reason
+      . assert(_ == MutationError.Reason.PointerNotFound)
+
+      test(m"Construct picks inline atoms for simple values"):
+        val c = Mutation.construct(t"name", t"Alice")
+        c.atoms.head match
+          case Tel.Atom.Inline(text, _) => text
+          case _                        => t""
+      . assert(_ == t"Alice")
+
+      test(m"Construct picks a source atom for multi-line values"):
+        val c = Mutation.construct(t"note", t"first line\nsecond line\n")
+        c.atoms.head match
+          case _: Tel.Atom.Source  => "source"
+          case _: Tel.Atom.Inline  => "inline"
+          case _: Tel.Atom.Literal => "literal"
+      . assert(_ == "source")
+
+      test(m"Construct falls back to literal for blank-line payloads"):
+        val c = Mutation.construct(t"note", t"first\n\nsecond\n")
+        c.atoms.head match
+          case _: Tel.Atom.Literal => "literal"
+          case _: Tel.Atom.Source  => "source"
+          case _: Tel.Atom.Inline  => "inline"
+      . assert(_ == "literal")
+
+      test(m"Construct's inline atom uses one preceding space"):
+        val c = Mutation.construct(t"name", t"Alice")
+        c.atoms.head match
+          case Tel.Atom.Inline(_, sp) => sp
+          case _                       => -1
+      . assert(_ == 1)
+
     suite(m"Tel.fields repeated-keyword accessor"):
       test(m"fields returns all matching children in order"):
         val tel = t"item 1\nitem 2\nitem 3\n".read[Tel]
