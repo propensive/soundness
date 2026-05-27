@@ -73,15 +73,27 @@ import TelError.Reason
 
 object TelParser:
 
+  // Thread-local parser pool. `TelParser` is a stateful object holding
+  // per-parse caches (keyword intern cache, ancestor buffer, lines
+  // array). Pooling per thread amortises those allocations across all
+  // parses on that thread — important for small documents where the
+  // setup cost otherwise dominates.
+  private val pool: ThreadLocal[TelParser] =
+    ThreadLocal.withInitial { () => new TelParser }
+
   def parse(input: Data): Tel.Document raises TelError =
-    TelParser(input, Unset).parseDocument()
+    val parser = pool.get
+    parser.resetData(input, Unset)
+    parser.parseDocument()
 
   // Schema-aware parse: when an odd-indented line is encountered the
   // parser uses §19.5's schema-aware E107 recovery to disambiguate
   // shallower vs deeper. Without a schema the original shallower-wins
   // rule still applies.
   def parse(input: Data, schema: Tels): Tel.Document raises TelError =
-    TelParser(input, schema: Optional[Tels]).parseDocument()
+    val parser = pool.get
+    parser.resetData(input, schema: Optional[Tels])
+    parser.parseDocument()
 
   // `Line` is an opaque-type `Long` that packs four byte/line-level
   // offsets into a single primitive:
@@ -135,16 +147,15 @@ object TelParser:
   private inline val ByteBom1 = 0xBB
   private inline val ByteBom2 = 0xBF
 
-private final class TelParser(input: Data, schema: Optional[Tels]):
+private final class TelParser:
   import TelParser.*
 
-  // The raw input bytes. We use the input's underlying `IArray[Byte]`
-  // (cast to `Array[Byte]`) directly — no defensive copy, no upfront
-  // `String` decode. The cost of `String(bytes, "UTF-8")` is two
-  // memory-bandwidth passes (a Latin-1 detection scan plus an internal
-  // copy); we eliminate both and decode UTF-8 lazily only at the points
-  // where the parser actually materialises a `Text`.
-  private val bytes: Array[Byte] = input.asInstanceOf[IArray[Byte]].asInstanceOf[Array[Byte]]
+  // Per-parse mutable state — set by `resetData` and consumed by
+  // `parseDocument`. The parser instance is reused across many parses
+  // via the thread-local pool in the companion object, so these fields
+  // are `var`s rather than constructor params.
+  private var bytes:  Array[Byte]     = new Array[Byte](0)
+  private var schema: Optional[Tels]  = Unset
 
   // Unsigned byte read. Java arrays return signed bytes; we mask with
   // 0xFF so comparisons against ASCII byte constants behave as expected
@@ -209,7 +220,9 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
   private val TelKeywordBytes: Array[Byte] =
     Array(ByteT.toByte, ByteE.toByte, ByteL.toByte, ByteSpace.toByte)
 
-  private val lineEndings: Tel.LineEndings =
+  private var lineEndings: Tel.LineEndings = Tel.LineEndings.Lf
+
+  private def detectLineEndings(): Tel.LineEndings =
     var i = 0
     while i < bytes.length && (bytes(i) & 0xFF) != ByteLf do i += 1
     if i > 0 && i < bytes.length && (bytes(i - 1) & 0xFF) == ByteCr then Tel.LineEndings.Crlf
@@ -231,18 +244,15 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       then errorAtOffset(Reason.BadLineEnding, i)
       i += 1
 
-  // Pre-split lines retaining leading-space count and blank flag. CR before
-  // LF is stripped in CRLF mode. The final stretch of content after the
-  // last LF is included only if it has content; an empty stretch after a
-  // trailing LF still counts as a blank line for §17 trailing-blank-line
-  // bookkeeping.
-  //
-  // Storage is `Array[Long]` (unboxed packed `Line`) sized to the actual
-  // line count. We grow a temporary array doubling-style during the scan
-  // and copy into a right-sized array at the end — no per-line object
-  // allocation.
-  private val linesArr: Array[Long] =
-    var buf = new Array[Long](64)
+  // Pre-split lines retaining leading-space count and blank flag. Storage
+  // is `Array[Long]` (unboxed packed `Line`) — no per-line object
+  // allocation. The array is reused across parses; if a previous parse
+  // sized it large enough we keep that capacity, otherwise we grow.
+  // `linesLen` tracks the current valid prefix length.
+  private var linesArr: Array[Long] = new Array[Long](64)
+  private var linesLen: Int = 0
+
+  private def buildLines(): Unit =
     var bufLen = 0
     val n = bytes.length
     var lineStart = 0
@@ -253,38 +263,30 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
           if index > 0 && (bytes(index - 1) & 0xFF) == ByteCr then index - 1
           else index
 
-        if bufLen == buf.length then
-          val grown = new Array[Long](buf.length * 2)
-          System.arraycopy(buf, 0, grown, 0, buf.length)
-          buf = grown
-        buf(bufLen) = Line.toRaw(makeLine(lineStart, contentEnd))
+        if bufLen == linesArr.length then growLinesArr()
+        linesArr(bufLen) = Line.toRaw(makeLine(lineStart, contentEnd))
         bufLen += 1
         lineStart = index + 1
 
       index += 1
 
     if lineStart < n then
-      if bufLen == buf.length then
-        val grown = new Array[Long](buf.length * 2)
-        System.arraycopy(buf, 0, grown, 0, buf.length)
-        buf = grown
-      buf(bufLen) = Line.toRaw(makeLine(lineStart, n))
+      if bufLen == linesArr.length then growLinesArr()
+      linesArr(bufLen) = Line.toRaw(makeLine(lineStart, n))
       bufLen += 1
     else if n > 0 && (bytes(n - 1) & 0xFF) == ByteLf then
-      if bufLen == buf.length then
-        val grown = new Array[Long](buf.length * 2)
-        System.arraycopy(buf, 0, grown, 0, buf.length)
-        buf = grown
-      buf(bufLen) = Line.toRaw(makeLine(n, n))
+      if bufLen == linesArr.length then growLinesArr()
+      linesArr(bufLen) = Line.toRaw(makeLine(n, n))
       bufLen += 1
 
-    if bufLen == buf.length then buf
-    else
-      val out = new Array[Long](bufLen)
-      System.arraycopy(buf, 0, out, 0, bufLen)
-      out
+    linesLen = bufLen
 
-  private inline def linesLength: Int = linesArr.length
+  private def growLinesArr(): Unit =
+    val grown = new Array[Long](linesArr.length * 2)
+    System.arraycopy(linesArr, 0, grown, 0, linesArr.length)
+    linesArr = grown
+
+  private inline def linesLength: Int = linesLen
   private inline def lineAt(i: Int): Line = Line.fromRaw(linesArr(i))
 
   private def makeLine(start: Int, end: Int): Line =
@@ -312,6 +314,27 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
   // by the schema-aware E107 recovery rule of §19.5.
   private val ancestors =
     scala.collection.mutable.ArrayBuffer.empty[Optional[Tels.Struct]]
+
+  // Reinitialise this pooled parser instance for a new parse. Reuses
+  // the underlying `linesArr` storage (only re-grown if needed),
+  // `ancestors` buffer, and the keyword cache. The keyword cache
+  // intentionally persists across parses: two byte sequences with the
+  // same content pack to the same `(low, high)` `Long` pair, so a hit
+  // is correct regardless of which previous parse populated the slot.
+  // This makes repeated parses of similar documents progressively
+  // cheaper, because previously-seen keywords are served from the
+  // cache without re-allocating a `String`.
+  def resetData(input: Data, sch: Optional[Tels]): Unit =
+    bytes           = input.asInstanceOf[IArray[Byte]].asInstanceOf[Array[Byte]]
+    schema          = sch
+    cursor          = 0
+    margin          = 0
+    sigilByte       = ByteHash
+    sigilChar       = '#'
+    prologueEndLine = -1
+    ancestors.clear()
+    lineEndings = detectLineEndings()
+    buildLines()
 
   // Build a `TelError.Position` for a given line index (0-based internally;
   // converted to the 1-indexed line numbers callers expect).
