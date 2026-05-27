@@ -39,6 +39,7 @@ import java.util as ju
 
 import scala.annotation.tailrec
 import scala.quoted.*
+import scala.util.NotGiven
 
 import anticipation.*
 import contextual.*
@@ -131,30 +132,78 @@ object Html extends Tag.Container
       Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
 
 
-  private inline def permissive(using recovery: Html.Recovery): Boolean =
-    recovery eq Html.Recovery.Permissive
+  // Internal Tactic used by the permissive-variant givens. Recovery warnings
+  // (`raise`) are discarded; truly unrecoverable conditions (`abort`) still
+  // throw, since the caller hasn't supplied a way to handle them.
+  private def lenientTactic: Tactic[ParseError] = new Tactic[ParseError]:
+    given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
+    def diagnostics: Diagnostics = errorDiagnostics.stackTraces
+    def record(error: Diagnostics ?=> ParseError): Unit = ()
 
-  given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
-  =>  ( Tactic[ParseError], Html.Recovery )
+    def abort(error: Diagnostics ?=> ParseError): Nothing =
+      throw error(using diagnostics)
+
+    def certify(): Unit = ()
+
+
+  given strictAggregable: [content <: Label: Reifiable to List[String]]
+  =>  (dom: Dom)
+  =>  Tactic[ParseError]
+  =>  NotGiven[Html.Recovery.Permissive]
   =>  (Html of content) is Aggregable by Text =
 
     input =>
       val root = Tag.root(content.reify.map(_.tt).to(Set))
-      HtmlParser.fromIterator(input.iterator, permissive).parseHtml(root).of[content]
+      HtmlParser.fromIterator(input.iterator, permissive = false).parseHtml(root).of[content]
 
-  given aggregable2: (dom: Dom)
-  =>  ( Tactic[ParseError], Html.Recovery )
+  given strictAggregable2: (dom: Dom)
+  =>  Tactic[ParseError]
+  =>  NotGiven[Html.Recovery.Permissive]
   =>  Html is Aggregable by Text =
     input =>
-      HtmlParser.fromIterator(input.iterator, permissive)
+      HtmlParser.fromIterator(input.iterator, permissive = false)
       . parseHtml(dom.generic, doctypes = false)
 
-  given loadable: (dom: Dom)
-  =>  ( Tactic[ParseError], Html.Recovery )
+  given strictLoadable: (dom: Dom)
+  =>  Tactic[ParseError]
+  =>  NotGiven[Html.Recovery.Permissive]
   =>  Html is Loadable by Text = stream =>
     val root = Tag.root(Set(t"html"))
 
-    HtmlParser.fromIterator(stream.iterator, permissive)
+    HtmlParser.fromIterator(stream.iterator, permissive = false)
+    . parseHtml(root, doctypes = true) match
+      case Fragment(Doctype(doctype), content) => Document(content, dom)
+      case html@Element("html", _, _, _)       => Document(html, dom)
+
+      case _ =>
+        abort(ParseError(Html, Position(1.u, 1.u), Issue.BadDocument))
+
+
+  given permissiveAggregable: [content <: Label: Reifiable to List[String]]
+  =>  (dom: Dom)
+  =>  Html.Recovery.Permissive
+  =>  (Html of content) is Aggregable by Text =
+
+    input =>
+      given Tactic[ParseError] = lenientTactic
+      val root = Tag.root(content.reify.map(_.tt).to(Set))
+      HtmlParser.fromIterator(input.iterator, permissive = true).parseHtml(root).of[content]
+
+  given permissiveAggregable2: (dom: Dom)
+  =>  Html.Recovery.Permissive
+  =>  Html is Aggregable by Text =
+    input =>
+      given Tactic[ParseError] = lenientTactic
+      HtmlParser.fromIterator(input.iterator, permissive = true)
+      . parseHtml(dom.generic, doctypes = false)
+
+  given permissiveLoadable: (dom: Dom)
+  =>  Html.Recovery.Permissive
+  =>  Html is Loadable by Text = stream =>
+    given Tactic[ParseError] = lenientTactic
+    val root = Tag.root(Set(t"html"))
+
+    HtmlParser.fromIterator(stream.iterator, permissive = true)
     . parseHtml(root, doctypes = true) match
       case Fragment(Doctype(doctype), content) => Document(content, dom)
       case html@Element("html", _, _, _)       => Document(html, dom)
@@ -410,11 +459,12 @@ object Html extends Tag.Container
   enum Mode:
     case Raw, Rcdata, Whitespace, Normal
 
+  // Bringing a `Recovery.Permissive` into scope selects the permissive HTML
+  // reader, which recovers from a defined subset of malformed inputs instead
+  // of aborting and does not require a `Tactic[ParseError]`. To enable it,
+  // `import honeycomb.recoveries.permissive` (defined in honeycomb_core.scala).
   object Recovery:
-    given default: Recovery = Strict
-
-  enum Recovery:
-    case Strict, Permissive
+    class Permissive
 
   enum Hole:
     case Text, Tagbody, Comment
@@ -1542,10 +1592,10 @@ object Html extends Tag.Container
       callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
       fastforward: Int                               = 0,
       doctypes:    Boolean                           = false )
-    ( using dom: Dom, recovery: Html.Recovery )
+    ( using dom: Dom )
   :   Html raises ParseError =
 
-    val parser = HtmlParser.fromIterator(input, permissive)
+    val parser = HtmlParser.fromIterator(input, permissive = false)
     parser.callback = callback
     parser.parseHtml(root, doctypes)
 
