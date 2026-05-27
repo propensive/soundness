@@ -1,0 +1,16 @@
+name example2
+
+record Menuitem
+  field value String optional
+  field onclick String optional
+
+record Popup
+  field menuitem Menuitem optional repeatable
+
+record Menu
+  field id String optional
+  field value String optional
+  field popup Popup optional
+
+document
+  field menu Menu optional

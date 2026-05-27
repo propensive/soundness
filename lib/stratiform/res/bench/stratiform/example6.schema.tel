@@ -1,0 +1,15 @@
+name example6
+
+record Transactions
+  field from String optional
+  field to String optional
+  field value String optional
+  field value-eth String optional
+  field gas-price-wei String optional
+  field gas-used String optional
+  field block-number String optional
+  field nonce String optional
+  field temperature-delta String optional
+
+document
+  field transactions Transactions optional repeatable

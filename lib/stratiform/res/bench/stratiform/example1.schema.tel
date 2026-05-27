@@ -1,0 +1,83 @@
+name example1
+
+record InitParam
+  field config-glossary-installation-at String optional
+  field config-glossary-admin-email String optional
+  field config-glossary-powered-by String optional
+  field config-glossary-powered-by-icon String optional
+  field config-glossary-static-path String optional
+  field template-processor-class String optional
+  field template-loader-class String optional
+  field template-path String optional
+  field template-override-path String optional
+  field default-list-template String optional
+  field default-file-template String optional
+  field use-jsp String optional
+  field jsp-list-template String optional
+  field jsp-file-template String optional
+  field cache-package-tags-track String optional
+  field cache-package-tags-store String optional
+  field cache-package-tags-refresh String optional
+  field cache-templates-track String optional
+  field cache-templates-store String optional
+  field cache-templates-refresh String optional
+  field cache-pages-track String optional
+  field cache-pages-store String optional
+  field cache-pages-refresh String optional
+  field cache-pages-dirty-read String optional
+  field search-engine-list-template String optional
+  field search-engine-file-template String optional
+  field search-engine-robots-db String optional
+  field use-data-store String optional
+  field data-store-class String optional
+  field redirection-class String optional
+  field data-store-name String optional
+  field data-store-driver String optional
+  field data-store-url String optional
+  field data-store-user String optional
+  field data-store-password String optional
+  field data-store-test-query String optional
+  field data-store-log-file String optional
+  field data-store-init-conns String optional
+  field data-store-max-conns String optional
+  field data-store-conn-usage-limit String optional
+  field data-store-log-level String optional
+  field max-url-length String optional
+  field mail-host String optional
+  field mail-host-override String optional
+  field log String optional
+  field log-location String optional
+  field log-max-size String optional
+  field data-log String optional
+  field data-log-location String optional
+  field data-log-max-size String optional
+  field remove-page-cache String optional
+  field remove-template-cache String optional
+  field file-transfer-folder String optional
+  field look-in-context String optional
+  field admin-group-id String optional
+  field beta-server String optional
+
+record Servlet
+  field servlet-name String optional
+  field servlet-class String optional
+  field init-param InitParam optional
+
+record ServletMapping
+  field cofax-cds String optional
+  field cofax-email String optional
+  field cofax-admin String optional
+  field file-servlet String optional
+  field cofax-tools String optional
+
+record Taglib
+  field taglib-uri String optional
+  field taglib-location String optional
+
+record WebApp
+  field servlet Servlet optional repeatable
+  field servlet-mapping ServletMapping optional
+  field taglib Taglib optional
+
+document
+  field web-app WebApp optional

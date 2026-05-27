@@ -1,0 +1,12 @@
+name example5
+
+record Logs
+  field timestamp String optional
+  field level String optional
+  field service String optional
+  field request-id String optional
+  field user-id String optional
+  field message String optional
+
+document
+  field logs Logs optional repeatable
