@@ -32,5 +32,5 @@
                                                                                                   */
 package soundness
 
-export stratiform.{Bintel, BintelError, Varint, VarintError,
+export stratiform.{Bintel, BintelError, SchemaSignature, Varint, VarintError,
                     bintel, bintelDocument, valueHash}

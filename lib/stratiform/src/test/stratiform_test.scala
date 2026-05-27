@@ -1234,6 +1234,72 @@ object Tests extends Suite(m"Stratiform Tests"):
         recovered.toSeq == source.toSeq
       . assert(_ == true)
 
+    suite(m"BinTEL §8.2 schema signature"):
+      def synthetic(seed: Int): Data =
+        val arr = new Array[Byte](32)
+        var i = 0
+        while i < 32 do
+          arr(i) = ((seed * 31 + i * 17) & 0xff).toByte
+          i += 1
+        arr.asInstanceOf[IArray[Byte]]
+
+      val h0 = synthetic(1)
+      val h1 = synthetic(2)
+      val h2 = synthetic(3)
+
+      test(m"single-component signature length is 32"):
+        SchemaSignature.encode(List(h0)).length
+      . assert(_ == 32)
+
+      test(m"single-component signature equals the component hash"):
+        SchemaSignature.encode(List(h0)).toSeq == h0.toSeq
+      . assert(_ == true)
+
+      test(m"two-component signature length is 34"):
+        SchemaSignature.encode(List(h0, h1)).length
+      . assert(_ == 34)
+
+      test(m"three-component signature length is 36"):
+        SchemaSignature.encode(List(h0, h1, h2)).length
+      . assert(_ == 36)
+
+      test(m"empty hash list raises BadSignatureLength"):
+        capture[BintelError](SchemaSignature.encode(Nil)).reason
+      . assert(_ == BintelError.Reason.BadSignatureLength)
+
+      test(m"non-32-byte hash raises BadSignatureLength"):
+        val bad: Data = Array.fill[Byte](16)(0).asInstanceOf[IArray[Byte]]
+        capture[BintelError](SchemaSignature.encode(List(bad))).reason
+      . assert(_ == BintelError.Reason.BadSignatureLength)
+
+      test(m"single-component signature decodes back to the hash"):
+        val sig = SchemaSignature.encode(List(h0))
+        val recovered = SchemaSignature.decode(sig, List(h0))
+        recovered.map(_.toSeq) == List(h0.toSeq)
+      . assert(_ == true)
+
+      test(m"two-component signature round-trips through encode/decode"):
+        val sig = SchemaSignature.encode(List(h0, h1))
+        val recovered = SchemaSignature.decode(sig, List(h0, h1, h2))
+        recovered.map(_.toSeq) == List(h0.toSeq, h1.toSeq)
+      . assert(_ == true)
+
+      test(m"three-component signature round-trips through encode/decode"):
+        val sig = SchemaSignature.encode(List(h0, h1, h2))
+        val recovered = SchemaSignature.decode(sig, List(h0, h1, h2))
+        recovered.map(_.toSeq) == List(h0.toSeq, h1.toSeq, h2.toSeq)
+      . assert(_ == true)
+
+      test(m"decode with odd signature length raises BadSignatureLength"):
+        val odd: Data = Array.fill[Byte](33)(0).asInstanceOf[IArray[Byte]]
+        capture[BintelError](SchemaSignature.decode(odd, List(h0))).reason
+      . assert(_ == BintelError.Reason.BadSignatureLength)
+
+      test(m"decode raises BadSignature when library is missing components"):
+        val sig = SchemaSignature.encode(List(h0, h1))
+        capture[BintelError](SchemaSignature.decode(sig, List(h2))).reason
+      . assert(_ == BintelError.Reason.BadSignature)
+
     suite(m"BinTEL §3 value hash"):
       test(m"valueHash is deterministic"):
         val tel = t"name Alice\n".read[Tel]
