@@ -226,10 +226,6 @@ object Tel extends Tel2:
     val meta = Tel.Metadata(doc.interpreterDirective, doc.pragma, doc.lineEndings)
     turbulence.Document(Tel(doc): Tel, meta)
 
-  // Lower-level parse returning the raw Document — used by code that
-  // needs the presentation AST directly (e.g. the round-trip printer).
-  def parseDocument(bytes: Data): Document raises TelError = TelParser.parse(bytes)
-
   // Print the document presentation (presentation-preserving when given a
   // Tel produced by `parse`).
   def show(tel: Tel): Text = tel.document.lay(t"")(TelPrinter.print)
