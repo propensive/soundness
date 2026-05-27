@@ -178,7 +178,33 @@ object Yaml extends Yaml2, Dynamic:
   opaque type Ast =
     YamlString | YamlInteger | YamlDecimal | YamlBoolean | YamlNull | YamlSequence | YamlMapping
     | Unset.type
-  
+
+  // Whether `YamlParser` captures line/column/length descriptors
+  // alongside the AST. The default is `Off`, matching the historic
+  // behaviour. Bring `Yaml.Tracking.On` into scope before calling
+  // `.read[Yaml]` / `.load[Yaml]` / `Yaml.parseAll(...)` to get a
+  // `Yaml` with `positionIndex` populated and `locate(pointer)`
+  // returning concrete `Position`s. Mirrors the precedent set by
+  // `jacinta.NumberMode`.
+  object Tracking:
+    given default: Tracking = Off
+
+  enum Tracking:
+    case On, Off
+
+  // A flat `IArray[Int]` of position descriptors, produced alongside the AST
+  // when a `Yaml` is parsed with `Tracking.On`. All internal offsets are
+  // stored relative to the start of the containing descriptor, so any slice
+  // taken at a descriptor boundary is itself a valid `PositionIndex` —
+  // mirrors `jacinta.Json.PositionIndex`.
+  opaque type PositionIndex = IArray[Int]
+
+  object PositionIndex:
+    private[ypsiloid] def apply(data: IArray[Int]): PositionIndex = data
+
+  extension (positionIndex: PositionIndex)
+    private[ypsiloid] def ints: IArray[Int] = positionIndex
+
   object Ast extends Format:
     def name: Text = "YAML"
   
@@ -679,6 +705,13 @@ object Yaml extends Yaml2, Dynamic:
 
   def ast(value: Yaml.Ast): Yaml = new Yaml(value)
 
+  // `object Yaml` extends `Dynamic`, which suppresses the universal-apply
+  // synthesis for `Yaml(...)` once the primary constructor takes more than
+  // one parameter; these explicit overloads forward to the constructor.
+  def apply(value: Any): Yaml = new Yaml(value)
+  def apply(value: Any, positions: Optional[Yaml.PositionIndex]): Yaml =
+    new Yaml(value, positions)
+
   // Canonical external accessor for the underlying AST. The `root`
   // field on `class Yaml` is package-private so that breaking through
   // the `Yaml` abstraction is a deliberate, named action.
@@ -990,14 +1023,38 @@ object Yaml extends Yaml2, Dynamic:
 
   // ── Parser entry-points ─────────────────────────────────────────────────
 
-  given decodable: Tactic[ParseError] => Yaml is Decodable in Text =
-    text => Yaml(YamlParser.parse(text))
+  // Whether parsing captures line/column/length descriptors alongside the
+  // AST is controlled by the contextual `Tracking` mode in scope —
+  // mirrors `jacinta.NumberMode`. Default is `Tracking.Off` (no
+  // descriptor capture). Callers wanting position-aware `Yaml.locate`
+  // (and, in subsequent PRs, focus-aware decoding) bring
+  // `Tracking.On` into scope before calling `.read[Yaml]` / `.load[Yaml]`
+  // / `Yaml.parseAll(...)`.
 
-  def parseAll(input: Text)(using Tactic[ParseError]): List[Yaml] =
-    YamlParser.parseAll(input).map(Yaml(_))
+  given decodable: (Tactic[ParseError], Yaml.Tracking) => Yaml is Decodable in Text =
+    text => summon[Yaml.Tracking] match
+      case Yaml.Tracking.On =>
+        val (ast, ints) = YamlParser.parseTracked(text)
+        new Yaml(ast, Yaml.PositionIndex(ints))
+      case Yaml.Tracking.Off =>
+        Yaml(YamlParser.parse(text))
 
-  given aggregable: Tactic[ParseError] => Yaml is Aggregable by Text =
-    summon[Text is Aggregable by Text].map{ text => Yaml(YamlParser.parse(text)) }
+  def parseAll(input: Text)(using Tactic[ParseError], Yaml.Tracking): List[Yaml] =
+    summon[Yaml.Tracking] match
+      case Yaml.Tracking.On =>
+        YamlParser.parseAllTracked(input).map: (ast, ints) =>
+          new Yaml(ast, Yaml.PositionIndex(ints))
+      case Yaml.Tracking.Off =>
+        YamlParser.parseAll(input).map(Yaml(_))
+
+  given aggregable: (Tactic[ParseError], Yaml.Tracking) => Yaml is Aggregable by Text =
+    summon[Text is Aggregable by Text].map: text =>
+      summon[Yaml.Tracking] match
+        case Yaml.Tracking.On =>
+          val (ast, ints) = YamlParser.parseTracked(text)
+          new Yaml(ast, Yaml.PositionIndex(ints))
+        case Yaml.Tracking.Off =>
+          Yaml(YamlParser.parse(text))
 
   def primitive(ast: Yaml.Ast): YamlPrimitive =
     if ast.asInstanceOf[AnyRef] == null then YamlPrimitive.Null
@@ -1015,7 +1072,15 @@ object Yaml extends Yaml2, Dynamic:
 
       case _ => YamlPrimitive.Null
 
-class Yaml(private[ypsiloid] val root: Yaml.Ast) extends Dynamic derives CanEqual:
+class Yaml(rootValue: Any, positions: Optional[Yaml.PositionIndex] = Unset)
+extends Dynamic derives CanEqual:
+  private[ypsiloid] def root: Yaml.Ast = rootValue.asInstanceOf[Yaml.Ast]
+
+  // The flat position-descriptor index produced alongside the AST when this
+  // `Yaml` was parsed under `Tracking.On`. `Unset` for non-tracking parses
+  // and for any `Yaml` built from a decoded/computed value.
+  def positionIndex: Optional[Yaml.PositionIndex] = positions
+
   def as[value: Decodable in Yaml]: value raises YamlError tracks YamlPath =
     value.decoded(this)
 

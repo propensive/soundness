@@ -82,6 +82,9 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
         ( target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min) ):
         '{ YamlParser.parse(ypsiloid.Benchmarks.yamlText1) }
 
+      bench(m"Parse with Ypsiloid (tracking)")(target = 1*Second, operationSize = size1):
+        '{ YamlParser.parseTracked(ypsiloid.Benchmarks.yamlText1) }
+
       bench(m"Parse with snakeyaml-engine")(target = 1*Second, operationSize = size1):
         '{ ypsiloid.Benchmarks.parseWithSnakeYaml(ypsiloid.Benchmarks.yamlText1.s) }
 
@@ -89,6 +92,9 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
       bench(m"Parse with Ypsiloid")
         ( target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min) ):
         '{ YamlParser.parse(ypsiloid.Benchmarks.yamlText2) }
+
+      bench(m"Parse with Ypsiloid (tracking)")(target = 1*Second, operationSize = size2):
+        '{ YamlParser.parseTracked(ypsiloid.Benchmarks.yamlText2) }
 
       bench(m"Parse with snakeyaml-engine")(target = 1*Second, operationSize = size2):
         '{ ypsiloid.Benchmarks.parseWithSnakeYaml(ypsiloid.Benchmarks.yamlText2.s) }
@@ -98,6 +104,9 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
         ( target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min) ):
         '{ YamlParser.parse(ypsiloid.Benchmarks.yamlText3) }
 
+      bench(m"Parse with Ypsiloid (tracking)")(target = 1*Second, operationSize = size3):
+        '{ YamlParser.parseTracked(ypsiloid.Benchmarks.yamlText3) }
+
       bench(m"Parse with snakeyaml-engine")(target = 1*Second, operationSize = size3):
         '{ ypsiloid.Benchmarks.parseWithSnakeYaml(ypsiloid.Benchmarks.yamlText3.s) }
 
@@ -106,6 +115,9 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
         ( target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min) ):
         '{ YamlParser.parse(ypsiloid.Benchmarks.yamlText4) }
 
+      bench(m"Parse with Ypsiloid (tracking)")(target = 1*Second, operationSize = size4):
+        '{ YamlParser.parseTracked(ypsiloid.Benchmarks.yamlText4) }
+
       bench(m"Parse with snakeyaml-engine")(target = 1*Second, operationSize = size4):
         '{ ypsiloid.Benchmarks.parseWithSnakeYaml(ypsiloid.Benchmarks.yamlText4.s) }
 
@@ -113,6 +125,9 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
       bench(m"Parse with Ypsiloid")
         ( target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min) ):
         '{ YamlParser.parse(ypsiloid.Benchmarks.yamlText5) }
+
+      bench(m"Parse with Ypsiloid (tracking)")(target = 1*Second, operationSize = size5):
+        '{ YamlParser.parseTracked(ypsiloid.Benchmarks.yamlText5) }
 
       bench(m"Parse with snakeyaml-engine")(target = 1*Second, operationSize = size5):
         '{ ypsiloid.Benchmarks.parseWithSnakeYaml(ypsiloid.Benchmarks.yamlText5.s) }
