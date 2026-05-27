@@ -212,6 +212,13 @@ object Tel extends Tel2:
   private[stratiform] def parse(bytes: Data): Tel raises TelError =
     Tel(TelParser.parse(bytes))
 
+  // Schema-aware parse: the parser uses the §19.5 schema-aware E107
+  // recovery rule when it encounters an odd-indented line. Useful
+  // when the consumer wants tolerant parsing of indentation typos
+  // against a known schema.
+  def parse(bytes: Data, schema: Tels): Tel raises TelError =
+    Tel(TelParser.parse(bytes, schema))
+
   // `bytes.read[Tel]` for any Stream[Data] source: concatenates the
   // chunks and parses the result. The metadata (interpreter directive,
   // pragma, line-endings) is *not* surfaced — use `.load[Tel]` to

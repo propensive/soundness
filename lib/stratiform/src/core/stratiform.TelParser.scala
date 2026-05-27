@@ -48,7 +48,15 @@ import TelError.Reason
 
 object TelParser:
 
-  def parse(input: Data): Tel.Document raises TelError = TelParser(input).parseDocument()
+  def parse(input: Data): Tel.Document raises TelError =
+    TelParser(input, Unset).parseDocument()
+
+  // Schema-aware parse: when an odd-indented line is encountered the
+  // parser uses §19.5's schema-aware E107 recovery to disambiguate
+  // shallower vs deeper. Without a schema the original shallower-wins
+  // rule still applies.
+  def parse(input: Data, schema: Tels): Tel.Document raises TelError =
+    TelParser(input, schema: Optional[Tels]).parseDocument()
 
   private final class Line
      ( val content:       String,
@@ -57,7 +65,7 @@ object TelParser:
        val start:         Int,
        val end:           Int )
 
-private final class TelParser(input: Data):
+private final class TelParser(input: Data, schema: Optional[Tels]):
   import TelParser.Line
 
   private val source: String =
@@ -126,6 +134,118 @@ private final class TelParser(input: Data):
   // this line as equivalent to "start of file" — comments immediately
   // after the prologue are valid.
   private var prologueEndLine: Int = -1
+
+  // Ancestor stack of Struct types known for each open compound, used
+  // by the schema-aware E107 recovery rule of §19.5. The element at
+  // index `i` is the schema struct corresponding to the compound at
+  // depth `i+1` (so the document root at depth 0 is implicit and
+  // refers to `schema.document`). `Unset` entries mark compounds
+  // whose schema position couldn't be resolved (e.g. an unknown
+  // keyword in a permissive layer), in which case both shallower and
+  // deeper recovery treat that ancestor as "schema-blind".
+  private val ancestors =
+    scala.collection.mutable.ArrayBuffer.empty[Optional[Tels.Struct]]
+
+  // Push a child compound's resolved struct onto the ancestor stack.
+  // The compound is at depth `parentDepth + 1`; `parentDepth` is the
+  // length of the current ancestor stack (0 = document root). If we
+  // can resolve the compound's keyword to a Struct type inside the
+  // parent's schema struct, push it; otherwise push Unset.
+  private def pushAncestor(keyword: Text): Unit raises TelError =
+    schema.let: s =>
+      val parent: Optional[Tels.Struct] =
+        if ancestors.isEmpty then s.document else ancestors(ancestors.length - 1)
+
+      val resolved: Optional[Tels.Struct] = parent.let: p =>
+        resolveKeywordStruct(p, keyword, s)
+
+      ancestors += resolved
+    .or:
+      // Without a schema we still keep the depth alignment so pop
+      // works symmetrically, but the entries are always Unset.
+      ancestors += Unset
+
+  private def popAncestor(): Unit =
+    if ancestors.nonEmpty then ancestors.remove(ancestors.length - 1)
+
+  // Resolve `keyword` against `parent`'s direct Field / SelectRef
+  // members. Returns the Struct type if the keyword names a child
+  // whose resolved type is a Struct, or Unset otherwise (Scalar /
+  // Flag / unknown keyword / Reference to a non-struct).
+  private def resolveKeywordStruct(parent: Tels.Struct, keyword: Text, schema: Tels)
+  :     Optional[Tels.Struct] raises TelError =
+    val matched: Optional[Tels.Type] =
+      var found: Optional[Tels.Type] = Unset
+      var i = 0
+      while i < parent.members.length && found.absent do
+        parent.members(i) match
+          case f: Tels.Field =>
+            if f.keyword == keyword then found = f.fieldType
+
+          case s: Tels.SelectRef =>
+            // Expand the SelectRef's variants.
+            schema.selects.find(_.name == s.reference).foreach: selectDef =>
+              selectDef.variants.find(_.keyword == keyword).foreach: variant =>
+                found = variant.variantType
+
+          case _: Tels.Exclude => ()
+
+        i += 1
+
+      found
+
+    matched.let: t =>
+      resolveTypeToStruct(t, schema)
+    .or(Unset)
+
+  // Resolve a Type to a Struct (following one level of Reference) or
+  // Unset if it doesn't resolve to a Struct.
+  private def resolveTypeToStruct(t: Tels.Type, schema: Tels)
+  :     Optional[Tels.Struct] =
+    t match
+      case s: Tels.Struct =>
+        s
+
+      case Tels.Reference(name) =>
+        schema.records.find(_.name == name) match
+          case Some(rec) => Tels.Struct(rec.members, rec.validators)
+          case None      => Unset
+
+      case _ =>
+        Unset
+
+  // Does `parent` contain `keyword` in its direct Field/SelectRef
+  // keyword set?
+  private def keywordAdmissible(parent: Tels.Struct, keyword: Text, schema: Tels): Boolean =
+    var i = 0
+    while i < parent.members.length do
+      parent.members(i) match
+        case f: Tels.Field =>
+          if f.keyword == keyword then return true
+
+        case s: Tels.SelectRef =>
+          schema.selects.find(_.name == s.reference).foreach: selectDef =>
+            if selectDef.variants.exists(_.keyword == keyword) then return true
+
+        case _: Tels.Exclude => ()
+
+      i += 1
+
+    false
+
+  // Extract the keyword phrase from a non-blank, non-comment,
+  // non-tabulation line — used by the schema-aware E107 recovery to
+  // probe the schema. Falls back to the empty string if the line has
+  // no leading keyword.
+  private def extractKeyword(line: Line): Text =
+    val start = line.leadingSpaces
+    var end = start
+    while end < line.content.length
+      && line.content.charAt(end) != ' '
+      && line.content.charAt(end) != sigil
+    do end += 1
+
+    Text(line.content.substring(start, end))
 
   def parseDocument(): Tel.Document raises TelError =
     checkBom()
@@ -277,15 +397,58 @@ private final class TelParser(input: Data):
     while i < lines.length && lines(i).blank do i += 1
     if i < lines.length then i else Unset
 
-  // Returns the indent in levels (units of two spaces beyond the margin).
-  // Raises E106 if leading spaces fall short of the margin, E107 if the
-  // post-margin offset is odd. Phase-1 recovery is to bail on first error;
-  // a future phase will adopt §19.5's accumulating recovery.
+  // Returns the indent in levels (units of two spaces beyond the
+  // margin). Raises E106 if leading spaces fall short of the margin.
+  // Odd post-margin offsets go through E107 recovery: schema-aware
+  // when a schema is in scope (§19.5), schema-independent shallower-
+  // wins otherwise.
   private def indentOf(line: Line): Int raises TelError =
     val relative = line.leadingSpaces - margin
     if relative < 0 then abort(TelError(Reason.LessThanMargin))
-    else if relative % 2 != 0 then abort(TelError(Reason.OddIndentation))
-    else relative / 2
+    else if relative % 2 == 0 then relative / 2
+    else recoverOddIndent(line, relative)
+
+  // §19.5 E107 recovery. When no schema is in scope, return the
+  // shallower depth (the original v1.0 rule). When a schema is in
+  // scope, compute admissibility at both candidate depths via the
+  // current ancestor stack, then:
+  //   - both invalid or both valid → shallower (tie-break favours
+  //     the shallower interpretation; type assignment can later
+  //     report E306 against the chosen parent).
+  //   - only one valid → that one.
+  // Edge cases tracked in §19.5:
+  //   1. shallower over-dedents past the ancestor stack → shallower
+  //      invalid; deeper's parent doesn't exist either, so we fall
+  //      back to shallower (graceful degradation).
+  //   2. deeper's parent doesn't exist (no open compound at depth
+  //      `shallower`) → deeper invalid.
+  //   3. deeper's parent resolved to a non-Struct (Scalar/Flag) → it
+  //      wasn't pushed onto the ancestor stack at all, so deeperParent
+  //      is Unset → deeper invalid.
+  private def recoverOddIndent(line: Line, relative: Int): Int raises TelError =
+    schema.let: s =>
+      val shallower = relative / 2
+      val deeper    = shallower + 1
+      val keyword   = extractKeyword(line)
+
+      val shallowerParent: Optional[Tels.Struct] =
+        if shallower == 0 then s.document
+        else if shallower - 1 < ancestors.length then ancestors(shallower - 1)
+        else Unset
+
+      val deeperParent: Optional[Tels.Struct] =
+        if shallower < ancestors.length then ancestors(shallower)
+        else Unset
+
+      val shallowerValid =
+        shallowerParent.let(p => keywordAdmissible(p, keyword, s)).or(false)
+
+      val deeperValid =
+        deeperParent.let(p => keywordAdmissible(p, keyword, s)).or(false)
+
+      if !shallowerValid && deeperValid then deeper else shallower
+    .or:
+      abort(TelError(Reason.OddIndentation))
 
   private def checkTrailingSpaces(line: Line): Unit raises TelError =
     if line.content.length > 0 && line.content.charAt(line.content.length - 1) == ' '
@@ -392,7 +555,9 @@ private final class TelParser(input: Data):
         else Unset
 
       val children =
-        if extraAtom.absent && tabulation.absent then parseChildren(indent)
+        if extraAtom.absent && tabulation.absent then
+          pushAncestor(parsed.keyword)
+          try parseChildren(indent) finally popAncestor()
         else IArray.empty[Tel.Block]
 
       val withAtom = extraAtom.lay(parsed): atom =>

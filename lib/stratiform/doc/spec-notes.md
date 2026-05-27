@@ -5,11 +5,11 @@ Implementation-discovered ambiguities, inconsistencies, and inadequacies in the 
 ## Open issues
 
 ### §18.1 / §19.1 vs §19.5 — schema-aware indentation recovery
-**Issue:** §18.1 and §19.1 say "the schema informs error recovery decisions (particularly for indentation errors, whose recovery algorithm is defined in §19.5)" — implying the parser consults the schema during recovery. But §19.5 defines the v1.0 recovery rule as the schema-independent **shallower-wins rule**, with the schema-aware variant "deliberately deferred" to a future revision.
+**Issue:** §18.1 and §19.1 say "the schema informs error recovery decisions (particularly for indentation errors, whose recovery algorithm is defined in §19.5)" — implying the parser consults the schema during recovery. But §19.5 originally defined the v1.0 recovery rule as the schema-independent **shallower-wins rule**.
 
-**Stratiform decision:** The parser is structured single-pass and schema-aware (per §18.1) but uses only the shallower-wins rule in phase 1. When schema integration lands in phase 3, the parser will consult the schema during recovery as the normative §18.1 wording allows, while still falling back to shallower-wins where the schema provides no signal.
+**Spec resolution:** **resolved.** §19.5 now defines two E107 recovery rules — a schema-independent shallower-wins rule (used when no schema is in scope) and a schema-aware rule (used when a schema is in scope) that picks between shallower and deeper based on keyword admissibility, falling back to shallower on a tie. §18.1 / §19.1 wording is now consistent.
 
-**Spec resolution:** open.
+**Stratiform implementation:** the schema-aware rule is implemented when the consumer calls `Tel.parse(bytes, schema)`; `bytes.read[Tel]` / `text.load[Tel]` (no schema in scope) continue to use shallower-wins (raising E107 in the absence of recovery). The parser maintains an `ancestors` stack of resolved struct types alongside the open-compound chain to enable the lookup.
 
 ### `tel-schema` self-validation circularity
 **Issue:** §20.5 specifies `tel-schema` as itself a TEL document conforming to `tel-schema`. A parser bootstrapping its first run has no `tel-schema` to validate the `tel-schema.tel` document against.
