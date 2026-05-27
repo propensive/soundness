@@ -40,7 +40,9 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
+import zephyrine.*
 
 import TelError.Reason
 
@@ -84,7 +86,7 @@ object TelParser:
   def parse(input: Data): Tel.Document raises TelError =
     val parser = pool.get
     parser.resetData(input, Unset)
-    parser.parseDocument()
+    parser.parseWithHold()
 
   // Schema-aware parse: when an odd-indented line is encountered the
   // parser uses §19.5's schema-aware E107 recovery to disambiguate
@@ -93,7 +95,22 @@ object TelParser:
   def parse(input: Data, schema: Tels): Tel.Document raises TelError =
     val parser = pool.get
     parser.resetData(input, schema: Optional[Tels])
-    parser.parseDocument()
+    parser.parseWithHold()
+
+  // Iterator-based input — for inputs that arrive as a stream of
+  // `Data` chunks. The cursor's loader pulls each chunk on demand;
+  // the parser drains them into a single buffer before parsing
+  // (true line-by-line streaming is future work — the current
+  // line-pre-split algorithm needs all bytes resident).
+  def parse(input: Iterator[Data]): Tel.Document raises TelError =
+    val parser = pool.get
+    parser.resetIterator(input, Unset)
+    parser.parseWithHold()
+
+  def parse(input: Iterator[Data], schema: Tels): Tel.Document raises TelError =
+    val parser = pool.get
+    parser.resetIterator(input, schema: Optional[Tels])
+    parser.parseWithHold()
 
   // `Line` is an opaque-type `Long` that packs four byte/line-level
   // offsets into a single primitive:
@@ -150,12 +167,25 @@ object TelParser:
 private final class TelParser:
   import TelParser.*
 
-  // Per-parse mutable state — set by `resetData` and consumed by
-  // `parseDocument`. The parser instance is reused across many parses
-  // via the thread-local pool in the companion object, so these fields
-  // are `var`s rather than constructor params.
-  private var bytes:  Array[Byte]     = new Array[Byte](0)
-  private var schema: Optional[Tels]  = Unset
+  // Per-parse mutable state — set by `resetData` / `resetIterator` and
+  // consumed by `parseDocument`. The parser instance is reused across
+  // many parses via the thread-local pool in the companion object, so
+  // these fields are `var`s rather than constructor params.
+  //
+  // `cursor` is a Zephyrine `Cursor[Data]` over the input. For
+  // `Data` inputs it's pre-filled; for `Iterator[Data]` inputs it
+  // loads chunks lazily and is drained into a single contiguous buffer
+  // by `drainCursor` before parsing. `bytes` and `bufEnd` are a snapshot
+  // of the cursor's underlying buffer and valid-data length, taken
+  // inside the parse-time hold (so the buffer reference is stable).
+  // `heldToken` is the witness that we're inside `cursor.hold` — kept
+  // as a field so the inner parsing routines can pass it where Zephyrine
+  // requires `using Cursor.Held`.
+  private var cursor:    Cursor[Data]      = null.asInstanceOf[Cursor[Data]]
+  private var heldToken: Cursor.Held | Null = null
+  private var bytes:     Array[Byte]       = new Array[Byte](0)
+  private var bufEnd:    Int               = 0
+  private var schema:    Optional[Tels]    = Unset
 
   // Unsigned byte read. Java arrays return signed bytes; we mask with
   // 0xFF so comparisons against ASCII byte constants behave as expected
@@ -187,7 +217,7 @@ private final class TelParser:
   // is encoded as UTF-8; this works for any prefix string but is only
   // used here with ASCII literals.
   private def bytesStartsWithAt(prefix: Array[Byte], from: Int): Boolean =
-    if from < 0 || from + prefix.length > bytes.length then false
+    if from < 0 || from + prefix.length > bufEnd then false
     else
       var i = 0
       while i < prefix.length && bytes(from + i) == prefix(i) do i += 1
@@ -202,7 +232,7 @@ private final class TelParser:
   private def bytesIndexOf(needle: Array[Byte], from: Int): Int =
     val n = needle.length
     if n == 0 then return from
-    val maxStart = bytes.length - n
+    val maxStart = bufEnd - n
     val first = needle(0)
     var i = from
     while i <= maxStart do
@@ -224,8 +254,8 @@ private final class TelParser:
 
   private def detectLineEndings(): Tel.LineEndings =
     var i = 0
-    while i < bytes.length && (bytes(i) & 0xFF) != ByteLf do i += 1
-    if i > 0 && i < bytes.length && (bytes(i - 1) & 0xFF) == ByteCr then Tel.LineEndings.Crlf
+    while i < bufEnd && (bytes(i) & 0xFF) != ByteLf do i += 1
+    if i > 0 && i < bufEnd && (bytes(i - 1) & 0xFF) == ByteCr then Tel.LineEndings.Crlf
     else Tel.LineEndings.Lf
 
   // Detect line-ending violations per §17 / E121. A CR that is not part
@@ -235,7 +265,7 @@ private final class TelParser:
   private def checkLineEndings(): Unit raises TelError =
     var i = 0
     val crlfMode = lineEndings == Tel.LineEndings.Crlf
-    val n = bytes.length
+    val n = bufEnd
     while i < n do
       val c = bytes(i) & 0xFF
       if c == ByteCr && (i + 1 >= n || (bytes(i + 1) & 0xFF) != ByteLf)
@@ -254,7 +284,7 @@ private final class TelParser:
 
   private def buildLines(): Unit =
     var bufLen = 0
-    val n = bytes.length
+    val n = bufEnd
     var lineStart = 0
     var index = 0
     while index < n do
@@ -295,7 +325,7 @@ private final class TelParser:
     val blank = start + spaces == end
     Line(spaces, blank, start, end)
 
-  private var cursor: Int = 0
+  private var lineCursor: Int = 0
   private var margin: Int = 0
   // Sigil byte. Restricted to a single-byte (ASCII) character by the
   // pragma parser; supporting multi-byte sigils would require a slower
@@ -321,20 +351,64 @@ private final class TelParser:
   // intentionally persists across parses: two byte sequences with the
   // same content pack to the same `(low, high)` `Long` pair, so a hit
   // is correct regardless of which previous parse populated the slot.
-  // This makes repeated parses of similar documents progressively
-  // cheaper, because previously-seen keywords are served from the
-  // cache without re-allocating a `String`.
+  //
+  // The `Cursor[Data]` is constructed here but the byte snapshot
+  // (`bytes`, `bufEnd`) and the line-pre-split (`buildLines`) are
+  // deferred to `parseWithHold` so they happen inside the hold —
+  // necessary for `Iterator[Data]` inputs where chunks load lazily
+  // and the buffer may reallocate during the drain.
   def resetData(input: Data, sch: Optional[Tels]): Unit =
-    bytes           = input.asInstanceOf[IArray[Byte]].asInstanceOf[Array[Byte]]
+    import Lineation.untrackedData
+    cursor          = Cursor[Data](input)
     schema          = sch
-    cursor          = 0
+    lineCursor      = 0
     margin          = 0
     sigilByte       = ByteHash
     sigilChar       = '#'
     prologueEndLine = -1
     ancestors.clear()
-    lineEndings = detectLineEndings()
-    buildLines()
+
+  // Same as `resetData` but for an iterator-of-`Data` input. The
+  // resulting `Cursor[Data]` will pull chunks lazily; `parseWithHold`
+  // calls `drainCursor` to load them all before parsing.
+  def resetIterator(input: Iterator[Data], sch: Optional[Tels]): Unit =
+    import Lineation.untrackedData
+    cursor          = Cursor[Data](input)
+    schema          = sch
+    lineCursor      = 0
+    margin          = 0
+    sigilByte       = ByteHash
+    sigilChar       = '#'
+    prologueEndLine = -1
+    ancestors.clear()
+
+  // Open a hold for the entire parse, take a buffer snapshot, build
+  // the line index, and parse. The hold protects the buffer from
+  // compaction so the parser's `Int` byte offsets remain valid across
+  // any refills that happen during `drainCursor`.
+  def parseWithHold(): Tel.Document raises TelError =
+    cursor.hold:
+      heldToken = summon[Cursor.Held]
+      try
+        drainCursor()
+        bytes       = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
+        bufEnd      = cursor.unsafeWriteEnd(using Unsafe)
+        lineEndings = detectLineEndings()
+        buildLines()
+        parseDocument()
+      finally heldToken = null
+
+  // Pull all remaining chunks from the cursor's loader into its
+  // buffer. The buffer may grow (and reallocate) during this loop;
+  // we don't snapshot `bytes` until the drain is complete.
+  //
+  // For pre-filled `Data` inputs this exits after the loader returns
+  // `Unset` on the first refill (typically a single iteration).
+  private def drainCursor(): Unit =
+    while cursor.more do
+      val end = cursor.unsafeWriteEnd(using Unsafe)
+      val cur = cursor.unsafePos(using Unsafe)
+      if end > cur then cursor.unsafeAdvanceBy(end - cur)(using Unsafe)
 
   // Build a `TelError.Position` for a given line index (0-based internally;
   // converted to the 1-indexed line numbers callers expect).
@@ -528,18 +602,18 @@ private final class TelParser:
     Tel.Document(directive, pragma, lineEndings, children)
 
   private def checkBom(): Unit raises TelError =
-    if bytes.length >= 3
+    if bufEnd >= 3
        && (bytes(0) & 0xFF) == ByteBom0
        && (bytes(1) & 0xFF) == ByteBom1
        && (bytes(2) & 0xFF) == ByteBom2
     then errorAtOffset(Reason.BomPresent, 0)
 
   private def parseInterpreterDirective(): Optional[Text] =
-    if cursor >= linesLength then Unset
-    else if lineStartsWith(lineAt(cursor), ShebangBytes) then
-      val payload = lineSubFrom(lineAt(cursor), 2)
-      prologueEndLine = cursor
-      cursor += 1
+    if lineCursor >= linesLength then Unset
+    else if lineStartsWith(lineAt(lineCursor), ShebangBytes) then
+      val payload = lineSubFrom(lineAt(lineCursor), 2)
+      prologueEndLine = lineCursor
+      lineCursor += 1
       Text(payload)
     else Unset
 
@@ -567,7 +641,7 @@ private final class TelParser:
         if line.start >= 4096 || line.end > 4096
         then errorAt(Reason.PragmaTooLong, idx)
         prologueEndLine = idx
-        cursor = idx + 1
+        lineCursor = idx + 1
         Optional(parsePragmaContent(lineSubFrom(line, ls), idx))
       else Unset
     .or(Unset)
@@ -662,7 +736,7 @@ private final class TelParser:
       margin = lineAt(idx).leadingSpaces
 
   private def peekNextNonBlankLine(): Optional[Int] =
-    var i = cursor
+    var i = lineCursor
     while i < linesLength && lineAt(i).blank do i += 1
     if i < linesLength then i else Unset
 
@@ -719,7 +793,7 @@ private final class TelParser:
       else
         val idx = nextIdx.vouch
         if indentOf(lineAt(idx)) == expected then
-          cursor = idx
+          lineCursor = idx
           true
         else false
     do
@@ -746,37 +820,37 @@ private final class TelParser:
     val comments = scala.collection.mutable.ArrayBuffer.empty[Tel.Comment]
 
     while atCommentLine(indent) do
-      if cursor > 0 && cursor - 1 > prologueEndLine then
-        val prev = lineAt(cursor - 1)
+      if lineCursor > 0 && lineCursor - 1 > prologueEndLine then
+        val prev = lineAt(lineCursor - 1)
         if !prev.blank && !isCommentLine(prev, indent) && prev.leadingSpaces >= margin + indent * 2
-        then errorAt(Reason.CommentNotPreceded, cursor)
+        then errorAt(Reason.CommentNotPreceded, lineCursor)
 
-      comments += parseCommentLine(lineAt(cursor))
-      cursor += 1
+      comments += parseCommentLine(lineAt(lineCursor))
+      lineCursor += 1
 
-    if comments.nonEmpty && cursor < linesLength && lineAt(cursor).blank then
-      var probe = cursor
+    if comments.nonEmpty && lineCursor < linesLength && lineAt(lineCursor).blank then
+      var probe = lineCursor
       while probe < linesLength && lineAt(probe).blank do probe += 1
       if probe < linesLength && indentOf(lineAt(probe)) == indent
         && !isCommentLine(lineAt(probe), indent)
-      then cursor = probe
+      then lineCursor = probe
 
     val tabulation: Optional[Tel.Tabulation] =
-      if cursor < linesLength && isTabulationLineAt(lineAt(cursor), indent) then
-        val line = lineAt(cursor)
-        cursor += 1
+      if lineCursor < linesLength && isTabulationLineAt(lineAt(lineCursor), indent) then
+        val line = lineAt(lineCursor)
+        lineCursor += 1
         Optional(parseTabulationLine(line))
       else Unset
 
     val compounds = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
 
     var continueLoop = true
-    while continueLoop && cursor < linesLength do
-      val line = lineAt(cursor)
+    while continueLoop && lineCursor < linesLength do
+      val line = lineAt(lineCursor)
       if line.blank || indentOf(line) != indent then continueLoop = false
       else if isCommentBody(line) || isTabulationBody(line) then continueLoop = false
       else
-        cursor += 1
+        lineCursor += 1
         val parsed = parseCompoundLine(line, indent)
         tabulation.let(validateTabulatedRow(line, _))
         val extraAtom =
@@ -916,22 +990,22 @@ private final class TelParser:
   private def consumeTrailingBlanksFor(indent: Int): Int raises TelError =
     var count = 0
     while
-      cursor < linesLength && lineAt(cursor).blank
+      lineCursor < linesLength && lineAt(lineCursor).blank
       && nextNonBlankMatches(indent)
     do
       count += 1
-      cursor += 1
+      lineCursor += 1
 
     count
 
   private def nextNonBlankMatches(indent: Int): Boolean raises TelError =
-    var probe = cursor
+    var probe = lineCursor
     while probe < linesLength && lineAt(probe).blank do probe += 1
     if probe >= linesLength then true
     else indentOf(lineAt(probe)) == indent
 
   private def atCommentLine(indent: Int): Boolean raises TelError =
-    cursor < linesLength && isCommentLine(lineAt(cursor), indent)
+    lineCursor < linesLength && isCommentLine(lineAt(lineCursor), indent)
 
   private def isCommentLine(line: Line, indent: Int): Boolean raises TelError =
     if line.blank || indentOf(line) != indent then false
@@ -952,9 +1026,9 @@ private final class TelParser:
 
   private def parseSourceOrLiteralAtom(compoundLeadingSpaces: Int)
   : Optional[Tel.Atom] raises TelError =
-    if cursor >= linesLength || lineAt(cursor).blank then Unset
+    if lineCursor >= linesLength || lineAt(lineCursor).blank then Unset
     else
-      val line = lineAt(cursor)
+      val line = lineAt(lineCursor)
       val sourceIndent = compoundLeadingSpaces + 4
       val literalIndent = compoundLeadingSpaces + 6
       val first =
@@ -962,12 +1036,12 @@ private final class TelParser:
         else if line.leadingSpaces == sourceIndent then Optional(parseSourceAtom(sourceIndent))
         else Unset
 
-      if first.present && cursor < linesLength && !lineAt(cursor).blank then
-        val nextLine = lineAt(cursor)
+      if first.present && lineCursor < linesLength && !lineAt(lineCursor).blank then
+        val nextLine = lineAt(lineCursor)
         if nextLine.leadingSpaces == literalIndent
-        then errorAt(Reason.DuplicateLiteral, cursor)
+        then errorAt(Reason.DuplicateLiteral, lineCursor)
         else if nextLine.leadingSpaces == sourceIndent
-        then errorAt(Reason.DuplicateSource, cursor)
+        then errorAt(Reason.DuplicateSource, lineCursor)
 
       first
 
@@ -975,26 +1049,26 @@ private final class TelParser:
     val captured = scala.collection.mutable.ListBuffer.empty[String]
 
     var done = false
-    while !done && cursor < linesLength do
-      val line = lineAt(cursor)
+    while !done && lineCursor < linesLength do
+      val line = lineAt(lineCursor)
       if line.blank then
-        var probe = cursor
+        var probe = lineCursor
         while probe < linesLength && lineAt(probe).blank do probe += 1
         val keep =
           probe >= linesLength
           || lineAt(probe).leadingSpaces >= sourceIndent
 
         if keep then
-          while cursor < probe do
+          while lineCursor < probe do
             captured += ""
-            cursor += 1
+            lineCursor += 1
         else done = true
       else if line.leadingSpaces >= sourceIndent then
         val len = lineLen(line)
         var endIdx = len
         while endIdx > sourceIndent && lineByteAt(line, endIdx - 1) == ByteSpace do endIdx -= 1
         captured += lineSub(line, sourceIndent, endIdx)
-        cursor += 1
+        lineCursor += 1
       else done = true
 
     val sb = StringBuilder()
@@ -1005,10 +1079,10 @@ private final class TelParser:
     Tel.Atom.Source(Text(sb.toString))
 
   private def parseLiteralAtom(literalIndent: Int): Tel.Atom.Literal raises TelError =
-    val openingLine = lineAt(cursor)
+    val openingLine = lineAt(lineCursor)
     val delimiter = lineSubFrom(openingLine, literalIndent)
     val delimiterBytes = delimiter.getBytes(StandardCharsets.UTF_8)
-    cursor += 1
+    lineCursor += 1
     val payloadStart = openingLine.end + (if lineEndings == Tel.LineEndings.Crlf then 2 else 1)
 
     // Empty payload (§15): the opening line's terminating LF is also
@@ -1016,7 +1090,7 @@ private final class TelParser:
     // path can't match — handle it explicitly.
     val emptyPatternLen = delimiterBytes.length + 1
     val isEmpty =
-      payloadStart + emptyPatternLen <= bytes.length
+      payloadStart + emptyPatternLen <= bufEnd
       && {
         var i = 0
         while i < delimiterBytes.length && bytes(payloadStart + i) == delimiterBytes(i) do i += 1
@@ -1038,7 +1112,7 @@ private final class TelParser:
 
     val payload = rawPayload.replace("\r\n", "\n")
 
-    while cursor < linesLength && lineAt(cursor).start < afterClose do cursor += 1
+    while lineCursor < linesLength && lineAt(lineCursor).start < afterClose do lineCursor += 1
 
     Tel.Atom.Literal(Text(delimiter), Text(payload))
 
