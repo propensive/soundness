@@ -83,11 +83,39 @@ object TelParser:
   def parse(input: Data, schema: Tels): Tel.Document raises TelError =
     TelParser(input, schema: Optional[Tels]).parseDocument()
 
-  private final class Line
-     ( val leadingSpaces: Int,
-       val blank:         Boolean,
-       val start:         Int,
-       val end:           Int )
+  // `Line` is an opaque-type `Long` that packs four byte/line-level
+  // offsets into a single primitive:
+  //
+  //   bits  0..23  → start    (byte offset, 24 bits, 16 MB cap)
+  //   bits 24..47  → end      (byte offset, 24 bits)
+  //   bits 48..59  → leadingSpaces (12 bits, 4096 cap)
+  //   bit  60      → blank    (1 bit)
+  //
+  // Storing lines as a `Long`-packed primitive is what makes the line
+  // array effectively allocation-free: `IArray[Line]` is backed by a
+  // `long[]` and there is no per-line object allocation. For ex5's
+  // ~3500 lines this avoids ~110 KB of per-parse heap allocation.
+  opaque type Line = Long
+
+  object Line:
+    inline def apply(leadingSpaces: Int, blank: Boolean, start: Int, end: Int): Line =
+      (start.toLong & 0xFFFFFFL)
+      | ((end.toLong & 0xFFFFFFL) << 24)
+      | ((leadingSpaces.toLong & 0xFFFL) << 48)
+      | (if blank then 1L << 60 else 0L)
+
+    // Transparent conversions for collaborator code that needs to
+    // store `Line` as raw `Long` in primitive arrays. Inside the
+    // opaque type's scope these are identity functions; the public
+    // signatures are the only thing keeping them honest.
+    inline def fromRaw(raw: Long): Line = raw
+    inline def toRaw(line: Line): Long = line
+
+    extension (line: Line)
+      inline def start:         Int     = (line & 0xFFFFFFL).toInt
+      inline def end:           Int     = ((line >> 24) & 0xFFFFFFL).toInt
+      inline def leadingSpaces: Int     = ((line >> 48) & 0xFFFL).toInt
+      inline def blank:         Boolean = (line & (1L << 60)) != 0L
 
   // Byte literals for ASCII syntax characters, factored out so the hot
   // loops compare against named constants rather than magic numbers.
@@ -208,8 +236,14 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
   // last LF is included only if it has content; an empty stretch after a
   // trailing LF still counts as a blank line for §17 trailing-blank-line
   // bookkeeping.
-  private val lines: IArray[Line] =
-    val builder = scala.collection.mutable.ArrayBuffer.empty[Line]
+  //
+  // Storage is `Array[Long]` (unboxed packed `Line`) sized to the actual
+  // line count. We grow a temporary array doubling-style during the scan
+  // and copy into a right-sized array at the end — no per-line object
+  // allocation.
+  private val linesArr: Array[Long] =
+    var buf = new Array[Long](64)
+    var bufLen = 0
     val n = bytes.length
     var lineStart = 0
     var index = 0
@@ -219,17 +253,39 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
           if index > 0 && (bytes(index - 1) & 0xFF) == ByteCr then index - 1
           else index
 
-        builder += makeLine(lineStart, contentEnd)
+        if bufLen == buf.length then
+          val grown = new Array[Long](buf.length * 2)
+          System.arraycopy(buf, 0, grown, 0, buf.length)
+          buf = grown
+        buf(bufLen) = Line.toRaw(makeLine(lineStart, contentEnd))
+        bufLen += 1
         lineStart = index + 1
 
       index += 1
 
     if lineStart < n then
-      builder += makeLine(lineStart, n)
+      if bufLen == buf.length then
+        val grown = new Array[Long](buf.length * 2)
+        System.arraycopy(buf, 0, grown, 0, buf.length)
+        buf = grown
+      buf(bufLen) = Line.toRaw(makeLine(lineStart, n))
+      bufLen += 1
     else if n > 0 && (bytes(n - 1) & 0xFF) == ByteLf then
-      builder += makeLine(n, n)
+      if bufLen == buf.length then
+        val grown = new Array[Long](buf.length * 2)
+        System.arraycopy(buf, 0, grown, 0, buf.length)
+        buf = grown
+      buf(bufLen) = Line.toRaw(makeLine(n, n))
+      bufLen += 1
 
-    IArray.from(builder)
+    if bufLen == buf.length then buf
+    else
+      val out = new Array[Long](bufLen)
+      System.arraycopy(buf, 0, out, 0, bufLen)
+      out
+
+  private inline def linesLength: Int = linesArr.length
+  private inline def lineAt(i: Int): Line = Line.fromRaw(linesArr(i))
 
   private def makeLine(start: Int, end: Int): Line =
     var spaces = 0
@@ -260,18 +316,18 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
   // Build a `TelError.Position` for a given line index (0-based internally;
   // converted to the 1-indexed line numbers callers expect).
   private inline def positionAt(lineIdx: Int, column: Int = 1): TelError.Position =
-    if lineIdx < 0 || lineIdx >= lines.length then TelError.Position(1, 1)
+    if lineIdx < 0 || lineIdx >= linesLength then TelError.Position(1, 1)
     else TelError.Position(lineIdx + 1, column)
 
   // Compute a position from an absolute byte offset into `bytes`.
   private def positionAtOffset(byteOffset: Int): TelError.Position =
     var lineIdx = 0
-    while lineIdx < lines.length && lines(lineIdx).end <= byteOffset do lineIdx += 1
-    if lineIdx >= lines.length then
-      val n = lines.length.max(1)
+    while lineIdx < linesLength && lineAt(lineIdx).end <= byteOffset do lineIdx += 1
+    if lineIdx >= linesLength then
+      val n = linesLength.max(1)
       TelError.Position(n, 1)
     else
-      val line = lines(lineIdx)
+      val line = lineAt(lineIdx)
       TelError.Position(lineIdx + 1, byteOffset - line.start + 1)
 
   private def errorAt(reason: Reason, lineIdx: Int, column: Int = 1)
@@ -286,12 +342,15 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
     abort(TelError(reason, positionAtOffset(byteOffset)))
 
-  // Reverse-lookup of a `Line` instance's index in `lines`. Only the
-  // error path hits this, so the linear scan is fine.
+  // Reverse-lookup of a `Line` value's index in `lines`. Only the
+  // error path hits this, so the linear scan is fine. We compare the
+  // raw `Long` representation rather than using `ne` (which would
+  // box) — each line has a unique `(start, end)` pair, so the packed
+  // `Long`s are unique too.
   private def lineIndexOf(line: Line): Int =
     var i = 0
-    while i < lines.length && (lines(i) ne line) do i += 1
-    if i < lines.length then i else -1
+    while i < linesLength && lineAt(i) != line do i += 1
+    if i < linesLength then i else -1
 
   private def errorAtLine(reason: Reason, line: Line, column: Int = 1)
                          (using Tactic[TelError])
@@ -453,9 +512,9 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     then errorAtOffset(Reason.BomPresent, 0)
 
   private def parseInterpreterDirective(): Optional[Text] =
-    if cursor >= lines.length then Unset
-    else if lineStartsWith(lines(cursor), ShebangBytes) then
-      val payload = lineSubFrom(lines(cursor), 2)
+    if cursor >= linesLength then Unset
+    else if lineStartsWith(lineAt(cursor), ShebangBytes) then
+      val payload = lineSubFrom(lineAt(cursor), 2)
       prologueEndLine = cursor
       cursor += 1
       Text(payload)
@@ -464,7 +523,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
   private def parsePragma(): Optional[Tel.Pragma] raises TelError =
     val firstNonBlank = peekNextNonBlankLine()
     val result = firstNonBlank.let: idx =>
-      val line = lines(idx)
+      val line = lineAt(idx)
       // A pragma-shaped line is either exactly "tel" or starts with
       // "tel " (after leading indentation). Detect this at the byte
       // level so we don't materialise a String per non-pragma line.
@@ -492,8 +551,8 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
     if result.absent then
       var j = firstNonBlank.or(0) + 1
-      while j < lines.length do
-        val ln = lines(j)
+      while j < linesLength do
+        val ln = lineAt(j)
         if !ln.blank && ln.leadingSpaces == 0 then
           if lineLen(ln) == 3 && lineByteAt(ln, 0) == ByteT && lineByteAt(ln, 1) == ByteE
             && lineByteAt(ln, 2) == ByteL
@@ -577,12 +636,12 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
   private def determineMargin(): Unit =
     peekNextNonBlankLine().let: idx =>
-      margin = lines(idx).leadingSpaces
+      margin = lineAt(idx).leadingSpaces
 
   private def peekNextNonBlankLine(): Optional[Int] =
     var i = cursor
-    while i < lines.length && lines(i).blank do i += 1
-    if i < lines.length then i else Unset
+    while i < linesLength && lineAt(i).blank do i += 1
+    if i < linesLength then i else Unset
 
   private def indentOf(line: Line): Int raises TelError =
     val relative = line.leadingSpaces - margin
@@ -626,7 +685,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     val firstIdx = peekNextNonBlankLine()
     if firstIdx.absent then return IArray.empty[Tel.Block]
     val firstResolved = firstIdx.vouch
-    val firstIndent = indentOf(lines(firstResolved))
+    val firstIndent = indentOf(lineAt(firstResolved))
     if firstIndent < expected then return IArray.empty[Tel.Block]
 
     val builder = scala.collection.mutable.ArrayBuffer.empty[Tel.Block]
@@ -636,7 +695,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       if nextIdx.absent then false
       else
         val idx = nextIdx.vouch
-        if indentOf(lines(idx)) == expected then
+        if indentOf(lineAt(idx)) == expected then
           cursor = idx
           true
         else false
@@ -645,7 +704,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
     val rest = peekNextNonBlankLine()
     rest.let: idx =>
-      val di = indentOf(lines(idx))
+      val di = indentOf(lineAt(idx))
       if di > expected then builder.lastOption match
         case Some(last) if last.tabulation.present && last.compounds.isEmpty =>
           errorAt(Reason.RowWrongIndent, idx)
@@ -665,23 +724,23 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
     while atCommentLine(indent) do
       if cursor > 0 && cursor - 1 > prologueEndLine then
-        val prev = lines(cursor - 1)
+        val prev = lineAt(cursor - 1)
         if !prev.blank && !isCommentLine(prev, indent) && prev.leadingSpaces >= margin + indent * 2
         then errorAt(Reason.CommentNotPreceded, cursor)
 
-      comments += parseCommentLine(lines(cursor))
+      comments += parseCommentLine(lineAt(cursor))
       cursor += 1
 
-    if comments.nonEmpty && cursor < lines.length && lines(cursor).blank then
+    if comments.nonEmpty && cursor < linesLength && lineAt(cursor).blank then
       var probe = cursor
-      while probe < lines.length && lines(probe).blank do probe += 1
-      if probe < lines.length && indentOf(lines(probe)) == indent
-        && !isCommentLine(lines(probe), indent)
+      while probe < linesLength && lineAt(probe).blank do probe += 1
+      if probe < linesLength && indentOf(lineAt(probe)) == indent
+        && !isCommentLine(lineAt(probe), indent)
       then cursor = probe
 
     val tabulation: Optional[Tel.Tabulation] =
-      if cursor < lines.length && isTabulationLineAt(lines(cursor), indent) then
-        val line = lines(cursor)
+      if cursor < linesLength && isTabulationLineAt(lineAt(cursor), indent) then
+        val line = lineAt(cursor)
         cursor += 1
         Optional(parseTabulationLine(line))
       else Unset
@@ -689,8 +748,8 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     val compounds = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
 
     var continueLoop = true
-    while continueLoop && cursor < lines.length do
-      val line = lines(cursor)
+    while continueLoop && cursor < linesLength do
+      val line = lineAt(cursor)
       if line.blank || indentOf(line) != indent then continueLoop = false
       else if isCommentBody(line) || isTabulationBody(line) then continueLoop = false
       else
@@ -834,7 +893,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
   private def consumeTrailingBlanksFor(indent: Int): Int raises TelError =
     var count = 0
     while
-      cursor < lines.length && lines(cursor).blank
+      cursor < linesLength && lineAt(cursor).blank
       && nextNonBlankMatches(indent)
     do
       count += 1
@@ -844,12 +903,12 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
   private def nextNonBlankMatches(indent: Int): Boolean raises TelError =
     var probe = cursor
-    while probe < lines.length && lines(probe).blank do probe += 1
-    if probe >= lines.length then true
-    else indentOf(lines(probe)) == indent
+    while probe < linesLength && lineAt(probe).blank do probe += 1
+    if probe >= linesLength then true
+    else indentOf(lineAt(probe)) == indent
 
   private def atCommentLine(indent: Int): Boolean raises TelError =
-    cursor < lines.length && isCommentLine(lines(cursor), indent)
+    cursor < linesLength && isCommentLine(lineAt(cursor), indent)
 
   private def isCommentLine(line: Line, indent: Int): Boolean raises TelError =
     if line.blank || indentOf(line) != indent then false
@@ -870,9 +929,9 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
   private def parseSourceOrLiteralAtom(compoundLeadingSpaces: Int)
   : Optional[Tel.Atom] raises TelError =
-    if cursor >= lines.length || lines(cursor).blank then Unset
+    if cursor >= linesLength || lineAt(cursor).blank then Unset
     else
-      val line = lines(cursor)
+      val line = lineAt(cursor)
       val sourceIndent = compoundLeadingSpaces + 4
       val literalIndent = compoundLeadingSpaces + 6
       val first =
@@ -880,8 +939,8 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
         else if line.leadingSpaces == sourceIndent then Optional(parseSourceAtom(sourceIndent))
         else Unset
 
-      if first.present && cursor < lines.length && !lines(cursor).blank then
-        val nextLine = lines(cursor)
+      if first.present && cursor < linesLength && !lineAt(cursor).blank then
+        val nextLine = lineAt(cursor)
         if nextLine.leadingSpaces == literalIndent
         then errorAt(Reason.DuplicateLiteral, cursor)
         else if nextLine.leadingSpaces == sourceIndent
@@ -893,14 +952,14 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     val captured = scala.collection.mutable.ListBuffer.empty[String]
 
     var done = false
-    while !done && cursor < lines.length do
-      val line = lines(cursor)
+    while !done && cursor < linesLength do
+      val line = lineAt(cursor)
       if line.blank then
         var probe = cursor
-        while probe < lines.length && lines(probe).blank do probe += 1
+        while probe < linesLength && lineAt(probe).blank do probe += 1
         val keep =
-          probe >= lines.length
-          || lines(probe).leadingSpaces >= sourceIndent
+          probe >= linesLength
+          || lineAt(probe).leadingSpaces >= sourceIndent
 
         if keep then
           while cursor < probe do
@@ -923,7 +982,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     Tel.Atom.Source(Text(sb.toString))
 
   private def parseLiteralAtom(literalIndent: Int): Tel.Atom.Literal raises TelError =
-    val openingLine = lines(cursor)
+    val openingLine = lineAt(cursor)
     val delimiter = lineSubFrom(openingLine, literalIndent)
     val delimiterBytes = delimiter.getBytes(StandardCharsets.UTF_8)
     cursor += 1
@@ -956,7 +1015,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
     val payload = rawPayload.replace("\r\n", "\n")
 
-    while cursor < lines.length && lines(cursor).start < afterClose do cursor += 1
+    while cursor < linesLength && lineAt(cursor).start < afterClose do cursor += 1
 
     Tel.Atom.Literal(Text(delimiter), Text(payload))
 
