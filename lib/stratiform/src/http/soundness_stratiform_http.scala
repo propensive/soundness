@@ -32,7 +32,8 @@
                                                                                                   */
 package soundness
 
-export
-  stratiform
-  . { TelElement, Tels, TelsAxiom, TelsDecoder, TelsLayers, TelsReconstructor,
-      TelTypeAssignment, TelValidator }
+package postables:
+  export stratiform.postables.telIsPostable
+
+package servables:
+  export stratiform.servables.telIsServable

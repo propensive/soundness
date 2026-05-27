@@ -30,9 +30,29 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package stratiform
 
-export
-  stratiform
-  . { TelElement, Tels, TelsAxiom, TelsDecoder, TelsLayers, TelsReconstructor,
-      TelTypeAssignment, TelValidator }
+import anticipation.*
+import gesticulate.*
+import hieroglyph.*
+import telekinesis.*
+
+// Telekinesis integration: send / serve Tel values over HTTP using
+// the application/vnd.tel media type (TEL has no IANA-registered type
+// yet; the vendor-tree placeholder is conventional). Package-scoped
+// givens that consumers import explicitly when they want HTTP
+// transport for TEL documents.
+
+import gossamer.*
+
+private val telMediaType: MediaType =
+  MediaType(Media.Group.Application, Media.Subtype.Vendor(t"tel"))
+
+package postables:
+  given telIsPostable: (encoder: CharEncoder) => Tel is Postable =
+    Postable(telMediaType, value => Stream(encoder.encoded(Tel.show(value))))
+
+package servables:
+  given telIsServable: (encoder: CharEncoder) => Tel is Servable =
+    Servable[Tel](_ => telMediaType): value =>
+      Http.Body.Fixed(encoder.encoded(Tel.show(value)))

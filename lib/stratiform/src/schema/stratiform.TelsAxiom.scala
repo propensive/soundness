@@ -35,8 +35,8 @@ package stratiform
 import anticipation.*
 import vacuous.*
 
-import TelSchema.*
-import TelSchema.Polarity.*
+import Tels.*
+import Tels.Polarity.*
 
 // Hand-encoded `tel-schema` axiom per §20.5 of the TEL specification.
 // This Scala literal MIRRORS the canonical `tel-schema.tel` document
@@ -44,10 +44,10 @@ import TelSchema.Polarity.*
 //
 // AUTHORITATIVE: this is the source-of-truth schema-of-schemas for the
 // stratiform parser. The self-consistency property — parsing the
-// canonical document under this axiom and reconstructing a TelSchema
+// canonical document under this axiom and reconstructing a Tels
 // value equal by structural equality — is the phase-3 merge blocker.
 
-object TelSchemaAxiom:
+object TelsAxiom:
 
   private inline def kebab(s: String): Text = Text(s)
 
@@ -98,7 +98,7 @@ object TelSchemaAxiom:
       field("layer",    Reference(kebab("Layer")),  required = Loose, repeatable = Loose)),
     validators = IArray.empty)
 
-  val telSchema: TelSchema = TelSchema(
+  val tels: Tels = Tels(
     name     = kebab("tel-schema"),
     document = documentStruct,
     layers   = IArray.empty,

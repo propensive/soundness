@@ -35,14 +35,15 @@ package stratiform
 import anticipation.*
 import contingency.*
 import fulminate.*
+import gossamer.*
 import rudiments.*
 import vacuous.*
 
 import TelError.Reason
-import TelSchema.*
+import Tels.*
 
 // Type assignment algorithm per §20.2 of the TEL specification.
-// Translates a Tel.Document presentation tree under a TelSchema into a
+// Translates a Tel.Document presentation tree under a Tels into a
 // Tel.Element semantic tree. Each compound becomes a Node (Struct- or
 // Flag-typed) and each atom-position scalar becomes a Value.
 //
@@ -56,10 +57,11 @@ import TelSchema.*
 object TelTypeAssignment:
 
   // Type-assign without running scalar / struct validators (per §21.4,
-  // when no Registry is supplied no E310 is raised).
-  def assign(document: Tel.Document, schema: TelSchema)
-  :     TelElement raises TelError =
-    val compounds: IArray[Tel.Compound] = document.children.flatMap(_.compounds)
+  // when no Registry is supplied no E310 is raised). Accepts any `Tel`
+  // value; the subtree is treated as the document root regardless of
+  // whether it wraps a Tel.Document or a Tel.Compound.
+  def assign(tel: Tel, schema: Tels): TelElement raises TelError =
+    val compounds: IArray[Tel.Compound] = tel.subtree.children.flatMap(_.compounds)
     val rootChildren = assignChildren(compounds, schema.document, schema)
     val rootElements = applyConstraints
                         (schema.document, IArray.empty[TelElement], rootChildren, schema)
@@ -70,12 +72,9 @@ object TelTypeAssignment:
   // every Scalar value's validators list is applied to the assigned
   // text; every Struct's validators list is applied to the assigned
   // Node. An Invalid response raises E310.
-  def assign
-       (document:   Tel.Document,
-        schema:     TelSchema,
-        validators: TelValidator.Registry)
+  def assign(tel: Tel, schema: Tels, validators: TelValidator.Registry)
   :     TelElement raises TelError =
-    val element = assign(document, schema)
+    val element = assign(tel, schema)
     validateElement(element, validators)
     element
 
@@ -107,7 +106,7 @@ object TelTypeAssignment:
   // Resolve a Reference to its concrete Type within the schema. Returns
   // the input type unchanged if not a Reference. Single-step (per
   // §20.2: "Reference and SelectRef resolution are single-step").
-  private def resolveType(t: Type, schema: TelSchema): Type raises TelError =
+  private def resolveType(t: Type, schema: Tels): Type raises TelError =
     t match
       case Reference(name) =>
         schema.records.find(_.name == name) match
@@ -131,7 +130,7 @@ object TelTypeAssignment:
        member:      Member,
        variant:     Optional[Variant] = Unset )
 
-  private def keywordMap(parent: Struct, schema: TelSchema)
+  private def keywordMap(parent: Struct, schema: Tels)
   :     Map[Text, KeywordEntry] raises TelError =
     val builder = scala.collection.mutable.LinkedHashMap.empty[Text, KeywordEntry]
     var idx = 0
@@ -159,7 +158,7 @@ object TelTypeAssignment:
     builder.toMap
 
   // Atom-assignable check (after Reference resolution).
-  private def atomAssignable(member: Member, schema: TelSchema): Boolean raises TelError =
+  private def atomAssignable(member: Member, schema: Tels): Boolean raises TelError =
     member match
       case f: Field =>
         resolveType(f.fieldType, schema) match
@@ -186,7 +185,7 @@ object TelTypeAssignment:
   private def assignAtoms
        (atoms:  IArray[Tel.Atom],
         parent: Struct,
-        schema: TelSchema)
+        schema: Tels)
   :     IArray[TelElement] raises TelError =
     val results = scala.collection.mutable.ArrayBuffer.empty[TelElement]
     var pos = 0
@@ -252,7 +251,7 @@ object TelTypeAssignment:
   private def assignChildren
        (compounds: IArray[Tel.Compound],
         parent:    Struct,
-        schema:    TelSchema)
+        schema:    Tels)
   :     IArray[TelElement] raises TelError =
     val km = keywordMap(parent, schema)
     val results = scala.collection.mutable.ArrayBuffer.empty[TelElement]
@@ -276,7 +275,7 @@ object TelTypeAssignment:
        ( parent:        Struct,
          atomElements:  IArray[TelElement],
          childElements: IArray[TelElement],
-         schema:        TelSchema )
+         schema:        Tels )
   :     IArray[TelElement] raises TelError =
     val results = scala.collection.mutable.ArrayBuffer.empty[TelElement]
     results ++= atomElements
@@ -308,7 +307,7 @@ object TelTypeAssignment:
   private def assignCompound
        (compound: Tel.Compound,
         entry:    KeywordEntry,
-        schema:   TelSchema)
+        schema:   Tels)
   :     TelElement raises TelError =
     val resolved = resolveType(entry.entryType, schema)
 
@@ -326,7 +325,7 @@ object TelTypeAssignment:
           case Tel.Atom.Source(t)     => t
           case Tel.Atom.Literal(_, t) => t
 
-        .getOrElse(Text(""))
+        .getOrElse(t"")
 
         TelElement.Value(entry.memberIndex, s, text)
 

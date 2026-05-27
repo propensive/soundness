@@ -30,9 +30,35 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package stratiform
 
-export
-  stratiform
-  . { TelElement, Tels, TelsAxiom, TelsDecoder, TelsLayers, TelsReconstructor,
-      TelTypeAssignment, TelValidator }
+import anticipation.*
+import aviation.*
+import contingency.*
+import distillate.*
+import gossamer.*
+import prepositional.*
+
+// Aviation integration: encode TEL atom values to/from Aviation's
+// Instant and Duration types. Mirroring jacinta.time, the codecs are
+// scoped to package objects so they're imported explicitly and don't
+// clash with project-wide default encodings.
+
+package telEncodables:
+  given encodeInstantsAsUnixEpochMilliseconds: Instant is Encodable in Tel =
+    instant => Tel.scalar(instant.long.toString.tt)
+
+  given encodeDurationsAsMilliseconds: Duration is Encodable in Tel =
+    duration => Tel.scalar((duration.value*1000).toLong.toString.tt)
+
+package telDecodables:
+  given decodeInstantsAsUnixEpochMilliseconds: Tactic[TelError]
+  =>  Instant is Decodable in Tel = tel =>
+    import abstractables.instantIsAbstractable
+    try Instant(tel.primaryAtom.s.toLong)
+    catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
+
+  given decodeDurationsAsMilliseconds: Tactic[TelError]
+  =>  Duration is Decodable in Tel = tel =>
+    try Duration(tel.primaryAtom.s.toLong)
+    catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))

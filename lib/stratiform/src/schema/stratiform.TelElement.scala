@@ -51,12 +51,12 @@ sealed trait TelElement
 object TelElement:
   case class Node
      ( keywordIndex: Optional[Int],
-       elementType:  TelSchema.Type,
+       elementType:  Tels.Type,
        children:     IArray[TelElement] )
   extends TelElement
 
   case class Value
      ( keywordIndex: Int,
-       scalarType:   TelSchema.Scalar,
+       scalarType:   Tels.Scalar,
        text:         Text )
   extends TelElement

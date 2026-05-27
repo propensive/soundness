@@ -42,7 +42,7 @@ import vacuous.*
 // presentation-model-driven Tel.as[T] decoder. The fluent path for a
 // schema-validated decode is:
 //
-//   given TelSchema = mySchema
+//   given Tels = mySchema
 //   val person: Person = tel.validate.as[Person]
 //
 // `validate` (alias `validated`) runs the §20.2 type-assignment +
@@ -53,30 +53,26 @@ import vacuous.*
 // type-assignment has already verified the document's shape against
 // the schema.
 
-object TelSchemaDecoder:
+object TelsDecoder:
 
   extension (tel: Tel)
     // Validate `tel` against the schema in scope and return it for
     // chaining. Raises a TelError on the first E2xx/E3xx violation;
     // returns the same `tel` value unchanged on success.
-    def validate(using schema: TelSchema): Tel raises TelError =
-      tel.document.let: doc =>
-        TelTypeAssignment.assign(doc, schema)
-        tel
-      .or(tel)
+    def validate(using schema: Tels): Tel raises TelError =
+      TelTypeAssignment.assign(tel, schema)
+      tel
 
     // Same as `validate` but also applies the registry's validators.
-    def validate(using schema: TelSchema, validators: TelValidator.Registry)
+    def validate(using schema: Tels, validators: TelValidator.Registry)
     :     Tel raises TelError =
-      tel.document.let: doc =>
-        TelTypeAssignment.assign(doc, schema, validators)
-        tel
-      .or(tel)
+      TelTypeAssignment.assign(tel, schema, validators)
+      tel
 
     // Convenience: validate-then-decode in a single call. Mirrors the
     // jacinta `.as[T](using JsonSchema)` ergonomic but routed through
     // type assignment first.
-    inline def asValidated[value: Decodable in Tel](using schema: TelSchema)
+    inline def asValidated[value: Decodable in Tel](using schema: Tels)
     :     value raises TelError =
-      tel.document.let(TelTypeAssignment.assign(_, schema))
+      TelTypeAssignment.assign(tel, schema)
       tel.as[value]

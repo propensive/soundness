@@ -37,18 +37,18 @@ import contingency.*
 import fulminate.*
 
 import TelError.Reason
-import TelSchema.*
+import Tels.*
 
 // Layer composition per §20.3. Takes a base schema and applies its
-// ordered layer list, producing a flat composed TelSchema. The merge
+// ordered layer list, producing a flat composed Tels. The merge
 // preserves subtyping: tightening polarity and excluding sum variants
 // are allowed; loosening or widening is rejected (E215/E216/E214).
 
-object TelSchemaLayers:
+object TelsLayers:
 
   // Top-level entry: applies every layer in `schema.layers` to the
   // schema's base, returning a composed Schema with empty `layers`.
-  def compose(schema: TelSchema): TelSchema raises TelError =
+  def compose(schema: Tels): Tels raises TelError =
     if schema.layers.isEmpty then schema
     else
       val seenLayerNames = scala.collection.mutable.HashSet.empty[Text]
@@ -65,7 +65,7 @@ object TelSchemaLayers:
   // Apply a single layer to the (partially composed) schema. The order
   // of operations matters: Definitions are merged first so any
   // Reference resolved later sees the merged namespace.
-  private def applyLayer(base: TelSchema, layer: Layer): TelSchema raises TelError =
+  private def applyLayer(base: Tels, layer: Layer): Tels raises TelError =
     val mergedRecords = mergeRecordList(base.records, layer.records, base.scalars, base.selects)
     val mergedScalars = mergeScalarList(base.scalars, layer.scalars, mergedRecords, base.selects)
     val mergedSelects = mergeSelectList(base.selects, layer.selects, mergedRecords, mergedScalars)

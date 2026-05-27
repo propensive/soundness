@@ -32,11 +32,9 @@
                                                                                                   */
 package stratiform
 
-import scala.compiletime.*
 import scala.quoted.*
 
 import anticipation.*
-import contextual.*
 import contingency.*
 import fulminate.*
 import gigantism.*
