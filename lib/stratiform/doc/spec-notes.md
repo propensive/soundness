@@ -11,7 +11,18 @@ Implementation-discovered ambiguities, inconsistencies, and inadequacies in the 
 
 **Stratiform implementation:** the schema-aware rule is implemented when the consumer calls `Tel.parse(bytes, schema)`; `bytes.read[Tel]` / `text.load[Tel]` (no schema in scope) continue to use shallower-wins (raising E107 in the absence of recovery). The parser maintains an `ancestors` stack of resolved struct types alongside the open-compound chain to enable the lookup.
 
-_(No remaining open issues — see Resolved below.)_
+### BinTEL §3 normative value-hash vector for tel-schema.tel
+**Issue:** Encoding the canonical `tel-schema.tel` to BinTEL bytes and hashing the result with SHA-256 should yield `9033cf054ed14fc460cfd04502a2b69e1ac840cd1035f213492b74af7df2a8dd` per §3 of the BinTEL spec. Stratiform's encoder produces a hash that does not match.
+
+**Likely causes:** byte-equality with the reference parser requires several BinTEL §7 behaviours that haven't been fully audited:
+
+- §7.2 canonical child order across atom-derived and compound-derived elements (currently sorts by member index but the relative order of atom-derived vs compound-derived elements within a member follows §18.3 step 4, which may not be what `Tel.Type.assign` produces).
+- §7.6 default-value synthesis for required scalars whose default value is used (the type-assignment pass already inserts these via `applyConstraints`, but the encoded value string must be the post-atom-decoded text, identical regardless of the atom form used in the schema source).
+- Atom-derived elements at the right position (§7.3) — the test-vector has many atom-derived elements in the schema document (e.g. `Field Bar Identifier` produces an `Identifier`-typed element at the `type` member position via atom assignment).
+
+**Stratiform implementation:** the §3 test is currently `aspire` rather than `assert`. The deterministic and same-value tests pass; the divergence is structural. Follow-up work: trace through the schema document one element at a time, compare to the reference BinTEL bytes, and reconcile each divergence.
+
+_(See Resolved below for closed entries.)_
 
 ## Phase status
 

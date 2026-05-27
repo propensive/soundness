@@ -38,6 +38,8 @@ import scala.language.unsafeNulls
 
 import anticipation.*
 import contingency.*
+import gastronomy.*
+import prepositional.*
 import vacuous.*
 
 // BinTEL §7 node encoding. Serialises a typed `TelElement` tree into
@@ -65,9 +67,19 @@ extension (tel: Tel)
   def bintel(schema: Tels): Data raises TelError =
     Bintel.encode(Tel.Type.assign(tel, schema))
 
+  // SHA-256 of this document's BinTEL body (§3 value hash). The hash
+  // is taken over the body bytes only — no magic number, no schema
+  // signature — and is therefore a function of the semantic model
+  // and the schema alone, independent of presentation form.
+  def valueHash(schema: Tels): Digest in Sha2[256] raises TelError =
+    tel.bintel(schema).digest[Sha2[256]]
+
 extension (element: TelElement)
   // Encode a pre-assigned semantic-model element to BinTEL body bytes.
   def bintel: Data = Bintel.encode(element)
+
+  // SHA-256 of this element's BinTEL body (§3 value hash).
+  def valueHash: Digest in Sha2[256] = element.bintel.digest[Sha2[256]]
 
 object Bintel:
 
@@ -81,11 +93,12 @@ object Bintel:
 
   private def encodeRoot(out: ByteArrayOutputStream, element: TelElement): Unit = element match
     case TelElement.Node(_, _, children) =>
-      writeVarint(out, children.length.toLong)
+      val ordered = canonicalOrder(children)
+      writeVarint(out, ordered.length.toLong)
       var i = 0
 
-      while i < children.length do
-        encodeElement(out, children(i))
+      while i < ordered.length do
+        encodeElement(out, ordered(i))
         i += 1
 
     case _: TelElement.Value =>
@@ -103,11 +116,12 @@ object Bintel:
 
     node.elementType match
       case _: Tels.Struct =>
-        writeVarint(out, node.children.length.toLong)
+        val ordered = canonicalOrder(node.children)
+        writeVarint(out, ordered.length.toLong)
         var i = 0
 
-        while i < node.children.length do
-          encodeElement(out, node.children(i))
+        while i < ordered.length do
+          encodeElement(out, ordered(i))
           i += 1
 
       case Tels.Flag =>
@@ -134,3 +148,28 @@ object Bintel:
       n >>>= 7
 
     out.write(n.toInt)
+
+  // §7.2 canonical child order: stable sort by keyword index so members
+  // are emitted in member declaration order while preserving source
+  // order within a single (repeatable) member. This makes the encoding
+  // independent of the source ordering of independent member groups.
+  private def canonicalOrder(children: IArray[TelElement]): IArray[TelElement] =
+    if children.length <= 1 then children
+    else
+      val arr = new Array[TelElement](children.length)
+      var i = 0
+      while i < children.length do
+        arr(i) = children(i)
+        i += 1
+
+      // java.util.Arrays.sort with a Comparator is stable — preserves
+      // source order within equal-key groups.
+      java.util.Arrays.sort
+       ( arr.asInstanceOf[Array[AnyRef]],
+         (a: AnyRef, b: AnyRef) => Integer.compare(kidxOf(a.asInstanceOf[TelElement]),
+                                                    kidxOf(b.asInstanceOf[TelElement])) )
+      arr.asInstanceOf[IArray[TelElement]]
+
+  private def kidxOf(element: TelElement): Int = element match
+    case TelElement.Node(idx, _, _)  => idx.or(0)
+    case TelElement.Value(idx, _, _) => idx
