@@ -94,9 +94,9 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     while i < source.length do
       val c = source.charAt(i)
       if c == '\r' && (i + 1 >= source.length || source.charAt(i + 1) != '\n')
-      then abort(TelError(Reason.BadLineEnding))
+      then errorAtOffset(Reason.BadLineEnding, i)
       else if crlfMode && c == '\n' && (i == 0 || source.charAt(i - 1) != '\r')
-      then abort(TelError(Reason.BadLineEnding))
+      then errorAtOffset(Reason.BadLineEnding, i)
       i += 1
 
   // Pre-split lines retaining leading-space count and blank flag. CR before
@@ -151,6 +151,64 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
   // deeper recovery treat that ancestor as "schema-blind".
   private val ancestors =
     scala.collection.mutable.ArrayBuffer.empty[Optional[Tels.Struct]]
+
+  // Build a `TelError.Position` for a given line index (0-based internally;
+  // converted to the 1-indexed line numbers callers expect). Column
+  // defaults to `1` meaning "first character of the line"; pass an
+  // explicit `column` for mid-line errors. Returns `(1, 1)` for an
+  // out-of-range index so a buggy caller can't crash the parser
+  // mid-error.
+  private inline def positionAt(lineIdx: Int, column: Int = 1): TelError.Position =
+    if lineIdx < 0 || lineIdx >= lines.length then TelError.Position(1, 1)
+    else TelError.Position(lineIdx + 1, column)
+
+  // Compute a position from an absolute byte offset into the original
+  // `source`. Used by `checkBom` / `checkLineEndings`, which walk the
+  // raw bytes before any cursor advance, so they don't have a line
+  // index to hand to `positionAt`. Linear scan is fine — these helpers
+  // run at most a handful of times per parse.
+  private def positionAtOffset(byteOffset: Int): TelError.Position =
+    var lineIdx = 0
+    while lineIdx < lines.length && lines(lineIdx).end <= byteOffset do lineIdx += 1
+    if lineIdx >= lines.length then
+      val n = lines.length.max(1)
+      TelError.Position(n, 1)
+    else
+      val line = lines(lineIdx)
+      TelError.Position(lineIdx + 1, byteOffset - line.start + 1)
+
+  // Abort with a positional `TelError`. The convenience helpers
+  // `errorAt(reason, lineIdx)` and `errorAtOffset(reason, offset)`
+  // construct the position before delegating here.
+  private def errorAt(reason: Reason, lineIdx: Int, column: Int = 1)
+                     (using Tactic[TelError])
+  :   Nothing =
+
+    abort(TelError(reason, positionAt(lineIdx, column)))
+
+  private def errorAtOffset(reason: Reason, byteOffset: Int)
+                           (using Tactic[TelError])
+  :   Nothing =
+
+    abort(TelError(reason, positionAtOffset(byteOffset)))
+
+  // Reverse-lookup of a `Line` instance's index in the pre-split
+  // `lines` array. The comparison uses object identity (`ne`) so it
+  // stays O(1) per slot — only the error path hits this, never the
+  // hot parse path, so the linear scan is fine. Returns `-1` if the
+  // line isn't part of this parser's `lines` (e.g. a synthetic
+  // line constructed mid-parse), which `positionAt` then maps to the
+  // sentinel position `(1, 1)`.
+  private def lineIndexOf(line: Line): Int =
+    var i = 0
+    while i < lines.length && (lines(i) ne line) do i += 1
+    if i < lines.length then i else -1
+
+  private def errorAtLine(reason: Reason, line: Line, column: Int = 1)
+                         (using Tactic[TelError])
+  :   Nothing =
+
+    errorAt(reason, lineIndexOf(line), column)
 
   // Push a child compound's resolved struct onto the ancestor stack.
   // The compound is at depth `parentDepth + 1`; `parentDepth` is the
@@ -268,7 +326,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
   private def checkBom(): Unit raises TelError =
     if source.length >= 1 && source.charAt(0) == '﻿' then
-      abort(TelError(Reason.BomPresent))
+      errorAtOffset(Reason.BomPresent, 0)
 
   private def parseInterpreterDirective(): Optional[Text] =
     if cursor >= lines.length then Unset
@@ -289,10 +347,10 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
         // the document. A pragma-shaped line that begins at or after
         // byte 4096 — or extends past it — is E103.
         if line.start >= 4096 || line.end > 4096
-        then abort(TelError(Reason.PragmaTooLong))
+        then errorAt(Reason.PragmaTooLong, idx)
         prologueEndLine = idx
         cursor = idx + 1
-        Optional(parsePragmaContent(content))
+        Optional(parsePragmaContent(content, idx))
       else Unset
     .or(Unset)
 
@@ -304,24 +362,24 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
         val ln = lines(j)
         if !ln.blank && ln.leadingSpaces == 0 then
           val c = ln.content
-          if c == "tel" || c.startsWith("tel ") then abort(TelError(Reason.PragmaNotFirst))
+          if c == "tel" || c.startsWith("tel ") then errorAt(Reason.PragmaNotFirst, j)
 
         j += 1
 
     result
 
-  private def parsePragmaContent(content: String): Tel.Pragma raises TelError =
+  private def parsePragmaContent(content: String, lineIdx: Int): Tel.Pragma raises TelError =
     val parts = splitPhrases(content)
-    if parts.head != "tel" then abort(TelError(Reason.PragmaNotFirst))
+    if parts.head != "tel" then errorAt(Reason.PragmaNotFirst, lineIdx)
     val version =
-      if parts.length >= 2 then parseVersion(parts(1))
+      if parts.length >= 2 then parseVersion(parts(1), lineIdx)
       else (1, 0)
 
     // §8: the pragma carries exactly tel + version + optional schema +
     // optional sigil. Anything beyond that — including a remark
     // introducer — is E123. Check up front so a stray remark doesn't
     // first hit the schema-identifier validator.
-    if parts.length > 4 then abort(TelError(Reason.ExtraPragmaContent))
+    if parts.length > 4 then errorAt(Reason.ExtraPragmaContent, lineIdx)
 
     val schema: Optional[Text] =
       if parts.length >= 3 then
@@ -336,7 +394,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
           (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
         val isBase256 = s.exists(_.toInt > 127)
         if !isUrl && !isHexHash && !isBase256
-        then abort(TelError(Reason.BadSchemaIdentifier))
+        then errorAt(Reason.BadSchemaIdentifier, lineIdx)
         Text(s): Optional[Text]
       else Unset
 
@@ -345,22 +403,22 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
         val c = parts(3).charAt(0)
         // Per §8.3 the sigil must be a symbolic character — not a digit,
         // not a letter, not whitespace, not the keyword-class character.
-        if c.isLetterOrDigit then abort(TelError(Reason.BadSigil))
+        if c.isLetterOrDigit then errorAt(Reason.BadSigil, lineIdx)
         sigil = c
         c: Optional[Char]
       else Unset
 
     Tel.Pragma(version, schema, pragmaSigil)
 
-  private def parseVersion(s: String): (Int, Int) raises TelError =
+  private def parseVersion(s: String, lineIdx: Int): (Int, Int) raises TelError =
     val dot = s.indexOf('.')
-    if dot <= 0 || dot == s.length - 1 then abort(TelError(Reason.BadVersion))
+    if dot <= 0 || dot == s.length - 1 then errorAt(Reason.BadVersion, lineIdx)
     try
       val major = s.substring(0, dot).toInt
       val minor = s.substring(dot + 1).toInt
-      if major < 0 || minor < 0 then abort(TelError(Reason.BadVersion))
+      if major < 0 || minor < 0 then errorAt(Reason.BadVersion, lineIdx)
       (major, minor)
-    catch case _: NumberFormatException => abort(TelError(Reason.BadVersion))
+    catch case _: NumberFormatException => errorAt(Reason.BadVersion, lineIdx)
 
   // Inline atoms are separated by single soft spaces until the first hard
   // space; from that point onward only hard spaces separate them. The
@@ -410,7 +468,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
   // wins otherwise.
   private def indentOf(line: Line): Int raises TelError =
     val relative = line.leadingSpaces - margin
-    if relative < 0 then abort(TelError(Reason.LessThanMargin))
+    if relative < 0 then errorAtLine(Reason.LessThanMargin, line)
     else if relative % 2 == 0 then relative / 2
     else recoverOddIndent(line, relative)
 
@@ -454,12 +512,12 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
 
       if !shallowerValid && deeperValid then deeper else shallower
     .or:
-      abort(TelError(Reason.OddIndentation))
+      errorAtLine(Reason.OddIndentation, line)
 
   private def checkTrailingSpaces(line: Line): Unit raises TelError =
     if line.content.length > 0 && line.content.charAt(line.content.length - 1) == ' '
       && !line.blank
-    then abort(TelError(Reason.TrailingSpaces))
+    then errorAtLine(Reason.TrailingSpaces, line, line.content.length)
 
   // Recursively parses the child blocks of a node at parentIndent. The
   // children themselves are at parentIndent + 1, except at top-level where
@@ -491,15 +549,15 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       val di = indentOf(lines(idx))
       if di > expected then builder.lastOption match
         case Some(last) if last.tabulation.present && last.compounds.isEmpty =>
-          abort(TelError(Reason.RowWrongIndent))
+          errorAt(Reason.RowWrongIndent, idx)
 
         case Some(last) if last.tabulation.present =>
-          abort(TelError(Reason.ChildOfNonCompound))
+          errorAt(Reason.ChildOfNonCompound, idx)
 
         case Some(last) if last.compounds.isEmpty =>
-          abort(TelError(Reason.ChildOfNonCompound))
+          errorAt(Reason.ChildOfNonCompound, idx)
 
-        case _ => abort(TelError(Reason.OverIndentation))
+        case _ => errorAt(Reason.OverIndentation, idx)
 
     IArray.from(builder)
 
@@ -519,7 +577,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       if cursor > 0 && cursor - 1 > prologueEndLine then
         val prev = lines(cursor - 1)
         if !prev.blank && !isCommentLine(prev, indent) && prev.leadingSpaces >= margin + indent * 2
-        then abort(TelError(Reason.CommentNotPreceded))
+        then errorAt(Reason.CommentNotPreceded, cursor)
 
       comments += parseCommentLine(lines(cursor))
       cursor += 1
@@ -614,7 +672,8 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
             if columnIdx >= 1 && columnIdx < markers.length - 1 then
               val phraseWidth = i - phraseStart
               val colMax = markers(columnIdx + 1) - markers(columnIdx) - 2
-              if phraseWidth > colMax then abort(TelError(Reason.ColumnValueTooWide))
+              if phraseWidth > colMax then
+                errorAtLine(Reason.ColumnValueTooWide, line, phraseStart + 1)
 
             var foundIdx = -1
             var k = 1
@@ -622,7 +681,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
               if markers(k) == j then foundIdx = k
               k += 1
 
-            if foundIdx < 0 then abort(TelError(Reason.HardSpaceWrongPosition))
+            if foundIdx < 0 then errorAtLine(Reason.HardSpaceWrongPosition, line, j + 1)
 
             columnIdx = foundIdx
             phraseStart = j
@@ -667,7 +726,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
     while m < markers.length do
       val markerPos = markers(m)
       val nextLimit = if m + 1 < markers.length then markers(m + 1) else content.length
-      headings += extractHeading(content, markerPos + 1, nextLimit)
+      headings += extractHeading(line, markerPos + 1, nextLimit)
       m += 1
 
     Tel.Tabulation(IArray.from(markers), IArray.from(headings))
@@ -678,16 +737,18 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
   // end of line for the final column). §16 / E120 forbids: non-space
   // immediately after the marker, more than one space before heading
   // content, or a sigil character inside the heading text.
-  private def extractHeading(content: String, start: Int, limit: Int): Text raises TelError =
+  private def extractHeading(line: Line, start: Int, limit: Int): Text raises TelError =
+    val content = line.content
     if start >= limit then t""
-    else if content.charAt(start) != ' ' then abort(TelError(Reason.BadTabulationHeading))
+    else if content.charAt(start) != ' ' then
+      errorAtLine(Reason.BadTabulationHeading, line, start + 1)
     else if start + 1 < limit && content.charAt(start + 1) == ' ' then
       // Two consecutive spaces immediately after the marker: either an
       // empty heading (introducer + single terminator space = exactly
       // two spaces between markers) or malformed (a real heading
       // starting after extra leading spaces, which is E120).
       if limit - start <= 2 then t""
-      else abort(TelError(Reason.BadTabulationHeading))
+      else errorAtLine(Reason.BadTabulationHeading, line, start + 1)
     else
       var i = start + 1
       var stop = limit
@@ -696,7 +757,8 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
           stop = i
           i = limit
         else
-          if content.charAt(i) == sigil then abort(TelError(Reason.BadTabulationHeading))
+          if content.charAt(i) == sigil then
+            errorAtLine(Reason.BadTabulationHeading, line, i + 1)
           i += 1
 
       Text(content.substring(start + 1, stop))
@@ -780,9 +842,9 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       if first.present && cursor < lines.length && !lines(cursor).blank then
         val nextLine = lines(cursor)
         if nextLine.leadingSpaces == literalIndent
-        then abort(TelError(Reason.DuplicateLiteral))
+        then errorAt(Reason.DuplicateLiteral, cursor)
         else if nextLine.leadingSpaces == sourceIndent
-        then abort(TelError(Reason.DuplicateSource))
+        then errorAt(Reason.DuplicateSource, cursor)
 
       first
 
@@ -846,7 +908,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       else
         val pattern = "\n" + delimiter + "\n"
         val closeIdx = source.indexOf(pattern, payloadStart)
-        if closeIdx < 0 then abort(TelError(Reason.UnclosedLiteral))
+        if closeIdx < 0 then errorAtLine(Reason.UnclosedLiteral, openingLine)
         (source.substring(payloadStart, closeIdx), closeIdx + pattern.length)
 
     // Strip \r\n → \n inside the literal payload. The TEL spec (§15) states

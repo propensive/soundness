@@ -313,6 +313,50 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[TelError](t"parent\n child Alice\n".read[Tel]).reason
       . assert(_ == TelError.Reason.OddIndentation)
 
+    suite(m"Error line/column positions"):
+      // Parse-time errors carry an `Optional[TelError.Position]` so
+      // callers can point at the offending line in the source. Validation
+      // (post-parse) errors leave `position` Unset because they apply to
+      // AST nodes rather than source bytes.
+
+      test(m"BOM error is at line 1, column 1"):
+        capture[TelError](t"﻿tel 1.0\n".read[Tel]).position
+      . assert(_ == TelError.Position(1, 1))
+
+      test(m"OddIndentation error reports the offending line"):
+        capture[TelError](t"parent\n child Alice\n".read[Tel]).position.let(_.line)
+      . assert(_ == 2)
+
+      test(m"BadVersion error reports the pragma line"):
+        capture[TelError](t"tel notaversion\n".read[Tel]).position.let(_.line)
+      . assert(_ == 1)
+
+      test(m"PragmaNotFirst error reports the misplaced pragma's line"):
+        capture[TelError](t"foo bar\ntel 1.0\nbaz\n".read[Tel]).position.let(_.line)
+      . assert(_ == 2)
+
+      test(m"TrailingSpaces error reports the offending line"):
+        capture[TelError](t"good\nbad   \n".read[Tel]).position.let(_.line)
+      . assert(_ == 2)
+
+      test(m"Validation error (Type.assign) leaves position Unset"):
+        val schema = Tels(
+          name     = t"person",
+          document = Tels.Struct(
+            members = IArray(
+              Tels.Field
+               ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+                 t"name", Tels.Scalar(IArray(t"string")), Unset )),
+            validators = IArray.empty),
+          layers   = IArray.empty,
+          sigil    = Unset,
+          records  = IArray.empty,
+          scalars  = IArray.empty,
+          selects  = IArray.empty)
+        val doc = t"age 30\n".read[Tel]
+        capture[TelError](Tel.Type.assign(doc, schema)).position
+      . assert(_ == Unset)
+
     suite(m"Type assignment"):
       // A small hand-built schema for a `person` document with required
       // name (Scalar String) and optional age (Scalar Identifier).

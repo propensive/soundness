@@ -34,8 +34,22 @@ package stratiform
 
 import anticipation.*
 import fulminate.*
+import vacuous.*
 
 object TelError:
+
+  // 1-indexed source position attached to a `TelError` raised by the
+  // TEL parser, so a caller capturing the error can point at the
+  // offending line in the source. `column = 1` refers to the first
+  // character of the line (including any leading spaces). Parse errors
+  // that pre-date the document body (e.g. `BomPresent` at offset 0)
+  // report `(1, 1)`. Post-parse / validation errors leave `position`
+  // `Unset` because they apply to AST nodes rather than source bytes.
+  case class Position(line: Int, column: Int) derives CanEqual
+
+  object Position:
+    given communicable: Position is Communicable =
+      position => m"line ${position.line}, column ${position.column}"
 
   // Recovery strategies prescribed by §19.5 of the TEL specification. Each
   // reason carries the recovery strategy declared for its E-code.
@@ -249,5 +263,10 @@ object TelError:
     case ValidatorRejected       extends Reason(310)
     case FlagWithContent         extends Reason(311)
 
-case class TelError(reason: TelError.Reason)(using Diagnostics)
-extends Error(605, reason.number)(m"the TEL document is invalid because $reason")
+case class TelError(reason: TelError.Reason, position: Optional[TelError.Position] = Unset)
+                   (using Diagnostics)
+extends Error
+  ( 605, reason.number )
+  ( position.let: p =>
+      m"the TEL document is invalid at $p because $reason"
+    . or(m"the TEL document is invalid because $reason"))
