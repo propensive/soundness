@@ -141,6 +141,35 @@ object Tests extends Suite(m"Stratiform Tests"):
           case _               => t""
       . assert(_ == t"Alice")
 
+      test(m"two captures across separate atoms"):
+        val input = tel"contact Alice alice@example.com"
+        input match
+          case tel"contact $name $email" => (name.primaryAtom, email.primaryAtom)
+          case _                          => (t"", t"")
+      . assert(_ == (t"Alice", t"alice@example.com"))
+
+      test(m"multiple captures within a single atom — split on hyphen"):
+        val input = tel"item foo-bar"
+        input match
+          case tel"item $prefix-$suffix" => (prefix.primaryAtom, suffix.primaryAtom)
+          case _                          => (t"", t"")
+      . assert(_ == (t"foo", t"bar"))
+
+      test(m"three captures within a single atom — split on dots"):
+        val input = tel"version 1.2.3"
+        input match
+          case tel"version $major.$minor.$patch" =>
+            (major.primaryAtom, minor.primaryAtom, patch.primaryAtom)
+          case _ => (t"", t"", t"")
+      . assert(_ == (t"1", t"2", t"3"))
+
+      test(m"multi-marker non-match falls through"):
+        val input = tel"item foo"  // no hyphen, no second capture site
+        input match
+          case tel"item $prefix-$suffix" => true
+          case _                          => false
+      . assert(!_)
+
     suite(m"tel-schema self-consistency"):
       // Phase-3 partial: parse the canonical tel-schema.tel and verify
       // it produces a valid presentation AST. Full self-consistency

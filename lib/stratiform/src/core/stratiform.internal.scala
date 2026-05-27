@@ -266,10 +266,19 @@ object internal:
 
     if holeCount == 0 then '{ $matchResult.isDefined: Boolean }
     else if holeCount == 1 then '{ $matchResult.map(_.head): Option[Tel] }
-    else '{ $matchResult.map { captures =>
-            val arr: Array[Object] = captures.toArray.asInstanceOf[Array[Object]]
-            scala.runtime.Tuples.fromArray(arr)
-          }: Option[Tuple] }
+    else
+      val telType = TypeRepr.of[Tel]
+      val tupleType =
+        AppliedType
+         (defn.TupleClass(holeCount).info.typeSymbol.typeRef, List.fill(holeCount)(telType))
+
+      tupleType.asType.absolve match
+        case '[type result <: Tuple; result] =>
+          '{
+            $matchResult.map: captures =>
+              val arr: Array[Object] = captures.toArray.asInstanceOf[Array[Object]]
+              scala.runtime.Tuples.fromArray(arr).asInstanceOf[result]
+          }
 
   // Runtime matcher: returns Some(captures) if input structurally matches
   // pattern (allowing marker characters in pattern atom-texts as capture
@@ -352,11 +361,19 @@ object internal:
 
         case _ => false
 
-  // Match a pattern atom text against an input atom text. The pattern may
-  // contain a single marker character: the surrounding literal segments
-  // must form a prefix/suffix of the input, and the middle substring is
-  // captured as a Tel scalar into `out`. Patterns with multiple markers
-  // in one atom text are not supported in this minimal extractor.
+  // Match a pattern atom text against an input atom text. The pattern
+  // is split by the marker character into N+1 literal segments
+  // separated by N hole markers (N >= 0); a successful match
+  // satisfies:
+  //   - the input starts with segment(0) (prefix)
+  //   - the input ends with segment(N) (suffix)
+  //   - for each interior marker, the next occurrence of the
+  //     following segment is found left-to-right, and the substring
+  //     between consumed segments is captured as a `Tel.scalar`
+  //
+  // Patterns with zero markers degenerate to a literal equality
+  // check. Captures are appended to `out` in left-to-right pattern
+  // order.
   private def matchAtomText
        (pattern: Text,
         input:   Text,
@@ -366,17 +383,49 @@ object internal:
     import scala.language.unsafeNulls
     val p: String = pattern.s
     val s: String = input.s
-    val markerIdx = p.indexOf(marker.toInt)
-    if markerIdx < 0 then p == s
-    else if p.indexOf(marker.toInt, markerIdx + 1) < 0 then
-      val prefix: String = p.substring(0, markerIdx)
-      val suffix: String = p.substring(markerIdx + 1)
-      if s.startsWith(prefix) && s.endsWith(suffix)
-        && s.length >= prefix.length + suffix.length
-      then
-        val captured: String = s.substring(prefix.length, s.length - suffix.length)
-        out += Tel.scalar(Text(captured))
-        true
-      else false
+
+    // Split pattern at every marker; pieces.length == markerCount + 1.
+    val pieces = scala.collection.mutable.ArrayBuffer.empty[String]
+    var start = 0
+    var i = 0
+    while i < p.length do
+      if p.charAt(i) == marker then
+        pieces += p.substring(start, i)
+        start = i + 1
+
+      i += 1
+
+    pieces += p.substring(start)
+
+    if pieces.length == 1 then p == s
     else
-      p == s
+      val prefix = pieces(0)
+      val suffix = pieces(pieces.length - 1)
+      if !s.startsWith(prefix) then false
+      else if !s.endsWith(suffix) then false
+      else if s.length < prefix.length + suffix.length then false
+      else
+        // Left-to-right scan the interior segments. The captures
+        // are appended to a local buffer so we can roll back on a
+        // mid-pattern mismatch without leaving partial captures in
+        // `out`.
+        val local = scala.collection.mutable.ListBuffer.empty[Tel]
+        var pos = prefix.length
+        val end = s.length - suffix.length
+        var idx = 1
+        var ok = true
+        while ok && idx < pieces.length - 1 do
+          val seg = pieces(idx)
+          val found =
+            if seg.isEmpty then pos else s.indexOf(seg, pos)
+          if found < 0 || found > end then ok = false
+          else
+            local += Tel.scalar(Text(s.substring(pos, found)))
+            pos = found + seg.length
+            idx += 1
+
+        if !ok then false
+        else
+          local += Tel.scalar(Text(s.substring(pos, end)))
+          out ++= local
+          true
