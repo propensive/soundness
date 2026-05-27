@@ -59,6 +59,14 @@ case class Tels
 
 object Tels:
 
+  // Consolidated names for the schema's companion modules. Mirroring
+  // the `Tel.X` pattern: the underlying top-level objects keep their
+  // canonical names, and `Tels.X` exposes them as singletons.
+  val Axiom:         TelsAxiom.type = TelsAxiom
+  val Decoder:       TelsDecoder.type = TelsDecoder
+  val Layers:        TelsLayers.type = TelsLayers
+  val Reconstructor: TelsReconstructor.type = TelsReconstructor
+
   // Per-axis polarity tristate from §20: "default" means no flag was
   // declared, "loose" means a loosening flag (optional / repeatable)
   // was declared, "tight" means a tightening flag (required /

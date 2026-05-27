@@ -30,9 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package stratiform
 
-export
-  stratiform
-  . { TelElement, Tels, TelsAxiom, TelsDecoder, TelsLayers, TelsReconstructor,
-      TelTypeAssignment, TelValidator }
+import anticipation.*
+import vacuous.*
+
+// Semantic model from §18.2 of the TEL specification — the result of
+// applying type assignment (§20.2) to the presentation model. Lives at
+// top level as `TelElement` and is exposed as `Tel.Element` through a
+// type alias + companion singleton in object Tel.
+
+sealed trait TelElement
+
+object TelElement:
+  case class Node
+     ( keywordIndex: Optional[Int],
+       elementType:  Tels.Type,
+       children:     IArray[TelElement] )
+  extends TelElement
+
+  case class Value
+     ( keywordIndex: Int,
+       scalarType:   Tels.Scalar,
+       text:         Text )
+  extends TelElement

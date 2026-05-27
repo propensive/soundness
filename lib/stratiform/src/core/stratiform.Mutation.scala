@@ -39,7 +39,7 @@ import vacuous.*
 import MutationError.Reason
 
 // Primitive presentation-preserving mutations per §22.2. Each op is a
-// local rewrite addressed by a TelPointer; surrounding atoms, comments,
+// local rewrite addressed by a Tel.Pointer; surrounding atoms, comments,
 // blank lines, and unrelated children are untouched by construction.
 //
 // Pointer conventions:
@@ -52,18 +52,18 @@ import MutationError.Reason
 
 object Mutation:
   enum Op:
-    case UpdateAtom(pointer: TelPointer, atomIndex: Int, text: Text)
-    case Insert(pointer: TelPointer, compound: Tel.Compound)
-    case InsertBefore(pointer: TelPointer, compound: Tel.Compound)
-    case InsertAfter(pointer: TelPointer, compound: Tel.Compound)
-    case Delete(pointer: TelPointer)
-    case Replace(pointer: TelPointer, compound: Tel.Compound)
-    case AttachRemark(pointer: TelPointer, text: Text)
-    case RemoveRemark(pointer: TelPointer)
-    case SetFlag(pointer: TelPointer, keyword: Text)
-    case UnsetFlag(pointer: TelPointer, keyword: Text)
+    case UpdateAtom(pointer: Tel.Pointer, atomIndex: Int, text: Text)
+    case Insert(pointer: Tel.Pointer, compound: Tel.Compound)
+    case InsertBefore(pointer: Tel.Pointer, compound: Tel.Compound)
+    case InsertAfter(pointer: Tel.Pointer, compound: Tel.Compound)
+    case Delete(pointer: Tel.Pointer)
+    case Replace(pointer: Tel.Pointer, compound: Tel.Compound)
+    case AttachRemark(pointer: Tel.Pointer, text: Text)
+    case RemoveRemark(pointer: Tel.Pointer)
+    case SetFlag(pointer: Tel.Pointer, keyword: Text)
+    case UnsetFlag(pointer: Tel.Pointer, keyword: Text)
 
-  private def pointerOf(op: Op): TelPointer = op match
+  private def pointerOf(op: Op): Tel.Pointer = op match
     case Op.UpdateAtom(p, _, _)   => p
     case Op.Insert(p, _)          => p
     case Op.InsertBefore(p, _)    => p
@@ -96,7 +96,7 @@ object Mutation:
   // op against the named child.
   private def transform
        ( subtree:  Tel.Subtree,
-         steps:    IArray[TelPointer.Step],
+         steps:    IArray[Tel.Pointer.Step],
          idx:      Int,
          op:       Op )
   :     Tel.Subtree raises MutationError =
@@ -140,7 +140,7 @@ object Mutation:
   // `step.keyword`. `step.index` defaults to 0 — i.e. "the first match".
   // Counting walks all blocks in order so siblings with the same keyword
   // spread across multiple blocks remain addressable.
-  private def findTarget(blocks: IArray[Tel.Block], step: TelPointer.Step)
+  private def findTarget(blocks: IArray[Tel.Block], step: Tel.Pointer.Step)
   :     (Int, Int) raises MutationError =
     val want = step.index.or(0)
     var seen = 0

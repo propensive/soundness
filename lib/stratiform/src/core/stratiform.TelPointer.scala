@@ -35,13 +35,13 @@ package stratiform
 import anticipation.*
 import vacuous.*
 
-// Logical address into a Tel document. A pointer is an ordered sequence of
-// `Step`s; each step selects a child compound from the current node by
-// keyword. When several siblings share a keyword the optional `index`
-// disambiguates them — `Unset` means "the first" (index 0).
+// Logical address into a Tel document. A pointer is an ordered sequence
+// of `Step`s; each step selects a child compound from the current node
+// by keyword. When several siblings share a keyword the optional
+// `index` disambiguates them — `Unset` means "the first" (index 0).
 //
-// `Empty` refers to the document or compound itself; descending into the
-// root walks the first block-level compound layer of the wrapping Subtree.
+// Exposed as `Tel.Pointer` via type alias + companion singleton in
+// object Tel.
 
 object TelPointer:
   case class Step(keyword: Text, index: Optional[Int])

@@ -34,7 +34,6 @@ package stratiform
 
 import anticipation.*
 import contingency.*
-import fulminate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
@@ -43,23 +42,10 @@ import TelError.Reason
 import Tels.*
 
 // Type assignment algorithm per §20.2 of the TEL specification.
-// Translates a Tel.Document presentation tree under a Tels into a
-// Tel.Element semantic tree. Each compound becomes a Node (Struct- or
-// Flag-typed) and each atom-position scalar becomes a Value.
-//
-// Phase-3 scope: covers Field members with Struct / Scalar / Flag
-// types and Reference resolution to RecordDefinitions and
-// ScalarDefinitions. SelectRef (sum types), schema layers, validator
-// callbacks, and the constraint-violation recovery semantics are
-// deferred. The implementation aborts on the first type-assignment
-// error rather than accruing.
+// Exposed as `Tel.Type` via singleton alias in object Tel.
 
 object TelTypeAssignment:
 
-  // Type-assign without running scalar / struct validators (per §21.4,
-  // when no Registry is supplied no E310 is raised). Accepts any `Tel`
-  // value; the subtree is treated as the document root regardless of
-  // whether it wraps a Tel.Document or a Tel.Compound.
   def assign(tel: Tel, schema: Tels): TelElement raises TelError =
     val compounds: IArray[Tel.Compound] = tel.subtree.children.flatMap(_.compounds)
     val rootChildren = assignChildren(compounds, schema.document, schema)
@@ -68,18 +54,12 @@ object TelTypeAssignment:
 
     TelElement.Node(keywordIndex = Unset, elementType = schema.document, children = rootElements)
 
-  // Type-assign AND validate. The Registry is invoked per §21:
-  // every Scalar value's validators list is applied to the assigned
-  // text; every Struct's validators list is applied to the assigned
-  // Node. An Invalid response raises E310.
   def assign(tel: Tel, schema: Tels, validators: TelValidator.Registry)
   :     TelElement raises TelError =
     val element = assign(tel, schema)
     validateElement(element, validators)
     element
 
-  // Walk the type-assigned tree post-order, invoking validators for
-  // every Scalar value and Struct node.
   private def validateElement
        (element: TelElement, registry: TelValidator.Registry)
   :     Unit raises TelError =
@@ -103,9 +83,6 @@ object TelTypeAssignment:
 
           case _ => ()
 
-  // Resolve a Reference to its concrete Type within the schema. Returns
-  // the input type unchanged if not a Reference. Single-step (per
-  // §20.2: "Reference and SelectRef resolution are single-step").
   private def resolveType(t: Type, schema: Tels): Type raises TelError =
     t match
       case Reference(name) =>
@@ -119,11 +96,6 @@ object TelTypeAssignment:
 
       case other => other
 
-  // Walk the parent struct's members and produce a flat keyword order:
-  // a list of (keyword, member-index, type). For Field members this is
-  // a single entry; for SelectRef members one entry per variant (all
-  // share the member index but carry the variant's Type and a back-
-  // reference to the variant keyword for atom-phase matching).
   private case class KeywordEntry
      ( memberIndex: Int,
        entryType:   Type,
@@ -138,8 +110,6 @@ object TelTypeAssignment:
       parent.members(idx) match
         case f: Field => builder(f.keyword) = KeywordEntry(idx, f.fieldType, f)
         case s: SelectRef =>
-          // Resolve the referenced SelectDefinition and expand its
-          // variants into one keyword entry per variant.
           val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
             abort(TelError(Reason.UnresolvedReference))
 
@@ -151,13 +121,12 @@ object TelTypeAssignment:
 
             v += 1
 
-        case _: Exclude => () // Exclude is layer-only
+        case _: Exclude => ()
 
       idx += 1
 
     builder.toMap
 
-  // Atom-assignable check (after Reference resolution).
   private def atomAssignable(member: Member, schema: Tels): Boolean raises TelError =
     member match
       case f: Field =>
@@ -167,8 +136,6 @@ object TelTypeAssignment:
           case _         => false
 
       case s: SelectRef =>
-        // SelectRef is atom-assignable iff every variant of the
-        // referenced SelectDefinition resolves to Flag (§20).
         val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
           abort(TelError(Reason.UnresolvedReference))
 
@@ -179,9 +146,6 @@ object TelTypeAssignment:
 
       case _: Exclude => false
 
-  // The atom phase of §20.2: walk the parent compound's atoms in order,
-  // advancing through the member list and assigning each atom to the
-  // next atom-assignable member.
   private def assignAtoms
        (atoms:  IArray[Tel.Atom],
         parent: Struct,
@@ -197,12 +161,6 @@ object TelTypeAssignment:
         case Tel.Atom.Source(t)     => t
         case Tel.Atom.Literal(_, t) => t
 
-      // Find the next atom-assignable member that can accept this atom.
-      // Scalar Fields accept any atom positionally. Flag Fields and
-      // SelectRef variants only accept atoms whose text matches the
-      // declared keyword — non-matching Flag positions are skipped per
-      // §20.2 (Flag fields are switch-like and may be omitted), so the
-      // search proceeds to the next position.
       var consumed = false
       while !consumed && pos < parent.members.length do
         if !atomAssignable(parent.members(pos), schema) then pos += 1
@@ -224,9 +182,6 @@ object TelTypeAssignment:
               case _ => abort(TelError(Reason.AtomAtNonAssignablePos))
 
           case s: SelectRef =>
-            // All-Flag SelectRef: atom text must match one of the
-            // referenced SelectDefinition's variant keywords. A no-match
-            // skips the SelectRef position and continues searching.
             val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
               abort(TelError(Reason.UnresolvedReference))
 
@@ -245,9 +200,6 @@ object TelTypeAssignment:
 
     IArray.from(results)
 
-  // The compound-child phase of §20.2. Walks compound children, looks
-  // up each keyword in the parent's keyword map, recurses according to
-  // the child's resolved type, and emits an Element per child.
   private def assignChildren
        (compounds: IArray[Tel.Compound],
         parent:    Struct,
@@ -267,10 +219,6 @@ object TelTypeAssignment:
 
     IArray.from(results)
 
-  // Constraint check per §20.2: required members must be filled either
-  // by an atom-assigned Value, a compound-assigned Node, or — for Scalar
-  // Fields only — a default value. Both atom-phase and child-phase
-  // contribute candidates; the check runs after the two are combined.
   private def applyConstraints
        ( parent:        Struct,
          atomElements:  IArray[TelElement],
@@ -302,8 +250,6 @@ object TelTypeAssignment:
 
     IArray.from(results)
 
-  // Assign a type to a single compound child and recurse into its body
-  // (atoms first, then sub-compounds).
   private def assignCompound
        (compound: Tel.Compound,
         entry:    KeywordEntry,
@@ -336,5 +282,4 @@ object TelTypeAssignment:
         TelElement.Node(entry.memberIndex, Flag, IArray.empty)
 
       case _: Reference =>
-        // resolveType is single-step; nested references shouldn't reach here.
         abort(TelError(Reason.UnresolvedReference))
