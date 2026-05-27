@@ -550,6 +550,7 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
       val line = lines(cursor)
       cursor += 1
       val parsed = parseCompoundLine(line, indent)
+      tabulation.let(validateTabulatedRow(line, parsed, _))
       val extraAtom =
         if tabulation.absent then parseSourceOrLiteralAtom(line.leadingSpaces)
         else Unset
@@ -583,6 +584,62 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
   // the text between a marker and the next hard-space-marker boundary
   // (or end of line for the final column), with the introducer space
   // consumed per §16.1.
+  // §16 row-against-tabulation validation: tracks the column index as
+  // we walk the parsed compound's keyword + inline atoms, computing
+  // each atom's absolute start position from its precedingSpaces.
+  // Compares against the tabulation's column markers:
+  //   - A hard space (precedingSpaces >= 2) terminates the current
+  //     column's value; it must end at *some* later column's marker
+  //     (allowing intermediate columns to be empty / skipped).
+  //   - Ending strictly between two markers in a bounded column is
+  //     E117 (hard space at wrong position) or E119 (column value
+  //     too wide), depending on whether the next marker can still
+  //     be reached: e.g. ending before markers(col+1) is E117; past
+  //     markers(col+1) without matching any later marker is E119.
+  //   - A hard space inside the last column (no further marker) is
+  //     E118 (consecutive spaces inside a value).
+  //   - A single space followed by an atom at the next column's marker
+  //     transitions us to that column with no separator violation.
+  // Source / Literal atoms can't appear in tabulated rows, so we
+  // ignore them.
+  private def validateTabulatedRow(line: Line, compound: Tel.Compound, tab: Tel.Tabulation)
+  :     Unit raises TelError =
+    val markers = tab.markerOffsets
+    var pos = line.leadingSpaces + compound.keyword.s.length
+    var col = 0
+
+    var i = 0
+    while i < compound.atoms.length do
+      compound.atoms(i) match
+        case Tel.Atom.Inline(text, precedingSpaces) =>
+          pos += precedingSpaces
+          if precedingSpaces >= 2 then
+            if col + 1 >= markers.length then
+              // Hard space inside the last (unbounded) column.
+              abort(TelError(Reason.ConsecutiveSpacesInValue))
+            else
+              // Find some j > col such that markers(j) == pos; if so
+              // we transition to column j (possibly skipping empty
+              // intermediates).
+              var j = col + 1
+              while j < markers.length && markers(j) != pos do j += 1
+              if j < markers.length then col = j
+              else if pos < markers(col + 1)
+              then abort(TelError(Reason.HardSpaceWrongPosition))
+              else abort(TelError(Reason.ColumnValueTooWide))
+          else
+            // Single-space inter-atom separator. May line up with the
+            // next column's marker (column transition) or just stay in
+            // the current column.
+            if col + 1 < markers.length && pos == markers(col + 1)
+            then col += 1
+
+          pos += text.s.length
+
+        case _ => ()
+
+      i += 1
+
   private def parseTabulationLine(line: Line): Tel.Tabulation raises TelError =
     val content = line.content
     val markers = scala.collection.mutable.ArrayBuffer.empty[Int]
