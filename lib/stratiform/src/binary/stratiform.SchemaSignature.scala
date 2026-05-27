@@ -32,35 +32,106 @@
                                                                                                   */
 package stratiform
 
+import scala.language.unsafeNulls
+
 import anticipation.*
-import fulminate.*
+import contingency.*
 
-object BintelError:
+// §8.2 of the BinTEL spec — palimpsest schema-signature construction
+// at byte cadence k = 2. Given n 32-byte component hashes, the signature
+// is a `30 + 2n`-byte sequence that uniquely identifies the ordered
+// component sequence (under the assumption that no two candidate
+// component hashes share the same final 16 bits).
 
-  object Reason:
-    given communicable: Reason is Communicable =
-      case BadMagic            => m"the magic number is missing or does not match B2 C4 B5 BB"
-      case VarintError         => m"a variable-length integer in the stream is invalid"
-      case BadSignatureLength  => m"the schema signature length is not 30 + 2n for any n ≥ 1"
-      case BadSignature        => m"the schema signature does not decode against the library"
-      case BadKeywordIndex     => m"a keyword index exceeds the parent's flat-keyword count"
-      case ValueTruncated      => m"a Scalar value's byte length extends beyond end of input"
-      case BadUtf8             => m"a Scalar value's bytes are not valid UTF-8"
-      case TrailingBytes       => m"the document root completed with input bytes remaining"
-      case UnexpectedEoi       => m"the decoder requested bytes beyond end of input"
-      case ReferenceUnresolved => m"a Reference type in the schema does not resolve"
+object SchemaSignature:
 
-  enum Reason(val number: Int) extends Clarification:
-    case BadMagic            extends Reason(1)
-    case VarintError         extends Reason(2)
-    case BadSignatureLength  extends Reason(3)
-    case BadSignature        extends Reason(4)
-    case BadKeywordIndex     extends Reason(5)
-    case ValueTruncated      extends Reason(6)
-    case BadUtf8             extends Reason(7)
-    case TrailingBytes       extends Reason(8)
-    case UnexpectedEoi       extends Reason(9)
-    case ReferenceUnresolved extends Reason(10)
+  // The constant component-hash size in bytes (SHA-256 width).
+  final val HashSize: Int = 32
 
-case class BintelError(reason: BintelError.Reason)(using Diagnostics)
-extends Error(609, reason.number)(m"the BinTEL stream is invalid because $reason")
+  // §8.2 encoding. Given an ordered sequence of n component hashes
+  // (each `HashSize` bytes), compute S = 0 then for each h_i in order
+  // S = (S << 16) XOR h_i, and emit S as `30 + 2n` bytes big-endian.
+  def encode(hashes: List[Data]): Data raises BintelError =
+    if hashes.isEmpty then abort(BintelError(BintelError.Reason.BadSignatureLength))
+
+    var bad = false
+    val it = hashes.iterator
+
+    while it.hasNext && !bad do if it.next().length != HashSize then bad = true
+    if bad then abort(BintelError(BintelError.Reason.BadSignatureLength))
+
+    val n = hashes.length
+    val outputBits = 256 + (n - 1) * 16
+    val outputBytes = (outputBits + 7) / 8
+
+    var acc: BigInt = BigInt(0)
+    hashes.foreach: h =>
+      acc = (acc << 16) ^ bytesToBigInt(h)
+
+    val raw = acc.toByteArray
+    val out = new Array[Byte](outputBytes)
+
+    if raw.length >= outputBytes then
+      System.arraycopy(raw, raw.length - outputBytes, out, 0, outputBytes)
+    else
+      System.arraycopy(raw, 0, out, outputBytes - raw.length, raw.length)
+
+    out.asInstanceOf[IArray[Byte]]
+
+  // §8.2 decoding. Given a signature of length L = `30 + 2n` for some
+  // n ≥ 1 and a library of candidate component hashes, recover the
+  // ordered sequence (h_0, …, h_{n-1}). The library MUST cover every
+  // component used by the signature, otherwise raises `BadSignature`.
+  // For a malformed length raises `BadSignatureLength`.
+  def decode(signature: Data, library: List[Data]): List[Data] raises BintelError =
+    val L = signature.length
+    if L < 32 || (L - 30) % 2 != 0
+    then abort(BintelError(BintelError.Reason.BadSignatureLength))
+
+    val n = (L - 30) / 2
+    val s0 = bytesToBigInt(signature)
+
+    // Build a quick lookup table keyed by the lowest 16 bits of each
+    // candidate hash. We only need the last 16 bits of each hash to
+    // identify it as the next component.
+    val byLowBits =
+      library.groupBy: h =>
+        ((h(h.length - 2) & 0xff) << 8) | (h(h.length - 1) & 0xff)
+
+    // Backwards-decode by repeatedly peeling off the trailing 16 bits.
+    // Per the spec, a unique decoding is guaranteed when no two
+    // library candidates share the same low 16 bits.
+    def recur(s: BigInt, remaining: Int, acc: List[Data]): List[Data] raises BintelError =
+      if remaining == 0 then
+        if s == BigInt(0) then acc
+        else abort(BintelError(BintelError.Reason.BadSignature))
+      else
+        val low = (s & BigInt(0xffff)).toInt
+
+        byLowBits.getOrElse(low, Nil) match
+          case h :: Nil =>
+            val nextS = (s ^ bytesToBigInt(h)) >> 16
+            recur(nextS, remaining - 1, h :: acc)
+
+          case Nil =>
+            abort(BintelError(BintelError.Reason.BadSignature))
+
+          case multiple =>
+            // For now we don't backtrack; report ambiguity as bad
+            // signature. Per the spec collision is computationally
+            // infeasible for SHA-256, so this should never trigger
+            // in practice for genuine schema libraries.
+            abort(BintelError(BintelError.Reason.BadSignature))
+
+    recur(s0, n, Nil)
+
+  private def bytesToBigInt(bytes: Data): BigInt =
+    val arr = new Array[Byte](bytes.length + 1)
+    arr(0) = 0
+    var i = 0
+
+    while i < bytes.length do
+      arr(i + 1) = bytes(i)
+      i += 1
+
+    BigInt(arr)
