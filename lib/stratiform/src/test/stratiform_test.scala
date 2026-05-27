@@ -171,7 +171,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         val doc = bytes.read[Tel]
         try
-          TelTypeAssignment.assign(doc, TelsAxiom.tels)
+          Tel.Type.assign(doc, TelsAxiom.tels)
           "ok"
         catch case e: TelError => s"failed-with-${e.reason}"
       . assert(_ == "ok")
@@ -227,11 +227,11 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"assigns Value for present scalar field"):
         val doc = t"name Alice\nage 30\n".read[Tel]
-        val root = TelTypeAssignment.assign(doc, personSchema)
+        val root = Tel.Type.assign(doc, personSchema)
         root match
-          case TelElement.Node(_, _, children) =>
+          case Tel.Element.Node(_, _, children) =>
             children.collect:
-              case TelElement.Value(_, _, t) => t
+              case Tel.Element.Value(_, _, t) => t
             .toList
 
           case _ => Nil
@@ -239,7 +239,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"raises E307 when required scalar field is missing"):
         val doc = t"age 30\n".read[Tel]
-        capture[TelError](TelTypeAssignment.assign(doc, personSchema)).reason
+        capture[TelError](Tel.Type.assign(doc, personSchema)).reason
       . assert(_ == TelError.Reason.RequiredMemberAbsent)
 
       // A schema with a Status SelectRef whose variants are all Flag,
@@ -265,51 +265,51 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"SelectRef variant matches compound child"):
         val doc = t"active\n".read[Tel]
-        val root = TelTypeAssignment.assign(doc, statusSchema)
+        val root = Tel.Type.assign(doc, statusSchema)
         root match
-          case TelElement.Node(_, _, children) => children.length
+          case Tel.Element.Node(_, _, children) => children.length
           case _                               => -1
       . assert(_ == 1)
 
       test(m"unknown SelectRef variant raises E306"):
         val doc = t"unknown\n".read[Tel]
-        capture[TelError](TelTypeAssignment.assign(doc, statusSchema)).reason
+        capture[TelError](Tel.Type.assign(doc, statusSchema)).reason
       . assert(_ == TelError.Reason.UnknownKeyword)
 
     suite(m"Validators"):
-      val reg = TelValidator.Registry.builtins
+      val reg = Tel.Validator.Registry.builtins
 
       test(m"string validator accepts any text"):
-        reg(TelValidator.Request.Scalar(t"string", t"anything"))
-      . assert(_ == TelValidator.Response.Valid)
+        reg(Tel.Validator.Request.Scalar(t"string", t"anything"))
+      . assert(_ == Tel.Validator.Response.Valid)
 
       test(m"identifier accepts kebab-case"):
-        reg(TelValidator.Request.Scalar(t"identifier", t"first-name"))
-      . assert(_ == TelValidator.Response.Valid)
+        reg(Tel.Validator.Request.Scalar(t"identifier", t"first-name"))
+      . assert(_ == Tel.Validator.Response.Valid)
 
       test(m"identifier rejects leading hyphen"):
-        reg(TelValidator.Request.Scalar(t"identifier", t"-leading")) match
-          case TelValidator.Response.Invalid(_) => true
+        reg(Tel.Validator.Request.Scalar(t"identifier", t"-leading")) match
+          case Tel.Validator.Response.Invalid(_) => true
           case _                                => false
       . assert(identity)
 
       test(m"type-name accepts PascalCase"):
-        reg(TelValidator.Request.Scalar(t"type-name", t"PhoneNumber"))
-      . assert(_ == TelValidator.Response.Valid)
+        reg(Tel.Validator.Request.Scalar(t"type-name", t"PhoneNumber"))
+      . assert(_ == Tel.Validator.Response.Valid)
 
       test(m"type-name rejects leading lowercase"):
-        reg(TelValidator.Request.Scalar(t"type-name", t"phoneNumber")) match
-          case TelValidator.Response.Invalid(_) => true
+        reg(Tel.Validator.Request.Scalar(t"type-name", t"phoneNumber")) match
+          case Tel.Validator.Response.Invalid(_) => true
           case _                                => false
       . assert(identity)
 
       test(m"sigil accepts a permitted symbol"):
-        reg(TelValidator.Request.Scalar(t"sigil", t"#"))
-      . assert(_ == TelValidator.Response.Valid)
+        reg(Tel.Validator.Request.Scalar(t"sigil", t"#"))
+      . assert(_ == Tel.Validator.Response.Valid)
 
       test(m"sigil rejects letters"):
-        reg(TelValidator.Request.Scalar(t"sigil", t"a")) match
-          case TelValidator.Response.Invalid(_) => true
+        reg(Tel.Validator.Request.Scalar(t"sigil", t"a")) match
+          case Tel.Validator.Response.Invalid(_) => true
           case _                                => false
       . assert(identity)
 
@@ -329,7 +329,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         val doc = t"name -bad\n".read[Tel]
         capture[TelError]:
-          TelTypeAssignment.assign(doc, schemaWithValidator, TelValidator.Registry.builtins)
+          Tel.Type.assign(doc, schemaWithValidator, Tel.Validator.Registry.builtins)
         .reason
       . assert(_ == TelError.Reason.ValidatorRejected)
 
@@ -423,21 +423,21 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"UpdateAtom rewrites the targeted inline atom"):
         val tel    = doc("name Alice\n")
-        val ptr    = TelPointer.of(t"name")
+        val ptr    = Tel.Pointer.of(t"name")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"Bob"))
         Tel.show(result.document.vouch)
       . assert(_ == t"name Bob\n")
 
       test(m"AttachRemark adds a remark to the targeted compound"):
         val tel    = doc("name Alice\n")
-        val ptr    = TelPointer.of(t"name")
+        val ptr    = Tel.Pointer.of(t"name")
         val result = Mutation(tel, Mutation.Op.AttachRemark(ptr, t"primary contact"))
         Tel.show(result.document.vouch)
       . assert(_ == t"name Alice  # primary contact\n")
 
       test(m"RemoveRemark drops a previously attached remark"):
         val tel    = doc("name Alice  # noted\n")
-        val ptr    = TelPointer.of(t"name")
+        val ptr    = Tel.Pointer.of(t"name")
         val result = Mutation(tel, Mutation.Op.RemoveRemark(ptr))
         Tel.show(result.document.vouch)
       . assert(_ == t"name Alice\n")
@@ -448,14 +448,14 @@ object Tests extends Suite(m"Stratiform Tests"):
                           (t"email",
                            IArray(Tel.Atom.Inline(t"alice@example.com", 1)),
                            Unset, IArray.empty)
-        val ptr    = TelPointer.of(t"contact")
+        val ptr    = Tel.Pointer.of(t"contact")
         val result = Mutation(tel, Mutation.Op.Insert(ptr, newCompound))
         Tel.show(result.document.vouch)
       . assert(_ == t"contact\n  name Alice\n  email alice@example.com\n")
 
       test(m"Delete removes the addressed compound"):
         val tel    = doc("name Alice\nemail alice@example.com\n")
-        val ptr    = TelPointer.of(t"email")
+        val ptr    = Tel.Pointer.of(t"email")
         val result = Mutation(tel, Mutation.Op.Delete(ptr))
         Tel.show(result.document.vouch)
       . assert(_ == t"name Alice\n")
@@ -464,7 +464,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val tel    = doc("b two\n")
         val a      = Tel.Compound
                       (t"a", IArray(Tel.Atom.Inline(t"one", 1)), Unset, IArray.empty)
-        val ptr    = TelPointer.of(t"b")
+        val ptr    = Tel.Pointer.of(t"b")
         val result = Mutation(tel, Mutation.Op.InsertBefore(ptr, a))
         Tel.show(result.document.vouch)
       . assert(_ == t"a one\nb two\n")
@@ -473,7 +473,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val tel    = doc("a one\n")
         val b      = Tel.Compound
                       (t"b", IArray(Tel.Atom.Inline(t"two", 1)), Unset, IArray.empty)
-        val ptr    = TelPointer.of(t"a")
+        val ptr    = Tel.Pointer.of(t"a")
         val result = Mutation(tel, Mutation.Op.InsertAfter(ptr, b))
         Tel.show(result.document.vouch)
       . assert(_ == t"a one\nb two\n")
@@ -483,28 +483,28 @@ object Tests extends Suite(m"Stratiform Tests"):
         val replacement = Tel.Compound
                            (t"name", IArray(Tel.Atom.Inline(t"Charlie", 1)),
                             Unset, IArray.empty)
-        val ptr    = TelPointer.of(t"name")
+        val ptr    = Tel.Pointer.of(t"name")
         val result = Mutation(tel, Mutation.Op.Replace(ptr, replacement))
         Tel.show(result.document.vouch)
       . assert(_ == t"name Charlie\n")
 
       test(m"SetFlag attaches a flag-typed child compound"):
         val tel    = doc("opt\n")
-        val ptr    = TelPointer.of(t"opt")
+        val ptr    = Tel.Pointer.of(t"opt")
         val result = Mutation(tel, Mutation.Op.SetFlag(ptr, t"enabled"))
         Tel.show(result.document.vouch)
       . assert(_ == t"opt\n  enabled\n")
 
       test(m"UnsetFlag removes a previously set flag"):
         val tel    = doc("opt\n  enabled\n")
-        val ptr    = TelPointer.of(t"opt")
+        val ptr    = Tel.Pointer.of(t"opt")
         val result = Mutation(tel, Mutation.Op.UnsetFlag(ptr, t"enabled"))
         Tel.show(result.document.vouch)
       . assert(_ == t"opt\n")
 
       test(m"sequenced ops apply in order"):
         val tel    = doc("name Alice\n")
-        val ptr    = TelPointer.of(t"name")
+        val ptr    = Tel.Pointer.of(t"name")
         val ops    = Seq
                       ( Mutation.Op.UpdateAtom(ptr, 0, t"Bob"),
                         Mutation.Op.AttachRemark(ptr, t"note") )
@@ -514,7 +514,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"pointer with no match raises PointerNotFound"):
         val tel = doc("name Alice\n")
-        val ptr = TelPointer.of(t"missing")
+        val ptr = Tel.Pointer.of(t"missing")
         capture[MutationError](Mutation(tel, Mutation.Op.Delete(ptr))).reason
       . assert(_ == MutationError.Reason.PointerNotFound)
 
@@ -566,8 +566,8 @@ object Tests extends Suite(m"Stratiform Tests"):
         val original = doc("name Alice\n")
         val edited =
           original.edited
-            ( Edit.at(TelPointer.of(t"name")).update(t"Bob")
-           ++ Edit.at(TelPointer.Empty)
+            ( Edit.at(Tel.Pointer.of(t"name")).update(t"Bob")
+           ++ Edit.at(Tel.Pointer.Empty)
                   .insert(Edit.compound(t"email", t"b@example.com")) )
 
         val printed   = Tel.show(edited.document.vouch)
@@ -609,14 +609,14 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"single-op edit changes one atom"):
         val tel  = doc("name Alice\n")
-        val edit = Edit.at(TelPointer.of(t"name")).update(t"Bob")
+        val edit = Edit.at(Tel.Pointer.of(t"name")).update(t"Bob")
         Tel.show(tel.edited(edit).document.vouch)
       . assert(_ == t"name Bob\n")
 
       test(m"chained edits apply in order"):
         val tel = doc("name Alice\n")
-        val edit = Edit.at(TelPointer.of(t"name")).update(t"Bob")
-                ++ Edit.at(TelPointer.of(t"name")).attachRemark(t"note")
+        val edit = Edit.at(Tel.Pointer.of(t"name")).update(t"Bob")
+                ++ Edit.at(Tel.Pointer.of(t"name")).attachRemark(t"note")
 
         Tel.show(tel.edited(edit).document.vouch)
       . assert(_ == t"name Bob  # note\n")
@@ -628,8 +628,8 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"inserting via Edit composes with deletion"):
         val tel  = doc("a 1\nb 2\n")
-        val edit = Edit.at(TelPointer.of(t"b")).delete
-                ++ Edit.at(TelPointer.of(t"a")).insertAfter(Edit.compound(t"c", t"3"))
+        val edit = Edit.at(Tel.Pointer.of(t"b")).delete
+                ++ Edit.at(Tel.Pointer.of(t"a")).insertAfter(Edit.compound(t"c", t"3"))
 
         Tel.show(tel.edited(edit).document.vouch)
       . assert(_ == t"a 1\nc 3\n")

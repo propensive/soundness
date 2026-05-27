@@ -50,7 +50,7 @@ object Edit:
   // Begin a new edit anchored at `pointer`. The returned cursor exposes
   // the per-operation builders; each call produces a fresh `Edit` value
   // that the caller may compose further with `++`.
-  def at(pointer: TelPointer): Cursor = Cursor(pointer)
+  def at(pointer: Tel.Pointer): Cursor = Cursor(pointer)
 
   // Construct a fresh compound from a keyword and a flat list of inline-
   // atom texts. Convenience for assembling Insert / Replace payloads
@@ -62,7 +62,7 @@ object Edit:
   // A cursor binds a pointer to the upcoming operation. Each operation
   // method returns an `Edit` (singleton op-log) that can be `++`-chained
   // with further edits.
-  case class Cursor(pointer: TelPointer):
+  case class Cursor(pointer: Tel.Pointer):
     def update(text: Text): Edit = update(0, text)
     def update(atomIndex: Int, text: Text): Edit =
       Edit.single(Mutation.Op.UpdateAtom(pointer, atomIndex, text))
