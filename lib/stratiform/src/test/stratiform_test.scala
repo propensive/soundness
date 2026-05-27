@@ -1300,6 +1300,69 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[BintelError](SchemaSignature.decode(sig, List(h2))).reason
       . assert(_ == BintelError.Reason.BadSignature)
 
+    suite(m"BinTEL §8.1 schema signature from document"):
+      test(m"single-component signature for a no-layer schema is 32 bytes"):
+        val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+        val source =
+          val arr = stream.readAllBytes().nn
+          stream.close()
+          IArray.from(arr)
+
+        val sig = SchemaSignature.fromDocument(source.read[Tel], TelsAxiom.tels)
+        sig.length
+      . assert(_ == 32)
+
+      test(m"no-layer schema signature equals the value hash of the document"):
+        val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+        val source =
+          val arr = stream.readAllBytes().nn
+          stream.close()
+          IArray.from(arr)
+
+        val sig = SchemaSignature.fromDocument(source.read[Tel], TelsAxiom.tels)
+        val hash = Tel.Type.assign(source.read[Tel], TelsAxiom.tels).valueHash.data
+        sig.toSeq == hash.toSeq
+      . assert(_ == true)
+
+      test(m"schema with a single layer produces a 34-byte signature"):
+        val src = """tel 1.0
+                    |
+                    |name basic
+                    |
+                    |record Item
+                    |  field key Identifier
+                    |
+                    |document
+                    |  field key Identifier
+                    |
+                    |layer ext
+                    |  scalar Number identifier
+                    |""".stripMargin.tt
+        val sig = SchemaSignature.fromDocument(src.read[Tel], TelsAxiom.tels)
+        sig.length
+      . assert(_ == 34)
+
+      test(m"two-layer schema produces a 36-byte signature"):
+        val src = """tel 1.0
+                    |
+                    |name multi
+                    |
+                    |record Item
+                    |  field key Identifier
+                    |
+                    |document
+                    |  field key Identifier
+                    |
+                    |layer ext1
+                    |  scalar Number identifier
+                    |
+                    |layer ext2
+                    |  scalar Symbol identifier
+                    |""".stripMargin.tt
+        val sig = SchemaSignature.fromDocument(src.read[Tel], TelsAxiom.tels)
+        sig.length
+      . assert(_ == 36)
+
     suite(m"BinTEL §3 value hash"):
       test(m"valueHash is deterministic"):
         val tel = t"name Alice\n".read[Tel]
