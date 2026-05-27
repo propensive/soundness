@@ -37,100 +37,104 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
 
-case class FPerson(name: Text, age: Int, email: Text) derives CanEqual
-case class FAddress(street: Text, city: Text, zip: Text) derives CanEqual
-case class FContact(person: FPerson, address: FAddress) derives CanEqual
+case class APerson(name: Text, age: Int, email: Text) derives CanEqual
+case class AContact(person: APerson, company: Text) derives CanEqual
 
-object FocusTests extends Suite(m"Ypsiloid focus + position tests"):
+object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
 
-  case class Captured
-    ( items: List[(Text, Optional[Int], Optional[Int])] = Nil )
-    ( using Diagnostics )
+  case class Issues(items: List[(Text, YamlError)] = Nil)(using Diagnostics)
   extends Error(m"${items.length} validation issues"):
-    def +(focus: Text, line: Optional[Int], column: Optional[Int]): Captured =
-      Captured(items :+ (focus, line, column))
+    def +(focus: Text, error: YamlError): Issues = Issues(items :+ (focus, error))
 
-  private def captureFoci[result](yaml: Yaml)
-                                 (decode: Yaml => result raises YamlError tracks Yaml.Focus)
-  :   List[(Text, Optional[Int], Optional[Int])] =
-    validate[Yaml.Focus](Captured()):
+  private def validateYaml[result](yaml: Yaml)
+                                  (decode: Yaml => result raises YamlError tracks Yaml.Focus)
+  :   Issues =
+    validate[Yaml.Focus](Issues()):
       case error: YamlError =>
-        val position = prior.let(_.position)
-        accrual + ( prior.let(_.pointer.encode).or(t"#"),
-                    position.let(_.line),
-                    position.let(_.column) )
-    . within(decode(yaml)).items
+        accrual + (prior.let(_.pointer.encode).or(t"#"), error)
+    . within(decode(yaml))
 
   def run(): Unit =
-    suite(m"Pointer-only focus (untracked Yaml)"):
-      test(m"Missing field reports the focus pointer (no position)"):
-        val yaml = t"name: Alice\nage: 30".read[Yaml]
-        captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to(Set)
-      . assert(_ == Set("#/email"))
+    suite(m"Single-error decoding (sanity)"):
+      test(m"Fully-valid object: no errors accrued"):
+        val yaml = t"name: Alice\nage: 30\nemail: a@b.c\n".read[Yaml]
+        validateYaml(yaml)(_.as[APerson]).items.length
+      . assert(_ == 0)
 
-      test(m"Wrong-type field reports the focus pointer (no position)"):
-        val yaml = t"name: Alice\nage: thirty\nemail: a@b".read[Yaml]
-        captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to(Set)
-      . assert(_ == Set("#/age"))
+      test(m"Single missing field: one error"):
+        val yaml = t"name: Alice\nage: 30\n".read[Yaml]
+        validateYaml(yaml)(_.as[APerson]).items.length
+      . assert(_ == 1)
 
-      test(m"Nested case-class missing field reports root-first path"):
-        val yaml = t"""
-person:
-  name: X
-  age: 1
-  email: x@y
-address:
-  street: S
-""".read[Yaml]
-        // address is missing both `city` and `zip`; primitive
-        // decoders raise+yet on the `Unset` sentinel so both accrue
-        // their own errors rather than the first one aborting the
-        // whole decode.
-        captureFoci(yaml)(_.as[FContact]).map(_(0).s).to(Set)
-      . assert(_ == Set("#/address/city", "#/address/zip"))
+      test(m"Single wrong-type field: one error"):
+        val yaml = t"name: Alice\nage: thirty\nemail: a@b\n".read[Yaml]
+        validateYaml(yaml)(_.as[APerson]).items.length
+      . assert(_ == 1)
 
-      test(m"Untracked roots leave the focus position Unset"):
-        val yaml = t"name: Alice\nage: 30".read[Yaml]
-        captureFoci(yaml)(_.as[FPerson]).forall((_, line, _) => line == Unset)
-      . assert(identity)
-
-    suite(m"Position-aware focus (tracked Yaml)"):
-      given Yaml.Tracking = Yaml.Tracking.On
-
-      test(m"Tracked root: focus pointers are still correct"):
-        // The decoder still aborts on first error (raise+yet is a PR 3
-        // change), so position population via `as[T]`'s Foci.supplement
-        // doesn't fire when an error short-circuits the decode. The
-        // focus *path* is registered by the focus block's try/finally
-        // either way, so we verify that path here and exercise the
-        // `withPosition` plumbing in a separate direct test below.
-        val yaml = t"name: Alice\nage: 30".read[Yaml]
-        captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to(Set)
-      . assert(_ == Set("#/email"))
-
-      test(m"Nested missing field reports root-first path on a tracked root"):
-        val source = t"""person:
-  name: C
-  age: 25
-  email: c@x
-address:
-  street: X
-"""
-        captureFoci(source.read[Yaml])(_.as[FContact]).map(_(0).s).to(Set)
-      . assert(_ == Set("#/address/city", "#/address/zip"))
-
-      test(m"withPosition on a tracked Yaml resolves the pointer to a real position"):
-        // Direct exercise of `Yaml.Focus#withPosition`. Even though the
-        // current decoder aborts before `as[T]`'s `Foci.supplement` can
-        // run, the plumbing is wired correctly — once primitive
-        // decoders gain raise+yet sentinels in PR 3, wrong-type errors
-        // will land with `position` populated through this same path.
-        val source = t"name: Alice\nage: 30\nemail: a@b\n"
-        val yaml = source.read[Yaml]
-        Yaml.Focus(YamlPath()(t"age")).withPosition(yaml).position.let(_.line)
+    suite(m"Multiple missing fields"):
+      test(m"Two missing primitive fields accrue two errors"):
+        val yaml = t"name: Alice\n".read[Yaml]
+        validateYaml(yaml)(_.as[APerson]).items.length
       . assert(_ == 2)
 
-      test(m"withPosition leaves position Unset when the pointer doesn't resolve"):
-        val yaml = t"name: Alice".read[Yaml]
-        Yaml.Focus(YamlPath()(t"missing")).withPosition(yaml).position
-      . assert(_ == Unset)
+      test(m"Pointers identify the missing fields"):
+        val yaml = t"name: Alice\n".read[Yaml]
+        validateYaml(yaml)(_.as[APerson]).items.map(_(0).s).to(Set)
+      . assert(_ == Set("#/age", "#/email"))
+
+      test(m"Each missing-field error has reason Absent"):
+        val yaml = t"name: Alice\n".read[Yaml]
+        validateYaml(yaml)(_.as[APerson]).items.all:
+          case (_, err) => err.reason == YamlError.Reason.Absent
+      . assert(identity)
+
+      test(m"Three missing fields: three errors accrued"):
+        val yaml = t"{}".read[Yaml]
+        validateYaml(yaml)(_.as[APerson]).items.length
+      . assert(_ == 3)
+
+    suite(m"Multiple wrong-type fields"):
+      test(m"Two wrong types accrue two errors"):
+        val yaml = t"name: 42\nage: thirty\nemail: x@y\n".read[Yaml]
+        validateYaml(yaml)(_.as[APerson]).items.length
+      . assert(_ == 2)
+
+      test(m"Pointers identify the wrong-type fields"):
+        val yaml = t"name: 42\nage: thirty\nemail: x@y\n".read[Yaml]
+        validateYaml(yaml)(_.as[APerson]).items.map(_(0).s).to(Set)
+      . assert(_ == Set("#/name", "#/age"))
+
+      test(m"Wrong-type errors have reason NotType"):
+        val yaml = t"name: 42\nage: thirty\nemail: x@y\n".read[Yaml]
+        validateYaml(yaml)(_.as[APerson]).items.all:
+          case (_, err) => err.reason match
+            case YamlError.Reason.NotType(_, _) => true
+            case _                              => false
+      . assert(identity)
+
+    suite(m"Missing + wrong-type mixed"):
+      test(m"One wrong-type plus two missing: three errors at the right pointers"):
+        val yaml = t"name: 42\n".read[Yaml]
+        validateYaml(yaml)(_.as[APerson]).items.map(_(0).s).to(Set)
+      . assert(_ == Set("#/name", "#/age", "#/email"))
+
+    suite(m"Nested case-class errors"):
+      test(m"Missing nested case-class field expands per sub-field"):
+        // Without a `Default[APerson]` (PR 4), a missing nested case
+        // class hits the wrong-shape branch of the inner conjunction,
+        // which builds against an empty mapping and lets each sub-
+        // field raise its own missing-field error.
+        val yaml = t"company: Acme\n".read[Yaml]
+        validateYaml(yaml)(_.as[AContact]).items.map(_(0).s).to(Set)
+      . assert: paths =>
+          paths == Set
+           ( "#/person/name",
+             "#/person/age",
+             "#/person/email" )
+
+      test(m"Mixed errors at different depths accrue together"):
+        val yaml = t"person:\n  name: D\ncompany: Acme\n".read[Yaml]
+        // person is present but missing `age` and `email`; company is
+        // present.
+        validateYaml(yaml)(_.as[AContact]).items.map(_(0).s).to(Set)
+      . assert(_ == Set("#/person/age", "#/person/email"))
