@@ -88,6 +88,41 @@ object TelParser:
   private final val BOM1: Byte = 0xBB.toByte
   private final val BOM2: Byte = 0xBF.toByte
 
+  // ── SWAR (SIMD-within-a-register) byte scan helpers ──────────────────────
+  // The inner byte-scan loops in the parser read a `Long` of 8 bytes at a
+  // time from the buffer and use the classic "haszero" trick to detect a
+  // target byte across all 8 lanes in two arithmetic ops. On long content
+  // runs (literal payloads, source-atom lines, inline atoms) this replaces
+  // an 8-iteration byte loop with one Long load plus a couple of bitwise
+  // operations.
+
+  // `classOf[Array[Long]]` resolves to `java.lang.Object` under some Scala 3
+  // compilation paths (notably macro-expansion contexts) — and
+  // `byteArrayViewVarHandle` rejects that. Get `long[].class` directly from
+  // a runtime instance instead.
+  private val longView: java.lang.invoke.VarHandle =
+    java.lang.invoke.MethodHandles.byteArrayViewVarHandle
+     ( (new Array[Long](0)).getClass.nn, java.nio.ByteOrder.LITTLE_ENDIAN )
+
+  private final val OnesMask:     Long = 0x0101010101010101L
+  private final val HighBitsMask: Long = 0x8080808080808080L
+
+  // The byte `b` replicated across all 8 lanes of a Long.
+  private inline def replicate(b: Byte): Long = (b & 0xFFL) * OnesMask
+
+  // Pre-computed replications for the constant scan targets.
+  private final val SpRepl: Long = (SP & 0xFFL) * OnesMask
+  private final val LfRepl: Long = (LF & 0xFFL) * OnesMask
+  private final val CrRepl: Long = (CR & 0xFFL) * OnesMask
+
+  // Per-lane "is this byte zero?" mask: each 0x80 marks a zero byte in `v`.
+  private inline def haszero(v: Long): Long =
+    (v - OnesMask) & ~v & HighBitsMask
+
+  // Per-lane "does this byte equal the target?" mask.
+  private inline def matchByte(v: Long, replicated: Long): Long =
+    haszero(v ^ replicated)
+
   // Carries the look-ahead state for the next unconsumed line. Parsed once
   // by `fillHead`, then consulted by recursive-descent functions to decide
   // whether to continue at the current indent, descend, ascend, or stop.
@@ -169,6 +204,78 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
 
   // Reusable string builder for source-atom / literal-atom payloads.
   private val sb: jl.StringBuilder = new jl.StringBuilder(256)
+
+  // Reusable Char[] buffer for inline-atom text. JsonParser uses the same
+  // pattern: append bytes-as-chars on the hot path, then `new String(chars,
+  // off, len)` once per atom — one allocation per atom instead of the two
+  // strings the previous `sliceText` + `sb.append` + `sb.toString` cycle
+  // produced.
+  private var atomChars: Array[Char] = new Array[Char](128)
+  private var atomCharCursor: Int    = 0
+
+  private inline def resetAtomChars(): Unit = atomCharCursor = 0
+
+  private inline def ensureAtomCharSpace(n: Int): Unit =
+    if atomCharCursor + n > atomChars.length then
+      var newLen = atomChars.length
+      while atomCharCursor + n > newLen do newLen *= 2
+      val grown = new Array[Char](newLen)
+      System.arraycopy(atomChars, 0, grown, 0, atomCharCursor)
+      atomChars = grown
+
+  private inline def appendAtomChar(c: Char): Unit =
+    if atomCharCursor == atomChars.length then ensureAtomCharSpace(1)
+    atomChars(atomCharCursor) = c
+    atomCharCursor += 1
+
+  // Decode UTF-8 bytes at `bytes(off..off+len)` and append as Chars to the
+  // atom buffer. ASCII fast-path; multi-byte sequences are decoded inline.
+  private def appendBytesAsAtomChars(src: Array[Byte], off: Int, len: Int): Unit =
+    ensureAtomCharSpace(len)  // upper bound (chars ≤ bytes for UTF-8)
+    var i = 0
+    while i < len do
+      val b = src(off + i)
+      if (b & 0x80) == 0 then
+        atomChars(atomCharCursor) = (b & 0xFF).toChar
+        atomCharCursor += 1
+        i += 1
+      else
+        val u = b & 0xFF
+        if (u & 0xE0) == 0xC0 then
+          val b2 = src(off + i + 1) & 0x3F
+          atomChars(atomCharCursor) = (((u & 0x1F) << 6) | b2).toChar
+          atomCharCursor += 1
+          i += 2
+        else if (u & 0xF0) == 0xE0 then
+          val b2 = src(off + i + 1) & 0x3F
+          val b3 = src(off + i + 2) & 0x3F
+          atomChars(atomCharCursor) = (((u & 0x0F) << 12) | (b2 << 6) | b3).toChar
+          atomCharCursor += 1
+          i += 3
+        else if (u & 0xF8) == 0xF0 then
+          val b2 = src(off + i + 1) & 0x3F
+          val b3 = src(off + i + 2) & 0x3F
+          val b4 = src(off + i + 3) & 0x3F
+          val cp = ((u & 0x07) << 18) | (b2 << 12) | (b3 << 6) | b4
+          if cp >= 0x10000 then
+            val adj = cp - 0x10000
+            ensureAtomCharSpace(2)
+            atomChars(atomCharCursor) = (0xD800 | (adj >>> 10)).toChar
+            atomChars(atomCharCursor + 1) = (0xDC00 | (adj & 0x3FF)).toChar
+            atomCharCursor += 2
+          else
+            atomChars(atomCharCursor) = cp.toChar
+            atomCharCursor += 1
+          i += 4
+        else
+          atomChars(atomCharCursor) = '�'
+          atomCharCursor += 1
+          i += 1
+
+  // Materialise the atom buffer's [start..atomCharCursor) range as a Text,
+  // exactly one allocation.
+  private inline def atomCharsToText(start: Int): Text =
+    Text(new String(atomChars, start, atomCharCursor - start))
 
   // ── Keyword interning cache ───────────────────────────────────────────────
   // 64-slot two-Long fingerprint cache. The byte-level variant: the first
@@ -254,6 +361,71 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
   private def peekNext(): Int =
     ensureLookahead(2)
     if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
+
+  // ── SWAR in-buffer scans ─────────────────────────────────────────────────
+  // Each `scanUntilN` method advances the parser-local `pos` until either a
+  // byte matching one of the targets is found, or `pos == bufEnd`. It does
+  // NOT refill the cursor — callers wrap the call in a refill loop when
+  // they need to scan across chunk boundaries.
+
+  // Advance pos until bytes(pos) == target1, or pos == bufEnd.
+  private def scanUntil1(target1: Byte, repl1: Long): Unit =
+    while pos + 8 <= bufEnd do
+      val v = TelParser.longView.get(bytes, pos).asInstanceOf[Long]
+      val mask = TelParser.matchByte(v, repl1)
+      if mask != 0L then
+        pos += (java.lang.Long.numberOfTrailingZeros(mask) >>> 3)
+        return
+      pos += 8
+    while pos < bufEnd && bytes(pos) != target1 do pos += 1
+
+  // Advance pos until bytes(pos) ∈ {target1, target2}, or pos == bufEnd.
+  private def scanUntil2(target1: Byte, target2: Byte, repl1: Long, repl2: Long): Unit =
+    while pos + 8 <= bufEnd do
+      val v = TelParser.longView.get(bytes, pos).asInstanceOf[Long]
+      val combined = TelParser.matchByte(v, repl1) | TelParser.matchByte(v, repl2)
+      if combined != 0L then
+        pos += (java.lang.Long.numberOfTrailingZeros(combined) >>> 3)
+        return
+      pos += 8
+    while pos < bufEnd && bytes(pos) != target1 && bytes(pos) != target2 do pos += 1
+
+  // Advance pos until bytes(pos) ∈ {a, b, c}, or pos == bufEnd.
+  private def scanUntil3
+                ( a: Byte, b: Byte, c: Byte,
+                  rA: Long, rB: Long, rC: Long )
+  : Unit =
+    while pos + 8 <= bufEnd do
+      val v = TelParser.longView.get(bytes, pos).asInstanceOf[Long]
+      val combined =
+        TelParser.matchByte(v, rA)
+        | TelParser.matchByte(v, rB)
+        | TelParser.matchByte(v, rC)
+      if combined != 0L then
+        pos += (java.lang.Long.numberOfTrailingZeros(combined) >>> 3)
+        return
+      pos += 8
+    while pos < bufEnd && bytes(pos) != a && bytes(pos) != b && bytes(pos) != c do pos += 1
+
+  // Advance pos until bytes(pos) ∈ {a, b, c, d}, or pos == bufEnd.
+  private def scanUntil4
+                ( a: Byte, b: Byte, c: Byte, d: Byte,
+                  rA: Long, rB: Long, rC: Long, rD: Long )
+  : Unit =
+    while pos + 8 <= bufEnd do
+      val v = TelParser.longView.get(bytes, pos).asInstanceOf[Long]
+      val combined =
+        TelParser.matchByte(v, rA)
+        | TelParser.matchByte(v, rB)
+        | TelParser.matchByte(v, rC)
+        | TelParser.matchByte(v, rD)
+      if combined != 0L then
+        pos += (java.lang.Long.numberOfTrailingZeros(combined) >>> 3)
+        return
+      pos += 8
+    while pos < bufEnd && bytes(pos) != a && bytes(pos) != b
+          && bytes(pos) != c && bytes(pos) != d
+    do pos += 1
 
   // ── Errors ────────────────────────────────────────────────────────────────
 
@@ -1177,7 +1349,10 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
         // Now read the line content (until LF/CR), tracking trailing spaces
         // so we can strip them.
         val mk = beginMark()
-        while more && peek != LF && peek != CR do advance()
+        while
+          scanUntil2(LF, CR, TelParser.LfRepl, TelParser.CrRepl)
+          pos == bufEnd && more
+        do ()
         val payload = sliceText(mk)
         // Strip trailing spaces.
         var endIdx = payload.length
@@ -1199,9 +1374,13 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
   // the delimiter (at column 0 / flush left).
   private def parseLiteralAtom(literalIndent: Int): Tel.Atom.Literal raises TelError =
     val openingLine = head.startLine
-    // Read the delimiter.
+    // Read the delimiter — opening line, terminated by LF or CR per the
+    // document's line-ending mode.
     val delimMk = beginMark()
-    while more && peek != LF && peek != CR do advance()
+    while
+      scanUntil2(LF, CR, TelParser.LfRepl, TelParser.CrRepl)
+      pos == bufEnd && more
+    do ()
     val delimiter = sliceText(delimMk)
     // The opening line is now consumed up to but not including the LF.
     // Empty-payload case: if next line is the closing delimiter exactly,
@@ -1214,11 +1393,13 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
       if !more then errorAt(Reason.UnclosedLiteral, openingLine, 1)
       // Read a line. Inside the literal payload, line endings are not
       // subject to the document's LF/CRLF mode (per §15 the payload is
-      // verbatim, with CRLF normalised to LF). Read up to the next LF
-      // treating any preceding CR as part of the line, then strip a
-      // trailing CR for normalisation.
+      // verbatim, with CRLF normalised to LF). SWAR-scan for LF; any
+      // preceding CR is captured in `raw` and stripped below.
       val lineMk = beginMark()
-      while more && peek != LF do advance()
+      while
+        scanUntil1(LF, TelParser.LfRepl)
+        pos == bufEnd && more
+      do ()
       val raw = sliceText(lineMk)
       val line = if raw.length > 0 && raw.charAt(raw.length - 1) == '\r'
                  then raw.substring(0, raw.length - 1) else raw
@@ -1254,7 +1435,6 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
   private def parseCompoundLine(lineNumber: Int): Tel.Compound raises TelError =
     val isAtColumnZero = head.leadingSpaces == 0
     val mayBeMisplacedPragma = isAtColumnZero && hasConsumedNonBlankLine
-    val lineStart = beginMark()
 
     // First phrase = keyword. Read until space or LF/CR.
     val keyword = readKeyword()
@@ -1268,15 +1448,16 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
 
     val atoms = scala.collection.mutable.ArrayBuffer.empty[Tel.Atom]
     var remark: Optional[Text] = Unset
-    sb.setLength(0)
+    resetAtomChars()
+    var atomStart = 0       // start index into atomChars for the open atom
     var precedingSpaces = 0
     var hardSpaceMode = false
     var atomOpen = false
 
     inline def commit(): Unit =
       if atomOpen then
-        atoms += Tel.Atom.Inline(Text(sb.toString), precedingSpaces)
-        sb.setLength(0)
+        atoms += Tel.Atom.Inline(atomCharsToText(atomStart), precedingSpaces)
+        atomStart = atomCharCursor
         atomOpen = false
 
     var stopped = false
@@ -1292,7 +1473,7 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
               commit()
               precedingSpaces = run
             else
-              sb.append(' ')
+              appendAtomChar(' ')
               atomOpen = true
           else
             if run == 1 then
@@ -1317,31 +1498,29 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
             while more && peek != LF && peek != CR do advance()
             remark = Text(sliceText(mk))
           else
-            sb.append(ch.toChar)
+            appendAtomChar(ch.toChar)
             atomOpen = true
             advance()
         else
-          // Read a run of non-space, non-sigil, non-LF, non-CR bytes into
-          // sb. This is the inner-loop hot path; we want bulk-copy.
-          val mk = beginMark()
-          var localPos = pos
-          while localPos < bufEnd
-                && bytes(localPos) != SP
-                && bytes(localPos) != LF
-                && bytes(localPos) != CR
-                && (atomOpen || bytes(localPos) != sigil)
-          do localPos += 1
-          val runLen = localPos - pos
+          // Read a run of non-space, non-sigil, non-LF, non-CR bytes
+          // directly into the char buffer — no intermediate String alloc.
+          // Atom runs in typical TEL are 2-12 bytes, too short for SWAR
+          // to amortise; we keep the byte loop and just direct-copy the
+          // range as UTF-8 → char in one shot.
+          val runStart = pos
+          while pos < bufEnd
+                && bytes(pos) != SP
+                && bytes(pos) != LF
+                && bytes(pos) != CR
+                && (atomOpen || bytes(pos) != sigil)
+          do pos += 1
+          val runLen = pos - runStart
           if runLen > 0 then
-            // Append via cursor.slice for a single zero-copy materialise →
-            // string concat.
-            pos = localPos
-            val piece = sliceText(mk)
-            sb.append(piece)
+            appendBytesAsAtomChars(bytes, runStart, runLen)
             atomOpen = true
           else
             // Could be a sigil while atomOpen — treat as content.
-            sb.append(ch.toChar)
+            appendAtomChar(ch.toChar)
             atomOpen = true
             advance()
 
@@ -1363,21 +1542,29 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
   // cache for ≤8-byte keywords (allocation-free on hit), one `grabText` on
   // miss or for length > 8.
   private def readKeyword(): Text raises TelError =
-    val startMk = beginMark()
+    // Track the byte offset directly instead of going through `cursor.mark`.
+    // With holdStart pinned at the outer hold's start (basePos stays 0),
+    // a refill never moves the byte at `startByte`; subsequent reads see
+    // the same data in the (possibly grown) buffer array.
+    val startByte = pos
     var low:  Long = 0L
     var high: Long = 0L
     var len = 0
-    while more && peek != SP && peek != LF && peek != CR do
-      val b = peek
-      if len < 4 then
-        low |= (b & 0xff).toLong << (len * 8)
-      else if len < 8 then
-        high |= (b & 0xff).toLong << ((len - 4) * 8)
-      len += 1
-      advance()
+    while
+      while pos < bufEnd && bytes(pos) != SP && bytes(pos) != LF && bytes(pos) != CR do
+        val b = bytes(pos)
+        if len < 4 then
+          low |= (b & 0xff).toLong << (len * 8)
+        else if len < 8 then
+          high |= (b & 0xff).toLong << ((len - 4) * 8)
+        len += 1
+        pos += 1
+      pos == bufEnd && more
+    do ()
 
     if len == 0 then t""
-    else if len > 8 then Text(sliceText(startMk))
+    else if len > 8 then
+      Text(new String(bytes, startByte, len, java.nio.charset.StandardCharsets.UTF_8))
     else
       val hash = ((low ^ (low >>> 32)) ^ (high ^ (high >>> 17))).toInt
       var slot = hash & 0x3F
@@ -1386,7 +1573,7 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
       while result == null && probes < 4 do
         val existing = keyCache(slot)
         if existing == null then
-          val s = sliceText(startMk)
+          val s = new String(bytes, startByte, len, java.nio.charset.StandardCharsets.UTF_8)
           keyCache(slot) = s
           keyCacheLow(slot) = low
           keyCacheHigh(slot) = high
@@ -1398,4 +1585,4 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
           probes += 1
 
       if result != null then Text(result)
-      else Text(sliceText(startMk))
+      else Text(new String(bytes, startByte, len, java.nio.charset.StandardCharsets.UTF_8))
