@@ -47,6 +47,9 @@ import probably.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
+
+import zephyrine.lineation.linefeedByte
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
@@ -75,6 +78,66 @@ object Tests extends Suite(m"Stratiform Tests"):
           val reparsed = printed.s.tt.read[Tel]
           TelCheckTree.of(reparsed)
         . assert(_ == TelCheckTree.of(testcase.source.read[Tel]))
+
+    suite(m"Streaming parser — positive corpus"):
+      CorpusLoader.positive.each: testcase =>
+        test(m"streaming parses ${testcase.stem}"):
+          val cursor = Cursor[Data](testcase.source)
+          val doc = TelStreamParser.parse(cursor)
+          TelCheckTree.of(Tel.make(doc))
+        . assert(_ == CheckFormat.parse(testcase.check).tree)
+
+    suite(m"Streaming parser — parity with TelParser"):
+      CorpusLoader.positive.each: testcase =>
+        test(m"streaming matches TelParser on ${testcase.stem}"):
+          val a = TelCheckTree.of(testcase.source.read[Tel])
+          val b = TelCheckTree.of(Tel.make(
+            TelStreamParser.parse(Cursor[Data](testcase.source))))
+          a == b
+        . assert(identity)
+
+    suite(m"Streaming parser — round-trip"):
+      CorpusLoader.positive.each: testcase =>
+        test(m"streaming round-trip ${testcase.stem}"):
+          val first = TelStreamParser.parse(Cursor[Data](testcase.source))
+          val printed = Tel.show(Tel.make(first))
+          val bytes: Data = summon[CharEncoder].encoded(printed)
+          val reparsed = TelStreamParser.parse(Cursor[Data](bytes))
+          TelCheckTree.of(Tel.make(reparsed)) == TelCheckTree.of(Tel.make(first))
+        . assert(identity)
+
+    suite(m"Streaming parser — negative corpus (E1xx)"):
+      CorpusLoader.negative.each: testcase =>
+        val codes = CorpusLoader.expectedCodes(testcase)
+        if codes.nonEmpty && codes.forall(_ < 200) then
+          test(m"streaming raises an expected E1xx error on ${testcase.stem}"):
+            codes.contains:
+              capture[TelError](TelStreamParser.parse(Cursor[Data](testcase.source)))
+              .reason.number
+          . assert(_ == true)
+
+    suite(m"Streaming parser — chunk-boundary fuzz"):
+      def chunkedCursor(data: Data, n: Int): Cursor[Data] =
+        val it = new Iterator[Data]:
+          var p: Int = 0
+          def hasNext: Boolean = p < data.length
+          def next(): Data =
+            val end = (p + n).min(data.length)
+            val out: Data = data.slice(p, end)
+            p = end
+            out
+        Cursor[Data](it)
+
+      CorpusLoader.positive.each: testcase =>
+        test(m"all chunk sizes parse identically on ${testcase.stem}"):
+          val baseline = TelCheckTree.of(Tel.make(
+            TelStreamParser.parse(Cursor[Data](testcase.source))))
+          val sizes = List(1, 7, 64, 1024, testcase.source.length.max(1))
+          sizes.forall: n =>
+            val tree = TelCheckTree.of(Tel.make(
+              TelStreamParser.parse(chunkedCursor(testcase.source, n))))
+            tree == baseline
+        . assert(identity)
 
     suite(m"Encode/decode primitives"):
       test(m"Text round-trip"):

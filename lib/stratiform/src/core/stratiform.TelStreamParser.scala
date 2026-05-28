@@ -114,11 +114,14 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
   // Look-ahead record describing the next unconsumed line.
   private val head: LineHead = new LineHead
 
-  // Tracks the kind of the most-recently consumed source line for the §9
-  // CommentNotPreceded check. `prevContentLeadingSpaces == -1` means the
-  // previous "thing" was SOF, the prologue, a blank, or a comment — all of
-  // which are OK before a comment. A non-negative value records the
-  // leadingSpaces of the most-recent non-blank non-comment line.
+  // Tracks state for the §9 CommentNotPreceded check.
+  // `prevLineWasBoundary` is true iff the immediately-previous consumed line
+  // was a blank, a comment, the prologue (directive / pragma), or we are
+  // still at start-of-file — i.e. any line that may legitimately precede a
+  // comment. `prevContentLeadingSpaces` records the leadingSpaces of the
+  // most-recent content line (compound or tabulation), used to compare
+  // against the indent at which a new comment appears.
+  private var prevLineWasBoundary: Boolean = true
   private var prevContentLeadingSpaces: Int = -1
 
   // Reusable string builder for source-atom / literal-atom payloads.
@@ -180,16 +183,34 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
 
   private inline def advance(): Unit = pos += 1
 
-  // Peek the byte one past the current position, refilling if necessary.
-  // Returns -1 if there is no byte one past the current position even after
-  // a refill. Used for the CR/LF-pair and `: ` look-ahead.
-  private def peekNext(): Int =
-    if pos + 1 < bufEnd then bytes(pos + 1) & 0xff
+  // Ensure that at least `n` bytes are available from the current position
+  // (or that we are at EOF). Pulls chunks from the cursor as needed. After
+  // this returns, either `pos + n <= bufEnd` or we have hit EOF and no more
+  // bytes will arrive. Used by the multi-byte look-ahead points (CR/LF
+  // pairs, sigil + soft-space + content checks, pragma detection).
+  //
+  // The trick: mark, advance up to `n` steps to force successive refills,
+  // then cue back. Inside the outer `hold` block, the mark prevents the
+  // buffer from compacting past our current position, so the bytes we
+  // need stay resident.
+  private def ensureLookahead(n: Int): Unit =
+    if pos + n <= bufEnd then ()
     else
-      // Force a refill so we can look one byte ahead.
-      if more then
-        if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
-      else -1
+      syncTo()
+      reconcileLineation()  // mark captures correct line/col
+      val mk = cursor.mark(using heldToken.nn)
+      var steps = 0
+      while steps < n && cursor.more do
+        cursor.advance()
+        steps += 1
+      cursor.cue(mk)
+      syncFrom()
+
+  // Peek the byte one past the current position, refilling if necessary.
+  // Returns -1 if there is no byte one past the current position.
+  private def peekNext(): Int =
+    ensureLookahead(2)
+    if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
 
   // ── Errors ────────────────────────────────────────────────────────────────
 
@@ -379,34 +400,17 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
 
   // True iff the cursor is at the start of a pragma line (already past any
   // leading spaces, on the first content byte). A pragma is "tel" followed
-  // by EOL or " ". We need three bytes of look-ahead; use a small buffered
-  // peek.
+  // by EOL or " ". Requires four bytes of look-ahead, or three bytes at EOF.
   private def startsWithPragma(): Boolean =
-    if pos + 3 < bufEnd then
-      bytes(pos) == 't'.toByte && bytes(pos + 1) == 'e'.toByte
-        && bytes(pos + 2) == 'l'.toByte
-        && (bytes(pos + 3) == SP || bytes(pos + 3) == LF || bytes(pos + 3) == CR)
-    else if pos + 2 < bufEnd && bytes(pos) == 't'.toByte && bytes(pos + 1) == 'e'.toByte
-            && bytes(pos + 2) == 'l'.toByte
+    ensureLookahead(4)
+    if pos + 2 < bufEnd
+       && bytes(pos) == 't'.toByte && bytes(pos + 1) == 'e'.toByte
+       && bytes(pos + 2) == 'l'.toByte
     then
-      // Three bytes "tel" present; need one more to know terminator.
-      if !more then false  // shouldn't happen but be safe
-      else
-        // After refill check again
-        if pos + 3 < bufEnd then
-          bytes(pos + 3) == SP || bytes(pos + 3) == LF || bytes(pos + 3) == CR
-        else true  // exactly "tel" at EOF
-    else
-      // Try to refill so we can read three "tel" bytes.
-      if more && pos + 3 < bufEnd then
-        bytes(pos) == 't'.toByte && bytes(pos + 1) == 'e'.toByte
-          && bytes(pos + 2) == 'l'.toByte
-          && (bytes(pos + 3) == SP || bytes(pos + 3) == LF || bytes(pos + 3) == CR)
-      else if more && pos + 2 < bufEnd then
-        // exactly "tel" remaining without trailing
-        bytes(pos) == 't'.toByte && bytes(pos + 1) == 'e'.toByte
-          && bytes(pos + 2) == 'l'.toByte && pos + 3 >= bufEnd
-      else false
+      if pos + 3 < bufEnd
+      then bytes(pos + 3) == SP || bytes(pos + 3) == LF || bytes(pos + 3) == CR
+      else true  // exactly "tel" at EOF
+    else false
 
   // Consume the entire current pragma line, including its line ending.
   // Cursor is positioned at the start of "tel..."; caller has verified.
@@ -528,6 +532,9 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
       head.eof = false
       head.indentLevels = -1
       consumeLineEnding()
+      // The line we just consumed was blank — it acts as a boundary for
+      // E109.
+      prevLineWasBoundary = true
     else
       head.blank = false
       head.eof = false
@@ -580,13 +587,15 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
 
     // Leading comments at this indent.
     while !head.eof && !head.blank && head.indentLevels == indent && isCommentBody() do
-      // §9 E109 check.
-      if prevContentLeadingSpaces >= 0
+      // §9 E109 check — fires only if the immediately preceding line was a
+      // content line (compound / tabulation) at indent ≥ this comment's.
+      if !prevLineWasBoundary && prevContentLeadingSpaces >= 0
          && prevContentLeadingSpaces >= margin + indent * 2
       then errorAt(Reason.CommentNotPreceded, head.startLine, 1)
 
       val text = parseCommentLine()
       comments += Tel.Comment(text)
+      prevLineWasBoundary = true
       fillHead()
 
     // Interior blanks: if we have comments and the next line is blank, look
@@ -599,8 +608,10 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
     val tabulation: Optional[Tel.Tabulation] =
       if !head.eof && !head.blank && head.indentLevels == indent && isTabulationBody()
       then
+        val ls = head.leadingSpaces
         val tab = parseTabulationLine()
-        prevContentLeadingSpaces = head.leadingSpaces
+        prevContentLeadingSpaces = ls
+        prevLineWasBoundary = false
         fillHead()
         Optional(tab)
       else Unset
@@ -616,6 +627,7 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
         val compoundLine = head.startLine
         val parsed = parseCompoundLine(compoundLine)
         prevContentLeadingSpaces = compoundLeadingSpaces
+        prevLineWasBoundary = false
         fillHead()
 
         if tabulation.present then validateTabulatedRowFromParsed(parsed, tabulation.vouch,
@@ -646,6 +658,7 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
     val mk = beginMark()
     val savedHeadSnapshot = (head.leadingSpaces, head.indentLevels, head.blank,
                              head.eof, head.startLine)
+    val savedBoundary = prevLineWasBoundary
     while !head.eof && head.blank do fillHead()
     val keep =
       !head.eof && head.indentLevels == indent && !isCommentBody()
@@ -660,12 +673,8 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
       head.blank         = savedHeadSnapshot._3
       head.eof           = savedHeadSnapshot._4
       head.startLine     = savedHeadSnapshot._5
-      // Re-park: we need to re-consume the leading spaces we just consumed
-      // via the cue. Actually no — cue rewinds the cursor; calling fillHead
-      // would walk forward again. We saved head, so just restore. But the
-      // cursor pos is now at the line start — we need to re-skip leading
-      // spaces to match the saved head. Use a small ad-hoc re-park: skip
-      // leadingSpaces space bytes.
+      prevLineWasBoundary = savedBoundary
+      // Re-park: skip leading spaces of the line we just rewound to.
       var i = 0
       while i < savedHeadSnapshot._1 && more && peek == SP do
         advance()
@@ -682,6 +691,7 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
       val mk = beginMark()
       val firstBlankSnapshot = (head.leadingSpaces, head.indentLevels, head.blank,
                                 head.eof, head.startLine)
+      val savedBoundary = prevLineWasBoundary
       var count = 0
       while !head.eof && head.blank do
         count += 1
@@ -702,6 +712,7 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
         head.blank         = firstBlankSnapshot._3
         head.eof           = firstBlankSnapshot._4
         head.startLine     = firstBlankSnapshot._5
+        prevLineWasBoundary = savedBoundary
         var i = 0
         while i < firstBlankSnapshot._1 && more && peek == SP do
           advance()
@@ -932,6 +943,7 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
         val mk = beginMark()
         val firstBlankSnapshot = (head.leadingSpaces, head.indentLevels, head.blank,
                                   head.eof, head.startLine)
+        val savedBoundary = prevLineWasBoundary
         var blanks = 0
         while !head.eof && head.blank do
           blanks += 1
@@ -952,6 +964,7 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
           head.blank         = firstBlankSnapshot._3
           head.eof           = firstBlankSnapshot._4
           head.startLine     = firstBlankSnapshot._5
+          prevLineWasBoundary = savedBoundary
           var i = 0
           while i < firstBlankSnapshot._1 && more && peek == SP do
             advance(); i += 1
@@ -1011,20 +1024,20 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
     var done = false
     while !done do
       if !more then errorAt(Reason.UnclosedLiteral, openingLine, 1)
-      // Read a line. Check if it matches delimiter (flush-left, no leading
-      // spaces).
+      // Read a line. The closing delimiter must be flush-left and match the
+      // opening delimiter; any other line is payload.
       val lineMk = beginMark()
       while more && peek != LF && peek != CR do advance()
       val line = sliceText(lineMk)
-      // Consume the line ending — but only if there is one. If we hit EOF
-      // without finding a closing delim that's E115.
-      val hadEol = more
-      if hadEol then consumeLineEnding()
-      else errorAt(Reason.UnclosedLiteral, openingLine, 1)
-
       if line == delimiter then
+        // Closing delimiter — consume the optional EOL (the very last line of
+        // a document may end at EOF without a trailing newline).
+        if more then consumeLineEnding()
         done = true
       else
+        // Payload line — must have an EOL terminator; EOF here is E115.
+        if !more then errorAt(Reason.UnclosedLiteral, openingLine, 1)
+        consumeLineEnding()
         sb.append(line)
         sb.append('\n')
 
@@ -1081,23 +1094,12 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
               precedingSpaces = run
               hardSpaceMode = true
         else if ch == sigil && !atomOpen then
-          // Could be remark introducer: sigil + soft space + content.
-          // We need to peek the next byte. The sigil is the only ASCII
-          // marker so peek directly.
-          val afterSigil = peekNext()
+          // Could be remark introducer: sigil + soft space + non-space.
+          ensureLookahead(3)
+          val afterSigil = if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
           val softSpaceAfter =
             afterSigil == SP.toInt
-            && {
-              // Check that it's NOT a hard space (not followed by another
-              // space). We need a 2-byte look-ahead past the sigil.
-              if pos + 2 < bufEnd then bytes(pos + 2) != SP
-              else
-                // Force refill to know.
-                if more then
-                  if pos + 2 < bufEnd then bytes(pos + 2) != SP
-                  else true  // sigil + space + EOF: that's a remark
-                else true
-            }
+            && (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
           if softSpaceAfter then
             // Consume sigil + space, then read remark text until LF/CR.
             advance()  // sigil
@@ -1135,19 +1137,14 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
             advance()
 
     commit()
-    // Check trailing-spaces (E108): if the line has trailing spaces before
-    // LF, error. Note: `precedingSpaces` after the last commit() captures
-    // any trailing spaces consumed *after* the last atom. If the line
-    // ended with spaces (no atom after them) precedingSpaces > 0.
-    if !remark.present && atoms.nonEmpty && precedingSpaces > 0
-       && (!more || peek == LF || peek == CR) && !hardSpaceMode
-    then
-      // Only error if trailing run is space-only at end of line.
-      errorAt(Reason.TrailingSpaces, lineNumber, head.leadingSpaces + 1)
-    if !remark.present && precedingSpaces > 0 && hardSpaceMode
-       && (!more || peek == LF || peek == CR)
-    then
-      errorAt(Reason.TrailingSpaces, lineNumber, head.leadingSpaces + 1)
+
+    // E108: a non-blank compound line must not end with a space character.
+    // Inside the outer `hold`, the buffer byte just before the current pos
+    // is still resident — peek it directly. (`pos > 0` because we have
+    // consumed at least the keyword.)
+    if remark.absent && more && (peek == LF || peek == CR)
+       && pos > 0 && bytes(pos - 1) == SP
+    then errorAt(Reason.TrailingSpaces, lineNumber, head.leadingSpaces + 1)
 
     consumeLineEnding()
     Tel.Compound(keyword, IArray.from(atoms), remark, IArray.empty)
