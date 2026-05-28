@@ -62,6 +62,17 @@ object TelStreamParser:
   def parse(cursor: Cursor[Data], schema: Tels): Tel.Document raises TelError =
     new TelStreamParser(cursor, schema: Optional[Tels]).parse()
 
+  // Convenience overloads for callers that already have the whole input as
+  // a single byte chunk. The cursor is constructed with `linefeedByte`
+  // lineation so error positions carry accurate line/column.
+  def parse(input: Data): Tel.Document raises TelError =
+    import zephyrine.lineation.linefeedByte
+    new TelStreamParser(Cursor[Data](input), Unset).parse()
+
+  def parse(input: Data, schema: Tels): Tel.Document raises TelError =
+    import zephyrine.lineation.linefeedByte
+    new TelStreamParser(Cursor[Data](input), schema: Optional[Tels]).parse()
+
   private final val SP: Byte = 0x20
   private final val LF: Byte = 0x0A
   private final val CR: Byte = 0x0D
@@ -727,27 +738,28 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
         val parsed = parseCompoundLine(compoundLine)
         prevContentLeadingSpaces = compoundLeadingSpaces
         prevLineWasBoundary = false
-        fillHead()
+        // §19.5 recovery needs this compound's keyword on the ancestor
+        // stack BEFORE fillHead reads the next line — odd-indent recovery
+        // there consults the ancestors. No-schema mode skips push/pop
+        // entirely so the hot path is unaffected.
+        val pushed = schema.present
+        if pushed then pushAncestor(parsed.keyword)
+        try
+          fillHead()
 
-        val extraAtom: Optional[Tel.Atom] =
-          if tabulation.absent then parseSourceOrLiteralAtomIfPresent(compoundLeadingSpaces)
-          else Unset
+          val extraAtom: Optional[Tel.Atom] =
+            if tabulation.absent then parseSourceOrLiteralAtomIfPresent(compoundLeadingSpaces)
+            else Unset
 
-        val children =
-          if extraAtom.absent && tabulation.absent then
-            // Ancestor bookkeeping is only consulted by the §19.5 schema-
-            // aware E107 recovery path. Skip the push / pop pair entirely in
-            // no-schema mode for the deep-nesting hot path.
-            if schema.present then
-              pushAncestor(parsed.keyword)
-              try parseChildren(indent) finally popAncestor()
-            else parseChildren(indent)
-          else IArray.empty[Tel.Block]
+          val children =
+            if extraAtom.absent && tabulation.absent then parseChildren(indent)
+            else IArray.empty[Tel.Block]
 
-        val finalAtoms = extraAtom.lay(parsed.atoms): atom =>
-          parsed.atoms :+ atom
+          val finalAtoms = extraAtom.lay(parsed.atoms): atom =>
+            parsed.atoms :+ atom
 
-        compounds += parsed.copy(atoms = finalAtoms, children = children)
+          compounds += parsed.copy(atoms = finalAtoms, children = children)
+        finally if pushed then popAncestor()
 
     val trailingBlankLines = consumeTrailingBlanksFor(indent)
 
