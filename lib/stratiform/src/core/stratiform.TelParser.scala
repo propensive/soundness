@@ -159,7 +159,6 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
   // mark/slice/refill operation; resync after.
 
   private val cursor: Cursor[Data] = cursor0
-  private var heldToken: Cursor.Held | Null = null
   private var bytes:  Array[Byte] = null.asInstanceOf[Array[Byte]]
   private var pos:    Int = 0
   private var bufEnd: Int = 0
@@ -444,7 +443,7 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
     if pos + n <= bufEnd then ()
     else
       syncTo()
-      val mk = cursor.mark(using heldToken.nn)
+      val mk = cursor.mark(using Cursor.shared)
       var steps = 0
       while steps < n && cursor.more do
         cursor.advance()
@@ -560,25 +559,24 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
   // never byte offsets into a particular buffer.
   //
   // `inHold` nests safely: an inner `inHold` does not change `holdStart`,
-  // it just acquires a fresh `Cursor.Held` token for the duration of the
-  // inner scope. `heldToken` is restored on exit so a method calling
-  // multiple sequential `inHold` scopes (or an outer method whose body
-  // delegates to inner `inHold`s) keeps a coherent view.
+  // it just executes inside the outer hold's protection. `Cursor.Held` is
+  // a witness type and `Cursor.shared` is a singleton we always pass to
+  // `cursor.mark` — there's no run-time tracking of "are we in a hold"
+  // inside the parser because no run-time decision depends on it; the
+  // compile-time `using Cursor.Held` requirement at every mark call site
+  // is the static guarantee that the code path is reachable only from
+  // inside a hold.
   private inline def inHold[T](inline body: => T): T =
     syncTo()
     cursor.hold:
-      val prev = heldToken
-      heldToken = summon[Cursor.Held]
       try
         syncFrom()
         body
-      finally
-        syncTo()
-        heldToken = prev
+      finally syncTo()
 
   private inline def beginMark(): Cursor.Mark =
     syncTo()
-    cursor.mark(using heldToken.nn)
+    cursor.mark(using Cursor.shared)
 
   // Materialise the byte range between `start` and the current position as
   // a UTF-8 `String`. The only allocation point in the keyword / atom path.
@@ -586,7 +584,7 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
   // resolves once here against `this.cursor`.
   private def sliceText(start: Cursor.Mark): String =
     syncTo()
-    val endMk = cursor.mark(using heldToken.nn)
+    val endMk = cursor.mark(using Cursor.shared)
     cursor.slice(start, endMk): (storage, off, len) =>
       val arr = storage.asInstanceOf[Array[Byte]]
       if len <= 0 then "" else new String(arr, off, len, StandardCharsets.UTF_8)
@@ -946,7 +944,7 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
   // path pays no per-line lineation cost. Runs inside its own hold so the
   // intermediate `consumeLineEnding` (which calls `peekNext` → `ensureLookahead`,
   // a mark-using lookahead) and `recoverOddIndent` (which calls `peekKeyword`,
-  // also mark-using) have a valid `heldToken`.
+  // also mark-using) execute inside an active `cursor.hold` scope.
   private def fillHead(): Unit raises TelError = inHold:
     head.startLine = lineNo
 
