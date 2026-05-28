@@ -1,4 +1,7 @@
 #[cfg(unix)]
+use std::io::Write;
+
+#[cfg(unix)]
 pub struct TtyState {
     termios: Option<libc::termios>,
     is_tty: bool,
@@ -23,6 +26,125 @@ pub fn stdin_is_tty() -> bool {
         let h = GetStdHandle(STD_INPUT_HANDLE);
         let mut mode: u32 = 0;
         GetConsoleMode(h, &mut mode) != 0
+    }
+}
+
+// The launcher must know the real terminal size so it can forward it to the
+// daemon (which only sees a socket and cannot query the tty itself). Querying
+// from the launcher avoids a fragile ANSI cursor-position handshake across
+// the socket pipeline.
+#[cfg(unix)]
+pub fn terminal_size() -> Option<(u16, u16)> {
+    if !stdin_is_tty() { return None; }
+    let mut ws: libc::winsize = unsafe { std::mem::zeroed() };
+    let result = unsafe { libc::ioctl(libc::STDIN_FILENO, libc::TIOCGWINSZ, &mut ws) };
+    if result == 0 && ws.ws_col > 0 && ws.ws_row > 0 {
+        Some((ws.ws_col, ws.ws_row))
+    } else {
+        None
+    }
+}
+
+// OSC 11 query (`\e]11;?\e\\`) asks the terminal to report its background
+// colour as `\e]11;rgb:RRRR/GGGG/BBBB\e\\`. Running this from the launcher
+// (before forwarders start) keeps the handshake confined to one process with
+// direct tty access — much more reliable than letting the daemon attempt it
+// across the socket pipeline. Any non-response bytes are returned so they can
+// be prepended to the daemon's stdin and not lost.
+#[cfg(unix)]
+pub fn query_bg_color(timeout: std::time::Duration) -> (Option<String>, Vec<u8>) {
+    use std::io::Read;
+    use std::os::fd::AsRawFd;
+    use std::time::Instant;
+
+    if !stdin_is_tty() { return (None, Vec::new()); }
+
+    let mut stdout = std::io::stdout();
+    if stdout.write_all(b"\x1b]11;?\x1b\\").is_err() { return (None, Vec::new()); }
+    let _ = stdout.flush();
+
+    let mut buf: Vec<u8> = Vec::with_capacity(64);
+    let deadline = Instant::now() + timeout;
+    let fd = std::io::stdin().as_raw_fd();
+
+    loop {
+        let now = Instant::now();
+        if now >= deadline { break; }
+        let remaining = (deadline - now).as_millis() as i32;
+        let mut pfd = libc::pollfd { fd, events: libc::POLLIN, revents: 0 };
+        let r = unsafe { libc::poll(&mut pfd, 1, remaining.max(1)) };
+        if r <= 0 { break; }
+
+        let mut chunk = [0u8; 64];
+        match std::io::stdin().read(&mut chunk) {
+            Ok(0) | Err(_) => break,
+            Ok(n) => {
+                buf.extend_from_slice(&chunk[..n]);
+                // Stop as soon as we see a terminator that could end an OSC response.
+                if find_subseq(&buf, b"\x1b\\").is_some() || buf.contains(&0x07) {
+                    break;
+                }
+            }
+        }
+    }
+
+    parse_osc11(&buf)
+}
+
+#[cfg(windows)]
+pub fn query_bg_color(_timeout: std::time::Duration) -> (Option<String>, Vec<u8>) {
+    // Windows Console doesn't reliably support OSC 11 background queries.
+    (None, Vec::new())
+}
+
+#[cfg(unix)]
+fn parse_osc11(buf: &[u8]) -> (Option<String>, Vec<u8>) {
+    let prefix = b"\x1b]11;rgb:";
+    let Some(start) = find_subseq(buf, prefix) else {
+        return (None, buf.to_vec());
+    };
+    let after_prefix = start + prefix.len();
+    let rest = &buf[after_prefix..];
+
+    let term_st = find_subseq(rest, b"\x1b\\");
+    let term_bel = rest.iter().position(|&b| b == 0x07);
+    let (rgb_end, term_len) = match (term_st, term_bel) {
+        (Some(a), Some(b)) if a < b => (a, 2),
+        (Some(_), Some(b))           => (b, 1),
+        (Some(a), None)              => (a, 2),
+        (None, Some(b))              => (b, 1),
+        (None, None)                 => return (None, buf.to_vec()),
+    };
+
+    let rgb_str = std::str::from_utf8(&rest[..rgb_end]).ok().map(str::to_owned);
+
+    let mut leftover = buf[..start].to_vec();
+    leftover.extend_from_slice(&rest[rgb_end + term_len..]);
+
+    (rgb_str, leftover)
+}
+
+#[cfg(unix)]
+fn find_subseq(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+    if needle.is_empty() || haystack.len() < needle.len() { return None; }
+    haystack.windows(needle.len()).position(|w| w == needle)
+}
+
+#[cfg(windows)]
+pub fn terminal_size() -> Option<(u16, u16)> {
+    use windows_sys::Win32::System::Console::{
+        CONSOLE_SCREEN_BUFFER_INFO, GetConsoleScreenBufferInfo, GetStdHandle, STD_OUTPUT_HANDLE,
+    };
+    unsafe {
+        let handle = GetStdHandle(STD_OUTPUT_HANDLE);
+        let mut info: CONSOLE_SCREEN_BUFFER_INFO = std::mem::zeroed();
+        if GetConsoleScreenBufferInfo(handle, &mut info) != 0 {
+            let cols = (info.srWindow.Right - info.srWindow.Left + 1).max(0) as u16;
+            let rows = (info.srWindow.Bottom - info.srWindow.Top + 1).max(0) as u16;
+            if cols > 0 && rows > 0 { Some((cols, rows)) } else { None }
+        } else {
+            None
+        }
     }
 }
 

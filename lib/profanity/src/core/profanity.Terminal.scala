@@ -32,7 +32,10 @@
                                                                                                   */
 package profanity
 
+import ambience.*
 import anticipation.*
+import contingency.*
+import distillate.*
 import gossamer.*
 import iridescence.*
 import parasite.*
@@ -49,16 +52,26 @@ object Terminal:
   def enablePaste: Text = t"\e[?2004h"
   def disablePaste: Text = t"\e[?2004l"
 
-case class Terminal()(using console: Console, monitor: Monitor, codicil: Codicil)
+case class Terminal()
+  ( using console: Console, monitor: Monitor, codicil: Codicil, environment: Environment )
 extends Interactivity[TerminalEvent]:
 
   export console.stdio.{in, out, err}
 
   val keyboard: Keyboard.Standard = Keyboard.Standard()
 
-  var mode: Optional[Brightness] = Unset
-  var rows: Optional[Int] = Unset
-  var columns: Optional[Int] = Unset
+  var mode: Optional[Brightness] = safely:
+    def hex(text: Text): Int = Integer.parseInt(text.s, 16)
+
+    Environment.terminalBg.cut(t"/").to(List) match
+      case red :: green :: blue :: Nil =>
+        if dark(hex(red), hex(green), hex(blue)) then Brightness.Dark else Brightness.Light
+
+      case _ =>
+        abort(EnvironmentError(t"TERMINAL_BG"))
+
+  var rows: Optional[Int] = safely(Environment.lines.decode[Int])
+  var columns: Optional[Int] = safely(Environment.columns.decode[Int])
 
   def knownColumns: Int = columns.or(80)
   def knownRows: Int = rows.or(80)
