@@ -130,6 +130,14 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
   // been consumed.
   private var hasConsumedNonBlankLine: Boolean = false
 
+  // TelParser surfaces an empty sentinel line when the input ends with LF
+  // (so a file "code\n" parses as two lines: "code" and ""). The streaming
+  // parser hits EOF after the LF, so the next consumeTrailingBlanksFor at
+  // the innermost block needs to claim one extra blank. Set when the LF we
+  // just consumed is the final byte of the document; consumed exactly once
+  // by the first consumeTrailingBlanksFor that reaches EOF.
+  private var documentEndsWithLf: Boolean = false
+
   // Reusable string builder for source-atom / literal-atom payloads.
   private val sb: jl.StringBuilder = new jl.StringBuilder(256)
 
@@ -261,7 +269,12 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
         val pragma = parsePragma()
         fillHead()  // park head at the next line
         if directive.absent && pragma.absent then determineMargin()
-        else margin = 0
+        else
+          // A directive or pragma may be followed by blank lines before the
+          // first content line; consume them so parseChildren can dispatch
+          // on a real content line.
+          margin = 0
+          while head.blank && !head.eof do fillHead()
 
         val children = parseChildren(parentIndent = -1)
         Tel.Document(directive, pragma, lineEndings, children)
@@ -364,13 +377,18 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
     count
 
   // Consume one line-ending sequence (LF or CR LF). Validates that bare CR
-  // (in LF mode) and bare LF (in CRLF mode) raise E121.
+  // (in LF mode) and bare LF (in CRLF mode) raise E121. Sets
+  // `documentEndsWithLf` when the LF we just consumed is the final byte of
+  // the document — used by consumeTrailingBlanksFor to count the virtual
+  // empty trailing line that TelParser surfaces when its lines array ends
+  // with a sentinel empty entry.
   private def consumeLineEnding(): Unit raises TelError =
     if !more then ()
     else if peek == LF then
       if !lineEndingsDetected then detectLineEndingMode(crBefore = false)
       else if crlfMode then errorHere(Reason.BadLineEnding)
       advance()
+      if !more then documentEndsWithLf = true
     else if peek == CR then
       val next = peekNext()
       if next != LF.toInt then errorHere(Reason.BadLineEnding)
@@ -379,6 +397,7 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
         else if !crlfMode then errorHere(Reason.BadLineEnding)
         advance()  // CR
         advance()  // LF
+        if !more then documentEndsWithLf = true
     else
       // not at a line ending — caller error
       ()
@@ -594,13 +613,15 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
       else
         val compoundLeadingSpaces = head.leadingSpaces
         val compoundLine = head.startLine
+        // §16.2: validate tabulated rows BEFORE parseCompoundLine consumes
+        // the row's bytes. validateTabulatedRowInline uses mark + cue so the
+        // cursor remains parked at the row start for parseCompoundLine.
+        if tabulation.present then
+          validateTabulatedRowInline(compoundLeadingSpaces, tabulation.vouch, compoundLine)
         val parsed = parseCompoundLine(compoundLine)
         prevContentLeadingSpaces = compoundLeadingSpaces
         prevLineWasBoundary = false
         fillHead()
-
-        if tabulation.present then validateTabulatedRowFromParsed(parsed, tabulation.vouch,
-                                                                  compoundLine)
 
         val extraAtom: Optional[Tel.Atom] =
           if tabulation.absent then parseSourceOrLiteralAtomIfPresent(compoundLeadingSpaces)
@@ -655,7 +676,15 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
   // blank line belongs if the next non-blank line (if any) matches `indent`
   // or EOF.
   private def consumeTrailingBlanksFor(indent: Int): Int raises TelError =
-    if !head.blank || head.eof then 0
+    if head.eof then
+      // The first parseBlock to reach EOF after a document that ended with
+      // LF claims the virtual sentinel trailing line that TelParser emits.
+      // Cleared so outer parseBlock invocations don't double-count.
+      if documentEndsWithLf then
+        documentEndsWithLf = false
+        1
+      else 0
+    else if !head.blank then 0
     else
       val mk = beginMark()
       val firstBlankSnapshot = (head.leadingSpaces, head.indentLevels, head.blank,
@@ -859,17 +888,66 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
     consumeLineEnding()
     Tel.Tabulation(IArray.from(markers), IArray.from(headings))
 
-  // Phase-1 tabulated-row validation. Mirrors `validateTabulatedRow` in
-  // TelParser. We need the row's parsed `Compound` and the tabulation's
-  // marker offsets; in streaming we don't have a `Line` object so we
-  // simulate by re-emitting from the parsed compound. For phase 1 the
-  // simplest approach is: skip this validation entirely (the column-rule
-  // tests rely on E117/E118 errors from byte-level scan, which we did not
-  // capture). Step 2 will add a proper byte-level tabulated-row check.
-  private def validateTabulatedRowFromParsed
-    ( compound: Tel.Compound, tabulation: Tel.Tabulation, lineIdx: Int )
+  // §16.2 column-rule validation. The cursor must be parked at the row's
+  // first content byte (past leading spaces). Walks the bytes up to LF/CR
+  // checking that every hard-space (2+) run ends exactly at one of the
+  // tabulation header's marker positions (E117) and that no non-final
+  // column value exceeds its declared width (E119). Uses mark + cue so the
+  // cursor is restored to the same position for the subsequent
+  // parseCompoundLine call.
+  private def validateTabulatedRowInline
+    ( rowLeadingSpaces: Int, tabulation: Tel.Tabulation, lineNumber: Int )
   : Unit raises TelError =
-    ()  // step-2 work
+    val markers = tabulation.markerOffsets
+    val mk = beginMark()
+    var col = rowLeadingSpaces
+    var columnIdx = 0
+    var phraseStart = rowLeadingSpaces
+    var stopped = false
+
+    while !stopped && more && peek != LF && peek != CR do
+      val b = peek
+      if b == SP then
+        val runStart = col
+        while more && peek == SP do { advance(); col += 1 }
+        val runLen = col - runStart
+        if runLen >= 2 then
+          val sigilNext = more && peek == sigil
+          val isRemark =
+            if !sigilNext then false
+            else
+              ensureLookahead(3)
+              val afterSigil = if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
+              afterSigil == SP.toInt
+              && (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
+          if isRemark then
+            // Remark terminates column validation.
+            while more && peek != LF && peek != CR do { advance(); col += 1 }
+            stopped = true
+          else
+            if columnIdx >= 1 && columnIdx < markers.length - 1 then
+              val phraseWidth = runStart - phraseStart
+              val colMax = markers(columnIdx + 1) - markers(columnIdx) - 2
+              if phraseWidth > colMax then
+                errorAt(Reason.ColumnValueTooWide, lineNumber, phraseStart + 1)
+            var foundIdx = -1
+            var k = 1
+            while k < markers.length && foundIdx < 0 do
+              if markers(k) == col then foundIdx = k
+              k += 1
+            if foundIdx < 0 then
+              errorAt(Reason.HardSpaceWrongPosition, lineNumber, col + 1)
+            columnIdx = foundIdx
+            phraseStart = col
+      else
+        advance()
+        col += 1
+
+    // Cue back so parseCompoundLine reads the row from the start.
+    syncTo()
+    reconcileLineation()
+    cursor.cue(mk)
+    syncFrom()
 
   // ── Source / literal atom dispatch ───────────────────────────────────────
 
@@ -906,7 +984,15 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
 
     var done = false
     while !done do
-      if head.eof then done = true
+      if head.eof then
+        // The virtual trailing blank at EOF (when the document ended with
+        // LF) is claimed by the source atom rather than the enclosing
+        // block — matches TelParser, where the source-atom loop's
+        // probe-past-EOF emits one extra empty line.
+        if documentEndsWithLf then
+          sb.append('\n')
+          documentEndsWithLf = false
+        done = true
       else if head.blank then
         // Probe across blanks to see if more source follows.
         val mk = beginMark()
@@ -1004,14 +1090,21 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
       val line = if raw.length > 0 && raw.charAt(raw.length - 1) == '\r'
                  then raw.substring(0, raw.length - 1) else raw
       if line == delimiter then
-        // Closing delimiter — consume the optional EOL (the document may
-        // end at EOF without a trailing newline).
-        if more then advance()  // consume LF
+        // Closing delimiter — the LF *before* the closing delimiter is the
+        // delimiter's leading separator, not part of the payload. Strip the
+        // trailing '\n' we appended for the previous payload line (if any),
+        // then consume the optional EOL after the delimiter.
+        if sb.length > 0 && sb.charAt(sb.length - 1) == '\n' then
+          sb.setLength(sb.length - 1)
+        if more then
+          advance()  // consume LF (may be absent at EOF)
+          if !more then documentEndsWithLf = true
         done = true
       else
         // Payload line — must have an LF terminator; EOF here is E115.
         if !more then errorAt(Reason.UnclosedLiteral, openingLine, 1)
         advance()  // consume LF
+        if !more then documentEndsWithLf = true
         sb.append(line)
         sb.append('\n')
 
