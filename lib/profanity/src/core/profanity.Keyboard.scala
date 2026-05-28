@@ -117,7 +117,7 @@ object Keyboard:
                       TerminalInfo.WindowSize(rows, cols) #:: process(tail)
 
                     case _ =>
-                      TerminalInfo.WindowSize(20, 30) #:: process(tail)
+                      process(tail)
 
                   case 'O' #:: tail =>
                     TerminalInfo.LoseFocus #:: process(tail)
