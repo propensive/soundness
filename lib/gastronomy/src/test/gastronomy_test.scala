@@ -94,3 +94,30 @@ object Tests extends Suite(m"Gastronomy tests"):
       0L.digest[Sha2[256]].serialize[Hex]
       != 0xf000000000000000L.digest[Sha2[256]].serialize[Hex]
     . assert(identity(_))
+
+    test(m"Blake3 via Hash typeclass, empty input"):
+      IArray[Byte]().digest[Blake3].serialize[Hex]
+    . assert: digest =>
+        digest == t"AF1349B9F5F9A1A6A0404DEA36DCC9499BCB25C9ADC112B7CC9A93CAE41F3262"
+
+    suite(m"Blake3 official test vectors"):
+      val key: IArray[Byte] = Blake3TestVectors.Key.getBytes("UTF-8").nn.immutable(using Unsafe)
+      val context: Text = Blake3TestVectors.ContextString.tt
+
+      Blake3TestVectors.cases.each: vector =>
+        val input = IArray.tabulate(vector.inputLen)(i => (i % 251).toByte)
+        val expectedHash      = vector.hash.toUpperCase.nn.tt
+        val expectedKeyed     = vector.keyedHash.toUpperCase.nn.tt
+        val expectedDerived   = vector.deriveKey.toUpperCase.nn.tt
+
+        test(m"hash, inputLen=${vector.inputLen}"):
+          Blake3.hashOf(input, 131).serialize[Hex]
+        . assert(_ == expectedHash)
+
+        test(m"keyedHash, inputLen=${vector.inputLen}"):
+          Blake3.keyedHash(key, input, 131).serialize[Hex]
+        . assert(_ == expectedKeyed)
+
+        test(m"deriveKey, inputLen=${vector.inputLen}"):
+          Blake3.deriveKey(context, input, 131).serialize[Hex]
+        . assert(_ == expectedDerived)

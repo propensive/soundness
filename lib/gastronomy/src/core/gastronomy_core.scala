@@ -37,6 +37,7 @@ import prepositional.*
 import turbulence.*
 
 package hashFunctions:
+  given blake3: Hash in Blake3 = Blake3.hash
   given crc32: Hash in Crc32 = Crc32.hash
   given md5: Hash in Md5 = Md5.hash
   given sha1: Hash in Sha1 = Sha1.hash
