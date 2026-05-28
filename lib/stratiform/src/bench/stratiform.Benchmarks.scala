@@ -51,8 +51,6 @@ import symbolism.*
 import temporaryDirectories.system
 import turbulence.*
 import vacuous.*
-import zephyrine.*
-import zephyrine.lineation.linefeedByte
 
 // Parser-throughput benchmarks against TEL-converted versions of the
 // eight JSON samples that the `jacinta.Benchmarks` suite uses. The
@@ -95,12 +93,6 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
     val tel = Tel.parse(bytes)
     Tels.Reconstructor.fromTel(tel)
 
-  // Streaming-parser convenience: build a Cursor around the byte chunk
-  // and run TelStreamParser. The Cursor's linefeedByte lineation gives
-  // the parser accurate error positions, matching TelParser's behaviour.
-  def streamingParse(bytes: Data): Tel.Document =
-    TelStreamParser.parse(Cursor[Data](bytes))
-
   // Pre-load every example: the bench harness re-runs each `bench`
   // block thousands of times, so loading the resource per iteration
   // would skew the measurement towards the resource I/O.
@@ -138,9 +130,6 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
              ( stratiform.Benchmarks.example1Bytes, stratiform.Benchmarks.example1Schema )
           }
 
-      bench(m"Parse (streaming)")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.streamingParse(stratiform.Benchmarks.example1Bytes) }
-
     suite(m"Example 2 — small menu fragment"):
       val size = example2Bytes.length*Byte
 
@@ -153,9 +142,6 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
             Tel.parse
              ( stratiform.Benchmarks.example2Bytes, stratiform.Benchmarks.example2Schema )
           }
-
-      bench(m"Parse (streaming)")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.streamingParse(stratiform.Benchmarks.example2Bytes) }
 
     suite(m"Example 3 — SVG viewer menu"):
       val size = example3Bytes.length*Byte
@@ -170,9 +156,6 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
              ( stratiform.Benchmarks.example3Bytes, stratiform.Benchmarks.example3Schema )
           }
 
-      bench(m"Parse (streaming)")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.streamingParse(stratiform.Benchmarks.example3Bytes) }
-
     suite(m"Example 4 — 100 user records"):
       val size = example4Bytes.length*Byte
 
@@ -185,9 +168,6 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
             Tel.parse
              ( stratiform.Benchmarks.example4Bytes, stratiform.Benchmarks.example4Schema )
           }
-
-      bench(m"Parse (streaming)")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.streamingParse(stratiform.Benchmarks.example4Bytes) }
 
     suite(m"Example 5 — 500 log entries"):
       val size = example5Bytes.length*Byte
@@ -202,9 +182,6 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
              ( stratiform.Benchmarks.example5Bytes, stratiform.Benchmarks.example5Schema )
           }
 
-      bench(m"Parse (streaming)")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.streamingParse(stratiform.Benchmarks.example5Bytes) }
-
     suite(m"Example 6 — 50 high-precision blockchain transactions"):
       val size = example6Bytes.length*Byte
 
@@ -217,9 +194,6 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
             Tel.parse
              ( stratiform.Benchmarks.example6Bytes, stratiform.Benchmarks.example6Schema )
           }
-
-      bench(m"Parse (streaming)")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.streamingParse(stratiform.Benchmarks.example6Bytes) }
 
     suite(m"Example 7 — 1000 small integers"):
       val size = example7Bytes.length*Byte
@@ -234,9 +208,6 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
              ( stratiform.Benchmarks.example7Bytes, stratiform.Benchmarks.example7Schema )
           }
 
-      bench(m"Parse (streaming)")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.streamingParse(stratiform.Benchmarks.example7Bytes) }
-
     suite(m"Example 8 — 1000 small decimals"):
       val size = example8Bytes.length*Byte
 
@@ -249,6 +220,3 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
             Tel.parse
              ( stratiform.Benchmarks.example8Bytes, stratiform.Benchmarks.example8Schema )
           }
-
-      bench(m"Parse (streaming)")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.streamingParse(stratiform.Benchmarks.example8Bytes) }

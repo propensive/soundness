@@ -644,14 +644,14 @@ object Tel extends Tel2:
   // internally by the Aggregable and Loadable typeclasses; user code
   // should prefer `bytes.read[Tel]` or `text.load[Tel]`.
   def parse(bytes: Data): Tel raises TelError =
-    Tel(TelStreamParser.parse(bytes))
+    Tel(TelParser.parse(bytes))
 
   // Schema-aware parse: the parser uses the §19.5 schema-aware E107
   // recovery rule when it encounters an odd-indented line. Useful
   // when the consumer wants tolerant parsing of indentation typos
   // against a known schema.
   def parse(bytes: Data, schema: Tels): Tel raises TelError =
-    Tel(TelStreamParser.parse(bytes, schema))
+    Tel(TelParser.parse(bytes, schema))
 
   // `bytes.read[Tel]` for any Stream[Data] source: concatenates the
   // chunks and parses the result. The metadata (interpreter directive,
@@ -697,7 +697,7 @@ object Tel extends Tel2:
 
     val text = builder.toString
     val bytes = text.getBytes("UTF-8").nn
-    val doc = TelStreamParser.parse(IArray.unsafeFromArray(bytes))
+    val doc = TelParser.parse(IArray.unsafeFromArray(bytes))
     val meta = Tel.Metadata(doc.interpreterDirective, doc.pragma, doc.lineEndings)
     turbulence.Document(Tel(doc): Tel, meta)
 

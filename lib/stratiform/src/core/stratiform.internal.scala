@@ -97,7 +97,7 @@ object internal:
         override def abort(error: Diagnostics ?=> TelError): Nothing =
           halt(m"the tel\"…\" literal is invalid: ${error.message}")
 
-      TelStreamParser.parse(data)
+      TelParser.parse(data)
 
     abortive:
       var holeIndex: Int = 0
@@ -246,7 +246,7 @@ object internal:
         override def abort(error: Diagnostics ?=> TelError): Nothing =
           halt(m"the tel\"…\" pattern is invalid: ${error.message}")
 
-      TelStreamParser.parse(IArray.from(source.getBytes("UTF-8").nn.iterator))
+      TelParser.parse(IArray.from(source.getBytes("UTF-8").nn.iterator))
 
     // At runtime the matcher re-parses the assembled pattern source from
     // an embedded byte literal. We could emit the pre-parsed AST as an
@@ -259,7 +259,7 @@ object internal:
 
     val matchResult: Expr[Option[List[Tel]]] = '{
       val pattern: Tel.Document =
-        contingency.unsafely(TelStreamParser.parse($patternBytesExpr))
+        contingency.unsafely(TelParser.parse($patternBytesExpr))
 
       stratiform.internal.matchDocument(pattern, $scrutinee, $markerExpr)
     }
