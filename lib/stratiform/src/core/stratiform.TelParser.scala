@@ -249,6 +249,123 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
     System.arraycopy(src, off, atomBytes, atomLen, len)
     atomLen += len
 
+  // ── Honeycomb-style scratch buffers ───────────────────────────────────────
+  // A single parser-lifetime array per child-collection type holds every
+  // pending child across the whole recursive descent. Each
+  // `parseBlock` / `parseCompoundLine` invocation snapshots the current
+  // index at scope-entry; on scope-exit it computes `count = current - start`,
+  // snapshots that range into a freshly allocated exact-size `Array` (wrapped
+  // as `IArray` via `.immutable(using Unsafe)`), and rewinds the index.
+  // Empty scopes return `IArray.empty` without any allocation.
+  //
+  // This replaces one `mutable.ArrayBuffer` (which itself allocates a backing
+  // array, grows geometrically, and copies on growth) + one `IArray.from`
+  // call per scope with a single exact-size `Array.copyOfRange` allocation
+  // per non-empty scope. For typical workloads (deep nesting, many siblings)
+  // it eliminates several thousand allocations per parse.
+
+  private var scratchAtoms:     Array[Tel.Atom]     = new Array[Tel.Atom](16)
+  private var atomScratchIx:    Int = 0
+
+  private var scratchComments:  Array[Tel.Comment]  = new Array[Tel.Comment](8)
+  private var commentScratchIx: Int = 0
+
+  private var scratchCompounds: Array[Tel.Compound] = new Array[Tel.Compound](8)
+  private var compoundScratchIx: Int = 0
+
+  private var scratchBlocks:    Array[Tel.Block]    = new Array[Tel.Block](16)
+  private var blockScratchIx:   Int = 0
+
+  private inline def reserveAtom(): Unit =
+    if atomScratchIx >= scratchAtoms.length then
+      val grown = new Array[Tel.Atom](scratchAtoms.length*2)
+      System.arraycopy(scratchAtoms, 0, grown, 0, atomScratchIx)
+      scratchAtoms = grown
+
+  private inline def reserveComment(): Unit =
+    if commentScratchIx >= scratchComments.length then
+      val grown = new Array[Tel.Comment](scratchComments.length*2)
+      System.arraycopy(scratchComments, 0, grown, 0, commentScratchIx)
+      scratchComments = grown
+
+  private inline def reserveCompound(): Unit =
+    if compoundScratchIx >= scratchCompounds.length then
+      val grown = new Array[Tel.Compound](scratchCompounds.length*2)
+      System.arraycopy(scratchCompounds, 0, grown, 0, compoundScratchIx)
+      scratchCompounds = grown
+
+  private inline def reserveBlock(): Unit =
+    if blockScratchIx >= scratchBlocks.length then
+      val grown = new Array[Tel.Block](scratchBlocks.length*2)
+      System.arraycopy(scratchBlocks, 0, grown, 0, blockScratchIx)
+      scratchBlocks = grown
+
+  private inline def pushAtom(atom: Tel.Atom): Unit =
+    reserveAtom()
+    scratchAtoms(atomScratchIx) = atom
+    atomScratchIx += 1
+
+  private inline def pushComment(c: Tel.Comment): Unit =
+    reserveComment()
+    scratchComments(commentScratchIx) = c
+    commentScratchIx += 1
+
+  private inline def pushCompound(c: Tel.Compound): Unit =
+    reserveCompound()
+    scratchCompounds(compoundScratchIx) = c
+    compoundScratchIx += 1
+
+  private inline def pushBlock(b: Tel.Block): Unit =
+    reserveBlock()
+    scratchBlocks(blockScratchIx) = b
+    blockScratchIx += 1
+
+  // Extract `count` items ending at the current index, rewind, and return
+  // them as an IArray. Empty scopes return the shared empty IArray with
+  // zero allocation.
+  private inline def takeAtoms(count: Int): IArray[Tel.Atom] =
+    if count == 0 then IArray.empty[Tel.Atom]
+    else
+      val result = new Array[Tel.Atom](count)
+      System.arraycopy(scratchAtoms, atomScratchIx - count, result, 0, count)
+      atomScratchIx -= count
+      result.asInstanceOf[IArray[Tel.Atom]]
+
+  private inline def takeComments(count: Int): IArray[Tel.Comment] =
+    if count == 0 then IArray.empty[Tel.Comment]
+    else
+      val result = new Array[Tel.Comment](count)
+      System.arraycopy(scratchComments, commentScratchIx - count, result, 0, count)
+      commentScratchIx -= count
+      result.asInstanceOf[IArray[Tel.Comment]]
+
+  private inline def takeCompounds(count: Int): IArray[Tel.Compound] =
+    if count == 0 then IArray.empty[Tel.Compound]
+    else
+      val result = new Array[Tel.Compound](count)
+      System.arraycopy(scratchCompounds, compoundScratchIx - count, result, 0, count)
+      compoundScratchIx -= count
+      result.asInstanceOf[IArray[Tel.Compound]]
+
+  private inline def takeBlocks(count: Int): IArray[Tel.Block] =
+    if count == 0 then IArray.empty[Tel.Block]
+    else
+      val result = new Array[Tel.Block](count)
+      System.arraycopy(scratchBlocks, blockScratchIx - count, result, 0, count)
+      blockScratchIx -= count
+      result.asInstanceOf[IArray[Tel.Block]]
+
+  // ── parseCompoundLine result channels ──────────────────────────────────────
+  // parseCompoundLine deposits its keyword + remark into these single-slot
+  // fields rather than returning a Tel.Compound. The atoms it reads remain
+  // on the scratchAtoms stack; the caller (parseBlock) optionally pushes
+  // an extra Source/Literal atom, then takes the entire atom run at once.
+  // This eliminates the prior `parsed.copy(atoms = finalAtoms, children = ...)`
+  // double-allocation: Tel.Compound is built exactly once with its final
+  // atoms and children set.
+  private var compoundLineKeyword: Text = t""
+  private var compoundLineRemark:  Optional[Text] = Unset
+
   // ── Keyword interning cache ───────────────────────────────────────────────
   // 64-slot two-Long fingerprint cache. The byte-level variant: the first
   // four bytes pack into `low` and the next four into `high`. ASCII keywords
@@ -831,36 +948,40 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
 
     if head.eof || head.indentLevels < expected then IArray.empty[Tel.Block]
     else
-      val builder = scala.collection.mutable.ArrayBuffer.empty[Tel.Block]
+      val start = blockScratchIx
       while !head.eof && head.indentLevels == expected do
-        builder += parseBlock(expected)
+        parseBlock(expected)  // pushes one block onto scratchBlocks
 
       // After consuming children at `expected`, a remaining non-blank line
       // more indented than `expected` is an error.
       if !head.eof && head.indentLevels > expected then
         val line = head.startLine
-        builder.lastOption match
-          case Some(last) if last.tabulation.present && last.compounds.isEmpty =>
+        val lastIx = blockScratchIx - 1
+        if lastIx >= start then
+          val last = scratchBlocks(lastIx)
+          if last.tabulation.present && last.compounds.isEmpty then
             errorAt(Reason.RowWrongIndent, line, 1)
-
-          case Some(last) if last.tabulation.present =>
+          else if last.tabulation.present then
             errorAt(Reason.ChildOfNonCompound, line, 1)
-
-          case Some(last) if last.compounds.isEmpty =>
+          else if last.compounds.isEmpty then
             errorAt(Reason.ChildOfNonCompound, line, 1)
+          else
+            errorAt(Reason.OverIndentation, line, 1)
+        else errorAt(Reason.OverIndentation, line, 1)
 
-          case _ => errorAt(Reason.OverIndentation, line, 1)
-
-      IArray.from(builder)
+      takeBlocks(blockScratchIx - start)
 
   // ── parseBlock ───────────────────────────────────────────────────────────
 
   // Parses one block at the given indent: leading comments, optional
   // tabulation header, a run of compounds (each possibly with source /
   // literal / children attached), then trailing blank lines (those that
-  // semantically belong to this block).
-  private def parseBlock(indent: Int): Tel.Block raises TelError =
-    val comments = scala.collection.mutable.ArrayBuffer.empty[Tel.Comment]
+  // semantically belong to this block). Pushes the resulting Tel.Block
+  // onto the parser's `scratchBlocks` stack; the caller (parseChildren)
+  // takes a contiguous range when its loop completes.
+  private def parseBlock(indent: Int): Unit raises TelError =
+    val commentStart  = commentScratchIx
+    val compoundStart = compoundScratchIx
 
     // Leading comments at this indent.
     while !head.eof && !head.blank && head.indentLevels == indent && isCommentBody() do
@@ -871,15 +992,17 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
       then errorAt(Reason.CommentNotPreceded, head.startLine, 1)
 
       val text = parseCommentLine()
-      comments += Tel.Comment(text)
+      pushComment(Tel.Comment(text))
       prevLineWasBoundary = true
       hasConsumedNonBlankLine = true
       fillHead()
 
+    val hasComments = commentScratchIx > commentStart
+
     // Interior blanks: if we have comments and the next line is blank, look
     // ahead to see whether the blanks separate the comments from a compound
     // group at the same indent. If so, consume them as interior whitespace.
-    if comments.nonEmpty && !head.eof && head.blank then
+    if hasComments && !head.eof && head.blank then
       skipInteriorBlanksIfFollowedByContentAtIndent(indent)
 
     // Optional tabulation header.
@@ -895,8 +1018,6 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
         Optional(tab)
       else Unset
 
-    val compounds = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
-
     // Compound loop.
     var keepLoop = true
     while keepLoop && !head.eof && !head.blank && head.indentLevels == indent do
@@ -909,7 +1030,17 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
         // cursor remains parked at the row start for parseCompoundLine.
         if tabulation.present then
           validateTabulatedRowInline(compoundLeadingSpaces, tabulation.vouch, compoundLine)
-        val parsed = parseCompoundLine(compoundLine)
+
+        // parseCompoundLine pushes the compound's inline atoms onto
+        // scratchAtoms and deposits keyword + remark into the parser's
+        // compoundLine* fields. The atoms stay on the stack so we can
+        // append an optional source/literal extra atom alongside them
+        // and take the entire run at once into the final Tel.Compound,
+        // skipping the previous `parsed.copy(...)` double-allocation.
+        val atomsStart = atomScratchIx
+        parseCompoundLine(compoundLine)
+        val compoundKeyword = compoundLineKeyword
+        val compoundRemark  = compoundLineRemark
         prevContentLeadingSpaces = compoundLeadingSpaces
         prevLineWasBoundary = false
         // §19.5 recovery needs this compound's keyword on the ancestor
@@ -917,7 +1048,7 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
         // there consults the ancestors. No-schema mode skips push/pop
         // entirely so the hot path is unaffected.
         val pushed = schema.present
-        if pushed then pushAncestor(parsed.keyword)
+        if pushed then pushAncestor(compoundKeyword)
         try
           fillHead()
 
@@ -925,19 +1056,21 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
             if tabulation.absent then parseSourceOrLiteralAtomIfPresent(compoundLeadingSpaces)
             else Unset
 
+          if extraAtom.present then pushAtom(extraAtom.vouch)
+
           val children =
             if extraAtom.absent && tabulation.absent then parseChildren(indent)
             else IArray.empty[Tel.Block]
 
-          val finalAtoms = extraAtom.lay(parsed.atoms): atom =>
-            parsed.atoms :+ atom
-
-          compounds += parsed.copy(atoms = finalAtoms, children = children)
+          val atoms = takeAtoms(atomScratchIx - atomsStart)
+          pushCompound(Tel.Compound(compoundKeyword, atoms, compoundRemark, children))
         finally if pushed then popAncestor()
 
     val trailingBlankLines = consumeTrailingBlanksFor(indent)
 
-    Tel.Block(IArray.from(comments), tabulation, IArray.from(compounds), trailingBlankLines)
+    val comments  = takeComments(commentScratchIx - commentStart)
+    val compounds = takeCompounds(compoundScratchIx - compoundStart)
+    pushBlock(Tel.Block(comments, tabulation, compounds, trailingBlankLines))
 
   // After the comment-group, consume blank lines if the next non-blank line
   // is a content (not comment) line at the same `indent`. Otherwise leave
@@ -1435,10 +1568,13 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
 
   // ── Compound line parsing ────────────────────────────────────────────────
 
-  // Cursor is at the first content byte (past leading spaces). Returns the
-  // parsed compound (keyword + atoms + remark, children left empty for the
-  // caller to fill in).
-  private def parseCompoundLine(lineNumber: Int): Tel.Compound raises TelError = inHold:
+  // Cursor is at the first content byte (past leading spaces). Reads the
+  // compound line's keyword, atoms, and remark, depositing the keyword and
+  // remark into `compoundLineKeyword` / `compoundLineRemark`. Atoms are
+  // pushed onto the `scratchAtoms` stack; the caller (parseBlock) is
+  // responsible for taking them — typically together with an optional
+  // source/literal extra atom — and constructing the final Tel.Compound.
+  private def parseCompoundLine(lineNumber: Int): Unit raises TelError = inHold:
     val isAtColumnZero = head.leadingSpaces == 0
     val mayBeMisplacedPragma = isAtColumnZero && hasConsumedNonBlankLine
 
@@ -1452,7 +1588,6 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
       errorAt(Reason.PragmaNotFirst, lineNumber, 1)
     hasConsumedNonBlankLine = true
 
-    val atoms = scala.collection.mutable.ArrayBuffer.empty[Tel.Atom]
     var remark: Optional[Text] = Unset
     // Accumulate atom bytes into the parser-owned `atomBytes` buffer rather
     // than tracking buffer offsets into the cursor's `bytes`. With narrow
@@ -1471,7 +1606,7 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
       if atomOpen then
         val owned = new Array[Byte](atomLen)
         System.arraycopy(atomBytes, 0, owned, 0, atomLen)
-        atoms += Tel.Atom.Inline.fromBytes(owned, precedingSpaces)
+        pushAtom(Tel.Atom.Inline.fromBytes(owned, precedingSpaces))
         resetAtom()
         atomOpen = false
 
@@ -1556,7 +1691,8 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
     then errorAt(Reason.TrailingSpaces, lineNumber, head.leadingSpaces + 1)
 
     consumeLineEnding()
-    Tel.Compound(keyword, IArray.from(atoms), remark, IArray.empty)
+    compoundLineKeyword = keyword
+    compoundLineRemark  = remark
 
   // Read a keyword from the current position. The keyword runs until SP, LF,
   // CR, or EOF. Returns the interned `Text`. Uses the 64-slot fingerprint
