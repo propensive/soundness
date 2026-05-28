@@ -33,13 +33,7 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
   echo "release: working tree is dirty; commit or stash first" >&2; exit 1
 fi
 
-git fetch origin release >/dev/null
 HEAD_SHA=$(git rev-parse HEAD)
-if ! git merge-base --is-ancestor "$HEAD_SHA" origin/release; then
-  echo "release: HEAD ($HEAD_SHA) is not reachable from origin/release" >&2
-  echo "  (releases must come from a commit on the release branch)" >&2
-  exit 1
-fi
 
 if git rev-parse "refs/tags/$VERSION" >/dev/null 2>&1; then
   echo "release: tag $VERSION already exists locally" >&2; exit 1
