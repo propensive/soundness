@@ -41,7 +41,14 @@ object Cursor:
   opaque type Mark = Long
   opaque type Offset = Long
 
-  class Held()
+  // `Held` is a witness type — it has no per-instance state, and the marker
+  // APIs (`mark`, `cue`) only consult its type to gate access. Share a
+  // single instance across all `cursor.hold` calls instead of allocating a
+  // fresh one each time; parsers using narrow per-leaf holds open one
+  // `cursor.hold` per line and would otherwise pay one tiny `Held`
+  // allocation per line.
+  final class Held private[zephyrine] ()
+  val shared: Held = new Held()
 
   type Loader[data] = () => Optional[data]
 
@@ -435,7 +442,7 @@ final class Cursor[data]
     val wasHeld = holdStart >= 0
     if !wasHeld then holdStart = pos
 
-    action(using new Cursor.Held()).also:
+    action(using Cursor.shared).also:
       if !wasHeld then
         holdStart = -1
         marksSize = 0

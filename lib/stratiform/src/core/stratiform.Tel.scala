@@ -634,7 +634,62 @@ object Tel extends Tel2:
   extends Subtree
 
   object Atom:
-    case class Inline(text: Text, precedingSpaces: Int) extends Atom
+    // Inline is a regular class (not a case class) so its `text` can be
+    // materialised lazily. The parser writes each atom's UTF-8 bytes into
+    // a shared per-parse "arena" (a growing byte buffer); each Inline
+    // remembers the slice as `(arenaBytes, byteOff, byteLen)`. The
+    // String allocation and UTF-8 decode only happen on first `.text`
+    // access — consumers that never inspect an atom (parser-throughput
+    // benchmarks, partial decoders) skip the per-atom String allocation
+    // entirely. The arena array is not aliased with the parser's
+    // streaming buffer, so the atom's lifetime is independent of the
+    // Cursor it was parsed from. When the arena needs to grow the parser
+    // allocates a fresh array and leaves the old one alive via the
+    // Inlines that point at it; multiple arena arrays may therefore be
+    // kept alive across a parse, but no per-atom byte[] is allocated.
+    // Apply / unapply preserve the previous case-class construction and
+    // pattern-match syntax; equality and hashCode are derived manually
+    // to match the prior structural behaviour.
+    final class Inline private[stratiform]
+      ( private val bytes:           Array[Byte] | Null,
+        private val byteOff:         Int,
+        private val byteLen:         Int,
+        private var _text:           String | Null,
+        val precedingSpaces:         Int )
+    extends Atom:
+
+      def text: Text =
+        val t = _text
+        if t == null then
+          val b = bytes.nn
+          val s = new String(b, byteOff, byteLen, java.nio.charset.StandardCharsets.UTF_8)
+          _text = s
+          Text(s)
+        else Text(t)
+
+      override def equals(other: Any): Boolean = other match
+        case o: Inline => text == o.text && precedingSpaces == o.precedingSpaces
+        case _         => false
+
+      override def hashCode: Int = text.hashCode * 31 + precedingSpaces
+
+      override def toString: String = s"Inline($text,$precedingSpaces)"
+
+    object Inline:
+      def apply(text: Text, precedingSpaces: Int): Inline =
+        new Inline(null, 0, 0, text.s, precedingSpaces)
+
+      // Parser entry: references a slice of the per-parse atom arena. The
+      // arena array is shared with sibling atoms committed before the
+      // arena's next growth event. UTF-8 decode is deferred until
+      // `.text` is first accessed.
+      private[stratiform] def fromArena
+                    (arena: Array[Byte], off: Int, len: Int, precedingSpaces: Int)
+      :     Inline =
+        new Inline(arena, off, len, null, precedingSpaces)
+
+      def unapply(i: Inline): (Text, Int) = (i.text, i.precedingSpaces)
+
     case class Source(text: Text)                       extends Atom
     case class Literal(delimiter: Text, text: Text)     extends Atom
 
