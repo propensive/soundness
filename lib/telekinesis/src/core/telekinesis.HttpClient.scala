@@ -39,6 +39,8 @@ import java.net as jn
 import java.net.http as jnh
 import javax.net.ssl as jns
 
+import scala.util.NotGiven
+
 import anticipation.*
 import coaxial.*
 import contingency.*
@@ -50,7 +52,12 @@ import urticose.*
 import vacuous.*
 
 object HttpClient:
-  private lazy val client: jnh.HttpClient = jnh.HttpClient.newHttpClient().nn
+  // Build the underlying Java client with redirect-following disabled — the
+  // redirect-following telekinesis given runs its own loop so it can honour
+  // `HttpRedirection` exactly. Java's `NORMAL` policy has its own hard-coded
+  // cap and would shadow the limit we summon.
+  private lazy val client: jnh.HttpClient =
+    jnh.HttpClient.newBuilder.nn.followRedirects(jnh.HttpClient.Redirect.NEVER).nn.build.nn
 
   given domainSocket: Tactic[StreamError] => HttpClient onto DomainSocket = new HttpClient:
     type Target = DomainSocket
@@ -59,75 +66,139 @@ object HttpClient:
 
       unsafely(Http.Response.parse(socket.transmit(request)))
 
-  given http: Tactic[ConnectError] => Online => HttpClient:
-    type Target = Origin["http" | "https"]
+  private def buildJavaRequest
+    ( uri:         jn.URI,
+      method:      Http.Method,
+      textHeaders: List[Http.Header],
+      bodyFn:      () => Stream[Data] )
+  :   jnh.HttpRequest =
 
+    val request: jnh.HttpRequest.Builder = jnh.HttpRequest.newBuilder().nn.uri(uri).nn
+
+    lazy val body = bodyFn() match
+      case Stream() => jnh.HttpRequest.BodyPublishers.noBody.nn
+
+      case Stream(bytes) =>
+        jnh.HttpRequest.BodyPublishers.ofByteArray(bytes.mutable(using Unsafe))
+
+      case stream =>
+        jnh.HttpRequest.BodyPublishers.ofInputStream: () => stream.inputStream
+
+    method match
+      case Http.Delete  => request.DELETE().nn
+      case Http.Get     => request.GET().nn
+      case Http.Post    => request.POST(body).nn
+      case Http.Put     => request.PUT(body).nn
+      case Http.Connect => request.method("CONNECT", body).nn
+      case Http.Head    => request.method("HEAD", body).nn
+      case Http.Options => request.method("OPTIONS", body).nn
+      case Http.Patch   => request.method("PATCH", body).nn
+      case Http.Trace   => request.method("TRACE", body).nn
+
+    request.header("User-Agent", "internal/1.0.0")
+
+    textHeaders.each:
+      case Http.Header(key, value) => request.header(key.s, value.s)
+
+    request.build().nn
+
+  private def send(request: jnh.HttpRequest)(using Tactic[ConnectError])
+  :   jnh.HttpResponse[ji.InputStream] =
+
+    import ConnectError.Reason.*, Ssl.Reason.*
+
+    try client.send(request, jnh.HttpResponse.BodyHandlers.ofInputStream()).nn catch
+      case error: jns.SSLHandshakeException       => abort(ConnectError(Ssl(Handshake)))
+      case error: jns.SSLProtocolException        => abort(ConnectError(Ssl(Protocol)))
+      case error: jns.SSLPeerUnverifiedException  => abort(ConnectError(Ssl(Peer)))
+      case error: jns.SSLKeyException             => abort(ConnectError(Ssl(Key)))
+      case error: jn.UnknownHostException         => abort(ConnectError(Dns))
+      case error: jnh.HttpConnectTimeoutException => abort(ConnectError(Timeout))
+
+      case error: jn.ConnectException =>
+        error.getMessage() match
+          case "Connection refused"                    => abort(ConnectError(Refused))
+          case "Connection timed out"                  => abort(ConnectError(Timeout))
+          case "HTTP connect timed out"                => abort(ConnectError(Timeout))
+          case error                                   => abort(ConnectError(Unknown))
+
+      case error: ji.IOException =>
+        abort(ConnectError(Unknown))
+
+  private def buildResponse(response: jnh.HttpResponse[ji.InputStream])(using Tactic[ConnectError])
+  :   Http.Response =
+
+    val status: Http.Status = Http.Status.unapply(response.statusCode()).getOrElse:
+      abort(ConnectError(ConnectError.Reason.Unknown))
+
+    val headers: List[Http.Header] = response.headers.nn.map().nn.asScala.to(List).flatMap:
+      (key, values) => values.asScala.map: value => Http.Header(key.tt, value.tt)
+
+    status(headers, Http.Body.Streaming(unsafely(response.body().nn.stream[Data])))
+
+  // 301/302/303 historically downgrade the method to GET and drop the body;
+  // 307/308 preserve both. Matches Java's `Redirect.NORMAL` and the WHATWG
+  // fetch spec.
+  private def redirectMethod(code: Int, original: Http.Method): Http.Method = code match
+    case 301 | 302 | 303 => Http.Get
+    case _               => original
+
+  private def isRedirect(code: Int): Boolean = code match
+    case 301 | 302 | 303 | 307 | 308 => true
+    case _                           => false
+
+  given httpStrict: Tactic[ConnectError] => Online => Redirects.Disabled => HttpClient:
+    type Target = Origin["http" | "https"]
 
     def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
     :   Http.Response logs HttpEvent =
 
       val url = httpRequest.on(origin)
-
       Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
 
-      val request: jnh.HttpRequest.Builder =
-        jnh.HttpRequest.newBuilder().nn.uri(jn.URI.create(url.show.s)).nn
+      val javaRequest =
+        buildJavaRequest
+          ( jn.URI.create(url.show.s).nn,
+            httpRequest.method,
+            httpRequest.textHeaders,
+            httpRequest.body )
 
-      lazy val body = httpRequest.body() match
-        case Stream() => jnh.HttpRequest.BodyPublishers.noBody.nn
+      buildResponse(send(javaRequest))
 
-        case Stream(bytes) =>
-          jnh.HttpRequest.BodyPublishers.ofByteArray(bytes.mutable(using Unsafe))
+  given http: Tactic[ConnectError]
+  =>  Online
+  =>  NotGiven[Redirects.Disabled]
+  =>  ( redirection: HttpRedirection )
+  =>  HttpClient:
+    type Target = Origin["http" | "https"]
 
-        case stream =>
-          jnh.HttpRequest.BodyPublishers.ofInputStream: () => stream.inputStream
+    def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
+    :   Http.Response logs HttpEvent =
 
-      httpRequest.method match
-        case Http.Delete  => request.DELETE().nn
-        case Http.Get     => request.GET().nn
-        case Http.Post    => request.POST(body).nn
-        case Http.Put     => request.PUT(body).nn
-        case Http.Connect => request.method("CONNECT", body).nn
-        case Http.Head    => request.method("HEAD", body).nn
-        case Http.Options => request.method("OPTIONS", body).nn
-        case Http.Patch   => request.method("PATCH", body).nn
-        case Http.Trace   => request.method("TRACE", body).nn
+      val url = httpRequest.on(origin)
+      Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
 
-      request.header("User-Agent", "internal/1.0.0")
+      def loop(uri: jn.URI, method: Http.Method, bodyFn: () => Stream[Data], remaining: Int)
+      :   Http.Response =
 
-      httpRequest.textHeaders.each:
-        case Http.Header(key, value) => request.header(key.s, value.s)
+        val javaResponse = send(buildJavaRequest(uri, method, httpRequest.textHeaders, bodyFn))
+        val code = javaResponse.statusCode()
 
-      val response: jnh.HttpResponse[ji.InputStream] =
-        import ConnectError.Reason.*, Ssl.Reason.*
+        if !isRedirect(code) || remaining <= 0 then buildResponse(javaResponse) else
+          val location = javaResponse.headers.nn.firstValue("Location").nn
 
-        val client = HttpClient.client
+          if !location.isPresent then buildResponse(javaResponse) else
+            try javaResponse.body().nn.close() catch case _: ji.IOException => ()
 
-        try client.send(request.build(), jnh.HttpResponse.BodyHandlers.ofInputStream()).nn catch
-          case error: jns.SSLHandshakeException       => abort(ConnectError(Ssl(Handshake)))
-          case error: jns.SSLProtocolException        => abort(ConnectError(Ssl(Protocol)))
-          case error: jns.SSLPeerUnverifiedException  => abort(ConnectError(Ssl(Peer)))
-          case error: jns.SSLKeyException             => abort(ConnectError(Ssl(Key)))
-          case error: jn.UnknownHostException         => abort(ConnectError(Dns))
-          case error: jnh.HttpConnectTimeoutException => abort(ConnectError(Timeout))
+            val nextUri = uri.resolve(jn.URI.create(location.get.nn).nn).nn
+            val nextMethod = redirectMethod(code, method)
 
-          case error: jn.ConnectException =>
-            error.getMessage() match
-              case "Connection refused"                    => abort(ConnectError(Refused))
-              case "Connection timed out"                  => abort(ConnectError(Timeout))
-              case "HTTP connect timed out"                => abort(ConnectError(Timeout))
-              case error                                   => abort(ConnectError(Unknown))
+            val nextBody: () => Stream[Data] =
+              if nextMethod == method then bodyFn else () => Stream()
 
-          case error: ji.IOException =>
-            abort(ConnectError(Unknown))
+            loop(nextUri, nextMethod, nextBody, remaining - 1)
 
-      val status2: Http.Status = Http.Status.unapply(response.statusCode()).getOrElse:
-        abort(ConnectError(ConnectError.Reason.Unknown))
-
-      val headers2: List[Http.Header] = response.headers.nn.map().nn.asScala.to(List).flatMap:
-        (key, values) => values.asScala.map: value => Http.Header(key.tt, value.tt)
-
-      status2(headers2, Http.Body.Streaming(unsafely(response.body().nn.stream[Data])))
+      loop(jn.URI.create(url.show.s).nn, httpRequest.method, httpRequest.body, redirection.value)
 
 trait HttpClient extends Targetable:
   def request(request: Http.Request, target: Target): Http.Response logs HttpEvent

@@ -292,6 +292,29 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       . assert()
 
+    suite(m"Redirect handling"):
+      test(m"Follow a relative redirect chain by default"):
+        url"https://httpbin.org/redirect/3".fetch().status
+
+      . assert(_ == Http.Ok)
+
+      test(m"Follow an absolute redirect chain by default"):
+        url"https://httpbin.org/absolute-redirect/3".fetch().status
+
+      . assert(_ == Http.Ok)
+
+      test(m"Strict mode surfaces the 3xx as HttpError"):
+        import httpRedirections.doNotFollowRedirects
+        capture[HttpError](url"https://httpbin.org/redirect/1".fetch().receive[Text]).status
+
+      . assert(_ == Http.Found)
+
+      test(m"HttpRedirection caps the redirect chain"):
+        given HttpRedirection = HttpRedirection(1)
+        capture[HttpError](url"https://httpbin.org/redirect/3".fetch().receive[Text]).status
+
+      . assert(_ == Http.Found)
+
     suite(m"DNS Errors"):
       test(m"Nonexistent DNS"):
         capture[ConnectError](url"http://www.asorbkxoreuatoehudncak.com/".fetch())

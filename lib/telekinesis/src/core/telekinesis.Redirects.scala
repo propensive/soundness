@@ -32,35 +32,9 @@
                                                                                                   */
 package telekinesis
 
-import language.dynamics
-
-import anticipation.*
-import distillate.*
-import legerdemain.*
-import prepositional.*
-import rudiments.*
-import urticose.*
-import vacuous.*
-
-package queryParameters:
-  inline given arbitrary: [key <: Label, value] => key is Parametric to value = !!
-
-package httpRedirections:
-  given doNotFollowRedirects: Redirects.Disabled = Redirects.Disabled()
-
-extension [value: Encodable in Query](value: value)
-  def query: Query = value.encode
-
-extension [fetchable: Fetchable](endpoint: fetchable)
-  def fetch: Http.Fetch[fetchable.Target] =
-    Http.Fetch(fetchable.text(endpoint), fetchable.target(endpoint), fetchable.hostname(endpoint))
-
-  def submit: Http.Submit[fetchable.Target] =
-    Http.Submit(fetchable.text(endpoint), fetchable.target(endpoint), fetchable.hostname(endpoint))
-
-extension (url: into[HttpUrl])
-  @targetName("withQuery")
-  def query(query: Query): HttpUrl =
-    val query2 = url.query.let(query ++ _.decode[Query]).or(query)
-    Url(url.origin, url.location, query2.encode, url.fragment)
-
+// Bringing a `Redirects.Disabled` into scope selects the strict HTTP client
+// given, which returns 3xx responses unchanged rather than following them.
+// To enable, `import telekinesis.redirects.disabled` (defined in
+// telekinesis_core.scala).
+object Redirects:
+  class Disabled
