@@ -219,35 +219,64 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
   // Reusable string builder for source-atom / literal-atom payloads.
   private val sb: jl.StringBuilder = new jl.StringBuilder(256)
 
-  // Reusable byte accumulator for the inline-atom currently being parsed in
-  // parseCompoundLine. Atom bytes are copied into here as we read them, so
-  // they're independent of the cursor's buffer — refills inside the
-  // parseCompoundLine hold can compact and shift `bytes` without
-  // invalidating the in-flight atom. At commit time we snapshot the
-  // accumulator into a freshly allocated, exact-size `Array[Byte]` owned
-  // by the `Inline` atom.
-  private var atomBytes: Array[Byte] = new Array[Byte](64)
-  private var atomLen: Int = 0
+  // Atom-bytes arena: one growing byte buffer per parser instance into which
+  // every inline atom's UTF-8 bytes are written. Each `Tel.Atom.Inline`
+  // stores `(arenaArray, offset, length)` referring to a slice of the
+  // arena. When the arena's capacity is exhausted, the parser allocates a
+  // fresh, larger backing array; previously committed atoms keep the old
+  // arena array alive via their slice references. This replaces the prior
+  // "one freshly-allocated exact-size byte[] per atom" scheme: a workload
+  // with N atoms now performs O(log capacity) arena allocations instead of
+  // N per-atom allocations.
+  //
+  // `inFlightStart` is the arena offset where the currently-open atom
+  // started; -1 when no atom is open. On a mid-atom arena growth we carry
+  // the in-flight bytes (`atomArena(inFlightStart..arenaPos)`) into the
+  // new array at offset 0 so the atom remains contiguous; the old array
+  // (which still holds completed atoms) stays alive via their Inline
+  // references.
+  private var atomArena:     Array[Byte] = new Array[Byte](256)
+  private var arenaPos:      Int = 0
+  private var inFlightStart: Int = -1
 
-  private inline def resetAtom(): Unit = atomLen = 0
+  private inline def beginInFlightAtom(): Unit = inFlightStart = arenaPos
 
-  private inline def atomReserve(n: Int): Unit =
-    if atomLen + n > atomBytes.length then
-      var newLen = atomBytes.length
-      while atomLen + n > newLen do newLen *= 2
-      val grown = new Array[Byte](newLen)
-      System.arraycopy(atomBytes, 0, grown, 0, atomLen)
-      atomBytes = grown
+  private inline def endInFlightAtom(): Int =
+    val len = arenaPos - inFlightStart
+    inFlightStart = -1
+    len
 
-  private inline def atomAppend(b: Byte): Unit =
-    atomReserve(1)
-    atomBytes(atomLen) = b
-    atomLen += 1
+  private inline def arenaInFlightOffset: Int = inFlightStart
 
-  private inline def atomAppendRange(src: Array[Byte], off: Int, len: Int): Unit =
-    atomReserve(len)
-    System.arraycopy(src, off, atomBytes, atomLen, len)
-    atomLen += len
+  private inline def ensureArenaSpace(n: Int): Unit =
+    if arenaPos + n > atomArena.length then growArena(n)
+
+  // Non-inline: keep the slow path out of the inline budget. Allocates a
+  // fresh arena array sized to at least `arenaPos + n`, copies the
+  // in-flight atom's bytes (if any) into it starting at offset 0, and
+  // resets `arenaPos` accordingly. Already-committed atoms continue to
+  // reference the previous array.
+  private def growArena(n: Int): Unit =
+    val inFlightLen = if inFlightStart >= 0 then arenaPos - inFlightStart else 0
+    val needed = inFlightLen + n
+    var newCap = (atomArena.length * 2).max(256)
+    while newCap < needed do newCap *= 2
+    val newArena = new Array[Byte](newCap)
+    if inFlightLen > 0 then
+      System.arraycopy(atomArena, inFlightStart, newArena, 0, inFlightLen)
+    atomArena = newArena
+    if inFlightStart >= 0 then inFlightStart = 0
+    arenaPos = inFlightLen
+
+  private inline def appendToArena(b: Byte): Unit =
+    ensureArenaSpace(1)
+    atomArena(arenaPos) = b
+    arenaPos += 1
+
+  private inline def appendToArenaRange(src: Array[Byte], off: Int, len: Int): Unit =
+    ensureArenaSpace(len)
+    System.arraycopy(src, off, atomArena, arenaPos, len)
+    arenaPos += len
 
   // ── Honeycomb-style scratch buffers ───────────────────────────────────────
   // A single parser-lifetime array per child-collection type holds every
@@ -1589,25 +1618,21 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
     hasConsumedNonBlankLine = true
 
     var remark: Optional[Text] = Unset
-    // Accumulate atom bytes into the parser-owned `atomBytes` buffer rather
-    // than tracking buffer offsets into the cursor's `bytes`. With narrow
-    // holds, `parseCompoundLine`'s hold has `holdStart > 0`, so refills
-    // inside the line compact and shift `bytes`'s live content — buffer
-    // offsets recorded before the refill would no longer point at the right
-    // content. Copying bytes into a parser-local accumulator sidesteps that
-    // entirely; at commit we snapshot the accumulator into a freshly
-    // allocated, exact-size `Array[Byte]` owned by the `Inline` atom.
-    resetAtom()
+    // Read atom bytes directly into the parser's atom-bytes arena. With
+    // narrow holds, parseCompoundLine's hold has holdStart > 0, so refills
+    // inside the line can compact and shift the cursor's `bytes` —
+    // we therefore copy bytes out into our own buffer (the arena) as we
+    // read them. Each Tel.Atom.Inline references its slice of the arena
+    // (arenaArray, offset, length); no per-atom byte[] is allocated.
     var precedingSpaces = 0
     var hardSpaceMode = false
     var atomOpen = false
 
     inline def commit(): Unit =
       if atomOpen then
-        val owned = new Array[Byte](atomLen)
-        System.arraycopy(atomBytes, 0, owned, 0, atomLen)
-        pushAtom(Tel.Atom.Inline.fromBytes(owned, precedingSpaces))
-        resetAtom()
+        val off = arenaInFlightOffset
+        val len = endInFlightAtom()
+        pushAtom(Tel.Atom.Inline.fromArena(atomArena, off, len, precedingSpaces))
         atomOpen = false
 
     var stopped = false
@@ -1628,7 +1653,7 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
               // true here (hard-space-mode is only entered after a content
               // commit, and hard-space-mode + run==1 only fires while
               // reading content).
-              atomAppend(SP)
+              appendToArena(SP)
               atomOpen = true
           else
             if run == 1 then
@@ -1653,15 +1678,16 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
             while more && peek != LF && peek != CR do advance()
             remark = Text(sliceText(mk))
           else
-            atomAppend(ch)
+            beginInFlightAtom()
+            appendToArena(ch)
             advance()
             atomOpen = true
         else
           // Read a run of non-space, non-sigil, non-LF, non-CR bytes,
-          // copying them into the parser-owned atom accumulator. After
-          // a refill compacts the cursor buffer, the source content stays
-          // valid because we read it out into our own array before the
-          // next refill can fire.
+          // copying them into the parser's atom arena. After a refill
+          // compacts the cursor buffer, the source content stays valid
+          // because we read it out into our own arena before the next
+          // refill can fire.
           val runStart = pos
           while pos < bufEnd
                 && bytes(pos) != SP
@@ -1671,12 +1697,14 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
           do pos += 1
           val runLen = pos - runStart
           if runLen > 0 then
-            atomAppendRange(bytes, runStart, runLen)
+            if !atomOpen then beginInFlightAtom()
+            appendToArenaRange(bytes, runStart, runLen)
             atomOpen = true
           else
             // Defensive: only reachable if the outer guards were ever
             // relaxed. Treat the byte at `pos` as one atom byte.
-            atomAppend(ch)
+            if !atomOpen then beginInFlightAtom()
+            appendToArena(ch)
             advance()
             atomOpen = true
 
