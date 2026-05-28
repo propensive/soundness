@@ -33,34 +33,114 @@
 package ulysses
 
 import anticipation.*
-import gossamer.*
-import rudiments.*
+import fulminate.*
 import vacuous.*
 
 object Palimpsest:
-  def apply(hashes: IndexedSeq[Data]): Palimpsest =
-    val array = new Array[Byte](hashes.head.length + hashes.length - 1)
+  // §3 encoding. Build a body of length `cadence.bodyLength(n)`, XOR each
+  // hash in at offset `cadence.offset(i)`, then append the trailing byte
+  // adjusted so the XOR-fold of every output byte equals the cadence byte.
+  def apply(hashes: IndexedSeq[Data])(using cadence: Cadence): Palimpsest =
+    if hashes.isEmpty then panic(m"palimpsest requires at least one hash")
 
-    val data = IArray.build[Byte](hashes.head.length + hashes.length - 1): array =>
-      hashes.indices.each: hash =>
-        hashes(hash).indices.each: index =>
-          array(index + hash) = (array(index + hash)^hashes(hash)(index)).toByte
+    if !hashes.forall(_.length == cadence.hashSize)
+    then panic(m"all hashes must have length ${cadence.hashSize}")
 
-    Palimpsest(data, hashes.length)
+    val n        = hashes.length
+    val bodyLen  = cadence.bodyLength(n)
+    val body     = new Array[Byte](bodyLen)
+    val hashSize = cadence.hashSize
+
+    var i = 0
+
+    while i < n do
+      val hash = hashes(i)
+      val o    = cadence.offset(i)
+      var j    = 0
+
+      while j < hashSize do
+        body(o + j) = (body(o + j) ^ hash(j)).toByte
+        j += 1
+
+      i += 1
+
+    var xor = 0
+    var k   = 0
+
+    while k < bodyLen do
+      xor = xor ^ (body(k) & 0xff)
+      k += 1
+
+    val out = new Array[Byte](bodyLen + 1)
+    System.arraycopy(body, 0, out, 0, bodyLen)
+    out(bodyLen) = (xor ^ (cadence.byte & 0xff)).toByte
+
+    Palimpsest(out.asInstanceOf[IArray[Byte]], n)
 
 case class Palimpsest(data: Data, length: Int):
-  def resolve(using bibliography: Bibliography): Optional[List[Data]] = boundary:
-    val array: Array[Byte] = data.mutable(using Unsafe)
+  // §4 decoding. Recover the cadence byte from the XOR-fold, derive `n`
+  // from the body length, then run the recursive backtracking search:
+  // at each step lookup candidate hashes by their first `k_i` (i = 0) or
+  // `k_r` (i ≥ 1) bytes, XOR the candidate out, recurse, undo on failure.
+  // Returns `Unset` if the cadence byte names a reserved hash-size index,
+  // if the byte length is inconsistent with the cadence, if `n` disagrees
+  // with the stored length, or if no library candidate combination zeroes
+  // out the body.
+  def resolve(using bibliography: Bibliography): Optional[List[Data]] =
+    val total = data.length
 
-    def xor(data: Data, offset: Int): Unit =
-      data.indices.each: index => array(index + offset) = (array(index + offset)^data(index)).toByte
+    if total < 2 then Unset else
+      var xor = 0
+      var i   = 0
 
-    def complete(matched: List[Data]): Unit = if array.iterator.all(_ == 0) then break(matched.reverse)
+      while i < total do
+        xor = xor ^ (data(i) & 0xff)
+        i += 1
 
-    def recur(item: Int, matched: List[Data]): Unit =
-      if item == length then complete(matched) else bibliography(array(item)).each: hash =>
-        xor(hash, item)
-        recur(item + 1, hash :: matched)
-        xor(hash, item)
+      Cadence.unpack(xor.toByte).let: cadence =>
+        val bodyLen = total - 1
 
-    recur(0, Nil) yet Unset
+        cadence.hashCount(bodyLen).let: n =>
+          if n != length then Unset else
+            val body: Array[Byte] = new Array[Byte](bodyLen)
+            System.arraycopy(data.asInstanceOf[Array[Byte]], 0, body, 0, bodyLen)
+
+            def xor_(hash: Data, offset: Int): Unit =
+              var j = 0
+
+              while j < cadence.hashSize do
+                body(offset + j) = (body(offset + j) ^ hash(j)).toByte
+                j += 1
+
+            def recur(item: Int, matched: List[Data]): Optional[List[Data]] =
+              if item == n then
+                var allZero = true
+                var k       = 0
+
+                while k < bodyLen && allZero do
+                  if body(k) != 0.toByte then allZero = false
+                  k += 1
+
+                if allZero then matched.reverse else Unset
+              else
+                val o         = cadence.offset(item)
+                val prefixLen = if item == 0 then cadence.initial else cadence.regular
+                val prefix    = new Array[Byte](prefixLen)
+                System.arraycopy(body, o, prefix, 0, prefixLen)
+
+                val candidates =
+                  bibliography.lookup(prefix.asInstanceOf[IArray[Byte]]).iterator
+
+                var found: Optional[List[Data]] = Unset
+
+                while found.absent && candidates.hasNext do
+                  val hash = candidates.next()
+                  xor_(hash, o)
+                  val sub = recur(item + 1, hash :: matched)
+
+                  if sub.absent then xor_(hash, o)
+                  else found = sub
+
+                found
+
+            recur(0, Nil)

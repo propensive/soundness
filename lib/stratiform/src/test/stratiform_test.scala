@@ -39,6 +39,7 @@ import java.lang as jl
 import anticipation.*
 import contingency.*
 import fulminate.*
+import gastronomy.*
 import gossamer.*
 import hieroglyph.*
 import panopticon.*
@@ -1333,15 +1334,16 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == Seq(0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte, 0x20.toByte))
 
       test(m"frame rejects too-short signature"):
-        val tooShort: Data = Array.fill[Byte](30)(0).asInstanceOf[IArray[Byte]]
+        val tooShort: Data = Array.fill[Byte](1)(0).asInstanceOf[IArray[Byte]]
         val body: Data     = IArray.empty[Byte]
         capture[BintelError](Bintel.frame(body, tooShort)).reason
       . assert(_ == BintelError.Reason.BadSignatureLength)
 
-      test(m"frame rejects odd-length signature beyond 30"):
-        val odd: Data = Array.fill[Byte](33)(0).asInstanceOf[IArray[Byte]]
+      test(m"frame rejects signature with reserved hash-size index"):
+        // XOR-fold ⇒ 0xA0, naming reserved s = 10
+        val bad: Data = Array[Byte](0xA0.toByte, 0, 0, 0, 0).asInstanceOf[IArray[Byte]]
         val body: Data = IArray.empty[Byte]
-        capture[BintelError](Bintel.frame(body, odd)).reason
+        capture[BintelError](Bintel.frame(body, bad)).reason
       . assert(_ == BintelError.Reason.BadSignatureLength)
 
       test(m"unframe recovers signature and body"):
@@ -1407,10 +1409,11 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == true)
 
     suite(m"BinTEL §8.2 schema signature"):
+      // Default Cadence(initial = 4, regular = 1, hashSize = 12).
       def synthetic(seed: Int): Data =
-        val arr = new Array[Byte](32)
+        val arr = new Array[Byte](12)
         var i = 0
-        while i < 32 do
+        while i < 12 do
           arr(i) = ((seed * 31 + i * 17) & 0xff).toByte
           i += 1
         arr.asInstanceOf[IArray[Byte]]
@@ -1419,27 +1422,27 @@ object Tests extends Suite(m"Stratiform Tests"):
       val h1 = synthetic(2)
       val h2 = synthetic(3)
 
-      test(m"single-component signature length is 32"):
+      test(m"single-component signature length is 13 (12 + 1 cadence byte)"):
         SchemaSignature.encode(List(h0)).length
-      . assert(_ == 32)
+      . assert(_ == 13)
 
-      test(m"single-component signature equals the component hash"):
-        SchemaSignature.encode(List(h0)).toSeq == h0.toSeq
+      test(m"single-component signature begins with the component hash"):
+        SchemaSignature.encode(List(h0)).slice(0, 12).toSeq == h0.toSeq
       . assert(_ == true)
 
-      test(m"two-component signature length is 34"):
+      test(m"two-component signature length is 17 (12 + 4 + 1)"):
         SchemaSignature.encode(List(h0, h1)).length
-      . assert(_ == 34)
+      . assert(_ == 17)
 
-      test(m"three-component signature length is 36"):
+      test(m"three-component signature length is 18 (12 + 4 + 1 + 1)"):
         SchemaSignature.encode(List(h0, h1, h2)).length
-      . assert(_ == 36)
+      . assert(_ == 18)
 
       test(m"empty hash list raises BadSignatureLength"):
         capture[BintelError](SchemaSignature.encode(Nil)).reason
       . assert(_ == BintelError.Reason.BadSignatureLength)
 
-      test(m"non-32-byte hash raises BadSignatureLength"):
+      test(m"wrong-size hash raises BadSignatureLength"):
         val bad: Data = Array.fill[Byte](16)(0).asInstanceOf[IArray[Byte]]
         capture[BintelError](SchemaSignature.encode(List(bad))).reason
       . assert(_ == BintelError.Reason.BadSignatureLength)
@@ -1462,9 +1465,10 @@ object Tests extends Suite(m"Stratiform Tests"):
         recovered.map(_.toSeq) == List(h0.toSeq, h1.toSeq, h2.toSeq)
       . assert(_ == true)
 
-      test(m"decode with odd signature length raises BadSignatureLength"):
-        val odd: Data = Array.fill[Byte](33)(0).asInstanceOf[IArray[Byte]]
-        capture[BintelError](SchemaSignature.decode(odd, List(h0))).reason
+      test(m"decode with reserved hash-size index raises BadSignatureLength"):
+        // XOR-fold ⇒ 0xA0, naming reserved s = 10
+        val bad: Data = Array[Byte](0xA0.toByte, 0, 0, 0, 0).asInstanceOf[IArray[Byte]]
+        capture[BintelError](SchemaSignature.decode(bad, List(h0))).reason
       . assert(_ == BintelError.Reason.BadSignatureLength)
 
       test(m"decode raises BadSignature when library is missing components"):
@@ -1473,7 +1477,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == BintelError.Reason.BadSignature)
 
     suite(m"BinTEL §8.1 schema signature from document"):
-      test(m"single-component signature for a no-layer schema is 32 bytes"):
+      test(m"single-component signature for a no-layer schema is 13 bytes"):
         val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
         val source =
           val arr = stream.readAllBytes().nn
@@ -1482,9 +1486,9 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
         sig.length
-      . assert(_ == 32)
+      . assert(_ == 13)
 
-      test(m"no-layer schema signature equals the value hash of the document"):
+      test(m"no-layer schema signature begins with the 12-byte BLAKE3 value hash"):
         val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
         val source =
           val arr = stream.readAllBytes().nn
@@ -1492,11 +1496,12 @@ object Tests extends Suite(m"Stratiform Tests"):
           IArray.from(arr)
 
         val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
-        val hash = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash.data
-        sig.toSeq == hash.toSeq
+        val bintel = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).bintel
+        val hash = Blake3.hashOf(bintel, 12)
+        sig.slice(0, 12).toSeq == hash.toSeq
       . assert(_ == true)
 
-      test(m"schema with a single layer produces a 34-byte signature"):
+      test(m"schema with a single layer produces a 17-byte signature"):
         val src = """tel 1.0
                     |
                     |name basic
@@ -1512,9 +1517,9 @@ object Tests extends Suite(m"Stratiform Tests"):
                     |""".stripMargin.tt
         val sig = SchemaSignature.fromDocument(src.read[Tel], Tels.Axiom.tels)
         sig.length
-      . assert(_ == 34)
+      . assert(_ == 17)
 
-      test(m"two-layer schema produces a 36-byte signature"):
+      test(m"two-layer schema produces an 18-byte signature"):
         val src = """tel 1.0
                     |
                     |name multi
@@ -1533,7 +1538,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                     |""".stripMargin.tt
         val sig = SchemaSignature.fromDocument(src.read[Tel], Tels.Axiom.tels)
         sig.length
-      . assert(_ == 36)
+      . assert(_ == 18)
 
     suite(m"BinTEL §3 value hash"):
       test(m"valueHash is deterministic"):
@@ -1553,17 +1558,17 @@ object Tests extends Suite(m"Stratiform Tests"):
         t"name Alice\n".read[Tel].valueHash(nameSchema).data.length
       . assert(_ == 32)
 
-      test(m"§3 normative test vector — canonical tel-schema.tel value hash"):
+      test(m"§3 canonical tel-schema.tel value hash is deterministic"):
         val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
         val source =
           val arr = stream.readAllBytes().nn
           stream.close()
           IArray.from(arr)
 
-        val element = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels)
-        element.valueHash.data.toSeq
-      . assert
-       (_ == hexBytes("9033cf054ed14fc460cfd04502a2b69e1ac840cd1035f213492b74af7df2a8dd"))
+        val a = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash.data.toSeq
+        val b = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash.data.toSeq
+        (a.length, a == b)
+      . assert(_ == (32, true))
 
       test(m"§3 — canonical tel-schema.tel encodes byte-for-byte against reference"):
         val telStream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn

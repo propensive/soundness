@@ -41,7 +41,10 @@ object BintelError:
     given communicable: Reason is Communicable =
       case BadMagic            => m"the magic number is missing or does not match B2 C4 B5 BB"
       case VarintError         => m"a variable-length integer in the stream is invalid"
-      case BadSignatureLength  => m"the schema signature length is not 30 + 2n for any n ≥ 1"
+
+      case BadSignatureLength =>
+        m"the schema signature length is not a valid palimpsest length under any (H, k_i, k_r)"
+
       case BadSignature        => m"the schema signature does not decode against the library"
       case BadKeywordIndex     => m"a keyword index exceeds the parent's flat-keyword count"
       case ValueTruncated      => m"a Scalar value's byte length extends beyond end of input"

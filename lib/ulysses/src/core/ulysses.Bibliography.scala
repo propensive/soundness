@@ -37,9 +37,22 @@ import beneficence.*
 
 object Bibliography:
   def apply(data: Iterable[Data]): Bibliography =
-    new Bibliography
-      ( data.foldLeft(Map[Byte, Set[Data]]()): (map, data) =>
-          map.updated(data(0), map.getOrElse(data(0), Set()) + data) )
+    new Bibliography(IArray.from(data))
 
-case class Bibliography(hashes: Map[Byte, Set[Data]]) extends Findable:
-  def apply(byte: Byte): Set[Data] = hashes.getOrElse(byte, Set.empty)
+case class Bibliography(hashes: IArray[Data]) extends Findable:
+  // Return every library hash whose leading bytes equal `prefix`. The
+  // palimpsest §4 decoder calls this with `k_i`-byte prefixes at step 0
+  // and `k_r`-byte prefixes thereafter. A linear scan is adequate for the
+  // small libraries we currently use; a prefix-indexed structure is the
+  // obvious next step if profiling shows it.
+  def lookup(prefix: Data): Iterator[Data] =
+    hashes.iterator.filter: hash =>
+      if hash.length < prefix.length then false else
+        var ok = true
+        var i  = 0
+
+        while ok && i < prefix.length do
+          if hash(i) != prefix(i) then ok = false
+          i += 1
+
+        ok
