@@ -120,7 +120,14 @@ fn main() {
     let saved_tty = tty::save_tty_state();
     tty::set_raw_mode();
 
-    let info = ClientInfo::collect(&script, &args, tty::stdin_is_tty());
+    // Query the terminal's background colour while we still own stdin/stdout
+    // directly. Anything the user happens to type during the handshake is
+    // returned as `leftover` and chained ahead of stdin into the forwarder so
+    // no bytes are lost.
+    let (bg_color, leftover) = tty::query_bg_color(Duration::from_millis(150));
+    debug!("main: bg_color={:?} leftover={}bytes", bg_color, leftover.len());
+
+    let info = ClientInfo::collect(&script, &args, tty::stdin_is_tty(), bg_color.as_deref());
     debug!("main: connecting to daemon (pid={})", info.pid);
     let (main_socket, stderr_socket) = match connect_to_daemon(&socket_file, &info) {
         Ok(connections) => { debug!("main: connected to daemon"); connections },
@@ -131,8 +138,9 @@ fn main() {
         }
     };
 
+    let stdin_reader = std::io::Cursor::new(leftover).chain(std::io::stdin());
     spawn_forwarder(
-        std::io::stdin(),
+        stdin_reader,
         main_socket.try_clone().expect("clone main socket"),
         false,
     );
@@ -233,7 +241,7 @@ fn run_non_interactive(socket_file: &Path, script: &Path, args: &[String]) -> i3
         "run_non_interactive socket={} args={:?}", socket_file.display(), args,
     ));
 
-    let info = ClientInfo::collect(script, args, false);
+    let info = ClientInfo::collect(script, args, false, None);
     let (main_socket, stderr_socket) = match connect_to_daemon(socket_file, &info) {
         Ok(connections) => { debug_log("connected"); connections }
         Err(error) => {
@@ -255,14 +263,34 @@ fn run_non_interactive(socket_file: &Path, script: &Path, args: &[String]) -> i3
 }
 
 impl ClientInfo {
-    pub fn collect(script: &Path, args: &[String], is_tty: bool) -> Self {
-        let env: Vec<String> = env::vars_os().map(|(name, value)| {
-            let mut entry = OsString::new();
-            entry.push(&name);
-            entry.push("=");
-            entry.push(&value);
-            entry.to_string_lossy().into_owned()
-        }).collect();
+    pub fn collect(script: &Path, args: &[String], is_tty: bool, bg_color: Option<&str>) -> Self {
+        let size = tty::terminal_size();
+        let mut env: Vec<String> = env::vars_os()
+            .filter(|(name, _)| {
+                // Strip any inherited COLUMNS/LINES/TERMINAL_BG; if we detected real
+                // values from the tty, ours are authoritative for this client, and if
+                // we didn't, inherited values are unreliable across a shared-daemon
+                // pipeline.
+                let n = name.to_string_lossy();
+                let strip_size = size.is_some() && (n == "COLUMNS" || n == "LINES");
+                let strip_bg = bg_color.is_some() && n == "TERMINAL_BG";
+                !(strip_size || strip_bg)
+            })
+            .map(|(name, value)| {
+                let mut entry = OsString::new();
+                entry.push(&name);
+                entry.push("=");
+                entry.push(&value);
+                entry.to_string_lossy().into_owned()
+            })
+            .collect();
+        if let Some((cols, rows)) = size {
+            env.push(format!("COLUMNS={}", cols));
+            env.push(format!("LINES={}", rows));
+        }
+        if let Some(bg) = bg_color {
+            env.push(format!("TERMINAL_BG={}", bg));
+        }
         ClientInfo {
             pid: std::process::id(),
             user_id: user_info::uid(),
