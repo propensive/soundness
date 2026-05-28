@@ -82,7 +82,7 @@ given daemonLogEvent: Message transcribes DaemonLogEvent = _.communicate
 def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus] = service
 
 def cli[bus <: Matchable](using executive: Executive)
-  ( block: (DaemonService[bus], executive.Interface) ?=> executive.Return )
+  ( block: (DaemonService[bus], executive.Interface, Environment) ?=> executive.Return )
   ( using interpreter: Interpreter,
           threading:   Threading,
           handler:     Backstop )
@@ -419,7 +419,7 @@ def cli[bus <: Matchable](using executive: Executive)
             connection.invocation.offer(cli)
 
             if cli.proceed then
-              val result = block(using service, cli)
+              val result = block(using service, cli, environment)
               val exitStatus: Exit = executive.process(cli)(result)
 
               connection.exitPromise.fulfill(exitStatus)
