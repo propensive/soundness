@@ -34,488 +34,468 @@ package stratiform
 
 import scala.language.unsafeNulls
 
+import java.lang as jl
+import java.nio.charset.StandardCharsets
+
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
+import zephyrine.*
 
 import TelError.Reason
 
-// Phase 1 presentation-only parser. Single-pass recursive descent over the
-// byte input, producing the §17 presentation AST. Schema-driven type
-// assignment and full error-recovery semantics arrive in phase 3.
+// Streaming TEL parser. Consumes a `Cursor[Data]` on demand — no upfront
+// String materialisation, no pre-split line array. Implements both the
+// schemaless and §19.5 schema-aware E107 recovery paths.
 //
-// Hot-path optimisations (see `lib/jacinta/src/core/jacinta.JsonParser.scala`
-// for the JSON analogue):
-//
-//   - `Line` carries only `(start, end, leadingSpaces, blank)` offsets into
-//     a single `source: String`. No per-line substring is materialised at
-//     line-split time; character access goes through `lineCharAt(line, i)`.
-//   - `parseCompoundLine` walks `source` directly without slicing off the
-//     leading indent; the keyword is interned through a 256-slot two-Long-
-//     packed cache so repeated keywords (typical for schema-shaped data)
-//     reuse the same `Text` value.
-//   - `makeLine` computes the blank flag during the leading-space scan
-//     rather than re-scanning the content for spaces.
+// Hot-path optimisations:
+//   - parser-local `bytes`/`pos`/`bufEnd` snapshot of the cursor's buffer
+//     keeps the inner-loop reads in registers; sync to / from the cursor
+//     only at refill, mark, or error points;
+//   - a single mutable `LineHead` look-ahead record threaded through
+//     recursive descent — no per-line allocation;
+//   - 64-slot two-Long byte-fingerprint keyword cache (allocation-free on
+//     hit), one `cursor.grab` materialisation on miss;
+//   - source / literal atom payloads built into a shared `StringBuilder`.
 
 object TelParser:
 
+  def parse(cursor: Cursor[Data]): Tel.Document raises TelError =
+    new TelParser(cursor, Unset).parse()
+
+  def parse(cursor: Cursor[Data], schema: Tels): Tel.Document raises TelError =
+    new TelParser(cursor, schema: Optional[Tels]).parse()
+
+  // Convenience overloads for callers that already have the whole input as
+  // a single byte chunk. The cursor is constructed with `linefeedByte`
+  // lineation so error positions carry accurate line/column.
   def parse(input: Data): Tel.Document raises TelError =
-    TelParser(input, Unset).parseDocument()
+    import zephyrine.lineation.linefeedByte
+    new TelParser(Cursor[Data](input), Unset).parse()
 
-  // Schema-aware parse: when an odd-indented line is encountered the
-  // parser uses §19.5's schema-aware E107 recovery to disambiguate
-  // shallower vs deeper. Without a schema the original shallower-wins
-  // rule still applies.
   def parse(input: Data, schema: Tels): Tel.Document raises TelError =
-    TelParser(input, schema: Optional[Tels]).parseDocument()
+    import zephyrine.lineation.linefeedByte
+    new TelParser(Cursor[Data](input), schema: Optional[Tels]).parse()
 
-  private final class Line
-     ( val leadingSpaces: Int,
-       val blank:         Boolean,
-       val start:         Int,
-       val end:           Int )
+  private final val SP: Byte = 0x20
+  private final val LF: Byte = 0x0A
+  private final val CR: Byte = 0x0D
+  private final val BOM0: Byte = 0xEF.toByte
+  private final val BOM1: Byte = 0xBB.toByte
+  private final val BOM2: Byte = 0xBF.toByte
 
-private final class TelParser(input: Data, schema: Optional[Tels]):
-  import TelParser.Line
+  // Carries the look-ahead state for the next unconsumed line. Parsed once
+  // by `fillHead`, then consulted by recursive-descent functions to decide
+  // whether to continue at the current indent, descend, ascend, or stop.
+  // Reused (mutated in place) across every line — single allocation per
+  // parser instance.
+  private final class LineHead:
+    var leadingSpaces: Int = 0
+    var indentLevels:  Int = 0      // (leadingSpaces - margin) / 2 or -1
+    var blank:         Boolean = false
+    var eof:           Boolean = false
+    var startLine:     Int = 1      // 1-indexed source line of this line
 
-  private val source: String =
-    val arr = input.asInstanceOf[IArray[Byte]]
-    val bytes = new Array[Byte](arr.length)
-    var i = 0
-    while i < arr.length do { bytes(i) = arr(i); i += 1 }
-    String(bytes, "UTF-8")
 
-  // Inline accessors for line content backed by `source`. The `start`/`end`
-  // offsets are absolute byte/char positions into `source`; `end` excludes
-  // a CR preceding LF in CRLF mode so the visible content length is
-  // simply `end - start`.
-  private inline def lineLen(line: Line): Int = line.end - line.start
-  private inline def lineCharAt(line: Line, i: Int): Char = source.charAt(line.start + i)
+private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
+  import TelParser.*
 
-  private inline def lineSub(line: Line, from: Int, until: Int): String =
-    source.substring(line.start + from, line.start + until)
+  // ── Local snapshot ────────────────────────────────────────────────────────
+  // Mirrors YamlParser's pattern: a parser-local snapshot of the cursor's
+  // buffer keeps `bytes`/`pos`/`bufEnd` as plain fields so the JIT can hold
+  // them in registers across hot byte loops. Sync to the cursor before any
+  // mark/slice/refill operation; resync after.
 
-  private inline def lineSubFrom(line: Line, from: Int): String =
-    source.substring(line.start + from, line.end)
+  private val cursor: Cursor[Data] = cursor0
+  private var heldToken: Cursor.Held | Null = null
+  private var bytes:  Array[Byte] = null.asInstanceOf[Array[Byte]]
+  private var pos:    Int = 0
+  private var bufEnd: Int = 0
 
-  private inline def lineStartsWith(line: Line, prefix: String): Boolean =
-    source.regionMatches(line.start, prefix, 0, prefix.length)
+  // Local-buffer offset up to which the cursor's lineNo/columnNo are up to
+  // date. We use `linefeedByte` lineation on the cursor, but bypass its
+  // per-`advance()` track via direct `pos` increments, so the cursor only
+  // sees lineation updates when we manually reconcile here.
+  private var lineationPos: Int = 0
 
-  private val lineEndings: Tel.LineEndings =
-    val firstLf = source.indexOf('\n')
-    if firstLf > 0 && source.charAt(firstLf - 1) == '\r' then Tel.LineEndings.Crlf
-    else Tel.LineEndings.Lf
+  // ── Parser state ──────────────────────────────────────────────────────────
 
-  // Detect line-ending violations per §17 / E121. A CR that is not part
-  // of a CR LF pair is a bare CR and raises E121. In CRLF mode, a bare
-  // LF (one not preceded by CR) outside of literal-atom payloads also
-  // raises E121. We approximate "outside literal payload" structurally
-  // here by walking the byte stream; the literal-atom payload exception
-  // is handled correctly because the structural line break terminating
-  // a literal-atom opening line is itself a valid CRLF in CRLF-mode
-  // documents.
-  private def checkLineEndings(): Unit raises TelError =
-    var i = 0
-    val crlfMode = lineEndings == Tel.LineEndings.Crlf
-    while i < source.length do
-      val c = source.charAt(i)
-      if c == '\r' && (i + 1 >= source.length || source.charAt(i + 1) != '\n')
-      then errorAtOffset(Reason.BadLineEnding, i)
-      else if crlfMode && c == '\n' && (i == 0 || source.charAt(i - 1) != '\r')
-      then errorAtOffset(Reason.BadLineEnding, i)
-      i += 1
-
-  // Pre-split lines retaining leading-space count and blank flag. CR before
-  // LF is stripped in CRLF mode. The final stretch of content after the
-  // last LF is included only if it has content; an empty stretch after a
-  // trailing LF still counts as a blank line for §17 trailing-blank-line
-  // bookkeeping.
-  private val lines: IArray[Line] =
-    val builder = scala.collection.mutable.ArrayBuffer.empty[Line]
-    var lineStart = 0
-    var index = 0
-    while index < source.length do
-      if source.charAt(index) == '\n' then
-        val contentEnd =
-          if index > 0 && source.charAt(index - 1) == '\r' then index - 1
-          else index
-
-        builder += makeLine(lineStart, contentEnd)
-        lineStart = index + 1
-
-      index += 1
-
-    if lineStart < source.length then
-      builder += makeLine(lineStart, source.length)
-    else if source.length > 0 && source.charAt(source.length - 1) == '\n' then
-      builder += makeLine(source.length, source.length)
-
-    IArray.from(builder)
-
-  private def makeLine(start: Int, end: Int): Line =
-    var spaces = 0
-    while start + spaces < end && source.charAt(start + spaces) == ' ' do spaces += 1
-    val blank = start + spaces == end
-    Line(spaces, blank, start, end)
-
-  private var cursor: Int = 0
   private var margin: Int = 0
-  private var sigil: Char = '#'
-  // The highest line index consumed by the prologue (interpreter
-  // directive or pragma). The E109 check treats anything at or before
-  // this line as equivalent to "start of file" — comments immediately
-  // after the prologue are valid.
-  private var prologueEndLine: Int = -1
+  private var sigil:  Byte = '#'.toByte
+  private var crlfMode: Boolean = false
+  private var lineEndingsDetected: Boolean = false
+  private var lineEndings: Tel.LineEndings = Tel.LineEndings.Lf
 
-  // Ancestor stack of Struct types known for each open compound, used
-  // by the schema-aware E107 recovery rule of §19.5. The element at
-  // index `i` is the schema struct corresponding to the compound at
-  // depth `i+1` (so the document root at depth 0 is implicit and
-  // refers to `schema.document`). `Unset` entries mark compounds
-  // whose schema position couldn't be resolved (e.g. an unknown
-  // keyword in a permissive layer), in which case both shallower and
-  // deeper recovery treat that ancestor as "schema-blind".
+  // Look-ahead record describing the next unconsumed line.
+  private val head: LineHead = new LineHead
+
+  // Tracks state for the §9 CommentNotPreceded check.
+  // `prevLineWasBoundary` is true iff the immediately-previous consumed line
+  // was a blank, a comment, the prologue (directive / pragma), or we are
+  // still at start-of-file — i.e. any line that may legitimately precede a
+  // comment. `prevContentLeadingSpaces` records the leadingSpaces of the
+  // most-recent content line (compound or tabulation), used to compare
+  // against the indent at which a new comment appears.
+  private var prevLineWasBoundary: Boolean = true
+  private var prevContentLeadingSpaces: Int = -1
+
+  // E102 detection: a "tel" / "tel …" line at column 0 that isn't the first
+  // non-blank line is a misplaced pragma. We set this flag whenever a
+  // non-blank line (directive, pragma, comment, compound, tabulation) has
+  // been consumed.
+  private var hasConsumedNonBlankLine: Boolean = false
+
+  // TelParser surfaces an empty sentinel line when the input ends with LF
+  // (so a file "code\n" parses as two lines: "code" and ""). The streaming
+  // parser hits EOF after the LF, so the next consumeTrailingBlanksFor at
+  // the innermost block needs to claim one extra blank. Set when the LF we
+  // just consumed is the final byte of the document; consumed exactly once
+  // by the first consumeTrailingBlanksFor that reaches EOF.
+  private var documentEndsWithLf: Boolean = false
+
+  // Ancestor stack of Struct types known for each open compound, used by
+  // §19.5's schema-aware E107 recovery. The element at index `i` is the
+  // schema struct corresponding to the compound at depth `i+1` (so the
+  // document root at depth 0 is implicit and refers to `schema.document`).
+  // `Unset` entries mark compounds whose schema position couldn't be
+  // resolved (e.g. an unknown keyword) — both shallower and deeper
+  // recovery treat that ancestor as schema-blind.
   private val ancestors =
     scala.collection.mutable.ArrayBuffer.empty[Optional[Tels.Struct]]
 
-  // Build a `TelError.Position` for a given line index (0-based internally;
-  // converted to the 1-indexed line numbers callers expect). Column
-  // defaults to `1` meaning "first character of the line"; pass an
-  // explicit `column` for mid-line errors. Returns `(1, 1)` for an
-  // out-of-range index so a buggy caller can't crash the parser
-  // mid-error.
-  private inline def positionAt(lineIdx: Int, column: Int = 1): TelError.Position =
-    if lineIdx < 0 || lineIdx >= lines.length then TelError.Position(1, 1)
-    else TelError.Position(lineIdx + 1, column)
+  // Reusable string builder for source-atom / literal-atom payloads.
+  private val sb: jl.StringBuilder = new jl.StringBuilder(256)
 
-  // Compute a position from an absolute byte offset into the original
-  // `source`. Used by `checkBom` / `checkLineEndings`, which walk the
-  // raw bytes before any cursor advance, so they don't have a line
-  // index to hand to `positionAt`. Linear scan is fine — these helpers
-  // run at most a handful of times per parse.
-  private def positionAtOffset(byteOffset: Int): TelError.Position =
-    var lineIdx = 0
-    while lineIdx < lines.length && lines(lineIdx).end <= byteOffset do lineIdx += 1
-    if lineIdx >= lines.length then
-      val n = lines.length.max(1)
-      TelError.Position(n, 1)
-    else
-      val line = lines(lineIdx)
-      TelError.Position(lineIdx + 1, byteOffset - line.start + 1)
-
-  // Abort with a positional `TelError`. The convenience helpers
-  // `errorAt(reason, lineIdx)` and `errorAtOffset(reason, offset)`
-  // construct the position before delegating here.
-  private def errorAt(reason: Reason, lineIdx: Int, column: Int = 1)
-                     (using Tactic[TelError])
-  :   Nothing =
-
-    abort(TelError(reason, positionAt(lineIdx, column)))
-
-  private def errorAtOffset(reason: Reason, byteOffset: Int)
-                           (using Tactic[TelError])
-  :   Nothing =
-
-    abort(TelError(reason, positionAtOffset(byteOffset)))
-
-  // Reverse-lookup of a `Line` instance's index in the pre-split
-  // `lines` array. The comparison uses object identity (`ne`) so it
-  // stays O(1) per slot — only the error path hits this, never the
-  // hot parse path, so the linear scan is fine. Returns `-1` if the
-  // line isn't part of this parser's `lines` (e.g. a synthetic
-  // line constructed mid-parse), which `positionAt` then maps to the
-  // sentinel position `(1, 1)`.
-  private def lineIndexOf(line: Line): Int =
-    var i = 0
-    while i < lines.length && (lines(i) ne line) do i += 1
-    if i < lines.length then i else -1
-
-  private def errorAtLine(reason: Reason, line: Line, column: Int = 1)
-                         (using Tactic[TelError])
-  :   Nothing =
-
-    errorAt(reason, lineIndexOf(line), column)
-
-  // Keyword interning cache. Keywords of length ≤8 are packed into two
-  // Longs (4 16-bit chars each) so a hash + linear-probe lookup is
-  // allocation-free on cache hits. Longer keywords skip the cache.
-  // The cache is bounded by linear-probe count (4) rather than load
-  // factor — fixed-cost lookup with a small chance of falling through
-  // to a direct substring allocation on full collision. Size of 64
-  // is enough for typical TEL schemas (<30 unique keywords) and keeps
-  // the per-parse zeroing cost down for small documents.
+  // ── Keyword interning cache ───────────────────────────────────────────────
+  // 64-slot two-Long fingerprint cache. The byte-level variant: the first
+  // four bytes pack into `low` and the next four into `high`. ASCII keywords
+  // fingerprint injectively; multibyte UTF-8 keywords fingerprint by raw
+  // bytes (still injective for ≤8 bytes).
   private val keyCache:     Array[String] = new Array[String](64)
   private val keyCacheLow:  Array[Long]   = new Array[Long](64)
   private val keyCacheHigh: Array[Long]   = new Array[Long](64)
 
-  // Look up or insert the substring `source[from, until)` in the keyword
-  // cache. Returns a `Text` whose underlying String is shared across
-  // every line that names the same keyword. For TEL keywords (no NUL
-  // characters per §6) the (low, high) pair is injective on ≤8-char
-  // strings, so direct (low, high) equality is sufficient — no need
-  // to fall back to a string comparison on hits.
-  private def internKeyword(from: Int, until: Int): Text =
-    val len = until - from
-    if len <= 0 then Text("")
-    else if len > 8 then Text(source.substring(from, until))
-    else
-      var low:  Long = 0L
-      var high: Long = 0L
-      var idx = 0
-      while idx < len && idx < 4 do
-        low |= source.charAt(from + idx).toLong << (idx * 16)
-        idx += 1
+  // ── Substrate ─────────────────────────────────────────────────────────────
 
-      while idx < len do
-        high |= source.charAt(from + idx).toLong << ((idx - 4) * 16)
-        idx += 1
+  private inline def syncTo(): Unit =
+    cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
-      val hash = ((low ^ (low >>> 32)) ^ (high ^ (high >>> 17))).toInt
-      var slot = hash & 0x3F
-      var probes = 0
-      while probes < 4 do
-        val existing = keyCache(slot)
-        if existing == null then
-          val str = source.substring(from, until)
-          keyCache(slot) = str
-          keyCacheLow(slot) = low
-          keyCacheHigh(slot) = high
-          return Text(str)
-        else if keyCacheLow(slot) == low && keyCacheHigh(slot) == high then
-          return Text(existing)
-        slot = (slot + 1) & 0x3F
-        probes += 1
+  private inline def syncFrom(): Unit =
+    bytes  = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
+    pos    = cursor.unsafePos(using Unsafe)
+    bufEnd = cursor.unsafeWriteEnd(using Unsafe)
+    lineationPos = pos
 
-      Text(source.substring(from, until))
-
-  // Push a child compound's resolved struct onto the ancestor stack.
-  // The compound is at depth `parentDepth + 1`; `parentDepth` is the
-  // length of the current ancestor stack (0 = document root). If we
-  // can resolve the compound's keyword to a Struct type inside the
-  // parent's schema struct, push it; otherwise push Unset.
-  private def pushAncestor(keyword: Text): Unit raises TelError =
-    schema.let: s =>
-      val parent: Optional[Tels.Struct] =
-        if ancestors.isEmpty then s.document else ancestors(ancestors.length - 1)
-
-      val resolved: Optional[Tels.Struct] = parent.let: p =>
-        resolveKeywordStruct(p, keyword, s)
-
-      ancestors += resolved
-    .or:
-      // Without a schema we still keep the depth alignment so pop
-      // works symmetrically, but the entries are always Unset.
-      ancestors += Unset
-
-  private def popAncestor(): Unit =
-    if ancestors.nonEmpty then ancestors.remove(ancestors.length - 1)
-
-  // Resolve `keyword` against `parent`'s direct Field / SelectRef
-  // members. Returns the Struct type if the keyword names a child
-  // whose resolved type is a Struct, or Unset otherwise (Scalar /
-  // Flag / unknown keyword / Reference to a non-struct).
-  private def resolveKeywordStruct(parent: Tels.Struct, keyword: Text, schema: Tels)
-  :     Optional[Tels.Struct] raises TelError =
-    val matched: Optional[Tels.Type] =
-      var found: Optional[Tels.Type] = Unset
-      var i = 0
-      while i < parent.members.length && found.absent do
-        parent.members(i) match
-          case f: Tels.Field =>
-            if f.keyword == keyword then found = f.fieldType
-
-          case s: Tels.SelectRef =>
-            // Expand the SelectRef's variants.
-            schema.selects.find(_.name == s.reference).foreach: selectDef =>
-              selectDef.variants.find(_.keyword == keyword).foreach: variant =>
-                found = variant.variantType
-
-          case _: Tels.Exclude => ()
-
+  // Walk the buffer bytes between `lineationPos` and the cursor's current
+  // position, bumping `cursor.lineNo` / `cursor.columnNo` accordingly. Must
+  // be called before any refill that may discard consumed bytes, and before
+  // any cursor read that needs accurate line/column (mark, error reporting).
+  private def reconcileLineation(): Unit =
+    val end = cursor.unsafePos(using Unsafe)
+    if lineationPos < end then
+      var i = lineationPos
+      var newlines = 0
+      var lastNewlineAt = -1
+      while i < end do
+        if bytes(i) == LF then
+          newlines += 1
+          lastNewlineAt = i
         i += 1
 
-      found
+      if newlines > 0 then
+        cursor.unsafeBumpLine(newlines)(using Unsafe)
+        cursor.unsafeSetColumn(end - lastNewlineAt - 1)(using Unsafe)
+      else
+        cursor.unsafeBumpColumn(end - lineationPos)(using Unsafe)
 
-    matched.let: t =>
-      resolveTypeToStruct(t, schema)
-    .or(Unset)
+      lineationPos = end
 
-  // Resolve a Type to a Struct (following one level of Reference) or
-  // Unset if it doesn't resolve to a Struct.
-  private def resolveTypeToStruct(t: Tels.Type, schema: Tels)
-  :     Optional[Tels.Struct] =
-    t match
-      case s: Tels.Struct =>
-        s
+  private inline def more: Boolean = pos < bufEnd || moreSlow()
 
-      case Tels.Reference(name) =>
-        schema.records.find(_.name == name) match
-          case Some(rec) => Tels.Struct(rec.members, rec.validators)
-          case None      => Unset
+  private def moreSlow(): Boolean =
+    syncTo()
+    reconcileLineation()
+    if cursor.more then { syncFrom(); true }
+    else { syncFrom(); false }
 
-      case _ =>
-        Unset
+  private inline def peek: Byte = bytes(pos)
 
-  // Does `parent` contain `keyword` in its direct Field/SelectRef
-  // keyword set?
-  private def keywordAdmissible(parent: Tels.Struct, keyword: Text, schema: Tels): Boolean =
-    var i = 0
-    while i < parent.members.length do
-      parent.members(i) match
-        case f: Tels.Field =>
-          if f.keyword == keyword then return true
+  private inline def advance(): Unit = pos += 1
 
-        case s: Tels.SelectRef =>
-          schema.selects.find(_.name == s.reference).foreach: selectDef =>
-            if selectDef.variants.exists(_.keyword == keyword) then return true
+  // Ensure that at least `n` bytes are available from the current position
+  // (or that we are at EOF). Pulls chunks from the cursor as needed. After
+  // this returns, either `pos + n <= bufEnd` or we have hit EOF and no more
+  // bytes will arrive. Used by the multi-byte look-ahead points (CR/LF
+  // pairs, sigil + soft-space + content checks, pragma detection).
+  //
+  // The trick: mark, advance up to `n` steps to force successive refills,
+  // then cue back. Inside the outer `hold` block, the mark prevents the
+  // buffer from compacting past our current position, so the bytes we
+  // need stay resident.
+  private def ensureLookahead(n: Int): Unit =
+    if pos + n <= bufEnd then ()
+    else
+      syncTo()
+      reconcileLineation()  // mark captures correct line/col
+      val mk = cursor.mark(using heldToken.nn)
+      var steps = 0
+      while steps < n && cursor.more do
+        cursor.advance()
+        steps += 1
+      cursor.cue(mk)
+      syncFrom()
 
-        case _: Tels.Exclude => ()
+  // Peek the byte one past the current position, refilling if necessary.
+  // Returns -1 if there is no byte one past the current position.
+  private def peekNext(): Int =
+    ensureLookahead(2)
+    if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
 
-      i += 1
+  // ── Errors ────────────────────────────────────────────────────────────────
 
-    false
+  private def errorHere(reason: Reason): Nothing raises TelError =
+    syncTo()
+    reconcileLineation()
+    val line = cursor.line.n0 + 1
+    val column = cursor.column.n0 + 1
+    abort(TelError(reason, TelError.Position(line, column)))
 
-  // Extract the keyword phrase from a non-blank, non-comment,
-  // non-tabulation line — used by the schema-aware E107 recovery to
-  // probe the schema. Falls back to the empty string if the line has
-  // no leading keyword.
-  private def extractKeyword(line: Line): Text =
-    val len = lineLen(line)
-    val start = line.leadingSpaces
-    var end = start
-    while end < len
-      && lineCharAt(line, end) != ' '
-      && lineCharAt(line, end) != sigil
-    do end += 1
+  private def errorAt(reason: Reason, line: Int, column: Int): Nothing raises TelError =
+    abort(TelError(reason, TelError.Position(line, column)))
 
-    internKeyword(line.start + start, line.start + end)
+  // ── Mark / hold plumbing ──────────────────────────────────────────────────
 
-  def parseDocument(): Tel.Document raises TelError =
-    checkBom()
-    checkLineEndings()
-    val directive = parseInterpreterDirective()
-    val pragma = parsePragma()
+  private inline def beginMark(): Cursor.Mark =
+    syncTo()
+    reconcileLineation()
+    cursor.mark(using heldToken.nn)
 
-    if directive.absent && pragma.absent then determineMargin()
-    else margin = 0
+  // Materialise the byte range between `start` and the current position as
+  // a UTF-8 `String`. The only allocation point in the keyword / atom path.
+  // Non-inline: the cursor.slice lambda's path-dependent `addressable.Storage`
+  // resolves once here against `this.cursor`.
+  private def sliceText(start: Cursor.Mark): String =
+    syncTo()
+    reconcileLineation()
+    val endMk = cursor.mark(using heldToken.nn)
+    cursor.slice(start, endMk): (storage, off, len) =>
+      val arr = storage.asInstanceOf[Array[Byte]]
+      if len <= 0 then "" else new String(arr, off, len, StandardCharsets.UTF_8)
 
-    val children = parseChildren(parentIndent = -1)
+  // ── Top-level parse ───────────────────────────────────────────────────────
 
-    Tel.Document(directive, pragma, lineEndings, children)
+  def parse(): Tel.Document raises TelError =
+    syncFrom()
+    cursor.hold:
+      heldToken = summon[Cursor.Held]
+      try
+        checkBom()
+        val directive = parseInterpreterDirective()
+        val pragma = parsePragma()
+        fillHead()  // park head at the next line
+        if directive.absent && pragma.absent then determineMargin()
+        else
+          // A directive or pragma may be followed by blank lines before the
+          // first content line; consume them so parseChildren can dispatch
+          // on a real content line.
+          margin = 0
+          while head.blank && !head.eof do fillHead()
+
+        val children = parseChildren(parentIndent = -1)
+        Tel.Document(directive, pragma, lineEndings, children)
+      finally heldToken = null
+
+  // ── BOM ──────────────────────────────────────────────────────────────────
 
   private def checkBom(): Unit raises TelError =
-    if source.length >= 1 && source.charAt(0) == '﻿' then
-      errorAtOffset(Reason.BomPresent, 0)
+    if more && peek == BOM0 then errorHere(Reason.BomPresent)
 
-  private def parseInterpreterDirective(): Optional[Text] =
-    if cursor >= lines.length then Unset
-    else if lineStartsWith(lines(cursor), "#!") then
-      val payload = lineSubFrom(lines(cursor), 2)
-      prologueEndLine = cursor
-      cursor += 1
-      Text(payload)
-    else Unset
+  // ── Line endings ─────────────────────────────────────────────────────────
 
+  // Detect line-endings mode from the first LF seen. CR before LF → CRLF
+  // mode. After detection, every subsequent byte is checked against the
+  // mode: in LF mode a CR is E121; in CRLF mode a lone LF (not preceded by
+  // CR) is E121. The detection is `lazy` — driven by `consumeLfFromHere`,
+  // which is the only place we consume an LF.
+  private inline def detectLineEndingMode(crBefore: Boolean): Unit =
+    if !lineEndingsDetected then
+      lineEndingsDetected = true
+      crlfMode = crBefore
+      lineEndings = if crBefore then Tel.LineEndings.Crlf else Tel.LineEndings.Lf
+
+  // ── Prologue ─────────────────────────────────────────────────────────────
+
+  // Reads "#!..." line if present. The directive payload excludes the
+  // "#!" prefix and the terminating LF.
+  private def parseInterpreterDirective(): Optional[Text] raises TelError =
+    // We can peek the first two bytes without consuming.
+    if !more then Unset
+    else if peek != '#'.toByte then Unset
+    else
+      val second = peekNext()
+      if second != '!'.toInt then Unset
+      else
+        // Consume "#!"
+        advance()
+        advance()
+        val mk = beginMark()
+        // Read until LF or CR
+        while more && peek != LF && peek != CR do advance()
+        val payload = sliceText(mk)
+        consumeLineEnding()
+        prevLineWasBoundary = true
+        hasConsumedNonBlankLine = true
+        Text(payload)
+
+  // Reads a pragma line ("tel ..." or "tel") if present as the first
+  // non-blank line. Marks before consuming any blanks; if the first
+  // non-blank line is NOT a pragma, cues back so the cursor remains at
+  // the original position and the caller can run determineMargin from
+  // scratch.
   private def parsePragma(): Optional[Tel.Pragma] raises TelError =
-    val firstNonBlank = peekNextNonBlankLine()
-    val result = firstNonBlank.let: idx =>
-      val line = lines(idx)
-      val content = lineSubFrom(line, line.leadingSpaces)
-      if content.startsWith("tel ") || content == "tel" then
-        // §8: the pragma must be entirely within the first 4096 bytes of
-        // the document. A pragma-shaped line that begins at or after
-        // byte 4096 — or extends past it — is E103.
-        if line.start >= 4096 || line.end > 4096
-        then errorAt(Reason.PragmaTooLong, idx)
-        prologueEndLine = idx
-        cursor = idx + 1
-        Optional(parsePragmaContent(content, idx))
-      else Unset
-    .or(Unset)
+    val mk = beginMark()
+    val savedBoundary = prevLineWasBoundary
 
-    // Detect a pragma-shaped line that occurs after the first non-blank
-    // line — that's E102 (PragmaNotFirst) per §8 of the TEL spec.
-    if result.absent then
-      var j = firstNonBlank.or(0) + 1
-      while j < lines.length do
-        val ln = lines(j)
-        if !ln.blank && ln.leadingSpaces == 0 then
-          if lineLen(ln) == 3 && lineCharAt(ln, 0) == 't' && lineCharAt(ln, 1) == 'e'
-            && lineCharAt(ln, 2) == 'l'
-          then errorAt(Reason.PragmaNotFirst, j)
-          else if lineStartsWith(ln, "tel ") then errorAt(Reason.PragmaNotFirst, j)
+    // Skip blank lines (consuming them; we may cue back).
+    var foundPragma: Optional[Tel.Pragma] = Unset
+    var done = false
+    while !done do
+      val spaceCount = countLeadingSpaces()
+      if !more then done = true
+      else if peek == LF || peek == CR then
+        consumeLineEnding()
+      else
+        // First non-blank line. Is it a pragma?
+        if spaceCount == 0 && startsWithPragma() then
+          val pragmaLine = cursor.line.n0 + 1
+          if cursor.position.n0 >= 4096 then
+            errorAt(Reason.PragmaTooLong, pragmaLine, 1)
+          val pragmaMk = beginMark()
+          while more && peek != LF && peek != CR do advance()
+          val payload = sliceText(pragmaMk)
+          if cursor.position.n0 > 4096 then
+            errorAt(Reason.PragmaTooLong, pragmaLine, 1)
+          consumeLineEnding()
+          prevLineWasBoundary = true
+          hasConsumedNonBlankLine = true
+          foundPragma = Optional(parsePragmaContent(payload, pragmaLine))
+        done = true
 
-        j += 1
+    if foundPragma.present then foundPragma
+    else
+      // Not a pragma — cue back to before any blanks were consumed.
+      syncTo()
+      reconcileLineation()
+      cursor.cue(mk)
+      syncFrom()
+      prevLineWasBoundary = savedBoundary
+      Unset
 
-    result
+  // Count leading spaces at the current position (does not consume the LF /
+  // content byte). Stops at LF, CR, EOF, or any non-space byte. Does NOT
+  // advance lineation across LF — caller must handle that.
+  private inline def countLeadingSpaces(): Int =
+    var count = 0
+    while more && peek == SP do
+      advance()
+      count += 1
+    count
 
-  private def parsePragmaContent(content: String, lineIdx: Int): Tel.Pragma raises TelError =
-    val parts = splitPhrases(content)
-    if parts.head != "tel" then errorAt(Reason.PragmaNotFirst, lineIdx)
+  // Consume one line-ending sequence (LF or CR LF). Validates that bare CR
+  // (in LF mode) and bare LF (in CRLF mode) raise E121. Sets
+  // `documentEndsWithLf` when the LF we just consumed is the final byte of
+  // the document — used by consumeTrailingBlanksFor to count the virtual
+  // empty trailing line that TelParser surfaces when its lines array ends
+  // with a sentinel empty entry.
+  private def consumeLineEnding(): Unit raises TelError =
+    if !more then ()
+    else if peek == LF then
+      if !lineEndingsDetected then detectLineEndingMode(crBefore = false)
+      else if crlfMode then errorHere(Reason.BadLineEnding)
+      advance()
+      if !more then documentEndsWithLf = true
+    else if peek == CR then
+      val next = peekNext()
+      if next != LF.toInt then errorHere(Reason.BadLineEnding)
+      else
+        if !lineEndingsDetected then detectLineEndingMode(crBefore = true)
+        else if !crlfMode then errorHere(Reason.BadLineEnding)
+        advance()  // CR
+        advance()  // LF
+        if !more then documentEndsWithLf = true
+    else
+      // not at a line ending — caller error
+      ()
+
+  // True iff the cursor is at the start of a pragma line (already past any
+  // leading spaces, on the first content byte). A pragma is "tel" followed
+  // by EOL or " ". Requires four bytes of look-ahead, or three bytes at EOF.
+  private def startsWithPragma(): Boolean =
+    ensureLookahead(4)
+    if pos + 2 < bufEnd
+       && bytes(pos) == 't'.toByte && bytes(pos + 1) == 'e'.toByte
+       && bytes(pos + 2) == 'l'.toByte
+    then
+      if pos + 3 < bufEnd
+      then bytes(pos + 3) == SP || bytes(pos + 3) == LF || bytes(pos + 3) == CR
+      else true  // exactly "tel" at EOF
+    else false
+
+  private def parsePragmaContent(content: String, lineIdx: Int)
+  : Tel.Pragma raises TelError =
+    val parts = splitPragmaPhrases(content)
+    if parts.head != "tel" then errorAt(Reason.PragmaNotFirst, lineIdx, 1)
     val version =
       if parts.length >= 2 then parseVersion(parts(1), lineIdx)
       else (1, 0)
 
-    // §8: the pragma carries exactly tel + version + optional schema +
-    // optional sigil. Anything beyond that — including a remark
-    // introducer — is E123. Check up front so a stray remark doesn't
-    // first hit the schema-identifier validator.
-    if parts.length > 4 then errorAt(Reason.ExtraPragmaContent, lineIdx)
+    if parts.length > 4 then errorAt(Reason.ExtraPragmaContent, lineIdx, 1)
 
-    val schema: Optional[Text] =
+    val schemaText: Optional[Text] =
       if parts.length >= 3 then
-        // §8.2: the schema atom must be either a URL (containing "://")
-        // or a BASE-256 schema signature. Plain identifier-style strings
-        // are E122. The BASE-256 signature is either a 64-character hex
-        // hash or a string of non-ASCII BASE-256 encoded bytes; a string
-        // of only ASCII characters that lacks "://" fails both forms.
         val s = parts(2)
         val isUrl = s.indexOf("://") >= 0
         val isHexHash = s.length == 64 && s.forall: c =>
           (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
         val isBase256 = s.exists(_.toInt > 127)
         if !isUrl && !isHexHash && !isBase256
-        then errorAt(Reason.BadSchemaIdentifier, lineIdx)
+        then errorAt(Reason.BadSchemaIdentifier, lineIdx, 1)
         Text(s): Optional[Text]
       else Unset
 
     val pragmaSigil: Optional[Char] =
       if parts.length >= 4 && parts(3).length == 1 then
         val c = parts(3).charAt(0)
-        // Per §8.3 the sigil must be a symbolic character — not a digit,
-        // not a letter, not whitespace, not the keyword-class character.
-        if c.isLetterOrDigit then errorAt(Reason.BadSigil, lineIdx)
-        sigil = c
+        if c.isLetterOrDigit then errorAt(Reason.BadSigil, lineIdx, 1)
+        sigil = c.toByte
         c: Optional[Char]
       else Unset
 
-    Tel.Pragma(version, schema, pragmaSigil)
+    Tel.Pragma(version, schemaText, pragmaSigil)
 
-  private def parseVersion(s: String, lineIdx: Int): (Int, Int) raises TelError =
+  private def parseVersion(s: String, lineIdx: Int)
+  : (Int, Int) raises TelError =
     val dot = s.indexOf('.')
-    if dot <= 0 || dot == s.length - 1 then errorAt(Reason.BadVersion, lineIdx)
+    if dot <= 0 || dot == s.length - 1 then errorAt(Reason.BadVersion, lineIdx, 1)
     try
       val major = s.substring(0, dot).toInt
       val minor = s.substring(dot + 1).toInt
-      if major < 0 || minor < 0 then errorAt(Reason.BadVersion, lineIdx)
+      if major < 0 || minor < 0 then errorAt(Reason.BadVersion, lineIdx, 1)
       (major, minor)
-    catch case _: NumberFormatException => errorAt(Reason.BadVersion, lineIdx)
+    catch case _: NumberFormatException => errorAt(Reason.BadVersion, lineIdx, 1)
 
-  // Inline atoms are separated by single soft spaces until the first hard
-  // space; from that point onward only hard spaces separate them. The
-  // current pragma parsing path is a simplified subset (no remark, no hard
-  // spaces in atom positions per the spec).
-  private def splitPhrases(content: String): List[String] =
+  private def splitPragmaPhrases(content: String): List[String] =
     val parts = scala.collection.mutable.ListBuffer.empty[String]
-    val builder = StringBuilder()
+    val builder = new StringBuilder()
     var i = 0
     var hardSpaceMode = false
     while i < content.length do
       val ch = content.charAt(i)
       if ch == ' ' then
-        // Count consecutive spaces
         var j = i
         while j < content.length && content.charAt(j) == ' ' do j += 1
         val runLength = j - i
@@ -523,7 +503,6 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
           if builder.nonEmpty then { parts += builder.toString; builder.clear() }
           i += 1
         else
-          // hard space; switches into hard-space mode and ends the phrase
           if !hardSpaceMode then hardSpaceMode = true
           if builder.nonEmpty then { parts += builder.toString; builder.clear() }
           i = j
@@ -532,606 +511,891 @@ private final class TelParser(input: Data, schema: Optional[Tels]):
         i += 1
 
     if builder.nonEmpty then parts += builder.toString
-
     parts.toList
 
-  private def determineMargin(): Unit =
-    peekNextNonBlankLine().let: idx =>
-      margin = lines(idx).leadingSpaces
+  // ── Margin determination ─────────────────────────────────────────────────
 
-  private def peekNextNonBlankLine(): Optional[Int] =
-    var i = cursor
-    while i < lines.length && lines(i).blank do i += 1
-    if i < lines.length then i else Unset
+  // Sets `margin` to the leadingSpaces of the first non-blank content line.
+  // The caller's outer fillHead has already parked head at the first line;
+  // we walk through blanks if needed.
+  private def determineMargin(): Unit raises TelError =
+    while head.blank && !head.eof do fillHead()
+    if !head.eof then
+      margin = head.leadingSpaces
+      head.indentLevels = 0  // by definition of margin
 
-  // Returns the indent in levels (units of two spaces beyond the
-  // margin). Raises E106 if leading spaces fall short of the margin.
-  // Odd post-margin offsets go through E107 recovery: schema-aware
-  // when a schema is in scope (§19.5), schema-independent shallower-
-  // wins otherwise.
-  private def indentOf(line: Line): Int raises TelError =
-    val relative = line.leadingSpaces - margin
-    if relative < 0 then errorAtLine(Reason.LessThanMargin, line)
-    else if relative % 2 == 0 then relative / 2
-    else recoverOddIndent(line, relative)
+  // ── §19.5 schema-aware E107 recovery ─────────────────────────────────────
 
-  // §19.5 E107 recovery. When no schema is in scope, return the
-  // shallower depth (the original v1.0 rule). When a schema is in
-  // scope, compute admissibility at both candidate depths via the
-  // current ancestor stack, then:
-  //   - both invalid or both valid → shallower (tie-break favours
-  //     the shallower interpretation; type assignment can later
-  //     report E306 against the chosen parent).
-  //   - only one valid → that one.
-  // Edge cases tracked in §19.5:
-  //   1. shallower over-dedents past the ancestor stack → shallower
-  //      invalid; deeper's parent doesn't exist either, so we fall
-  //      back to shallower (graceful degradation).
-  //   2. deeper's parent doesn't exist (no open compound at depth
-  //      `shallower`) → deeper invalid.
-  //   3. deeper's parent resolved to a non-Struct (Scalar/Flag) → it
-  //      wasn't pushed onto the ancestor stack at all, so deeperParent
-  //      is Unset → deeper invalid.
-  private def recoverOddIndent(line: Line, relative: Int): Int raises TelError =
+  // Peek the keyword of the line that head is currently parked at (i.e. read
+  // it without advancing past the line). Uses mark + cue to restore the
+  // cursor's byte position, lineation, and the parser's local snapshot.
+  private def peekKeyword(): Text raises TelError =
+    val outerMark = beginMark()
+    val kw = readKeyword()
+    syncTo()
+    reconcileLineation()
+    cursor.cue(outerMark)
+    syncFrom()
+    kw
+
+  // Resolve `t` to a Struct, optionally following one Reference indirection.
+  // Returns Unset for Scalars, Flag, Select etc.
+  private def resolveTypeToStruct(t: Tels.Type, s: Tels): Optional[Tels.Struct] =
+    t match
+      case struct: Tels.Struct => struct
+      case Tels.Reference(name) =>
+        s.records.find(_.name == name) match
+          case Some(rec) => Tels.Struct(rec.members, rec.validators)
+          case None      => Unset
+      case _ => Unset
+
+  // Resolve `keyword` against `parent`'s direct Field / SelectRef members.
+  // Returns the Struct type if the keyword names a child whose resolved
+  // type is a Struct, or Unset otherwise.
+  private def resolveKeywordStruct(parent: Tels.Struct, keyword: Text, s: Tels)
+  :     Optional[Tels.Struct] raises TelError =
+    var found: Optional[Tels.Type] = Unset
+    var i = 0
+    while i < parent.members.length && found.absent do
+      parent.members(i) match
+        case f: Tels.Field =>
+          if f.keyword == keyword then found = f.fieldType
+        case sr: Tels.SelectRef =>
+          s.selects.find(_.name == sr.reference).foreach: selectDef =>
+            selectDef.variants.find(_.keyword == keyword).foreach: variant =>
+              found = variant.variantType
+        case _: Tels.Exclude => ()
+      i += 1
+    found.let(t => resolveTypeToStruct(t, s)).or(Unset)
+
+  // Does `parent` admit `keyword` in its direct Field / SelectRef set?
+  private def keywordAdmissible(parent: Tels.Struct, keyword: Text, s: Tels): Boolean =
+    var i = 0
+    var hit = false
+    while !hit && i < parent.members.length do
+      parent.members(i) match
+        case f: Tels.Field =>
+          if f.keyword == keyword then hit = true
+        case sr: Tels.SelectRef =>
+          s.selects.find(_.name == sr.reference).foreach: selectDef =>
+            if selectDef.variants.exists(_.keyword == keyword) then hit = true
+        case _: Tels.Exclude => ()
+      i += 1
+    hit
+
+  // Push a child compound's resolved struct onto the ancestor stack. No-op
+  // (records Unset for depth bookkeeping) without a schema.
+  private def pushAncestor(keyword: Text): Unit raises TelError =
     schema.let: s =>
-      val shallower = relative / 2
-      val deeper    = shallower + 1
-      val keyword   = extractKeyword(line)
+      val parent: Optional[Tels.Struct] =
+        if ancestors.isEmpty then s.document else ancestors(ancestors.length - 1)
+      val resolved: Optional[Tels.Struct] =
+        parent.let(p => resolveKeywordStruct(p, keyword, s))
+      ancestors += resolved
+    .or:
+      ancestors += Unset
 
+  private def popAncestor(): Unit =
+    if ancestors.nonEmpty then ancestors.remove(ancestors.length - 1)
+
+  // §19.5 odd-indent recovery. Without a schema, raise E107. With a schema,
+  // compute admissibility at both candidate depths via the current ancestor
+  // stack and pick deeper if and only if shallower is invalid AND deeper is
+  // valid; tie-break favours shallower.
+  private def recoverOddIndent(spaces: Int, startLine: Int): Int raises TelError =
+    val rel = spaces - margin
+    schema.let: s =>
+      val shallower = rel / 2
+      val deeper    = shallower + 1
+      val keyword   = peekKeyword()
       val shallowerParent: Optional[Tels.Struct] =
         if shallower == 0 then s.document
         else if shallower - 1 < ancestors.length then ancestors(shallower - 1)
         else Unset
-
       val deeperParent: Optional[Tels.Struct] =
-        if shallower < ancestors.length then ancestors(shallower)
-        else Unset
-
+        if shallower < ancestors.length then ancestors(shallower) else Unset
       val shallowerValid =
         shallowerParent.let(p => keywordAdmissible(p, keyword, s)).or(false)
-
       val deeperValid =
         deeperParent.let(p => keywordAdmissible(p, keyword, s)).or(false)
-
       if !shallowerValid && deeperValid then deeper else shallower
     .or:
-      errorAtLine(Reason.OddIndentation, line)
+      errorAt(Reason.OddIndentation, startLine, 1)
 
-  private def checkTrailingSpaces(line: Line): Unit raises TelError =
-    val len = lineLen(line)
-    if len > 0 && lineCharAt(line, len - 1) == ' ' && !line.blank
-    then errorAtLine(Reason.TrailingSpaces, line, len)
+  // ── Line-head fill ───────────────────────────────────────────────────────
 
-  // Recursively parses the child blocks of a node at parentIndent. The
-  // children themselves are at parentIndent + 1, except at top-level where
-  // parentIndent = -1 means children are at indent 0.
+  // Consume the next line's leading spaces and parks at the first content
+  // byte (or LF/EOF for a blank line). Updates `head` in place. Always
+  // advances past EOF cleanly: head.eof = true, head.blank = true.
+  private def fillHead(): Unit raises TelError =
+    syncTo()
+    reconcileLineation()
+    val startLine = cursor.line.n0 + 1
+    head.startLine = startLine
+
+    val spaces = countLeadingSpaces()
+    head.leadingSpaces = spaces
+
+    if !more then
+      head.eof = true
+      head.blank = true
+      head.indentLevels = -1
+    else if peek == LF || peek == CR then
+      head.blank = true
+      head.eof = false
+      head.indentLevels = -1
+      consumeLineEnding()
+      // The line we just consumed was blank — it acts as a boundary for
+      // E109.
+      prevLineWasBoundary = true
+    else
+      head.blank = false
+      head.eof = false
+      val rel = spaces - margin
+      head.indentLevels =
+        if rel < 0 then
+          errorAt(Reason.LessThanMargin, startLine, 1)
+        else if rel % 2 == 0 then rel / 2
+        else recoverOddIndent(spaces, startLine)
+
+  // ── parseChildren ────────────────────────────────────────────────────────
+
   private def parseChildren(parentIndent: Int): IArray[Tel.Block] raises TelError =
     val expected = parentIndent + 1
 
-    // Fast path: if there's no next non-blank line, or it's at a shallower
-    // indent than expected, there are no children — skip the ArrayBuffer
-    // allocation entirely. This path fires once per leaf compound, so for
-    // schema-shaped data it's a huge fraction of all parseChildren calls.
-    val firstIdx = peekNextNonBlankLine()
-    if firstIdx.absent then return IArray.empty[Tel.Block]
-    val firstResolved = firstIdx.vouch
-    val firstIndent = indentOf(lines(firstResolved))
-    if firstIndent < expected then return IArray.empty[Tel.Block]
+    if head.eof || head.indentLevels < expected then IArray.empty[Tel.Block]
+    else
+      val builder = scala.collection.mutable.ArrayBuffer.empty[Tel.Block]
+      while !head.eof && head.indentLevels == expected do
+        builder += parseBlock(expected)
 
-    val builder = scala.collection.mutable.ArrayBuffer.empty[Tel.Block]
+      // After consuming children at `expected`, a remaining non-blank line
+      // more indented than `expected` is an error.
+      if !head.eof && head.indentLevels > expected then
+        val line = head.startLine
+        builder.lastOption match
+          case Some(last) if last.tabulation.present && last.compounds.isEmpty =>
+            errorAt(Reason.RowWrongIndent, line, 1)
 
-    while
-      val nextIdx = peekNextNonBlankLine()
-      if nextIdx.absent then false
-      else
-        val idx = nextIdx.vouch
-        if indentOf(lines(idx)) == expected then
-          cursor = idx
-          true
-        else false
-    do
-      builder += parseBlock(expected)
+          case Some(last) if last.tabulation.present =>
+            errorAt(Reason.ChildOfNonCompound, line, 1)
 
-    // After consuming children at `expected`, a remaining non-blank line
-    // more indented than `expected` is an error. The kind of error
-    // depends on the last block's shape:
-    //   - tabulation present, no rows: E116, a tabulated row at the
-    //     wrong indent
-    //   - tabulation present, rows present: E112, a child of a
-    //     tabulated row (rows cannot themselves have children)
-    //   - no tabulation, no compounds (comment-only): E112, the
-    //     orphaned line is a child of a non-compound
-    //   - otherwise: E111, the line over-indents past the last
-    //     compound's child level
-    val rest = peekNextNonBlankLine()
-    rest.let: idx =>
-      val di = indentOf(lines(idx))
-      if di > expected then builder.lastOption match
-        case Some(last) if last.tabulation.present && last.compounds.isEmpty =>
-          errorAt(Reason.RowWrongIndent, idx)
+          case Some(last) if last.compounds.isEmpty =>
+            errorAt(Reason.ChildOfNonCompound, line, 1)
 
-        case Some(last) if last.tabulation.present =>
-          errorAt(Reason.ChildOfNonCompound, idx)
+          case _ => errorAt(Reason.OverIndentation, line, 1)
 
-        case Some(last) if last.compounds.isEmpty =>
-          errorAt(Reason.ChildOfNonCompound, idx)
+      IArray.from(builder)
 
-        case _ => errorAt(Reason.OverIndentation, idx)
+  // ── parseBlock ───────────────────────────────────────────────────────────
 
-    IArray.from(builder)
-
-  // Parses a single block: optional leading comments at the given indent,
-  // followed by a contiguous run of compounds at the same indent, followed
-  // by zero or more trailing blank lines. Blanks between the comment-group
-  // and the compound-group are "interior" (not counted as trailing).
+  // Parses one block at the given indent: leading comments, optional
+  // tabulation header, a run of compounds (each possibly with source /
+  // literal / children attached), then trailing blank lines (those that
+  // semantically belong to this block).
   private def parseBlock(indent: Int): Tel.Block raises TelError =
     val comments = scala.collection.mutable.ArrayBuffer.empty[Tel.Comment]
 
-    while atCommentLine(indent) do
-      // §9 E109: a comment must be preceded by start of file, the
-      // prologue (directive / pragma), a blank line, another comment,
-      // or a line at lesser indent. A non-blank non-comment line at
-      // the same or greater indent immediately before violates the
-      // rule.
-      if cursor > 0 && cursor - 1 > prologueEndLine then
-        val prev = lines(cursor - 1)
-        if !prev.blank && !isCommentLine(prev, indent) && prev.leadingSpaces >= margin + indent * 2
-        then errorAt(Reason.CommentNotPreceded, cursor)
+    // Leading comments at this indent.
+    while !head.eof && !head.blank && head.indentLevels == indent && isCommentBody() do
+      // §9 E109 check — fires only if the immediately preceding line was a
+      // content line (compound / tabulation) at indent ≥ this comment's.
+      if !prevLineWasBoundary && prevContentLeadingSpaces >= 0
+         && prevContentLeadingSpaces >= margin + indent * 2
+      then errorAt(Reason.CommentNotPreceded, head.startLine, 1)
 
-      comments += parseCommentLine(lines(cursor))
-      cursor += 1
+      val text = parseCommentLine()
+      comments += Tel.Comment(text)
+      prevLineWasBoundary = true
+      hasConsumedNonBlankLine = true
+      fillHead()
 
-    // If comments are followed by blanks then a compound at the same indent,
-    // consume the blanks as interior whitespace (do not count them anywhere).
-    if comments.nonEmpty && cursor < lines.length && lines(cursor).blank then
-      var probe = cursor
-      while probe < lines.length && lines(probe).blank do probe += 1
-      if probe < lines.length && indentOf(lines(probe)) == indent
-        && !isCommentLine(lines(probe), indent)
-      then cursor = probe
+    // Interior blanks: if we have comments and the next line is blank, look
+    // ahead to see whether the blanks separate the comments from a compound
+    // group at the same indent. If so, consume them as interior whitespace.
+    if comments.nonEmpty && !head.eof && head.blank then
+      skipInteriorBlanksIfFollowedByContentAtIndent(indent)
 
-    // A tabulation line at this indent introduces a tabulated block: rows
-    // follow as ordinary compound lines (the column-alignment rules of §16
-    // are not enforced in phase 1; the row's keyword + inline atoms are
-    // captured verbatim per the phrase-separation rule).
+    // Optional tabulation header.
     val tabulation: Optional[Tel.Tabulation] =
-      if cursor < lines.length && isTabulationLineAt(lines(cursor), indent) then
-        val line = lines(cursor)
-        cursor += 1
-        Optional(parseTabulationLine(line))
+      if !head.eof && !head.blank && head.indentLevels == indent && isTabulationBody()
+      then
+        val ls = head.leadingSpaces
+        val tab = parseTabulationLine()
+        prevContentLeadingSpaces = ls
+        prevLineWasBoundary = false
+        hasConsumedNonBlankLine = true
+        fillHead()
+        Optional(tab)
       else Unset
 
     val compounds = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
 
-    // Hoisted compound-loop condition: a compound line at `indent` is a
-    // non-blank line at exactly `indent` whose first non-space character
-    // is NOT the sigil immediately followed by a soft space or end-of-
-    // line (comment) and is not a tabulation line. We do the indent
-    // check once here; the body-shape predicates `isCommentBody` and
-    // `isTabulationBody` skip their own redundant indent re-check.
-    var continueLoop = true
-    while continueLoop && cursor < lines.length do
-      val line = lines(cursor)
-      if line.blank || indentOf(line) != indent then continueLoop = false
-      else if isCommentBody(line) || isTabulationBody(line) then continueLoop = false
+    // Compound loop.
+    var keepLoop = true
+    while keepLoop && !head.eof && !head.blank && head.indentLevels == indent do
+      if isCommentBody() || isTabulationBody() then keepLoop = false
       else
-        cursor += 1
-        val parsed = parseCompoundLine(line, indent)
-        tabulation.let(validateTabulatedRow(line, _))
-        val extraAtom =
-          if tabulation.absent then parseSourceOrLiteralAtom(line.leadingSpaces)
-          else Unset
+        val compoundLeadingSpaces = head.leadingSpaces
+        val compoundLine = head.startLine
+        // §16.2: validate tabulated rows BEFORE parseCompoundLine consumes
+        // the row's bytes. validateTabulatedRowInline uses mark + cue so the
+        // cursor remains parked at the row start for parseCompoundLine.
+        if tabulation.present then
+          validateTabulatedRowInline(compoundLeadingSpaces, tabulation.vouch, compoundLine)
+        val parsed = parseCompoundLine(compoundLine)
+        prevContentLeadingSpaces = compoundLeadingSpaces
+        prevLineWasBoundary = false
+        // §19.5 recovery needs this compound's keyword on the ancestor
+        // stack BEFORE fillHead reads the next line — odd-indent recovery
+        // there consults the ancestors. No-schema mode skips push/pop
+        // entirely so the hot path is unaffected.
+        val pushed = schema.present
+        if pushed then pushAncestor(parsed.keyword)
+        try
+          fillHead()
 
-        val children =
-          if extraAtom.absent && tabulation.absent then
-            // Ancestor bookkeeping is only consulted by the §19.5
-            // schema-aware E107 recovery path. Skip the push/pop pair
-            // entirely in no-schema mode — for documents with deep
-            // nesting this is a meaningful saving.
-            if schema.present then
-              pushAncestor(parsed.keyword)
-              try parseChildren(indent) finally popAncestor()
-            else parseChildren(indent)
-          else IArray.empty[Tel.Block]
+          val extraAtom: Optional[Tel.Atom] =
+            if tabulation.absent then parseSourceOrLiteralAtomIfPresent(compoundLeadingSpaces)
+            else Unset
 
-        val finalAtoms = extraAtom.lay(parsed.atoms): atom =>
-          parsed.atoms :+ atom
+          val children =
+            if extraAtom.absent && tabulation.absent then parseChildren(indent)
+            else IArray.empty[Tel.Block]
 
-        compounds += parsed.copy(atoms = finalAtoms, children = children)
+          val finalAtoms = extraAtom.lay(parsed.atoms): atom =>
+            parsed.atoms :+ atom
+
+          compounds += parsed.copy(atoms = finalAtoms, children = children)
+        finally if pushed then popAncestor()
 
     val trailingBlankLines = consumeTrailingBlanksFor(indent)
 
     Tel.Block(IArray.from(comments), tabulation, IArray.from(compounds), trailingBlankLines)
 
-  // §16.2 column-rule validation for tabulated rows. Walks the row left-
-  // to-right. Each contiguous run of ≥2 spaces is a hard-space and MUST
-  // end exactly at one of the column marker positions M_k (k ≥ 1)
-  // declared on the tabulation line (**E117**). Each non-final column
-  // value's width MUST NOT exceed M_{k+1} − M_k − 2 (**E119**). A 2+
-  // space run that isn't a column separator is implicitly **E118**
-  // (consecutive spaces within a value), but the spec lets the parser
-  // report either E117 or E118 in that case — we report E117, matching
-  // the reference parser's behaviour. Remarks (hard-space + sigil +
-  // soft-space introducer) are exempt and end the validation walk.
-  private def validateTabulatedRow(line: Line, tabulation: Tel.Tabulation)
-  :     Unit raises TelError =
+  // After the comment-group, consume blank lines if the next non-blank line
+  // is a content (not comment) line at the same `indent`. Otherwise leave
+  // the blanks for the enclosing block. Uses mark+cue.
+  private def skipInteriorBlanksIfFollowedByContentAtIndent(indent: Int)
+  : Unit raises TelError =
+    val mk = beginMark()
+    val savedHeadSnapshot = (head.leadingSpaces, head.indentLevels, head.blank,
+                             head.eof, head.startLine)
+    val savedBoundary = prevLineWasBoundary
+    while !head.eof && head.blank do fillHead()
+    val keep =
+      !head.eof && head.indentLevels == indent && !isCommentBody()
+    if !keep then
+      // Rewind.
+      syncTo()
+      reconcileLineation()
+      cursor.cue(mk)
+      syncFrom()
+      head.leadingSpaces = savedHeadSnapshot._1
+      head.indentLevels  = savedHeadSnapshot._2
+      head.blank         = savedHeadSnapshot._3
+      head.eof           = savedHeadSnapshot._4
+      head.startLine     = savedHeadSnapshot._5
+      prevLineWasBoundary = savedBoundary
+      // Re-park: skip leading spaces of the line we just rewound to.
+      var i = 0
+      while i < savedHeadSnapshot._1 && more && peek == SP do
+        advance()
+        i += 1
+
+  // ── Trailing blanks ──────────────────────────────────────────────────────
+
+  // Consume blank lines that "belong" to the current block at `indent`. A
+  // blank line belongs if the next non-blank line (if any) matches `indent`
+  // or EOF.
+  private def consumeTrailingBlanksFor(indent: Int): Int raises TelError =
+    if head.eof then
+      // The first parseBlock to reach EOF after a document that ended with
+      // LF claims the virtual sentinel trailing line that TelParser emits.
+      // Cleared so outer parseBlock invocations don't double-count.
+      if documentEndsWithLf then
+        documentEndsWithLf = false
+        1
+      else 0
+    else if !head.blank then 0
+    else
+      val mk = beginMark()
+      val firstBlankSnapshot = (head.leadingSpaces, head.indentLevels, head.blank,
+                                head.eof, head.startLine)
+      val savedBoundary = prevLineWasBoundary
+      var count = 0
+      while !head.eof && head.blank do
+        count += 1
+        fillHead()
+
+      val keep =
+        head.eof || head.indentLevels == indent
+
+      if keep then count
+      else
+        // Rewind to the first blank.
+        syncTo()
+        reconcileLineation()
+        cursor.cue(mk)
+        syncFrom()
+        head.leadingSpaces = firstBlankSnapshot._1
+        head.indentLevels  = firstBlankSnapshot._2
+        head.blank         = firstBlankSnapshot._3
+        head.eof           = firstBlankSnapshot._4
+        head.startLine     = firstBlankSnapshot._5
+        prevLineWasBoundary = savedBoundary
+        var i = 0
+        while i < firstBlankSnapshot._1 && more && peek == SP do
+          advance()
+          i += 1
+        0
+
+  // ── Predicates over the parked head ──────────────────────────────────────
+
+  // True iff the parked head's first content byte is the sigil and the
+  // line is a comment (sigil-only or sigil + soft space + text), as opposed
+  // to a tabulation line or `#foo`-style keyword.
+  private def isCommentBody(): Boolean raises TelError =
+    if !more || peek != sigil then false
+    else
+      // Peek the rest of the line to decide between comment and tabulation.
+      // A comment line has at most one space after the sigil; tabulation
+      // lines have a hard space (2+) somewhere with another sigil.
+      // Strategy: look one byte after the sigil.
+      val nextByte = peekNext()
+      if nextByte < 0 then true  // sigil at EOF — bare comment
+      else if nextByte == LF.toInt || nextByte == CR.toInt then true
+      else if nextByte != SP.toInt then false  // `#foo` — not a comment
+      else
+        // sigil + space + ... — could be comment or tabulation. Look ahead
+        // to detect tabulation marker pattern. For now use mark+cue.
+        !lineHasTabulationMarker()
+
+  // Returns true iff the parked head's line, when read forward from current
+  // position, contains a 2-space-or-more run followed by sigil somewhere
+  // before the next LF. Uses mark+cue.
+  private def lineHasTabulationMarker(): Boolean raises TelError =
+    val mk = beginMark()
+    var found = false
+    var done = false
+    while !done do
+      if !more then done = true
+      else
+        val b = peek
+        if b == LF || b == CR then done = true
+        else if b == SP then
+          // Count run.
+          var run = 0
+          while more && peek == SP do { advance(); run += 1 }
+          if run >= 2 && more && peek == sigil then
+            found = true
+            done = true
+        else advance()
+
+    // Rewind.
+    syncTo()
+    reconcileLineation()
+    cursor.cue(mk)
+    syncFrom()
+    found
+
+  private def isTabulationBody(): Boolean raises TelError =
+    if !more || peek != sigil then false
+    else lineHasTabulationMarker()
+
+  // ── Comment parsing ──────────────────────────────────────────────────────
+
+  // Cursor is at the sigil. Returns the comment text, advancing past LF.
+  private def parseCommentLine(): Text raises TelError =
+    // Consume the sigil.
+    advance()
+    if !more || peek == LF || peek == CR then
+      consumeLineEnding()
+      t""
+    else if peek == SP then
+      // Skip the introducer space.
+      advance()
+      val mk = beginMark()
+      while more && peek != LF && peek != CR do advance()
+      val payload = sliceText(mk)
+      consumeLineEnding()
+      Text(payload)
+    else
+      // `#foo` — but we already classified this as a comment, so this
+      // shouldn't happen. Treat as bare-content.
+      val mk = beginMark()
+      while more && peek != LF && peek != CR do advance()
+      val payload = sliceText(mk)
+      consumeLineEnding()
+      Text(payload)
+
+  // ── Tabulation line parsing ──────────────────────────────────────────────
+
+  // Cursor is at the sigil. Reads marker offsets + headings, advances past
+  // LF.
+  private def parseTabulationLine(): Tel.Tabulation raises TelError =
+    val lineStartCol = head.leadingSpaces  // first marker offset (column 0 = sigil)
+    val markers = scala.collection.mutable.ArrayBuffer.empty[Int]
+    val headings = scala.collection.mutable.ArrayBuffer.empty[Text]
+
+    markers += lineStartCol  // first marker at first non-space position
+
+    // Consume the first sigil.
+    advance()
+
+    // Repeating: heading text until next marker (hard-space + sigil) or
+    // end of line.
+    var lineCol = lineStartCol + 1  // column index just past the sigil
+    var done = false
+    while !done do
+      // After a marker, an optional soft space introduces the heading.
+      // §16 / E120: non-space immediately after marker is malformed; >1
+      // leading space is malformed (unless empty heading).
+      if !more || peek == LF || peek == CR then
+        headings += t""
+        done = true
+      else if peek != SP then
+        errorAt(Reason.BadTabulationHeading, head.startLine, lineCol + 1)
+      else
+        // peek == SP
+        // Check if the next byte is also a space — if so, heading is empty
+        // or malformed.
+        val nextB = peekNext()
+        if nextB == SP.toInt then
+          // Two spaces after marker: empty heading? Look further.
+          // Consume the two spaces; check if next is a sigil (start of next
+          // column) or content (malformed).
+          advance(); lineCol += 1  // first space
+          advance(); lineCol += 1  // second space
+          if more && peek == sigil then
+            // Empty heading; new marker.
+            markers += lineCol
+            advance(); lineCol += 1
+            headings += t""
+            // continue outer loop for next column
+          else if !more || peek == LF || peek == CR then
+            // Empty heading at line end.
+            headings += t""
+            done = true
+          else
+            // E120: more spaces or non-sigil content after empty.
+            errorAt(Reason.BadTabulationHeading, head.startLine, lineCol + 1)
+        else
+          // One soft space — heading text follows.
+          advance(); lineCol += 1
+          val mk = beginMark()
+          var headingEnd = -1
+          var stop = false
+          while !stop do
+            if !more || peek == LF || peek == CR then
+              headingEnd = lineCol
+              stop = true
+            else if peek == sigil then
+              errorAt(Reason.BadTabulationHeading, head.startLine, lineCol + 1)
+            else if peek == SP then
+              // Hard space check: two spaces in a row?
+              val nb = peekNext()
+              if nb == SP.toInt then
+                headingEnd = lineCol
+                stop = true
+              else
+                advance(); lineCol += 1
+            else
+              advance(); lineCol += 1
+
+          headings += Text(sliceText(mk))
+          // Now we're either at LF/CR/EOF or at a hard-space run before a
+          // marker.
+          if !more || peek == LF || peek == CR then done = true
+          else
+            // Consume hard spaces.
+            while more && peek == SP do { advance(); lineCol += 1 }
+            if more && peek == sigil then
+              markers += lineCol
+              advance(); lineCol += 1
+              // Loop continues.
+            else if !more || peek == LF || peek == CR then done = true
+            else
+              errorAt(Reason.BadTabulationHeading, head.startLine, lineCol + 1)
+
+    consumeLineEnding()
+    Tel.Tabulation(IArray.from(markers), IArray.from(headings))
+
+  // §16.2 column-rule validation. The cursor must be parked at the row's
+  // first content byte (past leading spaces). Walks the bytes up to LF/CR
+  // checking that every hard-space (2+) run ends exactly at one of the
+  // tabulation header's marker positions (E117) and that no non-final
+  // column value exceeds its declared width (E119). Uses mark + cue so the
+  // cursor is restored to the same position for the subsequent
+  // parseCompoundLine call.
+  private def validateTabulatedRowInline
+    ( rowLeadingSpaces: Int, tabulation: Tel.Tabulation, lineNumber: Int )
+  : Unit raises TelError =
     val markers = tabulation.markerOffsets
-    val n = lineLen(line)
-
-    var i = line.leadingSpaces
+    val mk = beginMark()
+    var col = rowLeadingSpaces
     var columnIdx = 0
-    var phraseStart = i
+    var phraseStart = rowLeadingSpaces
+    var stopped = false
 
-    while i < n do
-      if lineCharAt(line, i) == ' ' then
-        var j = i
-        while j < n && lineCharAt(line, j) == ' ' do j += 1
-        val runLen = j - i
-
+    while !stopped && more && peek != LF && peek != CR do
+      val b = peek
+      if b == SP then
+        val runStart = col
+        while more && peek == SP do { advance(); col += 1 }
+        val runLen = col - runStart
         if runLen >= 2 then
+          val sigilNext = more && peek == sigil
           val isRemark =
-            j < n
-            && lineCharAt(line, j) == sigil
-            && (j + 1 >= n || (lineCharAt(line, j + 1) == ' '
-                               && (j + 2 >= n || lineCharAt(line, j + 2) != ' ')))
-
-          if isRemark then i = n
+            if !sigilNext then false
+            else
+              ensureLookahead(3)
+              val afterSigil = if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
+              afterSigil == SP.toInt
+              && (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
+          if isRemark then
+            // Remark terminates column validation.
+            while more && peek != LF && peek != CR do { advance(); col += 1 }
+            stopped = true
           else
             if columnIdx >= 1 && columnIdx < markers.length - 1 then
-              val phraseWidth = i - phraseStart
+              val phraseWidth = runStart - phraseStart
               val colMax = markers(columnIdx + 1) - markers(columnIdx) - 2
               if phraseWidth > colMax then
-                errorAtLine(Reason.ColumnValueTooWide, line, phraseStart + 1)
-
+                errorAt(Reason.ColumnValueTooWide, lineNumber, phraseStart + 1)
             var foundIdx = -1
             var k = 1
             while k < markers.length && foundIdx < 0 do
-              if markers(k) == j then foundIdx = k
+              if markers(k) == col then foundIdx = k
               k += 1
-
-            if foundIdx < 0 then errorAtLine(Reason.HardSpaceWrongPosition, line, j + 1)
-
+            if foundIdx < 0 then
+              errorAt(Reason.HardSpaceWrongPosition, lineNumber, col + 1)
             columnIdx = foundIdx
-            phraseStart = j
-            i = j
-        else i = j
-      else i += 1
-
-  private def isTabulationLineAt(line: Line, indent: Int): Boolean raises TelError =
-    if line.blank || indentOf(line) != indent then false
-    else isTabulationBody(line)
-
-  // Body-only variant: assumes the caller has already verified the line
-  // is non-blank and at the desired indent. Used in the inner compound
-  // loop to avoid a redundant `indentOf` pass per iteration.
-  private inline def isTabulationBody(line: Line): Boolean =
-    val start = line.leadingSpaces
-    start < lineLen(line)
-    && lineCharAt(line, start) == sigil
-    && hasTabulationMarker(line, start)
-
-  // Body-only variant of `isCommentLine` — same assumption as
-  // `isTabulationBody`.
-  private inline def isCommentBody(line: Line): Boolean =
-    val len = lineLen(line)
-    val start = line.leadingSpaces
-    if start >= len || lineCharAt(line, start) != sigil then false
-    else
-      val next = start + 1
-      if next >= len then true  // bare sigil
-      else if lineCharAt(line, next) == ' ' then !hasTabulationMarker(line, start)
-      else false  // `#foo` — not a comment
-
-  // Extracts marker offsets and headings from a tabulation line. The first
-  // marker is at the first non-space position; subsequent markers are
-  // sigil characters immediately preceded by a hard space. Headings are
-  // the text between a marker and the next hard-space-marker boundary
-  // (or end of line for the final column), with the introducer space
-  // consumed per §16.1.
-  private def parseTabulationLine(line: Line): Tel.Tabulation raises TelError =
-    val n = lineLen(line)
-    val markers = scala.collection.mutable.ArrayBuffer.empty[Int]
-
-    val first = line.leadingSpaces
-    markers += first
-    var i = first + 1
-    while i < n do
-      if lineCharAt(line, i) == ' ' then
-        var j = i
-        while j < n && lineCharAt(line, j) == ' ' do j += 1
-        val runLen = j - i
-        if runLen >= 2 && j < n && lineCharAt(line, j) == sigil then
-          markers += j
-          i = j + 1
-        else i = j
-      else i += 1
-
-    val headings = scala.collection.mutable.ArrayBuffer.empty[Text]
-    var m = 0
-    while m < markers.length do
-      val markerPos = markers(m)
-      val nextLimit = if m + 1 < markers.length then markers(m + 1) else n
-      headings += extractHeading(line, markerPos + 1, nextLimit)
-      m += 1
-
-    Tel.Tabulation(IArray.from(markers), IArray.from(headings))
-
-  // After a marker (which sits at the sigil's index, so `start` is index+1),
-  // an optional soft space introduces the heading text; the heading ends at
-  // the next hard space or at `limit` (the position of the next marker, or
-  // end of line for the final column). §16 / E120 forbids: non-space
-  // immediately after the marker, more than one space before heading
-  // content, or a sigil character inside the heading text.
-  private def extractHeading(line: Line, start: Int, limit: Int): Text raises TelError =
-    if start >= limit then t""
-    else if lineCharAt(line, start) != ' ' then
-      errorAtLine(Reason.BadTabulationHeading, line, start + 1)
-    else if start + 1 < limit && lineCharAt(line, start + 1) == ' ' then
-      // Two consecutive spaces immediately after the marker: either an
-      // empty heading (introducer + single terminator space = exactly
-      // two spaces between markers) or malformed (a real heading
-      // starting after extra leading spaces, which is E120).
-      if limit - start <= 2 then t""
-      else errorAtLine(Reason.BadTabulationHeading, line, start + 1)
-    else
-      var i = start + 1
-      var stop = limit
-      while i < limit - 1 do
-        if lineCharAt(line, i) == ' ' && lineCharAt(line, i + 1) == ' ' then
-          stop = i
-          i = limit
-        else
-          if lineCharAt(line, i) == sigil then
-            errorAtLine(Reason.BadTabulationHeading, line, i + 1)
-          i += 1
-
-      Text(lineSub(line, start + 1, stop))
-
-  // Counts blank lines that "belong" to a block at the given indent: the
-  // run of blanks immediately following the block, *stopping* when the next
-  // non-blank line is at a different indent. Blanks preceding a shallower
-  // line belong to the enclosing block; blanks preceding a deeper line
-  // would indicate over-indentation (handled elsewhere).
-  private def consumeTrailingBlanksFor(indent: Int): Int raises TelError =
-    var count = 0
-    while
-      cursor < lines.length && lines(cursor).blank
-      && nextNonBlankMatches(indent)
-    do
-      count += 1
-      cursor += 1
-
-    count
-
-  private def nextNonBlankMatches(indent: Int): Boolean raises TelError =
-    var probe = cursor
-    while probe < lines.length && lines(probe).blank do probe += 1
-    if probe >= lines.length then true
-    else indentOf(lines(probe)) == indent
-
-  // A line is a comment if, after its leading indentation, its first
-  // non-space character is the sigil and that sigil is either at end of
-  // line or followed by exactly one soft space; the `#foo` form (sigil
-  // concatenated with content) is NOT a comment. Tabulation lines are
-  // distinguished by a second sigil preceded by a hard space (deferred for
-  // phase 1; for now any sigil-prefixed line that does not have a tabulation
-  // marker is a comment).
-  private def atCommentLine(indent: Int): Boolean raises TelError =
-    cursor < lines.length && isCommentLine(lines(cursor), indent)
-
-  private def isCommentLine(line: Line, indent: Int): Boolean raises TelError =
-    if line.blank || indentOf(line) != indent then false
-    else
-      val len = lineLen(line)
-      val start = line.leadingSpaces
-      if start >= len || lineCharAt(line, start) != sigil then false
+            phraseStart = col
       else
-        val next = start + 1
-        if next >= len then true  // bare sigil
-        else if lineCharAt(line, next) == ' ' then !hasTabulationMarker(line, start)
-        else false  // `#foo` — not a comment
+        advance()
+        col += 1
 
-  private def hasTabulationMarker(line: Line, fromIdx: Int): Boolean =
-    val n = lineLen(line)
-    var i = fromIdx + 1
-    while i < n - 1 do
-      if lineCharAt(line, i) == ' ' && lineCharAt(line, i + 1) == ' ' then
-        var j = i
-        while j < n && lineCharAt(line, j) == ' ' do j += 1
-        if j < n && lineCharAt(line, j) == sigil then return true
-        i = j
-      else i += 1
+    // Cue back so parseCompoundLine reads the row from the start.
+    syncTo()
+    reconcileLineation()
+    cursor.cue(mk)
+    syncFrom()
 
-    false
+  // ── Source / literal atom dispatch ───────────────────────────────────────
 
-  // After a compound line, optionally consume a source atom (§14, indent
-  // = compound + 2 levels, 4 spaces deeper) or literal atom (§15, indent
-  // = compound + 3 levels, 6 spaces deeper). Returns the atom if one was
-  // consumed; otherwise Unset and parsing falls through to parseChildren.
-  private def parseSourceOrLiteralAtom(compoundLeadingSpaces: Int)
+  private def parseSourceOrLiteralAtomIfPresent(compoundLeadingSpaces: Int)
   : Optional[Tel.Atom] raises TelError =
-    if cursor >= lines.length || lines(cursor).blank then Unset
+    if head.eof || head.blank then Unset
     else
-      val line = lines(cursor)
       val sourceIndent = compoundLeadingSpaces + 4
       val literalIndent = compoundLeadingSpaces + 6
       val first =
-        if line.leadingSpaces == literalIndent then Optional(parseLiteralAtom(literalIndent))
-        else if line.leadingSpaces == sourceIndent then Optional(parseSourceAtom(sourceIndent))
+        if head.leadingSpaces == literalIndent then Optional(parseLiteralAtom(literalIndent))
+        else if head.leadingSpaces == sourceIndent then Optional(parseSourceAtom(sourceIndent))
         else Unset
 
-      // §10.4 / §11.1: a compound may carry at most one source or literal
-      // atom. The error code names the *second* atom's kind: E113 if a
-      // source follows an existing source/literal, E114 if a literal
-      // follows an existing source/literal.
-      if first.present && cursor < lines.length && !lines(cursor).blank then
-        val nextLine = lines(cursor)
-        if nextLine.leadingSpaces == literalIndent
-        then errorAt(Reason.DuplicateLiteral, cursor)
-        else if nextLine.leadingSpaces == sourceIndent
-        then errorAt(Reason.DuplicateSource, cursor)
+      // §10.4 / §11.1: at most one source / literal atom per compound.
+      if first.present && !head.eof && !head.blank then
+        if head.leadingSpaces == literalIndent
+        then errorAt(Reason.DuplicateLiteral, head.startLine, 1)
+        else if head.leadingSpaces == sourceIndent
+        then errorAt(Reason.DuplicateSource, head.startLine, 1)
 
       first
 
-  // Source atom: captures lines whose leading-spaces ≥ sourceIndent (or
-  // are blank, when followed by more source content or EOF), strips
-  // exactly sourceIndent spaces from each non-blank line, trims trailing
-  // spaces, and joins with `\n` per captured line (each line, including
-  // the last, contributes one terminating `\n`).
-  private def parseSourceAtom(sourceIndent: Int): Tel.Atom.Source =
-    val captured = scala.collection.mutable.ListBuffer.empty[String]
+  // ── Source atom ──────────────────────────────────────────────────────────
+
+  // Cursor is at the first content byte of a source line (past the
+  // sourceIndent leading spaces). head reflects that. Reads lines while
+  // they have leadingSpaces >= sourceIndent (or are blanks followed by
+  // more source / EOF). Each captured line contributes its content (with
+  // first sourceIndent spaces stripped) plus a trailing "\n" to the
+  // payload.
+  private def parseSourceAtom(sourceIndent: Int): Tel.Atom.Source raises TelError =
+    sb.setLength(0)
 
     var done = false
-    while !done && cursor < lines.length do
-      val line = lines(cursor)
-      if line.blank then
-        var probe = cursor
-        while probe < lines.length && lines(probe).blank do probe += 1
-        val keep =
-          probe >= lines.length
-          || lines(probe).leadingSpaces >= sourceIndent
-
+    while !done do
+      if head.eof then
+        // The virtual trailing blank at EOF (when the document ended with
+        // LF) is claimed by the source atom rather than the enclosing
+        // block — matches TelParser, where the source-atom loop's
+        // probe-past-EOF emits one extra empty line.
+        if documentEndsWithLf then
+          sb.append('\n')
+          documentEndsWithLf = false
+        done = true
+      else if head.blank then
+        // Probe across blanks to see if more source follows.
+        val mk = beginMark()
+        val firstBlankSnapshot = (head.leadingSpaces, head.indentLevels, head.blank,
+                                  head.eof, head.startLine)
+        val savedBoundary = prevLineWasBoundary
+        var blanks = 0
+        while !head.eof && head.blank do
+          blanks += 1
+          fillHead()
+        val keep = head.eof || head.leadingSpaces >= sourceIndent
         if keep then
-          while cursor < probe do
-            captured += ""
-            cursor += 1
-        else done = true
-      else if line.leadingSpaces >= sourceIndent then
-        val len = lineLen(line)
-        var endIdx = len
-        while endIdx > sourceIndent && lineCharAt(line, endIdx - 1) == ' ' do endIdx -= 1
-        captured += lineSub(line, sourceIndent, endIdx)
-        cursor += 1
-      else done = true
+          // Emit `blanks` empty lines.
+          var i = 0
+          while i < blanks do { sb.append('\n'); i += 1 }
+        else
+          // Rewind.
+          syncTo()
+          reconcileLineation()
+          cursor.cue(mk)
+          syncFrom()
+          head.leadingSpaces = firstBlankSnapshot._1
+          head.indentLevels  = firstBlankSnapshot._2
+          head.blank         = firstBlankSnapshot._3
+          head.eof           = firstBlankSnapshot._4
+          head.startLine     = firstBlankSnapshot._5
+          prevLineWasBoundary = savedBoundary
+          var i = 0
+          while i < firstBlankSnapshot._1 && more && peek == SP do
+            advance(); i += 1
+          done = true
+      else if head.leadingSpaces >= sourceIndent then
+        // Read content: skip the first sourceIndent spaces — but wait, the
+        // fillHead already consumed all leading spaces. We need to back up
+        // and consume only sourceIndent of them, leaving (leadingSpaces -
+        // sourceIndent) for the content. Alternative: pad the appended
+        // string with the extra leading spaces, since they ARE part of the
+        // content (per §14).
+        //
+        // §14: source-atom payload is each line's content with the first
+        // `sourceIndent` characters stripped. So if leadingSpaces > sourceIndent,
+        // the excess is part of the content as leading spaces.
+        // Since fillHead consumed ALL the leadingSpaces, we lost the
+        // (leadingSpaces - sourceIndent) excess. Recompose it.
+        val excess = head.leadingSpaces - sourceIndent
+        var i = 0
+        while i < excess do { sb.append(' '); i += 1 }
 
-    val sb = StringBuilder()
-    captured.foreach: c =>
-      sb.append(c)
-      sb.append('\n')
+        // Now read the line content (until LF/CR), tracking trailing spaces
+        // so we can strip them.
+        val mk = beginMark()
+        while more && peek != LF && peek != CR do advance()
+        val payload = sliceText(mk)
+        // Strip trailing spaces.
+        var endIdx = payload.length
+        while endIdx > 0 && payload.charAt(endIdx - 1) == ' ' do endIdx -= 1
+        sb.append(payload, 0, endIdx)
+        sb.append('\n')
+
+        consumeLineEnding()
+        fillHead()
+      else done = true
 
     Tel.Atom.Source(Text(sb.toString))
 
-  // Literal atom: the opening line's content (after literalIndent spaces)
-  // is the delimiter. Payload is everything between the LF terminating the
-  // opening line and the next bare `\n<delim>\n` match in the *raw* byte
-  // stream. The closing delimiter line is flush left (column 0).
+  // ── Literal atom ─────────────────────────────────────────────────────────
+
+  // Cursor is at the first content byte of the opening line (the delimiter
+  // text). The delimiter is the rest of the opening line. The payload is
+  // everything between the next LF and the first line whose content equals
+  // the delimiter (at column 0 / flush left).
   private def parseLiteralAtom(literalIndent: Int): Tel.Atom.Literal raises TelError =
-    val openingLine = lines(cursor)
-    val delimiter = lineSubFrom(openingLine, literalIndent)
-    cursor += 1
-    val payloadStart = openingLine.end + (if lineEndings == Tel.LineEndings.Crlf then 2 else 1)
-    val emptyPattern = delimiter + "\n"
+    val openingLine = head.startLine
+    // Read the delimiter.
+    val delimMk = beginMark()
+    while more && peek != LF && peek != CR do advance()
+    val delimiter = sliceText(delimMk)
+    // The opening line is now consumed up to but not including the LF.
+    // Empty-payload case: if next line is the closing delimiter exactly,
+    // payload is empty.
+    consumeLineEnding()
 
-    // An empty payload (§15: "An empty literal payload (a LF immediately
-    // followed by the delimiter and a LF) is permitted") shares the
-    // opening line's terminating LF with the closing pattern's leading
-    // LF; the search-from-payloadStart path can't match because there's
-    // no leading LF to find at payloadStart. Handle that case explicitly.
-    val (rawPayload, afterClose) =
-      if source.startsWith(emptyPattern, payloadStart) then
-        ("", payloadStart + emptyPattern.length)
+    sb.setLength(0)
+    var done = false
+    while !done do
+      if !more then errorAt(Reason.UnclosedLiteral, openingLine, 1)
+      // Read a line. Inside the literal payload, line endings are not
+      // subject to the document's LF/CRLF mode (per §15 the payload is
+      // verbatim, with CRLF normalised to LF). Read up to the next LF
+      // treating any preceding CR as part of the line, then strip a
+      // trailing CR for normalisation.
+      val lineMk = beginMark()
+      while more && peek != LF do advance()
+      val raw = sliceText(lineMk)
+      val line = if raw.length > 0 && raw.charAt(raw.length - 1) == '\r'
+                 then raw.substring(0, raw.length - 1) else raw
+      if line == delimiter then
+        // Closing delimiter — the LF *before* the closing delimiter is the
+        // delimiter's leading separator, not part of the payload. Strip the
+        // trailing '\n' we appended for the previous payload line (if any),
+        // then consume the optional EOL after the delimiter.
+        if sb.length > 0 && sb.charAt(sb.length - 1) == '\n' then
+          sb.setLength(sb.length - 1)
+        if more then
+          advance()  // consume LF (may be absent at EOF)
+          if !more then documentEndsWithLf = true
+        done = true
       else
-        val pattern = "\n" + delimiter + "\n"
-        val closeIdx = source.indexOf(pattern, payloadStart)
-        if closeIdx < 0 then errorAtLine(Reason.UnclosedLiteral, openingLine)
-        (source.substring(payloadStart, closeIdx), closeIdx + pattern.length)
+        // Payload line — must have an LF terminator; EOF here is E115.
+        if !more then errorAt(Reason.UnclosedLiteral, openingLine, 1)
+        advance()  // consume LF
+        if !more then documentEndsWithLf = true
+        sb.append(line)
+        sb.append('\n')
 
-    // Strip \r\n → \n inside the literal payload. The TEL spec (§15) states
-    // payload bytes are preserved literally, including any CR. The Rust
-    // reference implementation, however, normalises CRLF to LF inside the
-    // payload; the upstream `pos/literal-atom-cr-in-payload.check` fixture
-    // pins this normalisation. Recorded in doc/spec-notes.md.
-    val payload = rawPayload.replace("\r\n", "\n")
+    fillHead()
+    // §15 normalises CRLF to LF inside the payload, but since we read line
+    // by line and append LF, there's no CRLF inside.
+    Tel.Atom.Literal(Text(delimiter), Text(sb.toString))
 
-    // Advance cursor past the closing delimiter line: the line whose start
-    // is exactly afterClose.
-    while cursor < lines.length && lines(cursor).start < afterClose do cursor += 1
+  // ── Compound line parsing ────────────────────────────────────────────────
 
-    Tel.Atom.Literal(Text(delimiter), Text(payload))
+  // Cursor is at the first content byte (past leading spaces). Returns the
+  // parsed compound (keyword + atoms + remark, children left empty for the
+  // caller to fill in).
+  private def parseCompoundLine(lineNumber: Int): Tel.Compound raises TelError =
+    val isAtColumnZero = head.leadingSpaces == 0
+    val mayBeMisplacedPragma = isAtColumnZero && hasConsumedNonBlankLine
+    val lineStart = beginMark()
 
-  private def parseCommentLine(line: Line): Tel.Comment =
-    val len = lineLen(line)
-    val start = line.leadingSpaces + 1
-    val payload =
-      if start >= len then ""
-      else if lineCharAt(line, start) == ' ' then lineSubFrom(line, start + 1)
-      else lineSubFrom(line, start)
+    // First phrase = keyword. Read until space or LF/CR.
+    val keyword = readKeyword()
 
-    Tel.Comment(Text(payload))
-
-  // Splits the post-indent content of an ordinary line into a keyword (the
-  // first phrase), subsequent inline atoms with their preceding-space
-  // counts, and an optional remark per §10.3 / §11.2. Source and literal
-  // atoms are added in a separate pass.
-  private def parseCompoundLine(line: Line, indent: Int): Tel.Compound raises TelError =
-    checkTrailingSpaces(line)
-    val len = lineLen(line)
-    val ls = line.leadingSpaces
-
-    // First phrase = keyword (precedingSpaces = 0, never a remark).
-    var i = ls
-    val keywordStart = i
-    while i < len && lineCharAt(line, i) != ' ' do i += 1
-    val keyword = internKeyword(line.start + keywordStart, line.start + i)
+    // E102: a `tel` or `tel …` line at column 0 after the first non-blank
+    // line is a misplaced pragma. The valid pragma was already consumed
+    // earlier by parsePragma; anything matching here is a violation.
+    if mayBeMisplacedPragma && keyword == t"tel" then
+      errorAt(Reason.PragmaNotFirst, lineNumber, 1)
+    hasConsumedNonBlankLine = true
 
     val atoms = scala.collection.mutable.ArrayBuffer.empty[Tel.Atom]
-    val builder = StringBuilder()
+    var remark: Optional[Text] = Unset
+    sb.setLength(0)
     var precedingSpaces = 0
     var hardSpaceMode = false
     var atomOpen = false
-    var remark: Optional[Text] = Unset
 
     inline def commit(): Unit =
       if atomOpen then
-        atoms += Tel.Atom.Inline(Text(builder.toString), precedingSpaces)
-        builder.clear()
+        atoms += Tel.Atom.Inline(Text(sb.toString), precedingSpaces)
+        sb.setLength(0)
         atomOpen = false
 
-    while i < len && remark.absent do
-      val ch = lineCharAt(line, i)
-      if ch == ' ' then
-        var j = i
-        while j < len && lineCharAt(line, j) == ' ' do j += 1
-        val run = j - i
-
-        if hardSpaceMode then
-          if run >= 2 then
-            commit()
-            precedingSpaces = run
-            i = j
-          else
-            builder.append(' ')
-            atomOpen = true
-            i = j
-        else
-          if run == 1 then
-            commit()
-            precedingSpaces = 1
-            i = j
-          else
-            commit()
-            precedingSpaces = run
-            hardSpaceMode = true
-            i = j
-      else if ch == sigil && !atomOpen then
-        val afterSigil = i + 1
-        val softSpaceAfter =
-          afterSigil < len
-          && lineCharAt(line, afterSigil) == ' '
-          && (afterSigil + 1 >= len || lineCharAt(line, afterSigil + 1) != ' ')
-
-        if softSpaceAfter then
-          remark = Text(lineSubFrom(line, afterSigil + 1))
-          i = len
-        else
-          builder.append(ch)
-          atomOpen = true
-          i += 1
+    var stopped = false
+    while !stopped && remark.absent do
+      if !more || peek == LF || peek == CR then stopped = true
       else
-        builder.append(ch)
-        atomOpen = true
-        i += 1
+        val ch = peek
+        if ch == SP then
+          var run = 0
+          while more && peek == SP do { advance(); run += 1 }
+          if hardSpaceMode then
+            if run >= 2 then
+              commit()
+              precedingSpaces = run
+            else
+              sb.append(' ')
+              atomOpen = true
+          else
+            if run == 1 then
+              commit()
+              precedingSpaces = 1
+            else
+              commit()
+              precedingSpaces = run
+              hardSpaceMode = true
+        else if ch == sigil && !atomOpen then
+          // Could be remark introducer: sigil + soft space + non-space.
+          ensureLookahead(3)
+          val afterSigil = if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
+          val softSpaceAfter =
+            afterSigil == SP.toInt
+            && (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
+          if softSpaceAfter then
+            // Consume sigil + space, then read remark text until LF/CR.
+            advance()  // sigil
+            advance()  // space
+            val mk = beginMark()
+            while more && peek != LF && peek != CR do advance()
+            remark = Text(sliceText(mk))
+          else
+            sb.append(ch.toChar)
+            atomOpen = true
+            advance()
+        else
+          // Read a run of non-space, non-sigil, non-LF, non-CR bytes into
+          // sb. This is the inner-loop hot path; we want bulk-copy.
+          val mk = beginMark()
+          var localPos = pos
+          while localPos < bufEnd
+                && bytes(localPos) != SP
+                && bytes(localPos) != LF
+                && bytes(localPos) != CR
+                && (atomOpen || bytes(localPos) != sigil)
+          do localPos += 1
+          val runLen = localPos - pos
+          if runLen > 0 then
+            // Append via cursor.slice for a single zero-copy materialise →
+            // string concat.
+            pos = localPos
+            val piece = sliceText(mk)
+            sb.append(piece)
+            atomOpen = true
+          else
+            // Could be a sigil while atomOpen — treat as content.
+            sb.append(ch.toChar)
+            atomOpen = true
+            advance()
 
     commit()
 
+    // E108: a non-blank compound line must not end with a space character.
+    // Inside the outer `hold`, the buffer byte just before the current pos
+    // is still resident — peek it directly. (`pos > 0` because we have
+    // consumed at least the keyword.)
+    if remark.absent && more && (peek == LF || peek == CR)
+       && pos > 0 && bytes(pos - 1) == SP
+    then errorAt(Reason.TrailingSpaces, lineNumber, head.leadingSpaces + 1)
+
+    consumeLineEnding()
     Tel.Compound(keyword, IArray.from(atoms), remark, IArray.empty)
+
+  // Read a keyword from the current position. The keyword runs until SP, LF,
+  // CR, or EOF. Returns the interned `Text`. Uses the 64-slot fingerprint
+  // cache for ≤8-byte keywords (allocation-free on hit), one `grabText` on
+  // miss or for length > 8.
+  private def readKeyword(): Text raises TelError =
+    val startMk = beginMark()
+    var low:  Long = 0L
+    var high: Long = 0L
+    var len = 0
+    while more && peek != SP && peek != LF && peek != CR do
+      val b = peek
+      if len < 4 then
+        low |= (b & 0xff).toLong << (len * 8)
+      else if len < 8 then
+        high |= (b & 0xff).toLong << ((len - 4) * 8)
+      len += 1
+      advance()
+
+    if len == 0 then t""
+    else if len > 8 then Text(sliceText(startMk))
+    else
+      val hash = ((low ^ (low >>> 32)) ^ (high ^ (high >>> 17))).toInt
+      var slot = hash & 0x3F
+      var probes = 0
+      var result: String = null
+      while result == null && probes < 4 do
+        val existing = keyCache(slot)
+        if existing == null then
+          val s = sliceText(startMk)
+          keyCache(slot) = s
+          keyCacheLow(slot) = low
+          keyCacheHigh(slot) = high
+          result = s
+        else if keyCacheLow(slot) == low && keyCacheHigh(slot) == high then
+          result = existing
+        else
+          slot = (slot + 1) & 0x3F
+          probes += 1
+
+      if result != null then Text(result)
+      else Text(sliceText(startMk))
