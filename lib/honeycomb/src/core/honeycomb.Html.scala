@@ -179,6 +179,15 @@ object Html extends Tag.Container
         abort(ParseError(Html, Position(1.u, 1.u), Issue.BadDocument))
 
 
+  // Last-resort safety net for the permissive variants. Tokenizer-level
+  // conditions that haven't been wired into the parser's per-site recovery
+  // (e.g. EOF mid-comment) still call `fail`, which propagates as a thrown
+  // `ParseError`. Permissive callers haven't supplied a `Tactic[ParseError]`,
+  // so we swallow it here and yield an empty `Fragment` rather than letting
+  // the exception escape — the permissive reader is contractually no-throw.
+  private inline def lenient[result](inline fallback: => result)(inline body: => result): result =
+    try body catch case _: ParseError => fallback
+
   given permissiveAggregable: [content <: Label: Reifiable to List[String]]
   =>  (dom: Dom)
   =>  Html.Recovery.Permissive
@@ -187,15 +196,19 @@ object Html extends Tag.Container
     input =>
       given Tactic[ParseError] = lenientTactic
       val root = Tag.root(content.reify.map(_.tt).to(Set))
-      HtmlParser.fromIterator(input.iterator, permissive = true).parseHtml(root).of[content]
+
+      lenient(Fragment().of[content]):
+        HtmlParser.fromIterator(input.iterator, permissive = true).parseHtml(root).of[content]
 
   given permissiveAggregable2: (dom: Dom)
   =>  Html.Recovery.Permissive
   =>  Html is Aggregable by Text =
     input =>
       given Tactic[ParseError] = lenientTactic
-      HtmlParser.fromIterator(input.iterator, permissive = true)
-      . parseHtml(dom.generic, doctypes = false)
+
+      lenient(Fragment()):
+        HtmlParser.fromIterator(input.iterator, permissive = true)
+        . parseHtml(dom.generic, doctypes = false)
 
   given permissiveLoadable: (dom: Dom)
   =>  Html.Recovery.Permissive
@@ -203,13 +216,12 @@ object Html extends Tag.Container
     given Tactic[ParseError] = lenientTactic
     val root = Tag.root(Set(t"html"))
 
-    HtmlParser.fromIterator(stream.iterator, permissive = true)
-    . parseHtml(root, doctypes = true) match
-      case Fragment(Doctype(doctype), content) => Document(content, dom)
-      case html@Element("html", _, _, _)       => Document(html, dom)
-
-      case _ =>
-        abort(ParseError(Html, Position(1.u, 1.u), Issue.BadDocument))
+    lenient(Document(Fragment(), dom)):
+      HtmlParser.fromIterator(stream.iterator, permissive = true)
+      . parseHtml(root, doctypes = true) match
+        case Fragment(Doctype(doctype), content) => Document(content, dom)
+        case html@Element("html", _, _, _)       => Document(html, dom)
+        case other                               => Document(other, dom)
 
   // Up to 32 levels of two-space indentation
   private val indentation: Text =
@@ -1256,10 +1268,14 @@ object Html extends Tag.Container
             case '\u0000'  => fail(BadInsertion)
             case char      => fail(Unexpected(char))
 
-      def finish(parent: Tag, count: Int): Node =
+      def finish(parent: Tag, map: Attributes, count: Int): Node =
         if parent != root then
           if parent.autoclose then Element(parent.label, parent.attributes, array(count), false)
-          else fail(Incomplete(parent.label))
+          else if permissive then
+            warn(Incomplete(parent.label))
+            Element(parent.label, map, array(count), parent.foreign)
+          else
+            fail(Incomplete(parent.label))
         else
           if count > 1 then fragment = array(count)
           nodes(index - 1)
@@ -1280,7 +1296,7 @@ object Html extends Tag.Container
         def admit(child: Text): Boolean =
           parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
 
-        lay(finish(parent, count)):
+        lay(finish(parent, map, count)):
           case '\u0000' =>
             callback.let(_(position.z, Hole.Node(parent.label)))
             next()
@@ -1316,7 +1332,13 @@ object Html extends Tag.Container
 
                 if inferred.absent then
                   if parent.autoclose then close()
-                  else fail(InadmissibleTag(content, parent.label), mark)
+                  else if permissive then
+                    warn(InadmissibleTag(content, parent.label))
+                    // At root, just accept the empty tag; otherwise auto-close
+                    // the parent and let the tag retry at the grandparent.
+                    if parent == root then empty() else close()
+                  else
+                    fail(InadmissibleTag(content, parent.label), mark)
                 else
                   focus = inferred.vouch
                   level = Level.Descend
@@ -1360,6 +1382,15 @@ object Html extends Tag.Container
                       else if parent.tableLike && !focus.void then
                         pendingFosterDescend = true
                         level = Level.Descend
+                      else if permissive then
+                        warn(InadmissibleTag(content, parent.label))
+                        // At root, descend anyway; otherwise auto-close the
+                        // parent and retry the open tag at the grandparent.
+                        if parent == root then
+                          level = Level.Descend
+                        else
+                          reset(mark)
+                          close()
                       else
                         reset(mark)
                         fail(InadmissibleTag(content, parent.label), mark)
@@ -1413,6 +1444,11 @@ object Html extends Tag.Container
                       reset(mark)
                       close()
                     else if formattingTags.has(content) then
+                      advance()
+                      level = Level.Skip
+                    else if permissive then
+                      if parent == root then warn(UnopenedTag(content))
+                      else warn(MismatchedTag(parent.label, content))
                       advance()
                       level = Level.Skip
                     else
@@ -1580,7 +1616,12 @@ object Html extends Tag.Container
         if !more then Fragment() else
           append(root)
           val head = read(root, root.admissible, Attributes.empty, 0)
-          if fragment.nil then head else Fragment(fragment*)
+          // Permissive recovery can drain the root with no surviving children
+          // (e.g. input was all stray close tags), in which case `finish`
+          // returns the root sentinel that was appended before `read`. Yield
+          // an empty Fragment in that case rather than leaking the sentinel.
+          if fragment.nil then if head eq root then Fragment() else head
+          else Fragment(fragment*)
 
 
   // ───────────────────────────────────────────────────────────────────────

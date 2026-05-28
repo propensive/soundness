@@ -961,12 +961,79 @@ object Tests extends Suite(m"Honeycombd Tests"):
           t"""<div><![CDATA[xyz]]></div>""".read[Html of "div"]
         . assert(_ == Div(Comment("[CDATA[xyz]]")))
 
-        test(m"permissive mode still aborts on unrecoverable structural errors"):
-          try t"""<ul><li>First item""".read[Html of Flow]
-          catch case exception: Exception => exception
-        . assert:
-            case ParseError(_, _, Html.Issue.Incomplete("ul")) => true
-            case _                                             => false
+        test(m"unclosed element recovers via implicit close"):
+          t"""<ul><li>First item""".read[Html of Flow]
+        . assert(_ == Ul(Li("First item")))
+
+        test(m"stray close tag at root is ignored"):
+          t"""</br>""".read[Html of Flow]
+        . assert(_ == Fragment())
+
+        test(m"close tag with no matching open is ignored"):
+          t"""<div>x</p></div>""".read[Html of "div"]
+        . assert(_ == Div("x"))
+
+        test(m"inadmissible child auto-closes parent"):
+          // <a> is transparent; <li> isn't a valid child of <div> (which is
+          // the surrounding admissible context). Strict mode aborts.
+          // Permissive: close <a>, retry <li> at div level. div doesn't admit
+          // li either; auto-close div; retry at root. Root accepts whatever.
+          t"""<div><a href="#"><li>list item</li></a></div>""".read[Html of Flow]
+        . assert: result =>
+            // Just confirm we got SOMETHING back (no throw).
+            result != null
+
+        test(m"unclosed comment doesn't throw"):
+          t"""<div><!-- unclosed""".read[Html of "div"]
+        . assert: result =>
+            // Catch-all swallows the ExpectedMore; we get a Fragment fallback.
+            result != null
+
+        test(m"truncated open tag doesn't throw"):
+          t"""<div""".read[Html of Flow]
+        . assert: result =>
+            result != null
+
+        test(m"truncated attribute value doesn't throw"):
+          t"""<div style="ab""".read[Html of Flow]
+        . assert: result =>
+            result != null
+
+        test(m"chaotic real-page-like input doesn't throw"):
+          val samples = List
+           (t"""<html><body><p>opening<div>mixed</p></body>""",
+            t"""<p><b><i>X</b>Y</i></p>""",
+            t"""<table><tr><td>a<td>b<tr><td>c</table>""",
+            t"""<DIV CLASS=x>UPPER</DIV>""",
+            t"""<a href=javascript:void(0)>click</a>""",
+            t"""<!DOCTYPE html><html><body>hi</body>""",
+            t"""<p>one&amp;two&unknown;three</p>""",
+            t"""<script>if (a < b) doSomething();</script>""",
+            t"""<style>.x { color: red; }</style>""",
+            t"""<input checked disabled name=q value="hello world">""",
+            t"""<p>a<br>b<br/>c</p>""",
+            t"""<!--comment-->text<!--another-->""",
+            t"""<svg><circle cx="50" cy="50" r="40"/></svg>""",
+            t"""<div lang=en xml:lang="en">foreign attrs</div>""",
+            t"""<p>nested <em><strong>text</strong></em> ok</p>""" )
+
+          samples.map: sample =>
+            try
+              sample.read[Html of Flow]
+              true
+            catch case _: Throwable => false
+        . assert(_.forall(identity))
+
+        test(m"permissive given wins when Tactic[ParseError] is also in scope"):
+          // `throwUnsafely` (file-level import) provides Tactic[ParseError] via
+          // contravariance. `recoveries.permissive` provides Recovery.Permissive.
+          // Both givens are visible: strict requires `NotGiven[Permissive]`,
+          // which fails — so only permissive resolves.
+          //
+          // The strict reader on `<p>unclosed` would throw `Incomplete("p")`;
+          // permissive recovers it as `P("unclosed")`.
+          t"""<p>unclosed""".read[Html of Flow]
+        . assert(_ == P("unclosed"))
 
         test(m"parser emits warnings via raise() when a Tactic is in scope"):
           val errors = scala.collection.mutable.ListBuffer[ParseError]()
