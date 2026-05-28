@@ -37,23 +37,20 @@ import scala.language.unsafeNulls
 import anticipation.*
 import contingency.*
 import gastronomy.*
-import prepositional.*
+import ulysses.*
 import vacuous.*
 
-// §8.2 of the BinTEL spec — palimpsest schema-signature construction
-// at byte cadence k = 2. Given n 32-byte component hashes, the signature
-// is a `30 + 2n`-byte sequence that uniquely identifies the ordered
-// component sequence (under the assumption that no two candidate
-// component hashes share the same final 16 bits).
+// §8 of the BinTEL spec — schema-signature construction as a palimpsest
+// of BLAKE3 component hashes, parameterised by a user-chosen `Cadence`
+// (hash size + initial / regular cadences). The cadence is carried in
+// the trailing byte of the signature, so the receiver can recover it
+// without out-of-band agreement.
 
 object SchemaSignature:
 
-  // The constant component-hash size in bytes (SHA-256 width).
-  final val HashSize: Int = 32
-
   // §8.1 construction. Given a schema document parsable under `axiom`
   // (typically `Tels.Axiom.tels`), compute the full schema signature
-  // as the §8.2 palimpsest of:
+  // as the palimpsest of:
   //
   //   - h₀ — value hash of the base schema (the document with all
   //     `layer` compounds removed), encoded against `axiom.document`.
@@ -61,11 +58,13 @@ object SchemaSignature:
   //     where each layer's children are encoded as a virtual root
   //     under the `Layer` Definition's keyword order.
   //
-  // The resulting bytes are the same `30 + 2n` form returned by
-  // `encode`, suitable for use as the schema signature in a §6
-  // BinTEL document header or as the textual schema identifier on a
-  // TEL pragma after BASE-256 encoding.
-  def fromDocument(doc: Tel, axiom: Tels): Data raises BintelError raises TelError =
+  // The resulting palimpsest length is `cadence.totalLength(n)` bytes,
+  // suitable for use as the schema signature in a §6 BinTEL document
+  // header or as the textual schema identifier on a TEL pragma after
+  // BASE-256 encoding.
+  def fromDocument(doc: Tel, axiom: Tels)(using cadence: Cadence)
+  :   Data raises BintelError raises TelError =
+
     val root = Tel.Type.assign(doc, axiom).asInstanceOf[Tel.Element.Node]
 
     // Resolve the flat keyword index of "layer" and the Layer
@@ -78,7 +77,7 @@ object SchemaSignature:
       keywordIndexOf(child) != layerIdx
 
     val baseElement = Tel.Element.Node(Unset, axiom.document, baseChildren)
-    val baseHash    = baseElement.bintel.digest[Sha2[256]].data
+    val baseHash    = Blake3.hashOf(baseElement.bintel, cadence.hashSize)
 
     val layerChildren = root.children.filter: child =>
       keywordIndexOf(child) == layerIdx
@@ -91,9 +90,10 @@ object SchemaSignature:
     val layerHashes: List[Data] =
       layerStruct.let: ls =>
         layerChildren.toList.map: layer =>
-          val layerRoot = Tel.Element.Node
-                           (Unset, ls, layer.asInstanceOf[Tel.Element.Node].children)
-          layerRoot.bintel.digest[Sha2[256]].data
+          val layerChildren = layer.asInstanceOf[Tel.Element.Node].children
+          val layerRoot     = Tel.Element.Node(Unset, ls, layerChildren)
+          Blake3.hashOf(layerRoot.bintel, cadence.hashSize)
+
       .or(Nil)
 
     encode(baseHash :: layerHashes)
@@ -134,90 +134,45 @@ object SchemaSignature:
 
     if found < 0 then Unset else found
 
-  // §8.2 encoding. Given an ordered sequence of n component hashes
-  // (each `HashSize` bytes), compute S = 0 then for each h_i in order
-  // S = (S << 16) XOR h_i, and emit S as `30 + 2n` bytes big-endian.
-  def encode(hashes: List[Data]): Data raises BintelError =
+  // Build a palimpsest from an ordered sequence of component hashes
+  // under the contextual `Cadence`. Every hash must be `cadence.hashSize`
+  // bytes long; an empty list, or any mis-sized hash, raises
+  // `BadSignatureLength`.
+  def encode(hashes: List[Data])(using cadence: Cadence): Data raises BintelError =
     if hashes.isEmpty then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
-    var bad = false
     val it = hashes.iterator
+    var bad = false
 
-    while it.hasNext && !bad do if it.next().length != HashSize then bad = true
+    while it.hasNext && !bad do
+      if it.next().length != cadence.hashSize then bad = true
+
     if bad then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
-    val n = hashes.length
-    val outputBits = 256 + (n - 1) * 16
-    val outputBytes = (outputBits + 7) / 8
+    Palimpsest(hashes.toIndexedSeq).data
 
-    var acc: BigInt = BigInt(0)
-    hashes.foreach: h =>
-      acc = (acc << 16) ^ bytesToBigInt(h)
-
-    val raw = acc.toByteArray
-    val out = new Array[Byte](outputBytes)
-
-    if raw.length >= outputBytes then
-      System.arraycopy(raw, raw.length - outputBytes, out, 0, outputBytes)
-    else
-      System.arraycopy(raw, 0, out, outputBytes - raw.length, raw.length)
-
-    out.asInstanceOf[IArray[Byte]]
-
-  // §8.2 decoding. Given a signature of length L = `30 + 2n` for some
-  // n ≥ 1 and a library of candidate component hashes, recover the
-  // ordered sequence (h_0, …, h_{n-1}). The library MUST cover every
-  // component used by the signature, otherwise raises `BadSignature`.
-  // For a malformed length raises `BadSignatureLength`.
+  // Decode a palimpsest schema signature against a library of candidate
+  // component hashes. The cadence is recovered from the trailing byte
+  // (§4.2 of the palimpsest spec); a byte length inconsistent with any
+  // valid cadence raises `BadSignatureLength`. Failure to reconstruct
+  // the ordered hash sequence raises `BadSignature`.
   def decode(signature: Data, library: List[Data]): List[Data] raises BintelError =
-    val L = signature.length
-    if L < 32 || (L - 30) % 2 != 0
-    then abort(BintelError(BintelError.Reason.BadSignatureLength))
+    val total = signature.length
+    if total < 2 then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
-    val n = (L - 30) / 2
-    val s0 = bytesToBigInt(signature)
+    var xor = 0
+    var i   = 0
 
-    // Build a quick lookup table keyed by the lowest 16 bits of each
-    // candidate hash. We only need the last 16 bits of each hash to
-    // identify it as the next component.
-    val byLowBits =
-      library.groupBy: h =>
-        ((h(h.length - 2) & 0xff) << 8) | (h(h.length - 1) & 0xff)
-
-    // Backwards-decode by repeatedly peeling off the trailing 16 bits.
-    // Per the spec, a unique decoding is guaranteed when no two
-    // library candidates share the same low 16 bits.
-    def recur(s: BigInt, remaining: Int, acc: List[Data]): List[Data] raises BintelError =
-      if remaining == 0 then
-        if s == BigInt(0) then acc
-        else abort(BintelError(BintelError.Reason.BadSignature))
-      else
-        val low = (s & BigInt(0xffff)).toInt
-
-        byLowBits.getOrElse(low, Nil) match
-          case h :: Nil =>
-            val nextS = (s ^ bytesToBigInt(h)) >> 16
-            recur(nextS, remaining - 1, h :: acc)
-
-          case Nil =>
-            abort(BintelError(BintelError.Reason.BadSignature))
-
-          case multiple =>
-            // For now we don't backtrack; report ambiguity as bad
-            // signature. Per the spec collision is computationally
-            // infeasible for SHA-256, so this should never trigger
-            // in practice for genuine schema libraries.
-            abort(BintelError(BintelError.Reason.BadSignature))
-
-    recur(s0, n, Nil)
-
-  private def bytesToBigInt(bytes: Data): BigInt =
-    val arr = new Array[Byte](bytes.length + 1)
-    arr(0) = 0
-    var i = 0
-
-    while i < bytes.length do
-      arr(i + 1) = bytes(i)
+    while i < total do
+      xor = xor ^ (signature(i) & 0xff)
       i += 1
 
-    BigInt(arr)
+    val cadence: Cadence = Cadence.unpack(xor.toByte).or:
+      abort(BintelError(BintelError.Reason.BadSignatureLength))
+
+    val n: Int = cadence.hashCount(total - 1).or:
+      abort(BintelError(BintelError.Reason.BadSignatureLength))
+
+    given Bibliography = Bibliography(library)
+
+    Palimpsest(signature, n).resolve.or(abort(BintelError(BintelError.Reason.BadSignature)))

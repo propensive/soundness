@@ -1173,7 +1173,7 @@ object stratiform extends Library:
   object base256 extends Component(gossamer.core, contingency.core, fulminate.core, anticipation.codec, vacuous.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object binary extends Component(core, base256, gastronomy.core):
+  object binary extends Component(core, base256, gastronomy.core, ulysses.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object records extends Component(core, polyvinyl.core):

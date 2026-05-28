@@ -41,6 +41,7 @@ import contingency.*
 import fulminate.*
 import gastronomy.*
 import prepositional.*
+import ulysses.*
 import vacuous.*
 
 // BinTEL §7 node encoding. Serialises a typed `Tel.Element` tree into
@@ -68,17 +69,17 @@ extension (tel: Tel)
   def bintel(schema: Tels): Data raises TelError =
     Bintel.encode(Tel.Type.assign(tel, schema))
 
-  // SHA-256 of this document's BinTEL body (§3 value hash). The hash
-  // is taken over the body bytes only — no magic number, no schema
-  // signature — and is therefore a function of the semantic model
-  // and the schema alone, independent of presentation form.
-  def valueHash(schema: Tels): Digest in Sha2[256] raises TelError =
-    tel.bintel(schema).digest[Sha2[256]]
+  // BLAKE3 digest of this document's BinTEL body (§3 value hash). The
+  // hash is taken over the body bytes only — no magic number, no
+  // schema signature — and is therefore a function of the semantic
+  // model and the schema alone, independent of presentation form.
+  def valueHash(schema: Tels): Digest in Blake3 raises TelError =
+    tel.bintel(schema).digest[Blake3]
 
   // Encode this document as a complete §6 BinTEL byte sequence —
-  // magic + signature length + signature + body. The signature must
-  // satisfy `length ≥ 32` and `(length − 30) mod 2 == 0`; otherwise
-  // raises `BintelError(BadSignatureLength)`.
+  // magic + signature length + signature + body. The signature length
+  // must be a valid palimpsest length under some `(H, k_i, k_r)`;
+  // otherwise raises `BintelError(BadSignatureLength)`.
   def bintelDocument(schema: Tels, signature: Data)
   :     Data raises TelError raises BintelError =
     Bintel.frame(tel.bintel(schema), signature)
@@ -87,8 +88,8 @@ extension (element: Tel.Element)
   // Encode a pre-assigned semantic-model element to BinTEL body bytes.
   def bintel: Data = Bintel.encode(element)
 
-  // SHA-256 of this element's BinTEL body (§3 value hash).
-  def valueHash: Digest in Sha2[256] = element.bintel.digest[Sha2[256]]
+  // BLAKE3 digest of this element's BinTEL body (§3 value hash).
+  def valueHash: Digest in Blake3 = element.bintel.digest[Blake3]
 
 object Bintel:
 
@@ -115,12 +116,29 @@ object Bintel:
     encodeRoot(out, element)
     out.toByteArray.asInstanceOf[IArray[Byte]]
 
+  // Is `signature` a syntactically-valid palimpsest? Recovers the cadence
+  // byte from the XOR-fold of every byte and checks the byte length is
+  // consistent with the recovered `(H, k_i, k_r)`. Returns true iff so.
+  private def validSignatureLength(signature: Data): Boolean =
+    val total = signature.length
+
+    if total < 2 then false else
+      var xor = 0
+      var i   = 0
+
+      while i < total do
+        xor = xor ^ (signature(i) & 0xff)
+        i += 1
+
+      Cadence.unpack(xor.toByte).let(_.hashCount(total - 1)).present
+
   // §6 framing. Wrap a body byte sequence with the magic number, the
   // signature length (varint), and the signature bytes. The signature
-  // length MUST be `30 + 2n` for some `n ≥ 1` — i.e. `≥ 32` and
-  // congruent to 30 mod 2 — per §6 field 2.
+  // length MUST be a valid palimpsest length under some `(H, k_i, k_r)`,
+  // recovered from the trailing cadence byte (§8.2 of bintel.md, §4.2
+  // of palimpsest.md); otherwise raises `BadSignatureLength`.
   def frame(body: Data, signature: Data): Data raises BintelError =
-    if signature.length < 32 || (signature.length - 30) % 2 != 0
+    if !validSignatureLength(signature)
     then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
     val out = new ByteArrayOutputStream(magic.length + 10 + signature.length + body.length)
@@ -159,8 +177,6 @@ object Bintel:
       . mitigate(Varint.decode(data, magic.length))
 
     val sigLength = sigLenDecoded.value.toInt
-    if sigLength < 32 || (sigLength - 30) % 2 != 0
-    then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
     val sigStart = sigLenDecoded.next
     val sigEnd   = sigStart + sigLength
@@ -172,7 +188,11 @@ object Bintel:
     val bodyBytes = new Array[Byte](data.length - sigEnd)
     System.arraycopy(data.asInstanceOf[Array[Byte]], sigEnd, bodyBytes, 0, bodyBytes.length)
 
-    Framed(sigBytes.asInstanceOf[IArray[Byte]], bodyBytes.asInstanceOf[IArray[Byte]])
+    val sig = sigBytes.asInstanceOf[IArray[Byte]]
+    if !validSignatureLength(sig)
+    then abort(BintelError(BintelError.Reason.BadSignatureLength))
+
+    Framed(sig, bodyBytes.asInstanceOf[IArray[Byte]])
 
   // §6 + §7.8 — decode a complete BinTEL document (magic + signature
   // + body) into a `Document` carrying the signature bytes and the
