@@ -138,6 +138,16 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
   // by the first consumeTrailingBlanksFor that reaches EOF.
   private var documentEndsWithLf: Boolean = false
 
+  // Ancestor stack of Struct types known for each open compound, used by
+  // §19.5's schema-aware E107 recovery. The element at index `i` is the
+  // schema struct corresponding to the compound at depth `i+1` (so the
+  // document root at depth 0 is implicit and refers to `schema.document`).
+  // `Unset` entries mark compounds whose schema position couldn't be
+  // resolved (e.g. an unknown keyword) — both shallower and deeper
+  // recovery treat that ancestor as schema-blind.
+  private val ancestors =
+    scala.collection.mutable.ArrayBuffer.empty[Optional[Tels.Struct]]
+
   // Reusable string builder for source-atom / literal-atom payloads.
   private val sb: jl.StringBuilder = new jl.StringBuilder(256)
 
@@ -495,6 +505,104 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
       margin = head.leadingSpaces
       head.indentLevels = 0  // by definition of margin
 
+  // ── §19.5 schema-aware E107 recovery ─────────────────────────────────────
+
+  // Peek the keyword of the line that head is currently parked at (i.e. read
+  // it without advancing past the line). Uses mark + cue to restore the
+  // cursor's byte position, lineation, and the parser's local snapshot.
+  private def peekKeyword(): Text raises TelError =
+    val outerMark = beginMark()
+    val kw = readKeyword()
+    syncTo()
+    reconcileLineation()
+    cursor.cue(outerMark)
+    syncFrom()
+    kw
+
+  // Resolve `t` to a Struct, optionally following one Reference indirection.
+  // Returns Unset for Scalars, Flag, Select etc.
+  private def resolveTypeToStruct(t: Tels.Type, s: Tels): Optional[Tels.Struct] =
+    t match
+      case struct: Tels.Struct => struct
+      case Tels.Reference(name) =>
+        s.records.find(_.name == name) match
+          case Some(rec) => Tels.Struct(rec.members, rec.validators)
+          case None      => Unset
+      case _ => Unset
+
+  // Resolve `keyword` against `parent`'s direct Field / SelectRef members.
+  // Returns the Struct type if the keyword names a child whose resolved
+  // type is a Struct, or Unset otherwise.
+  private def resolveKeywordStruct(parent: Tels.Struct, keyword: Text, s: Tels)
+  :     Optional[Tels.Struct] raises TelError =
+    var found: Optional[Tels.Type] = Unset
+    var i = 0
+    while i < parent.members.length && found.absent do
+      parent.members(i) match
+        case f: Tels.Field =>
+          if f.keyword == keyword then found = f.fieldType
+        case sr: Tels.SelectRef =>
+          s.selects.find(_.name == sr.reference).foreach: selectDef =>
+            selectDef.variants.find(_.keyword == keyword).foreach: variant =>
+              found = variant.variantType
+        case _: Tels.Exclude => ()
+      i += 1
+    found.let(t => resolveTypeToStruct(t, s)).or(Unset)
+
+  // Does `parent` admit `keyword` in its direct Field / SelectRef set?
+  private def keywordAdmissible(parent: Tels.Struct, keyword: Text, s: Tels): Boolean =
+    var i = 0
+    var hit = false
+    while !hit && i < parent.members.length do
+      parent.members(i) match
+        case f: Tels.Field =>
+          if f.keyword == keyword then hit = true
+        case sr: Tels.SelectRef =>
+          s.selects.find(_.name == sr.reference).foreach: selectDef =>
+            if selectDef.variants.exists(_.keyword == keyword) then hit = true
+        case _: Tels.Exclude => ()
+      i += 1
+    hit
+
+  // Push a child compound's resolved struct onto the ancestor stack. No-op
+  // (records Unset for depth bookkeeping) without a schema.
+  private def pushAncestor(keyword: Text): Unit raises TelError =
+    schema.let: s =>
+      val parent: Optional[Tels.Struct] =
+        if ancestors.isEmpty then s.document else ancestors(ancestors.length - 1)
+      val resolved: Optional[Tels.Struct] =
+        parent.let(p => resolveKeywordStruct(p, keyword, s))
+      ancestors += resolved
+    .or:
+      ancestors += Unset
+
+  private def popAncestor(): Unit =
+    if ancestors.nonEmpty then ancestors.remove(ancestors.length - 1)
+
+  // §19.5 odd-indent recovery. Without a schema, raise E107. With a schema,
+  // compute admissibility at both candidate depths via the current ancestor
+  // stack and pick deeper if and only if shallower is invalid AND deeper is
+  // valid; tie-break favours shallower.
+  private def recoverOddIndent(spaces: Int, startLine: Int): Int raises TelError =
+    val rel = spaces - margin
+    schema.let: s =>
+      val shallower = rel / 2
+      val deeper    = shallower + 1
+      val keyword   = peekKeyword()
+      val shallowerParent: Optional[Tels.Struct] =
+        if shallower == 0 then s.document
+        else if shallower - 1 < ancestors.length then ancestors(shallower - 1)
+        else Unset
+      val deeperParent: Optional[Tels.Struct] =
+        if shallower < ancestors.length then ancestors(shallower) else Unset
+      val shallowerValid =
+        shallowerParent.let(p => keywordAdmissible(p, keyword, s)).or(false)
+      val deeperValid =
+        deeperParent.let(p => keywordAdmissible(p, keyword, s)).or(false)
+      if !shallowerValid && deeperValid then deeper else shallower
+    .or:
+      errorAt(Reason.OddIndentation, startLine, 1)
+
   // ── Line-head fill ───────────────────────────────────────────────────────
 
   // Consume the next line's leading spaces and parks at the first content
@@ -529,9 +637,7 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
         if rel < 0 then
           errorAt(Reason.LessThanMargin, startLine, 1)
         else if rel % 2 == 0 then rel / 2
-        else
-          // §19.5: schema-aware E107 recovery. Step 1 — schemaless only.
-          errorAt(Reason.OddIndentation, startLine, 1)
+        else recoverOddIndent(spaces, startLine)
 
   // ── parseChildren ────────────────────────────────────────────────────────
 
@@ -628,7 +734,14 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
           else Unset
 
         val children =
-          if extraAtom.absent && tabulation.absent then parseChildren(indent)
+          if extraAtom.absent && tabulation.absent then
+            // Ancestor bookkeeping is only consulted by the §19.5 schema-
+            // aware E107 recovery path. Skip the push / pop pair entirely in
+            // no-schema mode for the deep-nesting hot path.
+            if schema.present then
+              pushAncestor(parsed.keyword)
+              try parseChildren(indent) finally popAncestor()
+            else parseChildren(indent)
           else IArray.empty[Tel.Block]
 
         val finalAtoms = extraAtom.lay(parsed.atoms): atom =>
