@@ -71,14 +71,19 @@ object TelParser:
     new TelParser(cursor, schema: Optional[Tels]).parse()
 
   // Convenience overloads for callers that already have the whole input as
-  // a single byte chunk. The cursor is constructed with `linefeedByte`
-  // lineation so error positions carry accurate line/column.
+  // a single byte chunk. The cursor is constructed with `untrackedData`
+  // lineation: TelParser tracks the 1-indexed source line via its own
+  // `lineNo` field (bumped at every LF-consumption point) and never reads
+  // `cursor.line` / `cursor.column`. Driving cursor's lineation would
+  // record (line, column) on every `cursor.mark` call — for a parser that
+  // marks O(atoms + keywords + remarks + payloads) times per parse this is
+  // significant wasted work, since the recorded offsets are never consulted.
   def parse(input: Data): Tel.Document raises TelError =
-    import zephyrine.lineation.linefeedByte
+    import zephyrine.Lineation.untrackedData
     new TelParser(Cursor[Data](input), Unset).parse()
 
   def parse(input: Data, schema: Tels): Tel.Document raises TelError =
-    import zephyrine.lineation.linefeedByte
+    import zephyrine.Lineation.untrackedData
     new TelParser(Cursor[Data](input), schema: Optional[Tels]).parse()
 
   private final val SP: Byte = 0x20
