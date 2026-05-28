@@ -634,7 +634,53 @@ object Tel extends Tel2:
   extends Subtree
 
   object Atom:
-    case class Inline(text: Text, precedingSpaces: Int) extends Atom
+    // Inline is a regular class (not a case class) so its `text` can be
+    // materialised lazily. The parser constructs each atom with a freshly
+    // allocated byte array (an OWNED, exact-size copy of the atom's UTF-8
+    // bytes) and pays the UTF-8 decode only on first `text` access.
+    // Consumers that never inspect an atom (parser-throughput benchmarks,
+    // partial decoders) avoid the per-atom String allocation entirely.
+    // The byte array is private and never shared with the parser's
+    // streaming buffer, so the atom's lifetime is independent of the
+    // Cursor it was parsed from. Apply / unapply preserve the previous
+    // case-class construction and pattern-match syntax; equality and
+    // hashCode are derived manually to match the prior structural
+    // behaviour.
+    final class Inline private[stratiform]
+      ( private val bytes:           Array[Byte] | Null,
+        private var _text:           String | Null,
+        val precedingSpaces:         Int )
+    extends Atom:
+
+      def text: Text =
+        val t = _text
+        if t == null then
+          val b = bytes.nn
+          val s = new String(b, 0, b.length, java.nio.charset.StandardCharsets.UTF_8)
+          _text = s
+          Text(s)
+        else Text(t)
+
+      override def equals(other: Any): Boolean = other match
+        case o: Inline => text == o.text && precedingSpaces == o.precedingSpaces
+        case _         => false
+
+      override def hashCode: Int = text.hashCode * 31 + precedingSpaces
+
+      override def toString: String = s"Inline($text,$precedingSpaces)"
+
+    object Inline:
+      def apply(text: Text, precedingSpaces: Int): Inline =
+        new Inline(null, text.s, precedingSpaces)
+
+      // Parser entry: takes ownership of `ownedBytes` (an exact-size copy
+      // of the atom's UTF-8 bytes) and defers the String allocation until
+      // the atom's `text` is first read.
+      private[stratiform] def fromBytes(ownedBytes: Array[Byte], precedingSpaces: Int): Inline =
+        new Inline(ownedBytes, null, precedingSpaces)
+
+      def unapply(i: Inline): (Text, Int) = (i.text, i.precedingSpaces)
+
     case class Source(text: Text)                       extends Atom
     case class Literal(delimiter: Text, text: Text)     extends Atom
 
