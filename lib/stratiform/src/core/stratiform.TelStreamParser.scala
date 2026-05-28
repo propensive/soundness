@@ -124,6 +124,12 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
   private var prevLineWasBoundary: Boolean = true
   private var prevContentLeadingSpaces: Int = -1
 
+  // E102 detection: a "tel" / "tel …" line at column 0 that isn't the first
+  // non-blank line is a misplaced pragma. We set this flag whenever a
+  // non-blank line (directive, pragma, comment, compound, tabulation) has
+  // been consumed.
+  private var hasConsumedNonBlankLine: Boolean = false
+
   // Reusable string builder for source-atom / literal-atom payloads.
   private val sb: jl.StringBuilder = new jl.StringBuilder(256)
 
@@ -253,18 +259,9 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
         checkBom()
         val directive = parseInterpreterDirective()
         val pragma = parsePragma()
+        fillHead()  // park head at the next line
         if directive.absent && pragma.absent then determineMargin()
         else margin = 0
-
-        // Ensure head describes the first content line (after directive /
-        // pragma blanks have been consumed). determineMargin already did the
-        // initial fillHead when there was no prologue. With a prologue,
-        // fillHead may have been skipped — call it now if head is still in
-        // its initial state.
-        if !head.eof && head.leadingSpaces == 0 && head.indentLevels == 0
-           && !head.blank && head.startLine == 1 && cursor.position.n0 > 0
-        then ()  // nothing — head is up to date from earlier consumeBlanks
-        else if directive.present || pragma.present then fillHead()
 
         val children = parseChildren(parentIndent = -1)
         Tel.Document(directive, pragma, lineEndings, children)
@@ -307,66 +304,54 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
         // Read until LF or CR
         while more && peek != LF && peek != CR do advance()
         val payload = sliceText(mk)
-        // Consume the line ending.
         consumeLineEnding()
-        // Update state — we are now positioned at the start of the next line.
-        prevContentLeadingSpaces = -1  // Prologue lines are not "content" for E109
+        prevLineWasBoundary = true
+        hasConsumedNonBlankLine = true
         Text(payload)
 
   // Reads a pragma line ("tel ..." or "tel") if present as the first
-  // non-blank line. Blanks before the pragma are consumed silently.
+  // non-blank line. Marks before consuming any blanks; if the first
+  // non-blank line is NOT a pragma, cues back so the cursor remains at
+  // the original position and the caller can run determineMargin from
+  // scratch.
   private def parsePragma(): Optional[Tel.Pragma] raises TelError =
-    // Skip blank lines (consuming them; they belong before the pragma).
-    val savedHeldToken = heldToken
-    var consumedBlanks = 0
-    while
-      // Peek the current line's structure without consuming. We need to know
-      // if the first non-blank line is a pragma without committing.
-      false
-    do ()
+    val mk = beginMark()
+    val savedBoundary = prevLineWasBoundary
 
-    // We need to look at the first non-blank line. The simplest approach is
-    // to consume blanks one at a time, marking before each so we can rewind
-    // if we decide not to claim it. But this is the prologue — the pragma
-    // is the first non-blank line, and there's no enclosing block to give
-    // the blanks back to, so we can safely consume them.
-
-    // Skip blank lines.
+    // Skip blank lines (consuming them; we may cue back).
+    var foundPragma: Optional[Tel.Pragma] = Unset
     var done = false
     while !done do
-      // We need to know if the next line is blank. Skip leading spaces.
       val spaceCount = countLeadingSpaces()
-      if !more then
-        head.eof = true
-        head.blank = true
-        head.leadingSpaces = spaceCount
-        done = true
+      if !more then done = true
       else if peek == LF || peek == CR then
         consumeLineEnding()
-        consumedBlanks += 1
       else
-        // First non-blank line. Park here so the caller can inspect.
-        head.leadingSpaces = spaceCount
-        head.blank = false
-        head.eof = false
-        head.indentLevels = 0  // computed later when margin is known
-        head.startLine = cursor.line.n0 + 1
-        // Now check if this line is a pragma. Pragma lines have leadingSpaces
-        // == 0 and start with "tel" (followed by space or EOL).
-        if spaceCount != 0 then done = true
-        else
-          val pragmaOk = startsWithPragma()
-          if !pragmaOk then done = true
-          else
-            // It's a pragma — parse it.
-            val parsedPragma = consumePragmaLine()
-            return Optional(parsedPragma)
+        // First non-blank line. Is it a pragma?
+        if spaceCount == 0 && startsWithPragma() then
+          val pragmaLine = cursor.line.n0 + 1
+          if cursor.position.n0 >= 4096 then
+            errorAt(Reason.PragmaTooLong, pragmaLine, 1)
+          val pragmaMk = beginMark()
+          while more && peek != LF && peek != CR do advance()
+          val payload = sliceText(pragmaMk)
+          if cursor.position.n0 > 4096 then
+            errorAt(Reason.PragmaTooLong, pragmaLine, 1)
+          consumeLineEnding()
+          prevLineWasBoundary = true
+          hasConsumedNonBlankLine = true
+          foundPragma = Optional(parsePragmaContent(payload, pragmaLine))
         done = true
-    // No pragma found — also check that no later line is a pragma in disguise
-    // (E102). We can't easily look ahead in streaming form without consuming.
-    // The check fires later when we encounter a top-level keyword "tel" or
-    // "tel ..." on a non-first line — handled in parseCompoundLine.
-    Unset
+
+    if foundPragma.present then foundPragma
+    else
+      // Not a pragma — cue back to before any blanks were consumed.
+      syncTo()
+      reconcileLineation()
+      cursor.cue(mk)
+      syncFrom()
+      prevLineWasBoundary = savedBoundary
+      Unset
 
   // Count leading spaces at the current position (does not consume the LF /
   // content byte). Stops at LF, CR, EOF, or any non-space byte. Does NOT
@@ -411,23 +396,6 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
       then bytes(pos + 3) == SP || bytes(pos + 3) == LF || bytes(pos + 3) == CR
       else true  // exactly "tel" at EOF
     else false
-
-  // Consume the entire current pragma line, including its line ending.
-  // Cursor is positioned at the start of "tel..."; caller has verified.
-  private def consumePragmaLine(): Tel.Pragma raises TelError =
-    val pragmaLine = cursor.line.n0 + 1
-    // §8: the pragma must be entirely within the first 4096 bytes of the
-    // document. Check at entry and exit.
-    val pragmaStart = cursor.position.n0
-    if pragmaStart >= 4096 then errorAt(Reason.PragmaTooLong, pragmaLine, 1)
-    val mk = beginMark()
-    while more && peek != LF && peek != CR do advance()
-    val payload = sliceText(mk)
-    if cursor.position.n0 > 4096 then errorAt(Reason.PragmaTooLong, pragmaLine, 1)
-    consumeLineEnding()
-    // Update head — we're now at the start of the next line.
-    fillHead()
-    parsePragmaContent(payload, pragmaLine)
 
   private def parsePragmaContent(content: String, lineIdx: Int)
   : Tel.Pragma raises TelError =
@@ -499,15 +467,14 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
 
   // ── Margin determination ─────────────────────────────────────────────────
 
+  // Sets `margin` to the leadingSpaces of the first non-blank content line.
+  // The caller's outer fillHead has already parked head at the first line;
+  // we walk through blanks if needed.
   private def determineMargin(): Unit raises TelError =
-    fillHead()
-    // Skip blank lines.
     while head.blank && !head.eof do fillHead()
     if !head.eof then
       margin = head.leadingSpaces
-      // Recompute indentLevels now that margin is known.
-      val rel = head.leadingSpaces - margin
-      head.indentLevels = rel / 2
+      head.indentLevels = 0  // by definition of margin
 
   // ── Line-head fill ───────────────────────────────────────────────────────
 
@@ -596,6 +563,7 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
       val text = parseCommentLine()
       comments += Tel.Comment(text)
       prevLineWasBoundary = true
+      hasConsumedNonBlankLine = true
       fillHead()
 
     // Interior blanks: if we have comments and the next line is blank, look
@@ -612,6 +580,7 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
         val tab = parseTabulationLine()
         prevContentLeadingSpaces = ls
         prevLineWasBoundary = false
+        hasConsumedNonBlankLine = true
         fillHead()
         Optional(tab)
       else Unset
@@ -1024,20 +993,25 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
     var done = false
     while !done do
       if !more then errorAt(Reason.UnclosedLiteral, openingLine, 1)
-      // Read a line. The closing delimiter must be flush-left and match the
-      // opening delimiter; any other line is payload.
+      // Read a line. Inside the literal payload, line endings are not
+      // subject to the document's LF/CRLF mode (per §15 the payload is
+      // verbatim, with CRLF normalised to LF). Read up to the next LF
+      // treating any preceding CR as part of the line, then strip a
+      // trailing CR for normalisation.
       val lineMk = beginMark()
-      while more && peek != LF && peek != CR do advance()
-      val line = sliceText(lineMk)
+      while more && peek != LF do advance()
+      val raw = sliceText(lineMk)
+      val line = if raw.length > 0 && raw.charAt(raw.length - 1) == '\r'
+                 then raw.substring(0, raw.length - 1) else raw
       if line == delimiter then
-        // Closing delimiter — consume the optional EOL (the very last line of
-        // a document may end at EOF without a trailing newline).
-        if more then consumeLineEnding()
+        // Closing delimiter — consume the optional EOL (the document may
+        // end at EOF without a trailing newline).
+        if more then advance()  // consume LF
         done = true
       else
-        // Payload line — must have an EOL terminator; EOF here is E115.
+        // Payload line — must have an LF terminator; EOF here is E115.
         if !more then errorAt(Reason.UnclosedLiteral, openingLine, 1)
-        consumeLineEnding()
+        advance()  // consume LF
         sb.append(line)
         sb.append('\n')
 
@@ -1052,10 +1026,19 @@ private final class TelStreamParser(cursor0: Cursor[Data], schema: Optional[Tels
   // parsed compound (keyword + atoms + remark, children left empty for the
   // caller to fill in).
   private def parseCompoundLine(lineNumber: Int): Tel.Compound raises TelError =
+    val isAtColumnZero = head.leadingSpaces == 0
+    val mayBeMisplacedPragma = isAtColumnZero && hasConsumedNonBlankLine
     val lineStart = beginMark()
 
     // First phrase = keyword. Read until space or LF/CR.
     val keyword = readKeyword()
+
+    // E102: a `tel` or `tel …` line at column 0 after the first non-blank
+    // line is a misplaced pragma. The valid pragma was already consumed
+    // earlier by parsePragma; anything matching here is a violation.
+    if mayBeMisplacedPragma && keyword == t"tel" then
+      errorAt(Reason.PragmaNotFirst, lineNumber, 1)
+    hasConsumedNonBlankLine = true
 
     val atoms = scala.collection.mutable.ArrayBuffer.empty[Tel.Atom]
     var remark: Optional[Text] = Unset
