@@ -33,11 +33,9 @@
 package profanity
 
 import anticipation.*
-import contingency.*
 import gossamer.*
 import iridescence.*
 import parasite.*
-import quantitative.*
 import rudiments.*
 import symbolism.*
 import turbulence.*
@@ -57,15 +55,13 @@ extends Interactivity[TerminalEvent]:
   export console.stdio.{in, out, err}
 
   val keyboard: Keyboard.Standard = Keyboard.Standard()
-  val rows0: Promise[Int] = Promise()
-  val columns0: Promise[Int] = Promise()
 
   var mode: Optional[Brightness] = Unset
   var rows: Optional[Int] = Unset
   var columns: Optional[Int] = Unset
 
-  def knownColumns: Int = columns.or(safely(columns0.await(50.0*Milli(Second)))).or(80)
-  def knownRows: Int = rows.or(safely(rows0.await(50.0*Milli(Second)))).or(80)
+  def knownColumns: Int = columns.or(80)
+  def knownRows: Int = rows.or(80)
 
   val cap: Termcap = new Termcap:
     def ansi: Boolean = true
@@ -99,9 +95,7 @@ extends Interactivity[TerminalEvent]:
     keyboard.process(In.stream[Char]).each:
       case resize@TerminalInfo.WindowSize(rows2, columns2) =>
         rows = rows2
-        rows0.offer(rows2)
         columns = columns2
-        columns0.offer(columns2)
         events.put(resize)
 
       case bgColor@TerminalInfo.BgColor(red, green, blue) =>
