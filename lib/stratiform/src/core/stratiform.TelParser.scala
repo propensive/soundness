@@ -64,11 +64,28 @@ import TelError.Reason
 
 object TelParser:
 
+  // Per-thread cached parser. The parser's mutable state (scratch buffers,
+  // keyword cache, StringBuilder, ArrayBuffer of ancestors, etc.) is
+  // expensive to allocate fresh on every call; reusing the same parser
+  // across calls on a thread amortises those allocations to ~one per
+  // thread-lifetime. `reset()` re-initialises all per-parse state at the
+  // start of each call. The atom arena is REPLACED (not reused) so any
+  // `Tel.Atom.Inline` instances returned from prior parses keep their
+  // backing bytes valid; the previous arena array stays alive via those
+  // Inlines and gets GC'd once all references to the prior Document are
+  // released.
+  private val cached: ThreadLocal[TelParser] =
+    ThreadLocal.withInitial(() => new TelParser())
+
   def parse(cursor: Cursor[Data]): Tel.Document raises TelError =
-    new TelParser(cursor, Unset).parse()
+    val p = cached.get.nn
+    p.reset(cursor, Unset)
+    p.parse()
 
   def parse(cursor: Cursor[Data], schema: Tels): Tel.Document raises TelError =
-    new TelParser(cursor, schema: Optional[Tels]).parse()
+    val p = cached.get.nn
+    p.reset(cursor, schema: Optional[Tels])
+    p.parse()
 
   // Convenience overloads for callers that already have the whole input as
   // a single byte chunk. The cursor is constructed with `untrackedData`
@@ -80,11 +97,15 @@ object TelParser:
   // significant wasted work, since the recorded offsets are never consulted.
   def parse(input: Data): Tel.Document raises TelError =
     import zephyrine.Lineation.untrackedData
-    new TelParser(Cursor[Data](input), Unset).parse()
+    val p = cached.get.nn
+    p.reset(Cursor[Data](input), Unset)
+    p.parse()
 
   def parse(input: Data, schema: Tels): Tel.Document raises TelError =
     import zephyrine.Lineation.untrackedData
-    new TelParser(Cursor[Data](input), schema: Optional[Tels]).parse()
+    val p = cached.get.nn
+    p.reset(Cursor[Data](input), schema: Optional[Tels])
+    p.parse()
 
   private final val SP: Byte = 0x20
   private final val LF: Byte = 0x0A
@@ -149,7 +170,7 @@ object TelParser:
     var startLine:     Int = 1      // 1-indexed source line of this line
 
 
-private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
+private final class TelParser():
   import TelParser.*
 
   // ── Local snapshot ────────────────────────────────────────────────────────
@@ -157,8 +178,13 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
   // buffer keeps `bytes`/`pos`/`bufEnd` as plain fields so the JIT can hold
   // them in registers across hot byte loops. Sync to the cursor before any
   // mark/slice/refill operation; resync after.
+  //
+  // `cursor` and `schema` are `var`s rather than constructor args because
+  // the parser is cached per-thread and reset across calls. `reset()`
+  // re-binds both before each `parse()` invocation.
 
-  private val cursor: Cursor[Data] = cursor0
+  private var cursor: Cursor[Data] = null.asInstanceOf[Cursor[Data]]
+  private var schema: Optional[Tels] = Unset
   private var bytes:  Array[Byte] = null.asInstanceOf[Array[Byte]]
   private var pos:    Int = 0
   private var bufEnd: Int = 0
@@ -588,6 +614,60 @@ private final class TelParser(cursor0: Cursor[Data], schema: Optional[Tels]):
     cursor.slice(start, endMk): (storage, off, len) =>
       val arr = storage.asInstanceOf[Array[Byte]]
       if len <= 0 then "" else new String(arr, off, len, StandardCharsets.UTF_8)
+
+  // ── Reset (per-thread reuse) ──────────────────────────────────────────────
+  //
+  // Re-initialise the parser for a new parse. Called by the cached factory
+  // in `object TelParser` before each `parse()` invocation. Every mutable
+  // field that survives across parses is reset here; reusable arrays
+  // (scratch buffers, ancestors, sb) are cleared in place so we don't pay
+  // their allocation again. The atom arena is REPLACED with a fresh array
+  // because previously-parsed Inlines reference the old one — we cannot
+  // overwrite their bytes. The keyword-fingerprint cache is preserved
+  // across resets so frequent keywords stay interned.
+  private[stratiform] def reset(c: Cursor[Data], s: Optional[Tels]): Unit =
+    cursor = c
+    schema = s
+    bytes  = null.asInstanceOf[Array[Byte]]
+    pos    = 0
+    bufEnd = 0
+    lineNo = 1
+    margin = 0
+    sigil  = '#'.toByte
+    crlfMode = false
+    lineEndingsDetected = false
+    lineEndings = Tel.LineEndings.Lf
+    head.leadingSpaces = 0
+    head.indentLevels  = 0
+    head.blank = false
+    head.eof   = false
+    head.startLine = 1
+    prevLineWasBoundary = true
+    prevContentLeadingSpaces = -1
+    hasConsumedNonBlankLine = false
+    documentEndsWithLf = false
+    ancestors.clear()
+    sb.setLength(0)
+    // Fresh arena: previous parse's Inlines hold the old array via their
+    // (arena, off, len) backing reference, so it stays alive as long as
+    // those Inlines are referenced.
+    atomArena     = new Array[Byte](256)
+    arenaPos      = 0
+    inFlightStart = -1
+    // Null out the scratch arrays so they don't pin references from the
+    // previous parse. Cheap (one pass over what are typically small arrays);
+    // worth it to let GC collect the previous Document's transient nodes
+    // promptly while the parser sits in the ThreadLocal between calls.
+    java.util.Arrays.fill(scratchAtoms.asInstanceOf[Array[AnyRef]], null)
+    atomScratchIx = 0
+    java.util.Arrays.fill(scratchComments.asInstanceOf[Array[AnyRef]], null)
+    commentScratchIx = 0
+    java.util.Arrays.fill(scratchCompounds.asInstanceOf[Array[AnyRef]], null)
+    compoundScratchIx = 0
+    java.util.Arrays.fill(scratchBlocks.asInstanceOf[Array[AnyRef]], null)
+    blockScratchIx = 0
+    compoundLineKeyword = t""
+    compoundLineRemark  = Unset
 
   // ── Top-level parse ───────────────────────────────────────────────────────
 
