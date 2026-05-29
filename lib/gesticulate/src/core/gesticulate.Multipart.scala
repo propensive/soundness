@@ -37,6 +37,7 @@ import scala.reflect.*
 import anticipation.*
 import contingency.*
 import denominative.*
+import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -56,24 +57,23 @@ object Multipart:
 
     val cursor = Cursor[Data](input.stream[Data].filter(_.nonEmpty).iterator)
 
+    inline def expected(char: Char): Diagnostics ?=> MultipartError =
+      MultipartError(Reason.Expected(char))
+
     val boundary: Data = cursor.hold:
       val start = cursor.mark
-      if cursor.peek != '-' then raise(MultipartError(Reason.Expected('-')))
-      cursor.next()
-      if cursor.peek != '-' then raise(MultipartError(Reason.Expected('-')))
-      cursor.next()
+      cursor.expect('-')(expected('-'))
+      cursor.expect('-')(expected('-'))
       cursor.seek('\r'.toByte)
       cursor.grab(start, cursor.mark)
 
     cursor.next()
-    if cursor.peek != '\n' then raise(MultipartError(Reason.Expected('\n')))
-    cursor.next()
+    cursor.expect('\n')(expected('\n'))
 
     def headers(list: List[(Text, Text)]): Map[Text, Text] =
       if cursor.peek == '\r' then
         cursor.next()
-        if cursor.peek != '\n' then raise(MultipartError(Reason.Expected('\n')))
-        cursor.next()
+        cursor.expect('\n')(expected('\n'))
         list.to(Map)
 
       else
@@ -83,8 +83,7 @@ object Multipart:
           Text.ascii(cursor.grab(start, cursor.mark))
 
         cursor.next()
-        if cursor.peek != ' ' then raise(MultipartError(Reason.Expected(' ')))
-        cursor.next()
+        cursor.expect(' ')(expected(' '))
 
         val value: Text = cursor.hold:
           val start = cursor.mark
@@ -92,8 +91,7 @@ object Multipart:
           Text.ascii(cursor.grab(start, cursor.mark))
 
         cursor.next()
-        if cursor.peek != '\n' then raise(MultipartError(Reason.Expected('\n')))
-        cursor.next()
+        cursor.expect('\n')(expected('\n'))
         headers((key, value) :: list)
 
     inline def skipBytes(count: Int): Unit =
@@ -173,28 +171,24 @@ object Multipart:
       val part = parsePart(headers(Nil), body())
 
       if cursor.finished then
-        raise(MultipartError(Reason.Expected('-')))
+        raise(expected('-'))
         Stream()
       else if cursor.peek == '\r' then
-        if !cursor.next() || cursor.peek != '\n'
-        then raise(MultipartError(Reason.Expected('\n')))
+        cursor.next()
+        cursor.expect('\n')(expected('\n'))
 
-        part #:: { part.body.strict; cursor.next(); parts() }
+        part #:: { part.body.strict; parts() }
 
       else if cursor.peek == '-' then
-        if !cursor.next() || cursor.peek != '-'
-        then raise(MultipartError(Reason.Expected('-')))
-
-        if !cursor.next() || cursor.peek != '\r'
-        then raise(MultipartError(Reason.Expected('\r')))
-
-        if !cursor.next() || cursor.peek != '\n'
-        then raise(MultipartError(Reason.Expected('\n')))
+        cursor.next()
+        cursor.expect('-')(expected('-'))
+        cursor.expect('\r')(expected('\r'))
+        cursor.expect('\n')(expected('\n'))
 
         Stream(part)
 
       else
-        raise(MultipartError(Reason.Expected('-')))
+        raise(expected('-'))
         Stream()
 
     Multipart(parts())
