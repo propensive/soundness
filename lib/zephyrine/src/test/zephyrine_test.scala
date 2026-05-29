@@ -417,3 +417,52 @@ object Tests extends Suite(m"Zephyrine tests"):
 
       . assert(_ == List[Byte](4, 5, 6, 7, 8))
 
+    suite(m"Datum tests"):
+      test(m"Datum from ASCII byte equals same Byte literal"):
+        Datum('-'.toByte) == '-'.toByte
+      . assert(identity)
+
+      test(m"Datum from char equals same Char literal"):
+        Datum('-') == '-'
+      . assert(identity)
+
+      test(m"Datum from byte equals different byte is false"):
+        Datum('a'.toByte) == 'b'.toByte
+      . assert(_ == false)
+
+      test(m"Datum from byte 0xFF round-trips as unsigned"):
+        Datum(0xff.toByte).asInt
+      . assert(_ == 255)
+
+      test(m"Datum.End is not equal to any byte"):
+        Datum.End == 0.toByte
+      . assert(_ == false)
+
+      test(m"Datum.End equals Datum.End"):
+        Datum.End == Datum.End
+      . assert(identity)
+
+      test(m"Datum.End.isEnd is true"):
+        Datum.End.isEnd
+      . assert(identity)
+
+      test(m"Datum from byte is not End"):
+        Datum('-'.toByte).isEnd
+      . assert(_ == false)
+
+      test(m"Cursor[Data].peek returns Datum equal to next byte"):
+        val cursor = Cursor[Data](Iterator(Data('a'.toByte, 'b'.toByte)))
+        cursor.peek == 'a'.toByte
+      . assert(identity)
+
+      test(m"Cursor[Text].peek returns Datum equal to next char"):
+        val cursor = Cursor[Text](Iterator(t"xy"))
+        cursor.peek == 'x'
+      . assert(identity)
+
+      test(m"Cursor[Data].peek at end of stream is Datum.End"):
+        val cursor = Cursor[Data](Iterator(Data('a'.toByte)))
+        cursor.next()
+        cursor.peek == Datum.End
+      . assert(identity)
+
