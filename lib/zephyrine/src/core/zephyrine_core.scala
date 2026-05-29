@@ -36,6 +36,8 @@ import scala.annotation.targetName
 
 import anticipation.Data
 import anticipation.Text
+import contingency.*
+import fulminate.Diagnostics
 import vacuous.Unsafe
 
 // Safe, allocation-free single-element peek. Returns `Datum.End` when the
@@ -63,6 +65,31 @@ extension (cursor: Cursor[Text])
     else
       val buffer = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
       Datum.fromRaw(buffer(cursor.unsafePos(using Unsafe)).toInt)
+
+// Match the cursor's current operand against `target`. On a match, advance
+// past it; on a mismatch (or EOF), raise `failure` via the ambient
+// `Tactic`. Replaces the hand-rolled `if cursor.peek != X then raise(…);
+// cursor.next()` pair that every header / framer parser was writing. The
+// target is `Char` for both variants so callers don't need `'X'.toByte`
+// on `Cursor[Data]`; for ASCII targets the `Datum`-vs-`Char` comparison
+// compiles to a single primitive `int == int`.
+extension (cursor: Cursor[Data])
+  @targetName("expectByte")
+  inline def expect[error <: Exception](target: Char)
+    (inline failure: Diagnostics ?=> error)
+    ( using Tactic[error] )
+  :   Unit =
+
+    if cursor.peek == target then cursor.next() else raise(failure)
+
+extension (cursor: Cursor[Text])
+  @targetName("expectChar")
+  inline def expect[error <: Exception](target: Char)
+    (inline failure: Diagnostics ?=> error)
+    ( using Tactic[error] )
+  :   Unit =
+
+    if cursor.peek == target then cursor.next() else raise(failure)
 
 package lineation:
   inline given linefeedChars: Lineation:

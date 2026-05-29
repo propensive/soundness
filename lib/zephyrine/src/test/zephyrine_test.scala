@@ -466,3 +466,29 @@ object Tests extends Suite(m"Zephyrine tests"):
         cursor.peek == Datum.End
       . assert(identity)
 
+    suite(m"expect tests"):
+      import strategies.throwUnsafely
+      case class Mismatch() extends Exception
+
+      test(m"Cursor[Data].expect matching advances past the target"):
+        val cursor = Cursor[Data](Iterator(Data('a'.toByte, 'b'.toByte)))
+        cursor.expect('a')(Mismatch())
+        cursor.peek == 'b'
+      . assert(identity)
+
+      test(m"Cursor[Data].expect mismatching throws"):
+        val cursor = Cursor[Data](Iterator(Data('a'.toByte)))
+        try { cursor.expect('z')(Mismatch()); false } catch case _: Mismatch => true
+      . assert(identity)
+
+      test(m"Cursor[Data].expect at EOF throws"):
+        val cursor = Cursor[Data](Iterator(Data()))
+        try { cursor.expect('a')(Mismatch()); false } catch case _: Mismatch => true
+      . assert(identity)
+
+      test(m"Cursor[Text].expect matching advances past the target"):
+        val cursor = Cursor[Text](Iterator(t"ab"))
+        cursor.expect('a')(Mismatch())
+        cursor.peek == 'b'
+      . assert(identity)
+
