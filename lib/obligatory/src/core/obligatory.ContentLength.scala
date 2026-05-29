@@ -84,14 +84,6 @@ object ContentLength:
         case other =>
           abort(FrameError(FrameError.Reason.UnknownHeader))
 
-    new Iterator[Text]:
-      private var ready: Optional[Text] = Unset
-
-      def hasNext: Boolean =
-        if ready == Unset then ready = frame(0)
-        ready != Unset
-
-      def next(): Text = ready.asInstanceOf[Text].also:
-        ready = Unset
+    Framable.frames[Text](frame(0))
 
 sealed trait ContentLength

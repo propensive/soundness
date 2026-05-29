@@ -43,21 +43,12 @@ object CarriageReturn:
   given framable: Text is Framable by CarriageReturn = input =>
     val cursor = Cursor(input)
 
-    def frame(): Optional[Text] = cursor.hold:
-      val start = cursor.mark
+    Framable.frames[Text]:
+      cursor.hold:
+        val start = cursor.mark
 
-      if !cursor.finished && cursor.seek(Cr)
-      then cursor.grab(start, cursor.mark).also(cursor.next())
-      else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
-
-    new Iterator[Text]:
-      private var ready: Optional[Text] = Unset
-
-      def hasNext: Boolean =
-        if ready == Unset then ready = frame()
-        ready != Unset
-
-      def next(): Text = ready.asInstanceOf[Text].also:
-        ready = Unset
+        if !cursor.finished && cursor.seek(Cr)
+        then cursor.grab(start, cursor.mark).also(cursor.next())
+        else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
 
 sealed trait CarriageReturn
