@@ -346,18 +346,16 @@ object Http:
     def parse(stream: Stream[Data]): Response raises HttpResponseError =
       val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)
 
-      inline def expect(char: Char): Unit =
-        if cursor.datum(using Unsafe) != char.toByte then raise:
-          HttpResponseError:
-            HttpResponseError.Reason.Expectation(char, cursor.datum(using Unsafe).toChar)
+      inline def expected(char: Char): Diagnostics ?=> HttpResponseError =
+        HttpResponseError(HttpResponseError.Reason.Expectation(char, cursor.peek.asInt.toChar))
 
       val version: Http.Version = cursor.hold:
         val start = cursor.mark
-        expect('H'); cursor.next()
-        expect('T'); cursor.next()
-        expect('T'); cursor.next()
-        expect('P'); cursor.next()
-        expect('/'); cursor.next()
+        cursor.expect('H')(expected('H'))
+        cursor.expect('T')(expected('T'))
+        cursor.expect('T')(expected('T'))
+        cursor.expect('P')(expected('P'))
+        cursor.expect('/')(expected('/'))
         cursor.seek(' '.toByte)
         Http.Version.parse(Ascii(cursor.grab(start, cursor.mark)).show)
 
@@ -365,9 +363,9 @@ object Http:
 
       val code: Int = cursor.hold:
         val start = cursor.mark
-        val d1 = cursor.datum(using Unsafe)
+        val d1 = cursor.peek
 
-        if d1 < '1'.toByte || d1 > '5'.toByte then
+        if d1.asInt < '1' || d1.asInt > '5' then
           cursor.next()
           cursor.next()
 
@@ -375,44 +373,42 @@ object Http:
             HttpResponseError:
               HttpResponseError.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show)
 
-        var code = d1 - '0'.toByte
+        var code = d1.asInt - '0'
         cursor.next()
-        val d2 = cursor.datum(using Unsafe)
+        val d2 = cursor.peek
 
-        if d2 < '0'.toByte || d2 > '9'.toByte then
+        if d2.asInt < '0' || d2.asInt > '9' then
           cursor.next()
 
           abort:
             HttpResponseError
               ( HttpResponseError.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show) )
 
-        code = code*10 + (d2 - '0'.toByte)
+        code = code*10 + (d2.asInt - '0')
         cursor.next()
-        val d3 = cursor.datum(using Unsafe)
+        val d3 = cursor.peek
 
-        if d3 < '0'.toByte || d3 > '9'.toByte then
+        if d3.asInt < '0' || d3.asInt > '9' then
           abort:
             HttpResponseError
               ( HttpResponseError.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show) )
 
-        code*10 + (d3 - '0'.toByte)
+        code*10 + (d3.asInt - '0')
 
       cursor.next()
-      expect(' ')
+      cursor.expect(' ')(expected(' '))
 
       val status = Http.Status.unapply(code).optional.or:
         abort(HttpResponseError(HttpResponseError.Reason.Status(code.toString.tt)))
 
       cursor.seek('\r'.toByte)
       cursor.next()
-      expect('\n')
+      cursor.expect('\n')(expected('\n'))
 
       def readHeaders(headers: List[Http.Header]): List[Http.Header] =
-        cursor.next()
-
-        if cursor.datum(using Unsafe) == '\r'.toByte then
+        if cursor.peek == '\r' then
           cursor.next()
-          expect('\n')
+          cursor.expect('\n')(expected('\n'))
           headers
 
         else
@@ -423,7 +419,7 @@ object Http:
 
           cursor.next()
 
-          while cursor.datum(using Unsafe) == ' '.toByte || unsafely(cursor.datum) == '\t'.toByte
+          while cursor.peek == ' ' || cursor.peek == '\t'
           do cursor.next()
 
           val value: Text = cursor.hold:
@@ -432,12 +428,11 @@ object Http:
             Ascii(cursor.grab(start, cursor.mark)).show
 
           cursor.next()
-          expect('\n')
+          cursor.expect('\n')(expected('\n'))
           readHeaders(Http.Header(header, value) :: headers)
 
       val headers = readHeaders(Nil)
 
-      cursor.next()
       val body = Http.Body.Streaming(cursor.remainder)
 
       Response(version, status, headers.reverse, body)
