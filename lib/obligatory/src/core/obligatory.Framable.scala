@@ -35,6 +35,28 @@ package obligatory
 import scala.annotation.*
 
 import prepositional.*
+import rudiments.*
+import vacuous.*
+
+object Framable:
+  // Wraps a `frame` thunk — which reads one frame and returns `Unset` when
+  // the stream is exhausted — into an `Iterator[data]`. Hides the lazy
+  // `ready` cache and the `hasNext`/`next()` plumbing that every framer
+  // would otherwise duplicate. The thunk is by-name and `inline`, so the
+  // iterator's body still expands to a tight loop and closes over the
+  // caller's `Cursor` (preserving the cursor's operand-type refinement
+  // that a `Cursor[data] => Optional[data]` function boundary would erase).
+  inline def frames[data](inline frame: => Optional[data]): Iterator[data] =
+    new Iterator[data]:
+      private var ready: Optional[data] = Unset
+
+      def hasNext: Boolean =
+        if ready == Unset then ready = frame
+        ready != Unset
+
+      def next(): data = ready.asInstanceOf[data].also:
+        ready = Unset
+
 
 trait Framable extends Typeclass, Operable:
   def frames(input: Iterator[Self]): Iterator[Self]

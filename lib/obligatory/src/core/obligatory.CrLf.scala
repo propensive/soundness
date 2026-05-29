@@ -44,25 +44,16 @@ object CrLf:
   given framable: Tactic[FrameError] => Text is Framable by CrLf = input =>
     val cursor = Cursor(input)
 
-    def frame(): Optional[Text] = cursor.hold:
-      val start = cursor.mark
+    Framable.frames[Text]:
+      cursor.hold:
+        val start = cursor.mark
 
-      if !cursor.finished && cursor.seek(Cr)
-      then cursor.grab(start, cursor.mark).also:
-        cursor.next()
+        if !cursor.finished && cursor.seek(Cr)
+        then cursor.grab(start, cursor.mark).also:
+          cursor.next()
 
-        if !cursor.lay(false)(_ == Lf) then abort(FrameError(FrameError.Reason.MissingLineFeed))
-        else cursor.next()
-      else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
-
-    new Iterator[Text]:
-      private var ready: Optional[Text] = Unset
-
-      def hasNext: Boolean =
-        if ready == Unset then ready = frame()
-        ready != Unset
-
-      def next(): Text = ready.asInstanceOf[Text].also:
-        ready = Unset
+          if !cursor.lay(false)(_ == Lf) then abort(FrameError(FrameError.Reason.MissingLineFeed))
+          else cursor.next()
+        else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
 
 sealed trait CrLf

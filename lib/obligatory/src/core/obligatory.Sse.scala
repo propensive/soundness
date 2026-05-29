@@ -70,15 +70,8 @@ object Sse:
       else
         cursor.grab(start, cursor.mark)
 
-    new Iterator[Text]:
-      private var ready: Optional[Text] = Unset
-
-      def hasNext: Boolean =
-        if ready == Unset then ready = cursor.hold(frame(cursor.mark))
-        ready != Unset
-
-      def next(): Text = ready.asInstanceOf[Text].also:
-        ready = Unset
+    Framable.frames[Text]:
+      cursor.hold(frame(cursor.mark))
 
   given jsonEncodable: Json is Encodable in Sse =
     import jsonPrinters.minimal
