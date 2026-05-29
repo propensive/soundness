@@ -156,3 +156,33 @@ object Tests extends Suite(m"Gastronomy tests"):
       import alphabets.base64.standard
       pangram.hmac[Sha2[512]](t"key".data).serialize[Base64]
     . assert(_ == t"tCrwkFe6weLUFwjkipAuCbX/fxKrQopP6GZTxz3SSPuC+UilSfe3kaW0GRXuTR7Dk1NX5OIxclDQNyr6Lr7rOg==")
+
+    suite(m"COSE Mac0 (HMAC-SHA-256)"):
+      val keyBytes: Data = t"a-32-byte-key-for-hmac-sha256!!!".data
+      val key: SymmetricKey[HmacCipher[Sha2[256]]] = SymmetricKey(keyBytes)
+      val payload: Data = pangram.data
+
+      test(m"Cose(payload, key) round-trips through verify[Cose](key)"):
+        val cose = Cose(payload, key)
+        cose.bytes.verify[Cose](key)
+      . assert(identity)
+
+      test(m"Cose envelope is tagged with CBOR tag 17 (Mac0)"):
+        val wire = Cose(payload, key).bytes
+        wire(0).toInt & 0xFF
+      . assert(_ == 0xD1)   // major type 6 (tag) | tag value 17 = 0xC0 | 17 = 0xD1
+
+      test(m"Verification fails with the wrong key"):
+        val wire = Cose(payload, key).bytes
+        val wrongKey: SymmetricKey[HmacCipher[Sha2[256]]] =
+          SymmetricKey(t"this-is-a-different-key-bytes!!!".data)
+        wire.verify[Cose](wrongKey)
+      . assert(!_)
+
+      test(m"Verification fails after tampering the wire bytes"):
+        val wire = Cose(payload, key).bytes
+        val tampered = wire.mutable(using Unsafe)
+        // Flip a bit in the MAC tag near the end of the envelope.
+        tampered(tampered.length - 5) = (tampered(tampered.length - 5) ^ 0xFF.toByte).toByte
+        tampered.immutable(using Unsafe).verify[Cose](key)
+      . assert(!_)
