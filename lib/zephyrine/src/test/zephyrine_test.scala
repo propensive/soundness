@@ -492,3 +492,31 @@ object Tests extends Suite(m"Zephyrine tests"):
         cursor.peek == 'b'
       . assert(identity)
 
+    suite(m"lookahead tests"):
+      test(m"lookahead returns result without advancing on success"):
+        val cursor = Cursor[Text](Iterator(t"abcd"))
+        val ok = cursor.lookahead:
+          cursor.next() && cursor.peek == 'b'
+
+        (ok, cursor.peek == 'a')
+      . assert(_ == ((true, true)))
+
+      test(m"lookahead returns result without advancing on failure"):
+        val cursor = Cursor[Text](Iterator(t"abcd"))
+        val ok = cursor.lookahead:
+          cursor.next() && cursor.peek == 'z'
+
+        (ok, cursor.peek == 'a')
+      . assert(_ == ((false, true)))
+
+      test(m"lookahead inside an outer hold preserves the outer marks"):
+        val cursor = Cursor[Text](Iterator(t"abcd"))
+        cursor.hold:
+          val outer = cursor.mark
+          cursor.next()
+          val inner = cursor.lookahead:
+            cursor.next() && cursor.peek == 'c'
+
+          (inner, cursor.grab(outer, cursor.mark).s)
+      . assert(_ == ((true, "a")))
+
