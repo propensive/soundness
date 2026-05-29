@@ -108,8 +108,7 @@ object Multipart:
         else if cursor.peek != '\r' then
           if !cursor.next() then continue = false
         else
-          val matched = cursor.hold:
-            val crMark = cursor.mark
+          val matched = cursor.lookahead:
             var ok = cursor.next() && cursor.peek == '\n'
             var i = 0
 
@@ -117,7 +116,6 @@ object Multipart:
               ok = cursor.next() && cursor.peek == boundary(i)
               i += 1
 
-            cursor.cue(crMark)
             ok
 
           if matched then

@@ -91,6 +91,22 @@ extension (cursor: Cursor[Text])
 
     if cursor.peek == target then cursor.next() else raise(failure)
 
+// Run `action` inside a hold and always restore the cursor position to
+// where it was on entry, regardless of the result — i.e. a non-consuming
+// lookahead. Marks taken inside the action are available via the implicit
+// `Cursor.Held`; the outer cursor is `cue`d back on exit so subsequent
+// processing sees the same bytes. Replaces the explicit
+// `hold { val mk = mark; … cue(mk); result }` idiom that parsers like
+// Multipart's boundary detector and Zeppelin's ZIP signature scanner
+// were writing.
+extension [data](cursor: Cursor[data])
+  inline def lookahead[result](inline action: Cursor.Held ?=> result): result =
+    cursor.hold:
+      val saved = cursor.mark
+      val outcome: result = action
+      cursor.cue(saved)
+      outcome
+
 package lineation:
   inline given linefeedChars: Lineation:
     type Operand = Char
