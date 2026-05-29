@@ -440,7 +440,7 @@ private final class TelParser():
     cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
   private inline def syncFrom(): Unit =
-    bytes  = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
+    bytes  = cursor.buffer(using Unsafe)
     pos    = cursor.unsafePos(using Unsafe)
     bufEnd = cursor.unsafeWriteEnd(using Unsafe)
 
