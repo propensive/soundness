@@ -54,17 +54,13 @@ extension (cursor: Cursor[Data])
   @targetName("peekByte")
   inline def peek: Datum =
     if cursor.finished then Datum.End
-    else
-      val buffer = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
-      Datum.fromRaw(buffer(cursor.unsafePos(using Unsafe)) & 0xff)
+    else Datum.fromRaw(cursor.buffer(using Unsafe)(cursor.unsafePos(using Unsafe)) & 0xff)
 
 extension (cursor: Cursor[Text])
   @targetName("peekChar")
   inline def peek: Datum =
     if cursor.finished then Datum.End
-    else
-      val buffer = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
-      Datum.fromRaw(buffer(cursor.unsafePos(using Unsafe)).toInt)
+    else Datum.fromRaw(cursor.buffer(using Unsafe)(cursor.unsafePos(using Unsafe)).toInt)
 
 // Match the cursor's current operand against `target`. On a match, advance
 // past it; on a mismatch (or EOF), raise `failure` via the ambient
@@ -106,6 +102,23 @@ extension [data](cursor: Cursor[data])
       val outcome: result = action
       cursor.cue(saved)
       outcome
+
+// Typed, allocation-free view of the cursor's current backing storage.
+// Returns the same array as `unsafeBuffer` but with its concrete element
+// type, so parsers that snapshot the buffer for a hot-loop scan don't have
+// to write `cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]`
+// themselves — the unsafe cast lives in one place inside zephyrine.
+// `Unsafe` is still required: the returned reference is only valid until
+// the next cursor operation that may compact or grow the buffer.
+extension (cursor: Cursor[Data])
+  @targetName("dataBuffer")
+  inline def buffer(using erased Unsafe): Array[Byte] =
+    cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
+
+extension (cursor: Cursor[Text])
+  @targetName("textBuffer")
+  inline def buffer(using erased Unsafe): Array[Char] =
+    cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
 
 package lineation:
   inline given linefeedChars: Lineation:

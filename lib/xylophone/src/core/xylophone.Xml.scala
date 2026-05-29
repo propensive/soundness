@@ -1121,7 +1121,7 @@ object Xml extends Tag.Container
     // backtracking via `cue`) the parser pushes `pos` to the cursor first,
     // then refreshes its snapshot from the cursor afterwards — refill may
     // compact the buffer, reallocate it, or reset `pos`.
-    private var bytes:  Array[Char] = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
+    private var bytes:  Array[Char] = cursor.buffer(using Unsafe)
     private var pos:    Int = cursor.unsafePos(using Unsafe)
     private var bufEnd: Int = cursor.unsafeWriteEnd(using Unsafe)
 
@@ -1129,7 +1129,7 @@ object Xml extends Tag.Container
       cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
     private inline def syncFrom(): Unit =
-      bytes  = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
+      bytes  = cursor.buffer(using Unsafe)
       pos    = cursor.unsafePos(using Unsafe)
       bufEnd = cursor.unsafeWriteEnd(using Unsafe)
       lineationPos = pos

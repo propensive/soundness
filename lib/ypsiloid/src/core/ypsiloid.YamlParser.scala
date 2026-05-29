@@ -264,7 +264,7 @@ private[ypsiloid] final class YamlParser:
   // a refill may have compacted the buffer (bytes 0..old-pos are
   // discarded; subsequent walks would read different data).
   private inline def syncFrom(): Unit =
-    bytes  = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
+    bytes  = cursor.buffer(using Unsafe)
     pos    = cursor.unsafePos(using Unsafe)
     bufEnd = cursor.unsafeWriteEnd(using Unsafe)
     lineationPos = pos
