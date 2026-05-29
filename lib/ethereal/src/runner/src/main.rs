@@ -15,6 +15,7 @@ mod signals;
 mod tty;
 mod uds;
 mod update;
+mod verify;
 mod wrapper;
 mod xeq;
 

@@ -1,5 +1,7 @@
 use std::path::Path;
 
+use crate::config::FLAG_DOWNGRADE_PERMITTED;
+
 pub fn check_updates(script: &Path, args: &[String], name: &str) {
     let data_home = crate::state::data_home();
     let pending = data_home.join(name).join(".pending");
@@ -10,6 +12,42 @@ pub fn check_updates(script: &Path, args: &[String], name: &str) {
     };
     crate::debug!("update: pending size={}", metadata.len());
     if metadata.len() == 0 { return; }
+
+    // Read the pending binary and verify its ML-DSA-44 signature against the
+    // public key baked into THIS running runner. A failure here means the
+    // file was either unsigned, signed by an unknown key, or tampered with;
+    // in any of those cases we delete `.pending` and continue with the
+    // existing binary. Verification is authoritative: nothing past this
+    // point should assume the file is benign on its own merits.
+    let pending_bytes = match std::fs::read(&pending) {
+        Ok(b) => b,
+        Err(e) => {
+            crate::debug!("update: read(pending) failed: {}", e);
+            return;
+        },
+    };
+
+    let pubkey = crate::config::public_key();
+    let build_config = crate::config::read_config();
+
+    let verified = match crate::verify::verify_pending(&pending_bytes, &pubkey) {
+        Ok(v) => v,
+        Err(e) => {
+            crate::debug!("update: verify rejected: {:?}", e);
+            let _ = std::fs::remove_file(&pending);
+            return;
+        },
+    };
+
+    let allow_downgrade = (verified.flags & FLAG_DOWNGRADE_PERMITTED) != 0;
+    if verified.build_id <= build_config.build_id && !allow_downgrade {
+        crate::debug!("update: downgrade rejected (embedded={} current={})",
+                      verified.build_id, build_config.build_id);
+        let _ = std::fs::remove_file(&pending);
+        return;
+    }
+    crate::debug!("update: verified build_id={} flags={:#x}",
+                  verified.build_id, verified.flags);
 
     #[cfg(unix)]
     {

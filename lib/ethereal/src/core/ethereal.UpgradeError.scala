@@ -30,12 +30,24 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ethereal
 
-export
-  ethereal
-  . { cli, Client, DaemonEvent, DaemonLogEvent, daemonLogEvent, DaemonService, Installer,
-      LazyEnvironment, service, Stdin, Upgrade, UpgradeError }
+import anticipation.*
+import fulminate.*
 
-package workingDirectories:
-  export ambience.workingDirectories.daemonClient
+object UpgradeError:
+  object Reason:
+    given communicable: Reason is Communicable =
+      case CannotReadSource     => m"the upgrade source could not be read"
+      case CannotWritePending   => m"the .pending file could not be written"
+      case CannotResolveLauncher => m"the running launcher's path is not available"
+      case CannotRespawnLauncher => m"the launcher could not be relaunched"
+
+  enum Reason(val number: Int) extends Clarification:
+    case CannotReadSource      extends Reason(1)
+    case CannotWritePending    extends Reason(2)
+    case CannotResolveLauncher extends Reason(3)
+    case CannotRespawnLauncher extends Reason(4)
+
+case class UpgradeError(reason: UpgradeError.Reason)(using Diagnostics)
+extends Error(631, reason.number)(m"could not apply the upgrade because $reason")
