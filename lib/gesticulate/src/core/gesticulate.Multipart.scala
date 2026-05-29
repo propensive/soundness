@@ -56,26 +56,23 @@ object Multipart:
 
     val cursor = Cursor[Data](input.stream[Data].filter(_.nonEmpty).iterator)
 
-    inline def datum: Byte =
-      if cursor.finished then -1.toByte else cursor.datum(using Unsafe)
-
     val boundary: Data = cursor.hold:
       val start = cursor.mark
-      if datum != '-'.toByte then raise(MultipartError(Reason.Expected('-')))
+      if cursor.peek != '-' then raise(MultipartError(Reason.Expected('-')))
       cursor.next()
-      if datum != '-'.toByte then raise(MultipartError(Reason.Expected('-')))
+      if cursor.peek != '-' then raise(MultipartError(Reason.Expected('-')))
       cursor.next()
       cursor.seek('\r'.toByte)
       cursor.grab(start, cursor.mark)
 
     cursor.next()
-    if datum != '\n'.toByte then raise(MultipartError(Reason.Expected('\n')))
+    if cursor.peek != '\n' then raise(MultipartError(Reason.Expected('\n')))
     cursor.next()
 
     def headers(list: List[(Text, Text)]): Map[Text, Text] =
-      if datum == '\r'.toByte then
+      if cursor.peek == '\r' then
         cursor.next()
-        if datum != '\n'.toByte then raise(MultipartError(Reason.Expected('\n')))
+        if cursor.peek != '\n' then raise(MultipartError(Reason.Expected('\n')))
         cursor.next()
         list.to(Map)
 
@@ -86,7 +83,7 @@ object Multipart:
           Text.ascii(cursor.grab(start, cursor.mark))
 
         cursor.next()
-        if datum != ' '.toByte then raise(MultipartError(Reason.Expected(' ')))
+        if cursor.peek != ' ' then raise(MultipartError(Reason.Expected(' ')))
         cursor.next()
 
         val value: Text = cursor.hold:
@@ -95,7 +92,7 @@ object Multipart:
           Text.ascii(cursor.grab(start, cursor.mark))
 
         cursor.next()
-        if datum != '\n'.toByte then raise(MultipartError(Reason.Expected('\n')))
+        if cursor.peek != '\n' then raise(MultipartError(Reason.Expected('\n')))
         cursor.next()
         headers((key, value) :: list)
 
@@ -110,16 +107,16 @@ object Multipart:
 
       while continue do
         if cursor.finished then continue = false
-        else if datum != '\r'.toByte then
+        else if cursor.peek != '\r' then
           if !cursor.next() then continue = false
         else
           val matched = cursor.hold:
             val crMark = cursor.mark
-            var ok = cursor.next() && datum == '\n'.toByte
+            var ok = cursor.next() && cursor.peek == '\n'
             var i = 0
 
             while ok && i < boundary.length do
-              ok = cursor.next() && datum == boundary(i)
+              ok = cursor.next() && cursor.peek == boundary(i)
               i += 1
 
             cursor.cue(crMark)
@@ -178,29 +175,27 @@ object Multipart:
       if cursor.finished then
         raise(MultipartError(Reason.Expected('-')))
         Stream()
+      else if cursor.peek == '\r' then
+        if !cursor.next() || cursor.peek != '\n'
+        then raise(MultipartError(Reason.Expected('\n')))
+
+        part #:: { part.body.strict; cursor.next(); parts() }
+
+      else if cursor.peek == '-' then
+        if !cursor.next() || cursor.peek != '-'
+        then raise(MultipartError(Reason.Expected('-')))
+
+        if !cursor.next() || cursor.peek != '\r'
+        then raise(MultipartError(Reason.Expected('\r')))
+
+        if !cursor.next() || cursor.peek != '\n'
+        then raise(MultipartError(Reason.Expected('\n')))
+
+        Stream(part)
+
       else
-        datum match
-        case '\r' =>
-          if !cursor.next() || datum != '\n'.toByte
-          then raise(MultipartError(Reason.Expected('\n')))
-
-          part #:: { part.body.strict; cursor.next(); parts() }
-
-        case '-' =>
-          if !cursor.next() || datum != '-'.toByte
-          then raise(MultipartError(Reason.Expected('-')))
-
-          if !cursor.next() || datum != '\r'.toByte
-          then raise(MultipartError(Reason.Expected('\r')))
-
-          if !cursor.next() || datum != '\n'.toByte
-          then raise(MultipartError(Reason.Expected('\n')))
-
-          Stream(part)
-
-        case other =>
-          raise(MultipartError(Reason.Expected('-')))
-          Stream()
+        raise(MultipartError(Reason.Expected('-')))
+        Stream()
 
     Multipart(parts())
 

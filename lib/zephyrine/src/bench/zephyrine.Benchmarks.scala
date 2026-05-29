@@ -167,6 +167,31 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
     val c = Cursor(Iterator(text))
     c.take(t"")(64).s.length
 
+  // Walks `data10k` peeking each byte then advancing. Measures the safe
+  // `peek` extension against the hand-rolled `if finished then -1 else
+  // datum(using Unsafe) & 0xff` pattern in `dataDatumLoop`; both should
+  // produce the same inner loop.
+  def dataPeekByteLoop(data: Data): Int =
+    val c = Cursor[Data](Iterator(data))
+    var acc = 0
+    while !c.finished do { acc ^= c.peek.asInt; c.advance() }
+    acc
+
+  def dataDatumLoop(data: Data): Int =
+    val c = Cursor[Data](Iterator(data))
+    var acc = 0
+    while !c.finished do
+      val b = c.datum(using Unsafe) & 0xff
+      acc ^= b
+      c.advance()
+    acc
+
+  def textPeekCharLoop(text: Text): Int =
+    val c = Cursor[Text](Iterator(text))
+    var acc = 0
+    while !c.finished do { acc ^= c.peek.asInt; c.advance() }
+    acc
+
   // ─── benchmarks ───────────────────────────────────────────────────────────
 
   def run(): Unit =
@@ -224,3 +249,16 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
 
       bench(m"take(64)")(target = 1*Second):
         '{ zephyrine.Benchmarks.cursorTake64(zephyrine.Benchmarks.text10k) }
+
+    suite(m"Safe peek"):
+      bench(m"datum + manual sentinel loop, 10 KB bytes (baseline)")
+        ( target = 1*Second, operationSize = text10kSize, baseline = Baseline(compare = Min) ):
+        '{ zephyrine.Benchmarks.dataDatumLoop(zephyrine.Benchmarks.data10k) }
+
+      bench(m"peek loop, 10 KB bytes")
+        ( target = 1*Second, operationSize = text10kSize ):
+        '{ zephyrine.Benchmarks.dataPeekByteLoop(zephyrine.Benchmarks.data10k) }
+
+      bench(m"peek loop, 10 KB chars")
+        ( target = 1*Second, operationSize = text10kSize ):
+        '{ zephyrine.Benchmarks.textPeekCharLoop(zephyrine.Benchmarks.text10k) }

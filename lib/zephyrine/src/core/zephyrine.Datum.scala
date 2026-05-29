@@ -32,61 +32,44 @@
                                                                                                   */
 package zephyrine
 
-import scala.annotation.targetName
+import rudiments.*
 
-import anticipation.Data
-import anticipation.Text
-import vacuous.Unsafe
+// A `Datum` is a single buffer element — a byte (unsigned, `0..255`) or a
+// char — returned from `Cursor.peek`. Backed by `Int`, with a distinguished
+// `End` sentinel (`-1`) for an exhausted cursor that can't collide with any
+// real byte or char value. Distinct from `Int` at the type level so that
+// arithmetic, sign extension, and `Char`/`Byte` confusion can't happen
+// silently; comparable to `Byte` and `Char` via `CanEqual` instances so the
+// natural `==` operator works without ad-hoc redefinitions.
+opaque type Datum = Int
 
-// Safe, allocation-free single-element peek. Returns `Datum.End` when the
-// cursor is finished; otherwise the current byte (unsigned, `0..255`) or
-// char wrapped as a `Datum`. The `Datum` opaque type (backed by `Int`)
-// is deliberately distinct from raw `Int` so that arithmetic or
-// `Byte`/`Char` confusion can't happen silently — comparison with the
-// expected literal is via the dedicated `Datum.==` overloads, which still
-// compile to a single `int == int`. Two extensions disambiguated by
-// `@targetName` (they erase to the same JVM signature) — callers just
-// write `cursor.peek` without caring whether the cursor is byte- or
-// char-based.
-extension (cursor: Cursor[Data])
-  @targetName("peekByte")
-  inline def peek: Datum =
-    if cursor.finished then Datum.End
-    else
-      val buffer = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
-      Datum.fromRaw(buffer(cursor.unsafePos(using Unsafe)) & 0xff)
+object Datum:
+  // Sentinel for an exhausted cursor. The only `Datum` not derivable from a
+  // byte or char.
+  val End: Datum = -1
 
-extension (cursor: Cursor[Text])
-  @targetName("peekChar")
-  inline def peek: Datum =
-    if cursor.finished then Datum.End
-    else
-      val buffer = cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
-      Datum.fromRaw(buffer(cursor.unsafePos(using Unsafe)).toInt)
+  // Lift an unsigned byte (`0..255` after `& 0xff`) into a `Datum`.
+  inline def apply(byte: Byte): Datum = byte & 0xff
 
-package lineation:
-  inline given linefeedChars: Lineation:
-    type Operand = Char
+  // Lift a char into a `Datum`.
+  inline def apply(char: Char): Datum = char.toInt
 
-    inline def active: Boolean = true
-    inline def track(datum: Char): Boolean = datum == '\n'
+  // Construct from a raw `Int`. Caller is responsible for the value being a
+  // valid byte/char or `-1` — used by `Cursor.peek` to wrap an `Int` it has
+  // already validated.
+  private[zephyrine] inline def fromRaw(int: Int): Datum = int
 
-  inline given carriageReturnChar: Lineation:
-    type Operand = Char
+  inline given datumByte:  CanEqual[Datum, Byte]  = !!
+  inline given byteDatum:  CanEqual[Byte,  Datum] = !!
+  inline given datumChar:  CanEqual[Datum, Char]  = !!
+  inline given charDatum:  CanEqual[Char,  Datum] = !!
+  inline given datumDatum: CanEqual[Datum, Datum] = !!
 
-    inline def active: Boolean = true
-    inline def track(datum: Char): Boolean = datum == '\r'
 
-  inline given linefeedByte: Lineation:
-    type Operand = Byte
+extension (datum: Datum)
+  // The underlying `Int` representation. Use sparingly — anywhere it
+  // leaks the `Datum` distinction is lost.
+  inline def asInt: Int = datum
 
-    inline def active: Boolean = true
-    inline def track(datum: Byte): Boolean = datum == 10
-
-  inline given carriageReturnByte: Lineation:
-    type Operand = Byte
-
-    inline def active: Boolean = true
-    inline def track(datum: Byte): Boolean = datum == 13
-
-export Cursor.{Mark, Offset}
+  // `true` if the cursor that produced this `Datum` was exhausted.
+  inline def isEnd: Boolean = datum == Datum.End
