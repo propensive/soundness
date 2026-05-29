@@ -159,7 +159,11 @@ def cli[bus <: Matchable](using executive: Executive)
 
             val magic: Array[Byte] = Array[Byte](
               'E'.toByte, 'T'.toByte, 'H'.toByte, 'R'.toByte,
-              'C'.toByte, 'F'.toByte, 'G'.toByte, 1.toByte)
+              'C'.toByte, 'F'.toByte, 'G'.toByte, 2.toByte)
+
+            // v2 ETHRCFG layout — keep in sync with lib/ethereal/src/runner/src/config.rs.
+            val pubkeyLen: Int = 1312                       // ML-DSA-44 public key size
+            val pubkeyOffsetInBlock: Int = 32 - magic.length  // after the 24-byte meta region
 
             val magicOffset: Int =
               var found: Int = -1
@@ -177,20 +181,52 @@ def cli[bus <: Matchable](using executive: Executive)
                 i += 1
 
               if found < 0 then
-                Out.println(e"Runner binary does not contain the ETHRCFG magic marker")
+                Out.println(e"Runner binary does not contain the ETHRCFG\\x02 magic marker")
                 Exit.Fail(1).terminate()
 
               found
 
+            // ML-DSA-44 public key used by the runner to verify upgrades.
+            // When `ethereal.publicKey` is unset the slot stays zero and the
+            // runner's verifier rejects every upgrade — the safe default for
+            // dev builds where upgrades happen via `make install` rather
+            // than the .pending path. Releases that need signed upgrades
+            // pass `-Dethereal.publicKey=<path>` pointing at a 1312-byte raw
+            // ML-DSA-44 public key file.
+            val publicKeyBytes: Array[Byte] =
+              safely(System.properties.ethereal.publicKey[Text]()).absolve match
+                case Unset =>
+                  new Array[Byte](pubkeyLen)   // all zeros — upgrades blocked
+
+                case keyPath: Text =>
+                  val resolved: Path on Linux = safely(keyPath.decode[Path on Linux]).or:
+                    val work: Path on Linux = workingDirectory
+                    work + keyPath.decode[Relative on Linux]
+                  val raw = resolved.open(_.stream[Data].read[Data]).to(Array)
+                  if raw.length != pubkeyLen then
+                    Out.println(e"Public key at $keyPath is the wrong size (expected 1312 bytes)")
+                    Exit.Fail(1).terminate()
+                  raw
+
             val configOffset: Int = magicOffset + magic.length
             val patched: Array[Byte] = IArray.genericWrapArray(runnerBytes).toArray
-            val buf = jnio.ByteBuffer.wrap(patched, configOffset, 24).nn
-            buf.order(jnio.ByteOrder.LITTLE_ENDIAN).nn
-            buf.putLong(buildId)
-            buf.putShort(javaMinimum.toShort)
-            buf.putShort(javaPreferred.toShort)
-            buf.put((if jdk then 1 else 0).toByte)
-            while buf.hasRemaining do buf.put(0.toByte)
+
+            // Write the 24-byte metadata region.
+            val metaBuf = jnio.ByteBuffer.wrap(patched, configOffset, 24).nn
+            metaBuf.order(jnio.ByteOrder.LITTLE_ENDIAN).nn
+            metaBuf.putLong(buildId)
+            metaBuf.putShort(javaMinimum.toShort)
+            metaBuf.putShort(javaPreferred.toShort)
+            metaBuf.put((if jdk then 1 else 0).toByte)
+            while metaBuf.hasRemaining do metaBuf.put(0.toByte)
+
+            // Write the 1312-byte public-key region at offset 32 within the
+            // ETHRCFG block (8 magic + 24 metadata).
+            jl.System.arraycopy(publicKeyBytes, 0,
+                                patched, configOffset + 24,
+                                pubkeyLen)
+            // Signature slot at offset 1344 stays zero — populated later by
+            // the signer when this binary is itself shipped as an upgrade.
 
             path.open: file =>
               Stream(IArray.from(patched.iterator): IArray[Byte]).writeTo(file)

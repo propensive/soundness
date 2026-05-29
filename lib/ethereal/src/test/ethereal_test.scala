@@ -596,15 +596,23 @@ object Tests extends Suite(m"Ethereal Tests"):
         }
 
     suite(m"Self-update"):
-      test(m"launcher swaps in pending binary before next invocation"):
+      // The Enclave-built runner has no public key baked in (its config
+      // block's pubkey slot is all zero), so `update::check_updates` rejects
+      // every candidate .pending file. Once the Enclave test rig grows a
+      // way to bake in a test public key the pair of "valid signed upgrade
+      // applies / tampered upgrade rejected" end-to-end tests can be added
+      // here; for now the cryptographic verifier is covered by the Rust
+      // unit tests in lib/ethereal/src/runner/src/verify.rs.
+
+      test(m"launcher rejects unsigned pending binary"):
         sh"mkdir -p $selfuDataDir".exec[Unit]()
         sh"cp ${selfuV2.path} $selfuDataDir/.pending".exec[Unit]()
         sh"${selfuV1.path} version".exec[Text]()
 
-      .assert(_ == t"v2")
+      .assert(_ == t"v1")
 
-      test(m"old binary is preserved after upgrade"):
-        sh"test -f ${Xdg.dataHome[Path on Local]}/selfu.old".exec[Exit]()
+      test(m"rejected pending binary is deleted"):
+        sh"test ! -e $selfuDataDir/.pending".exec[Exit]()
 
       .assert(_ == Exit.Ok)
 

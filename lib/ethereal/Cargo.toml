@@ -8,6 +8,15 @@ edition = "2024"
 name = "runner"
 path = "src/runner/src/main.rs"
 
+[[bin]]
+name = "ethereal-sign"
+path = "src/sign/src/main.rs"
+required-features = ["sign"]
+
+[features]
+default = []
+sign = ["ml-dsa/rand_core", "dep:rand"]
+
 [profile.release]
 opt-level = "z"
 lto = true
@@ -16,6 +25,8 @@ panic = "abort"
 strip = true
 
 [dependencies]
+ml-dsa = { version = "0.1", default-features = false }
+rand = { version = "0.9", optional = true }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
