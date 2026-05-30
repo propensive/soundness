@@ -30,7 +30,97 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-export xenophile.{Dialect, Ecosystem, Evaluator, Foreign, ForeignExpr, Interface, Interoperable,
-    Signature, Typescript}
+import anticipation.*
+import vacuous.*
+
+// A minimal grammar for TypeScript declaration files: enough to read `interface` blocks of fields
+// (`name: Type;`) and methods (`name(p: T, …): Type;`). It does not interpret the rest of the
+// language — unrecognised tokens between members are skipped.
+object TypescriptDialect extends Dialect:
+  def parse(source: Text): Map[Text, Map[Text, Signature]] = interfaces(tokenize(source.s), Map())
+
+  // Splits the source into identifier and single-character punctuation tokens, discarding
+  // whitespace; this is all the lexical structure the interface grammar needs.
+  private def punctuation(char: Char): Boolean =
+    char == '{' || char == '}' || char == '(' || char == ')' || char == ':' ||
+      char == ',' || char == ';'
+
+  private def tokenize(source: String): List[String] =
+    def recur(index: Int, current: String, tokens: List[String]): List[String] =
+      if index >= source.length
+      then (if current.isEmpty then tokens else current :: tokens).reverse
+      else
+        val char = source.charAt(index)
+
+        if char.isLetterOrDigit || char == '_' then recur(index + 1, current + char, tokens)
+        else
+          val flushed = if current.isEmpty then tokens else current :: tokens
+
+          if punctuation(char) then recur(index + 1, "", char.toString :: flushed)
+          else recur(index + 1, "", flushed)
+
+    recur(0, "", Nil)
+
+  private def interfaces(tokens: List[String], acc: Map[Text, Map[Text, Signature]])
+  :   Map[Text, Map[Text, Signature]] =
+
+    tokens match
+      case "interface" :: name :: "{" :: rest =>
+        val (members, rest2) = membersOf(rest, Map())
+        interfaces(rest2, acc.updated(name.tt, members))
+
+      case _ :: rest =>
+        interfaces(rest, acc)
+
+      case Nil =>
+        acc
+
+  private def membersOf(tokens: List[String], acc: Map[Text, Signature])
+  :   (Map[Text, Signature], List[String]) =
+
+    tokens match
+      case "}" :: rest =>
+        (acc, rest)
+
+      case name :: "(" :: rest =>
+        val (parameters, rest2) = params(rest, Nil)
+
+        rest2 match
+          case ":" :: result :: rest3 =>
+            val signature = Signature(parameters.map(_.tt), result.tt)
+            membersOf(semicolon(rest3), acc.updated(name.tt, signature))
+
+          case _ =>
+            (acc, rest2)
+
+      case name :: ":" :: result :: rest =>
+        membersOf(semicolon(rest), acc.updated(name.tt, Signature(Unset, result.tt)))
+
+      case _ :: rest =>
+        membersOf(rest, acc)
+
+      case Nil =>
+        (acc, Nil)
+
+  // Reads parameter declarations up to the closing `)`, keeping only each parameter's type name.
+  private def params(tokens: List[String], acc: List[String]): (List[String], List[String]) =
+    tokens match
+      case ")" :: rest =>
+        (acc.reverse, rest)
+
+      case name :: ":" :: kind :: rest =>
+        rest match
+          case "," :: more => params(more, kind :: acc)
+          case _           => params(rest, kind :: acc)
+
+      case _ :: rest =>
+        params(rest, acc)
+
+      case Nil =>
+        (acc.reverse, Nil)
+
+  private def semicolon(tokens: List[String]): List[String] = tokens match
+    case ";" :: rest => rest
+    case _           => tokens

@@ -44,47 +44,21 @@ import vacuous.*
 
 object Xenophile:
 
-  case class Signature(parameters: Optional[List[Text]], result: Text)
+  // Selects the grammar for a source language. New ecosystems register here.
+  private def dialectFor(using Quotes)(origin: quotes.reflect.TypeRepr): Dialect =
+    import quotes.reflect.*
 
-  // Parses the trivial line-based definitions format into a map from each foreign type name to a
-  // map from member names to their signatures. A member is either a field (`bar Bar`) or a method
-  // (`greet(string) Text`); a method records its parameter type names and result type.
-  def parse(lines: List[Text]): Map[Text, Map[Text, Signature]] =
-    def recur(todo: List[Text], current: Text, acc: Map[Text, Map[Text, Signature]])
-    :   Map[Text, Map[Text, Signature]] =
+    if origin =:= TypeRepr.of[Typescript] then TypescriptDialect
+    else halt(m"xenophile: no grammar is available for the foreign source language")
 
-      todo match
-        case Nil =>
-          acc
+  // Reads the definitions resource at `path` and parses it with the grammar for `origin`.
+  def definitions(using quotes: Quotes)(origin: quotes.reflect.TypeRepr, path: Text)
+  :   Map[Text, Map[Text, Signature]] =
 
-        case line :: tail =>
-          val tokens = line.cut(t" ").to(List).filter(_ != t"")
-
-          if tokens.isEmpty then recur(tail, current, acc)
-          else if !line.starts(t" ") && line.ends(t":") then
-            val name = line.cut(t":").to(List).head
-            recur(tail, name, acc.updated(name, Map()))
-          else
-            val result = tokens.last
-            val segments = tokens.head.cut(t"(").to(List)
-            val name = segments.head
-
-            val signature =
-              if segments.length == 1 then Signature(Unset, result)
-              else
-                val inside = segments.tail.head.cut(t")").to(List).head
-                Signature(inside.cut(t",").to(List).filter(_ != t""), result)
-
-            val members = acc.at(current).or(Map()).updated(name, signature)
-            recur(tail, current, acc.updated(current, members))
-
-    recur(lines, t"", Map())
-
-  def definitions(path: Text)(using Quotes): Map[Text, Map[Text, Signature]] =
     val stream = Optional(getClass.getResourceAsStream(path.s)).or:
       halt(m"xenophile: could not read foreign definitions at $path on the classpath")
 
-    parse(scala.io.Source.fromInputStream(stream).getLines().map(Text(_)).to(List))
+    dialectFor(origin).parse(scala.io.Source.fromInputStream(stream).mkString.tt)
 
   // Collects every `type X = …` member from a (possibly nested) refinement type into a map.
   private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
@@ -200,7 +174,7 @@ object Xenophile:
     val fieldName = field.valueOrAbort.tt
     val (topic, originRepr) = receiver(self)
 
-    val typeMembers = definitions(locusOf(originRepr)).at(topic).or:
+    val typeMembers = definitions(originRepr, locusOf(originRepr)).at(topic).or:
       halt(m"xenophile: the foreign type $topic is not defined")
 
     val signature = typeMembers.at(fieldName).or:
@@ -218,7 +192,7 @@ object Xenophile:
     val fieldName = field.valueOrAbort.tt
     val (topic, originRepr) = receiver(self)
 
-    val typeMembers = definitions(locusOf(originRepr)).at(topic).or:
+    val typeMembers = definitions(originRepr, locusOf(originRepr)).at(topic).or:
       halt(m"xenophile: the foreign type $topic is not defined")
 
     val signature = typeMembers.at(fieldName).or:

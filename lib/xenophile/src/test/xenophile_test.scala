@@ -35,9 +35,9 @@ package xenophile
 import soundness.*
 import jacinta.*
 
-type TsInterface = Interface in Typescript at "/xenophile/definitions.simple"
+type TsInterface = Interface in Typescript at "/xenophile/definitions.ts"
 
-given tsInterface: TsInterface = Interface[Typescript](cp"/xenophile/definitions.simple")
+given tsInterface: TsInterface = Interface[Typescript](cp"/xenophile/definitions.ts")
 
 val document: Json = j"""{"Foo": {"baz": "hello", "bar": {"count": 42}}}"""
 

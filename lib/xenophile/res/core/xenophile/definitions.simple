@@ -1,8 +1,0 @@
-Foo:
-  bar Bar
-  baz string
-  greet(string) string
-  link(Bar) Foo
-Bar:
-  qux Foo
-  count number
