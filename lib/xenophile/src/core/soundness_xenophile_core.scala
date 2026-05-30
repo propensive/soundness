@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export xenophile.{Ecosystem, Foreign, ForeignExpr, Interface, Interoperable, Typescript}
+export xenophile.{Ecosystem, Evaluator, Foreign, ForeignExpr, Interface, Interoperable, Typescript}

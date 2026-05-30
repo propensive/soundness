@@ -259,21 +259,26 @@ object Xenophile:
       case TypeBounds(_, hi) => hi
       case repr              => repr
 
-    val base = Refinement(TypeRepr.of[Interoperable], "Self", TypeBounds(selfRepr, selfRepr))
-    val withForm = Refinement(base, "Form", TypeBounds(originRepr, originRepr))
-    val withTopic = Refinement(withForm, "Topic", TypeBounds(topicLiteral, topicLiteral))
-    val interopType = Refinement(withTopic, "Operand", TypeBounds(operandRepr, operandRepr))
+    val ioBase = Refinement(TypeRepr.of[Interoperable], "Self", TypeBounds(selfRepr, selfRepr))
+    val ioForm = Refinement(ioBase, "Form", TypeBounds(originRepr, originRepr))
+    val ioTopic = Refinement(ioForm, "Topic", TypeBounds(topicLiteral, topicLiteral))
+    val interopType = Refinement(ioTopic, "Operand", TypeBounds(operandRepr, operandRepr))
+
+    val evalForm = Refinement(TypeRepr.of[Evaluator], "Form", TypeBounds(originRepr, originRepr))
+    val evaluatorType = Refinement(evalForm, "Operand", TypeBounds(operandRepr, operandRepr))
 
     operandRepr.asType.absolve match
       case '[operand] => interopType.asType.absolve match
         case '[type interop <: Interoperable { type Operand = operand }; interop] =>
-          Expr.summon[interop].absolve match
-            case Some(instance) =>
-              val operand = '{Foreign.operandOf($self.expr).asInstanceOf[operand]}
-              '{$instance.value($operand).asInstanceOf[target]}
+          evaluatorType.asType.absolve match
+            case '[type evaluator <: Evaluator { type Operand = operand }; evaluator] =>
+              val io = Expr.summon[interop].getOrElse:
+                halt(m"xenophile: cannot read $topic as this type; no matching `Interoperable`")
 
-            case _ =>
-              halt(m"xenophile: cannot read $topic as this type; no matching `Interoperable`")
+              val ev = Expr.summon[evaluator].getOrElse:
+                halt(m"xenophile: no `Evaluator` is available for the foreign source language")
+
+              '{$io.value($ev.evaluate($self.expr)).asInstanceOf[target]}
 
   def interface[form: Type](resource: Expr[Resource]): Macro[Interface] =
     import quotes.reflect.*

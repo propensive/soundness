@@ -47,5 +47,21 @@ object Typescript:
   given boolean: (Boolean is Interoperable in Typescript of "boolean" by Json) =
     Interoperable[Boolean, Typescript, "boolean", Json](_.json, _.as[Boolean])
 
+  // A backend that evaluates a `ForeignExpr` against an in-memory JSON document: references and
+  // selections navigate the document; literals yield their operand; function application is
+  // unsupported (a static document has no callable members).
+  def evaluator(document: Json): Evaluator in Typescript by Json =
+    new Evaluator:
+      type Form = Typescript
+      type Operand = Json
+
+      def evaluate(expr: ForeignExpr): Json = expr match
+        case ForeignExpr.Literal(value)         => value.asInstanceOf[Json]
+        case ForeignExpr.Reference(name)        => document(name)
+        case ForeignExpr.Select(target, member) => evaluate(target)(member)
+
+        case ForeignExpr.Apply(_, _) =>
+          throw RuntimeException("xenophile: a JSON document evaluator cannot apply functions")
+
 trait Typescript extends Ecosystem:
   type Operand = Json
