@@ -61,6 +61,16 @@ object Tests extends Suite(m"Xenophile tests"):
           case ForeignExpr.Apply(ForeignExpr.Select(_, member), List(_)) => member == t"greet"
           case _                                                         => false
 
+      test(m"a Foreign argument of the declared parameter type is accepted"):
+        val linked: Foreign of "Foo" from Typescript = foo.link(foo.bar)
+        linked.expr
+      . assert:
+          case ForeignExpr.Apply(ForeignExpr.Select(_, m), List(ForeignExpr.Select(_, b))) =>
+            m == t"link" && b == t"bar"
+
+          case _ =>
+            false
+
     suite(m"Interoperability"):
       test(m"a Scala value converts into a `Foreign` literal"):
         val text: Foreign of "string" from Typescript = t"hello"

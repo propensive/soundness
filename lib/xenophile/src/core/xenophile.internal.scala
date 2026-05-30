@@ -157,6 +157,45 @@ object Xenophile:
         "Origin",
         TypeBounds(origin, origin) )
 
+  // Builds the `ForeignExpr` for a single method argument, checking it against the declared
+  // parameter type: a `Foreign` argument must already have that foreign type (`Topic`); any other
+  // value must have an `Interoperable` instance mapping it to exactly that foreign type.
+  private def argTree(using quotes: Quotes)
+    ( arg: Expr[Any], paramType: Text, originRepr: quotes.reflect.TypeRepr, method: Text )
+  :   Expr[ForeignExpr] =
+
+    import quotes.reflect.*
+
+    val paramTopic = ConstantType(StringConstant(paramType.s))
+
+    arg.asTerm.tpe.widen.asType.absolve match
+      case '[argument] =>
+        val argRepr = TypeRepr.of[argument]
+
+        if argRepr <:< TypeRepr.of[Foreign] then
+          val argTopic = refinements(argRepr).at(t"Topic").or:
+            halt(m"xenophile: the foreign type of an argument to $method is not known")
+
+          val matches = argTopic.absolve match
+            case ConstantType(StringConstant(name)) => name.tt == paramType
+            case _                                  => false
+
+          if matches then '{${arg.asExprOf[Foreign]}.expr}
+          else halt(m"xenophile: $method expects an argument of foreign type $paramType")
+        else
+          val base = Refinement(TypeRepr.of[Interoperable], "Self", TypeBounds(argRepr, argRepr))
+          val withForm = Refinement(base, "Form", TypeBounds(originRepr, originRepr))
+          val interopType = Refinement(withForm, "Topic", TypeBounds(paramTopic, paramTopic))
+
+          interopType.asType.absolve match
+            case '[type interop <: Interoperable { type Self = argument }; interop] =>
+              Expr.summon[interop].absolve match
+                case Some(instance) =>
+                  '{ForeignExpr.Literal($instance.operand(${arg.asExprOf[argument]}))}
+
+                case _ =>
+                  halt(m"xenophile: cannot pass this argument as $paramType to $method")
+
   def select(self: Expr[Foreign], field: Expr[String]): Macro[Foreign] =
     val fieldName = field.valueOrAbort.tt
     val (topic, originRepr) = receiver(self)
@@ -176,8 +215,6 @@ object Xenophile:
         '{Foreign.make($tree).asInstanceOf[result]}
 
   def applied(self: Expr[Foreign], field: Expr[String], arguments: Expr[Seq[Any]]): Macro[Foreign] =
-    import quotes.reflect.*
-
     val fieldName = field.valueOrAbort.tt
     val (topic, originRepr) = receiver(self)
 
@@ -199,28 +236,8 @@ object Xenophile:
     if args.length != parameters.length then
       halt(m"xenophile: $fieldName expects ${parameters.length} arguments, not ${args.length}")
 
-    val argTrees: List[Expr[ForeignExpr]] = args.map: arg =>
-      arg.asTerm.tpe.widen.asType.absolve match
-        case '[argument] =>
-          if TypeRepr.of[argument] <:< TypeRepr.of[Foreign] then '{${arg.asExprOf[Foreign]}.expr}
-          else
-            val interopType =
-              Refinement
-                ( Refinement
-                    ( TypeRepr.of[Interoperable],
-                      "Self",
-                      TypeBounds(TypeRepr.of[argument], TypeRepr.of[argument]) ),
-                  "Form",
-                  TypeBounds(originRepr, originRepr) )
-
-            interopType.asType.absolve match
-              case '[type interop <: Interoperable { type Self = argument }; interop] =>
-                Expr.summon[interop].absolve match
-                  case Some(instance) =>
-                    '{ForeignExpr.Literal($instance.operand(${arg.asExprOf[argument]}))}
-
-                  case _ =>
-                    halt(m"xenophile: no `Interoperable` instance for this argument to $fieldName")
+    val argTrees: List[Expr[ForeignExpr]] = args.zip(parameters).map: (arg, paramType) =>
+      argTree(arg, paramType, originRepr, fieldName)
 
     val target = '{ForeignExpr.Select($self.expr, ${Expr(fieldName.s)}.tt)}
     val tree = '{ForeignExpr.Apply($target, ${Expr.ofList(argTrees)})}
