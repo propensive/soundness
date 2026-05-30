@@ -47,6 +47,11 @@ object Typescript:
   given boolean: (Boolean is Interoperable in Typescript of "boolean" by Json) =
     Interoperable[Boolean, Typescript, "boolean", Json](_.json, _.as[Boolean])
 
+  // A TypeScript `string[]` array maps to a Scala `List[Text]`, decoded with jacinta's own
+  // collection support.
+  given strings: (List[Text] is Interoperable in Typescript of "string[]" by Json) =
+    Interoperable[List[Text], Typescript, "string[]", Json](_.json, _.as[List[Text]])
+
   // A backend that evaluates a `ForeignExpr` against an in-memory JSON document: references and
   // selections navigate the document; literals yield their operand; function application is
   // unsupported (a static document has no callable members).

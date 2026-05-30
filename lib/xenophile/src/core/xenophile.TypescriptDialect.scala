@@ -44,8 +44,8 @@ object TypescriptDialect extends Dialect:
   // Splits the source into identifier and single-character punctuation tokens, discarding
   // whitespace; this is all the lexical structure the interface grammar needs.
   private def punctuation(char: Char): Boolean =
-    char == '{' || char == '}' || char == '(' || char == ')' || char == ':' ||
-      char == ',' || char == ';'
+    char == '{' || char == '}' || char == '(' || char == ')' || char == ':' || char == ',' ||
+      char == ';' || char == '[' || char == ']' || char == '?' || char == '|'
 
   private def tokenize(source: String): List[String] =
     def recur(index: Int, current: String, tokens: List[String]): List[String] =
@@ -77,6 +77,24 @@ object TypescriptDialect extends Dialect:
       case Nil =>
         acc
 
+  // Parses a type expression into a foreign type name encoding its structure: `T[]` becomes "T[]";
+  // `T | null` and `T | undefined` become "T?"; any other union "A | B" becomes "A|B". These names
+  // are what `Interoperable` instances are keyed on.
+  private def typeOf(tokens: List[String]): (String, List[String]) = tokens match
+    case base :: rest =>
+      val (array, rest2) = rest match
+        case "[" :: "]" :: more => (base+"[]", more)
+        case _                  => (base, rest)
+
+      rest2 match
+        case "|" :: "null" :: more      => (array+"?", more)
+        case "|" :: "undefined" :: more => (array+"?", more)
+        case "|" :: other :: more       => (array+"|"+other, more)
+        case _                          => (array, rest2)
+
+    case Nil =>
+      ("", Nil)
+
   private def membersOf(tokens: List[String], acc: Map[Text, Signature])
   :   (Map[Text, Signature], List[String]) =
 
@@ -88,15 +106,21 @@ object TypescriptDialect extends Dialect:
         val (parameters, rest2) = params(rest, Nil)
 
         rest2 match
-          case ":" :: result :: rest3 =>
+          case ":" :: rest3 =>
+            val (result, rest4) = typeOf(rest3)
             val signature = Signature(parameters.map(_.tt), result.tt)
-            membersOf(semicolon(rest3), acc.updated(name.tt, signature))
+            membersOf(semicolon(rest4), acc.updated(name.tt, signature))
 
           case _ =>
             (acc, rest2)
 
-      case name :: ":" :: result :: rest =>
-        membersOf(semicolon(rest), acc.updated(name.tt, Signature(Unset, result.tt)))
+      case name :: "?" :: ":" :: rest =>
+        val (result, rest2) = typeOf(rest)
+        membersOf(semicolon(rest2), acc.updated(name.tt, Signature(Unset, (result+"?").tt)))
+
+      case name :: ":" :: rest =>
+        val (result, rest2) = typeOf(rest)
+        membersOf(semicolon(rest2), acc.updated(name.tt, Signature(Unset, result.tt)))
 
       case _ :: rest =>
         membersOf(rest, acc)
@@ -104,16 +128,18 @@ object TypescriptDialect extends Dialect:
       case Nil =>
         (acc, Nil)
 
-  // Reads parameter declarations up to the closing `)`, keeping only each parameter's type name.
+  // Reads parameter declarations up to the closing `)`, keeping only each parameter's type.
   private def params(tokens: List[String], acc: List[String]): (List[String], List[String]) =
     tokens match
       case ")" :: rest =>
         (acc.reverse, rest)
 
-      case name :: ":" :: kind :: rest =>
-        rest match
+      case name :: ":" :: rest =>
+        val (kind, rest2) = typeOf(rest)
+
+        rest2 match
           case "," :: more => params(more, kind :: acc)
-          case _           => params(rest, kind :: acc)
+          case _           => params(rest2, kind :: acc)
 
       case _ :: rest =>
         params(rest, acc)

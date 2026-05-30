@@ -3,6 +3,8 @@ interface Foo {
   baz: string;
   greet(name: string): string;
   link(other: Bar): Foo;
+  tags: string[];
+  nickname?: string;
 }
 
 interface Bar {

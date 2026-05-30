@@ -39,7 +39,8 @@ type TsInterface = Interface in Typescript at "/xenophile/definitions.ts"
 
 given tsInterface: TsInterface = Interface[Typescript](cp"/xenophile/definitions.ts")
 
-val document: Json = j"""{"Foo": {"baz": "hello", "bar": {"count": 42}}}"""
+val document: Json =
+  j"""{"Foo": {"baz": "hello", "bar": {"count": 42}, "tags": ["a", "b"], "nickname": null}}"""
 
 given Evaluator in Typescript by Json = Typescript.evaluator(document)
 
@@ -97,3 +98,16 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"evaluate a nested selection against the backend and decode it"):
         foo.bar.count.as[Int]
       . assert(_ == 42)
+
+    suite(m"Complex types"):
+      test(m"an array field has an array foreign type and decodes to a List"):
+        val tags: Foreign of "string[]" from Typescript = foo.tags
+        tags.as[List[Text]]
+      . assert(_ == List(t"a", t"b"))
+
+      test(m"an optional field is given an optional foreign type"):
+        val nickname: Foreign of "string?" from Typescript = foo.nickname
+        nickname.expr
+      . assert:
+          case ForeignExpr.Select(_, member) => member == t"nickname"
+          case _                              => false
