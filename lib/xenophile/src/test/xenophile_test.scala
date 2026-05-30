@@ -109,3 +109,16 @@ object Tests extends Suite(m"Xenophile tests"):
         val nickname: Foreign of "string?" from Typescript = foo.nickname
         nickname.as[Optional[Text]]
       . assert(_ == t"Bob")
+
+    suite(m"Compile-time safety"):
+      test(m"selecting an undefined member is a compile error"):
+        demilitarize(foo.nonexistent).map(_.message)
+      . assert(_ == List(t"xenophile: the foreign type Foo has no member nonexistent"))
+
+      test(m"calling a method with the wrong arity is a compile error"):
+        demilitarize(foo.greet(t"a", t"b")).map(_.message)
+      . assert(_ == List(t"xenophile: greet expects 1 arguments, not 2"))
+
+      test(m"passing an argument of the wrong foreign type is a compile error"):
+        demilitarize(foo.greet(42)).map(_.message)
+      . assert(_ == List(t"xenophile: cannot pass this argument as string to greet"))

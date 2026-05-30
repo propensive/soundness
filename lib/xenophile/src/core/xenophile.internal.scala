@@ -52,13 +52,24 @@ object Xenophile:
     else halt(m"xenophile: no grammar is available for the foreign source language")
 
   // Reads the definitions resource at `path` and parses it with the grammar for `origin`.
+  // Parsed definitions are cached by resource path for the lifetime of a compilation run, so that
+  // navigating a chain like `foo.bar.qux` parses each resource only once instead of per access.
+  private val parsed: scala.collection.mutable.HashMap[Text, Map[Text, Map[Text, Signature]]] =
+    scala.collection.mutable.HashMap()
+
   def definitions(using quotes: Quotes)(origin: quotes.reflect.TypeRepr, path: Text)
   :   Map[Text, Map[Text, Signature]] =
 
-    val stream = Optional(getClass.getResourceAsStream(path.s)).or:
-      halt(m"xenophile: could not read foreign definitions at $path on the classpath")
+    parsed.synchronized:
+      parsed.at(path).or:
+        val stream = Optional(getClass.getResourceAsStream(path.s)).or:
+          halt(m"xenophile: could not read foreign definitions at $path on the classpath")
 
-    dialectFor(origin).parse(scala.io.Source.fromInputStream(stream).mkString.tt)
+        val content = scala.io.Source.fromInputStream(stream).mkString.tt
+        val result = dialectFor(origin).parse(content)
+        parsed(path) = result
+
+        result
 
   // Collects every `type X = …` member from a (possibly nested) refinement type into a map.
   private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
