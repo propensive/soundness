@@ -1,0 +1,6 @@
+Foo:
+  bar Bar
+  baz Text
+Bar:
+  qux Foo
+  count Int
