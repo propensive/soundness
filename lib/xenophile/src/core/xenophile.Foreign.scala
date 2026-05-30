@@ -40,6 +40,13 @@ object Foreign:
   def make(tree: ForeignExpr): Foreign = new Foreign:
     def expr: ForeignExpr = tree
 
+  def unevaluated: Nothing =
+    throw RuntimeException("xenophile: this expression must be evaluated by a backend before `as`")
+
+  def operandOf(tree: ForeignExpr): Any = tree match
+    case ForeignExpr.Literal(value) => value
+    case _                          => unevaluated
+
   transparent inline def apply[name <: Label, origin]: Foreign = ${Xenophile.root[name, origin]}
 
   given converter: [value, ecosystem <: Ecosystem]
@@ -58,5 +65,4 @@ trait Foreign extends Dynamic, Topical, Original:
   transparent inline def applyDynamic(field: String)(inline arguments: Any*): Foreign =
     ${Xenophile.applied('this, 'field, 'arguments)}
 
-  inline def as[ScalaType]: ScalaType =
-    throw RuntimeException("xenophile: `as` is a proof-of-concept stub with no value to decode")
+  inline def as[ScalaType]: ScalaType = ${Xenophile.convert[ScalaType]('this)}

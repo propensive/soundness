@@ -1,7 +1,7 @@
 Foo:
   bar Bar
-  baz Text
-  greet(string) Text
+  baz string
+  greet(string) string
 Bar:
   qux Foo
-  count Int
+  count number

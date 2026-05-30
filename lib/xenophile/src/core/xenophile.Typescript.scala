@@ -32,18 +32,20 @@
                                                                                                   */
 package xenophile
 
+import anticipation.*
+import contingency.*, strategies.throwUnsafely
 import jacinta.*
 import prepositional.*
 
 object Typescript:
-  given string: (String is Interoperable in Typescript of "string" by Json) =
-    Interoperable[String, Typescript, "string", Json](_.json)
+  given text: (Text is Interoperable in Typescript of "string" by Json) =
+    Interoperable[Text, Typescript, "string", Json](_.json, _.as[Text])
 
   given int: (Int is Interoperable in Typescript of "number" by Json) =
-    Interoperable[Int, Typescript, "number", Json](_.json)
+    Interoperable[Int, Typescript, "number", Json](_.json, _.as[Int])
 
   given boolean: (Boolean is Interoperable in Typescript of "boolean" by Json) =
-    Interoperable[Boolean, Typescript, "boolean", Json](_.json)
+    Interoperable[Boolean, Typescript, "boolean", Json](_.json, _.as[Boolean])
 
 trait Typescript extends Ecosystem:
   type Operand = Json

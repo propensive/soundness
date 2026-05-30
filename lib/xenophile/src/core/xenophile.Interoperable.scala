@@ -35,7 +35,8 @@ package xenophile
 import prepositional.*
 
 object Interoperable:
-  def apply[self, form <: Ecosystem, topic <: Label, operand](lambda: self => operand)
+  def apply[self, form <: Ecosystem, topic <: Label, operand]
+    ( encode: self => operand, decode: operand => self )
   :   (self is Interoperable in form of topic by operand) =
 
     new Interoperable:
@@ -44,8 +45,10 @@ object Interoperable:
       type Topic = topic
       type Operand = operand
 
-      def operand(value: self): operand = lambda(value)
+      def operand(value: self): operand = encode(value)
+      def value(data: operand): self = decode(data)
 
 trait Interoperable extends Topical, Formal, Operable:
   type Self
   def operand(value: Self): Operand
+  def value(operand: Operand): Self

@@ -55,7 +55,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
     suite(m"Function application"):
       test(m"applyDynamic builds an `Apply` node typed by the method's result"):
-        val greeting: Foreign of "Text" from Typescript = foo.greet("hello")
+        val greeting: Foreign of "string" from Typescript = foo.greet(t"hello")
         greeting.expr
       . assert:
           case ForeignExpr.Apply(ForeignExpr.Select(_, member), List(_)) => member == t"greet"
@@ -63,8 +63,13 @@ object Tests extends Suite(m"Xenophile tests"):
 
     suite(m"Interoperability"):
       test(m"a Scala value converts into a `Foreign` literal"):
-        val text: Foreign of "string" from Typescript = "hello"
+        val text: Foreign of "string" from Typescript = t"hello"
         text.expr
       . assert:
           case ForeignExpr.Literal(_) => true
           case _                      => false
+
+      test(m"a foreign literal converts back to a Scala value via `as`"):
+        val text: Foreign of "string" from Typescript = t"hello"
+        text.as[Text]
+      . assert(_ == t"hello")

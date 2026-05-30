@@ -229,6 +229,35 @@ object Xenophile:
       case '[type result <: Foreign; result] =>
         '{Foreign.make($tree).asInstanceOf[result]}
 
+  // Converts a foreign value to a Scala type, via the `Interoperable` instance registered for the
+  // receiver's foreign type (its `Topic`) — the same typeclass that converts Scala values inwards.
+  def convert[target: Type](self: Expr[Foreign]): Macro[target] =
+    import quotes.reflect.*
+
+    val (topic, originRepr) = receiver(self)
+    val selfRepr = TypeRepr.of[target]
+    val topicLiteral = ConstantType(StringConstant(topic.s))
+
+    val operandRepr = originRepr.memberType(originRepr.typeSymbol.typeMember("Operand")) match
+      case TypeBounds(_, hi) => hi
+      case repr              => repr
+
+    val base = Refinement(TypeRepr.of[Interoperable], "Self", TypeBounds(selfRepr, selfRepr))
+    val withForm = Refinement(base, "Form", TypeBounds(originRepr, originRepr))
+    val withTopic = Refinement(withForm, "Topic", TypeBounds(topicLiteral, topicLiteral))
+    val interopType = Refinement(withTopic, "Operand", TypeBounds(operandRepr, operandRepr))
+
+    operandRepr.asType.absolve match
+      case '[operand] => interopType.asType.absolve match
+        case '[type interop <: Interoperable { type Operand = operand }; interop] =>
+          Expr.summon[interop].absolve match
+            case Some(instance) =>
+              val operand = '{Foreign.operandOf($self.expr).asInstanceOf[operand]}
+              '{$instance.value($operand).asInstanceOf[target]}
+
+            case _ =>
+              halt(m"xenophile: cannot read $topic as this type; no matching `Interoperable`")
+
   def interface[form: Type](resource: Expr[Resource]): Macro[Interface] =
     import quotes.reflect.*
 
