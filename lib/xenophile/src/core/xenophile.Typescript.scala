@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import jacinta.*
 import prepositional.*
+import vacuous.*
 
 object Typescript:
   given text: (Text is Interoperable in Typescript of "string" by Json) =
@@ -59,6 +60,8 @@ object Typescript:
     new Evaluator:
       type Form = Typescript
       type Operand = Json
+
+      def absent(operand: Json): Boolean = operand.as[Optional[Json]] == Unset
 
       def evaluate(expr: ForeignExpr): Json = expr match
         case ForeignExpr.Literal(value)         => value.asInstanceOf[Json]

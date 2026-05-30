@@ -226,33 +226,55 @@ object Xenophile:
     import quotes.reflect.*
 
     val (topic, originRepr) = receiver(self)
-    val selfRepr = TypeRepr.of[target]
-    val topicLiteral = ConstantType(StringConstant(topic.s))
 
     val operandRepr = originRepr.memberType(originRepr.typeSymbol.typeMember("Operand")) match
       case TypeBounds(_, hi) => hi
       case repr              => repr
 
-    val ioBase = Refinement(TypeRepr.of[Interoperable], "Self", TypeBounds(selfRepr, selfRepr))
-    val ioForm = Refinement(ioBase, "Form", TypeBounds(originRepr, originRepr))
-    val ioTopic = Refinement(ioForm, "Topic", TypeBounds(topicLiteral, topicLiteral))
-    val interopType = Refinement(ioTopic, "Operand", TypeBounds(operandRepr, operandRepr))
-
     val evalForm = Refinement(TypeRepr.of[Evaluator], "Form", TypeBounds(originRepr, originRepr))
     val evaluatorType = Refinement(evalForm, "Operand", TypeBounds(operandRepr, operandRepr))
 
     operandRepr.asType.absolve match
-      case '[operand] => interopType.asType.absolve match
-        case '[type interop <: Interoperable { type Operand = operand }; interop] =>
-          evaluatorType.asType.absolve match
-            case '[type evaluator <: Evaluator { type Operand = operand }; evaluator] =>
-              val io = Expr.summon[interop].getOrElse:
-                halt(m"xenophile: cannot read $topic as this type; no matching `Interoperable`")
+      case '[operand] => evaluatorType.asType.absolve match
+        case '[type evaluator <: Evaluator { type Operand = operand }; evaluator] =>
+          val ev = Expr.summon[evaluator].getOrElse:
+            halt(m"xenophile: no `Evaluator` is available for the foreign source language")
 
-              val ev = Expr.summon[evaluator].getOrElse:
-                halt(m"xenophile: no `Evaluator` is available for the foreign source language")
+          // Summons the `Interoperable` for `elementTopic` and decodes one operand value with it.
+          def element(elementRepr: TypeRepr, elementTopic: Text, data: Expr[operand]): Expr[Any] =
+            val literal = ConstantType(StringConstant(elementTopic.s))
+            val bounds = TypeBounds(elementRepr, elementRepr)
+            val withSelf = Refinement(TypeRepr.of[Interoperable], "Self", bounds)
+            val withForm = Refinement(withSelf, "Form", TypeBounds(originRepr, originRepr))
+            val withTopic = Refinement(withForm, "Topic", TypeBounds(literal, literal))
+            val full = Refinement(withTopic, "Operand", TypeBounds(operandRepr, operandRepr))
 
-              '{$io.value($ev.evaluate($self.expr)).asInstanceOf[target]}
+            full.asType.absolve match
+              case '[type io <: Interoperable { type Operand = operand }; io] =>
+                val instance = Expr.summon[io].getOrElse:
+                  halt(m"xenophile: cannot read $elementTopic; no matching `Interoperable`")
+
+                '{$instance.value($data)}.asExprOf[Any]
+
+          if topic.ends(t"?") then
+            val base = topic.cut(t"?").to(List).head
+
+            val innerRepr = TypeRepr.of[target].dealias match
+              case OrType(left, right) => if left =:= TypeRepr.of[Unset.type] then right else left
+
+              case _ =>
+                halt(m"xenophile: reading an optional foreign type needs an `Optional` Scala type")
+
+            val tree =
+              ' {
+                  val data: operand = $ev.evaluate($self.expr)
+                  if $ev.absent(data) then Unset else ${element(innerRepr, base, 'data)}
+                }
+
+            tree.asExprOf[target]
+
+          else
+            element(TypeRepr.of[target], topic, '{$ev.evaluate($self.expr)}).asExprOf[target]
 
   def interface[form: Type](resource: Expr[Resource]): Macro[Interface] =
     import quotes.reflect.*

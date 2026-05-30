@@ -36,3 +36,7 @@ import prepositional.*
 
 trait Evaluator extends Formal, Operable:
   def evaluate(expr: ForeignExpr): Operand
+
+  // Whether an evaluated operand represents an absent/null value in this ecosystem; used to decode
+  // optional foreign types.
+  def absent(operand: Operand): Boolean
