@@ -39,4 +39,4 @@ package classloaders:
   given scala: Classloader = Classloader[List]
 
 extension (inline context: StringContext)
-  inline def cp(): Resource = ${internal.classpath('context)}
+  transparent inline def cp(): Resource = ${internal.classpath('context)}

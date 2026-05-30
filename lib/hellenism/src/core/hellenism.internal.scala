@@ -59,10 +59,12 @@ object internal extends Hellenism2:
 
 
   def classpath(context: Expr[StringContext]): Macro[Resource] =
+    import quotes.reflect.*
+
     val name: String = context.valueOrAbort.parts.head
 
     val path = safely(name.tt.decode[Path on Classpath]).or:
-      halt(m"the path $name is not a valid classpath path")
+      halt(m"hellenism: the path $name is not a valid classpath path")
 
     val relativeName = if name.startsWith("/") then name.substring(1) else name
     val contextLoader = Thread.currentThread.nn.getContextClassLoader()
@@ -72,13 +74,19 @@ object internal extends Hellenism2:
       else classOf[hellenism.internal.type].getResourceAsStream(name)
 
     Optional(stream).or:
-      halt(m"the path $name is not on the classpath")
+      halt(m"hellenism: the path $name is not on the classpath")
 
-    ' {
-        Resource:
-          Path[Classpath, Classpath.type, Tuple]
-            ( ${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))} )
-      }
+    val resource =
+      ' {
+          Resource:
+            Path[Classpath, Classpath.type, Tuple]
+              ( ${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))} )
+        }
+
+    val locus = ConstantType(StringConstant(name))
+
+    Refinement(TypeRepr.of[Resource], "Locus", TypeBounds(locus, locus)).asType.absolve match
+      case '[type result <: Resource; result] => '{$resource.asInstanceOf[result]}
 
 
 trait Hellenism2:
