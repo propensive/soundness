@@ -30,6 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-export xenophile.{Ecosystem, Foreign, ForeignExpr, Interface, Interoperable, Typescript}
+import prepositional.*
+
+object Interoperable:
+  def apply[self, form <: Ecosystem, topic <: Label, operand](lambda: self => operand)
+  :   (self is Interoperable in form of topic by operand) =
+
+    new Interoperable:
+      type Self = self
+      type Form = form
+      type Topic = topic
+      type Operand = operand
+
+      def operand(value: self): operand = lambda(value)
+
+trait Interoperable extends Topical, Formal, Operable:
+  type Self
+  def operand(value: Self): Operand

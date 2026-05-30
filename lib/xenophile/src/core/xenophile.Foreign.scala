@@ -34,23 +34,29 @@ package xenophile
 
 import scala.language.dynamics
 
-import anticipation.*
 import prepositional.*
 
 object Foreign:
-  def make(name: String): Foreign = new Foreign:
-    def topic: Text = name.tt
+  def make(tree: ForeignExpr): Foreign = new Foreign:
+    def expr: ForeignExpr = tree
 
   transparent inline def apply[name <: Label, origin]: Foreign = ${Xenophile.root[name, origin]}
 
+  given converter: [value, ecosystem <: Ecosystem]
+  =>  ( interoperable: value is Interoperable in ecosystem )
+  =>  Conversion[value, Foreign of interoperable.Topic from ecosystem] =
+    instance =>
+      val literal = ForeignExpr.Literal(interoperable.operand(instance))
+      Foreign.make(literal).asInstanceOf[Foreign of interoperable.Topic from ecosystem]
+
 trait Foreign extends Dynamic, Topical, Original:
-  def topic: Text
+  def expr: ForeignExpr
 
   transparent inline def selectDynamic(field: String): Foreign =
     ${Xenophile.select('this, 'field)}
 
-  transparent inline def applyDynamic(field: String)(arguments: Any*): Foreign =
-    ${Xenophile.select('this, 'field)}
+  transparent inline def applyDynamic(field: String)(inline arguments: Any*): Foreign =
+    ${Xenophile.applied('this, 'field, 'arguments)}
 
   inline def as[ScalaType]: ScalaType =
     throw RuntimeException("xenophile: `as` is a proof-of-concept stub with no value to decode")

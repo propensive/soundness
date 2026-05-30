@@ -44,19 +44,14 @@ import vacuous.*
 
 object Xenophile:
 
+  case class Signature(parameters: Optional[List[Text]], result: Text)
+
   // Parses the trivial line-based definitions format into a map from each foreign type name to a
-  // map from its member names to the names of their (foreign) types. For example:
-  //
-  //     Foo:
-  //       bar Bar
-  //       baz Text
-  //     Bar:
-  //       qux Foo
-  //
-  // becomes `Map(Foo -> Map(bar -> Bar, baz -> Text), Bar -> Map(qux -> Foo))`.
-  def parse(lines: List[Text]): Map[Text, Map[Text, Text]] =
-    def recur(todo: List[Text], current: Text, acc: Map[Text, Map[Text, Text]])
-    :   Map[Text, Map[Text, Text]] =
+  // map from member names to their signatures. A member is either a field (`bar Bar`) or a method
+  // (`greet(string) Text`); a method records its parameter type names and result type.
+  def parse(lines: List[Text]): Map[Text, Map[Text, Signature]] =
+    def recur(todo: List[Text], current: Text, acc: Map[Text, Map[Text, Signature]])
+    :   Map[Text, Map[Text, Signature]] =
 
       todo match
         case Nil =>
@@ -65,39 +60,49 @@ object Xenophile:
         case line :: tail =>
           val tokens = line.cut(t" ").to(List).filter(_ != t"")
 
-          if tokens.isEmpty then
-            recur(tail, current, acc)
+          if tokens.isEmpty then recur(tail, current, acc)
           else if !line.starts(t" ") && line.ends(t":") then
             val name = line.cut(t":").to(List).head
             recur(tail, name, acc.updated(name, Map()))
           else
-            tokens match
-              case member :: kind :: _ =>
-                val updated = acc.at(current).or(Map()).updated(member, kind)
-                recur(tail, current, acc.updated(current, updated))
+            val result = tokens.last
+            val segments = tokens.head.cut(t"(").to(List)
+            val name = segments.head
 
-              case _ =>
-                recur(tail, current, acc)
+            val signature =
+              if segments.length == 1 then Signature(Unset, result)
+              else
+                val inside = segments.tail.head.cut(t")").to(List).head
+                Signature(inside.cut(t",").to(List).filter(_ != t""), result)
+
+            val members = acc.at(current).or(Map()).updated(name, signature)
+            recur(tail, current, acc.updated(current, members))
 
     recur(lines, t"", Map())
 
-  def definitions(path: Text)(using Quotes): Map[Text, Map[Text, Text]] =
+  def definitions(path: Text)(using Quotes): Map[Text, Map[Text, Signature]] =
     val stream = Optional(getClass.getResourceAsStream(path.s)).or:
       halt(m"xenophile: could not read foreign definitions at $path on the classpath")
 
     parse(scala.io.Source.fromInputStream(stream).getLines().map(Text(_)).to(List))
 
-  def select(self: Expr[Foreign], field: Expr[String]): Macro[Foreign] =
+  // Collects every `type X = …` member from a (possibly nested) refinement type into a map.
+  private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+  :   Map[Text, quotes.reflect.TypeRepr] =
+
     import quotes.reflect.*
 
-    val fieldName = field.valueOrAbort.tt
-
-    // Collects every `type X = …` member from a (possibly nested) refinement type into a map.
-    def refinements(repr: TypeRepr): Map[Text, TypeRepr] = repr.dealias match
+    repr.dealias match
       case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
       case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
       case AndType(left, right)                        => refinements(left) ++ refinements(right)
       case _                                           => Map()
+
+  // Reads the `Topic` (foreign type name) and `Origin` (source language) from a `Foreign` receiver.
+  private def receiver(using quotes: Quotes)(self: Expr[Foreign])
+  :   (Text, quotes.reflect.TypeRepr) =
+
+    import quotes.reflect.*
 
     val members = refinements(self.asTerm.tpe.widen)
 
@@ -110,59 +115,122 @@ object Xenophile:
       case _ =>
         halt(m"xenophile: the foreign type's `Topic` is not a string literal type")
 
-    val originRepr = members.at(t"Origin").or:
+    val origin = members.at(t"Origin").or:
       halt(m"xenophile: the receiver does not record its source language (it has no `Origin`)")
 
-    val interfaceType =
-      Refinement(TypeRepr.of[Interface], "Form", TypeBounds(originRepr, originRepr))
+    (topic, origin)
+
+  // Summons the `Interface` given for a source language and reads its definitions path (`Locus`).
+  private def locusOf(using quotes: Quotes)(origin: quotes.reflect.TypeRepr): Text =
+    import quotes.reflect.*
+
+    val interfaceType = Refinement(TypeRepr.of[Interface], "Form", TypeBounds(origin, origin))
 
     val interfaceTerm = interfaceType.asType.absolve match
       case '[interface] =>
-        val interface = Expr.summon[interface].getOrElse:
+        val found = Expr.summon[interface].getOrElse:
           halt(m"xenophile: no `Interface` is available for the foreign source language")
 
-        interface.asTerm
+        found.asTerm
 
-    val interfaceMembers =
-      refinements(interfaceTerm.tpe) ++ refinements(interfaceTerm.tpe.widen)
+    val members = refinements(interfaceTerm.tpe) ++ refinements(interfaceTerm.tpe.widen)
 
-    val locusRepr = interfaceMembers.at(t"Locus").or:
+    val locusRepr = members.at(t"Locus").or:
       halt(m"xenophile: the `Interface` does not specify a definitions path (it has no `Locus`)")
 
-    val locus = locusRepr.absolve match
+    locusRepr.absolve match
       case ConstantType(StringConstant(path)) => path.tt
 
       case _ =>
         halt(m"xenophile: the definitions path is not a string literal type")
 
-    val defs = definitions(locus)
+  // Builds the refined type `Foreign of <topic> from <origin>`.
+  private def foreignType(using quotes: Quotes)(topic: Text, origin: quotes.reflect.TypeRepr)
+  :   quotes.reflect.TypeRepr =
 
-    val typeMembers = defs.at(topic).or:
-      halt(m"xenophile: the foreign type $topic is not defined in $locus")
+    import quotes.reflect.*
 
-    val memberType = typeMembers.at(fieldName).or:
+    val topicType = ConstantType(StringConstant(topic.s))
+
+    Refinement
+      ( Refinement(TypeRepr.of[Foreign], "Topic", TypeBounds(topicType, topicType)),
+        "Origin",
+        TypeBounds(origin, origin) )
+
+  def select(self: Expr[Foreign], field: Expr[String]): Macro[Foreign] =
+    val fieldName = field.valueOrAbort.tt
+    val (topic, originRepr) = receiver(self)
+
+    val typeMembers = definitions(locusOf(originRepr)).at(topic).or:
+      halt(m"xenophile: the foreign type $topic is not defined")
+
+    val signature = typeMembers.at(fieldName).or:
       halt(m"xenophile: the foreign type $topic has no member $fieldName")
 
-    val topicType = ConstantType(StringConstant(memberType.s))
+    signature.parameters.let: _ =>
+      halt(m"xenophile: $fieldName is a method of $topic and must be called with arguments")
 
-    val resultType =
-      Refinement
-        ( Refinement(TypeRepr.of[Foreign], "Topic", TypeBounds(topicType, topicType)),
-          "Origin",
-          TypeBounds(originRepr, originRepr) )
-
-    resultType.asType.absolve match
+    foreignType(signature.result, originRepr).asType.absolve match
       case '[type result <: Foreign; result] =>
-        '{Foreign.make(${Expr(memberType.s)}).asInstanceOf[result]}
+        val tree = '{ForeignExpr.Select($self.expr, ${Expr(fieldName.s)}.tt)}
+        '{Foreign.make($tree).asInstanceOf[result]}
+
+  def applied(self: Expr[Foreign], field: Expr[String], arguments: Expr[Seq[Any]]): Macro[Foreign] =
+    import quotes.reflect.*
+
+    val fieldName = field.valueOrAbort.tt
+    val (topic, originRepr) = receiver(self)
+
+    val typeMembers = definitions(locusOf(originRepr)).at(topic).or:
+      halt(m"xenophile: the foreign type $topic is not defined")
+
+    val signature = typeMembers.at(fieldName).or:
+      halt(m"xenophile: the foreign type $topic has no member $fieldName")
+
+    val parameters = signature.parameters.or:
+      halt(m"xenophile: $fieldName is not a method of $topic")
+
+    val args = arguments match
+      case Varargs(exprs) => exprs.to(List)
+
+      case _ =>
+        halt(m"xenophile: the arguments to $fieldName must be passed directly")
+
+    if args.length != parameters.length then
+      halt(m"xenophile: $fieldName expects ${parameters.length} arguments, not ${args.length}")
+
+    val argTrees: List[Expr[ForeignExpr]] = args.map: arg =>
+      arg.asTerm.tpe.widen.asType.absolve match
+        case '[argument] =>
+          if TypeRepr.of[argument] <:< TypeRepr.of[Foreign] then '{${arg.asExprOf[Foreign]}.expr}
+          else
+            val interopType =
+              Refinement
+                ( Refinement
+                    ( TypeRepr.of[Interoperable],
+                      "Self",
+                      TypeBounds(TypeRepr.of[argument], TypeRepr.of[argument]) ),
+                  "Form",
+                  TypeBounds(originRepr, originRepr) )
+
+            interopType.asType.absolve match
+              case '[type interop <: Interoperable { type Self = argument }; interop] =>
+                Expr.summon[interop].absolve match
+                  case Some(instance) =>
+                    '{ForeignExpr.Literal($instance.operand(${arg.asExprOf[argument]}))}
+
+                  case _ =>
+                    halt(m"xenophile: no `Interoperable` instance for this argument to $fieldName")
+
+    val target = '{ForeignExpr.Select($self.expr, ${Expr(fieldName.s)}.tt)}
+    val tree = '{ForeignExpr.Apply($target, ${Expr.ofList(argTrees)})}
+
+    foreignType(signature.result, originRepr).asType.absolve match
+      case '[type result <: Foreign; result] =>
+        '{Foreign.make($tree).asInstanceOf[result]}
 
   def interface[form: Type](resource: Expr[Resource]): Macro[Interface] =
     import quotes.reflect.*
-
-    def refinements(repr: TypeRepr): Map[Text, TypeRepr] = repr.dealias match
-      case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
-      case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
-      case AndType(left, right)                        => refinements(left) ++ refinements(right)
-      case _                                           => Map()
 
     val members = refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)
 
@@ -192,14 +260,6 @@ object Xenophile:
       case _ =>
         halt(m"xenophile: the foreign type name must be a string literal type")
 
-    val originRepr = TypeRepr.of[origin]
-
-    val resultType =
-      Refinement
-        ( Refinement(TypeRepr.of[Foreign], "Topic", TypeBounds(nameRepr, nameRepr)),
-          "Origin",
-          TypeBounds(originRepr, originRepr) )
-
-    resultType.asType.absolve match
+    foreignType(name.tt, TypeRepr.of[origin]).asType.absolve match
       case '[type result <: Foreign; result] =>
-        '{Foreign.make(${Expr(name)}).asInstanceOf[result]}
+        '{Foreign.make(ForeignExpr.Reference(${Expr(name)}.tt)).asInstanceOf[result]}

@@ -43,19 +43,28 @@ object Tests extends Suite(m"Xenophile tests"):
     val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
 
     suite(m"Foreign type navigation"):
-      test(m"resolve a direct member's foreign type name"):
-        foo.bar.topic
-      . assert(_ == t"Bar")
-
-      test(m"resolve a leaf member's type name"):
-        foo.baz.topic
-      . assert(_ == t"Text")
-
-      test(m"navigate a cyclic foreign type graph"):
-        foo.bar.qux.topic
-      . assert(_ == t"Foo")
-
       test(m"a member access has the precise refined static type"):
         val bar: Foreign of "Bar" from Typescript = foo.bar
-        bar.topic
-      . assert(_ == t"Bar")
+        bar.expr
+      . assert(_ == ForeignExpr.Select(ForeignExpr.Reference(t"Foo"), t"bar"))
+
+      test(m"navigate a cyclic foreign type graph"):
+        val cyclic: Foreign of "Foo" from Typescript = foo.bar.qux
+        cyclic.expr
+      . assert(_ == ForeignExpr.Select(ForeignExpr.Select(ForeignExpr.Reference(t"Foo"), t"bar"), t"qux"))
+
+    suite(m"Function application"):
+      test(m"applyDynamic builds an `Apply` node typed by the method's result"):
+        val greeting: Foreign of "Text" from Typescript = foo.greet("hello")
+        greeting.expr
+      . assert:
+          case ForeignExpr.Apply(ForeignExpr.Select(_, member), List(_)) => member == t"greet"
+          case _                                                         => false
+
+    suite(m"Interoperability"):
+      test(m"a Scala value converts into a `Foreign` literal"):
+        val text: Foreign of "string" from Typescript = "hello"
+        text.expr
+      . assert:
+          case ForeignExpr.Literal(_) => true
+          case _                      => false

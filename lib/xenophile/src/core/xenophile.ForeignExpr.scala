@@ -30,6 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-export xenophile.{Ecosystem, Foreign, ForeignExpr, Interface, Interoperable, Typescript}
+import anticipation.*
+
+enum ForeignExpr:
+  case Reference(name: Text)
+  case Select(target: ForeignExpr, member: Text)
+  case Apply(target: ForeignExpr, arguments: List[ForeignExpr])
+  case Literal(value: Any)

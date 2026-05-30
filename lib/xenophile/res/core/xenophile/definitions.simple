@@ -1,6 +1,7 @@
 Foo:
   bar Bar
   baz Text
+  greet(string) Text
 Bar:
   qux Foo
   count Int

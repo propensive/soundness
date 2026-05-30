@@ -32,4 +32,18 @@
                                                                                                   */
 package xenophile
 
-trait Typescript
+import jacinta.*
+import prepositional.*
+
+object Typescript:
+  given string: (String is Interoperable in Typescript of "string" by Json) =
+    Interoperable[String, Typescript, "string", Json](_.json)
+
+  given int: (Int is Interoperable in Typescript of "number" by Json) =
+    Interoperable[Int, Typescript, "number", Json](_.json)
+
+  given boolean: (Boolean is Interoperable in Typescript of "boolean" by Json) =
+    Interoperable[Boolean, Typescript, "boolean", Json](_.json)
+
+trait Typescript extends Ecosystem:
+  type Operand = Json

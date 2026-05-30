@@ -30,6 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-export xenophile.{Ecosystem, Foreign, ForeignExpr, Interface, Interoperable, Typescript}
+import prepositional.*
+
+trait Ecosystem extends Operable
