@@ -217,7 +217,7 @@ object test extends ScalaModule:
 object groupCheck extends Module:
   // Library directories on disk that are deliberately not wired into the build
   // (work-in-progress modules with no compiling sources yet).
-  def disabledLibraries: Set[String] = Set("embarcadero", "perihelion")
+  def disabledLibraries: Set[String] = Set("perihelion")
 
   // Components deliberately not included in any soundness.{base,cli,data,sci,test,
   // tool,web} group bundle. Compiler plugins, internal subtypes, examples/demos,
@@ -236,9 +236,9 @@ object groupCheck extends Module:
     "exoskeleton.rig", "frontier.plugin", "probably.coverage",
     "quantitative.units",
 
-    "bitumen.core", "breviloquence.core", "distillate.core", "exegesis.core",
-    "gigantism.core", "locomotion.core", "proscenium.core", "satirical.core",
-    "stenography.core", "ypsiloid.core"
+    "bitumen.core", "breviloquence.core", "distillate.core", "embarcadero.oci",
+    "exegesis.core", "gigantism.core", "locomotion.core", "proscenium.core",
+    "satirical.core", "stenography.core", "ypsiloid.core"
   )
 
   def validate(): Command[Unit] = Task.Command:
@@ -596,9 +596,13 @@ object diuretic extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
 
-// object embarcadero extends Library:
-//   object core extends Component(jacinta.core, telekinesis.core, eucalyptus.core)
-//   object test extends Tests(core)
+object embarcadero extends Library:
+  object oci
+      extends Component(bitumen.core, jacinta.core, gastronomy.core, monotonous.core,
+        gesticulate.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(oci)
 
 object enigmatic extends Library:
   object core extends Component(gastronomy.core):
@@ -1382,7 +1386,8 @@ val allLibraries: Seq[Library] = Seq(
   cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
   cellulose, charisma, chiaroscuro, coaxial, contextual, contingency, cosmopolite,
   decorum, dendrology, denominative, digression, dissonance, distillate, diuretic,
-  enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis, exoskeleton,
+  embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
+  exoskeleton,
   frontier, fulminate, galilei, gastronomy, geodesy, gesticulate, gigantism,
   gnossienne, gossamer, guillotine, hallucination, harlequin, hellenism, hieroglyph,
   honeycomb, hyperbole, hypotenuse, imperial, inimitable, iridescence, jacinta,
