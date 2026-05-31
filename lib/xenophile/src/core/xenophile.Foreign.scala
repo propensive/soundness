@@ -55,7 +55,14 @@ trait Foreign extends Dynamic, Topical, Original:
   transparent inline def selectDynamic(field: String): Foreign =
     ${Xenophile.select('this, 'field)}
 
-  transparent inline def applyDynamic(field: String)(inline arguments: Any*): Foreign =
+  // Arguments are typed `Foreign from Origin` — i.e. a foreign value from this receiver's own
+  // source language. A Scala value with an `Interoperable` instance for that language is converted
+  // to a `Foreign` literal at the call site by the `converter` `Conversion` above (pinning the
+  // ecosystem to `Origin` is what lets the conversion infer its type parameters); the macro then
+  // checks each argument's foreign type against the declared parameter type.
+  transparent inline def applyDynamic(field: String)(inline arguments: (Foreign from Origin)*)
+  :   Foreign =
+
     ${Xenophile.applied('this, 'field, 'arguments)}
 
   inline def as[ScalaType]: ScalaType = ${Xenophile.convert[ScalaType]('this)}
