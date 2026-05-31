@@ -34,6 +34,7 @@ package obligatory
 
 import soundness.*
 
+import charEncoders.utf8
 import strategies.throwUnsafely
 
 object Tests extends Suite(m"Obligatory Tests"):
@@ -75,8 +76,15 @@ object Tests extends Suite(m"Obligatory Tests"):
         val input =
           t"Content-Type: x\r\nContent-Length: 5\r\n\r\n12345Content-Length: 3\r\n\r\nabc"
 
-        Iterator(input).frames[ContentLength].to(List)
+        Iterator(input.data).frames[ContentLength].map(_.utf8).to(List)
       . assert(_ == List("12345", "abc"))
+
+      test(m"Content-Length counts bytes, not characters"):
+        val body = t"""{"text":"café"}"""
+        val input = t"Content-Length: ${body.data.length}\r\n\r\n"+body
+
+        Iterator(input.data).frames[ContentLength].map(_.utf8).to(List)
+      . assert(_ == List(t"""{"text":"café"}"""))
 
       test(m"Server-side events"):
         val input = t"data: foobar\ndata: baz\n\ndata: hello world\n\n"
