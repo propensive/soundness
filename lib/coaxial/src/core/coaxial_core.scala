@@ -95,3 +95,10 @@ extension [endpoint: Routable as routable](endpoint: endpoint)
   :   Unit raises StreamError =
 
     routable.transmit(routable.connect(endpoint), transmissible.serialize(message))
+
+
+extension [endpoint: Connectable as connectable](endpoint: endpoint)
+  // Open a persistent, bidirectional connection that stays open for concurrent
+  // reads and writes (e.g. for HTTP/2), rather than a single request/response
+  // exchange. The caller is responsible for closing the returned `Duplex`.
+  def duplex(): Duplex = connectable.connect(endpoint)
