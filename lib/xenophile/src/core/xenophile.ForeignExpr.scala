@@ -30,26 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package xenophile
 
 import anticipation.*
-import contingency.*
-import gossamer.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import turbulence.*
-import vacuous.*
 
-object Resource:
-  given streamable: [resource <: Resource]
-        => (classloader: Classloader)
-        => resource is Streamable by Data =
-    given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
-
-    Streamable.inputStream.contramap: resource =>
-      classloader.inputStream(resource.path.encode)
-
-  given nominable: [resource <: Resource] => resource is Nominable = _.path.descent.prim.or(t"/")
-
-case class Resource private[hellenism](path: Path on Classpath) extends Locatable
+enum ForeignExpr:
+  case Reference(name: Text)
+  case Select(target: ForeignExpr, member: Text)
+  case Apply(target: ForeignExpr, arguments: List[ForeignExpr])
+  case Literal(value: Any)

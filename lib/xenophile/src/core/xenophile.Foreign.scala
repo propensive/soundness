@@ -30,26 +30,32 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package xenophile
 
-import anticipation.*
-import contingency.*
-import gossamer.*
+import scala.language.dynamics
+
 import prepositional.*
-import rudiments.*
-import serpentine.*
-import turbulence.*
-import vacuous.*
 
-object Resource:
-  given streamable: [resource <: Resource]
-        => (classloader: Classloader)
-        => resource is Streamable by Data =
-    given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
+object Foreign:
+  def make(tree: ForeignExpr): Foreign = new Foreign:
+    def expr: ForeignExpr = tree
 
-    Streamable.inputStream.contramap: resource =>
-      classloader.inputStream(resource.path.encode)
+  transparent inline def apply[name <: Label, origin]: Foreign = ${Xenophile.root[name, origin]}
 
-  given nominable: [resource <: Resource] => resource is Nominable = _.path.descent.prim.or(t"/")
+  given converter: [value, ecosystem <: Ecosystem]
+  =>  ( interoperable: value is Interoperable in ecosystem )
+  =>  Conversion[value, Foreign of interoperable.Topic from ecosystem] =
+    instance =>
+      val literal = ForeignExpr.Literal(interoperable.operand(instance))
+      Foreign.make(literal).asInstanceOf[Foreign of interoperable.Topic from ecosystem]
 
-case class Resource private[hellenism](path: Path on Classpath) extends Locatable
+trait Foreign extends Dynamic, Topical, Original:
+  def expr: ForeignExpr
+
+  transparent inline def selectDynamic(field: String): Foreign =
+    ${Xenophile.select('this, 'field)}
+
+  transparent inline def applyDynamic(field: String)(inline arguments: Any*): Foreign =
+    ${Xenophile.applied('this, 'field, 'arguments)}
+
+  inline def as[ScalaType]: ScalaType = ${Xenophile.convert[ScalaType]('this)}

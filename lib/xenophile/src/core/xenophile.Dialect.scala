@@ -30,26 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package xenophile
 
 import anticipation.*
-import contingency.*
-import gossamer.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import turbulence.*
 import vacuous.*
 
-object Resource:
-  given streamable: [resource <: Resource]
-        => (classloader: Classloader)
-        => resource is Streamable by Data =
-    given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
+// The signature of a member of a foreign type: a field has no parameters (`Unset`); a method
+// records the foreign type names of its parameters. `result` is the foreign type name produced.
+case class Signature(parameters: Optional[List[Text]], result: Text)
 
-    Streamable.inputStream.contramap: resource =>
-      classloader.inputStream(resource.path.encode)
-
-  given nominable: [resource <: Resource] => resource is Nominable = _.path.descent.prim.or(t"/")
-
-case class Resource private[hellenism](path: Path on Classpath) extends Locatable
+// A grammar for a particular foreign type system: parses a definitions source into a map from each
+// foreign type name to its members' signatures. Keyed on an ecosystem so the macro stays agnostic.
+trait Dialect:
+  def parse(source: Text): Map[Text, Map[Text, Signature]]

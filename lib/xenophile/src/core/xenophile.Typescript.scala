@@ -30,26 +30,46 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package xenophile
 
 import anticipation.*
-import contingency.*
-import gossamer.*
+import contingency.*, strategies.throwUnsafely
+import jacinta.*
 import prepositional.*
-import rudiments.*
-import serpentine.*
-import turbulence.*
 import vacuous.*
 
-object Resource:
-  given streamable: [resource <: Resource]
-        => (classloader: Classloader)
-        => resource is Streamable by Data =
-    given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
+object Typescript:
+  given text: (Text is Interoperable in Typescript of "string" by Json) =
+    Interoperable[Text, Typescript, "string", Json](_.json, _.as[Text])
 
-    Streamable.inputStream.contramap: resource =>
-      classloader.inputStream(resource.path.encode)
+  given int: (Int is Interoperable in Typescript of "number" by Json) =
+    Interoperable[Int, Typescript, "number", Json](_.json, _.as[Int])
 
-  given nominable: [resource <: Resource] => resource is Nominable = _.path.descent.prim.or(t"/")
+  given boolean: (Boolean is Interoperable in Typescript of "boolean" by Json) =
+    Interoperable[Boolean, Typescript, "boolean", Json](_.json, _.as[Boolean])
 
-case class Resource private[hellenism](path: Path on Classpath) extends Locatable
+  // A TypeScript `string[]` array maps to a Scala `List[Text]`, decoded with jacinta's own
+  // collection support.
+  given strings: (List[Text] is Interoperable in Typescript of "string[]" by Json) =
+    Interoperable[List[Text], Typescript, "string[]", Json](_.json, _.as[List[Text]])
+
+  // A backend that evaluates a `ForeignExpr` against an in-memory JSON document: references and
+  // selections navigate the document; literals yield their operand; function application is
+  // unsupported (a static document has no callable members).
+  def evaluator(document: Json): Evaluator in Typescript by Json =
+    new Evaluator:
+      type Form = Typescript
+      type Operand = Json
+
+      def absent(operand: Json): Boolean = operand.as[Optional[Json]] == Unset
+
+      def evaluate(expr: ForeignExpr): Json = expr match
+        case ForeignExpr.Literal(value)         => value.asInstanceOf[Json]
+        case ForeignExpr.Reference(name)        => document(name)
+        case ForeignExpr.Select(target, member) => evaluate(target)(member)
+
+        case ForeignExpr.Apply(_, _) =>
+          throw RuntimeException("xenophile: a JSON document evaluator cannot apply functions")
+
+trait Typescript extends Ecosystem:
+  type Operand = Json

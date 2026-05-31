@@ -30,26 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package xenophile
 
-import anticipation.*
-import contingency.*
-import gossamer.*
 import prepositional.*
-import rudiments.*
-import serpentine.*
-import turbulence.*
-import vacuous.*
 
-object Resource:
-  given streamable: [resource <: Resource]
-        => (classloader: Classloader)
-        => resource is Streamable by Data =
-    given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
+object Interoperable:
+  def apply[self, form <: Ecosystem, topic <: Label, operand]
+    ( encode: self => operand, decode: operand => self )
+  :   (self is Interoperable in form of topic by operand) =
 
-    Streamable.inputStream.contramap: resource =>
-      classloader.inputStream(resource.path.encode)
+    new Interoperable:
+      type Self = self
+      type Form = form
+      type Topic = topic
+      type Operand = operand
 
-  given nominable: [resource <: Resource] => resource is Nominable = _.path.descent.prim.or(t"/")
+      def operand(value: self): operand = encode(value)
+      def value(data: operand): self = decode(data)
 
-case class Resource private[hellenism](path: Path on Classpath) extends Locatable
+trait Interoperable extends Topical, Formal, Operable:
+  type Self
+  def operand(value: Self): Operand
+  def value(operand: Operand): Self

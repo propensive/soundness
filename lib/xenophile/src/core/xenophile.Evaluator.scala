@@ -30,26 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package xenophile
 
-import anticipation.*
-import contingency.*
-import gossamer.*
 import prepositional.*
-import rudiments.*
-import serpentine.*
-import turbulence.*
-import vacuous.*
 
-object Resource:
-  given streamable: [resource <: Resource]
-        => (classloader: Classloader)
-        => resource is Streamable by Data =
-    given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
+trait Evaluator extends Formal, Operable:
+  def evaluate(expr: ForeignExpr): Operand
 
-    Streamable.inputStream.contramap: resource =>
-      classloader.inputStream(resource.path.encode)
-
-  given nominable: [resource <: Resource] => resource is Nominable = _.path.descent.prim.or(t"/")
-
-case class Resource private[hellenism](path: Path on Classpath) extends Locatable
+  // Whether an evaluated operand represents an absent/null value in this ecosystem; used to decode
+  // optional foreign types.
+  def absent(operand: Operand): Boolean

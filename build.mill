@@ -1300,6 +1300,13 @@ object wisteria extends Library:
   object test extends Tests(core):
     override def enabled = false
 
+object xenophile extends Library:
+  object core extends Component(gossamer.core, prepositional.core, gigantism.core, fulminate.core,
+    vacuous.core, hellenism.core, jacinta.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core)
+
 object xylophone extends Library:
   object core extends Component(zephyrine.core, adversaria.core, typonym.core, hellenism.core, urticose.core, wisteria.core):
     override def scalacOptions = Task:
@@ -1386,6 +1393,6 @@ val allLibraries: Seq[Library] = Seq(
   proscenium, punctuation, quantitative, revolution, rudiments, satirical, savagery,
   scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
   surveillance, symbolism, synesthesia, tarantula, telekinesis, turbulence, typonym,
-  ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, wisteria, xylophone,
+  ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, wisteria, xenophile, xylophone,
   yossarian, ypsiloid, zephyrine, zeppelin, ziggurat
 )
