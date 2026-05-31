@@ -292,7 +292,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           val (clientSide, serverSide) = pair()
           runServer(serverSide)
 
-          import Http2Client.http2
+          import Http2.Client.http2
           import logging.silent
 
           // A `Connectable` whose connect() hands back the client side of the pair —
@@ -304,8 +304,8 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           // Summon the HTTP/2 client given exactly as telekinesis's fetch machinery
           // would, and invoke its `request` — verifying it captures the ambient
           // Monitor/Codicil and produces a telekinesis `Http.Response`.
-          val client = summon[HttpClient onto H2Endpoint[Loopback]]
-          val endpoint = H2Endpoint(Loopback(clientSide), t"unix")
+          val client = summon[HttpClient onto Http2.Endpoint[Loopback]]
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"unix")
 
           val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".decode[Host]),
               t"/echo.Service/Call", Nil, () => Stream())
