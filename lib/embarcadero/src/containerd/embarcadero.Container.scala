@@ -41,14 +41,14 @@ import locomotion.field
 // though only a subset of fields is modelled — unknown fields are skipped on decode.
 //
 // Omitted for now (needed only to *create* containers): `runtime` (4), the `spec`
-// `Any` (5), the `created_at`/`updated_at` timestamps (8, 9) and the `extensions`
-// `Any` map (10). These can be added once protobuf timestamp and `Any` types are
-// modelled.
+// `Any` (5) and the `extensions` `Any` map (10), pending a modelled protobuf `Any`.
 case class Container
   ( @field(1)  id:          Text,
     @field(2)  labels:      Map[Text, Text] = Map(),
     @field(3)  image:       Text            = t"",
     @field(6)  snapshotter: Text            = t"",
     @field(7)  snapshotKey: Text            = t"",
+    @field(8)  createdAt:   Timestamp       = Timestamp(),
+    @field(9)  updatedAt:   Timestamp       = Timestamp(),
     @field(11) sandbox:     Text            = t"" )
 derives CanEqual

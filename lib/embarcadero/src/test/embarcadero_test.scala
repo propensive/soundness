@@ -246,3 +246,16 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val containerd = Containerd(endpoint, t"example")
           containerd.containers().map(container => (container.id, container.labels))
       . assert(_ == List((t"alpha", Map(t"tier" -> t"db")), (t"beta", Map())))
+
+    suite(m"containerd timestamps via the generic time abstraction"):
+      // The `Long`-as-instant given lets us mint an Aviation `Instant` from epoch
+      // millis; Aviation's own `Instant` abstractable/instantiable instances are found
+      // via its companion, so `embarcadero` needs no dependency on Aviation.
+      import abstractables.instantIsAbstractable
+      val moment = Instant(1_700_000_001_000L)
+
+      test(m"a Container timestamp round-trips and converts to an Aviation Instant"):
+        val container = Container(t"svc", createdAt = embarcadero.Timestamp.of(moment))
+        val restored = Stream(container.protobuf.encode).read[Container over Protobuf]
+        restored.createdAt.instant[Instant]
+      . assert(_ == moment)
