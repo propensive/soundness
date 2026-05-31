@@ -35,5 +35,6 @@ package soundness
 // `Timestamp` is intentionally not exported: it collides with `aviation.Timestamp` in
 // the umbrella, and callers normally reach times through `…createdAt.instant[Instant]`
 // rather than naming it. Use `embarcadero.Timestamp` directly when constructing one.
-export embarcadero.{Containerd, Container, Empty, ListContainersRequest,
+export embarcadero.{Containerd, Container, DeleteContainerRequest, Empty,
+    GetContainerRequest, GetContainerResponse, ListContainersRequest,
     ListContainersResponse, VersionResponse}

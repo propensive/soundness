@@ -247,6 +247,25 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           containerd.containers().map(container => (container.id, container.labels))
       . assert(_ == List((t"alpha", Map(t"tier" -> t"db")), (t"beta", Map())))
 
+      test(m"container(id) decodes a nested Container response"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val namespace = Promise[Text]()
+
+          val response =
+            GetContainerResponse(Container(t"gamma", Map(t"x" -> t"y"), image = t"img:1"))
+
+          val body = GrpcFraming.encode(response.protobuf.encode)
+          runServer(serverSide, namespace, body)
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val container = Containerd(endpoint, t"example").container(t"gamma")
+          (container.id, container.labels, container.image)
+      . assert(_ == (t"gamma", Map(t"x" -> t"y"), t"img:1"))
+
     suite(m"containerd timestamps via the generic time abstraction"):
       // The `Long`-as-instant given lets us mint an Aviation `Instant` from epoch
       // millis; Aviation's own `Instant` abstractable/instantiable instances are found
