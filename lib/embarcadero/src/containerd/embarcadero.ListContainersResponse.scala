@@ -32,49 +32,7 @@
                                                                                                   */
 package embarcadero
 
-import anticipation.*
-import contingency.*
-import cordillera.*
-import gossamer.*
-import locomotion.*
-import obligatory.*
-import parasite.*
+import locomotion.field
 
-object Containerd:
-  // containerd multiplexes every service over the one connection; each method is
-  // addressed by its fully-qualified proto path.
-  private val versionMethod: Grpc.Method =
-    Grpc.Method(t"containerd.services.version.v1.Version", t"Version")
-
-  private val containersService: Text = t"containerd.services.containers.v1.Containers"
-  private val listContainersMethod: Grpc.Method = Grpc.Method(containersService, t"List")
-
-  // Connect to a containerd endpoint (typically a Unix socket carrying cleartext h2c),
-  // binding every call to `namespace` via the mandatory `containerd-namespace` header.
-  // Must be called inside a `supervise` scope (the connection runs background daemons).
-  def apply[endpoint]
-    ( endpoint: Http2.Endpoint[endpoint], namespace: Text )
-    ( using Monitor, Codicil )
-  :   Containerd raises AsyncError =
-
-    val metadata = Grpc.Metadata(List(t"containerd-namespace" -> namespace))
-    Containerd(GrpcChannel(endpoint, metadata))
-
-// A connected containerd client. Each method maps to one gRPC call over the shared
-// channel; the namespace travels in the channel's default metadata.
-case class Containerd(channel: GrpcChannel):
-  // The daemon's version and build revision (`containerd.services.version.v1.Version`).
-  def version()
-  :   VersionResponse raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
-
-    channel.unary[Empty, VersionResponse](Containerd.versionMethod, Empty())
-
-  // The containers in the bound namespace (`containerd.services.containers.v1`),
-  // optionally narrowed by containerd `filters`.
-  def containers(filters: List[Text] = Nil)
-  :   List[Container] raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
-
-    val request = ListContainersRequest(filters)
-
-    channel.unary[ListContainersRequest, ListContainersResponse]
-      (Containerd.listContainersMethod, request).containers
+// The reply from `Containers.List`: the matching containers, in containerd's order.
+case class ListContainersResponse(@field(1) containers: List[Container] = Nil)

@@ -227,3 +227,22 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val response = containerd.version()
           (response.version, response.revision, namespace.await())
       . assert(_ == (t"1.7.0", t"deadbeef", t"example"))
+
+      test(m"containers() decodes a repeated, labelled list"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val namespace = Promise[Text]()
+
+          val list = ListContainersResponse(List(Container(t"alpha", Map(t"tier" -> t"db")),
+              Container(t"beta")))
+
+          val body = GrpcFraming.encode(list.protobuf.encode)
+          runServer(serverSide, namespace, body)
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val containerd = Containerd(endpoint, t"example")
+          containerd.containers().map(container => (container.id, container.labels))
+      . assert(_ == List((t"alpha", Map(t"tier" -> t"db")), (t"beta", Map())))

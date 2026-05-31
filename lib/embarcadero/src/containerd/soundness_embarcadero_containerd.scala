@@ -32,4 +32,5 @@
                                                                                                   */
 package soundness
 
-export embarcadero.{Containerd, Empty, VersionResponse}
+export embarcadero.{Containerd, Container, Empty, ListContainersRequest,
+    ListContainersResponse, VersionResponse}
