@@ -68,7 +68,7 @@ class FrameReader(chunks: Iterator[Bytes]):
     out.immutable(using Unsafe)
 
   // Read the next frame, or `Unset` at clean end of stream.
-  def next()(using Tactic[Http2Error]): Optional[Frame] =
+  def next(): Optional[Frame] raises Http2Error =
     if !ensure(9) then Unset else
       val header = slice(9)
       val length = Frame.uint24(header, 0)

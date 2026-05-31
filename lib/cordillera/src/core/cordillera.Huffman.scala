@@ -144,7 +144,7 @@ object Huffman:
 
   // Decodes an HPACK Huffman string. Walks the code bit-by-bit against the table;
   // the trailing padding (all 1-bits, fewer than 8) is accepted and discarded.
-  def decode(data: Data)(using Tactic[Http2Error]): Data =
+  def decode(data: Data): Data raises Http2Error =
     val builder = scm.ArrayBuilder.make[Byte]
     var current = 0
     var bits = 0

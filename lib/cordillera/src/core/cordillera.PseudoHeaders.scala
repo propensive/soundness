@@ -67,8 +67,8 @@ object PseudoHeaders:
 
   // Reconstruct an `Http.Response` from a decoded HEADERS block and the body stream.
   // `:status` selects the `Http.Status`; other fields become response headers.
-  def response(headerBlock: List[HpackEntry], body: Stream[Data])(using Tactic[Http2Error])
-  :   Http.Response =
+  def response(headerBlock: List[HpackEntry], body: Stream[Data])
+  :   Http.Response raises Http2Error =
 
     var statusText: Optional[Text] = Unset
     val headers = scm.ListBuffer[Http.Header]()

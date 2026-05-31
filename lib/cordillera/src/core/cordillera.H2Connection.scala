@@ -114,7 +114,7 @@ class H2Connection(duplex: Duplex)(using Monitor, Codicil):
 
   // Dispatch one decoded frame. Separated out so the read loop's `Tactic[Http2Error]`
   // (for HPACK decoding) is supplied in one place.
-  private def dispatch(frame: Frame, decoder: Hpack)(using Tactic[Http2Error]): Boolean =
+  private def dispatch(frame: Frame, decoder: Hpack): Boolean raises Http2Error =
     frame match
       case Frame.Settings(_, ack) =>
         if !ack then
@@ -178,7 +178,7 @@ class H2Connection(duplex: Duplex)(using Monitor, Codicil):
         case frame: Frame  => continue = dispatch(frame, decoder)
 
   // Perform the connection handshake: emit our SETTINGS and await the peer's.
-  def start()(using Tactic[AsyncError]): Unit =
+  def start(): Unit raises AsyncError =
     send(Frame.Settings(initialSettings, ack = false))
     started.await()
 
@@ -204,8 +204,7 @@ class H2Connection(duplex: Duplex)(using Monitor, Codicil):
   // pseudo-headers the request type doesn't carry. Trailers (e.g. gRPC status) are
   // available afterwards via `stream.trailers`.
   def fetch(request: Http.Request, scheme: Text, authority: Text)
-    ( using Tactic[Http2Error], Tactic[AsyncError] )
-  :   (H2Stream, Http.Response) =
+  :   (H2Stream, Http.Response) raises Http2Error raises AsyncError =
 
     val headerBlock = PseudoHeaders.request(request, scheme, authority)
     val chunks = request.body().to(List)
