@@ -30,15 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package embarcadero
 
-// `Timestamp` is intentionally not exported: it collides with `aviation.Timestamp` in
-// the umbrella, and callers normally reach times through `…createdAt.instant[Instant]`
-// rather than naming it. Use `embarcadero.Timestamp` directly when constructing one.
-export embarcadero.{AnyMessage, Containerd, Container, ContentDescriptor,
-    CreateContainerRequest, CreateContainerResponse, CreateNamespaceRequest,
-    CreateNamespaceResponse, DeleteContainerRequest, DeleteImageRequest, DeleteNamespaceRequest,
-    Empty, GetContainerRequest, GetContainerResponse, GetImageRequest, GetImageResponse,
-    ImageRecord, ListContainersRequest, ListContainersResponse, ListImagesRequest,
-    ListImagesResponse, ListNamespacesRequest, ListNamespacesResponse, Namespace, Runtime,
-    VersionResponse}
+import anticipation.*
+import gossamer.*
+import locomotion.field
+
+// The protobuf well-known `google.protobuf.Any`: a serialized message tagged with its
+// type URL. containerd uses it to carry opaque payloads — notably a container's OCI
+// runtime spec and a task's runtime options — that this client passes through verbatim.
+// Named `AnyMessage` to avoid `scala.Any`.
+case class AnyMessage(@field(1) typeUrl: Text = t"", @field(2) value: Data = IArray[Byte]())

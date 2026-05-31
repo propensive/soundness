@@ -30,15 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package embarcadero
 
-// `Timestamp` is intentionally not exported: it collides with `aviation.Timestamp` in
-// the umbrella, and callers normally reach times through `…createdAt.instant[Instant]`
-// rather than naming it. Use `embarcadero.Timestamp` directly when constructing one.
-export embarcadero.{AnyMessage, Containerd, Container, ContentDescriptor,
-    CreateContainerRequest, CreateContainerResponse, CreateNamespaceRequest,
-    CreateNamespaceResponse, DeleteContainerRequest, DeleteImageRequest, DeleteNamespaceRequest,
-    Empty, GetContainerRequest, GetContainerResponse, GetImageRequest, GetImageResponse,
-    ImageRecord, ListContainersRequest, ListContainersResponse, ListImagesRequest,
-    ListImagesResponse, ListNamespacesRequest, ListNamespacesResponse, Namespace, Runtime,
-    VersionResponse}
+import anticipation.*
+import gossamer.*
+import locomotion.field
+
+// A container's runtime binding (`containerd.services.containers.v1.Container.Runtime`):
+// the runtime plugin `name` (e.g. `io.containerd.runc.v2`) and its opaque `options`.
+case class Runtime(@field(1) name: Text = t"", @field(2) options: AnyMessage = AnyMessage())

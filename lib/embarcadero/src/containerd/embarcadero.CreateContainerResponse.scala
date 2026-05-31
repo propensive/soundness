@@ -30,15 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package embarcadero
 
-// `Timestamp` is intentionally not exported: it collides with `aviation.Timestamp` in
-// the umbrella, and callers normally reach times through `…createdAt.instant[Instant]`
-// rather than naming it. Use `embarcadero.Timestamp` directly when constructing one.
-export embarcadero.{AnyMessage, Containerd, Container, ContentDescriptor,
-    CreateContainerRequest, CreateContainerResponse, CreateNamespaceRequest,
-    CreateNamespaceResponse, DeleteContainerRequest, DeleteImageRequest, DeleteNamespaceRequest,
-    Empty, GetContainerRequest, GetContainerResponse, GetImageRequest, GetImageResponse,
-    ImageRecord, ListContainersRequest, ListContainersResponse, ListImagesRequest,
-    ListImagesResponse, ListNamespacesRequest, ListNamespacesResponse, Namespace, Runtime,
-    VersionResponse}
+import gossamer.*
+import locomotion.field
+
+// The reply from `Containers.Create`: the container as stored.
+case class CreateContainerResponse(@field(1) container: Container = Container(t""))

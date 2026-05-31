@@ -49,6 +49,7 @@ object Containerd:
   private val containersService: Text = t"containerd.services.containers.v1.Containers"
   private val listContainersMethod: Grpc.Method = Grpc.Method(containersService, t"List")
   private val getContainerMethod: Grpc.Method = Grpc.Method(containersService, t"Get")
+  private val createContainerMethod: Grpc.Method = Grpc.Method(containersService, t"Create")
   private val deleteContainerMethod: Grpc.Method = Grpc.Method(containersService, t"Delete")
 
   private val namespacesService: Text = t"containerd.services.namespaces.v1.Namespaces"
@@ -90,6 +91,16 @@ case class Containerd(channel: GrpcChannel):
 
     channel.unary[ListContainersRequest, ListContainersResponse]
       (Containerd.listContainersMethod, request).containers
+
+  // Register a container, returning it as stored (`Containers.Create`). The container's
+  // `spec` carries the OCI runtime spec as an `AnyMessage`.
+  def createContainer(container: Container)
+  :   Container raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
+
+    val request = CreateContainerRequest(container)
+
+    channel.unary[CreateContainerRequest, CreateContainerResponse]
+      (Containerd.createContainerMethod, request).container
 
   // A single container by id (`Containers.Get`).
   def container(id: Text)

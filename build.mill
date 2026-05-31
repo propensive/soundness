@@ -620,8 +620,11 @@ object embarcadero extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object containerd extends Component(obligatory.grpc, cordillera.core, coaxial.core, locomotion.core, anticipation.time):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(oci, containerd, aviation.core)
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium",
+        "-Xmax-inlines", "64")
+  object test extends Tests(oci, containerd, aviation.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Xmax-inlines", "64")
 
 object enigmatic extends Library:
   object core extends Component(gastronomy.core):
