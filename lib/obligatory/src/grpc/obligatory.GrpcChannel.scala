@@ -50,12 +50,14 @@ object GrpcChannel:
   // Open a channel to a cleartext-h2c endpoint, completing the HTTP/2 handshake. The
   // connection's read/write daemons capture the ambient `Monitor`/`Codicil`, so this
   // must be called inside a `supervise` scope.
-  def apply[endpoint](endpoint: Http2.Endpoint[endpoint])(using Monitor, Codicil)
+  def apply[endpoint]
+    ( endpoint: Http2.Endpoint[endpoint], defaults: Grpc.Metadata = Grpc.Metadata() )
+    ( using Monitor, Codicil )
   :   GrpcChannel raises AsyncError =
 
     val connection = H2Connection(endpoint.connect())
     connection.start()
-    new GrpcChannel(connection, endpoint.authority)
+    new GrpcChannel(connection, endpoint.authority, defaults)
 
 // A gRPC channel over a single, persistent HTTP/2 connection (`cordillera`). Each
 // call opens one multiplexed stream: the request is one length-prefixed protobuf
@@ -63,7 +65,8 @@ object GrpcChannel:
 // `grpc-status` trailer. v1 supports unary and server-streaming calls; the request
 // is always a single message, so client-streaming and bidirectional streaming wait
 // on a `cordillera` enhancement.
-class GrpcChannel(connection: H2Connection, authority: Text):
+class GrpcChannel
+  ( connection: H2Connection, authority: Text, defaults: Grpc.Metadata = Grpc.Metadata() ):
   // The `:authority` pseudo-header is supplied to `fetch` separately; the request's
   // `Host` is unused by the HTTP/2 transport, so the hostname is parsed leniently.
   private val host: Host = unsafely(authority.cut(t":").prim.or(authority).decode[Host])
@@ -74,7 +77,7 @@ class GrpcChannel(connection: H2Connection, authority: Text):
   private def httpRequest(method: Grpc.Method, metadata: Grpc.Metadata, message: Data)
   :   Http.Request =
 
-    val metadataHeaders = metadata.entries.map: (key, value) =>
+    val metadataHeaders = (defaults.entries ++ metadata.entries).map: (key, value) =>
       Http.Header(key, value)
 
     val headers =
