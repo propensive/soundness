@@ -83,27 +83,33 @@ object Xenophile:
       case AndType(left, right)                        => refinements(left) ++ refinements(right)
       case _                                           => Map()
 
-  // Reads the `Topic` (foreign type name) and `Origin` (source language) from a `Foreign` receiver.
+  // Reads the `Topic` (foreign type) and `Origin` (source language) from a `Foreign` receiver. The
+  // topic is returned as a type, since it may be compound (a union, say) rather than a single name.
   private def receiver(using quotes: Quotes)(self: Expr[Foreign])
-  :   (Text, quotes.reflect.TypeRepr) =
+  :   (quotes.reflect.TypeRepr, quotes.reflect.TypeRepr) =
 
     import quotes.reflect.*
 
     val members = refinements(self.asTerm.tpe.widen)
 
-    val topicRepr = members.at(t"Topic").or:
-      halt(m"xenophile: the receiver is not a singleton foreign type (it has no `Topic`)")
-
-    val topic = topicRepr.absolve match
-      case ConstantType(StringConstant(name)) => name.tt
-
-      case _ =>
-        halt(m"xenophile: the foreign type's `Topic` is not a string literal type")
+    val topic = members.at(t"Topic").or:
+      halt(m"xenophile: the receiver is not a foreign type (it has no `Topic`)")
 
     val origin = members.at(t"Origin").or:
       halt(m"xenophile: the receiver does not record its source language (it has no `Origin`)")
 
     (topic, origin)
+
+  // The single foreign type name of a topic, for navigation; compound topics (e.g. unions) have no
+  // members to select, so they are rejected here.
+  private def topicName(using quotes: Quotes)(topic: quotes.reflect.TypeRepr): Text =
+    import quotes.reflect.*
+
+    topic.absolve match
+      case ConstantType(StringConstant(name)) => name.tt
+
+      case _ =>
+        halt(m"xenophile: a compound foreign type (such as a union) has no members to select")
 
   // Summons the `Interface` given for a source language and reads its definitions path (`Locus`).
   private def locusOf(using quotes: Quotes)(origin: quotes.reflect.TypeRepr): Text =
@@ -129,13 +135,28 @@ object Xenophile:
       case _ =>
         halt(m"xenophile: the definitions path is not a string literal type")
 
+  // Builds the type-level representation of a foreign type name: a bare union (`A | B`) when the
+  // name contains `|`, otherwise a string-singleton type.
+  private def topicReprOf(using quotes: Quotes)(topic: Text): quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+
+    topic.cut(t"|").to(List) match
+      case List(single) =>
+        ConstantType(StringConstant(single.s))
+
+      case parts =>
+        parts.map { part => ConstantType(StringConstant(part.s)): TypeRepr }.reduce: (a, b) =>
+          a.asType.absolve match
+            case '[x] => b.asType.absolve match
+              case '[y] => TypeRepr.of[x | y]
+
   // Builds the refined type `Foreign of <topic> from <origin>`.
   private def foreignType(using quotes: Quotes)(topic: Text, origin: quotes.reflect.TypeRepr)
   :   quotes.reflect.TypeRepr =
 
     import quotes.reflect.*
 
-    val topicType = ConstantType(StringConstant(topic.s))
+    val topicType = topicReprOf(topic)
 
     Refinement
       ( Refinement(TypeRepr.of[Foreign], "Topic", TypeBounds(topicType, topicType)),
@@ -183,7 +204,8 @@ object Xenophile:
 
   def select(self: Expr[Foreign], field: Expr[String]): Macro[Foreign] =
     val fieldName = field.valueOrAbort.tt
-    val (topic, originRepr) = receiver(self)
+    val (topicRepr, originRepr) = receiver(self)
+    val topic = topicName(topicRepr)
 
     val typeMembers = definitions(originRepr, locusOf(originRepr)).at(topic).or:
       halt(m"xenophile: the foreign type $topic is not defined")
@@ -201,7 +223,8 @@ object Xenophile:
 
   def applied(self: Expr[Foreign], field: Expr[String], arguments: Expr[Seq[Any]]): Macro[Foreign] =
     val fieldName = field.valueOrAbort.tt
-    val (topic, originRepr) = receiver(self)
+    val (topicRepr, originRepr) = receiver(self)
+    val topic = topicName(topicRepr)
 
     val typeMembers = definitions(originRepr, locusOf(originRepr)).at(topic).or:
       halt(m"xenophile: the foreign type $topic is not defined")
@@ -236,7 +259,7 @@ object Xenophile:
   def convert[target: Type](self: Expr[Foreign]): Macro[target] =
     import quotes.reflect.*
 
-    val (topic, originRepr) = receiver(self)
+    val (topicRepr, originRepr) = receiver(self)
 
     val operandRepr = originRepr.memberType(originRepr.typeSymbol.typeMember("Operand")) match
       case TypeBounds(_, hi) => hi
@@ -251,41 +274,72 @@ object Xenophile:
           val ev = Expr.summon[evaluator].getOrElse:
             halt(m"xenophile: no `Evaluator` is available for the foreign source language")
 
-          // Summons the `Interoperable` for `elementTopic` and decodes one operand value with it.
-          def element(elementRepr: TypeRepr, elementTopic: Text, data: Expr[operand]): Expr[Any] =
-            val literal = ConstantType(StringConstant(elementTopic.s))
-            val bounds = TypeBounds(elementRepr, elementRepr)
-            val withSelf = Refinement(TypeRepr.of[Interoperable], "Self", bounds)
+          // Summons the `Interoperable` keyed on a Self type and topic, and decodes an operand.
+          def element(kind: TypeRepr, topic: TypeRepr, data: Expr[operand]): Expr[Any] =
+            val withSelf = Refinement(TypeRepr.of[Interoperable], "Self", TypeBounds(kind, kind))
             val withForm = Refinement(withSelf, "Form", TypeBounds(originRepr, originRepr))
-            val withTopic = Refinement(withForm, "Topic", TypeBounds(literal, literal))
+            val withTopic = Refinement(withForm, "Topic", TypeBounds(topic, topic))
             val full = Refinement(withTopic, "Operand", TypeBounds(operandRepr, operandRepr))
 
             full.asType.absolve match
               case '[type io <: Interoperable { type Operand = operand }; io] =>
                 val instance = Expr.summon[io].getOrElse:
-                  halt(m"xenophile: cannot read $elementTopic; no matching `Interoperable`")
+                  halt(m"xenophile: cannot read this foreign type; no matching `Interoperable`")
 
                 '{$instance.value($data)}.asExprOf[Any]
 
-          if topic.ends(t"?") then
-            val base = topic.cut(t"?").to(List).head
+          // Decodes one operand by summoning the `Interoperable` for a Scala type alone (its topic
+          // unconstrained), used for union members where each alternative is tried in turn.
+          def member(selfRepr: TypeRepr, data: Expr[operand]): Expr[Any] =
+            val bounds = TypeBounds(selfRepr, selfRepr)
+            val withSelf = Refinement(TypeRepr.of[Interoperable], "Self", bounds)
+            val withForm = Refinement(withSelf, "Form", TypeBounds(originRepr, originRepr))
+            val full = Refinement(withForm, "Operand", TypeBounds(operandRepr, operandRepr))
 
-            val innerRepr = TypeRepr.of[target].dealias match
-              case OrType(left, right) => if left =:= TypeRepr.of[Unset.type] then right else left
+            full.asType.absolve match
+              case '[type io <: Interoperable { type Operand = operand }; io] =>
+                val instance = Expr.summon[io].getOrElse:
+                  halt(m"xenophile: cannot read a union member; no matching `Interoperable`")
 
-              case _ =>
-                halt(m"xenophile: reading an optional foreign type needs an `Optional` Scala type")
+                '{$instance.value($data)}.asExprOf[Any]
 
-            val tree =
-              ' {
-                  val data: operand = $ev.evaluate($self.expr)
-                  if $ev.absent(data) then Unset else ${element(innerRepr, base, 'data)}
-                }
+          def parts(repr: TypeRepr): List[TypeRepr] = repr.dealias match
+            case OrType(left, right) => parts(left) ++ parts(right)
+            case other               => List(other)
 
-            tree.asExprOf[target]
+          topicRepr.absolve match
+            case ConstantType(StringConstant(name)) if name.tt.ends(t"?") =>
+              val baseRepr = topicReprOf(name.tt.cut(t"?").to(List).head)
 
-          else
-            element(TypeRepr.of[target], topic, '{$ev.evaluate($self.expr)}).asExprOf[target]
+              val innerRepr = TypeRepr.of[target].dealias match
+                case OrType(left, right) => if left =:= TypeRepr.of[Unset.type] then right else left
+
+                case _ =>
+                  halt(m"xenophile: an optional foreign type must be read as an `Optional`")
+
+              val tree =
+                ' {
+                    val data: operand = $ev.evaluate($self.expr)
+                    if $ev.absent(data) then Unset else ${element(innerRepr, baseRepr, 'data)}
+                  }
+
+              tree.asExprOf[target]
+
+            case OrType(_, _) =>
+              def chain(members: List[TypeRepr], data: Expr[operand]): Expr[Any] =
+                members.map(member(_, data)).reduceRight: (head, tail) =>
+                  '{try $head catch case _: Exception => $tail}
+
+              val tree =
+                ' {
+                    val data: operand = $ev.evaluate($self.expr)
+                    ${chain(parts(TypeRepr.of[target]), 'data)}
+                  }
+
+              tree.asExprOf[target]
+
+            case _ =>
+              element(TypeRepr.of[target], topicRepr, '{$ev.evaluate($self.expr)}).asExprOf[target]
 
   def interface[form: Type](resource: Expr[Resource]): Macro[Interface] =
     import quotes.reflect.*

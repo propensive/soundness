@@ -40,7 +40,8 @@ type TsInterface = Interface in Typescript at "/xenophile/definitions.ts"
 given tsInterface: TsInterface = Interface[Typescript](cp"/xenophile/definitions.ts")
 
 val document: Json =
-  j"""{"Foo": {"baz": "hello", "bar": {"count": 42}, "tags": ["a", "b"], "nickname": "Bob"}}"""
+  j"""{"Foo": {"baz": "hello", "bar": {"count": 42}, "tags": ["a", "b"], "nickname": "Bob",
+       "id": "abc123"}}"""
 
 given Evaluator in Typescript by Json = Typescript.evaluator(document)
 
@@ -109,6 +110,11 @@ object Tests extends Suite(m"Xenophile tests"):
         val nickname: Foreign of "string?" from Typescript = foo.nickname
         nickname.as[Optional[Text]]
       . assert(_ == t"Bob")
+
+      test(m"a union field has a bare-union foreign type and decodes to a Scala union"):
+        val id: Foreign of ("string" | "number") from Typescript = foo.id
+        id.as[Text | Int]
+      . assert(_ == t"abc123")
 
     suite(m"Compile-time safety"):
       test(m"selecting an undefined member is a compile error"):

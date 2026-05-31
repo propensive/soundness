@@ -5,6 +5,7 @@ interface Foo {
   link(other: Bar): Foo;
   tags: string[];
   nickname?: string;
+  id: string | number;
 }
 
 interface Bar {
