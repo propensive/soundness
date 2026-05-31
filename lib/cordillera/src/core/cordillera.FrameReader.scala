@@ -37,6 +37,7 @@ import contingency.*
 import rudiments.*
 import vacuous.*
 
+import Http2.Frame
 import Http2Error.Reason
 
 // Pulls whole HTTP/2 frames from a byte stream that arrives in arbitrary chunks

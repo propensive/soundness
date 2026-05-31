@@ -35,6 +35,7 @@ package cordillera
 import soundness.*
 
 import strategies.throwUnsafely
+import Http2.*
 
 object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
   def run(): Unit =

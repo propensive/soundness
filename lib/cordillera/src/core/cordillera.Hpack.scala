@@ -54,9 +54,7 @@ class Hpack(maxTableSize: Int = 4096):
   // An integer uses the low `prefix` bits of the byte at `data(offset)`; if those
   // are all 1 it continues in subsequent 7-bit groups (low 7 bits, high bit =
   // continuation). Returns the value and the index just past the integer.
-  private def readInteger(data: Data, offset: Int, prefix: Int)(using Tactic[Http2Error])
-  :   (Int, Int) =
-
+  private def readInteger(data: Data, offset: Int, prefix: Int): (Int, Int) raises Http2Error =
     val mask = (1 << prefix) - 1
     val first = data(offset) & mask
 
@@ -97,7 +95,7 @@ class Hpack(maxTableSize: Int = 4096):
   // ─── string literal (RFC 7541 §5.2) ───────────────────────────────────────
   //
   // A length-prefixed octet sequence; the prefix's high bit flags Huffman coding.
-  private def readString(data: Data, offset: Int)(using Tactic[Http2Error]): (Text, Int) =
+  private def readString(data: Data, offset: Int): (Text, Int) raises Http2Error =
     val huffman = (data(offset) & 0x80) != 0
     val (length, start) = readInteger(data, offset, 7)
     if start + length > data.length then abort(Http2Error(Reason.Truncated))
@@ -120,7 +118,7 @@ class Hpack(maxTableSize: Int = 4096):
 
   // ─── decode a complete header block ────────────────────────────────────────
 
-  def decode(data: Data)(using Tactic[Http2Error]): List[HpackEntry] =
+  def decode(data: Data): List[HpackEntry] raises Http2Error =
     val builder = List.newBuilder[HpackEntry]
     var pos = 0
 
