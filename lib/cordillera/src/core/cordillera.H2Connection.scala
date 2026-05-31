@@ -48,6 +48,8 @@ import telekinesis.*
 import turbulence.*
 import vacuous.*
 
+import Http2.*
+
 object H2Connection:
   // The client connection preface (RFC 7540 §3.5): a fixed octet sequence that
   // precedes the first SETTINGS frame in prior-knowledge h2c.
