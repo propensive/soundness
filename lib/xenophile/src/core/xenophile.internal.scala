@@ -136,7 +136,8 @@ object Xenophile:
         halt(m"xenophile: the definitions path is not a string literal type")
 
   // Builds the type-level representation of a foreign type: a string-singleton for a named type, a
-  // bare union for `Union`, and `Applied[constructor, (arguments…)]` for a generic application.
+  // bare union for `Union`, and `constructor over (arguments…)` (the prepositional `over`, i.e.
+  // `constructor { type Transport = (arguments…) }`) for a generic application.
   private def reprOf(using quotes: Quotes)(foreign: ForeignType): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 
@@ -164,9 +165,7 @@ object Xenophile:
                 case '[head] => tail.asType.absolve match
                   case '[type tail <: Tuple; tail] => TypeRepr.of[head *: tail]
 
-        ctor.asType.absolve match
-          case '[type ctor <: Label; ctor] => argument.asType.absolve match
-            case '[argument] => TypeRepr.of[_root_.xenophile.Applied[ctor, argument]]
+        Refinement(ctor, "Transport", TypeBounds(argument, argument))
 
   // Builds the refined type `Foreign of <topic> from <origin>`.
   private def foreignType(using quotes: Quotes)(kind: ForeignType, origin: quotes.reflect.TypeRepr)
