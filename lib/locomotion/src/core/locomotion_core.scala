@@ -36,7 +36,7 @@ import anticipation.*
 import prepositional.*
 
 // Encodes any value with an `Encodable in Protobuf` instance to its `Protobuf` wire
-// form; `.serialize` then yields the message bytes. Decoding is `Protobuf.parse(
-// bytes).as[T]`.
+// form; `.encode` then yields the message bytes (`Data`). Decoding is
+// `bytes.read[Protobuf].as[T]` or the `bytes.read[T over Protobuf]` shorthand.
 extension [value: Encodable in Protobuf](value: value)
   def protobuf: Protobuf = value.encode
