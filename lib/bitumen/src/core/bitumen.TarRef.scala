@@ -35,4 +35,4 @@ package bitumen
 import prepositional.*
 import serpentine.*
 
-type TarRef = Relative on Posix
+type TarRef = Relative on Tar

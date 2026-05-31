@@ -37,15 +37,15 @@ import bitumen.*
 import gesticulate.*
 import turbulence.*
 
-// A single image layer, built from a `bitumen.Tar`. A layer carries two distinct
+// A single image layer, built from a `bitumen.Tarfile`. A layer carries two distinct
 // digests: the `diff_id` is the SHA-256 of the *uncompressed* tar (recorded in the
 // image config's `rootfs.diff_ids`), while the descriptor's `digest` is the
 // SHA-256 of the *gzip-compressed* blob (recorded in the manifest), alongside the
 // compressed `size`.
 object Layer:
-  def apply(tar: Tar): Layer = new Layer(tar)
+  def apply(tar: Tarfile): Layer = new Layer(tar)
 
-class Layer(val tar: Tar):
+class Layer(val tar: Tarfile):
   lazy val raw:        Data       = tar.stream[Data].foldLeft(IArray.empty[Byte])(_ ++ _)
   lazy val diffId:     Text       = sha256(raw)
   lazy val blob:       Data       = Stream(raw).compress[Gzip].foldLeft(IArray.empty[Byte])(_ ++ _)

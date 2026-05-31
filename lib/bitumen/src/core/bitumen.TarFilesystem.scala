@@ -49,7 +49,7 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 
-extension (tarType: Tar.type)
+extension (tarType: Tarfile.type)
   def from
               [plane <: Posix: Filesystem]
               (root: Path on plane)
@@ -58,14 +58,14 @@ extension (tarType: Tar.type)
                       plane is Explorable,
                       Tactic[IoError],
                       Tactic[TarError] )
-  :   Tar =
+  :   Tarfile =
 
     val entries: LazyList[TarEntry] = root.descendants.to(LazyList).map: path =>
       TarFilesystem.entryFor(root, path)
 
-    Tar(entries)
+    Tarfile(entries)
 
-extension (tar: Tar)
+extension (tar: Tarfile)
   def extractTo
               [plane <: Posix: Filesystem]
               (root: Path on plane)
@@ -201,7 +201,10 @@ private[bitumen] object TarFilesystem:
       if fullText.startsWith(prefix) then fullText.substring(prefix.length).nn.tt
       else fullText.tt
 
-    decodePath(relText)
+    whereas:
+      case PathError(_, _) => TarError(TarError.Reason.BadName(relText))
+
+    . mitigate(relText.decode[Relative on Posix])
 
   private def decodePath(text: Text)(using Tactic[TarError]): TarRef =
     import errorDiagnostics.empty
@@ -209,7 +212,7 @@ private[bitumen] object TarFilesystem:
     whereas:
       case PathError(_, _) => TarError(TarError.Reason.BadName(text))
 
-    . mitigate(text.decode[Relative on Posix])
+    . mitigate(text.decode[Relative on Tar])
 
   private def readMode(javaPath: jnf.Path)(using Tactic[IoError]): UnixMode =
     try jnf.Files.getAttribute(javaPath, "unix:mode").nn match

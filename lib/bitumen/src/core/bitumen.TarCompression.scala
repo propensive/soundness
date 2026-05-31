@@ -38,17 +38,17 @@ import turbulence.*
 
 object TarCompression
 
-extension (tar: Tar)
+extension (tar: Tarfile)
   def gzip: Stream[Data] = tar.stream[Data].compress[Gzip]
   def zlib: Stream[Data] = tar.stream[Data].compress[Zlib]
   def deflate: Stream[Data] = tar.stream[Data].compress[Deflate]
 
-extension (tarType: Tar.type)
+extension (tarType: Tarfile.type)
   def fromGzip(stream: Stream[Data]): Stream[TarEntry] raises TarError =
-    Tar.read(stream.decompress[Gzip])
+    Tarfile.read(stream.decompress[Gzip])
 
   def fromZlib(stream: Stream[Data]): Stream[TarEntry] raises TarError =
-    Tar.read(stream.decompress[Zlib])
+    Tarfile.read(stream.decompress[Zlib])
 
   def fromDeflate(stream: Stream[Data]): Stream[TarEntry] raises TarError =
-    Tar.read(stream.decompress[Deflate])
+    Tarfile.read(stream.decompress[Deflate])
