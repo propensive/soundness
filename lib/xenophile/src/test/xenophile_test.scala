@@ -102,7 +102,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
     suite(m"Complex types"):
       test(m"an array field is read as `Array<T>` and decodes to a List"):
-        val tags: Foreign of ("Array" applied "string") from Typescript = foo.tags
+        val tags: Foreign of ("Array" via "string") from Typescript = foo.tags
         tags.as[List[Text]]
       . assert(_ == List(t"a", t"b"))
 
@@ -116,8 +116,8 @@ object Tests extends Suite(m"Xenophile tests"):
         id.as[Text | Int]
       . assert(_ == t"abc123")
 
-      test(m"a generic field has an applied foreign type and decodes to a Scala Map"):
-        val lookup: Foreign of ("Map" applied ("number", "string")) from Typescript = foo.lookup
+      test(m"a generic field has an via foreign type and decodes to a Scala Map"):
+        val lookup: Foreign of ("Map" via ("number", "string")) from Typescript = foo.lookup
         lookup.as[Map[Int, Text]]
       . assert(_ == Map(1 -> t"one", 2 -> t"two"))
 

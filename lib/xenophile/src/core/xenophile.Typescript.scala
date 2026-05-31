@@ -50,10 +50,10 @@ object Typescript:
 
   // A TypeScript `string[]` (i.e. `Array<string>`) maps to a Scala `List[Text]`.
   type Strings =
-    List[Text] is Interoperable in Typescript of ("Array" applied "string") by Json
+    List[Text] is Interoperable in Typescript of ("Array" via "string") by Json
 
   given strings: Strings =
-    Interoperable[List[Text], Typescript, ("Array" applied "string"), Json]
+    Interoperable[List[Text], Typescript, ("Array" via "string"), Json]
       ( _.json, _.as[List[Text]] )
 
   // TypeScript `undefined` (produced by reading `T?` as `T | undefined`) maps to the absent
@@ -64,10 +64,10 @@ object Typescript:
   // A TypeScript `Map<number, string>` maps to a Scala `Map[Int, Text]`, decoded with jacinta's
   // map support (object keys parsed as numbers).
   type NumberToString =
-    Map[Int, Text] is Interoperable in Typescript of ("Map" applied ("number", "string")) by Json
+    Map[Int, Text] is Interoperable in Typescript of ("Map" via ("number", "string")) by Json
 
   given numberToString: NumberToString =
-    Interoperable[Map[Int, Text], Typescript, ("Map" applied ("number", "string")), Json]
+    Interoperable[Map[Int, Text], Typescript, ("Map" via ("number", "string")), Json]
       ( _.json, _.as[Map[Int, Text]] )
 
   // A backend that evaluates a `ForeignExpr` against an in-memory JSON document: references and
