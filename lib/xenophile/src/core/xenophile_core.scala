@@ -30,7 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-export xenophile.{Applied, applied, Dialect, Ecosystem, Evaluator, Foreign, ForeignExpr,
-    ForeignType, Interface, Interoperable, Signature, Typescript}
+// Infix sugar for a generic foreign type application: `"Map" applied ("number", "string")` is the
+// `Applied["Map", ("number", "string")]` topic. Parentheses are required around the application
+// when it is itself an argument to a preposition, e.g. `Foreign of ("Map" applied (…))`.
+infix type applied[constructor <: Label, arguments <: Tuple] = Applied[constructor, arguments]

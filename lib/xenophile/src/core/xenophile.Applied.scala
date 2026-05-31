@@ -33,5 +33,6 @@
 package xenophile
 
 // A generic foreign type application used as a `Foreign` topic: a TypeScript `Map<number, string>`
-// is represented as `Applied["Map", ("number", "string")]`. Purely a phantom type.
+// is `Applied["Map", ("number", "string")]`, written infix as `"Map" applied ("number", "string")`
+// (the `applied` infix type is in `xenophile_core`). Purely a phantom type.
 sealed trait Applied[constructor <: Label, arguments <: Tuple]
