@@ -86,6 +86,12 @@ object Tests extends Suite(m"Xenophile tests"):
           case ForeignExpr.Literal(_) => true
           case _                      => false
 
+      test(m"a Scala argument is converted to a `Foreign` literal upon application"):
+        foo.greet(t"hi").expr
+      . assert:
+          case ForeignExpr.Apply(_, List(ForeignExpr.Literal(_))) => true
+          case _                                                  => false
+
       test(m"a foreign literal converts back to a Scala value via `as`"):
         val text: Foreign of "string" from Typescript = t"hello"
         text.as[Text]
@@ -132,4 +138,4 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"passing an argument of the wrong foreign type is a compile error"):
         demilitarize(foo.greet(42)).map(_.message)
-      . assert(_ == List(t"xenophile: cannot pass this argument as string to greet"))
+      . assert(_ == List(t"xenophile: greet expects an argument of foreign type string"))
