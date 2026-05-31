@@ -53,6 +53,15 @@ object Typescript:
   given strings: (List[Text] is Interoperable in Typescript of "string[]" by Json) =
     Interoperable[List[Text], Typescript, "string[]", Json](_.json, _.as[List[Text]])
 
+  // A TypeScript `Map<number, string>` maps to a Scala `Map[Int, Text]`, decoded with jacinta's
+  // map support (object keys parsed as numbers).
+  type NumberToString =
+    Map[Int, Text] is Interoperable in Typescript of Applied["Map", ("number", "string")] by Json
+
+  given numberToString: NumberToString =
+    Interoperable[Map[Int, Text], Typescript, Applied["Map", ("number", "string")], Json]
+      ( _.json, _.as[Map[Int, Text]] )
+
   // A backend that evaluates a `ForeignExpr` against an in-memory JSON document: references and
   // selections navigate the document; literals yield their operand; function application is
   // unsupported (a static document has no callable members).

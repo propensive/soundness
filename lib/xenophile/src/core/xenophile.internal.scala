@@ -135,28 +135,40 @@ object Xenophile:
       case _ =>
         halt(m"xenophile: the definitions path is not a string literal type")
 
-  // Builds the type-level representation of a foreign type name: a bare union (`A | B`) when the
-  // name contains `|`, otherwise a string-singleton type.
-  private def topicReprOf(using quotes: Quotes)(topic: Text): quotes.reflect.TypeRepr =
+  // Builds the type-level representation of a foreign type: a string-singleton for a named type, a
+  // bare union for `Union`, and `Applied[constructor, (arguments…)]` for a generic application.
+  private def reprOf(using quotes: Quotes)(foreign: ForeignType): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 
-    topic.cut(t"|").to(List) match
-      case List(single) =>
-        ConstantType(StringConstant(single.s))
+    foreign match
+      case ForeignType.Named(name) =>
+        ConstantType(StringConstant(name.s))
 
-      case parts =>
-        parts.map { part => ConstantType(StringConstant(part.s)): TypeRepr }.reduce: (a, b) =>
+      case ForeignType.Union(members) =>
+        members.map(reprOf).reduce: (a, b) =>
           a.asType.absolve match
             case '[x] => b.asType.absolve match
               case '[y] => TypeRepr.of[x | y]
 
+      case ForeignType.Applied(constructor, arguments) =>
+        val ctor = ConstantType(StringConstant(constructor.s))
+
+        val tuple = arguments.map(reprOf).foldRight(TypeRepr.of[EmptyTuple]): (head, tail) =>
+          head.asType.absolve match
+            case '[head] => tail.asType.absolve match
+              case '[type tail <: Tuple; tail] => TypeRepr.of[head *: tail]
+
+        ctor.asType.absolve match
+          case '[type ctor <: Label; ctor] => tuple.asType.absolve match
+            case '[type tuple <: Tuple; tuple] => TypeRepr.of[_root_.xenophile.Applied[ctor, tuple]]
+
   // Builds the refined type `Foreign of <topic> from <origin>`.
-  private def foreignType(using quotes: Quotes)(topic: Text, origin: quotes.reflect.TypeRepr)
+  private def foreignType(using quotes: Quotes)(kind: ForeignType, origin: quotes.reflect.TypeRepr)
   :   quotes.reflect.TypeRepr =
 
     import quotes.reflect.*
 
-    val topicType = topicReprOf(topic)
+    val topicType = reprOf(kind)
 
     Refinement
       ( Refinement(TypeRepr.of[Foreign], "Topic", TypeBounds(topicType, topicType)),
@@ -167,12 +179,12 @@ object Xenophile:
   // parameter type: a `Foreign` argument must already have that foreign type (`Topic`); any other
   // value must have an `Interoperable` instance mapping it to exactly that foreign type.
   private def argTree(using quotes: Quotes)
-    ( arg: Expr[Any], paramType: Text, originRepr: quotes.reflect.TypeRepr, method: Text )
+    ( arg: Expr[Any], paramType: ForeignType, originRepr: quotes.reflect.TypeRepr, method: Text )
   :   Expr[ForeignExpr] =
 
     import quotes.reflect.*
 
-    val paramTopic = ConstantType(StringConstant(paramType.s))
+    val paramTopic = reprOf(paramType)
 
     arg.asTerm.tpe.widen.asType.absolve match
       case '[argument] =>
@@ -182,12 +194,8 @@ object Xenophile:
           val argTopic = refinements(argRepr).at(t"Topic").or:
             halt(m"xenophile: the foreign type of an argument to $method is not known")
 
-          val matches = argTopic.absolve match
-            case ConstantType(StringConstant(name)) => name.tt == paramType
-            case _                                  => false
-
-          if matches then '{${arg.asExprOf[Foreign]}.expr}
-          else halt(m"xenophile: $method expects an argument of foreign type $paramType")
+          if argTopic =:= paramTopic then '{${arg.asExprOf[Foreign]}.expr}
+          else halt(m"xenophile: $method expects an argument of foreign type ${paramType.text}")
         else
           val base = Refinement(TypeRepr.of[Interoperable], "Self", TypeBounds(argRepr, argRepr))
           val withForm = Refinement(base, "Form", TypeBounds(originRepr, originRepr))
@@ -200,7 +208,7 @@ object Xenophile:
                   '{ForeignExpr.Literal($instance.operand(${arg.asExprOf[argument]}))}
 
                 case _ =>
-                  halt(m"xenophile: cannot pass this argument as $paramType to $method")
+                  halt(m"xenophile: cannot pass this argument as ${paramType.text} to $method")
 
   def select(self: Expr[Foreign], field: Expr[String]): Macro[Foreign] =
     val fieldName = field.valueOrAbort.tt
@@ -309,7 +317,7 @@ object Xenophile:
 
           topicRepr.absolve match
             case ConstantType(StringConstant(name)) if name.tt.ends(t"?") =>
-              val baseRepr = topicReprOf(name.tt.cut(t"?").to(List).head)
+              val baseRepr = ConstantType(StringConstant(name.tt.cut(t"?").to(List).head.s))
 
               val innerRepr = TypeRepr.of[target].dealias match
                 case OrType(left, right) => if left =:= TypeRepr.of[Unset.type] then right else left
@@ -372,6 +380,6 @@ object Xenophile:
       case _ =>
         halt(m"xenophile: the foreign type name must be a string literal type")
 
-    foreignType(name.tt, TypeRepr.of[origin]).asType.absolve match
+    foreignType(ForeignType.Named(name.tt), TypeRepr.of[origin]).asType.absolve match
       case '[type result <: Foreign; result] =>
         '{Foreign.make(ForeignExpr.Reference(${Expr(name)}.tt)).asInstanceOf[result]}

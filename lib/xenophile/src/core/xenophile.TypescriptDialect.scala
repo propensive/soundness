@@ -33,6 +33,7 @@
 package xenophile
 
 import anticipation.*
+import gossamer.*
 import vacuous.*
 
 // A minimal grammar for TypeScript declaration files: enough to read `interface` blocks of fields
@@ -45,7 +46,8 @@ object TypescriptDialect extends Dialect:
   // whitespace; this is all the lexical structure the interface grammar needs.
   private def punctuation(char: Char): Boolean =
     char == '{' || char == '}' || char == '(' || char == ')' || char == ':' || char == ',' ||
-      char == ';' || char == '[' || char == ']' || char == '?' || char == '|'
+      char == ';' || char == '[' || char == ']' || char == '?' || char == '|' || char == '<' ||
+      char == '>'
 
   private def tokenize(source: String): List[String] =
     def recur(index: Int, current: String, tokens: List[String]): List[String] =
@@ -77,23 +79,67 @@ object TypescriptDialect extends Dialect:
       case Nil =>
         acc
 
-  // Parses a type expression into a foreign type name encoding its structure: `T[]` becomes "T[]";
-  // `T | null` and `T | undefined` become "T?"; any other union "A | B" becomes "A|B". These names
-  // are what `Interoperable` instances are keyed on.
-  private def typeOf(tokens: List[String]): (String, List[String]) = tokens match
-    case base :: rest =>
-      val (array, rest2) = rest match
-        case "[" :: "]" :: more => (base+"[]", more)
-        case _                  => (base, rest)
+  // Parses a type expression into a `ForeignType`: `T[]` and `T?` as suffixed named types, `A | B`
+  // as a union (with `| null` / `| undefined` collapsing to an optional), and `Name<args>` as a
+  // generic application.
+  private def typeOf(tokens: List[String]): (ForeignType, List[String]) =
+    val (first, rest0) = atom(tokens)
 
-      rest2 match
-        case "|" :: "null" :: more      => (array+"?", more)
-        case "|" :: "undefined" :: more => (array+"?", more)
-        case "|" :: other :: more       => (array+"|"+other, more)
-        case _                          => (array, rest2)
+    def union(todo: List[String], acc: List[ForeignType]): (List[ForeignType], List[String]) =
+      todo match
+        case "|" :: more =>
+          val (next, rest) = atom(more)
+          union(rest, next :: acc)
+
+        case _ =>
+          (acc.reverse, todo)
+
+    val (members, rest) = union(rest0, List(first))
+    val real = members.filterNot(nullish)
+
+    val result =
+      if members.length == real.length then
+        if real.length == 1 then real.head else ForeignType.Union(real)
+      else
+        real match
+          case List(ForeignType.Named(name)) => ForeignType.Named(t"$name?")
+          case _                             => ForeignType.Union(real)
+
+    (result, rest)
+
+  private def nullish(foreign: ForeignType): Boolean = foreign match
+    case ForeignType.Named(name) => name == t"null" || name == t"undefined"
+    case _                       => false
+
+  // Parses a single (non-union) type: a generic application, an array, or a plain named type.
+  private def atom(tokens: List[String]): (ForeignType, List[String]) = tokens match
+    case name :: "<" :: more =>
+      val (args, rest) = arguments(more, Nil)
+      (ForeignType.Applied(name.tt, args), rest)
+
+    case name :: "[" :: "]" :: more =>
+      (ForeignType.Named(t"$name[]"), more)
+
+    case name :: more =>
+      (ForeignType.Named(name.tt), more)
 
     case Nil =>
-      ("", Nil)
+      (ForeignType.Named(t""), Nil)
+
+  private def arguments(tokens: List[String], acc: List[ForeignType])
+  :   (List[ForeignType], List[String]) =
+
+    tokens match
+      case ">" :: rest =>
+        (acc.reverse, rest)
+
+      case _ =>
+        val (arg, rest) = typeOf(tokens)
+
+        rest match
+          case "," :: more => arguments(more, arg :: acc)
+          case ">" :: more => ((arg :: acc).reverse, more)
+          case _           => arguments(rest, acc)
 
   private def membersOf(tokens: List[String], acc: Map[Text, Signature])
   :   (Map[Text, Signature], List[String]) =
@@ -108,19 +154,18 @@ object TypescriptDialect extends Dialect:
         rest2 match
           case ":" :: rest3 =>
             val (result, rest4) = typeOf(rest3)
-            val signature = Signature(parameters.map(_.tt), result.tt)
-            membersOf(semicolon(rest4), acc.updated(name.tt, signature))
+            membersOf(semicolon(rest4), acc.updated(name.tt, Signature(parameters, result)))
 
           case _ =>
             (acc, rest2)
 
       case name :: "?" :: ":" :: rest =>
         val (result, rest2) = typeOf(rest)
-        membersOf(semicolon(rest2), acc.updated(name.tt, Signature(Unset, (result+"?").tt)))
+        membersOf(semicolon(rest2), acc.updated(name.tt, Signature(Unset, optional(result))))
 
       case name :: ":" :: rest =>
         val (result, rest2) = typeOf(rest)
-        membersOf(semicolon(rest2), acc.updated(name.tt, Signature(Unset, result.tt)))
+        membersOf(semicolon(rest2), acc.updated(name.tt, Signature(Unset, result)))
 
       case _ :: rest =>
         membersOf(rest, acc)
@@ -128,8 +173,14 @@ object TypescriptDialect extends Dialect:
       case Nil =>
         (acc, Nil)
 
+  private def optional(foreign: ForeignType): ForeignType = foreign match
+    case ForeignType.Named(name) => ForeignType.Named(t"$name?")
+    case other                   => other
+
   // Reads parameter declarations up to the closing `)`, keeping only each parameter's type.
-  private def params(tokens: List[String], acc: List[String]): (List[String], List[String]) =
+  private def params(tokens: List[String], acc: List[ForeignType])
+  :   (List[ForeignType], List[String]) =
+
     tokens match
       case ")" :: rest =>
         (acc.reverse, rest)

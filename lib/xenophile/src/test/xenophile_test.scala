@@ -41,7 +41,7 @@ given tsInterface: TsInterface = Interface[Typescript](cp"/xenophile/definitions
 
 val document: Json =
   j"""{"Foo": {"baz": "hello", "bar": {"count": 42}, "tags": ["a", "b"], "nickname": "Bob",
-       "id": "abc123"}}"""
+       "id": "abc123", "lookup": {"1": "one", "2": "two"}}}"""
 
 given Evaluator in Typescript by Json = Typescript.evaluator(document)
 
@@ -115,6 +115,11 @@ object Tests extends Suite(m"Xenophile tests"):
         val id: Foreign of ("string" | "number") from Typescript = foo.id
         id.as[Text | Int]
       . assert(_ == t"abc123")
+
+      test(m"a generic field has an `Applied` foreign type and decodes to a Scala Map"):
+        val lookup: Foreign of Applied["Map", ("number", "string")] from Typescript = foo.lookup
+        lookup.as[Map[Int, Text]]
+      . assert(_ == Map(1 -> t"one", 2 -> t"two"))
 
     suite(m"Compile-time safety"):
       test(m"selecting an undefined member is a compile error"):
