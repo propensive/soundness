@@ -40,7 +40,8 @@ type TsInterface = Interface in Typescript at "/xenophile/definitions.ts"
 given tsInterface: TsInterface = Interface[Typescript](cp"/xenophile/definitions.ts")
 
 val document: Json =
-  j"""{"Foo": {"baz": "hello", "bar": {"count": 42}, "tags": ["a", "b"], "nickname": "Bob"}}"""
+  j"""{"Foo": {"baz": "hello", "bar": {"count": 42}, "tags": ["a", "b"], "nickname": "Bob",
+       "id": "abc123", "lookup": {"1": "one", "2": "two"}}}"""
 
 given Evaluator in Typescript by Json = Typescript.evaluator(document)
 
@@ -100,15 +101,25 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_ == 42)
 
     suite(m"Complex types"):
-      test(m"an array field has an array foreign type and decodes to a List"):
-        val tags: Foreign of "string[]" from Typescript = foo.tags
+      test(m"an array field is read as `Array<T>` and decodes to a List"):
+        val tags: Foreign of ("Array" over "string") from Typescript = foo.tags
         tags.as[List[Text]]
       . assert(_ == List(t"a", t"b"))
 
-      test(m"an optional field has an optional foreign type and decodes to an Optional"):
-        val nickname: Foreign of "string?" from Typescript = foo.nickname
+      test(m"an optional field is a union with `undefined` and decodes to an Optional"):
+        val nickname: Foreign of ("string" | "undefined") from Typescript = foo.nickname
         nickname.as[Optional[Text]]
       . assert(_ == t"Bob")
+
+      test(m"a union field has a bare-union foreign type and decodes to a Scala union"):
+        val id: Foreign of ("string" | "number") from Typescript = foo.id
+        id.as[Text | Int]
+      . assert(_ == t"abc123")
+
+      test(m"a generic field has an `over` foreign type and decodes to a Scala Map"):
+        val lookup: Foreign of ("Map" over ("number", "string")) from Typescript = foo.lookup
+        lookup.as[Map[Int, Text]]
+      . assert(_ == Map(1 -> t"one", 2 -> t"two"))
 
     suite(m"Compile-time safety"):
       test(m"selecting an undefined member is a compile error"):

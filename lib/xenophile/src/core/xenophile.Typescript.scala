@@ -48,10 +48,27 @@ object Typescript:
   given boolean: (Boolean is Interoperable in Typescript of "boolean" by Json) =
     Interoperable[Boolean, Typescript, "boolean", Json](_.json, _.as[Boolean])
 
-  // A TypeScript `string[]` array maps to a Scala `List[Text]`, decoded with jacinta's own
-  // collection support.
-  given strings: (List[Text] is Interoperable in Typescript of "string[]" by Json) =
-    Interoperable[List[Text], Typescript, "string[]", Json](_.json, _.as[List[Text]])
+  // A TypeScript `string[]` (i.e. `Array<string>`) maps to a Scala `List[Text]`.
+  type Strings =
+    List[Text] is Interoperable in Typescript of ("Array" over "string") by Json
+
+  given strings: Strings =
+    Interoperable[List[Text], Typescript, ("Array" over "string"), Json]
+      ( _.json, _.as[List[Text]] )
+
+  // TypeScript `undefined` (produced by reading `T?` as `T | undefined`) maps to the absent
+  // `Optional` value.
+  given undefined: (Unset.type is Interoperable in Typescript of "undefined" by Json) =
+    Interoperable[Unset.type, Typescript, "undefined", Json](_ => Json(Unset), _ => Unset)
+
+  // A TypeScript `Map<number, string>` maps to a Scala `Map[Int, Text]`, decoded with jacinta's
+  // map support (object keys parsed as numbers).
+  type NumberToString =
+    Map[Int, Text] is Interoperable in Typescript of ("Map" over ("number", "string")) by Json
+
+  given numberToString: NumberToString =
+    Interoperable[Map[Int, Text], Typescript, ("Map" over ("number", "string")), Json]
+      ( _.json, _.as[Map[Int, Text]] )
 
   // A backend that evaluates a `ForeignExpr` against an in-memory JSON document: references and
   // selections navigate the document; literals yield their operand; function application is
@@ -60,8 +77,6 @@ object Typescript:
     new Evaluator:
       type Form = Typescript
       type Operand = Json
-
-      def absent(operand: Json): Boolean = operand.as[Optional[Json]] == Unset
 
       def evaluate(expr: ForeignExpr): Json = expr match
         case ForeignExpr.Literal(value)         => value.asInstanceOf[Json]

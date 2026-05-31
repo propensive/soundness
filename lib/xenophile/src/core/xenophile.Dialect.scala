@@ -33,11 +33,24 @@
 package xenophile
 
 import anticipation.*
+import gossamer.*
 import vacuous.*
 
+// A foreign type expression: a named type ("Foo", "string", and the suffixed "string[]"/"string?"),
+// a union of alternatives, or a generic application such as `Map<number, string>`.
+enum ForeignType:
+  case Named(name: Text)
+  case Union(members: List[ForeignType])
+  case Applied(constructor: Text, arguments: List[ForeignType])
+
+  def text: Text = this match
+    case Named(name)         => name
+    case Union(members)      => members.map(_.text).join(t"|")
+    case Applied(name, args) => t"$name<${args.map(_.text).join(t", ")}>"
+
 // The signature of a member of a foreign type: a field has no parameters (`Unset`); a method
-// records the foreign type names of its parameters. `result` is the foreign type name produced.
-case class Signature(parameters: Optional[List[Text]], result: Text)
+// records its parameter types. `result` is the foreign type the member produces.
+case class Signature(parameters: Optional[List[ForeignType]], result: ForeignType)
 
 // A grammar for a particular foreign type system: parses a definitions source into a map from each
 // foreign type name to its members' signatures. Keyed on an ecosystem so the macro stays agnostic.

@@ -35,7 +35,7 @@ package xenophile
 import prepositional.*
 
 object Interoperable:
-  def apply[self, form <: Ecosystem, topic <: Label, operand]
+  def apply[self, form <: Ecosystem, topic, operand]
     ( encode: self => operand, decode: operand => self )
   :   (self is Interoperable in form of topic by operand) =
 
