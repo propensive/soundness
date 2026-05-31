@@ -237,8 +237,8 @@ object groupCheck extends Module:
     "quantitative.units",
 
     "bitumen.core", "breviloquence.core", "distillate.core", "exegesis.core",
-    "gigantism.core", "proscenium.core", "satirical.core", "stenography.core",
-    "ypsiloid.core"
+    "gigantism.core", "locomotion.core", "proscenium.core", "satirical.core",
+    "stenography.core", "ypsiloid.core"
   )
 
   def validate(): Command[Unit] = Task.Command:
@@ -943,6 +943,14 @@ object mandible extends Library:
 
   object test extends Tests(core, revolution.core, quantitative.units)
 
+object locomotion extends Library:
+  object core
+      extends Component(turbulence.core, wisteria.core, adversaria.core, hypotenuse.core,
+        gossamer.core, spectacular.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core)
+
 object mercator extends Library:
   object core extends Component(fulminate.core):
     override def scalacOptions = Task:
@@ -1378,7 +1386,8 @@ val allLibraries: Seq[Library] = Seq(
   frontier, fulminate, galilei, gastronomy, geodesy, gesticulate, gigantism,
   gnossienne, gossamer, guillotine, hallucination, harlequin, hellenism, hieroglyph,
   honeycomb, hyperbole, hypotenuse, imperial, inimitable, iridescence, jacinta,
-  kaleidoscope, larceny, legerdemain, mandible, mercator, metamorphose, monotonous,
+  kaleidoscope, larceny, legerdemain, locomotion, mandible, mercator, metamorphose,
+  monotonous,
   mosquito, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
   phoenicia, plutocrat, polaris, polysyllabic, polyvinyl, prepositional, probably, profanity,
   proscenium, punctuation, quantitative, revolution, rudiments, satirical, savagery,
