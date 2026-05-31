@@ -52,7 +52,7 @@ object Http2Client:
   // `H2Connection`'s daemons need them — so it can only be summoned inside a
   // `supervise` scope. A fresh connection is opened per request for now; pooling
   // is a later refinement.
-  given http2: [endpoint] => (Monitor, Codicil, Tactic[H2Error], Tactic[AsyncError])
+  given http2: [endpoint] => (Monitor, Codicil, Tactic[Http2Error], Tactic[AsyncError])
   =>  HttpClient onto H2Endpoint[endpoint] =
 
     new HttpClient:

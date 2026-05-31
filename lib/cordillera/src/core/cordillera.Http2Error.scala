@@ -35,7 +35,7 @@ package cordillera
 import anticipation.*
 import fulminate.*
 
-object H2Error:
+object Http2Error:
   object Reason:
     given communicable: Reason is Communicable =
       case Truncated         => m"the HTTP/2 data ended unexpectedly"
@@ -61,5 +61,5 @@ object H2Error:
     case Protocol(message: Text)
     case GoAway(code: Long)
 
-case class H2Error(reason: H2Error.Reason)(using Diagnostics)
+case class Http2Error(reason: Http2Error.Reason)(using Diagnostics)
 extends Error(m"the HTTP/2 operation failed because $reason")
