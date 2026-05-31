@@ -147,7 +147,7 @@ object Http2:
 
     // Decodes a single frame from `data` starting at `offset`; returns the frame and
     // the offset just past it. `data` must already contain the whole frame.
-    def decode(data: Bytes, offset: Int)(using Tactic[Http2Error]): (Frame, Int) =
+    def decode(data: Bytes, offset: Int): (Frame, Int) raises Http2Error =
       if offset + 9 > data.length then abort(Http2Error(Reason.Truncated))
       val length = uint24(data, offset)
       val typeId = data(offset + 3) & 0xff
@@ -201,14 +201,14 @@ object Http2:
 
     // DATA/HEADERS may carry a 1-byte pad length followed by that many trailing pad
     // bytes (RFC 7540 §6.1/§6.2); strip both when the PADDED flag is set.
-    private def stripPadding(payload: Bytes, flags: Int)(using Tactic[Http2Error]): Bytes =
+    private def stripPadding(payload: Bytes, flags: Int): Bytes raises Http2Error =
       if !Flags.set(flags, Flags.Padded) then payload else
         if payload.length < 1 then abort(Http2Error(Reason.Truncated))
         val padLength = payload(0) & 0xff
         if 1 + padLength > payload.length then abort(Http2Error(Reason.Protocol(t"bad padding")))
         payload.slice(1, payload.length - padLength)
 
-    private def decodeSettings(payload: Bytes)(using Tactic[Http2Error]): List[Setting] =
+    private def decodeSettings(payload: Bytes): List[Setting] raises Http2Error =
       if payload.length%6 != 0 then abort(Http2Error(Reason.Protocol(t"bad SETTINGS length")))
       val builder = List.newBuilder[Setting]
       var i = 0

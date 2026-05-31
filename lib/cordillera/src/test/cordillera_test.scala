@@ -173,7 +173,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
       . assert(_ == t"000008060100000000 0102030405060708".sub(t" ", t""))
 
     suite(m"Frame codec — round-trips"):
-      def roundTrip(frame: Frame)(using Tactic[Http2Error]): Frame =
+      def roundTrip(frame: Frame): Frame raises Http2Error =
         Frame.decode(frame.serialize, 0)(0)
 
       test(m"SETTINGS with parameters round-trips"):
