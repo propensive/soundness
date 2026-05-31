@@ -316,32 +316,21 @@ object Xenophile:
             case other               => List(other)
 
           topicRepr.absolve match
-            case ConstantType(StringConstant(name)) if name.tt.ends(t"?") =>
-              val baseRepr = ConstantType(StringConstant(name.tt.cut(t"?").to(List).head.s))
-
-              val innerRepr = TypeRepr.of[target].dealias match
-                case OrType(left, right) => if left =:= TypeRepr.of[Unset.type] then right else left
-
-                case _ =>
-                  halt(m"xenophile: an optional foreign type must be read as an `Optional`")
-
-              val tree =
-                ' {
-                    val data: operand = $ev.evaluate($self.expr)
-                    if $ev.absent(data) then Unset else ${element(innerRepr, baseRepr, 'data)}
-                  }
-
-              tree.asExprOf[target]
-
             case OrType(_, _) =>
               def chain(members: List[TypeRepr], data: Expr[operand]): Expr[Any] =
                 members.map(member(_, data)).reduceRight: (head, tail) =>
                   '{try $head catch case _: Exception => $tail}
 
+              // `Unset.type`'s decoder always succeeds (it is the absent value), so it is tried
+              // last, after every concrete alternative.
+              val unset = TypeRepr.of[Unset.type]
+              val members = parts(TypeRepr.of[target])
+              val ordered = members.filterNot(_ =:= unset) ++ members.filter(_ =:= unset)
+
               val tree =
                 ' {
                     val data: operand = $ev.evaluate($self.expr)
-                    ${chain(parts(TypeRepr.of[target]), 'data)}
+                    ${chain(ordered, 'data)}
                   }
 
               tree.asExprOf[target]

@@ -101,13 +101,13 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_ == 42)
 
     suite(m"Complex types"):
-      test(m"an array field has an array foreign type and decodes to a List"):
-        val tags: Foreign of "string[]" from Typescript = foo.tags
+      test(m"an array field is read as `Array<T>` and decodes to a List"):
+        val tags: Foreign of Applied["Array", Tuple1["string"]] from Typescript = foo.tags
         tags.as[List[Text]]
       . assert(_ == List(t"a", t"b"))
 
-      test(m"an optional field has an optional foreign type and decodes to an Optional"):
-        val nickname: Foreign of "string?" from Typescript = foo.nickname
+      test(m"an optional field is a union with `undefined` and decodes to an Optional"):
+        val nickname: Foreign of ("string" | "undefined") from Typescript = foo.nickname
         nickname.as[Optional[Text]]
       . assert(_ == t"Bob")
 

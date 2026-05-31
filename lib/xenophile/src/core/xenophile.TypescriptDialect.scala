@@ -95,30 +95,22 @@ object TypescriptDialect extends Dialect:
           (acc.reverse, todo)
 
     val (members, rest) = union(rest0, List(first))
-    val real = members.filterNot(nullish)
-
-    val result =
-      if members.length == real.length then
-        if real.length == 1 then real.head else ForeignType.Union(real)
-      else
-        real match
-          case List(ForeignType.Named(name)) => ForeignType.Named(t"$name?")
-          case _                             => ForeignType.Union(real)
+    val result = if members.length == 1 then members.head else ForeignType.Union(members)
 
     (result, rest)
 
-  private def nullish(foreign: ForeignType): Boolean = foreign match
-    case ForeignType.Named(name) => name == t"null" || name == t"undefined"
-    case _                       => false
-
-  // Parses a single (non-union) type: a generic application, an array, or a plain named type.
+  // Parses a single (non-union) type. `T[]` is read as `Array<T>` (one array representation), and
+  // `null`/`undefined` are canonicalised to `undefined` (the absent value in a union).
   private def atom(tokens: List[String]): (ForeignType, List[String]) = tokens match
     case name :: "<" :: more =>
       val (args, rest) = arguments(more, Nil)
       (ForeignType.Applied(name.tt, args), rest)
 
     case name :: "[" :: "]" :: more =>
-      (ForeignType.Named(t"$name[]"), more)
+      (ForeignType.Applied(t"Array", List(ForeignType.Named(name.tt))), more)
+
+    case ("null" | "undefined") :: more =>
+      (ForeignType.Named(t"undefined"), more)
 
     case name :: more =>
       (ForeignType.Named(name.tt), more)
@@ -173,9 +165,9 @@ object TypescriptDialect extends Dialect:
       case Nil =>
         (acc, Nil)
 
-  private def optional(foreign: ForeignType): ForeignType = foreign match
-    case ForeignType.Named(name) => ForeignType.Named(t"$name?")
-    case other                   => other
+  // An optional member `x?: T` is `T | undefined`.
+  private def optional(foreign: ForeignType): ForeignType =
+    ForeignType.Union(List(foreign, ForeignType.Named(t"undefined")))
 
   // Reads parameter declarations up to the closing `)`, keeping only each parameter's type.
   private def params(tokens: List[String], acc: List[ForeignType])
