@@ -35,9 +35,13 @@ package cordillera
 import scala.collection.mutable as scm
 
 import anticipation.{Data as Bytes, *}
+import coaxial.*
 import contingency.*
 import gossamer.*
+import parasite.*
+import prepositional.*
 import rudiments.*
+import telekinesis.*
 import vacuous.*
 
 import Http2Error.Reason
@@ -315,3 +319,28 @@ object Http2:
       Frame.writeUint32(builder, stream.toLong & 0x7fffffffL)
       builder.addAll(body.mutable(using Unsafe))
       builder.result().immutable(using Unsafe)
+
+  // A cleartext-h2c endpoint: a connectable address plus the `:authority` to send.
+  // Used as the `Target` of the HTTP/2 `HttpClient` given, distinct from the
+  // `DomainSocket` target telekinesis binds to its HTTP/1.1 client.
+  case class Endpoint[endpoint: Connectable as connectable](endpoint: endpoint, authority: Text):
+    def connect(): Duplex = connectable.connect(endpoint)
+
+  // An `HttpClient` that speaks HTTP/2 (prior-knowledge h2c) to an `Http2.Endpoint`.
+  // It captures the ambient `Monitor`/`Codicil` from this given's context — the
+  // `H2Connection`'s daemons need them — so it can only be summoned inside a
+  // `supervise` scope. A fresh connection is opened per request for now; pooling
+  // is a later refinement.
+  object Client:
+    given http2: [endpoint] => (Monitor, Codicil, Tactic[Http2Error], Tactic[AsyncError])
+    =>  HttpClient onto Endpoint[endpoint] =
+
+      new HttpClient:
+        type Target = Endpoint[endpoint]
+
+        def request(request: Http.Request, target: Endpoint[endpoint])
+        :   Http.Response logs HttpEvent =
+
+          val connection = H2Connection(target.connect())
+          connection.start()
+          connection.fetch(request, t"http", target.authority)(1)
