@@ -266,6 +266,24 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           (container.id, container.labels, container.image)
       . assert(_ == (t"gamma", Map(t"x" -> t"y"), t"img:1"))
 
+      test(m"namespaces() decodes the namespace list"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val namespace = Promise[Text]()
+
+          val list = ListNamespacesResponse(List(Namespace(t"default"),
+              Namespace(t"k8s.io", Map(t"managed" -> t"true"))))
+
+          val body = GrpcFraming.encode(list.protobuf.encode)
+          runServer(serverSide, namespace, body)
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          Containerd(endpoint, t"example").namespaces().map(ns => (ns.name, ns.labels))
+      . assert(_ == List((t"default", Map()), (t"k8s.io", Map(t"managed" -> t"true"))))
+
     suite(m"containerd timestamps via the generic time abstraction"):
       // The `Long`-as-instant given lets us mint an Aviation `Instant` from epoch
       // millis; Aviation's own `Instant` abstractable/instantiable instances are found
