@@ -36,6 +36,11 @@ import soundness.*
 
 import charEncoders.utf8
 import strategies.throwUnsafely
+import Http2.*
+
+// Simple protobuf messages for the gRPC loopback tests.
+case class Ping(message: Text)
+case class Pong(message: Text)
 
 object Tests extends Suite(m"Obligatory Tests"):
   def run(): Unit =
@@ -109,3 +114,144 @@ object Tests extends Suite(m"Obligatory Tests"):
 
         Iterator(input).frames[Sse].map(_.decode[Sse]).to(List)
       . assert(_ == List(Sse("one", List("foobar", "baz"), "123"), Sse("message", List("hello world"), Unset, 54321L)))
+
+    suite(m"gRPC message framing"):
+      def ascii(text: Text): Data = IArray.from(text.s.getBytes("US-ASCII").nn.to(List))
+
+      test(m"encode prefixes a flag byte and 4-byte length"):
+        GrpcFraming.encode(ascii(t"hi")).to(List)
+      . assert(_ == (Data(0, 0, 0, 0, 2) ++ ascii(t"hi")).to(List))
+
+      test(m"round-trip a single message"):
+        val framed = GrpcFraming.encode(ascii(t"hello"))
+        Stream(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
+      . assert(_ == List(ascii(t"hello").to(List)))
+
+      test(m"split two concatenated messages"):
+        val framed = GrpcFraming.encode(ascii(t"one")) ++ GrpcFraming.encode(ascii(t"two"))
+        Stream(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
+      . assert(_ == List(ascii(t"one").to(List), ascii(t"two").to(List)))
+
+      test(m"gzip-compressed message round-trips"):
+        val framed = GrpcFraming.encode(ascii(t"compress me please"), compress = true)
+        Stream(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
+      . assert(_ == List(ascii(t"compress me please").to(List)))
+
+      test(m"status code maps to the canonical name"):
+        Grpc.Status.of(5)
+      . assert(_ == Grpc.Status.NotFound)
+
+    suite(m"gRPC over HTTP/2 (loopback)"):
+      import threading.virtual
+      import codicils.cancel
+      import errorDiagnostics.stackTraces
+
+      def pair(): (Duplex, Duplex) =
+        val clientToServer = Spool[Data]()
+        val serverToClient = Spool[Data]()
+
+        def duplex(inbound: Spool[Data], outbound: Spool[Data]) = new Duplex:
+          def stream: Stream[Data] = inbound.stream
+          def send(data: Stream[Data]): Unit = data.each(outbound.put)
+          def close(): Unit = outbound.stop()
+
+        (duplex(serverToClient, clientToServer), duplex(clientToServer, serverToClient))
+
+      def okHeaders(hpack: Hpack, id: Int): Frame =
+        val block = hpack.encode(List(HpackEntry(t":status", t"200"),
+            HpackEntry(t"content-type", t"application/grpc")))
+
+        Frame.Headers(id, block, endStream = false, endHeaders = true)
+
+      def trailers(hpack: Hpack, id: Int, fields: List[HpackEntry], endStream: Boolean): Frame =
+        Frame.Headers(id, hpack.encode(fields), endStream, endHeaders = true)
+
+      // A minimal in-process gRPC server: completes the HTTP/2 handshake, then on the
+      // request HEADERS replies with whatever frames `responder` builds.
+      def runServer(serverSide: Duplex, responder: (Hpack, Int) => List[Frame])
+          ( using Monitor, Codicil )
+      :   Daemon =
+
+        daemon:
+          safely:
+            serverSide.send(Stream(Frame.Settings(Nil, ack = false).serialize))
+            val raw = serverSide.stream.iterator
+
+            val afterPreface: Iterator[Data] =
+              var buffered = IArray.empty[Byte]
+              while buffered.length < 24 && raw.hasNext do buffered = buffered ++ raw.next()
+              val leftover = buffered.drop(24)
+              (if leftover.isEmpty then Iterator.empty else Iterator(leftover)) ++ raw
+
+            val reader = FrameReader(afterPreface)
+            val hpack = Hpack()
+            var continue = true
+
+            while continue do reader.next() match
+              case Unset    => continue = false
+
+              case f: Frame => f match
+                case Frame.Settings(_, false) =>
+                  serverSide.send(Stream(Frame.Settings(Nil, ack = true).serialize))
+
+                case Frame.Headers(id, _, _, _) =>
+                  responder(hpack, id).each: frame =>
+                    serverSide.send(Stream(frame.serialize))
+
+                case _ => ()
+
+      val method = Grpc.Method(t"echo.Echo", t"Call")
+
+      test(m"a unary call decodes a typed response and OK status"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+
+          runServer(serverSide, (hpack, id) =>
+            List
+              ( okHeaders(hpack, id),
+                Frame.Data(id, GrpcFraming.encode(Pong(t"pong").protobuf.encode), endStream = false),
+                trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val channel = GrpcChannel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
+          channel.unary[Ping, Pong](method, Ping(t"ping")).message
+      . assert(_ == t"pong")
+
+      test(m"a non-Ok trailing status raises a GrpcError"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+
+          runServer(serverSide, (hpack, id) =>
+            List(trailers(hpack, id, List(HpackEntry(t":status", t"200"),
+                HpackEntry(t"grpc-status", t"5"), HpackEntry(t"grpc-message", t"absent")), true)))
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val channel = GrpcChannel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
+          capture[GrpcError](channel.unary[Ping, Pong](method, Ping(t"ping"))).status
+      . assert(_ == Grpc.Status.NotFound)
+
+      test(m"a server-streaming call decodes every response message"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+
+          val body =
+            GrpcFraming.encode(Pong(t"a").protobuf.encode)
+            ++ GrpcFraming.encode(Pong(t"b").protobuf.encode)
+            ++ GrpcFraming.encode(Pong(t"c").protobuf.encode)
+
+          runServer(serverSide, (hpack, id) =>
+            List
+              ( okHeaders(hpack, id),
+                Frame.Data(id, body, endStream = false),
+                trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val channel = GrpcChannel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
+          channel.serverStreaming[Ping, Pong](method, Ping(t"ping")).map(_.message).to(List)
+      . assert(_ == List(t"a", t"b", t"c"))

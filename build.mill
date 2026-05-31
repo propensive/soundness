@@ -1040,7 +1040,10 @@ object obligatory extends Library:
   object json extends Component(core, scintillate.server, hyperbole.core, eucalyptus.core, revolution.core, jacinta.schema, jacinta.http):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, json)
+  object grpc extends Component(core, locomotion.core, cordillera.core, turbulence.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core, json, grpc)
 
 object panopticon extends Library:
   object core extends Component(rudiments.core):
