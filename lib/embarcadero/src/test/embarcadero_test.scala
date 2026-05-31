@@ -44,7 +44,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
   def run(): Unit =
     def fileEntry(name: Text, content: Text): TarEntry =
       TarEntry.File
-       ( path  = name.decode[Relative on Posix],
+       ( path  = name.decode[Relative on Tar],
          mode  = UnixMode(),
          user  = UnixUser(0),
          group = UnixGroup(0),
@@ -53,7 +53,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
     def bytesOf(stream: LazyList[Data]): Data = stream.foldLeft(IArray.empty[Byte])(_ ++ _)
 
-    val layerTar = Tar(LazyList(fileEntry(t"hello.txt", t"hello world\n")))
+    val layerTar = Tarfile(LazyList(fileEntry(t"hello.txt", t"hello world\n")))
     val layer    = Layer(layerTar)
     val image    = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
 
@@ -81,7 +81,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == media"application/vnd.oci.image.layer.v1.tar+gzip")
 
       test(m"the blob is a valid gzipped tar round-tripping to the original entry"):
-        Tar.fromGzip(LazyList(layer.blob)).map(_.entryName).to(List)
+        Tarfile.fromGzip(LazyList(layer.blob)).map(_.entryName).to(List)
       . assert(_ == List(t"hello.txt"))
 
     suite(m"Image config"):
@@ -131,7 +131,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == image.manifest)
 
     suite(m"OCI archive"):
-      val entries    = Tar.read(image.archive.stream[Data]).to(List)
+      val entries    = Tarfile.read(image.archive.stream[Data]).to(List)
       val names      = entries.map(_.entryName)
       val layoutData = entries.collect:
         case file: TarEntry.File if file.entryName == t"oci-layout" => bytesOf(file.data)

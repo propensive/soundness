@@ -106,10 +106,10 @@ case class Image
   // an `oci-layout` marker, the `index.json`, and every blob under
   // `blobs/sha256/`. Suitable for `ctr images import`, `podman load`, or
   // `skopeo copy oci-archive:…`.
-  def archive: Tar =
+  def archive: Tarfile =
     def entry(path: Text, content: Data): TarEntry =
       TarEntry.File
-        ( path  = path.decode[Relative on Posix],
+        ( path  = path.decode[Relative on Tar],
           mode  = UnixMode(),
           user  = UnixUser(0),
           group = UnixGroup(0),
@@ -123,4 +123,4 @@ case class Image
       val hex = digest.s.stripPrefix("sha256:").tt
       entry(t"blobs/sha256/$hex", content)
 
-    Tar(LazyList.from(layoutEntry :: indexEntry :: blobEntries))
+    Tarfile(LazyList.from(layoutEntry :: indexEntry :: blobEntries))
