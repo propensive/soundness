@@ -149,3 +149,65 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
         val encoded = Hpack().encode(headers)
         Hpack().decode(encoded).map(e => (e.name, e.value))
       . assert(_ == headers.map(e => (e.name, e.value)))
+
+    suite(m"Frame codec — golden bytes"):
+      test(m"SETTINGS ack serialises to the canonical empty-ack frame"):
+        hex(Frame.Settings(Nil, ack = true).serialize)
+      . assert(_ == t"000000040100000000")
+
+      test(m"empty SETTINGS (non-ack) is a zero-length frame"):
+        hex(Frame.Settings(Nil, ack = false).serialize)
+      . assert(_ == t"000000040000000000")
+
+      test(m"WINDOW_UPDATE on stream 1 with increment 65535"):
+        hex(Frame.WindowUpdate(1, 65535).serialize)
+      . assert(_ == t"0000040800000000010000ffff")
+
+      test(m"a DATA frame's 9-byte header carries length, type, flags and stream"):
+        hex(Frame.Data(3, ascii(t"hi"), endStream = true).serialize)
+      . assert(_ == t"00000200010000000368 69".sub(t" ", t""))
+
+      test(m"PING ack echoes its 8 opaque bytes"):
+        hex(Frame.Ping(bytes(t"0102030405060708"), ack = true).serialize)
+      . assert(_ == t"000008060100000000 0102030405060708".sub(t" ", t""))
+
+    suite(m"Frame codec — round-trips"):
+      def roundTrip(frame: Frame)(using Tactic[H2Error]): Frame =
+        Frame.decode(frame.serialize, 0)(0)
+
+      test(m"SETTINGS with parameters round-trips"):
+        val settings = List(Setting(SettingId.InitialWindowSize.id, 65535),
+            Setting(SettingId.MaxFrameSize.id, 16384))
+        roundTrip(Frame.Settings(settings, ack = false)) == Frame.Settings(settings, false)
+      . assert(_ == true)
+
+      test(m"DATA round-trips with payload and END_STREAM"):
+        roundTrip(Frame.Data(7, ascii(t"hello"), endStream = true)) match
+          case Frame.Data(id, p, end) => (id, p.to(List), end) == (7, ascii(t"hello").to(List), true)
+          case _                      => false
+      . assert(_ == true)
+
+      test(m"HEADERS round-trips its block + flags"):
+        roundTrip(Frame.Headers(1, ascii(t"block"), endStream = false, endHeaders = true)) match
+          case Frame.Headers(id, b, es, eh) => (id, b.to(List), es, eh)
+              == (1, ascii(t"block").to(List), false, true)
+          case _                            => false
+      . assert(_ == true)
+
+      test(m"GOAWAY round-trips last-stream-id and error code"):
+        roundTrip(Frame.GoAway(5, ErrorCode.ProtocolError.code, ascii(t""))) match
+          case Frame.GoAway(last, code, _) => (last, code) == (5, 0x1L)
+          case _                           => false
+      . assert(_ == true)
+
+      test(m"WINDOW_UPDATE round-trips its increment"):
+        roundTrip(Frame.WindowUpdate(3, 1000)) == Frame.WindowUpdate(3, 1000)
+      . assert(_ == true)
+
+      test(m"a padded DATA frame decodes to its unpadded payload"):
+        // length=5: padLength byte (0x02) + "hi" + 2 pad bytes; PADDED flag = 0x08
+        val padded = bytes(t"0000050008000000030268690000")
+        Frame.decode(padded, 0)(0) match
+          case Frame.Data(_, p, _) => p.to(List) == ascii(t"hi").to(List)
+          case _                   => false
+      . assert(_ == true)
