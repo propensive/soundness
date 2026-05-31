@@ -238,7 +238,8 @@ object groupCheck extends Module:
 
     "bitumen.core", "breviloquence.core", "cordillera.core", "distillate.core",
     "embarcadero.oci", "exegesis.core", "gigantism.core", "locomotion.core",
-    "proscenium.core", "satirical.core", "stenography.core", "ypsiloid.core"
+    "embarcadero.containerd", "obligatory.grpc", "proscenium.core", "satirical.core",
+    "stenography.core", "ypsiloid.core"
   )
 
   def validate(): Command[Unit] = Task.Command:
@@ -617,7 +618,10 @@ object embarcadero extends Library:
         gesticulate.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(oci)
+  object containerd extends Component(obligatory.grpc, cordillera.core, coaxial.core, locomotion.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(oci, containerd)
 
 object enigmatic extends Library:
   object core extends Component(gastronomy.core):

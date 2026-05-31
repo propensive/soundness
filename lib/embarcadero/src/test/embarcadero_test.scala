@@ -39,6 +39,7 @@ import alphabets.hex.lowerCase
 import charEncoders.utf8
 import jsonPrinters.minimal
 import strategies.throwUnsafely
+import Http2.*
 
 object Tests extends Suite(m"Embarcadero OCI Tests"):
   def run(): Unit =
@@ -152,3 +153,77 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       test(m"oci-layout declares image layout version 1.0.0"):
         layoutData.map(bytes => bytes.to(List))
       . assert(_ == List(t"""{"imageLayoutVersion":"1.0.0"}""".data.to(List)))
+
+    suite(m"containerd over a gRPC loopback"):
+      import threading.virtual
+      import codicils.cancel
+
+      def pair(): (Duplex, Duplex) =
+        val clientToServer = Spool[Data]()
+        val serverToClient = Spool[Data]()
+
+        def duplex(inbound: Spool[Data], outbound: Spool[Data]) = new Duplex:
+          def stream: Stream[Data] = inbound.stream
+          def send(data: Stream[Data]): Unit = data.each(outbound.put)
+          def close(): Unit = outbound.stop()
+
+        (duplex(serverToClient, clientToServer), duplex(clientToServer, serverToClient))
+
+      // A fake containerd: completes the HTTP/2 handshake, records the namespace header
+      // from the request, and replies to the `Version` call with a framed response.
+      def runServer(serverSide: Duplex, namespace: Promise[Text], body: Data)
+          ( using Monitor, Codicil )
+      :   Daemon =
+
+        daemon:
+          safely:
+            serverSide.send(Stream(Frame.Settings(Nil, ack = false).serialize))
+            val raw = serverSide.stream.iterator
+
+            val afterPreface: Iterator[Data] =
+              var buffered = IArray.empty[Byte]
+              while buffered.length < 24 && raw.hasNext do buffered = buffered ++ raw.next()
+              val leftover = buffered.drop(24)
+              (if leftover.isEmpty then Iterator.empty else Iterator(leftover)) ++ raw
+
+            val reader = FrameReader(afterPreface)
+            val hpack = Hpack()
+            var continue = true
+
+            while continue do reader.next() match
+              case Unset    => continue = false
+
+              case f: Frame => f match
+                case Frame.Settings(_, false) =>
+                  serverSide.send(Stream(Frame.Settings(Nil, ack = true).serialize))
+
+                case Frame.Headers(id, block, _, _) =>
+                  val fields = hpack.decode(block)
+                  fields.find(_.name == t"containerd-namespace").each: entry =>
+                    namespace.offer(entry.value)
+
+                  val status = hpack.encode(List(HpackEntry(t":status", t"200"),
+                      HpackEntry(t"content-type", t"application/grpc")))
+
+                  val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
+                  serverSide.send(Stream(Frame.Headers(id, status, false, true).serialize))
+                  serverSide.send(Stream(Frame.Data(id, body, false).serialize))
+                  serverSide.send(Stream(Frame.Headers(id, trailer, true, true).serialize))
+
+                case _ => ()
+
+      test(m"version() round-trips a VersionResponse and sends the namespace"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val namespace = Promise[Text]()
+          val body = GrpcFraming.encode(VersionResponse(t"1.7.0", t"deadbeef").protobuf.encode)
+          runServer(serverSide, namespace, body)
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val containerd = Containerd(endpoint, t"example")
+          val response = containerd.version()
+          (response.version, response.revision, namespace.await())
+      . assert(_ == (t"1.7.0", t"deadbeef", t"example"))
