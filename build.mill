@@ -200,7 +200,7 @@ object soundness extends ScalaModule:
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
     telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, /*perihelion.core,*/
     legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http, jacinta.schema,
-    stratiform.http, obligatory.core, synesthesia.core)
+    stratiform.http, obligatory.core, obligatory.json, synesthesia.core)
 
   object all extends Bundle(base, cli, data, sci, test, tool, web)
 
@@ -739,7 +739,7 @@ object eucalyptus extends Library:
     override def enabled = false
 
 object exegesis extends Library:
-  object core extends Component(obligatory.core):
+  object core extends Component(obligatory.json):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium",
         "-Xmax-inlines", "48")
@@ -1034,10 +1034,13 @@ object orthodoxy extends Library:
     override def enabled = false
 
 object obligatory extends Library:
-  object core extends Component(scintillate.server, hyperbole.core, eucalyptus.core, revolution.core, jacinta.schema, jacinta.http):
+  object core extends Component(zephyrine.core, gossamer.core, contingency.core, anticipation.codec, fulminate.core, prepositional.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+  object json extends Component(core, scintillate.server, hyperbole.core, eucalyptus.core, revolution.core, jacinta.schema, jacinta.http):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core, json)
 
 object panopticon extends Library:
   object core extends Component(rudiments.core):
@@ -1261,7 +1264,7 @@ object symbolism extends Library:
   object test extends Tests(core)
 
 object synesthesia extends Library:
-  object core extends Component(obligatory.core):
+  object core extends Component(obligatory.json):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium",
         "-Xmax-inlines", "48")
