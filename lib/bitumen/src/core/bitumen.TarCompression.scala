@@ -39,9 +39,9 @@ import turbulence.*
 object TarCompression
 
 extension (tar: Tar)
-  def gzip: Stream[Data] = tar.serialize.compress[Gzip]
-  def zlib: Stream[Data] = tar.serialize.compress[Zlib]
-  def deflate: Stream[Data] = tar.serialize.compress[Deflate]
+  def gzip: Stream[Data] = tar.stream[Data].compress[Gzip]
+  def zlib: Stream[Data] = tar.stream[Data].compress[Zlib]
+  def deflate: Stream[Data] = tar.stream[Data].compress[Deflate]
 
 extension (tarType: Tar.type)
   def fromGzip(stream: Stream[Data]): Stream[TarEntry] raises TarError =

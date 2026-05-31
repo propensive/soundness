@@ -51,7 +51,7 @@ enum LongNameFormat:
 object Tar:
   val zeroBlock: Data = IArray.fill[Byte](512)(0)
 
-  given streamable: Tar is Streamable by Data = _.serialize
+  given streamable: Tar is Streamable by Data = _.blocks
 
   def read(stream: Stream[Data]): Stream[TarEntry] raises TarError =
     readEntries(stream.chunked(512), Map.empty, Map.empty, Unset, Unset)
@@ -331,7 +331,9 @@ object Tar:
     case _: TarEntry.GnuLong      => Map.empty
 
 case class Tar(entries: LazyList[TarEntry], longNameFormat: LongNameFormat = LongNameFormat.Pax):
-  def serialize: LazyList[Data] =
+  // The raw 512-byte blocks of the archive, including the two trailing zero blocks.
+  // Reach this externally through the `Streamable` given, i.e. `tar.stream[Data]`.
+  private[bitumen] def blocks: LazyList[Data] =
     entries.flatMap(emitEntry) #::: LazyList(Tar.zeroBlock, Tar.zeroBlock)
 
   private def emitEntry(entry: TarEntry): LazyList[Data] =
