@@ -229,49 +229,49 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
 
         (duplex(serverToClient, clientToServer), duplex(clientToServer, serverToClient))
 
+      // A minimal in-process HTTP/2 server on the given duplex side. It sends its own
+      // SETTINGS (so the client's handshake completes), reads the client's preface +
+      // frames, and on the request HEADERS replies with response HEADERS (200 +
+      // content-type), a DATA frame, and trailing HEADERS carrying a grpc-status
+      // trailer. Returned as a Daemon so the caller can cancel it.
+      def runServer(serverSide: Duplex)(using Monitor, Codicil): Daemon = daemon:
+        safely:
+          serverSide.send(Stream(Frame.Settings(Nil, ack = false).serialize))
+
+          // Skip the 24-byte client connection preface before frame-parsing.
+          val raw = serverSide.stream.iterator
+
+          val afterPreface: Iterator[Data] =
+            var buffered = IArray.empty[Byte]
+            while buffered.length < 24 && raw.hasNext do buffered = buffered ++ raw.next()
+            val leftover = buffered.drop(24)
+            (if leftover.isEmpty then Iterator.empty else Iterator(leftover)) ++ raw
+
+          val reader = FrameReader(afterPreface)
+          val hpack = Hpack()
+          var continue = true
+
+          while continue do reader.next() match
+            case Unset        => continue = false
+            case f: Frame     => f match
+              case Frame.Settings(_, false) =>
+                serverSide.send(Stream(Frame.Settings(Nil, ack = true).serialize))
+
+              case Frame.Headers(id, _, _, _) =>
+                val respHeaders = hpack.encode(List(HpackEntry(t":status", t"200"),
+                    HpackEntry(t"content-type", t"application/grpc")))
+
+                val trailers = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
+                serverSide.send(Stream(Frame.Headers(id, respHeaders, false, true).serialize))
+                serverSide.send(Stream(Frame.Data(id, ascii(t"pong"), false).serialize))
+                serverSide.send(Stream(Frame.Headers(id, trailers, true, true).serialize))
+
+              case _ => ()
+
       test(m"a unary request round-trips status, body and trailers"):
         supervise:
           val (clientSide, serverSide) = pair()
-
-          // A minimal in-process server. It first sends its own SETTINGS (so the
-          // client's handshake completes), then reads the client's preface + frames,
-          // and on the request HEADERS replies with response HEADERS (200 +
-          // content-type), a DATA frame, and trailing HEADERS carrying a grpc-status
-          // trailer.
-          val server = daemon:
-            safely:
-              serverSide.send(Stream(Frame.Settings(Nil, ack = false).serialize))
-
-              // Skip the 24-byte client connection preface before frame-parsing.
-              val raw = serverSide.stream.iterator
-
-              val afterPreface: Iterator[Data] =
-                var buffered = IArray.empty[Byte]
-                while buffered.length < 24 && raw.hasNext do buffered = buffered ++ raw.next()
-                val leftover = buffered.drop(24)
-                (if leftover.isEmpty then Iterator.empty else Iterator(leftover)) ++ raw
-
-              val reader = FrameReader(afterPreface)
-              val hpack = Hpack()
-              var continue = true
-
-              while continue do reader.next() match
-                case Unset        => continue = false
-                case f: Frame     => f match
-                  case Frame.Settings(_, false) =>
-                    serverSide.send(Stream(Frame.Settings(Nil, ack = true).serialize))
-
-                  case Frame.Headers(id, _, _, _) =>
-                    val respHeaders = hpack.encode(List(HpackEntry(t":status", t"200"),
-                        HpackEntry(t"content-type", t"application/grpc")))
-
-                    val trailers = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
-                    serverSide.send(Stream(Frame.Headers(id, respHeaders, false, true).serialize))
-                    serverSide.send(Stream(Frame.Data(id, ascii(t"pong"), false).serialize))
-                    serverSide.send(Stream(Frame.Headers(id, trailers, true, true).serialize))
-
-                  case _ => ()
-
+          val server = runServer(serverSide)
           val connection = H2Connection(clientSide)
           connection.start()
 
@@ -285,3 +285,29 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           server.cancel()
           (statusCode, bodyText, grpcStatus.getOrElse(t"?"))
       . assert(_ == (200, true, t"0"))
+
+      test(m"the HttpClient given resolves and drives a request over h2c"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          runServer(serverSide)
+
+          import Http2Client.http2
+          import logging.silent
+
+          // A `Connectable` whose connect() hands back the client side of the pair —
+          // lets the real `HttpClient` given (which calls `target.connect()`) run
+          // against the loopback without a socket.
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          // Summon the HTTP/2 client given exactly as telekinesis's fetch machinery
+          // would, and invoke its `request` — verifying it captures the ambient
+          // Monitor/Codicil and produces a telekinesis `Http.Response`.
+          val client = summon[HttpClient onto H2Endpoint[Loopback]]
+          val endpoint = H2Endpoint(Loopback(clientSide), t"unix")
+
+          val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".decode[Host]),
+              t"/echo.Service/Call", Nil, () => Stream())
+
+          client.request(request, endpoint).status.code
+      . assert(_ == 200)

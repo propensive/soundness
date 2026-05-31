@@ -30,8 +30,37 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package cordillera
 
-export cordillera.{Frame, FrameType, Flags, ErrorCode, Setting, SettingId, Hpack, HpackEntry,
-    HpackTable, Huffman, H2Connection, H2Stream, H2Error, FrameReader, PseudoHeaders, H2Endpoint,
-    Http2Client}
+import anticipation.*
+import coaxial.*
+import contingency.*
+import gossamer.*
+import parasite.*
+import prepositional.*
+import telekinesis.*
+
+// A cleartext-h2c endpoint: a connectable address plus the `:authority` to send.
+// Used as the `Target` of the HTTP/2 `HttpClient` given, distinct from the
+// `DomainSocket` target telekinesis binds to its HTTP/1.1 client.
+case class H2Endpoint[endpoint: Connectable as connectable](endpoint: endpoint, authority: Text):
+  def connect(): Duplex = connectable.connect(endpoint)
+
+object Http2Client:
+  // An `HttpClient` that speaks HTTP/2 (prior-knowledge h2c) to an `H2Endpoint`.
+  // It captures the ambient `Monitor`/`Codicil` from this given's context — the
+  // `H2Connection`'s daemons need them — so it can only be summoned inside a
+  // `supervise` scope. A fresh connection is opened per request for now; pooling
+  // is a later refinement.
+  given http2: [endpoint] => (Monitor, Codicil, Tactic[H2Error], Tactic[AsyncError])
+  =>  HttpClient onto H2Endpoint[endpoint] =
+
+    new HttpClient:
+      type Target = H2Endpoint[endpoint]
+
+      def request(request: Http.Request, target: H2Endpoint[endpoint])
+      :   Http.Response logs HttpEvent =
+
+        val connection = H2Connection(target.connect())
+        connection.start()
+        connection.fetch(request, t"http", target.authority)(1)
