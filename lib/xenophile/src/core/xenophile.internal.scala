@@ -153,14 +153,20 @@ object Xenophile:
       case ForeignType.Applied(constructor, arguments) =>
         val ctor = ConstantType(StringConstant(constructor.s))
 
-        val tuple = arguments.map(reprOf).foldRight(TypeRepr.of[EmptyTuple]): (head, tail) =>
-          head.asType.absolve match
-            case '[head] => tail.asType.absolve match
-              case '[type tail <: Tuple; tail] => TypeRepr.of[head *: tail]
+        // A single argument is left bare; multiple arguments are wrapped in a tuple.
+        val argument = arguments.map(reprOf) match
+          case List(single) =>
+            single
+
+          case reprs =>
+            reprs.foldRight(TypeRepr.of[EmptyTuple]): (head, tail) =>
+              head.asType.absolve match
+                case '[head] => tail.asType.absolve match
+                  case '[type tail <: Tuple; tail] => TypeRepr.of[head *: tail]
 
         ctor.asType.absolve match
-          case '[type ctor <: Label; ctor] => tuple.asType.absolve match
-            case '[type tuple <: Tuple; tuple] => TypeRepr.of[_root_.xenophile.Applied[ctor, tuple]]
+          case '[type ctor <: Label; ctor] => argument.asType.absolve match
+            case '[argument] => TypeRepr.of[_root_.xenophile.Applied[ctor, argument]]
 
   // Builds the refined type `Foreign of <topic> from <origin>`.
   private def foreignType(using quotes: Quotes)(kind: ForeignType, origin: quotes.reflect.TypeRepr)

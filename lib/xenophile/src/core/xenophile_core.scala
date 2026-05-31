@@ -33,6 +33,7 @@
 package xenophile
 
 // Infix sugar for a generic foreign type application: `"Map" applied ("number", "string")` is the
-// `Applied["Map", ("number", "string")]` topic. Parentheses are required around the application
-// when it is itself an argument to a preposition, e.g. `Foreign of ("Map" applied (…))`.
-infix type applied[constructor <: Label, arguments <: Tuple] = Applied[constructor, arguments]
+// `Applied["Map", ("number", "string")]` topic; a single argument needn't be a tuple, so
+// `"Array" applied "string"` is `Array<string>`. Parentheses are required when the application is
+// itself an argument to a preposition.
+infix type applied[constructor <: Label, arguments] = Applied[constructor, arguments]

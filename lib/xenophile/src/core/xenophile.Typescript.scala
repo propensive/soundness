@@ -50,10 +50,10 @@ object Typescript:
 
   // A TypeScript `string[]` (i.e. `Array<string>`) maps to a Scala `List[Text]`.
   type Strings =
-    List[Text] is Interoperable in Typescript of ("Array" applied Tuple1["string"]) by Json
+    List[Text] is Interoperable in Typescript of ("Array" applied "string") by Json
 
   given strings: Strings =
-    Interoperable[List[Text], Typescript, ("Array" applied Tuple1["string"]), Json]
+    Interoperable[List[Text], Typescript, ("Array" applied "string"), Json]
       ( _.json, _.as[List[Text]] )
 
   // TypeScript `undefined` (produced by reading `T?` as `T | undefined`) maps to the absent

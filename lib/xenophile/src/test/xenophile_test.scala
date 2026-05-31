@@ -102,7 +102,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
     suite(m"Complex types"):
       test(m"an array field is read as `Array<T>` and decodes to a List"):
-        val tags: Foreign of ("Array" applied Tuple1["string"]) from Typescript = foo.tags
+        val tags: Foreign of ("Array" applied "string") from Typescript = foo.tags
         tags.as[List[Text]]
       . assert(_ == List(t"a", t"b"))
 
