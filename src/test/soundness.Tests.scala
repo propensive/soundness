@@ -150,7 +150,7 @@ object Tests extends Suite(m"Soundness tests"):
     ypsiloid.Tests()
     yossarian.Tests()
     zephyrine.Tests()
-    //zeppelin.Tests()
+    zeppelin.Tests()
     //ziggurat.Tests() - ziggurat.test missing from build.mill test bundle
 
 object FailingTests extends Suite(m"Failing tests"):
