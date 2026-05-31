@@ -211,3 +211,77 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           case Frame.Data(_, p, _) => p.to(List) == ascii(t"hi").to(List)
           case _                   => false
       . assert(_ == true)
+
+    suite(m"End-to-end over an in-memory Duplex (the whole stack)"):
+      import threading.virtual
+      import codicils.cancel
+
+      // An in-memory `Duplex` pair: bytes written to one side surface on the other's
+      // stream. Backed by `Spool`s so reads block until data arrives, like a socket.
+      def pair(): (Duplex, Duplex) =
+        val clientToServer = Spool[Data]()
+        val serverToClient = Spool[Data]()
+
+        def duplex(inbound: Spool[Data], outbound: Spool[Data]) = new Duplex:
+          def stream: Stream[Data] = inbound.stream
+          def send(data: Stream[Data]): Unit = data.each(outbound.put)
+          def close(): Unit = outbound.stop()
+
+        (duplex(serverToClient, clientToServer), duplex(clientToServer, serverToClient))
+
+      test(m"a unary request round-trips status, body and trailers"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+
+          // A minimal in-process server. It first sends its own SETTINGS (so the
+          // client's handshake completes), then reads the client's preface + frames,
+          // and on the request HEADERS replies with response HEADERS (200 +
+          // content-type), a DATA frame, and trailing HEADERS carrying a grpc-status
+          // trailer.
+          val server = daemon:
+            safely:
+              serverSide.send(Stream(Frame.Settings(Nil, ack = false).serialize))
+
+              // Skip the 24-byte client connection preface before frame-parsing.
+              val raw = serverSide.stream.iterator
+
+              val afterPreface: Iterator[Data] =
+                var buffered = IArray.empty[Byte]
+                while buffered.length < 24 && raw.hasNext do buffered = buffered ++ raw.next()
+                val leftover = buffered.drop(24)
+                (if leftover.isEmpty then Iterator.empty else Iterator(leftover)) ++ raw
+
+              val reader = FrameReader(afterPreface)
+              val hpack = Hpack()
+              var continue = true
+
+              while continue do reader.next() match
+                case Unset        => continue = false
+                case f: Frame     => f match
+                  case Frame.Settings(_, false) =>
+                    serverSide.send(Stream(Frame.Settings(Nil, ack = true).serialize))
+
+                  case Frame.Headers(id, _, _, _) =>
+                    val respHeaders = hpack.encode(List(HpackEntry(t":status", t"200"),
+                        HpackEntry(t"content-type", t"application/grpc")))
+
+                    val trailers = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
+                    serverSide.send(Stream(Frame.Headers(id, respHeaders, false, true).serialize))
+                    serverSide.send(Stream(Frame.Data(id, ascii(t"pong"), false).serialize))
+                    serverSide.send(Stream(Frame.Headers(id, trailers, true, true).serialize))
+
+                  case _ => ()
+
+          val connection = H2Connection(clientSide)
+          connection.start()
+
+          val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".decode[Host]),
+              t"/echo.Service/Call", Nil, () => Stream(ascii(t"ping")))
+
+          val (stream, response) = connection.fetch(request, t"http", t"unix")
+          val bodyText = ascii(t"pong").to(List) == response.body.stream.reduce(_ ++ _).to(List)
+          val statusCode = response.status.code
+          val grpcStatus = stream.trailers.await().find(_.name == t"grpc-status").map(_.value)
+          server.cancel()
+          (statusCode, bodyText, grpcStatus.getOrElse(t"?"))
+      . assert(_ == (200, true, t"0"))
