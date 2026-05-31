@@ -30,13 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package embarcadero
 
-// `Timestamp` is intentionally not exported: it collides with `aviation.Timestamp` in
-// the umbrella, and callers normally reach times through `…createdAt.instant[Instant]`
-// rather than naming it. Use `embarcadero.Timestamp` directly when constructing one.
-export embarcadero.{Containerd, Container, ContentDescriptor, CreateNamespaceRequest,
-    CreateNamespaceResponse, DeleteContainerRequest, DeleteImageRequest, DeleteNamespaceRequest,
-    Empty, GetContainerRequest, GetContainerResponse, GetImageRequest, GetImageResponse,
-    ImageRecord, ListContainersRequest, ListContainersResponse, ListImagesRequest,
-    ListImagesResponse, ListNamespacesRequest, ListNamespacesResponse, Namespace, VersionResponse}
+import anticipation.*
+import locomotion.field
+
+// The request for `Images.Delete`: the image reference to remove. `sync` waits for the
+// content to be garbage-collected before the call returns.
+case class DeleteImageRequest(@field(1) name: Text, @field(2) sync: Boolean = false)

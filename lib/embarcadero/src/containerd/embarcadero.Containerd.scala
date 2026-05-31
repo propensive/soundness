@@ -56,6 +56,11 @@ object Containerd:
   private val createNamespaceMethod: Grpc.Method = Grpc.Method(namespacesService, t"Create")
   private val deleteNamespaceMethod: Grpc.Method = Grpc.Method(namespacesService, t"Delete")
 
+  private val imagesService: Text = t"containerd.services.images.v1.Images"
+  private val listImagesMethod: Grpc.Method = Grpc.Method(imagesService, t"List")
+  private val getImageMethod: Grpc.Method = Grpc.Method(imagesService, t"Get")
+  private val deleteImageMethod: Grpc.Method = Grpc.Method(imagesService, t"Delete")
+
   // Connect to a containerd endpoint (typically a Unix socket carrying cleartext h2c),
   // binding every call to `namespace` via the mandatory `containerd-namespace` header.
   // Must be called inside a `supervise` scope (the connection runs background daemons).
@@ -126,3 +131,28 @@ case class Containerd(channel: GrpcChannel):
 
     val request = DeleteNamespaceRequest(name)
     val _ = channel.unary[DeleteNamespaceRequest, Empty](Containerd.deleteNamespaceMethod, request)
+
+  // The images in the bound namespace (`Images.List`), optionally filtered.
+  def images(filters: List[Text] = Nil)
+  :   List[ImageRecord] raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
+
+    val request = ListImagesRequest(filters)
+
+    channel.unary[ListImagesRequest, ListImagesResponse]
+      (Containerd.listImagesMethod, request).images
+
+  // A single image by reference (`Images.Get`).
+  def image(name: Text)
+  :   ImageRecord raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
+
+    val request = GetImageRequest(name)
+
+    channel.unary[GetImageRequest, GetImageResponse]
+      (Containerd.getImageMethod, request).image
+
+  // Remove an image by reference (`Images.Delete`).
+  def deleteImage(name: Text, sync: Boolean = false)
+  :   Unit raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
+
+    val request = DeleteImageRequest(name, sync)
+    val _ = channel.unary[DeleteImageRequest, Empty](Containerd.deleteImageMethod, request)

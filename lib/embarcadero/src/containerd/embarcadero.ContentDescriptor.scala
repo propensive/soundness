@@ -30,13 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package embarcadero
 
-// `Timestamp` is intentionally not exported: it collides with `aviation.Timestamp` in
-// the umbrella, and callers normally reach times through `…createdAt.instant[Instant]`
-// rather than naming it. Use `embarcadero.Timestamp` directly when constructing one.
-export embarcadero.{Containerd, Container, ContentDescriptor, CreateNamespaceRequest,
-    CreateNamespaceResponse, DeleteContainerRequest, DeleteImageRequest, DeleteNamespaceRequest,
-    Empty, GetContainerRequest, GetContainerResponse, GetImageRequest, GetImageResponse,
-    ImageRecord, ListContainersRequest, ListContainersResponse, ListImagesRequest,
-    ListImagesResponse, ListNamespacesRequest, ListNamespacesResponse, Namespace, VersionResponse}
+import anticipation.*
+import gossamer.*
+import locomotion.field
+
+// containerd's protobuf content descriptor (`containerd.types.Descriptor`): a typed,
+// digest-addressed pointer to a blob. Named `ContentDescriptor` to avoid clashing with
+// the OCI JSON `Descriptor` in this same package; the field numbers match the proto.
+case class ContentDescriptor
+  ( @field(1) mediaType:   Text            = t"",
+    @field(2) digest:      Text            = t"",
+    @field(3) size:        Long            = 0L,
+    @field(5) annotations: Map[Text, Text] = Map() )
+derives CanEqual

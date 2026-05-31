@@ -30,13 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package embarcadero
 
-// `Timestamp` is intentionally not exported: it collides with `aviation.Timestamp` in
-// the umbrella, and callers normally reach times through `…createdAt.instant[Instant]`
-// rather than naming it. Use `embarcadero.Timestamp` directly when constructing one.
-export embarcadero.{Containerd, Container, ContentDescriptor, CreateNamespaceRequest,
-    CreateNamespaceResponse, DeleteContainerRequest, DeleteImageRequest, DeleteNamespaceRequest,
-    Empty, GetContainerRequest, GetContainerResponse, GetImageRequest, GetImageResponse,
-    ImageRecord, ListContainersRequest, ListContainersResponse, ListImagesRequest,
-    ListImagesResponse, ListNamespacesRequest, ListNamespacesResponse, Namespace, VersionResponse}
+import anticipation.*
+import gossamer.*
+import locomotion.field
+
+// A containerd image metadata record (`containerd.services.images.v1`): a `name`
+// (the image reference) pointing at content via `target`, plus labels and timestamps.
+// Named `ImageRecord` to avoid clashing with the OCI `Image` config in this package.
+case class ImageRecord
+  ( @field(1) name:      Text                = t"",
+    @field(2) labels:    Map[Text, Text]     = Map(),
+    @field(3) target:    ContentDescriptor   = ContentDescriptor(),
+    @field(7) createdAt: Timestamp           = Timestamp(),
+    @field(8) updatedAt: Timestamp           = Timestamp() )
+derives CanEqual
