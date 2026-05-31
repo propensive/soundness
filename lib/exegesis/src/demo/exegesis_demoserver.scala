@@ -32,39 +32,34 @@
                                                                                                   */
 package exegesis
 
-import scala.annotation.*
+import soundness.*
 
-import anticipation.*
-import jacinta.*
-import obligatory.*
-import revolution.*
+// A minimal example Language Server, demonstrating a few features: a fixed hover message, a fixed
+// completion list, and a diagnostic published whenever a document is opened.
+object DemoLspServer extends LspServer():
+  def name: Text = t"Exegesis Demo"
+  override def version: Optional[Text] = t"0.1.0"
 
-object Lsp:
-  case class TextDocument(uri: Text, languageId: Text, version: Int, text: Text)
-  case class Folder(uri: Text, name: Text)
-  case class ClientInfo(name: Text, version: Semver)
+  def capabilities: Lsp.ServerCapabilities =
+    Lsp.ServerCapabilities
+      ( textDocumentSync   = Lsp.TextDocumentSyncKind.Full,
+        hoverProvider      = true,
+        completionProvider = Lsp.CompletionOptions() )
 
+  override def hover(uri: Text, position: Lsp.Position): Optional[Lsp.Hover] =
+    Lsp.Hover(Lsp.MarkupContent(value = t"Hello from the Exegesis LSP demo server."))
 
-trait Lsp:
-  @rpc
-  def initialize
-    ( processId:        Int,
-      clientInfo:       Lsp.ClientInfo,
-      locale:           Text,
-      rootPath:         Text,
-      rootUri:          Text,
-      capabilities:     Json,
-      workspaceFolders: List[Lsp.Folder] )
-  :   Json
+  override def complete(uri: Text, position: Lsp.Position): Lsp.CompletionList =
+    Lsp.CompletionList
+      ( items = List
+          ( Lsp.CompletionItem(label = t"exegesis", kind = Lsp.CompletionItemKind.Keyword),
+            Lsp.CompletionItem(label = t"soundness", kind = Lsp.CompletionItemKind.Keyword) ) )
 
-  @rpc
-  def initialized(): Unit
-
-  @rpc
-  def shutdown(): Unit
-
-  @rpc
-  def exit(): Unit
-
-  @rpc
-  def `textDocument/didOpen`(textDocument: Lsp.TextDocument): Unit
+  override def onOpen(document: Lsp.TextDocumentItem)(using LspClient): Unit =
+    summon[LspClient].publishDiagnostics
+      ( document.uri,
+        List
+          ( Lsp.Diagnostic
+              ( range    = Lsp.Range(Lsp.Position(0, 0), Lsp.Position(0, 1)),
+                severity = Lsp.DiagnosticSeverity.Warning,
+                message  = t"This is a demo diagnostic from the Exegesis LSP server." ) ) )

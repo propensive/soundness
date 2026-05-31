@@ -232,7 +232,7 @@ object groupCheck extends Module:
     "anticipation.path", "anticipation.print", "anticipation.text",
     "anticipation.time", "anticipation.url",
     "beneficence.core", "beneficence.plugin", "dendrology.demo",
-    "ethereal.example", "exoskeleton.args", "exoskeleton.core",
+    "ethereal.example", "exegesis.demo", "exoskeleton.args", "exoskeleton.core",
     "exoskeleton.rig", "frontier.plugin", "probably.coverage",
     "quantitative.units",
 
@@ -726,8 +726,18 @@ object eucalyptus extends Library:
 object exegesis extends Library:
   object core extends Component(obligatory.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium",
+        "-Xmax-inlines", "48")
+
+  object demo extends Component(core, ethereal.core, exoskeleton.completions):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium",
+        "-Xmax-inlines", "48")
+    override def mainClass: Task.Simple[Option[String]] = Some("exegesis.lsp")
+
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Xmax-inlines", "48")
 
 object exoskeleton extends Library:
   object args extends Component(escapade.core, profanity.core, ambience.core, quantitative.units):
