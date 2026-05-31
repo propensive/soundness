@@ -236,9 +236,9 @@ object groupCheck extends Module:
     "exoskeleton.rig", "frontier.plugin", "probably.coverage",
     "quantitative.units",
 
-    "bitumen.core", "breviloquence.core", "distillate.core", "embarcadero.oci",
-    "exegesis.core", "gigantism.core", "locomotion.core", "proscenium.core",
-    "satirical.core", "stenography.core", "ypsiloid.core"
+    "bitumen.core", "breviloquence.core", "cordillera.core", "distillate.core",
+    "embarcadero.oci", "exegesis.core", "gigantism.core", "locomotion.core",
+    "proscenium.core", "satirical.core", "stenography.core", "ypsiloid.core"
   )
 
   def validate(): Command[Unit] = Task.Command:
@@ -539,6 +539,14 @@ object coaxial extends Library:
 
 object contextual extends Library:
   object core extends Component(rudiments.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core)
+
+object cordillera extends Library:
+  object core
+      extends Component(telekinesis.core, coaxial.core, zephyrine.core, turbulence.core,
+        parasite.core, hypotenuse.core, gossamer.core, contingency.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
@@ -1419,7 +1427,8 @@ val allLibraries: Seq[Library] = Seq(
   abacist, acyclicity, adversaria, ambience, anamnesis, anthology, anticipation,
   apoplexy, austronesian, aviation, baroque, beneficence, bitumen, breviloquence, burdock,
   cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
-  cellulose, charisma, chiaroscuro, coaxial, contextual, contingency, cosmopolite,
+  cellulose, charisma, chiaroscuro, coaxial, contextual, contingency, cordillera,
+  cosmopolite,
   decorum, dendrology, denominative, digression, dissonance, distillate, diuretic,
   embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
   exoskeleton,
