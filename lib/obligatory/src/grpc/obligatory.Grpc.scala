@@ -76,3 +76,9 @@ object Grpc:
   // Custom call metadata: arbitrary key/value pairs sent as HTTP/2 headers
   // alongside the gRPC pseudo-headers (e.g. containerd's `containerd-namespace`).
   case class Metadata(entries: List[(Text, Text)] = Nil)
+
+  // Derive a client stub for a service interface of `@rpc`-annotated methods over the
+  // given channel; `service` is the fully-qualified proto service name (the package
+  // and `Service`), and each method's own name completes the `:path`.
+  inline def remote[interface](channel: GrpcChannel, service: Text): interface =
+    ${grpcInternal.remote[interface]('channel, 'service)}

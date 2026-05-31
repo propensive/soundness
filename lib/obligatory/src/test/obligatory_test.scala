@@ -42,6 +42,10 @@ import Http2.*
 case class Ping(message: Text)
 case class Pong(message: Text)
 
+// A service interface for deriving a gRPC client stub with `Grpc.remote`.
+trait Echo:
+  @rpc def call(request: Ping): Pong
+
 object Tests extends Suite(m"Obligatory Tests"):
   def run(): Unit =
     suite(m"Unframing tests"):
@@ -255,3 +259,21 @@ object Tests extends Suite(m"Obligatory Tests"):
           val channel = GrpcChannel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
           channel.serverStreaming[Ping, Pong](method, Ping(t"ping")).map(_.message).to(List)
       . assert(_ == List(t"a", t"b", t"c"))
+
+      test(m"a derived @rpc client stub round-trips a unary call"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+
+          runServer(serverSide, (hpack, id) =>
+            List
+              ( okHeaders(hpack, id),
+                Frame.Data(id, GrpcFraming.encode(Pong(t"pong").protobuf.encode), endStream = false),
+                trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val channel = GrpcChannel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
+          val echo = Grpc.remote[Echo](channel, t"echo.Echo")
+          echo.call(Ping(t"ping")).message
+      . assert(_ == t"pong")
