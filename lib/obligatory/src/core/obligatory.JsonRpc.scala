@@ -138,6 +138,8 @@ trait JsonRpc extends Original:
   def put(json: Json): Unit =
     channel.put(json)
 
+  def outgoing: Stream[Json] = channel.stream
+
   def stream: Stream[Sse] =
     channel.stream.map: json =>
       Sse(data = List(json.encode))
