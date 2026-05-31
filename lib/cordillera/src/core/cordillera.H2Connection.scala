@@ -110,9 +110,9 @@ class H2Connection(duplex: Duplex)(using Monitor, Codicil):
 
   private def send(frame: Frame): Unit = outbound.put(frame)
 
-  // Dispatch one decoded frame. Separated out so the read loop's `Tactic[H2Error]`
+  // Dispatch one decoded frame. Separated out so the read loop's `Tactic[Http2Error]`
   // (for HPACK decoding) is supplied in one place.
-  private def dispatch(frame: Frame, decoder: Hpack)(using Tactic[H2Error]): Boolean =
+  private def dispatch(frame: Frame, decoder: Hpack)(using Tactic[Http2Error]): Boolean =
     frame match
       case Frame.Settings(_, ack) =>
         if !ack then
@@ -202,7 +202,7 @@ class H2Connection(duplex: Duplex)(using Monitor, Codicil):
   // pseudo-headers the request type doesn't carry. Trailers (e.g. gRPC status) are
   // available afterwards via `stream.trailers`.
   def fetch(request: Http.Request, scheme: Text, authority: Text)
-    ( using Tactic[H2Error], Tactic[AsyncError] )
+    ( using Tactic[Http2Error], Tactic[AsyncError] )
   :   (H2Stream, Http.Response) =
 
     val headerBlock = PseudoHeaders.request(request, scheme, authority)

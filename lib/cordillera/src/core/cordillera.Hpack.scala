@@ -40,7 +40,7 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-import H2Error.Reason
+import Http2Error.Reason
 
 // HPACK header-block compression and decompression (RFC 7541). A `Hpack` instance
 // owns one direction's dynamic table; a connection keeps one for decoding inbound
@@ -54,7 +54,7 @@ class Hpack(maxTableSize: Int = 4096):
   // An integer uses the low `prefix` bits of the byte at `data(offset)`; if those
   // are all 1 it continues in subsequent 7-bit groups (low 7 bits, high bit =
   // continuation). Returns the value and the index just past the integer.
-  private def readInteger(data: Data, offset: Int, prefix: Int)(using Tactic[H2Error])
+  private def readInteger(data: Data, offset: Int, prefix: Int)(using Tactic[Http2Error])
   :   (Int, Int) =
 
     val mask = (1 << prefix) - 1
@@ -67,13 +67,13 @@ class Hpack(maxTableSize: Int = 4096):
       var continue = true
 
       while continue do
-        if pos >= data.length then abort(H2Error(Reason.Truncated))
+        if pos >= data.length then abort(Http2Error(Reason.Truncated))
         val byte = data(pos) & 0xff
         result += (byte & 0x7f) << shift
         shift += 7
         pos += 1
         continue = (byte & 0x80) != 0
-        if shift > 28 then abort(H2Error(Reason.BadInteger))
+        if shift > 28 then abort(Http2Error(Reason.BadInteger))
 
       (result, pos)
 
@@ -97,10 +97,10 @@ class Hpack(maxTableSize: Int = 4096):
   // ─── string literal (RFC 7541 §5.2) ───────────────────────────────────────
   //
   // A length-prefixed octet sequence; the prefix's high bit flags Huffman coding.
-  private def readString(data: Data, offset: Int)(using Tactic[H2Error]): (Text, Int) =
+  private def readString(data: Data, offset: Int)(using Tactic[Http2Error]): (Text, Int) =
     val huffman = (data(offset) & 0x80) != 0
     val (length, start) = readInteger(data, offset, 7)
-    if start + length > data.length then abort(H2Error(Reason.Truncated))
+    if start + length > data.length then abort(Http2Error(Reason.Truncated))
     val raw = data.slice(start, start + length)
     val decoded = if huffman then Huffman.decode(raw) else raw
 
@@ -120,15 +120,15 @@ class Hpack(maxTableSize: Int = 4096):
 
   // ─── decode a complete header block ────────────────────────────────────────
 
-  def decode(data: Data)(using Tactic[H2Error]): List[HpackEntry] =
+  def decode(data: Data)(using Tactic[Http2Error]): List[HpackEntry] =
     val builder = List.newBuilder[HpackEntry]
     var pos = 0
 
     def nameValue(index: Int, after: Int): (HpackEntry, Int) =
       // `index == 0` → literal name follows; otherwise name comes from the table.
       val (name, valueStart) =
-        if index != 0 then (table.lookup(index).lest(H2Error(Reason.BadIndex(index))).name, after)
-        else readString(data, after)
+        if index == 0 then readString(data, after)
+        else (table.lookup(index).lest(Http2Error(Reason.BadIndex(index))).name, after)
 
       val (value, next) = readString(data, valueStart)
       (HpackEntry(name, value), next)
@@ -139,7 +139,7 @@ class Hpack(maxTableSize: Int = 4096):
       if (byte & 0x80) != 0 then
         // Indexed header field (§6.1): whole field from the table.
         val (index, next) = readInteger(data, pos, 7)
-        builder += table.lookup(index).lest(H2Error(Reason.BadIndex(index)))
+        builder += table.lookup(index).lest(Http2Error(Reason.BadIndex(index)))
         pos = next
       else if (byte & 0x40) != 0 then
         // Literal with incremental indexing (§6.2.1): adds to the dynamic table.

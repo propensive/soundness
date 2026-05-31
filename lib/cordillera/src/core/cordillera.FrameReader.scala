@@ -37,7 +37,7 @@ import contingency.*
 import rudiments.*
 import vacuous.*
 
-import H2Error.Reason
+import Http2Error.Reason
 
 // Pulls whole HTTP/2 frames from a byte stream that arrives in arbitrary chunks
 // (a socket). Buffers leftover bytes between reads and blocks (by demanding the
@@ -67,10 +67,10 @@ class FrameReader(chunks: Iterator[Bytes]):
     out.immutable(using Unsafe)
 
   // Read the next frame, or `Unset` at clean end of stream.
-  def next()(using Tactic[H2Error]): Optional[Frame] =
+  def next()(using Tactic[Http2Error]): Optional[Frame] =
     if !ensure(9) then Unset else
       val header = slice(9)
       val length = Frame.uint24(header, 0)
-      if !ensure(length) then abort(H2Error(Reason.Truncated))
+      if !ensure(length) then abort(Http2Error(Reason.Truncated))
       val whole = header ++ slice(length)
       Frame.decode(whole, 0)(0)

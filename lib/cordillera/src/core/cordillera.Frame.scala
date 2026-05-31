@@ -40,7 +40,7 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-import H2Error.Reason
+import Http2Error.Reason
 
 // An HTTP/2 frame (RFC 7540 §6). Each frame is a 9-byte header — 24-bit length,
 // 8-bit type, 8-bit flags, 1 reserved bit + 31-bit stream identifier — followed by
@@ -74,8 +74,8 @@ object Frame:
   //
   // Decodes a single frame from `data` starting at `offset`; returns the frame and
   // the offset just past it. `data` must already contain the whole frame.
-  def decode(data: Bytes, offset: Int)(using Tactic[H2Error]): (Frame, Int) =
-    if offset + 9 > data.length then abort(H2Error(Reason.Truncated))
+  def decode(data: Bytes, offset: Int)(using Tactic[Http2Error]): (Frame, Int) =
+    if offset + 9 > data.length then abort(Http2Error(Reason.Truncated))
     val length = uint24(data, offset)
     val typeId = data(offset + 3) & 0xff
     val flags = data(offset + 4) & 0xff
@@ -83,10 +83,10 @@ object Frame:
     val start = offset + 9
     val end = start + length
 
-    if end > data.length then abort(H2Error(Reason.Truncated))
+    if end > data.length then abort(Http2Error(Reason.Truncated))
     val body = data.slice(start, end)
 
-    val frame = FrameType.fromId(typeId).lest(H2Error(Reason.BadFrameType(typeId))) match
+    val frame = FrameType.fromId(typeId).lest(Http2Error(Reason.BadFrameType(typeId))) match
       case FrameType.Data =>
         Frame.Data(streamId, stripPadding(body, flags), Flags.set(flags, Flags.EndStream))
 
@@ -126,15 +126,15 @@ object Frame:
 
   // DATA/HEADERS may carry a 1-byte pad length followed by that many trailing pad
   // bytes (RFC 7540 §6.1/§6.2); strip both when the PADDED flag is set.
-  private def stripPadding(payload: Bytes, flags: Int)(using Tactic[H2Error]): Bytes =
+  private def stripPadding(payload: Bytes, flags: Int)(using Tactic[Http2Error]): Bytes =
     if !Flags.set(flags, Flags.Padded) then payload else
-      if payload.length < 1 then abort(H2Error(Reason.Truncated))
+      if payload.length < 1 then abort(Http2Error(Reason.Truncated))
       val padLength = payload(0) & 0xff
-      if 1 + padLength > payload.length then abort(H2Error(Reason.Protocol(t"bad padding")))
+      if 1 + padLength > payload.length then abort(Http2Error(Reason.Protocol(t"bad padding")))
       payload.slice(1, payload.length - padLength)
 
-  private def decodeSettings(payload: Bytes)(using Tactic[H2Error]): List[Setting] =
-    if payload.length%6 != 0 then abort(H2Error(Reason.Protocol(t"bad SETTINGS length")))
+  private def decodeSettings(payload: Bytes)(using Tactic[Http2Error]): List[Setting] =
+    if payload.length%6 != 0 then abort(Http2Error(Reason.Protocol(t"bad SETTINGS length")))
     val builder = List.newBuilder[Setting]
     var i = 0
 

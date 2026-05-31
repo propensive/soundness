@@ -42,7 +42,7 @@ import spectacular.*
 import telekinesis.*
 import vacuous.*
 
-import H2Error.Reason
+import Http2Error.Reason
 
 // Translates between telekinesis's transport-agnostic HTTP model and HTTP/2's
 // HPACK header blocks. On the request side the pseudo-headers (`:method`, `:scheme`,
@@ -67,7 +67,7 @@ object PseudoHeaders:
 
   // Reconstruct an `Http.Response` from a decoded HEADERS block and the body stream.
   // `:status` selects the `Http.Status`; other fields become response headers.
-  def response(headerBlock: List[HpackEntry], body: Stream[Data])(using Tactic[H2Error])
+  def response(headerBlock: List[HpackEntry], body: Stream[Data])(using Tactic[Http2Error])
   :   Http.Response =
 
     var statusText: Optional[Text] = Unset
@@ -80,6 +80,6 @@ object PseudoHeaders:
     val code: Int = statusText.let { text => safely(Integer.parseInt(text.s)).or(0) }.or(0)
 
     val status: Http.Status =
-      Http.Status.unapply(code).optional.lest(H2Error(Reason.Protocol(t"missing :status")))
+      Http.Status.unapply(code).optional.lest(Http2Error(Reason.Protocol(t"missing :status")))
 
     status(headers.to(List), Http.Body.Streaming(body))
