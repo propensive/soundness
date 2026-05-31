@@ -48,18 +48,29 @@ object Typescript:
   given boolean: (Boolean is Interoperable in Typescript of "boolean" by Json) =
     Interoperable[Boolean, Typescript, "boolean", Json](_.json, _.as[Boolean])
 
-  // A TypeScript `string[]` (i.e. `Array<string>`) maps to a Scala `List[Text]`.
-  type Strings =
-    List[Text] is Interoperable in Typescript of ("Array" over "string") by Json
-
-  given strings: Strings =
-    Interoperable[List[Text], Typescript, ("Array" over "string"), Json]
-      ( _.json, _.as[List[Text]] )
+  // A TypeScript `T[]` (i.e. `Array<T>`) maps to a Scala `List`, with each element converted by
+  // the element type's own `Interoperable`.
+  given list: [element, topic]
+  =>  ( interoperable: element is Interoperable in Typescript of topic by Json )
+  =>  ( List[element] is Interoperable in Typescript of ("Array" over topic) by Json ) =
+    Interoperable[List[element], Typescript, ("Array" over topic), Json]
+      ( _.map(interoperable.operand(_)).json,
+        _.as[List[Json]].map(interoperable.value(_)) )
 
   // TypeScript `undefined` (produced by reading `T?` as `T | undefined`) maps to the absent
-  // `Optional` value.
+  // `Optional` value; it also backs the `Unset.type` alternative when a union is decoded.
   given undefined: (Unset.type is Interoperable in Typescript of "undefined" by Json) =
     Interoperable[Unset.type, Typescript, "undefined", Json](_ => Json(Unset), _ => Unset)
+
+  // A TypeScript `T?` (read as `T | undefined`) maps to a Scala `Optional`. Mirroring jacinta's own
+  // optional codecs, the `Mandatable` constraint identifies the mandatory type `inner` and ensures
+  // this instance applies only to genuine optionals — so it never competes with `inner`'s instance.
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner, topic]
+  =>  ( interoperable: inner is Interoperable in Typescript of topic by Json )
+  =>  ( value is Interoperable in Typescript of (topic | "undefined") by Json ) =
+    Interoperable[value, Typescript, (topic | "undefined"), Json]
+      ( _.let(_.asInstanceOf[inner]).let(interoperable.operand(_)).or(Json(Unset)),
+        _.as[Optional[Json]].let(interoperable.value(_)) )
 
   // A TypeScript `Map<number, string>` maps to a Scala `Map[Int, Text]`, decoded with jacinta's
   // map support (object keys parsed as numbers).

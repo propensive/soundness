@@ -40,8 +40,8 @@ type TsInterface = Interface in Typescript at "/xenophile/definitions.ts"
 given tsInterface: TsInterface = Interface[Typescript](cp"/xenophile/definitions.ts")
 
 val document: Json =
-  j"""{"Foo": {"baz": "hello", "bar": {"count": 42}, "tags": ["a", "b"], "nickname": "Bob",
-       "id": "abc123", "lookup": {"1": "one", "2": "two"}}}"""
+  j"""{"Foo": {"baz": "hello", "bar": {"count": 42}, "tags": ["a", "b"], "counts": [1, 2, 3],
+       "nickname": "Bob", "id": "abc123", "lookup": {"1": "one", "2": "two"}}}"""
 
 given Evaluator in Typescript by Json = Typescript.evaluator(document)
 
@@ -112,10 +112,25 @@ object Tests extends Suite(m"Xenophile tests"):
         tags.as[List[Text]]
       . assert(_ == List(t"a", t"b"))
 
+      test(m"the generic List instance decodes an `Array<number>` to a List[Int]"):
+        val counts: Foreign of ("Array" over "number") from Typescript = foo.counts
+        counts.as[List[Int]]
+      . assert(_ == List(1, 2, 3))
+
       test(m"an optional field is a union with `undefined` and decodes to an Optional"):
         val nickname: Foreign of ("string" | "undefined") from Typescript = foo.nickname
         nickname.as[Optional[Text]]
       . assert(_ == t"Bob")
+
+      test(m"a present Optional value converts to a `Foreign` literal and round-trips"):
+        val opt: Foreign of ("string" | "undefined") from Typescript = t"hi": Optional[Text]
+        opt.as[Optional[Text]]
+      . assert(_ == t"hi")
+
+      test(m"an absent Optional value converts to `undefined` and decodes to Unset"):
+        val opt: Foreign of ("string" | "undefined") from Typescript = Unset: Optional[Text]
+        opt.as[Optional[Text]]
+      . assert(_ == Unset)
 
       test(m"a union field has a bare-union foreign type and decodes to a Scala union"):
         val id: Foreign of ("string" | "number") from Typescript = foo.id
