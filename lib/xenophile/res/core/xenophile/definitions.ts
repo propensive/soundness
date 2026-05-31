@@ -4,6 +4,7 @@ interface Foo {
   greet(name: string): string;
   link(other: Bar): Foo;
   tags: string[];
+  counts: number[];
   nickname?: string;
   id: string | number;
   lookup: Map<number, string>;
