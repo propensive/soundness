@@ -96,6 +96,11 @@ object Protobuf extends Protobuf2:
 
   given protobuf: Protobuf is Decodable in Protobuf = identity(_)
 
+  // The wire bytes of a `Protobuf` message, reached with `.encode` (anticipation's
+  // `Encodable`) — the same verb jacinta uses for `Json`. `serialize` is reserved
+  // for monotonous's byte→text encodings (hex, base64, …).
+  given encodableInData: Protobuf is Encodable in Data = _.payload
+
   // `bytes.read[Protobuf]` aggregates the byte stream and wraps it as a message.
   given aggregable: Protobuf is Aggregable by Data = bytes => message(bytes.read[Data])
 
@@ -411,7 +416,5 @@ enum Protobuf:
     case Absent        => true
     case Repeated(Nil) => true
     case _             => false
-
-  def serialize: Data = payload
 
   def as[value: Decodable in Protobuf]: value raises ProtobufError = value.decoded(this)
