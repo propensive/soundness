@@ -106,7 +106,7 @@ object Tests extends Suite(m"Soundness tests"):
     monotonous.Tests()
     mosquito.Tests()
     nomenclature.Tests()
-    //obligatory.Tests() - obligatory_test.scala declares `package synesthesia`
+    obligatory.Tests()
     octogenarian.Tests()
     //orthodoxy.Tests()
     panopticon.Tests()

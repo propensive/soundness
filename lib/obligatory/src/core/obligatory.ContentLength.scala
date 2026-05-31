@@ -34,56 +34,83 @@ package obligatory
 
 import anticipation.*
 import contingency.*
-import distillate.*
 import gossamer.*
-import hieroglyph.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 import zephyrine.*
 
 object ContentLength:
-  given framable: Tactic[FrameError] => Text is Framable by ContentLength = input =>
-    val cursor: Cursor[Text] = Cursor(input)
+  // The Language Server Protocol (and the HTTP-style base protocol it derives from) defines the
+  // `Content-Length` header as a count of *bytes*. Framing therefore happens at the byte level:
+  // the ASCII headers are parsed byte-by-byte, then exactly `length` bytes of body are taken and
+  // yielded as `Data`, leaving any text decoding to the caller. Counting characters (as a `Text`
+  // framer would) coincides with bytes only for ASCII content and corrupts the stream on any
+  // multi-byte UTF-8 body. Unrecognised headers are skipped rather than rejected, since clients
+  // routinely send headers beyond `Content-Length` and `Content-Type`.
+  given framable: Tactic[FrameError] => Data is Framable by ContentLength = input =>
+    val cursor = Cursor(input)
+
+    val cr: Byte = 13
+    val lf: Byte = 10
+    val colon: Byte = 58
+    val space: Byte = 32
 
     def fail(): Nothing = abort(FrameError(FrameError.Reason.ShortRead))
-    def skip(): Unit = while cursor.next() && cursor.datum(using Unsafe) == ' ' do ()
+    def lower(byte: Byte): Byte = if byte >= 65 && byte <= 90 then (byte + 32).toByte else byte
 
-    def key(mark: Cursor.Mark)(using Cursor.Held): Optional[Text] = cursor.lay(fail()):
-      case Cr =>
-        if mark != cursor.mark then fail() else
-        cursor.consume(fail())("\n")
+    val name: Text = t"content-length"
 
-        cursor.next()
-        Unset
+    def frame(): Optional[Data] =
+      if cursor.finished then Unset else
+        var length: Int = -1
+        var blank = false
 
-      case ':' =>
-        cursor.grab(mark, cursor.mark).also(skip())
+        while !blank do
+          if cursor.finished then fail()
 
-      case chr =>
-        if cursor.next() then key(mark) else abort(FrameError(FrameError.Reason.ShortRead))
+          if cursor.datum(using Unsafe) == cr then
+            cursor.next()
+            if cursor.finished || cursor.datum(using Unsafe) != lf then fail()
+            cursor.next()
+            blank = true
+          else
+            var matches = true
+            var index = 0
 
-    def value(mark: Cursor.Mark)(using Cursor.Held): Text = cursor.lay(fail()):
-      case '\r' =>
-        cursor.grab(mark, cursor.mark).also:
-          cursor.consume(fail())("\n")
-          cursor.next()
+            while !cursor.finished && cursor.datum(using Unsafe) != colon do
+              val byte = lower(cursor.datum(using Unsafe))
+              if index >= name.length || byte != name.s.charAt(index).toByte then matches = false
+              index += 1
+              cursor.next()
 
-      case char =>
-        if cursor.next() then value(mark) else fail()
+            if index != name.length then matches = false
+            if cursor.finished then fail()
+            cursor.next()
 
-    def frame(length: Int): Optional[Text] =
-      if cursor.finished then Unset else cursor.hold(key(cursor.mark).let(_.lower)) match
-        case Unset           => cursor.take(fail())(length)
-        case t"content-type" => cursor.hold(value(cursor.mark)) yet frame(length)
+            while !cursor.finished && cursor.datum(using Unsafe) == space do cursor.next()
 
-        case t"content-length" =>
-          val raw = cursor.hold(value(cursor.mark))
-          frame(safely(raw.decode[Int]).lest(FrameError(FrameError.Reason.MalformedLength)))
+            var value = 0
+            var digits = false
 
-        case other =>
-          abort(FrameError(FrameError.Reason.UnknownHeader))
+            while !cursor.finished && cursor.datum(using Unsafe) != cr do
+              val byte = cursor.datum(using Unsafe)
 
-    Framable.frames[Text](frame(0))
+              if matches && byte >= 48 && byte <= 57 then
+                value = value*10 + (byte - 48)
+                digits = true
+
+              cursor.next()
+
+            if cursor.finished then fail()
+            cursor.next()
+            if cursor.finished || cursor.datum(using Unsafe) != lf then fail()
+            cursor.next()
+
+            if matches && digits then length = value
+
+        if length < 0 then abort(FrameError(FrameError.Reason.MalformedLength))
+        cursor.take(fail())(length)
+
+    Framable.frames[Data](frame())
 
 sealed trait ContentLength

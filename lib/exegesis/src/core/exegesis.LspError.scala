@@ -32,75 +32,18 @@
                                                                                                   */
 package exegesis
 
-import soundness.*
+import fulminate.*
 
-import charEncoders.utf8
-import strategies.throwUnsafely
+object LspError:
+  enum Reason(val number: Int) extends Clarification:
+    case ParseError    extends Reason(1)
+    case UnknownMethod extends Reason(2)
+    case InvalidParams extends Reason(3)
 
-object Tests extends Suite(m"Exegesis Tests"):
+  given communicable: Reason is Communicable =
+    case Reason.ParseError    => m"the message could not be parsed as JSON"
+    case Reason.UnknownMethod => m"the method name was not recognised by the server"
+    case Reason.InvalidParams => m"the parameters were not valid for the requested method"
 
-  object TestServer extends LspServer():
-    def name: Text = t"Test"
-    override def version: Optional[Text] = t"1.0"
-    def capabilities: Lsp.ServerCapabilities = Lsp.ServerCapabilities(hoverProvider = true)
-
-    override def hover(uri: Text, position: Lsp.Position): Optional[Lsp.Hover] =
-      Lsp.Hover(Lsp.MarkupContent(value = t"hi"))
-
-    override def onOpen(document: Lsp.TextDocumentItem)(using LspClient): Unit =
-      summon[LspClient].publishDiagnostics
-        ( document.uri,
-          List
-            ( Lsp.Diagnostic
-                ( range    = Lsp.Range(Lsp.Position(0, 0), Lsp.Position(0, 1)),
-                  severity = Lsp.DiagnosticSeverity.Error,
-                  message  = t"oops" ) ) )
-
-  def run(): Unit =
-    suite(m"Integer enum codecs"):
-      test(m"DiagnosticSeverity encodes to its protocol number"):
-        val number: Text = Lsp.DiagnosticSeverity.Warning.json.encode
-        number
-      . assert(_ == t"2")
-
-      test(m"DiagnosticSeverity decodes from its protocol number"):
-        2.json.as[Lsp.DiagnosticSeverity]
-      . assert(_ == Lsp.DiagnosticSeverity.Warning)
-
-      test(m"TextDocumentSyncKind is numbered from zero"):
-        val number: Text = Lsp.TextDocumentSyncKind.Full.json.encode
-        number
-      . assert(_ == t"1")
-
-    suite(m"Content-Length framing"):
-      test(m"a framed message is unframed to its body"):
-        Iterator(t"Content-Length: 5\r\n\r\n12345".data).frames[ContentLength].map(_.utf8).to(List)
-      . assert(_ == List(t"12345"))
-
-      test(m"a multi-byte UTF-8 body is framed by byte length, not character count"):
-        val body = t"""{"k":"café"}"""
-        val message = t"Content-Length: ${body.data.length}\r\n\r\n"+body
-        Iterator(message.data).frames[ContentLength].map(_.utf8).to(List)
-      . assert(_ == List(t"""{"k":"café"}"""))
-
-    suite(m"Dispatch"):
-      test(m"a hover request is answered with the hover result"):
-        val dispatch = JsonRpc.serve[Lsp](TestServer)
-
-        val request: Json =
-          t"""{"jsonrpc":"2.0","id":1,"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///x"},"position":{"line":0,"character":0}}}"""
-          . decode[Json]
-
-        dispatch(request).let(_.as[JsonRpc.Response].result.as[Lsp.Hover].contents.value)
-      . assert(_ == t"hi")
-
-      test(m"opening a document publishes a diagnostic to the client"):
-        val dispatch = JsonRpc.serve[Lsp](TestServer)
-
-        val request: Json =
-          t"""{"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"file:///x","languageId":"text","version":1,"text":"hello"}}}"""
-          . decode[Json]
-
-        dispatch(request)
-        TestServer.outgoing.iterator.next().as[JsonRpc.Request].method
-      . assert(_ == t"textDocument/publishDiagnostics")
+case class LspError(reason: LspError.Reason)(using Diagnostics)
+extends Error(631, reason.number)(m"the LSP operation failed because $reason")
