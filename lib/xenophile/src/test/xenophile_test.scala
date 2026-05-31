@@ -35,6 +35,8 @@ package xenophile
 import soundness.*
 import jacinta.*
 
+import strategies.throwUnsafely
+
 type TsInterface = Interface in Typescript at "/xenophile/definitions.ts"
 
 given tsInterface: TsInterface = Interface[Typescript](cp"/xenophile/definitions.ts")

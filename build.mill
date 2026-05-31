@@ -1306,7 +1306,7 @@ object wisteria extends Library:
 
 object xenophile extends Library:
   object core extends Component(gossamer.core, prepositional.core, gigantism.core, fulminate.core,
-    vacuous.core, hellenism.core, jacinta.core):
+    vacuous.core, hellenism.core, jacinta.core, distillate.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)

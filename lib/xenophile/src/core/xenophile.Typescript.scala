@@ -34,6 +34,7 @@ package xenophile
 
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
+import distillate.*
 import jacinta.*
 import prepositional.*
 import vacuous.*
@@ -72,14 +73,19 @@ object Typescript:
       ( _.let(_.asInstanceOf[inner]).let(interoperable.operand(_)).or(Json(Unset)),
         _.as[Optional[Json]].let(interoperable.value(_)) )
 
-  // A TypeScript `Map<number, string>` maps to a Scala `Map[Int, Text]`, decoded with jacinta's
-  // map support (object keys parsed as numbers).
-  type NumberToString =
-    Map[Int, Text] is Interoperable in Typescript of ("Map" over ("number", "string")) by Json
+  // A TypeScript `Map<K, V>` maps to a Scala `Map`. Values are converted by their `Interoperable`;
+  // JSON object keys are textual, so the key type also needs `Text` codecs.
+  given map: [key, value, keyTopic, valueTopic]
+  =>  ( keyType:   key is Interoperable in Typescript of keyTopic by Json,
+        valueType: value is Interoperable in Typescript of valueTopic by Json,
+        keyEncode: key is Encodable in Text,
+        keyDecode: key is Decodable in Text )
+  =>  ( Map[key, value] is Interoperable in Typescript
+          of ("Map" over (keyTopic, valueTopic)) by Json ) =
 
-  given numberToString: NumberToString =
-    Interoperable[Map[Int, Text], Typescript, ("Map" over ("number", "string")), Json]
-      ( _.json, _.as[Map[Int, Text]] )
+    Interoperable[Map[key, value], Typescript, ("Map" over (keyTopic, valueTopic)), Json]
+      ( _.map { (k, v) => (k.encode, valueType.operand(v)) }.json,
+        _.as[Map[Text, Json]].map { (k, v) => (k.decode[key], valueType.value(v)) } )
 
   // A backend that evaluates a `ForeignExpr` against an in-memory JSON document: references and
   // selections navigate the document; literals yield their operand; function application is
