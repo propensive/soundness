@@ -174,20 +174,20 @@ components:
     .assert:
       case JsonSchema.Object(_, properties, _, _, _, _, _) =>
         properties.at(t"owner").vouch match
-          case JsonSchema.Ref(pointer, _, _) => pointer == t"#/components/schemas/Owner"
+          case JsonSchema.Ref(pointer, _, _) => pointer.encode == t"#/components/schemas/Owner"
           case _                             => false
       case _ => false
 
     test(m"a component reference resolves to its schema"):
       given OpenApi = fromJson
-      JsonSchema.Ref(t"#/components/schemas/Pet").dereference
+      JsonSchema.Ref(t"#/components/schemas/Pet".decode[JsonPointer])()
     .assert:
       case _: JsonSchema.Object => true
       case _                    => false
 
     test(m"a cyclic reference resolves one hop without looping"):
       given OpenApi = fromJson
-      JsonSchema.Ref(t"#/components/schemas/Owner").dereference
+      JsonSchema.Ref(t"#/components/schemas/Owner".decode[JsonPointer])()
     .assert:
       case _: JsonSchema.Object => true
       case _                    => false

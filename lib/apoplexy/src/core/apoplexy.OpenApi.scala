@@ -64,10 +64,10 @@ object OpenApi:
 
     // Anchored (rather than derived inline at each use) so that `PathItem` and
     // `Operation`, which both embed `Parameter`, reference one cached instance.
-    given decodableJson: (Tactic[JsonError], Tactic[OpenApiError])
+    given decodableJson: (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApiError])
     =>  Parameter is Decodable in Json = Json.DecodableDerivation.derived
 
-    given decodableYaml: (Tactic[YamlError], Tactic[OpenApiError])
+    given decodableYaml: (Tactic[YamlError], Tactic[JsonPointerError], Tactic[OpenApiError])
     =>  Parameter is Decodable in Yaml = Yaml.DecodableDerivation.derived
 
     enum In:
@@ -99,10 +99,10 @@ object OpenApi:
     // `-Xmax-inlines` (which surfaces, misleadingly, as a missing `Decodable`
     // instance). Anchoring `Operation` derives it once and lets `PathItem`
     // simply reference it.
-    given decodableJson: (Tactic[JsonError], Tactic[OpenApiError])
+    given decodableJson: (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApiError])
     =>  Operation is Decodable in Json = Json.DecodableDerivation.derived
 
-    given decodableYaml: (Tactic[YamlError], Tactic[OpenApiError])
+    given decodableYaml: (Tactic[YamlError], Tactic[JsonPointerError], Tactic[OpenApiError])
     =>  Operation is Decodable in Yaml = Yaml.DecodableDerivation.derived
 
   case class Operation
@@ -151,21 +151,23 @@ object OpenApi:
       . or(operation.responses.at(t"${status.code/100}XX"))
       . or(operation.responses.at(t"default"))
 
-  // Resolve a single `$ref` hop against the document's component schemas.
-  // Resolving one hop at a time (never inlining recursively) keeps cyclic
-  // schema graphs from looping; the consumer drives the walk.
+  // Resolve a single `$ref` hop against the document's component schemas, via
+  // `ref()`. Resolving one hop at a time (never inlining recursively) keeps
+  // cyclic schema graphs from looping; the consumer drives the walk. A
+  // non-reference schema resolves to itself.
   extension (schema: JsonSchema)
-    def dereference(using doc: OpenApi): JsonSchema raises OpenApiError = schema match
+    def apply()(using doc: OpenApi): JsonSchema raises OpenApiError = schema match
       case JsonSchema.Ref(pointer, _, _) =>
+        val reference = pointer.encode
         val prefix = t"#/components/schemas/"
 
-        if pointer.starts(prefix) then
-          val name = pointer.skip(prefix.length)
+        if reference.starts(prefix) then
+          val name = reference.skip(prefix.length)
 
           doc.components.let(_.schemas.at(name)).or:
-            abort(OpenApiError(OpenApiError.Reason.UnresolvableRef(pointer)))
+            abort(OpenApiError(OpenApiError.Reason.UnresolvableRef(reference)))
         else
-          abort(OpenApiError(OpenApiError.Reason.UnsupportedRef(pointer)))
+          abort(OpenApiError(OpenApiError.Reason.UnsupportedRef(reference)))
 
       case other =>
         other
@@ -176,17 +178,19 @@ object OpenApi:
   // private method so that recursive summons for nested schemas (`items`,
   // `properties`, …) resolve to this fully-defined given rather than to the
   // instance currently being initialised.
-  given jsonSchemaYaml: Tactic[YamlError] => JsonSchema is Decodable in Yaml =
-    decodeYamlSchema(_)
+  given jsonSchemaYaml: (Tactic[YamlError], Tactic[JsonPointerError])
+  =>  JsonSchema is Decodable in Yaml = decodeYamlSchema(_)
 
-  private def decodeYamlSchema(yaml: Yaml)(using Tactic[YamlError]): JsonSchema =
+  private def decodeYamlSchema(yaml: Yaml)(using Tactic[YamlError], Tactic[JsonPointerError])
+  :   JsonSchema =
+
     def field[value: Decodable in Yaml](name: Text): Optional[value] =
       yaml(name).as[Optional[value]]
 
     val reference = field[Text]("$ref".tt)
 
     if !reference.absent
-    then JsonSchema.Ref(reference.vouch, field[Text](t"description"))
+    then JsonSchema.Ref(reference.vouch.decode[JsonPointer], field[Text](t"description"))
     else field[Text](t"type") match
       case t"array" =>
         JsonSchema.Array
@@ -252,9 +256,10 @@ object OpenApi:
     summon[Text is Aggregable by Text].map: text =>
       val document =
         whereas:
-          case ParseError(_, _, _) => OpenApiError(OpenApiError.Reason.Malformed)
-          case JsonError(_)        => OpenApiError(OpenApiError.Reason.Malformed)
-          case YamlError(_)        => OpenApiError(OpenApiError.Reason.Malformed)
+          case ParseError(_, _, _)  => OpenApiError(OpenApiError.Reason.Malformed)
+          case JsonError(_)         => OpenApiError(OpenApiError.Reason.Malformed)
+          case YamlError(_)         => OpenApiError(OpenApiError.Reason.Malformed)
+          case JsonPointerError(_)  => OpenApiError(OpenApiError.Reason.Malformed)
 
         . mitigate:
             if text.trim.starts(t"{") || text.trim.starts(t"[")

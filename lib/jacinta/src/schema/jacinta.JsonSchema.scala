@@ -57,7 +57,7 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
 
   given encodable: JsonSchema is Encodable in Json = value => value match
     case JsonSchema.Ref(pointer, _, _) =>
-      Json.ast(Json.Ast.obj(IArray("$ref"), IArray(Json.Ast(pointer.s))))
+      Json.ast(Json.Ast.obj(IArray("$ref"), IArray(Json.Ast(pointer.encode.s))))
 
     case other =>
       derivedEncodable.encoded(other)
@@ -66,14 +66,15 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
   // the *value* of its `type` field (and may carry none, for `$ref`), which the
   // `type`-as-Scala-subtype derivation cannot model. Decoding by hand also
   // keeps the recursion on nested schemas pointed back at this same given.
-  given decodable: Tactic[JsonError] => JsonSchema is Decodable in Json = json =>
+  given decodable: (Tactic[JsonError], Tactic[JsonPointerError])
+  =>  JsonSchema is Decodable in Json = json =>
     def field[value: Decodable in Json](name: Text): Optional[value] =
       json(name).as[Optional[value]]
 
     val reference = json("$ref".tt)
 
     if !reference.root.isAbsent
-    then JsonSchema.Ref(reference.as[Text], field[Text](t"description"))
+    then JsonSchema.Ref(reference.as[JsonPointer], field[Text](t"description"))
     else field[Text](t"type") match
       case t"array" =>
         JsonSchema.Array
@@ -253,9 +254,9 @@ enum JsonSchema extends Documentary:
   case Boolean(description: Optional[Text] = Unset, optional: scala.Boolean = false)
   case Null(description: Optional[Text] = Unset, optional: scala.Boolean = false)
 
-  // A JSON Reference (`{"$ref": "#/…"}`). The pointer is retained verbatim and
-  // resolved lazily by the consumer, so cyclic schema graphs stay finite.
+  // A JSON Reference (`{"$ref": "#/…"}`). The pointer is retained unresolved and
+  // dereferenced lazily by the consumer, so cyclic schema graphs stay finite.
   case Ref
-    ( pointer:     Text,
+    ( pointer:     JsonPointer,
       description: Optional[Text] = Unset,
       optional:    scala.Boolean  = false )

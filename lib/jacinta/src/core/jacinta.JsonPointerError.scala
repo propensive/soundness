@@ -32,14 +32,17 @@
                                                                                                   */
 package jacinta
 
+import anticipation.*
 import fulminate.*
 
 object JsonPointerError:
   enum Reason(val number: Int) extends Clarification:
-    case UnknownDocument extends Reason(1)
+    case UnknownDocument    extends Reason(1)
+    case Malformed(ref: Text) extends Reason(2)
 
   given communicable: Reason is Communicable =
     case Reason.UnknownDocument => m"the registry contains no document at the pointer's URL"
+    case Reason.Malformed(ref)  => m"$ref is not a valid JSON reference"
 
 case class JsonPointerError(reason: JsonPointerError.Reason)(using Diagnostics)
 extends Error(415, reason.number)

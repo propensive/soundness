@@ -39,6 +39,7 @@ import anticipation.*
 import beneficence.*
 import contingency.*
 import denominative.*
+import distillate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -75,6 +76,20 @@ object JsonPointer extends Root(""):
 
     if pointer.path.descent.length == 0 then t"$url#"
     else t"$url#/${pointer.path}"
+
+  // Parses a same-document JSON reference (`#`, `#/`, `#/a/b`). URL-bearing or
+  // fragmentless references are reported as `Malformed`; same-document refs are
+  // all OpenAPI's component `$ref`s use, and JSON Pointer fragments per RFC 6901.
+  given decodable: Tactic[JsonPointerError] => JsonPointer is Decodable in Text = text =>
+    val parts = text.cut(t"#")
+
+    if parts.length != 2 || parts.head != t""
+    then abort(JsonPointerError(JsonPointerError.Reason.Malformed(text)))
+    else
+      val segments = parts.last.cut(t"/").filter(_ != t"")
+
+      segments.foldLeft(JsonPointer(): JsonPointer): (pointer, segment) =>
+        pointer(filesystem.unescape(segment))
 
   given divisible: JsonPointer is Divisible by Text to JsonPointer =
     (pointer, segment) => JsonPointer(pointer.url, pointer.path / segment)
