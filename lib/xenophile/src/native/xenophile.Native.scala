@@ -33,6 +33,7 @@
 package xenophile
 
 import java.lang.foreign.*, ValueLayout.*
+import java.nio.file.Path
 
 import anticipation.*
 import gossamer.*
@@ -80,16 +81,23 @@ object Native:
 
   private val address: AddressLayout = ADDRESS.nn
 
-  // An evaluator that performs real FFM downcalls against the platform's default (libc) symbol
-  // lookup. Each function's call descriptor is built from its signature, read by re-parsing
-  // `header`. Function application (scalar/pointer arguments, scalar results) and struct field
-  // reads (returning the field's slice of the struct's memory) are supported.
+  // An evaluator that resolves symbols through the platform's default (libc) lookup.
   def evaluator(header: Text): Evaluator in Native by MemorySegment =
+    evaluator(header, Linker.nativeLinker().nn.defaultLookup().nn)
+
+  // An evaluator that loads the shared library at `library` (a `.so` / `.dylib` path — e.g. a Rust
+  // crate built as a `cdylib`) for the lifetime of the JVM, resolving symbols within it.
+  def evaluator(header: Text, library: Text): Evaluator in Native by MemorySegment =
+    evaluator(header, SymbolLookup.libraryLookup(Path.of(library.s), Arena.global().nn).nn)
+
+  // The shared evaluator: it performs real FFM downcalls, building each function's call descriptor
+  // from its signature (read by re-parsing `header`) and resolving the symbol through `lookup`.
+  // Function application (scalar/pointer arguments, scalar results) and struct field reads
+  // (returning the field's slice of the struct's memory) are supported.
+  private def evaluator(header: Text, lookup: SymbolLookup): Evaluator in Native by MemorySegment =
     val definitions = CHeaderDialect.parse(header)
     val functions = definitions.at(CHeaderDialect.library).or(Map[Text, Signature]())
-
     val linker = Linker.nativeLinker().nn
-    val lookup = linker.defaultLookup().nn
 
     def layout(foreign: ForeignType): MemoryLayout = foreign match
       case ForeignType.Named(name) =>

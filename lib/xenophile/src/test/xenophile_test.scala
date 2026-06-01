@@ -36,6 +36,7 @@ import soundness.*
 import jacinta.*
 
 import java.lang.foreign.{Arena, MemorySegment}, java.lang.foreign.ValueLayout.JAVA_INT
+import java.nio.file.Files
 
 import strategies.throwUnsafely
 
@@ -237,3 +238,24 @@ object Tests extends Suite(m"Xenophile tests"):
 
         (point.x.as[Int], point.y.as[Int])
       . assert(_ == (3, 4))
+
+      // Builds a tiny C `cdylib` (the same C ABI a Rust crate's `extern "C"` API exposes), loads it
+      // by path, and calls into it — the path Scala↔Rust interop would take.
+      test(m"a function in a loaded shared library is called through FFM"):
+        val directory = Files.createTempDirectory("xenophile").nn
+        val source = directory.resolve("add.c").nn
+        Files.writeString(source, "int add(int a, int b) { return a + b; }")
+        val target = directory.resolve("libadd.so").nn
+
+        // If `cc` fails, the library is not produced and `libraryLookup` below raises, failing
+        // the test with a clear native-loading error.
+        val _ =
+          ProcessBuilder("cc", "-shared", "-fPIC", "-o", target.toString.nn, source.toString.nn)
+            .inheritIO().nn.start().nn.waitFor()
+
+        given Evaluator in Native by MemorySegment =
+          Native.evaluator(t"int add(int a, int b);", target.toString.nn.tt)
+
+        val library: Foreign of "library" from Native = Foreign["library", Native]
+        library.add(2, 3).as[Int]
+      . assert(_ == 5)
