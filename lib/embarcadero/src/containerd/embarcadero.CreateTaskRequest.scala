@@ -30,17 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package embarcadero
 
-// `Timestamp` is intentionally not exported: it collides with `aviation.Timestamp` in
-// the umbrella, and callers normally reach times through `…createdAt.instant[Instant]`
-// rather than naming it. Use `embarcadero.Timestamp` directly when constructing one.
-export embarcadero.{AnyMessage, Containerd, Container, ContentDescriptor,
-    CreateContainerRequest, CreateContainerResponse, CreateNamespaceRequest,
-    CreateNamespaceResponse, CreateTaskRequest, CreateTaskResponse, DeleteContainerRequest,
-    DeleteImageRequest, DeleteNamespaceRequest, DeleteTaskRequest, DeleteTaskResponse, Empty,
-    GetContainerRequest, GetContainerResponse, GetImageRequest, GetImageResponse, GetTaskRequest,
-    GetTaskResponse, ImageRecord, KillRequest, ListContainersRequest, ListContainersResponse,
-    ListImagesRequest, ListImagesResponse, ListNamespacesRequest, ListNamespacesResponse,
-    ListTasksRequest, ListTasksResponse, Mount, Namespace, Process, ProcessStatus, Runtime,
-    StartRequest, StartResponse, VersionResponse, WaitRequest, WaitResponse}
+import anticipation.*
+import gossamer.*
+import locomotion.field
+
+// The request for `Tasks.Create`: a new task for `containerId`, with its root filesystem
+// `rootfs` mounts, optional stdio paths, a `terminal` flag, and opaque runtime `options`.
+case class CreateTaskRequest
+  ( @field(1)  containerId: Text        = t"",
+    @field(3)  rootfs:      List[Mount] = Nil,
+    @field(4)  stdin:       Text        = t"",
+    @field(5)  stdout:      Text        = t"",
+    @field(6)  stderr:      Text        = t"",
+    @field(7)  terminal:    Boolean     = false,
+    @field(10) options:     AnyMessage  = AnyMessage() )
+derives CanEqual

@@ -30,17 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package embarcadero
 
-// `Timestamp` is intentionally not exported: it collides with `aviation.Timestamp` in
-// the umbrella, and callers normally reach times through `…createdAt.instant[Instant]`
-// rather than naming it. Use `embarcadero.Timestamp` directly when constructing one.
-export embarcadero.{AnyMessage, Containerd, Container, ContentDescriptor,
-    CreateContainerRequest, CreateContainerResponse, CreateNamespaceRequest,
-    CreateNamespaceResponse, CreateTaskRequest, CreateTaskResponse, DeleteContainerRequest,
-    DeleteImageRequest, DeleteNamespaceRequest, DeleteTaskRequest, DeleteTaskResponse, Empty,
-    GetContainerRequest, GetContainerResponse, GetImageRequest, GetImageResponse, GetTaskRequest,
-    GetTaskResponse, ImageRecord, KillRequest, ListContainersRequest, ListContainersResponse,
-    ListImagesRequest, ListImagesResponse, ListNamespacesRequest, ListNamespacesResponse,
-    ListTasksRequest, ListTasksResponse, Mount, Namespace, Process, ProcessStatus, Runtime,
-    StartRequest, StartResponse, VersionResponse, WaitRequest, WaitResponse}
+import anticipation.*
+import gossamer.*
+import locomotion.field
+
+// A mount in a task's root filesystem (`containerd.types.Mount`): a `source` mounted at
+// `target` with a filesystem `mountType` (proto `type`) and mount `options`.
+case class Mount
+  ( @field(1) mountType: Text       = t"",
+    @field(2) source:    Text       = t"",
+    @field(3) target:    Text       = t"",
+    @field(4) options:   List[Text] = Nil )
+derives CanEqual

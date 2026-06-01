@@ -62,6 +62,15 @@ object Containerd:
   private val getImageMethod: Grpc.Method = Grpc.Method(imagesService, t"Get")
   private val deleteImageMethod: Grpc.Method = Grpc.Method(imagesService, t"Delete")
 
+  private val tasksService: Text = t"containerd.services.tasks.v1.Tasks"
+  private val createTaskMethod: Grpc.Method = Grpc.Method(tasksService, t"Create")
+  private val startTaskMethod: Grpc.Method = Grpc.Method(tasksService, t"Start")
+  private val killTaskMethod: Grpc.Method = Grpc.Method(tasksService, t"Kill")
+  private val waitTaskMethod: Grpc.Method = Grpc.Method(tasksService, t"Wait")
+  private val deleteTaskMethod: Grpc.Method = Grpc.Method(tasksService, t"Delete")
+  private val getTaskMethod: Grpc.Method = Grpc.Method(tasksService, t"Get")
+  private val listTasksMethod: Grpc.Method = Grpc.Method(tasksService, t"List")
+
   // Connect to a containerd endpoint (typically a Unix socket carrying cleartext h2c),
   // binding every call to `namespace` via the mandatory `containerd-namespace` header.
   // Must be called inside a `supervise` scope (the connection runs background daemons).
@@ -167,3 +176,54 @@ case class Containerd(channel: GrpcChannel):
 
     val request = DeleteImageRequest(name, sync)
     val _ = channel.unary[DeleteImageRequest, Empty](Containerd.deleteImageMethod, request)
+
+  // Create a task for a container (`Tasks.Create`): give it a root filesystem (the
+  // `rootfs` mounts, e.g. from an unpacked snapshot) and optional runtime `options`,
+  // returning the container id and the new task's host pid.
+  def createTask(containerId: Text, rootfs: List[Mount] = Nil, options: AnyMessage = AnyMessage())
+  :   CreateTaskResponse raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
+
+    val request = CreateTaskRequest(containerId, rootfs, options = options)
+    channel.unary[CreateTaskRequest, CreateTaskResponse](Containerd.createTaskMethod, request)
+
+  // Start a created task (`Tasks.Start`), returning its host pid.
+  def startTask(containerId: Text, execId: Text = t"")
+  :   Int raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
+
+    val request = StartRequest(containerId, execId)
+    channel.unary[StartRequest, StartResponse](Containerd.startTaskMethod, request).pid
+
+  // Send a signal to a task (`Tasks.Kill`); `all` targets every process in the container.
+  def killTask(containerId: Text, signal: Int, execId: Text = t"", all: Boolean = false)
+  :   Unit raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
+
+    val request = KillRequest(containerId, execId, signal, all)
+    val _ = channel.unary[KillRequest, Empty](Containerd.killTaskMethod, request)
+
+  // Wait for a task to exit (`Tasks.Wait`), returning its exit status and time.
+  def waitTask(containerId: Text, execId: Text = t"")
+  :   WaitResponse raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
+
+    val request = WaitRequest(containerId, execId)
+    channel.unary[WaitRequest, WaitResponse](Containerd.waitTaskMethod, request)
+
+  // Delete a task (`Tasks.Delete`), returning its final exit status.
+  def deleteTask(containerId: Text, execId: Text = t"")
+  :   DeleteTaskResponse raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
+
+    val request = DeleteTaskRequest(containerId, execId)
+    channel.unary[DeleteTaskRequest, DeleteTaskResponse](Containerd.deleteTaskMethod, request)
+
+  // The state of a single task (`Tasks.Get`).
+  def task(containerId: Text, execId: Text = t"")
+  :   Process raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
+
+    val request = GetTaskRequest(containerId, execId)
+    channel.unary[GetTaskRequest, GetTaskResponse](Containerd.getTaskMethod, request).process
+
+  // Every task known to the daemon (`Tasks.List`), optionally filtered.
+  def tasks(filter: Text = t"")
+  :   List[Process] raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
+
+    val request = ListTasksRequest(filter)
+    channel.unary[ListTasksRequest, ListTasksResponse](Containerd.listTasksMethod, request).tasks

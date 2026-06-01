@@ -30,17 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package embarcadero
 
-// `Timestamp` is intentionally not exported: it collides with `aviation.Timestamp` in
-// the umbrella, and callers normally reach times through `…createdAt.instant[Instant]`
-// rather than naming it. Use `embarcadero.Timestamp` directly when constructing one.
-export embarcadero.{AnyMessage, Containerd, Container, ContentDescriptor,
-    CreateContainerRequest, CreateContainerResponse, CreateNamespaceRequest,
-    CreateNamespaceResponse, CreateTaskRequest, CreateTaskResponse, DeleteContainerRequest,
-    DeleteImageRequest, DeleteNamespaceRequest, DeleteTaskRequest, DeleteTaskResponse, Empty,
-    GetContainerRequest, GetContainerResponse, GetImageRequest, GetImageResponse, GetTaskRequest,
-    GetTaskResponse, ImageRecord, KillRequest, ListContainersRequest, ListContainersResponse,
-    ListImagesRequest, ListImagesResponse, ListNamespacesRequest, ListNamespacesResponse,
-    ListTasksRequest, ListTasksResponse, Mount, Namespace, Process, ProcessStatus, Runtime,
-    StartRequest, StartResponse, VersionResponse, WaitRequest, WaitResponse}
+import anticipation.*
+import gossamer.*
+import locomotion.field
+import vacuous.*
+
+// A task's process state (`containerd.v1.types.Process`, a subset): which container and
+// exec it belongs to, its `pid`, the raw `status` code, and the exit status/time once
+// it has stopped. `state` decodes the status code to the `ProcessStatus` enum.
+case class Process
+  ( @field(1)  containerId: Text      = t"",
+    @field(2)  id:          Text      = t"",
+    @field(3)  pid:         Int       = 0,
+    @field(4)  status:      Int       = 0,
+    @field(9)  exitStatus:  Int       = 0,
+    @field(10) exitedAt:    Timestamp = Timestamp() )
+derives CanEqual:
+
+  def state: ProcessStatus = ProcessStatus.of(status).or(ProcessStatus.Unknown)

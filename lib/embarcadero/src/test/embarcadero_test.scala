@@ -328,6 +328,39 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           (created.id, created.runtime.name, created.spec.typeUrl, created.spec.value.to(List))
       . assert(_ == (t"web", t"io.containerd.runc.v2", t"oci-spec", t"hello".data.to(List)))
 
+      test(m"createTask sends rootfs mounts and returns the task pid"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val namespace = Promise[Text]()
+          val body = GrpcFraming.encode(CreateTaskResponse(t"web", 4321).protobuf.encode)
+          runServer(serverSide, namespace, body)
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val rootfs = List(Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
+          Containerd(endpoint, t"example").createTask(t"web", rootfs).pid
+      . assert(_ == 4321)
+
+      test(m"tasks() decodes processes and maps the status code to ProcessStatus"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val namespace = Promise[Text]()
+
+          val list =
+            ListTasksResponse(List(Process(t"web", t"", 4321, ProcessStatus.Running.code)))
+
+          val body = GrpcFraming.encode(list.protobuf.encode)
+          runServer(serverSide, namespace, body)
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          Containerd(endpoint, t"example").tasks().map(task => (task.containerId, task.pid, task.state))
+      . assert(_ == List((t"web", 4321, ProcessStatus.Running)))
+
     suite(m"containerd timestamps via the generic time abstraction"):
       // The `Long`-as-instant given lets us mint an Aviation `Instant` from epoch
       // millis; Aviation's own `Instant` abstractable/instantiable instances are found

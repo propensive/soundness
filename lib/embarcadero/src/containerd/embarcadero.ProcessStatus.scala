@@ -30,17 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package embarcadero
 
-// `Timestamp` is intentionally not exported: it collides with `aviation.Timestamp` in
-// the umbrella, and callers normally reach times through `…createdAt.instant[Instant]`
-// rather than naming it. Use `embarcadero.Timestamp` directly when constructing one.
-export embarcadero.{AnyMessage, Containerd, Container, ContentDescriptor,
-    CreateContainerRequest, CreateContainerResponse, CreateNamespaceRequest,
-    CreateNamespaceResponse, CreateTaskRequest, CreateTaskResponse, DeleteContainerRequest,
-    DeleteImageRequest, DeleteNamespaceRequest, DeleteTaskRequest, DeleteTaskResponse, Empty,
-    GetContainerRequest, GetContainerResponse, GetImageRequest, GetImageResponse, GetTaskRequest,
-    GetTaskResponse, ImageRecord, KillRequest, ListContainersRequest, ListContainersResponse,
-    ListImagesRequest, ListImagesResponse, ListNamespacesRequest, ListNamespacesResponse,
-    ListTasksRequest, ListTasksResponse, Mount, Namespace, Process, ProcessStatus, Runtime,
-    StartRequest, StartResponse, VersionResponse, WaitRequest, WaitResponse}
+import vacuous.*
+
+object ProcessStatus:
+  // The status code carried in a `Process` (a protobuf enum, encoded as its number).
+  def of(code: Int): Optional[ProcessStatus] = values.find(_.code == code).optional
+
+enum ProcessStatus(val code: Int) derives CanEqual:
+  case Unknown extends ProcessStatus(0)
+  case Created extends ProcessStatus(1)
+  case Running extends ProcessStatus(2)
+  case Stopped extends ProcessStatus(3)
+  case Paused  extends ProcessStatus(4)
+  case Pausing extends ProcessStatus(5)
