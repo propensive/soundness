@@ -105,3 +105,4 @@ object Typescript:
 
 trait Typescript extends Ecosystem:
   type Operand = Json
+  type Grammar = TypescriptDialect.type
