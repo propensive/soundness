@@ -402,6 +402,12 @@ object anticipation extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests
 
+object apoplexy extends Library:
+  object core extends Component(jacinta.schema, ypsiloid.core, telekinesis.core, fulminate.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core)
+
 object austronesian extends Library:
   object core extends Component(probably.core, hellenism.core):
     override def scalacOptions = Task:
@@ -1391,7 +1397,7 @@ object ziggurat extends Library:
 // directories.
 val allLibraries: Seq[Library] = Seq(
   abacist, acyclicity, adversaria, ambience, anamnesis, anthology, anticipation,
-  austronesian, aviation, baroque, beneficence, bitumen, breviloquence, burdock,
+  apoplexy, austronesian, aviation, baroque, beneficence, bitumen, breviloquence, burdock,
   cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
   cellulose, charisma, chiaroscuro, coaxial, contextual, contingency, cosmopolite,
   decorum, dendrology, denominative, digression, dissonance, distillate, diuretic,
