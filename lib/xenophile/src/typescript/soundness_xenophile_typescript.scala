@@ -30,12 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package xenophile
+package soundness
 
-import prepositional.*
-
-// A foreign source language. `Operand` is the runtime representation its `Evaluator` produces (e.g.
-// JSON for TypeScript), and `Grammar` is the singleton type of the `Dialect` object that parses its
-// definitions — the macro reads it to find the grammar without `core` depending on any ecosystem.
-trait Ecosystem extends Operable:
-  type Grammar <: Dialect
+export xenophile.Typescript

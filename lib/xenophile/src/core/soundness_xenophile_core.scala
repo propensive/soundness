@@ -33,4 +33,4 @@
 package soundness
 
 export xenophile.{Dialect, Ecosystem, Evaluator, Foreign, ForeignExpr, ForeignType, Interface,
-    Interoperable, Signature, Typescript}
+    Interoperable, Signature}

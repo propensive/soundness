@@ -44,12 +44,28 @@ import vacuous.*
 
 object Xenophile:
 
-  // Selects the grammar for a source language. New ecosystems register here.
-  private def dialectFor(using Quotes)(origin: quotes.reflect.TypeRepr): Dialect =
+  // Resolves the grammar for a source language by reading the `Grammar` type member of its
+  // `Ecosystem` — the singleton type of a `Dialect` object — and loading that object reflectively
+  // at compile time. This keeps `core` free of any dependency on the ecosystems (sibling modules).
+  private def dialectFor(using quotes: Quotes)(origin: quotes.reflect.TypeRepr): Dialect =
     import quotes.reflect.*
 
-    if origin =:= TypeRepr.of[Typescript] then TypescriptDialect
-    else halt(m"xenophile: no grammar is available for the foreign source language")
+    val grammar = origin.typeSymbol.typeMember("Grammar")
+
+    if !grammar.exists
+    then halt(m"xenophile: the source language does not define a `Grammar`")
+
+    val dialectType = origin.memberType(grammar) match
+      case TypeBounds(_, hi) => hi
+      case other             => other
+
+    // The symbol's full name is the JVM binary name of the module class (already `$`-suffixed); its
+    // singleton is the static `MODULE$` field. `Class.forName/1` uses the macro's own classloader.
+    val className = dialectType.typeSymbol.fullName
+
+    try Class.forName(className).nn.getField("MODULE$").nn.get(null).nn.asInstanceOf[Dialect]
+    catch case _: Throwable =>
+      halt(m"xenophile: could not load the grammar for the foreign source language")
 
   // Reads the definitions resource at `path` and parses it with the grammar for `origin`.
   // Parsed definitions are cached by resource path for the lifetime of a compilation run, so that
