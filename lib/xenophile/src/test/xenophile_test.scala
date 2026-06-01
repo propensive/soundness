@@ -35,6 +35,8 @@ package xenophile
 import soundness.*
 import jacinta.*
 
+import java.lang.foreign.MemorySegment
+
 import strategies.throwUnsafely
 
 type TsInterface = Interface in Typescript at "/xenophile/definitions.ts"
@@ -50,6 +52,8 @@ given Evaluator in Typescript by Json = Typescript.evaluator(document)
 type NativeLibrary = Interface in Native at "/xenophile/library.h"
 
 given nativeLibrary: NativeLibrary = Interface[Native](cp"/xenophile/library.h")
+
+given Evaluator in Native by MemorySegment = Native.evaluator(t"int abs(int n);")
 
 object Tests extends Suite(m"Xenophile tests"):
   def run(): Unit =
@@ -189,3 +193,7 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"passing a C argument of the wrong foreign type is a compile error"):
         demilitarize(library.abs(t"five")).map(_.message)
       . assert(_ == List(t"xenophile: abs expects an argument of foreign type int"))
+
+      test(m"a native function downcall through FFM returns the real result"):
+        library.abs(-7).as[Int]
+      . assert(_ == 7)

@@ -35,7 +35,10 @@ package xenophile
 import java.lang.foreign.*, ValueLayout.*
 
 import anticipation.*
+import gossamer.*
 import prepositional.*
+import rudiments.*
+import vacuous.*
 
 // The C / native ecosystem. Foreign values are represented directly by the Java Foreign Function
 // and Memory API's `MemorySegment` (no intermediate encoding), and grammars are read from C header
@@ -74,6 +77,90 @@ object Native:
   // A C string (`char*` / `const char*`) is an allocated, NUL-terminated UTF-8 segment.
   given string: (Text is Interoperable in Native of "string" by MemorySegment) =
     Interoperable(text => auto.allocateFrom(text.s).nn, _.getString(0L).nn.tt)
+
+  private val address: AddressLayout = ADDRESS.nn
+
+  // An evaluator that performs real FFM downcalls against the platform's default (libc) symbol
+  // lookup. Each function's call descriptor is built from its signature, read by re-parsing
+  // `header`. Function application with scalar and pointer arguments and scalar results is
+  // supported; struct field reads are not yet evaluated at runtime.
+  def evaluator(header: Text): Evaluator in Native by MemorySegment =
+    val functions =
+      CHeaderDialect.parse(header).at(CHeaderDialect.library).or(Map[Text, Signature]())
+
+    val linker = Linker.nativeLinker().nn
+    val lookup = linker.defaultLookup().nn
+
+    def layout(foreign: ForeignType): MemoryLayout = foreign match
+      case ForeignType.Named(name) =>
+        if name == t"int" then ints
+        else if name == t"long" || name == t"size_t" then longs
+        else if name == t"double" then doubles
+        else if name == t"float" then floats
+        else if name == t"bool" then bools
+        else address
+
+      case _ =>
+        address
+
+    def argument(foreign: ForeignType, segment: MemorySegment): Any = foreign match
+      case ForeignType.Named(name) =>
+        if name == t"int" then segment.get(ints, 0L)
+        else if name == t"long" || name == t"size_t" then segment.get(longs, 0L)
+        else if name == t"double" then segment.get(doubles, 0L)
+        else if name == t"float" then segment.get(floats, 0L)
+        else if name == t"bool" then segment.get(bools, 0L)
+        else segment
+
+      case _ =>
+        segment
+
+    def result(foreign: ForeignType, value: Any): MemorySegment = foreign match
+      case ForeignType.Named(name) =>
+        if name == t"int" then boxed(ints)(_.set(ints, 0L, value.asInstanceOf[Int]))
+        else if name == t"float" then boxed(floats)(_.set(floats, 0L, value.asInstanceOf[Float]))
+        else if name == t"bool" then boxed(bools)(_.set(bools, 0L, value.asInstanceOf[Boolean]))
+        else if name == t"long" || name == t"size_t"
+        then boxed(longs)(_.set(longs, 0L, value.asInstanceOf[Long]))
+        else if name == t"double"
+        then boxed(doubles)(_.set(doubles, 0L, value.asInstanceOf[Double]))
+        else value.asInstanceOf[MemorySegment]
+
+      case _ =>
+        value.asInstanceOf[MemorySegment]
+
+    new Evaluator:
+      type Form = Native
+      type Operand = MemorySegment
+
+      def evaluate(expr: ForeignExpr): MemorySegment = expr match
+        case ForeignExpr.Literal(value) =>
+          value.asInstanceOf[MemorySegment]
+
+        case ForeignExpr.Apply(ForeignExpr.Select(_, function), arguments) =>
+          val signature = functions.at(function).or:
+            throw RuntimeException(t"xenophile: unknown native function $function".s)
+
+          val parameters = signature.parameters.or(Nil)
+          val layouts = parameters.map(layout)
+
+          val descriptor = signature.result match
+            case ForeignType.Named(name) if name == t"void" =>
+              FunctionDescriptor.ofVoid(layouts*).nn
+
+            case other =>
+              FunctionDescriptor.of(layout(other), layouts*).nn
+
+          val symbol = lookup.find(function.s).nn.orElseThrow().nn
+          val handle = linker.downcallHandle(symbol, descriptor).nn
+
+          val values = parameters.zip(arguments).map: (kind, expr) =>
+            argument(kind, evaluate(expr))
+
+          result(signature.result, handle.invokeWithArguments(values*))
+
+        case _ =>
+          throw RuntimeException(t"xenophile: this native expression cannot be evaluated".s)
 
 trait Native extends Ecosystem:
   type Operand = MemorySegment
