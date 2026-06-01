@@ -36,8 +36,10 @@ import scala.collection.mutable as scm
 
 import anticipation.*
 import beneficence.*
+import contextual.*
 import contingency.*
 import denominative.*
+import distillate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -77,6 +79,45 @@ object YamlPath extends Root(""):
   given YamlPath is Encodable in Text = path =>
     t"${path.url.let(_.encode).or(t"")}#${path.path}"
 
+  inline given interpolable: YamlPath is Interpolable:
+    transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+      ( inline insertions: Any* )
+    :   YamlPath =
+
+      ${ypsiloid.YamlPathInterpolator.expand[parts, origins]('insertions)}
+
+  // Parses a same-document YAML path (`#`, `#/`, `#/a/b`), reporting the offset
+  // of any error. Modelled on `jacinta.JsonPointer`'s decoder, with the same
+  // RFC 6901 escaping.
+  given decodable: Tactic[YamlPathError] => YamlPath is Decodable in Text = text =>
+    val string = text.s
+
+    if string.isEmpty || string.charAt(0) != '#'
+    then abort(YamlPathError(YamlPathError.Reason.ExpectedHash, 0))
+    else if string.length > 1 && string.charAt(1) != '/'
+    then abort(YamlPathError(YamlPathError.Reason.ExpectedSlash, 1))
+    else
+      var index = 1
+
+      while index < string.length do
+        if string.charAt(index) == '~' then
+          val next = if index + 1 < string.length then string.charAt(index + 1) else ' '
+
+          if next != '0' && next != '1'
+          then abort(YamlPathError(YamlPathError.Reason.BadEscape, index))
+
+        index += 1
+
+      val segments = text.skip(1).cut(t"/").filter(_ != t"")
+
+      // Build with root `/`, matching the derivation's `prepend`, so the
+      // slashless encoder (`#${path}`) renders `#/a/b`. The whole-document path
+      // (`#`) keeps the default empty root so it encodes back to `#`.
+      if segments.isEmpty then YamlPath()
+      else
+        val descent = segments.reverse.map(filesystem.unescape)
+        YamlPath(Unset, Path[YamlPath, YamlPath.type, Tuple]("/", descent))
+
   given divisible: YamlPath is Divisible by Text to YamlPath =
     (path, segment) => YamlPath(path.url, path.path / segment)
 
@@ -85,7 +126,7 @@ object YamlPath extends Root(""):
 
 case class YamlPath(url: Optional[HttpUrl] = Unset, path: Path on YamlPath = YamlPath):
   def apply(using registry: YamlPath.Registry)(document: Yaml): Yaml raises YamlPathError =
-    url.let(registry(_).lest(YamlPathError(YamlPathError.Reason.UnknownDocument)))
+    url.let(registry(_).lest(YamlPathError(YamlPathError.Reason.UnknownDocument, 0)))
     . or(document)
 
   def apply(ordinal: Ordinal): YamlPath = YamlPath(url, path / ordinal)

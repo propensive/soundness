@@ -37,10 +37,18 @@ import fulminate.*
 object YamlPathError:
   enum Reason(val number: Int) extends Clarification:
     case UnknownDocument extends Reason(1)
+    case ExpectedHash    extends Reason(2)
+    case ExpectedSlash   extends Reason(3)
+    case BadEscape       extends Reason(4)
 
   given communicable: Reason is Communicable =
     case Reason.UnknownDocument => m"the registry contains no document at the path's URL"
+    case Reason.ExpectedHash    => m"a YAML path must begin with '#'"
+    case Reason.ExpectedSlash   => m"a YAML path fragment must begin with '/'"
+    case Reason.BadEscape       => m"a '~' in a YAML path must be followed by '0' or '1'"
 
-case class YamlPathError(reason: YamlPathError.Reason)(using Diagnostics)
-extends Error(546, reason.number)
-  ( m"the YAML path could not be resolved because $reason" )
+// `offset` is the character index, within the path text, where the error was
+// detected; consumers (e.g. the `yp"…"` interpolator) use it to position a
+// compile-time error precisely.
+case class YamlPathError(reason: YamlPathError.Reason, offset: Int)(using Diagnostics)
+extends Error(546, reason.number)(m"the YAML path was not valid because $reason")

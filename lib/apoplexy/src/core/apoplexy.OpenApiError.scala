@@ -30,25 +30,35 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package jacinta
+package apoplexy
 
+import anticipation.*
 import fulminate.*
 
-object JsonPointerError:
+object OpenApiError:
+  object Reason:
+    given Reason is Communicable =
+      case Malformed =>
+        m"the OpenAPI document could not be parsed"
+
+      case UnsupportedVersion(version) =>
+        m"the OpenAPI version $version is not supported; only 3.x is supported"
+
+      case UnresolvableRef(pointer) =>
+        m"the reference $pointer could not be resolved"
+
+      case UnsupportedRef(pointer) =>
+        m"the reference $pointer is not supported; only #/components/schemas references work"
+
+      case BadParameterLocation(value) =>
+        m"$value is not a valid parameter location; expected one of path, query, header or cookie"
+
   enum Reason(val number: Int) extends Clarification:
-    case UnknownDocument extends Reason(1)
-    case ExpectedHash    extends Reason(2)
-    case ExpectedSlash   extends Reason(3)
-    case BadEscape       extends Reason(4)
+    case Malformed                         extends Reason(1)
+    case UnsupportedVersion(version: Text) extends Reason(2)
+    case UnresolvableRef(pointer: Text)    extends Reason(3)
+    case UnsupportedRef(pointer: Text)     extends Reason(4)
+    case BadParameterLocation(value: Text) extends Reason(5)
 
-  given communicable: Reason is Communicable =
-    case Reason.UnknownDocument => m"the registry contains no document at the reference's URL"
-    case Reason.ExpectedHash    => m"a JSON reference must begin with '#'"
-    case Reason.ExpectedSlash   => m"a JSON reference fragment must begin with '/'"
-    case Reason.BadEscape       => m"a '~' in a JSON reference must be followed by '0' or '1'"
-
-// `offset` is the character index, within the reference text, where the error
-// was detected; consumers (e.g. the `jp"…"` interpolator) use it to position a
-// compile-time error precisely.
-case class JsonPointerError(reason: JsonPointerError.Reason, offset: Int)(using Diagnostics)
-extends Error(415, reason.number)(m"the JSON reference was not valid because $reason")
+case class OpenApiError(reason: OpenApiError.Reason)(using Diagnostics)
+extends Error(846, reason.number)(m"the OpenAPI document was not valid because $reason")

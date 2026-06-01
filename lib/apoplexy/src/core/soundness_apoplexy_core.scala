@@ -30,25 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package jacinta
+package soundness
 
-import fulminate.*
-
-object JsonPointerError:
-  enum Reason(val number: Int) extends Clarification:
-    case UnknownDocument extends Reason(1)
-    case ExpectedHash    extends Reason(2)
-    case ExpectedSlash   extends Reason(3)
-    case BadEscape       extends Reason(4)
-
-  given communicable: Reason is Communicable =
-    case Reason.UnknownDocument => m"the registry contains no document at the reference's URL"
-    case Reason.ExpectedHash    => m"a JSON reference must begin with '#'"
-    case Reason.ExpectedSlash   => m"a JSON reference fragment must begin with '/'"
-    case Reason.BadEscape       => m"a '~' in a JSON reference must be followed by '0' or '1'"
-
-// `offset` is the character index, within the reference text, where the error
-// was detected; consumers (e.g. the `jp"…"` interpolator) use it to position a
-// compile-time error precisely.
-case class JsonPointerError(reason: JsonPointerError.Reason, offset: Int)(using Diagnostics)
-extends Error(415, reason.number)(m"the JSON reference was not valid because $reason")
+export apoplexy.{OpenApi, OpenApiError}

@@ -51,6 +51,7 @@ extension [entity: Encodable in Yaml](value: entity) def yaml: Yaml = value.enco
 
 extension (inline context: StringContext)
   transparent inline def y: Interpolation = interpolation[Yaml](context)
+  transparent inline def yp: Interpolation = interpolation[YamlPath](context)
 
 // AST predicates and accessors mirroring Jacinta's `Json.Ast` extensions.
 // `isObject` / `isArray` distinguish mappings (even-length flat array of

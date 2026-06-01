@@ -47,4 +47,5 @@ extension [encodable: Encodable in Xml](value: encodable)
 
 extension (inline context: StringContext)
   transparent inline def x: Interpolation = interpolation[Xml](context)
+  transparent inline def xp: Interpolation = interpolation[XPath](context)
 

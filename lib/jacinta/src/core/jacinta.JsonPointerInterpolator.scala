@@ -32,23 +32,57 @@
                                                                                                   */
 package jacinta
 
+import scala.quoted.*
+
+import anticipation.*
+import contextual.*
+import contingency.*
+import distillate.*
 import fulminate.*
+import gigantism.*
+import rudiments.*
+import vacuous.*
 
-object JsonPointerError:
-  enum Reason(val number: Int) extends Clarification:
-    case UnknownDocument extends Reason(1)
-    case ExpectedHash    extends Reason(2)
-    case ExpectedSlash   extends Reason(3)
-    case BadEscape       extends Reason(4)
+object JsonPointerInterpolator:
+  // Reuses `JsonPointer`'s own `Decodable` for validation: the literal is
+  // decoded at macro-expansion time and, if it fails, the `JsonPointerError`'s
+  // offset is mapped back to a source position so the error points exactly at
+  // the offending character.
+  def expand[parts <: Tuple: Type, origins <: Tuple: Type](insertions: Expr[Seq[Any]])
+  :   Macro[JsonPointer] =
 
-  given communicable: Reason is Communicable =
-    case Reason.UnknownDocument => m"the registry contains no document at the reference's URL"
-    case Reason.ExpectedHash    => m"a JSON reference must begin with '#'"
-    case Reason.ExpectedSlash   => m"a JSON reference fragment must begin with '/'"
-    case Reason.BadEscape       => m"a '~' in a JSON reference must be followed by '0' or '1'"
+    import quotes.reflect.*
 
-// `offset` is the character index, within the reference text, where the error
-// was detected; consumers (e.g. the `jp"…"` interpolator) use it to position a
-// compile-time error precisely.
-case class JsonPointerError(reason: JsonPointerError.Reason, offset: Int)(using Diagnostics)
-extends Error(415, reason.number)(m"the JSON reference was not valid because $reason")
+    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case _               => strings
+
+    def firstOrigin[tuple: Type]: Int = Type.of[tuple] match
+      case '[head *: tail] => TypeRepr.of[head].dealias match
+        case AppliedType(_, ConstantType(IntConstant(start)) :: _) => start
+        case _                                                     => 0
+
+      case _ => 0
+
+    val parts = recur[parts](Nil)
+    if parts.length != 1 then halt(m"a JSON pointer literal cannot have substitutions")
+    val raw: String = parts.head
+    val start: Int = firstOrigin[origins]
+
+    try unsafely(raw.tt.decode[JsonPointer]) catch
+      case error: JsonPointerError =>
+        val sourceFile = Position.ofMacroExpansion.sourceFile
+
+        val position = sourceFile.content match
+          case Some(content: String) if start > 0 && start < content.length =>
+            val upper = (start + raw.length*6 + 16).min(content.length)
+            val mapping = Interpolation.buildMapping(content.substring(start, upper).nn, raw)
+            val at = (start + mapping(error.offset.min(raw.length))).min(content.length - 1)
+            Position(sourceFile, at, (at + 1).min(content.length))
+
+          case _ =>
+            Position.ofMacroExpansion
+
+        halt(error.message, position)
+
+    '{unsafely(${Expr(raw)}.tt.decode[JsonPointer])}
