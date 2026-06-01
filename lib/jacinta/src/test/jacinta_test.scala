@@ -769,7 +769,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(identity)
 
       test(m"JsonPointerError reason describes itself"):
-        val err = JsonPointerError(JsonPointerError.Reason.UnknownDocument)
+        val err = JsonPointerError(JsonPointerError.Reason.UnknownDocument, 0)
         err.message.text.s.contains("registry")
       . assert(identity)
 
@@ -1088,6 +1088,33 @@ object Tests extends Suite(m"Jacinta Tests"):
           j"""[$bad*]"""
         . map(_.focus)
       . assert(_ == List("bad"))
+
+    suite(m"JSON pointer interpolator"):
+      test(m"a same-document pointer parses"):
+        jp"#/foo/bar".encode
+      . assert(_ == t"#/foo/bar")
+
+      test(m"the whole-document pointer parses"):
+        jp"#".encode
+      . assert(_ == t"#")
+
+      test(m"a pointer not beginning with '#' is rejected at the first character"):
+        demilitarize:
+          jp"/foo/bar"
+        . map(_.focus)
+      . assert(_ == List("/"))
+
+      test(m"a fragment not beginning with '/' is rejected after the '#'"):
+        demilitarize:
+          jp"#foo"
+        . map(_.focus)
+      . assert(_ == List("f"))
+
+      test(m"a malformed '~' escape is rejected at the '~'"):
+        demilitarize:
+          jp"#/foo~2bar"
+        . map(_.focus)
+      . assert(_ == List("~"))
 
     ValidationTests()
     PositionTests()

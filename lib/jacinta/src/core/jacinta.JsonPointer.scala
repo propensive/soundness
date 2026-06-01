@@ -37,6 +37,7 @@ import scala.collection.mutable as scm
 
 import anticipation.*
 import beneficence.*
+import contextual.*
 import contingency.*
 import denominative.*
 import distillate.*
@@ -77,19 +78,38 @@ object JsonPointer extends Root(""):
     if pointer.path.descent.length == 0 then t"$url#"
     else t"$url#/${pointer.path}"
 
-  // Parses a same-document JSON reference (`#`, `#/`, `#/a/b`). URL-bearing or
-  // fragmentless references are reported as `Malformed`; same-document refs are
-  // all OpenAPI's component `$ref`s use, and JSON Pointer fragments per RFC 6901.
+  inline given interpolable: JsonPointer is Interpolable:
+    transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+      ( inline insertions: Any* )
+    :   JsonPointer =
+
+      ${jacinta.JsonPointerInterpolator.expand[parts, origins]('insertions)}
+
+  // Parses a same-document JSON reference (`#`, `#/`, `#/a/b`), reporting the
+  // offset of any error. URL-bearing references begin with a non-`#` character
+  // and so are rejected as `ExpectedHash`; same-document refs are all OpenAPI's
+  // `$ref`s use, and are JSON Pointer fragments per RFC 6901.
   given decodable: Tactic[JsonPointerError] => JsonPointer is Decodable in Text = text =>
-    val parts = text.cut(t"#")
+    val string = text.s
 
-    if parts.length != 2 || parts.head != t""
-    then abort(JsonPointerError(JsonPointerError.Reason.Malformed(text)))
+    if string.isEmpty || string.charAt(0) != '#'
+    then abort(JsonPointerError(JsonPointerError.Reason.ExpectedHash, 0))
+    else if string.length > 1 && string.charAt(1) != '/'
+    then abort(JsonPointerError(JsonPointerError.Reason.ExpectedSlash, 1))
     else
-      val segments = parts.last.cut(t"/").filter(_ != t"")
+      var index = 1
 
-      segments.foldLeft(JsonPointer(): JsonPointer): (pointer, segment) =>
-        pointer(filesystem.unescape(segment))
+      while index < string.length do
+        if string.charAt(index) == '~' then
+          val next = if index + 1 < string.length then string.charAt(index + 1) else ' '
+
+          if next != '0' && next != '1'
+          then abort(JsonPointerError(JsonPointerError.Reason.BadEscape, index))
+
+        index += 1
+
+      text.skip(1).cut(t"/").filter(_ != t"").foldLeft(JsonPointer(): JsonPointer):
+        (pointer, segment) => pointer(filesystem.unescape(segment))
 
   given divisible: JsonPointer is Divisible by Text to JsonPointer =
     (pointer, segment) => JsonPointer(pointer.url, pointer.path / segment)
@@ -99,7 +119,7 @@ object JsonPointer extends Root(""):
 
 case class JsonPointer(url: Optional[HttpUrl] = Unset, path: Path on JsonPointer = JsonPointer):
   def apply(using registry: JsonPointer.Registry)(document: Json): Json raises JsonPointerError =
-    url.let(registry(_).lest(JsonPointerError(JsonPointerError.Reason.UnknownDocument)))
+    url.let(registry(_).lest(JsonPointerError(JsonPointerError.Reason.UnknownDocument, 0)))
     . or(document)
 
   def apply(ordinal: Ordinal): JsonPointer = JsonPointer(url, path / ordinal)

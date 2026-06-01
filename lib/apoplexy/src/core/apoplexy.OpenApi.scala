@@ -259,7 +259,7 @@ object OpenApi:
           case ParseError(_, _, _)  => OpenApiError(OpenApiError.Reason.Malformed)
           case JsonError(_)         => OpenApiError(OpenApiError.Reason.Malformed)
           case YamlError(_)         => OpenApiError(OpenApiError.Reason.Malformed)
-          case JsonPointerError(_)  => OpenApiError(OpenApiError.Reason.Malformed)
+          case JsonPointerError(_, _) => OpenApiError(OpenApiError.Reason.Malformed)
 
         . mitigate:
             if text.trim.starts(t"{") || text.trim.starts(t"[")

@@ -229,6 +229,7 @@ extension [entity: Encodable in Json](value: entity) def json: Json = value.enco
 
 extension (inline context: StringContext)
   transparent inline def j: Interpolation = interpolation[Json](context)
+  transparent inline def jp: Interpolation = interpolation[JsonPointer](context)
 
 package jsonPrinters:
   given indented: JsonPrinter = JsonPrinter.print(_, true)
