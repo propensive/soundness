@@ -197,3 +197,29 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"a native function downcall through FFM returns the real result"):
         library.abs(-7).as[Int]
       . assert(_ == 7)
+
+      test(m"a `union` field has the field's foreign type"):
+        val number: Foreign of "Number" from Native = Foreign["Number", Native]
+        number.f.expr
+      . assert(_ == ForeignExpr.Select(ForeignExpr.Reference(t"Number"), t"f"))
+
+      test(m"a `typedef` alias resolves to its underlying foreign type"):
+        val counter: Foreign of "int" from Native = library.increment(1)
+        counter.expr
+      . assert:
+          case ForeignExpr.Apply(ForeignExpr.Select(_, m), List(_)) => m == t"increment"
+          case _                                                    => false
+
+      test(m"an `enum`-typed parameter and result are treated as `int`"):
+        val direction: Foreign of "int" from Native = library.flip(0)
+        direction.expr
+      . assert:
+          case ForeignExpr.Apply(ForeignExpr.Select(_, m), List(_)) => m == t"flip"
+          case _                                                    => false
+
+      test(m"a fixed-width `int32_t` is canonicalised to `int`"):
+        val value: Foreign of "int" from Native = library.identity(42)
+        value.expr
+      . assert:
+          case ForeignExpr.Apply(ForeignExpr.Select(_, m), List(_)) => m == t"identity"
+          case _                                                    => false
