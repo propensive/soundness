@@ -99,8 +99,8 @@ object Native:
     val functions = definitions.at(CHeaderDialect.library).or(Map[Text, Signature]())
     val linker = Linker.nativeLinker().nn
 
-    def layout(foreign: ForeignType): MemoryLayout = foreign match
-      case ForeignType.Named(name) =>
+    def layout(foreign: Foreign.Type): MemoryLayout = foreign match
+      case Foreign.Type.Named(name) =>
         if name == t"int" then ints
         else if name == t"long" || name == t"size_t" then longs
         else if name == t"double" then doubles
@@ -111,8 +111,8 @@ object Native:
       case _ =>
         address
 
-    def argument(foreign: ForeignType, segment: MemorySegment): Any = foreign match
-      case ForeignType.Named(name) =>
+    def argument(foreign: Foreign.Type, segment: MemorySegment): Any = foreign match
+      case Foreign.Type.Named(name) =>
         if name == t"int" then segment.get(ints, 0L)
         else if name == t"long" || name == t"size_t" then segment.get(longs, 0L)
         else if name == t"double" then segment.get(doubles, 0L)
@@ -123,8 +123,8 @@ object Native:
       case _ =>
         segment
 
-    def result(foreign: ForeignType, value: Any): MemorySegment = foreign match
-      case ForeignType.Named(name) =>
+    def result(foreign: Foreign.Type, value: Any): MemorySegment = foreign match
+      case Foreign.Type.Named(name) =>
         if name == t"int" then boxed(ints)(_.set(ints, 0L, value.asInstanceOf[Int]))
         else if name == t"float" then boxed(floats)(_.set(floats, 0L, value.asInstanceOf[Float]))
         else if name == t"bool" then boxed(bools)(_.set(bools, 0L, value.asInstanceOf[Boolean]))
@@ -157,15 +157,15 @@ object Native:
       type Form = Native
       type Operand = MemorySegment
 
-      def evaluate(expr: ForeignExpr): MemorySegment = expr match
-        case ForeignExpr.Literal(value) =>
+      def evaluate(expr: Foreign.Expression): MemorySegment = expr match
+        case Foreign.Expression.Literal(value) =>
           value.asInstanceOf[MemorySegment]
 
-        case ForeignExpr.Select(target, member, owner) =>
+        case Foreign.Expression.Select(target, member, owner) =>
           val (offset, size) = field(owner, member)
           evaluate(target).asSlice(offset, size).nn
 
-        case ForeignExpr.Apply(ForeignExpr.Select(_, function, _), arguments) =>
+        case Foreign.Expression.Apply(Foreign.Expression.Select(_, function, _), arguments) =>
           val signature = functions.at(function).or:
             throw RuntimeException(t"xenophile: unknown native function $function".s)
 
@@ -173,7 +173,7 @@ object Native:
           val layouts = parameters.map(layout)
 
           val descriptor = signature.result match
-            case ForeignType.Named(name) if name == t"void" =>
+            case Foreign.Type.Named(name) if name == t"void" =>
               FunctionDescriptor.ofVoid(layouts*).nn
 
             case other =>

@@ -34,11 +34,35 @@ package xenophile
 
 import scala.language.dynamics
 
+import anticipation.*
+import gossamer.*
 import prepositional.*
 
 object Foreign:
-  def make(tree: ForeignExpr): Foreign = new Foreign:
-    def expr: ForeignExpr = tree
+  // A foreign expression: a reference to a named foreign value, a member selection (recording the
+  // `owner` foreign type it is selected from, which backends needing that type's layout — e.g. the
+  // native evaluator — use, while self-describing backends like JSON ignore it), a function
+  // application, or a literal operand.
+  enum Expression:
+    case Reference(name: Text)
+    case Select(target: Expression, member: Text, owner: Text)
+    case Apply(target: Expression, arguments: List[Expression])
+    case Literal(value: Any)
+
+  // A foreign type: a named type, a union of alternatives, or a generic application such as a
+  // TypeScript `Map<number, string>` or a C pointer `T*`.
+  enum Type:
+    case Named(name: Text)
+    case Union(members: List[Type])
+    case Applied(constructor: Text, arguments: List[Type])
+
+    def text: Text = this match
+      case Named(name)         => name
+      case Union(members)      => members.map(_.text).join(t"|")
+      case Applied(name, args) => t"$name<${args.map(_.text).join(t", ")}>"
+
+  def make(tree: Expression): Foreign = new Foreign:
+    def expr: Expression = tree
 
   transparent inline def apply[name <: Label, origin]: Foreign = ${Xenophile.root[name, origin]}
 
@@ -46,11 +70,11 @@ object Foreign:
   =>  ( interoperable: value is Interoperable in ecosystem )
   =>  Conversion[value, Foreign of interoperable.Topic from ecosystem] =
     instance =>
-      val literal = ForeignExpr.Literal(interoperable.operand(instance))
+      val literal = Expression.Literal(interoperable.operand(instance))
       Foreign.make(literal).asInstanceOf[Foreign of interoperable.Topic from ecosystem]
 
 trait Foreign extends Dynamic, Topical, Original:
-  def expr: ForeignExpr
+  def expr: Foreign.Expression
 
   transparent inline def selectDynamic(field: String): Foreign =
     ${Xenophile.select('this, 'field)}

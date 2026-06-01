@@ -154,20 +154,20 @@ object Xenophile:
   // Builds the type-level representation of a foreign type: a string-singleton for a named type, a
   // bare union for `Union`, and `constructor over (arguments…)` (the prepositional `over`, i.e.
   // `constructor { type Transport = (arguments…) }`) for a generic application.
-  private def reprOf(using quotes: Quotes)(foreign: ForeignType): quotes.reflect.TypeRepr =
+  private def reprOf(using quotes: Quotes)(foreign: Foreign.Type): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 
     foreign match
-      case ForeignType.Named(name) =>
+      case Foreign.Type.Named(name) =>
         ConstantType(StringConstant(name.s))
 
-      case ForeignType.Union(members) =>
+      case Foreign.Type.Union(members) =>
         members.map(reprOf).reduce: (a, b) =>
           a.asType.absolve match
             case '[x] => b.asType.absolve match
               case '[y] => TypeRepr.of[x | y]
 
-      case ForeignType.Applied(constructor, arguments) =>
+      case Foreign.Type.Applied(constructor, arguments) =>
         val ctor = ConstantType(StringConstant(constructor.s))
 
         // A single argument is left bare; multiple arguments are wrapped in a tuple.
@@ -184,7 +184,7 @@ object Xenophile:
         Refinement(ctor, "Transport", TypeBounds(argument, argument))
 
   // Builds the refined type `Foreign of <topic> from <origin>`.
-  private def foreignType(using quotes: Quotes)(kind: ForeignType, origin: quotes.reflect.TypeRepr)
+  private def foreignType(using quotes: Quotes)(kind: Foreign.Type, origin: quotes.reflect.TypeRepr)
   :   quotes.reflect.TypeRepr =
 
     import quotes.reflect.*
@@ -196,12 +196,12 @@ object Xenophile:
         "Origin",
         TypeBounds(origin, origin) )
 
-  // Builds the `ForeignExpr` for a single method argument. Every argument arrives as a `Foreign`
+  // Builds the `Expression` for a single method argument. Every argument arrives as a `Foreign`
   // (either already, or converted from a Scala value at the call site by the `converter`
   // `Conversion`), so we need only check its foreign type (`Topic`) against the parameter type.
   private def argTree(using quotes: Quotes)
-    ( arg: Expr[Foreign], paramType: ForeignType, method: Text )
-  :   Expr[ForeignExpr] =
+    ( arg: Expr[Foreign], paramType: Foreign.Type, method: Text )
+  :   Expr[Foreign.Expression] =
 
     import quotes.reflect.*
 
@@ -230,7 +230,9 @@ object Xenophile:
 
     foreignType(signature.result, originRepr).asType.absolve match
       case '[type result <: Foreign; result] =>
-        val tree = '{ForeignExpr.Select($self.expr, ${Expr(fieldName.s)}.tt, ${Expr(topic.s)}.tt)}
+        val member = Expr(fieldName.s)
+        val owner = Expr(topic.s)
+        val tree = '{Foreign.Expression.Select($self.expr, $member.tt, $owner.tt)}
         '{Foreign.make($tree).asInstanceOf[result]}
 
   def applied(self: Expr[Foreign], field: Expr[String], arguments: Expr[Seq[Foreign]])
@@ -258,11 +260,13 @@ object Xenophile:
     if args.length != parameters.length then
       halt(m"xenophile: $fieldName expects ${parameters.length} arguments, not ${args.length}")
 
-    val argTrees: List[Expr[ForeignExpr]] = args.zip(parameters).map: (arg, paramType) =>
+    val argTrees: List[Expr[Foreign.Expression]] = args.zip(parameters).map: (arg, paramType) =>
       argTree(arg, paramType, fieldName)
 
-    val target = '{ForeignExpr.Select($self.expr, ${Expr(fieldName.s)}.tt, ${Expr(topic.s)}.tt)}
-    val tree = '{ForeignExpr.Apply($target, ${Expr.ofList(argTrees)})}
+    val member = Expr(fieldName.s)
+    val owner = Expr(topic.s)
+    val target = '{Foreign.Expression.Select($self.expr, $member.tt, $owner.tt)}
+    val tree = '{Foreign.Expression.Apply($target, ${Expr.ofList(argTrees)})}
 
     foreignType(signature.result, originRepr).asType.absolve match
       case '[type result <: Foreign; result] =>
@@ -375,6 +379,6 @@ object Xenophile:
       case _ =>
         halt(m"xenophile: the foreign type name must be a string literal type")
 
-    foreignType(ForeignType.Named(name.tt), TypeRepr.of[origin]).asType.absolve match
+    foreignType(Foreign.Type.Named(name.tt), TypeRepr.of[origin]).asType.absolve match
       case '[type result <: Foreign; result] =>
-        '{Foreign.make(ForeignExpr.Reference(${Expr(name)}.tt)).asInstanceOf[result]}
+        '{Foreign.make(Foreign.Expression.Reference(${Expr(name)}.tt)).asInstanceOf[result]}

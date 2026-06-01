@@ -87,20 +87,20 @@ object Typescript:
       ( _.map { (k, v) => (k.encode, valueType.operand(v)) }.json,
         _.as[Map[Text, Json]].map { (k, v) => (k.decode[key], valueType.value(v)) } )
 
-  // A backend that evaluates a `ForeignExpr` against an in-memory JSON document: references and
-  // selections navigate the document; literals yield their operand; function application is
-  // unsupported (a static document has no callable members).
+  // A backend that evaluates a `Foreign.Expression` against an in-memory JSON document:
+  // references and selections navigate the document; literals yield their operand; function
+  // application is unsupported (a static document has no callable members).
   def evaluator(document: Json): Evaluator in Typescript by Json =
     new Evaluator:
       type Form = Typescript
       type Operand = Json
 
-      def evaluate(expr: ForeignExpr): Json = expr match
-        case ForeignExpr.Literal(value)            => value.asInstanceOf[Json]
-        case ForeignExpr.Reference(name)           => document(name)
-        case ForeignExpr.Select(target, member, _) => evaluate(target)(member)
+      def evaluate(expr: Foreign.Expression): Json = expr match
+        case Foreign.Expression.Literal(value)            => value.asInstanceOf[Json]
+        case Foreign.Expression.Reference(name)           => document(name)
+        case Foreign.Expression.Select(target, member, _) => evaluate(target)(member)
 
-        case ForeignExpr.Apply(_, _) =>
+        case Foreign.Expression.Apply(_, _) =>
           throw RuntimeException("xenophile: a JSON document evaluator cannot apply functions")
 
 trait Typescript extends Ecosystem:
