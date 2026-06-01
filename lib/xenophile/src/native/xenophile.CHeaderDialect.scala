@@ -111,7 +111,7 @@ object CHeaderDialect extends Dialect:
   // (string, "s"), and an abstract `int` / `char*` → (…, Unset). The base type is its leading
   // keywords (`unsigned int`) or single identifier (`Point`, `size_t`), then trailing `*`s; a
   // lone `char*` / `const char*` is the C-string type `"string"`, any other `T*` is `"ptr" over T`.
-  private def declarator(tokens: List[String]): (ForeignType, Optional[Text], List[String]) =
+  private def declarator(tokens: List[String]): (Foreign.Type, Optional[Text], List[String]) =
     def typeWords(todo: List[String], acc: List[String]): (List[String], List[String]) =
       todo match
         case ("const" | "volatile" | "struct" | "enum" | "union") :: more =>
@@ -140,9 +140,9 @@ object CHeaderDialect extends Dialect:
     val base = canonical(words)
 
     val foreign =
-      if pointers == 0 then ForeignType.Named(base)
-      else if base == t"char" && pointers == 1 then ForeignType.Named(t"string")
-      else ForeignType.Applied(t"ptr", List(ForeignType.Named(base)))
+      if pointers == 0 then Foreign.Type.Named(base)
+      else if base == t"char" && pointers == 1 then Foreign.Type.Named(t"string")
+      else Foreign.Type.Applied(t"ptr", List(Foreign.Type.Named(base)))
 
     (foreign, name, rest)
 
@@ -152,8 +152,8 @@ object CHeaderDialect extends Dialect:
     ( tokens:    List[String],
       structs:   Map[Text, Map[Text, Signature]],
       functions: Map[Text, Signature],
-      typedefs:  Map[Text, ForeignType] )
-  :   (Map[Text, Map[Text, Signature]], Map[Text, Signature], Map[Text, ForeignType]) =
+      typedefs:  Map[Text, Foreign.Type] )
+  :   (Map[Text, Map[Text, Signature]], Map[Text, Signature], Map[Text, Foreign.Type]) =
 
     tokens match
       case Nil =>
@@ -178,7 +178,7 @@ object CHeaderDialect extends Dialect:
         val after = skipStatement(skipBraces(body, 1))
 
         val updated = name.lay(typedefs): word =>
-          typedefs.updated(word, ForeignType.Named(t"int"))
+          typedefs.updated(word, Foreign.Type.Named(t"int"))
 
         declarations(after, structs, functions, updated)
 
@@ -206,8 +206,8 @@ object CHeaderDialect extends Dialect:
     ( tokens:    List[String],
       structs:   Map[Text, Map[Text, Signature]],
       functions: Map[Text, Signature],
-      typedefs:  Map[Text, ForeignType] )
-  :   (Map[Text, Map[Text, Signature]], Map[Text, Signature], Map[Text, ForeignType]) =
+      typedefs:  Map[Text, Foreign.Type] )
+  :   (Map[Text, Map[Text, Signature]], Map[Text, Signature], Map[Text, Foreign.Type]) =
 
     tokens match
       case ("struct" | "union") :: name :: "{" :: more =>
@@ -231,7 +231,7 @@ object CHeaderDialect extends Dialect:
         val (alias, after) = aliasName(skipBraces(body, 1))
 
         val updated = alias.lay(typedefs): word =>
-          typedefs.updated(word, ForeignType.Named(t"int"))
+          typedefs.updated(word, Foreign.Type.Named(t"int"))
 
         declarations(after, structs, functions, updated)
 
@@ -270,8 +270,8 @@ object CHeaderDialect extends Dialect:
     case _                   => (Unset, skipStatement(tokens))
 
   // Reads a function's parameter types up to the closing `)`; `(void)` denotes no parameters.
-  private def parameters(tokens: List[String], acc: List[ForeignType])
-  :   (Optional[List[ForeignType]], List[String]) =
+  private def parameters(tokens: List[String], acc: List[Foreign.Type])
+  :   (Optional[List[Foreign.Type]], List[String]) =
 
     tokens match
       case ")" :: rest =>
@@ -290,18 +290,18 @@ object CHeaderDialect extends Dialect:
 
   // Resolves every `typedef` alias appearing in a type, transitively.
   private def resolve
-    ( definitions: Map[Text, Map[Text, Signature]], typedefs: Map[Text, ForeignType] )
+    ( definitions: Map[Text, Map[Text, Signature]], typedefs: Map[Text, Foreign.Type] )
   :   Map[Text, Map[Text, Signature]] =
 
-    def expand(foreign: ForeignType): ForeignType = foreign match
-      case ForeignType.Named(name) =>
+    def expand(foreign: Foreign.Type): Foreign.Type = foreign match
+      case Foreign.Type.Named(name) =>
         typedefs.at(name).lay(foreign)(expand)
 
-      case ForeignType.Union(members) =>
-        ForeignType.Union(members.map(expand))
+      case Foreign.Type.Union(members) =>
+        Foreign.Type.Union(members.map(expand))
 
-      case ForeignType.Applied(constructor, arguments) =>
-        ForeignType.Applied(constructor, arguments.map(expand))
+      case Foreign.Type.Applied(constructor, arguments) =>
+        Foreign.Type.Applied(constructor, arguments.map(expand))
 
     def signature(sig: Signature): Signature =
       Signature(sig.parameters.let(_.map(expand)), expand(sig.result))

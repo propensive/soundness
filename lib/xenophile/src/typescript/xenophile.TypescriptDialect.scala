@@ -79,13 +79,13 @@ object TypescriptDialect extends Dialect:
       case Nil =>
         acc
 
-  // Parses a type expression into a `ForeignType`: `T[]` and `T?` as suffixed named types, `A | B`
+  // Parses a type expression into a `Foreign.Type`: `T[]` and `T?` as suffixed named types, `A | B`
   // as a union (with `| null` / `| undefined` collapsing to an optional), and `Name<args>` as a
   // generic application.
-  private def typeOf(tokens: List[String]): (ForeignType, List[String]) =
+  private def typeOf(tokens: List[String]): (Foreign.Type, List[String]) =
     val (first, rest0) = atom(tokens)
 
-    def union(todo: List[String], acc: List[ForeignType]): (List[ForeignType], List[String]) =
+    def union(todo: List[String], acc: List[Foreign.Type]): (List[Foreign.Type], List[String]) =
       todo match
         case "|" :: more =>
           val (next, rest) = atom(more)
@@ -95,31 +95,31 @@ object TypescriptDialect extends Dialect:
           (acc.reverse, todo)
 
     val (members, rest) = union(rest0, List(first))
-    val result = if members.length == 1 then members.head else ForeignType.Union(members)
+    val result = if members.length == 1 then members.head else Foreign.Type.Union(members)
 
     (result, rest)
 
   // Parses a single (non-union) type. `T[]` is read as `Array<T>` (one array representation), and
   // `null`/`undefined` are canonicalised to `undefined` (the absent value in a union).
-  private def atom(tokens: List[String]): (ForeignType, List[String]) = tokens match
+  private def atom(tokens: List[String]): (Foreign.Type, List[String]) = tokens match
     case name :: "<" :: more =>
       val (args, rest) = arguments(more, Nil)
-      (ForeignType.Applied(name.tt, args), rest)
+      (Foreign.Type.Applied(name.tt, args), rest)
 
     case name :: "[" :: "]" :: more =>
-      (ForeignType.Applied(t"Array", List(ForeignType.Named(name.tt))), more)
+      (Foreign.Type.Applied(t"Array", List(Foreign.Type.Named(name.tt))), more)
 
     case ("null" | "undefined") :: more =>
-      (ForeignType.Named(t"undefined"), more)
+      (Foreign.Type.Named(t"undefined"), more)
 
     case name :: more =>
-      (ForeignType.Named(name.tt), more)
+      (Foreign.Type.Named(name.tt), more)
 
     case Nil =>
-      (ForeignType.Named(t""), Nil)
+      (Foreign.Type.Named(t""), Nil)
 
-  private def arguments(tokens: List[String], acc: List[ForeignType])
-  :   (List[ForeignType], List[String]) =
+  private def arguments(tokens: List[String], acc: List[Foreign.Type])
+  :   (List[Foreign.Type], List[String]) =
 
     tokens match
       case ">" :: rest =>
@@ -166,12 +166,12 @@ object TypescriptDialect extends Dialect:
         (acc, Nil)
 
   // An optional member `x?: T` is `T | undefined`.
-  private def optional(foreign: ForeignType): ForeignType =
-    ForeignType.Union(List(foreign, ForeignType.Named(t"undefined")))
+  private def optional(foreign: Foreign.Type): Foreign.Type =
+    Foreign.Type.Union(List(foreign, Foreign.Type.Named(t"undefined")))
 
   // Reads parameter declarations up to the closing `)`, keeping only each parameter's type.
-  private def params(tokens: List[String], acc: List[ForeignType])
-  :   (List[ForeignType], List[String]) =
+  private def params(tokens: List[String], acc: List[Foreign.Type])
+  :   (List[Foreign.Type], List[String]) =
 
     tokens match
       case ")" :: rest =>

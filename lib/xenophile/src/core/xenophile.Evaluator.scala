@@ -35,4 +35,4 @@ package xenophile
 import prepositional.*
 
 trait Evaluator extends Formal, Operable:
-  def evaluate(expr: ForeignExpr): Operand
+  def evaluate(expr: Foreign.Expression): Operand

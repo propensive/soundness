@@ -65,28 +65,28 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"a member access has the precise refined static type"):
         val bar: Foreign of "Bar" from Typescript = foo.bar
         bar.expr
-      . assert(_ == ForeignExpr.Select(ForeignExpr.Reference(t"Foo"), t"bar", t"Foo"))
+      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Foo"), t"bar", t"Foo"))
 
       test(m"navigate a cyclic foreign type graph"):
         val cyclic: Foreign of "Foo" from Typescript = foo.bar.qux
         cyclic.expr
       . assert: expr =>
-          val inner = ForeignExpr.Select(ForeignExpr.Reference(t"Foo"), t"bar", t"Foo")
-          expr == ForeignExpr.Select(inner, t"qux", t"Bar")
+          val inner = Foreign.Expression.Select(Foreign.Expression.Reference(t"Foo"), t"bar", t"Foo")
+          expr == Foreign.Expression.Select(inner, t"qux", t"Bar")
 
     suite(m"Function application"):
       test(m"applyDynamic builds an `Apply` node typed by the method's result"):
         val greeting: Foreign of "string" from Typescript = foo.greet(t"hello")
         greeting.expr
       . assert:
-          case ForeignExpr.Apply(ForeignExpr.Select(_, member, _), List(_)) => member == t"greet"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, member, _), List(_)) => member == t"greet"
           case _                                                         => false
 
       test(m"a Foreign argument of the declared parameter type is accepted"):
         val linked: Foreign of "Foo" from Typescript = foo.link(foo.bar)
         linked.expr
       . assert:
-          case ForeignExpr.Apply(ForeignExpr.Select(_, m, _), List(ForeignExpr.Select(_, b, _))) =>
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(Foreign.Expression.Select(_, b, _))) =>
             m == t"link" && b == t"bar"
 
           case _ =>
@@ -97,13 +97,13 @@ object Tests extends Suite(m"Xenophile tests"):
         val text: Foreign of "string" from Typescript = t"hello"
         text.expr
       . assert:
-          case ForeignExpr.Literal(_) => true
+          case Foreign.Expression.Literal(_) => true
           case _                      => false
 
       test(m"a Scala argument is converted to a `Foreign` literal upon application"):
         foo.greet(t"hi").expr
       . assert:
-          case ForeignExpr.Apply(_, List(ForeignExpr.Literal(_))) => true
+          case Foreign.Expression.Apply(_, List(Foreign.Expression.Literal(_))) => true
           case _                                                  => false
 
       test(m"a foreign literal converts back to a Scala value via `as`"):
@@ -175,13 +175,13 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"a C struct field has the field's foreign type"):
         val point: Foreign of "Point" from Native = Foreign["Point", Native]
         point.x.expr
-      . assert(_ == ForeignExpr.Select(ForeignExpr.Reference(t"Point"), t"x", t"Point"))
+      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Point"), t"x", t"Point"))
 
       test(m"applying a C function builds an `Apply` node typed by its result"):
         val absolute: Foreign of "int" from Native = library.abs(5)
         absolute.expr
       . assert:
-          case ForeignExpr.Apply(ForeignExpr.Select(_, m, _), List(ForeignExpr.Literal(_))) =>
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(Foreign.Expression.Literal(_))) =>
             m == t"abs"
 
           case _ =>
@@ -191,7 +191,7 @@ object Tests extends Suite(m"Xenophile tests"):
         val version: Foreign of "string" from Native = library.version()
         version.expr
       . assert:
-          case ForeignExpr.Apply(ForeignExpr.Select(_, m, _), Nil) => m == t"version"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), Nil) => m == t"version"
           case _                                                => false
 
       test(m"passing a C argument of the wrong foreign type is a compile error"):
@@ -205,27 +205,27 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"a `union` field has the field's foreign type"):
         val number: Foreign of "Number" from Native = Foreign["Number", Native]
         number.f.expr
-      . assert(_ == ForeignExpr.Select(ForeignExpr.Reference(t"Number"), t"f", t"Number"))
+      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Number"), t"f", t"Number"))
 
       test(m"a `typedef` alias resolves to its underlying foreign type"):
         val counter: Foreign of "int" from Native = library.increment(1)
         counter.expr
       . assert:
-          case ForeignExpr.Apply(ForeignExpr.Select(_, m, _), List(_)) => m == t"increment"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) => m == t"increment"
           case _                                                    => false
 
       test(m"an `enum`-typed parameter and result are treated as `int`"):
         val direction: Foreign of "int" from Native = library.flip(0)
         direction.expr
       . assert:
-          case ForeignExpr.Apply(ForeignExpr.Select(_, m, _), List(_)) => m == t"flip"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) => m == t"flip"
           case _                                                    => false
 
       test(m"a fixed-width `int32_t` is canonicalised to `int`"):
         val value: Foreign of "int" from Native = library.identity(42)
         value.expr
       . assert:
-          case ForeignExpr.Apply(ForeignExpr.Select(_, m, _), List(_)) => m == t"identity"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) => m == t"identity"
           case _                                                    => false
 
       test(m"struct fields are read from native memory at their computed offsets"):
@@ -234,7 +234,7 @@ object Tests extends Suite(m"Xenophile tests"):
         segment.set(JAVA_INT, 4L, 4)
 
         val point: Foreign of "Point" from Native =
-          Foreign.make(ForeignExpr.Literal(segment)).asInstanceOf[Foreign of "Point" from Native]
+          Foreign.make(Foreign.Expression.Literal(segment)).asInstanceOf[Foreign of "Point" from Native]
 
         (point.x.as[Int], point.y.as[Int])
       . assert(_ == (3, 4))
