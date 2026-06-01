@@ -20,6 +20,7 @@ typedef union {
 } Number;
 
 int abs(int n);
+int add(int a, int b);
 double pow(double base, double exponent);
 size_t strlen(const char* s);
 const char* version(void);
