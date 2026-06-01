@@ -32,20 +32,19 @@
                                                                                                   */
 package xylophone
 
-import language.dynamics
+import fulminate.*
 
-import scala.annotation.*
+object XPathError:
+  enum Reason(val number: Int) extends Clarification:
+    case ExpectedSlash extends Reason(1)
+    case BadStep       extends Reason(2)
 
-import anticipation.*
-import contextual.*
-import prepositional.*
+  given communicable: Reason is Communicable =
+    case Reason.ExpectedSlash => m"an XPath must begin with '/'"
+    case Reason.BadStep       => m"the path step is not a valid XPath step"
 
-export Xml.attribute
-
-extension [encodable: Encodable in Xml](value: encodable)
-  def xml: Xml = encodable.encoded(value)
-
-extension (inline context: StringContext)
-  transparent inline def x: Interpolation = interpolation[Xml](context)
-  transparent inline def xp: Interpolation = interpolation[XPath](context)
-
+// `offset` is the character index, within the path text, where the error was
+// detected; consumers (e.g. the `xp"…"` interpolator) use it to position a
+// compile-time error precisely.
+case class XPathError(reason: XPathError.Reason, offset: Int)(using Diagnostics)
+extends Error(562, reason.number)(m"the XPath was not valid because $reason")

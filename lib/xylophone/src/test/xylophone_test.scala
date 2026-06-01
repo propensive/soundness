@@ -912,5 +912,40 @@ object Tests extends Suite(m"Xylophone tests"):
             elem(t"root", elem(t"child")),
             Header(t"1.0", Unset, Unset))
 
+    suite(m"xp\"...\" interpolator"):
+      test(m"an absolute path with ordinals parses"):
+        xp"/root[1]/child[2]".encode
+      . assert(_ == t"/root[1]/child[2]")
+
+      test(m"an attribute step parses"):
+        xp"/root[1]/@id".encode
+      . assert(_ == t"/root[1]/@id")
+
+      test(m"a step without an ordinal defaults to [1]"):
+        xp"/root/child".encode
+      . assert(_ == t"/root[1]/child[1]")
+
+      test(m"the root path parses"):
+        xp"/".encode
+      . assert(_ == t"/")
+
+      test(m"a path not beginning with '/' is rejected at the first character"):
+        demilitarize:
+          xp"root/child"
+        . map(_.focus)
+      . assert(_ == List("r"))
+
+      test(m"an empty step is rejected at the offending separator"):
+        demilitarize:
+          xp"/root//child"
+        . map(_.focus)
+      . assert(_ == List("/"))
+
+      test(m"a non-numeric ordinal is rejected"):
+        demilitarize:
+          xp"/root[x]"
+        . map(_.focus.nonEmpty)
+      . assert(_ == List(true))
+
     PositionTests()
     DecoderTests()

@@ -33,6 +33,9 @@
 package xylophone
 
 import anticipation.*
+import contextual.*
+import contingency.*
+import distillate.*
 import gossamer.*
 import prepositional.*
 import serpentine.*
@@ -62,6 +65,39 @@ object XPath extends Root("/"):
   // it directly avoids the double-slash that `t"/${path.path}"` produced.
   given XPath is Encodable in Text = path =>
     if path.path.descent.length == 0 then t"/" else path.path.encode
+
+  inline given interpolable: XPath is Interpolable:
+    transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+      ( inline insertions: Any* )
+    :   XPath =
+
+      ${xylophone.XPathInterpolator.expand[parts, origins]('insertions)}
+
+  // Parses an absolute XPath (`/`, `/root[1]/child[2]`, `/root/@attr`),
+  // reporting the offset of any error. Each step is interpreted by `parseStep`;
+  // an unrecognised (e.g. empty, or `name[x]` with a non-numeric ordinal) step
+  // is a `BadStep`.
+  given decodable: Tactic[XPathError] => XPath is Decodable in Text = text =>
+    val string = text.s
+
+    if string.isEmpty || string.charAt(0) != '/'
+    then abort(XPathError(XPathError.Reason.ExpectedSlash, 0))
+    else
+      var xpath: XPath = XPath()
+      var offset = 1
+
+      while offset < string.length do
+        val slash = string.indexOf('/', offset)
+        val end = if slash < 0 then string.length else slash
+
+        parseStep(string.substring(offset, end).nn.tt) match
+          case Left(name)       => xpath = xpath.attribute(name)
+          case Right((name, n)) => xpath = xpath.element(name, n)
+          case Unset            => abort(XPathError(XPathError.Reason.BadStep, offset))
+
+        offset = end + 1
+
+      xpath
 
   // Parse a stored descent segment back into an addressable step. Returns
   // `Right(name, ordinal)` for an element step, `Left(name)` for an
