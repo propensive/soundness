@@ -954,9 +954,30 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(identity)
 
       test(m"YamlPathError reason describes itself"):
-        val err = YamlPathError(YamlPathError.Reason.UnknownDocument)
+        val err = YamlPathError(YamlPathError.Reason.UnknownDocument, 0)
         err.message.text.s.contains("registry")
       . assert(identity)
+
+    suite(m"yp\"...\" interpolator"):
+      test(m"a same-document path parses"):
+        yp"#/foo/bar".encode
+      . assert(_ == t"#/foo/bar")
+
+      test(m"the whole-document path parses"):
+        yp"#".encode
+      . assert(_ == t"#")
+
+      test(m"a path not beginning with '#' is rejected at the first character"):
+        demilitarize:
+          yp"/foo/bar"
+        . map(_.focus)
+      . assert(_ == List("/"))
+
+      test(m"a malformed '~' escape is rejected at the '~'"):
+        demilitarize:
+          yp"#/foo~2bar"
+        . map(_.focus)
+      . assert(_ == List("~"))
 
     suite(m"Lens"):
       import dynamicYamlAccess.enabled
