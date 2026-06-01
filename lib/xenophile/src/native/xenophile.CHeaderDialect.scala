@@ -32,6 +32,8 @@
                                                                                                   */
 package xenophile
 
+import scala.collection.immutable.ListMap
+
 import anticipation.*
 import gossamer.*
 import rudiments.*
@@ -161,7 +163,7 @@ object CHeaderDialect extends Dialect:
         typedef(rest, structs, functions, typedefs)
 
       case ("struct" | "union") :: name :: "{" :: more =>
-        val (fields, after) = members(more, Map())
+        val (fields, after) = members(more, ListMap())
         declarations(skipStatement(after), structs.updated(name.tt, fields), functions, typedefs)
 
       case ("struct" | "union") :: "{" :: more =>
@@ -209,12 +211,12 @@ object CHeaderDialect extends Dialect:
 
     tokens match
       case ("struct" | "union") :: name :: "{" :: more =>
-        val (fields, after) = members(more, Map())
+        val (fields, after) = members(more, ListMap())
         val (alias, after2) = aliasName(after)
         declarations(after2, structs.updated(alias.or(name.tt), fields), functions, typedefs)
 
       case ("struct" | "union") :: "{" :: more =>
-        val (fields, after) = members(more, Map())
+        val (fields, after) = members(more, ListMap())
         val (alias, after2) = aliasName(after)
 
         alias.lay(declarations(after2, structs, functions, typedefs)): name =>

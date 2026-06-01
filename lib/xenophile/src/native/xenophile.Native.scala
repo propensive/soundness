@@ -82,11 +82,11 @@ object Native:
 
   // An evaluator that performs real FFM downcalls against the platform's default (libc) symbol
   // lookup. Each function's call descriptor is built from its signature, read by re-parsing
-  // `header`. Function application with scalar and pointer arguments and scalar results is
-  // supported; struct field reads are not yet evaluated at runtime.
+  // `header`. Function application (scalar/pointer arguments, scalar results) and struct field
+  // reads (returning the field's slice of the struct's memory) are supported.
   def evaluator(header: Text): Evaluator in Native by MemorySegment =
-    val functions =
-      CHeaderDialect.parse(header).at(CHeaderDialect.library).or(Map[Text, Signature]())
+    val definitions = CHeaderDialect.parse(header)
+    val functions = definitions.at(CHeaderDialect.library).or(Map[Text, Signature]())
 
     val linker = Linker.nativeLinker().nn
     val lookup = linker.defaultLookup().nn
@@ -129,6 +129,22 @@ object Native:
       case _ =>
         value.asInstanceOf[MemorySegment]
 
+    // The byte offset and size of a struct field, by folding over the fields in declaration order
+    // and aligning each to its layout (so it matches the C ABI for naturally-aligned structs).
+    def field(owner: Text, name: Text): (Long, Long) =
+      def recur(fields: List[(Text, Signature)], offset: Long): (Long, Long) = fields match
+        case Nil =>
+          throw RuntimeException(t"xenophile: the foreign type $owner has no field $name".s)
+
+        case (field, signature) :: rest =>
+          val memory = layout(signature.result)
+          val align = memory.byteAlignment
+          val start = (offset + align - 1)/align*align
+
+          if field == name then (start, memory.byteSize) else recur(rest, start + memory.byteSize)
+
+      recur(definitions.at(owner).or(Map[Text, Signature]()).to(List), 0L)
+
     new Evaluator:
       type Form = Native
       type Operand = MemorySegment
@@ -137,7 +153,11 @@ object Native:
         case ForeignExpr.Literal(value) =>
           value.asInstanceOf[MemorySegment]
 
-        case ForeignExpr.Apply(ForeignExpr.Select(_, function), arguments) =>
+        case ForeignExpr.Select(target, member, owner) =>
+          val (offset, size) = field(owner, member)
+          evaluate(target).asSlice(offset, size).nn
+
+        case ForeignExpr.Apply(ForeignExpr.Select(_, function, _), arguments) =>
           val signature = functions.at(function).or:
             throw RuntimeException(t"xenophile: unknown native function $function".s)
 

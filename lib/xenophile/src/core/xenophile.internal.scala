@@ -230,7 +230,7 @@ object Xenophile:
 
     foreignType(signature.result, originRepr).asType.absolve match
       case '[type result <: Foreign; result] =>
-        val tree = '{ForeignExpr.Select($self.expr, ${Expr(fieldName.s)}.tt)}
+        val tree = '{ForeignExpr.Select($self.expr, ${Expr(fieldName.s)}.tt, ${Expr(topic.s)}.tt)}
         '{Foreign.make($tree).asInstanceOf[result]}
 
   def applied(self: Expr[Foreign], field: Expr[String], arguments: Expr[Seq[Foreign]])
@@ -261,7 +261,7 @@ object Xenophile:
     val argTrees: List[Expr[ForeignExpr]] = args.zip(parameters).map: (arg, paramType) =>
       argTree(arg, paramType, fieldName)
 
-    val target = '{ForeignExpr.Select($self.expr, ${Expr(fieldName.s)}.tt)}
+    val target = '{ForeignExpr.Select($self.expr, ${Expr(fieldName.s)}.tt, ${Expr(topic.s)}.tt)}
     val tree = '{ForeignExpr.Apply($target, ${Expr.ofList(argTrees)})}
 
     foreignType(signature.result, originRepr).asType.absolve match
