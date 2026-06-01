@@ -32,20 +32,26 @@
                                                                                                   */
 package xenophile
 
+import scala.collection.immutable.ListMap
+
 import anticipation.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 // A minimal grammar for C header files (the `extern "C"` subset that Rust's `cbindgen`, and C/C++
-// public headers, expose): `struct` definitions become navigable foreign types whose members are
-// their fields, and top-level function prototypes become members of a synthetic `"library"` type
-// representing the loaded library. Preprocessor lines and comments are skipped; the rest of C is
-// not interpreted.
+// public headers, expose): `struct`/`union` definitions become navigable foreign types whose
+// members are their fields, top-level function prototypes become members of a synthetic `"library"`
+// type, `enum`s are treated as `int`, and `typedef` aliases are resolved. Preprocessor lines and
+// comments are skipped; the rest of C is not interpreted.
 object CHeaderDialect extends Dialect:
   val library: Text = t"library"
 
   def parse(source: Text): Map[Text, Map[Text, Signature]] =
-    declarations(tokenize(source.s), Map(), Map())
+    val (structs, functions, typedefs) = declarations(tokenize(source.s), Map(), Map(), Map())
+    val all = if functions.isEmpty then structs else structs.updated(library, functions)
+
+    resolve(all, typedefs)
 
   private def punctuation(char: Char): Boolean =
     char == '{' || char == '}' || char == '(' || char == ')' || char == ';' || char == ',' ||
@@ -86,6 +92,21 @@ object CHeaderDialect extends Dialect:
     case "double" | "float" | "void" | "bool" | "_Bool"            => true
     case _                                                         => false
 
+  // Canonicalises a base type: `unsigned`/`signed` are dropped, and the width-exact fixed-width
+  // names are mapped to the primitive of the same size (so the FFM layout stays correct). Widths
+  // without a matching primitive (`int8_t`, `int16_t`, `short`) are left as-is.
+  private def canonical(words: List[String]): Text =
+    val cleaned = words.filterNot: word =>
+      word == "unsigned" || word == "signed"
+
+    val name = if cleaned.isEmpty then t"int" else cleaned.mkString(" ").tt
+
+    if name == t"int32_t" || name == t"uint32_t" then t"int"
+    else if name == t"int64_t" || name == t"uint64_t" || name == t"long long" then t"long"
+    else if name == t"intptr_t" || name == t"uintptr_t" then t"long"
+    else if name == t"size_t" || name == t"ssize_t" then t"long"
+    else name
+
   // Reads a type and an optional declarator name: `int x` → (int, "x"), `const char* s` →
   // (string, "s"), and an abstract `int` / `char*` → (…, Unset). The base type is its leading
   // keywords (`unsigned int`) or single identifier (`Point`, `size_t`), then trailing `*`s; a
@@ -116,7 +137,7 @@ object CHeaderDialect extends Dialect:
       case word :: more if isWord(word) => (word.tt, more)
       case _                            => (Unset, rest1)
 
-    val base = words.mkString(" ").tt
+    val base = canonical(words)
 
     val foreign =
       if pointers == 0 then ForeignType.Named(base)
@@ -125,40 +146,41 @@ object CHeaderDialect extends Dialect:
 
     (foreign, name, rest)
 
-  // Walks the top-level declarations, accumulating named types (`structs`) and the synthetic
-  // `"library"` type's function members (`functions`).
+  // Walks the top-level declarations, accumulating named types (`structs`), the synthetic
+  // `"library"` type's function members (`functions`), and `typedef` aliases (`typedefs`).
   private def declarations
     ( tokens:    List[String],
       structs:   Map[Text, Map[Text, Signature]],
-      functions: Map[Text, Signature] )
-  :   Map[Text, Map[Text, Signature]] =
+      functions: Map[Text, Signature],
+      typedefs:  Map[Text, ForeignType] )
+  :   (Map[Text, Map[Text, Signature]], Map[Text, Signature], Map[Text, ForeignType]) =
 
     tokens match
       case Nil =>
-        if functions.isEmpty then structs else structs.updated(library, functions)
+        (structs, functions, typedefs)
 
-      // `struct Name { … };` and `typedef struct Name? { … } Alias;`
-      case ("struct" | "typedef") :: rest =>
-        val rest1 = rest match
-          case "struct" :: more => more
-          case more             => more
+      case "typedef" :: rest =>
+        typedef(rest, structs, functions, typedefs)
 
-        rest1 match
-          case name :: "{" :: more =>
-            val (fields, after) = members(more, Map())
-            val (alias, after2) = aliasName(after)
+      case ("struct" | "union") :: name :: "{" :: more =>
+        val (fields, after) = members(more, ListMap())
+        declarations(skipStatement(after), structs.updated(name.tt, fields), functions, typedefs)
 
-            declarations(after2, structs.updated(alias.or(name.tt), fields), functions)
+      case ("struct" | "union") :: "{" :: more =>
+        declarations(skipStatement(skipBraces(more, 1)), structs, functions, typedefs)
 
-          case "{" :: more =>
-            val (fields, after) = members(more, Map())
-            val (alias, after2) = aliasName(after)
+      case "enum" :: rest =>
+        val (name, body) = rest match
+          case word :: "{" :: more if isWord(word) => (word.tt, more)
+          case "{" :: more                         => (Unset, more)
+          case _                                   => (Unset, rest)
 
-            alias.lay(declarations(after2, structs, functions)): name =>
-              declarations(after2, structs.updated(name, fields), functions)
+        val after = skipStatement(skipBraces(body, 1))
 
-          case _ =>
-            declarations(skipStatement(rest1), structs, functions)
+        val updated = name.lay(typedefs): word =>
+          typedefs.updated(word, ForeignType.Named(t"int"))
+
+        declarations(after, structs, functions, updated)
 
       // A top-level function prototype: `<type> <name> ( <params> ) ;`.
       case _ =>
@@ -166,18 +188,60 @@ object CHeaderDialect extends Dialect:
 
         rest match
           case "(" :: more =>
-            name.lay(declarations(skipStatement(more), structs, functions)): function =>
+            name.lay(declarations(skipStatement(more), structs, functions, typedefs)): function =>
               val (params, after) = parameters(more, Nil)
 
               declarations
                 ( skipStatement(after),
                   structs,
-                  functions.updated(function, Signature(params, result)) )
+                  functions.updated(function, Signature(params, result)),
+                  typedefs )
 
           case _ =>
-            declarations(skipStatement(tokens), structs, functions)
+            declarations(skipStatement(tokens), structs, functions, typedefs)
 
-  // Reads a struct body's fields up to the closing `}`.
+  // Handles a `typedef`: a wrapped `struct`/`union` (a named type), a wrapped `enum` (treated as
+  // `int`), or a simple `typedef <type> Alias;` alias.
+  private def typedef
+    ( tokens:    List[String],
+      structs:   Map[Text, Map[Text, Signature]],
+      functions: Map[Text, Signature],
+      typedefs:  Map[Text, ForeignType] )
+  :   (Map[Text, Map[Text, Signature]], Map[Text, Signature], Map[Text, ForeignType]) =
+
+    tokens match
+      case ("struct" | "union") :: name :: "{" :: more =>
+        val (fields, after) = members(more, ListMap())
+        val (alias, after2) = aliasName(after)
+        declarations(after2, structs.updated(alias.or(name.tt), fields), functions, typedefs)
+
+      case ("struct" | "union") :: "{" :: more =>
+        val (fields, after) = members(more, ListMap())
+        val (alias, after2) = aliasName(after)
+
+        alias.lay(declarations(after2, structs, functions, typedefs)): name =>
+          declarations(after2, structs.updated(name, fields), functions, typedefs)
+
+      case "enum" :: rest =>
+        val body = rest match
+          case _ :: "{" :: more => more
+          case "{" :: more      => more
+          case _                => rest
+
+        val (alias, after) = aliasName(skipBraces(body, 1))
+
+        val updated = alias.lay(typedefs): word =>
+          typedefs.updated(word, ForeignType.Named(t"int"))
+
+        declarations(after, structs, functions, updated)
+
+      case _ =>
+        val (kind, name, after) = declarator(tokens)
+
+        name.lay(declarations(skipStatement(tokens), structs, functions, typedefs)): alias =>
+          declarations(skipStatement(after), structs, functions, typedefs.updated(alias, kind))
+
+  // Reads a struct or union body's fields up to the closing `}`.
   private def members(tokens: List[String], acc: Map[Text, Signature])
   :   (Map[Text, Signature], List[String]) =
 
@@ -224,8 +288,36 @@ object CHeaderDialect extends Dialect:
           case ")" :: more => ((kind :: acc).reverse, more)
           case _           => (acc.reverse, skipStatement(rest))
 
+  // Resolves every `typedef` alias appearing in a type, transitively.
+  private def resolve
+    ( definitions: Map[Text, Map[Text, Signature]], typedefs: Map[Text, ForeignType] )
+  :   Map[Text, Map[Text, Signature]] =
+
+    def expand(foreign: ForeignType): ForeignType = foreign match
+      case ForeignType.Named(name) =>
+        typedefs.at(name).lay(foreign)(expand)
+
+      case ForeignType.Union(members) =>
+        ForeignType.Union(members.map(expand))
+
+      case ForeignType.Applied(constructor, arguments) =>
+        ForeignType.Applied(constructor, arguments.map(expand))
+
+    def signature(sig: Signature): Signature =
+      Signature(sig.parameters.let(_.map(expand)), expand(sig.result))
+
+    definitions.map: (name, members) =>
+      (name, members.map { (member, sig) => (member, signature(sig)) })
+
   // Skips tokens up to and including the next `;` (to recover from constructs we do not model).
   private def skipStatement(tokens: List[String]): List[String] = tokens match
     case Nil         => Nil
     case ";" :: rest => rest
     case _ :: rest   => skipStatement(rest)
+
+  // Skips a balanced `{ … }` block, given the tokens just inside the opening brace (depth 1).
+  private def skipBraces(tokens: List[String], depth: Int): List[String] = tokens match
+    case Nil         => Nil
+    case "{" :: rest => skipBraces(rest, depth + 1)
+    case "}" :: rest => if depth <= 1 then rest else skipBraces(rest, depth - 1)
+    case _ :: rest   => skipBraces(rest, depth)

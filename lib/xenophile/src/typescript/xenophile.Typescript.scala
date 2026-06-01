@@ -96,9 +96,9 @@ object Typescript:
       type Operand = Json
 
       def evaluate(expr: ForeignExpr): Json = expr match
-        case ForeignExpr.Literal(value)         => value.asInstanceOf[Json]
-        case ForeignExpr.Reference(name)        => document(name)
-        case ForeignExpr.Select(target, member) => evaluate(target)(member)
+        case ForeignExpr.Literal(value)            => value.asInstanceOf[Json]
+        case ForeignExpr.Reference(name)           => document(name)
+        case ForeignExpr.Select(target, member, _) => evaluate(target)(member)
 
         case ForeignExpr.Apply(_, _) =>
           throw RuntimeException("xenophile: a JSON document evaluator cannot apply functions")

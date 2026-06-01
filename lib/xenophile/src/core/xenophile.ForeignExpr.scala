@@ -36,6 +36,9 @@ import anticipation.*
 
 enum ForeignExpr:
   case Reference(name: Text)
-  case Select(target: ForeignExpr, member: Text)
+  // `owner` is the foreign type the member is selected from — needed by backends (e.g. the native
+  // evaluator) that must locate the owning type's layout to read a field; self-describing backends
+  // (e.g. JSON) ignore it.
+  case Select(target: ForeignExpr, member: Text, owner: Text)
   case Apply(target: ForeignExpr, arguments: List[ForeignExpr])
   case Literal(value: Any)
