@@ -47,6 +47,10 @@ val document: Json =
 
 given Evaluator in Typescript by Json = Typescript.evaluator(document)
 
+type NativeLibrary = Interface in Native at "/xenophile/library.h"
+
+given nativeLibrary: NativeLibrary = Interface[Native](cp"/xenophile/library.h")
+
 object Tests extends Suite(m"Xenophile tests"):
   def run(): Unit =
     val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
@@ -156,3 +160,32 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"passing an argument of the wrong foreign type is a compile error"):
         demilitarize(foo.greet(42)).map(_.message)
       . assert(_ == List(t"xenophile: greet expects an argument of foreign type string"))
+
+    suite(m"Native (C headers)"):
+      val library: Foreign of "library" from Native = Foreign["library", Native]
+
+      test(m"a C struct field has the field's foreign type"):
+        val point: Foreign of "Point" from Native = Foreign["Point", Native]
+        point.x.expr
+      . assert(_ == ForeignExpr.Select(ForeignExpr.Reference(t"Point"), t"x"))
+
+      test(m"applying a C function builds an `Apply` node typed by its result"):
+        val absolute: Foreign of "int" from Native = library.abs(5)
+        absolute.expr
+      . assert:
+          case ForeignExpr.Apply(ForeignExpr.Select(_, m), List(ForeignExpr.Literal(_))) =>
+            m == t"abs"
+
+          case _ =>
+            false
+
+      test(m"a function returning `const char*` has the C-string foreign type"):
+        val version: Foreign of "string" from Native = library.version()
+        version.expr
+      . assert:
+          case ForeignExpr.Apply(ForeignExpr.Select(_, m), Nil) => m == t"version"
+          case _                                                => false
+
+      test(m"passing a C argument of the wrong foreign type is a compile error"):
+        demilitarize(library.abs(t"five")).map(_.message)
+      . assert(_ == List(t"xenophile: abs expects an argument of foreign type int"))
