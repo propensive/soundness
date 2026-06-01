@@ -48,14 +48,14 @@ val document: Json =
   j"""{"Foo": {"baz": "hello", "bar": {"count": 42}, "tags": ["a", "b"], "counts": [1, 2, 3],
        "nickname": "Bob", "id": "abc123", "lookup": {"1": "one", "2": "two"}}}"""
 
-given Evaluator in Typescript by Json = Typescript.evaluator(document)
+given Evaluator in Typescript by Json = Typescript(document)
 
 type NativeLibrary = Interface in Native at "/xenophile/library.h"
 
 given nativeLibrary: NativeLibrary = Interface[Native](cp"/xenophile/library.h")
 
 given Evaluator in Native by MemorySegment =
-  Native.evaluator(t"typedef struct Point { int x; int y; } Point; int abs(int n);")
+  Native(t"typedef struct Point { int x; int y; } Point; int abs(int n);")
 
 object Tests extends Suite(m"Xenophile tests"):
   def run(): Unit =
@@ -254,7 +254,7 @@ object Tests extends Suite(m"Xenophile tests"):
             .inheritIO().nn.start().nn.waitFor()
 
         given Evaluator in Native by MemorySegment =
-          Native.evaluator(t"int add(int a, int b);", target.toString.nn.tt)
+          Native(t"int add(int a, int b);", target.toString.nn.tt)
 
         val library: Foreign of "library" from Native = Foreign["library", Native]
         library.add(2, 3).as[Int]

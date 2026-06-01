@@ -90,7 +90,7 @@ object Typescript:
   // A backend that evaluates a `Foreign.Expression` against an in-memory JSON document:
   // references and selections navigate the document; literals yield their operand; function
   // application is unsupported (a static document has no callable members).
-  def evaluator(document: Json): Evaluator in Typescript by Json =
+  def apply(document: Json): Evaluator in Typescript by Json =
     new Evaluator:
       type Form = Typescript
       type Operand = Json

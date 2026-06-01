@@ -82,19 +82,19 @@ object Native:
   private val address: AddressLayout = ADDRESS.nn
 
   // An evaluator that resolves symbols through the platform's default (libc) lookup.
-  def evaluator(header: Text): Evaluator in Native by MemorySegment =
-    evaluator(header, Linker.nativeLinker().nn.defaultLookup().nn)
+  def apply(header: Text): Evaluator in Native by MemorySegment =
+    apply(header, Linker.nativeLinker().nn.defaultLookup().nn)
 
   // An evaluator that loads the shared library at `library` (a `.so` / `.dylib` path — e.g. a Rust
   // crate built as a `cdylib`) for the lifetime of the JVM, resolving symbols within it.
-  def evaluator(header: Text, library: Text): Evaluator in Native by MemorySegment =
-    evaluator(header, SymbolLookup.libraryLookup(Path.of(library.s), Arena.global().nn).nn)
+  def apply(header: Text, library: Text): Evaluator in Native by MemorySegment =
+    apply(header, SymbolLookup.libraryLookup(Path.of(library.s), Arena.global().nn).nn)
 
   // The shared evaluator: it performs real FFM downcalls, building each function's call descriptor
   // from its signature (read by re-parsing `header`) and resolving the symbol through `lookup`.
   // Function application (scalar/pointer arguments, scalar results) and struct field reads
   // (returning the field's slice of the struct's memory) are supported.
-  private def evaluator(header: Text, lookup: SymbolLookup): Evaluator in Native by MemorySegment =
+  private def apply(header: Text, lookup: SymbolLookup): Evaluator in Native by MemorySegment =
     val definitions = CHeaderDialect.parse(header)
     val functions = definitions.at(CHeaderDialect.library).or(Map[Text, Signature]())
     val linker = Linker.nativeLinker().nn
