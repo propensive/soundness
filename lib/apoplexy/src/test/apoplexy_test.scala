@@ -196,3 +196,5 @@ components:
       capture[OpenApiError]:
         """{"openapi": "2.0", "info": {"title": "x", "version": "1"}}""".tt.read[OpenApi]
     .assert(_.reason == OpenApiError.Reason.UnsupportedVersion(t"2.0"))
+
+    ApiTests()
