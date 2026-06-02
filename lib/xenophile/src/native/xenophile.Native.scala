@@ -40,11 +40,13 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import xenophile.internal.*
 
-// The C / native ecosystem. Foreign values are represented directly by the Java Foreign Function
-// and Memory API's `MemorySegment` (no intermediate encoding), and grammars are read from C header
-// files by `CHeaderDialect`. Scalar `Interoperable`s box their value into a GC-managed segment via
-// the matching `ValueLayout`, so no explicit `Arena` need be threaded through the API.
+// The C / native ecosystem. Foreign values are represented as `Memory` — an opaque wrapper over the
+// Java Foreign Function & Memory API's `MemorySegment` (see `internal`), with no intermediate
+// encoding — and grammars are read from C header files by `CHeaderDialect`. Scalar `Interoperable`s
+// box their value into a GC-managed segment via the matching `ValueLayout`, so no explicit `Arena`
+// need be threaded through the API.
 object Native:
   private def auto: Arena = Arena.ofAuto().nn
 
@@ -53,48 +55,48 @@ object Native:
   private val doubles: ValueLayout.OfDouble = JAVA_DOUBLE.nn
   private val floats: ValueLayout.OfFloat = JAVA_FLOAT.nn
   private val bools: ValueLayout.OfBoolean = JAVA_BOOLEAN.nn
-
-  // Allocates a GC-managed segment for a single value and writes it with the given layout.
-  private inline def boxed(layout: ValueLayout)(write: MemorySegment => Unit): MemorySegment =
-    val segment = auto.allocate(layout).nn
-    write(segment)
-    segment
-
-  given int: (Int is Interoperable in Native of "int" by MemorySegment) =
-    Interoperable(n => boxed(ints)(_.set(ints, 0L, n)), _.get(ints, 0L))
-
-  given long: (Long is Interoperable in Native of "long" by MemorySegment) =
-    Interoperable(n => boxed(longs)(_.set(longs, 0L, n)), _.get(longs, 0L))
-
-  given double: (Double is Interoperable in Native of "double" by MemorySegment) =
-    Interoperable(x => boxed(doubles)(_.set(doubles, 0L, x)), _.get(doubles, 0L))
-
-  given float: (Float is Interoperable in Native of "float" by MemorySegment) =
-    Interoperable(x => boxed(floats)(_.set(floats, 0L, x)), _.get(floats, 0L))
-
-  given boolean: (Boolean is Interoperable in Native of "bool" by MemorySegment) =
-    Interoperable(b => boxed(bools)(_.set(bools, 0L, b)), _.get(bools, 0L))
-
-  // A C string (`char*` / `const char*`) is an allocated, NUL-terminated UTF-8 segment.
-  given string: (Text is Interoperable in Native of "string" by MemorySegment) =
-    Interoperable(text => auto.allocateFrom(text.s).nn, _.getString(0L).nn.tt)
-
   private val address: AddressLayout = ADDRESS.nn
 
+  // Allocates a GC-managed segment for a single value, writes it with the given layout, and wraps
+  // it as `Memory`.
+  private inline def boxed(layout: ValueLayout)(write: MemorySegment => Unit): Memory =
+    val segment = auto.allocate(layout).nn
+    write(segment)
+    Memory(segment)
+
+  given int: (Int is Interoperable in Native of "int" by Memory) =
+    Interoperable(n => boxed(ints)(_.set(ints, 0L, n)), _.segment.get(ints, 0L))
+
+  given long: (Long is Interoperable in Native of "long" by Memory) =
+    Interoperable(n => boxed(longs)(_.set(longs, 0L, n)), _.segment.get(longs, 0L))
+
+  given double: (Double is Interoperable in Native of "double" by Memory) =
+    Interoperable(x => boxed(doubles)(_.set(doubles, 0L, x)), _.segment.get(doubles, 0L))
+
+  given float: (Float is Interoperable in Native of "float" by Memory) =
+    Interoperable(x => boxed(floats)(_.set(floats, 0L, x)), _.segment.get(floats, 0L))
+
+  given boolean: (Boolean is Interoperable in Native of "bool" by Memory) =
+    Interoperable(b => boxed(bools)(_.set(bools, 0L, b)), _.segment.get(bools, 0L))
+
+  // A C string (`char*` / `const char*`) is an allocated, NUL-terminated UTF-8 segment.
+  given string: (Text is Interoperable in Native of "string" by Memory) =
+    Interoperable(text => Memory(auto.allocateFrom(text.s).nn), _.segment.getString(0L).nn.tt)
+
   // An evaluator that resolves symbols through the platform's default (libc) lookup.
-  def apply(header: Text): Evaluator in Native by MemorySegment =
+  def apply(header: Text): Evaluator in Native by Memory =
     apply(header, Linker.nativeLinker().nn.defaultLookup().nn)
 
   // An evaluator that loads the shared library at `library` (a `.so` / `.dylib` path — e.g. a Rust
   // crate built as a `cdylib`) for the lifetime of the JVM, resolving symbols within it.
-  def apply(header: Text, library: Text): Evaluator in Native by MemorySegment =
+  def apply(header: Text, library: Text): Evaluator in Native by Memory =
     apply(header, SymbolLookup.libraryLookup(Path.of(library.s), Arena.global().nn).nn)
 
   // The shared evaluator: it performs real FFM downcalls, building each function's call descriptor
   // from its signature (read by re-parsing `header`) and resolving the symbol through `lookup`.
   // Function application (scalar/pointer arguments, scalar results) and struct field reads
   // (returning the field's slice of the struct's memory) are supported.
-  private def apply(header: Text, lookup: SymbolLookup): Evaluator in Native by MemorySegment =
+  private def apply(header: Text, lookup: SymbolLookup): Evaluator in Native by Memory =
     val definitions = CHeaderDialect.parse(header)
     val functions = definitions.at(CHeaderDialect.library).or(Map[Text, Signature]())
     val linker = Linker.nativeLinker().nn
@@ -111,19 +113,19 @@ object Native:
       case _ =>
         address
 
-    def argument(foreign: Foreign.Type, segment: MemorySegment): Any = foreign match
+    def argument(foreign: Foreign.Type, memory: Memory): Any = foreign match
       case Foreign.Type.Named(name) =>
-        if name == t"int" then segment.get(ints, 0L)
-        else if name == t"long" || name == t"size_t" then segment.get(longs, 0L)
-        else if name == t"double" then segment.get(doubles, 0L)
-        else if name == t"float" then segment.get(floats, 0L)
-        else if name == t"bool" then segment.get(bools, 0L)
-        else segment
+        if name == t"int" then memory.segment.get(ints, 0L)
+        else if name == t"long" || name == t"size_t" then memory.segment.get(longs, 0L)
+        else if name == t"double" then memory.segment.get(doubles, 0L)
+        else if name == t"float" then memory.segment.get(floats, 0L)
+        else if name == t"bool" then memory.segment.get(bools, 0L)
+        else memory.segment
 
       case _ =>
-        segment
+        memory.segment
 
-    def result(foreign: Foreign.Type, value: Any): MemorySegment = foreign match
+    def result(foreign: Foreign.Type, value: Any): Memory = foreign match
       case Foreign.Type.Named(name) =>
         if name == t"int" then boxed(ints)(_.set(ints, 0L, value.asInstanceOf[Int]))
         else if name == t"float" then boxed(floats)(_.set(floats, 0L, value.asInstanceOf[Float]))
@@ -132,10 +134,10 @@ object Native:
         then boxed(longs)(_.set(longs, 0L, value.asInstanceOf[Long]))
         else if name == t"double"
         then boxed(doubles)(_.set(doubles, 0L, value.asInstanceOf[Double]))
-        else value.asInstanceOf[MemorySegment]
+        else Memory(value.asInstanceOf[MemorySegment])
 
       case _ =>
-        value.asInstanceOf[MemorySegment]
+        Memory(value.asInstanceOf[MemorySegment])
 
     // The byte offset and size of a struct field, by folding over the fields in declaration order
     // and aligning each to its layout (so it matches the C ABI for naturally-aligned structs).
@@ -155,15 +157,15 @@ object Native:
 
     new Evaluator:
       type Form = Native
-      type Operand = MemorySegment
+      type Operand = Memory
 
-      def evaluate(expr: Foreign.Expression): MemorySegment = expr match
+      def evaluate(expr: Foreign.Expression): Memory = expr match
         case Foreign.Expression.Literal(value) =>
-          value.asInstanceOf[MemorySegment]
+          value.asInstanceOf[Memory]
 
         case Foreign.Expression.Select(target, member, owner) =>
           val (offset, size) = field(owner, member)
-          evaluate(target).asSlice(offset, size).nn
+          Memory(evaluate(target).segment.asSlice(offset, size).nn)
 
         case Foreign.Expression.Apply(Foreign.Expression.Select(_, function, _), arguments) =>
           val signature = functions.at(function).or:
@@ -191,5 +193,5 @@ object Native:
           throw RuntimeException(t"xenophile: this native expression cannot be evaluated".s)
 
 trait Native extends Ecosystem:
-  type Operand = MemorySegment
+  type Operand = Memory
   type Grammar = CHeaderDialect.type
