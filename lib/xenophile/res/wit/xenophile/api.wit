@@ -14,11 +14,29 @@ interface api {
     blue,
   }
 
+  flags permissions {
+    read,
+    write,
+  }
+
+  variant shape {
+    circle(f64),
+    rectangle(point),
+  }
+
   type id = u64;
+
+  // A resource with a method body — the parser must skip its `{ … }` and still parse the functions
+  // that follow it.
+  resource file {
+    size: func() -> u64;
+  }
 
   greet: func(name: string) -> string;
   add: func(a: s32, b: s32) -> s32;
   origin: func() -> point;
   tags: func() -> list<string>;
   lookup: func(key: string) -> option<string>;
+  shade: func() -> color;
+  caps: func() -> permissions;
 }
