@@ -34,33 +34,37 @@ package synesthesia
 
 import soundness.*
 
-import strategies.throwUnsafely
-import charEncoders.utf8
-
 object Tests extends Suite(m"Synesthesia Tests"):
   def run(): Unit =
-    test(m"Remote server"):
-      import internetAccess.enabled
-      import supervisors.global
-      import codicils.cancel
-      import httpServers.stdlib
-      import logging.silent
-      import webserverErrorPages.stackTraces
-      import classloaders.threadContext
-
-      tcp"8080".serve:
-        request.path match
-          case % /: t"mcp" =>
-            try
-              unsafely:
-                TestMcpServer.serve
-            catch case throwable: Throwable =>
-              throwable.printStackTrace()
-              ???
-
-          case _ =>
-            Http.Response(Http.NotFound)(t"Error 404: Not found")
-
-      Thread.sleep(1000000)
-
-    . assert()
+    // Manual-only MCP server runner — NOT an automated test. It serves MCP on :8080
+    // and `Thread.sleep`s to keep the server alive for an external MCP client to
+    // connect to; it asserts nothing and blocked CI for ~16 minutes. Disabled here;
+    // uncomment (and restore the `strategies.throwUnsafely` / `charEncoders.utf8`
+    // imports) to run a live server by hand.
+    //
+    // test(m"Remote server"):
+    //   import internetAccess.enabled
+    //   import supervisors.global
+    //   import codicils.cancel
+    //   import httpServers.stdlib
+    //   import logging.silent
+    //   import webserverErrorPages.stackTraces
+    //   import classloaders.threadContext
+    //
+    //   tcp"8080".serve:
+    //     request.path match
+    //       case % /: t"mcp" =>
+    //         try
+    //           unsafely:
+    //             TestMcpServer.serve
+    //         catch case throwable: Throwable =>
+    //           throwable.printStackTrace()
+    //           ???
+    //
+    //       case _ =>
+    //         Http.Response(Http.NotFound)(t"Error 404: Not found")
+    //
+    //   Thread.sleep(1000000)
+    //
+    // . assert()
+    ()
