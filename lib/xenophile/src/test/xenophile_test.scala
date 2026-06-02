@@ -57,6 +57,14 @@ given nativeLibrary: NativeLibrary = Interface[Native](cp"/xenophile/library.h")
 given Evaluator in Native by Memory =
   Native(t"typedef struct Point { int x; int y; } Point; int abs(int n);")
 
+type WitApi = Interface in Wit at "/xenophile/api.wit"
+
+given witApi: WitApi = Interface[Wit](cp"/xenophile/api.wit")
+
+val witDocument: Json = j"""{"point": {"x": 3, "y": 4}}"""
+
+given witEvaluator: (Evaluator in Wit by Json) = Wit(witDocument)
+
 object Tests extends Suite(m"Xenophile tests"):
   def run(): Unit =
     val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
@@ -259,3 +267,41 @@ object Tests extends Suite(m"Xenophile tests"):
         val library: Foreign of "library" from Native = Foreign["library", Native]
         library.add(2, 3).as[Int]
       . assert(_ == 5)
+
+    suite(m"Wit (WebAssembly Interface Types)"):
+      val api: Foreign of "api" from Wit = Foreign["api", Wit]
+
+      test(m"a WIT record field has the field's foreign type"):
+        val point: Foreign of "point" from Wit = Foreign["point", Wit]
+        point.x.expr
+      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"point"), t"x", t"point"))
+
+      test(m"a WIT record field decodes from the backend document"):
+        val point: Foreign of "point" from Wit = Foreign["point", Wit]
+        point.x.as[Int]
+      . assert(_ == 3)
+
+      test(m"a WIT function application is typed by its result"):
+        val sum: Foreign of "s32" from Wit = api.add(2, 3)
+        sum.expr
+      . assert:
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_, _)) => m == t"add"
+          case _                                                                         => false
+
+      test(m"a WIT `list<T>` result has an `over` foreign type"):
+        val tags: Foreign of ("list" over "string") from Wit = api.tags()
+        tags.expr
+      . assert:
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), Nil) => m == t"tags"
+          case _                                                                  => false
+
+      test(m"a WIT `option<T>` result is a union with `none`"):
+        val found: Foreign of ("string" | "none") from Wit = api.lookup(t"k")
+        found.expr
+      . assert:
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) => m == t"lookup"
+          case _                                                                      => false
+
+      test(m"passing a WIT argument of the wrong foreign type is a compile error"):
+        demilitarize(api.add(t"two", 3)).map(_.message)
+      . assert(_ == List(t"xenophile: add expects an argument of foreign type s32"))
