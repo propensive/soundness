@@ -129,6 +129,12 @@
         ],
         "responses": { "204": { "description": "logged out" } }
       }
+    },
+    "/logout": {
+      "delete": {
+        "operationId": "logoutAll",
+        "responses": { "204": { "description": "logged out everywhere" } }
+      }
     }
   },
   "components": {

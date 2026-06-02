@@ -41,6 +41,7 @@ import gigantism.*
 import gossamer.*
 import hellenism.*
 import jacinta.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import strategies.throwUnsafely
@@ -94,13 +95,17 @@ object Apoplexy:
 
     ConstantType(StringConstant(value.s))
 
+  private def bounds(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+  :   quotes.reflect.TypeBounds =
+
+    import quotes.reflect.*
+    TypeBounds(repr, repr)
+
   private def apiType(using quotes: Quotes)(locus: Text, source: Text): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 
-    val withLocus =
-      Refinement(TypeRepr.of[Api], "Locus", TypeBounds(literalType(locus), literalType(locus)))
-
-    Refinement(withLocus, "Source", TypeBounds(literalType(source), literalType(source)))
+    val withLocus = Refinement(TypeRepr.of[Api], "Locus", bounds(literalType(locus)))
+    Refinement(withLocus, "Source", bounds(literalType(source)))
 
   private def receiver(using quotes: Quotes)(self: Expr[Api]): (Text, Text) =
     import quotes.reflect.*
@@ -122,6 +127,28 @@ object Apoplexy:
 
   private def join(locus: Text, segment: Text): Text =
     if locus == t"/" then t"/$segment" else t"$locus/$segment"
+
+  private def escape(text: Text): Text = text.sub(t"~", t"~0").sub(t"/", t"~1")
+
+  // --- HTTP method helpers -------------------------------------------------
+
+  private val verbs: Map[Text, Http.Method] =
+    Map(t"get" -> Http.Get, t"post" -> Http.Post, t"put" -> Http.Put, t"patch" -> Http.Patch,
+        t"delete" -> Http.Delete)
+
+  private def methodName(method: Http.Method): Text = method match
+    case Http.Post   => t"post"
+    case Http.Put    => t"put"
+    case Http.Patch  => t"patch"
+    case Http.Delete => t"delete"
+    case _           => t"get"
+
+  private def methodExpr(using Quotes)(method: Http.Method): Expr[Http.Method] = method match
+    case Http.Post   => '{Http.Post}
+    case Http.Put    => '{Http.Put}
+    case Http.Patch  => '{Http.Patch}
+    case Http.Delete => '{Http.Delete}
+    case _           => '{Http.Get}
 
   // --- schema → Scala type -------------------------------------------------
 
@@ -156,6 +183,140 @@ object Apoplexy:
       case Some(param) => param.schema.lay(TypeRepr.of[Text])(schemaType(doc, _))
       case None        => TypeRepr.of[Text]
 
+  // --- invocation ----------------------------------------------------------
+
+  // Builds the `Api.Response` for invoking `method` on the complete endpoint
+  // `locus`: typechecks named args against the query parameters, the single
+  // optional positional against the request body, and records the 2xx response
+  // schema's pointer in the result type.
+  private def invoke(using quotes: Quotes)
+    ( self:       Expr[Api],
+      doc:        OpenApi,
+      source:     Text,
+      locus:      Text,
+      method:     Http.Method,
+      named:      List[(Text, Expr[Any])],
+      positional: List[Expr[Any]] )
+  :   Expr[Any] =
+
+    import quotes.reflect.*
+
+    val verb = methodName(method)
+
+    val operation = doc.paths.at(locus).let(_.operations.at(method)).or:
+      halt(m"apoplexy: $locus defines no $verb operation")
+
+    val queryParams = operation.parameters.filter(_.`in` == OpenApi.Parameter.In.Query)
+
+    val queryEntries: List[Expr[(Text, Text)]] = named.map: (name, argExpr) =>
+      val param = queryParams.find(_.name == name).getOrElse:
+        halt(m"apoplexy: $verb $locus has no query parameter $name")
+
+      val expected = param.schema.lay(TypeRepr.of[Text])(schemaType(doc, _))
+      val actual = argExpr.asTerm.tpe.widen
+
+      if !(actual <:< expected)
+      then halt(m"apoplexy: the query parameter $name expects ${expected.show}")
+
+      actual.asType.absolve match
+        case '[argType] =>
+          val value = argExpr.asExprOf[argType]
+
+          val showable = Expr.summon[argType is Showable].getOrElse:
+            halt(m"apoplexy: the query parameter $name cannot be rendered as text")
+
+          '{(${Expr(name.s)}.tt, $showable.text($value))}
+
+    queryParams.filter(_.required.or(false)).each: param =>
+      if !named.exists(_(0) == param.name)
+      then halt(m"apoplexy: required query parameter ${param.name} is missing")
+
+    val queryExpr = Expr.ofList(queryEntries)
+
+    val bodyExpr: Expr[Optional[Json]] = positional match
+      case Nil =>
+        if operation.requestBody.let(_.required.or(false)).or(false)
+        then halt(m"apoplexy: $verb $locus requires a request body")
+        '{Unset}
+
+      case List(argExpr) =>
+        if operation.requestBody.absent then halt(m"apoplexy: $verb $locus takes no request body")
+
+        argExpr.asTerm.tpe.widen.asType.absolve match
+          case '[bodyType] =>
+            val value = argExpr.asExprOf[bodyType]
+
+            val encodable = Expr.summon[bodyType is Encodable in Json].getOrElse:
+              halt(m"apoplexy: the request body cannot be encoded as JSON")
+
+            '{$encodable.encoded($value)}
+
+      case _ =>
+        halt(m"apoplexy: $verb $locus takes a single request body")
+
+    val status =
+      operation.responses.keys.filter(_.starts(t"2")).to(List).sortBy(_.s).prim.or(t"200")
+
+    val pointer =
+      t"#/paths/${escape(locus)}/$verb/responses/$status/content/${escape(t"application/json")}/schema"
+
+    val mExpr = methodExpr(method)
+    val locusExpr = Expr(locus.s)
+
+    val responseType =
+      Refinement
+        ( Refinement(TypeRepr.of[Api.Response], "Result", bounds(literalType(pointer))),
+          "Form",
+          bounds(literalType(source)) )
+
+    responseType.asType.absolve match
+      case '[type result <: Api.Response; result] =>
+        '{
+            val request =
+              $self.request.copy
+               (method = $mExpr, path = $locusExpr.tt, query = $queryExpr, body = $bodyExpr)
+
+            Api.Response.make(request).asInstanceOf[result]
+          }
+
+  // Invokes the sole non-DELETE method of a complete endpoint (the `apply`
+  // shortcut). DELETE never participates: a sole-DELETE endpoint still requires
+  // an explicit `.delete()`.
+  private def shortcut(using quotes: Quotes)
+    ( self: Expr[Api], doc: OpenApi, source: Text, locus: Text,
+      named: List[(Text, Expr[Any])], positional: List[Expr[Any]] )
+  :   Expr[Any] =
+
+    val methods =
+      doc.paths.at(locus).lay(List[Http.Method]()): item =>
+        item.operations.keys.filter(_ != Http.Delete).to(List)
+
+    methods match
+      case List(method) =>
+        invoke(self, doc, source, locus, method, named, positional)
+
+      case Nil =>
+        halt(m"apoplexy: $locus has no invokable operation (use `.delete()` for a DELETE endpoint)")
+
+      case _ =>
+        halt(m"apoplexy: $locus has several operations; use `.get`, `.post`, `.put` or `.patch`")
+
+  // Extracts the (name, value) pairs from `applyDynamicNamed` arguments; a
+  // positional argument arrives with an empty name.
+  private def pairs(using quotes: Quotes)(args: Expr[Seq[(String, Any)]])
+  :   List[(Text, Expr[Any])] =
+
+    args match
+      case Varargs(exprs) => exprs.to(List).map:
+        case '{($key: String, $value)} => (key.valueOrAbort.tt, value)
+        case _                         => halt(m"apoplexy: arguments must be passed directly")
+
+      case _ =>
+        halt(m"apoplexy: arguments must be passed directly")
+
+  private def defines(using Quotes)(doc: OpenApi, locus: Text, method: Http.Method): Boolean =
+    doc.paths.at(locus).let(_.operations.contains(method)).or(false)
+
   // --- macros --------------------------------------------------------------
 
   def root(resource: Expr[Resource]): Macro[Api] =
@@ -174,13 +335,24 @@ object Apoplexy:
       case '[type result <: Api; result] =>
         '{Api.make(Api.Request(Http.Get, $baseExpr.tt, t"/")).asInstanceOf[result]}
 
-  def select(self: Expr[Api], field: Expr[String]): Macro[Api] =
+  def select(self: Expr[Api], field: Expr[String]): Macro[Any] =
     val name = field.valueOrAbort.tt
     val (locus, source) = receiver(self)
     val doc = spec(source)
-    val keys = doc.paths.keys.map(segments).to(List)
+
+    verbs.at(name) match
+      case method: Http.Method if defines(doc, locus, method) =>
+        invoke(self, doc, source, locus, method, Nil, Nil)
+
+      case _ =>
+        navigate(self, source, doc, locus, name)
+
+  private def navigate(using quotes: Quotes)
+    (self: Expr[Api], source: Text, doc: OpenApi, locus: Text, name: Text): Expr[Any] =
+
     val newLocus = join(locus, name)
     val newSegs = segments(newLocus)
+    val keys = doc.paths.keys.map(segments).to(List)
 
     if !keys.exists(isPrefix(newSegs, _)) then halt(m"apoplexy: no path begins with $newLocus")
 
@@ -190,63 +362,97 @@ object Apoplexy:
       case '[type result <: Api; result] =>
         '{Api.make($self.request.copy(path = $locusExpr.tt)).asInstanceOf[result]}
 
-  def applied(self: Expr[Api], field: Expr[String], args: Expr[Seq[Any]]): Macro[Api] =
+  def applied(self: Expr[Api], field: Expr[String], args: Expr[Seq[Any]]): Macro[Any] =
+    val name = field.valueOrAbort.tt
+    val (locus, source) = receiver(self)
+    val doc = spec(source)
+
+    val positional = args match
+      case Varargs(exprs) => exprs.to(List)
+      case _              => halt(m"apoplexy: arguments must be passed directly")
+
+    verbs.at(name) match
+      case method: Http.Method if defines(doc, locus, method) =>
+        invoke(self, doc, source, locus, method, Nil, positional)
+
+      case _ =>
+        val newLocus = join(locus, name)
+        val newSegs = segments(newLocus)
+        val keys = doc.paths.keys.map(segments).to(List)
+
+        if !keys.exists(isPrefix(newSegs, _)) then halt(m"apoplexy: no path begins with $newLocus")
+
+        val following =
+          keys.filter { key => isPrefix(newSegs, key) && key.length > newSegs.length }
+           .map(_(newSegs.length))
+           .find(isTemplate)
+
+        following match
+          case Some(template) => fillTemplate(self, source, doc, newLocus, template, positional)
+          case None           => shortcut(self, doc, source, newLocus, Nil, positional)
+
+  private def fillTemplate(using quotes: Quotes)
+    (self: Expr[Api], source: Text, doc: OpenApi, newLocus: Text, template: Text,
+     positional: List[Expr[Any]]): Expr[Any] =
+
     import quotes.reflect.*
+
+    val parameter = templateName(template)
+    val templatedLocus = join(newLocus, template)
+
+    val arg = positional match
+      case List(only) => only
+      case _          => halt(m"apoplexy: path parameter $parameter needs one argument")
+
+    val expected = pathParamType(doc, templatedLocus, parameter)
+    val actual = arg.asTerm.tpe.widen
+
+    if !(actual <:< expected)
+    then halt(m"apoplexy: path parameter $parameter expects ${expected.show}")
+
+    val locusExpr = Expr(templatedLocus.s)
+    val paramExpr = Expr(parameter.s)
+
+    apiType(templatedLocus, source).asType.absolve match
+      case '[type result <: Api; result] => actual.asType.absolve match
+        case '[argType] =>
+          val value = arg.asExprOf[argType]
+
+          val showable = Expr.summon[argType is Showable].getOrElse:
+            halt(m"apoplexy: the path parameter $parameter cannot be rendered as text")
+
+          ' {
+              val rendered = $showable.text($value)
+              val updated = $self.request.substitutions.updated($paramExpr.tt, rendered)
+
+              Api.make($self.request.copy(path = $locusExpr.tt, substitutions = updated))
+              . asInstanceOf[result]
+            }
+
+  def appliedNamed(self: Expr[Api], field: Expr[String], args: Expr[Seq[(String, Any)]])
+  :   Macro[Any] =
 
     val name = field.valueOrAbort.tt
     val (locus, source) = receiver(self)
     val doc = spec(source)
-    val keys = doc.paths.keys.map(segments).to(List)
-    val newLocus = join(locus, name)
-    val newSegs = segments(newLocus)
+    val entries = pairs(args)
+    val named = entries.filter(_(0) != t"")
+    val positional = entries.filter(_(0) == t"").map(_(1))
 
-    if !keys.exists(isPrefix(newSegs, _)) then halt(m"apoplexy: no path begins with $newLocus")
+    verbs.at(name) match
+      case method: Http.Method if defines(doc, locus, method) =>
+        invoke(self, doc, source, locus, method, named, positional)
 
-    val children = keys.filter: key =>
-      isPrefix(newSegs, key) && key.length > newSegs.length
+      case _ =>
+        val newLocus = join(locus, name)
+        val newSegs = segments(newLocus)
+        val keys = doc.paths.keys.map(segments).to(List)
 
-    children.map(_(newSegs.length)).find(isTemplate) match
-      case None =>
-        halt(m"apoplexy: invocation is not implemented yet")
+        if !keys.exists(isPrefix(newSegs, _)) then halt(m"apoplexy: no path begins with $newLocus")
+        if doc.paths.at(newLocus).absent
+        then halt(m"apoplexy: $newLocus is not a complete endpoint")
 
-      case Some(template) =>
-        val parameter = templateName(template)
-        val templatedLocus = join(newLocus, template)
-
-        val arg = args match
-          case Varargs(Seq(only)) => only
-          case Varargs(_)         => halt(m"apoplexy: path parameter $parameter needs one argument")
-          case _                  => halt(m"apoplexy: the path argument must be passed directly")
-
-        val expected = pathParamType(doc, templatedLocus, parameter)
-        val actual = arg.asTerm.tpe.widen
-
-        if !(actual <:< expected)
-        then halt(m"apoplexy: path parameter $parameter expects ${expected.show}")
-
-        val locusExpr = Expr(templatedLocus.s)
-        val paramExpr = Expr(parameter.s)
-
-        apiType(templatedLocus, source).asType.absolve match
-          case '[type result <: Api; result] => actual.asType.absolve match
-            case '[argType] =>
-              val valueExpr = arg.asExprOf[argType]
-
-              val showable = Expr.summon[argType is Showable].getOrElse:
-                halt(m"apoplexy: the path parameter $parameter cannot be rendered as text")
-
-              ' {
-                  val rendered = $showable.text($valueExpr)
-                  val updated = $self.request.substitutions.updated($paramExpr.tt, rendered)
-
-                  Api.make($self.request.copy(path = $locusExpr.tt, substitutions = updated))
-                  . asInstanceOf[result]
-                }
-
-  def appliedNamed(self: Expr[Api], field: Expr[String], args: Expr[Seq[(String, Any)]])
-  :   Macro[Api.Response] =
-
-    halt(m"apoplexy: invocation is not implemented yet")
+        shortcut(self, doc, source, newLocus, named, positional)
 
   def decode[value: Type](self: Expr[Api.Response]): Macro[value] =
     halt(m"apoplexy: .as is not implemented yet")
