@@ -1325,13 +1325,13 @@ object xenophile extends Library:
     vacuous.core, hellenism.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object typescript extends Component(core, jacinta.core, distillate.core):
+  object typescript extends Component(core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object native extends Component(core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object wit extends Component(core, jacinta.core):
+  object wit extends Component(core, hypotenuse.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(typescript, native, wit)

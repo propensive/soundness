@@ -33,4 +33,3 @@
 package soundness
 
 export xenophile.Native
-export xenophile.internal.Memory

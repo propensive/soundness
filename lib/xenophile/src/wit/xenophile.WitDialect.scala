@@ -82,17 +82,9 @@ object WitDialect extends Dialect:
 
     recur(0, "", Nil)
 
-  // Maps WIT primitive names that share a Scala representation onto a single canonical name (so a
-  // Scala type has exactly one `Interoperable`): the 8/16/32-bit integers collapse to `s32`, the
-  // 64-bit integers to `s64`, and `char` to `string`. Floats, `bool` and `string` are unchanged.
-  private def canonical(name: String): Text = name match
-    case "s8" | "s16" | "s32" | "u8" | "u16" | "u32" => t"s32"
-    case "s64" | "u64"                               => t"s64"
-    case "char"                                      => t"string"
-    case other                                       => other.tt
-
   // Parses a WIT type. `name<args>` is a generic application — `option<T>` becomes the union
-  // `T | none` (so it decodes to an `Optional`), and `list`/`tuple`/`result` stay applications.
+  // `T | none` (an `Optional`), and `list`/`tuple`/`result` stay applications. Primitive names are
+  // kept verbatim (`u32`, `s8`, `char`, …); the ecosystem maps each to a Hypotenuse type.
   private def typeOf(tokens: List[String]): (Foreign.Type, List[String]) = tokens match
     case name :: "<" :: rest =>
       val (args, after) = typeArguments(rest, Nil)
@@ -103,7 +95,7 @@ object WitDialect extends Dialect:
       else (Foreign.Type.Applied(name.tt, args), after)
 
     case name :: rest =>
-      (Foreign.Type.Named(canonical(name)), rest)
+      (Foreign.Type.Named(name.tt), rest)
 
     case Nil =>
       (Foreign.Type.Named(t""), Nil)

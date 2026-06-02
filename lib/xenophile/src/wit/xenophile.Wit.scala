@@ -33,73 +33,45 @@
 package xenophile
 
 import anticipation.*
-import contingency.*, strategies.throwUnsafely
-import jacinta.*
+import hypotenuse.*
 import prepositional.*
 import vacuous.*
 
-// The WIT (WebAssembly Interface Types) ecosystem. Foreign values are represented as `Json` (the
-// component model's textual value representation), grammars are read from `.wit` files by
-// `WitDialect`, and primitives map to the obvious Scala types.
+// The WIT (WebAssembly Interface Types) ecosystem: `Interoperable` markers associating Scala types
+// with the WIT types `WitDialect` reads from `.wit` files. WIT's sized integers map to Hypotenuse's
+// fixed-width numeric types, preserving signedness and width; no runtime representation is used.
 object Wit:
-  // WIT integers all canonicalise (in `WitDialect`) to `s32` (8/16/32-bit) or `s64` (64-bit), and
-  // `char` to `string`, so each Scala type maps to exactly one WIT primitive.
-  given s32: (Int is Interoperable in Wit of "s32" by Json) =
-    Interoperable[Int, Wit, "s32", Json](_.json, _.as[Int])
+  given s8: (S8 is Interoperable in Wit of "s8") = Interoperable[S8, Wit, "s8"]()
+  given s16: (S16 is Interoperable in Wit of "s16") = Interoperable[S16, Wit, "s16"]()
+  given s32: (S32 is Interoperable in Wit of "s32") = Interoperable[S32, Wit, "s32"]()
+  given s64: (S64 is Interoperable in Wit of "s64") = Interoperable[S64, Wit, "s64"]()
+  given u8: (U8 is Interoperable in Wit of "u8") = Interoperable[U8, Wit, "u8"]()
+  given u16: (U16 is Interoperable in Wit of "u16") = Interoperable[U16, Wit, "u16"]()
+  given u32: (U32 is Interoperable in Wit of "u32") = Interoperable[U32, Wit, "u32"]()
+  given u64: (U64 is Interoperable in Wit of "u64") = Interoperable[U64, Wit, "u64"]()
+  given f32: (F32 is Interoperable in Wit of "f32") = Interoperable[F32, Wit, "f32"]()
+  given f64: (F64 is Interoperable in Wit of "f64") = Interoperable[F64, Wit, "f64"]()
+  given boolean: (Boolean is Interoperable in Wit of "bool") = Interoperable[Boolean, Wit, "bool"]()
+  given char: (Char is Interoperable in Wit of "char") = Interoperable[Char, Wit, "char"]()
+  given string: (Text is Interoperable in Wit of "string") = Interoperable[Text, Wit, "string"]()
 
-  given s64: (Long is Interoperable in Wit of "s64" by Json) =
-    Interoperable[Long, Wit, "s64", Json](_.json, _.as[Long])
-
-  given f32: (Float is Interoperable in Wit of "f32" by Json) =
-    Interoperable[Float, Wit, "f32", Json](_.json, _.as[Float])
-
-  given f64: (Double is Interoperable in Wit of "f64" by Json) =
-    Interoperable[Double, Wit, "f64", Json](_.json, _.as[Double])
-
-  given boolean: (Boolean is Interoperable in Wit of "bool" by Json) =
-    Interoperable[Boolean, Wit, "bool", Json](_.json, _.as[Boolean])
-
-  given string: (Text is Interoperable in Wit of "string" by Json) =
-    Interoperable[Text, Wit, "string", Json](_.json, _.as[Text])
-
-  // A WIT `list<T>` maps to a Scala `List`, each element converted by its own `Interoperable`.
+  // A WIT `list<T>` corresponds to a Scala `List` of the element type.
   given list: [element, topic]
-  =>  ( interoperable: element is Interoperable in Wit of topic by Json )
-  =>  ( List[element] is Interoperable in Wit of ("list" over topic) by Json ) =
-    Interoperable[List[element], Wit, ("list" over topic), Json]
-      ( _.map(interoperable.operand(_)).json,
-        _.as[List[Json]].map(interoperable.value(_)) )
+  =>  ( element is Interoperable in Wit of topic )
+  =>  ( List[element] is Interoperable in Wit of ("list" over topic) ) =
+    Interoperable[List[element], Wit, ("list" over topic)]()
 
-  // WIT `none` (produced by reading `option<T>` as `T | none`) maps to the absent `Optional` value.
-  given none: (Unset.type is Interoperable in Wit of "none" by Json) =
-    Interoperable[Unset.type, Wit, "none", Json](_ => Json(Unset), _ => Unset)
+  // WIT `none` (produced by reading `option<T>` as `T | none`) is the absent `Optional` value.
+  given none: (Unset.type is Interoperable in Wit of "none") =
+    Interoperable[Unset.type, Wit, "none"]()
 
-  // A WIT `option<T>` (read as `T | none`) maps to a Scala `Optional`. As in jacinta's own optional
-  // codecs, the `Mandatable` constraint identifies the mandatory type `inner` and ensures this
-  // instance applies only to genuine optionals, so it never competes with `inner`'s instance.
+  // A WIT `option<T>` (read as `T | none`) corresponds to a Scala `Optional`. The `Mandatable`
+  // constraint identifies the mandatory type `inner`, so the instance applies only to genuine
+  // optionals and never competes with `inner`'s instance.
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner, topic]
-  =>  ( interoperable: inner is Interoperable in Wit of topic by Json )
-  =>  ( value is Interoperable in Wit of (topic | "none") by Json ) =
-    Interoperable[value, Wit, (topic | "none"), Json]
-      ( _.let(_.asInstanceOf[inner]).let(interoperable.operand(_)).or(Json(Unset)),
-        _.as[Optional[Json]].let(interoperable.value(_)) )
-
-  // A backend that evaluates a `Foreign.Expression` against an in-memory JSON document: references
-  // and selections navigate the document; literals yield their operand; function application is
-  // unsupported (a static document has no callable functions).
-  def apply(document: Json): Evaluator in Wit by Json =
-    new Evaluator:
-      type Form = Wit
-      type Operand = Json
-
-      def evaluate(expr: Foreign.Expression): Json = expr match
-        case Foreign.Expression.Literal(value)            => value.asInstanceOf[Json]
-        case Foreign.Expression.Reference(name)           => document(name)
-        case Foreign.Expression.Select(target, member, _) => evaluate(target)(member)
-
-        case Foreign.Expression.Apply(_, _) =>
-          throw RuntimeException("xenophile: a WIT document evaluator cannot call functions")
+  =>  ( inner is Interoperable in Wit of topic )
+  =>  ( value is Interoperable in Wit of (topic | "none") ) =
+    Interoperable[value, Wit, (topic | "none")]()
 
 trait Wit extends Ecosystem:
-  type Operand = Json
   type Grammar = WitDialect.type

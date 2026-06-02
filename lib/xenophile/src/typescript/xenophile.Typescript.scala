@@ -33,76 +33,46 @@
 package xenophile
 
 import anticipation.*
-import contingency.*, strategies.throwUnsafely
-import distillate.*
-import jacinta.*
 import prepositional.*
 import vacuous.*
 
+// The TypeScript ecosystem: a set of `Interoperable` markers associating Scala types with the
+// foreign types `TypescriptDialect` reads from `.ts` definition files. No runtime representation is
+// involved — these only record the type correspondence used for type-checking and conversion.
 object Typescript:
-  given text: (Text is Interoperable in Typescript of "string" by Json) =
-    Interoperable[Text, Typescript, "string", Json](_.json, _.as[Text])
+  given text: (Text is Interoperable in Typescript of "string") =
+    Interoperable[Text, Typescript, "string"]()
 
-  given int: (Int is Interoperable in Typescript of "number" by Json) =
-    Interoperable[Int, Typescript, "number", Json](_.json, _.as[Int])
+  given int: (Int is Interoperable in Typescript of "number") =
+    Interoperable[Int, Typescript, "number"]()
 
-  given boolean: (Boolean is Interoperable in Typescript of "boolean" by Json) =
-    Interoperable[Boolean, Typescript, "boolean", Json](_.json, _.as[Boolean])
+  given boolean: (Boolean is Interoperable in Typescript of "boolean") =
+    Interoperable[Boolean, Typescript, "boolean"]()
 
-  // A TypeScript `T[]` (i.e. `Array<T>`) maps to a Scala `List`, with each element converted by
-  // the element type's own `Interoperable`.
+  // A TypeScript `T[]` (i.e. `Array<T>`) corresponds to a Scala `List` of the element type.
   given list: [element, topic]
-  =>  ( interoperable: element is Interoperable in Typescript of topic by Json )
-  =>  ( List[element] is Interoperable in Typescript of ("Array" over topic) by Json ) =
-    Interoperable[List[element], Typescript, ("Array" over topic), Json]
-      ( _.map(interoperable.operand(_)).json,
-        _.as[List[Json]].map(interoperable.value(_)) )
+  =>  ( element is Interoperable in Typescript of topic )
+  =>  ( List[element] is Interoperable in Typescript of ("Array" over topic) ) =
+    Interoperable[List[element], Typescript, ("Array" over topic)]()
 
-  // TypeScript `undefined` (produced by reading `T?` as `T | undefined`) maps to the absent
-  // `Optional` value; it also backs the `Unset.type` alternative when a union is decoded.
-  given undefined: (Unset.type is Interoperable in Typescript of "undefined" by Json) =
-    Interoperable[Unset.type, Typescript, "undefined", Json](_ => Json(Unset), _ => Unset)
-
-  // A TypeScript `T?` (read as `T | undefined`) maps to a Scala `Optional`. Mirroring jacinta's own
-  // optional codecs, the `Mandatable` constraint identifies the mandatory type `inner` and ensures
-  // this instance applies only to genuine optionals — so it never competes with `inner`'s instance.
-  given optional: [inner <: value, value >: Unset.type: Mandatable to inner, topic]
-  =>  ( interoperable: inner is Interoperable in Typescript of topic by Json )
-  =>  ( value is Interoperable in Typescript of (topic | "undefined") by Json ) =
-    Interoperable[value, Typescript, (topic | "undefined"), Json]
-      ( _.let(_.asInstanceOf[inner]).let(interoperable.operand(_)).or(Json(Unset)),
-        _.as[Optional[Json]].let(interoperable.value(_)) )
-
-  // A TypeScript `Map<K, V>` maps to a Scala `Map`. Values are converted by their `Interoperable`;
-  // JSON object keys are textual, so the key type also needs `Text` codecs.
+  // A TypeScript `Map<K, V>` corresponds to a Scala `Map`.
   given map: [key, value, keyTopic, valueTopic]
-  =>  ( keyType:   key is Interoperable in Typescript of keyTopic by Json,
-        valueType: value is Interoperable in Typescript of valueTopic by Json,
-        keyEncode: key is Encodable in Text,
-        keyDecode: key is Decodable in Text )
-  =>  ( Map[key, value] is Interoperable in Typescript
-          of ("Map" over (keyTopic, valueTopic)) by Json ) =
+  =>  ( key is Interoperable in Typescript of keyTopic,
+        value is Interoperable in Typescript of valueTopic )
+  =>  ( Map[key, value] is Interoperable in Typescript of ("Map" over (keyTopic, valueTopic)) ) =
+    Interoperable[Map[key, value], Typescript, ("Map" over (keyTopic, valueTopic))]()
 
-    Interoperable[Map[key, value], Typescript, ("Map" over (keyTopic, valueTopic)), Json]
-      ( _.map { (k, v) => (k.encode, valueType.operand(v)) }.json,
-        _.as[Map[Text, Json]].map { (k, v) => (k.decode[key], valueType.value(v)) } )
+  // TypeScript `undefined` (produced by reading `T?` as `T | undefined`) is the absent `Optional`.
+  given undefined: (Unset.type is Interoperable in Typescript of "undefined") =
+    Interoperable[Unset.type, Typescript, "undefined"]()
 
-  // A backend that evaluates a `Foreign.Expression` against an in-memory JSON document:
-  // references and selections navigate the document; literals yield their operand; function
-  // application is unsupported (a static document has no callable members).
-  def apply(document: Json): Evaluator in Typescript by Json =
-    new Evaluator:
-      type Form = Typescript
-      type Operand = Json
-
-      def evaluate(expr: Foreign.Expression): Json = expr match
-        case Foreign.Expression.Literal(value)            => value.asInstanceOf[Json]
-        case Foreign.Expression.Reference(name)           => document(name)
-        case Foreign.Expression.Select(target, member, _) => evaluate(target)(member)
-
-        case Foreign.Expression.Apply(_, _) =>
-          throw RuntimeException("xenophile: a JSON document evaluator cannot apply functions")
+  // A TypeScript `T?` (read as `T | undefined`) corresponds to a Scala `Optional`. The `Mandatable`
+  // constraint identifies the mandatory type `inner`, so the instance applies only to genuine
+  // optionals and never competes with `inner`'s instance.
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner, topic]
+  =>  ( inner is Interoperable in Typescript of topic )
+  =>  ( value is Interoperable in Typescript of (topic | "undefined") ) =
+    Interoperable[value, Typescript, (topic | "undefined")]()
 
 trait Typescript extends Ecosystem:
-  type Operand = Json
   type Grammar = TypescriptDialect.type
