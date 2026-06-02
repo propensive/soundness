@@ -1,0 +1,24 @@
+// Sample WIT (WebAssembly Component Model interface types).
+
+package example:demo@1.0.0;
+
+interface api {
+  record point {
+    x: u32,
+    y: u32,
+  }
+
+  enum color {
+    red,
+    green,
+    blue,
+  }
+
+  type id = u64;
+
+  greet: func(name: string) -> string;
+  add: func(a: s32, b: s32) -> s32;
+  origin: func() -> point;
+  tags: func() -> list<string>;
+  lookup: func(key: string) -> option<string>;
+}
