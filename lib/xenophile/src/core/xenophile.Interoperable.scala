@@ -34,21 +34,16 @@ package xenophile
 
 import prepositional.*
 
+// Records that the Scala type `Self` corresponds to the foreign type `Topic` in the ecosystem
+// `Form`. It is a pure type-level marker: the macro uses it to type-check method arguments and to
+// give the `Foreign` converter its result type. It carries no runtime representation — converting
+// values to and from a foreign runtime is left to a layer outside xenophile.
 object Interoperable:
-  def apply[self, form <: Ecosystem, topic, operand]
-    ( encode: self => operand, decode: operand => self )
-  :   (self is Interoperable in form of topic by operand) =
-
+  def apply[self, form <: Ecosystem, topic](): (self is Interoperable in form of topic) =
     new Interoperable:
       type Self = self
       type Form = form
       type Topic = topic
-      type Operand = operand
 
-      def operand(value: self): operand = encode(value)
-      def value(data: operand): self = decode(data)
-
-trait Interoperable extends Topical, Formal, Operable:
+trait Interoperable extends Topical, Formal:
   type Self
-  def operand(value: Self): Operand
-  def value(operand: Operand): Self

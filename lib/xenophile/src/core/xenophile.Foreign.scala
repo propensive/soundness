@@ -66,11 +66,13 @@ object Foreign:
 
   transparent inline def apply[name <: Label, origin]: Foreign = ${Xenophile.root[name, origin]}
 
+  // A Scala value with an `Interoperable` instance converts into a `Foreign` literal carrying the
+  // value verbatim; the foreign type is the instance's `Topic`.
   given converter: [value, ecosystem <: Ecosystem]
   =>  ( interoperable: value is Interoperable in ecosystem )
   =>  Conversion[value, Foreign of interoperable.Topic from ecosystem] =
     instance =>
-      val literal = Expression.Literal(interoperable.operand(instance))
+      val literal = Expression.Literal(instance)
       Foreign.make(literal).asInstanceOf[Foreign of interoperable.Topic from ecosystem]
 
 trait Foreign extends Dynamic, Topical, Original:
@@ -88,5 +90,3 @@ trait Foreign extends Dynamic, Topical, Original:
   :   Foreign =
 
     ${Xenophile.applied('this, 'field, 'arguments)}
-
-  inline def as[ScalaType]: ScalaType = ${Xenophile.convert[ScalaType]('this)}
