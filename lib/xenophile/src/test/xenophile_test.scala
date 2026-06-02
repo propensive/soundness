@@ -35,7 +35,7 @@ package xenophile
 import soundness.*
 import jacinta.*
 
-import java.lang.foreign.{Arena, MemorySegment}, java.lang.foreign.ValueLayout.JAVA_INT
+import java.lang.foreign.Arena, java.lang.foreign.ValueLayout.JAVA_INT
 import java.nio.file.Files
 
 import strategies.throwUnsafely
@@ -54,7 +54,7 @@ type NativeLibrary = Interface in Native at "/xenophile/library.h"
 
 given nativeLibrary: NativeLibrary = Interface[Native](cp"/xenophile/library.h")
 
-given Evaluator in Native by MemorySegment =
+given Evaluator in Native by Memory =
   Native(t"typedef struct Point { int x; int y; } Point; int abs(int n);")
 
 object Tests extends Suite(m"Xenophile tests"):
@@ -234,7 +234,7 @@ object Tests extends Suite(m"Xenophile tests"):
         segment.set(JAVA_INT, 4L, 4)
 
         val point: Foreign of "Point" from Native =
-          Foreign.make(Foreign.Expression.Literal(segment)).asInstanceOf[Foreign of "Point" from Native]
+          Foreign.make(Foreign.Expression.Literal(Memory(segment))).asInstanceOf[Foreign of "Point" from Native]
 
         (point.x.as[Int], point.y.as[Int])
       . assert(_ == (3, 4))
@@ -253,7 +253,7 @@ object Tests extends Suite(m"Xenophile tests"):
           ProcessBuilder("cc", "-shared", "-fPIC", "-o", target.toString.nn, source.toString.nn)
             .inheritIO().nn.start().nn.waitFor()
 
-        given Evaluator in Native by MemorySegment =
+        given Evaluator in Native by Memory =
           Native(t"int add(int a, int b);", target.toString.nn.tt)
 
         val library: Foreign of "library" from Native = Foreign["library", Native]

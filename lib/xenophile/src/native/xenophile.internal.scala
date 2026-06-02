@@ -30,7 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-export xenophile.Native
-export xenophile.internal.Memory
+import java.lang.foreign.MemorySegment
+
+object internal:
+  // `Memory` is an opaque wrapper over the Java Foreign Function & Memory API's `MemorySegment`,
+  // presenting a region of native memory as the native ecosystem's operand without exposing the
+  // FFM type directly. `apply` wraps a segment; the `segment` extension unwraps it.
+  opaque type Memory = MemorySegment
+
+  object Memory:
+    def apply(segment: MemorySegment): Memory = segment
+
+  extension (memory: Memory)
+    def segment: MemorySegment = memory
