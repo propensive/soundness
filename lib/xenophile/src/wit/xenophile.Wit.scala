@@ -51,6 +51,12 @@ object Wit:
   given u64: (U64 is Interoperable in Wit of "u64") = Interoperable[U64, Wit, "u64"]()
   given f32: (F32 is Interoperable in Wit of "f32") = Interoperable[F32, Wit, "f32"]()
   given f64: (F64 is Interoperable in Wit of "f64") = Interoperable[F64, Wit, "f64"]()
+
+  // `flags` types resolve (in `WitDialect`) to a Hypotenuse bit-vector sized to hold their members.
+  given b8: (B8 is Interoperable in Wit of "b8") = Interoperable[B8, Wit, "b8"]()
+  given b16: (B16 is Interoperable in Wit of "b16") = Interoperable[B16, Wit, "b16"]()
+  given b32: (B32 is Interoperable in Wit of "b32") = Interoperable[B32, Wit, "b32"]()
+  given b64: (B64 is Interoperable in Wit of "b64") = Interoperable[B64, Wit, "b64"]()
   given boolean: (Boolean is Interoperable in Wit of "bool") = Interoperable[Boolean, Wit, "bool"]()
   given char: (Char is Interoperable in Wit of "char") = Interoperable[Char, Wit, "char"]()
   given string: (Text is Interoperable in Wit of "string") = Interoperable[Text, Wit, "string"]()

@@ -192,12 +192,28 @@ object Tests extends Suite(m"Xenophile tests"):
         point.x.expr
       . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"point"), t"x", t"point"))
 
-      test(m"a WIT function with a string argument is typed by its result"):
+      // `greet` is declared after a `resource { … }` in the interface, so this also checks that the
+      // resource's braces are skipped and the functions following it are still parsed.
+      test(m"a function declared after a `resource` is typed by its result"):
         val greeting: Foreign of "string" from Wit = api.greet(t"hi")
         greeting.expr
       . assert:
           case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) => m == t"greet"
           case _                                                                      => false
+
+      test(m"an `enum` is the unsigned discriminant sized to its cases"):
+        val shade: Foreign of "u8" from Wit = api.shade()
+        shade.expr
+      . assert:
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), Nil) => m == t"shade"
+          case _                                                                  => false
+
+      test(m"a `flags` type is a Hypotenuse bit-vector sized to its members"):
+        val caps: Foreign of "b8" from Wit = api.caps()
+        caps.expr
+      . assert:
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), Nil) => m == t"caps"
+          case _                                                                  => false
 
       test(m"a WIT `list<T>` result has an `over` foreign type"):
         val tags: Foreign of ("list" over "string") from Wit = api.tags()

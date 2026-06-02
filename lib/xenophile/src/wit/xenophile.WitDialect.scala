@@ -141,8 +141,10 @@ object WitDialect extends Dialect:
       case _ =>
         items(skipTo(tokens, t";"), types, typedefs)
 
-  // Walks an interface body: `record`s and the interface's own functions become navigable types,
-  // `enum`/`flags` become `s32`, and `variant`/`resource` are registered as opaque types.
+  // Walks an interface body: `record`s and the interface's own functions become navigable types;
+  // an `enum` becomes the unsigned discriminant (`u8`/`u16`/`u32`) that holds its cases and `flags`
+  // a bit-vector (`b8`/`b16`/`b32`/`b64`) that holds its members; `variant` is an opaque type; and
+  // `resource`/`use` declarations are skipped (their `{ … }` bodies and statements bypassed).
   private def interface
     ( tokens:   List[String],
       name:     Text,
@@ -168,13 +170,32 @@ object WitDialect extends Dialect:
           val (fields, after) = recordFields(rest, ListMap())
           recur(after, functions, types.updated(record.tt, fields), typedefs)
 
-        case ("enum" | "flags") :: alias :: "{" :: rest =>
-          val updated = typedefs.updated(alias.tt, Foreign.Type.Named(t"s32"))
-          recur(skipBraces(rest, 1), functions, types, updated)
+        case "enum" :: alias :: "{" :: rest =>
+          val (count, after) = enumerators(rest, 0)
+          val topic = if count <= 256 then t"u8" else if count <= 65536 then t"u16" else t"u32"
+          recur(after, functions, types, typedefs.updated(alias.tt, Foreign.Type.Named(topic)))
+
+        case "flags" :: alias :: "{" :: rest =>
+          val (count, after) = enumerators(rest, 0)
+
+          val topic =
+            if count <= 8 then t"b8" else if count <= 16 then t"b16"
+            else if count <= 32 then t"b32" else t"b64"
+
+          recur(after, functions, types, typedefs.updated(alias.tt, Foreign.Type.Named(topic)))
 
         case "variant" :: variant :: "{" :: rest =>
           val updated = types.updated(variant.tt, ListMap[Text, Signature]())
           recur(skipBraces(rest, 1), functions, updated, typedefs)
+
+        case "resource" :: _ :: "{" :: rest =>
+          recur(skipBraces(rest, 1), functions, types, typedefs)
+
+        case "resource" :: _ :: ";" :: rest =>
+          recur(rest, functions, types, typedefs)
+
+        case "use" :: rest =>
+          recur(skipTo(rest, t";"), functions, types, typedefs)
 
         case "type" :: alias :: "=" :: rest =>
           val (kind, after) = typeOf(rest)
@@ -189,6 +210,11 @@ object WitDialect extends Dialect:
 
           val signature = Signature(parameters, result)
           recur(skipTo(after2, t";"), functions.updated(function.tt, signature), types, typedefs)
+
+        // Any unrecognised `{ … }` block is skipped wholesale rather than token-by-token, so its
+        // closing brace is never mistaken for the end of the interface.
+        case "{" :: rest =>
+          recur(skipBraces(rest, 1), functions, types, typedefs)
 
         case _ :: rest =>
           recur(rest, functions, types, typedefs)
@@ -269,3 +295,11 @@ object WitDialect extends Dialect:
     case "{" :: rest => skipBraces(rest, depth + 1)
     case "}" :: rest => if depth <= 1 then rest else skipBraces(rest, depth - 1)
     case _ :: rest   => skipBraces(rest, depth)
+
+  // Counts the case/flag names inside an `enum`/`flags` body (used to size the discriminant or
+  // bit-vector), returning the count and the tokens after the closing `}`.
+  private def enumerators(tokens: List[String], count: Int): (Int, List[String]) = tokens match
+    case "}" :: rest                          => (count, rest)
+    case Nil                                  => (count, Nil)
+    case name :: rest if name.head.isLetter   => enumerators(rest, count + 1)
+    case _ :: rest                            => enumerators(rest, count)
