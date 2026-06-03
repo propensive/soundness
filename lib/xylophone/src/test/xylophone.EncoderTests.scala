@@ -40,9 +40,9 @@ import strategies.throwUnsafely
 // fixtures (`DPerson`/`DContact`/`DShape`) are shared with `DecoderTests`. A
 // product encodes to an element named after its type; each field becomes a
 // child element named after the field; a sum encodes its variant under an
-// element named after the variant. `@attribute` is intentionally not honoured
-// (the decoder cannot read attributes back), so an `@attribute` field still
-// encodes as a child element — locked in below.
+// element named after the variant. A field marked `@attribute` (e.g. `Book`'s
+// `isbn`, defined in `xylophone_test.scala`) is written to / read from the
+// element's attributes, so it round-trips.
 
 object EncoderTests extends Suite(m"Xylophone case-class encoder tests"):
   def run(): Unit =
@@ -84,7 +84,11 @@ object EncoderTests extends Suite(m"Xylophone case-class encoder tests"):
         (DShape.Square(4): DShape).xml.as[DShape]
       . assert(_ == DShape.Square(4))
 
-    suite(m"@attribute is not honoured (locked-in behaviour)"):
-      test(m"An @attribute field still encodes as a child element"):
+    suite(m"@attribute fields"):
+      test(m"An @attribute field encodes as an attribute"):
         Book(t"Dune", t"0441013597").xml
-      . assert(_ == x"<Book><title>Dune</title><isbn>0441013597</isbn></Book>")
+      . assert(_ == x"""<Book isbn="0441013597"><title>Dune</title></Book>""")
+
+      test(m"An @attribute field round-trips"):
+        Book(t"Dune", t"0441013597").xml.as[Book]
+      . assert(_ == Book(t"Dune", t"0441013597"))

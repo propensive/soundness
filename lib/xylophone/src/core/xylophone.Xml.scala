@@ -41,6 +41,7 @@ import scala.collection.mutable as scm
 import scala.compiletime.*
 import scala.quoted.*
 
+import adversaria.*
 import anticipation.*
 import contextual.*
 import contingency.*
@@ -247,6 +248,13 @@ object Xml extends Tag.Container
       ( using Foci[Xml.Focus], Tactic[XmlError] )
     :   derivation =
 
+      // Fields marked `@attribute` are read from the element's attributes
+      // rather than its child elements, mirroring the encoder.
+      val attributeFields: Map[Text, Set[attribute]] =
+        infer[derivation is Annotated by attribute] match
+          case annotated: Annotated.Fields => annotated.fields
+          case _                           => Map()
+
       val children: scm.HashMap[String, Element] = scm.HashMap.empty
       var i = 0
       while i < element.children.length do
@@ -268,7 +276,13 @@ object Xml extends Tag.Container
             val base = prior.let(_.path).or(XPath())
             Xml.Focus(base.prepend(fieldLabel, 1))
           }):
-            children.get(fieldLabel.s) match
+            if attributeFields.contains(fieldLabel) then
+              // `@attribute` field: decode from the matching attribute as a
+              // `TextNode`; a missing attribute falls back to the declared
+              // default, else the `Absent` sentinel (raise + continue).
+              element.attributes.at(fieldLabel).lay(default.or(context.decoded(Absent))): text =>
+                context.decoded(TextNode(text))
+            else children.get(fieldLabel.s) match
               case Some(child) => context.decoded(child)
               // Missing field: fall back to the case-class declared
               // default (Wisteria's `default`); if absent, hand the
@@ -316,10 +330,10 @@ object Xml extends Tag.Container
   // resulting element to the variant name, so it round-trips through the
   // `Discriminable`-by-label default that `disjunction` reads back.
   //
-  // `@attribute` is intentionally NOT honoured here: the decoder reads only
-  // child elements (never attributes), so writing a field as an attribute
-  // would not round-trip. Every field is emitted as a child element; the
-  // annotation stays inert in both directions.
+  // A field marked `@attribute` is written to the element's attributes rather
+  // than as a child element, and read back the same way by the decoder, so it
+  // round-trips. The annotation is read at derivation time via adversaria's
+  // `Annotated by attribute`.
   //
   // As in `DecodableDerivation`, `wisteria.label[Text]` is used in place of the
   // bare `label` identifier, which `Tag.Container`'s `label = "xml"` shadows.
@@ -337,11 +351,29 @@ object Xml extends Tag.Container
     :   derivation is Encodable in Xml =
 
       value =>
-        val children: IArray[Node] =
-          fields(value): [field] =>
-            field => wrap(wisteria.label[Text], contextual.encode(field))
+        val attributeFields: Map[Text, Set[attribute]] =
+          infer[derivation is Annotated by attribute] match
+            case annotated: Annotated.Fields => annotated.fields
+            case _                           => Map()
 
-        Element(typeName[derivation], Attributes.empty, children)
+        val attributes: scm.ArrayBuffer[(Text, Text)] = scm.ArrayBuffer()
+        val children: scm.ArrayBuffer[Node] = scm.ArrayBuffer()
+
+        fields(value): [field] =>
+          field =>
+            val fieldLabel: Text = wisteria.label[Text]
+            val encoded: Xml = contextual.encode(field)
+
+            // `@attribute` fields become attributes carrying the encoded leaf's
+            // text; every other field becomes a child element via `wrap`.
+            if attributeFields.contains(fieldLabel)
+            then attributes += fieldLabel -> textOf(encoded).or(t"")
+            else children += wrap(fieldLabel, encoded)
+
+        Element
+         (typeName[derivation],
+          Attributes(attributes.toSeq*),
+          children.toArray.immutable(using Unsafe))
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Xml =
       value =>
