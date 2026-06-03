@@ -53,3 +53,17 @@ inline def fieldAnnotations[self, annotation <: StaticAnnotation]
   summonInline[self is Annotated by annotation] match
     case annotated: Annotated.Fields => annotated.fields.filter(_(1).nonEmpty)
     case _                           => Map()
+
+// The serialization renames for `format`: a map from each `@name`-annotated
+// field's name to its serialized name, with a `@name[format]` overriding a bare
+// `@name` (i.e. `@name[Any]`) default on the same field. Fields without a `@name`
+// are absent (callers fall back to the field's own name). Used by each format's
+// derivation to honour `@name[Xml](t"…")` / `@name(t"…")` in encode and decode.
+inline def relabelling[self, format]: Map[Text, Text] =
+  val general:  Map[Text, Text] =
+    fieldAnnotations[self, name[Any]].map((field, set) => field -> set.head.name)
+
+  val specific: Map[Text, Text] =
+    fieldAnnotations[self, name[format]].map((field, set) => field -> set.head.name)
+
+  general ++ specific

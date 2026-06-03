@@ -81,6 +81,14 @@ object Tests extends Suite(m"Adversaria tests"):
       fieldAnnotations[Marked, marker[Person]]
     . assert(_ == Map(t"one" -> Set(marker[Person](1))))
 
+    test(m"a bare annotation (no type argument) is read as the `Any` instance"):
+      fieldAnnotations[Tagged, marker[Any]]
+    . assert(_ == Map(t"bare" -> Set(marker(1)), t"anyArg" -> Set(marker(2))))
+
+    test(m"a bare annotation is not read by a specific type-argument query"):
+      fieldAnnotations[Tagged, marker[Person]]
+    . assert(_ == Map(t"specific" -> Set(marker[Person](3))))
+
     test(m"List map of fields of an object"):
       summon[Example1.type is Dereferenceable to Int].members(Example1)
     . assert(_ == Map(t"foo" -> 42, t"baz" -> 12))
