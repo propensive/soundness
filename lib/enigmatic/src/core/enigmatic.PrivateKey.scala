@@ -33,8 +33,6 @@
 package enigmatic
 
 import anticipation.*
-import contingency.*
-import distillate.*
 import gastronomy.*
 import gossamer.*
 import monotonous.*
@@ -52,12 +50,6 @@ object PrivateKey:
 class PrivateKey[cipher <: Cipher](private[enigmatic] val privateData: Data):
   def public(using cipher: cipher): PublicKey[cipher] =
     PublicKey(cipher.privateToPublic(privateData))
-
-
-  def decrypt[decodable: Decodable in Data](bytes: Data)(using cipher: cipher & Encryption)
-  :   decodable raises CryptoError =
-
-    decodable.decoded(cipher.decrypt(bytes, privateData))
 
 
   def sign[encodable: Encodable in Data](value: encodable)(using cipher: cipher & Signing)

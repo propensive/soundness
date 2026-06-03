@@ -43,10 +43,6 @@ object SymmetricKey:
 
 class SymmetricKey[cipher <: Cipher](private[enigmatic] val bytes: Data)
 extends PrivateKey[cipher](bytes):
-  def encrypt[value: Encodable in Data](value: value)(using cipher & Encryption): Data =
-    public.encrypt(value)
-
-
   def verify[value: Encodable in Data](value: value, signature: Signature[cipher])
     ( using cipher & Signing )
   :   Boolean =
