@@ -949,3 +949,4 @@ object Tests extends Suite(m"Xylophone tests"):
 
     PositionTests()
     DecoderTests()
+    EncoderTests()

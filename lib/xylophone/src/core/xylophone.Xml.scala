@@ -194,6 +194,18 @@ object Xml extends Tag.Container
     case given Reflection[`value`] =>
       DecodableDerivation.derived
 
+  // Single entry-point for resolving `Encodable in Xml`, the exact mirror of
+  // `decodable` above. Prefers a textual encoder when one exists (so any
+  // `Encodable in Text` value — `Text`, `Int`, `Long`, user identifiers, … —
+  // becomes a leaf `TextNode`); otherwise falls back to Wisteria-derived
+  // case-class / sealed-trait encoding via `EncodableDerivation`.
+  inline given encodable: [value] => value is Encodable in Xml = summonFrom:
+    case given (`value` is Encodable in Text) =>
+      value => TextNode(value.encode)
+
+    case given Reflection[`value`] =>
+      EncodableDerivation.derived
+
   // Wisteria-based derivation for case classes (conjunction) and sealed
   // traits / enums (disjunction). Each field is decoded from the first
   // child element whose label matches the field name; sum-type variants
@@ -295,6 +307,48 @@ object Xml extends Tag.Container
                       raise(XmlError()) yet derivationDefault()
                     case _ =>
                       abort(XmlError())
+
+  // Wisteria-based encoder, the mirror of `DecodableDerivation`. A product
+  // encodes to an `Element` labelled with the type's short name (`typeName`);
+  // each field becomes a child `Element` labelled with the field name via
+  // `wrap` — the exact inverse of the decoder reading a field from the child
+  // element of that name. A sum encodes its selected variant and relabels the
+  // resulting element to the variant name, so it round-trips through the
+  // `Discriminable`-by-label default that `disjunction` reads back.
+  //
+  // `@attribute` is intentionally NOT honoured here: the decoder reads only
+  // child elements (never attributes), so writing a field as an attribute
+  // would not round-trip. Every field is emitted as a child element; the
+  // annotation stays inert in both directions.
+  //
+  // As in `DecodableDerivation`, `wisteria.label[Text]` is used in place of the
+  // bare `label` identifier, which `Tag.Container`'s `label = "xml"` shadows.
+  object EncodableDerivation extends Derivable[Encodable in Xml]:
+
+    // Relabel an encoded field value to its field name and guarantee an
+    // `Element` wrapper, so it decodes back from `<fieldName>…</fieldName>`.
+    private def wrap(fieldName: Text, encoded: Xml): Node = encoded match
+      case Element(_, attributes, children)           => Element(fieldName, attributes, children)
+      case Fragment(Element(_, attributes, children)) => Element(fieldName, attributes, children)
+      case Fragment(nodes*)                           => Element(fieldName, Attributes.empty, nodes.toArray.immutable(using Unsafe))
+      case node: Node                                 => Element(fieldName, Attributes.empty, IArray(node))
+
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   derivation is Encodable in Xml =
+
+      value =>
+        val children: IArray[Node] =
+          fields(value): [field] =>
+            field => wrap(wisteria.label[Text], contextual.encode(field))
+
+        Element(typeName[derivation], Attributes.empty, children)
+
+    inline def disjunction[derivation: SumReflection]: derivation is Encodable in Xml =
+      value =>
+        val discriminable = infer[derivation is Discriminable in Xml]
+
+        variant(value): [variant <: derivation] =>
+          value => discriminable.rewrite(wisteria.label[Text], contextual.encode(value))
 
   case class attribute() extends StaticAnnotation
 
@@ -658,7 +712,7 @@ object Xml extends Tag.Container
   given comment: [content <: Label] =>  Conversion[Comment, Xml of content] =
     _.of[content]
 
-  given encodable: [value: Encodable in Xml] => Conversion[value, Xml] =
+  given xmlConversion: [value: Encodable in Xml] => Conversion[value, Xml] =
     value.encoded(_)
 
   given sequences: [nodal, xml <: Xml] => (conversion: Conversion[nodal, xml])
