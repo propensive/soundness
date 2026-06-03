@@ -76,7 +76,7 @@ object SchemaSignature:
   // As `fromDocument`, but starting from an already type-assigned schema
   // root — used when recomputing the signature of an embedded schema body
   // decoded from a self-contained BinTEL document (§6.2, B11).
-  def fromElement(root: Tel.Element.Node, axiom: Tels)(using cadence: Cadence)
+  def fromElement(root: Tel.Element.Node, axiom: Tels)
   :   Data raises BintelError raises TelError =
 
     // Resolve the flat keyword index of "layer" and the Layer
