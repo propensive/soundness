@@ -1078,7 +1078,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"empty struct encodes as a single 00 child-count"):
         val root = Tel.Element.Node(Unset, nameSchema.document, IArray.empty)
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "00")
 
       test(m"single scalar child via tel.bintel(schema)"):
@@ -1089,7 +1089,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val scalar = Tels.Scalar(IArray.empty)
         val value = Tel.Element.Value(0, scalar, t"")
         val root = Tel.Element.Node(Unset, nameSchema.document, IArray(value))
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "01 00 00")
 
       test(m"UTF-8 byte length is encoded, not character count"):
@@ -1097,7 +1097,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val scalar = Tels.Scalar(IArray.empty)
         val value = Tel.Element.Value(0, scalar, t"café")
         val root = Tel.Element.Node(Unset, nameSchema.document, IArray(value))
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "01 00 05 63 61 66 C3 A9")
 
       test(m"flag node encodes as just its keyword index"):
@@ -1115,7 +1115,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           scalars  = IArray.empty,
           selects  = IArray.empty)
         val root = Tel.Element.Node(Unset, flagSchema.document, IArray(flagNode))
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "01 00")
 
       test(m"nested struct emits kidx + count + children recursively"):
@@ -1136,14 +1136,14 @@ object Tests extends Suite(m"Stratiform Tests"):
           IArray(Tel.Element.Value(0, innerScalar, t"example.com")))
 
         val root = Tel.Element.Node(Unset, outerStruct, IArray(configNode))
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "01 00 01 00 0B 65 78 61 6D 70 6C 65 2E 63 6F 6D")
 
       test(m"large keyword index uses multi-byte varint"):
         val scalar = Tels.Scalar(IArray.empty)
         val value = Tel.Element.Value(128, scalar, t"x")
         val root = Tel.Element.Node(Unset, nameSchema.document, IArray(value))
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "01 80 01 01 78")
 
       test(m"§7.2 canonical order — children reordered by member index"):
@@ -1163,7 +1163,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           Tel.Element.Value(1, scalar, t"B"),
           Tel.Element.Value(0, scalar, t"A"))
         val root = Tel.Element.Node(Unset, struct, children)
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "02 00 01 41 01 01 42")
 
       test(m"§7.2 canonical order is stable within a member"):
@@ -1178,13 +1178,13 @@ object Tests extends Suite(m"Stratiform Tests"):
           Tel.Element.Value(0, scalar, t"second"))
         val root = Tel.Element.Node(Unset, struct, children)
         // 2 children, then two Value(0, len, text)s.
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "02 00 05 66 69 72 73 74 00 06 73 65 63 6F 6E 64")
 
     suite(m"BinTEL §7.8 decoder"):
       test(m"empty struct round-trips"):
         val root = Tel.Element.Node(Unset, nameSchema.document, IArray.empty)
-        val bytes = root.bintel
+        val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
           case Tel.Element.Node(_, _, c) => c.length
@@ -1206,7 +1206,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val scalar = Tels.Scalar(IArray.empty)
         val root = Tel.Element.Node
                     (Unset, nameSchema.document, IArray(Tel.Element.Value(0, scalar, t"")))
-        val bytes = root.bintel
+        val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
           case Tel.Element.Node(_, _, children) =>
@@ -1219,7 +1219,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val scalar = Tels.Scalar(IArray.empty)
         val root = Tel.Element.Node
                     (Unset, nameSchema.document, IArray(Tel.Element.Value(0, scalar, t"café")))
-        val bytes = root.bintel
+        val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
           case Tel.Element.Node(_, _, children) =>
@@ -1243,7 +1243,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           selects  = IArray.empty)
         val root = Tel.Element.Node
                     (Unset, flagSchema.document, IArray(Tel.Element.Node(0, Tels.Flag, IArray.empty)))
-        val bytes = root.bintel
+        val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, flagSchema)
         decoded match
           case Tel.Element.Node(_, _, IArray(Tel.Element.Node(_, Tels.Flag, _))) => true
@@ -1272,7 +1272,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           IArray(Tel.Element.Value(0, innerScalar, t"example.com")))
         val root = Tel.Element.Node(Unset, outerStruct, IArray(configNode))
 
-        val bytes = root.bintel
+        val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, outerSchema)
         decoded match
           case Tel.Element.Node(_, _, IArray(Tel.Element.Node(_, _, inner))) =>
@@ -1496,7 +1496,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           IArray.from(arr)
 
         val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
-        val bintel = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).bintel
+        val bintel = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).bintel(Tels.Axiom.tels)
         val hash = Blake3.hashOf(bintel, 12)
         sig.slice(0, 12).toSeq == hash.toSeq
       . assert(_ == true)
@@ -1565,8 +1565,8 @@ object Tests extends Suite(m"Stratiform Tests"):
           stream.close()
           IArray.from(arr)
 
-        val a = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash.data.toSeq
-        val b = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash.data.toSeq
+        val a = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels).data.toSeq
+        val b = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels).data.toSeq
         (a.length, a == b)
       . assert(_ == (32, true))
 
@@ -1585,7 +1585,20 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         val refBytes = hexBytes(refHex)
         val element  = Tel.Type.assign(telBytes.read[Tel], Tels.Axiom.tels)
-        element.bintel.toSeq == refBytes
+        element.bintel(Tels.Axiom.tels).toSeq == refBytes
       . assert(_ == true)
+
+      test(m"§3 — tel-schema.tel matches the normative BLAKE3-256 value hash"):
+        // The single vector to which §3 of BinTEL and §20.5 of the TEL
+        // Specification are both pinned.
+        val telStream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+        val telBytes  =
+          val arr = telStream.readAllBytes().nn
+          telStream.close()
+          IArray.from(arr)
+
+        val digest = Tel.Type.assign(telBytes.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels)
+        digest.data.toSeq.map(b => f"${b & 0xff}%02x").mkString
+      . assert(_ == "626dd8958809da354a2f8bd9f7dac1cfda7f549ecbe047eb0d8c0a17c278d517")
 
     RecordsTests()

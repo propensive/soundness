@@ -77,7 +77,7 @@ object SchemaSignature:
       keywordIndexOf(child) != layerIdx
 
     val baseElement = Tel.Element.Node(Unset, axiom.document, baseChildren)
-    val baseHash    = Blake3.hashOf(baseElement.bintel, cadence.hashSize)
+    val baseHash    = Blake3.hashOf(baseElement.bintel(axiom), cadence.hashSize)
 
     val layerChildren = root.children.filter: child =>
       keywordIndexOf(child) == layerIdx
@@ -92,7 +92,7 @@ object SchemaSignature:
         layerChildren.toList.map: layer =>
           val layerChildren = layer.asInstanceOf[Tel.Element.Node].children
           val layerRoot     = Tel.Element.Node(Unset, ls, layerChildren)
-          Blake3.hashOf(layerRoot.bintel, cadence.hashSize)
+          Blake3.hashOf(layerRoot.bintel(axiom), cadence.hashSize)
 
       .or(Nil)
 

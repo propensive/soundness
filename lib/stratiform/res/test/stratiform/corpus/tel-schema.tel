@@ -29,6 +29,8 @@ name tel-schema
 # Scalar-typed fields (E204).
 
 record Field
+  description
+      A field declaration at a member position.
   field keyword Identifier
   field type TypeName
   field optional Flag optional
@@ -36,11 +38,14 @@ record Field
   field repeatable Flag optional
   field irrepeatable Flag optional
   field default String optional
+  field description String optional
 
 # A `select` declaration at a member position — a SelectRef. The first inline
 # atom names a top-level SelectDefinition; polarity lives at the use site.
 
 record SelectRef
+  description
+      A select declaration at a member position, referencing a top-level SelectDefinition.
   field reference TypeName
   field optional Flag optional
   field required Flag optional
@@ -50,38 +55,54 @@ record SelectRef
 # A `variant` declaration inside a Select body.
 
 record Variant
+  description
+      A variant declaration inside a Select body.
   field keyword Identifier
   field type TypeName
+  field description String optional
 
 # A `record` declaration: a named struct definition.
 
 record Record
+  description
+      A record declaration: a named struct definition.
   field name TypeName
   select Member optional repeatable
+  field description String optional
 
 # A `scalar` declaration: a named scalar definition (one or more validators).
 
 record Scalar
+  description
+      A scalar declaration: a named scalar definition with one or more validators.
   field name TypeName
   field validate Identifier repeatable
+  field description String optional
 
 # A top-level `select` declaration. `exclude` children are permitted
 # lexically but only valid inside a layer's select body; appearing in a
 # base-schema select body raises E217 during construction.
 
 record Select
+  description
+      A top-level select declaration: a named sum type.
   field name TypeName
   select SelectChild repeatable
+  field description String optional
 
 # The shared struct-shape used by `document` (Schema.document) and `overlay`
 # (Layer.overlay): a sequence of member declarations.
 
 record Body
+  description
+      The shared struct shape used by document and overlay.
   select Member optional repeatable
 
 # A `layer` declaration: per-layer Definitions and an optional overlay.
 
 record Layer
+  description
+      A layer declaration: per-layer definitions and an optional overlay.
   field name Identifier
   field record Record optional repeatable
   field scalar Scalar optional repeatable
@@ -95,6 +116,8 @@ record Layer
 # Members admissible inside a struct-shaped Body, Record body, or Overlay.
 
 select Member
+  description
+      Members admissible inside a struct-shaped body: a field, select, or validator.
   variant field Field
   variant select SelectRef
   variant validate Identifier
@@ -103,6 +126,8 @@ select Member
 # a base) but is lexically permitted here.
 
 select SelectChild
+  description
+      Children admissible inside a Select body: a variant, exclude, or validator.
   variant variant Variant
   variant exclude Identifier
   variant validate Identifier

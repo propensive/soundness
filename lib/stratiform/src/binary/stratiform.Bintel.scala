@@ -67,7 +67,7 @@ extension (tel: Tel)
   // magic number, no schema signature). Type-assigns `tel` against
   // `schema` first; raises `TelError` on type-assignment failures.
   def bintel(schema: Tels): Data raises TelError =
-    Bintel.encode(Tel.Type.assign(tel, schema))
+    Bintel.encode(Tel.Type.assign(tel, schema), schema)
 
   // BLAKE3 digest of this document's BinTEL body (§3 value hash). The
   // hash is taken over the body bytes only — no magic number, no
@@ -86,10 +86,12 @@ extension (tel: Tel)
 
 extension (element: Tel.Element)
   // Encode a pre-assigned semantic-model element to BinTEL body bytes.
-  def bintel: Data = Bintel.encode(element)
+  // The schema supplies the member layout needed for §7.2 canonical
+  // child order (variant counts of `SelectRef` members).
+  def bintel(schema: Tels): Data = Bintel.encode(element, schema)
 
   // BLAKE3 digest of this element's BinTEL body (§3 value hash).
-  def valueHash: Digest in Blake3 = element.bintel.digest[Blake3]
+  def valueHash(schema: Tels): Digest in Blake3 = element.bintel(schema).digest[Blake3]
 
 object Bintel:
 
@@ -111,9 +113,9 @@ object Bintel:
   // Encode a `Tel.Element` tree to its BinTEL body bytes. The element is
   // expected to be the document root (a Node with `keywordIndex = Unset`
   // and `elementType = Tels.Struct`), as produced by `Tel.Type.assign`.
-  def encode(element: Tel.Element): Data =
+  def encode(element: Tel.Element, schema: Tels): Data =
     val out = new ByteArrayOutputStream
-    encodeRoot(out, element)
+    encodeRoot(out, element, schema)
     out.toByteArray.asInstanceOf[IArray[Byte]]
 
   // Is `signature` a syntactically-valid palimpsest? Recovers the cadence
@@ -329,37 +331,44 @@ object Bintel:
 
   private final class Cursor(val data: Data, var offset: Int)
 
-  private def encodeRoot(out: ByteArrayOutputStream, element: Tel.Element): Unit = element match
-    case Tel.Element.Node(_, _, children) =>
-      val ordered = canonicalOrder(children)
-      writeVarint(out, ordered.length.toLong)
-      var i = 0
-
-      while i < ordered.length do
-        encodeElement(out, ordered(i))
-        i += 1
-
-    case _: Tel.Element.Value =>
-      writeVarint(out, 1L)
-      encodeElement(out, element)
-
-  private def encodeElement(out: ByteArrayOutputStream, element: Tel.Element): Unit =
+  private def encodeRoot(out: ByteArrayOutputStream, element: Tel.Element, schema: Tels): Unit =
     element match
-      case node: Tel.Element.Node   => encodeNode(out, node)
-      case value: Tel.Element.Value => encodeValue(out, value)
-
-  private def encodeNode(out: ByteArrayOutputStream, node: Tel.Element.Node): Unit =
-    val kidx = node.keywordIndex.or(0).toLong
-    writeVarint(out, kidx)
-
-    node.elementType match
-      case _: Tels.Struct =>
-        val ordered = canonicalOrder(node.children)
+      case Tel.Element.Node(_, parent: Tels.Struct, children) =>
+        val ordered = canonicalOrder(children, parent, schema)
         writeVarint(out, ordered.length.toLong)
         var i = 0
 
         while i < ordered.length do
-          encodeElement(out, ordered(i))
+          encodeElement(out, ordered(i), schema)
+          i += 1
+
+      case Tel.Element.Node(_, _, children) =>
+        writeVarint(out, children.length.toLong)
+        var i = 0
+        while i < children.length do { encodeElement(out, children(i), schema); i += 1 }
+
+      case _: Tel.Element.Value =>
+        writeVarint(out, 1L)
+        encodeElement(out, element, schema)
+
+  private def encodeElement(out: ByteArrayOutputStream, element: Tel.Element, schema: Tels)
+  :     Unit =
+    element match
+      case node: Tel.Element.Node   => encodeNode(out, node, schema)
+      case value: Tel.Element.Value => encodeValue(out, value)
+
+  private def encodeNode(out: ByteArrayOutputStream, node: Tel.Element.Node, schema: Tels): Unit =
+    val kidx = node.keywordIndex.or(0).toLong
+    writeVarint(out, kidx)
+
+    node.elementType match
+      case parent: Tels.Struct =>
+        val ordered = canonicalOrder(node.children, parent, schema)
+        writeVarint(out, ordered.length.toLong)
+        var i = 0
+
+        while i < ordered.length do
+          encodeElement(out, ordered(i), schema)
           i += 1
 
       case Tels.Flag =>
@@ -387,13 +396,26 @@ object Bintel:
 
     out.write(n.toInt)
 
-  // §7.2 canonical child order: stable sort by keyword index so members
-  // are emitted in member declaration order while preserving source
-  // order within a single (repeatable) member. This makes the encoding
-  // independent of the source ordering of independent member groups.
-  private def canonicalOrder(children: IArray[Tel.Element]): IArray[Tel.Element] =
+  // §7.2 canonical child order: emit elements member by member, in member
+  // declaration order, preserving source order within a single member.
+  // A `SelectRef` member spans one flat keyword index per variant; all of
+  // its variant-filling children belong to the SAME member, so they must
+  // stay in source order relative to each other rather than being sorted
+  // by variant index. We therefore sort (stably) by the flat index at
+  // which each child's member STARTS, not by the child's own flat index.
+  // For a struct of only `Field` members this is identical to sorting by
+  // flat index. Atom-derived elements precede compound-derived elements
+  // because type assignment inserts them first, and the stable sort keeps
+  // that order within a member.
+  private def canonicalOrder(children: IArray[Tel.Element], parent: Tels.Struct, schema: Tels)
+  :     IArray[Tel.Element] =
     if children.length <= 1 then children
     else
+      val memberBase = memberBaseByFlatIndex(parent, schema)
+      def keyOf(e: Tel.Element): Int =
+        val flat = kidxOf(e)
+        if flat >= 0 && flat < memberBase.length then memberBase(flat) else flat
+
       val arr = new Array[Tel.Element](children.length)
       var i = 0
       while i < children.length do
@@ -404,9 +426,38 @@ object Bintel:
       // source order within equal-key groups.
       java.util.Arrays.sort
        ( arr.asInstanceOf[Array[AnyRef]],
-         (a: AnyRef, b: AnyRef) => Integer.compare(kidxOf(a.asInstanceOf[Tel.Element]),
-                                                    kidxOf(b.asInstanceOf[Tel.Element])) )
+         (a: AnyRef, b: AnyRef) => Integer.compare(keyOf(a.asInstanceOf[Tel.Element]),
+                                                    keyOf(b.asInstanceOf[Tel.Element])) )
       arr.asInstanceOf[IArray[Tel.Element]]
+
+  // Maps each flat keyword index in `parent` to the flat index at which
+  // its member begins. A `Field` occupies one slot (mapping to itself); a
+  // `SelectRef` occupies one slot per variant of the referenced Select,
+  // all mapping to the SelectRef's starting flat index; an `Exclude`
+  // occupies none.
+  private def memberBaseByFlatIndex(parent: Tels.Struct, schema: Tels): IArray[Int] =
+    val bases = scala.collection.mutable.ArrayBuffer.empty[Int]
+    var flat = 0
+    var i = 0
+    while i < parent.members.length do
+      parent.members(i) match
+        case _: Tels.Field =>
+          bases += flat
+          flat += 1
+
+        case s: Tels.SelectRef =>
+          val width = schema.selects.find(_.name == s.reference) match
+            case Some(sd) => sd.variants.length
+            case None     => 0
+          var j = 0
+          while j < width do { bases += flat; j += 1 }
+          flat += width
+
+        case _: Tels.Exclude => ()
+
+      i += 1
+
+    IArray.from(bases)
 
   private def kidxOf(element: Tel.Element): Int = element match
     case Tel.Element.Node(idx, _, _)  => idx.or(0)

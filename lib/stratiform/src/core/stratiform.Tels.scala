@@ -82,11 +82,12 @@ object Tels:
   sealed trait Member
 
   case class Field
-     ( required:   Polarity,
-       repeatable: Polarity,
-       keyword:    Text,
-       fieldType:  Type,
-       default:    Optional[Text] )
+     ( required:    Polarity,
+       repeatable:  Polarity,
+       keyword:     Text,
+       fieldType:   Type,
+       default:     Optional[Text],
+       description: Optional[Text] = Unset )
   extends Member
 
   case class SelectRef
@@ -98,8 +99,8 @@ object Tels:
   case class Exclude(keyword: Text) extends Member
 
   // A Variant of a SelectDefinition: a kebab-case keyword paired with
-  // any Type.
-  case class Variant(keyword: Text, variantType: Type)
+  // any Type, plus an optional free-text description (§20).
+  case class Variant(keyword: Text, variantType: Type, description: Optional[Text] = Unset)
 
   // The four kinds of Type per §20:
   //   - Struct: an ordered Member list plus struct-level validators
@@ -118,18 +119,25 @@ object Tels:
 
   // Definitions in the schema's namespace. They share a single namespace
   // (§20: E211 for cross-kind collisions). Each Definition optionally
-  // carries validators applied to the entire instance.
+  // carries validators applied to the entire instance, and an optional
+  // free-text `description` (§20): semantic, survives BinTEL round-trips,
+  // never validated.
   case class RecordDefinition
-     ( name:       Text,
-       members:    IArray[Member],
-       validators: IArray[Text] )
+     ( name:        Text,
+       members:     IArray[Member],
+       validators:  IArray[Text],
+       description: Optional[Text] = Unset )
 
-  case class ScalarDefinition(name: Text, validators: IArray[Text])
+  case class ScalarDefinition
+     ( name:        Text,
+       validators:  IArray[Text],
+       description: Optional[Text] = Unset )
 
   case class SelectDefinition
-     ( name:       Text,
-       variants:   IArray[Variant],
-       validators: IArray[Text] )
+     ( name:        Text,
+       variants:    IArray[Variant],
+       validators:  IArray[Text],
+       description: Optional[Text] = Unset )
 
   // A Layer applies incremental refinements per §20.3. `overlay` is the
   // (possibly empty) Struct merged into the document root; the three
@@ -178,14 +186,21 @@ object Tels:
     private inline def variant(keyword: String, variantType: Type): Variant =
       Variant(kebab(keyword), variantType)
 
-    private inline def record(name: String, members: Member*): RecordDefinition =
-      RecordDefinition(kebab(name), IArray.from(members), IArray.empty)
+    // A Definition's `description` mirrors a single-line source atom in
+    // the canonical document, so it carries the trailing LF the §14
+    // source-atom parser appends.
+    private inline def describe(text: String): Text = Text(s"$text\n")
+
+    private inline def record(name: String, description: String, members: Member*)
+    :     RecordDefinition =
+      RecordDefinition(kebab(name), IArray.from(members), IArray.empty, describe(description))
 
     private inline def scalar(name: String, validators: String*): ScalarDefinition =
       ScalarDefinition(kebab(name), IArray.from(validators.map(kebab)))
 
-    private inline def select(name: String, variants: Variant*): SelectDefinition =
-      SelectDefinition(kebab(name), IArray.from(variants), IArray.empty)
+    private inline def select(name: String, description: String, variants: Variant*)
+    :     SelectDefinition =
+      SelectDefinition(kebab(name), IArray.from(variants), IArray.empty, describe(description))
 
     // Built-in scalar types referenced from member declarations.
     private val identifierRef: Type = Reference(kebab("Identifier"))
@@ -213,15 +228,18 @@ object Tels:
       sigil    = Unset,
       records  = IArray(
         record("Field",
+          "A field declaration at a member position.",
           field("keyword",      identifierRef),
           field("type",         typeNameRef),
           field("optional",     Flag,       required = Loose),
           field("required",     Flag,       required = Loose),
           field("repeatable",   Flag,       required = Loose),
           field("irrepeatable", Flag,       required = Loose),
-          field("default",      stringRef,  required = Loose)),
+          field("default",      stringRef,  required = Loose),
+          field("description",  stringRef,  required = Loose)),
 
         record("SelectRef",
+          "A select declaration at a member position, referencing a top-level SelectDefinition.",
           field("reference",    typeNameRef),
           field("optional",     Flag, required = Loose),
           field("required",     Flag, required = Loose),
@@ -229,25 +247,35 @@ object Tels:
           field("irrepeatable", Flag, required = Loose)),
 
         record("Variant",
-          field("keyword", identifierRef),
-          field("type",    typeNameRef)),
+          "A variant declaration inside a Select body.",
+          field("keyword",     identifierRef),
+          field("type",        typeNameRef),
+          field("description", stringRef, required = Loose)),
 
         record("Record",
+          "A record declaration: a named struct definition.",
           field("name", typeNameRef),
-          selectRef("Member", required = Loose, repeatable = Loose)),
+          selectRef("Member", required = Loose, repeatable = Loose),
+          field("description", stringRef, required = Loose)),
 
         record("Scalar",
-          field("name",     typeNameRef),
-          field("validate", identifierRef, repeatable = Loose)),
+          "A scalar declaration: a named scalar definition with one or more validators.",
+          field("name",        typeNameRef),
+          field("validate",    identifierRef, repeatable = Loose),
+          field("description", stringRef, required = Loose)),
 
         record("Select",
+          "A top-level select declaration: a named sum type.",
           field("name", typeNameRef),
-          selectRef("SelectChild", repeatable = Loose)),
+          selectRef("SelectChild", repeatable = Loose),
+          field("description", stringRef, required = Loose)),
 
         record("Body",
+          "The shared struct shape used by document and overlay.",
           selectRef("Member", required = Loose, repeatable = Loose)),
 
         record("Layer",
+          "A layer declaration: per-layer definitions and an optional overlay.",
           field("name",    identifierRef),
           field("record",  Reference(kebab("Record")), required = Loose, repeatable = Loose),
           field("scalar",  Reference(kebab("Scalar")), required = Loose, repeatable = Loose),
@@ -260,10 +288,12 @@ object Tels:
         scalar("String",     "string")),
       selects  = IArray(
         select("Member",
+          "Members admissible inside a struct-shaped body: a field, select, or validator.",
           variant("field",    Reference(kebab("Field"))),
           variant("select",   Reference(kebab("SelectRef"))),
           variant("validate", identifierRef)),
         select("SelectChild",
+          "Children admissible inside a Select body: a variant, exclude, or validator.",
           variant("variant",  Reference(kebab("Variant"))),
           variant("exclude",  identifierRef),
           variant("validate", identifierRef))))
@@ -356,9 +386,12 @@ object Tels:
                                       PolarityAxis.Required),
                        repeatable = mergePolarity(existing.repeatable, f.repeatable,
                                       PolarityAxis.Repeatable),
-                       keyword    = f.keyword,
-                       fieldType  = existing.fieldType,
-                       default    = existing.default )
+                       keyword     = f.keyword,
+                       fieldType   = existing.fieldType,
+                       default     = existing.default,
+                       // §20.3: a layer's non-null description overrides
+                       // the base's; otherwise the base's is inherited.
+                       description = f.description.or(existing.description) )
 
                   case _ => abort(TelError(Reason.LayerFieldTypeMismatch))
 
@@ -418,7 +451,8 @@ object Tels:
       val baseStruct  = Struct(base.members, base.validators)
       val layerStruct = Struct(layer.members, layer.validators)
       val merged      = mergeStruct(baseStruct, layerStruct)
-      RecordDefinition(base.name, merged.members, merged.validators)
+      RecordDefinition(base.name, merged.members, merged.validators,
+          layer.description.or(base.description))
 
     private def mergeScalarList
          (base:    IArray[ScalarDefinition],
@@ -433,7 +467,8 @@ object Tels:
         val existing = out.indexWhere(_.name == newDef.name)
         if existing >= 0 then
           val mergedValidators = (out(existing).validators ++ newDef.validators).distinct
-          out(existing) = ScalarDefinition(newDef.name, IArray.from(mergedValidators))
+          out(existing) = ScalarDefinition(newDef.name, IArray.from(mergedValidators),
+              newDef.description.or(out(existing).description))
         else
           if records.exists(_.name == newDef.name) || selects.exists(_.name == newDef.name)
           then abort(TelError(Reason.DuplicateDefinition))
@@ -476,7 +511,8 @@ object Tels:
         i += 1
 
       val mergedValidators = (base.validators ++ layer.validators).distinct
-      SelectDefinition(base.name, IArray.from(variants), IArray.from(mergedValidators))
+      SelectDefinition(base.name, IArray.from(variants), IArray.from(mergedValidators),
+          layer.description.or(base.description))
 
   // Inverse of the §20.5 schema-of-schemas: given a Tel.Document whose
   // surface matches the canonical tel-schema vocabulary, reconstruct
@@ -506,7 +542,7 @@ object Tels:
       case (a: Field, b: Field) =>
         a.required == b.required && a.repeatable == b.repeatable
           && a.keyword == b.keyword && typeEq(a.fieldType, b.fieldType)
-          && a.default == b.default
+          && a.default == b.default && a.description == b.description
 
       case (a: SelectRef, b: SelectRef) =>
         a.required == b.required && a.repeatable == b.repeatable && a.reference == b.reference
@@ -524,15 +560,18 @@ object Tels:
     private def recordEq(a: RecordDefinition, b: RecordDefinition): Boolean =
       a.name == b.name && seqEq(a.members, b.members, memberEq)
         && seqEq(a.validators, b.validators, textEq)
+        && a.description == b.description
 
     private def scalarEq(a: ScalarDefinition, b: ScalarDefinition): Boolean =
       a.name == b.name && seqEq(a.validators, b.validators, textEq)
+        && a.description == b.description
 
     private def selectEq(a: SelectDefinition, b: SelectDefinition): Boolean =
       a.name == b.name
         && seqEq(a.variants, b.variants, (x, y) => x.keyword == y.keyword
-             && typeEq(x.variantType, y.variantType))
+             && typeEq(x.variantType, y.variantType) && x.description == y.description)
         && seqEq(a.validators, b.validators, textEq)
+        && a.description == b.description
 
     private def layerEq(a: Layer, b: Layer): Boolean =
       a.name == b.name && structEq(a.overlay, b.overlay)
@@ -597,34 +636,55 @@ object Tels:
     private def parseType(name: Text): Type =
       if name == t"Flag" then Flag else Reference(name)
 
+    // The text of a scalar-valued child compound, taking its first atom
+    // (inline, source, or literal) — used for both `default` and the §20
+    // `description` child, whose prose is typically a source atom (§14).
+    private def scalarAtomText(c: Tel.Compound): Optional[Text] =
+      if c.atoms.isEmpty then Unset else c.atoms(0) match
+        case Tel.Atom.Inline(t, _)  => t
+        case Tel.Atom.Source(t)     => t
+        case Tel.Atom.Literal(_, t) => t
+
+    // The optional §20 `description` of a Definition/Field/Variant: the
+    // text of its `description` child compound, or `Unset` if absent.
+    private def descriptionOf(children: IArray[Tel.Compound]): Optional[Text] =
+      children.find(_.keyword == t"description") match
+        case Some(c) => scalarAtomText(c)
+        case None    => Unset
+
     private def parseRecord(c: Tel.Compound): RecordDefinition raises TelError =
       val recName = firstAtomText(c).or(abort(TelError(Reason.RequiredMemberAbsent)))
-      val (members, validators) = parseMembersAndValidators(childCompounds(c))
-      RecordDefinition(recName, members, validators)
+      val children = childCompounds(c)
+      val (members, validators) = parseMembersAndValidators(children)
+      RecordDefinition(recName, members, validators, descriptionOf(children))
 
     private def parseScalar(c: Tel.Compound): ScalarDefinition raises TelError =
       val scName = firstAtomText(c).or(abort(TelError(Reason.RequiredMemberAbsent)))
-      val validators = childCompounds(c).flatMap: cc =>
+      val children = childCompounds(c)
+      val validators = children.flatMap: cc =>
         if cc.keyword == t"validate" then atomTexts(cc) else IArray.empty[Text]
 
-      ScalarDefinition(scName, validators)
+      ScalarDefinition(scName, validators, descriptionOf(children))
 
     private def parseSelect(c: Tel.Compound): SelectDefinition raises TelError =
       val seName = firstAtomText(c).or(abort(TelError(Reason.RequiredMemberAbsent)))
+      val children   = childCompounds(c)
       val variants   = scala.collection.mutable.ArrayBuffer.empty[Variant]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
-      childCompounds(c).each: cc =>
+      children.each: cc =>
         cc.keyword.s match
           case "variant"  =>
             val ats = atomTexts(cc)
             if ats.length < 2 then abort(TelError(Reason.RequiredMemberAbsent))
-            variants += Variant(ats(0), parseType(ats(1)))
+            variants += Variant(ats(0), parseType(ats(1)), descriptionOf(childCompounds(cc)))
 
-          case "validate" => validators ++= atomTexts(cc)
-          case "exclude"  => ()
-          case _          => abort(TelError(Reason.UnknownKeyword))
+          case "validate"    => validators ++= atomTexts(cc)
+          case "exclude"     => ()
+          case "description" => ()
+          case _             => abort(TelError(Reason.UnknownKeyword))
 
-      SelectDefinition(seName, IArray.from(variants), IArray.from(validators))
+      SelectDefinition(seName, IArray.from(variants), IArray.from(validators),
+          descriptionOf(children))
 
     private def parseBody(c: Tel.Compound): Optional[Struct] raises TelError =
       val (members, validators) = parseMembersAndValidators(childCompounds(c))
@@ -666,7 +726,10 @@ object Tels:
             val ats = atomTexts(cc)
             if ats.length >= 1 then members += Exclude(ats(0))
 
-          case _          => abort(TelError(Reason.UnknownKeyword))
+          // The Definition's own `description` (§20); consumed by the
+          // enclosing parseRecord/parseBody, not a member.
+          case "description" => ()
+          case _             => abort(TelError(Reason.UnknownKeyword))
 
       (IArray.from(members), IArray.from(validators))
 
@@ -696,7 +759,8 @@ object Tels:
 
         j += 1
 
-      Field(required, repeatable, keyword, fieldType, default)
+      Field(required, repeatable, keyword, fieldType, default,
+          descriptionOf(childCompounds(c)))
 
     private def parseSelectRef(c: Tel.Compound): SelectRef raises TelError =
       val ats = atomTexts(c)
