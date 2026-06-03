@@ -12,7 +12,7 @@ Document {
                     atoms: [
                         Literal {
                             delimiter: "END",
-                            text: "hello\nworld",
+                            text: "hello\r\nworld",
                         },
                     ],
                     remark: None,
