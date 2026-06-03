@@ -171,16 +171,16 @@ object Attributes:
 
     def toMap: Map[Text, Optional[Text]] =
       val a = storage(attrs)
-      if a.length == 0 then ListMap.empty else
+      if a.length == 0 then Map() else
         val b = ListMap.newBuilder[Text, Optional[Text]]
         var i = 0
         while i < a.length do
           val v = a(i + 1)
           b += ((a(i).asInstanceOf[Text], if v == null then Unset else v.asInstanceOf[Text]))
           i += 2
-        b.result()
+        Map.from(b.result())
 
-    def map[B](f: ((Text, Optional[Text])) => B): Iterable[B] =
+    def map[B](f: ((Text, Optional[Text])) => B): List[B] =
       val a = storage(attrs)
       val b = List.newBuilder[B]
       var i = 0
@@ -226,10 +226,10 @@ object Attributes:
 
     inline def `-`(key: Text): Attributes = removed(key)
 
-    def `--`(others: Iterable[Text]): Attributes =
+    def `--`(others: List[Text]): Attributes =
       if isEmpty then attrs else
         var result: Attributes = attrs
-        others.foreach { k => result = result.removed(k) }
+        others.scala.foreach { k => result = result.removed(k) }
         result
 
     // Updates an existing key in place (preserving order) or appends a new pair

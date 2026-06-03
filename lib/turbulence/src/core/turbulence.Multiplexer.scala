@@ -32,7 +32,7 @@
                                                                                                   */
 package turbulence
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import java.util.concurrent as juc
 
@@ -49,7 +49,7 @@ case class Multiplexer[key, element]()(using Monitor):
   private val active: TrieMap[key, Task[Unit]] = TrieMap()
   private val queue: juc.LinkedBlockingQueue[element | Removal] = juc.LinkedBlockingQueue()
 
-  def close(): Unit = active.keys.each(remove(_))
+  def close(): Unit = List.from(active.keys).each(remove(_))
 
   @tailrec
   private def pump(key: key, stream: Stream[element])(using Worker): Unit =

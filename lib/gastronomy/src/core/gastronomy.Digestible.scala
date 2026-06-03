@@ -55,7 +55,7 @@ object Digestible extends Derivable[Digestible]:
 
 
   given optional: [value] => (digestible: => value is Digestible)
-  =>  util.NotGiven[Unset.type <:< value]
+  =>  scala.util.NotGiven[Unset.type <:< value]
   =>  Optional[value] is Digestible =
 
     (acc, value) => value.let(digestible.digest(acc, _))
@@ -64,19 +64,19 @@ object Digestible extends Derivable[Digestible]:
   given list: [list <: List, value] => (digestible: => value is Digestible)
   =>  list[value] is Digestible =
 
-    (digestion, list) => list.each(digestible.digest(digestion, _))
+    (digestion, list) => (list: List[value]).each(digestible.digest(digestion, _))
 
 
   given set: [set <: Set, value] => (digestible: => value is Digestible)
   =>  set[value] is Digestible =
 
-    (digestion, set) => set.each(digestible.digest(digestion, _))
+    (digestion, set) => (set: Set[value]).each(digestible.digest(digestion, _))
 
 
   given trie: [trie <: Trie, value] => (digestible: => value is Digestible)
   =>  trie[value] is Digestible =
 
-    (digestion, trie) => trie.each(digestible.digest(digestion, _))
+    (digestion, trie) => List.from(trie).each(digestible.digest(digestion, _))
 
 
   given iarray: [value] => (digestible: => value is Digestible) => IArray[value] is Digestible =
@@ -88,13 +88,13 @@ object Digestible extends Derivable[Digestible]:
   =>  Map[key, value] is Digestible =
 
     (digestion, map) =>
-      map.each: (key, value) =>
+      map.toList.each: (key, value) =>
         keyDigestible.digest(digestion, key)
         valueDigestible.digest(digestion, value)
 
 
   given stream: [value] => (digestible: => value is Digestible) => Stream[value] is Digestible =
-    (digestion, iterable) => iterable.each(digestible.digest(digestion, _))
+    (digestion, iterable) => List.from(iterable).each(digestible.digest(digestion, _))
 
   given int: Int is Digestible = (digestion, value) =>
     digestion.append((24 to 0 by -8).map(value >> _).map(_.toByte).toArray.immutable(using Unsafe))

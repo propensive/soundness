@@ -37,6 +37,7 @@ import gossamer.*
 import harlequin.*
 import honeycomb.*
 import prepositional.*
+import rudiments.*
 import punctuation.*
 import spectacular.*
 import vacuous.*
@@ -53,6 +54,6 @@ trait CommonFormattable extends Formattable:
 
   protected def postprocess(source: SourceCode): Html of Flow =
     val code = source.lines.map: line =>
-      Span.line(line.map { case Token(text, accent) => element(accent, text) }*)
+      Span.line(line.map { case Token(text, accent) => element(accent, text) }.scala*)
 
-    Fragment(Div.amok(Pre(code*)))
+    Fragment(Div.amok(Pre(code.to[Seq]*)))

@@ -43,7 +43,7 @@ object Unpackable:
     def unpack(buffer: Buffer): Int => IArray[pack] = count =>
       val array = new Array[pack](count)
 
-      array.indices.each: index =>
+      List.from(array.indices).each: index =>
         array(index) = pack.debuffer(buffer)
 
       array.immutable(using Unsafe)

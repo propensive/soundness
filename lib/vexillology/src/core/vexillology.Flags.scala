@@ -58,7 +58,7 @@ object Vexillology:
 
       while (value != 0) do
         val position = jl.Long.numberOfTrailingZeros(value)
-        set += enumerable.values(position)
+        set = set ++ Set(enumerable.values(position))
         value &= value - 1
 
       set

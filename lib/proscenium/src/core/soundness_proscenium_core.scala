@@ -35,7 +35,7 @@ package soundness
 export scala.collection.immutable.Vector as Trie
 export Predef.runtimeChecked as absolve
 export scala.reflect.{ClassTag, Typeable}
-export scala.collection.immutable.{List, ListMap, Map, Set, TreeMap, TreeSet}
+export scala.collection.immutable.{ListMap, TreeMap, TreeSet}
 export scala.collection.concurrent.TrieMap
 
 export
@@ -66,7 +66,7 @@ export scala.DummyImplicit as Void
 
 export proscenium.{`~>`, Label, Mono, Nat, Zero}
 
-transparent inline def infer[context]: context = compiletime.summonInline[context]
+transparent inline def infer[context]: context = scala.compiletime.summonInline[context]
 
 export proscenium.provide
 

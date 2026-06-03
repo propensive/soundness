@@ -68,7 +68,7 @@ object Annotated:
     type Unique = true
     type Topic = topic
     type Target = target
-    def field: Text = fields.keys.head
+    def field: Text = fields.keys.scala.head
     override def apply(): Set[operand] = fields(field)
 
   trait Subtypes extends Annotated:

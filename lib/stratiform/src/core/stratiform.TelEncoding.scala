@@ -138,7 +138,7 @@ trait Tel2:
               compounds += c.copy(keyword = keyword)
 
             case d: Tel.Document =>
-              compounds ++= d.children.flatMap(_.compounds)
+              compounds ++= d.children.flatMap(_.compounds).iterator
 
       Tel.compound(t"", IArray.empty, IArray.from(compounds))
 

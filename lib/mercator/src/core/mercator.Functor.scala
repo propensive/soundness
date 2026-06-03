@@ -32,19 +32,13 @@
                                                                                                   */
 package mercator
 
-import beneficence.Findable
+import murmuration.Functor
 
-object Functor:
-  inline given general: [functor[_]] => Functor[functor] = ${internal.functor[functor]}
+// The `Functor` typeclass and its `List` instance live in Murmuration. Mercator supplies the
+// derivation macro and re-surfaces Murmuration's `Functor.list` into lexical scope, where it is
+// more specific than the generic derivation (in the given scope the derivation, being in import
+// scope, would otherwise win the tie at `Functor[List]`).
+inline given functorDerivation: [functor[_]] => Functor[functor] = ${internal.functor[functor]}
 
-trait Functor[functor[_]] extends Findable:
-  def point[value](value: value): functor[value]
-
-
-  extension [value](value: functor[value])
-    def map[value2](lambda: value => value2): functor[value2] =
-
-      apply(value)(lambda)
-
-
-  def apply[value, value2](value: functor[value])(lambda: value => value2): functor[value2]
+export murmuration.Functor.list as functorList
+export murmuration.Functor.set as functorSet

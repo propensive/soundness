@@ -32,11 +32,13 @@
                                                                                                   */
 package mosquito
 
+import scala.reflect.ClassTag
+
 import vacuous.*
 
 export mosquito.internal.Tensor
 
 extension [element](list: List[element])
-  def slide(size: Int): Stream[Tensor[element, size.type]] = list match
+  def slide(size: Int)(using ClassTag[element]): Stream[Tensor[element, size.type]] = list match
     case Nil          => Stream()
     case head :: tail => Tensor.take(list, size).lay(Stream())(_ #:: tail.slide(size))

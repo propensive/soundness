@@ -33,6 +33,7 @@
 package quantitative
 
 import prepositional.*
+import rudiments.*
 
 object Prefixes:
   def apply[units](prefixes: List[Metric], minimum: Double = 1.0): Prefixes on units =
@@ -42,10 +43,10 @@ object Prefixes:
 class Prefixes(val prefixes: List[Metric], val minimum: Double) extends Planar:
   def select(value: Double): Metric =
     if value == 0.0 then NoPrefix else
-      val abs = math.abs(value)
+      val abs = scala.math.abs(value)
       val candidates = (NoPrefix :: prefixes).sortBy(-_.exponent)
 
       val chosen = candidates.find: prefix =>
-        abs/math.pow(prefix.base.toDouble, prefix.exponent.toDouble) >= minimum
+        abs/scala.math.pow(prefix.base.toDouble, prefix.exponent.toDouble) >= minimum
 
       chosen.getOrElse(candidates.last)

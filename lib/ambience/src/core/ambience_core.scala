@@ -32,7 +32,7 @@
                                                                                                   */
 package ambience
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import java.lang as jl
 import java.nio.file as jnf
@@ -87,7 +87,7 @@ package temporaryDirectories:
 inline def temporaryDirectory[path: Representative of Paths](using temporary: TemporaryDirectory)
 :   path =
 
-  compiletime.summonFrom:
+  scala.compiletime.summonFrom:
     case given (`path` is Instantiable across Paths from Paths.Trusted) =>
       Paths.Trusted(temporary.directory()).instantiate
 
@@ -96,7 +96,7 @@ inline def temporaryDirectory[path: Representative of Paths](using temporary: Te
 
 
 inline def workingDirectory[path: Representative of Paths](using work: WorkingDirectory): path =
-  compiletime.summonFrom:
+  scala.compiletime.summonFrom:
     case given (`path` is Instantiable across Paths from Paths.Trusted) =>
       Paths.Trusted(work.directory()).instantiate
 

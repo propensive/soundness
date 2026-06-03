@@ -32,7 +32,7 @@
                                                                                                   */
 package exoskeleton
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import denominative.*
@@ -98,12 +98,12 @@ extends Topical:
     cli.parameter(this)
 
 
-  def select(options: Iterable[Topic])
+  def select(options: List[Topic])
     ( using cli: Cli, interpreter: Interpreter, suggestible: Topic is Suggestible )
   :   Optional[Topic] =
 
     val mapping: Map[Text, Topic] =
-      options.map { option => (suggestible.suggest(option).text, option) }.to(Map)
+      options.map { option => (suggestible.suggest(option).text, option) }.to[Map]
 
     given interpretable: Topic is Interpretable =
       case List(value) => mapping.at(value())

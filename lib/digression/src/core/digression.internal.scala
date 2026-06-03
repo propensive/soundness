@@ -32,13 +32,14 @@
                                                                                                   */
 package digression
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import scala.quoted.*
 
 import anticipation.*
 import contingency.*
 import gigantism.*
+import rudiments.*
 
 object internal:
   def location: Macro[Codepoint] =
@@ -57,5 +58,7 @@ object internal:
         "final", "interface", "static", "void", "class", "finally", "long", "strictfp", "volatile",
         "const", "float", "native", "super", "while" )
 
-  def fqcn(context: Expr[StringContext]): Macro[Fqcn] =
-    abortive('{new Fqcn(${Expr(Fqcn(context.valueOrAbort.parts.head.tt).parts)})})
+  def fqcn(context: Expr[StringContext]): Macro[Fqcn] = abortive:
+    // `IArray` has no `ToExpr`; lift the parts as a `Seq[Text]` and rebuild the `IArray` in the quote.
+    val parts: Seq[Text] = Fqcn(context.valueOrAbort.parts.head.tt).parts.to[Seq]
+    '{new Fqcn(IArray.from(${Expr(parts)}))}

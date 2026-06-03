@@ -40,12 +40,12 @@ import rudiments.*
 import vacuous.*
 
 object Enumerable:
-  inline given derived: [enumeration <: reflect.Enum: Mirror.SumOf] => enumeration is Enumerable =
+  inline given derived: [enumeration <: scala.reflect.Enum: Mirror.SumOf] => enumeration is Enumerable =
     ${distillate.internal.enumerable[enumeration]}
 
 trait Enumerable:
-  type Self <: reflect.Enum
-  private lazy val valuesMap: Map[Text, Self] = values.indexBy(_.toString.tt)
+  type Self <: scala.reflect.Enum
+  private lazy val valuesMap: Map[Text, Self] = List.from(values.iterator).indexBy(_.toString.tt)
   val name: Text
   val values: IArray[Self]
 
@@ -54,4 +54,4 @@ trait Enumerable:
   def index(value: Self): Int = value.ordinal
 
   def value(ordinal: Ordinal): Optional[Self] =
-    if ordinal.n0 >= 0 && ordinal.n0 < values.length then values(ordinal.n0) else Unset
+    if ordinal.n0 >= 0 && ordinal.n0 < values.size then values(ordinal.n0) else Unset

@@ -66,7 +66,7 @@ class Recorder(canned: () => Http.Response) extends Http.Backend:
     lastMethod = method
     lastHeaders = headers
     val chunks = body().to(List)
-    lastBody = if chunks.isEmpty then Unset else chunks.head
+    lastBody = chunks.prim
     canned()
 
 object ApiTests extends Suite(m"Api client tests"):

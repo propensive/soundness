@@ -76,7 +76,7 @@ object Tests extends Suite(m"Geodesy tests"):
       . assert(_ == Northwest)
 
       test(m"contains no duplicates"):
-        Compass.points8.toSet.size
+        Compass.points8.to[Set].size
       . assert(_ == 8)
 
       test(m"315 degrees maps to Northwest"):

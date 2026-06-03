@@ -33,6 +33,7 @@
 package hyperbole
 
 import anticipation.*
+import rudiments.*
 import dendrology.*
 import denominative.*
 import digression.*
@@ -49,7 +50,7 @@ object TastyTree:
     ( text: Teletype, typeName: Text, param: Optional[Text], expr: Text, source: Teletype )
 
   private def expand(tree: TastyTree)(using palette: TastyPalette): List[Expansion] =
-    TreeDiagram.by[TastyTree](_.nodes)(tree).map: tiles =>
+    TreeDiagram.by[TastyTree](_.nodes.scala)(tree).map: tiles =>
       node =>
         val color = (node.term, node.definitional) match
           case (true, true)   => palette.termDefinition
@@ -67,7 +68,7 @@ object TastyTree:
             node.shortCode,
             node.source.teletype )
 
-    . to(List)
+    .to(List)
 
 
   given teletypeable: (palette: TastyPalette) => TastyTree is Teletypeable =
@@ -91,7 +92,7 @@ object TastyTree:
             if node.typeName.nil then e"" else e"${Fg(palette.outline)}(: $Italic(${name}))",
           Column(e"Source")(_.source.skip(crop)) )
 
-      . tabulate(expansions)
+      . tabulate(expansions.scala)
       . grid(10000)
       . render
       . join(e"\n")

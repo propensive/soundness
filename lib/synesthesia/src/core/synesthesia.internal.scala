@@ -70,7 +70,7 @@ object internal:
               halt:
                 m"could not find a contextual `${TypeRepr.of[argument].show} is Showable` instance"
 
-    val result = insertions.zip(parts.tail.map(Expr(_))).foldLeft(Expr(parts.head)):
+    val result = insertions.zip(parts.tail.map(Expr(_)).scala).foldLeft(Expr(parts.head)):
       case (result, (insertion, part)) =>
         '{$result+$insertion+$part}
 
@@ -128,7 +128,7 @@ object internal:
                             case Some(decodable) =>
                               ' {
                                   given param is Decodable in Json = $decodable
-                                  request(${Expr(param.name)}).as[param]
+                                  request(${Expr(param.name)}.tt).as[param]
                                 }
 
                               . asTerm
@@ -146,7 +146,7 @@ object internal:
                         case 1 => Apply(Select('target.asTerm, method), params)
 
                         case 2 =>
-                          Apply(Apply(Select('target.asTerm, method), params), List('client.asTerm))
+                          Apply(Apply(Select('target.asTerm, method), params), List('client.asTerm).scala)
 
                         case _ =>
                           halt:
@@ -236,7 +236,7 @@ object internal:
                         case 2 =>
                           Apply
                             ( Apply(Select('target.asTerm, method), params.get),
-                              List('client.asTerm) )
+                              List('client.asTerm).scala )
 
                         case _ => halt:
                           m"MCP prompt definitions should have exactly one explicit parameter block"
@@ -369,7 +369,7 @@ object internal:
             case None =>
               halt(m"There was no JSON schema for ${param.name}")
 
-      val properties = '{${Expr.ofList(params)}.toMap}
+      val properties = '{${Expr.ofList(params)}.to(Map)}
 
       val result: TypeRepr = method.info.absolve match
         case MethodType(_, _, MethodType(_, _, result)) => result
@@ -381,7 +381,7 @@ object internal:
             ' {
                 val inputSchema =
                   JsonSchema.Object
-                    ( properties = $properties, required = ${Expr.ofList(paramNames)} )
+                    ( properties = $properties, required = proscenium.List.from(${Expr.ofList(paramNames)}) )
 
                 val outputSchema =
                   JsonSchema.Object
@@ -445,14 +445,14 @@ object internal:
 
             '{Mcp.PromptArgument(${Expr(param.name.tt)}, $title, $about)}
 
-        . getOrElse(Nil)
+        . getOrElse(Nil.scala)
 
       ' {
           Mcp.Prompt
             ( name         = ${Expr(method.name.tt)},
               title        = $title,
               description  = $about,
-              arguments    = ${if params.isEmpty then 'Unset else Expr.ofList(params)} )
+              arguments    = ${if params.isEmpty then '{Unset} else '{proscenium.List.from(${Expr.ofList(params)})}} )
         }
 
     val resourceEntries = resourceMethods.map: method =>
@@ -509,9 +509,9 @@ object internal:
     ' {
         new McpSpecification:
           type Self = interface
-          def tools(): List[Mcp.Tool] = ${Expr.ofList(toolEntries)}
-          def resources(): List[Mcp.Resource] = ${Expr.ofList(resourceEntries)}
-          def prompts(): List[Mcp.Prompt] = ${Expr.ofList(promptEntries)}
+          def tools(): List[Mcp.Tool] = proscenium.List.from(${Expr.ofList(toolEntries)})
+          def resources(): List[Mcp.Resource] = proscenium.List.from(${Expr.ofList(resourceEntries)})
+          def prompts(): List[Mcp.Prompt] = proscenium.List.from(${Expr.ofList(promptEntries)})
 
           def invokeTool(server: interface, client: McpClient, method: Text, input: Json): Json =
             $toolInvocation(server)(method, input, client)

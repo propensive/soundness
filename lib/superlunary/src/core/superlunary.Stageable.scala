@@ -53,7 +53,7 @@ object Stageable:
         given RemoteError mitigates JsonError =
           error => RemoteError(RemoteError.Reason.Deserialization)
 
-        Array.from(provide[Json is Decodable in Text](text.nn.decode[Json].as[List[Json]]))
+        Array.from(provide[Json is Decodable in Text](text.nn.decode[Json].as[List[Json]]).scala)
 
     inline def serialize(value: Array[Object]): Text =
       value.iterator.to(List).map(_.asInstanceOf[Json]).json.encode

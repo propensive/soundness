@@ -32,7 +32,7 @@
                                                                                                   */
 package escapade
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 object Stylize:
   def apply(lambda: TextStyle => TextStyle): Ansi.Input.Markup = Ansi.Input.Markup(lambda)

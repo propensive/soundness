@@ -39,7 +39,7 @@ import prepositional.*
 import vacuous.*
 
 extension [entity](entity: entity)
-  def membersOfType[value](using deref: entity is Dereferenceable to value): Iterable[value] =
+  def membersOfType[value](using deref: entity is Dereferenceable to value): List[value] =
     deref.values(entity)
 
 // Read the `ann`-typed annotations on each field of `self`, keyed by field name,
@@ -51,7 +51,7 @@ inline def fieldAnnotations[self, annotation <: StaticAnnotation]
 :   Map[Text, Set[annotation]] =
 
   summonInline[self is Annotated by annotation] match
-    case annotated: Annotated.Fields => annotated.fields.filter(_(1).nonEmpty)
+    case annotated: Annotated.Fields => annotated.fields.filter(_(1).scala.nonEmpty)
     case _                           => Map()
 
 // The serialization renames for `format`: a map from each `@name`-annotated
@@ -61,12 +61,12 @@ inline def fieldAnnotations[self, annotation <: StaticAnnotation]
 // derivation to honour `@name[Xml](t"…")` / `@name(t"…")` in encode and decode.
 inline def relabelling[self, format]: Map[Text, Text] =
   val general:  Map[Text, Text] =
-    fieldAnnotations[self, name[Any]].map((field, set) => field -> set.head.name)
+    fieldAnnotations[self, name[Any]].map((field, set) => field -> set.scala.head.name)
 
   val specific: Map[Text, Text] =
-    fieldAnnotations[self, name[format]].map((field, set) => field -> set.head.name)
+    fieldAnnotations[self, name[format]].map((field, set) => field -> set.scala.head.name)
 
-  general ++ specific
+  general ++ specific.iterator
 
 // Like `fieldAnnotations`, but reads the `annotation`-typed annotations on the
 // subtypes (enum cases / sealed variants) of `self`, keyed by variant name,
@@ -75,7 +75,7 @@ inline def subtypeAnnotations[self, annotation <: StaticAnnotation]
 :   Map[Text, Set[annotation]] =
 
   summonInline[Annotated by annotation under self] match
-    case annotated: Annotated.Subtypes => annotated.subtypes.filter(_(1).nonEmpty)
+    case annotated: Annotated.Subtypes => annotated.subtypes.filter(_(1).scala.nonEmpty)
     case _                             => Map()
 
 // The serialization renames for the variants of a sum type `self`: exactly like
@@ -83,9 +83,9 @@ inline def subtypeAnnotations[self, annotation <: StaticAnnotation]
 // renamed variant's name to its serialized discriminator.
 inline def variantRelabelling[self, format]: Map[Text, Text] =
   val general:  Map[Text, Text] =
-    subtypeAnnotations[self, name[Any]].map((variant, set) => variant -> set.head.name)
+    subtypeAnnotations[self, name[Any]].map((variant, set) => variant -> set.scala.head.name)
 
   val specific: Map[Text, Text] =
-    subtypeAnnotations[self, name[format]].map((variant, set) => variant -> set.head.name)
+    subtypeAnnotations[self, name[format]].map((variant, set) => variant -> set.scala.head.name)
 
-  general ++ specific
+  general ++ specific.iterator

@@ -32,7 +32,7 @@
                                                                                                   */
 package kaleidoscope
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex as jur
@@ -129,12 +129,12 @@ object Regex:
 
     def captures(todo: List[Text], last: Int, done: Set[Int]): Set[Int] = todo match
       case Nil          => done
-      case head :: tail => captures(tail, last + head.s.length, done + last)
+      case head :: tail => captures(tail, last + head.s.length, done ++ Set(last))
 
     val captured: Set[Int] =
       if parts.length > 1 then captures(parts.tail, parts.head.s.length, Set()) else Set()
 
-    val text: Text = parts.mkString.tt
+    val text: Text = parts.scala.mkString.tt
 
     var index: Int = 0
 
@@ -207,9 +207,9 @@ object Regex:
           if !top then abort(RegexError(index, UnclosedGroup))
 
           Group(start, index, (index + 1).min(text.s.length), children.reverse,
-              Quantifier.Exactly(1), Greed.Greedy, captured.has(start - 1), false)
+              Quantifier.Exactly(1), Greed.Greedy, captured.contains(start - 1), false)
 
-        case '.' if !escape && !charClass && captured.has(index) =>
+        case '.' if !escape && !charClass && captured.contains(index) =>
           val groupStart = index
           index += 1
           val tokenEnd = index
@@ -219,7 +219,7 @@ object Regex:
           val newGroup = Group(groupStart, tokenEnd, index, Nil, q, g, true, false, true)
           group(start, newGroup :: children, top, false, false)
 
-        case '\\' if !escape && !charClass && captured.has(index)
+        case '\\' if !escape && !charClass && captured.contains(index)
           && index + 1 < text.s.length
           && "dDwWsS".indexOf(text.s.charAt(index + 1)) >= 0 =>
 
@@ -252,7 +252,7 @@ object Regex:
           val quantifier2 = quantifier()
           val greed2 = greed()
 
-          Group(start, end, index, Nil, quantifier2, greed2, captured.has(start - 1), true)
+          Group(start, end, index, Nil, quantifier2, greed2, captured.contains(start - 1), true)
 
         case char if charClass =>
           index += 1
@@ -276,7 +276,7 @@ object Regex:
               children.reverse,
               quantifier2,
               greed2,
-              captured.has(start - 1),
+              captured.contains(start - 1),
               false )
 
         case _ =>
@@ -395,10 +395,10 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
 
     scanner.nextStart match
       case Unset =>
-        if !matcher.matches then None else Some(IArray.from(recur(captureGroups, Nil, 0).reverse))
+        if !matcher.matches then None else Some(IArray.from(recur(captureGroups, Nil, 0).reverse.scala))
 
       case index: Int =>
         if !matcher.find(index) then None else
           scanner.nextStart = matcher.start + 1
           scanner.matchEnd = matcher.end
-          Some(IArray.from(recur(captureGroups, Nil, 0).reverse))
+          Some(IArray.from(recur(captureGroups, Nil, 0).reverse.scala))

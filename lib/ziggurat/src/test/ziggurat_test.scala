@@ -101,7 +101,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
       test(m"index line contains every label"):
         val text = bundleBytes.utf8
-        labels.forall: label =>
+        labels.all: label =>
           text.contains(t"$label=")
       .assert(_ == true)
 

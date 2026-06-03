@@ -116,7 +116,7 @@ object StackTrace:
     def recur(index: Int, digits: Boolean = false): Text =
       inline def token(index: Int, string: String, text: String, digits: Boolean = false): Text =
         if
-          (0 until string.length).all: offset => char(index + offset) == string(offset)
+          (0 until string.length).forall: offset => char(index + offset) == string(offset)
         then buffer.append(text) yet recur(index + string.length, digits)
         else buffer.append('#') yet recur(index + 1, digits)
 
@@ -138,7 +138,7 @@ object StackTrace:
       else char(index) match
         case '<' =>
           if
-            (0 until 6).all: offset => char(index + offset) == "<init>"(offset)
+            (0 until 6).forall: offset => char(index + offset) == "<init>"(offset)
           then
             buffer.append("ⲛ")
             recur(index + 6)
@@ -148,7 +148,7 @@ object StackTrace:
 
         case 'i' =>
           if
-            (0 until 8).all: offset => char(index + offset) == "initial$"(offset)
+            (0 until 8).forall: offset => char(index + offset) == "initial$"(offset)
           then
             buffer.append("ι")
             recur(index + 8)
@@ -158,7 +158,7 @@ object StackTrace:
 
         case 'l' =>
           if
-            (0 until 7).all: offset => char(index + offset) == "lzyINIT"(offset)
+            (0 until 7).forall: offset => char(index + offset) == "lzyINIT"(offset)
           then
             buffer.append("ℓ")
             recur(index + 7, true)
@@ -168,7 +168,7 @@ object StackTrace:
 
         case 's' =>
           if
-            (0 until 6).all: offset => char(index + offset) == "super$"(offset)
+            (0 until 6).forall: offset => char(index + offset) == "super$"(offset)
           then
             buffer.append("↑")
             recur(index + 6)
@@ -236,7 +236,7 @@ object StackTrace:
 
                 val name2 =
                   if arguments.length == 2 then "Σ("+arguments.last+" -> "+arguments.head+")"
-                  else arguments.tail.mkString("Σ((", ", ", ")")+" -> "+arguments.head+")"
+                  else arguments.tail.scala.mkString("Σ((", ", ", ")")+" -> "+arguments.head+")"
 
                 val mc = name.substring(index, index + 3).nn
                 token(index, mc, name2)
@@ -289,13 +289,13 @@ object StackTrace:
           Text:
             val types2 = types.drop(index + 3).iterator.to(List).map(primitive)
 
-            if types2.length <= 2 then types2.mkString("(", " => ", ")")
-            else types2.init.mkString("((", ", ", s") => ${types2.last})")
+            if types2.length <= 2 then types2.scala.mkString("(", " => ", ")")
+            else types2.init.scala.mkString("((", ", ", s") => ${types2.last})")
 
     else if rewritten.s.startsWith("scala.runtime.function.JProcedure")
     then
       val n = try rewritten.s.drop(33).toInt catch case error: Exception => 0
-      "("+(if n < 2 then s"Any" else List.fill(n)("Any").mkString("(", ", ", ")"))+" => Unit)"
+      "("+(if n < 2 then s"Any" else List.fill(n)("Any").scala.mkString("(", ", ", ")"))+" => Unit)"
 
     else if rewritten.s.endsWith("#") then
       val pivot = rewritten.s.lastIndexOf(".")

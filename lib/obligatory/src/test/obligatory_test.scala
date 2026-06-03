@@ -77,8 +77,8 @@ object Tests extends Suite(m"Obligatory Tests"):
         Stream(Data(0, 0, 0, 3, 50, 100, -100, 0, 0, 0, 1, -128, 0, 0, 0, 5, 5, 4, 3, 2, 1))
         . iterator
         . frames[LengthPrefix]
-        . to(List)
-        . map(_.to(List))
+        .to(List)
+        . map(_.to[List])
       . assert(_ == List(List(50, 100, -100), List(-128), List(5, 4, 3, 2, 1)))
 
       test(m"Content-Length-prefixed chunks"):
@@ -120,26 +120,26 @@ object Tests extends Suite(m"Obligatory Tests"):
       . assert(_ == List(Sse("one", List("foobar", "baz"), "123"), Sse("message", List("hello world"), Unset, 54321L)))
 
     suite(m"gRPC message framing"):
-      def ascii(text: Text): Data = IArray.from(text.s.getBytes("US-ASCII").nn.to(List))
+      def ascii(text: Text): Data = IArray.unsafeFromArray(text.s.getBytes("US-ASCII").nn)
 
       test(m"encode prefixes a flag byte and 4-byte length"):
-        GrpcFraming.encode(ascii(t"hi")).to(List)
-      . assert(_ == (Data(0, 0, 0, 0, 2) ++ ascii(t"hi")).to(List))
+        GrpcFraming.encode(ascii(t"hi")).to[List]
+      . assert(_ == (Data(0, 0, 0, 0, 2) ++ ascii(t"hi")).to[List])
 
       test(m"round-trip a single message"):
         val framed = GrpcFraming.encode(ascii(t"hello"))
-        Stream(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
-      . assert(_ == List(ascii(t"hello").to(List)))
+        Stream(framed).iterator.frames[GrpcFraming].to(List).map(_.to[List])
+      . assert(_ == List(ascii(t"hello").to[List]))
 
       test(m"split two concatenated messages"):
         val framed = GrpcFraming.encode(ascii(t"one")) ++ GrpcFraming.encode(ascii(t"two"))
-        Stream(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
-      . assert(_ == List(ascii(t"one").to(List), ascii(t"two").to(List)))
+        Stream(framed).iterator.frames[GrpcFraming].to(List).map(_.to[List])
+      . assert(_ == List(ascii(t"one").to[List], ascii(t"two").to[List]))
 
       test(m"gzip-compressed message round-trips"):
         val framed = GrpcFraming.encode(ascii(t"compress me please"), compress = true)
-        Stream(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
-      . assert(_ == List(ascii(t"compress me please").to(List)))
+        Stream(framed).iterator.frames[GrpcFraming].to(List).map(_.to[List])
+      . assert(_ == List(ascii(t"compress me please").to[List]))
 
       test(m"status code maps to the canonical name"):
         Grpc.Status.of(5)

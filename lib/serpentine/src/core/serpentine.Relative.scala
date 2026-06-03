@@ -77,7 +77,7 @@ object Relative:
                 val ascent = parts.takeWhile(_ == filesystem.parent).length
                 val descent = parts.drop(ascent).reverse
 
-                Relative(ascent, descent*)
+                Relative(ascent, descent.scala*)
 
 
   inline given conversion: [topic, ascent <: Int, filesystem]
@@ -122,7 +122,7 @@ object Relative:
             case _ :: _ :: Nil  => Some((relative.descent(1), relative.descent(0)))
 
             case _ =>
-              Some((relative.descent.last, Relative(0, relative.descent.init*)))
+              Some((relative.descent.last, Relative(0, relative.descent.init.scala*)))
 
         case _ =>
           None
@@ -160,28 +160,28 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
         this.asInstanceOf[Relative of Topic under Limit on filesystem]
 
       case _ =>
-        check[Topic, filesystem](descent.to(List))
+        check[Topic, filesystem](descent.to[List])
         this.asInstanceOf[Relative of Topic under Limit on filesystem]
 
   inline def unqualified: Relative of Topic under Limit = this
 
   transparent inline def parent = inline !![Topic] match
-    case head *: tail => Relative[Plane, tail.type, Limit](ascent, descent.tail*)
+    case head *: tail => Relative[Plane, tail.type, Limit](ascent, descent.tail.scala*)
     case EmptyTuple   => Relative[Plane, Zero, S[Limit]](ascent)
 
     case _ =>
       if descent.nil then Relative[Plane, Topic, S[Limit]](ascent + 1)
-      else Relative[Plane, Topic, Limit](ascent, descent.tail*)
+      else Relative[Plane, Topic, Limit](ascent, descent.tail.scala*)
 
   transparent inline def / (child: Any): Relative of (child.type *: Topic) under Limit =
     summonFrom:
       case given (child.type is Admissible on Plane) =>
         Relative[Plane, child.type *: Topic, Limit]
-          ( ascent, infer[child.type is Navigable].follow(child) +: descent* )
+          ( ascent, (infer[child.type is Navigable].follow(child) +: descent).scala* )
 
       case _ =>
         Relative[Plane, child.type *: Topic, Limit]
-          ( ascent, infer[child.type is Navigable].follow(child) :: descent* )
+          ( ascent, (infer[child.type is Navigable].follow(child) :: descent).scala* )
 
         . unqualified
 

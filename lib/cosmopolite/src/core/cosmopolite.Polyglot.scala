@@ -38,11 +38,12 @@ case class Polyglot[+value, language](values: Map[Language, value]):
   transparent inline infix def | [value2 >: value, language2](polyglot: Polyglot[value2, language2])
   :   Polyglot[value2, language & language2] | value2 =
 
-    compiletime.summonFrom:
-      case locale: Locale[language & language2] => (values ++ polyglot.values)(locale.language)
+    scala.compiletime.summonFrom:
+      case locale: Locale[language & language2] =>
+        (values.scala ++ polyglot.values.scala)(locale.language)
 
       case _ =>
-        Polyglot[value2, language & language2](values ++ polyglot.values)
+        Polyglot[value2, language & language2](Map.from(values.scala ++ polyglot.values.scala))
 
 
   def apply()(using locale: Locale[language]): value = values(locale.language)

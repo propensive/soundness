@@ -48,7 +48,7 @@ object Writable:
   =>  output is Writable by Data =
 
     (outputStream, stream) =>
-      stream.each: bytes =>
+      List.from(stream).each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
         outputStream.flush()
 
@@ -59,7 +59,7 @@ object Writable:
   =>  ji.OutputStream is Writable by Text =
 
     (outputStream, stream) =>
-      stream.each: text =>
+      List.from(stream).each: text =>
         outputStream.write(encoder.encode(text).mutable(using Unsafe))
         outputStream.flush()
 
@@ -83,12 +83,15 @@ object Writable:
 
     (channel, stream) =>
       @tailrec
-      def recur(total: Bytes, todo: Stream[jn.ByteBuffer]): Unit =
-        todo.flow(()):
+      def recur(total: Bytes, todo: Stream[jn.ByteBuffer]): Unit = todo match
+        case next #:: more =>
           val count = try channel.write(next) catch case e: Exception => -1
 
           if count == -1 then raise(StreamError(total))
           else recur(total + count.b, if next.hasRemaining then todo else more)
+
+        case _ =>
+          ()
 
       recur(0.b, stream.map { bytes => jn.ByteBuffer.wrap(bytes.mutable(using Unsafe)).nn })
 

@@ -32,7 +32,7 @@
                                                                                                   */
 package capricious
 
-import language.experimental.genericNumberLiterals
+import scala.language.experimental.genericNumberLiterals
 
 import java.security as js
 import java.util as ju
@@ -41,6 +41,7 @@ import scala.util as su
 
 import anticipation.*
 import hypotenuse.*
+import rudiments.*
 
 package randomization:
   package text:
@@ -67,7 +68,7 @@ package randomization:
     su.Random(ju.Random(seed.long))
 
   given secureSeeded: (seed: Seed) => Randomization = () =>
-    su.Random(js.SecureRandom(seed.value.to(Array)))
+    su.Random(js.SecureRandom(seed.value.to[Array]))
 
 def stochastic[result](using randomization: Randomization)(block: Random ?=> result): result =
   block(using new Random(randomization.initialize()))
@@ -78,7 +79,7 @@ def random[value: Randomizable](): value =
   given random: Random = Random.global
   value()
 
-def toss()(using Random): Boolean = math.random() < 0.5
+def toss()(using Random): Boolean = scala.math.random() < 0.5
 
 package randomDistributions:
   given gaussian: Distribution = Gaussian()

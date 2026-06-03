@@ -122,7 +122,7 @@ object Tests extends Suite(m"Profanity Tests"):
         }
 
     def waitFor(text: Text, ms: Int = 5000)(using Tmux, Monitor, WorkingDirectory): Boolean =
-      def matches: Boolean = Tmux.screenshot().screen.toList.exists(_.contains(text))
+      def matches: Boolean = Tmux.screenshot().screen.to[List].scala.exists(_.contains(text))
       // Bound the wait against a wall-clock deadline rather than counting fixed
       // 50 ms iterations: each poll spawns a `tmux` screenshot subprocess whose
       // latency varies wildly under load, so an iteration count made the real
@@ -149,7 +149,7 @@ object Tests extends Suite(m"Profanity Tests"):
         // fixture emits `GOT:` and never `RESULT:`, so the old `RESULT:`-first
         // probe always burnt the full timeout before falling back to `GOT:`.
         waitFor(marker)
-        Tmux.screenshot().screen.join(t"\n")
+        Tmux.screenshot().screen.to[List].join(t"\n")
 
     launcher.sandbox:
       // Warmup run to spawn the daemon and avoid timing flake on the first real test
@@ -202,7 +202,7 @@ object Tests extends Suite(m"Profanity Tests"):
             Tmux.enter('', '', '', '', '')
             Tmux.enter('\r')
             waitFor(t"RESULT:")
-            Tmux.screenshot().screen.toList.join
+            Tmux.screenshot().screen.to[List].join
         . assert(_.contains(t"RESULT:${t"X"*20}"))
 
         test(m"backspace clears characters wrapped onto the next visual line"):
@@ -219,7 +219,7 @@ object Tests extends Suite(m"Profanity Tests"):
             val mid = Tmux.screenshot()
             Tmux.enter('\r')
             waitFor(t"RESULT:")
-            mid.screen.toList.map(_.count(_ == 'X')).sum
+            mid.screen.to[List].map(_.chars.to[List].scala.count(_ == 'X')).sum
         . assert(_ == 20)
 
         // SelectMenu wrap-aware redraw: an option longer than the terminal width must
@@ -240,7 +240,7 @@ object Tests extends Suite(m"Profanity Tests"):
             // The third option ("third") must appear exactly once. If the renderer
             // miscounts visual rows for the wrapped second option, the menu drifts
             // on subsequent re-renders and stale copies of "third" pile up.
-            mid.screen.toList.count(_.contains(t"third"))
+            mid.screen.to[List].scala.count(_.contains(t"third"))
         . assert(_ == 1)
 
     // Pure state-transition tests, bypassing terminal IO. These exercise the
@@ -346,10 +346,10 @@ object Tests extends Suite(m"Profanity Tests"):
       test(m"SIGSYS is 31") (Signal.Sys.id)   .assert(_ == 31)
 
       test(m"every signal id is positive"):
-        Signal.values.toList.map(_.id).forall(_ > 0)
+        IArray.unsafeFromArray(Signal.values).to[List].map(_.id).all(_ > 0)
       . assert(identity(_))
 
       test(m"signal ids are distinct"):
-        val ids = Signal.values.toList.map(_.id)
+        val ids = IArray.unsafeFromArray(Signal.values).to[List].map(_.id)
         ids.length == ids.distinct.length
       . assert(identity(_))

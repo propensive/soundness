@@ -35,9 +35,11 @@ package soundness
 export
   rudiments
   . { !!, &, all, also, and, annex, at, b, bi, Bijection, bijection, Bytes, bytes, collate, Counter,
-      DecimalConverter, Defaulting, Defaulting2, Digit, each, establish, Exit, fixpoint, fuse, gib,
+      DecimalConverter, Defaulting, Defaulting2, Digit, each, establish, Exit, fixpoint, gib,
       give, has, immutable, Indexable, indexBy, intercalate, javaInputStream, kib, longestTrain,
       Loop, loop, matchable, mean, mib, mutable, Mutex, next, occupied, ordinal, pipe, place, plus,
       prim, prior, probe, product, reflectClass, repeat, runs, runsBy, sec, segment, Segmentable,
-      sift, snapshot, state, std, sumBy, tap, ter, that, tib, to, total, tri, triple, tuple, twin,
-      typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet }
+      sift, size, snapshot, state, std, sumBy, tap, ter, that, tib, to, total, tri, triple, tuple, twin,
+      typed, typeName, unit, unwind, upsert, variance, waive, weave, when, where, yet,
+      head, headOption, last, lastOption, find, exists, count, collectFirst, fold, foldLeft,
+      foldRight, reduce, reduceLeft, sum, min, max, minOption, maxOption, maxBy, minBy }

@@ -32,7 +32,7 @@
                                                                                                   */
 package anthology
 
-import language.adhocExtensions
+import scala.language.adhocExtensions
 
 import scala.util.control as suc
 
@@ -65,7 +65,7 @@ object Scalac:
   def compiler(): dtd.Compiler = Scala3
 
 case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[version]]):
-  def commandLineArguments: List[Text] = options.flatMap(_.flags)
+  def commandLineArguments: List[Text] = options.flatMap(o => List.from(o.flags))
 
 
   def apply
@@ -124,7 +124,7 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
           ::: List(t"")
 
         Log.info(CompileEvent.Running(arguments))
-        setup(arguments.map(_.s).to(Array), context).map(_(1)).get
+        setup(arguments.map(_.s).to[Array], context).map(_(1)).get
 
       def run(): CompileProcess =
         given dtdc.Contexts.Context = currentContext.fresh.pipe: context =>
@@ -133,14 +133,14 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
           . setCompilerCallback(callbackApi)
           . setProgressCallback(ProgressApi)
 
-        val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
+        val sourceFiles: List[dtdu.SourceFile] = sources.to[List].map: (name, content) =>
           dtdu.SourceFile.virtual(name.s, content.s)
 
         scalacProcess.put:
           task(t"scalac"):
             try
               Scalac.compiler().newRun.tap: run =>
-                run.compileSources(sourceFiles)
+                run.compileSources(sourceFiles.scala)
                 if !reporter.hasErrors then finish(Scalac.Scala3, run)
 
               scalacProcess.put

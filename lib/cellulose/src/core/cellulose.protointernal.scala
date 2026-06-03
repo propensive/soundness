@@ -45,7 +45,7 @@ trait protointernal:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Codl =
 
-      val mapping: Map[Text, Text] = compiletime.summonFrom:
+      val mapping: Map[Text, Text] = scala.compiletime.summonFrom:
         case relabelling: CodlRelabelling[derivation] => relabelling.relabelling()
         case _                                        => Map()
 
@@ -53,7 +53,7 @@ trait protointernal:
         List:
           val schemata: IArray[CodlSchema.Entry] =
             CodlSchematicDerivation.conjunction[derivation].schema().absolve match
-              case Struct(elements, _) => IArray.from(elements)
+              case Struct(elements, _) => IArray.from(elements.scala)
 
           Codllike:
             IArray.from:
@@ -67,7 +67,7 @@ trait protointernal:
 
                   . filter(!_.nil)
 
-              . to(List).flatten
+              .to[List].flatMap(identity).scala
 
   class DecodableDerivation()(using Tactic[CodlError]) extends ProductDerivable[Decodable in Codl]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -75,7 +75,7 @@ trait protointernal:
 
       values =>
         build: [field] => context =>
-          val label2 = compiletime.summonFrom:
+          val label2 = scala.compiletime.summonFrom:
             case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
             case _                                        => label
 

@@ -32,7 +32,7 @@
                                                                                                   */
 package honeycomb
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import denominative.*
@@ -89,7 +89,7 @@ object Tag:
       boundary:   Boolean                   = false )
   :   Container of label over children in dom =
 
-    val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
+    val admissible: Set[Text] = children.reify.map(_.tt).to[Set]
 
     Container
       ( valueOf[label].tt, autoclose, mode, presets, admissible, insertable, false, boundary )
@@ -103,7 +103,7 @@ object Tag:
     ( presets: Map[Text, Optional[Text]] = Map(), boundary: Boolean = false )
   :   Transparent of label over children in dom =
 
-    val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
+    val admissible: Set[Text] = children.reify.map(_.tt).to[Set]
 
     transparent(valueOf[label].tt, admissible, presets, boundary = boundary)
     . of[label]
@@ -141,7 +141,7 @@ object Tag:
       ( using css: Stylesheet of (? >: className) )
     :   Element of Topic over Transport in Form =
 
-      val nodes = children.compact.nodes
+      val nodes = List.from(children).compact.to[List].scala.nodes
 
       val presets2 = if css.classes.nil then presets else
         val cls: Text = valueOf[className]
@@ -187,7 +187,7 @@ object Tag:
         val value = presets.at("class").lay(cls): preset => t"$preset $cls"
         presets.updated("class", value)
 
-      val nodes: IArray[Node] = children.compact.nodes
+      val nodes: IArray[Node] = List.from(children).compact.to[List].scala.nodes
       Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].in[Form]
 
 
@@ -244,7 +244,7 @@ extends Element(label, Attributes.from(presets), IArray(), foreign), Formal, Dyn
 
     inline if method == "apply" then element(Map(), attributes*) else
       val stylesheet = infer[Stylesheet of (? >: label)]
-      element(Map(t"class" -> stylesheet.classes.to(List).join(t" ")), attributes*)
+      element(Map(t"class" -> stylesheet.classes.to[List].join(t" ")), attributes*)
 
 
   inline def element(presets: Map[Text, Text], inline attributes: (String, Any)*): Result =

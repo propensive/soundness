@@ -115,11 +115,11 @@ final class BlockParser:
       case item: ListItemBuilder =>
         parent match
           case bl: BulletListBuilder =>
-            bl.items += item.children.toList
+            bl.items += item.children.to(List)
             if item.hadBlank then bl.pendingBlank = true
 
           case ol: OrderedListBuilder =>
-            ol.items += item.children.toList
+            ol.items += item.children.to(List)
             if item.hadBlank then ol.pendingBlank = true
 
           case _ => panic(m"ListItem parent must be a List")

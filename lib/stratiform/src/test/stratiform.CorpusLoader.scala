@@ -36,6 +36,8 @@ import scala.language.unsafeNulls
 
 import anticipation.*
 import gossamer.*
+import rudiments.*
+import denominative.*
 import vacuous.*
 
 // Loads upstream TEL test corpus from classpath resources. The corpus is
@@ -54,7 +56,7 @@ object CorpusLoader:
     readIndex(category).filterNot(_.s.startsWith("_")).map: stem =>
       val source = readResource(t"/stratiform/corpus/$category/$stem.tel")
       val check = readResourceText(t"/stratiform/corpus/$category/$stem.check")
-      Case(stem, IArray.from(source), check)
+      Case(stem, IArray.unsafeFromArray(source), check)
 
   // Extract the expected E-code from a negative case's stem name. Filenames
   // follow the upstream convention `e<n>-<description>.tel`; cases without
@@ -86,11 +88,11 @@ object CorpusLoader:
 
   private def readIndex(category: Text): List[Text] =
     val text = readResourceText(t"/stratiform/corpus/$category.index")
-    text.s.split('\n').toList.map(_.trim).filter(_.nonEmpty).map(Text(_))
+    text.cut(t"\n").map(_.trim).filter(!_.nil)
 
   private def readResource(path: Text): Array[Byte] =
     val stream = getClass.getResourceAsStream(path.s)
-    if stream == null then sys.error(s"missing resource: $path")
+    if stream == null then scala.sys.error(s"missing resource: $path")
     try stream.readAllBytes() finally stream.close()
 
   private def readResourceText(path: Text): Text = Text(String(readResource(path), "UTF-8"))

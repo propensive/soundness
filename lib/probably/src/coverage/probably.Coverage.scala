@@ -51,10 +51,10 @@ object Coverage:
 
     if !dirFile.exists() then Coverage(dir, IArray(), Set(), Set())
     else
-      val otherFiles = Option(dirFile.listFiles).map(_.nn).map(_.iterator.map(_.nn).toList).getOrElse(Nil)
+      val otherFiles = Option(dirFile.listFiles).map(_.nn).map(_.iterator.map(_.nn).to(List)).getOrElse(Nil)
       val measurementFiles = otherFiles.filter(_.getName.nn.startsWith("scoverage.measurements"))
 
-      val allHits: Set[Int] = measurementFiles.iterator.flatMap(measurements(_)).to(Set)
+      val allHits: Set[Int] = measurementFiles.iterator.flatMap(measurements(_).scala).to(Set)
       val oldHits: Set[Int] = allHits -- hits
 
       Coverage(dir, spec(dir), oldHits, hits)
@@ -81,13 +81,13 @@ object Coverage:
         case _ =>
           junctures.reverse
 
-    IArray.from(recur(lines.dropWhile(_.starts(t"#"))))
+    IArray.from(recur(lines.dropWhile(_.starts(t"#"))).scala)
 
   private def measurements(file: File): Set[Int] =
     val ids = BitSet()
 
     if !file.exists() then Set()
-    else Source.fromFile(file).getLines().to(Stream).each: id =>
+    else List.from(Source.fromFile(file).getLines().to(Stream)).each: id =>
       ids(id.toInt) = true
 
     ids.to(Set)
@@ -96,7 +96,5 @@ case class Coverage(path: Text, spec: IArray[Juncture], oldHits: Set[Int], hits:
   lazy val structure: Map[Text, List[Surface]] =
     val index: Int = spec.lastIndexWhere(_.id == 0)
 
-    spec.to(List).drop(index).groupBy(_.path).map: (path, junctures) =>
+    spec.to[List].drop(index).groupBy(_.path).map: (path, junctures) =>
       path -> Surface.collapse(junctures.sortBy(-_.end).sortBy(_.start), Nil)
-
-    . to(Map)

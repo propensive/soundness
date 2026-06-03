@@ -32,7 +32,7 @@
                                                                                                   */
 package cellulose
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import chiaroscuro.*
@@ -40,12 +40,13 @@ import contingency.*
 import denominative.*
 import dissonance.*
 import gossamer.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
 object CodlNode:
   given inspectable: CodlNode is Inspectable = _.data.option.fold(t"!"): data =>
-    t"${data.key}[${data.children.map(_.inspect).join(t",")}]"
+    t"${data.key}[${data.children.map(_.inspect).to[List].join(t",")}]"
 
   val empty: CodlNode = CodlNode()
 
@@ -54,7 +55,7 @@ object CodlNode:
   given contrastable: (CodlNode is Inspectable) => CodlNode is Contrastable = (left, right) =>
     if left == right then Juxtaposition.Same(left.inspect) else
       val comparison =
-        diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
+        diff(left.children.to[IndexedSeq], right.children.to[IndexedSeq]).rdiff(_.id == _.id).changes.map:
           case Par(_, _, v) =>
             v.let(_.key).or(t"—") -> Juxtaposition.Same(v.let(_.inspect).toString.tt)
 
@@ -68,7 +69,7 @@ object CodlNode:
             if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") -> lv.contrast(rv)
             else t"[key]" -> Juxtaposition.Different(lv.let(_.key).or(t"—"), rv.let(_.key).or(t"—"))
 
-        . to(List)
+        .to(List)
 
       Juxtaposition.Collation(t"Node", comparison, left.key.or(t"—"), right.key.or(t"—"))
 

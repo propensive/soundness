@@ -58,13 +58,13 @@ object Showable:
   given option: [value: Showable] => Option[value] is Showable = _.fold("none".tt)(value.text(_))
   given uuid: Uuid is Showable = _.text
   given bytes: Bytes is Showable = _.text
-  given enumeration: [enumeration <: reflect.Enum] => enumeration is Showable = _.toString.tt
+  given enumeration: [enumeration <: scala.reflect.Enum] => enumeration is Showable = _.toString.tt
 
   given set: [element: Showable] => Set[element] is Showable =
-    _.map(_.show).mkString("{", ", ", "}").tt
+    _.map(_.show).scala.mkString("{", ", ", "}").tt
 
   given list: [element: Showable] => List[element] is Showable =
-    _.map(_.show).mkString("[", ", ", "]").tt
+    _.map(_.show).scala.mkString("[", ", ", "]").tt
 
   given trie: [element: Showable] => Trie[element] is Showable =
     _.map(_.show).mkString("[ ", " ", " ]").tt

@@ -32,8 +32,8 @@
                                                                                                   */
 package anticipation
 
-extension (texts: Iterable[Text])
-  transparent inline def ss: Iterable[String] = texts.map(_.s)
+extension (texts: List[Text])
+  transparent inline def ss: List[String] = texts.map(_.s)
 
 extension (string: String) def tt: Text = Text(string)
 

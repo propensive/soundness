@@ -32,7 +32,7 @@
                                                                                                   */
 package apoplexy
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
@@ -43,6 +43,7 @@ import hieroglyph.*
 import jacinta.*
 import prepositional.*
 import rudiments.*
+import denominative.*
 import spectacular.*
 import telekinesis.*
 import urticose.*
@@ -81,7 +82,7 @@ object Api:
         path.sub(t"{${entry(0)}}", entry(1))
 
     val full =
-      if request.query.isEmpty then t"${request.base}$substituted"
+      if request.query.nil then t"${request.base}$substituted"
       else
         val parameters =
           request.query.map: (key, value) =>
@@ -167,14 +168,14 @@ object Api:
       def dispatch(accept: Text): Http.Response =
         Api.send(request, accept)(using online, loggable, connect, urlError)(using client)
 
-      inline compiletime.erasedValue[this.Transport] match
+      inline scala.compiletime.erasedValue[this.Transport] match
         case _: jacinta.Json =>
           val response = dispatch(t"application/json")
-          compiletime.summonInline[(value is Conformant) over jacinta.Json].read(response)
+          scala.compiletime.summonInline[(value is Conformant) over jacinta.Json].read(response)
 
         case _: xylophone.Xml =>
           val response = dispatch(t"application/xml")
-          compiletime.summonInline[(value is Conformant) over xylophone.Xml].read(response)
+          scala.compiletime.summonInline[(value is Conformant) over xylophone.Xml].read(response)
 
 trait Api extends Dynamic, Locatable, Transportive:
   def request: Api.Request

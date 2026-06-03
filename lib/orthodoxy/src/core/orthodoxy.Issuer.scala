@@ -171,7 +171,7 @@ class Issuer
           ( client_id     = client,
             redirect_uri  = redirect,
             access_type   = t"offline",
-            scope         = scopes.flatMap(_.names).to(Set).to(List).join(t" "),
+            scope         = scopes.flatMap(_.names).to(Set).to[List].join(t" "),
             state         = state.uuid.show,
             response_type = t"code" )
 

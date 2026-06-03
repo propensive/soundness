@@ -33,6 +33,8 @@
 package telekinesis
 
 import scala.quoted.*
+import scala.collection.immutable.{List, Nil, `::`}
+import scala.collection.`+:`
 
 import anticipation.*
 import fulminate.*
@@ -134,7 +136,7 @@ object internal:
             val contentType = Http.Header("content-type".tt, $postable.mediaType($payload).show)
 
             val request =
-              Http.Request($method, 1.1, host, path, contentType :: $headers.to(List), () => body)
+              Http.Request($method, 1.1, host, path, proscenium.List.from(contentType :: $headers.to(List)), () => body)
 
             $client.request(request, $submit.target)
           }
@@ -163,7 +165,7 @@ object internal:
             val path = $fetch.originForm
 
             val request =
-              Http.Request($method, 1.1, $fetch.host, path, $headers.to(List), () => Stream())
+              Http.Request($method, 1.1, $fetch.host, path, proscenium.List.from($headers.to(List)), () => Stream())
 
             $client.request(request, $fetch.target)
           }
@@ -179,7 +181,7 @@ object internal:
     . or:
         headers.absolve match
           case Varargs(exprs) =>
-            val (_, status, headers2) = expand(exprs.to(List))
+            val (_, status, headers2) = expand(exprs)
 
             val status2: Expr[Optional[Http.Status]] = status match
               case Unset                   => '{Unset}

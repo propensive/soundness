@@ -32,8 +32,8 @@
                                                                                                   */
 package parasite
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 class Hook(unregister: () => Unit):
   def cancel(): Unit = unregister()

@@ -40,7 +40,7 @@ import prepositional.*
 object Paths:
   case class Trusted(text: Text)
 
-  inline given javaIoFile: ji.File is Representative of Paths = caps.unsafe.unsafeErasedValue
-  inline given javaNioFilePath: jnf.Path is Representative of Paths = caps.unsafe.unsafeErasedValue
+  inline given javaIoFile: ji.File is Representative of Paths = scala.caps.unsafe.unsafeErasedValue
+  inline given javaNioFilePath: jnf.Path is Representative of Paths = scala.caps.unsafe.unsafeErasedValue
 
 sealed trait Paths

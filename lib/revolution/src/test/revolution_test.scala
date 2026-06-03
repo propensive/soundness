@@ -71,7 +71,7 @@ object Tests extends Suite(m"Revolution Tests"):
             t"999999999999999999.999999999999999999.999999999999999999",
             t"1.0.0-0A.is.legal" )
 
-      for version <- valid do
+      valid.each: version =>
         test(m"Roundtrip $version"):
           import strategies.throwUnsafely
           version.decode[Semver].encode
@@ -120,7 +120,7 @@ object Tests extends Suite(m"Revolution Tests"):
             t"9.8.7-whatever+meta+meta",
             t"99999999999999999999999.999999999999999999.99999999999999999----RC-SNAPSHOT.12.09.1--------------------------------..12" )
 
-      for version <- invalid do
+      invalid.each: version =>
         test(m"Parser rejects ${version.keep(20)}"):
           safely(version.decode[Semver])
         . assert(_.absent)

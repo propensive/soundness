@@ -32,6 +32,9 @@
                                                                                                   */
 package stenography
 
+import scala.collection.immutable.`::`
+import scala.collection.immutable.List
+import scala.collection.immutable.Nil
 import scala.collection.immutable.ListMap
 import scala.quoted.*
 
@@ -114,7 +117,7 @@ object Syntax:
           case 1 => bounds(0)(1)
           case _ => Sequence('{', bounds.map(_(1)))
 
-    . to(Map)
+    .to(Map)
 
 
   def clause(using Quotes, Bindings)
@@ -307,8 +310,8 @@ object Syntax:
             Sequence('(', arguments0.map(apply(_)))
           else if base <:< TypeRepr.of[NamedTuple.NamedTuple]
           then
-            arguments0(0).absolve match
-              case AppliedType(_, names) => apply(arguments0(1)).absolve match
+            arguments0(0) match
+              case AppliedType(_, names) => apply(arguments0(1)) match
                 case Sequence(_, elements) =>
                   Sequence
                     ( '(',
@@ -317,8 +320,16 @@ object Syntax:
                           case (ConstantType(StringConstant(name)), element) =>
                             Named(false, name.tt, element) )
 
+                // The names/values aren't a literal tuple (e.g. an abstract or applied type
+                // parameter); fall back to rendering the type as an ordinary application.
+                case other =>
+                  Application(apply(base), arguments0.map(apply(_)), false)
+
               case ref@TypeRef(prefix, name) =>
                 apply(ref)
+
+              case other =>
+                Application(apply(base), arguments0.map(apply(_)), false)
 
           else
             Application(apply(base), arguments0.map(apply(_)), false)
@@ -364,7 +375,7 @@ object Syntax:
           val unnamed = arguments0.forall(_.startsWith("x$"))
 
           val arguments =
-            if arguments0.nil then Sequence('(', Nil)
+            if arguments0.isEmpty then Sequence('(', Nil)
             else if unnamed then Sequence('(', types.map(apply(_)))
             else
               Sequence

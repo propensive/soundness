@@ -370,14 +370,14 @@ object RecordSchema:
 
     def arrayFields =
       items.let(_.map: (key, value) =>
-        key -> value.as[Property].field(requiredFields.contains(key)))
+        key -> value.as[Property].field(requiredFields.scala.contains(key)))
 
       . or:
           panic(m"Some items were missing")
 
     def objectFields =
       properties.let(_.map: (key, value) =>
-        key -> value.as[Property].field(requiredFields.contains(key)))
+        key -> value.as[Property].field(requiredFields.scala.contains(key)))
 
       . or:
           panic(m"Some properties were missing")

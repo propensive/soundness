@@ -653,7 +653,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == Set(t"a", t"b"))
 
       test(m"Decode a map preserves values"):
-        t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].values.toSet
+        t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].values.to[Set]
       . assert(_ == Set(1, 2))
 
       test(m"primitive of a string is String"):
@@ -901,13 +901,13 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"Derived schema marks all fields required when none optional"):
         JsonSchema.derived[Bar].schema() match
-          case obj: JsonSchema.Object => obj.required.let(_.toSet).or(Set())
+          case obj: JsonSchema.Object => obj.required.let(_.to[Set]).or(Set())
           case _                      => Set()
       . assert(_ == Set(t"a", t"b"))
 
       test(m"Derived schema omits optional fields from required"):
         JsonSchema.derived[BarOpt].schema() match
-          case obj: JsonSchema.Object => obj.required.let(_.toSet).or(Set())
+          case obj: JsonSchema.Object => obj.required.let(_.to[Set]).or(Set())
           case _                      => Set()
       . assert(_ == Set(t"a"))
 
@@ -1034,7 +1034,7 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"Array tail spread"):
         val xs: List[Int] = List(2, 3, 4)
-        j"""[1, $xs*]"""
+        j"""[1, ${xs.scala}*]"""
       . assert(_ == t"""[1, 2, 3, 4]""".read[Json])
 
       test(m"Object rest splice"):

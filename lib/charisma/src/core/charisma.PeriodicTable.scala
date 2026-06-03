@@ -170,7 +170,7 @@ object PeriodicTable:
         Am, Cm, Bk, Cf, Es, Fm, Md, No, Lr, Rf, Db, Sg, Bh, Hs, Mt, Ds, Rg, Cn, Nh, Fl, Mc, Lv, Ts,
         Og )
 
-  lazy val symbols: Map[Text, ChemicalElement] = unsafely(elements.indexBy(_.symbol))
+  lazy val symbols: Map[Text, ChemicalElement] = unsafely(List.from(elements.iterator).indexBy(_.symbol))
 
   def apply(number: Int): Optional[ChemicalElement] =
     if 1 <= number <= 118 then elements(number - 1) else Unset

@@ -60,7 +60,7 @@ object internal:
       . getLines()
       . map(Text(_))
       . map(_.cut(t"\t").head.lower)
-      . to(Set)
+      .to(Set)
 
   private val validGroups: Set[Text] =
     Set
@@ -71,18 +71,18 @@ object internal:
     Set('(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '+')
 
   def validateLiteral(text: Text): Optional[Message] =
-    val parts: List[Text] = text.cut(t";").map(_.trim).to(List)
+    val parts: List[Text] = text.cut(t";").map(_.trim).to[List]
 
     parts.absolve match
       case Nil          => m"empty media type"
       case basic :: _   => validateBasic(basic)
 
   private def validateBasic(basic: Text): Optional[Message] =
-    basic.cut(t"/").to(List).absolve match
+    basic.cut(t"/").to[List].absolve match
       case List(group, subtype) =>
         val groupLower = group.lower
 
-        if !validGroups.has(groupLower) then m"$group is not a valid media group"
+        if !validGroups.scala.contains(groupLower) then m"$group is not a valid media group"
         else validateSubtype(groupLower, subtype)
 
       case _ =>
@@ -92,11 +92,11 @@ object internal:
     // The full subtype may be a `main+suffix` (e.g. `svg+xml`); the
     // character check applies to each segment individually since `+`
     // is itself a separator, not a body character.
-    val segments: List[Text] = subtype.cut(t"+").to(List)
+    val segments: List[Text] = subtype.cut(t"+").to[List]
 
     val badChar: Option[Char] = segments.iterator.flatMap: seg =>
       seg.chars.find: c =>
-        c.isWhitespace || c.isControl || specials.has(c)
+        c.isWhitespace || c.isControl || specials.scala.contains(c)
 
     . nextOption()
 
@@ -114,7 +114,7 @@ object internal:
         else
           val canonical: Text = t"$group/${subtype.lower}"
 
-          if systemMediaTypes.nil || systemMediaTypes.has(canonical) then Unset
+          if systemMediaTypes.scala.isEmpty || systemMediaTypes.scala.contains(canonical) then Unset
           else
             val suggestion = systemMediaTypes.minBy(_.proximity(canonical))
             m"$canonical is not a registered media type; did you mean $suggestion?"

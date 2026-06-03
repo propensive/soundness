@@ -32,6 +32,9 @@
                                                                                                   */
 package typonym
 
+import scala.collection.immutable.`::`
+import scala.collection.immutable.List
+import scala.collection.immutable.Nil
 import scala.quoted.*
 
 import gigantism.*
@@ -61,12 +64,14 @@ object internal:
 
     Type.of[phantom] match
       case '[type list <: Tuple; TypeList[list]] =>
-        untuple[list].map(_.asType).map:
+        val items = untuple[list].map(_.asType).map:
           _.absolve match
             case '[element] => reify[element]
 
-        . reverse
-        . foldLeft('{Nil}): (list, next) => '{$next :: $list}
+        val scalaList = items.reverse.foldLeft('{Nil}): (list, next) =>
+          '{$next :: $list}
+
+        '{proscenium.List.from($scalaList)}
 
       case '[type map <: Tuple; TypeMap[map]] =>
         val entries =
@@ -82,14 +87,14 @@ object internal:
 
           recur(keyValues)
 
-        '{$entries.to(Map)}
+        '{$entries.toMap}
 
       case '[type set; TypeSet[set]] =>
         def recur(repr: TypeRepr): List[Expr[set]] = repr.dealias match
           case OrType(left, right) => recur(left) ++ recur(right)
           case other               => List(constant(other).asExprOf[set])
 
-        '{List[set](${Varargs(recur(TypeRepr.of[set]))}*)}
+        '{proscenium.List[set](${Varargs(recur(TypeRepr.of[set]))}*)}
 
       case other => constant(TypeRepr.of[phantom])
 

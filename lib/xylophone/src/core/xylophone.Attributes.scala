@@ -96,7 +96,7 @@ object Attributes:
       while i < n do
         if a(i) == keyStr then return a(i + 1).asInstanceOf[Text]
         i += 2
-      throw new NoSuchElementException(s"key not found: $key")
+      throw new java.util.NoSuchElementException(s"key not found: $key")
 
     def at(key: Text): Optional[Text] =
       val a = storage(attrs)
@@ -153,13 +153,13 @@ object Attributes:
 
     def toMap: Map[Text, Text] =
       val a = storage(attrs)
-      if a.length == 0 then ListMap.empty else
+      if a.length == 0 then Map() else
         val b = ListMap.newBuilder[Text, Text]
         var i = 0
         while i < a.length do
           b += ((a(i).asInstanceOf[Text], a(i + 1).asInstanceOf[Text]))
           i += 2
-        b.result()
+        Map.from(b.result())
 
     def toList: List[(Text, Text)] =
       val a = storage(attrs)
@@ -179,7 +179,7 @@ object Attributes:
 
     def foreach(action: (Text, Text) => Unit): Unit = each(action)
 
-    def map[B](f: ((Text, Text)) => B): Iterable[B] =
+    def map[B](f: ((Text, Text)) => B): List[B] =
       val a = storage(attrs)
       val b = List.newBuilder[B]
       var i = 0
@@ -205,10 +205,10 @@ object Attributes:
 
     inline def `-`(key: Text): Attributes = removed(key)
 
-    def `--`(others: Iterable[Text]): Attributes =
+    def `--`(others: List[Text]): Attributes =
       if isEmpty then attrs else
         var result: Attributes = attrs
-        others.foreach { k => result = result.removed(k) }
+        others.scala.foreach { k => result = result.removed(k) }
         result
 
     def updated(key: Text, value: Text): Attributes =

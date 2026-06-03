@@ -32,7 +32,7 @@
                                                                                                   */
 package cellulose
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import contextual.*
@@ -45,7 +45,7 @@ import vacuous.*
 object Atom:
   given insertion: [entity: Encodable in Codl] => Insertion[List[Atom], entity] =
     value =>
-      entity.encoded(value).list.head.children.to(List).map(_.data).collect:
+      entity.encoded(value).list.head.children.to[List].map(_.data).collect:
         case data: Atom => data
 
   given inspectable: Atom is Inspectable = data => t"Atom(${data.key}, ${data.children.length})"
@@ -61,13 +61,13 @@ extends Indexed:
     (0 until layout.params.min(schema.paramCount)).map: index =>
       schema.subschemas(index).key -> index
 
-    . to(Map)
+    .to(Map)
 
-  def uniqueId: Optional[Text] = schema.subschemas.where(_.schema.arity == Arity.Unique).let:
+  def uniqueId: Optional[Text] = List.from(schema.subschemas.iterator).where(_.schema.arity == Arity.Unique).let:
     case CodlSchema.Entry(name: Text, schema) => paramIndex.at(name).let(children(_).fieldValue)
     case _                                    => Unset
 
-  def id: Optional[Text] = schema.subschemas.where(_.schema.arity == Arity.Unique) match
+  def id: Optional[Text] = List.from(schema.subschemas.iterator).where(_.schema.arity == Arity.Unique) match
     case CodlSchema.Entry(name: Text, schema) => index(name).prim.let(children(_).fieldValue)
     case _                                    => key
 
@@ -83,6 +83,6 @@ extends Indexed:
       false
 
   override def hashCode: Int =
-    key.hashCode ^ children.toSeq.hashCode ^ layout.hashCode ^ schema.hashCode
+    key.hashCode ^ children.to[IndexedSeq].hashCode ^ layout.hashCode ^ schema.hashCode
 
   override def toString: String = s"$key[${children.mkString(", ")}]:${schema}"

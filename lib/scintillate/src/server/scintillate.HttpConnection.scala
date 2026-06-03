@@ -59,12 +59,12 @@ object HttpConnection:
     val method = exchange.getRequestMethod.nn.show.decode[Http.Method]
 
     val headers: List[Http.Header] =
-      exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).flatMap: pair =>
+      exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.toList).flatMap: pair =>
         pair.absolve match
           case (key, values) => values.map: value =>
             Http.Header(key, value.tt)
 
-      . to(List)
+      .to(List)
 
     val version: Http.Version = Http.Version.parse(exchange.getProtocol.nn.tt)
 

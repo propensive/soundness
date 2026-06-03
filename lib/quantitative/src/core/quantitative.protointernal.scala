@@ -34,6 +34,7 @@ package quantitative
 
 import scala.compiletime.*
 import scala.quoted.*
+import scala.collection.immutable.{List, Nil, `::`}
 
 import anticipation.*
 import fulminate.*
@@ -67,7 +68,7 @@ trait protointernal:
 
       def recur(repr: TypeRepr): Map[DimensionRef, UnitPower] =
         repr.asMatchable match
-          case AndType(left, right) => recur(left) ++ recur(right)
+          case AndType(left, right) => Map.from(recur(left).scala ++ recur(right).scala)
 
           case AppliedType(_, List(_)) =>
             val unitPower = readUnitPower(repr)
@@ -89,7 +90,7 @@ trait protointernal:
           (current.asType, dimension.power(n).asType).absolve match case ('[current], '[next]) =>
             recur(tail, TypeRepr.of[current & next])
 
-      recur(map.to(List), TypeRepr.of[Units[?, ?]]).asType.absolve match
+      recur(map.scala.toList, TypeRepr.of[Units[?, ?]]).asType.absolve match
         case '[type units <: Units[?, ?]; units] =>
           Expr.summon[Amount[units, ?]].map: value =>
             value.absolve match
@@ -109,32 +110,32 @@ trait protointernal:
               UnitPower(UnitRef(unit.asType, unit.show), power)
 
   case class UnitsMap(map: Map[DimensionRef, UnitPower]):
-    def repr(using Quotes): Option[quotes.reflect.TypeRepr] = apply(map.values.to(List))
+    def repr(using Quotes): Option[quotes.reflect.TypeRepr] = apply(map.values.scala)
 
     def inverseMap: Map[DimensionRef, UnitPower] =
-      map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, -power) }.to(Map)
+      map.mapValues { case UnitPower(unit, power) => UnitPower(unit, -power) }
 
-    def dimensionality: Dimensionality = Dimensionality(map.view.mapValues(_.power).to(Map))
-    def dimensions: List[DimensionRef] = map.keys.to(List)
+    def dimensionality: Dimensionality = Dimensionality(map.mapValues(_.power))
+    def dimensions: List[DimensionRef] = map.keys.scala
     def nil: Boolean = map.values.all(_.power == 0)
 
     @targetName("multiply")
     infix def * (that: UnitsMap): UnitsMap =
       new UnitsMap
-        ( (dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
+        ( (dimensions ++ that.dimensions).to(Set).scala.to(List).map: dim =>
             val dimUnit = unit(dim).orElse(that.unit(dim)).get
             dim -> UnitPower(dimUnit, (unitPower(dim) + that.unitPower(dim)))
 
-          . to(Map).filter(_(1).power != 0) )
+          .to(Map).filter(_(1).power != 0) )
 
     @targetName("divide")
     infix def / (that: UnitsMap): UnitsMap =
       new UnitsMap
-        ( (dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
+        ( (dimensions ++ that.dimensions).to(Set).scala.to(List).map: dim =>
             val dimUnit = unit(dim).orElse(that.unit(dim)).get
             dim -> UnitPower(dimUnit, (unitPower(dim) - that.unitPower(dim)))
 
-          . to(Map).filter(_(1).power != 0) )
+          .to(Map).filter(_(1).power != 0) )
 
     def apply(using Quotes)(types: List[UnitPower]): Option[quotes.reflect.TypeRepr] =
       import quotes.reflect.*
@@ -331,7 +332,7 @@ trait protointernal:
         '{Map[Text, Int](($redesignation.name -> 1))}
 
       case None =>
-        recur('{Map[Text, Int]()}, UnitsMap[units].map.values.to(List))
+        recur('{Map[Text, Int]()}, UnitsMap[units].map.values.scala)
 
 
   def multiply[left <: Measure: Type, right <: Measure: Type]
@@ -498,20 +499,18 @@ trait protointernal:
   def sqrtTypeclass[value <: Measure: Type]: Macro[Quantity[value] is Rootable[2]] =
     val units = UnitsMap[value]
 
-    if !units.map.values.all(_.power%2 == 0)
+    if !List.from(units.map.values.scala).all(_.power%2 == 0)
     then halt(m"only quantities with units in even powers can have square roots calculated")
     else
       val unitsType =
         UnitsMap:
-          units.map.view.mapValues:
+          units.map.mapValues:
             case UnitPower(unit, power) => UnitPower(unit, power/2)
-
-          . toMap
 
         . repr.get.asType
 
       unitsType.absolve match case '[type result <: Measure; result] =>
-        val sqrt = '{(value: Quantity[value]) => Quantity[result](math.sqrt(value.value))}
+        val sqrt = '{(value: Quantity[value]) => Quantity[result](scala.math.sqrt(value.value))}
         val cast = sqrt.asExprOf[Quantity[value] => Quantity[result]]
 
         '{Rootable[2, Quantity[value], Quantity[result]]($cast(_))}
@@ -519,21 +518,19 @@ trait protointernal:
   def cbrtTypeclass[value <: Measure: Type](using Quotes): Expr[Quantity[value] is Rootable[3]] =
     val units = UnitsMap[value]
 
-    if !units.map.values.all(_.power%3 == 0)
+    if !List.from(units.map.values.scala).all(_.power%3 == 0)
     then halt:
       m"only quantities with units whose powers are multiples of 3 can have cube roots calculated"
     else
       val unitsType =
         UnitsMap:
-          units.map.view.mapValues:
+          units.map.mapValues:
             case UnitPower(unit, power) => UnitPower(unit, power/3)
-
-          . toMap
 
         . repr.get.asType
 
       unitsType.absolve match case '[type result <: Measure; result] =>
-        val cbrt = '{(value: Quantity[value]) => Quantity(math.cbrt(value.value))}
+        val cbrt = '{(value: Quantity[value]) => Quantity(scala.math.cbrt(value.value))}
         val cast = cbrt.asExprOf[Quantity[value] => Quantity[result]]
 
         '{Rootable[3, Quantity[value], Quantity[result]]($cast(_))}
@@ -553,7 +550,7 @@ trait protointernal:
     val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
     val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
-    if left2 != right2 then '{compiletime.error(${Expr(incompatibleTypeText(left, right))})} else
+    if left2 != right2 then '{scala.compiletime.error(${Expr(incompatibleTypeText(left, right))})} else
       if !invert.valueOrAbort
       then if closed then '{$leftValue <= $rightValue} else '{$leftValue < $rightValue}
       else if closed then '{$leftValue >= $rightValue} else '{$leftValue > $rightValue}
@@ -569,7 +566,7 @@ trait protointernal:
     val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
     val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
-    if left2 != right2 then '{compiletime.error(${Expr(incompatibleTypeText(left, right))})} else
+    if left2 != right2 then '{scala.compiletime.error(${Expr(incompatibleTypeText(left, right))})} else
       val resultValue = '{$leftValue + $rightValue}
 
       left2.repr.map(_.asType).absolve match
@@ -587,7 +584,7 @@ trait protointernal:
     val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
     val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
-    if left2 != right2 then '{compiletime.error(${Expr(incompatibleTypeText(left, right))})}
+    if left2 != right2 then '{scala.compiletime.error(${Expr(incompatibleTypeText(left, right))})}
     else '{$leftValue == $rightValue}
 
 
@@ -601,7 +598,7 @@ trait protointernal:
     val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
     val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
-    if left2 != right2 then '{compiletime.error(${Expr(incompatibleTypeText(left, right))})} else
+    if left2 != right2 then '{scala.compiletime.error(${Expr(incompatibleTypeText(left, right))})} else
       val resultValue = '{$leftValue - $rightValue}
 
       left2.repr.map(_.asType).absolve match

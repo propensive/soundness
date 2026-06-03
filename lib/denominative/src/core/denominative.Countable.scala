@@ -56,15 +56,16 @@ object Countable:
 
   given list: [element] => List[element] is Countable:
     def size(self: List[element]): Int = self.length
-    override def nil(self: List[element]): Boolean = self.isEmpty
+    override def nil(self: List[element]): Boolean = self.scala.isEmpty
 
-  given iterable: [element] => Iterable[element] is Countable:
-    def size(self: Iterable[element]): Int = self.size
-    override def nil(self: Iterable[element]): Boolean = self.isEmpty
+  // The project `List` (above) is opaque; the standard library's `List` needs its own instance.
+  given scalaList: [element] => scala.collection.immutable.List[element] is Countable:
+    def size(self: scala.collection.immutable.List[element]): Int = self.length
+    override def nil(self: scala.collection.immutable.List[element]): Boolean = self.isEmpty
 
-  given map: [key, element, map <: Map[key, element]] => map is Countable:
-    def size(self: map): Int = self.size
-    override def nil(self: map): Boolean = self.isEmpty
+  given map: [key, element] => Map[key, element] is Countable:
+    def size(self: Map[key, element]): Int = self.size
+    override def nil(self: Map[key, element]): Boolean = self.isEmpty
 
   given trieMap: [key, element] => TrieMap[key, element] is Countable:
     def size(self: TrieMap[key, element]): Int = self.size
@@ -83,8 +84,12 @@ object Countable:
     override def nil(self: StringBuilder): Boolean = self.isEmpty
 
   given set: [element] => Set[element] is Countable:
-    def size(self: Set[element]): Int = self.size
-    override def nil(self: Set[element]): Boolean = self.isEmpty
+    def size(self: Set[element]): Int = self.scala.size
+    override def nil(self: Set[element]): Boolean = self.scala.isEmpty
+
+  given series: [element] => Series[element] is Countable:
+    def size(self: Series[element]): Int = self.length
+    override def nil(self: Series[element]): Boolean = self.scala.isEmpty
 
   given indexedSeq: [element] => IndexedSeq[element] is Countable:
     def size(self: IndexedSeq[element]): Int = self.length
@@ -94,6 +99,14 @@ object Countable:
     def size(self: Text): Int = self.s.length
     override def nil(self: Text): Boolean = self.s.isEmpty
 
-trait Countable extends Typeclass:
+object Sizable:
+  // Every `Countable` (collections, `Text`, …) is `Sizable`; this bridge makes those instances
+  // resolvable when searching for `X is Sizable` (the instances live in `Countable`'s companion).
+  given countable: [value] => (countable: value is Countable) => value is Sizable =
+    countable.size(_)
+
+trait Sizable extends Typeclass:
   def size(self: Self): Int
+
+trait Countable extends Sizable:
   def nil(self: Self): Boolean = size(self) == 0

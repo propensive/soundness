@@ -34,6 +34,7 @@ package mosquito
 
 import scala.annotation.targetName
 import scala.compiletime.*
+import scala.reflect.ClassTag
 
 import anticipation.*
 import gossamer.*
@@ -46,11 +47,17 @@ import vacuous.*
 
 object internal:
   object Tensor:
-    def apply(tuple: Tuple): Tensor[Tuple.Union[tuple.type], Tuple.Size[tuple.type]] =
-      new Tensor(tuple.toIArray)
+    inline def apply(tuple: Tuple): Tensor[Tuple.Union[tuple.type], Tuple.Size[tuple.type]] =
+      type Element = Tuple.Union[tuple.type]
+      // NB: bind as a plain `val`, not a `given`. A `given` is in scope within its own RHS, so
+      // `summonInline[ClassTag[Element]]` would resolve to the instance being defined — a
+      // self-referential `def x = x` that loops forever at runtime. A `val` stays out of implicit
+      // scope, so the summon finds the real outer `ClassTag`; pass it explicitly to `IArray.from`.
+      val classTag: ClassTag[Element] = summonInline[ClassTag[Element]]
+      new Tensor(IArray.from(tuple.productIterator.map(_.asInstanceOf[Element]))(using classTag))
 
-    def take[element](list: List[element], size: Int): Optional[Tensor[element, size.type]] =
-      val array: Array[Any] = new Array(size)
+    def take[element: ClassTag](list: List[element], size: Int): Optional[Tensor[element, size.type]] =
+      val array: Array[element] = new Array(size)
       var i = 0
       var rest = list
 
@@ -74,7 +81,7 @@ object internal:
           value2,
           right  <: Tensor[value2, size],
           result ]
-    =>  ( addable: value is Addable by value2 to result )
+    =>  ( addable: value is Addable by value2 to result, classTag: ClassTag[result] )
     =>  left is Addable:
 
       type Operand = right
@@ -83,7 +90,7 @@ object internal:
       def add(left: left, right: right): Tensor[result, size] =
         val length = left.data.length
 
-        val arr = IArray.build[Any](length): array =>
+        val arr = IArray.build[result](length): array =>
           var i = 0
 
           while i < length do
@@ -96,7 +103,7 @@ object internal:
 
 
     given negatable: [value, size <: Int, tensor <: Tensor[value, size], result]
-    =>  ( negatable: value is Negatable to result )
+    =>  ( negatable: value is Negatable to result, classTag: ClassTag[result] )
     =>  tensor is Negatable:
 
       type Result = Tensor[result, size]
@@ -111,7 +118,7 @@ object internal:
           value2,
           right  <: Tensor[value2, size],
           result ]
-    =>  ( subtractable: value is Subtractable by value2 to result )
+    =>  ( subtractable: value is Subtractable by value2 to result, classTag: ClassTag[result] )
     =>  left is Subtractable:
 
       type Self = left
@@ -121,7 +128,7 @@ object internal:
       def subtract(left: left, right: right): Tensor[result, size] =
         val length = left.data.length
 
-        val arr = IArray.build[Any](length): array =>
+        val arr = IArray.build[result](length): array =>
           var i = 0
 
           while i < length do
@@ -155,14 +162,16 @@ object internal:
     def cross[right](right: Tensor[right, 3])
       ( using multiplication: left is Multiplicable by right,
               addition:       multiplication.Result is Addable by multiplication.Result,
-              subtraction:    multiplication.Result is Subtractable by multiplication.Result )
+              subtraction:    multiplication.Result is Subtractable by multiplication.Result,
+              classTag:       ClassTag[subtraction.Result] )
     :   Tensor[addition.Result, 3] =
 
       val first = left.element(1)*right.element(2) - left.element(2)*right.element(1)
       val second = left.element(2)*right.element(0) - left.element(0)*right.element(2)
       val third = left.element(0)*right.element(1) - left.element(1)*right.element(0)
 
-      new Tensor[addition.Result, 3](IArray[Any](first, second, third))
+      new Tensor[subtraction.Result, 3](IArray[subtraction.Result](first, second, third))
+      . asInstanceOf[Tensor[addition.Result, 3]]
 
 
   extension [left](left: Tensor[left, 7])
@@ -172,7 +181,8 @@ object internal:
               addition:       multiplication.Result is Addable by multiplication.Result,
               subtraction:    multiplication.Result is Subtractable by multiplication.Result,
               addEq:          addition.Result =:= multiplication.Result,
-              subEq:          subtraction.Result =:= multiplication.Result )
+              subEq:          subtraction.Result =:= multiplication.Result,
+              classTag:       ClassTag[multiplication.Result] )
     :   Tensor[addition.Result, 7] =
 
       val a0 = left.element(0); val a1 = left.element(1); val a2 = left.element(2)
@@ -205,15 +215,16 @@ object internal:
       val c5 = combine(a6*b1, a1*b6, a0*b4, a4*b0, a2*b3, a3*b2)
       val c6 = combine(a0*b2, a2*b0, a1*b5, a5*b1, a3*b4, a4*b3)
 
-      new Tensor[addition.Result, 7](IArray[Any](c0, c1, c2, c3, c4, c5, c6))
+      new Tensor[multiplication.Result, 7](IArray[multiplication.Result](c0, c1, c2, c3, c4, c5, c6))
+      . asInstanceOf[Tensor[addition.Result, 7]]
 
 
   extension [size <: Int, left](left: Tensor[left, size])
-    def element(index: Int): left = left.data(index).asInstanceOf[left]
+    def element(index: Int): left = left.data(index)
 
-    def apply(index: Int): left = left.data(index).asInstanceOf[left]
-    def list: List[left] = left.data.toList.asInstanceOf[List[left]]
-    def iarray: IArray[left] = left.data.asInstanceOf[IArray[left]]
+    def apply(index: Int): left = left.data(index)
+    def list: List[left] = left.data.to[List]
+    def iarray: IArray[left] = left.data
     def size(using ValueOf[size]): Int = valueOf[size]
 
 
@@ -232,10 +243,10 @@ object internal:
       recur(left.element(0)*left.element(0), left.data.length - 1)
 
 
-    def map[left2](fn: left => left2): Tensor[left2, size] =
+    def map[left2: ClassTag](fn: left => left2): Tensor[left2, size] =
       val length = left.data.length
 
-      val arr = IArray.build[Any](length): array =>
+      val arr = IArray.build[left2](length): array =>
         var i = 0
 
         while i < length do
@@ -255,7 +266,7 @@ object internal:
       val magnitude: left = left.norm
       val length = left.data.length
 
-      val arr = IArray.build[Any](length): array =>
+      val arr = IArray.build[Double](length): array =>
         var i = 0
 
         while i < length do
@@ -279,7 +290,7 @@ object internal:
       val start = size.value - 1
       recur(start - 1, left.element(start)*right.element(start))
 
-  class Tensor[value, size <: Int](val data: IArray[Any]):
+  class Tensor[value, size <: Int](val data: IArray[value]):
     override def equals(right: Any): Boolean = right.asMatchable match
       case that: Tensor[?, ?] => data.sameElements(that.data)
       case _                  => false

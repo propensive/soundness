@@ -32,11 +32,12 @@
                                                                                                   */
 package gossamer
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.language.experimental.into
+import rudiments.*
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 
 case class Numerous(word: Text, pluralEnd: Text = "s".tt, singularEnd: Text = "".tt):
-  def apply(elements: Iterable[?]): Text = apply(elements.size)
+  def apply(elements: List[Any]): Text = apply(elements.size)
   def apply(value: Int): Text = Text(word.s+(if value == 1 then singularEnd.s else pluralEnd.s))

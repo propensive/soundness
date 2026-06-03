@@ -49,7 +49,7 @@ case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[
     val columns: IArray[Column[row, text]] = IArray.from(columns0)
 
     val titles: Seq[IArray[IArray[text]]] =
-      Seq(IArray.from(columns.map { column => IArray.from(column.title.cut(t"\n")) }))
+      Seq(columns.map { column => IArray.from(column.title.cut(t"\n").scala) })
 
     def tabulate(data: Seq[row]): Tabulation[text] { type Row = row } = new Tabulation[text]:
       type Row = row
@@ -60,4 +60,4 @@ case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[
 
       val rows: Seq[IArray[IArray[text]]] =
         data.map: row =>
-          columns.map: column => IArray.from(column.get(row).lines)
+          columns.map: column => IArray.from(column.get(row).lines.scala)

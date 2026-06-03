@@ -88,12 +88,12 @@ object Tarfile:
             case 'x' =>
               val (data, rest) = takeData(tail, size)
               val pax = Pax.parse(data)
-              readEntries(rest, paxOverlay ++ pax, globalOverlay, longName, longLink)
+              readEntries(rest, Map.from(paxOverlay.scala ++ pax.scala), globalOverlay, longName, longLink)
 
             case 'g' =>
               val (data, rest) = takeData(tail, size)
               val pax = Pax.parse(data)
-              readEntries(rest, paxOverlay, globalOverlay ++ pax, longName, longLink)
+              readEntries(rest, paxOverlay, Map.from(globalOverlay.scala ++ pax.scala), longName, longLink)
 
             case 'L' =>
               val (data, rest) = takeData(tail, size)
@@ -118,7 +118,7 @@ object Tarfile:
               val allSegments = (inlineSegments ++ extSegments).filter(_.length > 0)
 
               val extras: Map[Text, Text] =
-                (globalOverlay ++ paxOverlay).filter((k, _) => !structuralPaxKeys.contains(k))
+                (Map.from(globalOverlay.scala ++ paxOverlay.scala)).filter((k, _) => !structuralPaxKeys.scala.contains(k))
 
               val entry = TarEntry.Sparse
                             ( path, mode, user, group, mtime, realSize, allSegments,
@@ -132,7 +132,7 @@ object Tarfile:
               val path = decodePath(nameText)
 
               val extras: Map[Text, Text] =
-                (globalOverlay ++ paxOverlay).filter((k, _) => !structuralPaxKeys.contains(k))
+                (Map.from(globalOverlay.scala ++ paxOverlay.scala)).filter((k, _) => !structuralPaxKeys.scala.contains(k))
 
               val (entry, rest) =
                 buildEntry(flag, path, mode, user, group, mtime, size, linkText, extras, header,
@@ -302,7 +302,7 @@ object Tarfile:
       if name.data.length > 32 then builder += ((t"gname", name))
 
     paxOf(entry).foreach: (k, v) =>
-      if !structuralPaxKeys.contains(k) then builder += ((k, v))
+      if !structuralPaxKeys.scala.contains(k) then builder += ((k, v))
 
     builder.result()
 
@@ -360,7 +360,7 @@ case class Tarfile
         case LongNameFormat.Gnu => key != t"path" && key != t"linkpath"
 
     val paxPart: LazyList[Data] =
-      if records.isEmpty then LazyList()
+      if records.scala.isEmpty then LazyList()
       else TarEntry.Pax(Pax.records(records)).serialize
 
     longNamePart #::: paxPart #::: entry.serialize

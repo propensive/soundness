@@ -33,6 +33,8 @@
 package cataclysm
 
 import scala.quoted.*
+import scala.collection.immutable.{List, Nil, `::`}
+import scala.collection.`+:`
 
 import anticipation.*
 import fulminate.*

@@ -77,7 +77,7 @@ object internal:
     var spreads: Set[Int] = Set()
     val cleaned: List[String] = parts.zipWithIndex.map: (part, idx) =>
       if idx > 0 && part.startsWith("*") then
-        spreads = spreads + (idx - 1)
+        spreads = spreads ++ Set(idx - 1)
         part.substring(1).nn
       else
         part
@@ -117,7 +117,7 @@ object internal:
       case Varargs(insertions) => insertions
 
     val (parts2, spreads) = preprocess(parts)
-    val source: String = parts2.mkString(MarkerString)
+    val source: String = parts2.scala.mkString(MarkerString)
 
     val sourceFile = Position.ofMacroExpansion.sourceFile
     val macroPos = Position.ofMacroExpansion
@@ -139,7 +139,7 @@ object internal:
             (i: Int) => i
         ((parserPart, effectiveStart, srcSkip), mapping)
 
-      . toIndexedSeq
+      . scala.toIndexedSeq
 
     def translateOffset(parserOff: Int, len: Int): Position =
       var acc = 0
@@ -205,15 +205,15 @@ object internal:
                 ( m"a value of ${TypeRepr.of[tpe].show} is not Encodable in Text",
                   expr.asTerm.underlyingArgument.pos )
 
-      def encodeArraySpread(expr: Expr[Any]): Expr[Iterable[Yaml.Ast]] = expr.absolve match
+      def encodeArraySpread(expr: Expr[Any]): Expr[List[Yaml.Ast]] = expr.absolve match
         case '{$value: tpe} => Type.of[tpe] match
-          case '[Iterable[t]] =>
+          case '[IterableOnce[t]] =>
             Expr.summon[(? >: t) is Encodable in Yaml] match
               case Some('{$enc: Encodable}) =>
                 ' {
-                    $value.asInstanceOf[Iterable[t]].iterator
+                    $value.asInstanceOf[IterableOnce[t]].iterator
                     . map: item => Yaml.unseal($enc.encode(item))
-                    . to(Iterable)
+                    .to(List)
                   }
 
               case _ =>
@@ -226,7 +226,7 @@ object internal:
               ( m"a `*`-spread requires an Iterable, but got ${TypeRepr.of[tpe].show}",
                 expr.asTerm.underlyingArgument.pos )
 
-      def encodeObjectRest(expr: Expr[Any]): Expr[Iterable[(String, Yaml.Ast)]] =
+      def encodeObjectRest(expr: Expr[Any]): Expr[List[(String, Yaml.Ast)]] =
         expr.absolve match
           case '{$value: tpe} => Type.of[tpe] match
             case '[Map[Text, Yaml]] =>
@@ -234,7 +234,7 @@ object internal:
                   $value.asInstanceOf[Map[Text, Yaml]].iterator.map: (key, yaml) =>
                     (key.s, Yaml.unseal(yaml))
 
-                  . toList
+                  .to(List)
                 }
 
             case _ =>
@@ -263,32 +263,32 @@ object internal:
       def serializeArray(elements: IArray[Any]): Expr[Yaml.Ast] =
         val n = elements.length
 
-        val pieces: List[Expr[Iterable[Yaml.Ast]]] = elements.zipWithIndex.toList.map:
+        val pieces: List[Expr[List[Yaml.Ast]]] = elements.zipWithIndex.to[List].map:
           (elem, idx) =>
             elem.asMatchable match
               case s: String if s == MarkerString =>
-                if spreads.has(holeIndex) then
+                if spreads.contains(holeIndex) then
                   if idx != n - 1 then halt:
                     m"a `*`-spread is only allowed as the last element of a sequence"
                   encodeArraySpread(consumeHole())
                 else
                   val v = encodeValue(consumeHole())
-                  '{Iterable($v)}
+                  '{List($v)}
 
               case other =>
                 val v = serialize(other)
-                '{Iterable($v)}
+                '{List($v)}
 
         ' {
-            val all = ${Expr.ofList(pieces)}.foldLeft(List.empty[Yaml.Ast])(_ ++ _)
-            Yaml.Ast.Sequence(IArray.from(all))
+            val all = ${Expr.ofList(pieces.scala)}.foldLeft(List.empty[Yaml.Ast])(_ ++ _)
+            Yaml.Ast.Sequence(IArray.from(all.scala))
           }
 
       def serializeObject(node: IArray[Any]): Expr[Yaml.Ast] =
         val n = node.length/2
 
-        val pieces: List[Expr[Iterable[(String, Yaml.Ast)]]] =
-          (0 until n).toList.map: i =>
+        val pieces: List[Expr[List[(String, Yaml.Ast)]]] =
+          (0 until n).to(List).map: i =>
             val k = node(i*2).asInstanceOf[String]
             val v = node(i*2 + 1)
             if k == MarkerString then
@@ -302,19 +302,19 @@ object internal:
               v.asMatchable match
                 case s: String if s == MarkerString =>
                   val expr = encodeValue(consumeHole())
-                  '{Iterable((${Expr(k)}, $expr))}
+                  '{List((${Expr(k)}, $expr))}
 
                 case other =>
                   val expr = serialize(other)
-                  '{Iterable((${Expr(k)}, $expr))}
+                  '{List((${Expr(k)}, $expr))}
 
         ' {
             val all =
-              ${Expr.ofList(pieces)}.foldLeft(List.empty[(String, Yaml.Ast)])(_ ++ _)
+              ${Expr.ofList(pieces.scala)}.foldLeft(List.empty[(String, Yaml.Ast)])(_ ++ _)
 
             val arr = new Array[Any](all.length*2)
             var k = 0
-            all.foreach: pair =>
+            all.each: pair =>
               arr(k*2)     = Yaml.Ast.Str(pair(0).tt).asInstanceOf[Any]
               arr(k*2 + 1) = pair(1).asInstanceOf[Any]
               k += 1
@@ -323,7 +323,7 @@ object internal:
 
       def serialize(node: Any): Expr[Yaml.Ast] = node.asMatchable match
         case s: String if s == MarkerString =>
-          if spreads.has(holeIndex) then halt:
+          if spreads.contains(holeIndex) then halt:
             m"a `*`-spread is only allowed as the last element of a sequence"
           encodeValue(consumeHole())
 
@@ -368,7 +368,7 @@ object internal:
 
     abortive:
       val (parts2, spreads) = preprocess(parts)
-      val source: String = parts2.mkString(MarkerString)
+      val source: String = parts2.scala.mkString(MarkerString)
 
       val ast: Yaml.Ast =
         given diagnostics: Diagnostics = Diagnostics.omit
@@ -387,7 +387,7 @@ object internal:
         pattern.asMatchable match
           case s: String if s == MarkerString =>
             val idx = nextHole
-            if spreads.has(idx) then halt:
+            if spreads.contains(idx) then halt:
               m"a `*`-spread is only allowed as the last element of a sequence"
             nextHole += 1
             types ::= TypeRepr.of[Yaml]
@@ -446,7 +446,7 @@ object internal:
         val tailSpread: Boolean =
           n > 0 && (elements(n - 1).asMatchable match
             case s: String if s == MarkerString =>
-              spreads.has(nextHole + countHolesInPrefix(elements, n - 1))
+              spreads.contains(nextHole + countHolesInPrefix(elements, n - 1))
 
             case _ => false)
 
@@ -541,7 +541,7 @@ object internal:
         val pairs = node.length/2
 
         val literalKeys: List[String] =
-          (0 until pairs).toList.collect:
+          (0 until pairs).to(List).collect:
             case i if node(i*2).asInstanceOf[String] != MarkerString =>
               node(i*2).asInstanceOf[String]
 
@@ -554,12 +554,12 @@ object internal:
                 $accept && $scrutinee.isObject
                 && {
                   val n = $scrutinee.objectSize
-                  var keysSet = Set.empty[String]
+                  val keysSet = scala.collection.mutable.Set.empty[String]
                   var k = 0
                   while k < n do
                     keysSet += $scrutinee.objectKey(k)
                     k += 1
-                  ${Expr(literalKeys)}.forall(keysSet.contains)
+                  ${Expr(literalKeys.scala)}.forall(keysSet.contains)
                 }
               }
           else
@@ -568,12 +568,12 @@ object internal:
                 && {
                   val n = $scrutinee.objectSize
                   n == ${Expr(literalKeys.length)} && {
-                    var keysSet = Set.empty[String]
+                    val keysSet = scala.collection.mutable.Set.empty[String]
                     var k = 0
                     while k < n do
                       keysSet += $scrutinee.objectKey(k)
                       k += 1
-                    ${Expr(literalKeys)}.forall(keysSet.contains)
+                    ${Expr(literalKeys.scala)}.forall(keysSet.contains)
                   }
                 }
               }
@@ -587,7 +587,7 @@ object internal:
             val idx = nextHole
             nextHole += 1
             types ::= TypeRepr.of[Yaml]
-            val literalKeysExpr = Expr(literalKeys)
+            val literalKeysExpr = Expr(literalKeys.scala)
             combined =
               ' {
                   $combined && {
@@ -598,7 +598,7 @@ object internal:
                     var j = 0
                     while j < n do
                       val key = $scrutinee.objectKey(j)
-                      if !keep.has(key) then
+                      if !keep.contains(key) then
                         keysBuf += key
                         valsBuf += $scrutinee.objectValue(j)
                       j += 1
@@ -658,7 +658,7 @@ object internal:
               '{$result.asInstanceOf[Option[result]]}
 
         case _ =>
-          AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse)
+          AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse.scala)
           . asType
           . absolve match
             case '[type result <: Tuple; result] =>

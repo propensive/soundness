@@ -52,8 +52,8 @@ extends Exception(message.text.s, cause, false, diagnostics.captureStack):
     this(0, 0)(message, cause)
 
   def fullClass: List[Text] = List(getClass.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
-  def className: Text = fullClass.last
-  def component: Text = fullClass.head
+  def className: Text = fullClass.scala.last
+  def component: Text = fullClass.scala.head
 
   def errorCode: Text =
     if d == 0 then "".tt

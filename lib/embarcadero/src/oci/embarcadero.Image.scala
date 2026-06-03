@@ -123,4 +123,4 @@ case class Image
       val hex = digest.s.stripPrefix("sha256:").tt
       entry(t"blobs/sha256/$hex", content)
 
-    Tarfile(LazyList.from(layoutEntry :: indexEntry :: blobEntries))
+    Tarfile(LazyList.from((layoutEntry :: indexEntry :: blobEntries).scala))

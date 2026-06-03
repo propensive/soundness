@@ -32,7 +32,7 @@
                                                                                                   */
 package turbulence
 
-import language.adhocExtensions
+import scala.language.adhocExtensions
 
 class Pistol() extends Spool[Unit]():
   def fire(): Unit = put(())

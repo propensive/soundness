@@ -381,7 +381,7 @@ object Matrix:
           x(i) = sum/a(size*i + i)
           i -= 1
 
-        val tensorData = IArray.build[Any](size): array =>
+        val tensorData = IArray.build[element](size): array =>
           var k = 0
 
           while k < size do
@@ -491,7 +491,7 @@ object Matrix:
         var checkCol = checkRow + 1
 
         while checkCol < dimension && symmetric do
-          if math.abs(matrix(checkRow, checkCol) - matrix(checkCol, checkRow)) > tolerance
+          if scala.math.abs(matrix(checkRow, checkCol) - matrix(checkCol, checkRow)) > tolerance
           then symmetric = false
 
           checkCol += 1
@@ -521,7 +521,7 @@ object Matrix:
             var j = i + 1
 
             while j < dimension do
-              val absValue = math.abs(mat(dimension*i + j))
+              val absValue = scala.math.abs(mat(dimension*i + j))
 
               if absValue > maxAbs then
                 maxAbs = absValue
@@ -541,10 +541,10 @@ object Matrix:
             val theta = (mqq - mpp)/(2.0*mpq)
 
             val tan =
-              if theta >= 0.0 then 1.0/(theta + math.sqrt(theta*theta + 1.0))
-              else 1.0/(theta - math.sqrt(theta*theta + 1.0))
+              if theta >= 0.0 then 1.0/(theta + scala.math.sqrt(theta*theta + 1.0))
+              else 1.0/(theta - scala.math.sqrt(theta*theta + 1.0))
 
-            val cos = 1.0/math.sqrt(1.0 + tan*tan)
+            val cos = 1.0/scala.math.sqrt(1.0 + tan*tan)
             val sin = tan*cos
 
             val newMpp = cos*cos*mpp - 2.0*cos*sin*mpq + sin*sin*mqq
@@ -583,7 +583,7 @@ object Matrix:
 
         if !converged then Unset
         else
-          val eigvalArr = IArray.build[Any](dimension): array =>
+          val eigvalArr = IArray.build[Double](dimension): array =>
             var i = 0
 
             while i < dimension do
@@ -615,10 +615,10 @@ class Matrix[element, rows <: Int, columns <: Int]
 
   def apply(row: Int, column: Int): element = elements(columns*row + column)
 
-  def row(index: Int): Tensor[element, columns] =
+  def row(index: Int)(using ClassTag[element]): Tensor[element, columns] =
     val cols = columns
 
-    val arr = IArray.build[Any](cols): array =>
+    val arr = IArray.build[element](cols): array =>
       var i = 0
 
       while i < cols do
@@ -628,8 +628,8 @@ class Matrix[element, rows <: Int, columns <: Int]
     new Tensor[element, columns](arr)
 
 
-  def column(index: Int): Tensor[element, rows] =
-    val arr = IArray.build[Any](rows): array =>
+  def column(index: Int)(using ClassTag[element]): Tensor[element, rows] =
+    val arr = IArray.build[element](rows): array =>
       var i = 0
 
       while i < rows do
@@ -825,12 +825,13 @@ class Matrix[element, rows <: Int, columns <: Int]
     ( using multiplication: element is Multiplicable by right,
             addition:       multiplication.Result is Addable by multiplication.Result,
             equality:       addition.Result =:= multiplication.Result,
-            columnValue:    ValueOf[columns] )
+            columnValue:    ValueOf[columns],
+            classTag:       ClassTag[multiplication.Result] )
   :   Tensor[multiplication.Result, rows] =
 
     val inner = valueOf[columns]
 
-    val arr = IArray.build[Any](rows): array =>
+    val arr = IArray.build[multiplication.Result](rows): array =>
       var row = 0
 
       while row < rows do

@@ -45,10 +45,10 @@ object Rootable:
       def root(operand: operand): result = lambda(operand)
 
 
-  given sqrt: Double is Rootable[2] to Double = math.sqrt(_)
-  given cbrt: Double is Rootable[3] to Double = math.cbrt(_)
-  given sqrtFloat: Float is Rootable[2] to Float = math.sqrt(_).toFloat
-  given cbrtFloat: Float is Rootable[3] to Float = math.cbrt(_).toFloat
+  given sqrt: Double is Rootable[2] to Double = scala.math.sqrt(_)
+  given cbrt: Double is Rootable[3] to Double = scala.math.cbrt(_)
+  given sqrtFloat: Float is Rootable[2] to Float = scala.math.sqrt(_).toFloat
+  given cbrtFloat: Float is Rootable[3] to Float = scala.math.cbrt(_).toFloat
 
 trait Rootable[root <: Int & Singleton] extends Typeclass, Resultant:
   def root(value: Self): Result

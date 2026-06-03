@@ -96,7 +96,7 @@ object Restorable extends ProductDerivation[[entity] =>> entity is Restorable]:
       ' {
           val cls0: Class[?] = Class.forName(${Expr(cls.getName.nn)}).nn
           val constructor = cls0.getDeclaredConstructors.nn(0).nn
-          constructor.newInstance(${Varargs(params)}*).nn.asInstanceOf[derivation]
+          constructor.newInstance(${Varargs(params.to[Seq])}*).nn.asInstanceOf[derivation]
         }
 
 trait Restorable extends Typeclass:

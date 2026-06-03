@@ -33,6 +33,7 @@
 package escapade
 
 import soundness.*
+import gossamer.{count, where}
 
 import strategies.throwUnsafely
 import textMetrics.uniform
@@ -496,7 +497,7 @@ object Tests extends Suite(m"Escapade tests"):
       . assert(_ == 'h')
 
       test(m"chars"):
-        e"abc".chars.toSeq
+        e"abc".chars.to[Seq]
       . assert(_ == Seq('a', 'b', 'c'))
 
     suite(m"Textual: slicing"):

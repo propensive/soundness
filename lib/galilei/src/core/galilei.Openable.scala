@@ -69,7 +69,7 @@ object Openable:
         else options
 
       path.protect(IoError.Operation.Open)
-        ( jnc.FileChannel.open(jnf.Path.of(path.encode.s), options2*).nn )
+        ( jnc.FileChannel.open(jnf.Path.of(path.encode.s), options2.scala*).nn )
 
     def handle(channel: jnc.FileChannel): Handle =
       Handle

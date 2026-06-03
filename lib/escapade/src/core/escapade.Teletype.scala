@@ -32,7 +32,7 @@
                                                                                                   */
 package escapade
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import scala.util.*
 
@@ -92,7 +92,7 @@ object Teletype:
     def map(text: Teletype)(lambda: Char => Char): Teletype =
       val array = text.plain.s.toCharArray.nn
 
-      array.indices.each: index =>
+      List.from(array.indices).each: index =>
         array(index) = lambda(array(index))
 
       Teletype(new String(array).tt, text.styles, text.hyperlinks, text.insertions, text.boundaries)
@@ -509,7 +509,7 @@ case class Teletype
           else
             var p = from
 
-            ins.each: (k, v) =>
+            List.from(ins).each: (k, v) =>
               if p < k then buffer.add(plain.s.substring(p, k).nn.tt)
               buffer.add(v)
               p = k
@@ -557,6 +557,6 @@ case class Teletype
           case Some(url) => buffer.add(t"\e]8;;$url\e\\")
           case None      => buffer.add(t"\e]8;;\e\\")
 
-      insertions.rangeFrom(n).values.each(buffer.add(_))
+      List.from(insertions.rangeFrom(n).values).each(buffer.add(_))
 
       buffer.text

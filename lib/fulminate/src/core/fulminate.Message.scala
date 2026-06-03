@@ -64,23 +64,23 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
   @targetName("append")
   infix def + (right: Message): Message =
     Message
-      ( texts.init ++ ((texts.last+right.texts.head) :: right.texts.tail),
+      ( texts.init ++ ((texts.scala.last+right.texts.scala.head) :: right.texts.tail),
         messages ++ right.messages )
 
   def segments: List[Text | Message] =
     def recur(parts: List[Text], messages: List[Message]): List[Text | Message] = parts match
-      case head :: tail => messages.head :: head :: recur(tail, messages.tail)
+      case head :: tail => messages.scala.head :: head :: recur(tail, messages.tail)
       case Nil          => Nil
 
-    texts.head :: recur(texts.tail, messages)
+    texts.scala.head :: recur(texts.tail, messages)
 
   def fold[render](initial: render)(append: (render, Text, Int) => render): render =
     def recur(done: render, textTodo: List[Text], messagesTodo: List[Message], level: Int): render =
       messagesTodo match
-        case Nil => append(done, textTodo.head, level)
+        case Nil => append(done, textTodo.scala.head, level)
 
         case sub :: messages =>
-          val prefix = recur(append(done, textTodo.head, level), sub.texts, sub.messages, level + 1)
+          val prefix = recur(append(done, textTodo.scala.head, level), sub.texts, sub.messages, level + 1)
           recur(prefix, textTodo.tail, messages, level)
 
     recur(initial, texts, messages, 0)
@@ -112,4 +112,4 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
 
         recur(tail)
 
-    recur(string.split("\n").nn.map(_.nn).iterator.to(List))
+    recur(List.from(string.split("\n").nn.map(_.nn).iterator.toList))

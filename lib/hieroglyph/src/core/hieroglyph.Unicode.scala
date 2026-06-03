@@ -109,7 +109,7 @@ object Unicode:
 
       . or(panic(m"could not find hieroglyph/UnicodeData.txt on the classpath"))
 
-    scala.io.Source.fromInputStream(in).getLines().map(_.split(";").nn.iterator.to(List)).flatMap:
+    scala.io.Source.fromInputStream(in).getLines().to(List).map(_.split(";").nn.iterator.to(List)).flatMap:
       case hex :: name :: _ if !name.nn.startsWith("<") =>
         val hexInt = Integer.parseInt(hex, 16)
 
@@ -119,7 +119,7 @@ object Unicode:
       case _ =>
         Nil
 
-    . to(Map)
+    .scala.to(Map)
 
   lazy val unicodeNames: Map[Char | Text, Text] = unicodeData.map: (key, value) =>
     value -> key.s.split(" ").nn.iterator.map(_.nn.toLowerCase.nn.capitalize).mkString(" ").tt
@@ -127,7 +127,7 @@ object Unicode:
   lazy val eastAsianWidths: TreeMap[CharRange, EaWidth] =
     extension (map: TreeMap[CharRange, EaWidth])
       def append(range: CharRange, width: EaWidth): TreeMap[CharRange, EaWidth] =
-        if map.nil then map.updated(range, width)
+        if map.isEmpty then map.updated(range, width)
         else if map.lastKey.to == (range.from - 1) && map(map.lastKey) == width
         then map.removed(map.lastKey).updated(CharRange(map.lastKey.from, range.to), width)
         else map.updated(range, width)

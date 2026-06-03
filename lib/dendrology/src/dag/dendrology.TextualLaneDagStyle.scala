@@ -33,6 +33,7 @@
 package dendrology
 
 import anticipation.*
+import rudiments.*
 import gossamer.*
 import gossamer.Textual.concatenable
 import symbolism.*

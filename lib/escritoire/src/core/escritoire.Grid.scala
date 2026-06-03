@@ -32,7 +32,7 @@
                                                                                                   */
 package escritoire
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import scala.collection.immutable as sci
 
@@ -90,10 +90,10 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
         widths.sum + style.cost(widths.length)
 
       val ascenders =
-        above.let(_.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
+        above.let(_.scan(0)(_ + _ + style.padding*2 + 1).scala.to(sci.BitSet)).or(sci.BitSet())
 
       val descenders =
-        below.let(_.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
+        below.let(_.scan(0)(_ + _ + style.padding*2 + 1).scala.to(sci.BitSet)).or(sci.BitSet())
 
       val horizontal =
         if above.absent then style.topLine
@@ -103,7 +103,7 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
       Textual:
         Text.fill(width): index =>
           def vertical(bitSet: sci.BitSet, line: BoxLine): BoxLine =
-            if bitSet.has(index) then line else BoxLine.Blank
+            if bitSet.contains(index) then line else BoxLine.Blank
 
           if index == 0 then
             style.charset
@@ -133,6 +133,6 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
       if style.bottomLine.absent then Stream() else Stream(rule(sections.head.widths, Unset))
 
     val body =
-      sections.to(Stream).flatMap: section => midRule #:: recur(section.widths, section.rows)
+      sections.to[Stream].flatMap: section => midRule #:: recur(section.widths, section.rows)
 
     topLine #::: body.tail #::: bottomLine

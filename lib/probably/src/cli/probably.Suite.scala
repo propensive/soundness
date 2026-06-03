@@ -99,7 +99,10 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
     runner0 = runner
     runner.suite(this, run())
 
-  final def main(arguments: IArray[Text]): Unit =
+  // The runnable entry point. Concrete suites run as programs (e.g. `soundness.Tests`) expose this
+  // as a JVM `main(String[])`; it is not called `main` here because an inherited `main` only yields
+  // a `BoxedUnit`-returning static forwarder, which the JVM launcher does not accept.
+  final def runSuite(): Unit =
     try runner.suite(this, run())
     catch case error: Throwable =>
       runner.terminate(error)

@@ -66,7 +66,7 @@ object Path:
       val parts = text.skip(radical.length(text)).cut(filesystem.separator)
       val parts2 = if parts.last == t"" then parts.init else parts
 
-      Path(root, parts2.reverse.map(filesystem.unescape(_)))
+      Path(root, parts2.reverse.map(filesystem.unescape(_)).scala)
 
 
   given decodable2: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
@@ -77,11 +77,11 @@ object Path:
       val parts = text.skip(radical.length(text)).cut(filesystem.separator)
       val parts2 = if parts.last == t"" then parts.init else parts
 
-      Path(root, parts2.reverse.map(filesystem.unescape(_)))
+      Path(root, parts2.reverse.map(filesystem.unescape(_)).scala)
 
 
   given nominable: [filesystem] => (Path on filesystem) is Nominable = path =>
-    path.descent.prim.or(path.root)
+    List.from(path.descent).prim.or(path.root)
 
 
   given trustedInstantiable: [filesystem: Filesystem]
@@ -161,7 +161,7 @@ object Path:
 case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   type Topic <: Tuple
 
-  def name: Text = descent.prim.or(root)
+  def name: Text = List.from(descent).prim.or(root)
   def nil: Boolean = descent.nil
 
   inline def knownElementTypes: Boolean = inline !![Topic] match
@@ -236,14 +236,14 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   transparent inline def sameRoot(right: Path): Boolean = summonFrom:
     case plane: (Plane is Filesystem) =>
-      inline if caps.unsafe.unsafeErasedValue[plane.UniqueRoot] then true else root == right.root
+      inline if scala.caps.unsafe.unsafeErasedValue[plane.UniqueRoot] then true else root == right.root
 
     case _ =>
       root == right.root
 
   transparent inline def rename(lambda: (Text aka "prior") ?=> Text): Optional[Path] =
     parent.let: parent =>
-      descent.prim.let: prior => parent / lambda(using prior.aka["prior"])
+      List.from(descent).prim.let: prior => parent / lambda(using prior.aka["prior"])
 
   def relative: Relative of Topic on Plane under 0 =
     Relative[Plane, Topic, 0](0, descent*)
@@ -257,7 +257,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     def recur(left: List[Text], right: List[Text], size: Int, count: Int)
     :   Path on Plane =
 
-      if left.nil then Path(root, left0.drop(size - count))
+      if left.nil then Path(root, left0.drop(size - count).scala)
       else if left.head == right.head then recur(left.tail, right.tail, size + 1, count + 1)
       else recur(left.tail, right.tail, size + 1, 0)
 
@@ -294,7 +294,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   transparent inline def peer(child: Any)(using child.type is Admissible on Plane)
   :   Path on Plane under Limit =
 
-    inline caps.unsafe.unsafeErasedValue[Topic] match
+    inline scala.caps.unsafe.unsafeErasedValue[Topic] match
       case _: (head *: tail) =>
         Path[Plane, Limit, child.type *: tail]
           ( root, infer[child.type is Navigable on Plane].follow(child) +: descent )
@@ -309,4 +309,4 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     type Topic2 = Tuple.Concat[relative.Topic, Base]
 
     Path[Plane, Limit, Topic2]
-      ( root, relative.descent ++ descent.drop(relative.ascent) )
+      ( root, relative.descent.scala ++ descent.drop(relative.ascent) )

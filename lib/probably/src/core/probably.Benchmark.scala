@@ -109,6 +109,6 @@ case class Benchmark
       case 99 => 2.326
 
   def confidenceInterval: Long =
-    (tQuantile(confidence, runs - 1)*sd/math.sqrt(runs.toDouble)).toLong
+    (tQuantile(confidence, runs - 1)*sd/scala.math.sqrt(runs.toDouble)).toLong
 
   def throughput: Long = (1000000000.0/mean).toLong

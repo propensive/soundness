@@ -33,6 +33,7 @@
 package serpentine
 
 import scala.quoted.*
+import rudiments.*
 
 import anticipation.*
 import contingency.*
@@ -143,7 +144,7 @@ object internal:
 
                             tuple(descent).asType.absolve match
                               case '[type tuple <: Tuple; tuple] =>
-                                val varargs = Varargs(descent.map(Expr[Text](_)))
+                                val varargs = Varargs(descent.map(Expr[Text](_)).scala)
                                 '{Relative[plane, tuple, limit](${Expr(ascent)}, $varargs*)}
 
                           case Left(_) => Unset
@@ -197,8 +198,8 @@ object internal:
   :   quotes.reflect.TypeRepr =
 
     val difference = left.length - right.length
-    val left0 = left.drop(difference).to(List)
-    val right0 = right.drop(-difference).to(List)
+    val left0 = left.drop(difference)
+    val right0 = right.drop(-difference)
 
     def recur(left: List[String], right: List[String], size: Int, count: Int): List[String] =
       if left.nil then left0.drop(size - count)

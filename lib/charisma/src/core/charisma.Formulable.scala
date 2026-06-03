@@ -39,7 +39,7 @@ trait Formulable:
 
   @targetName("plus")
   infix def + (formulable: Formulable): ChemicalFormula = ChemicalFormula:
-    formulable.formula.molecules.fuse(formula.molecules):
+    List.from(formulable.formula.molecules).fuse(formula.molecules):
       state.updated(next(0), formula.molecules.getOrElse(next(0), 0) + next(1))
 
   @targetName("netForward")

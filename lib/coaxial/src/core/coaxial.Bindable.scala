@@ -136,7 +136,7 @@ object Bindable:
 
             case ip: Ipv6 =>
               val array =
-                IArray.from(ip.highBits.bits.bytes ++ ip.lowBits.bits.bytes).mutable(using Unsafe)
+                (ip.highBits.bits.bytes ++ ip.lowBits.bits.bytes).mutable(using Unsafe)
 
               jn.InetAddress.getByAddress(array).nn
 

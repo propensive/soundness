@@ -35,6 +35,7 @@ package iridescence
 import scala.quoted.*
 
 import anticipation.*
+import rudiments.*
 import fulminate.*
 
 object internal:
@@ -46,7 +47,7 @@ object internal:
       context.value.getOrElse:
         halt(m"the StringContext extension method parameter does not appear to be inline")
 
-      . parts.toList
+      . parts.to(List)
 
     if parts.length != 1 then halt(m"an rgb literal cannot have substitutions")
 

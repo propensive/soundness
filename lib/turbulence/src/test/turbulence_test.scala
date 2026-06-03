@@ -49,13 +49,13 @@ object Tests extends Suite(m"Turbulence tests"):
       import randomization.seeded
       val data: Data = Data.fill(1000)(_.toByte)
       val stream: Stream[Data] = Stream(data)
-      val shredded: Iterable[Stream[Data]] = stochastic:
-        (0 until 100).map: index =>
+      val shredded: List[Stream[Data]] = stochastic:
+        (0 until 100).to(List).map: index =>
           stream.shred(20.0, 10.0)
 
       shredded.each: stream =>
         test(m"correct length after shredding"):
-          stream.map(_.length).total
+          List.from(stream.map(_.length)).total
         . assert(_ == 1000)
 
         test(m"correct content after shredding"):
@@ -75,22 +75,20 @@ object Tests extends Suite(m"Turbulence tests"):
         asc3 <- List(t"", t"a", t"ab", t"abc") // 2048
       yield asc0+cp2+asc1+cp3+asc2+cp4
 
-      for
-        string <- strings
-        bs     <- 1 to 8
-      do
-        test(m"length tests"):
-          val stream = string.data.grouped(bs).to(Stream)
-          val result = stream.read[Text]
-          result.data.length
-        . assert(_ == string.data.length)
+      strings.each: string =>
+        (1 to 8).to(List).each: bs =>
+          test(m"length tests"):
+            val stream = string.data.grouped(bs).to(Stream)
+            val result = stream.read[Text]
+            result.data.length
+          . assert(_ == string.data.length)
 
-        test(m"roundtrip tests"):
-          val stream = string.data.grouped(bs).to(Stream)
-          val result = stream.read[Text]
+          test(m"roundtrip tests"):
+            val stream = string.data.grouped(bs).to(Stream)
+            val result = stream.read[Text]
 
-          result
-        . assert(_ == string)
+            result
+          . assert(_ == string)
 
     val qbf = t"The quick brown fox\njumps over the lazy dog"
     val qbfData = qbf.data
@@ -117,8 +115,8 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_ == qbf)
 
       test(m"Stream Data"):
-        qbf.stream[Data].reduce(_ ++ _).to(List)
-      . assert(_ == qbfData.to(List))
+        qbf.stream[Data].reduce(_ ++ _).to[List]
+      . assert(_ == qbfData.to[List])
 
       test(m"Read Text as Text"):
         qbf.read[Text]
@@ -129,24 +127,24 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_ == t"abcdef")
 
       test(m"Read type as Data with Text and Byte Streamable"):
-        Ref().read[Data].to(List)
-      . assert(_ == t"abcdef".data.to(List))
+        Ref().read[Data].to[List]
+      . assert(_ == t"abcdef".data.to[List])
 
       test(m"Read some type as Text with only Text Streamable instance"):
         Ref2().read[Text]
       . assert(_ == t"abcdef")
 
       test(m"Read some type as Data with only Text Streamable instance"):
-        Ref2().read[Data].to(List)
-      . assert(_ == t"abcdef".data.to(List))
+        Ref2().read[Data].to[List]
+      . assert(_ == t"abcdef".data.to[List])
 
       test(m"Read some type as Text with only Data Streamable instance"):
         Ref3().read[Text]
       . assert(_ == t"abcdef")
 
       test(m"Read some type as Data with only Data Streamable instance"):
-        Ref3().read[Data].to(List)
-      . assert(_ == t"abcdef".data.to(List))
+        Ref3().read[Data].to[List]
+      . assert(_ == t"abcdef".data.to[List])
 
       test(m"Read Text as Stream[Text]"):
         qbf.read[Stream[Text]].join
@@ -154,11 +152,11 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read Text as Data"):
         qbf.read[Data]
-      . assert(_.to(List) == qbfData.to(List))
+      . assert(_.to[List] == qbfData.to[List])
 
       test(m"Read Text as Stream[Data]"):
         qbf.read[Stream[Data]]
-      . assert(_.reduce(_ ++ _).to(List) == qbfData.to(List))
+      . assert(_.reduce(_ ++ _).to[List] == qbfData.to[List])
 
       test(m"Read Data as Text"):
         qbfData.read[Text]
@@ -170,11 +168,11 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read Data as Data"):
         qbfData.read[Data]
-      . assert(_.to(List) == qbfData.to(List))
+      . assert(_.to[List] == qbfData.to[List])
 
       test(m"Read Data as Stream[Data]"):
         qbfData.read[Stream[Data]]
-      . assert(_.reduce(_ ++ _).to(List) == qbfData.to(List))
+      . assert(_.reduce(_ ++ _).to[List] == qbfData.to[List])
 
       // test(m"Read Text as Lines"):
       //   qbf.read[Stream[Line]]
@@ -411,7 +409,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
     suite(m"Compression tests"):
       test(m"Compress a single block with GZip"):
-        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].to(List).map(_.to(List))
+        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].to(List).map(_.to[List])
       . assert(_ == List(List(31, -117, 8, 0, 0, 0, 0, 0, 0, -1), List(99, 100, 100, 98, 102, -27, -32, 21, 85, 2, 0, -56, -16, -118, -53, 9, 0, 0, 0)))
 
       test(m"Roundtrip compress/decompress a single block with GZip"):
@@ -422,9 +420,9 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Roundtrip compress/decompress a long repetitive stream with Gzip"):
         longData.compress[Gzip].decompress[Gzip]
-      . assert(_.flatten == longData.flatten)
+      . assert(_.flatMap(_.to[List].scala) == longData.flatMap(_.to[List].scala))
       test(m"Compress a single block with Zlib"):
-        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].to(List).map(_.to(List))
+        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].to(List).map(_.to[List])
       . assert(_ == List(List(120, -100, 98, 100, 100, 98, 102, -27, -32, 21, 85, 2, 0, 0, 0, -1, -1), List(3, 0, 0, -26, 0, 89)))
 
       test(m"Roundtrip compress/decompress a single block with Zlib"):
@@ -436,7 +434,7 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert: stream => stream === longData
 
       test(m"Compress a single block with Deflate"):
-        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].to(List).map(_.to(List))
+        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].to(List).map(_.to[List])
       . assert(_ == List(List(98, 100, 100, 98, 102, -27, -32, 21, 85, 2, 0, 0, 0, -1, -1), List(3, 0)))
 
       test(m"Roundtrip compress/decompress a single block with Deflate"):
@@ -449,31 +447,31 @@ object Tests extends Suite(m"Turbulence tests"):
 
     suite(m"Framing"):
       test(m"Single 4-byte-prefixed frame in one chunk"):
-        Stream(Data(0, 0, 0, 3, 10, 20, 30)).framed[U32]().map(_.to(List)).to(List)
+        Stream(Data(0, 0, 0, 3, 10, 20, 30)).framed[U32]().map(_.to[List]).to(List)
       . assert(_ == List(List[Byte](10, 20, 30)))
 
       test(m"Single 2-byte-prefixed frame in one chunk"):
-        Stream(Data(0, 3, 10, 20, 30)).framed[U16]().map(_.to(List)).to(List)
+        Stream(Data(0, 3, 10, 20, 30)).framed[U16]().map(_.to[List]).to(List)
       . assert(_ == List(List[Byte](10, 20, 30)))
 
       test(m"Multiple 4-byte-prefixed frames in one chunk"):
         val data = Data(0, 0, 0, 2, 1, 2, 0, 0, 0, 3, 3, 4, 5)
-        Stream(data).framed[U32]().map(_.to(List)).to(List)
+        Stream(data).framed[U32]().map(_.to[List]).to(List)
       . assert(_ == List(List[Byte](1, 2), List[Byte](3, 4, 5)))
 
       test(m"Frame split across two chunks"):
         val s = Stream(Data(0, 0, 0, 5, 1, 2), Data(3, 4, 5))
-        s.framed[U32]().map(_.to(List)).to(List)
+        s.framed[U32]().map(_.to[List]).to(List)
       . assert(_ == List(List[Byte](1, 2, 3, 4, 5)))
 
       test(m"Length prefix split across chunks"):
         val s = Stream(Data(0, 0), Data(0, 3, 7, 8, 9))
-        s.framed[U32]().map(_.to(List)).to(List)
+        s.framed[U32]().to(List).map(_.to[List])
       . assert(_ == List(List[Byte](7, 8, 9)))
 
       test(m"Terminator ends stream cleanly"):
         val data = Data(0, 0, 0, 2, 1, 2, 0, 0, 255.toByte, 255.toByte)
-        Stream(data).framed[U32](U32(0xFFFF.bits)).map(_.to(List)).to(List)
+        Stream(data).framed[U32](U32(0xFFFF.bits)).to(List).map(_.to[List])
       . assert(_ == List(List[Byte](1, 2)))
 
       test(m"Truncated frame raises StreamError"):

@@ -90,9 +90,9 @@ object internal:
         '{Text($expr)}
 
     given conversion: Conversion[String, Text] = identity(_)
-    inline given canEqual: CanEqual[Text, Text] = caps.unsafe.unsafeErasedValue
-    inline given canEqual2: CanEqual[String, Text] = caps.unsafe.unsafeErasedValue
-    inline given canEqual3: CanEqual[Text, String] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[Text, Text] = scala.caps.unsafe.unsafeErasedValue
+    inline given canEqual2: CanEqual[String, Text] = scala.caps.unsafe.unsafeErasedValue
+    inline given canEqual3: CanEqual[Text, String] = scala.caps.unsafe.unsafeErasedValue
 
     given typeable: Typeable[Text]:
       def unapply(value: Any): Option[value.type & Text] = value.asMatchable match

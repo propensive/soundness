@@ -447,11 +447,11 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
 
     def parseInts(text: Text): List[Int] =
       if text.nil then Nil
-      else text.cut(t";").to(List).map(parseInt(_, 0))
+      else text.cut(t";").to[List].map(parseInt(_, 0))
 
     def parsePair(text: Text, default: Int): (Int, Int) =
       if text.nil then (default, default) else
-        val parts = text.cut(t";").to(List)
+        val parts = text.cut(t";").to[List]
         val first = if parts.length >= 1 then parseInt(parts(0), default) else default
         val second = if parts.length >= 2 then parseInt(parts(1), default) else default
         (first, second)

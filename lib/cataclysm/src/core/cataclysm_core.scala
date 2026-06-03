@@ -65,8 +65,8 @@ extension [selector: Selectable](left: selector)
   infix def ~~ [selector2: Selectable](right: selector2): Selector =
     selector.selector(left) ~ selector2.selector(right)
 
-def max(head: Length, tail: Length*): Length = tail.fuse(head)(state.function(t"max", next))
-def min(head: Length, tail: Length*): Length = tail.fuse(head)(state.function(t"min", next))
+def max(head: Length, tail: Length*): Length = List.from(tail).fuse(head)(state.function(t"max", next))
+def min(head: Length, tail: Length*): Length = List.from(tail).fuse(head)(state.function(t"min", next))
 
 package pseudo:
   def dir(direction: Dir) = Selector.PseudoClass(t"dir(${direction.show.lower})")

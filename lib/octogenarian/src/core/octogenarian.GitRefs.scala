@@ -37,6 +37,7 @@ import contingency.*
 import gossamer.*
 import prepositional.*
 import serpentine.*
+import rudiments.*
 
 // `GitRefs` is the Serpentine path scheme for Git references. Every fully-
 // qualified reference (`refs/heads/main`, `refs/notes/commits`, …) is rooted
@@ -78,8 +79,8 @@ object GitRefs extends Root(t"refs/"):
     if segment.contains(t"@{") then fail(GitRefError.Reason.ReservedSequence)
     if segment.contains(t"..") then fail(GitRefError.Reason.DoubleDot)
 
-    for ch <- List('*', '[', '\\', ' ', '^', '~', ':', '?', '/')
-    do if segment.contains(ch) then fail(GitRefError.Reason.InvalidCharacter)
+    List('*', '[', '\\', ' ', '^', '~', ':', '?', '/').each: ch =>
+      if segment.contains(ch) then fail(GitRefError.Reason.InvalidCharacter)
 
   // The default `text is Admissible on filesystem` from Serpentine already
   // satisfies the typeclass slot for any plane; the marker here is for the

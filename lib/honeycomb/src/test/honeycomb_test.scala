@@ -249,12 +249,12 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
       test(m"Foreign SVG tag"):
         t"""<div><svg><circle r="1"/></svg></div>""".read[Html of Flow]
-      . assert(_ == Div(Svg(Element.foreign("circle", sci.Map(t"r" -> t"1")))))
+      . assert(_ == Div(Svg(Element.foreign(t"circle", Attributes(t"r" -> t"1")))))
 
       test(m"Nontrivial MathML example"):
         t"""<div>The equation is <math><mfrac><msup><mi>π</mi><mn>2</mn></msup><mn>6</mn></mfrac></math>.</div>"""
         . read[Html of Flow]
-      . assert(_ == Div("The equation is ", Math(Element.foreign("mfrac", sci.Map(), Element.foreign("msup", sci.Map(), Element.foreign("mi", sci.Map(), "π"), Element.foreign("mn", sci.Map(), "2")), Element.foreign("mn", sci.Map(), "6"))), "."))
+      . assert(_ == Div("The equation is ", Math(Element.foreign(t"mfrac", Attributes(), Element.foreign(t"msup", Attributes(), Element.foreign(t"mi", Attributes(), "π"), Element.foreign(t"mn", Attributes(), "2")), Element.foreign(t"mn", Attributes(), "6"))), "."))
 
       test(m"transparent tag with text"):
         t"""<p>Go <a href="https://example.com">home</a>.</p>""".read[Html of "p"]
@@ -642,8 +642,8 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"nested SVG content"):
           t"""<svg><g><circle/></g></svg>""".read[Html of Flow]
         . assert: result =>
-            result == Svg(Element.foreign(t"g", sci.Map(),
-              Element.foreign(t"circle", sci.Map())))
+            result == Svg(Element.foreign(t"g", Attributes(),
+              Element.foreign(t"circle", Attributes())))
 
         test(m"CDATA inside SVG"):
           val parsed = t"""<svg><![CDATA[raw <text>]]></svg>""".read[Html of Flow]
@@ -664,7 +664,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         test(m"SVG self-closing rect"):
           t"""<svg><rect/></svg>""".read[Html of Flow]
-        . assert(_ == Svg(Element.foreign(t"rect", sci.Map())))
+        . assert(_ == Svg(Element.foreign(t"rect", Attributes())))
 
       suite(m"Error position reporting"):
         test(m"EOF inside open tag"):
@@ -1022,7 +1022,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
               sample.read[Html of Flow]
               true
             catch case _: Throwable => false
-        . assert(_.forall(identity))
+        . assert(_.all(identity))
 
         test(m"permissive given wins when Tactic[ParseError] is also in scope"):
           // `throwUnsafely` (file-level import) provides Tactic[ParseError] via

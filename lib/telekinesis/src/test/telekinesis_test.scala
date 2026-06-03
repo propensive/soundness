@@ -111,7 +111,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         val data: Data = text.data
         def go(offset: Int): Stream[Data] =
           if offset >= data.length then Stream() else
-            val end = math.min(offset + size, data.length)
+            val end = offset + size.min(data.length)
             data.slice(offset, end) #:: go(end)
         go(0)
 
@@ -122,7 +122,7 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       suite(m"Status line"):
         val fixture = t"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nbody"
-        for blockSize <- blockSizes do
+        blockSizes.each: blockSize =>
           test(m"Parse 200 OK at block size $blockSize"):
             Http.Response.parse(chunks(fixture, blockSize)).status
 
@@ -138,9 +138,9 @@ object Tests extends Suite(m"Telekinesis tests"):
 
           . assert(_ == t"body")
 
-        for status <- List(Http.Continue, Http.Ok, Http.NoContent, Http.MovedPermanently,
+        List(Http.Continue, Http.Ok, Http.NoContent, Http.MovedPermanently,
                            Http.NotModified, Http.BadRequest, Http.NotFound,
-                           Http.InternalServerError, Http.ServiceUnavailable) do
+                           Http.InternalServerError, Http.ServiceUnavailable).each: status =>
           test(m"Parse status code ${status.code}"):
             val fixture = t"HTTP/1.1 ${status.code} ${status.description}\r\n\r\n"
             Http.Response.parse(chunks(fixture, 4096)).status
@@ -160,7 +160,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         . assert(_ == Http.ServiceUnavailable)
 
       suite(m"Headers"):
-        for blockSize <- blockSizes do
+        blockSizes.each: blockSize =>
           test(m"Zero headers at block size $blockSize"):
             val fixture = t"HTTP/1.1 200 OK\r\n\r\nbody"
             Http.Response.parse(chunks(fixture, blockSize)).textHeaders
@@ -214,7 +214,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         . assert(_ == List(Http.Header(t"X-Same", t"a"), Http.Header(t"X-Same", t"b")))
 
       suite(m"Body"):
-        for blockSize <- blockSizes do
+        blockSizes.each: blockSize =>
           test(m"Empty body at block size $blockSize"):
             val fixture = t"HTTP/1.1 204 No Content\r\nContent-Length: 0\r\n\r\n"
             bodyText(Http.Response.parse(chunks(fixture, blockSize)))

@@ -115,7 +115,7 @@ object internal:
 
     def scroll(n: Int, top: Int, bottom: Int): Unit =
       val regionRows = bottom - top + 1
-      val absN = math.abs(n).min(regionRows)
+      val absN = scala.math.abs(n).min(regionRows)
       val offset = width*absN
       val length = width*(regionRows - absN)
       val regionStart = top*width
@@ -191,7 +191,7 @@ object internal:
           t"C"  -> Bit.Conceal(style),
           t"R"  -> Bit.Reverse(style) )
 
-      .   map: (key, value) => if value then key else t"!$key"
+      .toList.map: (key, value) => if value then key else t"!$key"
       .   join(t"[", t" ", t" ${Foreground(style).inspect} ${Background(style).inspect}]")
 
     enum Bit:

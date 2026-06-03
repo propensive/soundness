@@ -39,7 +39,7 @@ import spectacular.*
 
 object PemLabel:
   lazy val index: Map[Text, PemLabel] =
-    (0 to 17).map(fromOrdinal(_)).indexBy(_.toString.tt.uncamel.map(_.upper).join(t" "))
+    List.from((0 to 17).map(fromOrdinal(_))).indexBy(_.toString.tt.uncamel.map(_.upper).join(t" "))
 
   given showable: PemLabel is Showable =
     case Proprietary(label) => label

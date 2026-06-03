@@ -52,6 +52,6 @@ object Rgb12Opaque:
 
     def green: Int = (color >> 4)&15
     def blue: Int = color&15
-    def hex: Text = ("#"+List(red, green, blue).map(_.hex).mkString).tt
+    def hex: Text = ("#"+List(red, green, blue).map(_.hex).scala.mkString).tt
     def color: Color in Srgb = Srgb(red/15.0, green/15.0, blue/15.0)
     def chroma: Chroma = Chroma(red*17, green*17, blue*17)

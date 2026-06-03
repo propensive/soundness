@@ -59,4 +59,4 @@ enum Layout extends Markdown.Node:
     case Paragraph(_, children*)  => children
     case BlockQuote(_, children*) => children.flatMap(_.children)
     case Heading(_, _, children*) => children
-    case _                        => Nil
+    case _                        => Nil.scala

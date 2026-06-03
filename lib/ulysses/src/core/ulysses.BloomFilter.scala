@@ -83,7 +83,7 @@ case class BloomFilter[element: Digestible, algorithm <: Algorithm]
     BloomFilter(bitSize, hashCount, bits | bitSet)
 
   @targetName("addAll")
-  infix def ++ (elements: Iterable[element]): BloomFilter[element, algorithm] =
+  infix def ++ (elements: List[element]): BloomFilter[element, algorithm] =
     val bitSet = scm.BitSet()
     elements.each(additions(_, bitSet))
     BloomFilter(bitSize, hashCount, bits | bitSet)

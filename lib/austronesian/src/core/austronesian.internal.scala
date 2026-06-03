@@ -35,6 +35,7 @@ package austronesian
 import anticipation.*
 import contingency.*
 import distillate.*
+import murmuration.Expandable
 import prepositional.*
 import probably.*
 import rudiments.*
@@ -109,10 +110,11 @@ object internal:
     // => trie[element] is Encodable in Pojo =
     //   trie => IArray.from(trie.map(_.encode))
 
-    given list: [collection <: Iterable, element: Encodable in Pojo]
+    given list: [collection[_], element: Encodable in Pojo] => (expandable: collection is Expandable)
     =>  collection[element] is Encodable in Pojo =
 
-      iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
+      iterable =>
+        Array.from[Object](expandable.expand(iterable).iterator.map(_.encode.asInstanceOf[Object]))
 
 
     given text2: Text is Decodable:
@@ -157,7 +159,7 @@ object internal:
 
 
     inline given collection
-    :   [ collection <: Iterable, element: Decodable in Pojo ]
+    :   [ collection[_], element: Decodable in Pojo ]
     =>  Tactic[PojoError]
     =>  ( factory: scala.collection.Factory[element, collection[element]] )
     =>  collection[element] is Decodable in Pojo =

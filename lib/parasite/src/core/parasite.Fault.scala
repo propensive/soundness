@@ -32,8 +32,8 @@
                                                                                                   */
 package parasite
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 import java.util.concurrent.atomic as juca
 
@@ -55,8 +55,8 @@ object Fault:
 
     def register(value: Os.type, action: Fault => Unit): () => Unit =
       val handle: Fault => Unit = action(_)
-      handler.tasks.updateAndGet(_.nn + handle)
+      handler.tasks.updateAndGet(_.nn ++ Set(handle))
 
-      () => handler.tasks.updateAndGet(_.nn - handle)
+      () => handler.tasks.updateAndGet(_.nn -- Set(handle))
 
 case class Fault(thread: Thread, error: Error)

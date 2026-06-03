@@ -32,7 +32,7 @@
                                                                                                   */
 package vacuous
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 trait Extractor[-scrutinee, +extraction]:
   def extract(value: scrutinee): Optional[extraction]

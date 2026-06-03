@@ -116,7 +116,7 @@ object Dictionary:
   // auto-derived from the distinct characters appearing in the keys, in
   // first-encountered order.
   def apply[value: ClassTag](pairs: (Text, value)*): Dictionary[value] =
-    build(pairs, autoAlphabet(pairs), ahoCorasick = false)
+    build(pairs.to(List), autoAlphabet(pairs.to(List)), ahoCorasick = false)
 
   // Build a Dictionary from pairs with an explicit alphabet. Keys
   // containing characters not in the alphabet are silently dropped from
@@ -125,7 +125,7 @@ object Dictionary:
     ( alphabet: Alphabet, pairs: (Text, value)* )
   :   Dictionary[value] =
 
-    build(pairs, alphabet, ahoCorasick = false)
+    build(pairs.to(List), alphabet, ahoCorasick = false)
 
   // Build a Dictionary configured for an Aho-Corasick walk. The trie
   // additionally carries `depth`, `fail`, and `dictLink` arrays so a
@@ -135,15 +135,15 @@ object Dictionary:
     ( alphabet: Alphabet, pairs: (Text, value)* )
   :   Dictionary[value] =
 
-    build(pairs, alphabet, ahoCorasick = true)
+    build(pairs.to(List), alphabet, ahoCorasick = true)
 
   // Internal: derive an alphabet from the union of chars in the supplied
   // keys. Insertion order is preserved so the slot mapping is stable
   // across runs with the same input.
-  private def autoAlphabet[value](pairs: Iterable[(Text, value)]): Alphabet =
+  private def autoAlphabet[value](pairs: List[(Text, value)]): Alphabet =
     val chars = LinkedHashSet[Char]()
 
-    pairs.foreach: (key, _) =>
+    pairs.scala.foreach: (key, _) =>
       val s = key.s
       var i = 0
 
@@ -157,7 +157,7 @@ object Dictionary:
   // (key, value) pairs, then (optionally) compute Aho-Corasick failure
   // and dictionary-suffix links via BFS.
   private def build[value: ClassTag]
-    ( pairs:       Iterable[(Text, value)],
+    ( pairs:       List[(Text, value)],
       alphabet:    Alphabet,
       ahoCorasick: Boolean )
   :   Dictionary[value] =
@@ -173,7 +173,7 @@ object Dictionary:
     val root = new NodeBuilder
     val alpha = alphabet.size
 
-    pairs.foreach: (key, v) =>
+    pairs.scala.foreach: (key, v) =>
       var node = root
       val s = key.s
       var i = 0
@@ -363,7 +363,7 @@ final class Dictionary[+value]
     count
 
   // Iterate over stored values.
-  def iterator: Iterable[value] =
+  def iterator: List[value] =
     val buffer = ArrayBuffer[value]()
     var i = 0
 
@@ -372,12 +372,12 @@ final class Dictionary[+value]
       if v != null then buffer += v.asInstanceOf[value]
       i += 1
 
-    buffer
+    List.from(buffer)
 
   // Iterate over `(key, value)` pairs by walking the trie in alphabet
   // order. Allocates an `ArrayBuffer` and a `StringBuilder` shared
   // across recursive descents.
-  def entries: Iterable[(Text, value)] =
+  def entries: List[(Text, value)] =
     val buffer = ArrayBuffer[(Text, value)]()
     val key = new java.lang.StringBuilder
     val alpha = alphabet.size
@@ -398,7 +398,7 @@ final class Dictionary[+value]
         sl += 1
 
     if values.length > 0 then walk(0)
-    buffer
+    List.from(buffer)
 
   // Add an entry, returning a new Dictionary. Widens the value type to
   // include the new entry's value type via the standard `[v2 >: value]`
@@ -407,8 +407,8 @@ final class Dictionary[+value]
     this + (key -> value)
 
   def + [value2 >: value: ClassTag](entry: (Text, value2)): Dictionary[value2] =
-    this ++ Seq(entry)
+    this ++ List(entry)
 
-  def ++ [value2 >: value: ClassTag](extras: Iterable[(Text, value2)]): Dictionary[value2] =
-    val combined = entries.asInstanceOf[Iterable[(Text, value2)]] ++ extras
-    Dictionary[value2](combined.toSeq*)
+  def ++ [value2 >: value: ClassTag](extras: List[(Text, value2)]): Dictionary[value2] =
+    val combined = entries.asInstanceOf[List[(Text, value2)]] ++ extras
+    Dictionary[value2](combined.scala.toSeq*)

@@ -32,7 +32,7 @@
                                                                                                   */
 package locomotion
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import java.lang as jl
 import java.nio.charset.StandardCharsets.UTF_8
@@ -45,6 +45,7 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import hypotenuse.*
+import murmuration.Expandable
 import prepositional.*
 import rudiments.*
 import turbulence.*
@@ -68,15 +69,17 @@ trait Protobuf2:
   // higher-priority packed givens in `object Protobuf`. Decoding accepts either
   // form, so a packed field still round-trips here when no `Packable` is in scope.
 
-  given listEncodable: [collection <: Iterable, element]
-  =>  ( encodable: => element is Encodable in Protobuf )
+  given listEncodable: [collection[_], element] => (encodable: => element is Encodable in Protobuf)
+  =>  (expandable: collection is Expandable)
   =>  collection[element] is Encodable in Protobuf =
 
     values =>
-      val occurrences = values.to(List).flatMap(encodable.encode(_).occurrences)
-      if occurrences.isEmpty then Protobuf.Absent else Protobuf.Repeated(occurrences)
+      val occurrences =
+        List.from(expandable.expand(values)).flatMap(encodable.encode(_).occurrences)
 
-  given listDecodable: [collection <: Iterable, element]
+      if occurrences.scala.isEmpty then Protobuf.Absent else Protobuf.Repeated(occurrences)
+
+  given listDecodable: [collection[_], element]
   =>  ( factory: Factory[element, collection[element]] )
   =>  ( decodable: => element is Decodable in Protobuf )
   =>  collection[element] is Decodable in Protobuf =
@@ -84,7 +87,7 @@ trait Protobuf2:
     protobuf =>
       val builder = factory.newBuilder
 
-      protobuf.occurrences.foreach: wire =>
+      protobuf.occurrences.scala.foreach: wire =>
         builder += decodable.decoded(wire)
 
       builder.result()
@@ -236,24 +239,25 @@ object Protobuf extends Protobuf2:
   // concatenated into one length-delimited field. Higher priority than the unpacked
   // givens in `Protobuf2` because `Packable` constrains the element type.
 
-  given packedEncodable: [collection <: Iterable, element]
+  given packedEncodable: [collection[_], element]
   =>  ( encodable: => element is Encodable in Protobuf, packable: element is Packable )
+  =>  (expandable: collection is Expandable)
   =>  collection[element] is Encodable in Protobuf =
 
     values =>
-      val list = values.to(List)
+      val list = List.from(expandable.expand(values))
 
-      if list.isEmpty then Absent else
+      if list.scala.isEmpty then Absent else
         val printer = ProtobufPrinter()
         var rest = list
 
-        while rest.nonEmpty do
+        while !rest.scala.isEmpty do
           printer.raw(encodable.encode(rest.head).payload)
           rest = rest.tail
 
         Wire(WireType.Len, printer.result)
 
-  given packedDecodable: [collection <: Iterable, element]
+  given packedDecodable: [collection[_], element]
   =>  ( factory:   Factory[element, collection[element]],
         decodable: => element is Decodable in Protobuf,
         packable:  element is Packable )
@@ -265,9 +269,9 @@ object Protobuf extends Protobuf2:
 
       // Accept both packed (one Len field of concatenated values) and unpacked (a
       // value per occurrence) wire forms, per the proto3 compatibility rule.
-      protobuf.occurrences.foreach: wire =>
+      protobuf.occurrences.scala.foreach: wire =>
         if wire.wireKind == WireType.Len && packable.wireType != WireType.Len
-        then ProtobufParser(wire.payload).packed(packable.wireType).foreach: element =>
+        then ProtobufParser(wire.payload).packed(packable.wireType).scala.foreach: element =>
           builder += decodable.decoded(element)
         else builder += decodable.decoded(wire)
 
@@ -283,7 +287,7 @@ object Protobuf extends Protobuf2:
 
     map =>
       if map.isEmpty then Absent else
-        val entries = map.to(List).map: (key, value) =>
+        val entries = map.to[List].map: (key, value) =>
           val printer = ProtobufPrinter()
           printer.field(1, keyEncodable.encode(key))
           printer.field(2, valueEncodable.encode(value))
@@ -304,7 +308,7 @@ object Protobuf extends Protobuf2:
         val value = valueDecodable.decoded(Repeated(fields.at(2).or(Nil)))
         (key, value)
 
-      entries.to(Map)
+      entries.to[Map]
 
   object EncodableDerivation extends Derivable[Encodable in Protobuf]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -338,7 +342,7 @@ object Protobuf extends Protobuf2:
           [field0] => context =>
             (label, annotated.at(label).let(_.head.number).or(index + 1))
 
-      pairs.to(Map)
+      pairs.to[Map]
 
   object DecodableDerivation extends Derivable[Decodable in Protobuf]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -380,7 +384,7 @@ object Protobuf extends Protobuf2:
           [field0] => context =>
             (label, annotated.at(label).let(_.head.number).or(index + 1))
 
-      pairs.to(Map)
+      pairs.to[Map]
 
 // A single Protocol Buffers wire value, tagged with its wire type — the `Form` of
 // `Encodable`/`Decodable in Protobuf`. `Repeated` carries every occurrence of a
@@ -393,7 +397,7 @@ enum Protobuf:
 
   // The most recent single wire value (protobuf's last-one-wins rule for scalars).
   def single: Protobuf = this match
-    case Repeated(values) => if values.isEmpty then Protobuf.Absent else values.last
+    case Repeated(values) => if values.scala.isEmpty then Protobuf.Absent else values.last
     case other            => other
 
   // Every wire value recorded for this field — used to decode `repeated` fields.

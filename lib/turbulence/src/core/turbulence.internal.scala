@@ -32,6 +32,9 @@
                                                                                                   */
 package turbulence
 
+import scala.collection.immutable.`::`
+import scala.collection.immutable.List
+import scala.collection.immutable.Nil
 import scala.quoted.*
 
 import anticipation.*
@@ -61,8 +64,8 @@ object internal:
     lazy val decoder: Optional[Expr[CharDecoder]] = Expr.summon[CharDecoder].optional
     lazy val encoder: Optional[Expr[CharEncoder]] = Expr.summon[CharEncoder].optional
 
-    lazy val streamables = List(streamableData, streamableText).compact
-    lazy val aggregables = List(aggregableData, aggregableText).compact
+    lazy val streamables = List(streamableData, streamableText).flatMap(_.option)
+    lazy val aggregables = List(aggregableData, aggregableText).flatMap(_.option)
 
     streamableData.let: streamable =>
       aggregableData.let: aggregable =>
@@ -88,7 +91,7 @@ object internal:
     . or:
 
         val reason =
-          if streamables.nil && aggregables.nil
+          if streamables.isEmpty && aggregables.isEmpty
           then
             m"""
               no ${name[source is Streamable]} or ${name[result is Aggregable]} instance exists in

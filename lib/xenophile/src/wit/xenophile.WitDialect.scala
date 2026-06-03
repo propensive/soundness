@@ -167,7 +167,7 @@ object WitDialect extends Dialect:
           (types.updated(name, functions), typedefs, Nil)
 
         case "record" :: record :: "{" :: rest =>
-          val (fields, after) = recordFields(rest, ListMap())
+          val (fields, after) = recordFields(rest, Map())
           recur(after, functions, types.updated(record.tt, fields), typedefs)
 
         case "enum" :: alias :: "{" :: rest =>
@@ -185,7 +185,7 @@ object WitDialect extends Dialect:
           recur(after, functions, types, typedefs.updated(alias.tt, Foreign.Type.Named(topic)))
 
         case "variant" :: variant :: "{" :: rest =>
-          val updated = types.updated(variant.tt, ListMap[Text, Signature]())
+          val updated = types.updated(variant.tt, Map[Text, Signature]())
           recur(skipBraces(rest, 1), functions, updated, typedefs)
 
         case "resource" :: _ :: "{" :: rest =>
@@ -219,7 +219,7 @@ object WitDialect extends Dialect:
         case _ :: rest =>
           recur(rest, functions, types, typedefs)
 
-    recur(tokens, ListMap(), types, typedefs)
+    recur(tokens, Map(), types, typedefs)
 
   private def recordFields(tokens: List[String], acc: Map[Text, Signature])
   :   (Map[Text, Signature], List[String]) =

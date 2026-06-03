@@ -153,7 +153,7 @@ object internal:
 
     val lookupUnit = readUnitPower(TypeRepr.of[unit])
 
-    val multiplier: Multiplier = multipliers[units].where(_.unitPower == lookupUnit).or:
+    val multiplier: Multiplier = List.from(multipliers[units]).where(_.unitPower == lookupUnit).or:
       halt(557, m"the Quanta does not include this unit")
 
     '{(($value.long/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}
@@ -193,7 +193,7 @@ object internal:
 
       case head :: tail =>
         val value = ratio(head.ref, cascade.head.ref, head.power).valueOrAbort
-        val value2 = tail.prim.let(_.ref).let(ratio(_, head.ref, head.power).valueOrAbort + 0.5)
+        val value2 = List.from(tail).prim.let(_.ref).let(ratio(_, head.ref, head.power).valueOrAbort + 0.5)
 
         recur
           ( tail,

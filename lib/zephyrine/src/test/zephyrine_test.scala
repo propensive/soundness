@@ -152,8 +152,8 @@ object Tests extends Suite(m"Zephyrine tests"):
 
 
     suite(m"Cursor tests"):
-      def hello = Cursor(t"Hello world!".chars.to(List).map(_.show).iterator)
-      def numbers = Cursor(t"0123456789abc".chars.to(List).map(_.show).iterator)
+      def hello = Cursor(t"Hello world!".chars.to[List].map(_.show).iterator)
+      def numbers = Cursor(t"0123456789abc".chars.to[List].map(_.show).iterator)
 
       test(m"Iterate over elements"):
         val cursor = hello
@@ -397,7 +397,7 @@ object Tests extends Suite(m"Zephyrine tests"):
       test(m"Cursor[Data] remainder from start equals full stream"):
         val blocks = Stream(Data(1, 2, 3), Data(4, 5), Data(6, 7))
         val cursor = Cursor[Data](blocks.iterator)
-        cursor.remainder.flatten.to(List)
+        cursor.remainder.flatMap(_.to[List].scala).to(List)
 
       . assert(_ == List[Byte](1, 2, 3, 4, 5, 6, 7))
 
@@ -405,7 +405,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         val blocks = Stream(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
         val cursor = Cursor[Data](blocks.iterator)
         for i <- 0 until 3 do cursor.next()
-        cursor.remainder.flatten.to(List)
+        cursor.remainder.flatMap(_.to[List].scala).to(List)
 
       . assert(_ == List[Byte](4, 5, 6, 7, 8))
 
@@ -413,7 +413,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         val blocks = Stream(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
         val cursor = Cursor[Data](blocks.iterator)
         for i <- 0 until 3 do cursor.next()
-        cursor.hold(cursor.remainder.flatten.to(List))
+        cursor.hold(cursor.remainder.flatMap(_.to[List].scala).to(List))
 
       . assert(_ == List[Byte](4, 5, 6, 7, 8))
 

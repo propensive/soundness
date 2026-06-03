@@ -82,7 +82,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == media"application/vnd.oci.image.layer.v1.tar+gzip")
 
       test(m"the blob is a valid gzipped tar round-tripping to the original entry"):
-        Tarfile.fromGzip(LazyList(layer.blob)).map(_.entryName).to(List)
+        List.from(Tarfile.fromGzip(LazyList(layer.blob)).map(_.entryName))
       . assert(_ == List(t"hello.txt"))
 
     suite(m"Image config"):
@@ -132,27 +132,27 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == image.manifest)
 
     suite(m"OCI archive"):
-      val entries    = Tarfile.read(image.archive.stream[Data]).to(List)
+      val entries    = List.from(Tarfile.read(image.archive.stream[Data]))
       val names      = entries.map(_.entryName)
       val layoutData = entries.collect:
         case file: TarEntry.File if file.entryName == t"oci-layout" => bytesOf(file.data)
 
       test(m"archive contains the oci-layout marker and index.json"):
-        (names.contains(t"oci-layout"), names.contains(t"index.json"))
+        (names.scala.contains(t"oci-layout"), names.scala.contains(t"index.json"))
       . assert(_ == (true, true))
 
       test(m"archive contains one blob per config, layer and manifest"):
-        names.count(_.s.startsWith("blobs/sha256/"))
+        names.scala.count(_.s.startsWith("blobs/sha256/"))
       . assert(_ == 3)
 
       test(m"the layer blob is stored under its digest path"):
         val hex = layer.digest.s.stripPrefix("sha256:")
-        names.map(_.s).contains("blobs/sha256/"+hex)
+        names.map(_.s).scala.contains("blobs/sha256/"+hex)
       . assert(_ == true)
 
       test(m"oci-layout declares image layout version 1.0.0"):
-        layoutData.map(bytes => bytes.to(List))
-      . assert(_ == List(t"""{"imageLayoutVersion":"1.0.0"}""".data.to(List)))
+        layoutData.map(bytes => bytes.to[List])
+      . assert(_ == List(t"""{"imageLayoutVersion":"1.0.0"}""".data.to[List]))
 
     suite(m"containerd over a gRPC loopback"):
       import threading.virtual
@@ -325,8 +325,8 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           val created = Containerd(endpoint, t"example").createContainer(container)
-          (created.id, created.runtime.name, created.spec.typeUrl, created.spec.value.to(List))
-      . assert(_ == (t"web", t"io.containerd.runc.v2", t"oci-spec", t"hello".data.to(List)))
+          (created.id, created.runtime.name, created.spec.typeUrl, created.spec.value.to[List])
+      . assert(_ == (t"web", t"io.containerd.runc.v2", t"oci-spec", t"hello".data.to[List]))
 
       test(m"createTask sends rootfs mounts and returns the task pid"):
         supervise:

@@ -32,7 +32,7 @@
                                                                                                   */
 package turbulence
 
-import language.experimental.captureChecking
+import scala.language.experimental.captureChecking
 
 import prepositional.*
 

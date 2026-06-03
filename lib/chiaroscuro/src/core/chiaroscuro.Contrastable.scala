@@ -67,7 +67,7 @@ object Contrastable:
           val map = contexts: [field] =>
             context => label -> context.juxtaposition(dereference(left), dereference(right))
 
-          Juxtaposition.Collation(typeName, map.to(List), show(left), show(right))
+          Juxtaposition.Collation(typeName, map.to[List], show(left), show(right))
 
     inline def disjunction[derivation: SumReflection]: derivation is Contrastable =
       (left, right) =>
@@ -100,8 +100,8 @@ object Contrastable:
           val rightOnly: Set[Text] = (right -- left).map(_.show)
 
           def describe(set: Set[Text]): Text =
-            ( if set.size > 5 then set.take(4).to(List) :+ t"…${(set.size - 4).show.subscripts}"
-              else set.to(List) )
+            ( if set.size > 5 then set.take(4).to[List] :+ t"…${(set.size - 4).show.subscripts}"
+              else set.to[List] )
 
             . join(t"{", t", ", t"}")
 
@@ -163,14 +163,14 @@ object Contrastable:
         Juxtaposition.Different(left, right)
 
       case (Decomposition.Sequence(name, left, _), Decomposition.Sequence(rightName, right, _)) =>
-        comparison(typeName, IArray.from(left), IArray.from(right), name, rightName)
+        comparison(typeName, IArray.from(left.scala), IArray.from(right.scala), name, rightName)
 
       case (Decomposition.Product(leftName, left, _), Decomposition.Product(rightName, right, _)) =>
         val name = if leftName == rightName then leftName else t"$leftName/$rightName"
 
         Juxtaposition.Collation
           ( name,
-            left.keys.to(List).map: key =>
+            left.keys.map: key =>
               key -> juxtaposition(t"", left(key), right(key)),
             leftName,
             rightName )
@@ -182,7 +182,7 @@ object Contrastable:
             val missing = Decomposition.Primitive(t"", t"", Unset)
 
             val entries =
-              keys.to(List).map: key =>
+              keys.map: key =>
                 key -> juxtaposition(t"", left.at(key).or(missing), right.at(key).or(missing))
 
             val name = if lname == rname then lname else t"$lname/$rname"
@@ -212,7 +212,7 @@ object Contrastable:
 
     if left == right then Juxtaposition.Same(leftDebug) else
       val comparison = IArray.from:
-        diff(left, right).rdiff(_ == _, 10).changes.map:
+        diff(left.to[IndexedSeq], right.to[IndexedSeq]).rdiff(_ == _, 10).changes.map:
           case Par(leftIndex, rightIndex, value) =>
             val label =
               if leftIndex == rightIndex then leftIndex.show
@@ -233,7 +233,7 @@ object Contrastable:
 
             label -> juxtaposition(t"", Decomposition(leftValue), Decomposition(rightValue))
 
-      Juxtaposition.Collation(name, comparison.to(List), leftDebug, rightDebug)
+      Juxtaposition.Collation(name, comparison.to[List], leftDebug, rightDebug)
 
 
   trait Foundation extends Contrastable:

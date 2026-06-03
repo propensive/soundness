@@ -82,7 +82,7 @@ object Hostname:
           if dnsLabels2.map(_.text.length + 1).sum > 254
           then raise(HostnameError(text, LongHostname))
 
-          Hostname(dnsLabels2.reverse*)
+          Hostname(dnsLabels2.reverse.scala*)
 
       case char: Char =>
         if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit

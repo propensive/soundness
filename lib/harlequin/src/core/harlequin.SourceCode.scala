@@ -50,7 +50,7 @@ object SourceCode:
     else if token >= 4 && token <= 9 || token == 23 || token == 24 || token == 42 || token == 43
     then Accent.Number
     else if token == 14 then Accent.Ident
-    else if token >= 20 && token <= 62 && Tokens.modifierTokens.has(token) then Accent.Modifier
+    else if token >= 20 && token <= 62 && Tokens.modifierTokens.contains(token) then Accent.Modifier
     else if token >= 20 && token <= 66 then Accent.Keyword
     else if token >= 78 && token <= 99 then Accent.Symbol
     else Accent.Parens
@@ -81,7 +81,7 @@ object SourceCode:
 
     def hard(stream: Stream[Token]): Boolean = stream match
       case Token(_, Accent.Unparsed) #:: more                   => hard(more)
-      case Token(text, Accent.Ident) #:: more if soft.has(text) => hard(more)
+      case Token(text, Accent.Ident) #:: more if soft.scala.contains(text) => hard(more)
       case Token(text, Accent.Keyword | Accent.Modifier) #:: _  => true
       case other                                                => false
 
@@ -89,7 +89,7 @@ object SourceCode:
       case (Token(text@(t"using" | t"erased"), Accent.Ident)) #:: more =>
         Token(text, Accent.Modifier) #:: soften(more)
 
-      case (token@Token(text, Accent.Ident)) #:: more if soft.has(text) =>
+      case (token@Token(text, Accent.Ident)) #:: more if soft.scala.contains(text) =>
         if hard(more) then Token(text, Accent.Modifier) #:: soften(more)
         else token #:: soften(more)
 
@@ -109,7 +109,7 @@ object SourceCode:
           if lastEnd == start then Stream() else
             text.segment(lastEnd.z thru start.u)
             . cut(t"\n")
-            . to(Stream)
+            . to[Stream]
             . flatMap(untab(_).filter(_.length > 0))
             . init
 
@@ -118,7 +118,7 @@ object SourceCode:
 
         val content: Stream[Token] =
           if start == end then Stream() else
-            text.segment(start.z thru end.u).cut(t"\n").to(Stream).flatMap: line =>
+            text.segment(start.z thru end.u).cut(t"\n").to[Stream].flatMap: line =>
               Stream(Token(line, trees(start, end).getOrElse(accent(token))), Token.Newline)
 
             . init
@@ -137,7 +137,7 @@ object SourceCode:
             case -1    => xs :: acc
             case index => lines(xs.drop(index + 1), xs.take(index) :: acc)
 
-    SourceCode(language, 1, IArray(lines(soften(stream()).to(List)).reverse*))
+    SourceCode(language, 1, IArray(lines(soften(stream()).to(List)).reverse.scala*))
 
   private class Trees() extends ast.untpd.UntypedTreeTraverser:
     import ast.*, untpd.*

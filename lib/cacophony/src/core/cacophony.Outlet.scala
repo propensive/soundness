@@ -42,7 +42,7 @@ import vacuous.*
 
 object Outlet:
   def list: List[Outlet] =
-    jss.AudioSystem.getMixerInfo.nn.iterator.toList.flatMap: info0 =>
+    jss.AudioSystem.getMixerInfo.nn.iterator.to(List).flatMap: info0 =>
       val info = info0.nn
       val mixer = jss.AudioSystem.getMixer(info).nn
 
@@ -60,9 +60,9 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info):
   def configurations: List[Configuration] =
     val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
 
-    mixer.getSourceLineInfo.nn.iterator.toList.flatMap:
+    mixer.getSourceLineInfo.nn.iterator.to(List).flatMap:
       case dli: jss.DataLine.Info if dli.getLineClass == classOf[jss.SourceDataLine] =>
-        dli.getFormats.nn.iterator.toList.map: f0 =>
+        dli.getFormats.nn.iterator.to(List).map: f0 =>
           val f = f0.nn
 
           val encoding =
@@ -121,7 +121,7 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info):
             var offset = 0
 
             while !stopped && offset < data.length do
-              val len     = math.min(chunkBytes, data.length - offset)
+              val len     = scala.math.min(chunkBytes, data.length - offset)
               val written = line.write(data, offset, len)
               if written <= 0 then offset = data.length else offset += written
 

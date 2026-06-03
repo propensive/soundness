@@ -83,7 +83,7 @@ object internal:
       case _               => acc
 
     val parts = collectParts[parts](Nil)
-    val source: String = parts.mkString(MarkerString)
+    val source: String = parts.scala.mkString(MarkerString)
     val data: Data = IArray.from(source.getBytes("UTF-8").nn.iterator)
 
     val insertions: Seq[Expr[Any]] = insertions0.absolve match
@@ -152,15 +152,15 @@ object internal:
           '{ Tel.Atom.Literal($delimExpr.tt, $textExpr) }
 
       def emitAtomsArray(atoms: IArray[Tel.Atom]): Expr[IArray[Tel.Atom]] =
-        val list = atoms.toList.map(emitAtom)
-        '{ IArray.from(${Expr.ofList(list)}) }
+        val list = atoms.to[List].map(emitAtom)
+        '{ IArray.from(${Expr.ofList(list.scala)}) }
 
       def emitComment(c: Tel.Comment): Expr[Tel.Comment] =
         '{ Tel.Comment(${Expr(c.text.s)}.tt) }
 
       def emitTabulation(t: Tel.Tabulation): Expr[Tel.Tabulation] =
-        val markers = Expr(t.markerOffsets.toList)
-        val headings = Expr(t.headings.toList.map(_.s))
+        val markers = Expr(t.markerOffsets.to[List].scala)
+        val headings = Expr(t.headings.to[List].map(_.s).scala)
         '{ Tel.Tabulation(IArray.from(${markers}), IArray.from(${headings}.map(_.tt))) }
 
       def emitCompound(c: Tel.Compound): Expr[Tel.Compound] =
@@ -174,19 +174,19 @@ object internal:
         '{ Tel.Compound(${keywordExpr}.tt, $atomsExpr, $remarkExpr, $childrenExpr) }
 
       def emitBlock(b: Tel.Block): Expr[Tel.Block] =
-        val comments = '{ IArray.from(${Expr.ofList(b.comments.toList.map(emitComment))}) }
+        val comments = '{ IArray.from(${Expr.ofList(b.comments.to[List].map(emitComment).scala)}) }
         val tab: Expr[Optional[Tel.Tabulation]] = b.tabulation match
           case unset: Unset.type   => '{ Unset }
           case t: Tel.Tabulation   => '{ ${emitTabulation(t)}: Optional[Tel.Tabulation] }
 
         val compounds =
-          '{ IArray.from(${Expr.ofList(b.compounds.toList.map(emitCompound))}) }
+          '{ IArray.from(${Expr.ofList(b.compounds.to[List].map(emitCompound).scala)}) }
 
         val tbl = Expr(b.trailingBlankLines)
         '{ Tel.Block($comments, $tab, $compounds, $tbl) }
 
       def emitBlocks(blocks: IArray[Tel.Block]): Expr[IArray[Tel.Block]] =
-        '{ IArray.from(${Expr.ofList(blocks.toList.map(emitBlock))}) }
+        '{ IArray.from(${Expr.ofList(blocks.to[List].map(emitBlock).scala)}) }
 
       val directiveExpr: Expr[Optional[Text]] = document.interpreterDirective match
         case unset: Unset.type => '{ Unset }
@@ -235,7 +235,7 @@ object internal:
       case _               => acc
 
     val parts = collectParts[parts](Nil)
-    val source: String = parts.mkString(MarkerString)
+    val source: String = parts.scala.mkString(MarkerString)
     val holeCount = parts.length - 1
 
     // Parse the pattern at compile time to validate syntax (and to halt
@@ -270,13 +270,13 @@ object internal:
       val telType = TypeRepr.of[Tel]
       val tupleType =
         AppliedType
-         (defn.TupleClass(holeCount).info.typeSymbol.typeRef, List.fill(holeCount)(telType))
+         (defn.TupleClass(holeCount).info.typeSymbol.typeRef, List.fill(holeCount)(telType).scala)
 
       tupleType.asType.absolve match
         case '[type result <: Tuple; result] =>
           '{
             $matchResult.map: captures =>
-              val arr: Array[Object] = captures.toArray.asInstanceOf[Array[Object]]
+              val arr: Array[Object] = captures.to[Array].asInstanceOf[Array[Object]]
               scala.runtime.Tuples.fromArray(arr).asInstanceOf[result]
           }
 
@@ -288,7 +288,7 @@ object internal:
   :     Option[List[Tel]] =
     val captures = scala.collection.mutable.ListBuffer.empty[Tel]
     if matchBlocks(pattern.children, input.subtree.children, marker, captures)
-    then Some(captures.toList) else None
+    then Some(captures.to(List)) else None
 
   private def matchBlocks
        (pattern: IArray[Tel.Block],

@@ -32,7 +32,7 @@
                                                                                                   */
 package metamorphose
 
-import language.experimental.genericNumberLiterals
+import scala.language.experimental.genericNumberLiterals
 
 import soundness.*
 

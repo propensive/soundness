@@ -32,13 +32,13 @@
                                                                                                   */
 package capricious
 
-import language.experimental.genericNumberLiterals
+import scala.language.experimental.genericNumberLiterals
 
 import hypotenuse.*
 
 case class PolarGaussian(mean: Double = 0.0, std: Double = 1.0) extends Distribution:
   def transform(random: Random): Double =
-    @annotation.tailrec
+    @scala.annotation.tailrec
     def recur(): F64 =
       val u0: F64 = F64(randomDistributions.uniformSymmetricUnitInterval.transform(random))
       val u1: F64 = F64(randomDistributions.uniformSymmetricUnitInterval.transform(random))

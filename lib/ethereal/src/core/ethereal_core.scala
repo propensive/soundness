@@ -32,7 +32,7 @@
                                                                                                   */
 package ethereal
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import java.io as ji
 import java.lang as jl
@@ -202,14 +202,14 @@ def cli[bus <: Matchable](using executive: Executive)
                   val resolved: Path on Linux = safely(keyPath.decode[Path on Linux]).or:
                     val work: Path on Linux = workingDirectory
                     work + keyPath.decode[Relative on Linux]
-                  val raw = resolved.open(_.stream[Data].read[Data]).to(Array)
+                  val raw = resolved.open(_.stream[Data].read[Data]).to[Array]
                   if raw.length != pubkeyLen then
                     Out.println(e"Public key at $keyPath is the wrong size (expected 1312 bytes)")
                     Exit.Fail(1).terminate()
                   raw
 
             val configOffset: Int = magicOffset + magic.length
-            val patched: Array[Byte] = IArray.genericWrapArray(runnerBytes).toArray
+            val patched: Array[Byte] = runnerBytes.to[Array]
 
             // Write the 24-byte metadata region.
             val metaBuf = jnio.ByteBuffer.wrap(patched, configOffset, 24).nn
@@ -333,8 +333,8 @@ def cli[bus <: Matchable](using executive: Executive)
           val script: Text = line()
           val pwd: Text = line()
           val count: Int = line().decode[Int]
-          val textArguments: List[Text] = chunk().cut(t"\u0000").take(count).to(List)
-          val environment: List[Text] = chunk().cut(t"\u0000").init.to(List)
+          val textArguments: List[Text] = chunk().cut(t"\u0000").take(count).to[List]
+          val environment: List[Text] = chunk().cut(t"\u0000").init.to[List]
 
           DaemonEvent.Init(pid, login, pwd, script, stdin, textArguments, environment)
 
@@ -426,7 +426,7 @@ def cli[bus <: Matchable](using executive: Executive)
                 termcap )
 
           def deliver(sourcePid: Pid, message: bus): Unit =
-            clients.each: (pid, client) =>
+            List.from(clients).each: (pid, client) =>
               if sourcePid != pid then client.receive(message)
 
           val service: DaemonService[bus] =
@@ -505,7 +505,10 @@ def cli[bus <: Matchable](using executive: Executive)
       task(t"pid-watcher"):
         safely:
           List[Path on Local](socketFile, buildFile, pidFile).watch: watcher =>
-            watcher.stream.each:
+            // NB: consume the watch-event stream LAZILY — it is an unbounded, blocking stream of
+            // filesystem events. `List.from(...)` would force it before processing any event, so the
+            // pid-watcher would never react to the socket/pid file being deleted or modified.
+            watcher.stream.foreach:
               case Delete(_, _) | Modify(_, _) =>
                 Log.warn(DaemonLogEvent.Termination)
                 termination

@@ -84,7 +84,7 @@ object RecordsTests extends Suite(m"Jacinta records tests"):
 
     test(m"Get some values in a list"):
       capture:
-        record.children.map { elem => elem.height }.to(List)
+        record.children.map { elem => elem.height }.to[List]
     . assert(_ == BoundsError(100, 1, 99))
 
     test(m"Get a boolean value"):

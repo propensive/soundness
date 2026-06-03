@@ -32,7 +32,7 @@
                                                                                                   */
 package guillotine
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contextual.*
@@ -51,7 +51,7 @@ object Sh:
   case class ShError(detail: Message) extends Exception(s"guillotine: ${detail.text.s}")
 
   object Runtime:
-    import unsafeExceptions.canThrowAny
+    import scala.unsafeExceptions.canThrowAny
     import Context.*
 
     def complete(state: State): Command =
@@ -68,7 +68,7 @@ object Sh:
         case _ =>
           state.arguments
 
-      Command(arguments*)
+      Command(arguments.scala*)
 
     def initial: State = State(Awaiting, false, Nil)
     def skip(state: State): State = insert(state, Parameters(t"x"))
@@ -94,7 +94,7 @@ object Sh:
       case _ =>
         state
 
-    def parse(current: State, text: Text): State = text.chars.to(List).fuse(current):
+    def parse(current: State, text: Text): State = text.chars.to[List].fuse(current):
       (state, next).absolve match
         case (State(Awaiting, _, arguments), ' ') => State(Awaiting, false, arguments)
 
@@ -136,7 +136,7 @@ object Sh:
 
   given nothing: Insertion[Parameters, Nothing] = value => Parameters(t"")
   given text: Insertion[Parameters, Text] = value => Parameters(value)
-  given list: Insertion[Parameters, List[Text]] = xs => Parameters(xs*)
+  given list: Insertion[Parameters, List[Text]] = xs => Parameters(xs.scala*)
   given command: Insertion[Parameters, Command] = command => Parameters(command.arguments*)
 
 

@@ -33,6 +33,7 @@
 package probably
 
 import scala.collection.mutable as scm
+import denominative.*
 
 import ambience.*
 import anticipation.*
@@ -103,7 +104,7 @@ class Report(using Environment)(using palette: TestPalette):
       tests = tests.updated(testId, reportLine)
 
     def getOrElseUpdate(testId: TestId, reportLine: => ReportLine): ReportLine = mutex:
-      if !tests.has(testId) then tests = tests.updated(testId, reportLine)
+      if !tests.contains(testId) then tests = tests.updated(testId, reportLine)
       tests(testId)
 
   enum ReportLine:
@@ -123,17 +124,17 @@ class Report(using Environment)(using palette: TestPalette):
 
       case Test(testId, buffer) =>
         val status =
-          if buffer.all(_.typed[Verdict.Pass]) then Status.Pass
-          else if buffer.all(_.typed[Verdict.Fail]) then Status.Fail
-          else if buffer.all(_.typed[Verdict.Throws]) then Status.Throws
-          else if buffer.all(_.typed[Verdict.CheckThrows]) then Status.CheckThrows
-          else if buffer.all(_.typed[Verdict.AspirePass]) then Status.AspirePass
-          else if buffer.all(_.typed[Verdict.AspireFail]) then Status.AspireFail
+          if List.from(buffer).all(_.typed[Verdict.Pass]) then Status.Pass
+          else if List.from(buffer).all(_.typed[Verdict.Fail]) then Status.Fail
+          else if List.from(buffer).all(_.typed[Verdict.Throws]) then Status.Throws
+          else if List.from(buffer).all(_.typed[Verdict.CheckThrows]) then Status.CheckThrows
+          else if List.from(buffer).all(_.typed[Verdict.AspirePass]) then Status.AspirePass
+          else if List.from(buffer).all(_.typed[Verdict.AspireFail]) then Status.AspireFail
           else Status.Mixed
 
         val min: Long = buffer.map(_.duration).min
         val max: Long = buffer.map(_.duration).max
-        val avg: Long = buffer.fuse(0L)(state + next.duration)/buffer.length
+        val avg: Long = List.from(buffer).fuse(0L)(state + next.duration)/buffer.length
 
         List(Summary(status, testId, buffer.length, min, max, avg))
 
@@ -162,8 +163,8 @@ class Report(using Environment)(using palette: TestPalette):
   def addDetail(testId: TestId, info: Verdict.Detail): Report =
     this.also(details(testId) = details(testId).append(info))
 
-  private def benches(line: ReportLine): Iterable[ReportLine.Bench] = line match
-    case bench@ReportLine.Bench(_, _) => Iterable(bench)
+  private def benches(line: ReportLine): List[ReportLine.Bench] = line match
+    case bench@ReportLine.Bench(_, _) => List(bench)
     case ReportLine.Suite(_, tests)   => tests.list.flatMap: (_, line) => benches(line)
     case _                            => Nil
 
@@ -229,7 +230,7 @@ class Report(using Environment)(using palette: TestPalette):
 
     val columns: Int = safely(Environment.columns.decode[Int]).or(120)
     val summaryLines = lines.summaries
-    val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
+    val totals = summaryLines.groupBy(_.status).mapValues(_.size) - Status.Suite
     val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
     val aspirePassed: Int = totals.getOrElse(Status.AspirePass, 0)
     val aspireFailed: Int = totals.getOrElse(Status.AspireFail, 0)
@@ -260,7 +261,7 @@ class Report(using Environment)(using palette: TestPalette):
       val ln = frame.line.let(_.toString.tt).or(t"?")
       t"  at ${frame.method.cls}.${frame.method.method} (${frame.file}:$ln)"
 
-    val bySuite = benches(lines).to(List).groupBy(_.test.suite).to(List)
+    val bySuite = benches(lines).to[List].groupBy(_.test.suite).to[List]
       . sortBy(_(1).iterator.map(_.test.timestamp).min)
 
     bySuite.each: (suite, benchmarks) =>
@@ -283,15 +284,15 @@ class Report(using Environment)(using palette: TestPalette):
             val tp = b.benchmark.throughput
             if tp == 0 then e"" else e"$tp op/s" )
 
-      . tabulate(benchmarks.sortBy(_.test.timestamp)).grid(columns).render
+      . tabulate(benchmarks.sortBy(_.test.timestamp).scala).grid(columns).render.to(List)
       . each(Out.println(_))
 
     val failureStatuses: Set[Status] =
       Set(Status.Fail, Status.Throws, Status.CheckThrows, Status.Mixed)
 
-    val failures = summaryLines.filter: s => failureStatuses.has(s.status)
+    val failures = summaryLines.filter: s => failureStatuses.contains(s.status)
 
-    if failures.nonEmpty then
+    if !failures.nil then
       Out.println(t"")
 
       Scaffold[Summary]
@@ -303,7 +304,7 @@ class Report(using Environment)(using palette: TestPalette):
           Column(e"Status"): s =>
             e"${statusWord(s.status)}" )
 
-      . tabulate(failures).grid(columns).render.each(Out.println(_))
+      . tabulate(failures.scala).grid(columns).render.to(List).each(Out.println(_))
 
       Out.println(t"")
 
@@ -311,7 +312,7 @@ class Report(using Environment)(using palette: TestPalette):
         val location = t"${summary.id.codepoint.source}:${summary.id.codepoint.line}"
         Out.println(t"${summary.id.id}  ${summary.id.name.text} @ $location")
 
-        details(summary.id).each: detail =>
+        List.from(details(summary.id)).each: detail =>
           detail match
             case Verdict.Detail.Throws(err) =>
               Out.println:
@@ -335,17 +336,17 @@ class Report(using Environment)(using palette: TestPalette):
               Out.println(t"  ${truncate(text)}")
 
             case Verdict.Detail.Captures(captures) =>
-              captures.each: (expr, value) =>
+              captures.toList.each: (expr, value) =>
                 Out.println(t"  $expr = ${truncate(value)}")
 
         Out.println(t"")
 
     failure.let: (error, active) =>
-      val activeNames = active.to(List).map(_.name.text).join(t", ")
+      val activeNames = active.to[List].map(_.name.text).join(t", ")
       val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
       val msg = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
 
-      if active.isEmpty then Out.println(t"FATAL: $errorClass: $msg")
+      if active.scala.isEmpty then Out.println(t"FATAL: $errorClass: $msg")
       else Out.println(t"FATAL in $activeNames: $errorClass: $msg")
 
       StackTrace(error).frames.take(3).each: frame => Out.println(formatFrame(frame))
@@ -396,7 +397,7 @@ class Report(using Environment)(using palette: TestPalette):
       case Verdict.Detail.Captures(_) | Unset =>
         t"Test failed"
 
-    coverage.each: coverage =>
+    List.from(coverage).each: coverage =>
       Out.println(e"$Bold($Underline(Test coverage))")
 
       case class CoverageData(path: Text, branches: Int, hits: Int, oldHits: Int):
@@ -406,12 +407,12 @@ class Report(using Environment)(using palette: TestPalette):
           if oldHits == 0 then main
           else e"${palette.detail}(${oldHits.show.subscripts}) $main"
 
-      val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
+      val data = coverage.spec.groupBy(_.path).to[List].map: (path, branches) =>
         val hitCount: Int =
-          branches.to(List).map(_.id).map(coverage.hits.has).count(identity(_))
+          branches.to[List].map(_.id).map(coverage.hits.contains).count((hit: Boolean) => hit)
 
         val oldHitCount: Int =
-          branches.to(List).map(_.id).map(coverage.oldHits.has).count(identity(_))
+          branches.to[List].map(_.id).map(coverage.oldHits.contains).count((hit: Boolean) => hit)
 
         CoverageData(path, branches.size, hitCount, oldHitCount)
 
@@ -424,14 +425,13 @@ class Report(using Environment)(using palette: TestPalette):
         else e"• ${surface.juncture.shortCode}"
 
       def render(junctures: List[Surface]): Stream[(Surface, Teletype)] =
-        val diagram = TreeDiagram.by[Surface](_.children)(junctures*)
+        val diagram = TreeDiagram.by[Surface](_.children.scala)(junctures.scala*)
         diagram.nodes.zip(diagram.render(describe))
 
       val allHits = coverage.hits ++ coverage.oldHits
 
       val junctures2 =
-        coverage.structure.values.flatten
-        . to(List)
+        coverage.structure.values.flatMap(_.scala)
         . filter(!_.covered(allHits))
         . map(_.copy(children = Nil))
 
@@ -440,8 +440,8 @@ class Report(using Environment)(using palette: TestPalette):
             if row(0).juncture.branch then e"⎇" else e"",
 
           Column(e""): row =>
-            if coverage.hits.has(row(0).juncture.id) then e"${Bg(palette.detail)}(  )"
-            else if coverage.oldHits.has(row(0).juncture.id) then e"${Bg(palette.detail)}(  )"
+            if coverage.hits.contains(row(0).juncture.id) then e"${Bg(palette.detail)}(  )"
+            else if coverage.oldHits.contains(row(0).juncture.id) then e"${Bg(palette.detail)}(  )"
             else e"${Bg(palette.highlight)}(  )",
 
           Column(e"Juncture")(_(1)),
@@ -455,7 +455,7 @@ class Report(using Environment)(using palette: TestPalette):
 
       . tabulate(render(junctures2))
       . grid(columns)(using tableStyles.horizontal)
-      . render
+      . render.to(List)
       . each(Out.println(_))
 
       Out.println(e"")
@@ -482,13 +482,13 @@ class Report(using Environment)(using palette: TestPalette):
 
             bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join )
 
-      . tabulate(data).grid(columns).render.each(Out.println(_))
+      . tabulate(data.scala).grid(columns).render.to(List).each(Out.println(_))
 
       Out.println(e"")
 
     def totals(tabulation: Boolean): Unit =
       if summaryLines.exists(_.count > 0) then
-        val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
+        val totals = summaryLines.groupBy(_.status).mapValues(_.size) - Status.Suite
         val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
         val aspirePassed: Int = totals.getOrElse(Status.AspirePass, 0)
         val aspireFailed: Int = totals.getOrElse(Status.AspireFail, 0)
@@ -500,7 +500,7 @@ class Report(using Environment)(using palette: TestPalette):
           Out.print(e"${escapes.Reset}")
           Out.println(e"$Bold($Underline(Test results))")
 
-          table.tabulate(summaryLines).grid(columns).render.each(Out.println(_))
+          table.tabulate(summaryLines.scala).grid(columns).render.to(List).each(Out.println(_))
 
         else
           Out.println(t"─"*72)
@@ -580,7 +580,7 @@ class Report(using Environment)(using palette: TestPalette):
 
     totals(true)
 
-    benches(lines).groupBy(_.test.suite).each: (suite, benchmarks) =>
+    benches(lines).groupBy(_.test.suite).toList.each: (suite, benchmarks) =>
       val ribbon =
         Ribbon
           ( palette.subdue(palette.detail, 0.3),
@@ -596,7 +596,7 @@ class Report(using Environment)(using palette: TestPalette):
         ribbon.fill(e"${suite.lay(t"")(_.id.id)}", e"Benchmarks", suiteName)
 
       val comparisons: List[ReportLine.Bench] =
-        benchmarks.filter(!_.benchmark.baseline.absent).to(List)
+        benchmarks.filter(!_.benchmark.baseline.absent).to[List]
 
       def confInt(b: Benchmark): Teletype =
         if b.confidenceInterval == 0 || b.mean == 0.0 then e""
@@ -613,7 +613,7 @@ class Report(using Environment)(using palette: TestPalette):
           e"$tp ${Fg(palette.accented)}(op${Fg(palette.subdued)}(·)s¯¹)"
 
       val bench: Scaffold[ReportLine.Bench, Teletype] = Scaffold[ReportLine.Bench](
-        (List(
+        (List[Column[ReportLine.Bench, Teletype]](
           Column(e"$Bold(Hash)"): s =>
             e"${Fg(palette.informative)}(${s.test.id})",
           Column(e"$Bold(Test)"): s =>
@@ -677,11 +677,11 @@ class Report(using Environment)(using palette: TestPalette):
 
                 case Geometric =>
                   if value == 1 then e"★" else e"${Fg(palette.foreground)}($value)"
-        )*
+        ).scala*
       )
 
-      bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput))
-      . grid(columns).render.each(Out.println(_))
+      bench.tabulate(benchmarks.to[List].sortBy(-_.benchmark.throughput).scala)
+      . grid(columns).render.to(List).each(Out.println(_))
 
       if githubActions then GithubActions.endGroup()
 
@@ -689,10 +689,10 @@ class Report(using Environment)(using palette: TestPalette):
       Out.println(t"─"*74)
 
       Out.println:
-        StackTrace.legend.to(List).map: (symbol, description) =>
+        StackTrace.legend.toList.map: (symbol, description) =>
           e"$Bold(${Fg(palette.foreground)}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
 
-        . grouped(3).to(List).map(_.to(List).join).join(e"${t"\n"}")
+        . grouped(3).to(List).map(_.to[List].join).join(e"${t"\n"}")
 
       Out.println(t"─"*74)
 
@@ -718,7 +718,7 @@ class Report(using Environment)(using palette: TestPalette):
 
       Out.println(ribbon.fill(e"$Bold(${id.id})", id.codepoint.text.teletype, id.name.teletype))
 
-      info.each: details =>
+      List.from(info).each: details =>
         Out.println(t"")
 
         details match
@@ -753,7 +753,7 @@ class Report(using Environment)(using palette: TestPalette):
               ( Column(e"Expression", textAlign = TextAlignment.Right)(_(0)),
                 Column(e"Value")(_(1)) )
 
-            . tabulate(map.to(List)).grid(140).render.each(Out.println(_))
+            . tabulate(map.toList.scala).grid(140).render.to(List).each(Out.println(_))
 
           case Verdict.Detail.Message(text) =>
             Out.println(text)
@@ -762,25 +762,25 @@ class Report(using Environment)(using palette: TestPalette):
       if githubActions then GithubActions.endGroup()
 
     failure.let: (error, active) =>
-      val explanation = active.to(List) match
+      val explanation = active.to[List] match
         case Nil => e"No tests were active when a fatal error occurred."
 
         case _ =>
           val were = if active.size == 1 then e"was" else e"were"
 
           val tests =
-            active.to(List).map: test => e"$Bold(${test.name})"
+            active.to[List].map: test => e"$Bold(${test.name})"
             . join(e"", e", ", e" and ", e"")
 
           e"A fatal error occurred while $tests $were running."
 
       if githubActions then
-        val activeNames = active.to(List).map(_.name.text).join(t", ")
+        val activeNames = active.to[List].map(_.name.text).join(t", ")
         val cause = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
         val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
 
         val message =
-          if active.isEmpty
+          if active.scala.isEmpty
           then truncate(t"Fatal error: $errorClass: $cause")
           else truncate(t"Fatal error in $activeNames: $errorClass: $cause")
 

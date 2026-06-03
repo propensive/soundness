@@ -32,8 +32,8 @@
                                                                                                   */
 package gossamer
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 import java.lang as jl
 import java.net.{URLEncoder, URLDecoder}
@@ -95,7 +95,7 @@ extension (module: Text.type)
 
   def fill(length: Int)(lambda: Int => Char): Text =
     val array = new Array[Char](length)
-    (0 until length).each: index => array(index) = lambda(index)
+    List.from(0 until length).each: index => array(index) = lambda(index)
 
     String(array).tt
 
@@ -131,7 +131,7 @@ extension [textual](text: textual)
 
     cuttable.cut(text, delimiter, limit)
 
-extension [textual: Textual { type Operand = Char }](words: Iterable[textual])
+extension [textual: Textual { type Operand = Char }](words: List[textual])
   def pascal: textual = words.map(_.lower.capitalize).join
   def camel: textual = pascal.uncapitalize
   def snake: textual = words.join(textual("_".tt))
@@ -206,7 +206,7 @@ extension [textual: Textual](text: textual)
 
     $ {
         gossamer.internal.extractMacro[textual, value]
-          ( 'text, 'start, 'lambda, '{compiletime.summonInline[textual is Textual]} )
+          ( 'text, 'start, 'lambda, '{scala.compiletime.summonInline[textual is Textual]} )
       }
 
   def seek(regex: Regex): Optional[textual] = regex.seek(textual.text(text)).let(text.segment(_))
@@ -318,7 +318,7 @@ extension [textual: Textual { type Operand = Char }](text: textual)
 
     textual.builder().build:
       textual.map(text): char =>
-        if !set.contains(char) then append(char)
+        if !set.scala.contains(char) then append(char)
         char
 
   inline def count(predicate: Char => Boolean): Int =
@@ -514,7 +514,7 @@ extension (text: Text)
           ( 'text,
             'threshold,
             'cases,
-            '{compiletime.summonInline[Proximity { type Operand = Double }]} )
+            '{scala.compiletime.summonInline[Proximity { type Operand = Double }]} )
       }
 
   def proximity(other: Text)(using proximity: Proximity): proximity.Operand =
@@ -522,22 +522,84 @@ extension (text: Text)
 
 extension (iarray: IArray[Char]) def text: Text = String(iarray.mutable(using Unsafe)).tt
 
-extension [textual: {Joinable, Textual}](values: Iterable[textual])
+extension [textual: {Joinable, Textual}](values: List[textual])
   def join: textual = textual.join(values)
 
   def join(separator: textual): textual =
-    textual.join(values.flatMap(Iterable(separator, _)).drop(1))
+    textual.join(values.flatMap(List(separator, _)).drop(1))
 
   def join(left: textual, separator: textual, right: textual): textual =
-    Iterable(left, join(separator), right).join
+    List(left, join(separator), right).join
 
   def join(separator: textual, penultimate: textual): textual = values.size match
-    case 0 => Iterable().join
+    case 0 => List().join
     case 1 => values.head
-    case _ => Iterable(values.init.join(separator), penultimate, values.last).join
+    case _ => List(values.init.join(separator), penultimate, values.last).join
 
   def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
-    Iterable(left, join(separator, penultimate), right).join
+    List(left, join(separator, penultimate), right).join
+
+// `join` is defined above on Murmuration's `List`; this parallel block lets it work directly on
+// scala collections too (Seq/LazyList/IndexedSeq/Set/…) by delegating. Our own `Set`/`Series` are
+// not `scala.collection.Iterable`, so join them via `.to[List]` at the call site.
+extension [textual: {Joinable, Textual}](values: scala.collection.Iterable[textual])
+  @targetName("joinColl")
+  def join: textual = List.from(values).join
+
+  @targetName("joinSepColl")
+  def join(separator: textual): textual = List.from(values).join(separator)
+
+  @targetName("joinAffixColl")
+  def join(left: textual, separator: textual, right: textual): textual =
+    List.from(values).join(left, separator, right)
+
+  @targetName("joinPenultColl")
+  def join(separator: textual, penultimate: textual): textual =
+    List.from(values).join(separator, penultimate)
+
+  @targetName("joinFullColl")
+  def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
+    List.from(values).join(left, separator, penultimate, right)
+
+// Our `Set`/`Series` are distinct opaque types (not `scala.collection.Iterable`, nor subtypes of
+// `List`), so each joins by materialising to `List` via its own block — no ambiguity with `List.join`.
+extension [textual: {Joinable, Textual}](values: Set[textual])
+  @targetName("joinSet")
+  def join: textual = values.scala.join
+
+  @targetName("joinSepSet")
+  def join(separator: textual): textual = values.scala.join(separator)
+
+  @targetName("joinAffixSet")
+  def join(left: textual, separator: textual, right: textual): textual =
+    values.scala.join(left, separator, right)
+
+  @targetName("joinPenultSet")
+  def join(separator: textual, penultimate: textual): textual =
+    values.scala.join(separator, penultimate)
+
+  @targetName("joinFullSet")
+  def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
+    values.scala.join(left, separator, penultimate, right)
+
+extension [textual: {Joinable, Textual}](values: Series[textual])
+  @targetName("joinSeries")
+  def join: textual = values.scala.join
+
+  @targetName("joinSepSeries")
+  def join(separator: textual): textual = values.scala.join(separator)
+
+  @targetName("joinAffixSeries")
+  def join(left: textual, separator: textual, right: textual): textual =
+    values.scala.join(left, separator, right)
+
+  @targetName("joinPenultSeries")
+  def join(separator: textual, penultimate: textual): textual =
+    values.scala.join(separator, penultimate)
+
+  @targetName("joinFullSeries")
+  def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
+    values.scala.join(left, separator, penultimate, right)
 
 extension (builder: StringBuilder)
   def add(text: Text): Unit = builder.append(text.s)
@@ -549,16 +611,16 @@ package decimalFormatters:
     def decimalize(double: Double): Text = double.toString.tt
 
 package enumIdentification:
-  given kebabCase: [enumeration <: reflect.Enum] => enumeration is Identifiable =
+  given kebabCase: [enumeration <: scala.reflect.Enum] => enumeration is Identifiable =
     Identifiable(_.uncamel.kebab, _.unkebab.pascal)
 
-  given snakeCase: [enumeration <: reflect.Enum] => enumeration is Identifiable =
+  given snakeCase: [enumeration <: scala.reflect.Enum] => enumeration is Identifiable =
     Identifiable(_.uncamel.snake, _.unsnake.pascal)
 
-  given pascalCase: [enumeration <: reflect.Enum] => enumeration is Identifiable =
+  given pascalCase: [enumeration <: scala.reflect.Enum] => enumeration is Identifiable =
     Identifiable(identity(_), identity(_))
 
-  given camelCase: [enumeration <: reflect.Enum] => enumeration is Identifiable =
+  given camelCase: [enumeration <: scala.reflect.Enum] => enumeration is Identifiable =
     Identifiable(_.uncamel.camel, _.unsnake.pascal)
 
 package caseSensitivity:

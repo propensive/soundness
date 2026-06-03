@@ -60,13 +60,13 @@ object Cli:
 
 
   def arguments
-    ( textArguments: Iterable[Text],
+    ( textArguments: List[Text],
       focus:         Optional[Int]     = Unset,
       position:      Optional[Int]     = Unset,
       tab:           Optional[Ordinal] = Unset )
   :   List[Argument] =
 
-    textArguments.to(List).padTo(focus.let(_ + 1).or(0), t"").zipWithIndex.map: (text, index) =>
+    textArguments.to[List].padTo(focus.let(_ + 1).or(0), t"").zipWithIndex.map: (text, index) =>
       Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
 
 

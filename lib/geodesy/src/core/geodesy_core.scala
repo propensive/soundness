@@ -57,7 +57,7 @@ package compassBearings:
   given eightPointCompass: Compass[8] is Directional = Compass[8](_)
   given sixteenPointCompass: Compass[16] is Directional = Compass[16](_)
   given fromNorth: Angle is Directional = identity(_)
-  given fromEast: Angle is Directional = radians => radians - Angle(math.Pi/2)
+  given fromEast: Angle is Directional = radians => radians - Angle(scala.math.Pi/2)
 
 type Compass[points <: 4 | 8 | 16] = points match
   case 4  => CardinalWind

@@ -33,6 +33,7 @@
 package exoskeleton
 
 import soundness.*
+import galilei.exists
 
 import classloaders.system
 import environments.java
@@ -357,7 +358,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           test(m"'{admin}' install output lines are existing files"):
             val output = sh"$tool '{admin}' install".exec[Text]()
             val paths = output.trim.lines.filter(_.length > 0)
-            paths.forall: path =>
+            paths.all: path =>
               safely(path.decode[Path on Local]).let(_.exists()).or(false)
           .assert(_ == true)
 
@@ -397,7 +398,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           // behaviour for progressive completion.
           test(m"fish incomplete suggestion emits LCP duplicate"):
             sh"$tool '{completions}' fish 3 0 /dev/null -- abcd tree --at ".exec[Text]()
-          .check(_.cut(t"\n").count(_.starts(t"src/")) >= 2)
+          .check(_.cut(t"\n").count((line: Text) => line.starts(t"src/")) >= 2)
 
           // Regression check for #1109: with focus0 = 0 and position0 = 0 the
           // completions executive previously hit a `.get` on an empty Option in

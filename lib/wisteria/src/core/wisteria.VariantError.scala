@@ -42,7 +42,7 @@ object VariantError:
     ( using reflection: SumReflection[derivation], diagnostics: Diagnostics )
   :   VariantError =
 
-    val variants = constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
+    val variants = List.from(constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt))
     val sum = constValue[reflection.MirroredLabel].tt
 
     VariantError(inputLabel, sum, variants)
@@ -52,5 +52,5 @@ case class VariantError(inputLabel: Text, sum: Text, validVariants: List[Text])(
 extends Error
   ( m"""
       the specified variant ($inputLabel) is not one of the valid variants
-      (${validVariants.mkString(", ").tt}) of sum type $sum
+      (${validVariants.scala.mkString(", ").tt}) of sum type $sum
     """ )

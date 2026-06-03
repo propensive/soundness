@@ -32,13 +32,14 @@
                                                                                                   */
 package honeycomb
 
-import language.dynamics
+import scala.language.dynamics
 
 import scala.collection.mutable as scm
 
 import anticipation.*
 import beneficence.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 object Dom:
@@ -53,4 +54,4 @@ trait Dom extends Findable:
 
   def doctype: Doctype
   def infer(parent: Tag, child: Tag): Optional[Tag]
-  def generic: Tag = Tag.root(elements.iterator.map(_.label).to(Set))
+  def generic: Tag = Tag.root(elements.iterator.map(_.label).to[Set])

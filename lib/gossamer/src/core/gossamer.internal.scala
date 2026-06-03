@@ -32,6 +32,9 @@
                                                                                                   */
 package gossamer
 
+import scala.collection.immutable.`::`
+import scala.collection.immutable.List
+import scala.collection.immutable.Nil
 import scala.quoted.*
 
 import anticipation.*
@@ -199,7 +202,7 @@ object internal:
         if char >= 128 then halt(824, m"$char is not a valid ASCII character")
         Expr[Byte](char.toByte)
 
-      '{Ascii(Data(${Varargs(bytes)}*))}
+      '{Ascii(Data(${Varargs(bytes.to[Seq])}*))}
 
     def recur(first: List[Expr[Ascii]], second: List[Expr[Ascii]], expr: Expr[Ascii]): Expr[Ascii] =
       first match

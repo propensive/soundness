@@ -148,7 +148,7 @@ object Completions:
             then Installation.InstallResult.ShellNotInstalled(Shell.Zsh)
             else
               val dirNamesCmd = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'"
-              val dirNames = dirNamesCmd.exec[Text]().cut(t",").to(List)
+              val dirNames = dirNamesCmd.exec[Text]().cut(t",").to[List]
 
               val dirs =
                 dirNames.filter(_.trim != t"").map: dir =>
@@ -156,7 +156,7 @@ object Completions:
 
                 . compact
 
-              install(Shell.Zsh, command, Name[Linux](t"_$command"), dirs)
+              install(Shell.Zsh, command, Name[Linux](t"_$command"), dirs.to[List])
 
           val bash: Installation.InstallResult =
             if sh"sh -c 'command -v bash'".exec[Exit]() != Exit.Ok
@@ -290,7 +290,7 @@ object Completions:
     def paths: List[Text] =
       this match
         case CommandNotOnPath(_)              => Nil
-        case Shells(zsh, bash, fish, pwsh)    => List(zsh, bash, fish, pwsh).map(_.pathname).compact
+        case Shells(zsh, bash, fish, pwsh)    => List.from(List(zsh, bash, fish, pwsh).map(_.pathname).scala).compact.to[List]
 
 object CliEvent:
   given execEvent: CliEvent transcribes ExecEvent = CliEvent.Exec(_)

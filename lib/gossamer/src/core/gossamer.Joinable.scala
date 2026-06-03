@@ -32,8 +32,8 @@
                                                                                                   */
 package gossamer
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 import fulminate.*
 import prepositional.*
@@ -48,4 +48,4 @@ object Joinable:
   given message: Message is Joinable = _.fuse(m"")(state+next)
 
 trait Joinable extends Typeclass, Operable:
-  def join(elements: Iterable[Self]): Self
+  def join(elements: List[Self]): Self

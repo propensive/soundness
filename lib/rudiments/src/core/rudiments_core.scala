@@ -32,7 +32,7 @@
                                                                                                   */
 package rudiments
 
-import language.dynamics
+import scala.language.dynamics
 
 import java.io as ji
 
@@ -125,86 +125,115 @@ def loop(block: => Unit): Loop =
 export rudiments.internal.&
 
 @targetName("erasedValue")
-inline def !! [erasure]: erasure = caps.unsafe.unsafeErasedValue
+inline def !! [erasure]: erasure = scala.caps.unsafe.unsafeErasedValue
 
-extension [value <: Matchable](iterable: Iterable[value])
-  transparent inline def sift[filter <: value: Typeable]: Iterable[filter] =
-    iterable.flatMap(filter.unapply(_))
+extension [traversable: Traversable](value: traversable)
+  inline def sift[filter: Typeable]: List[filter] =
+    List.from(traversable.iterator(value).flatMap(filter.unapply(_)))
 
-  inline def has(value: value): Boolean = iterable.exists(_ == value)
+  inline def where(inline predicate: traversable.Operand => Boolean)
+  :   Optional[traversable.Operand] =
 
-  inline def where(inline predicate: value => Boolean): Optional[value] =
-    iterable.find(predicate).getOrElse(Unset)
+    traversable.iterator(value).find(predicate).getOrElse(Unset)
 
-  transparent inline def weave(right: Iterable[value]): Iterable[value] =
-    iterable.zip(right).flatMap(Iterable(_, _))
+  inline def weave(right: List[traversable.Operand]): List[traversable.Operand] =
+    val pairs = traversable.iterator(value).zip(right.scala.iterator)
+    List.from(pairs.flatMap { (a, b) => Iterator(a, b) })
+
+// `has` (element membership) stays on concrete receivers: a typeclass-generic version would clash
+// irreconcilably with the equally-generic `Indexable`-based `has` (index validity, used by `Map`).
+extension [value <: Matchable](list: List[value])
+  @targetName("hasList")
+  inline def has(value: value): Boolean = list.scala.contains(value)
+
+extension [element <: Matchable](set: Set[element])
+  @targetName("hasSet")
+  inline def has(value: element): Boolean = set.scala.contains(value)
+
+extension [value <: Matchable](series: Series[value])
+  @targetName("hasSeries")
+  inline def has(value: value): Boolean = series.scala.contains(value)
 
 extension [element <: Matchable](iarray: IArray[element])
   @targetName("hasIArray")
   inline def has(value: element): Boolean = iarray.exists(_ == value)
 
+extension [value <: Matchable](iterable: scala.collection.Iterable[value])
+  @targetName("hasSeq")
+  inline def has(value: value): Boolean = iterable.exists(_ == value)
+
+extension [element](array: IArray[element])
+  transparent inline def to[Form <: AnyKind](using transformable: IArray[element] is Transformable in Form)
+  :   transformable.Result =
+    transformable.transform(array)
+
 extension [element <: Matchable](array: Array[element])
   @targetName("hasArray")
   inline def has(value: element): Boolean = array.exists(_ == value)
 
-extension [value](iterator: Iterator[value])
-  transparent inline def each(predicate: Ordinal aka "ordinal" ?=> value => Unit): Unit =
-    var ordinal: Ordinal = Prim
+extension [value](lists: List[List[value]])
+  def intercalate(between: List[value] = List()): List[value] =
+    if lists.nil then List() else lists.reduceLeft(_ ++ between ++ _)
 
-    iterator.foreach: value =>
-      predicate(using ordinal.aka["ordinal"])(value)
-      ordinal += 1
+// Type-directed conversion: `coll.to(List)`, `coll.to(Set)`, `coll.to(Map)`, … resolved through the
+// `Transformable` typeclass, provided for every iterable via `Traversable`. `IArray` has its own,
+// more specific, block above.
+extension [traversable: Traversable](value: traversable)
+  transparent inline def to[Form <: AnyKind](using transformable: traversable is Transformable in Form)
+  :   transformable.Result =
+    transformable.transform(value)
 
-  inline def all(predicate: value => Boolean): Boolean = iterator.forall(predicate)
+// `size` is provided via the `Sizable` typeclass (so a single `size` extension serves both
+// collections and other sizable things like `Path`, avoiding same-name extension clashes).
+extension [sizable: Sizable](value: sizable)
+  inline def size: Int = sizable.size(value)
 
-extension [value](iterables: Iterable[Iterable[value]])
-  def intercalate(between: Iterable[value] = Iterable()): Iterable[value] =
-    if iterables.nil then Iterable() else iterables.reduceLeft(_ ++ between ++ _)
-
-extension [value](iterable: Iterable[value])
+extension [traversable: Traversable](value: traversable)
   transparent inline def total
-    ( using addable:  value is Addable by value,
-            equality: addable.Result =:= value )
-  :   Optional[value] =
+    ( using addable:  traversable.Operand is Addable by traversable.Operand,
+            equality: addable.Result =:= traversable.Operand )
+  :   Optional[traversable.Operand] =
 
-    compiletime.summonFrom:
-      case zeroic: ((? <: value) is Zeroic) => iterable.foldLeft(zeroic.zero)(addable.add)
+    scala.compiletime.summonFrom:
+      case zeroic: ((? <: traversable.Operand) is Zeroic) =>
+        value.foldLeft(zeroic.zero)(addable.add)
 
       case _ =>
-        if iterable.nil then Unset else iterable.tail.foldLeft(iterable.head)(addable.add)
+        val iterator = traversable.iterator(value)
+        if !iterator.hasNext then Unset else iterator.foldLeft(iterator.next())(addable.add)
 
 
   transparent inline def mean
-    ( using addable:   value is Addable by value,
-            equality:  addable.Result =:= value,
-            divisible: value is Divisible by Double,
-            eqality2:  divisible.Result =:= value )
-  :   Optional[value] =
+    ( using addable:   traversable.Operand is Addable by traversable.Operand,
+            equality:  addable.Result =:= traversable.Operand,
+            divisible: traversable.Operand is Divisible by Double,
+            eqality2:  divisible.Result =:= traversable.Operand )
+  :   Optional[traversable.Operand] =
 
-    iterable.total.let(_/iterable.size.toDouble)
+    value.total.let(_/traversable.iterator(value).size.toDouble)
 
   inline def mean2
-    ( using subtractable: value is Subtractable by value,
+    ( using subtractable: traversable.Operand is Subtractable by traversable.Operand,
             addable:      subtractable.Result is Addable by subtractable.Result,
             equality:     addable.Result =:= subtractable.Result,
             divisible:    subtractable.Result is Divisible by Double,
             equality2:    divisible.Result =:= subtractable.Result,
-            addable2:     value is Addable by divisible.Result,
-            equality3:    addable2.Result =:= value )
-  :   Optional[value] =
+            addable2:     traversable.Operand is Addable by divisible.Result,
+            equality3:    addable2.Result =:= traversable.Operand )
+  :   Optional[traversable.Operand] =
 
-    if iterable.nil then Unset else
-      val arbitrary = iterable.head
+    if !traversable.iterator(value).hasNext then Unset else
+      val arbitrary = value.head
 
-      iterable.map(_ - arbitrary).total.let: total =>
-        arbitrary + total/iterable.size.toDouble
+      List.from(traversable.iterator(value).map(_ - arbitrary)).total.let: total =>
+        arbitrary + total/traversable.iterator(value).size.toDouble
 
   def variance
-    ( using addable:       value is Addable by value,
-            equality:      addable.Result =:= value,
-            divisible:     value is Divisible by Double,
-            equality2:     divisible.Result =:= value,
-            subtractable:  value is Subtractable by value,
+    ( using addable:       traversable.Operand is Addable by traversable.Operand,
+            equality:      addable.Result =:= traversable.Operand,
+            divisible:     traversable.Operand is Divisible by Double,
+            equality2:     divisible.Result =:= traversable.Operand,
+            subtractable:  traversable.Operand is Subtractable by traversable.Operand,
             multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
             addable2:      multiplicable.Result is Addable by multiplicable.Result,
             zeroic2:       multiplicable.Result is Zeroic,
@@ -212,61 +241,64 @@ extension [value](iterable: Iterable[value])
             divisible2:    multiplicable.Result is Divisible by Double )
   :   Optional[divisible2.Result] =
 
-    iterable.mean.let: mean =>
-      iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
+    value.mean.let: mean =>
+      val deviations = traversable.iterator(value).map(_ - mean)
+      List.from(deviations.map { item => item*item }).total/traversable.iterator(value).size.toDouble
 
 
   def std
-    ( using addable:       value is Addable by value,
-            equality:      addable.Result =:= value,
-            divisible:     value is Divisible by Double,
-            equality2:     divisible.Result =:= value,
-            divisible2:    value is Divisible by value,
+    ( using addable:       traversable.Operand is Addable by traversable.Operand,
+            equality:      addable.Result =:= traversable.Operand,
+            divisible:     traversable.Operand is Divisible by Double,
+            equality2:     divisible.Result =:= traversable.Operand,
+            divisible2:    traversable.Operand is Divisible by traversable.Operand,
             equality3:     divisible2.Result =:= Double,
-            multiplicable: value is Multiplicable by Double,
-            equality4:     multiplicable.Result =:= value )
-  :   Optional[value] =
+            multiplicable: traversable.Operand is Multiplicable by Double,
+            equality4:     multiplicable.Result =:= traversable.Operand )
+  :   Optional[traversable.Operand] =
 
-    iterable.mean.let: mean0 =>
-      val mean: value = mean0
-      val divisor: value = iterable.head
+    value.mean.let: mean0 =>
+      val mean: traversable.Operand = mean0
+      val divisor: traversable.Operand = value.head
       var sum: Double = 0.0
       val mean2: Double = mean/divisor
 
-      for item <- iterable do
+      value.each: item =>
         val x: Double = item/divisor
         val y: Double = x - mean2
         sum += y*y
 
-      divisor*math.sqrt(sum/iterable.size.toDouble)
+      divisor*scala.math.sqrt(sum/traversable.iterator(value).size.toDouble)
 
 
   def product
-    ( using unital:        value is Unital,
-            multiplicable: value is Multiplicable by value,
-            equality:      multiplicable.Result =:= value )
-  :   value =
+    ( using unital:        traversable.Operand is Unital,
+            multiplicable: traversable.Operand is Multiplicable by traversable.Operand,
+            equality:      multiplicable.Result =:= traversable.Operand )
+  :   traversable.Operand =
 
-    iterable.foldLeft(unital.one)(multiplicable.multiply)
+    value.foldLeft(unital.one)(multiplicable.multiply)
 
 
-  transparent inline def each(lambda: Ordinal aka "ordinal" ?=> value => Unit): Unit =
+  transparent inline def each(lambda: Ordinal aka "ordinal" ?=> traversable.Operand => Unit): Unit =
     var ordinal: Ordinal = Prim
 
-    iterable.iterator.foreach: value =>
-      lambda(using ordinal.aka["ordinal"])(value)
+    traversable.iterator(value).foreach: item =>
+      lambda(using ordinal.aka["ordinal"])(item)
       ordinal += 1
 
-  transparent inline def annex[right](lambda: value => right) = iterable.map: item =>
-    inline !![value] match
-      case tuple: Tuple => tuple :* lambda(tuple)
-      case other        => (other, lambda(other))
+  transparent inline def annex[right](lambda: traversable.Operand => right) =
+    List.from(traversable.iterator(value)).map: item =>
+      inline !![traversable.Operand] match
+        case tuple: Tuple => tuple :* lambda(tuple)
+        case other        => (other, lambda(other))
 
 
-  inline def fuse[state](base: state)(lambda: (state aka "state", value aka "next") ?=> state)
+  inline def fuse[state](base: state)
+    ( lambda: (state aka "state", traversable.Operand aka "next") ?=> state )
   :   state =
 
-    val iterator: Iterator[value] = iterable.iterator
+    val iterator: Iterator[traversable.Operand] = traversable.iterator(value)
     var state: state = base
 
     while iterator.hasNext
@@ -275,40 +307,49 @@ extension [value](iterable: Iterable[value])
     state
 
 
-  def sumBy[number: Numeric](lambda: value => number): number =
+  inline def all(predicate: traversable.Operand => Boolean): Boolean =
+    traversable.iterator(value).forall(predicate)
+
+  inline def bi: List[(traversable.Operand, traversable.Operand)] =
+    List.from(traversable.iterator(value)).map: item => (item, item)
+
+  inline def tri: List[(traversable.Operand, traversable.Operand, traversable.Operand)] =
+    List.from(traversable.iterator(value)).map: item => (item, item, item)
+
+  def indexBy[value2](lambda: traversable.Operand => value2): Map[value2, traversable.Operand] =
+    List.from(traversable.iterator(value)).map { item => (lambda(item), item) }.to[Map]
+
+  def longestTrain(predicate: traversable.Operand => Boolean): (Int, Int) =
+    val iterator = traversable.iterator(value)
+    var index = 0
+    var length = 0
+    var bestStart = 0
+    var bestLength = 0
+
+    while iterator.hasNext do
+      if predicate(iterator.next()) then
+        if length >= bestLength then
+          bestStart = index - length
+          bestLength = length + 1
+
+        length += 1
+      else
+        length = 0
+
+      index += 1
+
+    (bestStart, bestLength)
+
+// `sumBy` names the element type explicitly (via the `Operand = element` refinement) so a lambda
+// like `_.length` resolves member access even when the element type is itself abstract.
+extension [self, element](value: self)(using traversable: self is Traversable { type Operand = element })
+  def sumBy[number: Numeric](lambda: element => number): number =
     var count = number.zero
 
-    iterable.foreach: value =>
-      count = number.plus(count, lambda(value))
+    traversable.iterator(value).foreach: item =>
+      count = number.plus(count, lambda(item))
 
     count
-
-  inline def all(predicate: value => Boolean): Boolean = iterable.forall(predicate)
-  transparent inline def bi: Iterable[(value, value)] = iterable.map: value => (value, value)
-
-  transparent inline def tri: Iterable[(value, value, value)] =
-    iterable.map: value => (value, value, value)
-
-  def indexBy[value2](lambda: value => value2): Map[value2, value] =
-    iterable.map: value =>
-      (lambda(value), value)
-
-    . to(Map)
-
-  def longestTrain(predicate: value => Boolean): (Int, Int) =
-    @tailrec
-    def recur(index: Int, iterable: Iterable[value], bestStart: Int, bestLength: Int, length: Int)
-    :   (Int, Int) =
-
-      if iterable.nil then (bestStart, bestLength) else
-        if predicate(iterable.head) then
-          if length >= bestLength
-          then recur(index + 1, iterable.tail, index - length, length + 1, length + 1)
-          else recur(index + 1, iterable.tail, bestStart, bestLength, length + 1)
-        else
-          recur(index + 1, iterable.tail, bestStart, bestLength, 0)
-
-    recur(0, iterable, 0, 0, 0)
 
 extension [element](value: IArray[element])
   inline def mutable(using erased Unsafe): Array[element] = value.asInstanceOf[Array[element]]
@@ -333,7 +374,7 @@ extension [key, value](map: Map[key, value])
     map.updated(key, optional(if map.has(key) then map(key) else Unset))
 
   def collate(right: Map[key, value])(merge: (value, value) => value): Map[key, value] =
-    right.fuse(map)(state.updated(next(0), state.get(next(0)).fold(next(1))(merge(_, next(1)))))
+    List.from(right.scala).fuse(map)(state.updated(next(0), state.get(next(0)).fold(next(1))(merge(_, next(1)))))
 
 extension [key, value](map: scm.Map[key, value])
   inline def establish(key: key)(evaluate: => value): value = map.getOrElseUpdate(key, evaluate)
@@ -345,17 +386,34 @@ extension [key, value](map: Map[key, List[value]])
 extension [value](list: List[value])
   def unwind(tail: List[value]): List[value] = tail.reverse_:::(list)
 
-extension [element](sequence: Seq[element])
-  def runs: List[List[element]] = runsBy(identity)
+extension [traversable: Traversable](value: traversable)
+  inline def prim: Optional[traversable.Operand] =
+    val iterator = traversable.iterator(value)
+    if iterator.hasNext then iterator.next() else Unset
 
-  inline def prim: Optional[element] = if sequence.nil then Unset else sequence.head
-  inline def sec: Optional[element] = if sequence.length < 2 then Unset else sequence(1)
-  inline def ter: Optional[element] = if sequence.length < 3 then Unset else sequence(2)
-  inline def unique: Optional[element] = if sequence.length == 1 then sequence.head else Unset
+  inline def sec: Optional[traversable.Operand] =
+    val iterator = traversable.iterator(value).drop(1)
+    if iterator.hasNext then iterator.next() else Unset
+
+  inline def ter: Optional[traversable.Operand] =
+    val iterator = traversable.iterator(value).drop(2)
+    if iterator.hasNext then iterator.next() else Unset
+
+  inline def unique: Optional[traversable.Operand] =
+    val iterator = traversable.iterator(value)
+
+    if iterator.hasNext then
+      val first = iterator.next()
+      if iterator.hasNext then Unset else first
+    else
+      Unset
+
+extension [element](sequence: List[element])
+  def runs: List[List[element]] = runsBy(identity)
 
   def runsBy(lambda: element => Any): List[List[element]] =
     @tailrec
-    def recur(current: Any, todo: Seq[element], run: List[element], done: List[List[element]])
+    def recur(current: Any, todo: List[element], run: List[element], done: List[List[element]])
     :   List[List[element]] =
 
       if todo.nil then (run.reverse :: done).reverse
@@ -378,10 +436,6 @@ extension [indexable: Indexable](inline value: indexable)
     optimizable[indexable.Result]: default =>
       if indexable.contains(value, index) then indexable.access(value, index) else default
 
-extension [indexable: Indexable by Ordinal](inline value: indexable)
-  inline def prim: Optional[indexable.Result] = value.at(Prim)
-  inline def sec: Optional[indexable.Result] = value.at(Sec)
-  inline def ter: Optional[indexable.Result] = value.at(Ter)
 
 extension [value: Segmentable as segmentable](inline value: value)
   inline def segment(interval: Interval): value = segmentable.segment(value, interval)

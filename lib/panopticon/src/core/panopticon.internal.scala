@@ -32,6 +32,9 @@
                                                                                                   */
 package panopticon
 
+import scala.collection.immutable.`::`
+import scala.collection.immutable.List
+import scala.collection.immutable.Nil
 import scala.quoted.*
 
 import anticipation.*

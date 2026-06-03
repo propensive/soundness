@@ -95,7 +95,7 @@ object Bootstrapper:
   case class Entry(name: Text, data: Data)
   case class UserError(detail: Message)(using Diagnostics) extends Error(detail)
 
-  def main(input: IArray[Text]): Unit = application(input):
+  def main(input: IArray[Text]): Unit = application(List.from(input.iterator)):
     whereas:
       case error: Error =>
         Err.println(error.message)
@@ -147,7 +147,9 @@ object Bootstrapper:
             ZipStream(data).keep(_.encode != t"META-INF/MANIFEST.MF").map: entry =>
               (entry.ref.show, entry.checksum[Sha1].serialize[Hex]) -> Requirement(url2, digest)
 
-        . to(Map)
+            .to(List)
+
+        .to[Map]
 
         val manifest: Promise[Manifest] = Promise()
 
@@ -160,14 +162,14 @@ object Bootstrapper:
             else entries.at((entry.ref.show, entry.checksum[Sha1].serialize[Hex])).or:
               Entry(entry.ref.show, entry.read[Data])
 
-          . to(List).compact
+          . pipe(stream => List.from(stream).compact.to[List])
 
         val manifest2 = manifest().lest:
           UserError(m"There is no META-INF/MANIFEST.MF entry in the JAR file")
 
         val manifest3 =
           import manifestAttributes.*
-          val require = BurdockRequire(todo.sift[Requirement].to(Set).to(List))
+          val require = BurdockRequire(todo.sift[Requirement].to[Set].to[List])
 
           val burdockMain = manifest2(MainClass).let(BurdockMain(_)).lest:
             UserError(m"Manifest file did not contain a Main-Class entry")
@@ -179,10 +181,12 @@ object Bootstrapper:
 
         val tmpFile = jarfile.parent.vouch / t"${jarfile.name}.tmp"
 
-        Zipfile.write(tmpFile):
+        val zipEntries =
           Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest3.serialize)
-          #:: todo.sift[Entry].to(Stream).map: entry =>
+          #:: todo.sift[Entry].to[Stream].map: entry =>
             Zip.Entry(entry.name.decode[Path on Zip], () => Stream(entry.data))
+
+        Zipfile.write(tmpFile)(List.from(zipEntries))
 
         import filesystemOptions.overwritePreexisting.enabled
         import filesystemOptions.deleteRecursively.disabled

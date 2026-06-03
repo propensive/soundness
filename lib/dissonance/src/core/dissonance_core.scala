@@ -33,6 +33,7 @@
 package dissonance
 
 import anticipation.*
+import rudiments.*
 import denominative.*
 import fulminate.*
 import symbolism.*
@@ -45,7 +46,7 @@ def evolve[element: ClassTag]
   import Evolution.Atom
 
 
-  def recur(iteration: Ordinal, todo: List[Seq[element]], evolution: Evolution[element])
+  def recur(iteration: Ordinal, todo: List[List[element]], evolution: Evolution[element])
   :   Evolution[element] =
 
     todo match
@@ -53,7 +54,7 @@ def evolve[element: ClassTag]
 
       case left :: right :: more =>
         val changes: List[Change[element]] =
-          val diff0 = diff(IArray.from(left), IArray.from(right))
+          val diff0 = diff(IndexedSeq.from(left.scala), IndexedSeq.from(right.scala))
           similar.lay(diff0.edits)(diff0.rdiff(_).changes).to(List)
 
 
@@ -66,8 +67,8 @@ def evolve[element: ClassTag]
         :   List[Atom[element]] =
 
           def finish(): List[Atom[element]] =
-            val left = IArray.from(skips)
-            val right = IArray.from(inserts)
+            val left = IndexedSeq.from(skips.scala)
+            val right = IndexedSeq.from(inserts.scala)
 
             val updates: List[Atom[element]] =
               diff(left, right, _.value == _.value).edits.to(List).map:
@@ -111,7 +112,7 @@ def evolve[element: ClassTag]
         recur(iteration + 1, right :: more, Evolution(merge(evolution.sequence, changes)))
 
 
-  if versions.isEmpty then Evolution(Nil)
+  if versions.nil then Evolution(Nil)
   else recur(Sec, versions, Evolution(versions.head.map(Atom(_, Set(Prim)))))
 
 def diff[element]
@@ -137,9 +138,9 @@ def diff[element]
     val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
 
     if best == left.length && (best - deletes + inserts) == right.length
-    then Diff(backtrack(left.length - 1, deletes, rows, Nil)*)
+    then Diff(backtrack(left.length - 1, deletes, rows, Nil).scala*)
     else if inserts > 0 then trace(deletes + 1, inserts - 1, best :: focus, rows)
-    else trace(0, deletes + 1, Nil, ((best :: focus).reverse).to(Array) :: rows)
+    else trace(0, deletes + 1, Nil, ((best :: focus).reverse).scala.toArray :: rows)
 
   @tailrec
   def backtrack(position: Int, deletes: Int, rows: List[Array[Int]], edits: Edits): Edits =
@@ -147,7 +148,7 @@ def diff[element]
     lazy val ins = rows.head(deletes) - 1
     lazy val del = rows.head(deletes - 1)
 
-    if position == -1 && rightPosition == -1 then edits else if rows.isEmpty
+    if position == -1 && rightPosition == -1 then edits else if rows.nil
     then
       backtrack
         ( position - 1, deletes, rows, Par(position, rightPosition, left(position)) :: edits )

@@ -56,15 +56,15 @@ object internal2:
       inline def cbrt(using root: Quantity[units] is Rootable[3]): root.Result = root.root(quantity)
       inline def units: Map[Text, Int] = ${quantitative.internal.collectUnits[units]}
 
-      inline def express(using Decimalizer): Text = compiletime.summonFrom:
+      inline def express(using Decimalizer): Text = scala.compiletime.summonFrom:
         case prefixes: (Prefixes `on` `units`) =>
           val prefix = prefixes.select(quantity.value)
-          val scaled = quantity.value/math.pow(prefix.base.toDouble, prefix.exponent.toDouble)
+          val scaled = quantity.value/scala.math.pow(prefix.base.toDouble, prefix.exponent.toDouble)
           t"$scaled ${prefix.symbol.tt}${Quantity.expressUnits(units)}"
 
         case prefixes: Prefixes =>
           val prefix = prefixes.select(quantity.value)
-          val scaled = quantity.value/math.pow(prefix.base.toDouble, prefix.exponent.toDouble)
+          val scaled = quantity.value/scala.math.pow(prefix.base.toDouble, prefix.exponent.toDouble)
           t"$scaled ${prefix.symbol.tt}${Quantity.expressUnits(units)}"
 
         case _ =>

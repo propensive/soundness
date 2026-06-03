@@ -71,6 +71,15 @@ object Addable:
   given byte: Byte is Addable by Byte to Byte = Addable:
     (augend, addend) => (augend + addend).toByte
 
+  // `set + element` adds a single element; collection union is `++`. (`Set` lives in murmuration,
+  // below this module, so the instance lives here rather than in `Set`'s companion.)
+  given set: [element] => Set[element] is Addable by element to Set[element] =
+    Addable((set, element) => set.incl(element))
+
+  // `map + (key -> value)` adds/overwrites one entry; `++` merges a collection of pairs.
+  given map: [key, value] => Map[key, value] is Addable by (key, value) to Map[key, value] =
+    Addable((map, pair) => map.updated(pair._1, pair._2))
+
 
   given concatenable: [left, right] => (concatenable: left is Concatenable by right)
   =>  left is Addable:

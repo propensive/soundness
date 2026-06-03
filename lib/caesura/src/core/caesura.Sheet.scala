@@ -81,8 +81,8 @@ object Sheet:
 
     def table(dsv: Sheet): Scaffold[Dsv, Text] =
       val columns: List[Text] =
-        dsv.columns.let(_.to(List)).or:
-          dsv.rows.prim.let: head =>
+        dsv.columns.let(_.to[List]).or:
+          List.from(dsv.rows).prim.let: head =>
             (1 to head.data.length).to(List).map(_.toString.tt)
 
         . or(Nil)
@@ -90,11 +90,11 @@ object Sheet:
       Scaffold[Dsv]
         ( ( columns.map: name =>
               Column[Dsv, Text, Text](name, sizing = columnar.Collapsible(0.5))
-                ( _[Text](name).or(t"") ) )* )
+                ( _[Text](name).or(t"") ) ).scala* )
 
   given aggregable: (format: DsvFormat) => Tactic[DsvError] => Sheet is Aggregable by Text = text =>
     val rows = parse(text)
-    if format.header then Sheet(rows, format, rows.prim.let(_.header)) else Sheet(rows, format)
+    if format.header then Sheet(rows, format, List.from(rows).prim.let(_.header)) else Sheet(rows, format)
 
   given showable: DsvFormat => Sheet is Showable = _.rows.map(_.show).join(t"\n")
   given streamable: DsvFormat => Sheet is Streamable by Text = _.rows.to(Stream).map(_.show+t"\n")

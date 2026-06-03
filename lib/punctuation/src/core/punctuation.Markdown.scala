@@ -154,14 +154,14 @@ object Markdown:
         case Layout.BulletList(line, tight, items*) =>
           val items2 = items.map: item =>
             if item.nil then Li
-            else Li(merge(false, item, Nil, tight)*)
+            else Li(merge(false, item, Nil, tight).scala*)
 
           Ul(items2*)
 
         case Layout.OrderedList(line, start, tight, delimiter, items*) =>
           val items2 = items.map: item =>
             if item.nil then Li
-            else Li(merge(false, item, Nil, tight)*)
+            else Li(merge(false, item, Nil, tight).scala*)
 
           val start2 = start.puncture(1)
 
@@ -212,10 +212,10 @@ object Markdown:
         todo match
           case Nil =>
             if current.nil then done.reverse
-            else recur(Nil, Nil, Markdown(Nil, current.reverse*) :: done)
+            else recur(Nil, Nil, Markdown(Nil, current.reverse.scala*) :: done)
 
           case Layout.ThematicBreak(_) :: more =>
-            recur(more, Nil, Markdown(Nil, current.reverse*) :: done)
+            recur(more, Nil, Markdown(Nil, current.reverse.scala*) :: done)
 
           case head :: more =>
             recur(more, head :: current, done)

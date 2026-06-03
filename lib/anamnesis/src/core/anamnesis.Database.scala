@@ -36,6 +36,7 @@ import beneficence.*
 import contingency.*
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 object Database:
@@ -95,7 +96,7 @@ class Database(size: Int) extends Findable:
     val relationIndex = !![Topic].indexOf[left -< right]
     val relation = relate[left, right]
     val corelation = corelate[left, right]
-    val relation2 = relation.updated(left, relation.at(left).or(Set()) + right)
+    val relation2 = relation.updated(left, relation.at(left).or(Set()) ++ Set(right))
     val corelation2 = corelation.updated(right, left)
     relations(relationIndex) = relation2
     corelations(relationIndex) = corelation2
@@ -117,8 +118,8 @@ class Database(size: Int) extends Findable:
     val corelation = corelate[left, right]
 
     val relation2: Map[Ref, Set[Ref]] =
-      relation.updated(left, relation.at(left).let(_ - right).or(Set()))
+      relation.updated(left, relation.at(left).let(_ -- Set(right)).or(Set()))
 
-    val corelation2 = corelation - right
+    val corelation2 = corelation - (right: Ref)
     relations(relationIndex) = relation2
     corelations(relationIndex) = corelation2

@@ -53,7 +53,7 @@ object Serializer:
   @scala.annotation.targetName("applyProse")
   def apply(markdown: Markdown of Prose): Text =
     val builder = StringBuilder()
-    markdown.children.each(prose(builder, _))
+    List.from(markdown.children).each(prose(builder, _))
     builder.text
 
   private def appendLinkRefs(builder: StringBuilder, refs: List[Markdown.LinkRef]): Unit =
@@ -215,17 +215,17 @@ object Serializer:
 
     case Prose.Emphasis(children*) =>
       builder.add('*')
-      children.each(prose(builder, _))
+      List.from(children).each(prose(builder, _))
       builder.add('*')
 
     case Prose.Strong(children*) =>
       builder.add(t"**")
-      children.each(prose(builder, _))
+      List.from(children).each(prose(builder, _))
       builder.add(t"**")
 
     case Prose.Link(destination, title, children*) =>
       builder.add('[')
-      children.each(prose(builder, _))
+      List.from(children).each(prose(builder, _))
       builder.add(t"](")
       builder.add(linkDestination(destination))
       title.let: t =>
@@ -236,7 +236,7 @@ object Serializer:
 
     case Prose.Image(destination, title, children*) =>
       builder.add(t"![")
-      children.each(prose(builder, _))
+      List.from(children).each(prose(builder, _))
       builder.add(t"](")
       builder.add(linkDestination(destination))
       title.let: t =>
@@ -253,7 +253,7 @@ object Serializer:
   // does not re-parse as a new block.
   private def inlineLine(children: Seq[Prose]): Text =
     val buf = StringBuilder()
-    children.each(prose(buf, _))
+    List.from(children).each(prose(buf, _))
     val out = buf.text
 
     if out.length == 0 then out
@@ -263,7 +263,7 @@ object Serializer:
   private def layoutSeq(builder: StringBuilder, nodes: Seq[Layout], indent: Text): Unit =
     var first = true
 
-    nodes.each: node =>
+    List.from(nodes).each: node =>
       if !first then ensureBlankLine(builder)
       first = false
       layout(builder, node, indent)
@@ -308,7 +308,7 @@ object Serializer:
       val fence = codeBlockFence(code)
       builder.add(indent)
       builder.add(fence)
-      if !info.nil then builder.add(info.map(_.s).mkString(" ").tt)
+      if !info.nil then builder.add(info.map(_.s).scala.mkString(" ").tt)
       builder.add('\n')
       writeWithIndent(builder, code, indent)
       if !code.ends(t"\n") then builder.add('\n')
@@ -339,7 +339,7 @@ object Serializer:
     case Layout.BulletList(_, tight, items*) =>
       var first = true
 
-      items.each: item =>
+      List.from(items).each: item =>
         if !first && !tight then ensureBlankLine(builder)
         first = false
         builder.add(indent)
@@ -350,7 +350,7 @@ object Serializer:
       var n = start
       var first = true
 
-      items.each: item =>
+      List.from(items).each: item =>
         if !first && !tight then ensureBlankLine(builder)
         first = false
         val marker = t"$n${delimiter.or('.')} "
@@ -371,7 +371,7 @@ object Serializer:
     if item.nil then builder.add('\n')
     else
       val inner = StringBuilder()
-      layoutSeq(inner, item, t"")
+      layoutSeq(inner, item.scala, t"")
       val rendered = inner.text.s
 
       var i = 0

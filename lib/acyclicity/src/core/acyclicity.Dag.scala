@@ -38,22 +38,23 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import rudiments.*
+import symbolism.*
 
 object Dag:
   @targetName("apply2")
   def apply[node](keys: Set[node])(dependencies: node => Set[node]): Dag[node] =
-    Dag(keys.map { key => (key, dependencies(key)) }.to(Map))
+    Dag(keys.map { key => (key, dependencies(key)) }.to[Map])
 
   @targetName("fromEdges")
   def apply[node](edges: (node, node)*): Dag[node] = Dag:
     edges.foldLeft(Map[node, Set[node]]()): case (acc, (key, value)) =>
-      acc.updated(key, acc.get(key).fold(Set(value))(_ + value))
+      acc.updated(key, acc.get(key).fold(Set(value))(_ ++ Set(value)))
 
   @targetName("fromNodes")
   def apply[node](nodes: (node, Set[node])*): Dag[node] = Dag(Map(nodes*))
 
   extension (dag: Dag[Text])
-    def dot: Dot = Digraph(dag.edges.to(List).map(Dot.Ref(_) --> Dot.Ref(_))*)
+    def dot: Dot = Digraph(dag.edges.to[List].map(Dot.Ref(_) --> Dot.Ref(_)).scala*)
 
 case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   private val reachableCache: scm.HashMap[node, Set[node]] = scm.HashMap()
@@ -63,7 +64,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   def map[node2](lambda: node => node2): Dag[node2] =
     Dag(edgeMap.map { (k, v) => (lambda(k), v.map(lambda)) })
 
-  def subgraph(keep: Set[node]): Dag[node] = (keys &~ keep).fuse(this)(state.remove(next))
+  def subgraph(keep: Set[node]): Dag[node] = keys.diff(keep).fuse(this)(state.remove(next))
   def apply(key: node): Set[node] = edgeMap.getOrElse(key, Set())
 
   def descendants(key: node): Dag[node] raises DagError = subgraph(reachable(key))
@@ -75,34 +76,38 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   @targetName("removeKey")
   infix def - (key: node): Dag[node] = Dag(edgeMap - key)
 
-  def sources: Set[node] = edgeMap.collect { case (k, v) if v.nil => k }.to(Set)
-  def edges: Set[(node, node)] = edgeMap.to(Set).flatMap: (key, values) => values.map(key -> _)
-  def closure: Dag[node] = Dag(keys.map { k => k -> (reach(k) - k) }.to(Map))
+  def sources: Set[node] = edgeMap.toList.collect { case (k, v) if v.nil => k }.to[Set]
+
+  def edges: Set[(node, node)] =
+    edgeMap.toList.flatMap { case (key, values) => values.map(key -> _) }.to[Set]
+
+  def closure: Dag[node] = Dag(keys.map { k => k -> (reach(k) -- Set(k)) }.to[Map])
   def sorted: List[node] raises DagError = sort(edgeMap, Nil).reverse
   def hasCycle(start: node): Boolean raises DagError = findCycle(start).isDefined
 
   def remove(key: node, value: node): Dag[node] =
-    Dag(edgeMap.updated(key, edgeMap.get(key).fold(Set())(_ - value)))
+    Dag(edgeMap.updated(key, edgeMap.get(key).fold(Set())(_ -- Set(value))))
 
   def has(key: node): Boolean = edgeMap.contains(key)
 
   def traversal[node2](lambda: (Set[node2], node) => node2): Map[node, node2] raises DagError =
 
     sorted.fuse(Map[node, node2]()):
-      state.updated(next, lambda(apply(next).map(state), next))
+      state.updated(next, lambda(apply(next).map(state(_)), next))
 
   @targetName("addAll")
   infix def ++ (dag: Dag[node]): Dag[node] =
-    val joined = edgeMap.to(List) ++ dag.edgeMap.to(List)
-    Dag(joined.groupBy(_._1).view.mapValues(_.flatMap(_._2).to(Set)).to(Map))
+    val joined = edgeMap.toList ++ dag.edgeMap.toList
+    Dag(joined.groupBy(_._1).mapValues(_.flatMap(_._2.to[List]).to[Set]))
 
   def add(key: node, value: node): Dag[node] = this ++ Dag(key -> value)
 
   def flatMap[node2](lambda: node => Dag[node2]): Dag[node2] = Dag:
-    edgeMap.flatMap:
-      case (k, v) => lambda(k).edgeMap.map:
-        case (h, w) => (h, (w ++ v.flatMap(lambda(_).keys)))
+    edgeMap.toList.flatMap:
+      case (k, v) =>
+        lambda(k).edgeMap.map { case (h, w) => (h, w ++ v.flatMap(lambda(_).keys)) }.toList
 
+    . to[Map]
   . reduction
 
   def reduction: Dag[node] =
@@ -118,7 +123,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
 
     Dag:
       removals.foldLeft(edgeMap):
-        case (m, (k, v)) => m.updated(k, m(k) - v)
+        case (m, (k, v)) => m.updated(k, m(k) -- Set(v))
 
   def reachable(node: node): Set[node] raises DagError =
     if !edgeMap.has(node)
@@ -126,31 +131,29 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
     else reach(node)
 
   private def reach(node: node): Set[node] =
-    reachableCache.getOrElseUpdate(node, edgeMap.getOrElse(node, Set()).flatMap(reach) + node)
+    reachableCache.getOrElseUpdate(node, edgeMap.getOrElse(node, Set()).flatMap(reach) ++ Set(node))
 
   def invert: Dag[node] = Dag:
     edgeMap.foldLeft(Map[node, Set[node]]()):
       case (acc, (k, vs)) =>
-        vs.fuse(acc)(state.updated(next, state.get(next).fold(Set(k))(_ + k)))
+        vs.fuse(acc)(state.updated(next, state.get(next).fold(Set(k))(_ ++ Set(k))))
 
   def remove(element: node): Dag[node] =
     val outgoing = edgeMap.getOrElse(element, Set())
 
     Dag:
-      (edgeMap - element).view.mapValues:
-        map => if map(element) then map ++ outgoing - element else map
-
-      . to(Map)
+      (edgeMap - element).mapValues:
+        map => if map.contains(element) then map ++ outgoing -- Set(element) else map
 
   private def sort(todo: Map[node, Set[node]], done: List[node])
   :   List[node] raises DagError =
 
     if todo.nil then done
-    else todo.find { (k, vs) => (vs -- done).nil } match
+    else todo.find { (k, vs) => (vs.scala -- done.scala).isEmpty } match
       case None => abort(DagError(DagError.Reason.Cyclic))
 
       case Some((node, _)) =>
-        sort((todo - node).view.mapValues(_.filter(_ != node)).to(Map), node :: done)
+        sort((todo - node).mapValues(_.filter(_ != node)), node :: done)
 
   def filter(predicate: node => Boolean): Dag[node] =
     val deletions = keys.filter(!predicate(_))
@@ -159,8 +162,8 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
     Dag:
       deletions.foldLeft(edgeMap): (acc, next) =>
         inverted(next).foldLeft(acc):
-          (acc2, ref) => acc2.updated(ref, acc2(ref) - next ++ acc(next))
-      -- deletions
+          (acc2, ref) => acc2.updated(ref, acc2(ref) -- Set(next) ++ acc(next))
+      -- deletions.scala
 
   private def findCycle(start: node): Option[List[node]] raises DagError =
     if !edgeMap.has(start)
@@ -174,11 +177,11 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
         case Nil => None
 
         case (vertex, trace) :: tail =>
-          trace.to(Set).intersect(apply(vertex)).headOption match
+          trace.to[Set].intersect(apply(vertex)).headOption match
             case Some(element) => Some(trace ++ List(vertex, element))
 
             case None =>
-              val queue = tail ++ apply(vertex).diff(finished).to(List).map((_, trace :+ vertex))
-              recur(queue, finished + vertex)
+              val queue = tail ++ apply(vertex).diff(finished).to[List].map((_, trace :+ vertex))
+              recur(queue, finished ++ Set(vertex))
 
     recur(List((start, List())), Set())

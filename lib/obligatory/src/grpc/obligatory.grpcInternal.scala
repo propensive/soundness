@@ -67,7 +67,7 @@ object grpcInternal:
     def decls(classSymbol: Symbol) = rpcMethods.map: method =>
       Symbol.newMethod(classSymbol, method.name, method.info, Flags.EmptyFlags, Symbol.noSymbol)
 
-    val parents = List(TypeTree.of[Object], TypeTree.of[interface])
+    val parents = scala.collection.immutable.List(TypeTree.of[Object], TypeTree.of[interface])
 
     val module =
       Symbol.newModule
@@ -85,7 +85,7 @@ object grpcInternal:
       val runSym = classSymbol.declaredMethod(method.name).head
 
       DefDef(runSym, {
-        case List(params) =>
+        case scala.collection.immutable.List(params) =>
           given Quotes = runSym.asQuotes
           val argument = params.head
           val name = Expr(method.name.tt)
@@ -105,7 +105,7 @@ object grpcInternal:
               halt(m"no ${TypeRepr.of[response is Decodable in Protobuf].show} instance was found")
 
           runSym.info.absolve match
-            case MethodType(_, List(parameter), result) => parameter.asType.absolve match
+            case MethodType(_, scala.collection.immutable.List(parameter), result) => parameter.asType.absolve match
               case '[request] =>
                 val enc = encoder[request]
                 val req = argument.asExprOf[request]

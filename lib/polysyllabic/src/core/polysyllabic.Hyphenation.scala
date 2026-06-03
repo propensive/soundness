@@ -51,14 +51,14 @@ object Hyphenation:
   // Build a `Hyphenation` from raw TeX-format pattern and exception strings.
   // Patterns look like `t"hy3ph"`; exceptions look like `t"as-so-ciate"`.
   def apply
-    ( patterns:   Iterable[Text],
-      exceptions: Iterable[Text] = Nil,
+    ( patterns:   List[Text],
+      exceptions: List[Text] = Nil,
       leftMin:    Int            = 2,
       rightMin:   Int            = 3 )
   :   Hyphenation =
 
-    val patternPairs    = patterns.map(TexPatterns.parsePattern).toSeq
-    val exceptionPairs  = exceptions.map(TexPatterns.parseException).toSeq
+    val patternPairs    = patterns.map(TexPatterns.parsePattern).to[IndexedSeq]
+    val exceptionPairs  = exceptions.map(TexPatterns.parseException).to[IndexedSeq]
     val patternDict     = Dictionary.aho(alphabet, patternPairs*)
     val exceptionDict   = Dictionary(exceptionPairs*)
 
@@ -69,7 +69,7 @@ object Hyphenation:
   // optional `\lefthyphenmin` / `\righthyphenmin` directives.
   def fromTex(content: Text): Hyphenation =
     val parsed = TexPatterns.parseFile(content)
-    apply(parsed.patterns, parsed.exceptions, parsed.leftMin, parsed.rightMin)
+    apply(parsed.patterns.to[List], parsed.exceptions.to[List], parsed.leftMin, parsed.rightMin)
 
   private[polysyllabic] def make
     ( patterns0:   Dictionary[IArray[Byte]],
@@ -306,18 +306,18 @@ trait Hyphenation:
   def rightMin: Int
 
   def extending
-    ( patterns:   Iterable[Text] = Nil,
-      exceptions: Iterable[Text] = Nil,
+    ( patterns:   List[Text] = Nil,
+      exceptions: List[Text] = Nil,
       leftMin:    Optional[Int]  = Unset,
       rightMin:   Optional[Int]  = Unset )
   :   Hyphenation =
 
-    val newPatternPairs = patterns.map(TexPatterns.parsePattern).toSeq
-    val newExceptionPairs = exceptions.map(TexPatterns.parseException).toSeq
+    val newPatternPairs = patterns.map(TexPatterns.parsePattern).to[IndexedSeq]
+    val newExceptionPairs = exceptions.map(TexPatterns.parseException).to[IndexedSeq]
     val newPatterns =
-      Dictionary.aho(Hyphenation.alphabet, (this.patterns.entries.toSeq ++ newPatternPairs)*)
+      Dictionary.aho(Hyphenation.alphabet, (this.patterns.entries.to[IndexedSeq] ++ newPatternPairs)*)
 
-    val newExceptions = this.exceptions ++ newExceptionPairs
+    val newExceptions = this.exceptions ++ newExceptionPairs.to(List)
     val effectiveLeft = leftMin.or(this.leftMin)
     val effectiveRight = rightMin.or(this.rightMin)
     Hyphenation.make(newPatterns, newExceptions, effectiveLeft, effectiveRight)

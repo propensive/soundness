@@ -367,7 +367,7 @@ object Tels:
       case Required, Repeatable
 
     private def mergeStruct(base: Struct, layer: Struct): Struct raises TelError =
-      val members = scala.collection.mutable.ArrayBuffer.from(base.members.toList)
+      val members = scala.collection.mutable.ArrayBuffer.from(base.members.iterator)
       val keywordToIndex = scala.collection.mutable.HashMap.from(
         members.zipWithIndex.collect:
           case (f: Field, idx)     => f.keyword -> idx
@@ -422,7 +422,7 @@ object Tels:
         i += 1
 
       val mergedValidators = (base.validators ++ layer.validators).distinct
-      Struct(IArray.from(members), IArray.from(mergedValidators))
+      Struct(IArray.from(members), mergedValidators)
 
     private def mergeRecordList
          (base:     IArray[RecordDefinition],
@@ -430,7 +430,7 @@ object Tels:
           scalars:  IArray[ScalarDefinition],
           selects:  IArray[SelectDefinition])
     :     IArray[RecordDefinition] raises TelError =
-      val out = scala.collection.mutable.ArrayBuffer.from(base.toList)
+      val out = scala.collection.mutable.ArrayBuffer.from(base.iterator)
       var i = 0
       while i < layer.length do
         val newDef = layer(i)
@@ -460,14 +460,14 @@ object Tels:
           records: IArray[RecordDefinition],
           selects: IArray[SelectDefinition])
     :     IArray[ScalarDefinition] raises TelError =
-      val out = scala.collection.mutable.ArrayBuffer.from(base.toList)
+      val out = scala.collection.mutable.ArrayBuffer.from(base.iterator)
       var i = 0
       while i < layer.length do
         val newDef = layer(i)
         val existing = out.indexWhere(_.name == newDef.name)
         if existing >= 0 then
           val mergedValidators = (out(existing).validators ++ newDef.validators).distinct
-          out(existing) = ScalarDefinition(newDef.name, IArray.from(mergedValidators),
+          out(existing) = ScalarDefinition(newDef.name, mergedValidators,
               newDef.description.or(out(existing).description))
         else
           if records.exists(_.name == newDef.name) || selects.exists(_.name == newDef.name)
@@ -484,7 +484,7 @@ object Tels:
           records: IArray[RecordDefinition],
           scalars: IArray[ScalarDefinition])
     :     IArray[SelectDefinition] raises TelError =
-      val out = scala.collection.mutable.ArrayBuffer.from(base.toList)
+      val out = scala.collection.mutable.ArrayBuffer.from(base.iterator)
       var i = 0
       while i < layer.length do
         val newDef = layer(i)
@@ -502,7 +502,7 @@ object Tels:
 
     private def mergeSelect(base: SelectDefinition, layer: SelectDefinition)
     :     SelectDefinition raises TelError =
-      val variants = scala.collection.mutable.ArrayBuffer.from(base.variants.toList)
+      val variants = scala.collection.mutable.ArrayBuffer.from(base.variants.iterator)
       var i = 0
       while i < layer.variants.length do
         val v = layer.variants(i)
@@ -511,7 +511,7 @@ object Tels:
         i += 1
 
       val mergedValidators = (base.validators ++ layer.validators).distinct
-      SelectDefinition(base.name, IArray.from(variants), IArray.from(mergedValidators),
+      SelectDefinition(base.name, IArray.from(variants), mergedValidators,
           layer.description.or(base.description))
 
   // Inverse of the §20.5 schema-of-schemas: given a Tel.Document whose
@@ -678,7 +678,7 @@ object Tels:
             if ats.length < 2 then abort(TelError(Reason.RequiredMemberAbsent))
             variants += Variant(ats(0), parseType(ats(1)), descriptionOf(childCompounds(cc)))
 
-          case "validate"    => validators ++= atomTexts(cc)
+          case "validate"    => validators ++= atomTexts(cc).iterator
           case "exclude"     => ()
           case "description" => ()
           case _             => abort(TelError(Reason.UnknownKeyword))
@@ -721,7 +721,7 @@ object Tels:
         cc.keyword.s match
           case "field"    => members += parseField(cc)
           case "select"   => members += parseSelectRef(cc)
-          case "validate" => validators ++= atomTexts(cc)
+          case "validate" => validators ++= atomTexts(cc).iterator
           case "exclude"  =>
             val ats = atomTexts(cc)
             if ats.length >= 1 then members += Exclude(ats(0))

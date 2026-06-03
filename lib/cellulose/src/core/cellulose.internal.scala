@@ -76,7 +76,7 @@ object internal extends protointernal:
     extends Format.Position:
       def describe: Text = t"line $line, column $column"
 
-    inline given derivedEncodable: [value] => value is Encodable in Codl = compiletime.summonFrom:
+    inline given derivedEncodable: [value] => value is Encodable in Codl = scala.compiletime.summonFrom:
       case given (`value` is Encodable in Text) => Codl.field[value]
       case given ProductReflection[`value`]     => EncodableDerivation.derived[value]
 
@@ -107,10 +107,10 @@ object internal extends protointernal:
 
 
     given setEncodable: [element: Encodable in Codl] => Set[element] is Encodable in Codl =
-      value => Codl(value.map(element.encoded(_).list.head).to(List))
+      value => Codl(value.map(element.encoded(_).list.head).to[List])
 
     inline given derivedDecodable: [value] => Tactic[CodlError] => value is Decodable in Codl =
-      compiletime.summonFrom:
+      scala.compiletime.summonFrom:
         case given (`value` is Decodable in Text) => decodableField[`value`]
         case given ProductReflection[`value`]     => DecodableDerivation().derived[`value`]
 
@@ -140,7 +140,7 @@ object internal extends protointernal:
 
       value => schematic.schema() match
         case Field(_) =>
-          value.list.flatMap(_.children).map: node =>
+          value.list.flatMap(node => List.from(node.children.iterator)).map: node =>
             decodable.decoded(Codl(List(CodlDoc(node))))
 
         case struct: Struct =>
@@ -153,13 +153,13 @@ object internal extends protointernal:
       value =>
         element.schema() match
           case Field(_) =>
-            value.list.flatMap(_.children).map: node =>
+            value.list.flatMap(node => List.from(node.children.iterator)).map: node =>
               decodable.decoded(Codl(List(CodlDoc(node))))
 
-            . to(Set)
+            .to[Set]
 
           case struct: Struct =>
-            value.list.map(List(_)).map(Codl(_)).map(decodable.decoded(_)).to(Set)
+            value.list.map(List(_)).map(Codl(_)).map(decodable.decoded(_)).to[Set]
 
 
     enum Issue extends Format.Issue:
@@ -273,7 +273,7 @@ object internal extends protointernal:
               val data =
                 Atom
                   ( key,
-                    IArray.from(children.reverse),
+                    IArray.from(children.reverse.scala),
                     Formation(params, multiline, col - margin),
                     schema )
 
@@ -482,7 +482,7 @@ object internal extends protointernal:
                 val closed = focus.close
                 val children = if closed.blank then peers.reverse else (closed :: peers).reverse
 
-                CodlDoc(IArray.from(children), baseSchema, margin, body)
+                CodlDoc(IArray.from(children.scala), baseSchema, margin, body)
 
               case _ =>
                 go(Stream(CodlToken.Outdent(stack.length + 1)))

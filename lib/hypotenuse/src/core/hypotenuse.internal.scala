@@ -32,8 +32,8 @@
                                                                                                   */
 package hypotenuse
 
-import language.experimental.genericNumberLiterals
-import language.experimental.into
+import scala.language.experimental.genericNumberLiterals
+import scala.language.experimental.into
 
 import java.lang.{Integer as JInt, Long as JLong, Short as JShort, Byte as JByte, Double as JDouble,
     Float as JFloat}
@@ -71,13 +71,13 @@ object internal:
     final val Min: F64 = Double.MinValue
     final val Max: F64 = Double.MaxValue
 
-    inline given underlying: Underlying[F64, Double] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[F64, Double] = scala.caps.unsafe.unsafeErasedValue
 
 
     inline given canEqual: CanEqual
       [ F64, F64 | S64 | S32 | S16 | S8 | Double | Long | Int | Short | Byte ] =
 
-      caps.unsafe.unsafeErasedValue
+      scala.caps.unsafe.unsafeErasedValue
 
 
     inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B64): F64 = F64:
@@ -184,13 +184,13 @@ object internal:
     final val Min: F32 = Float.MinValue
     final val Max: F32 = Float.MaxValue
 
-    inline given underlying: Underlying[F32, Float] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[F32, Float] = scala.caps.unsafe.unsafeErasedValue
 
 
     inline given canEqual: CanEqual
       [ F32, F32 | S64 | S32 | S16 | S8 | Float | Long | Int | Short | Byte ] =
 
-      caps.unsafe.unsafeErasedValue
+      scala.caps.unsafe.unsafeErasedValue
 
 
     inline given orderable: F32 is Orderable:
@@ -241,8 +241,8 @@ object internal:
     final val Min: U64 = 0L
     final val Max: U64 = -1L
 
-    inline given underlying: Underlying[U64, Long] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[U64, U64] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[U64, Long] = scala.caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U64, U64] = scala.caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U64]:
       inline def fromDigits(digits: String): U64 = ${hypotenuse.protointernal.parseU64('digits)}
@@ -270,13 +270,13 @@ object internal:
     final val Min: U64 = Long.MinValue
     final val Max: U64 = Long.MaxValue
 
-    inline given underlying: Underlying[S64, Long] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[S64, Long] = scala.caps.unsafe.unsafeErasedValue
 
 
     inline given canEqual: CanEqual[S64, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
                                     | Int | Short | Byte] =
 
-      caps.unsafe.unsafeErasedValue
+      scala.caps.unsafe.unsafeErasedValue
 
 
     given fromDigits: FromDigits[S64]:
@@ -302,8 +302,8 @@ object internal:
     final val Min: U32 = Int.MinValue
     final val Max: U32 = Int.MaxValue
 
-    inline given underlying: Underlying[U32, Int] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[U32, U32] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[U32, Int] = scala.caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U32, U32] = scala.caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U32]:
       inline def fromDigits(digits: String): U32 = ${hypotenuse.protointernal.parseU32('digits)}
@@ -331,13 +331,13 @@ object internal:
     final val Min: S32 = Int.MinValue
     final val Max: S32 = Int.MaxValue
 
-    inline given underlying: Underlying[S32, Int] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[S32, Int] = scala.caps.unsafe.unsafeErasedValue
 
 
     inline given canEqual: CanEqual[S32, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
                                     | Int | Short | Byte] =
 
-      caps.unsafe.unsafeErasedValue
+      scala.caps.unsafe.unsafeErasedValue
 
 
     given fromDigits: FromDigits[S32]:
@@ -363,8 +363,8 @@ object internal:
     final val Min: S16 = 0
     final val Max: S16 = -1
 
-    inline given underlying: Underlying[U16, Short] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[U16, U16] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[U16, Short] = scala.caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U16, U16] = scala.caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U16]:
       inline def fromDigits(digits: String): U16 = ${hypotenuse.protointernal.parseU16('digits)}
@@ -392,14 +392,14 @@ object internal:
     final val Min: S16 = Short.MinValue
     final val Max: S16 = Short.MaxValue
 
-    inline given underlying: Underlying[S16, Short] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[S16, Short] = scala.caps.unsafe.unsafeErasedValue
 
 
     inline given canEqual: CanEqual[S16,
                                     F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int
                                     | Short | Byte] =
 
-      caps.unsafe.unsafeErasedValue
+      scala.caps.unsafe.unsafeErasedValue
 
 
     given fromDigits: FromDigits[S16]:
@@ -429,8 +429,8 @@ object internal:
     final val Min: U8 = 0
     final val Max: U8 = -1
 
-    inline given underlying: Underlying[U8, Byte] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[U8, U8] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[U8, Byte] = scala.caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U8, U8] = scala.caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U8]:
       inline def fromDigits(digits: String): U8 = ${hypotenuse.protointernal.parseU8('digits)}
@@ -458,13 +458,13 @@ object internal:
     final val Min: S8 = Byte.MinValue
     final val Max: S8 = Byte.MaxValue
 
-    inline given underlying: Underlying[S8, Byte] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[S8, Byte] = scala.caps.unsafe.unsafeErasedValue
 
 
     inline given canEqual: CanEqual[S8, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
                                     | Int | Short | Byte] =
 
-      caps.unsafe.unsafeErasedValue
+      scala.caps.unsafe.unsafeErasedValue
 
 
     given fromDigits: FromDigits[S8]:
@@ -487,7 +487,7 @@ object internal:
         else inline if strict then (left: Byte) < (right: Byte) else (left: Byte) <= (right: Byte)
 
   object B64:
-    inline given underlying: Underlying[B64, Long] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[B64, Long] = scala.caps.unsafe.unsafeErasedValue
 
     inline def block(inline n: Int): B64 = (1L << n) - 1
     inline def set(inline ordinal: Ordinal): B64 = 1L << ordinal.n0
@@ -521,7 +521,7 @@ object internal:
       b64
 
   object B32:
-    inline given underlying: Underlying[B32, Int] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[B32, Int] = scala.caps.unsafe.unsafeErasedValue
 
     inline def block(inline n: Int): B32 = (1 << n) - 1
     inline def set(inline ordinal: Ordinal): B32 = 1 << ordinal.n0
@@ -542,7 +542,7 @@ object internal:
       b32
 
   object B16:
-    inline given underlying: Underlying[B16, Short] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[B16, Short] = scala.caps.unsafe.unsafeErasedValue
 
     inline def block(inline n: Int): B16 = ((1 << n) - 1).toShort
     inline def set(inline ordinal: Ordinal): B16 = (1 << ordinal.n0).toShort
@@ -561,7 +561,7 @@ object internal:
       b16.toShort
 
   object B8:
-    inline given underlying: Underlying[B8, Byte] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[B8, Byte] = scala.caps.unsafe.unsafeErasedValue
 
     inline def block(inline n: Int): B8 = ((1 << n) - 1).toByte
     inline def set(inline ordinal: Ordinal): B8 = (1 << ordinal.n0).toByte
@@ -574,7 +574,7 @@ object internal:
 
   extension (s64: S64)
     @targetName("absS64")
-    inline def abs: S64 = math.abs(s64)
+    inline def abs: S64 = scala.math.abs(s64)
 
     @targetName("longS64")
     inline def long: Long = s64
@@ -592,13 +592,13 @@ object internal:
     inline def binary: Text = JLong.toBinaryString(s64).nn.tt
 
     @targetName("floorModS64")
-    inline infix def %% (right: Conversion.into[S64]): S64 = math.floorMod(s64, right)
+    inline infix def %% (right: Conversion.into[S64]): S64 = scala.math.floorMod(s64, right)
 
     @targetName("floorDivS64")
-    inline infix def /- (right: Conversion.into[S64]): S64 = math.floorDiv(s64, right)
+    inline infix def /- (right: Conversion.into[S64]): S64 = scala.math.floorDiv(s64, right)
 
     @targetName("powerS64")
-    inline infix def ** (exponent: Double): Double = math.pow(s64.toDouble, exponent)
+    inline infix def ** (exponent: Double): Double = scala.math.pow(s64.toDouble, exponent)
 
     @targetName("divS64")
     inline infix def / (right: Conversion.into[S64])(using division: DivisionByZero)
@@ -635,10 +635,10 @@ object internal:
     inline def long: Long = s32.toLong
 
     @targetName("absS32")
-    inline def abs: S32 = math.abs(s32)
+    inline def abs: S32 = scala.math.abs(s32)
 
     @targetName("powerS32")
-    inline infix def ** (exponent: Double): Double = math.pow(s32.toDouble, exponent)
+    inline infix def ** (exponent: Double): Double = scala.math.pow(s32.toDouble, exponent)
 
     @targetName("octalS32")
     inline def octal: Text = JInt.toOctalString(s32).nn.tt
@@ -653,10 +653,10 @@ object internal:
     inline def binary: Text = JInt.toBinaryString(s32).nn.tt
 
     @targetName("floorModS32")
-    inline infix def %% (right: Conversion.into[S32]): S32 = math.floorMod(s32, right)
+    inline infix def %% (right: Conversion.into[S32]): S32 = scala.math.floorMod(s32, right)
 
     @targetName("floorDivS32")
-    inline infix def /- (right: Conversion.into[S32]): S32 = math.floorDiv(s32, right)
+    inline infix def /- (right: Conversion.into[S32]): S32 = scala.math.floorDiv(s32, right)
 
     @targetName("divS32")
     inline infix def / (right: Conversion.into[S32])(using division: DivisionByZero)
@@ -696,10 +696,10 @@ object internal:
     inline def long: Long = s16.toLong
 
     @targetName("absS16")
-    inline def abs: S16 = math.abs(s16).toShort
+    inline def abs: S16 = scala.math.abs(s16).toShort
 
     @targetName("powerS16")
-    inline infix def ** (exponent: Double): Double = math.pow(s16.toDouble, exponent)
+    inline infix def ** (exponent: Double): Double = scala.math.pow(s16.toDouble, exponent)
 
     @targetName("octalS16")
     inline def octal: Text = JInt.toOctalString(s16).nn.tt
@@ -714,10 +714,10 @@ object internal:
     inline def binary: Text = JInt.toBinaryString(s16).nn.tt
 
     @targetName("floorModS16")
-    inline infix def %% (right: Conversion.into[S16]): S16 = math.floorMod(s16, right).toShort
+    inline infix def %% (right: Conversion.into[S16]): S16 = scala.math.floorMod(s16, right).toShort
 
     @targetName("floorDivS16")
-    inline infix def /- (right: Conversion.into[S16]): S16 = math.floorDiv(s16, right).toShort
+    inline infix def /- (right: Conversion.into[S16]): S16 = scala.math.floorDiv(s16, right).toShort
 
     @targetName("divS16")
     inline infix def / (right: Conversion.into[S16])(using division: DivisionByZero)
@@ -760,10 +760,10 @@ object internal:
     inline def long: Long = s8.toLong
 
     @targetName("absS8")
-    inline def abs: S8 = math.abs(s8).toByte
+    inline def abs: S8 = scala.math.abs(s8).toByte
 
     @targetName("powerS8")
-    inline infix def ** (exponent: Double): Double = math.pow(s8.toDouble, exponent)
+    inline infix def ** (exponent: Double): Double = scala.math.pow(s8.toDouble, exponent)
 
     @targetName("octalS8")
     inline def octal: Text = JInt.toOctalString(s8).nn.tt
@@ -778,10 +778,10 @@ object internal:
     inline def binary: Text = JInt.toBinaryString(s8).nn.tt
 
     @targetName("floorModS8")
-    inline infix def %% (right: Conversion.into[S8]): S8 = math.floorMod(s8, right).toByte
+    inline infix def %% (right: Conversion.into[S8]): S8 = scala.math.floorMod(s8, right).toByte
 
     @targetName("floorDivS8")
-    inline infix def /- (right: Conversion.into[S8]): S8 = math.floorDiv(s8, right).toByte
+    inline infix def /- (right: Conversion.into[S8]): S8 = scala.math.floorDiv(s8, right).toByte
 
     @targetName("divS8")
     inline infix def / (right: Conversion.into[S8])(using division: DivisionByZero)
@@ -1202,7 +1202,7 @@ object internal:
     inline def double: Double = f64
 
     @targetName("powerF64")
-    inline infix def ** (exponent: Conversion.into[F64]): F64 = math.pow(f64, exponent)
+    inline infix def ** (exponent: Conversion.into[F64]): F64 = scala.math.pow(f64, exponent)
 
     @targetName("plusF64")
     inline infix def + (right: Conversion.into[F64]): F64 = f64 + right
@@ -1223,40 +1223,40 @@ object internal:
     inline def mantissa: B64 = bits & 0xfffffffffffffL
 
     @targetName("exponentF64")
-    inline def exponent: B16 = math.getExponent(double).toShort
+    inline def exponent: B16 = scala.math.getExponent(double).toShort
 
     @targetName("absF64")
-    inline def abs: F64 = math.abs(double)
+    inline def abs: F64 = scala.math.abs(double)
 
     @targetName("sqrtF64")
-    inline def sqrt: F64 = math.sqrt(double)
+    inline def sqrt: F64 = scala.math.sqrt(double)
 
     @targetName("cbrtF64")
-    inline def cbrt: F64 = math.cbrt(double)
+    inline def cbrt: F64 = scala.math.cbrt(double)
 
     @targetName("ceilingF64")
-    inline def ceiling: F64 = math.ceil(double)
+    inline def ceiling: F64 = scala.math.ceil(double)
 
     @targetName("floorF64")
-    inline def floor: F64 = math.floor(double)
+    inline def floor: F64 = scala.math.floor(double)
 
     @targetName("incrementF64")
-    inline def increment: F64 = math.nextUp(double)
+    inline def increment: F64 = scala.math.nextUp(double)
 
     @targetName("decrementF64")
-    inline def decrement: F64 = math.nextDown(double)
+    inline def decrement: F64 = scala.math.nextDown(double)
 
     @targetName("roundF64")
-    inline def round: Long = math.round(double)
+    inline def round: Long = scala.math.round(double)
 
     @targetName("scalbF64")
-    inline def scalb(inline scale: Int): F64 = math.scalb(double, scale)
+    inline def scalb(inline scale: Int): F64 = scala.math.scalb(double, scale)
 
     @targetName("signumF64")
-    inline def signum: -1.0 | 0.0 | 1.0 = math.signum(double).asInstanceOf[-1.0 | 0.0 | 1.0]
+    inline def signum: -1.0 | 0.0 | 1.0 = scala.math.signum(double).asInstanceOf[-1.0 | 0.0 | 1.0]
 
     @targetName("ulpF64")
-    inline def ulp: F64 = math.ulp(double)
+    inline def ulp: F64 = scala.math.ulp(double)
 
     @targetName("bitsF64")
     inline def bits: B64 = JDouble.doubleToLongBits(double)
@@ -1288,7 +1288,7 @@ object internal:
     inline def double: Double = f32.toDouble
 
     @targetName("powerF32")
-    inline infix def ** (exponent: Conversion.into[F32]): F32 = math.pow(f32, exponent).toFloat
+    inline infix def ** (exponent: Conversion.into[F32]): F32 = scala.math.pow(f32, exponent).toFloat
 
     @targetName("plusF32")
     inline infix def + (right: Conversion.into[F32]): F32 = f32 + right
@@ -1306,40 +1306,40 @@ object internal:
     inline def `unary_-`: F32 = -f32
 
     @targetName("absF32")
-    inline def abs: F32 = math.abs(float)
+    inline def abs: F32 = scala.math.abs(float)
 
     @targetName("sqrtF32")
-    inline def sqrt: F32 = math.sqrt(float).toFloat
+    inline def sqrt: F32 = scala.math.sqrt(float).toFloat
 
     @targetName("cbrtF32")
-    inline def cbrt: F32 = math.cbrt(float).toFloat
+    inline def cbrt: F32 = scala.math.cbrt(float).toFloat
 
     @targetName("ceilingF32")
-    inline def ceiling: F32 = math.ceil(float).toFloat
+    inline def ceiling: F32 = scala.math.ceil(float).toFloat
 
     @targetName("floorF32")
-    inline def floor: F32 = math.floor(float).toFloat
+    inline def floor: F32 = scala.math.floor(float).toFloat
 
     @targetName("exponentF32")
-    inline def exponent: Int = math.getExponent(float)
+    inline def exponent: Int = scala.math.getExponent(float)
 
     @targetName("incrementF32")
-    inline def increment: F32 = math.nextUp(float)
+    inline def increment: F32 = scala.math.nextUp(float)
 
     @targetName("decrementF32")
-    inline def decrement: F32 = math.nextDown(float)
+    inline def decrement: F32 = scala.math.nextDown(float)
 
     @targetName("roundF32")
-    inline def round: Long = math.round(float)
+    inline def round: Long = scala.math.round(float)
 
     @targetName("scalbF32")
-    inline def scalb(inline scale: Int): F32 = math.scalb(float, scale)
+    inline def scalb(inline scale: Int): F32 = scala.math.scalb(float, scale)
 
     @targetName("signumF32")
-    inline def signum: -1.0F | 0.0F | 1.0F = math.signum(float).asInstanceOf[-1.0F | 0.0F | 1.0F]
+    inline def signum: -1.0F | 0.0F | 1.0F = scala.math.signum(float).asInstanceOf[-1.0F | 0.0F | 1.0F]
 
     @targetName("ulpF32")
-    inline def ulp: F32 = math.ulp(float)
+    inline def ulp: F32 = scala.math.ulp(float)
 
     @targetName("bitsF32")
     inline def bits: Long = JFloat.floatToIntBits(float)

@@ -130,7 +130,7 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
     sh"$git $repoOptions branch"
     . exec[Stream[Text]]()
     . map(_.skip(2))
-    . to(List)
+    .to(List)
     . map(GitBranch.unsafe(_))
 
   // FIXME: this uses an `Executor[String]` instead of an `Executor[Text]` because, for some

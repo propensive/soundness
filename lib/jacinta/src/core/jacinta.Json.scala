@@ -32,8 +32,8 @@
                                                                                                   */
 package jacinta
 
-import language.dynamics
-import language.experimental.pureFunctions
+import scala.language.dynamics
+import scala.language.experimental.pureFunctions
 
 import scala.collection.Factory
 import scala.collection.mutable as scm
@@ -555,13 +555,13 @@ object Json extends Json2, Dynamic:
   given listEncodable: [list <: List, element] => (encodable: => element is Encodable in Json)
   =>  list[element] is Encodable in Json =
 
-    values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
+    values => Json.ast(Json.Ast.arr(IArray.from((values: List[element]).map(encodable.encoded(_).root).scala)))
 
 
   given setEncodable: [set <: Set, element] => (encodable: => element is Encodable in Json)
   =>  set[element] is Encodable in Json =
 
-    values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
+    values => Json.ast(Json.Ast.arr(IArray.from((values: Set[element]).iterator.map(encodable.encoded(_).root))))
 
 
   given trieEncodable: [trie <: Trie, element] => (encodable: => element is Encodable in Json)
@@ -570,7 +570,7 @@ object Json extends Json2, Dynamic:
     values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
 
 
-  given array: [collection <: Iterable, element]
+  given array: [collection[_], element]
   =>  ( factory: Factory[element, collection[element]],
         tactic:  Tactic[JsonError],
         foci:    Foci[Json.Focus] )
@@ -623,9 +623,9 @@ object Json extends Json2, Dynamic:
   =>  Map[key, element] is Encodable in Json =
 
     map =>
-      val keys: List[key] = map.keys.to(List)
-      val values = IArray.from(keys.map(map(_).encode.root))
-      Json.ast(Json.Ast.obj(IArray.from(keys.map(_.encode.s)), values))
+      val keys: List[key] = map.keys
+      val values = IArray.from(keys.map(map(_).encode.root).scala)
+      Json.ast(Json.Ast.obj(IArray.from(keys.map(_.encode.s).scala), values))
 
 
   given jsonEncodableInText: Json is Encodable in Text = json => JsonPrinter.print(json.root, false)
@@ -884,7 +884,7 @@ extends Dynamic derives CanEqual:
             rightMap = rightMap.updated(rightAst.objectKey(i), rightAst.objectValue(i))
             i += 1
 
-          leftMap.keySet == rightMap.keySet && leftMap.keySet.forall: key =>
+          leftMap.keySet == rightMap.keySet && leftMap.keySet.scala.forall: key =>
             recur(leftMap(key), rightMap(key))
 
       def recur(left: Json.Ast, right: Json.Ast): Boolean = right.asMatchable match

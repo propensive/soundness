@@ -33,6 +33,7 @@
 package dissonance
 
 import anticipation.*
+import denominative.*
 import contingency.*
 import fulminate.*
 import prepositional.*
@@ -109,7 +110,7 @@ object Diff:
                 recur(tail, line + 1, edits, position, rightPosition, 0)
 
         case _ =>
-          Diff(edits.reverse*)
+          Diff(edits.reverse.scala*)
 
 
     recur(lines, 1, Nil, 0, 0, 0)
@@ -121,15 +122,15 @@ object Diff:
           s"$start${if start == end then "" else s",$end"}".tt
 
         val command: Text =
-          if dels.isEmpty then s"${left}a${range(right + 1, right + inss.size)}".tt
-          else if inss.isEmpty then s"${range(left + 1, left + dels.size)}d${right}".tt
+          if dels.nil then s"${left}a${range(right + 1, right + inss.size)}".tt
+          else if inss.nil then s"${range(left + 1, left + dels.size)}d${right}".tt
           else s"${range(left + 1, left + dels.size)}c${range(right + 1, right + inss.size)}".tt
 
         val delSeq = dels.map: del => Text("< "+del.value)
         val sep = if inss.size > 0 && dels.size > 0 then List(Text("---")) else List()
         val insSeq = inss.map: ins => Text("> "+ins.value)
 
-        command :: delSeq ::: sep ::: insSeq
+        (command :: delSeq ::: sep ::: insSeq).scala
 
 case class Diff[element](edits: Edit[element]*):
   def size: Int = edits.count:
@@ -172,20 +173,20 @@ case class Diff[element](edits: Edit[element]*):
         if inss.length == dels.length && inss.length <= subSize
         then dels.zip(inss).map: (del, ins) => Sub(del.left, ins.right, del.value, ins.value)
         else
-          val delsSeq = dels.map(_.value.vouch).to(IndexedSeq)
-          val inssSeq = inss.map(_.value).to(IndexedSeq)
+          val delsSeq = dels.map(_.value.vouch).to[IndexedSeq]
+          val inssSeq = inss.map(_.value).to[IndexedSeq]
 
-          diff(delsSeq, inssSeq, similar).edits.map:
+          diff(delsSeq, inssSeq, similar).edits.to(List).map:
             case Del(index, _) => Del(dels(index).left, dels(index).value)
             case Ins(index, _) => Ins(inss(index).right, inss(index).value)
 
             case Par(left, right, _) =>
               Sub(dels(left).left, inss(right).right, dels(left).value, inss(right).value)
 
-    RDiff(changes*)
+    RDiff(changes.scala*)
 
   def collate: List[Region[element]] =
-    edits.runsBy:
+    edits.to(List).runsBy:
       case Par(_, _, _) => true
       case _            => false
 

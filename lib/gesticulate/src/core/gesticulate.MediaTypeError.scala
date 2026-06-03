@@ -32,7 +32,7 @@
                                                                                                   */
 package gesticulate
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import fulminate.*
@@ -57,7 +57,7 @@ object MediaTypeError:
 
       case InvalidGroup =>
         val list = Media.Group.values.immutable(using Unsafe).map(_.name)
-        txt"the type must be one of: ${list.join(t", ", t" or ")}"
+        txt"the type must be one of: ${List.from(list.iterator).join(t", ", t" or ")}"
 
 case class MediaTypeError(value: Text, reason: MediaTypeError.Reason)(using Diagnostics)
 extends Error(353, reason.number)

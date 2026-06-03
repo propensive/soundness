@@ -39,6 +39,7 @@ import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import rudiments.*
 import kaleidoscope.*
 import prepositional.*
 import spectacular.*
@@ -74,13 +75,12 @@ object Semver:
           if prerelease == t"-" || build == t"+" then
             raise(SemverError(text, SemverError.Reason.EmptyIdentifier))
 
-          for
-            extra   <- List(prerelease2, build2).compact
-            element <- extra
-          do element match
-            case r"0[0-9]+"       => raise(SemverError(text, SemverError.Reason.LeadingZero))
-            case r"[0-9A-Za-z-]+" => ()
-            case _                => raise(SemverError(text, SemverError.Reason.InvalidCharacter))
+          List(prerelease2, build2).compact.each: extra =>
+            extra.each: element =>
+              element match
+                case r"0[0-9]+"       => raise(SemverError(text, SemverError.Reason.LeadingZero))
+                case r"[0-9A-Za-z-]+" => ()
+                case _                => raise(SemverError(text, SemverError.Reason.InvalidCharacter))
 
           val prerelease3: List[Text | Long] = prerelease2.map: element =>
             safely(element.decode[Long]).or(element)

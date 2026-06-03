@@ -32,7 +32,7 @@
                                                                                                   */
 package urticose
 
-import language.adhocExtensions
+import scala.language.adhocExtensions
 
 import beneficence.*
 

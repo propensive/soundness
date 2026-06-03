@@ -102,10 +102,10 @@ extension [plane: Filesystem](path: Path on plane)
         case TraversalOrder.PostOrder => child.descendants #::: Stream(child)
 
 
-  def size()(using plane is Explorable): Bytes raises IoError =
+  def usage()(using plane is Explorable): Bytes raises IoError =
     import filesystemOptions.dereferenceSymlinks.disabled
     given TraversalOrder = TraversalOrder.PreOrder
-    descendants.fuse(jnf.Files.size(path.javaPath).b)(state + next.size())
+    List.from(descendants).fuse(jnf.Files.size(path.javaPath).b)(state + next.usage())
 
 
   def delete()(using deleteRecursively: DeleteRecursively on plane)
@@ -146,7 +146,7 @@ extension [plane: Filesystem](path: Path on plane)
     else if jnf.Files.isRegularFile(javaPath) then File
     else if jnf.Files.isDirectory(javaPath) then Directory
     else
-      val mode = jnf.Files.getAttribute(javaPath, "unix:mode", symlinks.options()*)
+      val mode = jnf.Files.getAttribute(javaPath, "unix:mode", symlinks.options().scala*)
 
       mode.absolve match
         case mode: Int => (mode & 61440) match
@@ -165,7 +165,7 @@ extension [plane: Filesystem](path: Path on plane)
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
-        jnf.Files.copy(path.javaPath, destination.javaPath, dereferenceSymlinks.options()*)
+        jnf.Files.copy(path.javaPath, destination.javaPath, dereferenceSymlinks.options().scala*)
 
     destination
 
@@ -190,7 +190,7 @@ extension [plane: Filesystem](path: Path on plane)
             createNonexistentParents: CreateNonexistentParents on plane )
   :   Path on plane raises IoError =
 
-    val options: Seq[jnf.CopyOption] = dereferenceSymlinks.options() ++ moveAtomically.options()
+    val options: Seq[jnf.CopyOption] = (dereferenceSymlinks.options() ++ moveAtomically.options()).scala
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -266,7 +266,7 @@ extension [plane <: Posix: Filesystem](path: Path on plane)
 
   def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks): Int raises IoError =
     path.protect(Operation.Metadata):
-      jnf.Files.getAttribute(jnf.Path.of(path.show.s), "unix:nlink", dereferenceSymlinks.options()*)
+      jnf.Files.getAttribute(jnf.Path.of(path.show.s), "unix:nlink", dereferenceSymlinks.options().scala*)
       . match
         case count: Int => count
         case _          => abort(IoError(path, Operation.Metadata, Reason.Unsupported))
@@ -319,11 +319,11 @@ package filesystemOptions:
       type World = plane
 
       def recur(path: Path on plane): Unit =
-        path.children.each(recur(_))
+        List.from(path.children).each(recur(_))
         jnf.Files.delete(jnf.Path.of(path.show.s))
 
       def conditionally[result](path: Path on Plane)(operation: => result): result =
-        path.children.each(recur(_)) yet operation
+        List.from(path.children).each(recur(_)) yet operation
 
 
     given disabled: [plane: {Filesystem, Explorable}] => Tactic[IoError]

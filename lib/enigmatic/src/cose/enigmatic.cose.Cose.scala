@@ -34,6 +34,7 @@ package enigmatic
 package cose
 
 import anticipation.*
+import rudiments.*
 import breviloquence.*
 import contingency.*
 import enigmatic.*
@@ -183,7 +184,7 @@ class Cose
         Cbor.Ast.array(IArray[Any](protectedHeader, unprotectedAst, payload, auth))
 
       case _ =>
-        val recipAst: IArray[Any] = IArray.from(recipients.map: r =>
+        val recipAst: IArray[Any] = IArray.from(recipients.scala.map: r =>
           Cbor.Ast.array(IArray[Any](r.protectedHeader, Cose.unsealOrEmpty(r.unprotectedHeader),
             r.authentication)))
         Cbor.Ast.array(IArray[Any](protectedHeader, unprotectedAst, payload,

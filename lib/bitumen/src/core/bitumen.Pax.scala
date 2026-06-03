@@ -46,7 +46,7 @@ object Pax:
     val total: Int = computeLength(payloadLen)
     (total.toString+" "+key.s+"="+value.s+"\n").tt.data
 
-  def records(pairs: Iterable[(Text, Text)]): Data =
+  def records(pairs: List[(Text, Text)]): Data =
     pairs.foldLeft(IArray.empty[Byte]): (acc, pair) => acc ++ record(pair(0), pair(1))
 
   def parse(data: Data): Map[Text, Text] raises TarError =

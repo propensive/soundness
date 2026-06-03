@@ -226,43 +226,43 @@ object Tests extends Suite(m"Kaleidoscope tests"):
       suite(m"Scanner patterns"):
         test(m"Simple capture"):
           Regex.parse(List(t"foo", t"(bar)")).matchGroups(t"foobar")
-          . map(_.to(List))
+          . map(_.to[List])
 
         . assert(_ == Some(List(t"bar")))
 
         test(m"Two captures"):
           Regex.parse(List(t"foo", t"(bar)", t"(baz)")).matchGroups(t"foobarbaz")
-          . map(_.to(List))
+          . map(_.to[List])
 
         . assert(_ == Some(List(t"bar", t"baz")))
 
         test(m"Two captures, one repeating"):
           Regex.parse(List(t"foo", t"(bar)", t"(baz)*")).matchGroups(t"foobarbazbaz")
-          . map(_.to(List))
+          . map(_.to[List])
 
         . assert(_ == Some(List(t"bar", List(t"baz", t"baz"))))
 
         test(m"Two captures, both repeating"):
           Regex.parse(List(t"foo", t"(bar){4}", t"(baz)*")).matchGroups(t"foobarbarbarbarbazbaz")
-          . map(_.to(List))
+          . map(_.to[List])
 
         . assert(_ == Some(List(List(t"bar", t"bar", t"bar", t"bar"), List(t"baz", t"baz"))))
 
         test(m"Two captures, one optional and absent, one repeating"):
           Regex.parse(List(t"foo", t"(bar)+", t"(baz)?")).matchGroups(t"foobarbar")
-          . map(_.to(List))
+          . map(_.to[List])
 
         . assert(_ == Some(List(List(t"bar", t"bar"), Unset)))
 
         test(m"Two captures, one optional and present, one repeating"):
           Regex.parse(List(t"foo", t"(b.r)+", t"(baz)?")).matchGroups(t"fooberbirbaz")
-          . map(_.to(List))
+          . map(_.to[List])
 
         . assert(_ == Some(List(List(t"ber", t"bir"), t"baz")))
 
         test(m"Nested captures, one optional and present, one repeating"):
           Regex.parse(List(t"f(oo", t"(b.r)+", t"(baz)?)")).matchGroups(t"fooberbirbaz")
-          . map(_.to(List))
+          . map(_.to[List])
 
         . assert(_ == Some(List(List(t"ber", t"bir"), t"baz")))
 

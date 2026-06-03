@@ -358,7 +358,7 @@ object Tests extends Suite(m"Contingency"):
       test(m"survive filters errors from a sequence"):
         List(1, 2, 3, 4).survive[Int]: n =>
           if n % 2 == 0 then n else raise(ErrorA(n)) yet 0
-        . to(List)
+        .to[List]
       . assert(_ == List(2, 4))
 
     suite(m"defer / Deferred"):

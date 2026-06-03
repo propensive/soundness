@@ -47,7 +47,7 @@ object Tests extends Suite(m"Decorum Tests"):
     builder.toString
 
   def violations(body: String): List[Violation] =
-    Checker.check("<test>", Some("decorum"), stub(body)).toList
+    Checker.check("<test>", Some("decorum"), stub(body)).to(List)
 
   def rules(body: String): List[String] = violations(body).map(_.rule)
 
@@ -56,33 +56,33 @@ object Tests extends Suite(m"Decorum Tests"):
 
       test(m"Tab character is rejected"):
         rules("def\tfoo(): Int = 1\n")
-      . assert(_.contains("135"))
+      . assert(_.has("135"))
 
       test(m"Line longer than 100 columns is rejected"):
         rules("val x = "+"a".repeat(120)+"\n")
-      . assert(_.contains("230"))
+      . assert(_.has("230"))
 
       test(m"Odd indent is rejected"):
         rules("object A:\n   val x = 1\n")
-      . assert(_.contains("926"))
+      . assert(_.has("926"))
 
       test(m"Trailing whitespace is rejected"):
         rules("val x = 1   \n")
-      . assert(_.contains("015"))
+      . assert(_.has("015"))
 
       test(m"Three consecutive blank lines are rejected"):
         rules("val a = 1\n\n\n\nval b = 2\n")
-      . assert(_.contains("783"))
+      . assert(_.has("783"))
 
       test(m"Clean stub produces no universal-rule diagnostics"):
         rules("val x: Int = 1\n")
-      . assert(_.forall(r => !Set("135", "230", "926", "015", "783").contains(r)))
+      . assert(_.all(r => !Set("135", "230", "926", "015", "783").has(r)))
 
     suite(m"Phase 1: License, package, imports"):
 
       test(m"Wrong package name is rejected"):
-        Checker.check("<test>", Some("wrongmodule"), stub("val x = 1\n")).toList.map(_.rule)
-      . assert(_.contains("131"))
+        Checker.check("<test>", Some("wrongmodule"), stub("val x = 1\n")).to(List).map(_.rule)
+      . assert(_.has("131"))
 
       test(m"Missing blank after package is rejected"):
         val builder = new StringBuilder
@@ -92,38 +92,38 @@ object Tests extends Suite(m"Decorum Tests"):
         builder.append("*/\n")
         builder.append("package decorum\n")
         builder.append("import gossamer.*\n")
-        Checker.check("<test>", Some("decorum"), builder.toString).toList.map(_.rule)
-      . assert(_.contains("658"))
+        Checker.check("<test>", Some("decorum"), builder.toString).to(List).map(_.rule)
+      . assert(_.has("658"))
 
       test(m"Out-of-order import groups are rejected"):
         rules("import gossamer.*\n\nimport scala.collection.mutable\n\nval x = 1\n")
-      . assert(_.contains("302.2"))
+      . assert(_.has("302.2"))
 
       test(m"Missing blank between import groups is rejected"):
         rules("import scala.collection.mutable\nimport gossamer.*\n\nval x = 1\n")
-      . assert(_.contains("302.3"))
+      . assert(_.has("302.3"))
 
       test(m"Out-of-order imports within a group are rejected"):
         rules("import zephyrine.*\nimport anticipation.*\n\nval x = 1\n")
-      . assert(_.contains("302.2"))
+      . assert(_.has("302.2"))
 
       test(m"Missing blank line after imports is rejected"):
         rules("import gossamer.*\nval x = 1\n")
-      . assert(_.contains("441"))
+      . assert(_.has("441"))
 
     suite(m"Phase 1: Per-token rules"):
 
       test(m"No space after comma is rejected"):
         rules("def f(a: Int,b: Int): Int = a + b\n")
-      . assert(_.contains("529.2"))
+      . assert(_.has("529.2"))
 
       test(m"Space before comma is rejected"):
         rules("def f(a: Int , b: Int): Int = a + b\n")
-      . assert(_.contains("529.1"))
+      . assert(_.has("529.1"))
 
       test(m"Single line with extra spaces after comma is rejected"):
         rules("val x = (1,  2)\n")
-      . assert(_.contains("529.2"))
+      . assert(_.has("529.2"))
 
       test(m"Genuinely aligned multi-row commas are accepted"):
         // Two rows where the second token after each `,` lands at the
@@ -131,7 +131,7 @@ object Tests extends Suite(m"Decorum Tests"):
         rules
          ( "val a = T(1,   t\"H\",  t\"Hydrogen\")\n"
             +"val b = T(20,  t\"Ne\", t\"Neon\")\n" )
-      . assert(!_.contains("529.2"))
+      . assert(!_.has("529.2"))
 
       test(m"Fake alignment (extra spaces but cols don't match) is rejected"):
         // `val H` vs `val He` shifts the parens column, so the would-be
@@ -139,171 +139,171 @@ object Tests extends Suite(m"Decorum Tests"):
         rules
          ( "val H = T(1,   t\"H\",  t\"Hydrogen\")\n"
             +"val He = T(2,   t\"He\", t\"Helium\")\n" )
-      . assert(_.contains("529.2"))
+      . assert(_.has("529.2"))
 
       test(m"Space inside parentheses on a single line is rejected"):
         rules("def f( a: Int ): Int = a\n")
-      . assert(_.contains("402"))
+      . assert(_.has("402"))
 
       test(m"Block comment outside license header is rejected"):
         rules("/* hello */\nval x = 1\n")
-      . assert(_.contains("162.1"))
+      . assert(_.has("162.1"))
 
       test(m"Scaladoc comment is rejected"):
         rules("/** hello */\nval x = 1\n")
-      . assert(_.contains("162.2"))
+      . assert(_.has("162.2"))
 
       test(m"Annotation followed by blank line is rejected"):
         rules("@deprecated\n\ndef foo(): Int = 1\n")
-      . assert(_.contains("551.2"))
+      . assert(_.has("551.2"))
 
       test(m"Param annotation does not arm 551.2 on a following blank line"):
         rules("case class P(@ident x: Int)\n\ncase class Q(y: Int)\n")
-      . assert(!_.contains("551.2"))
+      . assert(!_.has("551.2"))
 
       test(m"Annotation immediately before a decl, then a blank line, is accepted"):
         rules("@foo\ncase class A(x: Int)\n\ncase class B(y: Int)\n")
-      . assert(!_.contains("551.2"))
+      . assert(!_.has("551.2"))
 
     suite(m"Phase 2: Operator and method-name spacing"):
 
       test(m"Missing space before `=>` is rejected"):
         rules("val f = (x: Int)=> x + 1\n")
-      . assert(_.contains("376"))
+      . assert(_.has("376"))
 
       test(m"Missing space after `=>` is rejected"):
         rules("val f = (x: Int) =>x + 1\n")
-      . assert(_.contains("376"))
+      . assert(_.has("376"))
 
       test(m"Missing space around `<:` is rejected"):
         rules("def f[T<:Int](x: T): T = x\n")
-      . assert(_.contains("376"))
+      . assert(_.has("376"))
 
       test(m"Asymmetric `&` spacing is rejected"):
         rules("type T = Int& String\n")
-      . assert(_.contains("376"))
+      . assert(_.has("376"))
 
       test(m"Single-char `&` with no spaces is accepted"):
         rules("def f(x: Int): Int = x&255\n")
-      . assert(!_.contains("376"))
+      . assert(!_.has("376"))
 
       test(m"Spaced `=>` is accepted"):
         rules("val f = (x: Int) => x + 1\n")
-      . assert(!_.contains("376"))
+      . assert(!_.has("376"))
 
       test(m"`=>` at line start (continuation) is accepted"):
         rules("val f =\n  (x: Int) =>\n    x + 1\n")
-      . assert(!_.contains("376"))
+      . assert(!_.has("376"))
 
       test(m"Missing space before `=` is rejected"):
         rules("val x= 1\n")
-      . assert(_.contains("376.1"))
+      . assert(_.has("376.1"))
 
       test(m"Missing space after `=` is rejected"):
         rules("val x =1\n")
-      . assert(_.contains("376.1"))
+      . assert(_.has("376.1"))
 
       test(m"Two spaces *after* `=` is rejected"):
         rules("val x =  1\n")
-      . assert(_.contains("376.1"))
+      . assert(_.has("376.1"))
 
       test(m"Two spaces before `=` (alignment) is accepted"):
         // Multi-line param blocks often pad before `=` to align the
         // operators vertically; the rule must allow this.
         rules("val x  = 1\n")
-      . assert(!_.contains("376.1"))
+      . assert(!_.has("376.1"))
 
       test(m"`name_=` setter method declaration is not flagged"):
         rules("def x_=(value: Int): Unit = ()\n")
-      . assert(!_.contains("376.1"))
+      . assert(!_.has("376.1"))
 
       test(m"Single space around `=` is accepted"):
         rules("val x = 1\n")
-      . assert(!_.contains("376.1"))
+      . assert(!_.has("376.1"))
 
       test(m"`=` at line end (multi-line RHS) is accepted"):
         rules("val x =\n  1\n")
-      . assert(!_.contains("376.1"))
+      . assert(!_.has("376.1"))
 
       test(m"Missing space around `+=` is rejected"):
         rules("var x = 0\nx+=1\n")
-      . assert(_.contains("376.1"))
+      . assert(_.has("376.1"))
 
       test(m"Single space around `+=` is accepted"):
         rules("var x = 0\nx += 1\n")
-      . assert(!_.contains("376.1"))
+      . assert(!_.has("376.1"))
 
       test(m"Default parameter `=` with bad spacing is rejected"):
         rules("def f(x: Int=5): Int = x\n")
-      . assert(_.contains("376.1"))
+      . assert(_.has("376.1"))
 
       test(m"Symbolic operator method without space before parens is rejected"):
         rules("infix def +(right: Int): Int = right\n")
-      . assert(_.contains("013"))
+      . assert(_.has("013"))
 
       test(m"Symbolic operator method with space is accepted"):
         rules("infix def + (right: Int): Int = right\n")
-      . assert(!_.contains("013"))
+      . assert(!_.has("013"))
 
       test(m"`if/then/else` does not pool predicate ops with else-clause ops"):
         rules("def f(x: Int, y: Int, a: Int, b: Int): Int = if x == y then a else a^b\n")
-      . assert(!_.contains("376"))
+      . assert(!_.has("376"))
 
       test(m"`else if` chain does not pool ops across branches"):
         rules("def f(x: Boolean, a: Int, b: Int): Int = if x then 1 else if a == b then 2 else a^b\n")
-      . assert(!_.contains("376"))
+      . assert(!_.has("376"))
 
       test(m"Parenthesised `if/then/else` followed by an operator is accepted"):
         rules("def f(x: Int, a: Int, b: Int): Int = (if x == 0 then a else b) + 1\n")
-      . assert(!_.contains("376"))
+      . assert(!_.has("376"))
 
       test(m"`case class` modifier does not flush operator frames spuriously"):
         rules("case class Foo(x: Int, y: Int)\n")
-      . assert(!_.contains("376"))
+      . assert(!_.has("376"))
 
       test(m"Cross-precedence violation is still rejected"):
         rules("def f(a: Int, b: Int, c: Int): Int = a+b * c\n")
-      . assert(_.contains("376"))
+      . assert(_.has("376"))
 
     suite(m"Phase 3: Continuations and shape"):
 
       test(m"`=>` continuation with wrong space count is rejected"):
         rules("given x: [a]\n=> a is Foo =\n  ???\n")
-      . assert(_.contains("444"))
+      . assert(_.has("444"))
 
       test(m"`=>` continuation with two spaces is accepted"):
         rules("given x: [a]\n=>  a is Foo =\n\n  ???\n")
-      . assert(!_.contains("444"))
+      . assert(!_.has("444"))
 
       test(m"Heavy-signature `:` continuation with wrong spaces is rejected"):
         rules("def foo\n  ( x: Int )\n: Int =\n\n  x\n")
-      . assert(_.contains("444"))
+      . assert(_.has("444"))
 
       test(m"Missing blank line before heavy-signature body is rejected"):
         rules("def foo\n  ( x: Int )\n:   Int =\n  x\n")
-      . assert(_.contains("677"))
+      . assert(_.has("677"))
 
       test(m"Heavy-signature with blank line before body is accepted"):
         rules("def foo\n  ( x: Int )\n:   Int =\n\n  x\n")
-      . assert(!_.contains("677"))
+      . assert(!_.has("677"))
 
       test(m"Chain `. method` with same-indent preceded by blank is rejected"):
         rules("val a = foo\n\n. method\n")
-      . assert(_.contains("163.2"))
+      . assert(_.has("163.2"))
 
       test(m"Chain `. method` after deeper line without blank is rejected"):
         rules("val a = foo:\n  bar\n. method\n")
-      . assert(_.contains("163.1"))
+      . assert(_.has("163.1"))
 
     suite(m"Phase 4: Cross-cutting"):
 
       test(m"Companion object after class is rejected"):
         rules("class Foo:\n  val x = 1\n\nobject Foo:\n  val y = 2\n")
-      . assert(_.contains("398"))
+      . assert(_.has("398"))
 
       test(m"Companion object before class is accepted"):
         rules("object Foo:\n  val y = 2\n\nclass Foo:\n  val x = 1\n")
-      . assert(!_.contains("398"))
+      . assert(!_.has("398"))
 
     suite(m"Phase 3: Match-case rules"):
 
@@ -313,7 +313,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  case Short      => 1\n"
             +"  case LongerName => 2\n"
             +"  case Med => 3\n" )
-      . assert(_.contains("326"))
+      . assert(_.has("326"))
 
       test(m"Aligned `=>` in case run is accepted"):
         rules
@@ -321,7 +321,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  case Short      => 1\n"
             +"  case LongerName => 2\n"
             +"  case Medium     => 3\n" )
-      . assert(!_.contains("326"))
+      . assert(!_.has("326"))
 
       test(m"Multi-line case without preceding blank line is rejected"):
         rules
@@ -329,14 +329,14 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  case Foo => 1\n"
             +"  case Bar =>\n"
             +"    bigBody\n" )
-      . assert(_.contains("315"))
+      . assert(_.has("315"))
 
       test(m"Multi-line case as first case (after `match`) is accepted"):
         rules
          ( "def f(x: Any): Any = x match\n"
             +"  case Bar =>\n"
             +"    bigBody\n" )
-      . assert(!_.contains("315"))
+      . assert(!_.has("315"))
 
       test(m"Multi-line case after blank is accepted"):
         rules
@@ -345,7 +345,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"\n"
             +"  case Bar =>\n"
             +"    bigBody\n" )
-      . assert(!_.contains("315"))
+      . assert(!_.has("315"))
 
       test(m"Operator-continuation line does not trigger SN-315"):
         // Dotty may split `t == 1\n|| t == 2` into two `Block.stats` at
@@ -359,7 +359,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  t == 1\n"
             +"  || t == 2\n"
             +"  || t == 3\n" )
-      . assert(!_.contains("315"))
+      . assert(!_.has("315"))
 
       test(m"Multi-line pattern with trailing `=>` is accepted"):
         rules
@@ -367,7 +367,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  case Foo\n"
             +"    ( a, b ) =>\n"
             +"    body\n" )
-      . assert(!_.contains("R33-multiline-pattern-arrow-position"))
+      . assert(!_.has("R33-multiline-pattern-arrow-position"))
 
       test(m"Multi-line pattern with `=>` alone on its own line is rejected"):
         rules
@@ -376,100 +376,100 @@ object Tests extends Suite(m"Decorum Tests"):
             +"    ( a, b )\n"
             +"  =>\n"
             +"    body\n" )
-      . assert(_.contains("R33-multiline-pattern-arrow-position"))
+      . assert(_.has("R33-multiline-pattern-arrow-position"))
 
       test(m"Multi-line pattern with body on same line as `=>` is rejected"):
         rules
          ( "def f(x: Any): Any = x match\n"
             +"  case Foo\n"
             +"    ( a, b ) => body\n" )
-      . assert(_.contains("R33-multiline-pattern-body-newline"))
+      . assert(_.has("R33-multiline-pattern-body-newline"))
 
     suite(m"Phase 3: Sibling padding and using alignment"):
 
       test(m"Adjacent multi-line defs without blank line is rejected"):
         rules("def a: Int =\n  1\ndef b: Int =\n  2\n")
-      . assert(_.contains("315"))
+      . assert(_.has("315"))
 
       test(m"Adjacent multi-line defs with blank line is accepted"):
         rules("def a: Int =\n  1\n\ndef b: Int =\n  2\n")
-      . assert(!_.contains("315"))
+      . assert(!_.has("315"))
 
       test(m"First definition in a new indented scope is accepted"):
         rules("class Foo:\n  def a: Int =\n    1\n\n  def b: Int =\n    2\n")
-      . assert(!_.contains("315"))
+      . assert(!_.has("315"))
 
       test(m"Same-indent decls in unrelated scopes skip sibling check"):
         rules("class A:\n  def a: Int = 1\n\nclass B:\n  def b: Int = 2\n")
-      . assert(!_.contains("315"))
+      . assert(!_.has("315"))
 
       test(m"Misaligned param after `using` clause first row is rejected"):
         rules("def f\n  ( using a: A,\n        b: B )\n:   Int = 0\n")
-      . assert(_.contains("946"))
+      . assert(_.has("946"))
 
       test(m"Aligned `using` clause is accepted"):
         rules("def f\n  ( using a: A,\n          b: B )\n:   Int = 0\n")
-      . assert(!_.contains("946"))
+      . assert(!_.has("946"))
 
       test(m"Same-line type-annotation `:` is accepted"):
         rules("def foo: Int = 1\n")
-      . assert(!_.contains("833.3"))
+      . assert(!_.has("833.3"))
 
       test(m"Type-annotation `:` aligned with `def` on its own line is accepted"):
         rules("def foo\n:   Int =\n  1\n")
-      . assert(!_.contains("833.3"))
+      . assert(!_.has("833.3"))
 
       test(m"Mis-indented type-annotation `:` on its own line is rejected"):
         rules("def foo\n  : Int =\n    1\n")
-      . assert(_.contains("833.3"))
+      . assert(_.has("833.3"))
 
       test(m"`:` inside a parameter list is not flagged by 833.3"):
         rules("def f\n  ( a: Int )\n:   Int =\n  a\n")
-      . assert(!_.contains("833.3"))
+      . assert(!_.has("833.3"))
 
       test(m"Mis-indented `:` after multi-line param list with type params is rejected"):
         rules
          ( "def f[a, b]\n  ( x: Int,\n    y: Int )\n        :   Int =\n  0\n" )
-      . assert(_.contains("833.3"))
+      . assert(_.has("833.3"))
 
       test(m"Mis-indented `:` after param list containing a default value is rejected"):
         rules
          ( "def f\n  ( x: Int = 0,\n    y: Int = 1 )\n        :   Int =\n  0\n" )
-      . assert(_.contains("833.3"))
+      . assert(_.has("833.3"))
 
     suite(m"Phase 5: Keyword sequences (R33)"):
 
       test(m"Compact `if/then/else` is accepted"):
         rules("def f(x: Int): Int = if x > 0 then x else -x\n")
-      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
+      . assert(r => !r.has("833.1") && !r.has("833.2"))
 
       test(m"`if/then/else` with `else` on a new line is accepted"):
         rules("def f(x: Int): Int =\n  if x > 0 then x\n  else -x\n")
-      . assert(!_.contains("833.1"))
+      . assert(!_.has("833.1"))
 
       test(m"`if/then/else` fully split with aligned keywords is accepted"):
         rules("def f(x: Int): Int =\n  if x > 0\n  then x\n  else -x\n")
-      . assert(r => !r.contains("833.1"))
+      . assert(r => !r.has("833.1"))
 
       test(m"`if/then/else` with `then` broken but `else` not is rejected"):
         rules("def f(x: Int): Int =\n  if x > 0\n  then x else -x\n")
-      . assert(_.contains("833.1"))
+      . assert(_.has("833.1"))
 
       test(m"`if/then/else` with `then` not aligned with `if` is rejected"):
         rules("def f(x: Int): Int =\n  if x > 0\n      then x\n      else -x\n")
-      . assert(_.contains("833.1"))
+      . assert(_.has("833.1"))
 
       test(m"`if/then/else` with `then` indented, `else` inline is rejected"):
         rules("def f(x: Int): Int =\n  if x > 0 then\n    x\n  else -x\n")
-      . assert(_.contains("833.2"))
+      . assert(_.has("833.2"))
 
       test(m"`if/then/else` with both bodies indented is accepted"):
         rules("def f(x: Int): Int =\n  if x > 0 then\n    x\n  else\n    -x\n")
-      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
+      . assert(r => !r.has("833.1") && !r.has("833.2"))
 
       test(m"Compact `else if` chain is accepted"):
         rules("def f(x: Int): Int = if x > 0 then 1 else if x < 0 then -1 else 0\n")
-      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
+      . assert(r => !r.has("833.1") && !r.has("833.2"))
 
       test(m"`else if` with broken keywords and inline bodies is accepted"):
         rules
@@ -477,7 +477,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  if x > 0 then 1\n"
             +"  else if x < 0 then -1\n"
             +"  else 0\n" )
-      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
+      . assert(r => !r.has("833.1") && !r.has("833.2"))
 
       test(m"`else if` chain with all bodies indented is accepted"):
         rules
@@ -488,7 +488,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"    -1\n"
             +"  else\n"
             +"    0\n" )
-      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
+      . assert(r => !r.has("833.1") && !r.has("833.2"))
 
       test(m"`else if` chain: indented then-body, inline tail-body rejected"):
         rules
@@ -497,7 +497,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"    1\n"
             +"  else if x < 0 then -1\n"
             +"  else 0\n" )
-      . assert(_.contains("833.2"))
+      . assert(_.has("833.2"))
 
       test(m"`else if` chain misaligned with original `if` is rejected"):
         rules
@@ -505,7 +505,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  if x > 0 then 1\n"
             +"    else if x < 0 then -1\n"
             +"  else 0\n" )
-      . assert(_.contains("833.1"))
+      . assert(_.has("833.1"))
 
       test(m"`else` followed by indented inner `if` starts a new anchor"):
         // Newline + indentation between `else` and the next `if` means
@@ -518,7 +518,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  else\n"
             +"    if x < 0 then -x\n"
             +"    else 0\n" )
-      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
+      . assert(r => !r.has("833.1") && !r.has("833.2"))
 
       test(m"Inner `if` as new anchor: misaligned inner `then` is rejected"):
         rules
@@ -528,7 +528,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"    if x < 0\n"
             +"        then -x\n"
             +"    else 0\n" )
-      . assert(_.contains("833.1"))
+      . assert(_.has("833.1"))
 
       test(m"Bridge's internal `then` is part of the unit (not checked)"):
         // The inner `then` of an `else if … then` bridge belongs to
@@ -542,7 +542,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  else if x < 0\n"
             +"       then -1\n"
             +"  else 0\n" )
-      . assert(r => !r.contains("833.1"))
+      . assert(r => !r.has("833.1"))
 
       test(m"Inner then-only `if` doesn't steal the outer chain's `else`"):
         // The inner `if char >= 0 then ...` (no else) sits inside the
@@ -557,7 +557,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"    if char >= 0 then println(char.toChar)\n"
             +"    recur(text, esc)\n"
             +"  else if esc then throw new RuntimeException(\"\")\n" )
-      . assert(r => !r.contains("833.1"))
+      . assert(r => !r.has("833.1"))
 
       test(m"Case-guard `if` in pattern match isn't processed as if-chain"):
         // `case x if guard => …` looks like an `if` with no `then` to
@@ -575,7 +575,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"def g(y: Int): Int =\n"
             +"  if y > 0 then y\n"
             +"  else -y\n" )
-      . assert(r => !r.contains("833.1"))
+      . assert(r => !r.has("833.1"))
 
       test(m"For-comprehension filter `if` isn't processed as if-chain"):
         // `if filter` inside a for-comprehension has no `then`. Without
@@ -587,27 +587,27 @@ object Tests extends Suite(m"Decorum Tests"):
             +"def g(y: Int): Int =\n"
             +"  if y > 0 then y\n"
             +"  else -y\n" )
-      . assert(r => !r.contains("833.1"))
+      . assert(r => !r.has("833.1"))
 
       test(m"Compact `while/do` is accepted"):
         rules("def f(): Unit = while running() do step()\n")
-      . assert(r => !r.contains("833.1"))
+      . assert(r => !r.has("833.1"))
 
       test(m"`while/do` with `do` misaligned with `while` is rejected"):
         rules("def f(): Unit =\n  while running()\n      do step()\n")
-      . assert(_.contains("833.1"))
+      . assert(_.has("833.1"))
 
       test(m"Compact `try/catch/finally` is accepted"):
         rules("def f: Int = try compute() catch case e: Throwable => 0 finally cleanup()\n")
-      . assert(r => !r.contains("833.1"))
+      . assert(r => !r.has("833.1"))
 
       test(m"`try/catch/finally`: broken `catch`, inline `finally` rejected"):
         rules("def f: Int =\n  try compute()\n  catch case e: Throwable => 0 finally cleanup()\n")
-      . assert(_.contains("833.1"))
+      . assert(_.has("833.1"))
 
       test(m"`try`/`finally` without `catch` is accepted (compact)"):
         rules("def f(): Unit =\n  try block\n  finally cleanup()\n")
-      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
+      . assert(r => !r.has("833.1") && !r.has("833.2"))
 
       test(m"`inline if` aligns broken `then`/`else` with `inline`, not `if`"):
         // The `if` after `inline` starts mid-line, but visually the
@@ -618,7 +618,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  inline if x > 0\n"
             +"  then x\n"
             +"  else -x\n" )
-      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
+      . assert(r => !r.has("833.1") && !r.has("833.2"))
 
       test(m"`else inline if … then` is recognised as a chain bridge"):
         // The `else` is followed by `inline if` (modifier + `if`) on
@@ -630,7 +630,7 @@ object Tests extends Suite(m"Decorum Tests"):
             +"  inline if x > 0 then 1\n"
             +"  else inline if x < 0 then -1\n"
             +"  else 0\n" )
-      . assert(r => !r.contains("833.1") && !r.contains("833.2"))
+      . assert(r => !r.has("833.1") && !r.has("833.2"))
 
       test(m"Inline inner `else` in bridge doesn't fire 833.1"):
         // The bridge's inner `if/then` brings its own inline `else`;
@@ -640,7 +640,7 @@ object Tests extends Suite(m"Decorum Tests"):
          ( "inline def f(x: Int): Int =\n"
             +"  inline if x > 0 then inline if x == 1 then 1 else 2\n"
             +"  else inline if x == -1 then -1 else -2\n" )
-      . assert(r => !r.contains("833.1"))
+      . assert(r => !r.has("833.1"))
 
       test(m"`try`/`catch` without `finally` won't steal sibling's `finally`"):
         // The first def's `try`/`catch` has no `finally`; the second
@@ -661,86 +661,86 @@ object Tests extends Suite(m"Decorum Tests"):
             +"def focus(): Unit =\n"
             +"  try block\n"
             +"  finally cleanup()\n" )
-      . assert(r => !r.contains("833.2"))
+      . assert(r => !r.has("833.2"))
 
       test(m"Compact `for/yield` is accepted"):
         rules("def f: List[Int] = for x <- List(1, 2) yield x\n")
-      . assert(r => !r.contains("833.1"))
+      . assert(r => !r.has("833.1"))
 
       test(m"Compact `for/do` is accepted"):
         rules("def f(): Unit = for x <- List(1, 2) do println(x)\n")
-      . assert(r => !r.contains("833.1"))
+      . assert(r => !r.has("833.1"))
 
     suite(m"Phase 5: For-comprehension generator alignment (R34)"):
 
       test(m"For-comprehension aligned-LHS style is accepted"):
         rules("val r =\n  for x <- List(1)\n      y <- List(2)\n  yield x + y\n")
-      . assert(r => !r.contains("924.1") && !r.contains("924.2") && !r.contains("924.3"))
+      . assert(r => !r.has("924.1") && !r.has("924.2") && !r.has("924.3"))
 
       test(m"For-comprehension indented-block style is accepted"):
         rules("val r =\n  for\n    x <- List(1)\n    y <- List(2)\n  yield x + y\n")
-      . assert(r => !r.contains("924.1") && !r.contains("924.2") && !r.contains("924.3"))
+      . assert(r => !r.has("924.1") && !r.has("924.2") && !r.has("924.3"))
 
       test(m"For-comprehension with misaligned generator LHS is rejected"):
         rules("val r =\n  for x <- List(1)\n     y <- List(2)\n  yield x + y\n")
-      . assert(_.contains("924.2"))
+      . assert(_.has("924.2"))
 
       test(m"For-comprehension with misaligned `<-` operators is rejected"):
         rules("val r =\n  for x  <- List(1)\n      y <- List(2)\n  yield x + y\n")
-      . assert(_.contains("924.1"))
+      . assert(_.has("924.1"))
 
       test(m"For-comprehension with `if` filter aligned with `<-` is accepted"):
         rules
          ( "val r =\n  for x  <- List(1)\n         if x > 0\n      y  <- List(2)"
             +"\n  yield x + y\n" )
-      . assert(r => !r.contains("924.3"))
+      . assert(r => !r.has("924.3"))
 
       test(m"For-comprehension with `if` filter at LHS column is rejected"):
         rules
          ( "val r =\n  for x  <- List(1)\n      if x > 0\n      y  <- List(2)"
             +"\n  yield x + y\n" )
-      . assert(_.contains("924.3"))
+      . assert(_.has("924.3"))
 
       test(m"For-comprehension with `if` on same line as `<-` is accepted"):
         rules("val r =\n  for x <- List(1) if x > 0\n  yield x\n")
-      . assert(r => !r.contains("924.3") && !r.contains("924.4"))
+      . assert(r => !r.has("924.3") && !r.has("924.4"))
 
       test(m"For-comprehension with blank line before `if` is rejected"):
         rules
          ( "val r =\n  for x  <- List(1)\n\n         if x > 0\n      y  <- List(2)"
             +"\n  yield x + y\n" )
-      . assert(_.contains("924.4"))
+      . assert(_.has("924.4"))
 
       test(m"For-comprehension aligned `if` filter is exempt from 473.1"):
         rules
          ( "val r =\n  for x  <- List(1)\n         if x > 0\n      y  <- List(2)"
             +"\n  yield x + y\n" )
-      . assert(r => !r.contains("473.1"))
+      . assert(r => !r.has("473.1"))
 
       test(m"Inline term quote with inside space is rejected"):
         rules("val q = '{ x }\n")
-      . assert(_.contains("473.7"))
+      . assert(_.has("473.7"))
 
       test(m"Inline term splice with inside space is rejected"):
         rules("val s = ${ x }\n")
-      . assert(_.contains("473.7"))
+      . assert(_.has("473.7"))
 
       test(m"Inline type quote with inside space is rejected"):
         rules("val t = '[ Int ]\n")
-      . assert(_.contains("473.7"))
+      . assert(_.has("473.7"))
 
       test(m"Tight inline quote is accepted"):
         rules("val q = '{x}\n")
-      . assert(r => !r.contains("473.7"))
+      . assert(r => !r.has("473.7"))
 
       test(m"Tight inline splice is accepted"):
         rules("val s = ${x}\n")
-      . assert(r => !r.contains("473.7"))
+      . assert(r => !r.has("473.7"))
 
       test(m"Tight inline type quote is accepted"):
         rules("val t = '[Int]\n")
-      . assert(r => !r.contains("473.7"))
+      . assert(r => !r.has("473.7"))
 
       test(m"Multi-line quote opener is not flagged as inline"):
         rules("val q =\n  ' {\n    body\n  }\n")
-      . assert(r => !r.contains("473.7"))
+      . assert(r => !r.has("473.7"))

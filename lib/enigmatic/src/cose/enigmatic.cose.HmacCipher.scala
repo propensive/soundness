@@ -65,8 +65,8 @@ extends Cipher, Signing, Symmetric:
 
   def sign(data: Data, keyData: Data): Data =
     val mac = hash.hmac0
-    mac.init(SecretKeySpec(keyData.to(Array), hash.name.s))
-    mac.doFinal(data.to(Array)).nn.immutable(using Unsafe)
+    mac.init(SecretKeySpec(keyData.to[Array], hash.name.s))
+    mac.doFinal(data.to[Array]).nn.immutable(using Unsafe)
 
   def verify(data: Data, signature: Data, keyData: Data): Boolean =
     val expected = sign(data, keyData)

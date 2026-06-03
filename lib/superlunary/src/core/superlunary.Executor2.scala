@@ -34,8 +34,11 @@ package superlunary
 
 import vacuous.*
 
-object Executor2:
-  def main(input: Array[String]): Unit =
+// Defined as an `@main` method (rather than an `object` with a `main` method) so the compiler
+// reliably emits a JVM `public static void main(String[])`: under the proscenium predef a bare
+// object's `main` is compiled to a `BoxedUnit`-returning forwarder the JVM launcher rejects.
+@scala.main
+def Executor2(input: String*): Unit =
     val cls = Class.forName("Generated$Code$From$Quoted").nn
     val instance = cls.getDeclaredConstructor().nn.newInstance().nn
     val method = cls.getMethod("apply").nn

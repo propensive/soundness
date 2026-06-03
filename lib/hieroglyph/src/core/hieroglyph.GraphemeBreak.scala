@@ -66,16 +66,16 @@ object GraphemeBreak:
     ( in: ji.InputStream, classify: Text => Optional[Int] )
   :   List[Entry] =
 
-    scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
+    scala.io.Source.fromInputStream(in).getLines().to(List).flatMap: line =>
       Text(line) match
         case r"${Hex(from)}([0-9A-Fa-f]+)\.\.${Hex(to)}([0-9A-Fa-f]+)\s*;\s*$name([A-Za-z_]+).*" =>
-          classify(name).option.map(Entry(from, to, _))
+          classify(name).option.map(Entry(from, to, _)).to(List)
 
         case r"${Hex(from)}([0-9A-Fa-f]+)\s*;\s*${name}([A-Za-z_]+).*" =>
-          classify(name).option.map(Entry(from, from, _))
+          classify(name).option.map(Entry(from, from, _)).to(List)
 
         case _ =>
-          None
+          Nil
 
   private def gbpClassify(name: Text): Optional[Int] =
     name.s.match
@@ -103,19 +103,19 @@ object GraphemeBreak:
     val Linker: Int = 2
 
   private def parseIncbEntries(in: ji.InputStream): List[Entry] =
-    scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
+    scala.io.Source.fromInputStream(in).getLines().to(List).flatMap: line =>
       Text(line) match
         case r"${Hex(from)}([0-9A-Fa-f]+)\.\.$rest(.*)" => rest match
           case r"${Hex(to)}([0-9A-Fa-f]+)\s*;\s*InCB\s*;\s*$name([A-Za-z]+).*" =>
-            incbClassify(name).option.map(Entry(from, to, _))
+            incbClassify(name).option.map(Entry(from, to, _)).to(List)
 
-          case _ => None
+          case _ => Nil
 
         case r"${Hex(from)}([0-9A-Fa-f]+)\s*;\s*InCB\s*;\s*$name([A-Za-z]+).*" =>
-          incbClassify(name).option.map(Entry(from, from, _))
+          incbClassify(name).option.map(Entry(from, from, _)).to(List)
 
         case _ =>
-          None
+          Nil
 
   private def incbClassify(name: Text): Optional[Int] = name.s match
     case "Consonant" => IncbValue.Consonant
@@ -126,7 +126,7 @@ object GraphemeBreak:
   private case class Tables(starts: IArray[Int], ends: IArray[Int], props: IArray[Byte])
 
   private def buildTables(entries: List[Entry]): Tables =
-    val sorted = entries.sortBy(_.start).toArray
+    val sorted = entries.sortBy(_.start).to[Array]
     val count = sorted.length
     val starts = new Array[Int](count)
     val ends = new Array[Int](count)

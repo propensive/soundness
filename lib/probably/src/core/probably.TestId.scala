@@ -42,7 +42,7 @@ import vacuous.*
 
 object TestId:
   given ordering: Ordering[TestId] =
-    math.Ordering.Implicits.seqOrdering[List, Text].on(_.ids.reverse)
+    scala.math.Ordering.Implicits.seqOrdering[scala.collection.immutable.List, Text].on(_.ids.reverse.scala)
 
 case class TestId(name: Message, suite: Optional[Testable], codepoint: Codepoint):
   val timestamp: Long = System.currentTimeMillis

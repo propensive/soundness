@@ -46,7 +46,7 @@ object RadioGroup:
     val items = group.options.map: option =>
       Label(Input.Radio(name = group.name, value = option(1)), option(2))
 
-    Fragment(items*)
+    Fragment(items.scala*)
 
 case class RadioGroup(name: Text, options: List[(key: Text, value: Text, label: Text)], value: Text)
 extends Widget

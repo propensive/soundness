@@ -32,7 +32,7 @@
                                                                                                   */
 package xylophone
 
-import language.dynamics
+import scala.language.dynamics
 
 import scala.quoted.*
 
@@ -75,10 +75,10 @@ object internal:
       given XmlSchema = XmlSchema.Freeform
 
       val generic: Tag = Tag.root(Set())
-      val xml: Xml = Xml.parse(Iterator(parts.mkString("\u0000").tt), generic, capture(_, _))
+      val xml: Xml = Xml.parse(Iterator(parts.scala.mkString("\u0000").tt), generic, capture(_, _))
 
-      val holes2 = holes.to(List).sortBy(_(0)).map(_(1))
-      val iterator = holes2.to(Iterator)
+      val holes2 = holes.to[List].sortBy(_(0)).map(_(1))
+      val iterator = holes2.iterator
       var index: Int = -1
 
       var types: List[TypeRepr] = Nil
@@ -140,7 +140,7 @@ object internal:
             index += 1
             types ::= TypeRepr.of[Map[Text, Text]]
             iterator.next()
-            val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
+            val others = '{List.from(${Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)).scala)})}
 
             ' {
                 $expr
@@ -317,7 +317,7 @@ object internal:
               '{$result.asInstanceOf[Option[result]]}
 
         case _ =>
-          AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse)
+          AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse.scala)
           . asType
           . absolve match
             case '[type result <: Tuple; result] =>
@@ -385,7 +385,7 @@ object internal:
 
         ((part, srcStart), mapping)
 
-      . toIndexedSeq
+      . scala.toIndexedSeq
 
     def translateOffset(parserOff: Int, len: Int): Position =
       var acc = 0
@@ -428,12 +428,12 @@ object internal:
           val length = pe.position.length.or(0)
           halt(pe.labelled, translateOffset(off, length))
 
-      Xml.parse(Iterator(parts.mkString("\u0000").tt), XmlSchema.generic, capture(_, _))
+      Xml.parse(Iterator(parts.scala.mkString("\u0000").tt), XmlSchema.generic, capture(_, _))
 
     abortive:
 
       val iterator: Iterator[Expr[Any]] =
-        holes.to(List).sortBy(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
+        holes.to[List].sortBy(_(0)).map(_(1)).zip(List.from(insertions)).map: (hole, expr) =>
           expr.absolve match
             case '{$expr: value} => hole match
               case Hole.Attribute(tag, attribute) =>
@@ -542,7 +542,7 @@ object internal:
           val standalone2: Expr[Optional[Boolean]] =
             if standalone == Unset then '{Unset} else Expr(encoding.asInstanceOf[Boolean])
 
-          List('{Header(${Expr(version)}, $encoding2, $standalone2)})
+          List('{Header(${Expr(version)}, $encoding2, $standalone2)}).scala
 
         case Element(label, attributes, children) =>
           val exprs = attributes.toList.map: (key, value) =>
@@ -556,10 +556,10 @@ object internal:
 
             . asExprOf[(Text, Text)]
 
-          val map = '{Map(${Expr.ofList(exprs)}*)}
-          val elements = '{IArray(${Expr.ofList(children.flatMap(serialize(_)))}*)}
+          val map = '{Map(${Expr.ofList(exprs.scala)}*)}
+          val elements = '{IArray(${Expr.ofList(children.flatMap(serialize(_)).to[Seq])}*)}
 
-          List('{Element(${Expr(label)}, Attributes.from($map), $elements)})
+          List('{Element(${Expr(label)}, Attributes.from($map), $elements)}).scala
 
         case Comment(text) =>
           val parts = text.cut(t"\u0000").map(_.s)
@@ -572,7 +572,7 @@ object internal:
 
           val content = recur(parts.tail, Expr(parts.head))
 
-          List('{Comment($content.tt)})
+          List('{Comment($content.tt)}).scala
 
         case Cdata(text) =>
           val parts = text.cut(t"\u0000").map(_.s)
@@ -585,7 +585,7 @@ object internal:
 
           val content = recur(parts.tail, Expr(parts.head))
 
-          List('{Cdata($content.tt)})
+          List('{Cdata($content.tt)}).scala
 
         case ProcessingInstruction(target, data0) =>
           val parts = data0.cut(t"\u0000").map(_.s)
@@ -598,10 +598,10 @@ object internal:
 
           val data = recur(parts.tail, Expr(parts.head))
 
-          List('{ProcessingInstruction(${Expr(target)}, $data.tt)})
+          List('{ProcessingInstruction(${Expr(target)}, $data.tt)}).scala
 
         case TextNode("\u0000") =>
-          List(iterator.next().asExprOf[Node])
+          List(iterator.next().asExprOf[Node]).scala
 
         case TextNode(text) =>
           val parts = text.cut(t"\u0000").map(_.s)
@@ -614,10 +614,10 @@ object internal:
 
           val content = recur(parts.tail, Expr(parts.head))
 
-          List('{TextNode($content.tt)})
+          List('{TextNode($content.tt)}).scala
 
         case Doctype(text) =>
-          List('{Doctype(${Expr(text)})})
+          List('{Doctype(${Expr(text)})}).scala
 
       def resultType(xml: Xml): Set[String] = xml match
         case TextNode(_)        => Set("#text")
@@ -699,4 +699,4 @@ object internal:
 
                 . or(halt(m"unexpected type"))
 
-    '{$tag.node(Attributes.from(${Expr.ofList(attributes)}.compact.to(Map)))}.asExprOf[result]
+    '{$tag.node(Attributes.from(List.from(${Expr.ofList(attributes)}).compact.to[Map]))}.asExprOf[result]

@@ -46,7 +46,7 @@ inline def default[value](using default: Default[value]): value = default()
 inline def optimizable[value](lambda: Optional[value] => Optional[value]): Optional[value] =
   lambda(Unset)
 
-erased val Unsafe: Unsafe = caps.unsafe.unsafeErasedValue
+erased val Unsafe: Unsafe = scala.caps.unsafe.unsafeErasedValue
 
 type Optional[value] = Unset.type | value
 
@@ -61,9 +61,9 @@ transparent inline def invite[entity]: Optional[entity] = summonFrom:
   case value: `entity` => value
   case _               => Unset
 
-extension [value](iterable: Iterable[Optional[value]])
-  transparent inline def compact: Iterable[value] =
-    iterable.filter(!_.absent).map(_.vouch)
+extension [value](iterable: List[Optional[value]])
+  transparent inline def compact: List[value] =
+    List.from(iterable.scala.filter(!_.absent).map(_.vouch))
 
 extension [value](option: Option[value])
   inline def optional: Unset.type | value = option.getOrElse(Unset)

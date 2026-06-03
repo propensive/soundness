@@ -56,7 +56,7 @@ object Inspectable extends Inspectable2:
         [variant <: derivation] => variant =>
           contextual.give(variant.inspect)
 
-  inline given derived: [value] => value is Inspectable = compiletime.summonFrom:
+  inline given derived: [value] => value is Inspectable = scala.compiletime.summonFrom:
     case given (`value` is Encodable in Text) => _.encode
     case given (`value` is Showable)          => _.show
     case given Reflection[`value`]            => Derivation.derived[value].text(_)
@@ -70,7 +70,7 @@ object Inspectable extends Inspectable2:
 
   given text: Text is Inspectable = text =>
     val builder: StringBuilder = new StringBuilder()
-    text.s.map(escape(_, true)).each(builder.append)
+    List.from(text.s.map(escape(_, true))).each(builder.append)
 
     ("t\""+builder.toString+"\"").tt
 
@@ -87,7 +87,7 @@ object Inspectable extends Inspectable2:
     case double                  => double.toString.tt
 
   given boolean: Boolean is Inspectable = boolean => if boolean then "true".tt else "false".tt
-  given reflectEnum: reflect.Enum is Inspectable = _.toString.show
+  given reflectEnum: scala.reflect.Enum is Inspectable = _.toString.show
 
   def escape(char: Char, eEscape: Boolean = false): Text = char match
     case '\n'                => "\\n".tt
@@ -106,7 +106,7 @@ object Inspectable extends Inspectable2:
       else String.format("\\u%04x", char.toInt).nn.tt
 
   given set: [element] => (inspectable: => element is Inspectable) => Set[element] is Inspectable =
-    _.map(inspectable.text(_)).mkString("{", ", ", "}").tt
+    _.map(inspectable.text(_)).scala.mkString("{", ", ", "}").tt
 
 
   given vector: [element] => (inspectable: => element is Inspectable)
@@ -123,7 +123,7 @@ object Inspectable extends Inspectable2:
   given list: [element] => (inspectable: => element is Inspectable)
   =>  List[element] is Inspectable =
 
-    _.map(inspectable.text(_)).mkString("[", ", ", "]").tt
+    _.map(inspectable.text(_)).scala.mkString("[", ", ", "]").tt
 
 
   given array: [element] => (inspectable: => element is Inspectable)

@@ -32,7 +32,7 @@
                                                                                                   */
 package telekinesis
 
-import language.dynamics
+import scala.language.dynamics
 
 import java.io as ji
 import java.net as jn
@@ -133,7 +133,7 @@ object HttpClient:
       abort(ConnectError(ConnectError.Reason.Unknown))
 
     val headers: List[Http.Header] = response.headers.nn.map().nn.asScala.to(List).flatMap:
-      (key, values) => values.asScala.map: value => Http.Header(key.tt, value.tt)
+      (key, values) => List.from(values.asScala).map: value => Http.Header(key.tt, value.tt)
 
     status(headers, Http.Body.Streaming(unsafely(response.body().nn.stream[Data])))
 
@@ -173,7 +173,7 @@ object HttpClient:
     :   Http.Response logs HttpEvent =
 
       val url = httpRequest.on(origin)
-      Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
+      Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders.scala))
 
       backend.request(url.show, httpRequest.method, httpRequest.textHeaders, httpRequest.body)
 
@@ -189,7 +189,7 @@ object HttpClient:
     :   Http.Response logs HttpEvent =
 
       val url = httpRequest.on(origin)
-      Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
+      Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders.scala))
 
       def loop(uri: jn.URI, method: Http.Method, bodyFn: () => Stream[Data], remaining: Int)
       :   Http.Response =

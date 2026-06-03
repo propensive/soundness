@@ -37,6 +37,8 @@ import scala.language.unsafeNulls
 import anticipation.*
 import contingency.*
 import gastronomy.*
+import rudiments.*
+import denominative.*
 import ulysses.*
 import vacuous.*
 
@@ -101,7 +103,7 @@ object SchemaSignature:
 
     val layerHashes: List[Data] =
       layerStruct.let: ls =>
-        layerChildren.toList.map: layer =>
+        layerChildren.to[List].map: layer =>
           val layerChildren = layer.asInstanceOf[Tel.Element.Node].children
           val layerRoot     = Tel.Element.Node(Unset, ls, layerChildren)
           Blake3.hashOf(layerRoot.bintel(axiom), cadence.hashSize)
@@ -151,7 +153,7 @@ object SchemaSignature:
   // (32) bytes long; an empty list, or any mis-sized hash, raises
   // `BadSignatureLength`.
   def encode(hashes: List[Data]): Data raises BintelError =
-    if hashes.isEmpty then abort(BintelError(BintelError.Reason.BadSignatureLength))
+    if hashes.nil then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
     val it = hashes.iterator
     var bad = false
@@ -161,14 +163,14 @@ object SchemaSignature:
 
     if bad then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
-    Palimpsest(hashes.toIndexedSeq).data
+    Palimpsest(hashes.scala.toIndexedSeq).data
 
   // Decode a palimpsest schema signature against a library of candidate
   // component hashes. The cadence is recovered from the trailing byte
   // (§4.2 of the palimpsest spec); a byte length inconsistent with any
   // valid cadence raises `BadSignatureLength`. Failure to reconstruct
   // the ordered hash sequence raises `BadSignature`.
-  def decode(signature: Data, library: List[Data]): List[Data] raises BintelError =
+  def decode(signature: Data, library: Seq[Data]): List[Data] raises BintelError =
     val total = signature.length
     if total < 2 then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
@@ -185,6 +187,6 @@ object SchemaSignature:
     val n: Int = cadence.hashCount(total - 1).or:
       abort(BintelError(BintelError.Reason.BadSignatureLength))
 
-    given Bibliography = Bibliography(library)
+    given Bibliography = Bibliography(List.from(library))
 
     Palimpsest(signature, n).resolve.or(abort(BintelError(BintelError.Reason.BadSignature)))

@@ -32,8 +32,8 @@
                                                                                                   */
 package parasite
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 import java.lang.management as jlm
 import javax.management as jm
@@ -143,6 +143,6 @@ case class GarbageCollection
     collector: GarbageCollection.Collector,
     cause:     GarbageCollection.Cause,
     bytes:     Map[Text, (before: Bytes, after: Bytes)] ):
-  def before: Bytes = bytes.to(List).map(_(1)(0)).total
-  def after: Bytes = bytes.to(List).map(_(1)(1)).total
+  def before: Bytes = bytes.values.map(_(0)).foldLeft(0L.b)(_ + _)
+  def after: Bytes = bytes.values.map(_(1)).foldLeft(0L.b)(_ + _)
   def reduction: Bytes = before - after

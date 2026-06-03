@@ -78,13 +78,13 @@ object Tests extends Suite(m"Ulysses tests"):
       given bibliography: Bibliography = Bibliography(numbers)
       Palimpsest((1 to 3).map(numbers(_))).resolve
 
-    . assert(_ == (1 to 3).map(numbers(_)))
+    . assert(_ == (1 to 3).to(List).map(numbers(_)))
 
     val letters = List(t"alpha", t"beta", t"gamma", t"delta").map(_.digest[Blake3].data)
 
     test(m"Round-trip a Palimpsest under an overridden Cadence"):
       given cadence: Cadence = Cadence(initial = 4, regular = 2, hashSize = 32)
       given bibliography: Bibliography = Bibliography(letters)
-      Palimpsest(letters.toIndexedSeq).resolve
+      Palimpsest(letters.scala.toIndexedSeq).resolve
 
     . assert(_ == letters)

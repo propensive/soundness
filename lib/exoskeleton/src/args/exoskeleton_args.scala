@@ -34,6 +34,7 @@ package exoskeleton
 
 import anticipation.*
 import denominative.*
+import rudiments.*
 import fulminate.*
 import gossamer.*
 import vacuous.*
@@ -95,7 +96,7 @@ package interpreters:
 
       def postprocess(commandline: Commandline): Commandline =
         val parameters2: Map[Argument, List[Argument]] =
-          commandline.parameters.to(List).flatMap: (key, values) =>
+          commandline.parameters.to[List].flatMap: (key, values) =>
             val flag = key.value
 
             if flag.starts(t"--") && flag.contains(t"=")
@@ -119,12 +120,12 @@ package interpreters:
             else
               List(key -> values)
 
-          . to(Map)
+          .to[Map]
 
         val focus2 = current.let: current =>
           val focusCursor: Ordinal = current.cursor.or(current.value.length).z
 
-          (parameters2.keySet ++ parameters2.values.flatten).find: argument =>
+          (parameters2.keySet ++ parameters2.values.flatMap(_.scala)).find: argument =>
             current.position == argument.position && argument.contains(focusCursor)
 
           . optional

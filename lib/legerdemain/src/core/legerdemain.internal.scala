@@ -83,7 +83,7 @@ object internal:
           recur(tail, parameters :: done)
 
         case _ =>
-          '{Query(${Expr.ofList(done.reverse)}.flatten)}
+          '{Query(List.from(${Expr.ofList(done.reverse.scala)}.flatMap(_.scala)))}
 
     values.absolve match
       case Varargs(exprs) => recur(exprs.to(List))

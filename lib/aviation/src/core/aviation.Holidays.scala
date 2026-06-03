@@ -38,8 +38,8 @@ import rudiments.*
 import vacuous.*
 
 object Holidays:
-  def apply(holidays: Iterable[Holiday]): Holidays = new Holidays:
-    private val store: SortedMap[Date, Holiday] = holidays.bi.map(_.date -> _).to(SortedMap)
+  def apply(holidays: List[Holiday]): Holidays = new Holidays:
+    private val store: SortedMap[Date, Holiday] = holidays.bi.map(_.date -> _).scala.to(SortedMap)
 
     def holiday(date: Date): Optional[Holiday] = if store.has(date) then store(date) else Unset
 

@@ -66,8 +66,8 @@ object internal:
         if part.contains(t"..")                 then fail(GitRefError.Reason.DoubleDot)
         if part.length == 0                     then fail(GitRefError.Reason.EmptySegment)
 
-        for char <- List('*', '[', '\\', ' ', '^', '~', ':', '?')
-        do if part.contains(char) then fail(GitRefError.Reason.InvalidCharacter)
+        List('*', '[', '\\', ' ', '^', '~', ':', '?').each: char =>
+          if part.contains(char) then fail(GitRefError.Reason.InvalidCharacter)
 
       text
 

@@ -38,6 +38,7 @@ import acyclicity.*
 import anticipation.*
 import contingency.*
 import gossamer.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
@@ -79,7 +80,7 @@ object LayeredDagDiagram:
         case _                            => Space
 
   def apply[node](dag: Dag[node]): LayeredDagDiagram[node] raises DagError =
-    val nodes: Vector[node] = dag.sorted.to(Vector)
+    val nodes: Vector[node] = dag.sorted.to[Vector]
 
     if nodes.isEmpty then LayeredDagDiagram(Nil) else
       val parents: Map[node, Set[node]] = dag.edgeMap
@@ -89,7 +90,7 @@ object LayeredDagDiagram:
 
       for n <- nodes do
         val ps = parents.getOrElse(n, Set.empty)
-        level(n) = if ps.isEmpty then 0 else ps.iterator.map(level).max + 1
+        level(n) = if ps.scala.isEmpty then 0 else ps.iterator.map(level).max + 1
 
       val maxLevel: Int = level.values.max
 
@@ -104,14 +105,14 @@ object LayeredDagDiagram:
       for l <- 0 to maxLevel do
         val levelNodes = byLevel(l)
 
-        val terminating = state.toMap.filter: (_, lane) => level(lane.target) == l
-        val continuing = state.toMap -- terminating.keys
+        val terminating = Map.from(state).filter: (_, lane) => level(lane.target) == l
+        val continuing = Map.from(state) -- terminating.keys
 
         val incomingByNode: Map[node, Vector[Int]] =
           terminating
             . groupBy(_._2.target)
             . map: (n, m) =>
-                n -> m.keys.to(Vector).sorted
+                n -> m.keys.to[Vector].sorted
 
         val desired: Map[node, Int] = levelNodes.map: n =>
           val incoming = incomingByNode.getOrElse(n, Vector.empty)
@@ -123,10 +124,10 @@ object LayeredDagDiagram:
 
           n -> centre
 
-        . to(Map)
+        .to(Map)
 
-        val ordered = levelNodes.sortBy(desired)
-        val nodeOccupied = scm.HashSet[Int]() ++ continuing.keys
+        val ordered = levelNodes.sortBy(desired(_))
+        val nodeOccupied = scm.HashSet[Int]() ++ continuing.keys.scala
         val nodeCol = scm.LinkedHashMap[node, Int]()
 
         for n <- ordered do
@@ -135,15 +136,15 @@ object LayeredDagDiagram:
           nodeCol(n) = col
           nodeOccupied.add(col)
 
-        layouts += Layout(state.toMap, terminating, continuing, nodeCol.toMap, prevNodeCols)
+        layouts += Layout(Map.from(state), terminating, continuing, Map.from(nodeCol), prevNodeCols)
 
-        terminating.keys.foreach(state.remove)
+        terminating.keys.each(state.remove(_))
 
-        val laneOccupied = scm.HashSet[Int]() ++ continuing.keys
+        val laneOccupied = scm.HashSet[Int]() ++ continuing.keys.scala
 
         for n <- ordered do
           val outgoing = forward.getOrElse(n, Set.empty).filter(level(_) > l)
-          val sortedOut = outgoing.to(Vector).sortBy(level)
+          val sortedOut = outgoing.to[Vector].sortBy(level)
 
           for target <- sortedOut do
             var col = nodeCol(n)
@@ -151,7 +152,7 @@ object LayeredDagDiagram:
             laneOccupied.add(col)
             state(col) = Lane(n, target, col)
 
-        prevNodeCols = nodeCol.toMap
+        prevNodeCols = Map.from(nodeCol)
 
       val width: Int =
         val cols = layouts.iterator.flatMap: lay =>
@@ -218,14 +219,14 @@ object LayeredDagDiagram:
     cells.iterator.map(_.tile).to(List)
 
   private def nodeRow[node](layout: Layout[node], width: Int): List[DagTile] =
-    val nodeColSet = layout.nodeCol.values.to(Set)
+    val nodeColSet = layout.nodeCol.values.to[Set]
 
     (0 until width).map: c =>
       if nodeColSet(c) then Node
       else if layout.continuing.contains(c) then Vertical
       else Space
 
-    . to(List)
+    .to(List)
 
   given printable: [node: Showable] => (style: LaneDagStyle[Text])
   =>  LayeredDagDiagram[node] is Printable =
@@ -238,7 +239,7 @@ case class LayeredDagDiagram[node](rows: List[(List[DagTile], Map[Int, node])]):
     val maxCol = rows.iterator.map(_(0).length).maxOption.getOrElse(0)
     val widths = Array.fill(maxCol)(2)
 
-    rows.foreach: (_, nodesAt) =>
+    rows.each: (_, nodesAt) =>
       nodesAt.foreach: (col, n) =>
         val w = style.width(glyph(n))
         if w > widths(col) then widths(col) = w

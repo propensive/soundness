@@ -33,6 +33,7 @@
 package iridescence
 
 import prepositional.*
+import rudiments.*
 
 object Cmy:
   given cmyk: Cmy is Perceptual in Cmyk =

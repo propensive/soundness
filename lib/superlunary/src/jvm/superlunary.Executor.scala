@@ -46,4 +46,4 @@ object Executor:
   def main(arguments: Array[String]): Unit =
     val out = System.out.nn
     System.setOut(null)
-    Console.withOut(_ => ())(out.println(run(arguments(0))))
+    scala.Console.withOut(_ => ())(out.println(run(arguments(0))))

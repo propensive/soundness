@@ -79,7 +79,7 @@ class Classfile(data: Data):
         val builder = Map.newBuilder[jlc.Label, Int]
         var offset = 0
 
-        elements.foreach:
+        elements.each:
           case instr: jlc.Instruction       => offset += instr.sizeInBytes
           case target: jlci.LabelTarget     => builder += target.label.nn -> offset
           case _                            => ()
@@ -94,11 +94,11 @@ class Classfile(data: Data):
         attr.fold(Map.empty): smt =>
           smt.entries.nn.asScala.iterator.map: entry =>
             val frames =
-              entry.stack.nn.asScala.toList.map(Bytecode.Frame.fromVerificationType).reverse
+              entry.stack.nn.asScala.to(List).map(Bytecode.Frame.fromVerificationType).reverse
 
             entry.target.nn -> frames
 
-          . toMap
+          . to(Map)
 
       def recur
         ( todo:  List[jlc.CodeElement],

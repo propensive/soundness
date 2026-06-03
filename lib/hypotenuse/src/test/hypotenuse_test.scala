@@ -71,41 +71,41 @@ object Tests extends Suite(m"Hypotenuse tests"):
 
     suite(m"Median tests"):
       test(m"Simple median"):
-        Iterable[Double](7, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21).median
+        List[Double](7, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21).median
       . assert(_ == 7.0)
 
       test(m"Simple median, different pivot"):
-        Iterable(25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7).median
+        List(25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7).median
       . assert(_ == 7.0)
 
       test(m"Simple median, even items"):
-        Iterable(25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7, 8).median
+        List(25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7, 8).median
       . assert(_ == 7.5)
 
       test(m"Simple median, even items, different order"):
-        Iterable(8, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7).median
+        List(8, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7).median
       . assert(_ == 7.5)
 
       test(m"Simple median, even items, different elements"):
-        Iterable(10, 125, -1, 124, -2, -3, 123, -4, 122, -5, 121, 9).median
+        List(10, 125, -1, 124, -2, -3, 123, -4, 122, -5, 121, 9).median
       . assert(_ == 9.5)
 
       test(m"Median of temperatures"):
-        Iterable(Fahrenheit(10), Celsius(35), Celsius(40)).median
+        List(Fahrenheit(10), Celsius(35), Celsius(40)).median
       . assert(_ == Celsius(35))
 
       test(m"Median of even number of temperatures"):
-        Iterable(Fahrenheit(40), Celsius(35), Celsius(45), Celsius(80)).median
+        List(Fahrenheit(40), Celsius(35), Celsius(45), Celsius(80)).median
       . assert(_ == Celsius(40))
 
       test(m"Median of quantities"):
-        Iterable(10*Metre/Second, 30*Metre/Second, 5*Metre/Second, 20*Metre/Second).median
+        List(10*Metre/Second, 30*Metre/Second, 5*Metre/Second, 20*Metre/Second).median
       . assert(_ == 15*Metre/Second)
 
       // type Height = Quanta[(Feet[1], Inches[1])]
 
       // test(m"Median of quanta"):
-      //   Iterable[Quanta[Height]](Quanta[Height](6, 11), Quanta[Height](5, 10), Quanta[Height](6, 2)).median
+      //   List[Quanta[Height]](Quanta[Height](6, 11), Quanta[Height](5, 10), Quanta[Height](6, 2)).median
       // . assert(_ == Quanta[Height](6, 2))
 
     suite(m"Power tests"):
@@ -115,7 +115,7 @@ object Tests extends Suite(m"Hypotenuse tests"):
 
       test(m"Short ** preserves fractional results"):
         (1000: Short) ** 1.5
-      . assert(_ == math.pow(1000.0, 1.5))
+      . assert(_ == scala.math.pow(1000.0, 1.5))
 
       test(m"Byte ** beyond Byte range does not truncate"):
         (50: Byte) ** 2.0
@@ -123,11 +123,11 @@ object Tests extends Suite(m"Hypotenuse tests"):
 
       test(m"Int ** preserves fractional results"):
         2 ** 0.5
-      . assert(_ == math.sqrt(2.0))
+      . assert(_ == (2.0).sqrt)
 
       test(m"Long ** preserves fractional results"):
         2L ** 0.5
-      . assert(_ == math.sqrt(2.0))
+      . assert(_ == (2.0).sqrt)
 
     suite(m"Bit-pattern formatting"):
       test(m"Byte.hex of -1 is two characters"):

@@ -88,11 +88,11 @@ object Bcodl:
             val key = subschema(0).option.getOrElse:
               abort(BcodlError(BcodlError.Reason.MissingKey, 0))
 
-            val children = IArray.from(recur(subschema(1)))
+            val children = IArray.from(recur(subschema(1)).scala)
 
             CodlNode(Atom(key, children, Formation.empty, subschema(1)))
 
-    CodlDoc(IArray.from(recur(schema)), schema, 0)
+    CodlDoc(IArray.from(recur(schema).scala), schema, 0)
 
   private def readNumber(in: ji.Reader): Int = in.read - 32
 

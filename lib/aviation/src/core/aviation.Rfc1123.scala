@@ -142,7 +142,7 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
         if next() != 'e' || next() != 'p' then fail(MonthName(Sep)) yet Sep else Sep
 
       case _ =>
-        fail(MonthName(Month.all*)) yet Jan
+        fail(MonthName(Month.all.to[Seq]*)) yet Jan
 
     expect(' ')
 

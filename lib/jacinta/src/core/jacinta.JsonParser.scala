@@ -617,7 +617,7 @@ private[jacinta] final class JsonParser:
         if len > KeyCacheMaxBytes then
           new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
         else
-          val packedLow  = packBytes(arr, off,     math.min(len, 8))
+          val packedLow  = packBytes(arr, off,     scala.math.min(len, 8))
           val packedHigh = if len > 8 then packBytes(arr, off + 8, len - 8) else 0L
           val idx        = ((packedLow.toInt ^ (packedLow >>> 32).toInt) ^
                             (packedHigh.toInt ^ (packedHigh >>> 32).toInt)) & (KeyCacheSize - 1)

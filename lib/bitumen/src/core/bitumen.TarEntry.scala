@@ -66,20 +66,20 @@ object TarEntry:
     t"PaxHeaders/0".decode[Relative on Tar]
 
   private[bitumen] def sparseExtensionBlocks(segments: List[SparseSegment]): LazyList[Data] =
-    if segments.isEmpty then LazyList()
+    if segments.nil then LazyList()
     else
       val (batch, rest) = segments.splitAt(21)
 
       val block: Data = Data.build(512): array =>
         var pos = 0
 
-        batch.foreach: seg =>
+        batch.each: seg =>
           array.place(formatLongOctal(seg.offset, 12), pos.z)
           pos = pos + 12
           array.place(formatLongOctal(seg.length, 12), pos.z)
           pos = pos + 12
 
-        if rest.nonEmpty then array(504) = 1.toByte
+        if !rest.nil then array(504) = 1.toByte
 
       block #:: sparseExtensionBlocks(rest)
 
@@ -179,7 +179,7 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
 
 
   def size: U32 = this match
-    case file: File      => file.data.sumBy(_.length).bits.u32
+    case file: File      => List.from(file.data).sumBy(_.length).bits.u32
     case pax: Pax        => pax.records.length.bits.u32
     case long: GnuLong   => (long.content.data.length + 1).bits.u32
     case sparse: Sparse  => sparse.segments.map(_.length).sum.toInt.bits.u32
@@ -262,7 +262,7 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
         val inline = sparse.segments.take(4)
         var pos = 386
 
-        inline.foreach: seg =>
+        inline.each: seg =>
           array.place(formatLong(seg.offset, 12), pos.z)
           pos = pos + 12
           array.place(formatLong(seg.length, 12), pos.z)

@@ -32,8 +32,8 @@
                                                                                                   */
 package hypotenuse
 
-import language.experimental.genericNumberLiterals
-import language.experimental.into
+import scala.language.experimental.genericNumberLiterals
+import scala.language.experimental.into
 
 import java.lang.{Integer as JInt, Long as JLong, Double as JDouble, Float as JFloat}
 
@@ -54,7 +54,7 @@ extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${hypotenuse.protointernal.bin('context)}
   transparent inline def hex(): IArray[Byte] = ${hypotenuse.protointernal.hex('context)}
 
-extension [value](iterable: Iterable[value])
+extension [value](iterable: List[value])
   inline def minimum(using commensurable: value is Commensurable against value): Optional[value] =
     if iterable.nil then Unset else
       var current = iterable.head
@@ -96,44 +96,44 @@ extension [value](iterable: Iterable[value])
 
     if size == 0 then Unset
     else if size%2 == 0 then
-      val first = recur((size - 1)/2, iterable.to(List))
-      val second = recur((size + 1)/2, iterable.to(List))
+      val first = recur((size - 1)/2, iterable.to[List])
+      val second = recur((size + 1)/2, iterable.to[List])
       first + (second - first)/2.0
     else
-      val result: value = recur((size - 1)/2, iterable.to(List))
+      val result: value = recur((size - 1)/2, iterable.to[List])
       result + (result - result)/1.0
 
 
 extension (float: Float)
   @targetName("absFloat")
-  inline def abs: Float = math.abs(float)
+  inline def abs: Float = scala.math.abs(float)
 
   @targetName("ceilingFloat")
-  inline def ceiling: Float = math.ceil(float).toFloat
+  inline def ceiling: Float = scala.math.ceil(float).toFloat
 
   @targetName("floorFloat")
-  inline def floor: Float = math.floor(float).toFloat
+  inline def floor: Float = scala.math.floor(float).toFloat
 
   @targetName("exponentFloat")
-  inline def exponent: Int = math.getExponent(float)
+  inline def exponent: Int = scala.math.getExponent(float)
 
   @targetName("incrementFloat")
-  inline def increment: Float = math.nextUp(float)
+  inline def increment: Float = scala.math.nextUp(float)
 
   @targetName("decrementFloat")
-  inline def decrement: Float = math.nextDown(float)
+  inline def decrement: Float = scala.math.nextDown(float)
 
   @targetName("roundFloat")
-  inline def round: Long = math.round(float)
+  inline def round: Long = scala.math.round(float)
 
   @targetName("scalbFloat")
-  inline def scalb(scale: Int): Float = math.scalb(float, scale)
+  inline def scalb(scale: Int): Float = scala.math.scalb(float, scale)
 
   @targetName("signumFloat")
-  inline def signum: -1.0F | 0.0F | 1.0F = math.signum(float).asInstanceOf[-1.0F | 0.0F | 1.0F]
+  inline def signum: -1.0F | 0.0F | 1.0F = scala.math.signum(float).asInstanceOf[-1.0F | 0.0F | 1.0F]
 
   @targetName("ulpFloat")
-  inline def ulp: Float = math.ulp(float)
+  inline def ulp: Float = scala.math.ulp(float)
 
   @targetName("bitsFloat")
   inline def bits: Long = JFloat.floatToIntBits(float)
@@ -157,7 +157,7 @@ extension (float: Float)
   inline def predecessor: Float = Math.nextDown(float)
 
   @targetName("powerFloat")
-  inline infix def ** (exponent: Double): Float = math.pow(float, exponent).toFloat
+  inline infix def ** (exponent: Double): Float = scala.math.pow(float, exponent).toFloat
 
   @targetName("floorModFloat")
   inline infix def %% (right: Float): Float =
@@ -171,34 +171,34 @@ extension (double: Double)
   inline def mantissa: B64 = bits & 0xfffffffffffffL.bits
 
   @targetName("exponentDouble")
-  inline def exponent: B16 = math.getExponent(double).toShort.bits
+  inline def exponent: B16 = scala.math.getExponent(double).toShort.bits
 
   @targetName("absDouble")
-  inline def abs: Double = math.abs(double)
+  inline def abs: Double = scala.math.abs(double)
 
   @targetName("ceilingDouble")
-  inline def ceiling: Double = math.ceil(double)
+  inline def ceiling: Double = scala.math.ceil(double)
 
   @targetName("floorDouble")
-  inline def floor: Double = math.floor(double)
+  inline def floor: Double = scala.math.floor(double)
 
   @targetName("incrementDouble")
-  inline def increment: Double = math.nextUp(double)
+  inline def increment: Double = scala.math.nextUp(double)
 
   @targetName("decrementDouble")
-  inline def decrement: Double = math.nextDown(double)
+  inline def decrement: Double = scala.math.nextDown(double)
 
   @targetName("roundDouble")
-  inline def round: Long = math.round(double)
+  inline def round: Long = scala.math.round(double)
 
   @targetName("scalbDouble")
-  inline def scalb(scale: Int): Double = math.scalb(double, scale)
+  inline def scalb(scale: Int): Double = scala.math.scalb(double, scale)
 
   @targetName("signumDouble")
-  inline def signum: -1.0 | 0.0 | 1.0 = math.signum(double).asInstanceOf[-1.0 | 0.0 | 1.0]
+  inline def signum: -1.0 | 0.0 | 1.0 = scala.math.signum(double).asInstanceOf[-1.0 | 0.0 | 1.0]
 
   @targetName("ulpDouble")
-  inline def ulp: Double = math.ulp(double)
+  inline def ulp: Double = scala.math.ulp(double)
 
   @targetName("bitsDouble")
   inline def bits: B64 = JDouble.doubleToLongBits(double).bits
@@ -222,7 +222,7 @@ extension (double: Double)
   inline def predecessor: Double = Math.nextDown(double)
 
   @targetName("powerDouble")
-  inline infix def ** (exponent: Double): Double = math.pow(double, exponent)
+  inline infix def ** (exponent: Double): Double = scala.math.pow(double, exponent)
 
   @targetName("floorModDouble")
   inline infix def %% (right: Double): Double =
@@ -245,10 +245,10 @@ extension (byte: Byte)
   inline def short: Long = byte.toShort
 
   @targetName("absByte")
-  inline def abs: Byte = math.abs(byte).toByte
+  inline def abs: Byte = scala.math.abs(byte).toByte
 
   @targetName("powerByte")
-  inline infix def ** (exponent: Double): Double = math.pow(byte.toDouble, exponent)
+  inline infix def ** (exponent: Double): Double = scala.math.pow(byte.toDouble, exponent)
 
   @targetName("octalByte")
   inline def octal: Text = JInt.toOctalString(byte & 0xff).nn.tt
@@ -263,10 +263,10 @@ extension (byte: Byte)
   inline def binary: Text = JInt.toBinaryString(byte & 0xff).nn.tt
 
   @targetName("floorModByte")
-  inline infix def %% (right: Int): Int = math.floorMod(byte, right)
+  inline infix def %% (right: Int): Int = scala.math.floorMod(byte, right)
 
   @targetName("floorDivByte")
-  inline infix def /- (right: Int): Int = math.floorDiv(byte, right)
+  inline infix def /- (right: Int): Int = scala.math.floorDiv(byte, right)
 
   @tailrec @targetName("gcdByte")
   def gcd(right: Byte): Byte = if right == 0 then byte else right.gcd((byte%right).toByte)
@@ -282,10 +282,10 @@ extension (short: Short)
   inline def long: Long = short.toLong
 
   @targetName("absShort")
-  inline def abs: Short = math.abs(short).toShort
+  inline def abs: Short = scala.math.abs(short).toShort
 
   @targetName("powerShort")
-  inline infix def ** (exponent: Double): Double = math.pow(short.toDouble, exponent)
+  inline infix def ** (exponent: Double): Double = scala.math.pow(short.toDouble, exponent)
 
   @targetName("octalShort")
   inline def octal: Text = JInt.toOctalString(short & 0xffff).nn.tt
@@ -300,10 +300,10 @@ extension (short: Short)
   inline def binary: Text = JInt.toBinaryString(short & 0xffff).nn.tt
 
   @targetName("floorModShort")
-  inline infix def %% (right: Short): Short = math.floorMod(short, right).toShort
+  inline infix def %% (right: Short): Short = scala.math.floorMod(short, right).toShort
 
   @targetName("floorDivShort")
-  inline infix def /- (right: Short): Short = math.floorDiv(short, right).toShort
+  inline infix def /- (right: Short): Short = scala.math.floorDiv(short, right).toShort
 
   @tailrec @targetName("gcdShort")
   def gcd(right: Short): Short = if right == 0 then short else right.gcd((short%right).toShort)
@@ -319,10 +319,10 @@ extension (int: Int)
   inline def long: Long = int.toLong
 
   @targetName("absInt")
-  inline def abs: Int = math.abs(int)
+  inline def abs: Int = scala.math.abs(int)
 
   @targetName("powerInt")
-  inline infix def ** (exponent: Double): Double = math.pow(int.toDouble, exponent)
+  inline infix def ** (exponent: Double): Double = scala.math.pow(int.toDouble, exponent)
 
   @targetName("octalInt")
   inline def octal: Text = JInt.toOctalString(int).nn.tt
@@ -337,10 +337,10 @@ extension (int: Int)
   inline def binary: Text = JInt.toBinaryString(int).nn.tt
 
   @targetName("floorModInt")
-  inline infix def %% (right: Int): Int = math.floorMod(int, right)
+  inline infix def %% (right: Int): Int = scala.math.floorMod(int, right)
 
   @targetName("floorDivInt")
-  inline infix def /- (right: Int): Int = math.floorDiv(int, right)
+  inline infix def /- (right: Int): Int = scala.math.floorDiv(int, right)
 
   @tailrec @targetName("gcdInt")
   def gcd(right: Int): Int = if right == 0 then int else right.gcd(int%right)
@@ -350,7 +350,7 @@ extension (int: Int)
 
 extension (long: Long)
   @targetName("absLong")
-  inline def abs: Long = math.abs(long)
+  inline def abs: Long = scala.math.abs(long)
 
   @targetName("bitsLong")
   inline def bits: B64 = long.asInstanceOf[B64]
@@ -368,13 +368,13 @@ extension (long: Long)
   inline def binary: Text = JLong.toBinaryString(long).nn.tt
 
   @targetName("floorModLong")
-  inline infix def %% (right: Long): Long = math.floorMod(long, right)
+  inline infix def %% (right: Long): Long = scala.math.floorMod(long, right)
 
   @targetName("floorDivLong")
-  inline infix def /- (right: Long): Long = math.floorDiv(long, right)
+  inline infix def /- (right: Long): Long = scala.math.floorDiv(long, right)
 
   @targetName("powerLong")
-  inline infix def ** (exponent: Double): Double = math.pow(long.toDouble, exponent)
+  inline infix def ** (exponent: Double): Double = scala.math.pow(long.toDouble, exponent)
 
   @tailrec @targetName("gcdLong")
   def gcd(right: Long): Long = if right == 0 then long else right.gcd(long%right)
@@ -434,35 +434,35 @@ def erf(value: Double): Double =
   val e = 1.061405429
   val p = 0.3275911
 
-  val x = math.abs(value)
+  val x = scala.math.abs(value)
   val t = 1.0/(1.0 + p*x)
-  val y = 1 - (((((e*t + d)*t) + c)*t + b)*t + a)*t*math.exp(-x*x)
+  val y = 1 - (((((e*t + d)*t) + c)*t + b)*t + a)*t*scala.math.exp(-x*x)
 
-  math.signum(value)*y
+  scala.math.signum(value)*y
 
-final val π = math.Pi
-final val pi = math.Pi
-final val euler = math.E
+final val π = scala.math.Pi
+final val pi = scala.math.Pi
+final val euler = scala.math.E
 final val φ = (1.0 + 5.0.sqrt)/2.0
 final val goldenRatio = φ
 
-inline def cos(f64: Conversion.into[F64]): F64 = F64(math.cos(f64.double))
-inline def acos(f64: Conversion.into[F64]): F64 = F64(math.acos(f64.double))
-inline def cosh(f64: Conversion.into[F64]): F64 = F64(math.cosh(f64.double))
-inline def sin(f64: Conversion.into[F64]): F64 = F64(math.sin(f64.double))
-inline def asin(f64: Conversion.into[F64]): F64 = F64(math.asin(f64.double))
-inline def sinh(f64: Conversion.into[F64]): F64 = F64(math.sinh(f64.double))
-inline def tan(f64: Conversion.into[F64]): F64 = F64(math.tan(f64.double))
-inline def atan(f64: Conversion.into[F64]): F64 = F64(math.atan(f64.double))
+inline def cos(f64: Conversion.into[F64]): F64 = F64(scala.math.cos(f64.double))
+inline def acos(f64: Conversion.into[F64]): F64 = F64(scala.math.acos(f64.double))
+inline def cosh(f64: Conversion.into[F64]): F64 = F64(scala.math.cosh(f64.double))
+inline def sin(f64: Conversion.into[F64]): F64 = F64(scala.math.sin(f64.double))
+inline def asin(f64: Conversion.into[F64]): F64 = F64(scala.math.asin(f64.double))
+inline def sinh(f64: Conversion.into[F64]): F64 = F64(scala.math.sinh(f64.double))
+inline def tan(f64: Conversion.into[F64]): F64 = F64(scala.math.tan(f64.double))
+inline def atan(f64: Conversion.into[F64]): F64 = F64(scala.math.atan(f64.double))
 
 inline def hyp(first: Conversion.into[F64], second: F64): F64 =
-  F64(math.hypot(first.double, second.double))
+  F64(scala.math.hypot(first.double, second.double))
 
-inline def exp(f64: Conversion.into[F64]): F64 = F64(math.exp(f64.double))
-inline def expm1(f64: Conversion.into[F64]): F64 = F64(math.expm1(f64.double))
-inline def ln(f64: Conversion.into[F64]): F64 = F64(math.log(f64.double))
-inline def log10(f64: Conversion.into[F64]): F64 = F64(math.log10(f64.double))
-inline def log1p(f64: Conversion.into[F64]): F64 = F64(math.log1p(f64.double))
+inline def exp(f64: Conversion.into[F64]): F64 = F64(scala.math.exp(f64.double))
+inline def expm1(f64: Conversion.into[F64]): F64 = F64(scala.math.expm1(f64.double))
+inline def ln(f64: Conversion.into[F64]): F64 = F64(scala.math.log(f64.double))
+inline def log10(f64: Conversion.into[F64]): F64 = F64(scala.math.log10(f64.double))
+inline def log1p(f64: Conversion.into[F64]): F64 = F64(scala.math.log1p(f64.double))
 
 extension [left](inline left: left)
   @targetName("lt")

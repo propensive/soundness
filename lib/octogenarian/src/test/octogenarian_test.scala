@@ -33,6 +33,7 @@
 package octogenarian
 
 import soundness.*
+import galilei.exists
 
 // `/` is now Path's own `def /` (Method on the Path class) so no
 // Octogenarian-side extension import is needed.  `read`/`namespace`/
@@ -371,7 +372,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
            t"index 1234567..89abcde",
            t"Binary files a/blob and b/blob differ" ).head
         file.hunks
-      .assert(_.isEmpty)
+      .assert(_.nil)
 
       test(m"asDiff flattens hunks into a Dissonance Diff"):
         val file = patchFrom
@@ -439,7 +440,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
       test(m"a fresh repo has an empty log"):
         val worktree = freshWorktree()
         worktree.repo.log()
-      .assert(_.isEmpty)
+      .assert(_.nil)
 
       test(m"log returns commits newest-first"):
         val worktree = freshWorktree()
@@ -490,13 +491,13 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
         worktree.status()
-      .assert(_.isEmpty)
+      .assert(_.nil)
 
       test(m"an untracked file shows as Untracked"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
         writeFile(worktree.path / t"new.txt", t"new\n")
-        worktree.status().exists: e =>
+        worktree.status().scala.exists: e =>
           e.path1 == t"new.txt" && e.status1 == GitStatus.Untracked
       .assert(_ == true)
 
@@ -505,7 +506,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"a", t"a\n", t"first")
         writeFile(worktree.path / t"new.txt", t"new\n")
         worktree.add(worktree.path / t"new.txt")
-        worktree.status().exists: e =>
+        worktree.status().scala.exists: e =>
           e.path1 == t"new.txt" && e.status1 == GitStatus.Added
       .assert(_ == true)
 
@@ -513,7 +514,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
         writeFile(worktree.path / t"a", t"a-changed\n")
-        worktree.status().exists: e =>
+        worktree.status().scala.exists: e =>
           e.path1 == t"a" && e.status2 == GitStatus.Updated
       .assert(_ == true)
 
@@ -521,7 +522,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
         sh"rm ${worktree.path}/a".exec[Exit]()
-        worktree.status().exists: e =>
+        worktree.status().scala.exists: e =>
           e.path1 == t"a" && e.status2 == GitStatus.Deleted
       .assert(_ == true)
 
@@ -533,7 +534,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         worktree.commit(t"add gitignore")
         writeFile(worktree.path / t"ignored.txt", t"x\n")
 
-        worktree.status(ignored = true).exists: e =>
+        worktree.status(ignored = true).scala.exists: e =>
           e.path1 == t"ignored.txt" && e.status1 == GitStatus.Ignored
       .assert(_ == true)
 
@@ -555,7 +556,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         writeFile(worktree.path / t"new.txt", t"new\n")
         worktree.add(worktree.path / t"new.txt")
         worktree.unstage(worktree.path / t"new.txt")
-        worktree.status().exists: e =>
+        worktree.status().scala.exists: e =>
           e.path1 == t"new.txt" && e.status1 == GitStatus.Untracked
       .assert(_ == true)
 
@@ -592,7 +593,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"b", t"b\n", t"second")
         worktree.reset(ResetMode.Soft, Refspec.head(1))
         // After --soft, file b is staged as Added.
-        worktree.status().exists: e =>
+        worktree.status().scala.exists: e =>
           e.path1 == t"b" && e.status1 == GitStatus.Added
       .assert(_ == true)
 
@@ -602,7 +603,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"b", t"b\n", t"second")
         worktree.reset(ResetMode.Mixed, Refspec.head(1))
         // b.txt still on disk, but no longer staged (Untracked).
-        worktree.status().exists: e =>
+        worktree.status().scala.exists: e =>
           e.path1 == t"b" && e.status1 == GitStatus.Untracked
       .assert(_ == true)
 
@@ -612,7 +613,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"b", t"b\n", t"second")
         worktree.reset(ResetMode.Hard, Refspec.head(1))
         // b.txt is gone entirely.
-        !(worktree.path / t"b").exists() && worktree.status().isEmpty
+        !(worktree.path / t"b").exists() && worktree.status().nil
       .assert(_ == true)
 
     // ----- branches and tags ----------------------------------------------
@@ -629,7 +630,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
         worktree.makeBranch(GitBranch(t"feature"))
-        worktree.branches().map(_.show).to(Set)
+        worktree.branches().map(_.show).to[Set]
       .assert(_ == Set(t"main", t"feature"))
 
       test(m"branch() returns the currently checked-out branch"):
@@ -672,7 +673,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"a", t"a\n", t"first")
         worktree.makeBranch(GitBranch(t"oldname"))
         worktree.repo.renameBranch(GitBranch(t"oldname"), GitBranch(t"newname"))
-        val names = worktree.branches().map(_.show).to(Set)
+        val names = worktree.branches().map(_.show).to[Set]
         names.has(t"newname") && !names.has(t"oldname")
       .assert(_ == true)
 
@@ -680,7 +681,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
         worktree.repo.tags()
-      .assert(_.isEmpty)
+      .assert(_.nil)
 
       test(m"tag(name) creates a tag at HEAD"):
         val worktree = freshWorktree()
@@ -695,7 +696,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         worktree.repo.tag(GitTag(t"v1"))
         worktree.repo.deleteTag(GitTag(t"v1"))
         worktree.repo.tags()
-      .assert(_.isEmpty)
+      .assert(_.nil)
 
       test(m"multiple tags are reported in lexicographic order"):
         val worktree = freshWorktree()
@@ -713,7 +714,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
       test(m"a fresh repo has no reflog entries"):
         val worktree = freshWorktree()
         worktree.repo.reflog().to(List)
-      .assert(_.isEmpty)
+      .assert(_.nil)
 
       test(m"reflog returns one entry per commit (newest first)"):
         val worktree = freshWorktree()
@@ -748,7 +749,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val files = worktree.diff().to(List)
         files.length == 1
           && files.head.changeKind == ChangeKind.Modified
-          && files.head.hunks.flatMap(_.edits).exists:
+          && files.head.hunks.flatMap(_.edits).scala.exists:
               case Ins(_, t"second") => true
               case _                 => false
       .assert(_ == true)
@@ -768,7 +769,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
         worktree.diff()
-      .assert(_.isEmpty)
+      .assert(_.nil)
 
       test(m"diff(ref) compares working tree to a ref"):
         val worktree = freshWorktree()
@@ -877,7 +878,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         worktree.revert(toRevert, noCommit = true)
         // History unchanged (still 2), but b is staged for deletion.
         worktree.repo.log().to(List).length == 2
-          && worktree.status().exists: e =>
+          && worktree.status().scala.exists: e =>
               e.path1 == t"b" && e.status1 == GitStatus.Deleted
       .assert(_ == true)
 
@@ -949,12 +950,12 @@ object Tests extends Suite(m"Octogenarian Tests"):
       test(m"a fresh repo has no remotes"):
         val worktree = freshWorktree()
         worktree.repo.remotes()
-      .assert(_.isEmpty)
+      .assert(_.nil)
 
       test(m"addRemote then remotes() round-trip"):
         val worktree = freshWorktree()
         worktree.repo.addRemote(t"origin", t"git@example.com:foo/bar.git")
-        worktree.repo.remotes().exists: r =>
+        worktree.repo.remotes().scala.exists: r =>
           r.name == t"origin" && r.fetchUrl == t"git@example.com:foo/bar.git"
       .assert(_ == true)
 
@@ -969,13 +970,13 @@ object Tests extends Suite(m"Octogenarian Tests"):
         worktree.repo.addRemote(t"origin", t"git@example.com:foo/bar.git")
         worktree.repo.removeRemote(t"origin")
         worktree.repo.remotes()
-      .assert(_.isEmpty)
+      .assert(_.nil)
 
       test(m"two remotes are listed and addressable separately"):
         val worktree = freshWorktree()
         worktree.repo.addRemote(t"origin", t"git@a.example:foo.git")
         worktree.repo.addRemote(t"upstream", t"git@b.example:bar.git")
-        worktree.repo.remotes().map(_.name).to(Set)
+        worktree.repo.remotes().map(_.name).to[Set]
       .assert(_ == Set(t"origin", t"upstream"))
 
     // ----- clone (integration) --------------------------------------------
@@ -1121,7 +1122,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
         worktree.repo.notes.list().to(List)
-      .assert(_.isEmpty)
+      .assert(_.nil)
 
       test(m"list yields one entry per annotated commit"):
         val worktree = freshWorktree()
@@ -1129,7 +1130,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val second = commitFile(worktree, t"b", t"b\n", t"second")
         worktree.repo.notes.add(first, t"note one")
         worktree.repo.notes.add(second, t"note two")
-        worktree.repo.notes.list().to(List).map(_._2).to(Set) == Set(first, second)
+        worktree.repo.notes.list().to(List).map(_._2).to[Set] == Set(first, second)
       .assert(_ == true)
 
       test(m"copy duplicates a note onto another commit"):

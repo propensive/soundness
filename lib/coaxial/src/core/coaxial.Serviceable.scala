@@ -59,7 +59,7 @@ object Serviceable:
       Connection(channel)
 
     def transmit(connection: Connection, input: Stream[Data]): Unit =
-      input.each: bytes =>
+      List.from(input).each: bytes =>
         connection.channel.write(ByteBuffer.wrap(bytes.mutable(using Unsafe)))
 
       connection.channel.shutdownOutput()
@@ -94,7 +94,7 @@ object Serviceable:
     def transmit(socket: jn.Socket, input: Stream[Data]): Unit =
       val out = socket.getOutputStream.nn
 
-      input.each: bytes =>
+      List.from(input).each: bytes =>
         out.write(bytes.mutable(using Unsafe))
         out.flush()
 
@@ -112,7 +112,7 @@ object Serviceable:
     def transmit(socket: jn.Socket, input: Stream[Data]): Unit =
       val out = socket.getOutputStream.nn
 
-      input.each: bytes =>
+      List.from(input).each: bytes =>
         out.write(bytes.mutable(using Unsafe))
         out.flush()
 

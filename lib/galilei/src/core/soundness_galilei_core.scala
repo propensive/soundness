@@ -39,7 +39,7 @@ export
       DereferenceSymlinks, descendants, Directory, Entry, entry, executable, exists, Explorable,
       Fifo, File, FilesystemAttribute, Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent,
       javaFile, javaPath, modified, MoveAtomically, moveInto, moveTo, open, Openable,
-      OverwritePreexisting, readable, ReadAccess, size, Socket, Substantiable, Symlink, symlinkInto,
+      OverwritePreexisting, readable, ReadAccess, usage, Socket, Substantiable, Symlink, symlinkInto,
       symlinkTo, touch, TraversalOrder, UnixEntry, Volume, volume, WindowsEntry, wipe, writable,
       WriteAccess, WriteSynchronously }
 

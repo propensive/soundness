@@ -63,7 +63,7 @@ object protointernal:
   def disintersection[intersection: Type]: Macro[Tuple] =
     import quotes.reflect.*
 
-    build(decompose(TypeRepr.of[intersection].dealias).to(List)).asType.absolve match
+    build(decompose(TypeRepr.of[intersection].dealias).to[List]).asType.absolve match
       case '[type tupleType <: Tuple; tupleType] => '{null.asInstanceOf[tupleType]}
 
   def extractor(context: Expr[StringContext]): Macro[Any] =
@@ -83,7 +83,7 @@ object protointernal:
     Expr.summon[system is Nominative].absolve match
       case Some('{type limit; $nominative: (Nominative { type Limit = limit })}) =>
         val checks =
-          decompose(TypeRepr.of[limit]).to(List).map(_.asType).foldLeft('{()}): (expr, next) =>
+          decompose(TypeRepr.of[limit]).to[List].map(_.asType).foldLeft('{()}): (expr, next) =>
             next.absolve match
               case '[type param <: String; type rule <: Check[param]; rule] =>
                 anteprotointernal.staticCompanion[rule].absolve match
@@ -134,7 +134,7 @@ object protointernal:
                 $value: nominative
               } ) =>
 
-        decompose(TypeRepr.of[limit]).to(List).each: repr =>
+        decompose(TypeRepr.of[limit]).to[List].each: repr =>
           val text = repr.asMatchable match
             case AppliedType(_, List(param)) =>
               param.asMatchable match

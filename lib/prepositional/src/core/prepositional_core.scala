@@ -44,7 +44,7 @@ infix type by [refined <: { type Operand }, operand] = refined { type Operand = 
 infix type from [refined <: { type Origin }, origin] = refined { type Origin = origin }
 
 // Formal
-infix type in [refined, form] = refined { type Form = form }
+infix type in [refined, form <: AnyKind] = refined { type Form = form }
 
 // Resultant
 infix type to [refined <: { type Result }, result] = refined { type Result = result }

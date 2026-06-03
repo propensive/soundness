@@ -61,20 +61,20 @@ class Dsa[bits <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signing:
 
   def sign(data: Data, keyData: Data): Data =
     val sig = initialize()
-    val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(keyData.to(Array)))
+    val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(keyData.to[Array]))
     sig.initSign(key)
-    sig.update(data.to(Array))
+    sig.update(data.to[Array])
     sig.sign().nn.immutable(using Unsafe)
 
   def verify(data: Data, signature: Data, keyData: Data): Boolean =
     val sig = initialize()
-    val key = keyFactory().generatePublic(jss.X509EncodedKeySpec(keyData.to(Array)))
+    val key = keyFactory().generatePublic(jss.X509EncodedKeySpec(keyData.to[Array]))
     sig.initVerify(key)
-    sig.update(data.to(Array))
-    sig.verify(signature.to(Array))
+    sig.update(data.to[Array])
+    sig.verify(signature.to[Array])
 
   def privateToPublic(keyData: Data): Data =
-    val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(keyData.to(Array))).nn match
+    val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(keyData.to[Array])).nn match
       case key: jsi.DSAPrivateKey => key
       case key: js.PrivateKey     => panic(m"unexpected private key type")
 

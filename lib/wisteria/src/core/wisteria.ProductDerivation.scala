@@ -125,12 +125,12 @@ object ProductDerivation:
       valueOf[reflection.MirroredLabel].tt
 
     inline def tuple[derivation](using reflection: Reflection[derivation]): Boolean =
-      compiletime.summonFrom:
+      scala.compiletime.summonFrom:
         case given (reflection.MirroredMonoType <:< Tuple) => true
         case _                                             => false
 
     inline def singleton[derivation](using reflection: Reflection[derivation]): Boolean =
-      compiletime.summonFrom:
+      scala.compiletime.summonFrom:
         case given (reflection.MirroredMonoType <:< Singleton) => true
         case _                                                 => false
 

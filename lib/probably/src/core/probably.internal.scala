@@ -33,6 +33,7 @@
 package probably
 
 import scala.quoted.*
+import scala.collection.immutable.{List, Nil, `::`}
 
 import dotty.tools.dotc.util as dtdu
 

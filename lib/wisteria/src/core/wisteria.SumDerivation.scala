@@ -77,7 +77,7 @@ object SumDerivation:
     protected inline def variantLabels[derivation](using reflection: SumReflection[derivation])
     :   List[Text] =
 
-      constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
+      List.from(constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt))
 
 
     protected transparent inline def singleton[derivation](input: Text)

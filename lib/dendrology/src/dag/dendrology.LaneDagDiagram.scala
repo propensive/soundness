@@ -38,6 +38,7 @@ import acyclicity.*
 import anticipation.*
 import contingency.*
 import gossamer.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
@@ -75,7 +76,7 @@ object LaneDagDiagram:
         case _                            => Space
 
   def apply[node](dag: Dag[node]): LaneDagDiagram[node] raises DagError =
-    val nodes: Vector[node] = dag.sorted.to(Vector)
+    val nodes: Vector[node] = dag.sorted.to[Vector]
     val total: Int = nodes.length
 
     if total == 0 then LaneDagDiagram(Nil) else
@@ -105,14 +106,15 @@ object LaneDagDiagram:
         nodeCol(r) = chosenCol
 
         val nextNode: Optional[node] = if r + 1 < total then nodes(r + 1) else Unset
-        val targets: Vector[node] = forward.getOrElse(current, Set.empty).to(Vector).sortBy(rowOf)
+        val targets: Vector[node] =
+          forward.getOrElse(current, Set.empty).to[Vector].sortBy(rowOf(_))
 
         val (directs, indirects) = nextNode.lay((Vector.empty[node], targets)): nx =>
           targets.partition(_ == nx)
 
         directOut(r) = directs.nonEmpty
 
-        val occupied = scm.HashSet.from(continuing.keys)
+        val occupied = scm.HashSet.from(continuing.keys.scala)
 
         val newLanes = indirects.map: target =>
           val col = nearestFree(chosenCol, occupied)
@@ -123,7 +125,7 @@ object LaneDagDiagram:
         laneState(r + 1) = continuing ++ newLanes.map: lane => lane.col -> lane
 
       val width: Int =
-        val colsUsed = laneState.flatMap(_.keys) ++ nodeCol
+        val colsUsed = laneState.flatMap(_.keys.scala) ++ nodeCol
         if colsUsed.isEmpty then 1 else colsUsed.iterator.max + 1
 
       val rows = scm.ListBuffer[(List[DagTile], Optional[node])]()
@@ -221,14 +223,14 @@ object LaneDagDiagram:
       width:    Int )
   :   List[DagTile] =
 
-    val continuing = state.filter{ (_, lane) => lane.target != current }.keys.to(Set)
+    val continuing = state.filter{ (_, lane) => lane.target != current }.keys.to[Set]
 
     (0 until width).map: c =>
       if c == col then Node
       else if continuing(c) then Vertical
       else Space
 
-    . to(List)
+    .to(List)
 
   given printable: [node: Showable] => (style: LaneDagStyle[Text])
   =>  LaneDagDiagram[node] is Printable =
@@ -238,8 +240,8 @@ object LaneDagDiagram:
     val (tiles, node) = row
 
     if node.present then true else
-      val onlyPassThrough = tiles.forall: tile => tile == Vertical || tile == Space
-      val verticalCount = tiles.count(_ == Vertical)
+      val onlyPassThrough = tiles.all: tile => tile == Vertical || tile == Space
+      val verticalCount = tiles.count((tile: DagTile) => tile == Vertical)
       !(onlyPassThrough && verticalCount != 1)
 
   private def defaultWidths(rows: Iterator[List[DagTile]]): List[Int] =
@@ -255,7 +257,7 @@ object LaneDagDiagram:
     val maxCol = rows.iterator.map(_(0).length).maxOption.getOrElse(0)
     val widths = Array.fill(maxCol)(2)
 
-    rows.foreach: (tiles, optNode) =>
+    rows.each: (tiles, optNode) =>
       if optNode.present then
         val nodeIdx = tiles.indexOf(Node)
 
@@ -288,5 +290,5 @@ case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
 
   def compact: LaneDagDiagram[node] = LaneDagDiagram(lines.filter(LaneDagDiagram.keepRow))
 
-  def nodes: List[node] = lines.flatMap(_(1).option)
+  def nodes: List[node] = lines.flatMap(_(1).lay(Nil)(List(_)))
   def tiles: List[List[DagTile]] = lines.map(_(0))

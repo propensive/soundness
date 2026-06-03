@@ -1,0 +1,65 @@
+                                                                                                  /*
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                  ┃
+┃                                                   ╭───╮                                          ┃
+┃                                                   │   │                                          ┃
+┃                                                   │   │                                          ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
+┃                                                                                                  ┃
+┃    Soundness, version 0.54.0.                                                                    ┃
+┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
+┃                                                                                                  ┃
+┃    The primary distribution site is:                                                             ┃
+┃                                                                                                  ┃
+┃        https://soundness.dev/                                                                    ┃
+┃                                                                                                  ┃
+┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
+┃    except in compliance with the License. You may obtain a copy of the License at                ┃
+┃                                                                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
+┃                                                                                                  ┃
+┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
+┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
+┃    either express or implied. See the License for the specific language governing permissions    ┃
+┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                                                                                  */
+package murmuration
+
+import beneficence.Findable
+
+import murmuration.internal.List
+import murmuration.internal.Set
+
+trait Monad[monad[_]] extends Functor[monad], Findable:
+  def bind[value, value2](value: monad[value])(lambda: value => monad[value2]): monad[value2]
+
+  extension [value](value: monad[value])
+    def flatMap[value2](lambda: value => monad[value2]): monad[value2] = bind(value)(lambda)
+
+object Monad:
+  // `List` is opaque, so its `map`/`flatMap` are invisible to Mercator's derivation macro; this
+  // explicit instance routes through the `.scala` escape hatch and the stdlib.
+  given list: Monad[List]:
+    def point[value](value: value): List[value] = List(value)
+
+    def apply[value, value2](value: List[value])(lambda: value => value2): List[value2] =
+      List.from(value.scala.map(lambda))
+
+    def bind[value, value2](value: List[value])(lambda: value => List[value2]): List[value2] =
+      List.from(value.scala.flatMap { element => lambda(element).scala })
+
+  given set: Monad[Set]:
+    def point[value](value: value): Set[value] = Set(value)
+
+    def apply[value, value2](value: Set[value])(lambda: value => value2): Set[value2] =
+      Set.from(value.scala.map(lambda))
+
+    def bind[value, value2](value: Set[value])(lambda: value => Set[value2]): Set[value2] =
+      Set.from(value.scala.flatMap { element => lambda(element).scala })

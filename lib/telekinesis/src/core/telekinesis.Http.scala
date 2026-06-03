@@ -32,7 +32,7 @@
                                                                                                   */
 package telekinesis
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import coaxial.*
@@ -113,7 +113,7 @@ object Http:
 
   object Status:
     private lazy val all: Map[Int, Status] =
-      values.immutable(using Unsafe).bi.map(_.code -> _).to(Map)
+      List.from(values.immutable(using Unsafe).iterator).bi.map(_.code -> _).to[Map]
 
     def unapply(code: Int): Option[Status] = all.get(code)
 
@@ -305,7 +305,7 @@ object Http:
       headers.cookie.flatMap: cookie =>
         cookie.bi.map(_.name -> _.value)
 
-      . to(Map)
+      .to[Map]
 
 
   // The swappable transport that physically sends a single request and returns

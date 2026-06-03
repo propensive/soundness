@@ -48,7 +48,7 @@ object Fqcn:
     parts.foreach: part =>
       if part.length == 0 then raise(FqcnError(name, FqcnError.Reason.EmptyName))
 
-      if digression.internal.javaKeywords.has(part)
+      if digression.internal.javaKeywords.contains(part)
       then raise(FqcnError(name, FqcnError.Reason.JavaKeyword(part.tt)))
 
       part.foreach: char =>

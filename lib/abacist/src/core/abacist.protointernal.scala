@@ -95,7 +95,7 @@ object protointernal extends anteprotointernal:
         val nonzeroComponents = count.components.filter(_(1) != 0)
         val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
         val units = nonzeroUnits.head :: nonzeroUnits.tail.map(names.separator+_)
-        units.weave(names.units().takeRight(nonzeroUnits.length)).mkString.tt
+        units.weave(names.units().takeRight(nonzeroUnits.length)).scala.mkString.tt
 
       case _ =>
         count =>
@@ -104,7 +104,7 @@ object protointernal extends anteprotointernal:
 
     inline given distributive2: [units <: Tuple] => Quanta[units] is Distributive by Long =
       distributive[units](_.components.map(_(1)).to(List)): (value, parts) =>
-        parts.zip(value.components.map(_(0))).map: (number, units) =>
+        parts.zip(List.from(value.components.map(_(0)))).map: (number, units) =>
           t"$number $units"
 
         . join(t", ")

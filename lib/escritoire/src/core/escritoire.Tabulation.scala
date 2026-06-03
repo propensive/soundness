@@ -32,7 +32,7 @@
                                                                                                   */
 package escritoire
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import scala.collection.immutable as sci
 
@@ -67,7 +67,7 @@ abstract class Tabulation[text: ClassTag]():
   :   Grid[text] =
 
     case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):
-      lazy val include: sci.BitSet = indices.to(sci.BitSet)
+      lazy val include: sci.BitSet = indices.scala.to(sci.BitSet)
 
       lazy val columnWidths: IArray[(Int, Column[Row, text], Int)] = IArray.from:
         indices.indices.map: index =>
@@ -93,11 +93,11 @@ abstract class Tabulation[text: ClassTag]():
             dataMax.max(titleMax).puncture(0)
 
         val indices: IndexedSeq[Int] =
-          widths.indices.map { index => widths(index).let(index.waive) }.compact
+          List.from(widths.indices.map { index => widths(index).let(index.waive) }).compact.scala.to(IndexedSeq)
 
-        val totalWidth = widths.sumBy(_.or(0)) + style.cost(indices.size)
+        val totalWidth = List.from(widths).sumBy(_.or(0)) + style.cost(indices.size)
 
-        Layout(slack, IArray.from(indices), IArray.from(widths.compact), totalWidth)
+        Layout(slack, IArray.from(indices), IArray.from(List.from(widths).compact.scala), totalWidth)
 
       def recur(min: Layout, max: Layout, gas: Int = 8): (Layout, Layout) =
         if gas == 0 || max.totalWidth - min.totalWidth <= 1 then (min, max)

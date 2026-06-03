@@ -72,7 +72,7 @@ case class Ttf(data: Data):
   def advanceWidth(char: Char): Int raises FontError = hmtx.metrics(glyph(char).id).advanceWidth
 
   def width(text: Text): Quantity[Ems[1]] raises FontError =
-    text.chars.sumBy(advanceWidth).toDouble*Em/head.unitsPerEm.int.toDouble
+    List.from(text.chars.iterator).sumBy(advanceWidth).toDouble*Em/head.unitsPerEm.int.toDouble
 
   def leftSideBearing(char: Char): Int raises FontError =
     hmtx.metrics(glyph(char).id).leftSideBearing
@@ -90,7 +90,7 @@ case class Ttf(data: Data):
         case TtfTag(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
         case _           => None
 
-    . to(Map)
+    .to(Map)
 
   def head: HeadTable raises FontError =
     tables.at(TtfTag.Head).let: ref =>

@@ -32,7 +32,7 @@
                                                                                                   */
 package anticipation
 
-import language.experimental.into
+import scala.language.experimental.into
 
 object Log:
   def fine[loggable: Loggable](message: loggable): Unit =

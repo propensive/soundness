@@ -72,7 +72,7 @@ object Comprehensions:
 
   private def descend(x: Any, visit: untpd.Tree => Unit): Unit = x match
     case sub: untpd.Tree  => visit(sub)
-    case it:  Iterable[?] => it.foreach(descend(_, visit))
+    case it:  scala.collection.Iterable[?] => it.foreach(descend(_, visit))
     case _                => ()
 
   // Build a `GenLine` for one enumerator. `GenFrom` is `x <- xs`; `GenAlias`

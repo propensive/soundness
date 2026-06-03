@@ -32,6 +32,9 @@
                                                                                                   */
 package frontier
 
+import scala.collection.immutable.`::`
+import scala.collection.immutable.List
+import scala.collection.immutable.Nil
 import scala.quoted.*
 
 import dotty.tools.dotc.*
@@ -224,7 +227,7 @@ object internal:
         candidateArgLists(symbol, target, typeParams)
         . iterator
         . flatMap: args =>
-            val pairs = typeParams.zip(args).toMap
+            val pairs = typeParams.zip(args).to(Map)
 
             if !boundsRespected(typeParams, pairs) then None
             else
@@ -251,11 +254,11 @@ object internal:
     :   List[List[TypeRepr]] =
 
       val raw = resultOf(symbol.info)
-      val bindings = unify(raw, target, typeParams.toSet)
+      val bindings = unify(raw, target, typeParams.to(Set))
 
       val unified: List[List[TypeRepr]] =
         if typeParams.forall(bindings.contains)
-        then List(typeParams.map(bindings))
+        then List(typeParams.map(bindings(_)))
         else Nil
 
       val applied: List[List[TypeRepr]] = target.dealias match
@@ -300,7 +303,7 @@ object internal:
     def usingTypesInstantiated(matched: Matched): List[TypeRepr] =
       if matched.typeParams.isEmpty then usingTypes(matched.symbol)
       else
-        val args = matched.typeParams.map(matched.bindings)
+        val args = matched.typeParams.map(matched.bindings(_))
 
         matched.symbol.info.appliedTo(args) match
           case mt: MethodType =>
@@ -377,14 +380,14 @@ object internal:
           val tyconBindings = unify(tTycon, rTycon, params)
 
           tArgs.zip(rArgs).foldLeft(tyconBindings): (acc, pair) =>
-            acc ++ unify(pair(0), pair(1), params)
+            Map.from(acc.scala ++ unify(pair(0), pair(1), params).scala)
 
         case (tRef: Refinement, rRef: Refinement) =>
           val Refinement(tParent, tName, tInfo) = tRef
           val Refinement(rParent, rName, rInfo) = rRef
 
           if tName != rName then Map.empty
-          else unify(tParent, rParent, params) ++ unifyInfo(tInfo, rInfo, params)
+          else Map.from(unify(tParent, rParent, params).scala ++ unifyInfo(tInfo, rInfo, params).scala)
 
         case _ =>
           Map.empty
@@ -394,7 +397,7 @@ object internal:
 
       (template, target) match
         case (TypeBounds(tLo, tHi), TypeBounds(rLo, rHi)) =>
-          unify(tHi, rHi, params) ++ unify(tLo, rLo, params)
+          Map.from(unify(tHi, rHi, params).scala ++ unify(tLo, rLo, params).scala)
 
         case _ =>
           unify(template, target, params)
@@ -482,10 +485,10 @@ object internal:
 
     def renderText(available: List[Available], candidates: List[Candidate]): String =
       given Result is Expandable =
-        case Candidate(_, _, missing)          => missing
-        case Missing(_, available, candidates) => available ::: candidates
-        case Available(_, requirements)        => requirements
-        case Found(_, _)                       => Nil
+        case Candidate(_, _, missing)          => proscenium.List.from(missing)
+        case Missing(_, available, candidates) => proscenium.List.from(available ::: candidates)
+        case Available(_, requirements)        => proscenium.List.from(requirements)
+        case Found(_, _)                       => proscenium.List.empty
 
       TreeDiagram[Result]((available ::: candidates)*).render:
         case Found(name, _) =>
@@ -618,4 +621,4 @@ object internal:
             case _ =>
               acc.reverse
 
-    '{Every[value](${Expr.ofList(collect(Nil, Nil))})}
+    '{Every[value](proscenium.List.from(${Expr.ofList(collect(Nil, Nil))}))}

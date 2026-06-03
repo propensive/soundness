@@ -75,9 +75,9 @@ object internal:
         else if list(2) == t"udp" then List((false, list(0)) -> list(1).decode[Int])
         else Nil
 
-      . or(Nil)
+      . or(Nil).scala
 
-    . to(Map)
+    .to(Map)
 
   object Opaques:
     opaque type Ipv4 <: Matchable = Int
@@ -123,7 +123,7 @@ object internal:
 
           . mitigate:
               bytes.map(Decodable.int.decoded(_)).pipe: bytes =>
-                for byte <- bytes do
+                bytes.each: byte =>
                   if !(0 <= byte <= 255)
                   then abort(IpAddressError(Ipv4ByteOutOfRange(byte)))
 
@@ -143,7 +143,7 @@ object internal:
       def apply(value: Long): MacAddress = value
 
       def parse(text: Text): MacAddress raises MacAddressError =
-        val groups = text.cut(t"-").to(List)
+        val groups = text.cut(t"-").to[List]
 
         if groups.length != 6
         then raise(MacAddressError(WrongGroupCount(groups.length)))
@@ -288,10 +288,10 @@ object internal:
     private val zeroes: List[Text] = List.fill(8)(t"0")
 
     def parse(text: Text): Ipv6 raises IpAddressError =
-      val groups: List[Text] = text.cut(t"::").to(List) match
+      val groups: List[Text] = text.cut(t"::").to[List] match
         case List(left, right) =>
-          val leftGroups = left.cut(t":").to(List).filter(_ != t"")
-          val rightGroups = right.cut(t":").to(List).filter(_ != t"")
+          val leftGroups = left.cut(t":").to[List].filter(_ != t"")
+          val rightGroups = right.cut(t":").to[List].filter(_ != t"")
 
           if leftGroups.length + rightGroups.length > 7
           then
@@ -304,7 +304,7 @@ object internal:
 
           if groups.length != 8
           then abort(IpAddressError(Ipv6WrongNumberOfGroups(groups.length)))
-          else groups.to(List)
+          else groups.to[List]
 
         case _ =>
           abort(IpAddressError(Ipv6MultipleDoubleColons))

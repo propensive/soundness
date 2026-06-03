@@ -57,7 +57,7 @@ object GivensWriter:
     if outputRoot == null then return  // JAR output: skip; future work to support
 
     val givensDir = new File(new File(outputRoot, "META-INF"), "givens")
-    if !givensDir.exists then givensDir.mkdirs(): @annotation.nowarn
+    if !givensDir.exists then givensDir.mkdirs(): @scala.annotation.nowarn
 
     collected.foreach: (typeclassFqn, entries) =>
       mergeOne(new File(givensDir, typeclassFqn), entries, recompiledSources)
@@ -76,7 +76,7 @@ object GivensWriter:
     if outputRoot == null then return
 
     val servicesDir = new File(new File(outputRoot, "META-INF"), "services")
-    if !servicesDir.exists then servicesDir.mkdirs(): @annotation.nowarn
+    if !servicesDir.exists then servicesDir.mkdirs(): @scala.annotation.nowarn
 
     mergeOne(new File(servicesDir, "probably.Suite"), collected, recompiledSources)
 
@@ -132,7 +132,7 @@ object GivensWriter:
 
   private def write(file: File, blocks: List[(String, List[String])]): Unit =
     val parent = file.getParentFile
-    if parent != null && !parent.exists then parent.mkdirs(): @annotation.nowarn
+    if parent != null && !parent.exists then parent.mkdirs(): @scala.annotation.nowarn
 
     val tmp = new File(file.getParentFile, file.getName.nn + ".tmp")
     val writer = new

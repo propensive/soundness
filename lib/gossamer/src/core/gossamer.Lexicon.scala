@@ -52,14 +52,14 @@ object Lexicon:
     def search(query: Text, radius: Int): Set[element] = lexicon.lay(Set())(_.search(query, radius))
 
   def apply(terms: List[Text])(using Proximity { type Triangulable = true } by Int): Lexicon[Text] =
-    apply(terms.bi.to(Map))
+    apply(terms.bi.to[Map])
 
 
   def apply[element](terms: Map[Text, element])(using Proximity { type Triangulable = true } by Int)
   :   Lexicon[element] =
 
     if terms.nil then apply() else Node(terms.head(0), terms.head(1)).tap: tree =>
-      terms.drop(1).each(tree(_) = _)
+      List.from(terms.scala.drop(1)).each(tree(_) = _)
 
 
   class Node[element](term: Text, value: element)(using Proximity by Int) extends Lexicon[element]:
@@ -76,8 +76,8 @@ object Lexicon:
         case (key, tree) if (distance - radius) <= key <= (distance + radius) =>
           tree.search(query, radius)
 
-      . to(Set)
-      . flatten
+      .to(Set)
+      . flatMap(identity)
       ++ (if distance <= radius then Set(value) else Set())
 
 trait Lexicon[element]:

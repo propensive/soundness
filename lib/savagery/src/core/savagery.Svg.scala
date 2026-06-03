@@ -33,10 +33,12 @@
 package savagery
 
 import scala.collection.immutable.SeqMap
+import denominative.*
 
 import anticipation.*
 import contingency.*
 import gossamer.*
+import rudiments.*
 import hieroglyph.*
 import prepositional.*
 import spectacular.*
@@ -108,14 +110,14 @@ extends Documentary:
           t"height"  -> height.show )
 
     val defsElement: Seq[Xml] =
-      if defs.isEmpty then Nil
-      else Seq(Element(t"defs", Attributes.empty, defs.map(_.xml).toSeq.nodes))
+      if defs.nil then Nil.scala
+      else Seq(Element(t"defs", Attributes.empty, defs.map(_.xml).to[IndexedSeq].nodes))
 
     val figureNodes: Seq[Xml] =
-      if transforms.isEmpty then figures.map(_.xml)
+      if transforms.nil then figures.map(_.xml).scala
       else
         val groupAttrs = SeqMap(t"transform" -> transforms.map(_.encode).join(t" "))
-        Seq(Element(t"g", Attributes.from(groupAttrs), figures.map(_.xml).toSeq.nodes))
+        Seq(Element(t"g", Attributes.from(Map.from(groupAttrs)), figures.map(_.xml).to[IndexedSeq].nodes))
 
     val children: IArray[Node] = (defsElement ++ figureNodes).nodes
-    Element(t"svg", Attributes.from(attrs), children)
+    Element(t"svg", Attributes.from(Map.from(attrs)), children)

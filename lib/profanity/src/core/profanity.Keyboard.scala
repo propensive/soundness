@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import gossamer.*
+import rudiments.*
 import hypotenuse.*
 import parasite.*
 import quantitative.*
@@ -104,7 +105,7 @@ object Keyboard:
                 Keyboard.modified(modifiers, Keyboard.navigation(code)) #:: process(rest)
 
               case '2' #:: '0' #:: '0' #:: '~' #:: tail =>
-                val size = tail.indexOfSlice(List('\u001b', '[', '2', '0', '1', '~'))
+                val size = tail.indexOfSlice(List('\u001b', '[', '2', '0', '1', '~').scala)
                 val content = tail.take(size).map(_.show).join
                 TerminalInfo.Paste(content) #:: process(tail.drop(size + 6))
 
@@ -112,7 +113,7 @@ object Keyboard:
                 val sequence = other.takeWhile(!_.isLetter)
 
                 other.drop(sequence.length) match
-                  case 'R' #:: tail => sequence.map(_.show).join.cut(';').to(List) match
+                  case 'R' #:: tail => sequence.map(_.show).join.cut(';').to[List] match
                     case List(As[Int](rows), As[Int](cols)) =>
                       TerminalInfo.WindowSize(rows, cols) #:: process(tail)
 
@@ -135,7 +136,7 @@ object Keyboard:
               val content = rest.takeWhile(_ != '\u001b').mkString.tt
               val continuation = rest.drop(content.length + 2)
 
-              content.cut(t"/").to(List) match
+              content.cut(t"/").to[List] match
                 case List(red, green, blue) =>
                   def decimal(hex: Text): Int = Integer.parseInt(hex.s, 16)
 

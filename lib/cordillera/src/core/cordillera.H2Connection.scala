@@ -210,7 +210,7 @@ class H2Connection(duplex: Duplex)(using Monitor, Codicil):
     val chunks = request.body().to(List)
 
     val payload: Optional[Bytes] =
-      if chunks.isEmpty then Unset else chunks.foldLeft(IArray.empty[Byte])(_ ++ _)
+      if chunks.scala.isEmpty then Unset else chunks.foldLeft(IArray.empty[Byte])(_ ++ _)
 
     val stream = this.request(headerBlock, payload)
     val responseHeaders = stream.headers.await()

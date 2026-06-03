@@ -35,6 +35,9 @@ package contingency
 import java.util.concurrent.atomic as juca
 
 import scala.compiletime.*
+import scala.collection.immutable.`::`
+import scala.collection.immutable.List
+import scala.collection.immutable.Nil
 import scala.quoted.*
 
 import anticipation.*
@@ -99,7 +102,7 @@ object internal:
           case RepeatedParam(_) => true
           case _                => false
 
-        val isExhaustive = params.zip(types).all:
+        val isExhaustive = params.zip(types).forall:
           case (param, pattern@RepeatedParam(patternType)) => param match
             case Bind(_, Typed(Ident("_*"), bound)) => true
             case other                              => false
@@ -115,7 +118,7 @@ object internal:
       case Unapply(Select(target, method), _, params) =>
         // TODO: Check that extractor is exhaustive
         val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
-        params.zip(types).all(exhaustive) || halt(423, m"this type of pattern is not recognized")
+        params.zip(types).forall(exhaustive) || halt(423, m"this type of pattern is not recognized")
 
       case other =>
         halt(454, m"bad pattern")
@@ -147,7 +150,7 @@ object internal:
         case '{$rhs: rhsType} =>
           patternType(pattern).map(_.typeSymbol -> TypeRepr.of[rhsType].typeSymbol)
 
-    . to(Map)
+    .to(Map)
 
 
   def unpack(using Quotes)(repr: quotes.reflect.TypeRepr): List[quotes.reflect.TypeRepr] =
@@ -164,7 +167,7 @@ object internal:
     import quotes.reflect.*
 
     val errors = mapping(handler.asTerm)
-    val tactics = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
+    val tactics = errors.scala.keys.toList.map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
     val functionType = defn.FunctionClass(errors.size, true).typeRef
 
     val typeLambda =
@@ -189,7 +192,7 @@ object internal:
     import quotes.reflect.*
 
     val errors = mapping(handler.asTerm)
-    val tactics = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
+    val tactics = errors.scala.keys.toList.map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
     val functionType = defn.FunctionClass(errors.size, true).typeRef
 
     val typeLambda =
@@ -228,14 +231,14 @@ object internal:
                   halt:
                     m"argument to `track` should be a partial function implemented as match cases"
 
-              val tactics = cases.map: (_, _) =>
+              val tactics = cases.scala.map: (_, _) =>
                 '{TrackTactic(label, $track.initial, foci)(using $diagnostics)}.asTerm
 
               val contextTypeRepr = TypeRepr.of[context[result]]
               val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
 
               val term =
-                '{$lambda(using foci)}.asTerm.select(method).appliedToArgs(tactics.to(List))
+                '{$lambda(using foci)}.asTerm.select(method).appliedToArgs(tactics.toList)
 
               val expr = term.asExprOf[result]
 
@@ -280,14 +283,14 @@ object internal:
                       argument to `validate` should be a partial function implemented as match cases
                     """
 
-              val tactics = cases.map: (_, _) =>
+              val tactics = cases.scala.map: (_, _) =>
                 '{TrackTactic(label, $validate.initial, foci)(using $diagnostics)}.asTerm
 
               val contextTypeRepr = TypeRepr.of[context[Any]]
               val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
 
               val term =
-                '{$lambda(using foci)}.asTerm.select(method).appliedToArgs(tactics.to(List))
+                '{$lambda(using foci)}.asTerm.select(method).appliedToArgs(tactics.toList)
 
               term.asExpr
             }
@@ -307,7 +310,7 @@ object internal:
     import quotes.reflect.*
 
     val errors = mapping[Exception](handler.asTerm)
-    val tactics = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
+    val tactics = errors.scala.keys.toList.map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
     val functionType = defn.FunctionClass(errors.size, true).typeRef
 
     val typeLambda =
@@ -336,7 +339,7 @@ object internal:
       case Apply(_, List(Inlined(_, _, matches))) =>
         val partialFunction = matches.asExprOf[PartialFunction[Exception, Any]]
 
-        mapping[Exception](matches).values.map: errorType =>
+        mapping[Exception](matches).values.scala.map: errorType =>
           errorType.typeRef.asType.absolve match
             case '[type errorType <: Exception; errorType] =>
               Expr.summon[Tactic[errorType]] match
@@ -352,7 +355,7 @@ object internal:
         halt(648, m"argument to `whereas` should be a partial function implemented as match cases")
 
     val method = TypeRepr.of[context[result]].typeSymbol.declaredMethod("apply").head
-    body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
+    body.asTerm.select(method).appliedToArgs(tactics.toList).asExprOf[result]
 
 
   /** Macro for `whereas { … }.recover { body }`. Wraps `body` in a
@@ -387,7 +390,7 @@ object internal:
 
               val pfExpr = partialFunction.asExprOf[PartialFunction[Exception, Any]]
 
-              val tactics = mapping[Exception](partialFunction).map: (_, _) =>
+              val tactics = mapping[Exception](partialFunction).scala.map: (_, _) =>
                 ' {
                     tactic.contramap: error =>
                       Whereas.Escape[result]($pfExpr(error).asInstanceOf[result])
@@ -396,7 +399,7 @@ object internal:
                 . asTerm
 
               val method = TypeRepr.of[ContextResult].typeSymbol.declaredMethod("apply").head
-              body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
+              body.asTerm.select(method).appliedToArgs(tactics.toList).asExprOf[result]
             }
       }
 
@@ -431,12 +434,12 @@ object internal:
 
         val outcome: Either[accrual, result] =
           try Right($ {
-            val tactics = cases.map: (_, _) =>
+            val tactics = cases.scala.map: (_, _) =>
               '{acc}.asTerm
 
             val contextTypeRepr = TypeRepr.of[context[result]]
             val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
-            body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
+            body.asTerm.select(method).appliedToArgs(tactics.toList).asExprOf[result]
           })
           catch case _: Exception => Left(acc.accumulated)
 

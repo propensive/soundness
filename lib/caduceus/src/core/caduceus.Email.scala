@@ -36,6 +36,7 @@ import anticipation.*
 import denominative.*
 import gesticulate.*
 import turbulence.*
+import rudiments.*
 import vacuous.*
 
 object Email:
@@ -82,7 +83,7 @@ case class Email(headers: Map[Text, Text], message: Email.Message) extends Docum
   def html: Optional[Text] = message.content.body.html
   def text: Optional[Text] = message.content.body.text
   def inlines: List[Email.Inline] = message.content.inlines.to(List)
-  def attachments: List[Asset] = message.attachments.to(List)
+  def attachments: List[Asset] = message.attachments.to[List]
 
   def attach[attachable: Attachable](attachment: attachable): Email =
     copy(message = message.copy(attachments = attachments :+ attachable.attachment(attachment)))

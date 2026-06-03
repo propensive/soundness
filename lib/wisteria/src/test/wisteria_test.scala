@@ -98,7 +98,7 @@ object Tests extends Suite(m"Wisteria tests"):
     given int: Eq[Int] = _ == _
     given text: Eq[Text] = _.s.toLowerCase == _.s.toLowerCase
     given boolean: Eq[Boolean] = _ == _
-    given double: Eq[Double] = (left, right) => math.abs(left - right) < 0.1
+    given double: Eq[Double] = (left, right) => (left - right).abs < 0.1
 
     inline def conjunction[derivation <: Product: ProductReflection]: Eq[derivation] =
       (left, right) =>
@@ -189,11 +189,11 @@ object Tests extends Suite(m"Wisteria tests"):
 
     inline def conjunction[derivation <: Product](using reflection: ProductReflection[derivation])
     :   Labels[derivation] =
-      Impl(scala.compiletime.constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt))
+      Impl(List.from(scala.compiletime.constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)))
 
     inline def disjunction[derivation](using reflection: SumReflection[derivation])
     :   Labels[derivation] =
-      Impl(scala.compiletime.constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt))
+      Impl(List.from(scala.compiletime.constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)))
 
   // ===== Data types =====
 

@@ -57,7 +57,7 @@ object Permutation:
         raise
           ( PermutationError(PermutationError.Reason.InvalidIndex(element, sequence.length - 1)) )
 
-      if seen.has(element)
+      if seen.contains(element)
       then raise(PermutationError(PermutationError.Reason.DuplicateIndex(element, index)))
 
       seen(element) = true
@@ -110,6 +110,6 @@ case class Permutation(factoradic: Factoradic):
         recur(index + 1, tail)
 
       case Nil =>
-        unsafely(Permutation(IArray.from(array.iterator)))
+        unsafely(Permutation(IndexedSeq.from(array.iterator)))
 
     recur(0, expansion)

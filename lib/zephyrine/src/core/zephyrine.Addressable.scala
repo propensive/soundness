@@ -47,7 +47,7 @@ object Addressable:
     type Target = ji.ByteArrayOutputStream
     type Storage = Array[Byte]
 
-    val empty: Data = IArray.from(Nil)
+    val empty: Data = IArray.from(Nil.scala)
 
     inline def blank(size: Int): ji.ByteArrayOutputStream = ji.ByteArrayOutputStream(size)
 

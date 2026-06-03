@@ -249,7 +249,7 @@ object Tel extends Tel2:
 
         idx += 1
 
-      builder.toMap
+      Map.from(builder)
 
     private def atomAssignable(member: Member, schema: Tels): Boolean raises TelError =
       member match
@@ -376,8 +376,8 @@ object Tel extends Tel2:
            schema:        Tels )
     :     IArray[Tel.Element] raises TelError =
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
-      results ++= atomElements
-      results ++= childElements
+      results ++= atomElements.iterator
+      results ++= childElements.iterator
 
       def flatWidth(member: Member): Int = member match
         case _: Field   => 1
@@ -792,7 +792,7 @@ object Tel extends Tel2:
   :     IArray[Block] =
     var b = 0
     var found = false
-    val out = scala.collection.mutable.ArrayBuffer.from(blocks.toList)
+    val out = scala.collection.mutable.ArrayBuffer.from(blocks.iterator)
     while b < out.length && !found do
       val cs = out(b).compounds
       val idx = cs.indexWhere(_.keyword == keyword)

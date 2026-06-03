@@ -35,6 +35,7 @@ package escritoire
 import anticipation.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 import wisteria.*, derivationContext.required
@@ -43,10 +44,10 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
   class JoinTabulable[derivation <: Product](columns: IArray[Column[derivation, Text]])
   extends Tabulable[Text]:
     type Self = derivation
-    def table(): Scaffold[derivation, Text] = Scaffold[derivation](columns*)
+    def table(): Scaffold[derivation, Text] = Scaffold[derivation](columns.to[Seq]*)
 
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Tabulable[Text] =
-    val labels: Map[Text, Text] = compiletime.summonFrom:
+    val labels: Map[Text, Text] = scala.compiletime.summonFrom:
       case labels: TableRelabelling[derivation] => labels.relabelling()
       case _                                    => Map()
 
@@ -56,7 +57,7 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
           tabulable.table().columns.map(_.contramap(dereference).retitle:
             labels.get(label).getOrElse(label.uncamel.join(t" ").capitalize))
 
-      . flatten
+      . flatMap(_.iterator)
 
     new JoinTabulable[derivation](columns)
 

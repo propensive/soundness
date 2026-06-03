@@ -37,6 +37,7 @@ import scala.collection.mutable as scm
 import ambience.*
 import anticipation.*
 import denominative.*
+import rudiments.*
 import escapade.*
 import gossamer.*
 import guillotine.*
@@ -92,11 +93,11 @@ extends Cli:
 
     interpreter.focus(parameters).let: argument =>
       if operands.headOption.contains(argument) then
-        val allSuggestions = discoverable.discover(tab).to(List)
+        val allSuggestions = discoverable.discover(tab).to[List]
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
       if flag.matches(argument) && currentArgument == argument.position + 1 then
-        val allSuggestions = discoverable.discover(tab).to(List)
+        val allSuggestions = discoverable.discover(tab).to[List]
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
     if !flag.secret then flags(flag) = discoverable
@@ -122,7 +123,7 @@ extends Cli:
 
 
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
-    (flags.keySet.to(Set) -- seenFlags.to(Set)).to(List).flatMap: flag =>
+    (flags.keySet.to(Set) -- seenFlags.to(Set)).to[List].flatMap: flag =>
       val allFlags = (flag.name :: flag.aliases)
 
       if longOnly then

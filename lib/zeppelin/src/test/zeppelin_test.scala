@@ -121,7 +121,7 @@ object Tests extends Suite(m"Zeppelin tests"):
     suite(m"Writing ZIP archives"):
       test(m"single-entry archive begins with the ZIP local-header magic"):
         bytesOf(writeZip(t"one.zip", entry(t"hello.txt", t"Hello world")))
-          .slice(0, 4).to(List).map(_.toInt & 0xff)
+          .slice(0, 4).to[List].map(_.toInt & 0xff)
       . assert(_ == List(0x50, 0x4b, 0x03, 0x04))
 
       test(m"single entry is visible to the JDK ZIP reader"):
@@ -167,8 +167,8 @@ object Tests extends Suite(m"Zeppelin tests"):
         val payload: Data = IArray.tabulate(512)(i => (i%256).toByte)
         val path = workDir/t"bin.zip"
         Zipfile.write(path)(List(Zip.Entry(zipRef(t"blob"), payload)))
-        ZipStream(bytesOf(path)).map(_.read[Data]).head.to(List)
-      . assert(_ == IArray.tabulate(512)(i => (i%256).toByte).to(List))
+        ZipStream(bytesOf(path)).map(_.read[Data]).head.to[List]
+      . assert(_ == IArray.tabulate(512)(i => (i%256).toByte).to[List])
 
       test(m"reads back an entry with empty content"):
         streamEntries(writeZip(t"emptyfile.zip", entry(t"empty", t""))).head.read[Text]

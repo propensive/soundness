@@ -32,7 +32,7 @@
                                                                                                   */
 package escapade
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import scala.quoted.*
 
@@ -61,10 +61,10 @@ object internal:
       context.value.getOrElse:
         halt(m"the StringContext extension method parameter does not appear to be inline")
 
-      . parts.toList
+      . parts.to(List)
 
     val insertionExprs: List[Expr[Any]] = insertions.absolve match
-      case Varargs(exprs) => exprs.toList
+      case Varargs(exprs) => exprs.to(List)
 
     // Determine each insertion's substitution label (e.g. "esc" for stylize
     // markup, "t" for text-input). Returns None for insertions that aren't

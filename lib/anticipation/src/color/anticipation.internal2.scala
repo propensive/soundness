@@ -36,7 +36,7 @@ object internal2:
   opaque type Chroma <: Matchable = Int
 
   object Chroma:
-    erased given underlying: Underlying[Chroma, Int] = caps.unsafe.unsafeErasedValue
+    erased given underlying: Underlying[Chroma, Int] = scala.caps.unsafe.unsafeErasedValue
 
     def apply(value: Int): Chroma = value
 

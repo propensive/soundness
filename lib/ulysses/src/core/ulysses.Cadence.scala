@@ -33,6 +33,7 @@
 package ulysses
 
 import fulminate.*
+import rudiments.*
 import vacuous.*
 
 object Cadence:
@@ -60,7 +61,7 @@ case class Cadence(initial: Int, regular: Int, hashSize: Int):
 
   val hashSizeIndex: Int =
     val i = Cadence.hashSizes.indexOf(hashSize)
-    if i < 0 then panic(m"hash size $hashSize is not one of ${Cadence.hashSizes.toList.toString}")
+    if i < 0 then panic(m"hash size $hashSize is not one of ${Cadence.hashSizes.to[List].toString}")
     i
 
   // Packed cadence byte per §2.1: bits 4-7 = s, bits 2-3 = k_i - k_r, bits 0-1 = k_r - 1.

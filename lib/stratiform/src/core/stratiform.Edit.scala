@@ -33,6 +33,7 @@
 package stratiform
 
 import anticipation.*
+import rudiments.*
 import contingency.*
 import vacuous.*
 
@@ -120,7 +121,7 @@ object Edit:
 case class Edit private[stratiform] (ops: IArray[Mutation.Op]):
   def ++ (next: Edit): Edit = new Edit(ops ++ next.ops)
 
-  def apply(tel: Tel): Tel raises MutationError = Mutation(tel, ops.toSeq)
+  def apply(tel: Tel): Tel raises MutationError = Mutation(tel, ops.to[IndexedSeq])
 
 extension (tel: Tel)
   def edited(edit: Edit): Tel raises MutationError = edit(tel)

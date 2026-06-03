@@ -32,7 +32,7 @@
                                                                                                   */
 package stenography
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import fulminate.*
@@ -85,7 +85,7 @@ object Tests extends Suite(m"Stenography Tests"):
     . assert(_ == t"Double & Int & String")
 
     test(m"Show `List[Int]`"):
-      Syntax.name[List[Int]]
+      Syntax.name[scala.collection.immutable.List[Int]]
     . assert(_ == t"collection.immutable.List[Int]")
 
     test(m"Show constant String type"):
@@ -121,19 +121,19 @@ object Tests extends Suite(m"Stenography Tests"):
     . assert(_ == t"'a'")
 
     test(m"Show wildcard type argument"):
-      Syntax.name[List[?]]
+      Syntax.name[scala.collection.immutable.List[?]]
     . assert(_ == t"collection.immutable.List[?]")
 
     test(m"Show upper-bounded wildcard"):
-      Syntax.name[List[? <: AnyRef]]
+      Syntax.name[scala.collection.immutable.List[? <: AnyRef]]
     . assert(_ == t"collection.immutable.List[? <: AnyRef]")
 
     test(m"Show lower-bounded wildcard"):
-      Syntax.name[List[? >: String]]
+      Syntax.name[scala.collection.immutable.List[? >: String]]
     . assert(_ == t"collection.immutable.List[? >: String]")
 
     test(m"Show wildcard with both bounds"):
-      Syntax.name[List[? >: String <: AnyRef]]
+      Syntax.name[scala.collection.immutable.List[? >: String <: AnyRef]]
     . assert(_ == t"collection.immutable.List[? >: String <: AnyRef]")
 
     test(m"Show into-annotated type"):
@@ -148,7 +148,7 @@ object Tests extends Suite(m"Stenography Tests"):
 
     test(m"Show match type with parametric case"):
       Syntax.name[[scrutinee] =>> scrutinee match
-        case List[item] => item]
+        case scala.collection.immutable.List[item] => item]
     . assert(_ == t"[scrutinee] =>> scrutinee match { case collection.immutable.List[item] => item }")
 
     test(m"Show singleton type"):
@@ -212,7 +212,7 @@ object Tests extends Suite(m"Stenography Tests"):
     . assert(_ == t"(=> Int) => Double")
 
     test(m"Projection type"):
-      Syntax.name[Enumeration#Value]
+      Syntax.name[scala.Enumeration#Value]
     . assert(_ == t"Enumeration#Value")
 
     test(m"Refined type"):
@@ -248,8 +248,8 @@ object Tests extends Suite(m"Stenography Tests"):
     . assert(_ == t"Addable { type Hkt = [Bar <: String] =>> Option[Bar] }")
 
     // test(m"Refined higher-kinded type member 2"):
-    //   Syntax.name[Addable { type Hkt[Coll[T] <: Iterable[T]] = Option[Coll[String]] }]
-    // .assert(_ == t"Addable { type Hkt[Coll[T] <: Iterable[T]] = Option[Coll[String]] }")
+    //   Syntax.name[Addable { type Hkt[Coll[T] <: List[T]] = Option[Coll[String]] }]
+    // .assert(_ == t"Addable { type Hkt[Coll[T] <: List[T]] = Option[Coll[String]] }")
 
     test(m"Projected refined type"):
       Syntax.name[(Addable { type Q = Int; type Other = String})#Q]
@@ -284,5 +284,5 @@ object Tests extends Suite(m"Stenography Tests"):
     // .assert(_ == t"Int -> String")
 
     test(m"Dependent function type"):
-      Syntax.name[(e: Enumeration) => e.Value]
+      Syntax.name[(e: scala.Enumeration) => e.Value]
     . assert(_ == t"(e: Enumeration) => e.Value")

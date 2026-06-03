@@ -32,7 +32,7 @@
                                                                                                   */
 package caesura
 
-import language.dynamics
+import scala.language.dynamics
 
 import scala.compiletime.*
 
@@ -48,7 +48,7 @@ import vacuous.*
 import wisteria.*
 
 object Dsv:
-  def apply(iterable: Iterable[Text]): Dsv = new Dsv(IArray.from(iterable))
+  def apply(iterable: List[Text]): Dsv = new Dsv(IArray.from(iterable.scala))
   def apply(text: Text*): Dsv = new Dsv(IArray.from(text))
 
   given decoder: [decodable: Decodable in Text] => decodable is Decodable in Dsv =
@@ -85,7 +85,7 @@ object Dsv:
 
           append(format.quote)
 
-    . join(format.delimiter.show)
+    .to[List].join(format.delimiter.show)
 
   object DecodableDerivation extends ProductDerivable[Decodable in Dsv]:
     class DsvProductDecoder[derivation](lambda: Dsv => derivation)
@@ -122,8 +122,8 @@ object Dsv:
           fields(value):
             [field] => field => contextual.encode(field).data
 
-          . to(List)
-          . flatten
+          .to[List]
+          . flatMap(_.to[List])
 
         Dsv(cells)
 
@@ -145,11 +145,11 @@ case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
   def apply[value: Decodable in Text](field: Text): Optional[value] =
     columns.let(_.at(field)).let { index => data.at(index.z) }.let(value.decoded(_))
 
-  override def hashCode: Int = data.indices.fuse(0)(state*31 + data(next).hashCode)
+  override def hashCode: Int = List.from(data.indices).fuse(0)(state*31 + data(next).hashCode)
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case row: Dsv =>
-      data.length == row.data.length && data.indices.all: index =>
+      data.length == row.data.length && List.from(data.indices).all: index =>
         data(index) == row.data(index)
 
     case _ =>

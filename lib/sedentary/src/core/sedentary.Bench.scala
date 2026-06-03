@@ -118,7 +118,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
             d = jl.System.nanoTime - t0
 
           var rate: Double = d.toDouble/count
-          count = math.max(1L, ($target2/rate).toLong)
+          count = scala.math.max(1L, ($target2/rate).toLong)
           val result = new Array[Long](${Expr(iterations2)} + 1)
 
           // Warmup / calibration: run `warmups` full-count batches, adjusting
@@ -134,11 +134,11 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
             while j < count do { sink.lazySet($body0); j += 1L }
             val t1 = jl.System.nanoTime - t0
             rates(c) = t1.toDouble/count
-            count = math.max(1L, ($target2/rates(c)).toLong)
+            count = scala.math.max(1L, ($target2/rates(c)).toLong)
             c += 1
 
           java.util.Arrays.sort(rates)
-          count = math.max(1L, ($target2/rates(rates.length/2)).toLong)
+          count = scala.math.max(1L, ($target2/rates(rates.length/2)).toLong)
 
           result(0) = count
 
@@ -171,7 +171,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
     val sampleMean = sampleMean0.or(0.0)
     val sum = results.map(_.toDouble/sample - sampleMean).bi.map(_*_).sum
     val variance = sum/(runs - 1)
-    val sd = math.sqrt(variance)
+    val sd = scala.math.sqrt(variance)
     val min = results.min.toDouble/sample
     val max = results.max.toDouble/sample
 

@@ -33,6 +33,9 @@
 package vicarious
 
 import scala.compiletime.*
+import scala.collection.immutable.`::`
+import scala.collection.immutable.List
+import scala.collection.immutable.Nil
 import scala.quoted.*
 
 import gigantism.*
@@ -96,7 +99,7 @@ object internal:
       val base =
         TypeRepr.of[Proxy].appliedTo(List(TypeRepr.of[key], TypeRepr.of[value], nat))
 
-      repr.typeSymbol.caseFields.fuse(base):
+      List.from(repr.typeSymbol.caseFields).fuse(base):
         val label = if prefix == "" then next.name else prefix+"."+next.name
         val fieldType: TypeRepr = next.info
         Refinement(state, next.name, recur(label, fieldType))

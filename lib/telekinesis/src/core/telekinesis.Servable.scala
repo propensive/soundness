@@ -65,7 +65,7 @@ object Servable:
   given data: Data is Servable =
     Servable[Data](_ => media"application/octet-stream")(Http.Body.Fixed(_))
 
-  inline given media: [media: Media] => media is Servable = compiletime.summonFrom:
+  inline given media: [media: Media] => media is Servable = scala.compiletime.summonFrom:
     case encodable: (`media` is Encodable in Data) =>
       value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))

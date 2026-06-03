@@ -32,7 +32,7 @@
                                                                                                   */
 package xylophone
 
-import language.dynamics
+import scala.language.dynamics
 
 import java.lang as jl
 import java.util as ju
@@ -278,7 +278,7 @@ object Xml extends Tag.Container
             val base = prior.let(_.path).or(XPath())
             Xml.Focus(base.prepend(wireName, 1))
           }):
-            if attributeFields.contains(fieldLabel) then
+            if attributeFields.has(fieldLabel) then
               // `@attribute` field: decode from the matching attribute as a
               // `TextNode`; a missing attribute falls back to the declared
               // default, else the `Absent` sentinel (raise + continue).
@@ -319,7 +319,7 @@ object Xml extends Tag.Container
               val resolved: Optional[Text] =
                 discriminable.discriminate(xml).let: wire =>
                   val discriminant = variantNames.getOrElse(wire, wire)
-                  if labels.contains(discriminant) then discriminant else Unset
+                  if labels.scala.contains(discriminant) then discriminant else Unset
 
               resolved.let: discriminant =>
                 delegate(discriminant): [variant <: derivation] =>
@@ -377,7 +377,7 @@ object Xml extends Tag.Container
 
             // `@attribute` fields become attributes carrying the encoded leaf's
             // text; every other field becomes a child element via `wrap`.
-            if attributeFields.contains(fieldLabel)
+            if attributeFields.has(fieldLabel)
             then attributes += wireName -> textOf(encoded).or(t"")
             else children += wrap(wireName, encoded)
 
@@ -521,7 +521,7 @@ object Xml extends Tag.Container
     async:
       def recur(node: Xml, indent: Int): Unit =
         node match
-          case Fragment(nodes*) => nodes.each(recur(_, indent))
+          case Fragment(nodes*) => List.from(nodes).each(recur(_, indent))
 
           case Comment(comment) =>
             emitter.put("<!--")
@@ -739,7 +739,7 @@ object Xml extends Tag.Container
   trait Populable:
     node: Element =>
       def apply(children: Optional[Xml of (? <: node.Transport)]*): Element of node.Topic =
-        new Element(node.label, node.attributes, children.compact.nodes):
+        new Element(node.label, node.attributes, List.from(children).compact.to[List].scala.nodes):
           type Topic = node.Topic
 
   import Issue.*
@@ -2395,7 +2395,7 @@ extends Node, Topical, Transportive:
 object Fragment:
   @targetName("make")
   def apply[topic <: Label](nodes: Xml of (? <: topic)*): Fragment of topic =
-    new Fragment(nodes.nodes*).of[topic]
+    new Fragment(nodes.nodes.to[Seq]*).of[topic]
 
 case class Fragment(nodes: Node*) extends Xml:
   override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode

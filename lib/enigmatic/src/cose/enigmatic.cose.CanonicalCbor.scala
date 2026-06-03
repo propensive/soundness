@@ -76,7 +76,7 @@ object CanonicalCbor:
     else ast
 
   private def compareBytes(a: Data, b: Data): Int =
-    val n = math.min(a.length, b.length)
+    val n = scala.math.min(a.length, b.length)
     var index = 0
     while index < n do
       val diff = (a(index) & 0xFF) - (b(index) & 0xFF)

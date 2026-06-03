@@ -160,14 +160,13 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
 
             (label, schema2)
 
-        .to(Map)
+        .to[Map]
 
       val required: List[Text] =
-        contexts:
+        val labels = contexts:
           [field] => schema => label.unless(_ => schema.schema().optional)
 
-        . compact
-        . to(List)
+        List.from(labels.iterator).compact.to[List]
 
       Object(properties = map, required = required)
 

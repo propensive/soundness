@@ -52,10 +52,10 @@ object internal:
     private def fromAngle(latitude: Angle, longitude: Angle): Location =
       (encodeLatitude(latitude).toLong << 32) | (encodeLongitude(longitude) & 0xffffffffL)
 
-    private def encodeLatitude(latitude: Angle): Int = (latitude*2*Int.MaxValue/math.Pi).toInt
+    private def encodeLatitude(latitude: Angle): Int = (latitude*2*Int.MaxValue/scala.math.Pi).toInt
 
     private def encodeLongitude(longitude: Angle): Int =
-      ((longitude - math.Pi)*Int.MaxValue/math.Pi).toInt
+      ((longitude - scala.math.Pi)*Int.MaxValue/scala.math.Pi).toInt
 
     def apply(latitude: Angle, longitude: Angle): Location = fromAngle(latitude, longitude)
 
@@ -136,22 +136,22 @@ object internal:
           "0123456789bcdefghjkmnpqrstuvwxyz".charAt((binary >> ((length - index - 1)*5)&31).toInt)
 
     def surfaceDistance(right: Location): Angle =
-      val dLat = math.abs(left.latitude - right.latitude)
-      val dLng = math.abs(left.longitude - right.longitude)
+      val dLat = scala.math.abs(left.latitude - right.latitude)
+      val dLng = scala.math.abs(left.longitude - right.longitude)
 
       val a =
-        math.pow(math.sin(dLat/2), 2)
-        + math.cos(left.latitude)*math.cos(right.latitude)*math.pow(math.sin(dLng/2), 2)
+        scala.math.pow(scala.math.sin(dLat/2), 2)
+        + scala.math.cos(left.latitude)*scala.math.cos(right.latitude)*scala.math.pow(scala.math.sin(dLng/2), 2)
 
-      2*math.atan2(math.sqrt(a), math.sqrt(1 - a))
+      2*scala.math.atan2(scala.math.sqrt(a), scala.math.sqrt(1 - a))
 
     def bearing[compass: Directional](right: Location): compass =
-      val dLng = math.abs(left.longitude - right.longitude)
+      val dLng = scala.math.abs(left.longitude - right.longitude)
 
       val result: Double =
-        math.atan2
-          ( math.sin(dLng)*math.cos(right.latitude),
-            math.cos(left.latitude)*math.sin(right.latitude) -
-                math.sin(left.latitude)*math.cos(right.latitude)*math.cos(dLng) )
+        scala.math.atan2
+          ( scala.math.sin(dLng)*scala.math.cos(right.latitude),
+            scala.math.cos(left.latitude)*scala.math.sin(right.latitude) -
+                scala.math.sin(left.latitude)*scala.math.cos(right.latitude)*scala.math.cos(dLng) )
 
       compass.direction(Angle(result))

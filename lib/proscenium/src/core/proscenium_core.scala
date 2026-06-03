@@ -35,8 +35,30 @@ package proscenium
 export scala.collection.immutable.Vector as Trie
 export Predef.runtimeChecked as absolve
 export scala.reflect.{ClassTag, Typeable}
-export scala.collection.immutable.{Set, List, ListMap, Map, TreeSet, TreeMap}
+export scala.collection.immutable.{ListMap, TreeSet, TreeMap}
 export scala.collection.concurrent.TrieMap
+export murmuration.{List, Nil, `::`, `:+`, `+:`, IterableOnce, Set, Series, Map, IArray}
+
+// `scala` was removed from `-Yimports` so the project's `List`/`Iterable`/`Set` win unambiguously
+// over the standard library's. Proscenium is now the sole predef and re-exports the scala-package
+// prelude the library modules use bare. The collection names `Iterable`/`IterableOnce`/`List`/`Set`
+// are intentionally NOT re-exported here — murmuration owns those. (Packages such as `scala.math`
+// and `scala.compiletime` cannot be re-exported, so sites using `scala.math.…`/`scala.compiletime.…` etc. get
+// an explicit `import scala.…` instead.)
+export scala.{Any, AnyRef, AnyVal, Matchable, Nothing, Null, Singleton, Equals, Product,
+    Serializable, Cloneable, Int, Long, Short, Byte, Double, Float, Char, Boolean, Option,
+    Some, None, Either, Left, Right, Tuple, EmptyTuple, Function, PartialFunction, Conversion,
+    Selectable, Dynamic, CanEqual, Specializable, MatchError, ValueOf, CanThrow, AnyKind, NamedTuple, Precise, Seq, IndexedSeq, Iterator, Vector, Array, StringContext, Symbol,
+    deprecated, inline, throws, unchecked, specialized, volatile, transient, native,
+    SerialVersionUID}
+
+export scala.math.{Ordering, Numeric, Integral, Fractional, BigInt, BigDecimal}
+export scala.{`&`, `|`, `<:<`, `=:=`, `*:`}
+export scala.unsafeExceptions
+export scala.collection.mutable.StringBuilder
+export scala.collection.immutable.Range
+export scala.collection.immutable.LazyList.`#::`
+export scala.collection.StringOps
 
 export Predef
 . { nn, identity, summon, charWrapper, $conforms, ArrowAssoc, intWrapper, longWrapper,
@@ -59,10 +81,13 @@ export scala.annotation
 export scala.annotation.unchecked.{uncheckedVariance, uncheckedCaptures, uncheckedStable}
 
 export scala.LazyList as Stream
+export scala.LazyList
 export scala.DummyImplicit as Void
+export scala.DummyImplicit
 
 export Conversion.into
 
+type Unit = scala.Unit
 type Nat = Int & Singleton
 type Label = String & Singleton
 
@@ -76,7 +101,7 @@ object Mono:
 
 type Mono[value] = value *: Zero
 
-transparent inline def infer[context]: context = compiletime.summonInline[context]
+transparent inline def infer[context]: context = scala.compiletime.summonInline[context]
 
 transparent inline def provide[context](using erased Void)[result]
   ( inline lambda: context ?=> result )

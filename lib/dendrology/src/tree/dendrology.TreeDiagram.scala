@@ -40,11 +40,11 @@ import TreeTile.*
 
 object TreeDiagram:
   def apply[node: Expandable](roots: node*): TreeDiagram[node] =
-    by[node](node.children(_))(roots*)
+    by[node](n => node.children(n).scala)(roots*)
 
   given printable: [node: Showable] => (style: TreeStyle[Text]) => TreeDiagram[node] is Printable =
     (diagram, termcap) =>
-      (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
+      List.from(diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
   def by[node](getChildren: node => Seq[node])(roots: node*): TreeDiagram[node] =
     def recur(level: List[TreeTile], input: Seq[node]): Stream[(List[TreeTile], node)] =

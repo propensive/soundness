@@ -32,7 +32,7 @@
                                                                                                   */
 package escapade
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import scala.collection.mutable as scm
 
@@ -54,7 +54,7 @@ trait Ansi2:
     def embed(value: value) = Ansi.Input.TextInput(teletype(value))
 
   inline given teletype: [value] => Substitution[Ansi.Input, value, "t"] =
-    val teletype: value => Teletype = value => compiletime.summonFrom:
+    val teletype: value => Teletype = value => scala.compiletime.summonFrom:
       case given (`value` is Teletypeable) => value.teletype
       case given (`value` is Showable)     => Teletype(value.show)
 
@@ -147,10 +147,10 @@ object Ansi extends Ansi2:
       if triggerLink then linkArmed = false
 
       if text.hyperlinks.nonEmpty then
-        text.hyperlinks.each: (k, v) => hyperlinks(n + k) = v
+        text.hyperlinks.toList.each: (k, v) => hyperlinks(n + k) = v
 
       if text.insertions.nonEmpty then
-        text.insertions.each: (k, v) => insertions(n + k) = v
+        List.from(text.insertions).each: (k, v) => insertions(n + k) = v
 
     def addInsertion(position: Int, content: Text): Unit =
       insertions.updateWith(position):
@@ -191,7 +191,7 @@ object Ansi extends Ansi2:
 
 
   object Runtime:
-    import unsafeExceptions.canThrowAny
+    import scala.unsafeExceptions.canThrowAny
     private val complement = Map('[' -> ']', '(' -> ')', '{' -> '}', '<' -> '>', '«' -> '»')
 
     def initial: State = State()
@@ -290,7 +290,7 @@ object Ansi extends Ansi2:
     def skip(state: State): State = insert(state, Input.TextInput(Teletype.empty))
 
     def complete(state: State): Teletype =
-      if state.stack.nonEmpty
+      if !state.stack.nil
       then throw AnsiError(m"the closing brace does not match an opening brace")
 
       val tail = if state.linkArmed then StyleWord.HyperlinkChange else 0L
@@ -303,7 +303,7 @@ object Ansi extends Ansi2:
       Teletype
         ( plainText,
           newStyles,
-          state.hyperlinks.toMap,
+          Map.from(state.hyperlinks),
           state.insertions.to(TreeMap),
           newBoundaries )
 

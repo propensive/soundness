@@ -32,7 +32,7 @@
                                                                                                   */
 package exoskeleton
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import contingency.*
 import rudiments.*
@@ -53,6 +53,6 @@ case class Commandline
 
     cli.register(flag, discoverable)
 
-    parameters.where { (key, _) => flag.matches(key) }.let: (_, operands) =>
+    parameters.toList.where { (key, _) => flag.matches(key) }.let: (_, operands) =>
       cli.present(flag)
       safely(operand.interpret(operands))

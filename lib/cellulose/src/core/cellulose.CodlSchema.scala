@@ -32,7 +32,7 @@
                                                                                                   */
 package cellulose
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
@@ -68,9 +68,9 @@ object CodlSchema:
 sealed trait CodlSchema(val subschemas: IArray[CodlSchema.Entry], val arity: Arity)
 extends Dynamic:
   import CodlSchema.Entry
-  protected lazy val dictionary: Map[Optional[Text], CodlSchema] = subschemas.map(_.tuple).to(Map)
+  protected lazy val dictionary: Map[Optional[Text], CodlSchema] = subschemas.map(_.tuple).iterator.to(Map)
 
-  lazy val keyMap: Map[Optional[Text], Int] = subschemas.map(_.key).zipWithIndex.to(Map)
+  lazy val keyMap: Map[Optional[Text], Int] = subschemas.map(_.key).zipWithIndex.iterator.to(Map)
 
   def optional: CodlSchema
   def entry(n: Int): Entry = subschemas(n)
@@ -100,7 +100,7 @@ extends Dynamic:
   def has(key: Optional[Text]): Boolean = dictionary.has(key)
 
   lazy val requiredKeys: List[Text] =
-    subschemas.filter(_.required).map(_.key).collect { case text: Text => text }.to(List)
+    subschemas.filter(_.required).map(_.key).collect { case text: Text => text }.to[List]
 
   export arity.{required, variadic, unique}
 
@@ -113,7 +113,7 @@ object Struct:
     Struct(subschemas.map(CodlSchema.Entry(_, _)).to(List), arity)
 
 case class Struct(structSubschemas: List[CodlSchema.Entry], structArity: Arity = Arity.AtMostOne)
-extends CodlSchema(IArray.from(structSubschemas), structArity):
+extends CodlSchema(IArray.from(structSubschemas.scala), structArity):
   import CodlSchema.Entry
 
   def optional: Struct = Struct(structSubschemas, Arity.AtMostOne)
@@ -133,9 +133,9 @@ extends CodlSchema(IArray.from(structSubschemas), structArity):
         recur(tail, Entry(key, field) :: fields)
 
       case _ =>
-        IArray.from(fields.reverse)
+        IArray.from(fields.reverse.scala)
 
-    recur(subschemas.to(List), Nil)
+    recur(subschemas.to[List], Nil)
 
   override def toString(): String =
     t"${structArity.symbol}${structSubschemas.map(_.toString.tt).join(t"(", t", ", t")")}".s

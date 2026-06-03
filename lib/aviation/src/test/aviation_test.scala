@@ -616,7 +616,7 @@ object Tests extends Suite(m"Aviation Tests"):
               Holiday(2025-May-26, t"Spring Bank Holiday"),
               Holiday(2025-Aug-25, t"Summer Bank Holiday"),
               Holiday(2025-Dec-25, t"Christmas Day"),
-              Holiday(2025-Dec-26, t"Boxing Day")) )
+              Holiday(2025-Dec-26, t"Boxing Day")).scala )
 
           test(m"Check the next working day after Monday is Tuesday"):
             import hebdomads.european
@@ -950,7 +950,7 @@ object Tests extends Suite(m"Aviation Tests"):
         ( Holiday(2025-Jan-1, t"New Year's Day"),
           Holiday(2025-Apr-21, t"Good Friday"),
           Holiday(2025-Dec-25, t"Christmas Day"),
-          Holiday(2025-Dec-26, t"Boxing Day") ))
+          Holiday(2025-Dec-26, t"Boxing Day") ).scala)
 
       test(m"holiday returns the matching Holiday"):
         holidays.holiday(2025-Dec-25).let(_.name).or(t"")
@@ -1286,7 +1286,7 @@ object Tests extends Suite(m"Aviation Tests"):
       given Holidays = Holidays(List
         ( Holiday(2025-Jan-1, t"New Year's Day"),
           Holiday(2025-Dec-25, t"Christmas Day"),
-          Holiday(2025-Dec-26, t"Boxing Day") ))
+          Holiday(2025-Dec-26, t"Boxing Day") ).scala)
 
       test(m"WorkingDays(0) on a Saturday bumps to Monday"):
         import hebdomads.european

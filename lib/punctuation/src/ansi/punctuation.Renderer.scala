@@ -33,6 +33,7 @@
 package punctuation
 
 import anticipation.*
+import denominative.*
 import escapade.*
 import frontier.*
 import gossamer.*
@@ -62,7 +63,7 @@ object Renderer:
             palette: MarkdownPalette )
   :   Teletype =
 
-    val blocks = markdown.children.map(layoutLines(_, width)).filter(_.nonEmpty)
+    val blocks = markdown.children.map(layoutLines(_, width)).filter(!_.nil)
     blocks.map(joinLines(_)).to(Seq).join(e"\n\n")
 
   // -- inline ---------------------------------------------------------------
@@ -167,7 +168,7 @@ object Renderer:
     case Layout.BlockQuote(_, children*) =>
       val bar = e"${Fg(palette.quoteBar)}(▎)"
       val innerWidth = (width - 2).max(1)
-      val innerBlocks = children.map(layoutLines(_, innerWidth)).filter(_.nonEmpty)
+      val innerBlocks = children.map(layoutLines(_, innerWidth)).filter(!_.nil)
       val joined = interleaveBlanks(innerBlocks.to(List))
 
       joined.map: line =>
@@ -222,13 +223,13 @@ object Renderer:
             palette: MarkdownPalette )
   :   List[Teletype] =
 
-    if items.isEmpty then Nil
+    if items.nil then Nil
     else
       val rendered = items.zipWithIndex.map: (item, idx) =>
         val mk = marker(idx)
         val markerSize = mk.plain.length + 1   // marker + one space
         val hang = t" "*markerSize
-        val inner = item.map(layoutLines(_, (width - markerSize).max(1))).filter(_.nonEmpty)
+        val inner = item.map(layoutLines(_, (width - markerSize).max(1))).filter(!_.nil)
         val joined = if tight then concatItems(inner) else interleaveBlanks(inner)
 
         joined match
@@ -263,7 +264,7 @@ object Renderer:
 
   // Join a list of lines into one Teletype with embedded newlines.
   private def joinLines(lines: List[Teletype]): Teletype =
-    lines.to(Seq).join(Newline)
+    lines.to[Seq].join(Newline)
 
 
   // Wrap an inline `Teletype` into width-bounded lines, applying soft

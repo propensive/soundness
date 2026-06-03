@@ -908,7 +908,7 @@ private final class TelParser():
         i += 1
 
     if builder.nonEmpty then parts += builder.toString
-    parts.toList
+    parts.to(List)
 
   // ── Margin determination ─────────────────────────────────────────────────
 

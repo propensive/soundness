@@ -114,5 +114,5 @@ object Definitions:
 
   private def descend(x: Any, visit: untpd.Tree => Unit): Unit = x match
     case sub: untpd.Tree  => walk(sub)(visit)
-    case it:  Iterable[?] => it.foreach(descend(_, visit))
+    case it:  scala.collection.Iterable[?] => it.foreach(descend(_, visit))
     case _                => ()

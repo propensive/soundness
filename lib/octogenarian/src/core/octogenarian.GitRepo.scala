@@ -155,7 +155,7 @@ case class GitRepo(gitDir: Path on Linux):
     val grouped = lines.collect:
       case r"$name(\S+)\t$url(\S+) \($kind(fetch|push)\)" => (name, url, kind)
 
-    grouped.to(List).groupBy(_._1).to(List).map: (name, rows) =>
+    grouped.to(List).groupBy(_._1).to[List].map: (name, rows) =>
       val fetch = rows.collectFirst { case (_, url, t"fetch") => url }.getOrElse(t"")
       val push  = rows.collectFirst { case (_, url, t"push")  => url }
       Remote(name, fetch, push.getOrElse(Unset))
@@ -377,7 +377,7 @@ case class GitRepo(gitDir: Path on Linux):
         block :: blocks(rest.dropWhile(_ == t""))
 
     blocks(lines).flatMap: block =>
-      val isBare = block.contains(t"bare")
+      val isBare = block.scala.contains(t"bare")
 
       block.collect:
         case r"worktree $path(.*)" if !isBare =>

@@ -32,6 +32,7 @@
                                                                                                   */
 package cellulose
 
+import rudiments.*
 import vacuous.*
 import wisteria.*
 
@@ -40,10 +41,10 @@ object CodlSchematicDerivation extends ProductDerivable[CodlSchematic]:
     () =>
       val elements = contexts:
         [field] => context =>
-          val label2 = compiletime.summonFrom:
+          val label2 = scala.compiletime.summonFrom:
             case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
             case _                                        => label
 
           CodlSchema.Entry(label2, context.schema())
 
-      Struct(elements.to(List), Arity.One)
+      Struct(elements.to[List], Arity.One)

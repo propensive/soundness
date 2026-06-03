@@ -32,6 +32,9 @@
                                                                                                   */
 package stenography
 
+import scala.collection.immutable.`::`
+import scala.collection.immutable.List
+import scala.collection.immutable.Nil
 import scala.quoted.*
 
 import anticipation.*
@@ -64,7 +67,7 @@ object internal:
 
       case _ => Nil
 
-    val imports: Set[Typename] = metaprogramming.imports.map(_.term).map(Syntax.term(_)).to(Set)
+    val imports: Set[Typename] = metaprogramming.imports.map(_.term).map(Syntax.term(_)).scala.to(Set)
 
     // Build the `direct` set by drilling into every wildcard import that's in
     // scope (including REPL-accumulated imports across earlier lines, captured
@@ -75,18 +78,18 @@ object internal:
       case quotes: runtime.impl.QuotesImpl =>
         given context: core.Contexts.Context = quotes.ctx
 
-        metaprogramming.imports.filter(_.wildcard).flatMap: imp =>
+        metaprogramming.imports.scala.filter(_.wildcard).flatMap: imp =>
           val rootSym = imp.term.asInstanceOf[core.Types.Type].termSymbol(using context)
 
           if !rootSym.exists then Nil
           else exportedTargets(rootSym)
 
-        .toSet
+        .to(Set)
 
       case _ => Set.empty[Typename]
 
     given Imports =
-      Imports(Set(Typename("scala"), Typename("scala.Predef")) ++ imports ++ outer, direct)
+      Imports(Set(Typename("scala"), Typename("scala.Predef")) ++ imports ++ Set.from(outer), direct)
 
     Syntax(TypeRepr.of[typename]).text
 

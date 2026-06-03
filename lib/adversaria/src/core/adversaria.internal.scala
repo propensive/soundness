@@ -34,6 +34,9 @@ package adversaria
 
 import java.lang as jl
 
+import scala.collection.immutable.`::`
+import scala.collection.immutable.List
+import scala.collection.immutable.Nil
 import scala.quoted.*
 
 import anticipation.*
@@ -102,7 +105,8 @@ object internal:
 
     def matching(annotations: List[Term]): Expr[List[operand]] =
       Expr.ofList:
-        annotations.filter(_.tpe <:< operand).map(rebuild(_)).compact.map(_.asExprOf[operand]).reverse
+        annotations.filter(_.tpe <:< operand).map(rebuild(_)).flatMap(_.option).map(_.asExprOf[operand])
+        . reverse
 
     if limit =:= TypeRepr.of[Any] then
       val annotations = matching(self.typeSymbol.annotations)
@@ -112,10 +116,10 @@ object internal:
 
       val fields =
         params2.flatMap: param =>
-          if param.annotations.nil then Nil else
+          if param.annotations.isEmpty then Nil else
             List(param.name -> '{(${Expr(param.name)}.tt, ${matching(param.annotations)}.to(Set))})
 
-        . to(Map)
+        .to(Map)
 
       if fields.size == 1
       then
@@ -126,12 +130,12 @@ object internal:
           case ('[topic], '[type target <: Label; target]) =>
             ' {
                 Annotated.AnnotatedField[operand, self, plane, limit, topic, target]
-                  ( $annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map) )
+                  ( $annotations.to(Set), ${Expr.ofList(fields.values.scala)}.to(Map) )
               }
       else
         ' {
             Annotated.AnnotatedFields[operand, self, plane, limit]
-              ( $annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map) )
+              ( $annotations.to(Set), ${Expr.ofList(fields.values.scala)}.to(Map) )
           }
 
     else
@@ -147,12 +151,15 @@ object internal:
   def dereferenceable[entity: Type, value: Type]: Macro[entity is Dereferenceable to value] =
     import quotes.reflect.*
 
-    def namesList: Expr[List[Text]] = Expr.ofList:
-      TypeRepr.of[entity]
-      . typeSymbol
-      . fieldMembers
-      . filter(_.info <:< TypeRepr.of[value])
-      . map: field => '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
+    def namesList: Expr[proscenium.List[Text]] =
+      val scalaNames = Expr.ofList:
+        TypeRepr.of[entity]
+        . typeSymbol
+        . fieldMembers
+        . filter(_.info <:< TypeRepr.of[value])
+        . map: field => '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
+
+      '{proscenium.List.from($scalaNames)}
 
     def lambdaMap: Expr[List[(Text, entity => value)]] = Expr.ofList:
       TypeRepr.of[entity]
@@ -167,7 +174,8 @@ object internal:
         new Dereferenceable:
           type Self = entity
           type Result = value
-          private val lambdas: Map[Text, Self => Result] = ${lambdaMap}.toMap
-          def names(entity: Self): List[Text] = ${namesList}
+          private val lambdas: scala.collection.immutable.Map[Text, Self => Result] =
+            ${lambdaMap}.toMap
+          def names(entity: Self): proscenium.List[Text] = ${namesList}
           def select(entity: entity, name: Text): Result = lambdas(name)(entity)
       }

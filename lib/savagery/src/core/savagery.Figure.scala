@@ -33,6 +33,7 @@
 package savagery
 
 import scala.collection.immutable.SeqMap
+import denominative.*
 
 import anticipation.*
 import cataclysm.{Float as _, *}
@@ -60,10 +61,10 @@ extends Figure:
     attrs += t"width" -> width.show
     attrs += t"height" -> height.show
 
-    if transforms.nonEmpty
+    if !transforms.nil
     then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
-    Element(t"rect", Attributes.from(attrs.result()), IArray())
+    Element(t"rect", Attributes.from(Map.from(attrs.result())), IArray())
 
 case class Outline
   ( ops:        List[Stroke]       = Nil,
@@ -80,11 +81,11 @@ extends Figure:
     attrs += t"d" -> d
     id.let: svgId => attrs += t"id" -> svgId.text
 
-    if transforms.nonEmpty
+    if !transforms.nil
     then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
     style.let: css => attrs += t"style" -> css.properties.map(_.text).join(t";")
-    Element(t"path", Attributes.from(attrs.result()), IArray())
+    Element(t"path", Attributes.from(Map.from(attrs.result())), IArray())
 
   def moveTo(point: Point): Outline = copy(ops = MoveTo(point) :: ops)
   def lineTo(point: Point): Outline = copy(ops = DrawTo(point) :: ops)
@@ -137,7 +138,7 @@ extends Figure:
       attrs += t"rx" -> xRadius.show
       attrs += t"ry" -> yRadius.show
 
-    if transforms.nonEmpty
+    if !transforms.nil
     then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
-    Element(if circle then t"circle" else t"ellipse", Attributes.from(attrs.result()), IArray())
+    Element(if circle then t"circle" else t"ellipse", Attributes.from(Map.from(attrs.result())), IArray())

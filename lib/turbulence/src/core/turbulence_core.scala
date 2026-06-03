@@ -32,7 +32,7 @@
                                                                                                   */
 package turbulence
 
-import language.adhocExtensions
+import scala.language.adhocExtensions
 
 import java.io as ji
 import java.lang as jl
@@ -143,7 +143,7 @@ extension [element](stream: Stream[element])
       ( active: Boolean, stream: Stream[Some[element] | Tap.Regulation], buffer: List[element] )
     :   Stream[element] =
 
-      if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
+      if active && !buffer.nil then buffer.head #:: defer(true, stream, buffer.tail)
       else if stream.nil then Stream()
       else stream.head match
         case Tap.Regulation.Start => recur(true, stream.tail, buffer)
@@ -214,7 +214,7 @@ extension (obj: Stream.type)
 
   def multiplexer[element](streams: Stream[element]*)(using Monitor): Multiplexer[Any, element] =
     Multiplexer[Any, element]().tap: multiplexer =>
-      streams.zipWithIndex.each: (stream, index) =>
+      List.from(streams.zipWithIndex).each: (stream, index) =>
         multiplexer.add(index, stream)
 
   def defer[element](stream: => Stream[element]): Stream[element] =

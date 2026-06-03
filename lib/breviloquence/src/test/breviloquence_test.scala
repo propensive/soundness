@@ -130,7 +130,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
       test(m"Parse single-precision float (3.4028235e38)"):
         // 0xfa 7f7fffff = max positive float
         val v = Cbor.ast(Cbor.Ast.parse(hex("fa7f7fffff"))).as[Double]
-        math.abs(v - 3.4028234663852886e38) < 1e30
+        (v - 3.4028234663852886e38).abs < 1e30
       . assert(identity)
 
       test(m"Parse half-precision float 1.0"):
@@ -152,7 +152,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"Parse byte string [01 02 03 04]"):
         val bytes = Cbor.ast(Cbor.Ast.parse(hex("4401020304"))).as[IArray[Byte]]
-        bytes.toList
+        bytes.to[List]
       . assert(_ == List[Byte](1, 2, 3, 4))
 
     suite(m"Parsing arrays"):

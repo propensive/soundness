@@ -540,7 +540,7 @@ private[ypsiloid] final class YamlParser:
           lastDocEndedWithFooter = consumeOptionalDocumentEnd()
           firstDoc = false
 
-    docs.toList
+    docs.to(List)
 
   // Tracked variant of `parseAll`: parses every document like `parseAll`
   // but also captures a per-document `PositionIndex` for the
@@ -616,7 +616,7 @@ private[ypsiloid] final class YamlParser:
           lastDocEndedWithFooter = consumeOptionalDocumentEnd()
           firstDoc = false
 
-    docs.toList
+    docs.to(List)
 
   // Consume `---` if at the current position. Returns true if consumed.
   // Per spec the marker requires either a following line-boundary

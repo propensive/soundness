@@ -50,7 +50,7 @@ object Tests extends Suite(m"Gesticulate tests"):
         val data: Data = text.data
         def go(offset: Int): Stream[Data] =
           if offset >= data.length then Stream() else
-            val end = math.min(offset + size, data.length)
+            val end = offset + size.min(data.length)
             data.slice(offset, end) #:: go(end)
         go(0)
 
@@ -84,7 +84,7 @@ object Tests extends Suite(m"Gesticulate tests"):
         t"file content\r\n" +
         t"--xyz--\r\n"
 
-      for blockSize <- blockSizes do
+      blockSizes.each: blockSize =>
         test(m"Single part: count at block size $blockSize"):
           Multipart.parse(chunks(singlePart, blockSize)).parts.length
 

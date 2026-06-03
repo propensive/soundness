@@ -38,7 +38,7 @@ import urticose.*
 import vacuous.*
 
 object Envelope:
-  def many[entity: Distinct from List[?]](value: entity | List[entity]): List[entity] = value match
+  def many[entity: Distinct from List[Any]](value: entity | List[entity]): List[entity] = value match
     case many: List[`entity` @unchecked] => many
     case one: (`entity` @unchecked)      => List(one)
 

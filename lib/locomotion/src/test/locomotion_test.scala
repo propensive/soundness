@@ -68,7 +68,7 @@ case class Counts(@field(1) counts: Map[Text, Int]) derives CanEqual
 object Tests extends Suite(m"Locomotion Protobuf Tests"):
   def run(): Unit =
     def wire[value: Encodable in Protobuf](value: value): List[Int] =
-      value.protobuf.encode.to(List).map(_.toInt & 0xff)
+      value.protobuf.encode.to[List].map(_.toInt & 0xff)
 
     suite(m"Wire-format golden vectors"):
       test(m"a single varint field encodes to the canonical bytes"):

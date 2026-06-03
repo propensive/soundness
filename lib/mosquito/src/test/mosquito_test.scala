@@ -121,7 +121,7 @@ object Tests extends Suite(m"Mosquito tests"):
       . assert(_ == List(1, 2, 3))
 
       test(m"iarray conversion"):
-        Tensor("a", "b", "c").iarray.toList
+        Tensor("a", "b", "c").iarray.to[List]
       . assert(_ == List("a", "b", "c"))
 
       test(m"size of a 4-tensor"):
@@ -317,14 +317,14 @@ object Tests extends Suite(m"Mosquito tests"):
         val m = Matrix[2, 2]((4.0, 7.0), (2.0, 6.0))
         val product = m*m.inverse.vouch
         val target = Matrix[2, 2]((1.0, 0.0), (0.0, 1.0))
-        product.elements.indices.map(i => math.abs(product.elements(i) - target.elements(i))).max
+        product.elements.indices.map(i => (product.elements(i) - target.elements(i)).abs).max
       . assert(_ < 0.000001)
 
       test(m"M times M-inverse is identity (3x3)"):
         val m = Matrix[3, 3]((1.0, 2.0, 3.0), (0.0, 1.0, 4.0), (5.0, 6.0, 0.0))
         val product = m*m.inverse.vouch
         val target = Matrix[3, 3]((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
-        product.elements.indices.map(i => math.abs(product.elements(i) - target.elements(i))).max
+        product.elements.indices.map(i => (product.elements(i) - target.elements(i)).abs).max
       . assert(_ < 0.000001)
 
       test(m"Inverse of singular 3x3 matrix is Unset"):
@@ -369,7 +369,7 @@ object Tests extends Suite(m"Mosquito tests"):
         val bDotB = bd.dot(bd)
         val aDotB = ad.dot(bd)
         crossNormSquared - (aDotA*bDotB - aDotB*aDotB)
-      . assert(d => math.abs(d) < 0.000001)
+      . assert(d => (d).abs < 0.000001)
 
       test(m"Type error if cross called on 4-tensor"):
         demilitarize:
@@ -558,7 +558,7 @@ object Tests extends Suite(m"Mosquito tests"):
 
       test(m"Submatrix of 2x3 matrix has shape 1x2"):
         Matrix[2, 3]((1, 2, 3), (4, 5, 6)).submatrix(0, 1)
-      . assert(_ == Matrix[1, 2](Tuple1((4, 6))))
+      . assert(_ == Matrix[1, 2](scala.Tuple1((4, 6))))
 
     suite(m"Frobenius norm"):
       test(m"Frobenius norm of [[3, 0], [0, 4]] = 5"):
@@ -567,7 +567,7 @@ object Tests extends Suite(m"Mosquito tests"):
 
       test(m"Frobenius norm of [[1, 2], [3, 4]]"):
         Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).frobeniusNorm
-      . assert(_ === math.sqrt(30.0) +/- 0.000001)
+      . assert(_ === (30.0).sqrt +/- 0.000001)
 
       test(m"Frobenius norm of identity equals sqrt(n)"):
         Matrix.identity[Double, 4].frobeniusNorm
@@ -599,19 +599,19 @@ object Tests extends Suite(m"Mosquito tests"):
         val sorted =
           Matrix[2, 2]((2.0, 0.0), (0.0, 3.0)).eigenvalues.let(_.list.sorted).vouch
 
-        math.abs(sorted(0) - 2.0) + math.abs(sorted(1) - 3.0)
+        (sorted(0) - 2.0).abs + (sorted(1) - 3.0).abs
       . assert(_ < 0.000001)
 
       test(m"Eigenvalues of [[2, 1], [1, 2]] are 1 and 3"):
         val sorted =
           Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues.let(_.list.sorted).vouch
 
-        math.abs(sorted(0) - 1.0) + math.abs(sorted(1) - 3.0)
+        (sorted(0) - 1.0).abs + (sorted(1) - 3.0).abs
       . assert(_ < 0.000001)
 
       test(m"Eigenvalues of identity are all 1"):
         val list = Matrix.identity[Double, 3].eigenvalues.let(_.list).vouch
-        list.map(v => math.abs(v - 1.0)).max
+        list.map(v => (v - 1.0).abs).max
       . assert(_ < 0.000001)
 
       test(m"Eigensystem of non-symmetric matrix is Unset"):
@@ -629,16 +629,16 @@ object Tests extends Suite(m"Mosquito tests"):
         val lambda1 = vals(1)
         val mv0 = mat*v0
         val mv1 = mat*v1
-        val d0 = math.abs(mv0(0) - lambda0*v0(0)) + math.abs(mv0(1) - lambda0*v0(1))
-        val d1 = math.abs(mv1(0) - lambda1*v1(0)) + math.abs(mv1(1) - lambda1*v1(1))
-        math.max(d0, d1)
+        val d0 = (mv0(0) - lambda0*v0(0)).abs + (mv0(1) - lambda0*v0(1)).abs
+        val d1 = (mv1(0) - lambda1*v1(0)).abs + (mv1(1) - lambda1*v1(1)).abs
+        d0.max(d1)
       . assert(_ < 0.000001)
 
       test(m"Eigenvectors are unit vectors"):
         val mat = Matrix[3, 3]((4.0, 1.0, 2.0), (1.0, 5.0, 3.0), (2.0, 3.0, 6.0))
         val vecs = mat.eigenvectors.vouch
         val norms = (0 until 3).map: column =>
-          math.abs(vecs.column(column).norm - 1.0)
+          (vecs.column(column).norm - 1.0).abs
 
         norms.max
       . assert(_ < 0.000001)
@@ -648,7 +648,7 @@ object Tests extends Suite(m"Mosquito tests"):
         val mat = Matrix[2, 2]((2.0, 1.0), (1.0, 3.0))
         val rhs = Tensor(3.0, 4.0)
         val solution = mat.solve(rhs).vouch
-        math.abs(solution(0) - 1.0) + math.abs(solution(1) - 1.0)
+        (solution(0) - 1.0).abs + (solution(1) - 1.0).abs
       . assert(_ < 0.000001)
 
       test(m"Solve identity system returns RHS"):
@@ -661,7 +661,7 @@ object Tests extends Suite(m"Mosquito tests"):
         val rhs = Tensor(6.0, -4.0, 27.0)
         val solution = mat.solve(rhs).vouch
         val expected = Tensor(5.0, 3.0, -2.0)
-        (0 until 3).map(i => math.abs(solution(i) - expected(i))).max
+        (0 until 3).map(i => (solution(i) - expected(i)).abs).max
       . assert(_ < 0.000001)
 
       test(m"Solve verifies A * x = b"):
@@ -669,7 +669,7 @@ object Tests extends Suite(m"Mosquito tests"):
         val rhs = Tensor(7.0, 8.0, 9.0)
         val solution = mat.solve(rhs).vouch
         val recovered = mat*solution
-        (0 until 3).map(i => math.abs(recovered(i) - rhs(i))).max
+        (0 until 3).map(i => (recovered(i) - rhs(i)).abs).max
       . assert(_ < 0.000001)
 
       test(m"Solve singular system returns Unset"):
@@ -679,5 +679,5 @@ object Tests extends Suite(m"Mosquito tests"):
       test(m"Solve requires row swap (zero in pivot)"):
         val mat = Matrix[2, 2]((0.0, 1.0), (1.0, 0.0))
         val solution = mat.solve(Tensor(2.0, 3.0)).vouch
-        math.abs(solution(0) - 3.0) + math.abs(solution(1) - 2.0)
+        (solution(0) - 3.0).abs + (solution(1) - 2.0).abs
       . assert(_ < 0.000001)

@@ -148,7 +148,7 @@ object RecordSchema:
 
       i += 1
 
-    builder.toMap
+    Map.from(builder)
 
   // Map a single Tels.Field to its polyvinyl Member representation.
   // Scalar / Flag / Reference types are translated to a Value member

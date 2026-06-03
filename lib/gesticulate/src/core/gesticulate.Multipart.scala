@@ -74,7 +74,7 @@ object Multipart:
       if cursor.peek == '\r' then
         cursor.next()
         cursor.expect('\n')(expected('\n'))
-        list.to(Map)
+        list.to[Map]
 
       else
         val key: Text = cursor.hold:
@@ -148,7 +148,7 @@ object Multipart:
               case _ =>
                 abort(MultipartError(Reason.BadDisposition))
 
-          . to(Map)
+          .to[Map]
 
         val dispositionValue = parts.prim match
           case t"inline"     => Multipart.Disposition.Inline

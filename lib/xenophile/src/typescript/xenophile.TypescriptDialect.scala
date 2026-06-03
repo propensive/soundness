@@ -34,6 +34,7 @@ package xenophile
 
 import anticipation.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 // A minimal grammar for TypeScript declaration files: enough to read `interface` blocks of fields

@@ -131,7 +131,7 @@ object Installer:
         else
           val payloadSize: Bytes = Bytes(System.properties.ethereal.payloadSize[Int]())
           val jarSize: Bytes = Bytes(System.properties.ethereal.jarSize[Int]())
-          val fileSize = service.executable.size()
+          val fileSize = service.executable.usage()
           val prefixSize = fileSize - payloadSize - jarSize
 
           val installDirectory: Path on Linux = target.or(candidateTargets().prim).or:

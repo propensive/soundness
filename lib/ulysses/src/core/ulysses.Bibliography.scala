@@ -36,8 +36,8 @@ import anticipation.*
 import beneficence.*
 
 object Bibliography:
-  def apply(data: Iterable[Data]): Bibliography =
-    new Bibliography(IArray.from(data))
+  def apply(data: List[Data]): Bibliography =
+    new Bibliography(IArray.from(data.scala))
 
 case class Bibliography(hashes: IArray[Data]) extends Findable:
   // Return every library hash whose leading bytes equal `prefix`. The

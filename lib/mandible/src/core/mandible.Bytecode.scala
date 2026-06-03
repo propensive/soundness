@@ -44,6 +44,7 @@ import escapade.*
 import escritoire.*
 import fulminate.*
 import gossamer.*
+import rudiments.*
 import hieroglyph.*
 import iridescence.*
 import spectacular.*
@@ -67,7 +68,7 @@ object Bytecode:
           Column(e"$Bold(Opcode)")(_.opcode.teletype),
           Column(e"$Bold(Stack)")(_.stack.let(_.teletype).or(e"")) )
 
-    table.tabulate(bytecode.instructions).grid(160).render.join(e"\n")
+    table.tabulate(bytecode.instructions.scala).grid(160).render.join(e"\n")
 
   given printable: (palette: BytecodePalette) => Bytecode is Printable =
     _.teletype.render(_)
@@ -158,7 +159,7 @@ object Bytecode:
       val result: Optional[Frame] =
         if s.charAt(cursor) == 'V' then Unset else Frame.parseOne(descriptor, cursor)._1
 
-      Descriptor(argsBuf.toList, result)
+      Descriptor(argsBuf.to(List), result)
 
   case class Descriptor(args: List[Frame], result: Optional[Frame])
 
@@ -325,7 +326,7 @@ object Bytecode:
       case tswitch: jlci.TableSwitchInstruction =>
         val default = labels.getOrElse(tswitch.defaultTarget.nn, 0)
 
-        val targets = tswitch.cases.nn.asScala.toList.map: c =>
+        val targets = tswitch.cases.nn.asScala.to(List).map: c =>
           labels.getOrElse(c.nn.target.nn, 0)
 
         Tableswitch(default, tswitch.lowValue, tswitch.highValue, targets)
@@ -333,7 +334,7 @@ object Bytecode:
       case lswitch: jlci.LookupSwitchInstruction =>
         val default = labels.getOrElse(lswitch.defaultTarget.nn, 0)
 
-        val cases = lswitch.cases.nn.asScala.toList.map: c =>
+        val cases = lswitch.cases.nn.asScala.to(List).map: c =>
           (c.nn.caseValue, labels.getOrElse(c.nn.target.nn, 0))
 
         Lookupswitch(default, cases)
@@ -1484,7 +1485,7 @@ case class Bytecode
         . or(results += Bytecode.Linearized(depth, source, instr))
 
     expand(this, 0, t"")
-    results.toList
+    results.to(List)
 
   def effectivelyStaticCalls: Set[Int] =
     import Bytecode.Opcode.*
@@ -1494,7 +1495,7 @@ case class Bytecode
       var prev: Optional[List[Bytecode.Frame]] = Nil
       val builder = Map.newBuilder[Int, List[Bytecode.Frame]]
 
-      instructions.foreach: instr =>
+      instructions.each: instr =>
         prev.let(builder += instr.offset -> _)
         prev = instr.stack
 
@@ -1515,4 +1516,4 @@ case class Bytecode
           case Bytecode.Frame.L(name) if name == owner => Some(instr.offset)
           case _                                       => None
 
-    . toSet
+    .to(Set)

@@ -32,31 +32,32 @@
                                                                                                   */
 package ambience
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import distillate.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 
 object Variable extends Protovariable:
   given path: [path: Instantiable across Paths from Text] => (system: System)
   =>  Variable["path", List[path]] =
 
-    _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
+    _.cut(system(t"path.separator").or(t":")).to[List].map(path(_))
 
 
   given xdgDataDirs: [path: Instantiable across Paths from Text] => (system: System)
   =>  Variable["xdgDataDirs", List[path]] =
 
-    _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
+    _.cut(system(t"path.separator").or(t":")).to[List].map(path(_))
 
 
   given xdgConfigDirs: [path: Instantiable across Paths from Text] => (system: System)
   =>  Variable["xdgConfigDirs", List[path]] =
 
-    _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
+    _.cut(system(t"path.separator").or(t":")).to[List].map(path(_))
 
 
   given xdgDataHome: [path: Instantiable across Paths from Text]

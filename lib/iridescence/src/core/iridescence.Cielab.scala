@@ -54,7 +54,7 @@ case class Cielab(lightness: Double, blueYellow: Double, greenRed: Double) exten
     val dl = lightness - that.lightness
     val da = greenRed - that.greenRed
     val db = blueYellow - that.blueYellow
-    math.sqrt(dl*dl + da*da + db*db)
+    scala.math.sqrt(dl*dl + da*da + db*db)
 
   def mix(that: Cielab, ratio: Double = 0.5): Cielab =
     Cielab

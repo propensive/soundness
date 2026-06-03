@@ -32,7 +32,7 @@
                                                                                                   */
 package parasite
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import java.lang as jl
 import java.util.concurrent.atomic as juca
@@ -52,7 +52,7 @@ import vacuous.*
 import AsyncError.Reason
 import Fulfillment.*
 import beneficence.*
-import unsafeExceptions.canThrowAny
+import scala.unsafeExceptions.canThrowAny
 
 sealed trait Monitor extends Resultant, Findable:
   val promise: Promise[Result]
@@ -63,7 +63,7 @@ sealed trait Monitor extends Resultant, Findable:
   protected[parasite] def workers: Set[Worker] = workersRef.get().nn
 
   protected[parasite] def addWorker(worker: Worker): Unit =
-    workersRef.updateAndGet(_.nn + worker)
+    workersRef.updateAndGet(_.nn ++ Set(worker))
 
   def name: Optional[Text]
   def chain: Optional[Chain]
@@ -72,7 +72,7 @@ sealed trait Monitor extends Resultant, Findable:
   def attend(): Unit = promise.attend()
   def ready: Boolean = promise.ready
   def cancel(): Unit
-  def remove(monitor: Worker): Unit = workersRef.updateAndGet(_.nn - monitor)
+  def remove(monitor: Worker): Unit = workersRef.updateAndGet(_.nn -- Set(monitor))
   def supervisor: Supervisor
 
   def snooze[generic: Abstractable across Durations to Long](duration: generic): Unit =

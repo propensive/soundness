@@ -64,7 +64,7 @@ object internal:
                 ${Expr(name)},
                 ${Expr(expr)},
                 ${Expr(source)},
-                ${Expr.ofList(nodes2)},
+                proscenium.List.from(${Expr.ofList(nodes2.scala)}),
                 $param2.asInstanceOf[Optional[Text]],
                 ${Expr(term)},
                 ${Expr(definitional)} )
@@ -286,7 +286,7 @@ object internal:
           case Inlined(call, bindings, child) =>
             if inlining then expand(tag, child) else
               TastyTree(tag, typeName, t"Inlined", tree)
-              . add('c', call.to(List)*)
+              . add('c', call.to(List).scala*)
               . add('b', bindings*)
               . children(child)
 
@@ -354,7 +354,7 @@ object internal:
             TastyTree(tag, typeName, t"Try", tree)
             . add('t', expr)
             . add('c', cases*)
-            . add('f', finalizer.to(List)*)
+            . add('f', finalizer.to(List).scala*)
 
           case Block(statements, last) =>
             TastyTree(tag, typeName, t"Block", tree)
@@ -412,7 +412,7 @@ object internal:
 
           case MatchTypeTree(bound, selector, cases) =>
             TastyTree(tag, typeName, t"MatchTypeTree", tree)
-            . add('b', bound.to(List)*)
+            . add('b', bound.to(List).scala*)
             . add('s', selector)
             . add('c', cases*)
             . typeNode
@@ -477,9 +477,9 @@ object internal:
                 panic(m"unexpected parameter clause: ${clause.toString}")
 
             TastyTree(tag, typeName, t"DefDef", tree, parameter = name.tt)
-            . copy(nodes = clauses)
+            . copy(nodes = List.from(clauses))
             . typed(tpt)
-            . children(rhs.to(List)*)
+            . children(rhs.to(List).scala*)
             . definition
 
           case SummonFrom(cases) =>
@@ -490,13 +490,13 @@ object internal:
             val typeName = stenography.internal.name(tpt.tpe)
             TastyTree(tag, typeName, t"ValDef", tree, parameter = name.tt)
             . typed(tpt)
-            . children(rhs.to(List)*)
+            . children(rhs.to(List).scala*)
             . definition
 
           case CaseDef(pattern, guard, rhs) =>
             TastyTree(tag, typeName, t"CaseDef", tree)
             . add('p', pattern)
-            . add('g', guard.to(List)*)
+            . add('g', guard.to(List).scala*)
             . children(rhs)
 
           case _ =>
@@ -625,7 +625,7 @@ object internal:
 
       . getOrElse(t"")
 
-    val details: List[(Text, Text | List[Text])] =
+    val details: List[(Text, Text | scala.collection.immutable.List[Text])] =
       List
         ( t"Owner"            -> symbol.owner.fullName.tt,
           t"Info"             -> symbol.info.show,
@@ -637,7 +637,7 @@ object internal:
           t"Declared fields"  -> symbol.declaredFields.sortBy(_.name).map(_.name.tt),
           t"Field members"    -> symbol.fieldMembers.sortBy(_.name).map(_.name.tt),
           t"Declared methods" -> symbol.declaredMethods.sortBy(_.name).map(_.name.tt),
-          t"Method members"   -> symbol.methodMembers.sortBy(_.name).map(_.name),
+          t"Method members"   -> symbol.methodMembers.sortBy(_.name).map(_.name.tt),
           t"Declared types"   -> symbol.declaredTypes.sortBy(_.name).map(_.name.tt),
           t"Type members"     -> symbol.typeMembers.sortBy(_.name).map(_.name.tt),
           t"Declarations"     -> symbol.declarations.sortBy(_.name).map(_.name.tt),
@@ -647,7 +647,7 @@ object internal:
           ->  symbol.paramSymss.map(_.map(_.name.tt).join(t"(", t" ", t")")),
 
           t"All overridden symbols"
-          ->  symbol.allOverriddenSymbols.map(_.name.tt).to(List),
+          ->  symbol.allOverriddenSymbols.map(_.name.tt).toList,
 
           t"Primary constructor"
           ->  symbol.primaryConstructor.name.tt,
@@ -681,14 +681,14 @@ object internal:
         pair.absolve match
           case (key, text: Text) => '{(${Expr(key)}, ${Expr(text)})}
 
-          case (key, list: List[Text] @unchecked) =>
+          case (key, list: scala.collection.immutable.List[Text] @unchecked) =>
             '{(${Expr(key)}, ${Expr.ofList(list.map(Expr(_)))})}
 
     ' {
         TastySymbol
           ( ${Expr(symbol.prefix)},
             ${Expr(symbol.name)},
-            ${Expr.ofList(flags)},
-            ${Expr.ofList(properties)},
-            ${Expr.ofList(details)} )
+            proscenium.List.from(${Expr.ofList(flags.scala)}),
+            proscenium.List.from(${Expr.ofList(properties.scala)}),
+            proscenium.List.from(${Expr.ofList(details.scala)}) )
       }

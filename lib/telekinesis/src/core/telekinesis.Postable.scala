@@ -32,7 +32,7 @@
                                                                                                   */
 package telekinesis
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
@@ -61,7 +61,7 @@ object Postable:
 
 
   given text: (encoder: CharEncoder) => Text is Postable =
-    Postable(media"text/plain", value => Stream(IArray.from(value.data)))
+    Postable(media"text/plain", value => Stream(value.data))
 
   given textStream: (encoder: CharEncoder) => Stream[Text] is Postable =
     Postable(media"application/octet-stream", _.map(_.data))
@@ -89,7 +89,7 @@ trait Postable extends Typeclass:
   def mediaType(content: Self): MediaType
   def stream(content: Self): Stream[Data]
 
-  def preview(value: Self): Text = stream(value).prim.lay(t""): data =>
+  def preview(value: Self): Text = List.from(stream(value)).prim.lay(t""): data =>
     val sample = data.take(1024)
     val string: Text = sample.serialize[Base256]
     if data.length > 128 then t"$string..." else string

@@ -49,7 +49,7 @@ object Routable:
       Connection(address, endpoint.port.number, jn.DatagramSocket())
 
     def transmit(connection: Connection, input: Stream[Data]): Unit =
-      input.each: bytes =>
+      List.from(input).each: bytes =>
         val packet =
           jn.DatagramPacket
             ( bytes.mutable(using Unsafe), bytes.length, connection.address, connection.port )
@@ -63,7 +63,7 @@ object Routable:
       Connection(port.number, jn.DatagramSocket())
 
     def transmit(connection: Connection, input: Stream[Data]): Unit =
-      input.each: bytes =>
+      List.from(input).each: bytes =>
         val packet =
           jn.DatagramPacket
             ( bytes.mutable(using Unsafe),

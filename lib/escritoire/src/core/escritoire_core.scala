@@ -197,7 +197,7 @@ package columnar:
 
         recur(0, 0, 0, Nil)
 
-      lines.to(IndexedSeq).flatMap(format(_).reverse)
+      lines.to[IndexedSeq].flatMap(format(_).reverse.scala)
 
   object ProseOrBreak extends Columnar:
     def width[textual: Textual](lines: IArray[textual], maxWidth: Int, slack: Double)
@@ -221,10 +221,10 @@ package columnar:
         lines.each: line =>
           val count = (line.length - 1)/width + 1
 
-          (0 until count).each: index =>
+          List.from(0 until count).each: index =>
             result = line.segment((width*index).z span width) :: result
 
-        result.reverse.to(Vector)
+        result.reverse.to[Vector]
 
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)
@@ -236,7 +236,7 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   IndexedSeq[text] =
 
-      lines.to(IndexedSeq).map: line =>
+      lines.to[IndexedSeq].map: line =>
         if line.plain.metrics > width then line.keep(width - ellipsis.length)+text(ellipsis)
         else line
 
@@ -253,7 +253,7 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   IndexedSeq[text] =
 
-      lines.to(IndexedSeq).map: line =>
+      lines.to[IndexedSeq].map: line =>
         if line.plain.metrics > width then line.keep(width - ellipsis.length)+text(ellipsis)
         else line
 
@@ -269,4 +269,4 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   IndexedSeq[text] =
 
-      lines.to(IndexedSeq)
+      lines.to[IndexedSeq]

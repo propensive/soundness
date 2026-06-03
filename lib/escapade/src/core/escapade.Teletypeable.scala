@@ -40,6 +40,7 @@ import gossamer.*
 import hieroglyph.*
 import iridescence.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
@@ -97,14 +98,14 @@ object Teletypeable:
 
         case head :: tail =>
           if seen.contains(head) then dedup(tail, seen, done)
-          else dedup(tail, seen + head, head :: done)
+          else dedup(tail, seen ++ Set(head), head :: done)
 
     val packages: Map[Text, Color in Srgb] =
       dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil)
       . zipWithIndex.map: (prefix, index) =>
           prefix -> accent(index)
 
-      . to(Map)
+      .to[Map]
 
     val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
     val init = e"${palette.message}($fullClass): ${stack.message}"
@@ -167,7 +168,7 @@ object Teletypeable:
 
     given attenuation: Attenuation = columnAttenuation.ignore
 
-    val grid = scaffold.tabulate(rows).grid(200)
+    val grid = scaffold.tabulate(rows.scala).grid(200)
     val dataOnly = grid.copy(sections = grid.sections.tail)
     val tableLines = dataOnly.render.to(List)
 

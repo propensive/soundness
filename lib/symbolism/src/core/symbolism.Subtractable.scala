@@ -58,6 +58,15 @@ object Subtractable:
   given byte: Byte is Subtractable by Byte to Byte = Subtractable:
     (minuend, subtrahend) => (minuend - subtrahend).toByte
 
+  // `set - element` removes a single element; collection difference is `--`. (`Set` lives in
+  // murmuration, below this module, so the instance lives here rather than in `Set`'s companion.)
+  given set: [element] => Set[element] is Subtractable by element to Set[element] =
+    Subtractable((set, element) => set.excl(element))
+
+  // `map - key` removes one entry; `--` removes a collection of keys.
+  given map: [key, value] => Map[key, value] is Subtractable by key to Map[key, value] =
+    Subtractable((map, key) => map.removed(key))
+
 trait Subtractable extends Typeclass, Operable, Resultant:
   type Minuend = Self
   type Subtrahend = Operand

@@ -32,12 +32,15 @@
                                                                                                   */
 package mercator
 
+import scala.collection.immutable.List
 import scala.compiletime.*
 import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
 import gigantism.*
+
+import murmuration.{Functor, Monad, Identity}
 
 object internal:
   def point[typeConstructor[_]: Type]: Macro[Identity[typeConstructor]] =

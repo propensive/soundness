@@ -33,6 +33,8 @@
 package soundness
 
 object Tests extends Suite(m"Soundness tests"):
+  def main(args: scala.Array[String]): Unit = runSuite()
+
   def run(): Unit =
     abacist.Tests()
     acyclicity.Tests()
@@ -154,6 +156,8 @@ object Tests extends Suite(m"Soundness tests"):
     //ziggurat.Tests() - ziggurat.test missing from build.mill test bundle
 
 object FailingTests extends Suite(m"Failing tests"):
+  def main(args: scala.Array[String]): Unit = runSuite()
+
   def run(): Unit =
     jacinta.ParserTests()
     satirical.Tests()

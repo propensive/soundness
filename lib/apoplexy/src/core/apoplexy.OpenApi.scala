@@ -130,7 +130,7 @@ object OpenApi:
       parameters:  List[Parameter]     = Nil ):
 
     def operations: Map[Http.Method, Operation] =
-      val verbs =
+      val verbs: List[(Http.Method, Optional[Operation])] =
         List
           ( Http.Get -> get, Http.Put -> put, Http.Post -> post, Http.Delete -> delete,
             Http.Options -> options, Http.Head -> head, Http.Patch -> patch,
@@ -138,7 +138,7 @@ object OpenApi:
 
       verbs
       . collect { case (method, operation) if operation.present => method -> operation.vouch }
-      . to(Map)
+      .to[Map]
 
   case class Components(schemas: Map[Text, JsonSchema] = Map())
 

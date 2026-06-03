@@ -32,7 +32,8 @@
                                                                                                   */
 package guillotine
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
+import rudiments.*
 
 import scala.quoted.*
 
@@ -50,10 +51,10 @@ object internal:
       context.value.getOrElse:
         halt(m"the StringContext extension method parameter does not appear to be inline")
 
-      . parts.toList
+      . parts.to(List)
 
     val insertionExprs: List[Expr[Any]] = insertions.absolve match
-      case Varargs(exprs) => exprs.toList
+      case Varargs(exprs) => exprs.to(List)
 
     def rethrow[result](block: => result): result =
       try block catch case error: Sh.ShError => halt(error.detail)

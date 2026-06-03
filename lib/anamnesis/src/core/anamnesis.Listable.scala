@@ -35,4 +35,4 @@ package anamnesis
 trait Listable:
   type Self <: Entity
 
-  def list(predicate: Self => Boolean): Iterable[Reference[Self]]
+  def list(predicate: Self => Boolean): List[Reference[Self]]

@@ -32,7 +32,7 @@
                                                                                                   */
 package cellulose
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
@@ -64,7 +64,7 @@ trait Indexed extends Codllike, Dynamic:
       case (acc, _) =>
         acc
 
-    . view.mapValues(_.reverse).to(Map)
+    . mapValues(_.reverse)
 
   protected lazy val idIndex: Map[Text, Int] =
     def recur(index: Int, map: Map[Text, Int] = Map()): Map[Text, Int] =
@@ -81,9 +81,9 @@ trait Indexed extends Codllike, Dynamic:
   def apply(key: Text): List[CodlNode] = index.at(key).or(Nil).map(children(_))
 
   def get(key: Text): List[Indexed] =
-    paramIndex.lift(key) match
+    paramIndex.get(key) match
       case None =>
-        index.lift(key) match
+        index.get(key) match
           case None          => Nil
           case Some(indexes) => indexes.map(children(_).data.vouch)
 

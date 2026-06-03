@@ -32,7 +32,7 @@
                                                                                                   */
 package cataclysm
 
-import language.dynamics
+import scala.language.dynamics
 
 
 object From extends Dynamic:

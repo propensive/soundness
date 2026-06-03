@@ -49,4 +49,4 @@ enum Prose extends Markdown.Node:
   def children: Seq[Prose] = this match
     case Link(_, _, prose*)  => prose
     case Image(_, _, prose*) => prose
-    case _                   => Nil
+    case _                   => Nil.scala

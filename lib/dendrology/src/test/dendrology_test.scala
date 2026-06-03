@@ -161,7 +161,7 @@ object Tests extends Suite(m"Dendrology tests"):
           t"B" -> Set(t"A"),
           t"C" -> Set(),
           t"D" -> Set(t"A", t"C") )
-      LaneDagDiagram(dag).render(node => t"").map(_.s).mkString("\n").linesIterator.toList.size
+      LaneDagDiagram(dag).render(node => t"").map(_.s).scala.mkString("\n").linesIterator.toList.size
 
     . assert(_ == 7)
 
@@ -198,7 +198,7 @@ object Tests extends Suite(m"Dendrology tests"):
 
     test(m"Layered DAG: linear chain has one node per level"):
       val dag = Dag(t"A" -> Set(), t"B" -> Set(t"A"), t"C" -> Set(t"B"))
-      LayeredDagDiagram(dag).rows.count((_, nodesAt) => nodesAt.nonEmpty)
+      LayeredDagDiagram(dag).rows.count((_, nodesAt) => !nodesAt.nil)
 
     . assert(_ == 3)
 
@@ -209,7 +209,7 @@ object Tests extends Suite(m"Dendrology tests"):
           t"C" -> Set(t"A"),
           t"D" -> Set(t"B", t"C") )
       val nodeRows = LayeredDagDiagram(dag).rows.collect:
-        case (_, nodesAt) if nodesAt.nonEmpty => nodesAt
+        case (_, nodesAt) if !nodesAt.nil => nodesAt
       // Three node rows: [A], [B,C], [D]
       ( nodeRows.length,
         nodeRows.head.size,

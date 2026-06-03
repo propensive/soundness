@@ -66,14 +66,14 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
 
         case Ctrl(Left) =>
           val position2 =
-            ((position - 2 `max` 0) to 0 by -1).where: index =>
+            List.from((position - 2 `max` 0) to 0 by -1).where: index =>
               value.at(index.z) == ' '
 
           copy(position0 = position2.lay(0)(_ + 1))
 
         case Ctrl(Right) =>
           val range = ((position + 1) `min` (value.length - 1)) to (value.length - 1)
-          val position2 = range.where { index => value.at(index.z) == ' ' }.lay(value.length)(_ + 1)
+          val position2 = List.from(range).where { index => value.at(index.z) == ' ' }.lay(value.length)(_ + 1)
           copy(position0 = position2 `min` value.length)
 
         case _ =>

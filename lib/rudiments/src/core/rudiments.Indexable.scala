@@ -32,7 +32,7 @@
                                                                                                   */
 package rudiments
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import scala.collection.mutable as scm
 
@@ -83,7 +83,7 @@ object Indexable:
     type Result = value
 
     def contains(value: Self, index: key): Boolean = value.map.contains(index)
-    def access(value: Self, index: key): value = value.map(index)
+    def access(value: Self, index: key): value = value(index)
 
   given hashMap: [key, value] => scm.HashMap[key, value] is Indexable:
     type Self = scm.HashMap[key, value]

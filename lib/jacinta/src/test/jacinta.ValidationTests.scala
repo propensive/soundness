@@ -81,7 +81,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
 
       test(m"Pointers identify the missing fields"):
         val json = t"""{"name": "Alice"}""".read[Json]
-        validateJson(json)(_.as[VPerson]).items.map(_(0).s).to(Set)
+        validateJson(json)(_.as[VPerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set("#/age", "#/email"))
 
       test(m"Each missing-field error has reason Absent"):
@@ -103,7 +103,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
 
       test(m"Pointers identify the wrong-type fields"):
         val json = t"""{"name": 42, "age": "thirty", "email": "x@y"}""".read[Json]
-        validateJson(json)(_.as[VPerson]).items.map(_(0).s).to(Set)
+        validateJson(json)(_.as[VPerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set("#/name", "#/age"))
 
       test(m"Wrong-type errors have reason NotType"):
@@ -122,26 +122,26 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
     suite(m"Missing and wrong-type mixed"):
       test(m"One wrong-type + two missing: three errors at the right pointers"):
         val json = t"""{"name": 42}""".read[Json]
-        validateJson(json)(_.as[VPerson]).items.map(_(0).s).to(Set)
+        validateJson(json)(_.as[VPerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set("#/name", "#/age", "#/email"))
 
     suite(m"Nested case-class errors"):
       test(m"Nested object's missing field reports both segments"):
         val json = t"""{"person": {"name": "X", "age": 1, "email": "y@z"},
                         "address": {"street": "S"}}""".read[Json]
-        validateJson(json)(_.as[VContact]).items.map(_(0).s).to(Set)
+        validateJson(json)(_.as[VContact]).items.map(_(0).s).to[Set]
       . assert(_ == Set("#/address/city", "#/address/zip"))
 
       test(m"Nested wrong-type field reports both segments"):
         val json = t"""{"person": {"name": "C", "age": 25, "email": "c@x"},
                         "address": {"street": "X", "city": 999, "zip": "Z"}}""".read[Json]
-        validateJson(json)(_.as[VContact]).items.map(_(0).s).to(Set)
+        validateJson(json)(_.as[VContact]).items.map(_(0).s).to[Set]
       . assert(_ == Set("#/address/city"))
 
       test(m"Mixed errors at different depths accrue together"):
         val json = t"""{"person": {"name": "D"},
                         "address": {"street": "X", "city": "Y", "zip": "Z"}}""".read[Json]
-        validateJson(json)(_.as[VContact]).items.map(_(0).s).to(Set)
+        validateJson(json)(_.as[VContact]).items.map(_(0).s).to[Set]
       . assert(_ == Set("#/person/age", "#/person/email"))
 
       test(m"Errors accumulate across both nested objects"):
@@ -179,7 +179,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
         val source = t"""{"name": "Alice"}"""
         val json = Json.parseTracked(source)
         val results = validateWithPositions(json)(_.as[VPerson])
-        results.map(_(0).s).to(Set)
+        results.map(_(0).s).to[Set]
       . assert(_ == Set("#/age", "#/email"))
 
       test(m"Wrong-type field reports the value's line/column"):
@@ -194,5 +194,5 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
         val source = t"""{"name": "Alice"}"""
         val json = source.read[Json]
         val results = validateWithPositions(json)(_.as[VPerson])
-        results.forall((_, line, _) => line == Unset)
+        results.all((_, line, _) => line == Unset)
       . assert(identity)

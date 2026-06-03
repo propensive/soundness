@@ -42,11 +42,11 @@ object Poset:
 case class Poset[element: PartiallyOrdered](elements: Set[element]):
   def dag: Dag[element] =
     val map: scm.HashMap[element, scm.HashSet[element]] =
-      elements.map(_ -> scm.HashSet()).to(scm.HashMap)
+      elements.map(_ -> scm.HashSet()).scala.to(scm.HashMap)
 
     for
-      left  <- elements
-      right <- elements
+      left  <- elements.scala
+      right <- elements.scala
     do if element.compare(left, right) then map(left) += right
 
     Dag(map.view.mapValues(_.to(Set)).to(Map)).reduction

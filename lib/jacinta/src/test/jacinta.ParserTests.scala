@@ -33,6 +33,7 @@
 package jacinta
 
 import soundness.*
+import galilei.exists
 
 import interfaces.paths.pathOnLinux
 import strategies.throwUnsafely
@@ -70,15 +71,15 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         . filter(_.name.starts(t"y_"))
         . map: file =>
             (file.name, file.open(_.read[Data]))
-        . to(List)
+        .to(List)
 
     val negativeCases: List[(Text, Data)] =
       tests.children
         . filter(_.name.starts(t"n_"))
-        . filter { file => !deeplyNested.contains(file.name) }
+        . filter { file => !deeplyNested.scala.contains(file.name) }
         . map: file =>
             (file.name, file.open(_.read[Data]))
-        . to(List)
+        .to(List)
 
     suite(m"Positive tests"):
       positiveCases.each: (name, data) =>
@@ -183,13 +184,13 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
 
     suite(m"Streaming over multi-block input"):
       def chunks(text: Text, sizes: Int*): Iterator[Data] =
-        val bytes = text.s.getBytes("UTF-8").nn
+        val bytes: Data = text.data
         var offset = 0
 
         sizes.iterator.flatMap: size =>
           if offset >= bytes.length then None else
-            val end = math.min(offset + size, bytes.length)
-            val slice: Data = IArray.from(bytes.slice(offset, end))
+            val end = offset + size.min(bytes.length)
+            val slice: Data = bytes.slice(offset, end)
             offset = end
             Some(slice)
 
@@ -226,17 +227,17 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(_ == Json.Ast(42L))
 
     suite(m"Hole-mode parsing"):
-      def bytes(text: Text): Data = IArray.from(text.s.getBytes("UTF-8").nn)
+      def bytes(text: Text): Data = text.data
 
       def shape(node: Any): Any = node.asMatchable match
         case nums: Array[Double] @unchecked =>
           // Number-only array: recover Long for whole values, Double for the rest.
-          nums.toList.map: d =>
+          IArray.unsafeFromArray(nums).to[List].map: d =>
             if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
             then d.toLong
             else d
         case arr: IArray[?] @unchecked =>
-          val raw = arr.toList
+          val raw = arr.to[List]
           if (raw.length & 1) == 0 then
             // Object: alternating key/value
             val keys = (0 until raw.length/2).toList.map(i => raw(i*2).asInstanceOf[String])
@@ -245,7 +246,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
           else
             // Array: strip sentinel pad if present
             val elems =
-              if raw.nonEmpty && raw.last.asInstanceOf[AnyRef] == Json.Ast.arrayPad
+              if !raw.nil && raw.last.asInstanceOf[AnyRef] == Json.Ast.arrayPad
               then raw.init else raw
             elems.map(shape)
         case other => other
@@ -285,7 +286,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
           case ParseError(_, _, _) => true
 
     suite(m"Position ranges"):
-      def asBytes(text: Text): Data = IArray.from(text.s.getBytes("UTF-8").nn)
+      def asBytes(text: Text): Data = text.data
       def position(input: Text): Json.Ast.Position =
         capture[ParseError](Json.Ast.parse(asBytes(input)))
         . position.asInstanceOf[Json.Ast.Position]
@@ -302,7 +303,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(_ == (1: Int))
 
     suite(m"Number-only arrays"):
-      def parseRaw(text: Text): Any = Json.Ast.parse(IArray.from(text.s.getBytes("UTF-8").nn))
+      def parseRaw(text: Text): Any = Json.Ast.parse(text.data)
 
       test(m"Pure integer array uses the unboxed Array[Double] form"):
         parseRaw(t"[1, 2, 3]").getClass.getName
@@ -378,7 +379,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(identity)
 
     suite(m"Boxed-array storage"):
-      def parseRaw(text: Text): Any = Json.Ast.parse(IArray.from(text.s.getBytes("UTF-8").nn))
+      def parseRaw(text: Text): Any = Json.Ast.parse(text.data)
 
       test(m"Empty array round-trips via the printer"):
         JsonPrinter.print(parseRaw(t"[]").asInstanceOf[Json.Ast], false)

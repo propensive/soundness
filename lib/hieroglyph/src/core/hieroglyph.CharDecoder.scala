@@ -32,7 +32,7 @@
                                                                                                   */
 package hieroglyph
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import java.nio as jn, jn.charset as jnc
 
@@ -55,7 +55,7 @@ class CharDecoder(val encoding: Encoding)(using sanitizer: TextSanitizer) extend
 
   def decoded(bytes: Data, omit: Boolean): Text =
     val buffer: StringBuilder = StringBuilder()
-    decoded(Stream(bytes)).each: text => buffer.append(text.s)
+    List.from(decoded(Stream(bytes))).each: text => buffer.append(text.s)
     buffer.toString.tt
 
   def decoded(bytes: Data): Text = decoded(bytes, false)

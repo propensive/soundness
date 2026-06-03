@@ -42,93 +42,93 @@ object Tests extends Suite(m"Dissonance tests"):
   def run(): Unit =
     suite(m"Diff tests"):
       test(m"Empty lists"):
-        diff(IArray[Char](), IArray[Char]())
+        diff(IArray[Char]().to[IndexedSeq], IArray[Char]().to[IndexedSeq])
       . assert(_ == Diff())
 
       test(m"One element, equal"):
-        diff(IArray('a'), IArray('a'))
+        diff(IArray('a').to[IndexedSeq], IArray('a').to[IndexedSeq])
       . assert(_ == Diff(Par(0, 0, 'a')))
 
       test(m"Straight swap"):
-        diff(IArray('a'), IArray('A'))
+        diff(IArray('a').to[IndexedSeq], IArray('A').to[IndexedSeq])
       . assert(_ == Diff(Del(0, 'a'), Ins(0, 'A')))
 
       test(m"Two elements, equal"):
-        diff(IArray('a', 'b'), IArray('a', 'b'))
+        diff(IArray('a', 'b').to[IndexedSeq], IArray('a', 'b').to[IndexedSeq])
       . assert(_ == Diff(Par(0, 0, 'a'), Par(1, 1, 'b')))
 
       test(m"Insertion to empty list"):
-        diff(IArray[Char](), IArray('a'))
+        diff(IArray[Char]().to[IndexedSeq], IArray('a').to[IndexedSeq])
       . assert(_ == Diff(Ins(0, 'a')))
 
       test(m"Deletion to become empty list"):
-        diff(t"a".chars, t"".chars)
+        diff(t"a".chars.to[IndexedSeq], t"".chars.to[IndexedSeq])
       . assert(_ == Diff(Del(0, 'a')))
 
       test(m"Prefix to short list"):
-        diff(t"BC".chars, t"ABC".chars)
+        diff(t"BC".chars.to[IndexedSeq], t"ABC".chars.to[IndexedSeq])
       . assert(_ == Diff(Ins(0, 'A'), Par(0, 1, 'B'), Par(1, 2, 'C')))
 
       test(m"Suffix to short list"):
-        diff(t"AB".chars, t"ABC".chars)
+        diff(t"AB".chars.to[IndexedSeq], t"ABC".chars.to[IndexedSeq])
       . assert(_ == Diff(Par(0, 0, 'A'), Par(1, 1, 'B'), Ins(2, 'C')))
 
       test(m"Insertion in middle of short list"):
-        diff(t"AC".chars, t"ABC".chars)
+        diff(t"AC".chars.to[IndexedSeq], t"ABC".chars.to[IndexedSeq])
       . assert(_ == Diff(Par(0, 0, 'A'), Ins(1, 'B'), Par(1, 2, 'C')))
 
       test(m"Deletion from middle of short list"):
-        diff(t"ABC".chars, t"AC".chars)
+        diff(t"ABC".chars.to[IndexedSeq], t"AC".chars.to[IndexedSeq])
       . assert(_ == Diff(Par(0, 0, 'A'), Del(1, 'B'), Par(2, 1, 'C')))
 
       test(m"Deletion from start of short list"):
-        diff(t"ABC".chars, t"BC".chars).edits.to(List)
+        diff(t"ABC".chars.to[IndexedSeq], t"BC".chars.to[IndexedSeq]).edits.to(List)
       . assert(_ == List(Del(0, 'A'), Par(1, 0, 'B'), Par(2, 1, 'C')))
 
       test(m"Deletion from end of short list"):
-        diff(t"ABC".chars, t"AB".chars)
+        diff(t"ABC".chars.to[IndexedSeq], t"AB".chars.to[IndexedSeq])
       . assert(_ == Diff(Par(0, 0, 'A'), Par(1, 1, 'B'), Del(2, 'C')))
 
       test(m"Multiple inner keeps"):
-        diff(t"BCD".chars, t"ABC".chars)
+        diff(t"BCD".chars.to[IndexedSeq], t"ABC".chars.to[IndexedSeq])
       . assert(_ == Diff(Ins(0, 'A'), Par(0, 1, 'B'), Par(1, 2, 'C'), Del(2, 'D')))
 
       test(m"Example from blog"):
-        diff(t"ABCABBA".chars, t"CBABAC".chars).edits.to(List)
+        diff(t"ABCABBA".chars.to[IndexedSeq], t"CBABAC".chars.to[IndexedSeq]).edits.to(List)
       . assert(_ == List(Del(0, 'A'), Del(1, 'B'), Par(2, 0, 'C'), Ins(1, 'B'), Par(3, 2, 'A'),
           Par(4, 3, 'B'), Del(5, 'B'), Par(6, 4, 'A'), Ins(5, 'C')))
 
       test(m"Reversed example from blog"):
-        diff(t"CBABAC".chars, t"ABCABBA".chars).edits.to(List)
+        diff(t"CBABAC".chars.to[IndexedSeq], t"ABCABBA".chars.to[IndexedSeq]).edits.to(List)
       . assert(_ == List(Del(0, 'C'), Ins(0, 'A'), Par(1, 1, 'B'), Ins(2, 'C'), Par(2, 3, 'A'),
           Par(3, 4, 'B'), Ins(5, 'B'), Par(4, 6, 'A'), Del(5, 'C')))
 
       test(m"Item swap"):
-        diff(t"AB".chars, t"BA".chars)
+        diff(t"AB".chars.to[IndexedSeq], t"BA".chars.to[IndexedSeq])
       . assert(_ == Diff(Del(0, 'A'), Par(1, 0, 'B'), Ins(1, 'A')))
 
       test(m"Item change"):
-        diff(t"A".chars, t"C".chars)
+        diff(t"A".chars.to[IndexedSeq], t"C".chars.to[IndexedSeq])
       . assert(_ == Diff(Del(0, 'A'), Ins(0, 'C')))
 
       test(m"Item change between values"):
-        diff(t"NAN".chars, t"NCN".chars)
+        diff(t"NAN".chars.to[IndexedSeq], t"NCN".chars.to[IndexedSeq])
       . assert(_ == Diff(Par(0, 0, 'N'), Del(1, 'A'), Ins(1, 'C'), Par(2, 2, 'N')))
 
       test(m"Item swap between values"):
-        diff(t"NABN".chars, t"NBAN".chars)
+        diff(t"NABN".chars.to[IndexedSeq], t"NBAN".chars.to[IndexedSeq])
       . assert(_ == Diff(Par(0, 0, 'N'), Del(1, 'A'), Par(2, 1, 'B'), Ins(2, 'A'), Par(3, 3, 'N')))
 
       test(m"Item swap interspersed with values"):
-        diff(t"AZB".chars, t"BZA".chars)
+        diff(t"AZB".chars.to[IndexedSeq], t"BZA".chars.to[IndexedSeq])
       . assert(_ == Diff(Del(0, 'A'), Del(1, 'Z'), Par(2, 0, 'B'), Ins(1, 'Z'), Ins(2, 'A')))
 
       test(m"real-world example 1"):
-        diff(IArray('a', 'b', 'c'), IArray('A', 'b', 'C')).edits.to(List)
+        diff(IArray('a', 'b', 'c').to[IndexedSeq], IArray('A', 'b', 'C').to[IndexedSeq]).edits.to(List)
       . assert(_ == Diff(Del(0, 'a'), Ins(0, 'A'), Par(1, 1, 'b'), Del(2, 'c'), Ins(2, 'C')).edits.to(List))
 
       test(m"real-world example 2"):
-        diff(IArray(t"A", t"B"), IArray(t"B", t"C", t"D"))
+        diff(IArray(t"A", t"B").to[IndexedSeq], IArray(t"B", t"C", t"D").to[IndexedSeq])
       . assert(_ == Diff(Del(0, t"A"), Par(1, 0, t"B"), Ins(1, t"C"), Ins(2, t"D")))
 
     val start = Vector(t"foo", t"bar", t"baz")
@@ -224,33 +224,33 @@ object Tests extends Suite(m"Dissonance tests"):
     suite(m"Evolution tests"):
       test(m"Sample words"):
         val evolution =
-          evolve(List(t"slain", t"stain", t"strange", t"star", t"rain", t"train").map(_.chars.to(List)))
-        List(Prim, Sec, Ter, Quat, Quin, Sen).map(evolution(_).mkString)
+          evolve(List(t"slain", t"stain", t"strange", t"star", t"rain", t"train").map(_.chars.to[List]))
+        List(Prim, Sec, Ter, Quat, Quin, Sen).map(evolution(_).scala.mkString)
       . assert(_ == List("slain", "stain", "strange", "star", "rain", "train"))
 
       test(m"dog/cat"):
-        val evolution = evolve(List(t"dog", t"cat", t"dog").map(_.chars.to(List)))
-        List(Prim, Sec, Ter).map(evolution(_).mkString)
+        val evolution = evolve(List(t"dog", t"cat", t"dog").map(_.chars.to[List]))
+        List(Prim, Sec, Ter).map(evolution(_).scala.mkString)
       . assert(_ == List("dog", "cat", "dog"))
 
       test(m"dog/cat 2"):
-        val evolution = evolve(List(t"dog", t"cat", t"dog", t"dog2").map(_.chars.to(List)))
-        List(Prim, Sec, Ter, Quat).map(evolution(_).mkString)
+        val evolution = evolve(List(t"dog", t"cat", t"dog", t"dog2").map(_.chars.to[List]))
+        List(Prim, Sec, Ter, Quat).map(evolution(_).scala.mkString)
       . assert(_ == List("dog", "cat", "dog", "dog2"))
 
       test(m"dog/cat 3"):
-        val evolution = evolve(List(t"dog", t"cat", t"dog", t"do").map(_.chars.to(List)))
-        List(Prim, Sec, Ter, Quat).map(evolution(_).mkString)
+        val evolution = evolve(List(t"dog", t"cat", t"dog", t"do").map(_.chars.to[List]))
+        List(Prim, Sec, Ter, Quat).map(evolution(_).scala.mkString)
       . assert(_ == List("dog", "cat", "dog", "do"))
 
       test(m"Dogs and cats"):
-        val evolution = evolve(List(t"dog", t"dog and cat", t"cat", t"cat and dog").map(_.chars.to(List)))
-        List(Prim, Sec, Ter, Quat).map(evolution(_).mkString)
+        val evolution = evolve(List(t"dog", t"dog and cat", t"cat", t"cat and dog").map(_.chars.to[List]))
+        List(Prim, Sec, Ter, Quat).map(evolution(_).scala.mkString)
       . assert(_ == List("dog", "dog and cat", "cat", "cat and dog"))
 
       test(m"Jack and Jill"):
-        val evolution = evolve(List(t"Jack and Jill", t"Jack with Jill", t"Jack und Jill").map(_.chars.to(List)))
-        List(Prim, Sec, Ter).map(evolution(_).mkString)
+        val evolution = evolve(List(t"Jack and Jill", t"Jack with Jill", t"Jack und Jill").map(_.chars.to[List]))
+        List(Prim, Sec, Ter).map(evolution(_).scala.mkString)
       . assert(_ == List("Jack and Jill", "Jack with Jill", "Jack und Jill"))
 
     // suite(m"Casual diff tests"):

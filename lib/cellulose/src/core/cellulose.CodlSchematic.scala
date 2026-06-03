@@ -39,7 +39,7 @@ import vacuous.*
 import wisteria.*
 
 object CodlSchematic:
-  inline given derived: [value] => value is CodlSchematic = compiletime.summonFrom:
+  inline given derived: [value] => value is CodlSchematic = scala.compiletime.summonFrom:
     case given (`value` is Decodable in Text) => () => Field(Arity.One)
     case given ProductReflection[`value`]     => CodlSchematicDerivation.derived[`value`]
 

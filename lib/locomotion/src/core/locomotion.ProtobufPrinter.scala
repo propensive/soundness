@@ -83,7 +83,7 @@ class ProtobufPrinter():
 
   def field(number: Int, value: Protobuf): Unit = value match
     case Protobuf.Absent           => ()
-    case Protobuf.Repeated(values) => values.foreach(field(number, _))
+    case Protobuf.Repeated(values) => values.scala.foreach(field(number, _))
 
     case Protobuf.Wire(wireType, bytes) =>
       tag(number, wireType)

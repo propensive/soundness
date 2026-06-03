@@ -70,7 +70,7 @@ object Decomposable extends Decomposable2:
   =>  collection is Decomposable =
 
     list =>
-      Decomposition.Sequence(t"List", list.map(decomposable.decomposition(_)), list)
+      Decomposition.Sequence(t"List", (list: List[element]).map(decomposable.decomposition(_)), list)
 
 
   given trie: [element, collection <: Trie[element]]
@@ -87,7 +87,7 @@ object Decomposable extends Decomposable2:
 
     iarray =>
       Decomposition.Sequence
-        ( t"IArray", iarray.map(decomposable.decomposition(_)).to(List), iarray )
+        ( t"IArray", iarray.map(decomposable.decomposition(_)).to[List], iarray )
 
 
 trait Decomposable extends Typeclass:
@@ -131,7 +131,7 @@ trait Decomposable2 extends Decomposable3:
     inline def conjunction[derivation <: Product: ProductReflection]: derivation is Decomposable =
       value =>
         val map =
-          fields(value) { [field] => field => label -> contextual.decomposition(field) }.to(Map)
+          fields(value) { [field] => field => label -> contextual.decomposition(field) }.to[Map]
 
         Decomposition.Product(typeName, map, value)
 

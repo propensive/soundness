@@ -38,6 +38,7 @@ import escritoire.*, tableStyles.default, columnAttenuation.ignore
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import iridescence.*
+import rudiments.*
 
 object TastySymbol:
   given teletypeable: (palette: TastyPalette) => TastySymbol is Teletypeable =
@@ -63,10 +64,10 @@ object TastySymbol:
             case (key, value: Text) =>
               key -> e"${Fg(palette.outline)}($value)"
 
-            case (key, items: List[Text]) =>
+            case (key, items: scala.collection.immutable.List[Text]) =>
               key -> e"${Fg(palette.outline)}(${items.join(t", ")})"
 
-        . to(List)
+        .to[List]
 
       val name = (t"Name", e"$Bold(${symbol.prefix}${Fg(palette.foreground)}(${symbol.name}))")
 
@@ -74,7 +75,7 @@ object TastySymbol:
         ( Column(e"$Bold(Property)", textAlign = TextAlignment.Right)(_(0)),
           Column(e"$Bold(Value)", sizing = columnar.ProseOrBreak)(_(1)) )
 
-      . tabulate(name :: (t"Flags", flags) :: (t"Properties", properties) :: details)
+      . tabulate((name :: (t"Flags", flags) :: (t"Properties", properties) :: details).scala)
       . grid(120)
       . render
       . join(e"\n")
@@ -84,4 +85,4 @@ case class TastySymbol
     name:       Text,
     flags:      List[(Text, Boolean)],
     properties: List[(Text, Boolean)],
-    details:    List[(Text, List[Text] | Text)] )
+    details:    List[(Text, scala.collection.immutable.List[Text] | Text)] )

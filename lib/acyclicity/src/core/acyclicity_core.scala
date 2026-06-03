@@ -44,7 +44,7 @@ extension (stringContext: StringContext)
   def id(): Dot.Id = Dot.Id(stringContext.parts.head.show)
 
 extension [node](start: node)
-  def explore(dependencies: node => Iterable[node]): Dag[node] =
+  def explore(dependencies: node => List[node]): Dag[node] =
     @tailrec
     def recur(map: Map[node, Set[node]], todo: Set[node], done: Set[node]): Dag[node] =
 
@@ -53,8 +53,8 @@ extension [node](start: node)
 
         dependencies(key).pipe: children =>
           recur
-            ( map.updated(key, children.to(Set)),
-              (todo ++ children.filter(!done(_))) - key,
-              done + key )
+            ( map.updated(key, children.to[Set]),
+              (todo ++ children.filter(!done(_))) -- Set(key),
+              done ++ Set(key) )
 
     recur(Map(), Set(start), Set())

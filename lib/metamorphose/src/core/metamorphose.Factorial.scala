@@ -33,6 +33,7 @@
 package metamorphose
 
 import scala.annotation.*
+import rudiments.*
 
 object Factorial:
   def apply(n: Int): BigInt =

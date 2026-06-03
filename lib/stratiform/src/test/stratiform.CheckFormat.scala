@@ -107,7 +107,7 @@ object CheckFormat:
 
     cursor.advance(1) // consume '}'
 
-    builder.toList
+    List.from(builder)
 
   private def parseSomePayload(cursor: Cursor): CheckTree =
     cursor.advance(1) // consume '('
@@ -135,7 +135,7 @@ object CheckFormat:
 
     cursor.advance(1)
 
-    CheckTree.Sequence(builder.toList)
+    CheckTree.Sequence(List.from(builder))
 
   private def parseTuple(cursor: Cursor): CheckTree =
     cursor.advance(1) // consume '('
@@ -151,7 +151,7 @@ object CheckFormat:
 
     cursor.advance(1)
 
-    CheckTree.Tuple(builder.toList)
+    CheckTree.Tuple(List.from(builder))
 
   private def parseString(cursor: Cursor): Text =
     cursor.advance(1) // opening "
@@ -243,7 +243,7 @@ object CheckFormat:
 
       cursor.skipLineWhitespace()
 
-    builder.toList
+    List.from(builder)
 
   private def isDigit(c: Char): Boolean = c >= '0' && c <= '9'
   private def isHexDigit(c: Char): Boolean = isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
@@ -257,7 +257,7 @@ object CheckFormat:
       position + literal.length <= input.length && input.regionMatches(position, literal, 0, literal.length)
 
     def expect(c: Char): Unit =
-      if peek() != c then sys.error
+      if peek() != c then scala.sys.error
        (s"CheckFormat parse error at $position: expected '$c' but found '${peek()}'")
       advance(1)
 

@@ -37,6 +37,7 @@ import contingency.*
 import distillate.*
 import galilei.*
 import gossamer.*
+import rudiments.*
 import hellenism.*
 import hieroglyph.*
 import monotonous.*, alphabets.base64.standard
@@ -94,7 +95,7 @@ object Xeq:
     builder.add(indexEntries.join(t","))
     builder.add('\n')
 
-    encoded.foreach: (_, content) =>
+    encoded.each: (_, content) =>
       builder.add(t"-----BEGIN CERTIFICATE-----\n")
       builder.add(content)
       builder.add(t"-----END CERTIFICATE-----\n")
@@ -165,7 +166,7 @@ object Xeq:
       else
         Unset
 
-    write(outputPath, installer(runnerPayloads ++ dataPayload.option))
+    write(outputPath, installer(runnerPayloads ++ dataPayload.lay(Nil)(List(_))))
 
 
   private def downloaderMain(output: Text, url: Text, hash: Text): Unit = unsafely:
@@ -173,7 +174,7 @@ object Xeq:
 
 
   def main(args: Array[String]): Unit =
-    args.iterator.toList match
+    args.iterator.to(List) match
       case "installer" :: output :: staging :: Nil =>
         installerMain(output.tt, staging.tt)
 

@@ -48,6 +48,6 @@ object Combobox:
 
     Fragment
       ( Input(name = combobox.name, list = DomId(combobox.name), value = combobox.value),
-        Datalist(id = DomId(combobox.name))(items*) )
+        Datalist(id = DomId(combobox.name))(items.scala*) )
 
 case class Combobox(name: Text, options: List[Text], value: Text) extends Widget

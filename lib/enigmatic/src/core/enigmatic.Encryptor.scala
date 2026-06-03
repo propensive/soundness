@@ -35,4 +35,4 @@ package enigmatic
 import anticipation.*
 
 class Encryptor[cipher] private[enigmatic] (private[enigmatic] val bytes: Data)
-extends caps.SharedCapability
+extends scala.caps.SharedCapability

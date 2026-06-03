@@ -63,7 +63,7 @@ extends Interactivity[TerminalEvent]:
   var mode: Optional[Brightness] = safely:
     def hex(text: Text): Int = Integer.parseInt(text.s, 16)
 
-    Environment.terminalBg.cut(t"/").to(List) match
+    Environment.terminalBg.cut(t"/").to[List] match
       case red :: green :: blue :: Nil =>
         if dark(hex(red), hex(green), hex(blue)) then Brightness.Dark else Brightness.Light
 
@@ -105,7 +105,10 @@ extends Interactivity[TerminalEvent]:
     (0.299*red + 0.587*green + 0.114*blue) < 32768
 
   val pumpInput: Task[Unit] = task(t"stdin"):
-    keyboard.process(In.stream[Char]).each:
+    // NB: consume the keypress stream LAZILY. `In.stream[Char]` is an unbounded, blocking stdin
+    // stream; wrapping it in `List.from(...)` would force the whole stream before processing any
+    // event, so the input pump would block forever and no keystroke would ever reach the app.
+    keyboard.process(In.stream[Char]).foreach:
       case resize@TerminalInfo.WindowSize(rows2, columns2) =>
         rows = rows2
         columns = columns2

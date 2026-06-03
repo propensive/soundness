@@ -32,9 +32,13 @@
                                                                                                   */
 package mercator
 
+export murmuration.{Functor, Monad, Identity}
+
 import scala.collection.BuildFrom
 
 import anticipation.*
+
+import murmuration.Expandable
 
 extension [value, functor[_]](using functor: Functor[functor])(value: functor[value])
   def map[value2](lambda: value => value2): functor[value2] =
@@ -53,36 +57,62 @@ extension (text: Text)
 
     builder.toString.tt
 
-extension [monad[_], collection[element] <: Iterable[element],
-  element](elems: collection[monad[element]])
-  (using monad: Monad[monad])
+extension [monad[_], collection[_], element](elems: collection[monad[element]])
+  (using monad: Monad[monad], expandable: collection is Expandable)
 
   def sequence(using buildFrom: BuildFrom[List[element], element, collection[element]])
   :   monad[collection[element]] =
 
 
-    def recur(todo: Iterable[monad[element]], accumulator: monad[List[element]])
+    def recur(todo: List[monad[element]], accumulator: monad[List[element]])
     :   monad[List[element]] =
 
-      if todo.isEmpty then accumulator
-      else recur(todo.tail, accumulator.flatMap { xs => todo.head.map(_ :: xs) })
+      if todo.scala.isEmpty then accumulator
+      else recur(todo.tail, accumulator.flatMap { xs => todo.scala.head.map(_ :: xs) })
 
 
-    recur(elems, monad.point(List())).map(_.reverse.to(buildFrom.toFactory(Nil)))
+    recur(List.from(expandable.expand(elems)), monad.point(List()))
+    . map(_.reverse.scala.to(buildFrom.toFactory(Nil)))
 
 
-extension [collection[element] <: Iterable[element], element](elems: collection[element])
+extension [collection[_], element](elems: collection[element])(using expandable: collection is Expandable)
   def traverse[element2, monad[_]](lambda: element => monad[element2])
     ( using monad:     Monad[monad],
             buildFrom: BuildFrom[List[element2], element2, collection[element2]] )
   :   monad[collection[element2]] =
 
 
-    def recur(todo: Iterable[element], accumulator: monad[List[element2]])
+    def recur(todo: List[element], accumulator: monad[List[element2]])
     :   monad[List[element2]] =
 
-      if todo.isEmpty then accumulator
-      else recur(todo.tail, accumulator.flatMap { xs => lambda(todo.head).map(_ :: xs) })
+      if todo.scala.isEmpty then accumulator
+      else recur(todo.tail, accumulator.flatMap { xs => lambda(todo.scala.head).map(_ :: xs) })
 
 
-    recur(elems, monad.point(List())).map(_.reverse.to(buildFrom.toFactory(Nil)))
+    recur(List.from(expandable.expand(elems)), monad.point(List()))
+    . map(_.reverse.scala.to(buildFrom.toFactory(Nil)))
+
+
+// `List`-specialized `sequence`/`traverse`: the accumulator is already a `List`, so no
+// `BuildFrom` rebuild is needed (the standard library provides no `BuildFrom` for the opaque
+// `List`). The generic overloads above remain inapplicable to `List` for want of that evidence,
+// so these are selected without ambiguity.
+extension [monad[_], element](elems: List[monad[element]])(using monad: Monad[monad])
+  def sequence: monad[List[element]] =
+    def recur(todo: List[monad[element]], accumulator: monad[List[element]])
+    :   monad[List[element]] =
+
+      if todo.scala.isEmpty then accumulator
+      else recur(todo.tail, accumulator.flatMap { xs => todo.scala.head.map(_ :: xs) })
+
+    recur(elems, monad.point(List())).map(_.reverse)
+
+extension [element](elems: List[element])
+  def traverse[element2, monad[_]](lambda: element => monad[element2])(using monad: Monad[monad])
+  :   monad[List[element2]] =
+
+    def recur(todo: List[element], accumulator: monad[List[element2]]): monad[List[element2]] =
+      if todo.scala.isEmpty then accumulator
+      else recur(todo.tail, accumulator.flatMap { xs => lambda(todo.scala.head).map(_ :: xs) })
+
+    recur(elems, monad.point(List())).map(_.reverse)

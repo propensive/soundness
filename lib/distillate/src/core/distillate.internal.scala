@@ -39,7 +39,7 @@ import fulminate.*
 import gigantism.*
 
 object internal:
-  def enumerable[enumeration <: reflect.Enum: Type]: Macro[enumeration is Enumerable] =
+  def enumerable[enumeration <: scala.reflect.Enum: Type]: Macro[enumeration is Enumerable] =
     import quotes.reflect.*
 
     val companion = Ref(TypeRepr.of[enumeration].typeSymbol.companionModule).asExpr

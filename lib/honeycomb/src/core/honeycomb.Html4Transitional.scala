@@ -32,7 +32,7 @@
                                                                                                   */
 package honeycomb
 
-import language.dynamics
+import scala.language.dynamics
 
 import scala.collection.immutable as sci
 
@@ -106,7 +106,7 @@ object Html4Transitional:
   def attribute[self <: Label: ValueOf, plane <: Label: Reifiable to List[String], topic]()
   :   self is Attribute on plane of topic in Html4Transitional =
 
-    new Attribute(valueOf[self].tt, plane.reify.map(_.tt).to(Set), false)
+    new Attribute(valueOf[self].tt, plane.reify.map(_.tt).to[Set], false)
     . asInstanceOf[self is Attribute on plane of topic in Html4Transitional]
 
 
@@ -353,11 +353,11 @@ class Html4Transitional() extends Dom:
   type Metadata = "title" | "base" | "script" | "style" | "meta" | "link" | "object"
 
   def insertable(tag: Tag): Set[Tag] =
-    tag.admissible.map(elements(_)).compact.filter(_.insertable)
+    tag.admissible.map(elements(_)).to[List].compact.filter(_.insertable).to[Set]
 
   def infer(parent: Tag, child: Tag): Optional[Tag] =
     def recur(parent: Tag): Boolean =
-      parent.admissible.has(child.label) || insertable(parent).exists(recur(_))
+      parent.admissible.scala.contains(child.label) || insertable(parent).exists(recur(_))
 
     insertable(parent).find(recur(_)).optional
 
@@ -423,21 +423,21 @@ class Html4Transitional() extends Dom:
   val Iframe = Tag.container["iframe", Flow, Html4Transitional]()
   val Img = Tag.void["img", Html4Transitional]()
 
-  object Input extends Tag.Void("input", sci.Map(), false):
+  object Input extends Tag.Void("input", murmuration.Map(), false):
     type Topic = "input"
     type Transport = ""
     type Form = Html4Transitional
 
-    val Hidden = Tag.void["input", Html4Transitional](presets = sci.Map(t"type" -> t"hidden"))
-    val Text = Tag.void["input", Html4Transitional](presets = sci.Map(t"type" -> t"text"))
-    val Password = Tag.void["input", Html4Transitional](presets = sci.Map(t"type" -> t"password"))
-    val Checkbox = Tag.void["input", Html4Transitional](presets = sci.Map(t"type" -> t"checkbox"))
-    val Radio = Tag.void["input", Html4Transitional](presets = sci.Map(t"type" -> t"radio"))
-    val Submit = Tag.void["input", Html4Transitional](presets = sci.Map(t"type" -> t"submit"))
-    val Image = Tag.void["input", Html4Transitional](presets = sci.Map(t"type" -> t"image"))
-    val Reset = Tag.void["input", Html4Transitional](presets = sci.Map(t"type" -> t"reset"))
-    val Button = Tag.void["input", Html4Transitional](presets = sci.Map(t"type" -> t"button"))
-    val File = Tag.void["input", Html4Transitional](presets = sci.Map(t"type" -> t"file"))
+    val Hidden = Tag.void["input", Html4Transitional](presets = murmuration.Map(t"type" -> t"hidden"))
+    val Text = Tag.void["input", Html4Transitional](presets = murmuration.Map(t"type" -> t"text"))
+    val Password = Tag.void["input", Html4Transitional](presets = murmuration.Map(t"type" -> t"password"))
+    val Checkbox = Tag.void["input", Html4Transitional](presets = murmuration.Map(t"type" -> t"checkbox"))
+    val Radio = Tag.void["input", Html4Transitional](presets = murmuration.Map(t"type" -> t"radio"))
+    val Submit = Tag.void["input", Html4Transitional](presets = murmuration.Map(t"type" -> t"submit"))
+    val Image = Tag.void["input", Html4Transitional](presets = murmuration.Map(t"type" -> t"image"))
+    val Reset = Tag.void["input", Html4Transitional](presets = murmuration.Map(t"type" -> t"reset"))
+    val Button = Tag.void["input", Html4Transitional](presets = murmuration.Map(t"type" -> t"button"))
+    val File = Tag.void["input", Html4Transitional](presets = murmuration.Map(t"type" -> t"file"))
 
   val Ins = Tag.transparent["ins", "", Html4Transitional]()
   val Isindex = Tag.void["isindex", Html4Transitional]()
@@ -510,22 +510,22 @@ class Html4Transitional() extends Dom:
   val Var = Tag.container["var", Inline, Html4Transitional]()
 
   val elements: Dictionary[Tag] =
-    Dictionary(this.membersOfType[Tag].to(Seq).bi.map(_.label -> _)*)
+    Dictionary(this.membersOfType[Tag].to[List].bi.map(_.label -> _).to[IndexedSeq]*)
 
   val entities: Dictionary[Text] =
     val list = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n").map(_.cut(t"\t")).collect:
       case List(key, value) => (key, value)
 
-    Dictionary(list*)
+    Dictionary(list.scala*)
 
   val attributes: Dictionary[Attribute] =
     val list: List[(Text, Attribute)] =
       Html4Transitional.membersOfType[honeycomb.Attribute]
-      . foldLeft(sci.Map[Text, Attribute]()): (map, next) =>
+      . foldLeft(murmuration.Map[Text, Attribute]()): (map, next) =>
         val coerced = next.asInstanceOf[Attribute]
         val merged = map.at(coerced.label).let(_.merge(coerced).asInstanceOf[Attribute]).or(coerced)
         map.updated(coerced.label, merged)
 
-      . to(List)
+      .to[List]
 
-    Dictionary(list*)
+    Dictionary(list.scala*)

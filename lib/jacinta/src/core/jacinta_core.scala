@@ -32,8 +32,8 @@
                                                                                                   */
 package jacinta
 
-import language.dynamics
-import language.experimental.pureFunctions
+import scala.language.dynamics
+import scala.language.experimental.pureFunctions
 
 import scala.compiletime.*
 

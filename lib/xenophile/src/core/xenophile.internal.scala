@@ -96,7 +96,9 @@ object Xenophile:
     repr.dealias match
       case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
       case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
-      case AndType(left, right)                        => refinements(left) ++ refinements(right)
+      case AndType(left, right)                        =>
+        Map.from(refinements(left).scala ++ refinements(right).scala)
+
       case _                                           => Map()
 
   // Reads the `Topic` (foreign type) and `Origin` (source language) from a `Foreign` receiver. The
@@ -251,7 +253,7 @@ object Xenophile:
     val element = topicRepr.dealias match
       case Refinement(parent, "Transport", TypeBounds(_, element)) => parent.dealias match
         case ConstantType(StringConstant(constructor))
-        if arrayConstructors.contains(constructor.tt) =>
+        if arrayConstructors.has(constructor.tt) =>
           element
 
         case _ =>
@@ -302,7 +304,7 @@ object Xenophile:
     val member = Expr(fieldName.s)
     val owner = Expr(topic.s)
     val target = '{Foreign.Expression.Select($self.expr, $member.tt, $owner.tt)}
-    val tree = '{Foreign.Expression.Apply($target, ${Expr.ofList(argTrees)})}
+    val tree = '{Foreign.Expression.Apply($target, List.from(${Expr.ofList(argTrees.scala)}))}
 
     foreignType(signature.result, originRepr).asType.absolve match
       case '[type result <: Foreign; result] =>

@@ -64,8 +64,8 @@ class TeletypeBuilder(size: Optional[Int] = Unset) extends Builder[Teletype]:
       styles += text.styleAt(i)
       i += 1
 
-    text.hyperlinks.each: (k, v) => hyperlinks(k + offset) = v
-    text.insertions.each: (k, v) => insertions(k + offset) = v
+    text.hyperlinks.toList.each: (k, v) => hyperlinks(k + offset) = v
+    List.from(text.insertions).each: (k, v) => insertions(k + offset) = v
 
     offset += text.plain.length
 
@@ -84,6 +84,6 @@ class TeletypeBuilder(size: Optional[Int] = Unset) extends Builder[Teletype]:
     Teletype
       ( plainText,
         newStyles,
-        hyperlinks.toMap,
+        Map.from(hyperlinks),
         insertions.to(TreeMap),
         newBoundaries )

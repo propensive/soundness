@@ -51,7 +51,7 @@ object Renderable:
           case text: Text       => List(text)
           case _                => Nil
 
-        Fragment(elements*)
+        Fragment(elements.scala*)
 
   given stackTrace: StackTrace is Renderable in Flow = stackTrace =>
     given stylesheet: (Stylesheet of "at" | "class" | "stack" | "method" | "file" | "line") =
@@ -70,7 +70,7 @@ object Renderable:
       ( H2(stackTrace.component),
         H3(stackTrace.className),
         H4(stackTrace.message.html),
-        Table(Tbody(rows*)) )
+        Table(Tbody(rows.scala*)) )
 
 
 trait Renderable extends Typeclass, Formal:

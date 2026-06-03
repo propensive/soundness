@@ -33,6 +33,7 @@
 package mandible
 
 import scala.quoted.*
+import rudiments.*
 
 import anticipation.*
 import fulminate.*

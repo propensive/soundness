@@ -41,7 +41,7 @@ case class Scope(names: Text*):
   def apply()(using authorization: Authorization of (? >: this.type))
   :   Authorization of this.type raises OAuthError =
 
-    names.each: name =>
+    List.from(names).each: name =>
       if !authorization.scopes.has(name)
       then raise(OAuthError(OAuthError.Reason.InsufficientPrivileges(name)))
 

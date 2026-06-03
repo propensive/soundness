@@ -32,10 +32,13 @@
                                                                                                   */
 package kaleidoscope
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import java.util.regex.*
 
+import scala.collection.immutable.`::`
+import scala.collection.immutable.List
+import scala.collection.immutable.Nil
 import scala.quoted.*
 
 import anticipation.*
@@ -56,9 +59,9 @@ object internal:
   private def extractor(parts: List[String]): Macro[Any] =
     import quotes.reflect.*
 
-    val regex = abortive(Regex.parse(parts.map(Text(_))))
+    val regex = abortive(Regex.parse(proscenium.List.from(parts.map(Text(_)))))
 
-    val types: List[TypeRepr] = regex.captureGroups.map: group =>
+    val types: List[TypeRepr] = regex.captureGroups.scala.map: group =>
       group.quantifier match
         case Regex.Quantifier.Exactly(1) =>
           if group.charMatcher then TypeRepr.of[Char] else TypeRepr.of[Text]
@@ -68,7 +71,7 @@ object internal:
           else TypeRepr.of[Optional[Text]]
 
         case _ =>
-          if group.charMatcher then TypeRepr.of[List[Char]] else TypeRepr.of[List[Text]]
+          if group.charMatcher then TypeRepr.of[proscenium.List[Char]] else TypeRepr.of[proscenium.List[Text]]
 
     // This needs to be `lazy`
     lazy val tupleType: TypeRepr =
@@ -105,4 +108,4 @@ object internal:
       val result2 = result.asInstanceOf[Option[IArray[List[Text | Char] | Optional[Text | Char]]]]
 
       if parts.length == 2 then result2.map(_.head).asInstanceOf[result]
-      else result2.map(Tuple.fromIArray(_)).asInstanceOf[result]
+      else result2.map { array => Tuple.fromIArray(array.scala) }.asInstanceOf[result]

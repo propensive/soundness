@@ -32,11 +32,12 @@
                                                                                                   */
 package mercator
 
-object Identity:
-  given either:  Identity[[Type] =>> Either[?, Type]]:
-    def point[value](value: value): Either[Nothing, value] = Right(value)
+import murmuration.Identity
 
-  inline given ident: [ident[_]] => Identity[ident] = ${internal.point[ident]}
+inline given identityDerivation: [ident[_]] => Identity[ident] = ${internal.point[ident]}
 
-trait Identity[ident[_]]:
-  def point[value](value: value): ident[value]
+export murmuration.Identity.list as identityList
+export murmuration.Identity.set as identitySet
+
+given identityEither: Identity[[value] =>> Either[?, value]]:
+  def point[value](value: value): Either[Nothing, value] = Right(value)

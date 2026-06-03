@@ -33,6 +33,7 @@
 package gossamer
 
 import soundness.*
+import gossamer.where
 
 import textMetrics.uniform
 import caseSensitivity.sensitive
@@ -181,12 +182,12 @@ object Tests extends Suite(m"Gossamer Tests"):
 
     suite(m"Text methods"):
       test(m"get bytes from text"):
-        t"hello".sysData.to(List)
+        t"hello".sysData.to[List]
 
       . assert(_ == List(104, 101, 108, 108, 111))
 
       test(m"get bytes from empty Text"):
-        t"".sysData.to(List)
+        t"".sysData.to[List]
 
       . assert(_.nil)
 
@@ -316,7 +317,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == t"o world")
 
       test(m"Get characters from a Text"):
-        t"Hello world".chars.to(List)
+        t"Hello world".chars.to[List]
 
       . assert(_ == List('H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd'))
 
@@ -340,37 +341,37 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == false)
 
       test(m"Cut a Text"):
-        t"one,two,three".cut(t",").to(List)
+        t"one,two,three".cut(t",").to[List]
 
       . assert(_ == List(t"one", t"two", t"three"))
 
       test(m"Cut a Text with empty Text at start"):
-        t",one,two".cut(t",").to(List)
+        t",one,two".cut(t",").to[List]
 
       . assert(_ == List(t"", t"one", t"two"))
 
       test(m"Cut a Text with empty Text at end"):
-        t"one,two,".cut(t",").to(List)
+        t"one,two,".cut(t",").to[List]
 
       . assert(_ == List(t"one", t"two", t""))
 
       test(m"Cut a Text with empty parts at start and end"):
-        t",one,two,".cut(t",").to(List)
+        t",one,two,".cut(t",").to[List]
 
       . assert(_ == List(t"", t"one", t"two", t""))
 
       test(m"Cut a series of empty Texts"):
-        t",,,".cut(t",").to(List)
+        t",,,".cut(t",").to[List]
 
       . assert(_ == List(t"", t"", t"", t""))
 
       test(m"Cut a Text which doesn't contain the separator"):
-        t"one,two,three".cut(t"x").to(List)
+        t"one,two,three".cut(t"x").to[List]
 
       . assert(_ == List(t"one,two,three"))
 
       test(m"Cut a Text on an escaped character"):
-        t"one\ntwo\nthree".cut(t"\n").to(List)
+        t"one\ntwo\nthree".cut(t"\n").to[List]
 
       . assert(_ == List(t"one", t"two", t"three"))
 
@@ -402,7 +403,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       test(m"Get camel-case words"):
         t"oneTwoThree".uncamel
 
-      . assert(_ == Seq(t"one", "two", "three"))
+      . assert(_ == List(t"one", "two", "three"))
 
       test(m"Camel-case to dashed words"):
         t"oneTwoThree".uncamel.kebab
@@ -564,252 +565,252 @@ object Tests extends Suite(m"Gossamer Tests"):
 
     suite(m"Decimalization tests"):
       test(m"Write negative pi"):
-        Decimalizer(1).decimalize(-math.Pi)
+        Decimalizer(1).decimalize(-pi)
 
       . assert(_ == t"-3")
 
       test(m"Write negative pi to 2 s.f."):
-        Decimalizer(2).decimalize(-math.Pi)
+        Decimalizer(2).decimalize(-pi)
 
       . assert(_ == t"-3.1")
 
       test(m"Write negative pi to 3 s.f."):
-        Decimalizer(3).decimalize(-math.Pi)
+        Decimalizer(3).decimalize(-pi)
 
       . assert(_ == t"-3.14")
 
       test(m"Write 1 s.f. pi"):
-        Decimalizer(1).decimalize(math.Pi)
+        Decimalizer(1).decimalize(pi)
 
       . assert(_ == t"3")
 
       test(m"Write 2 s.f. pi"):
-        Decimalizer(2).decimalize(math.Pi)
+        Decimalizer(2).decimalize(pi)
 
       . assert(_ == t"3.1")
 
       test(m"Write 3 s.f. pi"):
-        Decimalizer(3).decimalize(math.Pi)
+        Decimalizer(3).decimalize(pi)
 
       . assert(_ == t"3.14")
 
       test(m"Write 4 s.f. pi"):
-        Decimalizer(4).decimalize(math.Pi)
+        Decimalizer(4).decimalize(pi)
 
       . assert(_ == t"3.142")
 
       test(m"Write 5 s.f. pi"):
-        Decimalizer(5).decimalize(math.Pi)
+        Decimalizer(5).decimalize(pi)
 
       . assert(_ == t"3.1416")
 
       test(m"Write 6 s.f. pi"):
-        Decimalizer(6).decimalize(math.Pi)
+        Decimalizer(6).decimalize(pi)
 
       . assert(_ == t"3.14159")
 
       test(m"Write 7 s.f. pi"):
-        Decimalizer(7).decimalize(math.Pi)
+        Decimalizer(7).decimalize(pi)
 
       . assert(_ == t"3.141593")
 
       test(m"Write 8 s.f. pi"):
-        Decimalizer(8).decimalize(math.Pi)
+        Decimalizer(8).decimalize(pi)
 
       . assert(_ == t"3.1415927")
 
       test(m"Write 1 s.f. 10*pi"):
-        Decimalizer(1).decimalize(10*math.Pi)
+        Decimalizer(1).decimalize(10*pi)
 
       . assert(_ == t"30")
 
       test(m"Write 2 s.f. 10*pi"):
-        Decimalizer(2).decimalize(10*math.Pi)
+        Decimalizer(2).decimalize(10*pi)
 
       . assert(_ == t"31")
 
       test(m"Write 3 s.f. 10*pi"):
-        Decimalizer(3).decimalize(10*math.Pi)
+        Decimalizer(3).decimalize(10*pi)
 
       . assert(_ == t"31.4")
 
       test(m"Write 4 s.f. 10*pi"):
-        Decimalizer(4).decimalize(10*math.Pi)
+        Decimalizer(4).decimalize(10*pi)
 
       . assert(_ == t"31.42")
 
       test(m"Write 5 s.f. 10*pi"):
-        Decimalizer(5).decimalize(10*math.Pi)
+        Decimalizer(5).decimalize(10*pi)
 
       . assert(_ == t"31.416")
 
       test(m"Write 6 s.f. 10*pi"):
-        Decimalizer(6).decimalize(10*math.Pi)
+        Decimalizer(6).decimalize(10*pi)
 
       . assert(_ == t"31.4159")
 
       test(m"Write 7 s.f. 10*pi"):
-        Decimalizer(7).decimalize(10*math.Pi)
+        Decimalizer(7).decimalize(10*pi)
 
       . assert(_ == t"31.41593")
 
       test(m"Write 8 s.f. 10*pi"):
-        Decimalizer(8).decimalize(10*math.Pi)
+        Decimalizer(8).decimalize(10*pi)
 
       . assert(_ == t"31.415927")
 
       test(m"Write 1 s.f. 100*pi"):
-        Decimalizer(1).decimalize(100*math.Pi)
+        Decimalizer(1).decimalize(100*pi)
 
       . assert(_ == t"300")
 
       test(m"Write 2 s.f. 100*pi"):
-        Decimalizer(2).decimalize(100*math.Pi)
+        Decimalizer(2).decimalize(100*pi)
 
       . assert(_ == t"310")
 
       test(m"Write 3 s.f. 100*pi"):
-        Decimalizer(3).decimalize(100*math.Pi)
+        Decimalizer(3).decimalize(100*pi)
 
       . assert(_ == t"314")
 
       test(m"Write 4 s.f. 100*pi"):
-        Decimalizer(4).decimalize(100*math.Pi)
+        Decimalizer(4).decimalize(100*pi)
 
       . assert(_ == t"314.2")
 
       test(m"Write 5 s.f. 100*pi"):
-        Decimalizer(5).decimalize(100*math.Pi)
+        Decimalizer(5).decimalize(100*pi)
 
       . assert(_ == t"314.16")
 
       test(m"Write 6 s.f. 100*pi"):
-        Decimalizer(6).decimalize(100*math.Pi)
+        Decimalizer(6).decimalize(100*pi)
 
       . assert(_ == t"314.159")
 
       test(m"Write 7 s.f. 100*pi"):
-        Decimalizer(7).decimalize(100*math.Pi)
+        Decimalizer(7).decimalize(100*pi)
 
       . assert(_ == t"314.1593")
 
       test(m"Write 8 s.f. 100*pi"):
-        Decimalizer(8).decimalize(100*math.Pi)
+        Decimalizer(8).decimalize(100*pi)
 
       . assert(_ == t"314.15927")
 
       test(m"Write 1 s.f. pi/10"):
-        Decimalizer(1).decimalize(math.Pi/10)
+        Decimalizer(1).decimalize(pi/10)
 
       . assert(_ == t"0.3")
 
       test(m"Write 2 s.f. pi/10"):
-        Decimalizer(2).decimalize(math.Pi/10)
+        Decimalizer(2).decimalize(pi/10)
 
       . assert(_ == t"0.31")
 
       test(m"Write 3 s.f. pi/10"):
-        Decimalizer(3).decimalize(math.Pi/10)
+        Decimalizer(3).decimalize(pi/10)
 
       . assert(_ == t"0.314")
 
       test(m"Write 4 s.f. pi/10"):
-        Decimalizer(4).decimalize(math.Pi/10)
+        Decimalizer(4).decimalize(pi/10)
 
       . assert(_ == t"0.3142")
 
       test(m"Write 5 s.f. pi/10"):
-        Decimalizer(5).decimalize(math.Pi/10)
+        Decimalizer(5).decimalize(pi/10)
 
       . assert(_ == t"0.31416")
 
       test(m"Write 6 s.f. pi/10"):
-        Decimalizer(6).decimalize(math.Pi/10)
+        Decimalizer(6).decimalize(pi/10)
 
       . assert(_ == t"0.314159")
 
       test(m"Write 7 s.f. pi/10"):
-        Decimalizer(7).decimalize(math.Pi/10)
+        Decimalizer(7).decimalize(pi/10)
 
       . assert(_ == t"0.3141593")
 
       test(m"Write 8 s.f. pi/10"):
-        Decimalizer(8).decimalize(math.Pi/10)
+        Decimalizer(8).decimalize(pi/10)
 
       . assert(_ == t"0.31415927")
 
       test(m"Write 1 s.f. pi/100"):
-        Decimalizer(1).decimalize(math.Pi/100)
+        Decimalizer(1).decimalize(pi/100)
 
       . assert(_ == t"0.03")
 
       test(m"Write 2 s.f. pi/100"):
-        Decimalizer(2).decimalize(math.Pi/100)
+        Decimalizer(2).decimalize(pi/100)
 
       . assert(_ == t"0.031")
 
       test(m"Write 3 s.f. pi/100"):
-        Decimalizer(3).decimalize(math.Pi/100)
+        Decimalizer(3).decimalize(pi/100)
 
       . assert(_ == t"0.0314")
 
       test(m"Write 4 s.f. pi/100"):
-        Decimalizer(4).decimalize(math.Pi/100)
+        Decimalizer(4).decimalize(pi/100)
 
       . assert(_ == t"0.03142")
 
       test(m"Write 5 s.f. pi/100"):
-        Decimalizer(5).decimalize(math.Pi/100)
+        Decimalizer(5).decimalize(pi/100)
 
       . assert(_ == t"0.031416")
 
       test(m"Write 6 s.f. pi/100"):
-        Decimalizer(6).decimalize(math.Pi/100)
+        Decimalizer(6).decimalize(pi/100)
 
       . assert(_ == t"0.0314159")
 
       test(m"Write 7 s.f. pi/100"):
-        Decimalizer(7).decimalize(math.Pi/100)
+        Decimalizer(7).decimalize(pi/100)
 
       . assert(_ == t"0.03141593")
 
       test(m"Write 8 s.f. pi/100"):
-        Decimalizer(8).decimalize(math.Pi/100)
+        Decimalizer(8).decimalize(pi/100)
 
       . assert(_ == t"0.031415927")
 
       test(m"Write 1 s.f. pi/1000"):
-        Decimalizer(1).decimalize(math.Pi/1000)
+        Decimalizer(1).decimalize(pi/1000)
 
       . assert(_ == t"3×10¯³")
 
       test(m"Write 2 s.f. pi/1000"):
-        Decimalizer(2).decimalize(math.Pi/1000)
+        Decimalizer(2).decimalize(pi/1000)
 
       . assert(_ == t"3.1×10¯³")
 
       test(m"Write 3 s.f. pi/1000"):
-        Decimalizer(3).decimalize(math.Pi/1000)
+        Decimalizer(3).decimalize(pi/1000)
 
       . assert(_ == t"3.14×10¯³")
 
       test(m"Write 4 s.f. pi/1000"):
-        Decimalizer(4).decimalize(math.Pi/1000)
+        Decimalizer(4).decimalize(pi/1000)
 
       . assert(_ == t"3.142×10¯³")
 
       test(m"Write 5 s.f. pi/1000"):
-        Decimalizer(5).decimalize(math.Pi/1000)
+        Decimalizer(5).decimalize(pi/1000)
 
       . assert(_ == t"3.1416×10¯³")
 
       test(m"Write 6 s.f. pi/1000"):
-        Decimalizer(6).decimalize(math.Pi/1000)
+        Decimalizer(6).decimalize(pi/1000)
 
       . assert(_ == t"3.14159×10¯³")
 
       test(m"Write 7 s.f. pi/1000"):
-        Decimalizer(7).decimalize(math.Pi/1000)
+        Decimalizer(7).decimalize(pi/1000)
 
       . assert(_ == t"3.141593×10¯³")
 
@@ -819,7 +820,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == t"6.0221×10²³")
 
       test(m"Write 8 s.f. pi/1000"):
-        Decimalizer(8).decimalize(math.Pi/1000)
+        Decimalizer(8).decimalize(pi/1000)
 
       . assert(_ == t"3.1415927×10¯³")
 
@@ -1054,12 +1055,12 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == ("COLOR", "COLORS"))
 
       test(m"Large dictionary size"):
-        val dictionary = Dictionary(words.map { word => (word, word.upper) }*)
+        val dictionary = Dictionary(words.map { word => (word, word.upper) }.scala*)
         dictionary.size
       . assert(_ == words.size)
 
       test(m"Large dictionary"):
-        Dictionary(words2.map { word => (word, word.upper) }*)
+        Dictionary(words2.map { word => (word, word.upper) }.scala*)
       . assert: dictionary =>
           words2.all: word =>
             dictionary(word) == word.upper
@@ -1070,7 +1071,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == 0)
 
       test(m"empty Text has single sentinel boundary"):
-        Writing(t"").boundaries.toList
+        Writing(t"").boundaries.to[List]
       . assert(_ == List(0))
 
       test(m"ASCII text grapheme count equals char count"):
@@ -1078,11 +1079,11 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == 3)
 
       test(m"ASCII text boundaries are sentinels at every char"):
-        Writing(t"abc").boundaries.toList
+        Writing(t"abc").boundaries.to[List]
       . assert(_ == List(0, 1, 2, 3))
 
       test(m"CR LF stays one grapheme"):
-        Writing(t"a\r\nb").boundaries.toList
+        Writing(t"a\r\nb").boundaries.to[List]
       . assert(_ == List(0, 1, 3, 4))
 
       test(m"CR LF grapheme count"):
@@ -1153,7 +1154,7 @@ object Tests extends Suite(m"Gossamer Tests"):
         t"a=1; b=22; c=333".extract():
           case r"$key([a-z])=$value([0-9]+)" => (key, value)
 
-        . to(List)
+        .to(List)
 
       . assert(_ == List((t"a", t"1"), (t"b", t"22"), (t"c", t"333")))
 
@@ -1161,7 +1162,7 @@ object Tests extends Suite(m"Gossamer Tests"):
         t"hello world".extract():
           case r"$digit([0-9])" => digit
 
-        . to(List)
+        .to(List)
 
       . assert(_ == Nil)
 
@@ -1169,7 +1170,7 @@ object Tests extends Suite(m"Gossamer Tests"):
         t"hello".extract(100.z):
           case r"$any(.)" => any
 
-        . to(List)
+        .to(List)
 
       . assert(_ == Nil)
 
@@ -1178,7 +1179,7 @@ object Tests extends Suite(m"Gossamer Tests"):
           case r"$f(foo)" => 1
           case r"$b(bar)" => 2
 
-        . to(List)
+        .to(List)
 
       . assert(_ == List(2, 1, 2, 1))
 
@@ -1187,7 +1188,7 @@ object Tests extends Suite(m"Gossamer Tests"):
           case r"$d([0-9]+)" => d.length
           case r"$x(zzz)"    => -1
 
-        . to(List)
+        .to(List)
 
       . assert(_ == List(3, 3))
 
@@ -1196,7 +1197,7 @@ object Tests extends Suite(m"Gossamer Tests"):
           case r"$l([a-z])" => Right(l)
           case r"$n([0-9])" => Left(n)
 
-        . to(List)
+        .to(List)
 
       . assert(_ == List(Right(t"a"), Left(t"1"), Right(t"b"), Left(t"2"), Right(t"c"), Left(t"3")))
 
@@ -1204,7 +1205,7 @@ object Tests extends Suite(m"Gossamer Tests"):
         t"foo foo foo".extract():
           case r"foo" => 1
 
-        . to(List)
+        .to(List)
 
       . assert(_ == List(1, 1, 1))
 
@@ -1213,7 +1214,7 @@ object Tests extends Suite(m"Gossamer Tests"):
           case r"foo" => 1
           case r"bar" => 2
 
-        . to(List)
+        .to(List)
 
       . assert(_ == List(2, 1, 2, 1))
 
@@ -1221,7 +1222,7 @@ object Tests extends Suite(m"Gossamer Tests"):
         t"".extract():
           case r"$any(.)" => any
 
-        . to(List)
+        .to(List)
 
       . assert(_ == Nil)
 

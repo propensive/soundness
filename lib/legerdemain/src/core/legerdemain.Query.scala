@@ -32,7 +32,7 @@
                                                                                                   */
 package legerdemain
 
-import language.dynamics
+import scala.language.dynamics
 
 import scala.compiletime.*
 
@@ -70,7 +70,7 @@ object Query extends Dynamic:
       value =>
         Query:
           fields(value) { [field] => field => contextual.encoded(field).prefix(label) }
-          . to(List)
+          .to[List]
           . flatMap(_.values)
 
   object DecodableDerivation extends ProductDerivation[[Type] =>> Type is Decodable in Query]:

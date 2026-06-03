@@ -59,7 +59,7 @@ object Tmux:
       case NumberError(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
 
     . mitigate:
-        val content = IArray.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]())
+        val content = IArray.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]().scala)
         val cx = sh"tmux display-message -pt ${tmux.id} '#{cursor_x}'".exec[Text]()
         val cy = sh"tmux display-message -pt ${tmux.id} '#{cursor_y}'".exec[Text]()
         val x = cx.trim.decode[Int].z
@@ -90,7 +90,7 @@ object Tmux:
         while Tmux.screenshot().screen.filter(_ == t">").length == 0 && count < 333 do
           delay(0.03*Second)
           count += 1
-        screenshot().screen.to(List)
+        screenshot().screen.to[List]
           .filter(!_.starts(t">"))
           .map(_.trim)
           .filter(_.length > 0)
@@ -107,7 +107,7 @@ object Tmux:
         enter(' ')
         enter(text)
         attend(enter(Ht))
-        screenshot().screen.filter(!_.starts(t"> ")).join(t"\n").trim
+        screenshot().screen.filter(!_.starts(t"> ")).to[List].join(t"\n").trim
 
 
   def progress(text: Text, decorate: Char => Text = char => t"^")
@@ -167,7 +167,7 @@ case class Tmux(id: Text, workingDirectory: WorkingDirectory, width: Int, height
 extends Findable
 
 case class Screenshot(screen: IArray[Text], size: (Int, Int), cursor: (Ordinal, Ordinal)):
-  def apply(): Text = screen.join("\n")
+  def apply(): Text = screen.to[List].join("\n")
 
   def currentLine(decorate: Char => Text): Text =
     val line0 = screen.at(cursor(1)).or(t"")

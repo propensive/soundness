@@ -41,7 +41,7 @@ trait Molecular extends Formulable:
 
   @targetName("with")
   infix def * (moleculable: Molecular): Molecule =
-    val elements2 = moleculable.molecule.elements.fuse(molecule.elements):
+    val elements2 = moleculable.molecule.elements.toList.fuse(molecule.elements):
       state.updated(next(0), molecule.elements.getOrElse(next(0), 0) + next(1))
 
     Molecule(elements2, molecule.charge + moleculable.molecule.charge)
@@ -52,7 +52,7 @@ trait Molecular extends Formulable:
   @targetName("times2")
   infix def ** (multiplier: Int): Molecule =
     Molecule
-      ( molecule.elements.view.mapValues(_*multiplier).to(Map), molecule.charge*multiplier, Unset )
+      ( molecule.elements.mapValues(_*multiplier), molecule.charge*multiplier, Unset )
 
   @targetName("cation")
   def `unary_-`: Molecule = molecule.copy(charge = molecule.charge - 1)

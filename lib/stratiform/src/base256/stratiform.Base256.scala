@@ -82,7 +82,7 @@ object Base256:
   // error fails fast rather than surfacing as silent decode corruption.
   locally:
     if alphabetString.length != 256 then
-      sys.error(s"BASE-256 alphabet has ${alphabetString.length} chars, expected 256")
+      scala.sys.error(s"BASE-256 alphabet has ${alphabetString.length} chars, expected 256")
 
     var i = 0
 
@@ -91,7 +91,7 @@ object Base256:
 
       if c.toInt % 256 != i then
         val hex = String.format("%04X", Integer.valueOf(c.toInt))
-        sys.error(s"BASE-256 alphabet[$i] = U+$hex (mod 256 = ${c.toInt % 256}, expected $i)")
+        scala.sys.error(s"BASE-256 alphabet[$i] = U+$hex (mod 256 = ${c.toInt % 256}, expected $i)")
 
       i += 1
 
@@ -100,7 +100,7 @@ object Base256:
 
     while j < 256 do
       val ord = alphabet(j).toInt
-      if seen(ord) then sys.error(s"BASE-256 alphabet has duplicate char at index $j")
+      if seen(ord) then scala.sys.error(s"BASE-256 alphabet has duplicate char at index $j")
       seen(ord) = true
       j += 1
 

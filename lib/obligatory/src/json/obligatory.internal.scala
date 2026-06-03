@@ -34,6 +34,7 @@ package obligatory
 
 import scala.annotation.*
 import scala.quoted.*
+import scala.collection.immutable.{List, Nil, `::`}
 
 import anticipation.*
 import contingency.*
@@ -209,7 +210,7 @@ object internal:
               halt:
                 m"the type of method ${method.name} has the unexpected type, ${method.info.show}"
 
-          val notification = result.typeSymbol == TypeRepr.of[Unit].typeSymbol
+          val notification = result =:= TypeRepr.of[Unit]
           val id = if notification then '{Unset} else Expr(Uuid().show)
           val methodName = Expr(method.name.tt)
 
@@ -330,7 +331,7 @@ object internal:
           val result: TypeRepr = runSym.info.absolve match
             case MethodType(_, _, result) => result
 
-          val notification = result.typeSymbol == TypeRepr.of[Unit].typeSymbol
+          val notification = result =:= TypeRepr.of[Unit]
           val id = if notification then '{Unset} else Expr(Uuid().show)
           val methodName = Expr(method.name.tt)
 

@@ -168,7 +168,7 @@ object Blake3:
         val words =
           compress(inputChainingValue, blockWords, blockCounter, blockLen, flags | RootFlag)
 
-        val take = math.min(2*OutLen, outLen - pos)
+        val take = scala.math.min(2*OutLen, outLen - pos)
         var i = 0
 
         while i < take do
@@ -222,7 +222,7 @@ object Blake3:
           blockLen = 0
 
         val want = BlockLen - blockLen
-        val take = math.min(want, end - pos)
+        val take = scala.math.min(want, end - pos)
         System.arraycopy(input, pos, block, blockLen, take)
         blockLen += take
         pos += take
@@ -277,7 +277,7 @@ object Blake3:
           chunkState = ChunkState(keyWords, totalChunks, flags)
 
         val want = ChunkLen - chunkState.len
-        val take = math.min(want, end - pos)
+        val take = scala.math.min(want, end - pos)
         chunkState.update(input, pos, pos + take)
         pos += take
 

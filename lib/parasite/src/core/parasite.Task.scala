@@ -32,8 +32,8 @@
                                                                                                   */
 package parasite
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
@@ -70,12 +70,12 @@ object Task:
     def sequence(using Monitor, Codicil): Task[Seq[result]] raises AsyncError =
       async(tasks.map(_.await()))
 
-  extension [result](tasks: Iterable[Task[result]])
+  extension [result](tasks: List[Task[result]])
     def race()(using Monitor, Codicil): result raises AsyncError =
       val promise: Promise[result] = Promise()
-      tasks.foreach(_.map(promise.offer(_)))
+      tasks.scala.foreach(_.map(promise.offer(_)))
 
-      try promise.await() finally tasks.foreach(_.cancel())
+      try promise.await() finally tasks.scala.foreach(_.cancel())
 
 trait Task[+result]:
   def ready: Boolean

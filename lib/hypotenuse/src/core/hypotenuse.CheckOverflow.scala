@@ -32,8 +32,8 @@
                                                                                                   */
 package hypotenuse
 
-import language.experimental.genericNumberLiterals
-import language.experimental.into
+import scala.language.experimental.genericNumberLiterals
+import scala.language.experimental.into
 
 trait CheckOverflow:
   type Wrap[result]

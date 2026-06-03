@@ -98,7 +98,7 @@ package executives:
 
 
     def invocation
-      ( arguments:        Iterable[Text],
+      ( arguments:        List[Text],
         environment:      Environment,
         workingDirectory: WorkingDirectory,
         stdio:            Stdio,
@@ -130,7 +130,7 @@ inline def trap(handler: PartialFunction[UnixSignal | WindowsSignal, SignalRespo
   cli.trap(handler)
 
 def application(using executive: Executive, interpreter: Interpreter, system: System)
-  ( arguments: Iterable[Text], signals: List[UnixSignal] = Nil )
+  ( arguments: List[Text], signals: List[UnixSignal] = Nil )
   ( block: Cli ?=> executive.Return )
 :   Unit =
 

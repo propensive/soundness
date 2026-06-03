@@ -38,6 +38,7 @@ import fulminate.*
 import gossamer.*
 import honeycomb.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 import wisteria.*
 
@@ -61,7 +62,7 @@ object Formulaic extends ProductDerivable[Formulaic]:
       val widget = renderable.render(elicitable.widget(pointer.text, legend, query().or(t"")))
       val required = false//safely(decodable.decoded(t"")).absent
 
-      List(formulation.element(widget, legend, message, required))
+      List(formulation.element(widget, legend, message, required)).scala
 
 
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Formulaic =
@@ -73,9 +74,9 @@ object Formulaic extends ProductDerivable[Formulaic]:
             val legend = label.uncamel.map(_.lower.capitalize).spaced
             context.fields(label2, legend, query(label), errors, formulation)
 
-        . flatten
+        . flatMap(_.iterator).to[Seq]
 
-      List(Fieldset(Legend(legend): Html of Flow, Fragment(content*): Html of Flow))
+      List(Fieldset(Legend(legend): Html of Flow, Fragment(content*): Html of Flow)).scala
 
 
 trait Formulaic extends Typeclass:

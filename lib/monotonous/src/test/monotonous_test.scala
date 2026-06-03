@@ -42,7 +42,7 @@ given Seed = Seed(1L)
 object Tests extends Suite(m"Monotonous tests"):
 
   val numbers = IArray[Byte](0, 1, 2, 3, -125, -126, -127, -128, -4, -3, -2, -1)
-  val numberList = numbers.to(List)
+  val numberList = numbers.to[List]
 
   val allNumbers = IArray.from((0 to 18).map(_.toByte))
 
@@ -95,44 +95,44 @@ object Tests extends Suite(m"Monotonous tests"):
 
     test(m"Deserialize from Binary"):
       import alphabets.binary.standard
-      t"000000000000000100000010000000111000001110000010100000011000000011111100111111011111111011111111".deserialize[Binary].to(List)
+      t"000000000000000100000010000000111000001110000010100000011000000011111100111111011111111011111111".deserialize[Binary].to[List]
     . assert(_ == numberList)
 
     test(m"Deserialize from Octal"):
       import alphabets.octal.standard
-      t"00000402007016024030037477377377".deserialize[Octal].to(List)
+      t"00000402007016024030037477377377".deserialize[Octal].to[List]
     . assert(_ == numberList)
 
     test(m"Deserialize from Hex"):
       import alphabets.hex.lowerCase
-      t"0001020383828180fcfdfeff".deserialize[Hex].to(List)
+      t"0001020383828180fcfdfeff".deserialize[Hex].to[List]
     . assert(_ == numberList)
 
     test(m"Deserialize from BASE32"):
       import alphabets.base32.upperCase
-      t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to(List)
+      t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to[List]
     . assert(_ == numberList)
 
     test(m"Deserialize from BASE64"):
       import alphabets.base64.standard
-      t"AAECA4OCgYD8/f7/".deserialize[Base64].to(List)
+      t"AAECA4OCgYD8/f7/".deserialize[Base64].to[List]
     . assert(_ == numberList)
 
     test(m"Tolerant BASE32"):
       import alphabets.base32.lowerCase
-      t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to(List)
+      t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to[List]
     . assert(_ == numberList)
 
     test(m"Intolerant BASE32"):
       capture[SerializationError]:
         import alphabets.base32.strictLowerCase
-        t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to(List)
+        t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to[List]
     . assert(_ == SerializationError(0, 'A'))
 
     test(m"Bad character offset"):
       capture[SerializationError]:
         import alphabets.base32.lowerCase
-        t"AAAQEA4?DQKAYB7H5737Q====".deserialize[Base32].to(List)
+        t"AAAQEA4?DQKAYB7H5737Q====".deserialize[Base32].to[List]
     . assert(_ == SerializationError(7, '?'))
 
     given Seed = Seed(1L)
@@ -140,48 +140,48 @@ object Tests extends Suite(m"Monotonous tests"):
     stochastic:
       for i <- 1 to 100 do
         val arb = arbitrary[IArray[Byte]]()
-        val arbList = arb.to(List)
+        val arbList = arb.to[List]
 
         locally:
           import alphabets.base64
-          for alphabet <- List(base64.standard, base64.unpadded, base64.url, base64.xml,
-              base64.imap, base64.yui, base64.radix64, base64.bcrypt, base64.sasl) do
+          List(base64.standard, base64.unpadded, base64.url, base64.xml,
+              base64.imap, base64.yui, base64.radix64, base64.bcrypt, base64.sasl).each: alphabet =>
             test(m"Roundtrip BASE64 tests"):
               given Alphabet[Base64] = alphabet
-              arb.serialize[Base64].deserialize[Base64].to(List)
+              arb.serialize[Base64].deserialize[Base64].to[List]
             . assert(_ == arbList)
 
         locally:
           import alphabets.base32
-          for alphabet <- List(base32.strictUpperCase, base32.strictLowerCase, base32.upperCase,
+          List(base32.strictUpperCase, base32.strictLowerCase, base32.upperCase,
               base32.lowerCase, base32.extendedHexUpperCase, base32.extendedHexLowerCase,
               base32.zBase32, base32.zBase32Unpadded, base32.geohash, base32.wordSafe,
-              base32.crockford) do
+              base32.crockford).each: alphabet =>
             test(m"Roundtrip BASE32 tests"):
               given Alphabet[Base32] = alphabet
-              arb.serialize[Base32].deserialize[Base32].to(List)
+              arb.serialize[Base32].deserialize[Base32].to[List]
             . assert(_ == arbList)
 
         locally:
           import alphabets.hex
-          for alphabet <- List(hex.strictUpperCase, hex.strictLowerCase, hex.upperCase,
-              hex.lowerCase, hex.bioctal) do
+          List(hex.strictUpperCase, hex.strictLowerCase, hex.upperCase,
+              hex.lowerCase, hex.bioctal).each: alphabet =>
             test(m"Roundtrip Hex tests"):
               given Alphabet[Hex] = alphabet
-              arb.serialize[Hex].deserialize[Hex].to(List)
+              arb.serialize[Hex].deserialize[Hex].to[List]
             . assert(_ == arbList)
 
         test(m"Roundtrip Octal tests"):
           import alphabets.octal.standard
-          arb.serialize[Octal].deserialize[Octal].to(List)
+          arb.serialize[Octal].deserialize[Octal].to[List]
         . assert(_ == arbList)
 
         test(m"Roundtrip Quaternary tests"):
           import alphabets.quaternary.dnaNucleotide
-          arb.serialize[Quaternary].deserialize[Quaternary].to(List)
+          arb.serialize[Quaternary].deserialize[Quaternary].to[List]
         . assert(_ == arbList)
 
         test(m"Roundtrip Binary tests"):
           import alphabets.binary.standard
-          arb.serialize[Binary].deserialize[Binary].to(List)
+          arb.serialize[Binary].deserialize[Binary].to[List]
         . assert(_ == arbList)

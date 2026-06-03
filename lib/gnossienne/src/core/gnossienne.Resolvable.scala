@@ -33,6 +33,7 @@
 package gnossienne
 
 import scala.annotation.*
+import rudiments.*
 
 import adversaria.*
 import anticipation.*

@@ -39,6 +39,7 @@ import contingency.*
 import denominative.*
 import distillate.*
 import gossamer.*
+import rudiments.*
 import kaleidoscope.*
 import spectacular.*
 import symbolism.*
@@ -84,7 +85,7 @@ object Tzdb:
     parse(name, lines)
 
   def parse(name: Text, lines: Stream[Text]): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
-    def parseDuration(lineNo: Int, string: Text) = string.cut(t":").to(List) match
+    def parseDuration(lineNo: Int, string: Text) = string.cut(t":").to[List] match
       case As[Base24](h) :: Nil                                   => Duration(h, 0, 0)
       case As[Base24](h) :: As[Base60](m) :: Nil                  => Duration(h, m, 0)
       case As[Base24](h) :: As[Base60](m) :: As[Base60](s) :: Nil => Duration(h, m, s)
@@ -92,7 +93,7 @@ object Tzdb:
       case other =>
         abort(TzdbError(TzdbError.Reason.CouldNotParseTime(other.show), lineNo))
 
-    def parseTime(lineNo: Int, string: Text) = string.cut(t":").to(List) match
+    def parseTime(lineNo: Int, string: Text) = string.cut(t":").to[List] match
       case As[Base24](h) :: r"${As[Base60](m)}([0-9]*)s" :: Nil   => Time(h, m, 0, 's')
       case As[Base24](h) :: r"${As[Base60](m)}([0-9]*)u" :: Nil   => Time(h, m, 0, 'u')
       case As[Base24](h) :: As[Base60](m) :: Nil                  => Time(h, m, 0, Unset)
@@ -123,7 +124,7 @@ object Tzdb:
 
     def parseZone(lineNo: Int, arguments: List[Text]): Tzdb.Entry.Zone = arguments match
       case name :: rest =>
-        name.cut(t"/", 2).to(List) match
+        name.cut(t"/", 2).to[List] match
           case area :: location :: Nil =>
             Tzdb.Entry.Zone(area, Some(location), Trie(parseZoneInfo(lineNo, rest)))
 
@@ -140,7 +141,7 @@ object Tzdb:
       case stdoff :: rules :: format :: until =>
         val s = parseDuration(lineNo, stdoff)
 
-        def f(string: Text) = format.cut(t"%s", 2).to(List).absolve match
+        def f(string: Text) = format.cut(t"%s", 2).to[List].absolve match
           case value :: Nil           => value
           case before :: after :: Nil => before+string+after
 
@@ -185,10 +186,10 @@ object Tzdb:
         zone:    Option[Tzdb.Entry.Zone] = None )
     :   List[Tzdb.Entry] =
 
-      if lines.nil then entries ++ zone else
+      if lines.nil then entries ++ List.from(zone) else
         val line: Text = lines.head.upto(_ == '#')
 
-        line.cut(unsafely(r"\s+")).to(List) match
+        line.cut(unsafely(r"\s+")).to[List] match
           case t"Rule" :: tail =>
             recur(lineNo + 1, lines.tail, parseRule(lineNo, tail) :: (zone.to(List) ++ entries))
 

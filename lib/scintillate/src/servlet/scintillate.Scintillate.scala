@@ -34,6 +34,7 @@ package scintillate
 
 import scala.annotation.*
 import scala.quoted.*
+import scala.collection.immutable.{List, Nil, `::`}
 
 import fulminate.*
 import telekinesis.*

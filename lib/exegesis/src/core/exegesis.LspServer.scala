@@ -116,7 +116,7 @@ trait LspServer() extends Lsp:
       contentChanges: List[TextDocumentContentChangeEvent] )
   :   Unit =
 
-    if contentChanges.nonEmpty then documents.at(textDocument.uri).let: current =>
+    if !contentChanges.scala.isEmpty then documents.at(textDocument.uri).let: current =>
       documents(textDocument.uri) =
         current.copy(version = textDocument.version, text = contentChanges.last.text)
 

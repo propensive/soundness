@@ -47,7 +47,7 @@ object Complex:
   =>  Complex[part] is Showable =
 
     complex =>
-      compiletime.summonFrom:
+      scala.compiletime.summonFrom:
         case distributive: (`part` is Distributive) =>
           provide[Complex[distributive.Operand] is Showable]:
             provide[distributive.Operand is Zeroic]:
@@ -134,7 +134,7 @@ object Complex:
     ( modulus: component, argument: Angle )
   :   Complex[multiplication.Result] =
 
-    Complex(modulus*math.cos(argument.radians), modulus*math.sin(argument.radians))
+    Complex(modulus*scala.math.cos(argument.radians), modulus*scala.math.sin(argument.radians))
 
 
 case class Complex[component](real: component, imaginary: component):

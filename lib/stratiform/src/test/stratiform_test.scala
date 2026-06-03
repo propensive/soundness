@@ -39,6 +39,7 @@ import java.lang as jl
 import adversaria.name
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gastronomy.*
 import gossamer.*
@@ -113,7 +114,7 @@ object Tests extends Suite(m"Stratiform Tests"):
     suite(m"Streaming parser — negative corpus (E1xx)"):
       CorpusLoader.negative.each: testcase =>
         val codes = CorpusLoader.expectedCodes(testcase)
-        if codes.nonEmpty && codes.forall(_ < 200) then
+        if !codes.nil && codes.all(_ < 200) then
           test(m"streaming raises an expected E1xx error on ${testcase.stem}"):
             codes.contains:
               capture[TelError](TelParser.parse(Cursor[Data](testcase.source)))
@@ -137,7 +138,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           val baseline = TelCheckTree.of(Tel.make(
             TelParser.parse(Cursor[Data](testcase.source))))
           val sizes = List(1, 7, 64, 1024, testcase.source.length.max(1))
-          sizes.forall: n =>
+          sizes.all: n =>
             val tree = TelCheckTree.of(Tel.make(
               TelParser.parse(chunkedCursor(testcase.source, n))))
             tree == baseline
@@ -264,7 +265,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val bytes  =
           val arr = stream.readAllBytes().nn
           stream.close()
-          IArray.from(arr)
+          IArray.unsafeFromArray(arr)
 
         bytes.read[Tel].childCompounds.length
       . assert(_ > 0)
@@ -276,7 +277,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val bytes  =
           val arr = stream.readAllBytes().nn
           stream.close()
-          IArray.from(arr)
+          IArray.unsafeFromArray(arr)
 
         val doc = bytes.read[Tel]
         try
@@ -293,7 +294,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val bytes  =
           val arr = stream.readAllBytes().nn
           stream.close()
-          IArray.from(arr)
+          IArray.unsafeFromArray(arr)
 
         val doc = bytes.read[Tel]
         val reconstructed = Tels.Reconstructor.fromTel(doc)
@@ -310,7 +311,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(identity)
 
       test(m"axiom declares the four built-in scalars"):
-        Tels.Axiom.tels.scalars.map(_.name).toSet
+        Tels.Axiom.tels.scalars.map(_.name).to[Set]
       . assert: scalars =>
           scalars == Set(t"Identifier", t"TypeName", t"Sigil", t"String")
 
@@ -459,7 +460,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           case Tel.Element.Node(_, _, children) =>
             children.collect:
               case Tel.Element.Value(_, _, t) => t
-            .toList
+            .to[List]
 
           case _ => Nil
       . assert(_ == List(t"Alice", t"30"))
@@ -808,7 +809,7 @@ object Tests extends Suite(m"Stratiform Tests"):
     suite(m"Tel.fields repeated-keyword accessor"):
       test(m"fields returns all matching children in order"):
         val tel = t"item 1\nitem 2\nitem 3\n".read[Tel]
-        tel.fields(t"item").map(_.primaryAtom).toList
+        tel.fields(t"item").map(_.primaryAtom).to[List]
       . assert(_ == List(t"1", t"2", t"3"))
 
       test(m"fields returns empty array when none match"):
@@ -935,7 +936,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         // present; the captured error must be one of them, since fixture
         // filenames sometimes describe a scenario while the reference
         // parser surfaces a different code first (e.g. e118 → E117).
-        if codes.nonEmpty && codes.forall(_ < 200) then
+        if !codes.nil && codes.all(_ < 200) then
           test(m"raises an expected E1xx error on ${testcase.stem}"):
             codes.contains(capture[TelError](testcase.source.read[Tel]).reason.number)
           . assert(_ == true)
@@ -950,7 +951,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == true)
 
       test(m"alphabet entries are pairwise distinct"):
-        Base256.alphabet.toSet.size
+        Base256.alphabet.to[Set].size
       . assert(_ == 256)
 
       test(m"ASCII digits encode to themselves"):
@@ -967,7 +968,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"round-trip all 256 byte values"):
         val data: Data = (0 to 255).map(_.toByte).toArray.asInstanceOf[IArray[Byte]]
-        Base256.decode(Base256.encode(data)).toSeq
+        Base256.decode(Base256.encode(data)).to[List].scala
       . assert(_ == (0 to 255).map(_.toByte))
 
       test(m"empty bytes round-trip to empty text"):
@@ -984,12 +985,12 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == 256)
 
       test(m"permissive decode accepts non-alphabet chars by residue"):
-        Base256.decode(t"A ").toSeq
+        Base256.decode(t"A ").to[List].scala
       . assert(_ == Seq(0x41.toByte, 0x20.toByte))
 
       test(m"strict decode accepts the alphabet"):
         val data: Data = (0 to 255).map(_.toByte).toArray.asInstanceOf[IArray[Byte]]
-        Base256.decodeStrict(Base256.encode(data)).toSeq
+        Base256.decodeStrict(Base256.encode(data)).to[List].scala
       . assert(_ == (0 to 255).map(_.toByte))
 
       test(m"strict decode rejects a non-alphabet char"):
@@ -1017,7 +1018,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         16384L -> "80 80 01"
       )
 
-      vectors.foreach: (value, expected) =>
+      vectors.each: (value, expected) =>
         test(m"encodes $value as $expected"):
           hex(Varint.encode(value))
         . assert(_ == expected)
@@ -1028,12 +1029,12 @@ object Tests extends Suite(m"Stratiform Tests"):
         . assert(_ == value)
 
       test(m"round-trips every value in 0..1023"):
-        (0L to 1023L).forall: n =>
+        (0L to 1023L).all: n =>
           Varint.decode(Varint.encode(n), 0).value == n
       . assert(identity)
 
       test(m"round-trips powers of two up to 2^62"):
-        (0 to 62).map(_.toLong).forall: i =>
+        (0 to 62).map(_.toLong).all: i =>
           val n = 1L << i
           Varint.decode(Varint.encode(n), 0).value == n
       . assert(identity)
@@ -1083,7 +1084,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       while i < arr.length do
         arr(i) = jl.Integer.parseInt(s.substring(i * 2, i * 2 + 2), 16).toByte
         i += 1
-      arr.toSeq
+      IArray.unsafeFromArray(arr).to[List].scala
 
     suite(m"BinTEL §7 node encoder"):
 
@@ -1208,7 +1209,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
           case Tel.Element.Node(_, _, children) =>
-            children.toList.collect:
+            children.to[List].collect:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t"Alice"))
@@ -1221,7 +1222,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
           case Tel.Element.Node(_, _, children) =>
-            children.toList.collect:
+            children.to[List].collect:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t""))
@@ -1234,7 +1235,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
           case Tel.Element.Node(_, _, children) =>
-            children.toList.collect:
+            children.to[List].collect:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t"café"))
@@ -1287,7 +1288,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val decoded = Bintel.decode(bytes, outerSchema)
         decoded match
           case Tel.Element.Node(_, _, IArray(Tel.Element.Node(_, _, inner))) =>
-            inner.toList.collect:
+            inner.to[List].collect:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t"example.com"))
@@ -1295,7 +1296,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"trailing bytes after document root raise BintelError"):
         val original = t"name Alice\n".read[Tel]
         val bytes = original.bintel(nameSchema)
-        val padded = (bytes.toList :+ 0xff.toByte).toArray.asInstanceOf[IArray[Byte]]
+        val padded = (bytes.to[List] :+ 0xff.toByte).scala.toArray.asInstanceOf[IArray[Byte]]
         capture[BintelError](Bintel.decode(padded, nameSchema)).reason
       . assert(_ == BintelError.Reason.TrailingBytes)
 
@@ -1341,7 +1342,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"frame writes signature length immediately after magic"):
         val body: Data = Array[Byte](0x01).asInstanceOf[IArray[Byte]]
         val framed = Bintel.frame(body, sig32)
-        framed.slice(0, 5).toSeq
+        framed.slice(0, 5).to[List].scala
       . assert(_ == Seq(0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte, 0x20.toByte))
 
       test(m"frame rejects too-short signature"):
@@ -1361,8 +1362,8 @@ object Tests extends Suite(m"Stratiform Tests"):
         val body: Data = Array[Byte](0x01, 0x02, 0x03).asInstanceOf[IArray[Byte]]
         val framed = Bintel.frame(body, sig32)
         val Bintel.Framed(sig, recovered) = Bintel.unframe(framed)
-        (sig.toSeq, recovered.toSeq)
-      . assert(_ == (sig32.toSeq, Seq[Byte](0x01, 0x02, 0x03)))
+        (sig.to[List].scala, recovered.to[List].scala)
+      . assert(_ == (sig32.to[List].scala, Seq[Byte](0x01, 0x02, 0x03)))
 
       test(m"unframe rejects bad magic"):
         val bytes: Data = Array.fill[Byte](40)(0).asInstanceOf[IArray[Byte]]
@@ -1385,13 +1386,13 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"frame ↔ unframe round-trip for non-trivial body"):
         val original: Data = (0 to 99).map(_.toByte).toArray.asInstanceOf[IArray[Byte]]
         val framed = Bintel.frame(original, sig32)
-        val recovered = Bintel.unframe(framed).body.toSeq
-        recovered == original.toSeq
+        val recovered = Bintel.unframe(framed).body.to[List].scala
+        recovered == original.to[List].scala
       . assert(_ == true)
 
       test(m"tel.bintelDocument produces a file beginning with magic"):
         val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
-        bytes.slice(0, 4).toSeq
+        bytes.slice(0, 4).to[List].scala
       . assert(_ == Seq(0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte))
 
       test(m"decodeDocument round-trips through frame + decode"):
@@ -1399,7 +1400,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val doc = Bintel.decodeDocument(bytes, nameSchema)
         doc.root match
           case Tel.Element.Node(_, _, children) =>
-            children.toList.collect:
+            children.to[List].collect:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t"Alice"))
@@ -1416,7 +1417,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val source = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
         val text = Bintel.text(source)
         val recovered = Bintel.fromText(text)
-        recovered.toSeq == source.toSeq
+        recovered.to[List].scala == source.to[List].scala
       . assert(_ == true)
 
     suite(m"BinTEL §8.2 schema signature"):
@@ -1438,7 +1439,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == 33)
 
       test(m"single-component signature begins with the component hash"):
-        SchemaSignature.encode(List(h0)).slice(0, 32).toSeq == h0.toSeq
+        SchemaSignature.encode(List(h0)).slice(0, 32).to[List].scala == h0.to[List].scala
       . assert(_ == true)
 
       test(m"two-component signature length is 37 (32 + 4 + 1)"):
@@ -1460,31 +1461,31 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"single-component signature decodes back to the hash"):
         val sig = SchemaSignature.encode(List(h0))
-        val recovered = SchemaSignature.decode(sig, List(h0))
-        recovered.map(_.toSeq) == List(h0.toSeq)
+        val recovered = SchemaSignature.decode(sig, List(h0).scala)
+        recovered.map(_.to[List].scala) == List(h0.to[List].scala)
       . assert(_ == true)
 
       test(m"two-component signature round-trips through encode/decode"):
         val sig = SchemaSignature.encode(List(h0, h1))
-        val recovered = SchemaSignature.decode(sig, List(h0, h1, h2))
-        recovered.map(_.toSeq) == List(h0.toSeq, h1.toSeq)
+        val recovered = SchemaSignature.decode(sig, List(h0, h1, h2).scala)
+        recovered.map(_.to[List].scala) == List(h0.to[List].scala, h1.to[List].scala)
       . assert(_ == true)
 
       test(m"three-component signature round-trips through encode/decode"):
         val sig = SchemaSignature.encode(List(h0, h1, h2))
-        val recovered = SchemaSignature.decode(sig, List(h0, h1, h2))
-        recovered.map(_.toSeq) == List(h0.toSeq, h1.toSeq, h2.toSeq)
+        val recovered = SchemaSignature.decode(sig, List(h0, h1, h2).scala)
+        recovered.map(_.to[List].scala) == List(h0.to[List].scala, h1.to[List].scala, h2.to[List].scala)
       . assert(_ == true)
 
       test(m"decode with reserved hash-size index raises BadSignatureLength"):
         // XOR-fold ⇒ 0xA0, naming reserved s = 10
         val bad: Data = Array[Byte](0xA0.toByte, 0, 0, 0, 0).asInstanceOf[IArray[Byte]]
-        capture[BintelError](SchemaSignature.decode(bad, List(h0))).reason
+        capture[BintelError](SchemaSignature.decode(bad, List(h0).scala)).reason
       . assert(_ == BintelError.Reason.BadSignatureLength)
 
       test(m"decode raises BadSignature when library is missing components"):
         val sig = SchemaSignature.encode(List(h0, h1))
-        capture[BintelError](SchemaSignature.decode(sig, List(h2))).reason
+        capture[BintelError](SchemaSignature.decode(sig, List(h2).scala)).reason
       . assert(_ == BintelError.Reason.BadSignature)
 
     suite(m"BinTEL §8.1 schema signature from document"):
@@ -1493,7 +1494,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val source =
           val arr = stream.readAllBytes().nn
           stream.close()
-          IArray.from(arr)
+          IArray.unsafeFromArray(arr)
 
         val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
         sig.length
@@ -1504,12 +1505,12 @@ object Tests extends Suite(m"Stratiform Tests"):
         val source =
           val arr = stream.readAllBytes().nn
           stream.close()
-          IArray.from(arr)
+          IArray.unsafeFromArray(arr)
 
         val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
         val bintel = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).bintel(Tels.Axiom.tels)
         val hash = Blake3.hashOf(bintel, 32)
-        sig.slice(0, 32).toSeq == hash.toSeq
+        sig.slice(0, 32).to[List].scala == hash.to[List].scala
       . assert(_ == true)
 
       test(m"schema with a single layer produces a 37-byte signature"):
@@ -1554,14 +1555,14 @@ object Tests extends Suite(m"Stratiform Tests"):
     suite(m"BinTEL §3 value hash"):
       test(m"valueHash is deterministic"):
         val tel = t"name Alice\n".read[Tel]
-        val a = tel.valueHash(nameSchema).data.toSeq
-        val b = tel.valueHash(nameSchema).data.toSeq
+        val a = tel.valueHash(nameSchema).data.to[List].scala
+        val b = tel.valueHash(nameSchema).data.to[List].scala
         a == b
       . assert(_ == true)
 
       test(m"valueHash differs when value differs"):
-        val a = t"name Alice\n".read[Tel].valueHash(nameSchema).data.toSeq
-        val b = t"name Bob\n".read[Tel].valueHash(nameSchema).data.toSeq
+        val a = t"name Alice\n".read[Tel].valueHash(nameSchema).data.to[List].scala
+        val b = t"name Bob\n".read[Tel].valueHash(nameSchema).data.to[List].scala
         a == b
       . assert(_ == false)
 
@@ -1574,10 +1575,10 @@ object Tests extends Suite(m"Stratiform Tests"):
         val source =
           val arr = stream.readAllBytes().nn
           stream.close()
-          IArray.from(arr)
+          IArray.unsafeFromArray(arr)
 
-        val a = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels).data.toSeq
-        val b = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels).data.toSeq
+        val a = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels).data.to[List].scala
+        val b = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels).data.to[List].scala
         (a.length, a == b)
       . assert(_ == (32, true))
 
@@ -1586,7 +1587,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val telBytes  =
           val arr = telStream.readAllBytes().nn
           telStream.close()
-          IArray.from(arr)
+          IArray.unsafeFromArray(arr)
 
         val refStream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.bintel.hex").nn
         val refHex    =
@@ -1596,7 +1597,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         val refBytes = hexBytes(refHex)
         val element  = Tel.Type.assign(telBytes.read[Tel], Tels.Axiom.tels)
-        element.bintel(Tels.Axiom.tels).toSeq == refBytes
+        element.bintel(Tels.Axiom.tels).to[List].scala == refBytes
       . assert(_ == true)
 
       test(m"§3 — tel-schema.tel matches the normative BLAKE3-256 value hash"):
@@ -1606,10 +1607,10 @@ object Tests extends Suite(m"Stratiform Tests"):
         val telBytes  =
           val arr = telStream.readAllBytes().nn
           telStream.close()
-          IArray.from(arr)
+          IArray.unsafeFromArray(arr)
 
         val digest = Tel.Type.assign(telBytes.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels)
-        digest.data.toSeq.map(b => f"${b & 0xff}%02x").mkString
+        digest.data.to[List].scala.map(b => f"${b & 0xff}%02x").mkString
       . assert(_ == "626dd8958809da354a2f8bd9f7dac1cfda7f549ecbe047eb0d8c0a17c278d517")
 
     suite(m"BinTEL §6.2 self-contained mode"):
@@ -1624,7 +1625,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         dataDoc.read[Tel].bintelSelfContained(schemaDoc.read[Tel])
 
       test(m"self-contained document begins with the B2 C4 B5 BC magic"):
-        selfContained().slice(0, 4).toSeq
+        selfContained().slice(0, 4).to[List].scala
       . assert(_ == Seq[Byte](0xb2.toByte, 0xc4.toByte, 0xb5.toByte, 0xbc.toByte))
 
       test(m"self-contained text form begins with βτεμ"):
@@ -1641,7 +1642,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val schema = Tels.Layers.compose(Tels.Reconstructor.fromTel(schemaDoc.read[Tel]))
         val external = dataDoc.read[Tel].bintel(schema)
         val recovered = Bintel.decodeDocumentSelfContained(selfContained()).root.bintel(schema)
-        recovered.toSeq == external.toSeq
+        recovered.to[List].scala == external.to[List].scala
       . assert(_ == true)
 
       test(m"signature not matching the embedded schema raises B11"):

@@ -32,7 +32,8 @@
                                                                                                   */
 package guillotine
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
+import rudiments.*
 
 import java.io as ji
 
@@ -105,7 +106,7 @@ case class Command(arguments: Text*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)
   :   Job[Exec, result] logs ExecEvent raises ExecError =
 
-    val processBuilder = ProcessBuilder(arguments.ss*)
+    val processBuilder = ProcessBuilder(arguments.map(_.s)*)
     processBuilder.directory(ji.File(working.directory().s))
 
     Log.info(ExecEvent.ProcessStart(this))
@@ -129,7 +130,7 @@ case class Pipeline(commands: Command*) extends Executable:
   :   Job[Exec, result] logs ExecEvent raises ExecError =
 
     val processBuilders = commands.map: command =>
-      val processBuilder = ProcessBuilder(command.arguments.ss*)
+      val processBuilder = ProcessBuilder(command.arguments.map(_.s)*)
 
       processBuilder.directory(ji.File(working.directory().s))
 

@@ -42,6 +42,7 @@ import galilei.*
 import gossamer.*
 import hellenism.*
 import prepositional.*
+import rudiments.*
 import revolution.*
 import serpentine.*
 import turbulence.*
@@ -66,7 +67,7 @@ object Bundler:
       case _ =>
         unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)
 
-    LocalClasspath(entries*)
+    LocalClasspath(entries.scala*)
 
 
   def bundle(directory: Path on Linux, jarfile0: Optional[Path on Linux], main: Optional[Fqcn])
@@ -87,7 +88,7 @@ object Bundler:
     Zipfile.write(jarfile):
       val entries =
         Zip.Entry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest)
-        :: classpath(directory).entries.to(List).flatMap:
+        :: classpath(directory).entries.to[List].flatMap:
           case ClasspathEntry.Directory(directory) =>
             val root = directory.decode[Path on Linux]
             root.descendants.to(List).filter: entry => !omissions(entry.name)
@@ -103,11 +104,11 @@ object Bundler:
               ZipStream(handle).keep(_.encode != t"META-INF/MANIFEST.MF").map: entry =>
                 Zip.Entry(entry.ref, entry.read[Data])
 
-              . to(List)
+              .to(List)
 
           case _ =>
             Nil
 
-      entries.distinctBy(_.ref)
+      List.from(entries.scala.distinctBy(_.ref))
 
     jarfile

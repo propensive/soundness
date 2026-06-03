@@ -38,6 +38,10 @@ import scala.quoted.*
 
 import soundness.*
 
+import environments.java
+import stdios.virtualMachine
+import termcaps.environment
+
 import systems.java
 import temporaryDirectories.system
 import embeddings.automatic
@@ -52,7 +56,7 @@ object Tests extends Suite(m"Superlunary Tests"):
         ' {
             val x = ${message.name}
             val y = ${message.count}
-            println(y)
+            Out.println(y.inspect)
             Example(t"Time: $x $y ${jl.System.currentTimeMillis - ${message}.count}", 9)
           }
 

@@ -32,7 +32,7 @@
                                                                                                   */
 package contingency
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import scala.quoted.*
 
@@ -99,7 +99,7 @@ def unsafely[error <: Exception](using erased Void)[success]
 :   success =
 
   boundary: label ?=>
-    import unsafeExceptions.canThrowAny
+    import scala.unsafeExceptions.canThrowAny
     block(using Unsafe)(using ThrowTactic())
 
 
@@ -206,11 +206,11 @@ transparent inline def validate[focus](using erased Void)[accrual](accrual: accr
   ${contingency.internal.validate[accrual, focus]('accrual, 'block)}
 
 
-extension [element](sequence: Iterable[element])
+extension [element](sequence: List[element])
   transparent inline def survive[result](using erased Void)[error <: Exception]
     ( lambda
     : (OptionalTactic[error, result], Diagnostics, CanThrow[Exception]) ?=> element => result )
-  :   Iterable[result] =
+  :   List[result] =
 
     sequence.map { element => safely(lambda(element)) }.compact
 

@@ -61,7 +61,7 @@ package executives:
 
 
     def invocation
-      ( arguments:        Iterable[Text],
+      ( arguments:        List[Text],
         environment:      Environment,
         workingDirectory: WorkingDirectory,
         stdio:            Stdio,
@@ -70,7 +70,7 @@ package executives:
       ( using interpreter: Interpreter )
     :   Cli =
 
-      arguments match
+      arguments.to[List] match
         case
           t"{completions}" :: t"powershell" :: As[Int](cursor) :: _ :: tty
           :: t"--"
@@ -80,11 +80,11 @@ package executives:
           val parts0 = rawLine.cut(t" ")
           val parts = if cursor > rawLine.length then parts0 :+ t"" else parts0
           val wordStarts = parts.scanLeft(0){ (pos, w) => pos + w.length + 1 }.init
-          val wordIdx = wordStarts.lastIndexWhere(_ <= cursor).max(0)
+          val wordIdx = wordStarts.scala.lastIndexWhere(_ <= cursor).max(0)
           val posInWord = cursor - wordStarts(wordIdx)
           val focus = (wordIdx - 1).max(0)
           val restParts = if parts.length > 1 then parts.tail else List(t"")
-          val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, cursor))
+          val tab = Completions.tab(tty, Completions.Tab(arguments.to[List], focus, cursor))
 
           Completion
             ( Cli.arguments(arguments, focus, posInWord, tab),
@@ -122,13 +122,13 @@ package executives:
               case head :: tail =>
                 read(tail, head.starts(t"--"), head :: done)
 
-            val rest2 = read(rest.to(List), false, Nil)
+            val rest2 = read(rest.to[List], false, Nil)
 
             val focus = focus1 - (if shell == Shell.Zsh then 2 else 1)
 
             val position = if shell == Shell.Bash then Unset else position0
-            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position0))
-            val equalses = rest.take(focus0).count(_ == t"=")
+            val tab = Completions.tab(tty, Completions.Tab(arguments.to[List], focus, position0))
+            val equalses = rest.take(focus0).count((arg: Text) => arg == t"=")
             val focus2 = focus - (if shell == Shell.Bash then equalses else 0)
 
             Completion

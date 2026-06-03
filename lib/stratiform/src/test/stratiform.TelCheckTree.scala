@@ -34,6 +34,7 @@ package stratiform
 
 import anticipation.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 import CheckFormat.CheckTree
@@ -86,8 +87,8 @@ object TelCheckTree:
     CheckTree.Struct
       ( t"Tabulation",
         List
-         ( t"marker_offsets" -> CheckTree.Sequence(tabulation.markerOffsets.toList.map(CheckTree.Num(_))),
-           t"headings"       -> CheckTree.Sequence(tabulation.headings.toList.map(h => CheckTree.Str(h))) ) )
+         ( t"marker_offsets" -> CheckTree.Sequence(tabulation.markerOffsets.to[List].map(CheckTree.Num(_))),
+           t"headings"       -> CheckTree.Sequence(tabulation.headings.to[List].map(h => CheckTree.Str(h))) ) )
 
   private def ofCompound(compound: Tel.Compound): CheckTree =
     CheckTree.Struct
@@ -120,4 +121,4 @@ object TelCheckTree:
     opt.lay(CheckTree.Variant(t"None", Unset))(v => CheckTree.Variant(t"Some", f(v)))
 
   private def ofIArray[value](items: IArray[value])(f: value => CheckTree): CheckTree =
-    CheckTree.Sequence(items.toList.map(f))
+    CheckTree.Sequence(items.to[List].map(f))

@@ -32,7 +32,7 @@
                                                                                                   */
 package austronesian
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import hellenism.*

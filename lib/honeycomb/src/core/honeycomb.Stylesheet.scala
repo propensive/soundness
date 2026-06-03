@@ -36,6 +36,7 @@ import anticipation.*
 import beneficence.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
 import symbolism.*
 import typonym.*
 
@@ -43,7 +44,7 @@ object Stylesheet:
   given generic: Stylesheet is GenericCssSelection = _.classes.join(t".", t".", t"")
 
   def apply[name <: Label: Reifiable to List[String]](): Stylesheet of name =
-    new Stylesheet(name.reify.map(_.tt).to(Set)) { type Topic = name }
+    new Stylesheet(name.reify.map(_.tt).to[Set]) { type Topic = name }
 
   given addable: Stylesheet is Addable by Stylesheet to Stylesheet =
     (classes, additions) => Stylesheet(classes.classes ++ additions.classes)

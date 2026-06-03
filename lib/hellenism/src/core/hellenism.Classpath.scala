@@ -82,9 +82,9 @@ object Classpath extends Root(t""):
     path => classloader.java.getResourceAsStream(path.encode.s) != null
 
   def apply(classloader: jn.URLClassLoader): Classpath =
-    val entries = classloader.getURLs.nn.iterator.to(List).map(_.nn).flatMap(ClasspathEntry(_).option)
+    val entries = classloader.getURLs.nn.iterator.to(List).map(_.nn).flatMap(ClasspathEntry(_).lay(Nil)(List(_)))
 
-    if entries.exists:
+    if entries.scala.exists:
       case _: ClasspathEntry.Url => true
       case _                     => false
     then OnlineClasspath(entries)
@@ -96,7 +96,7 @@ object Classpath extends Root(t""):
         case jar: ClasspathEntry.Jar                  => jar
         case runtime: ClasspathEntry.JavaRuntime.type => runtime
 
-      LocalClasspath(items*)
+      LocalClasspath(items.scala*)
 
 
   given streamable: [path <: Path on Classpath] => Tactic[ClasspathError]
@@ -113,9 +113,7 @@ object Classpath extends Root(t""):
     val parent = Optional(cls.getClassLoader).or(ClassLoader.getSystemClassLoader.nn)
 
     val urls: Array[jn.URL | Null] =
-      Array.from(classpath.entries.flatMap:
-        case ClasspathEntry.JavaRuntime => Nil
-        case other                      => List(other.javaUrl))
+      Array.from(classpath.entries.flatMap { case ClasspathEntry.JavaRuntime => Nil; case other => List(other.javaUrl) }.scala)
 
     val loader = jn.URLClassLoader(urls, parent)
     val seen = scala.collection.mutable.Set.empty[Class[?]]
@@ -125,12 +123,12 @@ object Classpath extends Root(t""):
       val provider0 = provider.nn
       if seen.add(provider0.`type`.nn) then result += provider0.get.nn
 
-    result.toSet
+    result.to(Set)
 
 
 trait Classpath:
   def entries: List[ClasspathEntry]
-  private def array: Array[jn.URL | Null] = Array.from(entries.map(_.javaUrl))
+  private def array: Array[jn.URL | Null] = Array.from(entries.map(_.javaUrl).scala)
 
   def classloader(parent: Classloader = classloaders.platform): Classloader =
     val javaClassloader = new jn.URLClassLoader(array, parent.java):
@@ -146,7 +144,7 @@ trait Classpath:
       case other                      => List(other.javaUrl)
 
     new Classloader
-      ( new jn.URLClassLoader(Array.from(urls), ClassLoader.getPlatformClassLoader().nn) )
+      ( new jn.URLClassLoader(Array.from(urls.scala), ClassLoader.getPlatformClassLoader().nn) )
 
   inline def services[service]: Set[service] =
     Classpath.servicesFor[service](this, reflectClass[service])

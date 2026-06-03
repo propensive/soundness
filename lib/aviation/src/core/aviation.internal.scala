@@ -237,7 +237,7 @@ object internal:
     given decoder: Tactic[TimeError] => Date is Decodable in Text = value =>
       import calendars.gregorian
 
-      value.cut(t"-").to(List) match
+      value.cut(t"-").to[List] match
         case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil => Date(year, Month(month), day)
 
         case cnt =>
@@ -278,7 +278,7 @@ object internal:
           else
             val next = current.jdn + count
             val holidays = summon[Holidays].between(current, next)
-            val weekends = Weekday.all.to(List).filter(_.weekend)
+            val weekends = Weekday.all.to[List].filter(_.weekend)
             val weekendDays = weekends.map(Weekday.count(current, next, _)).sum
             val weekdayHolidays = holidays.filter(!_.date.weekend).length
             val skipped = weekdayHolidays + weekendDays

@@ -93,7 +93,7 @@ object SvgParser:
         ()
 
     walk(elem)
-    Svg(width, height, defs.toList, figures.toList)
+    Svg(width, height, defs.to(List), figures.to(List))
 
 
   private def decodeFigure(elem: Element)(using Tactic[SvgError]): Optional[Figure] =
@@ -150,7 +150,7 @@ object SvgParser:
 
     val id = elem.attributes.at(t"id").let(SvgId(_)).or(SvgId(t""))
 
-    val stops: Seq[Stop[Color in Srgb]] = elem.children.toSeq.collect:
+    val stops: Seq[Stop[Color in Srgb]] = elem.children.to[IndexedSeq].collect:
       case e: Element if e.label == t"stop" => decodeStop(e)
 
     LinearGradient(id, stops*)
@@ -286,7 +286,7 @@ object SvgParser:
 
       skipWs()
 
-    ops.toList
+    ops.to(List)
 
 
   // Transform list parser. Recognises translate/scale/rotate/skewX/skewY/matrix.
@@ -344,7 +344,7 @@ object SvgParser:
 
           if pos < s.length then pos += 1 // skip )
 
-          (name, args.toList) match
+          (name, args.to(List)) match
             case ("translate", List(dx, dy))        => xs += Transform.Translate(Delta(dx, dy))
             case ("translate", List(dx))            => xs += Transform.Translate(Delta(dx, 0.0f))
             case ("scale", List(x))                 => xs += Transform.Scale(x, Unset)
@@ -364,7 +364,7 @@ object SvgParser:
         else
           if pos == nameStart then pos += 1 // avoid infinite loop on stray punctuation
 
-    xs.toList
+    xs.to(List)
 
 
   // Color parser: handles #rgb, #rrggbb, rgb(r,g,b), and a few named colours.

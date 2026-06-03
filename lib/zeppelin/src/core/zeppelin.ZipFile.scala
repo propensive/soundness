@@ -57,7 +57,7 @@ object Zipfile:
     protected type Transport = jnf.FileSystem
 
     def initialize(value: Zipfile, options: List[Operand]): Transport =
-      try jnf.FileSystems.newFileSystem(value.uri, Map("zipinfo-time" -> "false").asJava).nn
+      try jnf.FileSystems.newFileSystem(value.uri, Map("zipinfo-time" -> "false").scala.asJava).nn
       catch case exception: jnf.ProviderNotFoundException =>
         panic(m"There was unexpectedly no filesystem provider for ZIP files")
 
@@ -65,20 +65,20 @@ object Zipfile:
     def close(transport: Transport): Unit = transport.close()
 
 
-  def write[path: Abstractable across Paths to Text](path: path)(stream: Iterable[Zip.Entry])
+  def write[path: Abstractable across Paths to Text](path: path)(stream: List[Zip.Entry])
   :   Unit raises ZipError =
 
     val filename = path.generic
     val out: juz.ZipOutputStream = juz.ZipOutputStream(ji.FileOutputStream(ji.File(filename.s)))
 
-    for entry <- stream do
+    stream.each: entry =>
       val ref = entry.ref.encode
       val ref2 = if ref.starts("/") then ref.skip(1).s else ref.s
 
       try out.putNextEntry(juz.ZipEntry(ref2)) catch case exception: juz.ZipException =>
         raise(ZipError(ZipError.Reason.DuplicateEntry(entry.ref)))
 
-      entry.content().each: bytes => out.write(bytes.mutable(using Unsafe))
+      List.from(entry.content()).each: bytes => out.write(bytes.mutable(using Unsafe))
       out.closeEntry()
 
     out.close()

@@ -32,7 +32,7 @@
                                                                                                   */
 package gesticulate
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
@@ -94,7 +94,7 @@ object Media:
       if ps == List("")
       then raise(MediaTypeError(string, MediaTypeError.Reason.MissingParam))
 
-      ps.map(_.cut(t"=", 2).to(List)).map: p => p(0).show -> p(1).show
+      ps.map(_.cut(t"=", 2).to[List]).map: p => p(0).show -> p(1).show
 
     def parseSuffixes(suffixes: List[Text]): List[Suffix] =
       suffixes.map(_.lower.capitalize).flatMap: suffix =>
@@ -102,12 +102,12 @@ object Media:
           abort(MediaTypeError(string, MediaTypeError.Reason.InvalidSuffix(suffix)))
 
     def parseInit(string: Text): (Subtype, List[Suffix]) =
-      val xs: List[Text] = string.cut(t"+").to(List)
+      val xs: List[Text] = string.cut(t"+").to[List]
 
       xs.absolve match
         case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
 
-    def parseBasic(string: Text): (Group, Subtype, List[Suffix]) = string.cut(t"/").to(List) match
+    def parseBasic(string: Text): (Group, Subtype, List[Suffix]) = string.cut(t"/").to[List] match
       case List(group, subtype) => parseGroup(group) *: parseInit(subtype)
 
       case _ =>
@@ -120,7 +120,7 @@ object Media:
 
     def parseSubtype(string: Text): Subtype =
       def notAllowed(char: Char): Boolean =
-        char.isWhitespace || char.isControl || specials.has(char)
+        char.isWhitespace || char.isControl || specials.scala.contains(char)
 
       string.chars.find(notAllowed(_)).map: char =>
         raise(MediaTypeError(string, MediaTypeError.Reason.InvalidChar(char)))
@@ -132,7 +132,7 @@ object Media:
           else if string.starts(t"x.") || string.starts(t"x-") then Subtype.X(string.skip(2))
           else Subtype.Standard(string)
 
-    val xs: List[Text] = string.cut(t";").to(List).map(_.trim)
+    val xs: List[Text] = string.cut(t";").to[List].map(_.trim)
 
     xs.absolve match
       case (h: Text) :: _ =>

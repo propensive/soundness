@@ -32,7 +32,7 @@
                                                                                                   */
 package ypsiloid
 
-import language.dynamics
+import scala.language.dynamics
 
 import scala.collection.Factory
 import scala.collection.mutable as scm
@@ -47,6 +47,7 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import jacinta.Bcd
+import murmuration.Expandable
 import panopticon.*
 import prepositional.*
 import rudiments.*
@@ -201,7 +202,7 @@ trait Yaml2:
             val resolved: Optional[Text] =
               discriminable.discriminate(yaml).let: wire =>
                 val discriminant = variantNames.getOrElse(wire, wire)
-                if labels.contains(discriminant) then discriminant else Unset
+                if labels.scala.contains(discriminant) then discriminant else Unset
 
             resolved.let: discriminant =>
               delegate(discriminant): [variant <: derivation] =>
@@ -950,7 +951,7 @@ object Yaml extends Yaml2, Dynamic:
     if yaml.root.asInstanceOf[AnyRef] == null then ()
     else primitiveFault(yaml, YamlPrimitive.Null, ())
 
-  given iterable: [collection <: Iterable, element]
+  given iterable: [collection[_], element]
   =>  ( factory:   Factory[element, collection[element]],
         tactic:    Tactic[YamlError],
         foci:      Foci[Yaml.Focus] )
@@ -1046,20 +1047,20 @@ object Yaml extends Yaml2, Dynamic:
   given unitEncodable: Unit is Encodable in Yaml = _ => Yaml.ast(Yaml.Ast.Null)
 
 
-  given iterableEncodable: [collection <: Iterable, element]
-  =>  ( encodable: => element is Encodable in Yaml )
+  given iterableEncodable: [collection[_], element] => (encodable: => element is Encodable in Yaml)
+  =>  (expandable: collection is Expandable)
   =>  collection[element] is Encodable in Yaml = values =>
-    val items = IArray.from(values.map(encodable.encode(_).root))
+    val items = IArray.from(expandable.expand(values).iterator.map(encodable.encode(_).root))
     Yaml.ast(Yaml.Ast.Sequence(items))
 
 
   given mapEncodable: [key: Encodable in Text, element]
   =>  ( encodable: element is Encodable in Yaml )
   =>  Map[key, element] is Encodable in Yaml = map =>
-    val keys: List[key] = map.keys.to(List)
+    val keys: List[key] = map.keys
     val arr = new Array[Any](keys.size*2)
     var i = 0
-    keys.foreach: k =>
+    keys.each: k =>
       arr(i*2) = Yaml.Ast.Str(k.encode).asInstanceOf[Any]
       arr(i*2 + 1) = encodable.encode(map(k)).root.asInstanceOf[Any]
       i += 1

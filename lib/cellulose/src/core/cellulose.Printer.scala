@@ -42,20 +42,26 @@ import vacuous.*
 object Printer:
   def print(out: ji.Writer, doc: CodlDoc): Unit =
 
-    @tailrec
-    def printBlock(indent: Int, text: Text, start: Int = 0): Unit =
-      if start < (text.length - 1) then
-        for i <- 0 until indent do out.write(' ')
+    def printBlock(indent: Int, text: Text, start0: Int = 0): Unit =
+      var start = start0
+      var continue = true
+
+      while continue && start < (text.length - 1) do
+        var i = 0
+        while i < indent do
+          out.write(' ')
+          i += 1
 
         text.s.indexOf('\n', start) match
           case -1 =>
             out.write(text.s.substring(start))
             out.write('\n')
+            continue = false
 
           case end =>
             out.write(text.s.substring(start, end))
             out.write('\n')
-            printBlock(indent, text, end + 1)
+            start = end + 1
 
     def recur(node: CodlNode, indent: Int): Unit = node match
       case CodlNode(data, extra) =>

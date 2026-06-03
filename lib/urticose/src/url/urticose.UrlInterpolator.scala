@@ -33,6 +33,7 @@
 package urticose
 
 import scala.quoted.*
+import rudiments.*
 
 import anticipation.*
 import contextual.*
@@ -48,7 +49,7 @@ object UrlInterpolator:
   extends Exception(s"urticose: ${detail.text.s}")
 
   object Runtime:
-    import unsafeExceptions.canThrowAny
+    import scala.unsafeExceptions.canThrowAny
 
     def initial: Text = t""
 
@@ -94,10 +95,10 @@ object UrlInterpolator:
       context.value.getOrElse:
         halt(m"the StringContext extension method parameter does not appear to be inline")
 
-      . parts.toList
+      . parts.to(List)
 
     val insertionExprs: List[Expr[Any]] = insertions.absolve match
-      case Varargs(exprs) => exprs.toList
+      case Varargs(exprs) => exprs.to(List)
 
     def rethrow[result](block: => result): result =
       try block catch case error: UrlInterpolatorError => halt(error.detail)

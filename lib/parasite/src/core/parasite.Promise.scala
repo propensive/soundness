@@ -32,7 +32,7 @@
                                                                                                   */
 package parasite
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import java.lang as jl
 import java.util.concurrent.atomic as juca
@@ -44,7 +44,7 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
-import unsafeExceptions.canThrowAny
+import scala.unsafeExceptions.canThrowAny
 
 object Promise:
   enum State[+value]:
@@ -87,7 +87,7 @@ final case class Promise[value]():
 
   private def enqueue(thread: Thread)(current: State[value] | Null): State[value] =
     current.nn match
-      case Incomplete(waiting) => Incomplete(waiting + thread)
+      case Incomplete(waiting) => Incomplete(waiting ++ Set(thread))
       case Complete(value)     => Complete(value)
       case _                   => Cancelled
 
@@ -96,7 +96,9 @@ final case class Promise[value]():
     if Thread.interrupted() then throw new InterruptedException()
 
     state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
-      case Incomplete(_)   => jucl.LockSupport.park(this) yet await()
+      case Incomplete(_)   =>
+        jucl.LockSupport.park(this)
+        await()
       case Complete(value) => value
       case Cancelled       => abort(AsyncError(AsyncError.Reason.Cancelled))
 
@@ -105,7 +107,9 @@ final case class Promise[value]():
     if Thread.interrupted() then throw new InterruptedException()
 
     state.getAndUpdate(enqueue(Thread.currentThread.nn)) match
-      case Incomplete(_) => jucl.LockSupport.park(this) yet attend()
+      case Incomplete(_) =>
+        jucl.LockSupport.park(this)
+        attend()
       case _             => ()
 
   private def cancelIncomplete(current: State[value] | Null): State[value] = current match

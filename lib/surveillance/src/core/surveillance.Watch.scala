@@ -77,19 +77,17 @@ object Watch:
 
         key.reset()
 
-  def apply[path: Abstractable across Paths to Text](paths: Iterable[path]): Watch =
+  def apply[path: Abstractable across Paths to Text](paths: List[path]): Watch =
     Watch.register:
-      val pathGroups: Map[jnf.Path, Iterable[Text => Boolean]] =
+      val pathGroups: Map[jnf.Path, List[Text => Boolean]] =
         paths.map(_.generic.s).map(jnf.Paths.get(_).nn).map: javaPath =>
           if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
           else (javaPath.getParent.nn, (_: Text) == javaPath.getFileName.nn.toString.tt)
 
-        . groupBy(_(0)).view.mapValues(_.map(_(1))).to(Map)
+        . groupBy(_(0)).mapValues(_.map(_(1)))
 
-      pathGroups.view.mapValues: predicates =>
+      pathGroups.mapValues: predicates =>
         (value: Text) => predicates.exists(_(value))
-
-      . to(Map)
 
 class Watch():
   private val mutex: Mutex = Mutex()
@@ -131,21 +129,21 @@ class Watch():
   def stream: Stream[WatchEvent] = spool.stream
 
   def watch(paths: Map[jnf.Path, Text => Boolean]): Unit =
-    val watches2 = paths.map:
+    val watches2 = paths.scala.map:
       case (path, filter) =>
         val key =
           path.register(Watch.service.watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
 
         new PathWatch(key, path, spool, filter).tap: watch =>
           Watch.watchesMutex:
-            Watch.watches(key) = Watch.watches.at(key).or(Set()) + watch
+            Watch.watches(key) = Watch.watches.at(key).or(Set()) ++ Set(watch)
 
     mutex(watches ++= watches2)
 
   def unregister(): Unit =
     Watch.watchesMutex:
-      watches.each: watch =>
-        Watch.watches(watch.key) = Watch.watches.at(watch.key).or(Set()) - watch
+      List.from(watches).each: watch =>
+        Watch.watches(watch.key) = Watch.watches.at(watch.key).or(Set()) -- Set(watch)
 
         if Watch.watches(watch.key).nil then
           watch.key.cancel()

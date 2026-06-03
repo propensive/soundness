@@ -49,6 +49,6 @@ object Compass:
 
   inline def apply[points <: 4 | 8 | 16](angle: Angle): Compass[points] =
     inline !![points] match
-      case _: 4  => points4((0.5 + 2*angle.radians/math.Pi).toInt%4)
-      case _: 8  => points8((0.5 + 4*angle.radians/math.Pi).toInt%8)
-      case _: 16 => points16((0.5 + 8*angle.radians/math.Pi).toInt%16)
+      case _: 4  => points4((0.5 + 2*angle.radians/scala.math.Pi).toInt%4)
+      case _: 8  => points8((0.5 + 4*angle.radians/scala.math.Pi).toInt%8)
+      case _: 16 => points16((0.5 + 8*angle.radians/scala.math.Pi).toInt%16)

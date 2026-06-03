@@ -122,7 +122,7 @@ object Juxtaposition:
 
               e"$line1\n$line2\n"
 
-            . to(Iterable)
+            . to(List)
             . join(topRule, midRule, penultimateRule, bottomRule)
 
           else
@@ -131,7 +131,7 @@ object Juxtaposition:
               case Different(left, right, difference)    => Nil
 
               case Collation(_, comparison, left, right) =>
-                if comparison.all(_(1).singleChar) then Nil else comparison.to(List)
+                if comparison.all(_(1).singleChar) then Nil else comparison.to[List]
 
             case class Row(treeLine: Text, left: Teletype, right: Teletype, memo: Teletype)
 
@@ -184,7 +184,7 @@ object Juxtaposition:
                   Column(e"Details")(_.memo.teletype) )
 
             table
-            . tabulate(TreeDiagram.by(children(_))(comparison*).render(line))
+            . tabulate(TreeDiagram.by((comp: (Text, Juxtaposition)) => children(comp).scala)(comparison.scala*).render(line))
             . grid(200)
             . render
             . join(e"\n")

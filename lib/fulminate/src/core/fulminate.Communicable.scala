@@ -59,7 +59,7 @@ object Communicable:
     Message(value.getClass.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt)
 
   given listMessage: List[Message] is Communicable =
-    messages => Message(List.fill(messages.size)("\n - ".tt) ::: List("".tt), messages)
+    messages => Message(List.fill(messages.scala.size)("\n - ".tt) ::: List("".tt), messages)
 
 trait Communicable extends Typeclass:
   def message(value: Self): Message

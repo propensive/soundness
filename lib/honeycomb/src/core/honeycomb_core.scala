@@ -32,7 +32,7 @@
                                                                                                   */
 package honeycomb
 
-import language.dynamics
+import scala.language.dynamics
 
 import scala.util.NotGiven
 

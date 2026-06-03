@@ -33,6 +33,7 @@
 package octogenarian
 
 import anticipation.*
+import rudiments.*
 import dissonance.*
 import gossamer.*
 import kaleidoscope.*
@@ -53,7 +54,7 @@ object Patch:
 
   // Flattens every hunk's edits into a single Dissonance Diff[Text].
   def asDiff(file: FileDiff): Diff[Text] =
-    Diff(file.hunks.flatMap(_.edits)*)
+    Diff(file.hunks.flatMap(_.edits).scala*)
 
 
   private def parseHunkRange(text: Text): (Int, Int) = text.cut(t",") match

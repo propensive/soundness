@@ -32,7 +32,7 @@
                                                                                                   */
 package honeycomb
 
-import language.dynamics
+import scala.language.dynamics
 
 import java.lang as jl
 import java.util as ju
@@ -129,7 +129,7 @@ object Html extends Tag.Container
   =>  left is Addable by right to (Fragment of leftTopic | rightTopic in dom) =
 
     (left, right) =>
-      Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
+      Fragment(List(left, right).scala.nodes.to[Seq]*).of[leftTopic | rightTopic].in[dom]
 
 
   // Internal Tactic used by the permissive-variant givens. Recovery warnings
@@ -153,7 +153,7 @@ object Html extends Tag.Container
   =>  (Html of content) is Aggregable by Text =
 
     input =>
-      val root = Tag.root(content.reify.map(_.tt).to(Set))
+      val root = Tag.root(content.reify.map(_.tt).to[Set])
       HtmlParser.fromIterator(input.iterator, permissive = false).parseHtml(root).of[content]
 
   given strictAggregable2: (dom: Dom)
@@ -195,7 +195,7 @@ object Html extends Tag.Container
 
     input =>
       given Tactic[ParseError] = lenientTactic
-      val root = Tag.root(content.reify.map(_.tt).to(Set))
+      val root = Tag.root(content.reify.map(_.tt).to[Set])
 
       lenient(Fragment().of[content]):
         HtmlParser.fromIterator(input.iterator, permissive = true).parseHtml(root).of[content]
@@ -239,7 +239,7 @@ object Html extends Tag.Container
     async:
       def recur(node: Html, indent: Int, block: Boolean, mode: Mode): Unit =
         node match
-          case Fragment(nodes*) => nodes.each(recur(_, indent, block, mode))
+          case Fragment(nodes*) => List.from(nodes).each(recur(_, indent, block, mode))
 
           case Comment(comment) =>
             emitter.put("<!--")
@@ -341,7 +341,7 @@ object Html extends Tag.Container
 
         . join(t" ", t" ", t"")
 
-      t"<$tagname$tagContent>${children.map(_.show).join}</$tagname>"
+      t"<$tagname$tagContent>${children.map(_.show).to[List].join}</$tagname>"
 
 
   private enum Token:
@@ -359,7 +359,7 @@ object Html extends Tag.Container
       def apply(children: Optional[Html of (? <: node.Transport)]*)
       :   Element of node.Topic in node.Form =
 
-        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
+        new Element(node.label, node.attributes, List.from(children).compact.to[List].scala.nodes, node.foreign):
           type Topic = node.Topic
           type Form = node.Form
 
@@ -369,7 +369,7 @@ object Html extends Tag.Container
       def apply[labels <: Label](children: Optional[Html of (? <: (labels | node.Transport))]*)
       :   Element of labels in node.Form =
 
-        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
+        new Element(node.label, node.attributes, List.from(children).compact.to[List].scala.nodes, node.foreign):
           type Topic = labels
           type Form = node.Form
 
@@ -776,15 +776,22 @@ object Html extends Tag.Container
       def warn(issue: Issue): Unit = raise(ParseError(Html, currentPosition(), issue))
 
       @tailrec
-      def skip(): Unit = let:
-        case ' ' | '\f' | '\n' | '\r' | '\t' => advance() yet skip()
-        case _                               => ()
+      def skip(): Unit = if more then peek match
+        case ' ' | '\f' | '\n' | '\r' | '\t' =>
+          advance()
+          skip()
+
+        case _ =>
+          ()
 
       @tailrec
-      def whitespace(): Unit = lay(()):
-        case ' ' | '\f' | '\n' | '\r' | '\t' => advance() yet whitespace()
-        case '<'                             => ()
-        case char                            => fail(OnlyWhitespace(char))
+      def whitespace(): Unit = if !more then () else peek match
+        case ' ' | '\f' | '\n' | '\r' | '\t' =>
+          advance()
+          whitespace()
+
+        case '<'   => ()
+        case char  => fail(OnlyWhitespace(char))
 
       @tailrec
       def tagname(mark: Mark, node: Int): Tag =
@@ -1424,7 +1431,7 @@ object Html extends Tag.Container
                       reset(mark)
                       close()
                     else if stackContainsAncestor(content) then
-                      if formattingTags.has(parent.label) then
+                      if formattingTags.scala.contains(parent.label) then
                         pendingAtDepth = findAncestorIndex(content)
 
                         if pendingFormattingSize >= pendingFormattingLabels.length then
@@ -1443,7 +1450,7 @@ object Html extends Tag.Container
 
                       reset(mark)
                       close()
-                    else if formattingTags.has(content) then
+                    else if formattingTags.scala.contains(content) then
                       advance()
                       level = Level.Skip
                     else if permissive then
@@ -1621,7 +1628,7 @@ object Html extends Tag.Container
           // returns the root sentinel that was appended before `read`. Yield
           // an empty Fragment in that case rather than leaking the sentinel.
           if fragment.nil then if head eq root then Fragment() else head
-          else Fragment(fragment*)
+          else Fragment(fragment.to[Seq]*)
 
 
   // ───────────────────────────────────────────────────────────────────────
@@ -1706,7 +1713,7 @@ extends Node, Topical, Transportive, Dynamic:
     Fragment[tag.Topic](children2.mutable(using Unsafe)*).in[tag.Form]
 
   def body: Fragment of Topic over Transport in Form =
-    Fragment[Topic](children.map(_.of[Topic])*).over[Transport].in[Form]
+    Fragment[Topic](children.map(_.of[Topic]).to[Seq]*).over[Transport].in[Form]
 
   def ^+ (html: Html of Transport): Element of Topic over Transport in Form =
     (html: Html).match
@@ -1714,7 +1721,7 @@ extends Node, Topical, Transportive, Dynamic:
         Element(label, attributes, IArray.from(fragment.nodes) ++ children, foreign)
 
       case node: Node =>
-        Element(label, attributes, node +: children, foreign)
+        Element(label, attributes, IArray(node) ++ children, foreign)
 
     . of[Topic]
     . over[Transport]
@@ -1747,14 +1754,14 @@ extends Node, Topical, Transportive, Dynamic:
 
   transparent inline def selectDynamic(name: Label): Any =
 
-    compiletime.summonFrom:
+    scala.compiletime.summonFrom:
       case attribute: (name.type is Attribute on (? >: Topic) in Form) =>
-        compiletime.summonFrom:
+        scala.compiletime.summonFrom:
           case unattributive: (attribute.Topic is Unattributive) =>
             unattributive.unattribute(attributes(name.tt))
 
       case attribute: (name.type is Attribute in Form) =>
-        compiletime.summonFrom:
+        scala.compiletime.summonFrom:
           case unattributive: (attribute.Topic is Unattributive) =>
             unattributive.unattribute(attributes(name.tt))
 
@@ -1762,7 +1769,7 @@ extends Node, Topical, Transportive, Dynamic:
   inline def updateDynamic[value](name: Label)(value: value)
   :   Element of Topic over Transport in Form =
 
-    compiletime.summonFrom:
+    scala.compiletime.summonFrom:
       case attribute: (name.type is Attribute on (? >: Topic) in Form) =>
         val attributive = infer[value is Attributive to attribute.Topic]
 
@@ -1788,7 +1795,7 @@ extends Node, Topical, Transportive, Dynamic:
 object Fragment:
   @targetName("make")
   def apply[topic <: Label](nodes: Html of (? <: topic)*): Fragment of topic =
-    new Fragment(nodes.nodes*).of[topic]
+    new Fragment(nodes.nodes.to[Seq]*).of[topic]
 
 case class Fragment(nodes: Node*) extends Html:
   override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode

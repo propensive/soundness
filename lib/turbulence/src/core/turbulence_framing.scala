@@ -45,7 +45,7 @@ extension (stream: Stream[Data])
     ( using Tactic[StreamError] )
   :   Stream[Data] =
 
-    inline compiletime.erasedValue[width] match
+    inline scala.compiletime.erasedValue[width] match
       case _: U16 =>
         framingImpl(stream, 2, terminator.asInstanceOf[Optional[U16]].let(_.long).or(-1L))
 

@@ -36,6 +36,7 @@ import scala.collection.immutable.ListMap
 
 import anticipation.*
 import gossamer.*
+import denominative.*
 import rudiments.*
 import vacuous.*
 
@@ -99,7 +100,7 @@ object CHeaderDialect extends Dialect:
     val cleaned = words.filterNot: word =>
       word == "unsigned" || word == "signed"
 
-    val name = if cleaned.isEmpty then t"int" else cleaned.mkString(" ").tt
+    val name = if cleaned.nil then t"int" else cleaned.scala.mkString(" ").tt
 
     if name == t"int32_t" || name == t"uint32_t" then t"int"
     else if name == t"int64_t" || name == t"uint64_t" || name == t"long long" then t"long"
@@ -120,7 +121,7 @@ object CHeaderDialect extends Dialect:
         case word :: more if isKeyword(word) =>
           typeWords(more, word :: acc)
 
-        case word :: more if isWord(word) && acc.isEmpty =>
+        case word :: more if isWord(word) && acc.nil =>
           (List(word), more)
 
         case _ =>
@@ -163,7 +164,7 @@ object CHeaderDialect extends Dialect:
         typedef(rest, structs, functions, typedefs)
 
       case ("struct" | "union") :: name :: "{" :: more =>
-        val (fields, after) = members(more, ListMap())
+        val (fields, after) = members(more, Map())
         declarations(skipStatement(after), structs.updated(name.tt, fields), functions, typedefs)
 
       case ("struct" | "union") :: "{" :: more =>
@@ -211,12 +212,12 @@ object CHeaderDialect extends Dialect:
 
     tokens match
       case ("struct" | "union") :: name :: "{" :: more =>
-        val (fields, after) = members(more, ListMap())
+        val (fields, after) = members(more, Map())
         val (alias, after2) = aliasName(after)
         declarations(after2, structs.updated(alias.or(name.tt), fields), functions, typedefs)
 
       case ("struct" | "union") :: "{" :: more =>
-        val (fields, after) = members(more, ListMap())
+        val (fields, after) = members(more, Map())
         val (alias, after2) = aliasName(after)
 
         alias.lay(declarations(after2, structs, functions, typedefs)): name =>

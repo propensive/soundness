@@ -32,8 +32,8 @@
                                                                                                   */
 package breviloquence
 
-import language.dynamics
-import language.experimental.pureFunctions
+import scala.language.dynamics
+import scala.language.experimental.pureFunctions
 
 import scala.collection as sc
 import scala.collection.mutable as scm
@@ -43,6 +43,7 @@ import adversaria.*
 import anticipation.*
 import contingency.*
 import distillate.*
+import murmuration.Expandable
 import prepositional.*
 import rudiments.*
 import turbulence.*
@@ -298,13 +299,13 @@ object Cbor extends Cbor2, Dynamic:
   given listEncodable: [list <: List, element] => (encodable: => element is Encodable in Cbor)
   =>  list[element] is Encodable in Cbor =
 
-    values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
+    values => ast(Ast.array(IArray.from((values: List[element]).map(encodable.encoded(_).root).scala)))
 
 
   given setEncodable: [set <: Set, element] => (encodable: => element is Encodable in Cbor)
   =>  set[element] is Encodable in Cbor =
 
-    values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
+    values => ast(Ast.array(IArray.from((values: Set[element]).iterator.map(encodable.encoded(_).root))))
 
 
   given trieEncodable: [trie <: Trie, element] => (encodable: => element is Encodable in Cbor)
@@ -313,7 +314,7 @@ object Cbor extends Cbor2, Dynamic:
     values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
 
 
-  given collectionDecodable: [collection <: Iterable, element]
+  given collectionDecodable: [collection[_], element]
   =>  ( factory: sc.Factory[element, collection[element]], tactic:  Tactic[CborError] )
   =>  ( decodable: => element is Decodable in Cbor )
   =>  collection[element] is Decodable in Cbor =
@@ -353,9 +354,9 @@ object Cbor extends Cbor2, Dynamic:
   =>  Map[key, element] is Encodable in Cbor =
 
     map =>
-      val keys: List[key] = map.keys.to(List)
-      val values = IArray.from(keys.map(map(_).encode.root))
-      ast(Ast.map(IArray.from(keys.map{ k => k.encode.s }), values))
+      val keys: List[key] = map.keys
+      val values = IArray.from(keys.map(map(_).encode.root).scala)
+      ast(Ast.map(IArray.from(keys.map{ k => k.encode.s }.scala), values))
 
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Cbor)*): Cbor =

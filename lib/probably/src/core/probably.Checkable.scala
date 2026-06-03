@@ -43,7 +43,7 @@ object Checkable:
   given stream: [left, right] => (left is Checkable against right)
   =>  Stream[left] is Checkable against Stream[right] =
 
-    _.zip(_).all(_ === _)
+    (left, right) => List.from(left.zip(right)).all(_ === _)
 
 
   given tolerance2: [value] => value is Checkable against Tolerance[value] =

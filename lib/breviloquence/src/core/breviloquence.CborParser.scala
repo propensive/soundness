@@ -221,7 +221,7 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
 
   // IEEE 754 half precision (16-bit) → Double, per RFC 8949 §3.3.
   // Assembles the 64-bit pattern directly rather than going through
-  // `math.pow` and a multiplication: half-floats have only 65 536 possible
+  // `scala.math.pow` and a multiplication: half-floats have only 65 536 possible
   // values and the conversion is a fixed sequence of bit moves.
   private def halfToDouble(half: Int): Double =
     val sign = (half.toLong & 0x8000L) << 48 // sign bit → bit 63

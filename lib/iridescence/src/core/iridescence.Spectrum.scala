@@ -33,16 +33,17 @@
 package iridescence
 
 import denominative.*
+import rudiments.*
 import prepositional.*
 
 object Spectrum:
   def apply[color <: Color: Perceptual in Srgb](colors0: List[Color in color])
   :   Spectrum in color =
 
-    var colors = colors0.to(Set)
+    var colors = colors0.scala.to(Set)
 
     def assign(target: Srgb): Color in color =
-      if colors.nil then colors = colors0.to(Set)
+      if colors.nil then colors = colors0.scala.to(Set)
 
       val chosen = colors.minBy: candidate =>
         val srgb = candidate.in[Srgb]
@@ -51,7 +52,7 @@ object Spectrum:
         val db = srgb.blue - target.blue
         dr*dr + dg*dg + db*db
 
-      colors -= chosen
+      colors = colors -- Set(chosen)
       chosen
 
     new Spectrum:

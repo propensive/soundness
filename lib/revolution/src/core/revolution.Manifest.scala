@@ -51,7 +51,7 @@ object Manifest:
       java.getMainAttributes.nn.asScala.to(List).map: (key, value) =>
         (key.toString.tt, value.toString.tt)
 
-      . to(Map)
+      .to[Map]
 
   given streamable: Manifest is Streamable by Data = manifest => Stream(manifest.serialize)
   given aggregable: Manifest is Aggregable by Data = parse(_)
@@ -60,7 +60,7 @@ object Manifest:
     entries.map: entry =>
       (entry.key, entry.value)
 
-    . to(Map)
+    .to(Map)
 
   given addable: Manifest is Addable by ManifestEntry to Manifest = (manifest, entry) =>
     Manifest(manifest.entries.updated(entry.key, entry.value))
@@ -81,7 +81,7 @@ case class Manifest(entries: Map[Text, Text]):
   def serialize: Data =
     val manifest = juj.Manifest()
 
-    entries.each: (key, value) =>
+    entries.toList.each: (key, value) =>
       manifest.getMainAttributes.nn.putValue(key.s, value.s)
 
     val out = ji.ByteArrayOutputStream()

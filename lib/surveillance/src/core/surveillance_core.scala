@@ -44,7 +44,7 @@ extension [path: Abstractable across Paths to Text](path: path)
     lambda(watchSet).also:
       watchSet.unregister()
 
-extension [path: Abstractable across Paths to Text](paths: Iterable[path])
+extension [path: Abstractable across Paths to Text](paths: List[path])
   def watch[result](lambda: Watch => result): result raises WatchError =
     val watchSet = Watch(paths)
 

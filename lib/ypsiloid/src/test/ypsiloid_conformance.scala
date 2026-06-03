@@ -49,6 +49,11 @@ import java.io.IOException
 import java.nio.file.{Files, Path, Paths}
 import scala.jdk.CollectionConverters.*
 
+// This conformance runner bridges java.nio and the scala-jdk collection
+// converters, so it works in terms of the scala collection library
+// throughout rather than the proscenium predef's murmuration collections.
+import scala.collection.immutable.{List, Set, Map}
+
 import anticipation.Text
 import contingency.{Tactic, strategies}
 import hieroglyph.charEncoders
@@ -167,7 +172,7 @@ object Conformance:
             case Some(expectedText) =>
               val expectedDocs = parseJsonStream(expectedText)
               val actualDocs = docs.map(yamlAstToJson)
-              val actualStr = actualDocs.map(jsonString).mkString(", ")
+              val actualStr = actualDocs.map(jsonString).scala.mkString(", ")
               val expectedStr = expectedDocs.map(jsonString).mkString(", ")
               // Compare via canonical jsonString rendering rather than
               // Json equality — jacinta's Json.equals has no `null` case
@@ -245,21 +250,21 @@ object Conformance:
     val overallTotal = results.length
 
     val divider = "=".repeat(80)
-    println()
-    println(divider)
-    println("YAML Test Suite Conformance")
-    println(divider)
-    println(f"In-scope:     $inScopePassed%4d / ${inScopeResults.length}%-4d  "
-          + f"(${pct(inScopePassed, inScopeResults.length)}%.1f%%)")
-    println(f"Out-of-scope: $outOfScopePassed%4d / ${outOfScopeResults.length}%-4d "
-          + f"  (${pct(outOfScopePassed, outOfScopeResults.length)}%.1f%%, informational)")
-    println(f"Overall:      $overallPassed%4d / $overallTotal%-4d  "
-          + f"(${pct(overallPassed, overallTotal)}%.1f%%)")
-    println()
+    System.out.nn.println()
+    System.out.nn.println(divider)
+    System.out.nn.println("YAML Test Suite Conformance")
+    System.out.nn.println(divider)
+    System.out.nn.println(String.format("In-scope:     %4d / %-4d  (%.1f%%)",
+        inScopePassed, inScopeResults.length, pct(inScopePassed, inScopeResults.length)))
+    System.out.nn.println(String.format("Out-of-scope: %4d / %-4d   (%.1f%%, informational)",
+        outOfScopePassed, outOfScopeResults.length, pct(outOfScopePassed, outOfScopeResults.length)))
+    System.out.nn.println(String.format("Overall:      %4d / %-4d  (%.1f%%)",
+        overallPassed, overallTotal, pct(overallPassed, overallTotal)))
+    System.out.nn.println()
 
     val inScopeFailures = inScopeResults.filterNot(_.passed)
     if inScopeFailures.nonEmpty then
-      println(s"In-scope failures (${inScopeFailures.length.min(maxFailuresShown)}"
+      System.out.nn.println(s"In-scope failures (${inScopeFailures.length.min(maxFailuresShown)}"
             + s" of ${inScopeFailures.length} shown):")
       inScopeFailures.take(maxFailuresShown).foreach: result =>
         printFailure(result)
@@ -269,20 +274,20 @@ object Conformance:
       excludedTags.toList.sorted.foreach: tag =>
         val matching = outFailures.filter(_.testCase.tags.contains(tag))
         if matching.nonEmpty then
-          println()
-          println(s"== Out-of-scope tag '$tag' (${matching.length} failing):")
+          System.out.nn.println()
+          System.out.nn.println(s"== Out-of-scope tag '$tag' (${matching.length} failing):")
           matching.foreach: r =>
             val descShort = r.testCase.description.linesIterator.next().take(60)
             val tagsShort = r.testCase.tags.toList.sorted.mkString("{", ",", "}")
-            println(s"  ${r.testCase.id} $tagsShort  $descShort")
+            System.out.nn.println(s"  ${r.testCase.id} $tagsShort  $descShort")
             r.outcome match
               case Outcome.Mismatch(actual, expected) =>
-                println(s"    expected: ${expected.take(120)}")
-                println(s"    actual:   ${actual.take(120)}")
+                System.out.nn.println(s"    expected: ${expected.take(120)}")
+                System.out.nn.println(s"    actual:   ${actual.take(120)}")
               case Outcome.ShouldHaveErrored =>
-                println(s"    (should have errored)")
+                System.out.nn.println(s"    (should have errored)")
               case Outcome.UnexpectedError(msg) =>
-                println(s"    error: ${msg.take(120)}")
+                System.out.nn.println(s"    error: ${msg.take(120)}")
               case Outcome.Passed => ()
 
     if inScopeFailures.nonEmpty then System.exit(1)
@@ -296,15 +301,15 @@ object Conformance:
                     else result.testCase.tags.toList.sorted.mkString(" {", ",", "}")
     result.outcome match
       case Outcome.Mismatch(actual, expected) =>
-        println(s"  ${result.testCase.id} [$descShort]$tagsShort")
-        println(s"    expected: ${expected.take(120)}")
-        println(s"    actual:   ${actual.take(120)}")
+        System.out.nn.println(s"  ${result.testCase.id} [$descShort]$tagsShort")
+        System.out.nn.println(s"    expected: ${expected.take(120)}")
+        System.out.nn.println(s"    actual:   ${actual.take(120)}")
 
       case Outcome.ShouldHaveErrored =>
-        println(s"  ${result.testCase.id} [$descShort]$tagsShort: should have errored")
+        System.out.nn.println(s"  ${result.testCase.id} [$descShort]$tagsShort: should have errored")
 
       case Outcome.UnexpectedError(msg) =>
-        println(s"  ${result.testCase.id} [$descShort]$tagsShort: unexpected error: " + msg)
+        System.out.nn.println(s"  ${result.testCase.id} [$descShort]$tagsShort: unexpected error: " + msg)
 
       case Outcome.Passed => ()
 
@@ -317,15 +322,15 @@ object Conformance:
 
     case Yaml.Ast.Sequence(items) =>
       val converted: IArray[Any] =
-        IArray.from(items.map(item => Json.unseal(yamlAstToJson(item)).asInstanceOf[Any]))
+        items.map(item => Json.unseal(yamlAstToJson(item)).asInstanceOf[Any])
       Json.ast(Json.Ast.arr(converted))
 
     case Yaml.Ast.Mapping(entries) =>
       val pairs = entries.collect:
         case (Yaml.Ast.Str(s), v) => (s.s, Json.unseal(yamlAstToJson(v)))
 
-      val keys: IArray[String] = IArray.from(pairs.map(_._1))
-      val values: IArray[Any] = IArray.from(pairs.map(_._2.asInstanceOf[Any]))
+      val keys: IArray[String] = pairs.map(_._1)
+      val values: IArray[Any] = pairs.map(_._2.asInstanceOf[Any])
       Json.ast(Json.Ast.obj(keys, values))
 
   private def jsonString(json: Json): String =

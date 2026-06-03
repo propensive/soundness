@@ -35,6 +35,7 @@ package punctuation
 import scala.collection.mutable
 
 import anticipation.*
+import rudiments.*
 import vacuous.*
 
 // Working representation for inline parsing. The inline parser builds a
@@ -235,8 +236,8 @@ object EmphasisProcessor:
                     cursor = nx
 
                   val wrapper =
-                    if strong then InlineNode(StrongData(children.toList))
-                    else InlineNode(EmphasisData(children.toList))
+                    if strong then InlineNode(StrongData(children.to(List)))
+                    else InlineNode(EmphasisData(children.to(List)))
 
                   list.insertAfter(openerNode, wrapper)
 
@@ -304,5 +305,5 @@ object EmphasisProcessor:
 
   private def childProse(children: List[InlineNode]): Seq[Prose] =
     val builder = mutable.ListBuffer[Prose]()
-    children.foreach(appendProse(_, builder))
+    children.each(appendProse(_, builder))
     builder.toSeq

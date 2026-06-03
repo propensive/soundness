@@ -53,7 +53,7 @@ object ConformanceTests:
 
         results.foreach: result =>
           val classifier = if result.testCase.inScope then t"in-scope" else t"out-of-scope"
-          val firstLine = result.testCase.description.linesIterator.next.tt
+          val firstLine = result.testCase.description.linesIterator.next().tt
           val id = result.testCase.id.tt
           val name = m"`$id` $firstLine"
 

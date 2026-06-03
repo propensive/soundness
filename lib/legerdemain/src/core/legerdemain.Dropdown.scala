@@ -46,7 +46,7 @@ object Dropdown:
     val items = selection.options.map: option =>
       whatwg.Option(value = option(0), label = option(1)).asInstanceOf[Element of Select.Transport]
 
-    Select(name = selection.name)(items*)
+    Select(name = selection.name)(items.scala*)
 
 case class Dropdown(name: Text, options: List[(key: Text, value: Text)], value: Text)
 extends Widget

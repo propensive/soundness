@@ -33,6 +33,7 @@
 package mandible
 
 import scala.quoted.*
+import rudiments.*
 
 import ambience.*
 import anthology.*
@@ -68,7 +69,7 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
   val settings: staging.Compiler.Settings =
-    staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
+    staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s).scala)
 
   given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
 

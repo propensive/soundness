@@ -32,14 +32,9 @@
                                                                                                   */
 package mercator
 
-import beneficence.Findable
+import murmuration.Monad
 
-object Monad:
-  inline given monad: [monad[_]] => Monad[monad] = ${internal.monad[monad]}
+inline given monadDerivation: [monad[_]] => Monad[monad] = ${internal.monad[monad]}
 
-trait Monad[monad[_]] extends Functor[monad], Findable:
-  def bind[value, value2](value: monad[value])(lambda: value => monad[value2]): monad[value2]
-
-
-  extension [value](value: monad[value])
-    def flatMap[value2](lambda: value => monad[value2]): monad[value2] = bind(value)(lambda)
+export murmuration.Monad.list as monadList
+export murmuration.Monad.set as monadSet

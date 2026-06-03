@@ -328,7 +328,7 @@ object Mutation:
       newGroup.insert(newIndex, movedCompound)
 
       // Write the reordered group back into the original slots.
-      val out = scala.collection.mutable.ArrayBuffer.from(blocks.toList)
+      val out = scala.collection.mutable.ArrayBuffer.from(blocks.iterator)
       var j = 0
       while j < positions.length do
         val (bIdx, cIdx) = positions(j)
@@ -476,7 +476,7 @@ object Mutation:
           a match
             case Tel.Atom.Inline(text, _) if colIdx < n =>
               val targetStart = newOffsets(colIdx)
-              val gap = math.max(2, targetStart - cursor)
+              val gap = scala.math.max(2, targetStart - cursor)
               val padded = Tel.Atom.Inline(text, gap)
               cursor = targetStart + textWidth(text)
               colIdx += 1

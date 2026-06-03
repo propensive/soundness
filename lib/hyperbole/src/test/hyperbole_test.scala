@@ -33,8 +33,10 @@
 package hyperbole
 
 import scala.annotation.*
+import scala.Predef.println
 
 import soundness.*
+
 
 object Tests extends Suite(m"Hyperbole Tests"):
   def run(): Unit =

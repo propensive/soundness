@@ -47,4 +47,4 @@ case class Alphabet[encoding <: Serialization]
   def invert(position: Int, char: Char): Int raises SerializationError =
     inverse.getOrElse(char, abort(SerializationError(position, char)))
 
-  lazy val inverse: Map[Char, Int] = tolerance ++ chars.chars.zipWithIndex.to(Map)
+  lazy val inverse: Map[Char, Int] = tolerance ++ chars.chars.zipWithIndex.to[List]

@@ -32,7 +32,7 @@
                                                                                                   */
 package fulminate
 
-import language.experimental.into
+import scala.language.experimental.into
 
 import scala.compiletime.*
 import scala.quoted.*
@@ -55,13 +55,13 @@ object internal:
         Message[tuple.type](tuple, Nil)
 
       case other =>
-        import unsafeExceptions.canThrowAny
+        import scala.unsafeExceptions.canThrowAny
         List(infer[(? >: other.type) is Communicable].message(other))
 
   def mMacro[param: Type](context: Expr[StringContext], subs: Expr[param]): Macro[Message] =
     import quotes.reflect.*
 
-    val parts: List[String] = context.valueOrAbort.parts.toList
+    val parts: List[String] = List.from(context.valueOrAbort.parts.toList)
 
     def parseUnicode(part: String, current: Int): Char =
       if current + 4 > part.length
@@ -99,35 +99,40 @@ object internal:
 
       loop(0, "")
 
-    val groups: List[String] = parts.mkString("\u0000").split("`", -1).nn.map(_.nn).iterator.toList
+    val groups: List[String] =
+      List.from(parts.scala.mkString("\u0000").split("`", -1).nn.map(_.nn).iterator.toList)
 
-    if groups.size%2 == 0
+    if groups.scala.size%2 == 0
     then report.errorAndAbort("the m\"\" interpolator has an unmatched backtick")
 
     def toMessage(items: List[String | Expr[Message]]): Expr[Message] =
       val texts: List[String] = items.collect { case text: String => text }
       val msgs:  List[Expr[Message]] = items.collect { case expr: Expr[Message] @unchecked => expr }
-      val textsExpr: Expr[List[Text]] = Expr.ofList(texts.map { text => '{${Expr(text)}.tt} })
+      // Build our opaque `List` inside the quote: `Expr.ofList` would yield an `Expr` of the
+      // standard library's List, a different type from our `List` at the `Expr` level.
+      val textExprs: List[Expr[Text]] = texts.map { text => '{${Expr(text)}.tt} }
+      val textsExpr: Expr[List[Text]] = '{List.from(${Expr.ofList(textExprs.scala)})}
+      val msgsExpr:  Expr[List[Message]] = '{List.from(${Expr.ofList(msgs.scala)})}
 
-      '{Message($textsExpr, ${Expr.ofList(msgs)})}
+      '{Message($textsExpr, $msgsExpr)}
 
 
     def sequence(group: String, startIndex: Int, subListRef: Expr[List[Message]])
     :   (List[String | Expr[Message]], Int) =
 
-      val segments = group.split("\u0000", -1).nn.map(_.nn).iterator.toList
+      val segments = List.from(group.split("\u0000", -1).nn.map(_.nn).iterator.toList)
 
       val items: List[String | Expr[Message]] = segments.zipWithIndex.flatMap: (segment, index) =>
         val text = decode(segment)
 
-        if index < segments.size - 1 then List(text, '{$subListRef(${Expr(startIndex + index)})})
+        if index < segments.scala.size - 1 then List(text, '{$subListRef(${Expr(startIndex + index)})})
         else List(text)
 
-      (items, startIndex + segments.size - 1)
+      (items, startIndex + segments.scala.size - 1)
 
 
     def assemble(subListRef: Expr[List[Message]]): Expr[Message] =
-      val (items, _) = groups.zipWithIndex.foldLeft((List[String | Expr[Message]](), 0)):
+      val (items, _) = groups.zipWithIndex.scala.foldLeft((List[String | Expr[Message]](), 0)):
         case ((accumulator, index), (group, i)) =>
           val (groups, nextIndex) = sequence(group, index, subListRef)
           val addition = if i % 2 == 0 then groups else List(toMessage(groups))

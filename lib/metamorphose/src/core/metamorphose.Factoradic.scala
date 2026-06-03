@@ -33,6 +33,7 @@
 package metamorphose
 
 import scala.annotation.*
+import rudiments.*
 
 import contingency.*
 

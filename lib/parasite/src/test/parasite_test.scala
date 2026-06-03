@@ -489,7 +489,7 @@ object Tests extends Suite(m"Parasite tests"):
             async { winner.await(); t"first" },
             async { gate.await(); t"second" },
             async { gate.await(); t"third" } )
-          val raceTask = async(tasks.race())
+          val raceTask = async(List.from(tasks).race())
           winner.fulfill(())
           val result = raceTask.await()
           gate.fulfill(())
@@ -499,7 +499,7 @@ object Tests extends Suite(m"Parasite tests"):
         test(m"Race with all tasks succeeding picks one"):
           val tasks = (1 to 5).map: i =>
             async(i)
-          val result = async(tasks.race()).await()
+          val result = async(List.from(tasks).race()).await()
           (1 to 5).has(result)
         . assert(_ == true)
 
@@ -986,7 +986,7 @@ object Tests extends Suite(m"Parasite tests"):
           val later = async:
             snooze(1.0*Second)
             -1
-          val result = async(Vector(ready, later).race()).await()
+          val result = async(List.from(Vector(ready, later)).race()).await()
           later.cancel()
           result
         . assert(_ == 99)
@@ -1092,7 +1092,7 @@ object Tests extends Suite(m"Parasite tests"):
             async:
               gate.await()
               t"fast" )
-          val task = async(tasks.race())
+          val task = async(List.from(tasks).race())
           gate.fulfill(())
           val result = task.await()
           result
@@ -1108,7 +1108,7 @@ object Tests extends Suite(m"Parasite tests"):
             winnerGate.await()
             t"winner"
           val tasks = Vector(winner, loser)
-          val raceTask = async(tasks.race())
+          val raceTask = async(List.from(tasks).race())
           winnerGate.fulfill(())
           raceTask.await()
           snooze(200.0*Milli(Second))

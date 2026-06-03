@@ -32,7 +32,6 @@
                                                                                                   */
 package xenophile
 
-import scala.collection.immutable.ListMap
 
 import anticipation.*
 import gossamer.*
@@ -258,8 +257,8 @@ object WebIdlDialect extends Dialect:
   private def body(tokens: List[String], name: Text, parent: Optional[Text], idl: Idl)
   :   (Idl, List[String]) =
 
-    val (members, rest) = memberList(tokens, ListMap())
-    val merged = idl.types.get(name).getOrElse(ListMap[Text, Signature]()) ++ members
+    val (members, rest) = memberList(tokens, Map())
+    val merged = idl.types.get(name).getOrElse(Map[Text, Signature]()) ++ members
 
     val parents = parent.lay(idl.parents): base =>
       idl.parents.updated(name, base)
@@ -371,18 +370,18 @@ object WebIdlDialect extends Dialect:
   // visited set guards against cycles.
   private def flatten(idl: Idl): Map[Text, Map[Text, Signature]] =
     def collect(name: Text, visiting: Set[Text]): Map[Text, Signature] =
-      if visiting.contains(name) then idl.types.get(name).getOrElse(ListMap())
+      if visiting.has(name) then idl.types.get(name).getOrElse(Map())
       else
-        val visiting2 = visiting + name
-        val own = idl.types.get(name).getOrElse(ListMap[Text, Signature]())
+        val visiting2 = visiting.incl(name)
+        val own = idl.types.get(name).getOrElse(Map[Text, Signature]())
 
-        val inherited = idl.parents.at(name).lay(ListMap[Text, Signature]()): base =>
+        val inherited = idl.parents.at(name).lay(Map[Text, Signature]()): base =>
           collect(base, visiting2)
 
         val mixedIn = idl.includes.get(name).getOrElse(Nil).foldLeft(inherited): (acc, mixin) =>
-          acc ++ collect(mixin, visiting2)
+          acc ++ collect(mixin, visiting2).iterator
 
-        mixedIn ++ own
+        mixedIn ++ own.iterator
 
     idl.types.map: (name, _) =>
       (name, collect(name, Set()))

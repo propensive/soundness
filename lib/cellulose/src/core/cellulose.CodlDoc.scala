@@ -32,7 +32,7 @@
                                                                                                   */
 package cellulose
 
-import language.dynamics
+import scala.language.dynamics
 
 import java.io as ji
 
@@ -78,7 +78,7 @@ extends Indexed:
     case _ =>
       false
 
-  override def hashCode: Int = children.toSeq.hashCode ^ schema.hashCode ^ margin.hashCode
+  override def hashCode: Int = children.to[IndexedSeq].hashCode ^ schema.hashCode ^ margin.hashCode
   def layout: Formation = Formation.empty
   def paramIndex: Map[Text, Int] = Map()
   def materialize(using Topic is Decodable in Codl): Topic raises CodlError = as[Topic]
@@ -92,7 +92,7 @@ extends Indexed:
         x.id == y.id
 
     def recur(original: IArray[CodlNode], updates: IArray[CodlNode]): IArray[CodlNode] =
-      val changes = diff[CodlNode](children, updates, cmp).edits
+      val changes = diff[CodlNode](children.to[IndexedSeq], updates.to[IndexedSeq], cmp).edits
 
       val nodes2 = changes.foldLeft(List[CodlNode]()):
         case (nodes, Del(left, value))  => nodes
@@ -108,7 +108,7 @@ extends Indexed:
             // FIXME: Check layout remains safe
             orig.copy(data = origAtom.copy(children = children2)) :: nodes
 
-      IArray.from(nodes2.reverse)
+      IArray.from(nodes2.reverse.scala)
 
     copy(children = recur(children, input.children))
 

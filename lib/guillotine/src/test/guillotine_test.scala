@@ -292,8 +292,8 @@ object Tests extends Suite(m"Guillotine tests"):
       . assert(_ == List(t"a", t"b", t"c"))
 
       test(m"read stream of bytes"):
-        sh"echo 'Hello world'".exec[Stream[Data]]().read[Data].to(List)
-      . assert(_ == Data(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10).to(List))
+        sh"echo 'Hello world'".exec[Stream[Data]]().read[Data].to[List]
+      . assert(_ == Data(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10).to[List])
 
       test(m"read as String"):
         sh"echo hi".exec[String]().trim

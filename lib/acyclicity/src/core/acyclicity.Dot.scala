@@ -32,7 +32,7 @@
                                                                                                   */
 package acyclicity
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import contextual.*
@@ -103,7 +103,7 @@ object Dot:
       else
         append(t" ")
 
-    tokens.each:
+    List.from(tokens).each:
       case t""  => ()
       case t"," => append(t",")
       case t"{" => whitespace(); append(t"{"); indent(); newline()

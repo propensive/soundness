@@ -87,10 +87,10 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
       case _ =>
         unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)
 
-    LocalClasspath(entries*)
+    LocalClasspath(entries.scala*)
 
   lazy val settings2: staging.Compiler.Settings =
-    staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
+    staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s).scala)
 
   lazy val compiler2: staging.Compiler = staging.Compiler.make(classloader.java)(using settings2)
 
@@ -134,7 +134,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
         val settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make
-            ( Some(out.encode.s), scalac.commandLineArguments.map(_.s) )
+            ( Some(out.encode.s), scalac.commandLineArguments.map(_.s).scala )
 
         given compiler: staging.Compiler =
           staging.Compiler.make(classloader.java)(using settings)

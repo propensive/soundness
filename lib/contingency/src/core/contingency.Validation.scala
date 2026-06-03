@@ -32,7 +32,7 @@
                                                                                                   */
 package contingency
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import scala.annotation.*
 
@@ -63,7 +63,7 @@ object Validation:
 
 case class Validation(messages: List[(Pointer, Message)] = Nil)
 extends Error(59, 0)(Validation.text(messages)):
-  private lazy val map: Map[Pointer, Message] = messages.to(Map)
+  private lazy val map: Map[Pointer, Message] = messages.to[Map]
 
   @targetName("add")
   infix def + (pointer: Pointer, message: Message): Validation =
