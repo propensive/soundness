@@ -1409,11 +1409,11 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == true)
 
     suite(m"BinTEL §8.2 schema signature"):
-      // Default Cadence(initial = 4, regular = 1, hashSize = 12).
+      // BinTEL-pinned Cadence(initial = 4, regular = 2, hashSize = 32).
       def synthetic(seed: Int): Data =
-        val arr = new Array[Byte](12)
+        val arr = new Array[Byte](32)
         var i = 0
-        while i < 12 do
+        while i < 32 do
           arr(i) = ((seed * 31 + i * 17) & 0xff).toByte
           i += 1
         arr.asInstanceOf[IArray[Byte]]
@@ -1422,21 +1422,21 @@ object Tests extends Suite(m"Stratiform Tests"):
       val h1 = synthetic(2)
       val h2 = synthetic(3)
 
-      test(m"single-component signature length is 13 (12 + 1 cadence byte)"):
+      test(m"single-component signature length is 33 (32 + 1 cadence byte)"):
         SchemaSignature.encode(List(h0)).length
-      . assert(_ == 13)
+      . assert(_ == 33)
 
       test(m"single-component signature begins with the component hash"):
-        SchemaSignature.encode(List(h0)).slice(0, 12).toSeq == h0.toSeq
+        SchemaSignature.encode(List(h0)).slice(0, 32).toSeq == h0.toSeq
       . assert(_ == true)
 
-      test(m"two-component signature length is 17 (12 + 4 + 1)"):
+      test(m"two-component signature length is 37 (32 + 4 + 1)"):
         SchemaSignature.encode(List(h0, h1)).length
-      . assert(_ == 17)
+      . assert(_ == 37)
 
-      test(m"three-component signature length is 18 (12 + 4 + 1 + 1)"):
+      test(m"three-component signature length is 39 (32 + 4 + 2 + 1)"):
         SchemaSignature.encode(List(h0, h1, h2)).length
-      . assert(_ == 18)
+      . assert(_ == 39)
 
       test(m"empty hash list raises BadSignatureLength"):
         capture[BintelError](SchemaSignature.encode(Nil)).reason
@@ -1477,7 +1477,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == BintelError.Reason.BadSignature)
 
     suite(m"BinTEL §8.1 schema signature from document"):
-      test(m"single-component signature for a no-layer schema is 13 bytes"):
+      test(m"single-component signature for a no-layer schema is 33 bytes"):
         val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
         val source =
           val arr = stream.readAllBytes().nn
@@ -1486,9 +1486,9 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
         sig.length
-      . assert(_ == 13)
+      . assert(_ == 33)
 
-      test(m"no-layer schema signature begins with the 12-byte BLAKE3 value hash"):
+      test(m"no-layer schema signature begins with the 32-byte BLAKE3 value hash"):
         val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
         val source =
           val arr = stream.readAllBytes().nn
@@ -1497,11 +1497,11 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
         val bintel = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).bintel(Tels.Axiom.tels)
-        val hash = Blake3.hashOf(bintel, 12)
-        sig.slice(0, 12).toSeq == hash.toSeq
+        val hash = Blake3.hashOf(bintel, 32)
+        sig.slice(0, 32).toSeq == hash.toSeq
       . assert(_ == true)
 
-      test(m"schema with a single layer produces a 17-byte signature"):
+      test(m"schema with a single layer produces a 37-byte signature"):
         val src = """tel 1.0
                     |
                     |name basic
@@ -1517,9 +1517,9 @@ object Tests extends Suite(m"Stratiform Tests"):
                     |""".stripMargin.tt
         val sig = SchemaSignature.fromDocument(src.read[Tel], Tels.Axiom.tels)
         sig.length
-      . assert(_ == 17)
+      . assert(_ == 37)
 
-      test(m"two-layer schema produces an 18-byte signature"):
+      test(m"two-layer schema produces a 39-byte signature"):
         val src = """tel 1.0
                     |
                     |name multi
@@ -1538,7 +1538,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                     |""".stripMargin.tt
         val sig = SchemaSignature.fromDocument(src.read[Tel], Tels.Axiom.tels)
         sig.length
-      . assert(_ == 18)
+      . assert(_ == 39)
 
     suite(m"BinTEL §3 value hash"):
       test(m"valueHash is deterministic"):
