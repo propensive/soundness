@@ -52,7 +52,20 @@ object internal:
       override def transformTypeTree(tree: TypeTree)(owner: Symbol): TypeTree =
         tree match
           case ident: TypeIdent => TypeIdent(tree.symbol)
-          case _                => throw jl.Error()
+
+          // A type-parameterized annotation (e.g. `@label[Xml](…)`) stores its
+          // type as an applied type tree. Re-root the type constructor and
+          // synthesise fresh argument trees from their types — the originals are
+          // loaded from another compilation unit's TASTy without usable source
+          // positions, which the later `typedTypeApply` asserts are present.
+          case Applied(constructor, arguments) =>
+            val arguments2 = arguments.map:
+              case argument: TypeTree => TypeTree.of(using argument.tpe.asType)
+              case argument           => argument
+
+            Applied(transformTypeTree(constructor)(owner), arguments2)
+
+          case _ => throw jl.Error()
 
       override def transformTerm(tree: Term)(sym: Symbol): Term =
         tree match
@@ -64,6 +77,16 @@ object internal:
 
           case Apply(fn, arguments) =>
             Apply(transformTerm(fn)(sym), transformTerms(arguments)(sym))
+
+          // The constructor of a type-parameterized annotation is applied to its
+          // type arguments before its value arguments. Synthesise fresh type-arg
+          // trees from their types (see `transformTypeTree` above).
+          case TypeApply(fn, arguments) =>
+            val arguments2 = arguments.map:
+              case argument: TypeTree => TypeTree.of(using argument.tpe.asType)
+              case argument           => argument
+
+            TypeApply(transformTerm(fn)(sym), arguments2)
 
           case _ =>
             throw jl.Error()

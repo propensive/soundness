@@ -32,8 +32,24 @@
                                                                                                   */
 package adversaria
 
+import scala.compiletime.summonInline
+
+import anticipation.*
 import prepositional.*
+import vacuous.*
 
 extension [entity](entity: entity)
   def membersOfType[value](using deref: entity is Dereferenceable to value): Iterable[value] =
     deref.values(entity)
+
+// Read the `ann`-typed annotations on each field of `self`, keyed by field name,
+// keeping only fields that actually carry one (an `Annotated.Fields` lists every
+// field bearing *any* annotation, with an empty set for the others). Replaces the
+// `match { case _: Annotated.Fields => … case _ => Map() }` boilerplate callers
+// would otherwise repeat.
+inline def fieldAnnotations[self, annotation <: StaticAnnotation]
+:   Map[Text, Set[annotation]] =
+
+  summonInline[self is Annotated by annotation] match
+    case annotated: Annotated.Fields => annotated.fields.filter(_(1).nonEmpty)
+    case _                           => Map()

@@ -39,6 +39,14 @@ final case class unique() extends StaticAnnotation
 final case class number(number: Int) extends StaticAnnotation
 final case class ref(x: Int) extends StaticAnnotation
 
+// A type-parameterized annotation, used to check that adversaria can read and
+// filter annotations by their type argument (e.g. `@marker[Person]`).
+final case class marker[topic](id: Int) extends StaticAnnotation
+
+case class Marked
+   (@marker[Person](1) @marker[Company](2) one: Int,
+    @marker[Company](3)                    two: Int)
+
 case class Person(name: Text, @ident email: Text)
 
 @number(10)
