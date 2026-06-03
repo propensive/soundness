@@ -32,7 +32,6 @@
                                                                                                   */
 package enigmatic
 
-import java.security as js
 import javax.crypto as jc, javax.crypto.spec.*
 
 import anticipation.*
@@ -43,14 +42,14 @@ import vacuous.*
 
 object Aes:
   given value: [bits <: 128 | 192 | 256: ValueOf, mode, padding]
-        => (mode is BlockCipherMode)
-        => (padding is BlockCipherPadding)
-        => (Aes[bits] over mode against padding) =
-    Aes[bits](summon[mode is BlockCipherMode], summon[padding is BlockCipherPadding])
-    . asInstanceOf[Aes[bits] over mode against padding]
+  =>  ( blockMode: mode is BlockCipherMode )
+  =>  ( blockPadding: padding is BlockCipherPadding )
+  =>  ( iv: InitializationVector )
+  =>  ( Aes[bits] over mode against padding ) =
+    Aes[bits](blockMode, blockPadding, iv).asInstanceOf[Aes[bits] over mode against padding]
 
 class Aes[bits <: 128 | 192 | 256: ValueOf]
-    (mode: BlockCipherMode, padding: BlockCipherPadding)
+  ( mode: BlockCipherMode, padding: BlockCipherPadding, initialization: InitializationVector )
 extends BlockCipher:
   type Size = bits
 
@@ -63,8 +62,7 @@ extends BlockCipher:
     val cipher = initialize().nn
 
     if mode.usesIv then
-      val iv = new Array[Byte](cipher.getBlockSize)
-      js.SecureRandom().nextBytes(iv)
+      val iv = initialization(cipher.getBlockSize).mutable(using Unsafe)
       cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key), IvParameterSpec(iv))
       (iv ++ cipher.doFinal(bytes.mutable(using Unsafe)).nn).immutable(using Unsafe)
     else

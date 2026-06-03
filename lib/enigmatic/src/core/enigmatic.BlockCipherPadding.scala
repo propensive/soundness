@@ -44,15 +44,18 @@ object BlockCipherPadding:
 trait BlockCipherPadding extends Typeclass:
   def name: Text
 
-sealed trait Pkcs7
 object Pkcs7:
   // The JDK calls PKCS#7 padding "PKCS5Padding" for historical reasons.
   given padding: Pkcs7 is BlockCipherPadding = BlockCipherPadding(t"PKCS5Padding")
 
-sealed trait Iso10126
+sealed trait Pkcs7
+
 object Iso10126:
   given padding: Iso10126 is BlockCipherPadding = BlockCipherPadding(t"ISO10126Padding")
 
-sealed trait NoPadding
+sealed trait Iso10126
+
 object NoPadding:
   given padding: NoPadding is BlockCipherPadding = BlockCipherPadding(t"NoPadding")
+
+sealed trait NoPadding

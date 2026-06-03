@@ -32,35 +32,19 @@
                                                                                                   */
 package enigmatic
 
-import javax.crypto.spec.SecretKeySpec
+import java.security as js
 
 import anticipation.*
-import contingency.*
-import gastronomy.*
-import prepositional.*
 import rudiments.*
 import vacuous.*
 
-extension [encodable: Encodable in Data](value: encodable)
-  def hmac[algorithm <: Algorithm](key: Data)(using hash: Hash in algorithm): Hmac in algorithm =
+object InitializationVector:
+  given random: InitializationVector = size =>
+    val iv = new Array[Byte](size)
+    js.SecureRandom().nextBytes(iv)
+    iv.immutable(using Unsafe)
 
-    val mac = hash.hmac0
-    mac.init(SecretKeySpec(key.to(Array), hash.name.s))
+  def fixed(iv: Data): InitializationVector = _ => iv
 
-    Hmac(unsafely(mac.doFinal(encodable.encode(value).mutable).nn.immutable))
-
-package blockCipherMode:
-  export Cbc.mode as cbc
-  export Ecb.mode as ecb
-  export Ctr.mode as ctr
-  export Cfb.mode as cfb
-  export Ofb.mode as ofb
-
-package blockCipherPadding:
-  export Pkcs7.padding as pkcs7
-  export Iso10126.padding as iso10126
-  export NoPadding.padding as noPadding
-
-package initializationVector:
-  export InitializationVector.random
-  given zero: InitializationVector = size => Array.fill[Byte](size)(0).immutable(using Unsafe)
+trait InitializationVector:
+  def apply(size: Int): Data

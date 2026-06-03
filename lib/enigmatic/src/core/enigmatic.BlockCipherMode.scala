@@ -46,22 +46,27 @@ trait BlockCipherMode extends Typeclass:
   def name: Text
   def usesIv: Boolean
 
-sealed trait Cbc
 object Cbc:
   given mode: Cbc is BlockCipherMode = BlockCipherMode(t"CBC", true)
 
-sealed trait Ecb
+sealed trait Cbc
+
 object Ecb:
   given mode: Ecb is BlockCipherMode = BlockCipherMode(t"ECB", false)
 
-sealed trait Ctr
+sealed trait Ecb
+
 object Ctr:
   given mode: Ctr is BlockCipherMode = BlockCipherMode(t"CTR", true)
 
-sealed trait Cfb
+sealed trait Ctr
+
 object Cfb:
   given mode: Cfb is BlockCipherMode = BlockCipherMode(t"CFB", true)
 
-sealed trait Ofb
+sealed trait Cfb
+
 object Ofb:
   given mode: Ofb is BlockCipherMode = BlockCipherMode(t"OFB", true)
+
+sealed trait Ofb

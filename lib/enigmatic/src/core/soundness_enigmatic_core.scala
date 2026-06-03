@@ -35,11 +35,15 @@ package soundness
 export
   enigmatic
   . { Aes, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher, CryptoError, Ctr,
-      Divulgence, Dsa, Ecb, Encryption, Hmac, hmac, Iso10126, NoPadding, Ofb, Pem, PemError,
-      PemLabel, Pkcs7, PrivateKey, PublicKey, Rsa, Signature, Signing, Symmetric, SymmetricKey }
+      Divulgence, Dsa, Ecb, Encryption, Hmac, hmac, InitializationVector, Iso10126, NoPadding, Ofb,
+      Pem, PemError, PemLabel, Pkcs7, PrivateKey, PublicKey, Rsa, Signature, Signing, Symmetric,
+      SymmetricKey }
 
 package blockCipherMode:
   export enigmatic.blockCipherMode.{cbc, cfb, ctr, ecb, ofb}
 
 package blockCipherPadding:
   export enigmatic.blockCipherPadding.{iso10126, noPadding, pkcs7}
+
+package initializationVector:
+  export enigmatic.initializationVector.{random, zero}

@@ -153,8 +153,26 @@ object Tests extends Suite(m"Gastronomy tests"):
 
     test(m"CBC encryption of the same plaintext differs run-to-run (random IV)"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
-      key.encrypt(t"Hello world") == key.encrypt(t"Hello world")
+      key.encrypt(t"Hello world").serialize[Hex] == key.encrypt(t"Hello world").serialize[Hex]
     . assert(_ == false)
+
+    test(m"A fixed IV makes CBC encryption deterministic"):
+      given InitializationVector = InitializationVector.fixed(t"0123456789abcdef".data)
+      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      key.encrypt(t"Hello world").serialize[Hex] == key.encrypt(t"Hello world").serialize[Hex]
+    . assert(_ == true)
+
+    test(m"A fixed IV still round-trips"):
+      given InitializationVector = InitializationVector.fixed(t"0123456789abcdef".data)
+      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      key.decrypt(key.encrypt(t"Hello world")).text
+    . assert(_ == t"Hello world")
+
+    test(m"An imported zero IV makes CBC encryption deterministic"):
+      import initializationVector.zero
+      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      key.encrypt(t"Hello world").serialize[Hex] == key.encrypt(t"Hello world").serialize[Hex]
+    . assert(_ == true)
 
     test(m"Sign some data with DSA"):
       val privateKey: PrivateKey[Dsa[1024]] = PrivateKey.generate[Dsa[1024]]()
