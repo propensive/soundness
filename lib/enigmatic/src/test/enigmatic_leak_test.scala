@@ -60,3 +60,18 @@ object LeakCheck:
   //
   //   val escaped = key.expose:
   //     summon[Encryptor[Aes[256]]]
+
+  // Validity regression: only cipher/mode/padding triples the JDK supports have a
+  // `given`, so an invalid combination does not compile. CTR permits only
+  // `NoPadding`, so the line below fails with "no implicit values were found that
+  // match type Ctr Permits Pkcs7" (verified manually — uncomment to re-check).
+  //
+  //   val invalid = SymmetricKey.generate[Aes[256] over Ctr against Pkcs7]()
+  val valid = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+
+  // Totality regression: `NoPadding` can fail on misaligned input, so its `given`
+  // demands a `Tactic[CryptoError]`. With no error-handling strategy in scope,
+  // summoning a `NoPadding` cipher (and hence encrypting with one) does not
+  // compile, whereas every padded cipher is total (verified manually — uncomment).
+  //
+  //   val noTactic = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()

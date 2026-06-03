@@ -56,6 +56,7 @@ extends Cipher, Encryption, Symmetric:
 
   def encrypt(bytes: Data, key: Data): Data =
     val cipher = initialize()
+    padding.verify(bytes.length, cipher.getBlockSize, mode.blockAligned)
 
     if mode.usesIv then
       val iv = vector(cipher.getBlockSize).mutable(using Unsafe)

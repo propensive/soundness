@@ -183,6 +183,60 @@ object Tests extends Suite(m"Gastronomy tests"):
         t"Hello world".encrypt.serialize[Hex] == t"Hello world".encrypt.serialize[Hex]
     . assert(_ == true)
 
+    test(m"DES/CBC/PKCS7 roundtrip"):
+      val key = SymmetricKey.generate[Des over Cbc against Pkcs7]()
+      key.expose:
+        t"Hello world".encrypt.decrypt.text
+    . assert(_ == t"Hello world")
+
+    test(m"TripleDES/CBC/PKCS7 roundtrip"):
+      val key = SymmetricKey.generate[TripleDes[168] over Cbc against Pkcs7]()
+      key.expose:
+        t"Hello world".encrypt.decrypt.text
+    . assert(_ == t"Hello world")
+
+    test(m"Blowfish/CBC/PKCS7 roundtrip"):
+      val key = SymmetricKey.generate[Blowfish[448] over Cbc against Pkcs7]()
+      key.expose:
+        t"Hello world".encrypt.decrypt.text
+    . assert(_ == t"Hello world")
+
+    test(m"RC2/CFB/ISO10126 roundtrip"):
+      val key = SymmetricKey.generate[Rc2[128] over Cfb against Iso10126]()
+      key.expose:
+        t"Hello world".encrypt.decrypt.text
+    . assert(_ == t"Hello world")
+
+    test(m"DES/CTR/NoPadding roundtrip"):
+      val key = SymmetricKey.generate[Des over Ctr against NoPadding]()
+      key.expose:
+        t"Hello world".encrypt.decrypt.text
+    . assert(_ == t"Hello world")
+
+    test(m"Decryption with the wrong key fails with a CryptoError"):
+      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      val wrongKey = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      val ciphertext = key.expose(t"Hello world".encrypt)
+      capture[CryptoError](wrongKey.expose(ciphertext.decrypt.text)).reason
+    . assert(_ == CryptoError.Reason.BadPadding)
+
+    test(m"AES/CBC/NoPadding round-trips block-aligned input"):
+      val key = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
+      key.expose:
+        t"0123456789abcdef".encrypt.decrypt.text
+    . assert(_ == t"0123456789abcdef")
+
+    test(m"AES/CBC/NoPadding rejects misaligned input with a CryptoError"):
+      val key = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
+      capture[CryptoError](key.expose(t"Hello world".encrypt)).reason
+    . assert(_ == CryptoError.Reason.IllegalBlockSize)
+
+    test(m"AES/CTR/NoPadding (stream mode) accepts any length"):
+      val key = SymmetricKey.generate[Aes[256] over Ctr against NoPadding]()
+      key.expose:
+        t"Hello world".encrypt.decrypt.text
+    . assert(_ == t"Hello world")
+
     test(m"Sign some data with DSA"):
       val privateKey: PrivateKey[Dsa[1024]] = PrivateKey.generate[Dsa[1024]]()
       val message = t"Hello world"
