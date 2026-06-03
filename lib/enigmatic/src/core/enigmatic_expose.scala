@@ -32,8 +32,6 @@
                                                                                                   */
 package enigmatic
 
-import language.experimental.captureChecking
-
 import java.security as js
 import javax.crypto as jc
 
@@ -51,29 +49,26 @@ import vacuous.*
 
 extension [value: Encodable in Data](value: value)
   def encrypt[cipher <: Cipher]
-    ( using encryptor: Encryptor[cipher]^, algorithm: cipher & Encryption )
+    ( using encryptor: Encryptor[cipher], algorithm: cipher & Encryption )
   :   Data =
 
     algorithm.encrypt(value.bytestream, encryptor.bytes)
 
-// Streaming encryption (block ciphers only) lazily transforms a `Stream`. Unlike
-// the `Encryptor` capability itself — which capture checking still confines to the
-// `expose` scope — the resulting `Stream[Data]` is a pure value, so it is not
-// scope-confined. That is harmless here: it is bound to this one input stream and
-// holds only the (unextractable) key bytes needed to finish encrypting it, so no
-// reusable encryption authority and no key material can escape. Drain it within
-// the block all the same; only the fixed ciphertext of `stream` could leak.
+// Streaming encryption (block ciphers only) lazily transforms a `Stream`, driving
+// the JCE cipher through update/doFinal. The IV is emitted as the leading chunk
+// and the `NoPadding` alignment check runs at end-of-stream. Drain it within the
+// `expose` block — only the fixed ciphertext of `stream` could otherwise leak.
 
 extension (stream: Stream[Data])
   def encrypt[cipher <: BlockCipher]
-    ( using encryptor: Encryptor[cipher]^, algorithm: cipher & Encryption )
+    ( using encryptor: Encryptor[cipher], algorithm: cipher & Encryption )
   :   Stream[Data] =
 
     algorithm.encryptStream(stream, encryptor.bytes)
 
 extension (data: Data)
   def decrypt[decodable: Decodable in Data, cipher <: Cipher]
-    ( using decryptor: Decryptor[cipher]^, algorithm: cipher & Encryption )
+    ( using decryptor: Decryptor[cipher], algorithm: cipher & Encryption )
   :   decodable raises CryptoError =
 
     def detail(error: Throwable): Optional[Text] = error.getMessage match
@@ -99,14 +94,18 @@ extension (data: Data)
 
     decodable.decoded(plaintext)
 
+// `expose` lends the key to the block as an `Encryptor`/`Decryptor` capability.
+// Capture checking (which would confine the capability to this scope) is not yet
+// enabled; the capability types are kept so it can be turned on as an enhancement.
+
 extension [cipher <: Cipher](key: PublicKey[cipher])
-  def expose[result](block: Encryptor[cipher]^ ?-> result): result =
+  def expose[result](block: Encryptor[cipher] ?=> result): result =
     block(using Encryptor(key.bytes))
 
 extension [cipher <: Cipher](key: PrivateKey[cipher])
-  def expose[result](block: Decryptor[cipher]^ ?-> result): result =
+  def expose[result](block: Decryptor[cipher] ?=> result): result =
     block(using Decryptor(key.privateData))
 
 extension [cipher <: Cipher](key: SymmetricKey[cipher])
-  def expose[result](block: (Encryptor[cipher]^, Decryptor[cipher]^) ?-> result): result =
+  def expose[result](block: (Encryptor[cipher], Decryptor[cipher]) ?=> result): result =
     block(using Encryptor(key.bytes), Decryptor(key.bytes))

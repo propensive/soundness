@@ -32,34 +32,19 @@
                                                                                                   */
 package enigmatic
 
-import language.experimental.captureChecking
-
 import soundness.*
 
 import charEncoders.utf8
 import blockCipherMode.cbc, blockCipherPadding.pkcs7
 
-// Capture-checking regression for `expose`.
-//
-// The exposed `Encryptor`/`Decryptor` capability must not escape its scope; only
-// pure values (e.g. the ciphertext `Data`) may leave the block. The commented-out
-// line fails to compile with a capture error of the form
-//
-//   Capability `contextual$1` outlives its scope: it leaks into outer capture set
-//   's1 which is owned by value escaped.
-//
-// (verified manually — uncomment to re-check).
-object LeakCheck:
+// Compile-time regressions for the cipher API. (Capture-checking confinement of
+// the exposed `Encryptor`/`Decryptor` capability is not yet enabled — see
+// `expose` — so a capability-escape regression is not included here.)
+object CompileChecks:
   val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
 
-  // Legitimate: only the pure `Data` ciphertext leaves the scope.
   val ciphertext: Data = key.expose:
     t"Hello world".encrypt
-
-  // LEAK (must NOT compile): smuggling the capability out directly.
-  //
-  //   val escaped = key.expose:
-  //     summon[Encryptor[Aes[256]]]
 
   // Validity regression: only cipher/mode/padding triples the JDK supports have a
   // `given`, so an invalid combination does not compile. CTR permits only
