@@ -32,26 +32,35 @@
                                                                                                   */
 package enigmatic
 
+import language.experimental.captureChecking
+
 import anticipation.*
-import gossamer.*
-import monotonous.*
+import contingency.*
+import distillate.*
 import prepositional.*
-import spectacular.*
 
-object PublicKey:
-  given showable: [key <: Cipher] => PublicKey[key] is Showable = key =>
-    import alphabets.hex.lowerCase
-    t"PublicKey(${key.bytes.serialize[Hex]})"
+extension [value: Encodable in Data](value: value)
+  def encrypt[cipher <: Cipher]
+    ( using encryptor: Encryptor[cipher]^, algorithm: cipher & Encryption )
+  :   Data =
 
-  given encodable: [cipher <: Cipher] => PublicKey[cipher] is Encodable in Data = _.bytes
+    algorithm.encrypt(value.bytestream, encryptor.bytes)
 
+extension (data: Data)
+  def decrypt[decodable: Decodable in Data, cipher <: Cipher]
+    ( using decryptor: Decryptor[cipher]^, algorithm: cipher & Encryption )
+  :   decodable raises CryptoError =
 
-case class PublicKey[cipher <: Cipher](bytes: Data):
-  def verify[encodable: Encodable in Data](value: encodable, signature: Signature[cipher])
-    ( using algorithm: cipher & Signing )
-  :   Boolean =
+    decodable.decoded(algorithm.decrypt(data, decryptor.bytes))
 
-    algorithm.verify(encodable.encode(value), signature.bytes, bytes)
+extension [cipher <: Cipher](key: PublicKey[cipher])
+  def expose[result](block: Encryptor[cipher]^ ?-> result): result =
+    block(using Encryptor(key.bytes))
 
+extension [cipher <: Cipher](key: PrivateKey[cipher])
+  def expose[result](block: Decryptor[cipher]^ ?-> result): result =
+    block(using Decryptor(key.privateData))
 
-  def pem: Pem = Pem(PemLabel.PublicKey, bytes)
+extension [cipher <: Cipher](key: SymmetricKey[cipher])
+  def expose[result](block: (Encryptor[cipher]^, Decryptor[cipher]^) ?-> result): result =
+    block(using Encryptor(key.bytes), Decryptor(key.bytes))

@@ -32,26 +32,19 @@
                                                                                                   */
 package enigmatic
 
+import java.security as js
+
 import anticipation.*
-import gossamer.*
-import monotonous.*
-import prepositional.*
-import spectacular.*
+import rudiments.*
+import vacuous.*
 
-object PublicKey:
-  given showable: [key <: Cipher] => PublicKey[key] is Showable = key =>
-    import alphabets.hex.lowerCase
-    t"PublicKey(${key.bytes.serialize[Hex]})"
+object InitializationVector:
+  given random: InitializationVector = size =>
+    val iv = new Array[Byte](size)
+    js.SecureRandom().nextBytes(iv)
+    iv.immutable(using Unsafe)
 
-  given encodable: [cipher <: Cipher] => PublicKey[cipher] is Encodable in Data = _.bytes
+  def fixed(iv: Data): InitializationVector = _ => iv
 
-
-case class PublicKey[cipher <: Cipher](bytes: Data):
-  def verify[encodable: Encodable in Data](value: encodable, signature: Signature[cipher])
-    ( using algorithm: cipher & Signing )
-  :   Boolean =
-
-    algorithm.verify(encodable.encode(value), signature.bytes, bytes)
-
-
-  def pem: Pem = Pem(PemLabel.PublicKey, bytes)
+trait InitializationVector:
+  def apply(size: Int): Data

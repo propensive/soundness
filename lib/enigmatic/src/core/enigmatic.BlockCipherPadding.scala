@@ -34,24 +34,28 @@ package enigmatic
 
 import anticipation.*
 import gossamer.*
-import monotonous.*
 import prepositional.*
-import spectacular.*
 
-object PublicKey:
-  given showable: [key <: Cipher] => PublicKey[key] is Showable = key =>
-    import alphabets.hex.lowerCase
-    t"PublicKey(${key.bytes.serialize[Hex]})"
+object BlockCipherPadding:
+  def apply[padding](name0: Text): padding is BlockCipherPadding = new BlockCipherPadding:
+    type Self = padding
+    val name: Text = name0
 
-  given encodable: [cipher <: Cipher] => PublicKey[cipher] is Encodable in Data = _.bytes
+trait BlockCipherPadding extends Typeclass:
+  def name: Text
 
+object Pkcs7:
+  // The JDK calls PKCS#7 padding "PKCS5Padding" for historical reasons.
+  given padding: Pkcs7 is BlockCipherPadding = BlockCipherPadding(t"PKCS5Padding")
 
-case class PublicKey[cipher <: Cipher](bytes: Data):
-  def verify[encodable: Encodable in Data](value: encodable, signature: Signature[cipher])
-    ( using algorithm: cipher & Signing )
-  :   Boolean =
+sealed trait Pkcs7
 
-    algorithm.verify(encodable.encode(value), signature.bytes, bytes)
+object Iso10126:
+  given padding: Iso10126 is BlockCipherPadding = BlockCipherPadding(t"ISO10126Padding")
 
+sealed trait Iso10126
 
-  def pem: Pem = Pem(PemLabel.PublicKey, bytes)
+object NoPadding:
+  given padding: NoPadding is BlockCipherPadding = BlockCipherPadding(t"NoPadding")
+
+sealed trait NoPadding

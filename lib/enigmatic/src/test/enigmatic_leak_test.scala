@@ -32,26 +32,31 @@
                                                                                                   */
 package enigmatic
 
-import anticipation.*
-import gossamer.*
-import monotonous.*
-import prepositional.*
-import spectacular.*
+import language.experimental.captureChecking
 
-object PublicKey:
-  given showable: [key <: Cipher] => PublicKey[key] is Showable = key =>
-    import alphabets.hex.lowerCase
-    t"PublicKey(${key.bytes.serialize[Hex]})"
+import soundness.*
 
-  given encodable: [cipher <: Cipher] => PublicKey[cipher] is Encodable in Data = _.bytes
+import charEncoders.utf8
+import blockCipherMode.cbc, blockCipherPadding.pkcs7
 
+// Capture-checking regression for `expose`.
+//
+// The exposed `Encryptor`/`Decryptor` capability must not escape its scope; only
+// pure values (e.g. the ciphertext `Data`) may leave the block. The commented-out
+// line fails to compile with a capture error of the form
+//
+//   Capability `contextual$1` outlives its scope: it leaks into outer capture set
+//   's1 which is owned by value escaped.
+//
+// (verified manually — uncomment to re-check).
+object LeakCheck:
+  val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
 
-case class PublicKey[cipher <: Cipher](bytes: Data):
-  def verify[encodable: Encodable in Data](value: encodable, signature: Signature[cipher])
-    ( using algorithm: cipher & Signing )
-  :   Boolean =
+  // Legitimate: only the pure `Data` ciphertext leaves the scope.
+  val ciphertext: Data = key.expose:
+    t"Hello world".encrypt
 
-    algorithm.verify(encodable.encode(value), signature.bytes, bytes)
-
-
-  def pem: Pem = Pem(PemLabel.PublicKey, bytes)
+  // LEAK (must NOT compile): smuggling the capability out directly.
+  //
+  //   val escaped = key.expose:
+  //     summon[Encryptor[Aes[256]]]

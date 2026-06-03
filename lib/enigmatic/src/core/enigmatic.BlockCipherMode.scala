@@ -34,24 +34,39 @@ package enigmatic
 
 import anticipation.*
 import gossamer.*
-import monotonous.*
 import prepositional.*
-import spectacular.*
 
-object PublicKey:
-  given showable: [key <: Cipher] => PublicKey[key] is Showable = key =>
-    import alphabets.hex.lowerCase
-    t"PublicKey(${key.bytes.serialize[Hex]})"
+object BlockCipherMode:
+  def apply[mode](name0: Text, usesIv0: Boolean): mode is BlockCipherMode = new BlockCipherMode:
+    type Self = mode
+    val name: Text = name0
+    val usesIv: Boolean = usesIv0
 
-  given encodable: [cipher <: Cipher] => PublicKey[cipher] is Encodable in Data = _.bytes
+trait BlockCipherMode extends Typeclass:
+  def name: Text
+  def usesIv: Boolean
 
+object Cbc:
+  given mode: Cbc is BlockCipherMode = BlockCipherMode(t"CBC", true)
 
-case class PublicKey[cipher <: Cipher](bytes: Data):
-  def verify[encodable: Encodable in Data](value: encodable, signature: Signature[cipher])
-    ( using algorithm: cipher & Signing )
-  :   Boolean =
+sealed trait Cbc
 
-    algorithm.verify(encodable.encode(value), signature.bytes, bytes)
+object Ecb:
+  given mode: Ecb is BlockCipherMode = BlockCipherMode(t"ECB", false)
 
+sealed trait Ecb
 
-  def pem: Pem = Pem(PemLabel.PublicKey, bytes)
+object Ctr:
+  given mode: Ctr is BlockCipherMode = BlockCipherMode(t"CTR", true)
+
+sealed trait Ctr
+
+object Cfb:
+  given mode: Cfb is BlockCipherMode = BlockCipherMode(t"CFB", true)
+
+sealed trait Cfb
+
+object Ofb:
+  given mode: Ofb is BlockCipherMode = BlockCipherMode(t"OFB", true)
+
+sealed trait Ofb

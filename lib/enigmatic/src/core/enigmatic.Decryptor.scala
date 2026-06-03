@@ -33,25 +33,6 @@
 package enigmatic
 
 import anticipation.*
-import gossamer.*
-import monotonous.*
-import prepositional.*
-import spectacular.*
 
-object PublicKey:
-  given showable: [key <: Cipher] => PublicKey[key] is Showable = key =>
-    import alphabets.hex.lowerCase
-    t"PublicKey(${key.bytes.serialize[Hex]})"
-
-  given encodable: [cipher <: Cipher] => PublicKey[cipher] is Encodable in Data = _.bytes
-
-
-case class PublicKey[cipher <: Cipher](bytes: Data):
-  def verify[encodable: Encodable in Data](value: encodable, signature: Signature[cipher])
-    ( using algorithm: cipher & Signing )
-  :   Boolean =
-
-    algorithm.verify(encodable.encode(value), signature.bytes, bytes)
-
-
-  def pem: Pem = Pem(PemLabel.PublicKey, bytes)
+class Decryptor[cipher] private[enigmatic] (private[enigmatic] val bytes: Data)
+extends caps.SharedCapability
