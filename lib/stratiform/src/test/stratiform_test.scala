@@ -1078,7 +1078,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"empty struct encodes as a single 00 child-count"):
         val root = Tel.Element.Node(Unset, nameSchema.document, IArray.empty)
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "00")
 
       test(m"single scalar child via tel.bintel(schema)"):
@@ -1089,7 +1089,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val scalar = Tels.Scalar(IArray.empty)
         val value = Tel.Element.Value(0, scalar, t"")
         val root = Tel.Element.Node(Unset, nameSchema.document, IArray(value))
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "01 00 00")
 
       test(m"UTF-8 byte length is encoded, not character count"):
@@ -1097,7 +1097,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val scalar = Tels.Scalar(IArray.empty)
         val value = Tel.Element.Value(0, scalar, t"café")
         val root = Tel.Element.Node(Unset, nameSchema.document, IArray(value))
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "01 00 05 63 61 66 C3 A9")
 
       test(m"flag node encodes as just its keyword index"):
@@ -1115,7 +1115,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           scalars  = IArray.empty,
           selects  = IArray.empty)
         val root = Tel.Element.Node(Unset, flagSchema.document, IArray(flagNode))
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "01 00")
 
       test(m"nested struct emits kidx + count + children recursively"):
@@ -1136,14 +1136,14 @@ object Tests extends Suite(m"Stratiform Tests"):
           IArray(Tel.Element.Value(0, innerScalar, t"example.com")))
 
         val root = Tel.Element.Node(Unset, outerStruct, IArray(configNode))
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "01 00 01 00 0B 65 78 61 6D 70 6C 65 2E 63 6F 6D")
 
       test(m"large keyword index uses multi-byte varint"):
         val scalar = Tels.Scalar(IArray.empty)
         val value = Tel.Element.Value(128, scalar, t"x")
         val root = Tel.Element.Node(Unset, nameSchema.document, IArray(value))
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "01 80 01 01 78")
 
       test(m"§7.2 canonical order — children reordered by member index"):
@@ -1163,7 +1163,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           Tel.Element.Value(1, scalar, t"B"),
           Tel.Element.Value(0, scalar, t"A"))
         val root = Tel.Element.Node(Unset, struct, children)
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "02 00 01 41 01 01 42")
 
       test(m"§7.2 canonical order is stable within a member"):
@@ -1178,13 +1178,13 @@ object Tests extends Suite(m"Stratiform Tests"):
           Tel.Element.Value(0, scalar, t"second"))
         val root = Tel.Element.Node(Unset, struct, children)
         // 2 children, then two Value(0, len, text)s.
-        hex(root.bintel)
+        hex(root.bintel(nameSchema))
       . assert(_ == "02 00 05 66 69 72 73 74 00 06 73 65 63 6F 6E 64")
 
     suite(m"BinTEL §7.8 decoder"):
       test(m"empty struct round-trips"):
         val root = Tel.Element.Node(Unset, nameSchema.document, IArray.empty)
-        val bytes = root.bintel
+        val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
           case Tel.Element.Node(_, _, c) => c.length
@@ -1206,7 +1206,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val scalar = Tels.Scalar(IArray.empty)
         val root = Tel.Element.Node
                     (Unset, nameSchema.document, IArray(Tel.Element.Value(0, scalar, t"")))
-        val bytes = root.bintel
+        val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
           case Tel.Element.Node(_, _, children) =>
@@ -1219,7 +1219,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val scalar = Tels.Scalar(IArray.empty)
         val root = Tel.Element.Node
                     (Unset, nameSchema.document, IArray(Tel.Element.Value(0, scalar, t"café")))
-        val bytes = root.bintel
+        val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
           case Tel.Element.Node(_, _, children) =>
@@ -1243,7 +1243,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           selects  = IArray.empty)
         val root = Tel.Element.Node
                     (Unset, flagSchema.document, IArray(Tel.Element.Node(0, Tels.Flag, IArray.empty)))
-        val bytes = root.bintel
+        val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, flagSchema)
         decoded match
           case Tel.Element.Node(_, _, IArray(Tel.Element.Node(_, Tels.Flag, _))) => true
@@ -1272,7 +1272,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           IArray(Tel.Element.Value(0, innerScalar, t"example.com")))
         val root = Tel.Element.Node(Unset, outerStruct, IArray(configNode))
 
-        val bytes = root.bintel
+        val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, outerSchema)
         decoded match
           case Tel.Element.Node(_, _, IArray(Tel.Element.Node(_, _, inner))) =>
@@ -1409,11 +1409,11 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == true)
 
     suite(m"BinTEL §8.2 schema signature"):
-      // Default Cadence(initial = 4, regular = 1, hashSize = 12).
+      // BinTEL-pinned Cadence(initial = 4, regular = 2, hashSize = 32).
       def synthetic(seed: Int): Data =
-        val arr = new Array[Byte](12)
+        val arr = new Array[Byte](32)
         var i = 0
-        while i < 12 do
+        while i < 32 do
           arr(i) = ((seed * 31 + i * 17) & 0xff).toByte
           i += 1
         arr.asInstanceOf[IArray[Byte]]
@@ -1422,21 +1422,21 @@ object Tests extends Suite(m"Stratiform Tests"):
       val h1 = synthetic(2)
       val h2 = synthetic(3)
 
-      test(m"single-component signature length is 13 (12 + 1 cadence byte)"):
+      test(m"single-component signature length is 33 (32 + 1 cadence byte)"):
         SchemaSignature.encode(List(h0)).length
-      . assert(_ == 13)
+      . assert(_ == 33)
 
       test(m"single-component signature begins with the component hash"):
-        SchemaSignature.encode(List(h0)).slice(0, 12).toSeq == h0.toSeq
+        SchemaSignature.encode(List(h0)).slice(0, 32).toSeq == h0.toSeq
       . assert(_ == true)
 
-      test(m"two-component signature length is 17 (12 + 4 + 1)"):
+      test(m"two-component signature length is 37 (32 + 4 + 1)"):
         SchemaSignature.encode(List(h0, h1)).length
-      . assert(_ == 17)
+      . assert(_ == 37)
 
-      test(m"three-component signature length is 18 (12 + 4 + 1 + 1)"):
+      test(m"three-component signature length is 39 (32 + 4 + 2 + 1)"):
         SchemaSignature.encode(List(h0, h1, h2)).length
-      . assert(_ == 18)
+      . assert(_ == 39)
 
       test(m"empty hash list raises BadSignatureLength"):
         capture[BintelError](SchemaSignature.encode(Nil)).reason
@@ -1477,7 +1477,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == BintelError.Reason.BadSignature)
 
     suite(m"BinTEL §8.1 schema signature from document"):
-      test(m"single-component signature for a no-layer schema is 13 bytes"):
+      test(m"single-component signature for a no-layer schema is 33 bytes"):
         val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
         val source =
           val arr = stream.readAllBytes().nn
@@ -1486,9 +1486,9 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
         sig.length
-      . assert(_ == 13)
+      . assert(_ == 33)
 
-      test(m"no-layer schema signature begins with the 12-byte BLAKE3 value hash"):
+      test(m"no-layer schema signature begins with the 32-byte BLAKE3 value hash"):
         val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
         val source =
           val arr = stream.readAllBytes().nn
@@ -1496,12 +1496,12 @@ object Tests extends Suite(m"Stratiform Tests"):
           IArray.from(arr)
 
         val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
-        val bintel = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).bintel
-        val hash = Blake3.hashOf(bintel, 12)
-        sig.slice(0, 12).toSeq == hash.toSeq
+        val bintel = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).bintel(Tels.Axiom.tels)
+        val hash = Blake3.hashOf(bintel, 32)
+        sig.slice(0, 32).toSeq == hash.toSeq
       . assert(_ == true)
 
-      test(m"schema with a single layer produces a 17-byte signature"):
+      test(m"schema with a single layer produces a 37-byte signature"):
         val src = """tel 1.0
                     |
                     |name basic
@@ -1517,9 +1517,9 @@ object Tests extends Suite(m"Stratiform Tests"):
                     |""".stripMargin.tt
         val sig = SchemaSignature.fromDocument(src.read[Tel], Tels.Axiom.tels)
         sig.length
-      . assert(_ == 17)
+      . assert(_ == 37)
 
-      test(m"two-layer schema produces an 18-byte signature"):
+      test(m"two-layer schema produces a 39-byte signature"):
         val src = """tel 1.0
                     |
                     |name multi
@@ -1538,7 +1538,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                     |""".stripMargin.tt
         val sig = SchemaSignature.fromDocument(src.read[Tel], Tels.Axiom.tels)
         sig.length
-      . assert(_ == 18)
+      . assert(_ == 39)
 
     suite(m"BinTEL §3 value hash"):
       test(m"valueHash is deterministic"):
@@ -1565,8 +1565,8 @@ object Tests extends Suite(m"Stratiform Tests"):
           stream.close()
           IArray.from(arr)
 
-        val a = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash.data.toSeq
-        val b = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash.data.toSeq
+        val a = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels).data.toSeq
+        val b = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels).data.toSeq
         (a.length, a == b)
       . assert(_ == (32, true))
 
@@ -1585,7 +1585,78 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         val refBytes = hexBytes(refHex)
         val element  = Tel.Type.assign(telBytes.read[Tel], Tels.Axiom.tels)
-        element.bintel.toSeq == refBytes
+        element.bintel(Tels.Axiom.tels).toSeq == refBytes
       . assert(_ == true)
+
+      test(m"§3 — tel-schema.tel matches the normative BLAKE3-256 value hash"):
+        // The single vector to which §3 of BinTEL and §20.5 of the TEL
+        // Specification are both pinned.
+        val telStream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+        val telBytes  =
+          val arr = telStream.readAllBytes().nn
+          telStream.close()
+          IArray.from(arr)
+
+        val digest = Tel.Type.assign(telBytes.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels)
+        digest.data.toSeq.map(b => f"${b & 0xff}%02x").mkString
+      . assert(_ == "626dd8958809da354a2f8bd9f7dac1cfda7f549ecbe047eb0d8c0a17c278d517")
+
+    suite(m"BinTEL §6.2 self-contained mode"):
+      val schemaDoc = """name greeting
+                        |
+                        |document
+                        |  field name Identifier
+                        |""".stripMargin.tt
+      val dataDoc = t"name Alice\n"
+
+      def selfContained(): Data =
+        dataDoc.read[Tel].bintelSelfContained(schemaDoc.read[Tel])
+
+      test(m"self-contained document begins with the B2 C4 B5 BC magic"):
+        selfContained().slice(0, 4).toSeq
+      . assert(_ == Seq[Byte](0xb2.toByte, 0xc4.toByte, 0xb5.toByte, 0xbc.toByte))
+
+      test(m"self-contained text form begins with βτεμ"):
+        Bintel.text(selfContained()).s.substring(0, 4)
+      . assert(_ == "βτεμ")
+
+      test(m"round-trips: decode recovers the single document-root child"):
+        Bintel.decodeDocumentSelfContained(selfContained()).root match
+          case Tel.Element.Node(_, _, children) => children.length
+          case _                                => -1
+      . assert(_ == 1)
+
+      test(m"value hash is mode-independent (external == self-contained)"):
+        val schema = Tels.Layers.compose(Tels.Reconstructor.fromTel(schemaDoc.read[Tel]))
+        val external = dataDoc.read[Tel].bintel(schema)
+        val recovered = Bintel.decodeDocumentSelfContained(selfContained()).root.bintel(schema)
+        recovered.toSeq == external.toSeq
+      . assert(_ == true)
+
+      test(m"signature not matching the embedded schema raises B11"):
+        val axiom      = Tels.Axiom.tels
+        val sd         = schemaDoc.read[Tel]
+        val schemaBody = sd.bintel(axiom)
+        val schema     = Tels.Layers.compose(Tels.Reconstructor.fromTel(sd))
+        val docBody    = dataDoc.read[Tel].bintel(schema)
+        // A valid-length but wrong signature: flip the first body byte and
+        // the trailing cadence byte so the XOR-fold length check still passes.
+        val wrong = SchemaSignature.fromDocument(sd, axiom).asInstanceOf[Array[Byte]].clone()
+        wrong(0) = (wrong(0) ^ 0x01).toByte
+        wrong(wrong.length - 1) = (wrong(wrong.length - 1) ^ 0x01).toByte
+        val bytes = Bintel.frameSelfContained(wrong.asInstanceOf[IArray[Byte]], schemaBody, docBody)
+        capture[BintelError](Bintel.decodeDocumentSelfContained(bytes)).reason
+      . assert(_ == BintelError.Reason.EmbeddedSignatureMismatch)
+
+      test(m"undecodable embedded schema raises B12"):
+        val axiom   = Tels.Axiom.tels
+        val sd      = schemaDoc.read[Tel]
+        val schema  = Tels.Layers.compose(Tels.Reconstructor.fromTel(sd))
+        val docBody = dataDoc.read[Tel].bintel(schema)
+        val sig     = SchemaSignature.fromDocument(sd, axiom)
+        val garbage: Data = IArray[Byte](0x7f, 0x7f, 0x7f, 0x7f)
+        val bytes = Bintel.frameSelfContained(sig, garbage, docBody)
+        capture[BintelError](Bintel.decodeDocumentSelfContained(bytes)).reason
+      . assert(_ == BintelError.Reason.EmbeddedSchemaUndecodable)
 
     RecordsTests()

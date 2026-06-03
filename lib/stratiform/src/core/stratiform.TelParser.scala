@@ -850,11 +850,16 @@ private final class TelParser():
     val schemaText: Optional[Text] =
       if parts.length >= 3 then
         val s = parts(2)
+        // §8.1: the schema identifier is either an HTTP/HTTPS URL (with a
+        // `://`) or a bare BASE-256-encoded schema signature. The BASE-256
+        // alphabet (§4) is exactly the Unicode letters and ASCII digits, so
+        // a bare signature is a non-empty run of letters/digits with no
+        // whitespace or punctuation. Palimpsest length/decodability are
+        // checked later, at signature resolution — not at pragma parse time.
         val isUrl = s.indexOf("://") >= 0
-        val isHexHash = s.length == 64 && s.forall: c =>
-          (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
-        val isBase256 = s.exists(_.toInt > 127)
-        if !isUrl && !isHexHash && !isBase256
+        val isBase256 = s.nonEmpty && s.forall: c =>
+          Character.isLetter(c) || (c >= '0' && c <= '9')
+        if !isUrl && !isBase256
         then errorAt(Reason.BadSchemaIdentifier, line, 1)
         Text(s): Optional[Text]
       else Unset
@@ -1649,6 +1654,9 @@ private final class TelParser():
           pos == bufEnd && more
         do ()
         val raw = sliceText(lineMk)
+        // The CR-stripped form is used only to recognise the closing
+        // delimiter line; the payload itself preserves every byte between
+        // structural LFs, including CR (§15).
         val line = if raw.length > 0 && raw.charAt(raw.length - 1) == '\r'
                    then raw.substring(0, raw.length - 1) else raw
         if line == delimiter then
@@ -1669,13 +1677,13 @@ private final class TelParser():
           advance()  // consume LF
           lineNo += 1
           if !more then documentEndsWithLf = true
-          sb.append(line)
+          sb.append(raw)
           sb.append('\n')
           false
 
     fillHead()
-    // §15 normalises CRLF to LF inside the payload, but since we read line
-    // by line and append LF, there's no CRLF inside.
+    // §15: the payload is the verbatim bytes between structural LFs — CR is
+    // preserved (only the LF before the closing delimiter is dropped, above).
     Tel.Atom.Literal(Text(delimiter), Text(sb.toString))
 
   // ── Compound line parsing ────────────────────────────────────────────────

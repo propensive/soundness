@@ -38,6 +38,7 @@ leading-blank-lines
 lf-line-endings
 literal-atom-basic
 literal-atom-cr-in-payload
+literal-atom-cr-preserved
 literal-atom-custom-delimiter
 literal-atom-delimiter-in-payload
 literal-atom-delimiter-partial-match
