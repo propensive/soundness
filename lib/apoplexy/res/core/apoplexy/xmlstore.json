@@ -1,0 +1,61 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Notes", "version": "1.0.0" },
+  "servers": [{ "url": "https://xml.example.com" }],
+  "paths": {
+    "/notes/{id}": {
+      "get": {
+        "operationId": "getNote",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "a note",
+            "content": {
+              "application/xml": { "schema": { "$ref": "#/components/schemas/Note" } }
+            }
+          }
+        }
+      }
+    },
+    "/notes": {
+      "post": {
+        "operationId": "addNote",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/xml": { "schema": { "$ref": "#/components/schemas/NewNote" } }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created",
+            "content": {
+              "application/xml": { "schema": { "$ref": "#/components/schemas/Note" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Note": {
+        "type": "object",
+        "required": ["id", "text"],
+        "properties": {
+          "id":   { "type": "integer" },
+          "text": { "type": "string" }
+        }
+      },
+      "NewNote": {
+        "type": "object",
+        "required": ["text"],
+        "properties": {
+          "text": { "type": "string" }
+        }
+      }
+    }
+  }
+}

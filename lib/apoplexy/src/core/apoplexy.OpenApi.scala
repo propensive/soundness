@@ -256,9 +256,9 @@ object OpenApi:
     summon[Text is Aggregable by Text].map: text =>
       val document =
         whereas:
-          case ParseError(_, _, _)  => OpenApiError(OpenApiError.Reason.Malformed)
-          case JsonError(_)         => OpenApiError(OpenApiError.Reason.Malformed)
-          case YamlError(_)         => OpenApiError(OpenApiError.Reason.Malformed)
+          case ParseError(_, _, _)    => OpenApiError(OpenApiError.Reason.Malformed)
+          case JsonError(_)           => OpenApiError(OpenApiError.Reason.Malformed)
+          case YamlError(_)           => OpenApiError(OpenApiError.Reason.Malformed)
           case JsonPointerError(_, _) => OpenApiError(OpenApiError.Reason.Malformed)
 
         . mitigate:
