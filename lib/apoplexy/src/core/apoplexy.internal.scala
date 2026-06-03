@@ -533,13 +533,13 @@ object Apoplexy:
     if !ok(value, schema)
     then halt(m"apoplexy: ${value.show} does not conform to the response schema")
 
-  // The inline entry point called from `Api.Response.as`: a splice cannot appear
+  // The inline entry point called from `Api.Response.call`: a splice cannot appear
   // as a mid-body statement in an inline method, so the macro is wrapped here.
   transparent inline def check[value](inline self: Api.Response): Unit =
     ${conform[value]('self)}
 
   // Compile-time only: verify `value` conforms to the endpoint's response
-  // schema. The actual send and decode happen in inline code in `Api.Response.as`
+  // schema. The actual send and decode happen in inline code in `Api.Response.call`
   // (where `value` is concrete), so this returns `Unit`. The raw `Http.Response`
   // and `Json` targets bypass the schema check.
   def conform[value: Type](self: Expr[Api.Response]): Macro[Unit] =

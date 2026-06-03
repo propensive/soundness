@@ -44,8 +44,8 @@ import errorDiagnostics.empty
 import zephyrine.ParseError
 
 // Interprets an `Http.Response` as a value of `Self`. The instances decide how a
-// response body is read; the `.as[T]` macro performs the compile-time check that
-// `T` conforms to the endpoint's response schema before summoning one.
+// response body is read; `Api.Response.call[T]` performs the compile-time check
+// that `T` conforms to the endpoint's response schema before summoning one.
 object Conformant:
   // Raise `ApiError` unless the response status is in the 2xx range.
   def successful(response: Http.Response)(using Tactic[ApiError]): Unit =
@@ -64,7 +64,7 @@ object Conformant:
 
     . mitigate(response.body.stream.read[Json])
 
-  // A 2xx body decoded to any JSON-decodable type. The `.as[T]` inline method
+  // A 2xx body decoded to any JSON-decodable type. The `.call[T]` inline method
   // only summons this after the conformance macro has verified `T` matches the
   // endpoint's response schema. Resolving `value is Decodable in Json` here, at
   // the concrete call site, lets jacinta pick the collection decoder for

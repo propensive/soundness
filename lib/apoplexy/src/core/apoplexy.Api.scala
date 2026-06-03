@@ -58,7 +58,7 @@ object Api:
   def make(apiRequest: Api.Request): Api = new Api:
     def request: Api.Request = apiRequest
 
-  // The runtime send (invoked by the code `.as` emits): assemble the URL (base +
+  // The runtime send (invoked by the code `.call` emits): assemble the URL (base +
   // substituted path + query), build the `Http.Request`, and dispatch through the
   // telekinesis `HttpClient` — which uses whichever `Http.Backend` is in scope.
   def send(request: Api.Request)
@@ -113,7 +113,7 @@ object Api:
 
   // The result of invoking an endpoint. Its refined type records `Result` (a
   // JSON-pointer to the 2xx response schema) and `Form` (the spec source),
-  // which `as` reads to check a target type for conformance against the schema.
+  // which `call` reads to check a target type for conformance against the schema.
   object Response:
     def make(apiRequest: Api.Request): Api.Response = new Api.Response:
       def request: Api.Request = apiRequest
@@ -123,12 +123,13 @@ object Api:
     type Form
     def request: Api.Request
 
-    // First, the macro checks (at compile time) that `value` conforms to the
-    // endpoint's response schema. Then we send and interpret the response in
-    // *inline* code, so `value` is concrete when the `Conformant` (and hence the
-    // jacinta `Decodable`) instance is summoned — which is what lets `List[T]`
-    // and other collections resolve their decoders.
-    transparent inline def as[value]
+    // Performs the request and decodes the response as `value`. First, the macro
+    // checks (at compile time) that `value` conforms to the endpoint's response
+    // schema. Then we send and interpret the response in *inline* code, so `value`
+    // is concrete when the `Conformant` (and hence the jacinta `Decodable`)
+    // instance is summoned — which is what lets `List[T]` and other collections
+    // resolve their decoders.
+    transparent inline def call[value]
       ( using online:     Online,
               loggable:   HttpEvent is Loggable,
               connect:    Tactic[ConnectError],

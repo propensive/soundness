@@ -165,48 +165,48 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert(_ > 0)
 
     suite(m"sending and decoding responses"):
-      test(m".as[Pet] decodes a single pet"):
+      test(m".call[Pet] decodes a single pet"):
         given Http.Backend = Recorder(() => ok(petJson))
-        api.pets(42).get.as[Pet]
+        api.pets(42).get.call[Pet]
       . assert(_ == Pet(42, t"Milo", t"cat"))
 
-      test(m".as[List[Pet]] decodes a list of pets"):
+      test(m".call[List[Pet]] decodes a list of pets"):
         given Http.Backend = Recorder(() => ok(petsJson))
-        api.pets.get(limit = 10).as[List[Pet]]
+        api.pets.get(limit = 10).call[List[Pet]]
       . assert(_ == List(Pet(1, t"Ada"), Pet(2, t"Bea")))
 
-      test(m".as[Json] returns the raw body"):
+      test(m".call[Json] returns the raw body"):
         given Http.Backend = Recorder(() => ok(petJson))
-        api.pets(42).get.as[Json]
+        api.pets(42).get.call[Json]
       . assert(_.as[Pet] == Pet(42, t"Milo", t"cat"))
 
-      test(m".as[Http.Response] returns the raw response"):
+      test(m".call[Http.Response] returns the raw response"):
         given Http.Backend = Recorder(() => ok(petJson))
-        api.pets(42).get.as[Http.Response].status
+        api.pets(42).get.call[Http.Response].status
       . assert(_ == Http.Ok)
 
       test(m"the request URL and method are sent as navigated"):
         val recorder = Recorder(() => ok(petJson))
         given Http.Backend = recorder
-        api.pets(42).get.as[Pet]
+        api.pets(42).get.call[Pet]
         (recorder.lastUrl, recorder.lastMethod)
       . assert(_ == (t"https://api.example.com/v1/pets/42", Http.Get))
 
       test(m"a POST sends its body"):
         val recorder = Recorder(() => ok(petJson))
         given Http.Backend = recorder
-        api.pets.post(NewPet(t"Milo", tag = t"cat")).as[Pet]
+        api.pets.post(NewPet(t"Milo", tag = t"cat")).call[Pet]
         (recorder.lastMethod, recorder.lastBody.present)
       . assert(_ == (Http.Post, true))
 
       test(m"a non-2xx response raises ApiError"):
         given Http.Backend = Recorder(() => Http.Response(Http.NotFound)(t"{}"))
-        capture[ApiError](api.pets(42).get.as[Pet]).reason
+        capture[ApiError](api.pets(42).get.call[Pet]).reason
       . assert(_ == ApiError.Reason.Status(404))
 
       test(m"a type that does not conform to the schema is rejected"):
         demilitarize:
           given Http.Backend = Recorder(() => ok(petJson))
-          api.pets(42).get.as[Photo]
+          api.pets(42).get.call[Photo]
         . length
       . assert(_ > 0)
