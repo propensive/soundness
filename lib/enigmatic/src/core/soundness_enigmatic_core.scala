@@ -45,7 +45,7 @@ package blockCipherMode:
   export enigmatic.blockCipherMode.{cbc, cfb, ctr, ecb, ofb}
 
 package blockCipherPadding:
-  export enigmatic.blockCipherPadding.{iso10126, noPadding, pkcs7}
+  export enigmatic.blockCipherPadding.{iso10126, pkcs7}
 
 package initializationVector:
   export enigmatic.initializationVector.{random, zero}
