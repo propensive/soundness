@@ -103,3 +103,365 @@ object Tests extends Suite(m"Denominative Tests"):
       test(m"the canonical empty interval equals a degenerate range"):
         Interval() == (Quat till Quat)
       . assert(identity(_))
+
+    suite(m"Ordinal-conversion tests"):
+      test(m"Prim is the zeroth zerary ordinal"):
+        Prim.n0
+      . assert(_ == 0)
+
+      test(m"Prim is the first uniary ordinal"):
+        Prim.n1
+      . assert(_ == 1)
+
+      test(m"Sept has zerary index six"):
+        Sept.n0
+      . assert(_ == 6)
+
+      test(m"Sept has uniary index seven"):
+        Sept.n1
+      . assert(_ == 7)
+
+      test(m"the zerary constructor agrees with the constant"):
+        5.z
+      . assert(_ == Sen)
+
+      test(m"the zerary constructor round-trips through n0"):
+        5.z.n0
+      . assert(_ == 5)
+
+      test(m"the uniary constructor counts from one"):
+        5.u
+      . assert(_ == Quin)
+
+      test(m"the uniary constructor maps one to Prim"):
+        1.u
+      . assert(_ == Prim)
+
+      test(m"the uniary constructor round-trips through n1"):
+        7.u.n1
+      . assert(_ == 7)
+
+      test(m"Ordinal.zerary matches the named constant"):
+        Ordinal.zerary(3)
+      . assert(_ == Quat)
+
+      test(m"Ordinal.uniary maps one to Prim"):
+        Ordinal.uniary(1)
+      . assert(_ == Prim)
+
+    suite(m"Ordinal-arithmetic tests"):
+      test(m"a cardinal can be added to an ordinal"):
+        Prim + 3
+      . assert(_ == Quat)
+
+      test(m"adding a cardinal advances the ordinal"):
+        Sec + 4
+      . assert(_ == Sen)
+
+      test(m"subtracting two ordinals yields a cardinal"):
+        Sept - Quat
+      . assert(_ == 3)
+
+      test(m"subtracting a cardinal from an ordinal yields an ordinal"):
+        Sept - 2
+      . assert(_ == Quin)
+
+    suite(m"Ordinal-comparison tests"):
+      test(m"an earlier ordinal is less than a later one"):
+        Sec.lt(Ter)
+      . assert(identity(_))
+
+      test(m"a later ordinal is not less than an earlier one"):
+        Ter.lt(Sec)
+      . assert(_ == false)
+
+      test(m"an ordinal is less-than-or-equal to itself"):
+        Sec.le(Sec)
+      . assert(identity(_))
+
+      test(m"a later ordinal is greater than an earlier one"):
+        Ter.gt(Sec)
+      . assert(identity(_))
+
+      test(m"an earlier ordinal is not greater-or-equal to a later one"):
+        Sec.ge(Ter)
+      . assert(_ == false)
+
+    suite(m"Ordinal-navigation tests"):
+      test(m"the ordinal after Prim is Sec"):
+        Prim.next
+      . assert(_ == Sec)
+
+      test(m"the ordinal before Sec is Prim"):
+        Sec.previous
+      . assert(_ == Prim)
+
+      test(m"the ordinal before Prim is clamped to Prim"):
+        Prim.previous
+      . assert(_ == Prim)
+
+    suite(m"Interval-factory tests"):
+      test(m"thru includes its final ordinal"):
+        (Sec thru Quat).size
+      . assert(_ == 3)
+
+      test(m"thru sets the inclusive end ordinal"):
+        (Sec thru Quat).end
+      . assert(_ == Quat)
+
+      test(m"till excludes its final ordinal"):
+        (Sec till Quat).size
+      . assert(_ == 2)
+
+      test(m"till sets the inclusive end below its argument"):
+        (Sec till Quat).end
+      . assert(_ == Ter)
+
+      test(m"initial starts at Prim"):
+        Interval.initial(4).start
+      . assert(_ == Prim)
+
+      test(m"initial has the requested size"):
+        Interval.initial(4).size
+      . assert(_ == 4)
+
+      test(m"a zero-sized initial interval is empty"):
+        Interval.initial(0).nil
+      . assert(identity(_))
+
+      test(m"zerary starts at its first argument"):
+        Interval.zerary(2, 5).start
+      . assert(_ == Ter)
+
+      test(m"zerary's size is the difference of its arguments"):
+        Interval.zerary(2, 5).size
+      . assert(_ == 3)
+
+      test(m"zerary's exclusive limit is its second argument"):
+        Interval.zerary(2, 5).limit
+      . assert(_ == 5.z)
+
+      test(m"subsequent starts after the ordinal"):
+        Prim.subsequent(3).start
+      . assert(_ == Sec)
+
+      test(m"preceding starts a cardinal before the ordinal"):
+        Sept.preceding(3).start
+      . assert(_ == Quat)
+
+      test(m"preceding ends just before the ordinal"):
+        Sept.preceding(3).end
+      . assert(_ == Sen)
+
+    suite(m"Interval-navigation tests"):
+      test(m"the ordinal after an interval is its limit"):
+        (Sec span 3).next
+      . assert(_ == Quin)
+
+      test(m"the ordinal before an interval is just before its start"):
+        (Sec span 3).previous
+      . assert(_ == Prim)
+
+      test(m"subsequent yields the following interval"):
+        (Quin span 2).subsequent(2).start
+      . assert(_ == Sept)
+
+      test(m"the preceding interval ends just before the start"):
+        (Quin span 2).preceding(2).start
+      . assert(_ == Ter)
+
+      test(m"the interval contains its starting ordinal"):
+        (Sec span 3).contains(Sec)
+      . assert(identity(_))
+
+      test(m"the interval does not contain an ordinal before its start"):
+        (Sec span 3).contains(Prim)
+      . assert(_ == false)
+
+    suite(m"Interval-fold tests"):
+      test(m"each visits every ordinal in order"):
+        var total = 0
+        (Sec span 3).each: ordinal =>
+          total += ordinal.n0
+        total
+      . assert(_ == 6)
+
+      test(m"each over an empty interval does nothing"):
+        var count = 0
+        (Sec till Sec).each: _ =>
+          count += 1
+        count
+      . assert(_ == 0)
+
+      test(m"fuse counts the ordinals in an interval"):
+        (Sec span 3).fuse(0)(state + 1)
+      . assert(_ == 3)
+
+      test(m"fuse accumulates over every ordinal"):
+        (Sec span 3).fuse(0)(state + next.n0)
+      . assert(_ == 6)
+
+    suite(m"Countable tests"):
+      test(m"a list's gamut spans all its elements"):
+        List(1, 2, 3).gamut.size
+      . assert(_ == 3)
+
+      test(m"a list's gamut starts at Prim"):
+        List(1, 2, 3).gamut.start
+      . assert(_ == Prim)
+
+      test(m"a list's gamut ends at its last ordinal"):
+        List(1, 2, 3).gamut.end
+      . assert(_ == Ter)
+
+      test(m"an empty list is nil"):
+        List[Int]().nil
+      . assert(identity(_))
+
+      test(m"a non-empty list is not nil"):
+        List(1).nil
+      . assert(_ == false)
+
+      test(m"a set's gamut spans all its elements"):
+        Set(1, 2, 3, 4).gamut.size
+      . assert(_ == 4)
+
+      test(m"an indexed sequence's gamut spans all its elements"):
+        val sequence: IndexedSeq[Int] = Vector(1, 2)
+        sequence.gamut.size
+      . assert(_ == 2)
+
+      test(m"a general sequence's gamut spans all its elements"):
+        val sequence: Seq[Int] = Seq(1, 2, 3)
+        sequence.gamut.size
+      . assert(_ == 3)
+
+      test(m"an immutable array's gamut spans all its elements"):
+        IArray(1, 2, 3).gamut.size
+      . assert(_ == 3)
+
+      test(m"a present option has a gamut of size one"):
+        Option(1).gamut.size
+      . assert(_ == 1)
+
+      test(m"an absent option is nil"):
+        Option.empty[Int].nil
+      . assert(identity(_))
+
+      test(m"text's gamut spans its characters"):
+        t"hello".gamut.size
+      . assert(_ == 5)
+
+      test(m"empty text is nil"):
+        t"".nil
+      . assert(identity(_))
+
+      test(m"an integer counts itself"):
+        5.gamut.size
+      . assert(_ == 5)
+
+    suite(m"Ordinal-showable tests"):
+      test(m"nominal names a known ordinal"):
+        import ordinalShowables.nominal
+        Quat.textual
+      . assert(_ == t"quat")
+
+      test(m"nominal falls back for an unnamed ordinal"):
+        import ordinalShowables.nominal
+        7.z.textual
+      . assert(_ == t"7.z")
+
+      test(m"the uniary showable counts from one"):
+        import ordinalShowables.uniary
+        Prim.textual
+      . assert(_ == t"1♭")
+
+      test(m"the zerary showable counts from zero"):
+        import ordinalShowables.zerary
+        Prim.textual
+      . assert(_ == t"0♯")
+
+      test(m"the unmarked uniary showable counts from one"):
+        import ordinalShowables.unmarkedUniary
+        Sec.textual
+      . assert(_ == t"2")
+
+      test(m"the unmarked zerary showable counts from zero"):
+        import ordinalShowables.unmarkedZerary
+        Sec.textual
+      . assert(_ == t"1")
+
+      test(m"the intermediate showable shows both indices"):
+        import ordinalShowables.intermediate
+        Prim.textual
+      . assert(_ == t"⌞0⌟|⌞1⌟")
+
+      test(m"english renders the first ordinal"):
+        import ordinalShowables.english
+        Prim.textual
+      . assert(_ == t"1st")
+
+      test(m"english renders the second ordinal"):
+        import ordinalShowables.english
+        Sec.textual
+      . assert(_ == t"2nd")
+
+      test(m"english renders the third ordinal"):
+        import ordinalShowables.english
+        Ter.textual
+      . assert(_ == t"3rd")
+
+      test(m"english renders a regular ordinal"):
+        import ordinalShowables.english
+        Quat.textual
+      . assert(_ == t"4th")
+
+      test(m"english renders the eleventh ordinal"):
+        import ordinalShowables.english
+        10.z.textual
+      . assert(_ == t"11th")
+
+      test(m"english renders the twenty-first ordinal"):
+        import ordinalShowables.english
+        20.z.textual
+      . assert(_ == t"21st")
+
+      test(m"english renders the thirteenth ordinal"):
+        import ordinalShowables.english
+        12.z.textual
+      . assert(_ == t"13th")
+
+      test(m"english superscript renders the first ordinal"):
+        import ordinalShowables.englishSuperscript
+        Prim.textual
+      . assert(_ == t"1ˢᵗ")
+
+      test(m"english superscript renders the second ordinal"):
+        import ordinalShowables.englishSuperscript
+        Sec.textual
+      . assert(_ == t"2ⁿᵈ")
+
+      test(m"french renders the first ordinal"):
+        import ordinalShowables.french
+        Prim.textual
+      . assert(_ == t"1ᵉʳ")
+
+      test(m"french renders the second ordinal"):
+        import ordinalShowables.french
+        Sec.textual
+      . assert(_ == t"2ᵉ")
+
+      test(m"italian renders the first ordinal"):
+        import ordinalShowables.italian
+        Prim.textual
+      . assert(_ == t"1ᵒ")
+
+      test(m"spanish renders the second ordinal"):
+        import ordinalShowables.spanish
+        Sec.textual
+      . assert(_ == t"2.ᵒ")
+
+      test(m"russian renders the second ordinal"):
+        import ordinalShowables.russian
+        Sec.textual
+      . assert(_ == t"2-й")
