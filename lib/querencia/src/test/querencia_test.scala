@@ -30,69 +30,62 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package xenophile
+package querencia
 
-import scala.language.dynamics
+import soundness.*
 
-import anticipation.*
-import gossamer.*
-import prepositional.*
+import doms.html.html4Transitional
+import html4Transitional.*
 
-object Foreign:
-  // A foreign expression: a reference to a named foreign value, a member selection (recording the
-  // `owner` foreign type it is selected from, which backends needing that type's layout — e.g. the
-  // native evaluator — use, while self-describing backends like JSON ignore it), a function
-  // application, an indexed access into an array-typed value, or a literal operand.
-  enum Expression:
-    case Reference(name: Text)
-    case Select(target: Expression, member: Text, owner: Text)
-    case Apply(target: Expression, arguments: List[Expression])
-    case Index(target: Expression, index: Expression)
-    case Literal(value: Any)
+// Querencia navigates the DOM (described by WebIDL) at compile time, builds a `Foreign.Expression`,
+// renders it to JavaScript, and lets such a value be used as a Honeycomb event handler. These tests
+// assert the rendered JavaScript and the expression AST, and that a foreign DOM value is accepted
+// as an `onclick` attribute (where plain text now is not).
+object Tests extends Suite(m"Querencia tests"):
+  def run(): Unit =
+    suite(m"DOM navigation and JavaScript rendering"):
+      test(m"a navigated DOM call renders to JavaScript"):
+        Javascript.serialize(document.getElementById(t"foo").focus().expr)
+      . assert(_ == t"document.getElementById('foo').focus()")
 
-  // A foreign type: a named type, a union of alternatives, or a generic application such as a
-  // TypeScript `Map<number, string>` or a C pointer `T*`.
-  enum Type:
-    case Named(name: Text)
-    case Union(members: List[Type])
-    case Applied(constructor: Text, arguments: List[Type])
+      test(m"array indexing renders to a bracket access"):
+        Javascript.serialize(document.querySelectorAll(t".btn")(0).click().expr)
+      . assert(_ == t"document.querySelectorAll('.btn')[0].click()")
 
-    def text: Text = this match
-      case Named(name)         => name
-      case Union(members)      => members.map(_.text).join(t"|")
-      case Applied(name, args) => t"$name<${args.map(_.text).join(t", ")}>"
+      test(m"the `window` global renders a method call"):
+        Javascript.serialize(window.alert(t"hi").expr)
+      . assert(_ == t"window.alert('hi')")
 
-  def make(tree: Expression): Foreign = new Foreign:
-    def expr: Expression = tree
+      test(m"navigating through `window.document` chains"):
+        Javascript.serialize(window.document.getElementById(t"x").focus().expr)
+      . assert(_ == t"window.document.getElementById('x').focus()")
 
-  transparent inline def apply[name <: Label, origin]: Foreign = ${Xenophile.root[name, origin]}
+      test(m"a string argument is escaped for the JavaScript string literal"):
+        Javascript.serialize(document.getElementById(t"it's a \\ backslash").expr)
+      . assert(_ == t"document.getElementById('it\\'s a \\\\ backslash')")
 
-  // A Scala value with an `Interoperable` instance converts into a `Foreign` literal carrying the
-  // value verbatim; the foreign type is the instance's `Topic`.
-  given converter: [value, ecosystem <: Ecosystem]
-  =>  ( interoperable: value is Interoperable in ecosystem )
-  =>  Conversion[value, Foreign of interoperable.Topic from ecosystem] =
-    instance =>
-      val literal = Expression.Literal(instance)
-      Foreign.make(literal).asInstanceOf[Foreign of interoperable.Topic from ecosystem]
+      test(m"a member access has the precise refined foreign type"):
+        val element: Foreign of "HTMLElement" from Browser = document.getElementById(t"foo")
 
-trait Foreign extends Dynamic, Topical, Original:
-  def expr: Foreign.Expression
+        element.expr
+      . assert: expr =>
+          val root = Foreign.Expression.Reference(t"document")
+          val select = Foreign.Expression.Select(root, t"getElementById", t"Document")
+          expr == Foreign.Expression.Apply(select, List(Foreign.Expression.Literal(t"foo")))
 
-  transparent inline def selectDynamic(field: String): Foreign =
-    ${Xenophile.select('this, 'field)}
+      test(m"indexing yields the element's foreign type"):
+        val element: Foreign of "HTMLElement" from Browser = document.querySelectorAll(t".x")(0)
 
-  // Indexes into an array-typed foreign value (a `sequence`/`FrozenArray`/`Array`/`list`),
-  // returning a `Foreign` of the element type. This is a real `apply` (taking precedence over
-  // `Dynamic`), so `array(0)` resolves here; the macro rejects indexing a non-array foreign type.
-  transparent inline def apply(index: Int): Foreign = ${Xenophile.index('this, 'index)}
+        element.expr
+      . assert:
+          case Foreign.Expression.Index(_, Foreign.Expression.Literal(index)) => index == 0
+          case _                                                               => false
 
-  // Arguments are typed `Foreign from Origin` — i.e. a foreign value from this receiver's own
-  // source language. A Scala value with an `Interoperable` instance for that language is converted
-  // to a `Foreign` literal at the call site by the `converter` `Conversion` above (pinning the
-  // ecosystem to `Origin` is what lets the conversion infer its type parameters); the macro then
-  // checks each argument's foreign type against the declared parameter type.
-  transparent inline def applyDynamic(field: String)(inline arguments: (Foreign from Origin)*)
-  :   Foreign =
+    suite(m"Honeycomb integration"):
+      test(m"a foreign DOM expression is accepted as an `onclick` handler"):
+        Button(onclick = document.getElementById(t"foo").focus()).show
+      . assert(_.contains(t"onclick=\"document.getElementById('foo').focus()\""))
 
-    ${Xenophile.applied('this, 'field, 'arguments)}
+      test(m"a chained handler renders inside the rendered HTML"):
+        Button(onclick = document.querySelector(t".x").click()).show
+      . assert(_.contains(t"document.querySelector('.x').click()"))

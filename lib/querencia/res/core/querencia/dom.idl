@@ -1,0 +1,66 @@
+// A curated subset of the WHATWG DOM (https://dom.spec.whatwg.org/) and HTML
+// (https://html.spec.whatwg.org/) WebIDL, sufficient to navigate and script common DOM operations
+// from Scala via `querencia`. Inheritance (`Node : EventTarget`, etc.) is flattened by
+// `WebIdlDialect`, so inherited members resolve on subtypes.
+//
+// Pragmatic deviation from the specifications: lookups that the specs declare nullable (e.g.
+// `getElementById`, `querySelector` → `Element?`) are given non-null `HTMLElement` results here,
+// and `querySelectorAll` returns `sequence<HTMLElement>` rather than a `NodeList`. The navigator
+// rejects member access on a nullable union, so non-null results keep DOM expressions chainable,
+// and `sequence<…>` supports integer indexing (`querySelectorAll(…)[0]`) — rendering to valid
+// JavaScript in both cases.
+
+interface EventTarget {
+  undefined addEventListener(DOMString type, EventListener callback);
+  undefined removeEventListener(DOMString type, EventListener callback);
+  boolean dispatchEvent(Event event);
+};
+
+interface Event {
+  readonly attribute DOMString type;
+  undefined preventDefault();
+  undefined stopPropagation();
+};
+
+interface Node : EventTarget {
+  readonly attribute DOMString nodeName;
+  attribute DOMString textContent;
+  Node appendChild(Node node);
+  Node removeChild(Node child);
+  boolean contains(Node other);
+};
+
+interface Element : Node {
+  readonly attribute DOMString tagName;
+  attribute DOMString id;
+  attribute DOMString className;
+  DOMString getAttribute(DOMString name);
+  undefined setAttribute(DOMString name, DOMString value);
+  undefined removeAttribute(DOMString name);
+  boolean hasAttribute(DOMString name);
+  boolean matches(DOMString selectors);
+  HTMLElement closest(DOMString selectors);
+};
+
+interface HTMLElement : Element {
+  attribute DOMString title;
+  attribute DOMString innerText;
+  attribute boolean hidden;
+  undefined click();
+  undefined focus();
+  undefined blur();
+};
+
+interface Document : Node {
+  readonly attribute DOMString title;
+  HTMLElement getElementById(DOMString elementId);
+  HTMLElement querySelector(DOMString selectors);
+  sequence<HTMLElement> querySelectorAll(DOMString selectors);
+  HTMLElement createElement(DOMString localName);
+};
+
+interface Window : EventTarget {
+  readonly attribute Document document;
+  undefined alert(DOMString message);
+  undefined scrollTo(long x, long y);
+};

@@ -32,67 +32,64 @@
                                                                                                   */
 package xenophile
 
-import scala.language.dynamics
-
 import anticipation.*
-import gossamer.*
+import hypotenuse.*
 import prepositional.*
+import vacuous.*
 
-object Foreign:
-  // A foreign expression: a reference to a named foreign value, a member selection (recording the
-  // `owner` foreign type it is selected from, which backends needing that type's layout — e.g. the
-  // native evaluator — use, while self-describing backends like JSON ignore it), a function
-  // application, an indexed access into an array-typed value, or a literal operand.
-  enum Expression:
-    case Reference(name: Text)
-    case Select(target: Expression, member: Text, owner: Text)
-    case Apply(target: Expression, arguments: List[Expression])
-    case Index(target: Expression, index: Expression)
-    case Literal(value: Any)
+// The WebIDL ecosystem: `Interoperable` markers associating Scala types with the WebIDL types
+// `WebIdlDialect` reads from `.idl` files. WebIDL's integer types map to Hypotenuse's fixed-width
+// numeric types (preserving signedness and width, as canonicalised by the dialect), and its three
+// string types all map to `Text`; no runtime representation is used.
+object WebIdl:
+  given s8: (S8 is Interoperable in WebIdl of "s8") = Interoperable[S8, WebIdl, "s8"]()
+  given s16: (S16 is Interoperable in WebIdl of "s16") = Interoperable[S16, WebIdl, "s16"]()
+  given s32: (S32 is Interoperable in WebIdl of "s32") = Interoperable[S32, WebIdl, "s32"]()
+  given s64: (S64 is Interoperable in WebIdl of "s64") = Interoperable[S64, WebIdl, "s64"]()
+  given u8: (U8 is Interoperable in WebIdl of "u8") = Interoperable[U8, WebIdl, "u8"]()
+  given u16: (U16 is Interoperable in WebIdl of "u16") = Interoperable[U16, WebIdl, "u16"]()
+  given u32: (U32 is Interoperable in WebIdl of "u32") = Interoperable[U32, WebIdl, "u32"]()
+  given u64: (U64 is Interoperable in WebIdl of "u64") = Interoperable[U64, WebIdl, "u64"]()
+  given f32: (F32 is Interoperable in WebIdl of "f32") = Interoperable[F32, WebIdl, "f32"]()
+  given f64: (F64 is Interoperable in WebIdl of "f64") = Interoperable[F64, WebIdl, "f64"]()
 
-  // A foreign type: a named type, a union of alternatives, or a generic application such as a
-  // TypeScript `Map<number, string>` or a C pointer `T*`.
-  enum Type:
-    case Named(name: Text)
-    case Union(members: List[Type])
-    case Applied(constructor: Text, arguments: List[Type])
+  given boolean: (Boolean is Interoperable in WebIdl of "boolean") =
+    Interoperable[Boolean, WebIdl, "boolean"]()
 
-    def text: Text = this match
-      case Named(name)         => name
-      case Union(members)      => members.map(_.text).join(t"|")
-      case Applied(name, args) => t"$name<${args.map(_.text).join(t", ")}>"
+  // WebIDL's `DOMString`, `USVString` and `ByteString` all canonicalise to `string` in the dialect.
+  given string: (Text is Interoperable in WebIdl of "string") =
+    Interoperable[Text, WebIdl, "string"]()
 
-  def make(tree: Expression): Foreign = new Foreign:
-    def expr: Expression = tree
+  // A WebIDL `sequence<T>` corresponds to a Scala `List` of the element type.
+  given sequence: [element, topic]
+  =>  ( element is Interoperable in WebIdl of topic )
+  =>  ( List[element] is Interoperable in WebIdl of ("sequence" over topic) ) =
+    Interoperable[List[element], WebIdl, ("sequence" over topic)]()
 
-  transparent inline def apply[name <: Label, origin]: Foreign = ${Xenophile.root[name, origin]}
+  // A WebIDL `FrozenArray<T>` likewise corresponds to a Scala `List`.
+  given frozenArray: [element, topic]
+  =>  ( element is Interoperable in WebIdl of topic )
+  =>  ( List[element] is Interoperable in WebIdl of ("FrozenArray" over topic) ) =
+    Interoperable[List[element], WebIdl, ("FrozenArray" over topic)]()
 
-  // A Scala value with an `Interoperable` instance converts into a `Foreign` literal carrying the
-  // value verbatim; the foreign type is the instance's `Topic`.
-  given converter: [value, ecosystem <: Ecosystem]
-  =>  ( interoperable: value is Interoperable in ecosystem )
-  =>  Conversion[value, Foreign of interoperable.Topic from ecosystem] =
-    instance =>
-      val literal = Expression.Literal(instance)
-      Foreign.make(literal).asInstanceOf[Foreign of interoperable.Topic from ecosystem]
+  // A WebIDL `record<K, V>` corresponds to a Scala `Map`.
+  given record: [key, value, keyTopic, valueTopic]
+  =>  ( key is Interoperable in WebIdl of keyTopic,
+        value is Interoperable in WebIdl of valueTopic )
+  =>  ( Map[key, value] is Interoperable in WebIdl of ("record" over (keyTopic, valueTopic)) ) =
+    Interoperable[Map[key, value], WebIdl, ("record" over (keyTopic, valueTopic))]()
 
-trait Foreign extends Dynamic, Topical, Original:
-  def expr: Foreign.Expression
+  // WebIDL `null` (produced by reading a nullable `T?` as `T | null`) is the absent `Optional`.
+  given nullable: (Unset.type is Interoperable in WebIdl of "null") =
+    Interoperable[Unset.type, WebIdl, "null"]()
 
-  transparent inline def selectDynamic(field: String): Foreign =
-    ${Xenophile.select('this, 'field)}
+  // A WebIDL nullable `T?` (read as `T | null`) corresponds to a Scala `Optional`. The `Mandatable`
+  // constraint identifies the mandatory type `inner`, so the instance applies only to genuine
+  // optionals and never competes with `inner`'s instance.
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner, topic]
+  =>  ( inner is Interoperable in WebIdl of topic )
+  =>  ( value is Interoperable in WebIdl of (topic | "null") ) =
+    Interoperable[value, WebIdl, (topic | "null")]()
 
-  // Indexes into an array-typed foreign value (a `sequence`/`FrozenArray`/`Array`/`list`),
-  // returning a `Foreign` of the element type. This is a real `apply` (taking precedence over
-  // `Dynamic`), so `array(0)` resolves here; the macro rejects indexing a non-array foreign type.
-  transparent inline def apply(index: Int): Foreign = ${Xenophile.index('this, 'index)}
-
-  // Arguments are typed `Foreign from Origin` — i.e. a foreign value from this receiver's own
-  // source language. A Scala value with an `Interoperable` instance for that language is converted
-  // to a `Foreign` literal at the call site by the `converter` `Conversion` above (pinning the
-  // ecosystem to `Origin` is what lets the conversion infer its type parameters); the macro then
-  // checks each argument's foreign type against the declared parameter type.
-  transparent inline def applyDynamic(field: String)(inline arguments: (Foreign from Origin)*)
-  :   Foreign =
-
-    ${Xenophile.applied('this, 'field, 'arguments)}
+trait WebIdl extends Ecosystem:
+  type Grammar = WebIdlDialect.type

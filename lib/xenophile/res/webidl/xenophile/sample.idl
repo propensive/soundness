@@ -1,0 +1,41 @@
+// Sample WebIDL exercising the subset `WebIdlDialect` reads: interfaces with attributes and
+// operations, single inheritance (`Circle : Shape`), a mixin applied with `includes`, a
+// `partial interface`, a `dictionary`, an `enum`, a `typedef`, and the numeric/string/sequence/
+// nullable/union types. The `[Exposed=Window]` extended attribute must be skipped.
+
+[Exposed=Window]
+interface Shape {
+  readonly attribute DOMString name;
+  readonly attribute octet sides;
+  readonly attribute unsigned long area;
+  readonly attribute Style style;
+  readonly attribute Identifier id;
+
+  sequence<DOMString> labels();
+  DOMString? describe(DOMString prefix);
+  double scale(double factor);
+};
+
+interface Circle : Shape {
+  readonly attribute double radius;
+};
+
+interface mixin Drawable {
+  readonly attribute boolean visible;
+  undefined draw(DOMString surface);
+};
+
+Circle includes Drawable;
+
+partial interface Shape {
+  readonly attribute long order;
+};
+
+dictionary ShapeOptions {
+  boolean filled = false;
+  DOMString color;
+};
+
+enum Style { "solid", "dashed", "dotted" };
+
+typedef (DOMString or long) Identifier;

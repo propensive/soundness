@@ -43,6 +43,17 @@ given nativeLibrary: NativeLibrary = Interface[Native](cp"/xenophile/library.h")
 type WitApi = Interface in Wit at "/xenophile/api.wit"
 given witApi: WitApi = Interface[Wit](cp"/xenophile/api.wit")
 
+type WebIdlSample = Interface in WebIdl at "/xenophile/sample.idl"
+given webIdlSample: WebIdlSample = Interface[WebIdl](cp"/xenophile/sample.idl")
+
+// The real DOM source uses a second ecosystem so its `Interface` is summoned unambiguously
+// alongside the synthetic `sample.idl`; both share `WebIdlDialect` as their grammar.
+trait WebIdlDom extends Ecosystem:
+  type Grammar = WebIdlDialect.type
+
+type WebIdlDomSource = Interface in WebIdlDom at "/xenophile/dom.idl"
+given webIdlDom: WebIdlDomSource = Interface[WebIdlDom](cp"/xenophile/dom.idl")
+
 // Xenophile navigates and type-checks foreign types and builds a `Foreign.Expression`; it carries
 // no runtime representation and performs no evaluation, so these tests assert static foreign types
 // (by ascription) and the expression AST, plus the compile-time safety diagnostics.
@@ -104,6 +115,14 @@ object Tests extends Suite(m"Xenophile tests"):
         val tags: Foreign of ("Array" over "string") from Typescript = foo.tags
         tags.expr
       . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Foo"), t"tags", t"Foo"))
+
+      test(m"indexing an array value yields the element's foreign type"):
+        val tags: Foreign of ("Array" over "string") from Typescript = foo.tags
+        val tag: Foreign of "string" from Typescript = tags(0)
+        tag.expr
+      . assert:
+          case Foreign.Expression.Index(_, Foreign.Expression.Literal(index)) => index == 0
+          case _                                                               => false
 
       test(m"an optional field is a union with `undefined`"):
         val nickname: Foreign of ("string" | "undefined") from Typescript = foo.nickname
@@ -232,3 +251,143 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"passing a WIT argument of the wrong foreign type is a compile error"):
         demilitarize(api.add(t"two", t"three")).map(_.message)
       . assert(_ == List(t"xenophile: add expects an argument of foreign type s32"))
+
+    suite(m"WebIDL (synthetic sample)"):
+      val shape: Foreign of "Shape" from WebIdl = Foreign["Shape", WebIdl]
+      val circle: Foreign of "Circle" from WebIdl = Foreign["Circle", WebIdl]
+
+      test(m"an attribute is read as a field of its declared foreign type"):
+        val name: Foreign of "string" from WebIdl = shape.name
+        name.expr
+      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Shape"), t"name", t"Shape"))
+
+      test(m"`octet` canonicalises to the Hypotenuse-backed `u8`"):
+        val sides: Foreign of "u8" from WebIdl = shape.sides
+        sides.expr
+      . assert:
+          case Foreign.Expression.Select(_, m, _) => m == t"sides"
+          case _                                   => false
+
+      test(m"`unsigned long` canonicalises to `u32`"):
+        val area: Foreign of "u32" from WebIdl = shape.area
+        area.expr
+      . assert:
+          case Foreign.Expression.Select(_, m, _) => m == t"area"
+          case _                                   => false
+
+      test(m"a `sequence<T>` operation has an `over` foreign type"):
+        val labels: Foreign of ("sequence" over "string") from WebIdl = shape.labels()
+        labels.expr
+      . assert:
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), Nil) => m == t"labels"
+          case _                                                                  => false
+
+      test(m"a nullable `T?` result is a union with `null`"):
+        val described: Foreign of ("string" | "null") from WebIdl = shape.describe(t"the ")
+        described.expr
+      . assert:
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) => m == t"describe"
+          case _                                                                      => false
+
+      test(m"an `enum` reference resolves to `string`"):
+        val style: Foreign of "string" from WebIdl = shape.style
+        style.expr
+      . assert:
+          case Foreign.Expression.Select(_, m, _) => m == t"style"
+          case _                                   => false
+
+      test(m"a `typedef` to a union resolves transitively"):
+        val id: Foreign of ("string" | "s32") from WebIdl = shape.id
+        id.expr
+      . assert:
+          case Foreign.Expression.Select(_, m, _) => m == t"id"
+          case _                                   => false
+
+      test(m"a `partial interface` member is merged into the interface"):
+        val order: Foreign of "s32" from WebIdl = shape.order
+        order.expr
+      . assert:
+          case Foreign.Expression.Select(_, m, _) => m == t"order"
+          case _                                   => false
+
+      test(m"an inherited attribute resolves on the derived interface"):
+        val area: Foreign of "u32" from WebIdl = circle.area
+        area.expr
+      . assert:
+          case Foreign.Expression.Select(_, m, _) => m == t"area"
+          case _                                   => false
+
+      test(m"a mixin member applied with `includes` resolves"):
+        val visible: Foreign of "boolean" from WebIdl = circle.visible
+        visible.expr
+      . assert:
+          case Foreign.Expression.Select(_, m, _) => m == t"visible"
+          case _                                   => false
+
+      test(m"a `dictionary` field is read as a field of its foreign type"):
+        val options: Foreign of "ShapeOptions" from WebIdl = Foreign["ShapeOptions", WebIdl]
+        val color: Foreign of "string" from WebIdl = options.color
+        color.expr
+      . assert:
+          case Foreign.Expression.Select(_, m, _) => m == t"color"
+          case _                                   => false
+
+      test(m"passing a WebIDL argument of the wrong foreign type is a compile error"):
+        demilitarize(shape.scale(t"large")).map(_.message)
+      . assert(_ == List(t"xenophile: scale expects an argument of foreign type f64"))
+
+    suite(m"WebIDL (real DOM from webref)"):
+      val node: Foreign of "Node" from WebIdlDom = Foreign["Node", WebIdlDom]
+      val element: Foreign of "HTMLElement" from WebIdlDom = Foreign["HTMLElement", WebIdlDom]
+
+      test(m"a DOM attribute is read as a field of its foreign type"):
+        val nodeName: Foreign of "string" from WebIdlDom = node.nodeName
+        nodeName.expr
+      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Node"), t"nodeName", t"Node"))
+
+      test(m"`unsigned short` canonicalises to `u16`"):
+        val nodeType: Foreign of "u16" from WebIdlDom = node.nodeType
+        nodeType.expr
+      . assert:
+          case Foreign.Expression.Select(_, m, _) => m == t"nodeType"
+          case _                                   => false
+
+      test(m"an inherited attribute resolves up the chain (HTMLElement → Element)"):
+        val tagName: Foreign of "string" from WebIdlDom = element.tagName
+        tagName.expr
+      . assert:
+          case Foreign.Expression.Select(_, m, _) => m == t"tagName"
+          case _                                   => false
+
+      test(m"a member inherited from the root (HTMLElement → … → Node) resolves"):
+        val nodeName: Foreign of "string" from WebIdlDom = element.nodeName
+        nodeName.expr
+      . assert:
+          case Foreign.Expression.Select(_, m, _) => m == t"nodeName"
+          case _                                   => false
+
+      test(m"an operation inherited from EventTarget resolves on HTMLElement"):
+        val dispatched: Foreign of "boolean" from WebIdlDom =
+          element.dispatchEvent(Foreign["Event", WebIdlDom])
+
+        dispatched.expr
+      . assert:
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) =>
+            m == t"dispatchEvent"
+
+          case _ =>
+            false
+
+      test(m"an inherited operation is typed by its result"):
+        val appended: Foreign of "Node" from WebIdlDom = node.appendChild(Foreign["Node", WebIdlDom])
+        appended.expr
+      . assert:
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) =>
+            m == t"appendChild"
+
+          case _ =>
+            false
+
+      test(m"passing a DOM argument of the wrong foreign type is a compile error"):
+        demilitarize(node.appendChild(Foreign["Event", WebIdlDom])).map(_.message)
+      . assert(_ == List(t"xenophile: appendChild expects an argument of foreign type Node"))
