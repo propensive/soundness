@@ -66,6 +66,35 @@ extends Cipher, Encryption, Symmetric:
       cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key))
       cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
 
+  // Streaming encryption feeds each chunk through `Cipher.update` and flushes with
+  // `doFinal`, mirroring `turbulence.Compression`. The IV (if any) is emitted as
+  // the first chunk; the `NoPadding` alignment check happens at end-of-stream,
+  // where the total length is finally known.
+  def encryptStream(stream: Stream[Data], key: Data): Stream[Data] =
+    val cipher = initialize()
+
+    val prefix: Stream[Data] =
+      if mode.usesIv then
+        val iv = vector(cipher.getBlockSize).mutable(using Unsafe)
+        cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key), IvParameterSpec(iv))
+        Stream(iv.immutable(using Unsafe))
+      else
+        cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key))
+        Stream()
+
+    def recur(stream: Stream[Data], total: Int): Stream[Data] = stream match
+      case head #:: tail =>
+        val updated = cipher.update(head.mutable(using Unsafe)).nn.immutable(using Unsafe)
+        val rest = recur(tail, total + head.length)
+        if updated.length > 0 then updated #:: rest else rest
+
+      case _ =>
+        padding.verify(total, cipher.getBlockSize, mode.blockAligned)
+        val last = cipher.doFinal().nn.immutable(using Unsafe)
+        if last.length > 0 then Stream(last) else Stream()
+
+    prefix #::: recur(stream, 0)
+
   def decrypt(bytes: Data, key: Data): Data =
     val cipher = initialize()
     val input = bytes.mutable(using Unsafe)

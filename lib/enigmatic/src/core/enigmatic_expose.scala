@@ -56,6 +56,21 @@ extension [value: Encodable in Data](value: value)
 
     algorithm.encrypt(value.bytestream, encryptor.bytes)
 
+// Streaming encryption (block ciphers only) lazily transforms a `Stream`. Unlike
+// the `Encryptor` capability itself — which capture checking still confines to the
+// `expose` scope — the resulting `Stream[Data]` is a pure value, so it is not
+// scope-confined. That is harmless here: it is bound to this one input stream and
+// holds only the (unextractable) key bytes needed to finish encrypting it, so no
+// reusable encryption authority and no key material can escape. Drain it within
+// the block all the same; only the fixed ciphertext of `stream` could leak.
+
+extension (stream: Stream[Data])
+  def encrypt[cipher <: BlockCipher]
+    ( using encryptor: Encryptor[cipher]^, algorithm: cipher & Encryption )
+  :   Stream[Data] =
+
+    algorithm.encryptStream(stream, encryptor.bytes)
+
 extension (data: Data)
   def decrypt[decodable: Decodable in Data, cipher <: Cipher]
     ( using decryptor: Decryptor[cipher]^, algorithm: cipher & Encryption )

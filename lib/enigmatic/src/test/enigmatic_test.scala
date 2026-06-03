@@ -237,6 +237,23 @@ object Tests extends Suite(m"Gastronomy tests"):
         t"Hello world".encrypt.decrypt.text
     . assert(_ == t"Hello world")
 
+    test(m"Streaming encryption round-trips via one-shot decryption"):
+      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      key.expose:
+        val chunks = Stream(t"Hello, ".data, t"streaming ".data, t"world!".data)
+        chunks.encrypt.reduce(_ ++ _).decrypt.text
+    . assert(_ == t"Hello, streaming world!")
+
+    test(m"Streaming and one-shot encryption agree for a fixed IV"):
+      given InitializationVector = InitializationVector.fixed(t"0123456789abcdef".data)
+      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      key.expose:
+        val streamed =
+          Stream(t"Hello, ".data, t"streaming ".data, t"world!".data).encrypt.reduce(_ ++ _)
+
+        streamed.serialize[Hex] == t"Hello, streaming world!".data.encrypt.serialize[Hex]
+    . assert(_ == true)
+
     test(m"Sign some data with DSA"):
       val privateKey: PrivateKey[Dsa[1024]] = PrivateKey.generate[Dsa[1024]]()
       val message = t"Hello world"
