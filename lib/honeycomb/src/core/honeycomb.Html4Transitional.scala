@@ -89,7 +89,13 @@ object Html4Transitional:
   type Frame = Whatwg.Textual
   type Rules = Whatwg.Textual
   type Scope = Whatwg.Textual
-  type Script = Whatwg.Textual
+
+  // Event-handler attributes (`onclick`, `onchange`, …) are typed `of Script`. `Script` is a
+  // distinct marker (NOT an alias of `Textual`), so a plain `Text`/`String` does not satisfy a
+  // handler: the value must be a typed scripting value (e.g. a `querencia` foreign DOM expression)
+  // for which an `Attributive to Whatwg.Scripting` instance exists.
+  type Script = Whatwg.Scripting
+
   type Size = Whatwg.Textual
   type Valign = Whatwg.Textual
   type Valuetype = Whatwg.Textual

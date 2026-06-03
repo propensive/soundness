@@ -1334,7 +1334,17 @@ object xenophile extends Library:
   object wit extends Component(core, hypotenuse.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(typescript, native, wit)
+  object webidl extends Component(core, hypotenuse.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(typescript, native, wit, webidl)
+
+object querencia extends Library:
+  object core extends Component(xenophile.webidl, honeycomb.core, hypotenuse.core, gossamer.core,
+    prepositional.core, vacuous.core, hellenism.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core)
 
 object xylophone extends Library:
   object core extends Component(zephyrine.core, adversaria.core, typonym.core, hellenism.core, urticose.core, wisteria.core):
@@ -1419,7 +1429,7 @@ val allLibraries: Seq[Library] = Seq(
   monotonous,
   mosquito, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
   phoenicia, plutocrat, polaris, polysyllabic, polyvinyl, prepositional, probably, profanity,
-  proscenium, punctuation, quantitative, revolution, rudiments, satirical, savagery,
+  proscenium, punctuation, quantitative, querencia, revolution, rudiments, satirical, savagery,
   scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
   surveillance, symbolism, synesthesia, tarantula, telekinesis, turbulence, typonym,
   ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, wisteria, xenophile, xylophone,

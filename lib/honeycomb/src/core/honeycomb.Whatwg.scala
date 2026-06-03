@@ -108,6 +108,7 @@ object Whatwg:
   sealed trait Regex
   sealed trait Sandbox
   sealed trait ScriptType
+  sealed trait Scripting
   sealed trait Shape
   sealed trait Sizes
   sealed trait Softness

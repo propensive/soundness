@@ -1,0 +1,157 @@
+// GENERATED CONTENT - DO NOT EDIT
+// A trimmed excerpt of the DOM and HTML interface definitions, extracted by Reffy into the W3C
+// webref project (https://github.com/w3c/webref) from the DOM Standard
+// (https://dom.spec.whatwg.org/) and the HTML Standard (https://html.spec.whatwg.org/), reduced to
+// the core inheritance chain EventTarget <- Node <- Element <- HTMLElement for navigation tests.
+
+// Source: DOM Standard (https://dom.spec.whatwg.org/)
+
+interface EventTarget {
+  constructor();
+
+  undefined addEventListener(DOMString type, EventListener? callback, optional (AddEventListenerOptions or boolean) options = {});
+  undefined removeEventListener(DOMString type, EventListener? callback, optional (EventListenerOptions or boolean) options = {});
+  boolean dispatchEvent(Event event);
+};
+
+interface Node : EventTarget {
+  const unsigned short ELEMENT_NODE = 1;
+  const unsigned short ATTRIBUTE_NODE = 2;
+  const unsigned short TEXT_NODE = 3;
+  const unsigned short CDATA_SECTION_NODE = 4;
+  const unsigned short ENTITY_REFERENCE_NODE = 5; // legacy
+  const unsigned short ENTITY_NODE = 6; // legacy
+  const unsigned short PROCESSING_INSTRUCTION_NODE = 7;
+  const unsigned short COMMENT_NODE = 8;
+  const unsigned short DOCUMENT_NODE = 9;
+  const unsigned short DOCUMENT_TYPE_NODE = 10;
+  const unsigned short DOCUMENT_FRAGMENT_NODE = 11;
+  const unsigned short NOTATION_NODE = 12; // legacy
+  readonly attribute unsigned short nodeType;
+  readonly attribute DOMString nodeName;
+
+  readonly attribute USVString baseURI;
+
+  readonly attribute boolean isConnected;
+  readonly attribute Document? ownerDocument;
+  Node getRootNode(optional GetRootNodeOptions options = {});
+  readonly attribute Node? parentNode;
+  readonly attribute Element? parentElement;
+  boolean hasChildNodes();
+  [SameObject] readonly attribute NodeList childNodes;
+  readonly attribute Node? firstChild;
+  readonly attribute Node? lastChild;
+  readonly attribute Node? previousSibling;
+  readonly attribute Node? nextSibling;
+
+  [CEReactions] attribute DOMString? nodeValue;
+  [CEReactions] attribute DOMString? textContent;
+  [CEReactions] undefined normalize();
+
+  [CEReactions, NewObject] Node cloneNode(optional boolean subtree = false);
+  boolean isEqualNode(Node? otherNode);
+  boolean isSameNode(Node? otherNode); // legacy alias of ===
+
+  const unsigned short DOCUMENT_POSITION_DISCONNECTED = 0x01;
+  const unsigned short DOCUMENT_POSITION_PRECEDING = 0x02;
+  const unsigned short DOCUMENT_POSITION_FOLLOWING = 0x04;
+  const unsigned short DOCUMENT_POSITION_CONTAINS = 0x08;
+  const unsigned short DOCUMENT_POSITION_CONTAINED_BY = 0x10;
+  const unsigned short DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC = 0x20;
+  unsigned short compareDocumentPosition(Node other);
+  boolean contains(Node? other);
+
+  DOMString? lookupPrefix(DOMString? namespace);
+  DOMString? lookupNamespaceURI(DOMString? prefix);
+  boolean isDefaultNamespace(DOMString? namespace);
+
+  [CEReactions] Node insertBefore(Node node, Node? child);
+  [CEReactions] Node appendChild(Node node);
+  [CEReactions] Node replaceChild(Node node, Node child);
+  [CEReactions] Node removeChild(Node child);
+};
+
+interface Element : Node {
+  readonly attribute DOMString? namespaceURI;
+  readonly attribute DOMString? prefix;
+  readonly attribute DOMString localName;
+  readonly attribute DOMString tagName;
+
+  [CEReactions] attribute DOMString id;
+  [CEReactions] attribute DOMString className;
+  [SameObject, PutForwards=value] readonly attribute DOMTokenList classList;
+  [CEReactions, Unscopable] attribute DOMString slot;
+
+  boolean hasAttributes();
+  [SameObject] readonly attribute NamedNodeMap attributes;
+  sequence<DOMString> getAttributeNames();
+  DOMString? getAttribute(DOMString qualifiedName);
+  DOMString? getAttributeNS(DOMString? namespace, DOMString localName);
+  [CEReactions] undefined setAttribute(DOMString qualifiedName, (TrustedType or DOMString) value);
+  [CEReactions] undefined setAttributeNS(DOMString? namespace, DOMString qualifiedName, (TrustedType or DOMString) value);
+  [CEReactions] undefined removeAttribute(DOMString qualifiedName);
+  [CEReactions] undefined removeAttributeNS(DOMString? namespace, DOMString localName);
+  [CEReactions] boolean toggleAttribute(DOMString qualifiedName, optional boolean force);
+  boolean hasAttribute(DOMString qualifiedName);
+  boolean hasAttributeNS(DOMString? namespace, DOMString localName);
+
+  Attr? getAttributeNode(DOMString qualifiedName);
+  Attr? getAttributeNodeNS(DOMString? namespace, DOMString localName);
+  [CEReactions] Attr? setAttributeNode(Attr attr);
+  [CEReactions] Attr? setAttributeNodeNS(Attr attr);
+  [CEReactions] Attr removeAttributeNode(Attr attr);
+
+  ShadowRoot attachShadow(ShadowRootInit init);
+  readonly attribute ShadowRoot? shadowRoot;
+
+  readonly attribute CustomElementRegistry? customElementRegistry;
+
+  Element? closest(DOMString selectors);
+  boolean matches(DOMString selectors);
+  boolean webkitMatchesSelector(DOMString selectors); // legacy alias of .matches
+
+  HTMLCollection getElementsByTagName(DOMString qualifiedName);
+  HTMLCollection getElementsByTagNameNS(DOMString? namespace, DOMString localName);
+  HTMLCollection getElementsByClassName(DOMString classNames);
+
+  [CEReactions] Element? insertAdjacentElement(DOMString where, Element element); // legacy
+  undefined insertAdjacentText(DOMString where, DOMString data); // legacy
+};
+
+// Source: HTML Standard (https://html.spec.whatwg.org/)
+
+interface HTMLElement : Element {
+  [HTMLConstructor] constructor();
+
+  // metadata attributes
+  [CEReactions, Reflect] attribute DOMString title;
+  [CEReactions, Reflect] attribute DOMString lang;
+  [CEReactions] attribute boolean translate;
+  [CEReactions] attribute DOMString dir;
+
+  // user interaction
+  [CEReactions] attribute (boolean or unrestricted double or DOMString)? hidden;
+  [CEReactions, Reflect] attribute boolean inert;
+  undefined click();
+  [CEReactions, Reflect] attribute DOMString accessKey;
+  readonly attribute DOMString accessKeyLabel;
+  [CEReactions] attribute boolean draggable;
+  [CEReactions] attribute boolean spellcheck;
+  [CEReactions, ReflectSetter] attribute DOMString writingSuggestions;
+  [CEReactions, ReflectSetter] attribute DOMString autocapitalize;
+  [CEReactions] attribute boolean autocorrect;
+
+  [CEReactions] attribute [LegacyNullToEmptyString] DOMString innerText;
+  [CEReactions] attribute [LegacyNullToEmptyString] DOMString outerText;
+
+  ElementInternals attachInternals();
+
+  // The popover API
+  undefined showPopover(optional ShowPopoverOptions options = {});
+  undefined hidePopover();
+  boolean togglePopover(optional (TogglePopoverOptions or boolean) options = {});
+  [CEReactions] attribute DOMString? popover;
+
+  [CEReactions, Reflect, ReflectRange=(0, 8)] attribute unsigned long headingOffset;
+  [CEReactions, Reflect] attribute boolean headingReset;
+};

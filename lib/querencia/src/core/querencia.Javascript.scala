@@ -30,69 +30,44 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package xenophile
-
-import scala.language.dynamics
+package querencia
 
 import anticipation.*
 import gossamer.*
-import prepositional.*
+import xenophile.*
 
-object Foreign:
-  // A foreign expression: a reference to a named foreign value, a member selection (recording the
-  // `owner` foreign type it is selected from, which backends needing that type's layout — e.g. the
-  // native evaluator — use, while self-describing backends like JSON ignore it), a function
-  // application, an indexed access into an array-typed value, or a literal operand.
-  enum Expression:
-    case Reference(name: Text)
-    case Select(target: Expression, member: Text, owner: Text)
-    case Apply(target: Expression, arguments: List[Expression])
-    case Index(target: Expression, index: Expression)
-    case Literal(value: Any)
+// Renders a `Foreign.Expression` (built by navigating the DOM) to JavaScript source. The output is
+// intended to sit inside an HTML event-handler attribute, so string literals use single quotes (to
+// nest cleanly inside the attribute's double quotes).
+object Javascript:
+  def serialize(expression: Foreign.Expression): Text = expression match
+    case Foreign.Expression.Reference(name) =>
+      name
 
-  // A foreign type: a named type, a union of alternatives, or a generic application such as a
-  // TypeScript `Map<number, string>` or a C pointer `T*`.
-  enum Type:
-    case Named(name: Text)
-    case Union(members: List[Type])
-    case Applied(constructor: Text, arguments: List[Type])
+    case Foreign.Expression.Select(target, member, _) =>
+      t"${serialize(target)}.$member"
 
-    def text: Text = this match
-      case Named(name)         => name
-      case Union(members)      => members.map(_.text).join(t"|")
-      case Applied(name, args) => t"$name<${args.map(_.text).join(t", ")}>"
+    case Foreign.Expression.Apply(target, arguments) =>
+      t"${serialize(target)}(${arguments.map(serialize).join(t", ")})"
 
-  def make(tree: Expression): Foreign = new Foreign:
-    def expr: Expression = tree
+    case Foreign.Expression.Index(target, index) =>
+      t"${serialize(target)}[${serialize(index)}]"
 
-  transparent inline def apply[name <: Label, origin]: Foreign = ${Xenophile.root[name, origin]}
+    case Foreign.Expression.Literal(value) =>
+      literal(value)
 
-  // A Scala value with an `Interoperable` instance converts into a `Foreign` literal carrying the
-  // value verbatim; the foreign type is the instance's `Topic`.
-  given converter: [value, ecosystem <: Ecosystem]
-  =>  ( interoperable: value is Interoperable in ecosystem )
-  =>  Conversion[value, Foreign of interoperable.Topic from ecosystem] =
-    instance =>
-      val literal = Expression.Literal(instance)
-      Foreign.make(literal).asInstanceOf[Foreign of interoperable.Topic from ecosystem]
+  // A `Text`/`String` literal becomes a single-quoted JavaScript string; a `Boolean` becomes
+  // `true`/`false`; numbers (including the Hypotenuse fixed-width types, boxed as `Int`/`Long`/…)
+  // render verbatim through their `toString`.
+  private def literal(value: Any): Text = value match
+    case string: String   => quote(string.tt)
+    case boolean: Boolean => if boolean then t"true" else t"false"
+    case other            => other.toString.tt
 
-trait Foreign extends Dynamic, Topical, Original:
-  def expr: Foreign.Expression
+  // A single-quoted JavaScript string literal, escaping backslash, single-quote and newlines.
+  private def quote(text: Text): Text =
+    val escaped =
+      text.s.replace("\\", "\\\\").nn.replace("'", "\\'").nn.replace("\n", "\\n").nn
+      . replace("\r", "\\r").nn.tt
 
-  transparent inline def selectDynamic(field: String): Foreign =
-    ${Xenophile.select('this, 'field)}
-
-  // Indexes into an array-typed foreign value (a `sequence`/`FrozenArray`/`Array`/`list`),
-  // returning a `Foreign` of the element type. This is a real `apply` (taking precedence over
-  // `Dynamic`), so `array(0)` resolves here; the macro rejects indexing a non-array foreign type.
-  transparent inline def apply(index: Int): Foreign = ${Xenophile.index('this, 'index)}
-
-  // Arguments are typed `Foreign from Origin` — i.e. a foreign value from this receiver's own
-  // source language. A Scala value with an `Interoperable` instance for that language is converted
-  // to a `Foreign` literal at the call site by the `converter` `Conversion` above (pinning the
-  // ecosystem to `Origin` is what lets the conversion infer its type parameters); the macro then
-  // checks each argument's foreign type against the declared parameter type.
-  transparent inline def applyDynamic(field: String)(inline arguments: (Foreign from Origin)*)
-  :   Foreign =
-
-    ${Xenophile.applied('this, 'field, 'arguments)}
+    t"'$escaped'"

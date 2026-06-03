@@ -235,6 +235,42 @@ object Xenophile:
         val tree = '{Foreign.Expression.Select($self.expr, $member.tt, $owner.tt)}
         '{Foreign.make($tree).asInstanceOf[result]}
 
+  // The array constructors whose element type indexing yields: WebIDL/`sequence`, `FrozenArray`,
+  // TypeScript `Array`/`ReadonlyArray`, and WIT `list`. All are encoded by `reprOf` as
+  // `<constructor> { type Transport = <element> }` (the prepositional `over`).
+  private val arrayConstructors: Set[Text] =
+    Set(t"sequence", t"FrozenArray", t"Array", t"ReadonlyArray", t"list")
+
+  // Indexes into an array-typed foreign value: checks the receiver's `Topic` is one of the
+  // `arrayConstructors` applied to a single element type, and yields a `Foreign` of that element.
+  def index(self: Expr[Foreign], idx: Expr[Int]): Macro[Foreign] =
+    import quotes.reflect.*
+
+    val (topicRepr, originRepr) = receiver(self)
+
+    val element = topicRepr.dealias match
+      case Refinement(parent, "Transport", TypeBounds(_, element)) => parent.dealias match
+        case ConstantType(StringConstant(constructor))
+        if arrayConstructors.contains(constructor.tt) =>
+          element
+
+        case _ =>
+          halt(m"xenophile: this foreign type is not an indexable array type")
+
+      case _ =>
+        halt(m"xenophile: this foreign type is not an indexable array type")
+
+    val resultType =
+      Refinement
+        ( Refinement(TypeRepr.of[Foreign], "Topic", TypeBounds(element, element)),
+          "Origin",
+          TypeBounds(originRepr, originRepr) )
+
+    resultType.asType.absolve match
+      case '[type result <: Foreign; result] =>
+        val tree = '{Foreign.Expression.Index($self.expr, Foreign.Expression.Literal($idx))}
+        '{Foreign.make($tree).asInstanceOf[result]}
+
   def applied(self: Expr[Foreign], field: Expr[String], arguments: Expr[Seq[Foreign]])
   :   Macro[Foreign] =
 
