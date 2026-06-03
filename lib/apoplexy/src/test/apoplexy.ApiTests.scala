@@ -48,6 +48,7 @@ case class NewPet(name: Text, tag: Optional[Text] = Unset)
 case class Photo(url: Text, width: Optional[Int] = Unset, height: Optional[Int] = Unset)
 case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
 case class Note(id: Int, text: Text)
+case class NewNote(text: Text)
 
 // A test `Http.Backend` that captures the request it is given and replies with a
 // canned response, so `.call` can be exercised without any network access.
@@ -272,3 +273,16 @@ object ApiTests extends Suite(m"Api client tests"):
         xmlApi.notes(1).get.call[Note]()
         recorder.lastHeaders.filter(_.key == t"accept").map(_.value)
       . assert(_ == List(t"application/xml"))
+
+      test(m"the request body is encoded as XML"):
+        xmlApi.notes.post(NewNote(t"hi")).request.body match
+          case Api.Body.Xml(_) => true
+          case _               => false
+      . assert(_ == true)
+
+      test(m"an XML POST sends an XML body and content-type"):
+        val recorder = Recorder(() => Http.Response(Http.Created, contentType = media"application/xml")(noteXml))
+        given Http.Backend = recorder
+        xmlApi.notes.post(NewNote(t"hi")).call[Note]()
+        (recorder.lastHeaders.filter(_.key == t"content-type").map(_.value), recorder.lastBody.present)
+      . assert(_ == (List(t"application/xml"), true))

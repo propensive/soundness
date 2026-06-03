@@ -18,6 +18,25 @@
           }
         }
       }
+    },
+    "/notes": {
+      "post": {
+        "operationId": "addNote",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/xml": { "schema": { "$ref": "#/components/schemas/NewNote" } }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created",
+            "content": {
+              "application/xml": { "schema": { "$ref": "#/components/schemas/Note" } }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -27,6 +46,13 @@
         "required": ["id", "text"],
         "properties": {
           "id":   { "type": "integer" },
+          "text": { "type": "string" }
+        }
+      },
+      "NewNote": {
+        "type": "object",
+        "required": ["text"],
+        "properties": {
           "text": { "type": "string" }
         }
       }
