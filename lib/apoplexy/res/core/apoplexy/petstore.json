@@ -121,6 +121,25 @@
         }
       }
     },
+    "/profile": {
+      "put": {
+        "operationId": "updateProfile",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/NewPet" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "updated",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Pet" } }
+            }
+          }
+        }
+      }
+    },
     "/sessions/{token}": {
       "delete": {
         "operationId": "logout",

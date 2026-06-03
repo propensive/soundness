@@ -101,6 +101,14 @@ object ApiTests extends Suite(m"Api client tests"):
         api.login(Credentials(t"jon", t"pw")).request
       . assert(request => request.method == Http.Post && request.path == t"/login" && request.body.present)
 
+      test(m"PUT sole method with a positional body (verb omitted)"):
+        api.profile(NewPet(t"Rex")).request
+      . assert(request => request.method == Http.Put && request.path == t"/profile" && request.body.present)
+
+      test(m"the verb is still explicitly usable on a sole-method endpoint"):
+        api.profile.put(NewPet(t"Rex")).request.method
+      . assert(_ == Http.Put)
+
       test(m"an optional query parameter may be omitted"):
         api.pets(42).photos(width = 10).request.query
       . assert(_ == List(t"width" -> t"10"))
