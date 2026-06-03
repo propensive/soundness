@@ -54,3 +54,52 @@ object Tests extends Suite(m"Denominative Tests"):
         val full = (Prim span 3).size
         skip == full
       . assert(identity(_))
+
+    suite(m"Interval-semantics tests"):
+      test(m"span preserves the start ordinal"):
+        (Sec span 3).start
+      . assert(_ == Sec)
+
+      test(m"span sets the inclusive end ordinal"):
+        (Sec span 3).end
+      . assert(_ == Quat)
+
+      test(m"span sets the exclusive limit ordinal"):
+        (Sec span 3).limit
+      . assert(_ == Quin)
+
+      test(m"interval contains an interior ordinal"):
+        (Sec span 3).contains(Quat)
+      . assert(identity(_))
+
+      test(m"interval does not contain the limit ordinal"):
+        (Sec span 3).contains(Quin)
+      . assert(_ == false)
+
+      test(m"each iterates exactly size times"):
+        var count = 0
+        (Sec span 3).each: _ =>
+          count += 1
+        count
+      . assert(_ == 3)
+
+    suite(m"Empty-interval tests"):
+      test(m"an empty interval has zero size"):
+        (Sec till Sec).size
+      . assert(_ == 0)
+
+      test(m"an empty interval is nil"):
+        (Sec till Sec).nil
+      . assert(identity(_))
+
+      test(m"an empty interval contains no ordinals"):
+        (Quat till Quat).contains(Quat)
+      . assert(_ == false)
+
+      test(m"empty intervals at different positions are equal"):
+        (Sec till Sec) == (Sept till Sept)
+      . assert(identity(_))
+
+      test(m"the canonical empty interval equals a degenerate range"):
+        Interval() == (Quat till Quat)
+      . assert(identity(_))

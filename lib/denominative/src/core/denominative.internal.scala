@@ -78,10 +78,11 @@ object internal:
   extension (interval: Interval)
     inline def start: Ordinal = ((interval >> 32) & 0xffffffff).toInt
 
-    inline def end: Ordinal = (interval & 0xffffffff).toInt
-    inline def contains(ordinal: Ordinal): Boolean = start <= ordinal && ordinal <= end
-    inline def size: Int = (end - start) max 0
-    inline def next: Ordinal = end + 1
+    inline def size: Int = (interval & 0xffffffff).toInt
+    inline def end: Ordinal = start + size - 1
+    inline def limit: Ordinal = start + size
+    inline def contains(ordinal: Ordinal): Boolean = start <= ordinal && ordinal < limit
+    inline def next: Ordinal = limit
     inline def previous: Ordinal = start - 1
     inline def subsequent(size: Int): Interval = end.subsequent(size)
     inline def preceding(size: Int): Interval = start.preceding(size)
@@ -108,15 +109,17 @@ object internal:
       acc
 
 
-    inline def nil: Boolean = end < start
+    inline def nil: Boolean = size == 0
 
 
   object Interval:
-    inline def initial(size: Int): Interval = size.toLong
+    inline def sized(inline start: Int, inline count: Int): Interval =
+      if count <= 0 then 0L else (start.toLong & 0xffffffffL) << 32 | (count.toLong & 0xffffffffL)
+
+    inline def initial(size: Int): Interval = sized(0, size)
     inline def apply(): Interval = 0L
 
-    inline def zerary(inline start: Int, inline end: Int): Interval =
-      (start & 0xffffffffL) << 32 | end & 0xffffffffL
+    inline def zerary(inline start: Int, inline end: Int): Interval = sized(start, end - start)
 
     inline def apply(inline start: Ordinal, inline end: Ordinal): Interval =
-      (start & 0xffffffffL) << 32 | (end + 1) & 0xffffffffL
+      sized(start.n0, end.n0 - start.n0 + 1)
