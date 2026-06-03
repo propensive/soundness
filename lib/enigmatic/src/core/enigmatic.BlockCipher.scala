@@ -32,30 +32,6 @@
                                                                                                   */
 package enigmatic
 
-import javax.crypto.spec.SecretKeySpec
-
-import anticipation.*
-import contingency.*
-import gastronomy.*
-import prepositional.*
-import rudiments.*
-
-extension [encodable: Encodable in Data](value: encodable)
-  def hmac[algorithm <: Algorithm](key: Data)(using hash: Hash in algorithm): Hmac in algorithm =
-
-    val mac = hash.hmac0
-    mac.init(SecretKeySpec(key.to(Array), hash.name.s))
-
-    Hmac(unsafely(mac.doFinal(encodable.encode(value).mutable).nn.immutable))
-
-package blockCipherMode:
-  export Cbc.mode as cbc
-  export Ecb.mode as ecb
-  export Ctr.mode as ctr
-  export Cfb.mode as cfb
-  export Ofb.mode as ofb
-
-package blockCipherPadding:
-  export Pkcs7.padding as pkcs7
-  export Iso10126.padding as iso10126
-  export NoPadding.padding as noPadding
+trait BlockCipher extends Cipher, Encryption, Symmetric:
+  type Transport
+  type Contrast

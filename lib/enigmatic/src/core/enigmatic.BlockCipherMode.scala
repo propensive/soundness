@@ -32,30 +32,36 @@
                                                                                                   */
 package enigmatic
 
-import javax.crypto.spec.SecretKeySpec
-
 import anticipation.*
-import contingency.*
-import gastronomy.*
+import gossamer.*
 import prepositional.*
-import rudiments.*
 
-extension [encodable: Encodable in Data](value: encodable)
-  def hmac[algorithm <: Algorithm](key: Data)(using hash: Hash in algorithm): Hmac in algorithm =
+object BlockCipherMode:
+  def apply[mode](name0: Text, usesIv0: Boolean): mode is BlockCipherMode = new BlockCipherMode:
+    type Self = mode
+    val name: Text = name0
+    val usesIv: Boolean = usesIv0
 
-    val mac = hash.hmac0
-    mac.init(SecretKeySpec(key.to(Array), hash.name.s))
+trait BlockCipherMode extends Typeclass:
+  def name: Text
+  def usesIv: Boolean
 
-    Hmac(unsafely(mac.doFinal(encodable.encode(value).mutable).nn.immutable))
+sealed trait Cbc
+object Cbc:
+  given mode: Cbc is BlockCipherMode = BlockCipherMode(t"CBC", true)
 
-package blockCipherMode:
-  export Cbc.mode as cbc
-  export Ecb.mode as ecb
-  export Ctr.mode as ctr
-  export Cfb.mode as cfb
-  export Ofb.mode as ofb
+sealed trait Ecb
+object Ecb:
+  given mode: Ecb is BlockCipherMode = BlockCipherMode(t"ECB", false)
 
-package blockCipherPadding:
-  export Pkcs7.padding as pkcs7
-  export Iso10126.padding as iso10126
-  export NoPadding.padding as noPadding
+sealed trait Ctr
+object Ctr:
+  given mode: Ctr is BlockCipherMode = BlockCipherMode(t"CTR", true)
+
+sealed trait Cfb
+object Cfb:
+  given mode: Cfb is BlockCipherMode = BlockCipherMode(t"CFB", true)
+
+sealed trait Ofb
+object Ofb:
+  given mode: Ofb is BlockCipherMode = BlockCipherMode(t"OFB", true)

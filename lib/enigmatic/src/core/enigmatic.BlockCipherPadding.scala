@@ -32,30 +32,27 @@
                                                                                                   */
 package enigmatic
 
-import javax.crypto.spec.SecretKeySpec
-
 import anticipation.*
-import contingency.*
-import gastronomy.*
+import gossamer.*
 import prepositional.*
-import rudiments.*
 
-extension [encodable: Encodable in Data](value: encodable)
-  def hmac[algorithm <: Algorithm](key: Data)(using hash: Hash in algorithm): Hmac in algorithm =
+object BlockCipherPadding:
+  def apply[padding](name0: Text): padding is BlockCipherPadding = new BlockCipherPadding:
+    type Self = padding
+    val name: Text = name0
 
-    val mac = hash.hmac0
-    mac.init(SecretKeySpec(key.to(Array), hash.name.s))
+trait BlockCipherPadding extends Typeclass:
+  def name: Text
 
-    Hmac(unsafely(mac.doFinal(encodable.encode(value).mutable).nn.immutable))
+sealed trait Pkcs7
+object Pkcs7:
+  // The JDK calls PKCS#7 padding "PKCS5Padding" for historical reasons.
+  given padding: Pkcs7 is BlockCipherPadding = BlockCipherPadding(t"PKCS5Padding")
 
-package blockCipherMode:
-  export Cbc.mode as cbc
-  export Ecb.mode as ecb
-  export Ctr.mode as ctr
-  export Cfb.mode as cfb
-  export Ofb.mode as ofb
+sealed trait Iso10126
+object Iso10126:
+  given padding: Iso10126 is BlockCipherPadding = BlockCipherPadding(t"ISO10126Padding")
 
-package blockCipherPadding:
-  export Pkcs7.padding as pkcs7
-  export Iso10126.padding as iso10126
-  export NoPadding.padding as noPadding
+sealed trait NoPadding
+object NoPadding:
+  given padding: NoPadding is BlockCipherPadding = BlockCipherPadding(t"NoPadding")

@@ -116,10 +116,45 @@ object Tests extends Suite(m"Gastronomy tests"):
     . assert(_ == t"Hello world")
 
     test(m"AES roundtrip"):
+      import blockCipherMode.cbc, blockCipherPadding.pkcs7
       val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
       val message: Data = key.encrypt(t"Hello world")
       key.decrypt(message).text
     . assert(_ == t"Hello world")
+
+    test(m"AES/CBC/PKCS7 roundtrip (mode and padding fully specified)"):
+      val key: SymmetricKey[Aes[256] over Cbc against Pkcs7] =
+        SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      val message: Data = key.encrypt(t"Hello world")
+      key.decrypt(message).text
+    . assert(_ == t"Hello world")
+
+    test(m"AES/ECB/ISO10126 roundtrip (mode and padding fully specified)"):
+      val key = SymmetricKey.generate[Aes[256] over Ecb against Iso10126]()
+      key.decrypt(key.encrypt(t"Hello world")).text
+    . assert(_ == t"Hello world")
+
+    test(m"AES/CTR/NoPadding roundtrip (mode and padding fully specified)"):
+      val key = SymmetricKey.generate[Aes[128] over Ctr against NoPadding]()
+      key.decrypt(key.encrypt(t"Hello world")).text
+    . assert(_ == t"Hello world")
+
+    test(m"AES/CBC with padding inferred as PKCS7 from import"):
+      import blockCipherPadding.pkcs7
+      val key = SymmetricKey.generate[Aes[256] over Cbc]()
+      key.decrypt(key.encrypt(t"Hello world")).text
+    . assert(_ == t"Hello world")
+
+    test(m"AES with mode and padding inferred as CBC/PKCS7 from imports"):
+      import blockCipherMode.cbc, blockCipherPadding.pkcs7
+      val key = SymmetricKey.generate[Aes[256]]()
+      key.decrypt(key.encrypt(t"Hello world")).text
+    . assert(_ == t"Hello world")
+
+    test(m"CBC encryption of the same plaintext differs run-to-run (random IV)"):
+      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      key.encrypt(t"Hello world") == key.encrypt(t"Hello world")
+    . assert(_ == false)
 
     test(m"Sign some data with DSA"):
       val privateKey: PrivateKey[Dsa[1024]] = PrivateKey.generate[Dsa[1024]]()

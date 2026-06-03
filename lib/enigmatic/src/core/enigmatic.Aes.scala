@@ -32,31 +32,56 @@
                                                                                                   */
 package enigmatic
 
+import java.security as js
 import javax.crypto as jc, javax.crypto.spec.*
 
 import anticipation.*
+import gossamer.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 
 object Aes:
-  given value: [bits <: 128 | 192 | 256: ValueOf] => Aes[bits] = Aes()
+  given value: [bits <: 128 | 192 | 256: ValueOf, mode, padding]
+        => (mode is BlockCipherMode)
+        => (padding is BlockCipherPadding)
+        => (Aes[bits] over mode against padding) =
+    Aes[bits](summon[mode is BlockCipherMode], summon[padding is BlockCipherPadding])
+    . asInstanceOf[Aes[bits] over mode against padding]
 
-class Aes[bits <: 128 | 192 | 256: ValueOf]() extends Cipher, Encryption, Symmetric:
+class Aes[bits <: 128 | 192 | 256: ValueOf]
+    (mode: BlockCipherMode, padding: BlockCipherPadding)
+extends BlockCipher:
   type Size = bits
 
   def keySize: bits = valueOf[bits]
-  private def initialize() = jc.Cipher.getInstance("AES/ECB/PKCS5Padding")
+  private def transformation: Text = t"AES/${mode.name}/${padding.name}"
+  private def initialize() = jc.Cipher.getInstance(transformation.s)
   private def makeKey(key: Data): SecretKeySpec = SecretKeySpec(key.mutable(using Unsafe), "AES")
 
   def encrypt(bytes: Data, key: Data): Data =
     val cipher = initialize().nn
-    cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key))
-    cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
+
+    if mode.usesIv then
+      val iv = new Array[Byte](cipher.getBlockSize)
+      js.SecureRandom().nextBytes(iv)
+      cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key), IvParameterSpec(iv))
+      (iv ++ cipher.doFinal(bytes.mutable(using Unsafe)).nn).immutable(using Unsafe)
+    else
+      cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key))
+      cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
 
   def decrypt(bytes: Data, key: Data): Data =
     val cipher = initialize().nn
-    cipher.init(jc.Cipher.DECRYPT_MODE, makeKey(key))
-    cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
+    val input = bytes.mutable(using Unsafe)
+
+    if mode.usesIv then
+      val blockSize = cipher.getBlockSize
+      cipher.init(jc.Cipher.DECRYPT_MODE, makeKey(key), IvParameterSpec(input.take(blockSize)))
+      cipher.doFinal(input.drop(blockSize)).nn.immutable(using Unsafe)
+    else
+      cipher.init(jc.Cipher.DECRYPT_MODE, makeKey(key))
+      cipher.doFinal(input).nn.immutable(using Unsafe)
 
   def genKey(): Data =
     val keyGen = jc.KeyGenerator.getInstance("AES").nn
